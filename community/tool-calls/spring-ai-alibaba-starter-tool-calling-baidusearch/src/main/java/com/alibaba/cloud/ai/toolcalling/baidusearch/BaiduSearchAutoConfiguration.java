@@ -34,7 +34,7 @@ import static com.alibaba.cloud.ai.toolcalling.common.CommonToolCallConstants.DE
  * @author KrakenZJC
  **/
 @Configuration
-@EnableConfigurationProperties(BaiduSearchProperties.class)
+@EnableConfigurationProperties({ BaiduSearchProperties.class, BaiduAiSearchProperties.class })
 @ConditionalOnProperty(prefix = BaiduSearchConstants.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class BaiduSearchAutoConfiguration {
@@ -52,6 +52,20 @@ public class BaiduSearchAutoConfiguration {
 		};
 		return new BaiduSearchService(jsonParseTool, properties,
 				WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(consumer).build());
+	}
+
+	@Bean(name = BaiduSearchConstants.TOOL_NAME_AI)
+	@ConditionalOnMissingBean
+	@Description("Use baidu ai search engine to query information.")
+	@ConditionalOnProperty(prefix = BaiduSearchConstants.CONFIG_PREFIX_AI, name = "enabled", havingValue = "true")
+	public BaiduAiSearchService baiduAiSearch(JsonParseTool jsonParseTool, BaiduAiSearchProperties properties) {
+		Consumer<HttpHeaders> consumer = headers -> {
+			headers.add("Content-Type", "application/json");
+			headers.add("Authorization", "Bearer " + properties.getApiKey());
+		};
+		return new BaiduAiSearchService(
+				WebClientTool.builder(jsonParseTool, properties).httpHeadersConsumer(consumer).build(), jsonParseTool,
+				properties);
 	}
 
 }

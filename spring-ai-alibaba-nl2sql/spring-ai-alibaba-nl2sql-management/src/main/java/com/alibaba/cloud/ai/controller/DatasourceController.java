@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * 数据源控制器
+ * Data Source Controller
  *
  * @author Alibaba Cloud AI
  */
@@ -43,7 +43,7 @@ public class DatasourceController {
 	}
 
 	/**
-	 * 获取所有数据源列表
+	 * Get all data source list
 	 */
 	@GetMapping
 	public ResponseEntity<List<Datasource>> getAllDatasources(
@@ -66,10 +66,10 @@ public class DatasourceController {
 	}
 
 	/**
-	 * 根据ID获取数据源详情
+	 * Get data source details by ID
 	 */
 	@GetMapping("/{id}")
-	public ResponseEntity<Datasource> getDatasourceById(@PathVariable Integer id) {
+	public ResponseEntity<Datasource> getDatasourceById(@PathVariable(value = "id") Integer id) {
 		Datasource datasource = datasourceService.getDatasourceById(id);
 		if (datasource != null) {
 			return ResponseEntity.ok(datasource);
@@ -80,7 +80,7 @@ public class DatasourceController {
 	}
 
 	/**
-	 * 创建数据源
+	 * Create data source
 	 */
 	@PostMapping
 	public ResponseEntity<Datasource> createDatasource(@RequestBody Datasource datasource) {
@@ -94,10 +94,11 @@ public class DatasourceController {
 	}
 
 	/**
-	 * 更新数据源
+	 * Update data source
 	 */
 	@PutMapping("/{id}")
-	public ResponseEntity<Datasource> updateDatasource(@PathVariable Integer id, @RequestBody Datasource datasource) {
+	public ResponseEntity<Datasource> updateDatasource(@PathVariable(value = "id") Integer id,
+			@RequestBody Datasource datasource) {
 		try {
 			Datasource updated = datasourceService.updateDatasource(id, datasource);
 			return ResponseEntity.ok(updated);
@@ -108,10 +109,10 @@ public class DatasourceController {
 	}
 
 	/**
-	 * 删除数据源
+	 * Delete data source
 	 */
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Map<String, Object>> deleteDatasource(@PathVariable Integer id) {
+	public ResponseEntity<Map<String, Object>> deleteDatasource(@PathVariable(value = "id") Integer id) {
 		try {
 			datasourceService.deleteDatasource(id);
 			Map<String, Object> response = new HashMap<>();
@@ -128,10 +129,10 @@ public class DatasourceController {
 	}
 
 	/**
-	 * 测试数据源连接
+	 * Test data source connection
 	 */
 	@PostMapping("/{id}/test")
-	public ResponseEntity<Map<String, Object>> testConnection(@PathVariable Integer id) {
+	public ResponseEntity<Map<String, Object>> testConnection(@PathVariable(value = "id") Integer id) {
 		try {
 			boolean success = datasourceService.testConnection(id);
 			Map<String, Object> response = new HashMap<>();
@@ -148,7 +149,7 @@ public class DatasourceController {
 	}
 
 	/**
-	 * 获取数据源统计信息
+	 * Get data source statistics
 	 */
 	@GetMapping("/stats")
 	public ResponseEntity<Map<String, Object>> getDatasourceStats() {
@@ -162,10 +163,10 @@ public class DatasourceController {
 	}
 
 	/**
-	 * 获取智能体关联的数据源列表
+	 * Get data source list associated with agent
 	 */
 	@GetMapping("/agent/{agentId}")
-	public ResponseEntity<List<AgentDatasource>> getAgentDatasources(@PathVariable Integer agentId) {
+	public ResponseEntity<List<AgentDatasource>> getAgentDatasources(@PathVariable(value = "agentId") Integer agentId) {
 		try {
 			List<AgentDatasource> agentDatasources = datasourceService.getAgentDatasources(agentId);
 			return ResponseEntity.ok(agentDatasources);
@@ -176,7 +177,7 @@ public class DatasourceController {
 	}
 
 	/**
-	 * 为智能体添加数据源
+	 * Add data source for agent
 	 */
 	@PostMapping("/agent/{agentId}")
 	public ResponseEntity<Map<String, Object>> addDatasourceToAgent(@PathVariable Integer agentId,
@@ -206,7 +207,7 @@ public class DatasourceController {
 	}
 
 	/**
-	 * 移除智能体的数据源关联
+	 * Remove data source association from agent
 	 */
 	@DeleteMapping("/agent/{agentId}/{datasourceId}")
 	public ResponseEntity<Map<String, Object>> removeDatasourceFromAgent(@PathVariable Integer agentId,

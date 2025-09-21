@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.StringUtils;
 
 import java.util.concurrent.CountDownLatch;
@@ -38,7 +37,6 @@ import java.util.function.Consumer;
 
 @SpringBootTest(classes = { CodeExecutorProperties.class })
 @DisplayName("Run Python Code in Docker Test Without Network")
-@ActiveProfiles("docker")
 public class DockerCodePoolExecutorServiceTest {
 
 	private static final Logger log = LoggerFactory.getLogger(DockerCodePoolExecutorServiceTest.class);
@@ -50,6 +48,8 @@ public class DockerCodePoolExecutorServiceTest {
 
 	@BeforeEach
 	public void init() {
+		this.properties.setCodeTimeout("5s");
+		this.properties.setCodePoolExecutor(CodePoolExecutorEnum.DOCKER);
 		this.codePoolExecutorService = new DockerCodePoolExecutorService(properties);
 	}
 
@@ -81,7 +81,8 @@ public class DockerCodePoolExecutorServiceTest {
 			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.TIMEOUT_CODE, "", null));
 		System.out.println(response);
 		log.info("Run Code with Endless Loop Finished");
-		if (response.isSuccess() || !response.toString().contains("Killed")) {
+		if (response.isSuccess() || !response.toString().contains("Killed")
+				|| !response.executionSuccessButResultFailed()) {
 			throw new RuntimeException("Test Failed");
 		}
 	}
@@ -92,7 +93,8 @@ public class DockerCodePoolExecutorServiceTest {
 			.runTask(new CodePoolExecutorService.TaskRequest(CodeTestConstant.ERROR_CODE, "", null));
 		System.out.println(response);
 		log.info("Run Code with Syntax Error Finished");
-		if (response.isSuccess() || !response.toString().contains("SyntaxError")) {
+		if (response.isSuccess() || !response.toString().contains("SyntaxError")
+				|| !response.executionSuccessButResultFailed()) {
 			throw new RuntimeException("Test Failed");
 		}
 	}

@@ -6,10 +6,17 @@ spring:
     password: $FSD#@!@#!#$!12341234
   h2:
     console:
-      enabled: false
+      enabled: true
       path: /h2-console
       settings:
         web-allow-others: true
   # JPA configuration
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  ai:
+    memory:
+      h2:
+        enabled: true

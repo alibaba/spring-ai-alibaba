@@ -1,10 +1,11 @@
 # TEXT_FILE_AGENT 配置
 agentName: TEXT_FILE_AGENT
 agentDescription: 一个文本文件处理代理，可以创建、读取、写入和追加内容到各种基于文本的文件。适用于临时和持久性记录保存。支持多种文件类型，包括markdown、html、源代码和配置文件。
+builtIn: false  # 文本文件 agent 可以删除
 availableToolKeys:
   - text_file_operator
   - terminate
-  - inner_storage_content_tool
+  - extract_relevant_content
   - file_merge_tool
 
 # 下一步提示配置

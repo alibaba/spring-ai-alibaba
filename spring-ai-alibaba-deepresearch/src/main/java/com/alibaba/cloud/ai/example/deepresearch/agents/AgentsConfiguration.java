@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.example.deepresearch.config.PythonCoderProperties;
 import com.alibaba.cloud.ai.example.deepresearch.model.multiagent.AgentType;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PlannerTool;
 import com.alibaba.cloud.ai.example.deepresearch.tool.PythonReplTool;
-import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentPromptTemplateUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.AgentPromptTemplateUtil;
 import com.alibaba.cloud.ai.example.deepresearch.util.ResourceUtil;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerConstants;
 import org.springframework.ai.chat.client.ChatClient;

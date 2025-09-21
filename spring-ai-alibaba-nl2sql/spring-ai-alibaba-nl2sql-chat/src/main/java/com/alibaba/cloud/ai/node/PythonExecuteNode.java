@@ -62,13 +62,13 @@ public class PythonExecuteNode extends AbstractPlanBasedNode implements NodeActi
 		this.logNodeEntry();
 
 		try {
-			// 获取上下文
+			// Get context
 			String pythonCode = StateUtils.getStringValue(state, PYTHON_GENERATE_NODE_OUTPUT);
 			List<Map<String, String>> sqlResults = StateUtils.getListValue(state, SQL_RESULT_LIST_MEMORY);
 			CodePoolExecutorService.TaskRequest taskRequest = new CodePoolExecutorService.TaskRequest(pythonCode,
 					objectMapper.writeValueAsString(sqlResults), null);
 
-			// 运行Python代码
+			// Run Python code
 			CodePoolExecutorService.TaskResponse taskResponse = this.codePoolExecutor.runTask(taskRequest);
 			if (!taskResponse.isSuccess()) {
 				String errorMsg = "Python Execute Failed!\nStdOut: " + taskResponse.stdOut() + "\nStdErr: "
@@ -76,29 +76,41 @@ public class PythonExecuteNode extends AbstractPlanBasedNode implements NodeActi
 				log.error(errorMsg);
 				throw new RuntimeException(errorMsg);
 			}
-			log.info("Python Execute Success! StdOut: {}", taskResponse.stdOut());
+
+			// Python输出的JSON字符串可能有Unicode转义形式，需要解析回汉字
+			String stdout = taskResponse.stdOut();
+			try {
+				Object value = objectMapper.readValue(stdout, Object.class);
+				stdout = objectMapper.writeValueAsString(value);
+			}
+			catch (Exception e) {
+				stdout = taskResponse.stdOut();
+			}
+			String finalStdout = stdout;
+
+			log.info("Python Execute Success! StdOut: {}", finalStdout);
 
 			// Create display flux for user experience only
 			Flux<ChatResponse> displayFlux = Flux.create(emitter -> {
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("开始执行Python代码..."));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("标准输出：\n```"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse(taskResponse.stdOut()));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("\n```"));
-				emitter.next(ChatResponseUtil.createCustomStatusResponse("Python代码执行成功！"));
+				emitter.next(ChatResponseUtil.createStatusResponse("开始执行Python代码..."));
+				emitter.next(ChatResponseUtil.createStatusResponse("标准输出：\n```"));
+				emitter.next(ChatResponseUtil.createStatusResponse(finalStdout));
+				emitter.next(ChatResponseUtil.createStatusResponse("\n```"));
+				emitter.next(ChatResponseUtil.createStatusResponse("Python代码执行成功！"));
 				emitter.complete();
 			});
 
 			// Create generator using utility class, returning pre-computed business logic
 			// result
 			var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-					v -> Map.of(PYTHON_EXECUTE_NODE_OUTPUT, taskResponse.stdOut(), PYTHON_IS_SUCCESS, true),
-					displayFlux, StreamResponseType.PYTHON_EXECUTE);
+					v -> Map.of(PYTHON_EXECUTE_NODE_OUTPUT, finalStdout, PYTHON_IS_SUCCESS, true), displayFlux,
+					StreamResponseType.PYTHON_EXECUTE);
 
 			return Map.of(PYTHON_EXECUTE_NODE_OUTPUT, generator);
 		}
 		catch (Exception e) {
 			String errorMessage = e.getMessage();
-			log.error("Python Execute Exception: {}", errorMessage, e);
+			log.error("Python Execute Exception: {}", errorMessage);
 
 			// Prepare error result
 			Map<String, Object> errorResult = Map.of(PYTHON_EXECUTE_NODE_OUTPUT, errorMessage, PYTHON_IS_SUCCESS,

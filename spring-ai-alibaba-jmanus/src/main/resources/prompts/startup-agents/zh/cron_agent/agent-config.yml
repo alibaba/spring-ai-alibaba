@@ -1,6 +1,7 @@
 # CRON_AGENT 配置
 agentName: CRON_AGENT
 agentDescription: 一个定时任务执行代理，负责处理用户提出的定时任务需求。代理会解析出用户定时任务执行的时间，以及执行的计划提示词。
+builtIn: false  # 定时任务 agent 可以删除
 availableToolKeys:
   - cron_tool
   - terminate

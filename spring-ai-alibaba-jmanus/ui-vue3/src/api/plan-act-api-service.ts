@@ -24,10 +24,11 @@ export class PlanActApiService {
   private static readonly CRON_TASK_URL = '/api/cron-tasks'
 
   // Generate plan
-  public static async generatePlan(query: string, existingJson?: string): Promise<any> {
+  public static async generatePlan(query: string, existingJson?: string, planType: string = 'simple'): Promise<any> {
     return LlmCheckService.withLlmCheck(async () => {
-      const requestBody: Record<string, any> = { query }
+      const requestBody: Record<string, any> = { query, planType }
       if (existingJson) requestBody.existingJson = existingJson
+      
       const response = await fetch(`${this.PLAN_TEMPLATE_URL}/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,18 +47,29 @@ export class PlanActApiService {
     })
   }
 
-  // Execute generated plan
-  public static async executePlan(planTemplateId: string, rawParam?: string): Promise<any> {
+  // Execute generated plan using ManusController.executeByToolNameAsync
+  public static async executePlan(planTemplateId: string, rawParam?: string, uploadedFiles?: any[], replacementParams?: Record<string, string>): Promise<any> {
     return LlmCheckService.withLlmCheck(async () => {
-      console.log('[PlanActApiService] executePlan called with:', { planTemplateId, rawParam })
+      console.log('[PlanActApiService] executePlan called with:', { planTemplateId, rawParam, uploadedFiles, replacementParams })
       
-      const requestBody: Record<string, any> = { planTemplateId }
+      // Use planTemplateId as toolName to call executeByToolNameAsync
+      const requestBody: Record<string, any> = { 
+        toolName: planTemplateId  // Use planTemplateId as toolName
+      }
       if (rawParam) requestBody.rawParam = rawParam
+      if (uploadedFiles && uploadedFiles.length > 0) {
+        requestBody.uploadedFiles = uploadedFiles
+        console.log('[PlanActApiService] Including uploaded files:', uploadedFiles.length)
+      }
+      if (replacementParams && Object.keys(replacementParams).length > 0) {
+        requestBody.replacementParams = replacementParams
+        console.log('[PlanActApiService] Including replacement params:', replacementParams)
+      }
       
-      console.log('[PlanActApiService] Making request to:', `${this.PLAN_TEMPLATE_URL}/executePlanByTemplateId`)
+      console.log('[PlanActApiService] Making request to:', `/api/executor/executeByToolNameAsync`)
       console.log('[PlanActApiService] Request body:', requestBody)
       
-      const response = await fetch(`${this.PLAN_TEMPLATE_URL}/executePlanByTemplateId`, {
+      const response = await fetch(`/api/executor/executeByToolNameAsync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
@@ -118,10 +130,11 @@ export class PlanActApiService {
   }
 
   // Update existing plan template
-  public static async updatePlanTemplate(planId: string, query: string, existingJson?: string): Promise<any> {
+  public static async updatePlanTemplate(planId: string, query: string, existingJson?: string, planType: string = 'simple'): Promise<any> {
     return LlmCheckService.withLlmCheck(async () => {
-      const requestBody: Record<string, any> = { planId, query }
+      const requestBody: Record<string, any> = { planId, query, planType }
       if (existingJson) requestBody.existingJson = existingJson
+      
       const response = await fetch(`${this.PLAN_TEMPLATE_URL}/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

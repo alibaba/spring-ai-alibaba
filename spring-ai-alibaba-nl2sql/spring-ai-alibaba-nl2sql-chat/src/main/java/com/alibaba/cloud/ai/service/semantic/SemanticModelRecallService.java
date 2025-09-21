@@ -46,12 +46,12 @@ public class SemanticModelRecallService {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	// 根据data_set_id获取智能体字段
+	// Get agent fields by data_set_id
 	public List<SemanticModelDTO> getFieldByDataSetId(String dataSetId) {
 		return this.jdbcTemplate.query(FIELD_GET_BY_DATASET_IDS, new Object[] { dataSetId }, (rs, rowNum) -> {
 			return new SemanticModelDTO(rs.getString("agent_id"), rs.getString("origin_name"),
 					rs.getString("field_name"), rs.getString("synonyms"), rs.getString("description"),
-					rs.getObject("is_recall", boolean.class), rs.getObject("status", boolean.class),
+					rs.getObject("is_recall", Boolean.class), rs.getObject("status", Boolean.class),
 					rs.getString("type"), rs.getString("origin_description"));
 		});
 	}

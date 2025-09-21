@@ -53,7 +53,10 @@
             @click="selectAgent(agent)"
           >
             <div class="agent-card-header">
-              <span class="agent-name">{{ agent.name }}</span>
+              <div class="agent-name-section">
+                <span class="agent-name">{{ agent.name }}</span>
+                <span v-if="agent.builtIn" class="built-in-badge">Built-in</span>
+              </div>
               <Icon icon="carbon:chevron-right" />
             </div>
             <p class="agent-desc">{{ agent.description }}</p>
@@ -101,7 +104,12 @@
               <Icon icon="carbon:save" />
               {{ t('common.save') }}
             </button>
-            <button class="action-btn danger" @click="showDeleteConfirm">
+            <button 
+              class="action-btn danger" 
+              @click="showDeleteConfirm"
+              :disabled="!!selectedAgent?.builtIn"
+              :title="selectedAgent?.builtIn ? t('config.agentConfig.cannotDeleteBuiltIn') : ''"
+            >
               <Icon icon="carbon:trash-can" />
               {{ t('common.delete') }}
             </button>
@@ -200,41 +208,16 @@
           <h4>{{ t('config.agentConfig.toolConfiguration') }}</h4>
 
           <!-- Assigned Tools -->
-          <div class="assigned-tools">
-            <div class="section-header">
-              <span
-                >{{ t('config.agentConfig.assignedTools') }} ({{
-                  (selectedAgent.availableTools || []).length
-                }})</span
-              >
-              <button
-                class="action-btn small"
-                @click="showToolSelectionModal"
-                v-if="availableTools.length > 0"
-              >
-                <Icon icon="carbon:add" />
-                {{ t('config.agentConfig.addRemoveTools') }}
-              </button>
-            </div>
-
-            <div class="tools-grid">
-              <div
-                v-for="toolId in selectedAgent.availableTools || []"
-                :key="toolId"
-                class="tool-item assigned"
-              >
-                <div class="tool-info">
-                  <span class="tool-name">{{ getToolDisplayName(toolId) }}</span>
-                  <span class="tool-desc">{{ getToolDescription(toolId) }}</span>
-                </div>
-              </div>
-
-              <div v-if="selectedAgent.availableTools.length === 0" class="no-tools">
-                <Icon icon="carbon:tool-box" />
-                <span>{{ t('config.agentConfig.noAssignedTools') }}</span>
-              </div>
-            </div>
-          </div>
+          <AssignedTools
+            :title="t('config.agentConfig.assignedTools')"
+            :selected-tool-ids="selectedAgent.availableTools || []"
+            :available-tools="availableTools"
+            :add-button-text="t('config.agentConfig.addRemoveTools')"
+            :empty-text="t('config.agentConfig.noAssignedTools')"
+            :show-add-button="availableTools.length > 0"
+            @add-tools="showToolSelectionModal"
+            @tools-filtered="handleToolsFiltered"
+          />
         </div>
       </div>
 
@@ -364,7 +347,8 @@ import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 import ConfigPanel from './components/configPanel.vue'
 import Modal from '@/components/modal/index.vue'
-import ToolSelectionModal from '@/components/tool-selection-modal/index.vue'
+import ToolSelectionModal from '@/components/tool-selection-modal/ToolSelectionModal.vue'
+import AssignedTools from '@/components/shared/AssignedTools.vue'
 import { AgentApiService, type Agent, type Tool } from '@/api/agent-api-service'
 import { type Model, ModelApiService } from '@/api/model-api-service'
 import { usenameSpaceStore } from '@/stores/namespace'
@@ -419,16 +403,10 @@ const newAgent = reactive<Omit<Agent, 'id' | 'availableTools'>>({
 
 // Computed property - removed unused unassignedTools since it's not used in the template
 
-// Get tool display name
+// Helper function for agent card display
 const getToolDisplayName = (toolId: string): string => {
   const tool = availableTools.find(t => t.key === toolId)
   return tool ? tool.name : toolId
-}
-
-// Tool description retrieval
-const getToolDescription = (toolId: string): string => {
-  const tool = availableTools.find(t => t.key === toolId)
-  return tool ? tool.description : ''
 }
 
 // Message Prompt
@@ -464,123 +442,27 @@ const loadData = async () => {
       ...loadedModels,
     }))
 
-    agents.splice(0, agents.length, ...normalizedAgents)
+    // Sort agents: non-built-in agents first, then built-in agents
+    const sortedAgents = normalizedAgents.sort((a, b) => {
+      // If both are built-in or both are not built-in, maintain original order
+      if (a.builtIn === b.builtIn) {
+        return 0
+      }
+      // Put non-built-in agents first (a.builtIn = false comes before b.builtIn = true)
+      return a.builtIn ? 1 : -1
+    })
+
+    agents.splice(0, agents.length, ...sortedAgents)
     availableTools.splice(0, availableTools.length, ...loadedTools)
     modelOptions.splice(0, modelOptions.length, ...loadedModels)
 
     // Select the first agent
-    if (normalizedAgents.length > 0) {
-      await selectAgent(normalizedAgents[0])
+    if (sortedAgents.length > 0) {
+      await selectAgent(sortedAgents[0])
     }
   } catch (err: any) {
     console.error('Failed to load data:', err)
     showMessage(t('config.agentConfig.loadDataFailed') + ': ' + err.message, 'error')
-
-    // Provide demo data as a fallback
-    const demoTools = [
-      {
-        key: 'search-web',
-        name: 'Web Search',
-        description: 'Search for information on the internet',
-        enabled: true,
-        serviceGroup: 'Search Services',
-      },
-      {
-        key: 'search-local',
-        name: 'Local Search',
-        description: 'Search content in local files',
-        enabled: true,
-        serviceGroup: 'Search Services',
-      },
-      {
-        key: 'file-read',
-        name: 'Read File',
-        description: 'Read local or remote file content',
-        enabled: true,
-        serviceGroup: 'File Services',
-      },
-      {
-        key: 'file-write',
-        name: 'Write File',
-        description: 'Create or modify file content',
-        enabled: true,
-        serviceGroup: 'File Services',
-      },
-      {
-        key: 'file-delete',
-        name: 'Delete File',
-        description: 'Delete specified file',
-        enabled: false,
-        serviceGroup: 'File Services',
-      },
-      {
-        key: 'calculator',
-        name: 'Calculator',
-        description: 'Perform mathematical calculations',
-        enabled: true,
-        serviceGroup: 'Computing Services',
-      },
-      {
-        key: 'code-execute',
-        name: 'Code Execution',
-        description: 'Execute Python or JavaScript code',
-        enabled: true,
-        serviceGroup: 'Computing Services',
-      },
-      {
-        key: 'weather',
-        name: 'Weather Query',
-        description: 'Get weather information for specified regions',
-        enabled: true,
-        serviceGroup: 'Information Services',
-      },
-      {
-        key: 'currency',
-        name: 'Exchange Rate Query',
-        description: 'Query currency exchange rate information',
-        enabled: true,
-        serviceGroup: 'Information Services',
-      },
-      {
-        key: 'email',
-        name: 'Send Email',
-        description: 'Send electronic mail',
-        enabled: false,
-        serviceGroup: 'Communication Services',
-      },
-      {
-        key: 'sms',
-        name: 'Send SMS',
-        description: 'Send SMS messages',
-        enabled: false,
-        serviceGroup: 'Communication Services',
-      },
-    ]
-
-    const demoAgents = [
-      {
-        id: 'demo-1',
-        name: 'General Assistant',
-        description: 'An intelligent assistant capable of handling various tasks',
-        nextStepPrompt:
-          'You are a helpful assistant that can answer questions and help with various tasks. What would you like me to help you with next?',
-        availableTools: ['search-web', 'calculator', 'weather'],
-      },
-      {
-        id: 'demo-2',
-        name: 'Data Analyst',
-        description: 'Agent specialized in data analysis and visualization',
-        nextStepPrompt:
-          'You are a data analyst assistant specialized in analyzing data and creating visualizations. Please provide the data you would like me to analyze.',
-        availableTools: ['file-read', 'file-write', 'calculator', 'code-execute'],
-      },
-    ]
-    availableTools.splice(0, availableTools.length, ...demoTools)
-    agents.splice(0, agents.length, ...demoAgents)
-
-    if (demoAgents.length > 0) {
-      selectedAgent.value = demoAgents[0]
-    }
   } finally {
     loading.value = false
   }
@@ -651,6 +533,13 @@ const showToolSelectionModal = () => {
 const handleToolSelectionConfirm = (selectedToolIds: string[]) => {
   if (selectedAgent.value) {
     selectedAgent.value.availableTools = [...selectedToolIds]
+  }
+}
+
+// Handle tools filtered event (remove tools that are no longer available)
+const handleToolsFiltered = (filteredTools: string[]) => {
+  if (selectedAgent.value) {
+    selectedAgent.value.availableTools = [...filteredTools]
   }
 }
 
@@ -946,8 +835,15 @@ watch(
 .agent-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 8px;
+}
+
+.agent-name-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
 }
 
 .agent-name {
@@ -1133,65 +1029,6 @@ watch(
   }
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-
-  span {
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.8);
-  }
-}
-
-.tools-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.tool-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  transition: all 0.3s ease;
-
-  &.assigned {
-    border-color: rgba(102, 126, 234, 0.3);
-    background: rgba(102, 126, 234, 0.1);
-  }
-}
-
-.tool-info {
-  flex: 1;
-
-  .tool-name {
-    display: block;
-    font-weight: 500;
-    margin-bottom: 4px;
-  }
-
-  .tool-desc {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
-    line-height: 1.3;
-  }
-}
-
-.no-tools {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 40px;
-  color: rgba(255, 255, 255, 0.4);
-  font-style: italic;
-}
 
 .action-btn {
   display: flex;
@@ -1664,5 +1501,29 @@ watch(
     background: rgba(0, 0, 0, 0.05);
     color: rgba(0, 0, 0, 0.9);
   }
+}
+
+.built-in-badge {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  align-self: flex-start;
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.3);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #ccc;
+}
+
+.action-btn.danger:disabled {
+  background: #ccc;
+  border-color: #ccc;
 }
 </style>

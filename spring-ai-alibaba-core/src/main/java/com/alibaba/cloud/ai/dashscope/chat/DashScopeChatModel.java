@@ -140,7 +140,8 @@ public class DashScopeChatModel implements ChatModel {
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
 
-		this(dashscopeApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry, null);
+		this(dashscopeApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
+				new DefaultToolExecutionEligibilityPredicate());
 	}
 
 	public DashScopeChatModel(DashScopeApi dashscopeApi, DashScopeChatOptions defaultOptions,
@@ -159,7 +160,7 @@ public class DashScopeChatModel implements ChatModel {
 		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
-		this.toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
+		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 	}
 
 	@Override
@@ -384,6 +385,12 @@ public class DashScopeChatModel implements ChatModel {
 	 * @return the ChatCompletion
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
+
+		// check chunk
+		if (Objects.isNull(chunk) || Objects.isNull(chunk.output())) {
+			throw new RuntimeException("LLM response chunk is null.");
+		}
+
 		return new ChatCompletion(chunk.requestId(),
 				new ChatCompletionOutput(chunk.output().text(), chunk.output().choices(), chunk.output().searchInfo()),
 				chunk.usage());

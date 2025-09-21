@@ -28,8 +28,6 @@
     <properties>
         <gpdb.version>3.0.0</gpdb.version>
         <druid.version>1.2.22</druid.version>
-        <commons-lang3.version>3.9</commons-lang3.version>
-        <mysql-connector-java.version>8.0.15</mysql-connector-java.version>
         <postgresql.version>42.4.1</postgresql.version>
         <commons-collections.version>3.2.1</commons-collections.version>
         <commonmark.version>0.17.0</commonmark.version>
@@ -53,14 +51,9 @@
                 <version>${druid.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${commons-lang3.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>mysql</groupId>
-                <artifactId>mysql-connector-java</artifactId>
-                <version>${mysql-connector-java.version}</version>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                <version>3.5.12</version>
             </dependency>
             <dependency>
                 <groupId>org.postgresql</groupId>

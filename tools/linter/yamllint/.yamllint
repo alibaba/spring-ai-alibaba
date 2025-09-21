@@ -25,6 +25,7 @@ ignore: |
   **/target/**
   **/build/**
   **/dist/**
+  **/docker/**
 
 rules:
   braces:

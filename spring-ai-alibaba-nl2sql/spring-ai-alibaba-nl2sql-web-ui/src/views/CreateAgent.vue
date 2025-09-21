@@ -110,20 +110,30 @@
               </div>
 
               <div class="form-group">
-                <label for="agentAvatar">头像设置</label>
+                <label>头像设置</label>
                 <div class="avatar-upload">
                   <div class="avatar-preview">
-                    <img :src="agentForm.avatar || '/default-avatar.png'" alt="智能体头像">
+                    <img :src="agentForm.avatar" alt="智能体头像">
                   </div>
                   <div class="avatar-controls">
-                    <input 
-                      type="url" 
-                      id="agentAvatar"
-                      v-model="agentForm.avatar" 
-                      placeholder="请输入头像URL或上传图片"
-                      class="form-control"
-                    >
-                    <button type="button" class="btn btn-outline">上传图片</button>
+                    <div class="avatar-buttons">
+                      <button type="button" class="btn btn-outline" @click="regenerateAvatar">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        重新生成
+                      </button>
+                      <button type="button" class="btn btn-outline" @click="triggerFileUpload" :disabled="uploading">
+                        <i class="bi bi-upload" v-if="!uploading"></i>
+                        <i class="bi bi-hourglass-split" v-if="uploading"></i>
+                        {{ uploading ? '上传中...' : '上传图片' }}
+                      </button>
+                      <input 
+                        ref="fileInput" 
+                        type="file" 
+                        accept="image/*" 
+                        style="display: none" 
+                        @change="handleFileUpload"
+                      >
+                    </div>
                   </div>
                 </div>
               </div>
@@ -144,39 +154,18 @@
 
           <div class="form-section">
             <div class="section-title">
-              <h3>Prompt配置</h3>
-              <p>设置智能体的对话行为和规则</p>
+              <h3>智能体类型</h3>
+              <p>选择适合您业务需求的智能体类型</p>
             </div>
 
-            <div class="form-group">
-              <label for="agentPrompt">系统Prompt</label>
-              <textarea 
-                id="agentPrompt"
-                v-model="agentForm.prompt" 
-                placeholder="请输入智能体的系统Prompt，定义其行为和回答方式..."
-                class="form-control prompt-textarea"
-                rows="8"
-              ></textarea>
-              <div class="form-help">
-                系统Prompt将决定智能体的人格特征、专业能力和回答风格。
+            <div class="template-grid">
+              <div class="template-card" @click="useTemplate('data-analyst')">
+                <h5>数据分析师</h5>
+                <p>专业的数据分析和SQL查询助手</p>
               </div>
-            </div>
-
-            <div class="prompt-templates">
-              <h4>常用模板</h4>
-              <div class="template-grid">
-                <div class="template-card" @click="useTemplate('data-analyst')">
-                  <h5>数据分析师</h5>
-                  <p>专业的数据分析和SQL查询助手</p>
-                </div>
-                <div class="template-card" @click="useTemplate('business-advisor')">
-                  <h5>业务顾问</h5>
-                  <p>业务问题解答和建议提供者</p>
-                </div>
-                <div class="template-card" @click="useTemplate('report-generator')">
-                  <h5>报表生成器</h5>
-                  <p>自动生成各类业务报表</p>
-                </div>
+              <div class="template-card" @click="useTemplate('report-generator')">
+                <h5>报表生成器</h5>
+                <p>自动生成各类业务报表</p>
               </div>
             </div>
           </div>
@@ -225,7 +214,7 @@
 
           <div class="agent-preview">
             <div class="preview-avatar">
-              <img :src="agentForm.avatar || '/default-avatar.png'" :alt="agentForm.name || '智能体'">
+              <img :src="agentForm.avatar" :alt="agentForm.name || '智能体'">
             </div>
             <div class="preview-info">
               <h4>{{ agentForm.name || '智能体名称' }}</h4>
@@ -244,12 +233,7 @@
             </div>
           </div>
 
-          <div class="preview-prompt" v-if="agentForm.prompt">
-            <h4>Prompt预览</h4>
-            <div class="prompt-preview">
-              {{ agentForm.prompt }}
-            </div>
-          </div>
+
         </div>
       </div>
     </div>
@@ -257,15 +241,18 @@
 </template>
 
 <script>
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { agentApi } from '../utils/api.js'
+import { agentApi, fileUploadApi } from '../utils/api.js'
+import { generateRandomAvatar, generateProfessionalAvatar } from '../utils/avatar.js'
 
 export default {
   name: 'CreateAgent',
   setup() {
     const router = useRouter()
     const loading = ref(false)
+    const fileInput = ref(null)
+    const uploading = ref(false)
 
     const agentForm = reactive({
       name: '',
@@ -276,6 +263,29 @@ export default {
       prompt: '',
       status: 'draft'
     })
+
+    // 组件挂载时生成随机头像
+    onMounted(() => {
+      // 直接使用备用头像，确保能正常显示
+      agentForm.avatar = generateFallbackAvatar()
+      console.log('Generated fallback avatar:', agentForm.avatar)
+    })
+
+    // 备用头像生成函数
+    const generateFallbackAvatar = () => {
+      const colors = ['3B82F6', '8B5CF6', '10B981', 'F59E0B', 'EF4444', '6366F1', 'EC4899', '14B8A6']
+      const randomColor = colors[Math.floor(Math.random() * colors.length)]
+      const letters = ['AI', '数据', '智能', 'DA', 'BI', 'ML', 'DL', 'NL']
+      const randomLetter = letters[Math.floor(Math.random() * letters.length)]
+      
+      // 使用最简单的 SVG，只有背景色和文字
+      const svg = `<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+        <rect width="200" height="200" fill="#${randomColor}"/>
+        <text x="100" y="120" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="white">${randomLetter}</text>
+      </svg>`
+      
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+    }
 
     // Prompt模板
     const promptTemplates = {
@@ -336,6 +346,86 @@ export default {
       await createAgent()
     }
 
+    const regenerateAvatar = () => {
+      // 直接使用备用头像生成函数
+      agentForm.avatar = generateFallbackAvatar()
+      console.log('Regenerated avatar:', agentForm.avatar)
+    }
+
+    // 触发文件选择
+    const triggerFileUpload = () => {
+      if (fileInput.value) {
+        fileInput.value.click()
+      }
+    }
+
+    // 处理文件上传
+    const handleFileUpload = async (event) => {
+      const file = event.target.files[0]
+      if (!file) return
+
+      // 验证文件类型
+      if (!file.type.startsWith('image/')) {
+        alert('请选择图片文件')
+        return
+      }
+
+      // 验证文件大小 (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('图片大小不能超过5MB')
+        return
+      }
+
+      try {
+        uploading.value = true
+        
+        // 保存当前头像，用于失败时恢复
+        const originalAvatar = agentForm.avatar
+        
+        // 显示上传中的预览（使用base64）
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          agentForm.avatar = e.target.result
+        }
+        reader.readAsDataURL(file)
+
+        // 上传文件
+        const response = await fileUploadApi.uploadAvatar(file)
+        
+        if (response.success) {
+          // 上传成功，使用服务器返回的URL
+          agentForm.avatar = response.url
+          console.log('头像上传成功:', response.url)
+        } else {
+          throw new Error(response.message || '上传失败')
+        }
+      } catch (error) {
+        console.error('头像上传失败:', error)
+        alert('头像上传失败: ' + error.message)
+        // 恢复之前的头像
+        agentForm.avatar = generateFallbackAvatar()
+      } finally {
+        uploading.value = false
+        // 清空文件输入
+        if (fileInput.value) {
+          fileInput.value.value = ''
+        }
+      }
+    }
+
+    // 图片加载成功处理
+    const handleImageLoad = (event) => {
+      console.log('头像图片加载成功:', event.target.src)
+    }
+
+    // 图片加载失败处理
+    const handleImageError = (event) => {
+      console.error('头像图片加载失败:', event.target.src)
+      console.error('错误详情:', event)
+      // 可以在这里设置一个默认头像
+      // agentForm.avatar = generateFallbackAvatar()
+    }
+
     const createAgent = async () => {
       if (!agentForm.name.trim()) {
         alert('请填写智能体名称')
@@ -348,7 +438,7 @@ export default {
         const agentData = {
           name: agentForm.name.trim(),
           description: agentForm.description.trim(),
-          avatar: agentForm.avatar.trim() || '/default-avatar.png',
+          avatar: agentForm.avatar.trim() || generateRandomAvatar(),
           category: agentForm.category.trim(),
           tags: agentForm.tags.trim(),
           prompt: agentForm.prompt.trim(),
@@ -370,6 +460,8 @@ export default {
     return {
       agentForm,
       loading,
+      fileInput,
+      uploading,
       goBack,
       goToAgentList,
       goToWorkspace,
@@ -377,6 +469,12 @@ export default {
       goToHome,
       useTemplate,
       saveDraft,
+      regenerateAvatar,
+      generateFallbackAvatar,
+      triggerFileUpload,
+      handleFileUpload,
+      handleImageLoad,
+      handleImageError,
       createAgent
     }
   }
@@ -633,19 +731,27 @@ export default {
 /* 头像上传 */
 .avatar-upload {
   display: flex;
-  gap: var(--space-lg);
+  gap: var(--space-xl);
   align-items: flex-start;
 }
 
 .avatar-preview {
-  width: 80px;
-  height: 80px;
-  border-radius: var(--radius-lg);
+  width: 100px;
+  height: 100px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  border: 2px solid var(--border-secondary);
+  border: 3px solid var(--border-secondary);
   flex-shrink: 0;
   background: var(--bg-secondary);
   position: relative;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+}
+
+.avatar-preview:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-color);
 }
 
 .avatar-preview::before {
@@ -655,7 +761,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(95, 112, 225, 0.1), rgba(145, 125, 254, 0.1));
+  background: linear-gradient(135deg, rgba(95, 112, 225, 0.05), rgba(145, 125, 254, 0.05));
   pointer-events: none;
 }
 
@@ -669,7 +775,58 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  justify-content: center;
+  gap: var(--space-md);
+  min-height: 100px;
+}
+
+.avatar-buttons {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.avatar-buttons .btn {
+  flex: 1;
+  min-width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+  white-space: nowrap;
+}
+
+.avatar-buttons .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.avatar-buttons .btn i {
+  font-size: var(--font-size-base);
+}
+
+/* 头像信息区域 */
+.avatar-info {
+  margin-bottom: var(--space-md);
+}
+
+.avatar-desc {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-xs) 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.avatar-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
 }
 
 /* Prompt 文本区域 */

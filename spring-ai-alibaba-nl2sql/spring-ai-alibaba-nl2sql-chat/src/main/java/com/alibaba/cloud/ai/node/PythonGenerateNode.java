@@ -76,7 +76,7 @@ public class PythonGenerateNode extends AbstractPlanBasedNode implements NodeAct
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		this.logNodeEntry();
 
-		// 获取上下文
+		// Get context
 		SchemaDTO schemaDTO = StateUtils.getObjectValue(state, TABLE_RELATION_OUTPUT, SchemaDTO.class);
 		List<Map<String, String>> sqlResults = StateUtils.getListValue(state, SQL_RESULT_LIST_MEMORY);
 		boolean codeRunSuccess = StateUtils.getObjectValue(state, PYTHON_IS_SUCCESS, Boolean.class, true);
@@ -84,7 +84,8 @@ public class PythonGenerateNode extends AbstractPlanBasedNode implements NodeAct
 
 		String userPrompt = StateUtils.getStringValue(state, QUERY_REWRITE_NODE_OUTPUT);
 		if (!codeRunSuccess) {
-			// 上次生成的Python代码运行失败，将这个信息告知AI模型
+			// Last generated Python code failed to run, inform AI model of this
+			// information
 			String lastCode = StateUtils.getStringValue(state, PYTHON_GENERATE_NODE_OUTPUT);
 			String lastError = StateUtils.getStringValue(state, PYTHON_EXECUTE_NODE_OUTPUT);
 			userPrompt += String.format("""
@@ -104,7 +105,7 @@ public class PythonGenerateNode extends AbstractPlanBasedNode implements NodeAct
 
 		ExecutionStep.ToolParameters toolParameters = executionStep.getToolParameters();
 
-		// 加载Python代码生成模板
+		// Load Python code generation template
 		String systemPrompt = PromptConstant.getPythonGeneratorPromptTemplate()
 			.render(Map.of("python_memory", codeExecutorProperties.getLimitMemory().toString(), "python_timeout",
 					codeExecutorProperties.getCodeTimeout(), "database_schema",
@@ -118,9 +119,10 @@ public class PythonGenerateNode extends AbstractPlanBasedNode implements NodeAct
 			.stream()
 			.chatResponse();
 
-		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
-				"正在生成Python代码...", "Python代码生成完成。", aiResponse -> {
-					// 部分AI模型仍然输出Markdown标记（即使Prompt已经强调了这一点）
+		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state, "", "",
+				aiResponse -> {
+					// Some AI models still output Markdown markup (even though Prompt has
+					// emphasized this)
 					aiResponse = MarkdownParser.extractRawText(aiResponse);
 					log.info("Python Generate Code: {}", aiResponse);
 					return Map.of(PYTHON_GENERATE_NODE_OUTPUT, aiResponse, PYTHON_TRIES_COUNT, triesCount - 1);

@@ -36,6 +36,7 @@ import com.aliyun.gpdb20160503.models.QueryCollectionDataResponseBody;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -53,7 +54,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * 核心向量数据库操作服务，提供向量写入、查询、删除、Schema 初始化等功能。
+ * Core vector database operation service, providing vector writing, querying, deletion,
+ * schema initialization and other functions.
  */
 
 @Service
@@ -85,9 +87,9 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 	private Gson gson;
 
 	/**
-	 * 将证据内容添加到向量库中
-	 * @param evidenceRequests 证据请求列表
-	 * @return 是否成功
+	 * Add evidence content to vector store
+	 * @param evidenceRequests list of evidence requests
+	 * @return success status
 	 */
 	@Override
 	public Boolean addEvidence(List<EvidenceRequest> evidenceRequests) {
@@ -102,9 +104,9 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 	}
 
 	/**
-	 * 将文本嵌入为向量
-	 * @param text 输入文本
-	 * @return 向量化结果
+	 * Embed text into vectors
+	 * @param text input text
+	 * @return vectorization result
 	 */
 	public List<Double> embed(String text) {
 		float[] embedded = embeddingModel.embed(text);
@@ -116,9 +118,9 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 	}
 
 	/**
-	 * 向量搜索
-	 * @param searchRequest 查询请求
-	 * @return 匹配的文档列表
+	 * Vector search
+	 * @param searchRequest query request
+	 * @return list of matching documents
 	 */
 	public List<Document> search(SearchRequest searchRequest) throws Exception {
 		String filterTemplate = "jsonb_extract_path_text(metadata, 'vectorType') = '%s'";
@@ -167,9 +169,9 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 	}
 
 	/**
-	 * 删除指定条件的向量数据
-	 * @param deleteRequest 删除请求
-	 * @return 是否删除成功
+	 * Delete vector data with specified conditions
+	 * @param deleteRequest delete request
+	 * @return deletion success status
 	 */
 	@Override
 	public Boolean deleteDocuments(DeleteRequest deleteRequest) throws Exception {
@@ -206,9 +208,9 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 	}
 
 	/**
-	 * 初始化数据库 schema 到向量库
-	 * @param schemaInitRequest schema 初始化请求
-	 * @throws Exception 如果发生错误
+	 * Initialize database schema to vector store
+	 * @param schemaInitRequest schema initialization request
+	 * @throws Exception if an error occurs
 	 */
 	@Override
 	public Boolean schema(SchemaInitRequest schemaInitRequest) throws Exception {
@@ -270,12 +272,19 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 			columnInfoBO.setSamples(gson.toJson(sampleColumn));
 		}
 
-		ColumnInfoBO primaryColumnDO = columnInfoBOS.stream()
+		List<ColumnInfoBO> targetPrimaryList = columnInfoBOS.stream()
 			.filter(ColumnInfoBO::isPrimary)
-			.findFirst()
-			.orElse(new ColumnInfoBO());
+			.collect(Collectors.toList());
+		if (CollectionUtils.isNotEmpty(targetPrimaryList)) {
+			List<String> columnNames = targetPrimaryList.stream()
+				.map(ColumnInfoBO::getName)
+				.collect(Collectors.toList());
+			tableInfoBO.setPrimaryKeys(columnNames);
+		}
+		else {
+			tableInfoBO.setPrimaryKeys(new ArrayList<>());
+		}
 
-		tableInfoBO.setPrimaryKey(primaryColumnDO.getName());
 		tableInfoBO.setForeignKey(String.join("、", buildForeignKeyList(tableInfoBO.getName())));
 	}
 
@@ -312,7 +321,7 @@ public class AnalyticDbVectorStoreManagementService implements VectorStoreManage
 		Map<String, Object> metadata = Map.of("schema", Optional.ofNullable(tableInfoBO.getSchema()).orElse(""), "name",
 				tableInfoBO.getName(), "description", Optional.ofNullable(tableInfoBO.getDescription()).orElse(""),
 				"foreignKey", Optional.ofNullable(tableInfoBO.getForeignKey()).orElse(""), "primaryKey",
-				Optional.ofNullable(tableInfoBO.getPrimaryKey()).orElse(""), "vectorType", "table");
+				Optional.ofNullable(tableInfoBO.getPrimaryKeys()).orElse(new ArrayList<>()), "vectorType", "table");
 		return new Document(tableInfoBO.getName(), text, metadata);
 	}
 

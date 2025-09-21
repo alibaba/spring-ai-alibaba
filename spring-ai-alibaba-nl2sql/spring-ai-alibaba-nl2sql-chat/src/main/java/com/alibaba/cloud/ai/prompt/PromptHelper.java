@@ -22,8 +22,11 @@ import com.alibaba.cloud.ai.dto.SemanticModelDTO;
 import com.alibaba.cloud.ai.dto.schema.ColumnDTO;
 import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
 import com.alibaba.cloud.ai.dto.schema.TableDTO;
+import com.alibaba.cloud.ai.entity.UserPromptConfig;
+
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.util.*;
@@ -47,7 +50,7 @@ public class PromptHelper {
 		params.put("db_content", dbContent.toString());
 		params.put("evidence", evidence);
 		params.put("multi_turn", multiTurn.toString());
-		return PromptConstant.INIT_REWRITE_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.getInitRewritePromptTemplate().render(params);
 	}
 
 	public static String buildMacSqlTablePrompt(TableDTO tableDTO) {
@@ -80,7 +83,7 @@ public class PromptHelper {
 	public static String buildQueryToKeywordsPrompt(String question) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("question", question);
-		return PromptConstant.QUESTION_TO_KEYWORDS_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.getQuestionToKeywordsPromptTemplate().render(params);
 	}
 
 	public static String buildMixSelectorPrompt(List<String> evidences, String question, SchemaDTO schemaDTO) {
@@ -90,13 +93,13 @@ public class PromptHelper {
 		params.put("question", question);
 		String evidence = CollectionUtils.isEmpty(evidences) ? "" : StringUtils.join(evidences, ";\n");
 		params.put("evidence", evidence);
-		return PromptConstant.MIX_SELECTOR_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.getMixSelectorPromptTemplate().render(params);
 	}
 
 	public static String buildDateTimeExtractPrompt(String question) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("question", question);
-		return PromptConstant.EXTRACT_DATETIME_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.getExtractDatetimePromptTemplate().render(params);
 	}
 
 	public static String buildMixMacSqlDbPrompt(SchemaDTO schemaDTO, Boolean withColumnType) {
@@ -202,8 +205,8 @@ public class PromptHelper {
 		params.put("schema_info", schemaInfo);
 		params.put("evidence", evidence);
 		List<String> prompts = new ArrayList<>();
-		prompts.add(PromptConstant.MIX_SQL_GENERATOR_SYSTEM_PROMPT_TEMPLATE.render(params));
-		prompts.add(PromptConstant.MIX_SQL_GENERATOR_PROMPT_TEMPLATE.render(params));
+		prompts.add(PromptConstant.getMixSqlGeneratorSystemPromptTemplate().render(params));
+		prompts.add(PromptConstant.getMixSqlGeneratorPromptTemplate().render(params));
 		return prompts;
 	}
 
@@ -217,39 +220,37 @@ public class PromptHelper {
 		params.put("question", question);
 		params.put("schema_info", schemaInfo);
 		params.put("evidence", evidence);
-		return PromptConstant.MIX_SQL_GENERATOR_SYSTEM_PROMPT_CHECK_TEMPLATE.render(params);
+		return PromptConstant.getMixSqlGeneratorSystemCheckPromptTemplate().render(params);
 	}
 
 	public static String buildSemanticConsistenPrompt(String nlReq, String sql) {
 		Map<String, Object> params = new HashMap<>();
 		params.put("nl_req", nlReq);
 		params.put("sql", sql);
-		return PromptConstant.SEMANTIC_CONSISTENCY_PROMPT_TEMPLATE.render(params);
+		return PromptConstant.getSemanticConsistencyPromptTemplate().render(params);
 	}
 
 	/**
-	 * 构建带自定义提示词的报告生成提示词
-	 * @param userRequirementsAndPlan 用户需求和计划
-	 * @param analysisStepsAndData 分析步骤和数据
-	 * @param summaryAndRecommendations 总结和建议
-	 * @param customPrompt 用户自定义的提示词内容，如果为null则使用默认提示词
-	 * @return 构建的提示词
+	 * Build report generation prompt with custom prompt
+	 * @param userRequirementsAndPlan user requirements and plan
+	 * @param analysisStepsAndData analysis steps and data
+	 * @param summaryAndRecommendations summary and recommendations
+	 * @return built prompt
 	 */
-	public static String buildReportGeneratorPromptWithCustom(String userRequirementsAndPlan,
-			String analysisStepsAndData, String summaryAndRecommendations, String customPrompt) {
+	public static String buildReportGeneratorPromptWithOptimization(String userRequirementsAndPlan,
+			String analysisStepsAndData, String summaryAndRecommendations, List<UserPromptConfig> optimizationConfigs) {
+
 		Map<String, Object> params = new HashMap<>();
 		params.put("user_requirements_and_plan", userRequirementsAndPlan);
 		params.put("analysis_steps_and_data", analysisStepsAndData);
 		params.put("summary_and_recommendations", summaryAndRecommendations);
 
-		if (customPrompt != null && !customPrompt.trim().isEmpty()) {
-			// 使用自定义提示词
-			return new org.springframework.ai.chat.prompt.PromptTemplate(customPrompt).render(params);
-		}
-		else {
-			// 使用默认提示词
-			return PromptConstant.getReportGeneratorPromptTemplate().render(params);
-		}
+		// Build optional optimization section content from user configs
+		String optimizationSection = buildOptimizationSection(optimizationConfigs, params);
+		params.put("optimization_section", optimizationSection);
+
+		// Render using the default report generator template
+		return PromptConstant.getReportGeneratorPromptTemplate().render(params);
 	}
 
 	public static String buildSqlErrorFixerPrompt(String question, DbConfig dbConfig, SchemaDTO schemaDTO,
@@ -283,6 +284,51 @@ public class PromptHelper {
 				: StringUtils.join(semanticModelDTOS, ";\n");
 		params.put("semanticModel", semanticModel);
 		return PromptConstant.getSemanticModelPromptTemplate().render(params);
+	}
+
+	/**
+	 * 构建优化提示词部分内容
+	 * @param optimizationConfigs 优化配置列表
+	 * @param params 模板参数
+	 * @return 优化部分的内容
+	 */
+	private static String buildOptimizationSection(List<UserPromptConfig> optimizationConfigs,
+			Map<String, Object> params) {
+
+		if (optimizationConfigs == null || optimizationConfigs.isEmpty()) {
+			return "";
+		}
+
+		StringBuilder result = new StringBuilder();
+		result.append("## 优化要求\n");
+
+		for (UserPromptConfig config : optimizationConfigs) {
+			String optimizationContent = renderOptimizationPrompt(config.getOptimizationPrompt(), params);
+			if (!optimizationContent.trim().isEmpty()) {
+				result.append("- ").append(optimizationContent).append("\n");
+			}
+		}
+
+		return result.toString().trim();
+	}
+
+	/**
+	 * 渲染优化提示词模板
+	 * @param optimizationPrompt 优化提示词模板
+	 * @param params 参数
+	 * @return 渲染后的内容
+	 */
+	private static String renderOptimizationPrompt(String optimizationPrompt, Map<String, Object> params) {
+		if (optimizationPrompt == null || optimizationPrompt.trim().isEmpty()) {
+			return "";
+		}
+		try {
+			return new PromptTemplate(optimizationPrompt).render(params);
+		}
+		catch (Exception e) {
+			// 如果模板渲染失败，直接返回原始内容
+			return optimizationPrompt;
+		}
 	}
 
 }

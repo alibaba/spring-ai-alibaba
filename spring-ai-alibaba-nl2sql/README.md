@@ -11,92 +11,171 @@
 ```
 spring-ai-alibaba-nl2sql/
 ├── spring-ai-alibaba-nl2sql-management    # 管理端（可直接启动的Web应用）
-├── spring-ai-alibaba-nl2sql-chat         # 核心功能（不能独立启动，供集成使用）  
+├── spring-ai-alibaba-nl2sql-chat         # 核心功能（不能独立启动，供集成使用）
 └── spring-ai-alibaba-nl2sql-common       # 公共代码
 ```
 
 ## 快速启动
+
 项目进行本地测试是在spring-ai-alibaba-nl2sql-management中进行
 
-### 1. 配置数据库
+### 1. 业务数据库准备
 
-修改 `spring-ai-alibaba-nl2sql-management/src/main/resources/application.yml`：
+可以在spring-ai-alibaba-example项目仓库获取测试表和数据：
 
-.sql文件在spring-ai-alibaba-example项目仓库中(https://github.com/springaialibaba/spring-ai-alibaba-examples/tree/main/spring-ai-alibaba-nl2sql-example)
+- Schema：https://github.com/springaialibaba/spring-ai-alibaba-examples/blob/main/spring-ai-alibaba-nl2sql-example/chat/sql/schema.sql
+- Data：https://github.com/springaialibaba/spring-ai-alibaba-examples/blob/main/spring-ai-alibaba-nl2sql-example/chat/sql/insert.sql
 
-请直接导入对应的insert.sql文件和schema.sql文件，并进行配置后启动spring-ai-alibaba-nl2sql-management
+将表和数据导入到你的MySQL数据库中。
+
+### 2. 配置management数据库
+
+在`spring-ai-alibaba-nl2sql-management/src/main/resources/application.yml`中配置你的MySQL数据库连接信息。
+
+> 初始化行为说明：默认开启自动创建表并插入示例数据（`spring.sql.init.mode: always`）。生产环境建议关闭，避免示例数据回填覆盖你的业务数据。
 
 ```yaml
-chatBi:
-  dbConfig:
-    url: jdbc:mysql://localhost:3306/你的数据库?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8
-    username: 你的用户名
-    password: 你的密码
-    dialect-type: mysql
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/nl2sql?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
 ```
 
-### 2. 配置API Key
+### 2.1 可选：启用/关闭自动初始化（schema.sql + data.sql）
 
-在同一个配置文件中设置（两个部分都需要配置）：
+- 默认配置：`application.yml` 中已设置为开启
+
+```yaml
+spring:
+  sql:
+    init:
+      mode: always           # 默认：每次启动执行 schema.sql 与 data.sql
+      schema-locations: classpath:sql/schema.sql
+      data-locations: classpath:sql/data.sql
+```
+
+- 若不希望每次启动回填示例数据，可将 `mode` 改为 `never` 关闭：
+
+```yaml
+spring:
+  sql:
+    init:
+      mode: never            # 关闭自动初始化
+      schema-locations: classpath:sql/schema.sql
+      data-locations: classpath:sql/data.sql
+```
+
+注意：默认开启时（`mode: always`），`data.sql` 会在每次启动回填示例数据（即使你手动删除了数据）。生产环境请改为 `mode: never`，避免覆盖/复原业务数据。
+
+![Snipaste_2025-09-18_14-35-29.jpg](img/Snipaste_2025-09-18_14-35-29.jpg)
+
+
+### 3. 配置 API Key
 
 ```yaml
 spring:
   ai:
-    dashscope:
-      api-key: 你的DashScope-API-Key
     openai:
-      api-key: 你的DashScope-API-Key
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      api-key: ${AI_DASHSCOPE_API_KEY}
+      model: qwen-max
+      embedding:
+        model: text-embedding-v4
 ```
 
-## 如何使用
-### API调用
+
+### 4. 启动管理端
+
+在`spring-ai-alibaba-nl2sql-management`目录下，运行 `spring-ai-alibaba-nl2sql/spring-ai-alibaba-nl2sql-management/src/main/java/com/alibaba/cloud/ai/Application.java` 类。
+
+### 5. 启动WEB页面
+
+进入 `spring-ai-alibaba-nl2sql/spring-ai-alibaba-nl2sql-web-ui` 目录
+
+#### 安装依赖
+
+
 ```bash
-# 执行自然语言查询
-GET http://localhost:8062/nl2sql/search?query=查询用户数量
+# 使用 npm
+npm install
 
-# 流式聊天（实时返回结果，想要参与进入开发,一般使用该接口）
-GET http://localhost:8062/nl2sql/stream/search?query=你的问题
-
-# 简单聊天接口
-POST http://localhost:8062/simpleChat
-Content-Type: application/json
+# 或使用 yarn
+yarn install
 ```
 
+### 启动服务
 
-## 开发集成
+```bash
+# 使用 npm
+npm run dev
 
-如果要在自己的项目中集成NL2SQL功能：
-
-### 1. 添加依赖
-
-```xml
-<dependency>
-    <groupId>com.alibaba.cloud.ai</groupId>
-    <artifactId>spring-ai-alibaba-starter-nl2sql</artifactId>
-    <version>${spring-ai-alibaba.version}</version>
-</dependency>
+# 或使用 yarn
+yarn dev
 ```
 
-### 2. 代码示例
+启动成功后，访问地址 http://localhost:3000
 
-```java
-@RestController
-public class MyNl2SqlController {
-    
-    @Autowired
-    private SimpleNl2SqlService simpleNl2SqlService;
-    
-    @PostMapping("/query")
-    public String query(@RequestBody String question) throws Exception {
-        return simpleNl2SqlService.nl2sql(question);
-    }
-}
-```
+## 系统体验
 
-## 贡献指南
+访问 http://localhost:3000 ，可以看到有四个智能体（目前这四个只是占位显示，并没有对接数据）
 
-欢迎提交Issue和PR！详见 [Spring AI Alibaba 贡献指南](https://github.com/alibaba/spring-ai-alibaba/blob/main/CONTRIBUTING-zh.md)
+![homepage-agents.png](img/homepage-agents.png)
 
-## 开源协议
 
-Apache License 2.0 
+点击右上角“创建智能体” ，这里只需要输入智能体名称，其他配置都选默认。
+
+创建成功后，可以看到智能体配置页面。
+
+![agent-config.png](img/agent-config.png)
+
+进入数据源配置页面，配置业务数据库（我们在环境初始化时第一步提供的业务数据库）。
+
+![datasource-config.png](img/datasource-config.png)
+
+添加完成后，可以在列表页面验证数据源连接是否正常。
+
+![datasource-validation.png](img/datasource-validation.png)
+
+预设问题管理，可以为智能体设置预设问题
+
+![preset-questions.png](img/preset-questions.png)
+
+智能体调试页面可以定制化配置数据源，然后初始化数据源到向量库，进行效果调试。
+
+![agent-debug.png](img/agent-debug.png)
+
+![vector-initialization.png](img/vector-initialization.png)
+
+成功后可以在智能体调试页面输入自然语言进行查询。
+
+![natural-language-query.png](img/natural-language-query.png)
+
+![query-results.png](img/query-results.png)
+
+> 调试和发布的智能体数据是分离的，调试时的数据不会影响发布后的智能体。
+
+调试没问题后，可以发布智能体。
+
+![publish-agent.png](img/publish-agent.png)
+
+> 目前“嵌入网站”和“访问API”当前版本暂未实现。
+
+点击发布后会更新元数据到发布后的智能体。
+
+![metadata-update.png](img/metadata-update.png)
+
+![publish-complete.png](img/publish-complete.png)
+
+分析问题
+
+![analyze-question.png](img/analyze-question.png)
+
+分析结果
+
+![analyze-result.png](img/analyze-result.png)
+
+> 注意：Python节点默认启用的是模拟节点，目前会造成幻觉问题，如需解决幻觉问题，需要实际启动Python执行功能。
+> 如果你没有环境执行Python节点，临时解决方法：在提问的问题中，添加“请不要通过Python分析”。

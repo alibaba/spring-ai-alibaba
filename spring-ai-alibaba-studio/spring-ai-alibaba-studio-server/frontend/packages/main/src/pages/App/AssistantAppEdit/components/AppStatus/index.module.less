@@ -1,0 +1,22 @@
+.appStatus {
+  .tagName {
+    display: flex;
+    align-items: center;
+    font-weight: normal;
+  }
+
+  .backWrap {
+    margin: 0;
+    &.draft {
+      max-width: calc(100% - 40px - 32px - 32px) !important;
+    }
+
+    &.publish {
+      max-width: calc(100% - 52px - 32px - 32px) !important;
+    }
+
+    &.draftAndPublish {
+      max-width: calc(100% - 88px - 32px - 32px) !important;
+    }
+  }
+}

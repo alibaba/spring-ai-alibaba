@@ -14,11 +14,11 @@ INSERT IGNORE INTO `semantic_model` (`id`, `agent_id`, `field_name`, `synonyms`,
 (3, 2, 'customerRetentionRate', 'retention rate, loyalty rate', 'retention_pct', 'Percentage of retained customers', 'Customer retention percentage', 'decimal', NOW(), NOW(), 1, 1);
 
 -- 智能体示例数据
-INSERT IGNORE INTO `agent` (`id`, `name`, `description`, `avatar`, `status`, `prompt`, `category`, `admin_id`, `tags`, `create_time`, `update_time`) VALUES 
-(1, '中国人口GDP数据智能体', '专门处理中国人口和GDP相关数据查询分析的智能体', '/avatars/china-gdp-agent.png', 'published', '你是一个专业的数据分析助手，专门处理中国人口和GDP相关的数据查询。请根据用户的问题，生成准确的SQL查询语句。', '数据分析', 2100246635, '人口数据,GDP分析,经济统计', NOW(), NOW()),
-(2, '销售数据分析智能体', '专注于销售数据分析和业务指标计算的智能体', '/avatars/sales-agent.png', 'published', '你是一个销售数据分析专家，能够帮助用户分析销售趋势、客户行为和业务指标。', '业务分析', 2100246635, '销售分析,业务指标,客户分析', NOW(), NOW()),
-(3, '财务报表智能体', '专门处理财务数据和报表分析的智能体', '/avatars/finance-agent.png', 'draft', '你是一个财务分析专家，专门处理财务数据查询和报表生成。', '财务分析', 2100246635, '财务数据,报表分析,会计', NOW(), NOW()),
-(4, '库存管理智能体', '专注于库存数据管理和供应链分析的智能体', '/avatars/inventory-agent.png', 'published', '你是一个库存管理专家，能够帮助用户查询库存状态、分析供应链数据。', '供应链', 2100246635, '库存管理,供应链,物流', NOW(), NOW());
+INSERT IGNORE INTO `agent` (`id`, `name`, `description`, `avatar`, `status`, `prompt`, `category`, `admin_id`, `tags`, `create_time`, `update_time`, `human_review_enabled`) VALUES 
+(1, '中国人口GDP数据智能体', '专门处理中国人口和GDP相关数据查询分析的智能体', '/avatars/china-gdp-agent.png', 'published', '你是一个专业的数据分析助手，专门处理中国人口和GDP相关的数据查询。请根据用户的问题，生成准确的SQL查询语句。', '数据分析', 2100246635, '人口数据,GDP分析,经济统计', NOW(), NOW(), 0),
+(2, '销售数据分析智能体', '专注于销售数据分析和业务指标计算的智能体', '/avatars/sales-agent.png', 'published', '你是一个销售数据分析专家，能够帮助用户分析销售趋势、客户行为和业务指标。', '业务分析', 2100246635, '销售分析,业务指标,客户分析', NOW(), NOW(), 0),
+(3, '财务报表智能体', '专门处理财务数据和报表分析的智能体', '/avatars/finance-agent.png', 'draft', '你是一个财务分析专家，专门处理财务数据查询和报表生成。', '财务分析', 2100246635, '财务数据,报表分析,会计', NOW(), NOW(), 0),
+(4, '库存管理智能体', '专注于库存数据管理和供应链分析的智能体', '/avatars/inventory-agent.png', 'published', '你是一个库存管理专家，能够帮助用户查询库存状态、分析供应链数据。', '供应链', 2100246635, '库存管理,供应链,物流', NOW(), NOW(), 0);
 
 -- 智能体知识示例数据
 INSERT IGNORE INTO `agent_knowledge` (`id`, `agent_id`, `title`, `content`, `type`, `category`, `tags`, `status`, `source_url`, `file_type`, `embedding_status`, `creator_id`, `create_time`, `update_time`) VALUES 
@@ -31,11 +31,10 @@ INSERT IGNORE INTO `agent_knowledge` (`id`, `agent_id`, `title`, `content`, `typ
 (7, 4, '库存管理最佳实践', '库存管理的核心要点：\n1. 安全库存设置：确保不断货\n2. ABC分类管理：重点管理A类物料\n3. 先进先出原则：避免库存积压\n4. 定期盘点：确保数据准确性\n5. 供应商管理：建立稳定供应关系', 'document', '最佳实践', '库存管理,安全库存,ABC分类,盘点', 'active', NULL, 'text', 'completed', 2100246635, NOW(), NOW());
 
 -- 数据源示例数据
+-- 示例数据源可以运行docker-compose-datasource.yml建立，或者手动修改为自己的数据源
 INSERT IGNORE INTO `datasource` (`id`, `name`, `type`, `host`, `port`, `database_name`, `username`, `password`, `connection_url`, `status`, `test_status`, `description`, `creator_id`, `create_time`, `update_time`) VALUES 
-(1, '生产环境MySQL数据库', 'mysql', '192.168.1.100', 3306, 'production_db', 'app_user', 'encrypted_password_123', 'jdbc:mysql://192.168.1.100:3306/production_db', 'active', 'success', '生产环境主数据库，包含核心业务数据', 2100246635, NOW(), NOW()),
-(2, '数据仓库PostgreSQL', 'postgresql', '192.168.1.101', 5432, 'data_warehouse', 'analytics_user', 'encrypted_password_456', 'jdbc:postgresql://192.168.1.101:5432/data_warehouse', 'active', 'success', '数据仓库，用于数据分析和报表生成', 2100246635, NOW(), NOW()),
-(3, '测试环境MySQL', 'mysql', '192.168.1.102', 3306, 'test_db', 'test_user', 'encrypted_password_789', 'jdbc:mysql://192.168.1.102:3306/test_db', 'active', 'failed', '测试环境数据库，用于开发测试', 2100246635, NOW(), NOW()),
-(4, 'CDP客户数据平台', 'postgresql', '192.168.1.103', 5432, 'customer_data', 'cdp_user', 'encrypted_password_abc', 'jdbc:postgresql://192.168.1.103:5432/customer_data', 'inactive', 'unknown', 'CDP客户数据平台，包含客户360度数据', 2100246635, NOW(), NOW());
+(1, '生产环境MySQL数据库', 'mysql', 'mysql-data', 3306, 'product_db', 'root', 'root', 'jdbc:mysql://mysql-data:3306/product_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true', 'active', 'success', '生产环境主数据库，包含核心业务数据', 2100246635, NOW(), NOW()),
+(2, '数据仓库PostgreSQL', 'postgresql', 'postgres-data', 5432, 'data_warehouse', 'postgres', 'postgres', 'jdbc:postgresql://postgres-data:5432/data_warehouse', 'active', 'success', '数据仓库，用于数据分析和报表生成', 2100246635, NOW(), NOW());
 
 -- 智能体数据源关联示例数据
 INSERT IGNORE INTO `agent_datasource` (`id`, `agent_id`, `datasource_id`, `is_active`, `create_time`, `update_time`) VALUES 

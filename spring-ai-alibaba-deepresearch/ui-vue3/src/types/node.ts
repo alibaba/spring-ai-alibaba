@@ -14,7 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+export interface GraphId {
+  session_id: string
+  thread_id: string
+}
 /**
  * 普通类型节点定义
  */
@@ -22,5 +25,23 @@ export interface NormalNode {
   /** 节点名称 */
   nodeName: string
   /** 节点内容 */
-  content: object
+  content: string | any ,
+  graphId: GraphId
+  displayTitle: string,
+  siteInformation: SiteInformation[]
+}
+
+export interface SiteInformation {
+  icon: string
+  weight: string
+  title: string
+  url: string
+  content: string
+}
+
+export interface LlmStreamNode {
+  visible: boolean,
+  step_title: string,
+  finishReason: string
+  graphId: GraphId
 }

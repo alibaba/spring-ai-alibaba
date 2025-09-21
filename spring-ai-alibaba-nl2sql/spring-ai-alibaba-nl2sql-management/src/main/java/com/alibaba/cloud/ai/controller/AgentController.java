@@ -17,34 +17,34 @@ package com.alibaba.cloud.ai.controller;
 
 import com.alibaba.cloud.ai.entity.Agent;
 import com.alibaba.cloud.ai.service.AgentService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * 智能体管理控制器
+ * Agent Management Controller
  */
-@Controller
+@RestController
 @RequestMapping("/api/agent")
 @CrossOrigin(origins = "*")
 public class AgentController {
 
 	private final AgentService agentService;
 
+	@Autowired(required = false)
 	public AgentController(AgentService agentService) {
 		this.agentService = agentService;
 	}
 
 	/**
-	 * 获取智能体列表
+	 * Get agent list
 	 */
-	@GetMapping
-	@ResponseBody
-	public ResponseEntity<List<Agent>> list(@RequestParam(required = false) String status,
-			@RequestParam(required = false) String keyword) {
-		List<Agent> result;
+	@GetMapping("/list")
+	public ResponseEntity<List<Agent>> list(@RequestParam(value = "status", required = false) String status,
+			@RequestParam(value = "keyword", required = false) String keyword) {
+		List<Agent> result = null;
 		if (keyword != null && !keyword.trim().isEmpty()) {
 			result = agentService.search(keyword);
 		}
@@ -58,11 +58,10 @@ public class AgentController {
 	}
 
 	/**
-	 * 根据ID获取智能体详情
+	 * Get agent details by ID
 	 */
 	@GetMapping("/{id}")
-	@ResponseBody
-	public ResponseEntity<Agent> get(@PathVariable Long id) {
+	public ResponseEntity<Agent> get(@PathVariable(value = "id") Long id) {
 		Agent agent = agentService.findById(id);
 		if (agent == null) {
 			return ResponseEntity.notFound().build();
@@ -71,12 +70,11 @@ public class AgentController {
 	}
 
 	/**
-	 * 创建智能体
+	 * Create agent
 	 */
 	@PostMapping
-	@ResponseBody
 	public ResponseEntity<Agent> create(@RequestBody Agent agent) {
-		// 设置默认状态
+		// Set default status
 		if (agent.getStatus() == null || agent.getStatus().trim().isEmpty()) {
 			agent.setStatus("draft");
 		}
@@ -85,11 +83,10 @@ public class AgentController {
 	}
 
 	/**
-	 * 更新智能体
+	 * Update agent
 	 */
 	@PutMapping("/{id}")
-	@ResponseBody
-	public ResponseEntity<Agent> update(@PathVariable Long id, @RequestBody Agent agent) {
+	public ResponseEntity<Agent> update(@PathVariable(value = "id") Long id, @RequestBody Agent agent) {
 		if (agentService.findById(id) == null) {
 			return ResponseEntity.notFound().build();
 		}
@@ -99,11 +96,10 @@ public class AgentController {
 	}
 
 	/**
-	 * 删除智能体
+	 * Delete agent
 	 */
 	@DeleteMapping("/{id}")
-	@ResponseBody
-	public ResponseEntity<Void> delete(@PathVariable Long id) {
+	public ResponseEntity<Void> delete(@PathVariable(value = "id") Long id) {
 		if (agentService.findById(id) == null) {
 			return ResponseEntity.notFound().build();
 		}
@@ -112,11 +108,10 @@ public class AgentController {
 	}
 
 	/**
-	 * 发布智能体
+	 * Publish agent
 	 */
 	@PostMapping("/{id}/publish")
-	@ResponseBody
-	public ResponseEntity<Agent> publish(@PathVariable Long id) {
+	public ResponseEntity<Agent> publish(@PathVariable(value = "id") Long id) {
 		Agent agent = agentService.findById(id);
 		if (agent == null) {
 			return ResponseEntity.notFound().build();
@@ -127,11 +122,10 @@ public class AgentController {
 	}
 
 	/**
-	 * 下线智能体
+	 * Offline agent
 	 */
 	@PostMapping("/{id}/offline")
-	@ResponseBody
-	public ResponseEntity<Agent> offline(@PathVariable Long id) {
+	public ResponseEntity<Agent> offline(@PathVariable(value = "id") Long id) {
 		Agent agent = agentService.findById(id);
 		if (agent == null) {
 			return ResponseEntity.notFound().build();

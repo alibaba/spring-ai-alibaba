@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.request.DeleteRequest;
 import com.alibaba.cloud.ai.request.EvidenceRequest;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.google.gson.Gson;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -69,9 +70,9 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 	}
 
 	/**
-	 * 初始化数据库 schema 到向量库
-	 * @param schemaInitRequest schema 初始化请求
-	 * @throws Exception 如果发生错误
+	 * Initialize database schema to vector store
+	 * @param schemaInitRequest schema initialization request
+	 * @throws Exception if an error occurs
 	 */
 	@Override
 	public Boolean schema(SchemaInitRequest schemaInitRequest) throws Exception {
@@ -115,9 +116,9 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 	}
 
 	/**
-	 * 将证据内容添加到向量库中
-	 * @param evidenceRequests 证据请求列表
-	 * @return 是否成功
+	 * Add evidence content to vector store
+	 * @param evidenceRequests list of evidence requests
+	 * @return success status
 	 */
 	@Override
 	public Boolean addEvidence(List<EvidenceRequest> evidenceRequests) {
@@ -150,12 +151,18 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 			columnInfoBO.setSamples(gson.toJson(sampleColumn));
 		}
 
-		ColumnInfoBO primaryColumnDO = columnInfoBOS.stream()
+		List<ColumnInfoBO> targetPrimaryList = columnInfoBOS.stream()
 			.filter(ColumnInfoBO::isPrimary)
-			.findFirst()
-			.orElse(new ColumnInfoBO());
-
-		tableInfoBO.setPrimaryKey(primaryColumnDO.getName());
+			.collect(Collectors.toList());
+		if (CollectionUtils.isNotEmpty(targetPrimaryList)) {
+			List<String> columnNames = targetPrimaryList.stream()
+				.map(ColumnInfoBO::getName)
+				.collect(Collectors.toList());
+			tableInfoBO.setPrimaryKeys(columnNames);
+		}
+		else {
+			tableInfoBO.setPrimaryKeys(new ArrayList<>());
+		}
 		tableInfoBO.setForeignKey(String.join("、", buildForeignKeyList(tableInfoBO.getName())));
 	}
 
@@ -180,7 +187,7 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 		Map<String, Object> metadata = Map.of("schema", Optional.ofNullable(tableInfoBO.getSchema()).orElse(""), "name",
 				tableInfoBO.getName(), "description", Optional.ofNullable(tableInfoBO.getDescription()).orElse(""),
 				"foreignKey", Optional.ofNullable(tableInfoBO.getForeignKey()).orElse(""), "primaryKey",
-				Optional.ofNullable(tableInfoBO.getPrimaryKey()).orElse(""), "vectorType", "table");
+				Optional.ofNullable(tableInfoBO.getPrimaryKeys()).orElse(new ArrayList<>()), "vectorType", "table");
 		return new Document(tableInfoBO.getName(), text, metadata);
 	}
 
@@ -197,9 +204,9 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 	}
 
 	/**
-	 * 删除指定条件的向量数据
-	 * @param deleteRequest 删除请求
-	 * @return 是否删除成功
+	 * Delete vector data with specified conditions
+	 * @param deleteRequest delete request
+	 * @return deletion success status
 	 */
 	@Override
 	public Boolean deleteDocuments(DeleteRequest deleteRequest) throws Exception {
@@ -229,10 +236,10 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 	}
 
 	/**
-	 * 根据搜索请求在向量库中检索文档
-	 * @param searchRequest 搜索请求
-	 * @return 匹配的文档列表
-	 * @throws Exception 检索异常
+	 * Search documents in vector store based on search request
+	 * @param searchRequest search request
+	 * @return list of matching documents
+	 * @throws Exception search exception
 	 */
 	public List<Document> search(SearchRequest searchRequest) throws Exception {
 		try {

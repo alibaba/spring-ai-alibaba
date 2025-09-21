@@ -40,10 +40,10 @@ public class AgentPresetQuestionController {
 	}
 
 	/**
-	 * 获取智能体的预设问题列表
+	 * Get preset question list of agent
 	 */
 	@GetMapping("/{agentId}/preset-questions")
-	public ResponseEntity<List<AgentPresetQuestion>> getPresetQuestions(@PathVariable Long agentId) {
+	public ResponseEntity<List<AgentPresetQuestion>> getPresetQuestions(@PathVariable(value = "agentId") Long agentId) {
 		try {
 			List<AgentPresetQuestion> questions = presetQuestionService.findByAgentId(agentId);
 			return ResponseEntity.ok(questions);
@@ -55,13 +55,13 @@ public class AgentPresetQuestionController {
 	}
 
 	/**
-	 * 批量保存智能体的预设问题
+	 * Batch save preset questions of agent
 	 */
 	@PostMapping("/{agentId}/preset-questions")
-	public ResponseEntity<Map<String, String>> savePresetQuestions(@PathVariable Long agentId,
+	public ResponseEntity<Map<String, String>> savePresetQuestions(@PathVariable(value = "agentId") Long agentId,
 			@RequestBody List<Map<String, String>> questionsData) {
 		try {
-			// 转换为实体对象
+			// Convert to entity object
 			List<AgentPresetQuestion> questions = questionsData.stream().map(data -> {
 				AgentPresetQuestion question = new AgentPresetQuestion();
 				question.setQuestion(data.get("question"));
@@ -78,10 +78,10 @@ public class AgentPresetQuestionController {
 	}
 
 	/**
-	 * 删除预设问题
+	 * Delete preset question
 	 */
 	@DeleteMapping("/{agentId}/preset-questions/{questionId}")
-	public ResponseEntity<Map<String, String>> deletePresetQuestion(@PathVariable Long agentId,
+	public ResponseEntity<Map<String, String>> deletePresetQuestion(@PathVariable(value = "agentId") Long agentId,
 			@PathVariable Long questionId) {
 		try {
 			presetQuestionService.deleteById(questionId);

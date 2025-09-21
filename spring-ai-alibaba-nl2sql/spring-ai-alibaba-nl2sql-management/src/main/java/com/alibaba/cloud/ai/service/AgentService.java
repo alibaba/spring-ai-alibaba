@@ -31,7 +31,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 智能体服务类
+ * Agent Service Class
  */
 @Service
 public class AgentService {
@@ -41,7 +41,7 @@ public class AgentService {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
-	@Autowired(required = false)
+	@Autowired
 	private AgentVectorService agentVectorService;
 
 	private static final String SELECT_ALL = """
@@ -63,13 +63,13 @@ public class AgentService {
 			""";
 
 	private static final String INSERT = """
-			INSERT INTO agent (name, description, avatar, status, prompt, category, admin_id, tags, create_time, update_time)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			INSERT INTO agent (name, description, avatar, status, prompt, category, admin_id, tags, create_time, update_time, human_review_enabled)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			""";
 
 	private static final String UPDATE = """
 			UPDATE agent SET name = ?, description = ?, avatar = ?, status = ?, prompt = ?,
-			category = ?, admin_id = ?, tags = ?, update_time = ? WHERE id = ?
+			category = ?, admin_id = ?, tags = ?, update_time = ?, human_review_enabled = ? WHERE id = ?
 			""";
 
 	private static final String DELETE = """
@@ -99,9 +99,13 @@ public class AgentService {
 		LocalDateTime now = LocalDateTime.now();
 
 		if (agent.getId() == null) {
-			// 新增
+			// Add
 			agent.setCreateTime(now);
 			agent.setUpdateTime(now);
+			// 确保 humanReviewEnabled 不为 null
+			if (agent.getHumanReviewEnabled() == null) {
+				agent.setHumanReviewEnabled(0);
+			}
 
 			KeyHolder keyHolder = new GeneratedKeyHolder();
 			jdbcTemplate.update(connection -> {
@@ -116,6 +120,7 @@ public class AgentService {
 				ps.setString(8, agent.getTags());
 				ps.setObject(9, agent.getCreateTime());
 				ps.setObject(10, agent.getUpdateTime());
+				ps.setObject(11, agent.getHumanReviewEnabled());
 				return ps;
 			}, keyHolder);
 
@@ -125,11 +130,15 @@ public class AgentService {
 			}
 		}
 		else {
-			// 更新
+			// Update
 			agent.setUpdateTime(now);
+			// 确保 humanReviewEnabled 不为 null
+			if (agent.getHumanReviewEnabled() == null) {
+				agent.setHumanReviewEnabled(0);
+			}
 			jdbcTemplate.update(UPDATE, agent.getName(), agent.getDescription(), agent.getAvatar(), agent.getStatus(),
 					agent.getPrompt(), agent.getCategory(), agent.getAdminId(), agent.getTags(), agent.getUpdateTime(),
-					agent.getId());
+					agent.getHumanReviewEnabled(), agent.getId());
 		}
 
 		return agent;
@@ -137,10 +146,10 @@ public class AgentService {
 
 	public void deleteById(Long id) {
 		try {
-			// 删除数据库中的智能体记录
+			// Delete agent record from database
 			jdbcTemplate.update(DELETE, id);
 
-			// 同时清理智能体的向量数据
+			// Also clean up the agent's vector data
 			if (agentVectorService != null) {
 				try {
 					agentVectorService.deleteAllVectorDataForAgent(id);
@@ -148,7 +157,7 @@ public class AgentService {
 				}
 				catch (Exception vectorException) {
 					log.warn("Failed to delete vector data for agent: {}, error: {}", id, vectorException.getMessage());
-					// 向量数据删除失败不影响主流程
+					// Vector data deletion failure does not affect the main process
 				}
 			}
 

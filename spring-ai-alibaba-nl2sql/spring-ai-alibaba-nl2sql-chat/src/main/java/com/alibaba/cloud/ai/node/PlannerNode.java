@@ -34,6 +34,7 @@ import java.util.Map;
 
 import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
 import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
+import static com.alibaba.cloud.ai.constant.Constant.IS_ONLY_NL2SQL;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_ERROR;
 import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_MODEL;
@@ -54,38 +55,60 @@ public class PlannerNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		logger.info("Entering {} node", this.getClass().getSimpleName());
 		String input = (String) state.value(INPUT_KEY).orElseThrow();
-		// load prompt template
-		String businessKnowledgePrompt = (String) state.value(BUSINESS_KNOWLEDGE).orElse("");
-		String semanticModelPrompt = (String) state.value(SEMANTIC_MODEL).orElse("");
+		Boolean onlyNl2sql = state.value(IS_ONLY_NL2SQL, false);
 
-		SchemaDTO schemaDTO = (SchemaDTO) state.value(TABLE_RELATION_OUTPUT).orElseThrow();
-		String schemaStr = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
-
-		// Check if this is a repair attempt
+		// 检查是否为修复模式
 		String validationError = StateUtils.getStringValue(state, PLAN_VALIDATION_ERROR, null);
-		String userPrompt;
 		if (validationError != null) {
-			logger.warn("This is a plan repair attempt. Previous error: {}", validationError);
-			String previousPlan = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT, "");
-			userPrompt = String.format(
-					"The previous plan you generated failed validation with the following error: %s\n\nHere is the faulty plan:\n%s\n\nPlease correct the plan and provide a new, valid one to answer the original question: %s",
-					validationError, previousPlan, input);
+			logger.info("Regenerating plan with user feedback: {}", validationError);
 		}
 		else {
-			userPrompt = input;
+			logger.info("Generating initial plan");
 		}
 
-		Map<String, Object> params = Map.of("user_question", userPrompt, "schema", schemaStr, "business_knowledge",
-				businessKnowledgePrompt, "semantic_model", semanticModelPrompt);
-		String plannerPrompt = PromptConstant.getPlannerPromptTemplate().render(params);
-		Flux<ChatResponse> chatResponseFlux = chatClient.prompt().user(plannerPrompt).stream().chatResponse();
+		// 构建提示参数
+		String businessKnowledge = (String) state.value(BUSINESS_KNOWLEDGE).orElse("");
+		String semanticModel = (String) state.value(SEMANTIC_MODEL).orElse("");
+		SchemaDTO schemaDTO = StateUtils.getObjectValue(state, TABLE_RELATION_OUTPUT, SchemaDTO.class);
+		String schemaStr = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
 
+		// 构建用户提示
+		String userPrompt = buildUserPrompt(input, validationError, state);
+
+		// 构建模板参数
+		Map<String, Object> params = Map.of("user_question", userPrompt, "schema", schemaStr, "business_knowledge",
+				businessKnowledge, "semantic_model", semanticModel, "plan_validation_error",
+				formatValidationError(validationError));
+
+		// 生成计划
+		String plannerPrompt = (onlyNl2sql ? PromptConstant.getPlannerNl2sqlOnlyTemplate()
+				: PromptConstant.getPlannerPromptTemplate())
+			.render(params);
+
+		Flux<ChatResponse> chatResponseFlux = chatClient.prompt().user(plannerPrompt).stream().chatResponse();
 		var generator = StreamingChatGeneratorUtil.createStreamingGeneratorWithMessages(this.getClass(), state,
 				v -> Map.of(PLANNER_NODE_OUTPUT, v), chatResponseFlux, StreamResponseType.PLAN_GENERATION);
 
 		return Map.of(PLANNER_NODE_OUTPUT, generator);
+	}
+
+	private String buildUserPrompt(String input, String validationError, OverAllState state) {
+		if (validationError == null) {
+			return input;
+		}
+
+		String previousPlan = StateUtils.getStringValue(state, PLANNER_NODE_OUTPUT, "");
+		return String.format(
+				"IMPORTANT: User rejected previous plan with feedback: \"%s\"\n\n" + "Original question: %s\n\n"
+						+ "Previous rejected plan:\n%s\n\n"
+						+ "CRITICAL: Generate new plan incorporating user feedback (\"%s\")",
+				validationError, input, previousPlan, validationError);
+	}
+
+	private String formatValidationError(String validationError) {
+		return validationError != null ? String
+			.format("**USER FEEDBACK (CRITICAL)**: %s\n\n**Must incorporate this feedback.**", validationError) : "";
 	}
 
 }

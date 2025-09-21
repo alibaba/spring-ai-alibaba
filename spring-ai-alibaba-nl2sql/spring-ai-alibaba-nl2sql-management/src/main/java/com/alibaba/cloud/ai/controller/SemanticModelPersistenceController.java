@@ -33,7 +33,7 @@ public class SemanticModelPersistenceController {
 		this.semanticModelPersistenceService = semanticModelPersistenceService;
 	}
 
-	// 新增
+	// Add
 	@PostMapping("/add")
 	public ResponseEntity<Void> addField(@RequestBody SemanticModelDTO semanticModelDTO) {
 		semanticModelPersistenceService.addField(semanticModelDTO);
@@ -46,44 +46,45 @@ public class SemanticModelPersistenceController {
 		return ResponseEntity.ok().build();
 	}
 
-	// 启用
+	// Enable
 	@PutMapping("/enable")
 	public ResponseEntity<Void> enableFields(@RequestBody List<Long> ids) {
 		semanticModelPersistenceService.enableFields(ids);
 		return ResponseEntity.ok().build();
 	}
 
-	// 禁用
+	// Disable
 	@PutMapping("/disable")
 	public ResponseEntity<Void> disableFields(@RequestBody List<Long> ids) {
 		semanticModelPersistenceService.disableFields(ids);
 		return ResponseEntity.ok().build();
 	}
 
-	// 根据agentId获取数据
+	// Get data by agentId
 	@GetMapping("/agent/{agentId}")
-	public ResponseEntity<List<SemanticModel>> getFieldsByAgentId(@PathVariable Long agentId) {
+	public ResponseEntity<List<SemanticModel>> getFieldsByAgentId(@PathVariable(value = "agentId") Long agentId) {
 		List<SemanticModel> fields = semanticModelPersistenceService.getFieldByAgentId(agentId);
 		return ResponseEntity.ok(fields);
 	}
 
-	// 搜索
+	// Search
 	@GetMapping("/search")
-	public ResponseEntity<List<SemanticModel>> searchFields(@RequestParam String content) {
+	public ResponseEntity<List<SemanticModel>> searchFields(@RequestParam(value = "content") String content) {
 		List<SemanticModel> fields = semanticModelPersistenceService.searchFields(content);
 		return ResponseEntity.ok(fields);
 	}
 
-	// 根据id删除
+	// Delete by id
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteFieldById(@PathVariable long id) {
+	public ResponseEntity<Void> deleteFieldById(@PathVariable(value = "id") long id) {
 		semanticModelPersistenceService.deleteFieldById(id);
 		return ResponseEntity.ok().build();
 	}
 
-	// 编辑更新
+	// Edit update
 	@PutMapping("/{id}")
-	public ResponseEntity<Void> updateField(@PathVariable long id, @RequestBody SemanticModelDTO semanticModelDTO) {
+	public ResponseEntity<Void> updateField(@PathVariable(value = "id") long id,
+			@RequestBody SemanticModelDTO semanticModelDTO) {
 		semanticModelPersistenceService.updateField(semanticModelDTO, id);
 		return ResponseEntity.ok().build();
 	}

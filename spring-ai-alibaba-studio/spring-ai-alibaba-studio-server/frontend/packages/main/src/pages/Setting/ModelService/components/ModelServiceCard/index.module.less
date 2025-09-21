@@ -1,0 +1,61 @@
+.service-card {
+  height: 100%;
+  position: relative;
+
+  .status-tag {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+
+    .dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: currentColor;
+      margin-right: 6px;
+    }
+
+    &[data-color='success'] {
+      color: var(--ag-ant-color-success);
+    }
+
+    &[data-color='error'] {
+      color: var(--ag-ant-color-error);
+    }
+  }
+
+  .model-type {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+    min-height: 26px;
+  }
+
+  .type-tag {
+    margin-bottom: 4px;
+    margin-right: 4px;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+
+    &:last-child {
+      flex-shrink: 1;
+      min-width: 0;
+    }
+  }
+
+  .footer-desc-node {
+    font-size: 12px;
+    color: var(--ag-ant-color-text-secondary);
+  }
+
+  .provider-avatar {
+    color: var(--ag-ant-color-text);
+    background-color: var(--ag-ant-color-bg-base);
+  }
+}

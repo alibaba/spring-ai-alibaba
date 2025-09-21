@@ -17,7 +17,7 @@
 <template>
   <div class="__container_chat_index">
     <Flex class="body" gap="middle">
-      <Flex class="chat" vertical gap="middle" flex="1" align="center">
+      <Flex class="chat" vertical gap="middle" :style="{ width: current.deepResearchDetail ? '40%' : '100%' }" align="center">
         <div
           ref="scrollContainer"
           align="center"
@@ -36,6 +36,7 @@
         <div class="sender-wrapper">
           <sender
             class-name="sender"
+            :header="headerNode"
             :autoSize="{ minRows: 2, maxRows: 3 }"
             :loading="senderLoading"
             v-model:value="content"
@@ -43,60 +44,34 @@
             :actions="false"
             placeholder="type an issue"
           >
-            <template #header>
-              <a-carousel :slidesToShow="2" arrows style="width: 100%; padding: 12px">
-                <a-tag style="left: 5px" :id="f.uid" :closable="true" v-for="f in uploadFileList">
-                  <LinkOutlined />
-                  {{ f.name }}
-                </a-tag>
-              </a-carousel>
-            </template>
             <template
               #footer="{
                 info: {
-                  components: { SendButton, LoadingButton, ClearButton, SpeechButton },
+                  components: { SendButton, LoadingButton, ClearButton },
                 },
               }"
             >
               <Flex justify="space-between" align="center">
                 <Flex align="center">
-                  <a-upload
-                    :multiple="true"
-                    name="uploadFileList"
-                    v-model:file-list="uploadFileList"
-                    :showUploadList="false"
-                  >
-                    <a-button size="small" style="border-radius: 15px" type="text">
+                  <a-button size="small" style="border-radius: 15px" type="text" @click="headerOpen = !headerOpen">
                       <LinkOutlined />
-                    </a-button>
-                  </a-upload>
-
-                  <a-button
-                    size="small"
-                    style="border-radius: 15px; margin-right: 8px"
-                    type="text"
-                    @click="deepResearch"
-                    :style="{ color: current.deepResearchDetail ? token.colorPrimary : '' }"
-                  >
-                    <BgColorsOutlined />
-                    Report
                   </a-button>
 
                   <a-switch
-                    un-checked-children="Deep Research"
-                    checked-children="Deep Research"
+                    un-checked-children="极速模式"
+                    checked-children="深度模式"
                     v-model:checked="current.deepResearch"
                   ></a-switch>
                 </Flex>
                 <Flex>
                   <component :is="ClearButton" />
-                  <component :is="SpeechButton" />
+                  <!-- <component :is="SpeechButton" /> -->
                   <component
                     :is="LoadingButton"
                     v-if="senderLoading"
                     type="default"
                     style="display: block"
-                    :disabled="true"
+                    @click="stopHandle"
                   >
                     <template #icon>
                       <Spin size="small" />
@@ -117,45 +92,27 @@
           </sender>
         </div>
       </Flex>
-      <Report :visible="current.deepResearchDetail" :convId="convId" @close="current.deepResearchDetail = false" />
-      <!-- HTML 渲染组件弹窗 -->
-      <a-modal
-        v-model:open="htmlModalVisible"
-        title="HTML 报告"
-        :width="1200"
-        :footer="null"
-        :destroyOnClose="true"
-        @cancel="closeHtmlModal"
-      >
-        <HtmlRenderer
-          ref="htmlRendererRef"
-          :htmlChunks="htmlChunks"
-          :loading="htmlLoading"
-          style="height: 600px;"
-        />
-      </a-modal>
+      <Report :visible="current.deepResearchDetail" :threadId="current.threadId" :convId="convId" @close="current.deepResearchDetail = false" />
     </Flex>
   </div>
 </template>
 
 <script setup lang="tsx">
-import { Button, Card, Flex, Modal, Spin, theme, Typography } from 'ant-design-vue'
+import { Button, Card, Flex, Spin, theme, Typography, message } from 'ant-design-vue'
 import {
   CheckCircleOutlined,
-  CloseOutlined,
-  CopyOutlined,
   GlobalOutlined,
   LinkOutlined,
-  MoreOutlined,
   SendOutlined,
   IeOutlined,
   BgColorsOutlined,
   DotChartOutlined,
-  ShareAltOutlined,
   LoadingOutlined,
   UserOutlined,
+  CloudUploadOutlined,
 } from '@ant-design/icons-vue'
 import {
+  Attachments,
   Bubble,
   type BubbleListProps,
   type MessageStatus,
@@ -171,9 +128,7 @@ import type { JSX } from 'vue/jsx-runtime'
 import MD from '@/components/md/index.vue'
 import Gap from '@/components/toolkit/Gap.vue'
 import Report from '@/components/report/index.vue'
-import HtmlRenderer from '@/components/html/index.vue'
 import { XStreamBody } from '@/utils/stream'
-import request from '@/utils/request'
 import { ScrollController } from '@/utils/scroll'
 import { useAuthStore } from '@/store/AuthStore'
 import { useMessageStore } from '@/store/MessageStore'
@@ -181,22 +136,24 @@ import { useConversationStore } from '@/store/ConversationStore'
 import { useRoute, useRouter } from 'vue-router'
 import { useConfigStore } from '@/store/ConfigStore'
 import { parseJsonTextStrict } from '@/utils/jsonParser';
-import type { NormalNode } from '@/types/node';
-import type { UploadFile } from '@/types/upload';
+import type { NormalNode, SiteInformation } from '@/types/node';
+import type { MessageState } from '@/types/message';
+import service, { post } from '@/utils/request'
 
 const router = useRouter()
 const route = useRoute()
 const conversationStore = useConversationStore()
-// 会话ID
+// TODO 是否有更好的方式，发送消息之后才启动一个新的会话 
 let convId = route.params.convId as string
 if (!convId) {
   const { key } = conversationStore.newOne()
   router.push(`/chat/${key}`) 
 }
-const uploadFileList = ref<UploadFile[]>([])
 const { useToken } = theme
 const { token } = useToken()
 const username = useAuthStore().token
+
+// 定义消息列表角色配置
 const roles: BubbleListProps['roles'] = {
   ai: {
     placement: 'start',
@@ -224,15 +181,18 @@ const roles: BubbleListProps['roles'] = {
 
 const messageStore = useMessageStore()
 const configStore = useConfigStore()
+
+// 设置当前会话信息
 messageStore.convId = convId
 let current = messageStore.current
 if (!current) {
-  current = reactive({})
+  current = reactive({} as MessageState)
   if (convId) {
     messageStore.currentState[convId] = current
   }
 }
 
+// 处理人类反馈的请求
 const sendResumeStream  =  async(message: string | undefined, onUpdate: (content: any) => void, onError: (error: any) => void): Promise<string> => {
     const xStreamBody = new XStreamBody('/chat/resume', {
           method: 'POST',
@@ -241,24 +201,29 @@ const sendResumeStream  =  async(message: string | undefined, onUpdate: (content
             Accept: 'text/event-stream',
           },
           body: {
-            feed_back_content: message,
-            feed_back: true,
-            thread_id: convId
+            feedback_content: message,
+            feedback: true,
+            session_id: convId,
+            thread_id: current.threadId,
           },
         })
 
         try {
           await xStreamBody.readStream((chunk: any) => {
-            onUpdate(chunk)
+            if (chunk) {
+              messageStore.addReport(chunk)
+            }
+            onUpdate(chunk)            
           })
         } catch (e: any) {
-          console.error(e.statusText)
+          console.error('sendResumeStreamError', e)
           onError(e.statusText)
         }
 
      return xStreamBody.content()
 }
 
+// 处理发送消息的请求
 const sendChatStream = async (message: string | undefined, onUpdate: (content: any) => void, onError: (error: any) => void): Promise<string> => {
   const xStreamBody = new XStreamBody('/chat/stream', {
           method: 'POST',
@@ -268,34 +233,33 @@ const sendChatStream = async (message: string | undefined, onUpdate: (content: a
           },
           body: {
             ...configStore.chatConfig,
+            enable_deepresearch: current.deepResearch,
             query: message,
-            thread_id: convId
+            session_id: convId
           },
         })
 
         try {
           await xStreamBody.readStream((chunk: any) => {
+            if (chunk) {
+              messageStore.addReport(chunk)
+            }
             onUpdate(chunk)
+            
           })
         } catch (e: any) {
-          console.error(e.statusText)
+          console.error('sendChatStream', e)
           onError(e.statusText)
         }
   return xStreamBody.content()
 }
 
+// 定义 agent
+const senderLoading = ref(false)
 const [agent] = useXAgent({
   request: async ({ message }, { onSuccess, onUpdate, onError }) => {
     senderLoading.value = true
-
-    if (!current.deepResearch) {
-      senderLoading.value = false
-      onSuccess(`暂未实现: ${message}`)
-      return
-    }
-
     let content = ''
-
     switch (current.aiType) {
       case 'normal':
       case 'startDS': {
@@ -305,60 +269,6 @@ const [agent] = useXAgent({
 
       case 'onDS': {
         content = await (configStore.chatConfig.auto_accepted_plan ? sendChatStream(message, onUpdate, onError) : sendResumeStream(message, onUpdate, onError))
-        break
-      }
-
-      case 'onDS': {
-        const xStreamBody = new XStreamBody('/chat/resume', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-          },
-          body: {
-            ...configStore.chatConfig,
-            query: message,
-            feed_back: false,
-          },
-        })
-
-        try {
-          await xStreamBody.readStream((chunk: any) => {
-            onUpdate(chunk)
-          })
-        } catch (e: any) {
-          console.error(e.statusText)
-          onError(e.statusText)
-        }
-
-        content = xStreamBody.content()
-        break
-      }
-
-      case 'endDS': {
-        const xStreamBody = new XStreamBody('/chat/resume', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'text/event-stream',
-          },
-          body: {
-            ...configStore.chatConfig,
-            query: message,
-            feed_back: true,
-          },
-        })
-
-        try {
-          await xStreamBody.readStream((chunk: any) => {
-            onUpdate(chunk)
-          })
-        } catch (e: any) {
-          console.error(e.statusText)
-          onError(e.statusText)
-        }
-
-        content = xStreamBody.content()
         break
       }
 
@@ -374,36 +284,19 @@ const [agent] = useXAgent({
     senderLoading.value = false
   },
 })
+
 const { onRequest, messages } = useXChat({
   agent: agent.value,
   requestPlaceholder: 'Waiting...',
   requestFallback: 'Failed return. Please try again later.',
 })
-if (convId) {
-  const his_messages = messageStore.history[convId]
-  console.log('his_messages', his_messages)
-  if (his_messages) {
-    messages.value = [...his_messages]
-  }
-}
-
+// 定义发送消息的内容
 const content = ref('')
-const senderLoading = ref(false)
-
-// HTML 渲染组件相关状态
-const htmlModalVisible = ref(false)
-const htmlChunks = ref<string[]>([])
-const htmlLoading = ref(false)
-const htmlRendererRef = ref(null)
-
 
 const submitHandle = (nextContent: any) => {  
   current.aiType = 'normal'
-  // 如果是深度研究，需要切换到下一个aiType
-  if (current.deepResearch) {
-      messageStore.nextAIType()
-      current.deepResearchDetail = true
-  }
+  messageStore.nextAIType()
+  
   // 自动接受，需要再转为下一个状态
   if(configStore.chatConfig.auto_accepted_plan){
     messageStore.nextAIType()
@@ -413,82 +306,30 @@ const submitHandle = (nextContent: any) => {
   conversationStore.updateTitle(convId, nextContent)
 }
 
+const stopHandle = async () => {
+  // 发送上传请求
+    await post<string>('/chat/stop', {
+      session_id: convId,
+      thread_id: current.threadId,
+    })
+
+    message.success('停止成功')
+
+}
+
 // 开始研究
 function startDeepResearch() {
   messageStore.nextAIType()
   onRequest('开始研究')
 }
 
-// 展示HTML报告
-async function htmlDeepResearch(){
-    // 先打开弹窗
-    htmlModalVisible.value = true
-    htmlLoading.value = true
-    htmlChunks.value = []
-    
-    
-    if(messageStore.htmlReport[convId]){
-      htmlChunks.value = messageStore.htmlReport[convId]
-      htmlLoading.value = false
-      return
-    }
-
-    const xStreamBody = new XStreamBody('/api/reports/build-html?threadId=' + convId, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-        }})
-    let success = true
-    try {
-        await xStreamBody.readStream((chunk: any) => {
-            // 将接收到的HTML片段添加到数组中
-            const chunkNode = JSON.parse(chunk)
-            htmlChunks.value.push(chunkNode.result.output.text)
-        })
-        htmlLoading.value = false
-    } catch (e: any) {
-        console.error(e.statusText)
-        htmlLoading.value = false
-        // 如果出错，可以显示错误信息
-        htmlChunks.value = [`<div style="color: red; padding: 20px;">加载HTML报告时出错: ${e.statusText}</div>`]
-        success = false
-    }
-    // 缓存html报告
-    if(success) {
-        messageStore.htmlReport[convId] = htmlChunks.value
-    }
-    
-}
-
-// 关闭HTML模态框
-function closeHtmlModal() {
-    htmlModalVisible.value = false
-    htmlChunks.value = []
-    htmlLoading.value = false
-}
-
-// 下载报告
-function downDeepResearch(){
-  request({
-    url: '/api/reports/export',
-    method: 'POST',
-    data: {
-      thread_id: convId,
-      format: 'pdf'
-    }
-  }).then((response: any) => {
-    if(response.status === 'success') {
-      window.open(import.meta.env.VITE_BASE_URL + response.report_information.download_url, '_blank')
-    }
-  })
-}
-
-function deepResearch() {
+function openDeepResearch(threadId: string) {
+  current.threadId = threadId
   current.deepResearchDetail = !current.deepResearchDetail
 }
 
-function buildPendingNodeThoughtChain() : any {
+// 构建待处理节点的思考链
+function buildPendingNodeThoughtChain(jsonArray: any[]) : any {
     const items: ThoughtChainProps['items'] = [
         {
           title: '请稍后...',
@@ -505,16 +346,20 @@ function buildPendingNodeThoughtChain() : any {
           </>
         )
 }
+const collapsible = ref(['backgroundInvestigator'])
+const onExpand = (keys: string[]) => {
+  collapsible.value = keys;
+};
 
-let tempJsonArray: any[] = []
+// 构建开始研究的思考链
 function buildStartDSThoughtChain(jsonArray: any[]) : any {
-    // 重置数组
-    if(tempJsonArray.length > 0) {
-      tempJsonArray = []
-    }
-    const { Paragraph, Text } = Typography
+    const { Paragraph } = Typography
     // 获取背景调查节点
-    const backgroundInvestigatorNode = jsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
+    const backgroundInvestigatorNodeArray = jsonArray.filter((item) => item.nodeName === 'background_investigator')
+    if(backgroundInvestigatorNodeArray.length === 0){
+      return buildPendingNodeThoughtChain(jsonArray)
+    }
+    const backgroundInvestigatorNode = backgroundInvestigatorNodeArray[0]
     const results = backgroundInvestigatorNode.siteInformation
     const markdownContent = results.map((result: any, index: number) => {
         return `${index + 1}. [${result.title}](${result.url})\n\n`
@@ -548,34 +393,34 @@ function buildStartDSThoughtChain(jsonArray: any[]) : any {
         description: <i>只需要几分钟就可以准备好</i>,
         footer: (
           <Flex style="margin-left: auto" gap="middle">
-            <Button type="primary">修改方案</Button>
-            <Button type="primary" onClick={startDeepResearch}>开始研究</Button>
+            { messageStore.isEnd(backgroundInvestigatorNode.graphId.thread_id) ? 
+              <Button type="link" >已完成</Button> : <Button type="primary" onClick={startDeepResearch}>开始研究</Button>}
           </Flex>
         ),
         extra: '',
       },
     ]
-    tempJsonArray = jsonArray
     return (
       <>
         这是该主题的研究方案。如果你需要进行更新，请告诉我。
+        <p/>
         <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
-          {/* <h2>{{ msg }}</h2> */}
-          <ThoughtChain items={items} collapsible={{ expandedKeys: ['backgroundInvestigator'] }} />
+          <ThoughtChain items={items} collapsible={{ expandedKeys: collapsible.value, onExpand }} />
         </Card>
       </>
     )
 }
-
-function buildOnDSThoughtChain() : any {
-    if(tempJsonArray.length === 0){
-      return
-    }
-    const { Paragraph, Text } = Typography
+// 构建正在分析结果的思考链
+function buildOnDSThoughtChain(jsonArray: any[]) : any {
+    const { Paragraph } = Typography
     // 获取背景调查节点
-    const backgroundInvestigatorNode = tempJsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
-    const results = backgroundInvestigatorNode.siteInformation
-    const markdownContent = results.map((result: any, index: number) => {
+    const backgroundInvestigatorNodeArray = jsonArray.filter((item) => item.nodeName === 'background_investigator')
+    if(backgroundInvestigatorNodeArray.length === 0){
+      return buildPendingNodeThoughtChain(jsonArray)
+    }
+    const backgroundInvestigatorNode = backgroundInvestigatorNodeArray[0]
+    const results: SiteInformation[] = backgroundInvestigatorNode.siteInformation
+    const markdownContent = results.map((result: SiteInformation, index: number) => {
         return `${index + 1}. [${result.title}](${result.url})\n\n`
     }).join('\n')
     const items: ThoughtChainProps['items'] = [
@@ -604,24 +449,20 @@ function buildOnDSThoughtChain() : any {
     return (
       <>
         这是该主题的研究方案。正在分析结果中...
+        <p/>
         <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
           {/* <h2>{{ msg }}</h2> */}
-          <ThoughtChain items={items} collapsible={{ expandedKeys: ['backgroundInvestigator'] }} />
+          <ThoughtChain items={items} collapsible={{ expandedKeys: collapsible.value, onExpand }} />
         </Card>
       </>
     )
 }
-
-function buildEndDSThoughtChain(jsonArray: any[]): JSX.Element | undefined {
-  if(tempJsonArray.length === 0 && jsonArray.length === 0){
-    return undefined
-  }
-  const curJsonArray = tempJsonArray.length > 0 ? tempJsonArray : jsonArray
-  const { Paragraph, Text } = Typography
+// 构建分析完成的思考链
+function buildEndDSThoughtChain(jsonArray: NormalNode[]): JSX.Element | undefined {
+  const { Paragraph } = Typography
   const items: ThoughtChainProps['items'] = []
-  let collapsible = { }
   // 获取背景调查节点
-  const backgroundInvestigatorNode = curJsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
+  const backgroundInvestigatorNode = jsonArray.filter((item) => item.nodeName === 'background_investigator')[0]
   if(backgroundInvestigatorNode && backgroundInvestigatorNode.siteInformation){
       const results = backgroundInvestigatorNode.siteInformation
       const markdownContent = results.map((result: any, index: number) => {
@@ -642,20 +483,27 @@ function buildEndDSThoughtChain(jsonArray: any[]): JSX.Element | undefined {
           ),
       }
       items.push(item)
-      collapsible = { expandedKeys: ['backgroundInvestigator'] }
   }
-  const completeItem: ThoughtChainItem = {
-      status: 'success',
-      title: '分析结果',
-      icon: <CheckCircleOutlined />,
-      footer: (
-          <Flex style="margin-left: auto" gap="middle">
-            <Button type="primary" onClick={downDeepResearch}>下载报告</Button>
-            <Button type="primary" onClick={htmlDeepResearch}>在线报告</Button>
-          </Flex>
-        ),
+  // 分析结果节点
+  const startNode = jsonArray.filter((item) => item.nodeName === '__START__')[0]
+  const humanFeedbackNode = jsonArray.filter((item) => item.nodeName === 'human_feedback')[0]
+  if(startNode || humanFeedbackNode) {
+    const threadId = startNode ? startNode.graphId.thread_id : humanFeedbackNode.graphId.thread_id
+    const completeItem: ThoughtChainItem = {
+        status: 'success',
+        title: '分析结果',
+        icon: <CheckCircleOutlined />,
+        footer: (
+            <Flex style="margin-left: auto" gap="middle">
+            <Button type="primary" onClick={() => openDeepResearch(threadId)}>
+              { current.deepResearchDetail && current.threadId === threadId ? '关闭' : '打开' }
+            </Button>
+            </Flex>
+          ),
+      }
+      items.push(completeItem)
     }
-  items.push(completeItem)
+  // 完成节点
   const endItem: ThoughtChainItem = {
           title: '完成',
           icon: h(CheckCircleOutlined),
@@ -666,123 +514,229 @@ function buildEndDSThoughtChain(jsonArray: any[]): JSX.Element | undefined {
   return (
     <>
       这是该主题的研究方案已完成，可以点击下载报告
+      <p/>
       <Card style={{ width: '500px', backgroundColor: '#EEF2F8' }}>
-        {/* <h2>{{ msg }}</h2> */}
-        <ThoughtChain items={items} collapsible={collapsible} />
+        <ThoughtChain items={items} collapsible={{expandedKeys: collapsible.value, onExpand}} />
       </Card>
     </>
   )
 }
 
-function parseLoadingMessage(): any{
-    if(current.deepResearch){
-    // 准备开始研究
-    if(current.aiType === 'startDS') {
-      return buildPendingNodeThoughtChain()
-    }
-    if(current.aiType === 'onDS' && configStore.chatConfig.auto_accepted_plan) {
-      return buildPendingNodeThoughtChain()
-    }
-    // 正在研究中
-    if(current.aiType === 'onDS') {
-      return  buildOnDSThoughtChain()
-    }
+// 解析 status = loading 的消息
+function parseLoadingMessage(msg: string): any{
+  // 准备开始研究
+  const jsonArray = parseJsonTextStrict(msg)
+  if(!jsonArray || jsonArray.length === 0){
+    return buildPendingNodeThoughtChain(jsonArray)
   }
-  return buildPendingNodeThoughtChain()
-}
+  // 深度研究模式， 需要设置 threadId 并且 打开 report 面板
+  const coordinatorNode = jsonArray.filter((item) => item.nodeName === 'coordinator')[0];
+  if(coordinatorNode && coordinatorNode.content) {
+    current.threadId = coordinatorNode.graphId.thread_id
+    current.deepResearchDetail = true
+  }
+  const report = messageStore.report[jsonArray[0].graphId.thread_id]
+  if(!report) {
+    return buildPendingNodeThoughtChain(jsonArray)
+  }
+  // 如果已经有数，则渲染思维链
+  const backgroundInvestigatorNode = report.filter((item) => item.nodeName === 'background_investigator')[0]
+  if(backgroundInvestigatorNode) {
+    return buildOnDSThoughtChain(report)
+  }
 
-function parseSuccessMessage(msg: any, isCurrent: boolean) {
+  return buildPendingNodeThoughtChain(jsonArray)
+}
+function findNode(jsonArray: NormalNode[], nodeName: string): NormalNode | undefined {
+  return jsonArray.filter((item) => item.nodeName === nodeName)[0]
+}
+// 解析 status = success 的消息
+function parseSuccessMessage(msg: string) {
     // 解析完整数据
     const jsonArray: NormalNode[] = parseJsonTextStrict(msg)
-    // 历史数据渲染
-    if (current.deepResearch && !isCurrent) {
-      // 研究网站、分析结果、生成报告
-      return <MD content={ '进行下一步处理' } />
+    // 闲聊模式
+    const coordinatorNode = findNode(jsonArray, 'coordinator')
+    if(coordinatorNode && !coordinatorNode.content) {
+      const endNode = findNode(jsonArray, '__END__')
+      return endNode?.content.output
+      }
+    // 用户终止
+    const endNode = findNode(jsonArray, '__END__')
+    if(endNode && endNode.content.reason === '用户终止') {
+      current.deepResearchDetail = false
+      return endNode.content.reason
     }
-    
-    if (current.deepResearch && isCurrent) {
-      // 不启用研究模式，闲聊模式
-      if(jsonArray.filter((item) => item.nodeName === 'coordinator').length > 0) {
-        const coordinatorNode = jsonArray.filter((item) => item.nodeName === 'coordinator')[0];
-        if(!coordinatorNode.content) {
-          return (jsonArray.filter((item) => item.nodeName === '__END__')[0].content as any).output
-        }
-      }
-      if (current.aiType === 'startDS') {
-        // 如果不包含背景调查，则提示用户重新输入
-        if(jsonArray.filter((item) => item.nodeName === 'background_investigator').length === 0) {
-          return <MD content={'未进行背景调查，请重新输入话题进行研究'} />
-        }
-        return buildStartDSThoughtChain(jsonArray)
-      }
-      // 研究完成，TODO 这里应该流为endDS状态
-      if (current.aiType === 'onDS') {
-        return buildEndDSThoughtChain(jsonArray)
-      }
+    // 需要用用户反馈
+    if(!endNode) {
+      return buildStartDSThoughtChain(jsonArray)
+    }
+    // 人类恢复模式 或者 直接 end 模式
+    const humanFeedbackNode = findNode(jsonArray, 'human_feedback')
+    if(humanFeedbackNode || endNode) {
+      return buildEndDSThoughtChain(jsonArray)
     }
 }
 
-function getTargetNode(jsonArray: NormalNode[]): NormalNode | undefined {
-  // TODO: 实现获取目标节点的逻辑
-  return undefined
-}
 
 // 解析消息记录 
 // status === local 表示人类  loading表示stream流正在返回  success表示steram完成返回
 // msg  当status === loading的时候，返回stream流的chunk  当status === success的时候，返回所有chunk的拼接字符串
-// isCurrent  true表示当前消息是最新的，false表示历史消息
-function parseMessage(status: MessageStatus, msg: any, isCurrent: boolean): any {
+function parseMessage(status: MessageStatus, msg: string): any {
   switch (status) {
     // 人类信息
     case 'local':
       return msg
     case 'loading':
-      return parseLoadingMessage()
+      return parseLoadingMessage(msg)
     case 'success':
-      return parseSuccessMessage(msg, isCurrent)
+      return parseSuccessMessage(msg)
       case 'error':
         return msg
     default:
       return ''
   }
 }
-
-function parseFooter(status: MessageStatus, isCurrent: boolean): any {
+// TODO 分享、拷贝、更多操作
+function parseFooter(status: MessageStatus): any {
   switch (status) {
     case 'success':
-      // return (
-      //   <div class="bubble-footer">
-      //     <Flex gap="middle" class={isCurrent ? '' : 'toggle-bubble-footer'}>
-      //       <CopyOutlined />
-      //       <ShareAltOutlined />
-      //       <MoreOutlined />
-      //     </Flex>
-      //   </div>
-      // )
       return ''
     default:
       return ''
   }
 }
-
+// 初始化消息
+if (convId) {
+  const his_messages = messageStore.history[convId]
+  if (his_messages) {
+    messages.value = his_messages as any
+  }
+}
+// 消息列表
 const bubbleList = computed(() => {
-  const len = messages.value.length
+  let isError = false
+  for(const item of messages.value) {
+    if(item.status === 'error') {
+      isError = true
+    }
+  }
+  // 避免异常，导致整个消息列表被覆盖
+  if(isError) {
+    return []
+  }
+
   messageStore.history[convId] = messages.value
-  //  当状态是loading的时候，是每个chunk，然后succes，把之前所有的chunk 全部返回
-  const list =  messages.value.map(({ id, message, status }, idx) => ({
-    key: id,
-    role: status === 'local' ? 'local' : 'ai',
-    content: parseMessage(status, message, idx === len - 1),
-    footer: parseFooter(status, idx === len - 1),
-  }))
-  return list;
+  return messages.value.map(({id, status, message}, idx) => {
+      return {
+        key: idx,
+        role: status === 'local' ? 'local' : 'ai',
+        content: parseMessage(status, message),
+        footer: parseFooter(status),
+      }
+  })
 })
+
+
+const headerOpen = ref(false)
+function handleFileChange({file, fileList}){
+  console.log('handleFileChange', file)
+  if(file.status === 'removed'){
+    messageStore.removeUploadedFile(convId, file.uid)
+    message.success('文件已删除')
+    return
+  }
+  if(file.status === 'done'){
+    const uploadedFile = {
+      uid: file.uid,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      uploadTime: new Date().toISOString(),
+      status: 'success' as const
+    }
+    messageStore.addUploadedFile(convId, uploadedFile)
+    message.success(`${file.name} 上传成功`)
+  }
+}
+// 文件上传前的验证
+function beforeUpload(file: File) {
+  // 检查文件类型
+  const allowedTypes = ['application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/markdown']
+  if (!allowedTypes.includes(file.type)) {
+    message.error('只支持 PDF、TXT、DOC、DOCX、MD 格式的文件')
+    return false
+  }
+
+  // 检查文件大小（限制为 10MB）
+  const maxSize = 10 * 1024 * 1024
+  if (file.size > maxSize) {
+    message.error('文件大小不能超过 10MB')
+    return false
+  }
+
+  return true
+}
+
+// 处理文件上传
+async function handleFileUpload(options: any) {
+  const file = options.file as File
+
+  try {
+    // 构建表单数据
+    const formData = new FormData()
+    formData.append('files', file, file.name)
+    formData.append('session_id', convId)
+
+    // 发送上传请求
+    const res = await service.post('/api/rag/user/batch-upload', formData, {
+      timeout: 30000 // 30秒超时
+    })
+    options.onSuccess?.(res)
+  } catch (error: any) {
+    console.error('文件上传失败:', error)
+    // 根据错误类型显示不同的错误信息
+    let errorMessage = `${file.name} 上传失败`
+    if (error.code === 'ECONNABORTED') {
+      errorMessage += '：请求超时'
+    } else if (error.response?.status === 413) {
+      errorMessage += '：文件过大'
+    } else if (error.response?.status === 415) {
+      errorMessage += '：不支持的文件格式'
+    } else if (error.response?.data?.message) {
+      errorMessage += `：${error.response.data.message}`
+    }
+    message.error(errorMessage)
+    options.onError?.(errorMessage)
+  }
+}
+
+const headerNode = computed(() => {
+  const filesList = messageStore.uploadedFiles?.[convId] || []
+  return (
+
+    <Sender.Header title="上传文件" open={headerOpen.value} onOpenChange={v => headerOpen.value = v}>
+      <Attachments items={filesList} overflow="scrollX" onChange={handleFileChange} beforeUpload={beforeUpload} customRequest={handleFileUpload} placeholder={(type) => type === 'drop'
+              ? {
+                title: '点击或拖拽文件到这里上传',
+              }
+              : {
+                icon: <CloudUploadOutlined />,
+                title: '点击上传文件',
+                description: '支持上传PDF、TXT、DOC、DOCX、MD等文件',
+              }}/>
+    </Sender.Header>
+
+)});
 
 const scrollContainer = ref<Element | any>(null)
 const sc = new ScrollController()
+
+
 onMounted(() => {
   sc.init(scrollContainer)
 })
+
+
 watch(
   () => messages.value,
   (o, n) => {
@@ -792,30 +746,37 @@ watch(
   { deep: true }
 )
 </script>
+
 <style lang="less" scoped>
 .__container_chat_index {
   width: 100%;
   height: 100%;
   box-sizing: border-box;
 
+
   .body {
-    padding: 20px;
+    // padding: 20px;
     height: 100%;
     box-sizing: border-box;
   }
 
-
-
   .chat {
     padding-top: 20px;
+    padding-bottom: 120px;
     height: 100%;
     box-sizing: border-box;
+    position: relative;
+    transition: width 0.3s ease, margin 0.3s ease, padding 0.3s ease;
 
     .bubble-list {
       width: 100%;
       overflow-y: auto;
       min-height: calc(100vh - 280px);
       max-height: calc(100vh - 280px);
+    }
+
+    :deep(.ant-card) {
+      border-radius: 20px;
     }
 
     :deep(.ant-bubble-content-wrapper) {
@@ -859,15 +820,17 @@ watch(
     }
 
     .sender-wrapper {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
       box-sizing: border-box;
       max-width: 750px;
       width: 100%;
+      z-index: 10;
 
       .tag-deep-research {
         cursor: pointer;
-
-        &checked {
-        }
 
         &unchecked {
           background: #fff;

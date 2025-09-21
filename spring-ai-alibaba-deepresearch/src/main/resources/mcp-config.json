@@ -1,22 +1,12 @@
 {
-    "coderAgent": {
-        "mcp-servers": [
-            {
-                "url": "https://mcp.amap.com/?key={AMAP_MAPS_API_KEY}",
-                "sse-endpoint": null,
-                "description": "这是一个高德地图服务",
-                "enabled": true
-            }
-        ]
-    },
     "researchAgent": {
         "mcp-servers": [
             {
-                "url": "https://mcp.amap.com?key=${AI_DASHSCOPE_API_KEY}",
-                "sse-endpoint": null,
+                "url": "https://mcp.amap.com?key=${AMAP_API_KEY}",
+                "sse-endpoint": "/sse",
                 "description": "这是一个高德地图服务",
                 "enabled": false
             }
         ]
     }
-} 
+}

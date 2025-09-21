@@ -42,13 +42,13 @@ public class BusinessKnowledgeRecallService {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	// 根据data_set_id获取智能体字段
+	// Get agent fields by data_set_id
 	public List<BusinessKnowledgeDTO> getFieldByDataSetId(String dataSetId) {
 		return this.jdbcTemplate.query(FIELD_GET_BY_DATASET_IDS, new Object[] { dataSetId }, (rs, rowNum) -> {
 			return new BusinessKnowledgeDTO(rs.getString("business_term"), // businessTerm
 					rs.getString("description"), // description
 					rs.getString("synonyms"), // synonyms
-					rs.getObject("is_recall", boolean.class), // defaultRecall (convert to
+					rs.getObject("is_recall", Boolean.class), // defaultRecall (convert to
 																// Boolean)
 					rs.getString("data_set_id") // datasetId
 			);

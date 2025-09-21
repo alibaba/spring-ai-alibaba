@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.example.deepresearch.model.multiagent;
 
 import org.springframework.ai.chat.client.ChatClient;
 
+import java.util.Map;
+
 /**
  * 智能Agent选择结果
  *
@@ -34,11 +36,19 @@ public class AgentSelectionResult {
 
 	private final String reason;
 
+	private final Map<String, Object> stateUpdate;
+
 	public AgentSelectionResult(ChatClient selectedAgent, AgentType agentType, boolean isSmartAgent, String reason) {
+		this(selectedAgent, agentType, isSmartAgent, reason, Map.of());
+	}
+
+	public AgentSelectionResult(ChatClient selectedAgent, AgentType agentType, boolean isSmartAgent, String reason,
+			Map<String, Object> stateUpdate) {
 		this.selectedAgent = selectedAgent;
 		this.agentType = agentType;
 		this.isSmartAgent = isSmartAgent;
 		this.reason = reason;
+		this.stateUpdate = stateUpdate != null ? stateUpdate : Map.of();
 	}
 
 	public ChatClient getSelectedAgent() {
@@ -55,6 +65,10 @@ public class AgentSelectionResult {
 
 	public String getReason() {
 		return reason;
+	}
+
+	public Map<String, Object> getStateUpdate() {
+		return stateUpdate;
 	}
 
 	@Override

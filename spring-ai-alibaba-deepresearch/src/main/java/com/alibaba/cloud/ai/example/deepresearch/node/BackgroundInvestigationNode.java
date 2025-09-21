@@ -17,21 +17,25 @@
 package com.alibaba.cloud.ai.example.deepresearch.node;
 
 import com.alibaba.cloud.ai.example.deepresearch.config.SmartAgentProperties;
+import com.alibaba.cloud.ai.example.deepresearch.model.SessionHistory;
 import com.alibaba.cloud.ai.example.deepresearch.service.InfoCheckService;
-import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
 import com.alibaba.cloud.ai.example.deepresearch.service.SearchFilterService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SearchInfoService;
+import com.alibaba.cloud.ai.example.deepresearch.service.SessionContextService;
 import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SearchPlatformSelectionService;
-import com.alibaba.cloud.ai.example.deepresearch.util.Multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.AgentIntegrationUtil;
+import com.alibaba.cloud.ai.example.deepresearch.util.multiagent.SmartAgentUtil;
+import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.ToolCallingSearchService;
 import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.SmartAgentSelectionHelperService;
 import com.alibaba.cloud.ai.example.deepresearch.service.multiagent.QuestionClassifierService;
 import com.alibaba.cloud.ai.example.deepresearch.util.StateUtil;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.toolcalling.jinacrawler.JinaCrawlerService;
-import com.alibaba.cloud.ai.toolcalling.searches.SearchEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 
@@ -56,17 +60,22 @@ public class BackgroundInvestigationNode implements NodeAction {
 
 	private final SmartAgentSelectionHelperService smartAgentSelectionHelper;
 
+	private final SessionContextService sessionContextService;
+
 	private final ChatClient backgroundAgent;
 
 	public BackgroundInvestigationNode(JinaCrawlerService jinaCrawlerService, InfoCheckService infoCheckService,
 			SearchFilterService searchFilterService, QuestionClassifierService questionClassifierService,
 			SearchPlatformSelectionService platformSelectionService, SmartAgentProperties smartAgentProperties,
-			ChatClient backgroundAgent) {
-		this.searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService);
+			ChatClient backgroundAgent, SessionContextService sessionContextService,
+			ToolCallingSearchService toolCallingSearchService) {
+		this.searchInfoService = new SearchInfoService(jinaCrawlerService, searchFilterService,
+				toolCallingSearchService);
 		this.infoCheckService = infoCheckService;
 		this.smartAgentSelectionHelper = AgentIntegrationUtil.createSelectionHelper(smartAgentProperties, null,
 				questionClassifierService, platformSelectionService);
 		this.backgroundAgent = backgroundAgent;
+		this.sessionContextService = sessionContextService;
 	}
 
 	@Override
@@ -79,58 +88,57 @@ public class BackgroundInvestigationNode implements NodeAction {
 		assert queries != null && !queries.isEmpty();
 
 		for (String query : queries) {
-			// 如果mutiAgent功能开启且配置了专用搜索平台，则使用智能搜索引擎选择,否则使用默认的通用搜索引擎
-			SearchEnum searchEnum = getSearchEnum(state, query);
-			List<Map<String, String>> results = new ArrayList<>();
+			// 使用统一的智能搜索选择方法
+			SmartAgentUtil.SearchSelectionResult searchSelection = smartAgentSelectionHelper
+				.intelligentSearchSelection(state, query);
+			List<Map<String, String>> results;
 
-			results = searchInfoService.searchInfo(state.value("enable_search_filter", true), searchEnum, query);
-			resultMap.put("site_information", results);
+			// 使用支持工具调用的搜索方法
+			results = searchInfoService.searchInfo(StateUtil.isSearchFilter(state), searchSelection.getSearchEnum(),
+					query, searchSelection.getSearchPlatform());
 			resultsList.add(results);
 		}
+		resultMap.put("site_information", resultsList);
 
-		if (!resultsList.isEmpty()) {
-			List<String> backgroundResults = new ArrayList<>();
-			assert resultsList.size() != queries.size();
+		List<String> backgroundResults = new ArrayList<>();
+		assert resultsList.size() == queries.size();
 
-			for (int i = 0; i < resultsList.size(); i++) {
-				List<Map<String, String>> searchResults = resultsList.get(i);
+		for (int i = 0; i < resultsList.size(); i++) {
+			List<Map<String, String>> searchResults = resultsList.get(i);
 
-				String query = queries.get(i);
+			String query = queries.get(i);
 
-				Message messages = new UserMessage(
-						"搜索问题:" + query + "\n" + "以下是搜索结果：\n\n" + searchResults.stream().map(r -> {
-							return String.format("标题: %s\n权重: %s\n内容: %s\n", r.get("title"), r.get("weight"),
-									r.get("content"));
-						}).collect(Collectors.joining("\n\n")));
+			Message messages = new UserMessage(
+					"搜索问题:" + query + "\n" + "以下是搜索结果：\n\n" + searchResults.stream().map(r -> {
+						return String.format("标题: %s\n权重: %s\n内容: %s\n", r.get("title"), r.get("weight"),
+								r.get("content"));
+					}).collect(Collectors.joining("\n\n")));
 
-				String content = backgroundAgent.prompt().messages(messages).call().content();
-
-				backgroundResults.add(content);
-
-				logger.info("背景调查报告生成已完成: {}", backgroundResults.size());
+			String sessionId = state.value("session_id", String.class).orElse("__default__");
+			List<SessionHistory> reports = sessionContextService.getRecentReports(sessionId);
+			Message lastReportMessage;
+			if (reports != null && !reports.isEmpty()) {
+				lastReportMessage = new AssistantMessage("这是用户前几次使用DeepResearch的报告：\r\n"
+						+ reports.stream().map(SessionHistory::toString).collect(Collectors.joining("\r\n\r\n")));
 			}
-			resultMap.put("background_investigation_results", backgroundResults);
+			else {
+				lastReportMessage = new AssistantMessage("这是用户的第一次询问，因此没有上下文。");
+			}
+
+			String content = backgroundAgent.prompt().messages(lastReportMessage, messages).call().content();
+
+			backgroundResults.add(content);
+
+			logger.info("背景调查报告生成已完成: {}", backgroundResults.size());
 		}
-		else {
-			logger.warn("⚠️ 搜索失败");
-		}
+		resultMap.put("background_investigation_results", backgroundResults);
 
 		String nextStep = "planner";
-		if (!state.value("enable_deepresearch", true)) {
+		if (!StateUtil.isDeepresearch(state)) {
 			nextStep = "reporter";
 		}
 		resultMap.put("background_investigation_next_node", nextStep);
 		return resultMap;
-	}
-
-	/**
-	 * 获取智能选择的搜索引擎
-	 * @param state 全局状态
-	 * @param query 查询内容
-	 * @return 搜索引擎枚举
-	 */
-	private SearchEnum getSearchEnum(OverAllState state, String query) {
-		return smartAgentSelectionHelper.intelligentSearchEngineSelection(state, query);
 	}
 
 }

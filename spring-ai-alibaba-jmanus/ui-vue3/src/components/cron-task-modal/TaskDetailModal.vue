@@ -143,7 +143,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
 import type { CronConfig } from '@/types/cron-task'
 import { PlanActApiService } from '@/api/plan-act-api-service'
@@ -192,7 +192,21 @@ const fetchTemplates = async () => {
   }
 }
 
-onMounted(fetchTemplates)
+// Handle ESC key to close modal
+const handleEscKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && props.modelValue) {
+    emit('update:modelValue', false)
+  }
+}
+
+onMounted(() => {
+  fetchTemplates()
+  document.addEventListener('keydown', handleEscKey)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscKey)
+})
 
 /**
  * Handle click on modal overlay area

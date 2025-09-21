@@ -32,7 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 智能体Schema初始化控制器 处理智能体的数据库Schema初始化到向量存储
+ * Agent Schema Initialization Controller Handles agent's database Schema initialization
+ * to vector storage
  */
 @Controller
 @RequestMapping("/api/agent/{agentId}/schema")
@@ -52,11 +53,12 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 为智能体初始化数据库Schema到向量存储 对应前端页面的"初始化信息源"功能
+	 * Initialize agent's database Schema to vector storage Corresponds to the "Initialize
+	 * Information Source" function on the frontend
 	 */
 	@PostMapping("/init")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> initializeSchema(@PathVariable Long agentId,
+	public ResponseEntity<Map<String, Object>> initializeSchema(@PathVariable(value = "agentId") Long agentId,
 			@RequestBody Map<String, Object> requestData) {
 
 		Map<String, Object> response = new HashMap<>();
@@ -64,11 +66,11 @@ public class AgentSchemaController {
 		try {
 			log.info("Initializing schema for agent: {}", agentId);
 
-			// 从请求中提取数据源ID和表列表
+			// Extract data source ID and table list from request
 			Integer datasourceId = null;
 			List<String> tables = null;
 
-			// 尝试从不同的请求格式中提取数据
+			// Try to extract data from different request formats
 			if (requestData.containsKey("datasourceId")) {
 				datasourceId = (Integer) requestData.get("datasourceId");
 			}
@@ -83,7 +85,7 @@ public class AgentSchemaController {
 				tables = (List<String>) requestData.get("tables");
 			}
 
-			// 验证请求参数
+			// Validate request parameters
 			if (datasourceId == null) {
 				response.put("success", false);
 				response.put("message", "数据源ID不能为空");
@@ -96,7 +98,7 @@ public class AgentSchemaController {
 				return ResponseEntity.badRequest().body(response);
 			}
 
-			// 执行Schema初始化
+			// Execute Schema initialization
 			Boolean result = agentVectorService.initializeSchemaForAgentWithDatasource(agentId, datasourceId, tables);
 
 			if (result) {
@@ -125,11 +127,11 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 获取智能体的向量存储统计信息
+	 * Get agent's vector storage statistics
 	 */
 	@GetMapping("/statistics")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> getVectorStatistics(@PathVariable Long agentId) {
+	public ResponseEntity<Map<String, Object>> getVectorStatistics(@PathVariable(value = "agentId") Long agentId) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
@@ -149,11 +151,11 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 清空智能体的所有向量数据
+	 * Clear all vector data of agent
 	 */
 	@DeleteMapping("/clear")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> clearVectorData(@PathVariable Long agentId) {
+	public ResponseEntity<Map<String, Object>> clearVectorData(@PathVariable(value = "agentId") Long agentId) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
@@ -178,11 +180,11 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 获取智能体配置的数据源列表
+	 * Get list of data sources configured for agent
 	 */
 	@GetMapping("/datasources")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> getAgentDatasources(@PathVariable Long agentId) {
+	public ResponseEntity<Map<String, Object>> getAgentDatasources(@PathVariable(value = "agentId") Long agentId) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
@@ -208,11 +210,12 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 获取数据源的表列表
+	 * Get table list of data source
 	 */
 	@GetMapping("/datasources/{datasourceId}/tables")
 	@ResponseBody
-	public ResponseEntity<Map<String, Object>> getDatasourceTables(@PathVariable Integer datasourceId) {
+	public ResponseEntity<Map<String, Object>> getDatasourceTables(
+			@PathVariable(value = "datasourceId") Integer datasourceId) {
 		Map<String, Object> response = new HashMap<>();
 
 		try {
@@ -238,11 +241,12 @@ public class AgentSchemaController {
 	}
 
 	/**
-	 * 智能体聊天接口 - 流式响应 直接调用Nl2sqlForGraphController的streamSearch方法
+	 * Agent chat interface - Streaming response Directly call streamSearch method of
+	 * Nl2sqlForGraphController
 	 */
 	@PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	@ResponseBody
-	public Flux<ServerSentEvent<String>> agentChat(@PathVariable Long agentId,
+	public Flux<ServerSentEvent<String>> agentChat(@PathVariable(value = "agentId") Long agentId,
 			@RequestBody Map<String, Object> requestData, HttpServletResponse response) {
 
 		try {
@@ -255,8 +259,10 @@ public class AgentSchemaController {
 
 			log.info("Agent {} chat request: {}", agentId, query);
 
-			// 直接调用Nl2sqlForGraphController的streamSearch方法
-			return nl2sqlForGraphController.streamSearch(query.trim(), String.valueOf(agentId), response);
+			// Directly call streamSearch method of Nl2sqlForGraphController
+			// 生成一个threadId用于图执行
+			String threadId = String.valueOf(System.currentTimeMillis());
+			return nl2sqlForGraphController.streamSearch(query.trim(), String.valueOf(agentId), threadId, response);
 
 		}
 		catch (Exception e) {

@@ -1,0 +1,29 @@
+{
+  "name": "main",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "cross-env DID_YOU_KNOW=none umi build",
+    "dev": "cross-env DID_YOU_KNOW=none umi dev",
+    "postinstall": "umi setup",
+    "setup": "umi setup",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "eventemitter3": "^5.0.1",
+    "@spark-ai/flow": "0.0.13",
+    "react-resizable-panels": "^0.0.63",
+    "ahooks": "3.8.1",
+    "classnames": "^2.5.1",
+    "copy-to-clipboard": "^3.3.3",
+    "dayjs": "^1.11.13",
+    "react-error-boundary": "^6.0.0",
+    "umi": "^4.3.8"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.33",
+    "@types/react-dom": "^18.0.11",
+    "@umijs/plugins": "^4.4.6",
+    "tailwindcss": "^3",
+    "typescript": "^5.0.3"
+  }
+}

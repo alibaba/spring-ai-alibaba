@@ -168,23 +168,23 @@ public class BaseNl2SqlService {
 	}
 
 	/**
-	 * 将问题扩展为多个不同表述的问题变体
-	 * @param query 原始问题
-	 * @return 包含原始问题和扩展问题的列表
+	 * Expand question into multiple differently expressed question variants
+	 * @param query original question
+	 * @return list containing original question and expanded questions
 	 */
 	public List<String> expandQuestion(String query) {
 		logger.info("Starting question expansion for query: {}", query);
 		try {
-			// 构建问题扩展提示词
+			// Build question expansion prompt
 			Map<String, Object> params = new HashMap<>();
 			params.put("question", query);
 			String prompt = getQuestionExpansionPromptTemplate().render(params);
 
-			// 调用LLM获取扩展问题
+			// Call LLM to get expanded questions
 			logger.debug("Calling LLM for question expansion");
 			String content = aiService.call(prompt);
 
-			// 解析JSON响应
+			// Parse JSON response
 			List<String> expandedQuestions = new Gson().fromJson(content, new TypeToken<List<String>>() {
 			}.getType());
 
@@ -204,19 +204,19 @@ public class BaseNl2SqlService {
 	}
 
 	/**
-	 * 抽取证据
+	 * Extract evidence
 	 */
 	public List<String> extractEvidences(String query) {
 		return extractEvidences(query, null);
 	}
 
 	/**
-	 * 抽取证据 - 支持智能体隔离
+	 * Extract evidence - supports agent isolation
 	 */
 	public List<String> extractEvidences(String query, String agentId) {
 		logger.debug("Extracting evidences for query: {} with agentId: {}", query, agentId);
 		List<Document> evidenceDocuments;
-		if (agentId != null) {
+		if (agentId != null && !agentId.trim().isEmpty()) {
 			evidenceDocuments = vectorStoreService.getDocumentsForAgent(agentId, query, "evidence");
 		}
 		else {
@@ -301,7 +301,7 @@ public class BaseNl2SqlService {
 
 		String newSql = "";
 		if (sql != null && !sql.isEmpty()) {
-			// 使用专业的SQL错误修复提示词
+			// Use professional SQL error repair prompt
 			logger.debug("Using SQL error fixer for existing SQL: {}", sql);
 			String errorFixerPrompt = PromptHelper.buildSqlErrorFixerPrompt(query, dbConfig, schemaDTO, evidenceList,
 					sql, exceptionMessage);
@@ -309,7 +309,7 @@ public class BaseNl2SqlService {
 			logger.info("SQL error fixing completed");
 		}
 		else {
-			// 正常的SQL生成流程
+			// Normal SQL generation process
 			logger.debug("Generating new SQL from scratch");
 			List<String> prompts = PromptHelper.buildMixSqlGeneratorPrompt(query, dbConfig, schemaDTO, evidenceList);
 			newSql = aiService.callWithSystemPrompt(prompts.get(0), prompts.get(1));
@@ -378,9 +378,11 @@ public class BaseNl2SqlService {
 				}.getType());
 			}
 			catch (Exception e) {
-				// 某些场景会提示异常，如：java.lang.IllegalStateException:
-				// 请提供数据库schema信息以便我能够根据您的问题筛选出相关的表。
-				// TODO 目前异常接口直接返回500，未返回向异常常信息，后续优化将异常返回给用户
+				// Some scenarios may prompt exceptions, such as:
+				// java.lang.IllegalStateException:
+				// Please provide database schema information so I can filter relevant
+				// tables based on your question.
+				// TODO 目前异常接口直接返回500，未返回异常信息，后续优化将异常返回给用户
 				logger.error("Failed to parse fine selection response: {}", jsonContent, e);
 				throw new IllegalStateException(jsonContent);
 			}

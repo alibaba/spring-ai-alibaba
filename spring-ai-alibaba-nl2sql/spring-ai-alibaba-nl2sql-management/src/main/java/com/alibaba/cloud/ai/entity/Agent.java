@@ -18,33 +18,38 @@ package com.alibaba.cloud.ai.entity;
 import java.time.LocalDateTime;
 
 /**
- * 智能体实体类
+ * Agent Entity Class
  */
 public class Agent {
 
 	private Long id;
 
-	private String name; // 智能体名称
+	private String name; // Agent name
 
-	private String description; // 智能体描述
+	private String description; // Agent description
 
-	private String avatar; // 头像URL
+	private String avatar; // Avatar URL
 
-	private String status; // 状态：draft-待发布，published-已发布，offline-已下线
+	private String status; // Status: draft-pending publication, published-published,
+							// offline-offline
 
-	private String prompt; // 自定义Prompt配置
+	private String prompt; // Custom Prompt configuration
 
-	private String category; // 分类
+	private String category; // Category
 
-	private Long adminId; // 管理员ID
+	private Long adminId; // Admin ID
 
-	private String tags; // 标签，逗号分隔
+	private String tags; // Tags, comma separated
 
 	private LocalDateTime createTime;
 
 	private LocalDateTime updateTime;
 
+	// Whether human review is enabled for this agent
+	private Integer humanReviewEnabled; // 0/1 for JDBC compatibility
+
 	public Agent() {
+		this.humanReviewEnabled = 0; // 默认禁用人工复核
 	}
 
 	public Agent(String name, String description, String avatar, String status, String prompt, String category,
@@ -59,6 +64,7 @@ public class Agent {
 		this.tags = tags;
 		this.createTime = LocalDateTime.now();
 		this.updateTime = LocalDateTime.now();
+		this.humanReviewEnabled = 0; // 默认禁用人工复核
 	}
 
 	// Getters and Setters
@@ -148,6 +154,14 @@ public class Agent {
 
 	public void setUpdateTime(LocalDateTime updateTime) {
 		this.updateTime = updateTime;
+	}
+
+	public Integer getHumanReviewEnabled() {
+		return humanReviewEnabled;
+	}
+
+	public void setHumanReviewEnabled(Integer humanReviewEnabled) {
+		this.humanReviewEnabled = humanReviewEnabled;
 	}
 
 	@Override

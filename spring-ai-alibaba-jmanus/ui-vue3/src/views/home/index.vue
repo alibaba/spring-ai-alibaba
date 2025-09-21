@@ -34,7 +34,7 @@
             <img src="/Java-AI.svg" alt="JManus" class="java-logo" />
             <h1>JManus</h1>
           </div>
-                      <span class="tagline">{{ $t('home.tagline') }}</span>
+          <span class="tagline">{{ $t('home.tagline') }}</span>
         </div>
       </header>
 
@@ -52,12 +52,12 @@
           <div class="input-section">
             <div class="input-container">
               <textarea
-                v-model="userInput"
-                ref="textareaRef"
-                class="main-input"
-                :placeholder="$t('home.inputPlaceholder')"
-                @keydown="handleKeydown"
-                @input="adjustTextareaHeight"
+                  v-model="userInput"
+                  ref="textareaRef"
+                  class="main-input"
+                  :placeholder="$t('home.inputPlaceholder')"
+                  @keydown="handleKeydown"
+                  @input="adjustTextareaHeight"
               ></textarea>
               <button class="send-button" :disabled="!userInput.trim()" @click="handleSend">
                 <Icon icon="carbon:send-alt" />
@@ -69,8 +69,8 @@
             <div class="examples-grid">
               <div v-for="item in allCards" :key="item.title" class="card-with-type">
                 <BlurCard
-                  :content="item"
-                  @clickCard="handleCardClick(item)"
+                    :content="item"
+                    @clickCard="handleCardClick(item)"
                 />
                 <span class="card-type">{{ item.type }}</span>
               </div>
@@ -87,8 +87,8 @@ import { ref, nextTick, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import BlurCard from '@/components/blurCard/index.vue'
-import LanguageSwitcher from '@/components/language-switcher/index.vue'
+import BlurCard from '@/components/blurCard/BlurCard.vue'
+import LanguageSwitcher from '@/components/language-switcher/LanguageSwitcher.vue'
 import { useTaskStore } from '@/stores/task'
 
 const router = useRouter()
@@ -115,10 +115,11 @@ const examples = computed(() => [
   { title: t('home.examples.weather.title'), type: 'message', description: t('home.examples.weather.description'), icon: 'carbon:partly-cloudy', prompt: t('home.examples.weather.prompt') }
 ])
 const plans = computed(() => [
-  { title: t('home.examples.queryplan.title'), type: 'plan-act', description: t('home.examples.queryplan.description'), icon: 'carbon:plan', prompt: t('home.examples.queryplan.prompt'), planJson: { planType: 'simple', title: t('home.examples.queryplan.planTitle'), steps: [{ stepRequirement: t('home.examples.queryplan.step1'), terminateColumns: t('home.examples.queryplan.step1Output') }, { stepRequirement: t('home.examples.queryplan.step2'), terminateColumns: t('home.examples.queryplan.step2Output') }], planId: 'planTemplate-1749200517403' } },
-  { title: t('home.examples.ainovel.title'), type: 'plan-act', description: t('home.examples.ainovel.description'), icon: 'carbon:document-tasks', prompt: t('home.examples.ainovel.prompt'), planJson: { planType: 'simple', title: t('home.examples.ainovel.planTitle'), steps: [{ stepRequirement: t('home.examples.ainovel.step1'), terminateColumns: t('home.examples.ainovel.step1Output') }, { stepRequirement: t('home.examples.ainovel.step2'), terminateColumns: t('home.examples.ainovel.step2Output') }], planId: 'planTemplate-1753622676988' } }
+  { title: t('home.examples.queryplan.title'), type: 'plan-act', description: t('home.examples.queryplan.description'), icon: 'carbon:plan', prompt: t('home.examples.queryplan.prompt'), planJson: { planType: 'simple', title: t('home.examples.queryplan.planTitle'), steps: [{ stepRequirement: t('home.examples.queryplan.step1'), terminateColumns: t('home.examples.queryplan.step1Output') }, { stepRequirement: t('home.examples.queryplan.step2'), terminateColumns: t('home.examples.queryplan.step2Output') }], planTemplateId: 'planTemplate-1749200517403' } },
+  { title: t('home.examples.ainovel.title'), type: 'plan-act', description: t('home.examples.ainovel.description'), icon: 'carbon:document-tasks', prompt: t('home.examples.ainovel.prompt'), planJson: { planType: 'simple', title: t('home.examples.ainovel.planTitle'), steps: [{ stepRequirement: t('home.examples.ainovel.step1'), terminateColumns: t('home.examples.ainovel.step1Output') }, { stepRequirement: t('home.examples.ainovel.step2'), terminateColumns: t('home.examples.ainovel.step2Output') }], planTemplateId: 'planTemplate-1753622676988' } },
+  { title: t('home.examples.formInputDemo.title'), type: 'plan-act', description: t('home.examples.formInputDemo.description'), icon: 'carbon:watson', prompt: t('home.examples.formInputDemo.prompt'), planJson: { planType: 'simple', title: t('home.examples.formInputDemo.planTitle'), steps: [{ stepRequirement: t('home.examples.formInputDemo.step1'), terminateColumns: t('home.examples.formInputDemo.step1Output') }, { stepRequirement: t('home.examples.formInputDemo.step2'), terminateColumns: t('home.examples.formInputDemo.step2Output') }, { stepRequirement: t('home.examples.formInputDemo.step3'), terminateColumns: t('home.examples.formInputDemo.step3Output') }], planTemplateId: 'planTemplate-forminput-demo-2025' } }
 ])
-const allCards = computed(() => [...examples.value, ...plans.value])
+const allCards = computed(() => [...examples.value,  ...plans.value])
 
 const handleCardClick = (item: any) => {
   if (item.type === 'message') {
@@ -142,7 +143,7 @@ import { sidebarStore } from '@/stores/sidebar'
 
 const saveJsonPlanToTemplate = async (jsonPlan: any) => {
   try {
-    sidebarStore.createNewTemplate();
+    sidebarStore.createNewTemplate(jsonPlan.planType);
     sidebarStore.jsonContent = JSON.stringify(jsonPlan);
     const saveResult = await sidebarStore.saveTemplate();
     if (saveResult?.duplicate) {
@@ -152,9 +153,12 @@ const saveJsonPlanToTemplate = async (jsonPlan: any) => {
     } else if (saveResult?.message) {
       console.log('[Sidebar] ' + t('sidebar.saveStatus', { message: saveResult.message }));
     }
+    return saveResult; // Return the save result
   } catch (error: any) {
     console.error('[Sidebar] Failed to save the plan to the template library:', error);
+    // Note: This would need toast import if used in this context
     alert(error.message || t('sidebar.saveFailed'));
+    throw error; // Re-throw the error
   }
 }
 
@@ -231,8 +235,8 @@ const selectPlan = async (plan: any) => {
 
   try {
     // 1. First, save the plan to the template library
-    await saveJsonPlanToTemplate(plan.planJson)
-    console.log('[Home] Plan saved to templates')
+    const saveResult = await saveJsonPlanToTemplate(plan.planJson)
+    console.log('[Home] Plan saved to templates, saveResult:', saveResult)
 
     // 2. Navigate to the direct page
     const chatId = Date.now().toString()
@@ -258,10 +262,12 @@ const selectPlan = async (plan: any) => {
       await sidebarStore.loadPlanTemplateList()
       console.log('[Sidebar] Template list loaded')
 
-      // Find and select the template
-      const template = sidebarStore.planTemplateList.find(t => t.id === plan.planJson.planId)
+      // Find and select the template - use the updated ID from saveResult or fallback to original
+      const templateId = saveResult?.planId || plan.planJson.planTemplateId
+      const template = sidebarStore.planTemplateList.find(t => t.id === templateId)
       if (!template) {
-        console.error('[Sidebar] Template not found')
+        console.error('[Sidebar] Template not found for ID:', templateId)
+        console.log('[Sidebar] Available templates:', sidebarStore.planTemplateList.map(t => t.id))
         return
       }
 

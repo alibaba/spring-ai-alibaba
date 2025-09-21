@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-deepresearch</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.0-SNAPSHOT</version>
     <name>Spring AI Alibaba Deep Research</name>
 
     <properties>
@@ -13,7 +13,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spring-boot.version>3.4.5</spring-boot.version>
+        <spring-boot.version>3.4.8</spring-boot.version>
 
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <moditect-maven-plugin.version>1.2.0.Final</moditect-maven-plugin.version>
@@ -21,11 +21,12 @@
         <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
-        <spring-ai.version>1.0.0</spring-ai.version>
-        <spring-ai-alibaba.version>1.0.0.3-SNAPSHOT</spring-ai-alibaba.version>
+        <spring-ai.version>1.0.1</spring-ai.version>
+        <spring-ai-alibaba.version>1.0.0.4-SNAPSHOT</spring-ai-alibaba.version>
 
-        <openhtmltopdf.version>1.0.10</openhtmltopdf.version>
+        <openhtmltopdf.version>1.1.30</openhtmltopdf.version>
         <commonmark.version>0.24.0</commonmark.version>
+        <pdfbox.version>3.0.4</pdfbox.version>
 
         <!-- CheckStyle Maven Plugin -->
         <maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
@@ -39,6 +40,10 @@
 
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-tika-document-reader</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
@@ -82,6 +87,46 @@
             <version>${spring-ai-alibaba.version}</version>
         </dependency>
 
+        <!-- 学术研究工具调用 -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-openalex</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+        </dependency>
+
+        <!-- 旅游生活工具调用 -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-opentripmap</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-tripadvisor</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+        </dependency>
+
+        <!-- 百科知识工具调用 -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-wikipedia</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+        </dependency>
+
+        <!-- 数据分析工具调用 -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-worldbankdata</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-tool-calling-googlescholar</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.apache.httpcomponents.core5</groupId>
             <artifactId>httpcore5-h2</artifactId>
@@ -104,10 +149,6 @@
             <artifactId>spring-ai-starter-vector-store-elasticsearch</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-tika-document-reader</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -115,19 +156,25 @@
         </dependency>
 
         <dependency>
-            <groupId>com.openhtmltopdf</groupId>
+            <groupId>io.github.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-core</artifactId>
             <version>${openhtmltopdf.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>com.openhtmltopdf</groupId>
+            <groupId>io.github.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-pdfbox</artifactId>
             <version>${openhtmltopdf.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>pdfbox</artifactId>
+                    <groupId>org.apache.pdfbox</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
-            <groupId>com.openhtmltopdf</groupId>
+            <groupId>io.github.openhtmltopdf</groupId>
             <artifactId>openhtmltopdf-slf4j</artifactId>
             <version>${openhtmltopdf.version}</version>
         </dependency>
@@ -181,6 +228,16 @@
     </dependencies>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>pdfbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pdfbox</groupId>
+                <artifactId>xmpbox</artifactId>
+                <version>${pdfbox.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>

@@ -83,6 +83,32 @@ check_directories() {
     log_success "Directory structure check completed"
 }
 
+# Clean frontend project before build
+clean_frontend_build() {
+    log_info "Cleaning frontend build artifacts..."
+
+    cd "$PROJECT_ROOT/ui-vue3"
+
+    # Clean build artifacts
+    if [ -d "ui" ]; then
+        log_info "Removing existing build directory (ui)..."
+        rm -rf ui
+    fi
+
+    if [ -d "dist" ]; then
+        log_info "Removing existing dist directory..."
+        rm -rf dist
+    fi
+
+    # Clean other potential build artifacts
+    if [ -d ".vite" ]; then
+        log_info "Removing .vite cache directory..."
+        rm -rf .vite
+    fi
+
+    log_success "Frontend build artifacts cleaned"
+}
+
 # Build frontend project
 build_frontend() {
     log_info "Starting frontend project build..."
@@ -94,6 +120,9 @@ build_frontend() {
         log_warning "node_modules does not exist, installing dependencies..."
         pnpm install
     fi
+
+    # Clean before build
+    clean_frontend_build
 
     # Run build command
     log_info "Running pnpm run build..."
@@ -117,9 +146,9 @@ clean_static_directory() {
     # Create directory (if it doesn't exist)
     mkdir -p "$STATIC_DIR"
 
-    # Clear directory contents
+    # Simply remove all files from static directory
     if [ "$(ls -A $STATIC_DIR)" ]; then
-        log_warning "Deleting existing files in $STATIC_DIR..."
+        log_info "Removing existing files from $STATIC_DIR..."
         rm -rf "$STATIC_DIR"/*
         log_success "Static resources directory cleared"
     else
@@ -153,6 +182,90 @@ copy_build_files() {
     fi
 }
 
+# Auto-resolve git conflicts and stage changes
+auto_resolve_git_conflicts() {
+    log_info "Auto-resolving git conflicts and staging changes..."
+    
+    cd "$PROJECT_ROOT"
+    
+    # Check if we're in a git repository
+    if [ ! -d ".git" ]; then
+        log_info "Not in a git repository, skipping git operations"
+        return
+    fi
+    
+    # Check for merge conflicts
+    local conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
+    if [ -n "$conflicted_files" ]; then
+        log_warning "Found conflicted files, resolving automatically..."
+        
+        # For UI files, we want to keep the new version (ours)
+        echo "$conflicted_files" | while read -r file; do
+            if [[ "$file" == src/main/resources/static/ui/* ]]; then
+                log_info "Resolving conflict for UI file: $file"
+                # Try to resolve by keeping our version
+                git checkout --ours "$file" 2>/dev/null || true
+                git add "$file" 2>/dev/null || true
+            fi
+        done
+        
+        # Try to complete the merge if we're in merge state
+        if [ -f ".git/MERGE_HEAD" ]; then
+            if git commit --no-edit 2>/dev/null; then
+                log_success "Successfully resolved and committed merge conflicts"
+            else
+                log_warning "Could not auto-commit merge resolution"
+            fi
+        fi
+    fi
+    
+    # Add all new UI files
+    log_info "Adding new UI files to git..."
+    git add "src/main/resources/static/ui/" 2>/dev/null || true
+    
+    # Remove deleted UI files from git tracking
+    local deleted_files=$(git ls-files --deleted 2>/dev/null | grep "src/main/resources/static/ui/" || true)
+    if [ -n "$deleted_files" ]; then
+        log_info "Removing deleted UI files from git tracking..."
+        echo "$deleted_files" | while read -r file; do
+            git rm "$file" 2>/dev/null || true
+        done
+    fi
+    
+    # Check if there are staged changes
+    if [ -n "$(git diff --cached --name-only 2>/dev/null || true)" ]; then
+        log_info "Changes staged successfully"
+    else
+        log_info "No changes to stage"
+    fi
+}
+
+# Commit UI changes to git
+commit_ui_changes() {
+    log_info "Committing UI changes to git..."
+    
+    cd "$PROJECT_ROOT"
+    
+    # Check if we're in a git repository
+    if [ ! -d ".git" ]; then
+        log_info "Not in a git repository, skipping git commit"
+        return
+    fi
+    
+    # Check if there are staged changes
+    if [ -n "$(git diff --cached --name-only 2>/dev/null || true)" ]; then
+        # Commit with a descriptive message
+        local commit_message="Update UI build files - $(date '+%Y-%m-%d %H:%M:%S')"
+        if git commit -m "$commit_message" 2>/dev/null; then
+            log_success "Successfully committed UI changes: $commit_message"
+        else
+            log_warning "Could not commit UI changes"
+        fi
+    else
+        log_info "No staged changes to commit"
+    fi
+}
+
 # Show build summary
 show_summary() {
     log_success "=== Build Completed ==="
@@ -176,6 +289,8 @@ main() {
     build_frontend
     clean_static_directory
     copy_build_files
+    auto_resolve_git_conflicts
+    commit_ui_changes
     show_summary
 
     log_success "All steps completed!"
