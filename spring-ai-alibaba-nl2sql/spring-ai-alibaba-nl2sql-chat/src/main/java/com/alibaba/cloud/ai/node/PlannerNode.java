@@ -61,10 +61,6 @@ public class PlannerNode implements NodeAction {
 		String processedQuery = StateUtils.getStringValue(state, QUERY_REWRITE_NODE_OUTPUT, input);
 		logger.info("Using processed query for planning: {}", processedQuery);
 
-		// load prompt template
-		String businessKnowledgePrompt = (String) state.value(BUSINESS_KNOWLEDGE).orElse("");
-		String semanticModelPrompt = (String) state.value(SEMANTIC_MODEL).orElse("");
-
 		// 是否为NL2SQL模式
 		Boolean onlyNl2sql = state.value(IS_ONLY_NL2SQL, false);
 
@@ -84,7 +80,7 @@ public class PlannerNode implements NodeAction {
 		String schemaStr = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
 
 		// 构建用户提示
-		String userPrompt = buildUserPrompt(input, validationError, state);
+		String userPrompt = buildUserPrompt(processedQuery, validationError, state);
 
 		// 构建模板参数
 		Map<String, Object> params = Map.of("user_question", userPrompt, "schema", schemaStr, "business_knowledge",
