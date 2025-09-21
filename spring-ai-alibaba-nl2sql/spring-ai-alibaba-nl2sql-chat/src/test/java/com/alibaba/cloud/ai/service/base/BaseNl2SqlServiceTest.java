@@ -113,13 +113,15 @@ class BaseNl2SqlServiceTest {
 
 		// Mock 依赖方法的返回值
 		List<String> mockEvidences = Arrays.asList("evidence1", "evidence2");
-		when(vectorStoreService.getDocuments(eq(query), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
+		when(vectorStoreService.getDocuments(anyString(), eq("evidence")))
+			.thenReturn(createMockDocuments(mockEvidences));
 
 		SchemaDTO mockSchemaDTO = createMockSchemaDTO();
 		when(schemaService.mixRag(anyString(), anyList())).thenReturn(mockSchemaDTO);
-		when(aiService.call(anyString())).thenReturn("[\"keyword1\", \"keyword2\"]")
-			.thenReturn("[]")
-			.thenReturn("需求类型：正常查询\n需求内容：" + expectedRewrittenQuery);
+		when(aiService.call(anyString())).thenReturn(query) // processTimeExpressions
+			.thenReturn("[\"keyword1\", \"keyword2\"]") // extractKeywords
+			.thenReturn("[]") // fineSelect
+			.thenReturn("需求类型：正常查询\n需求内容：" + expectedRewrittenQuery); // buildRewritePrompt
 
 		// Execute test
 		String result = baseNl2SqlService.rewrite(query);
@@ -128,7 +130,7 @@ class BaseNl2SqlServiceTest {
 		assertEquals(expectedRewrittenQuery, result);
 
 		// Verify method call
-		verify(vectorStoreService, times(1)).getDocuments(eq(query), eq("evidence"));
+		verify(vectorStoreService, times(1)).getDocuments(anyString(), eq("evidence"));
 		verify(aiService, atLeastOnce()).call(anyString());
 
 		log.info("Rewrite test passed with result: {}", result);
@@ -142,11 +144,13 @@ class BaseNl2SqlServiceTest {
 
 		// Mock 依赖方法的返回值
 		List<String> mockEvidences = Arrays.asList("evidence1");
-		when(vectorStoreService.getDocuments(eq(query), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
+		when(vectorStoreService.getDocuments(anyString(), eq("evidence")))
+			.thenReturn(createMockDocuments(mockEvidences));
 
 		SchemaDTO mockSchemaDTO = createMockSchemaDTO();
 		when(schemaService.mixRag(anyString(), anyList())).thenReturn(mockSchemaDTO);
-		when(aiService.call(anyString())).thenReturn("[\"greeting\"]") // extractKeywords
+		when(aiService.call(anyString())).thenReturn(query) // processTimeExpressions
+			.thenReturn("[\"greeting\"]") // extractKeywords
 			.thenReturn("[]") // fineSelect
 			.thenReturn("需求类型：《自由闲聊》\n需求内容：用户问好"); // buildRewritePrompt
 
@@ -167,11 +171,13 @@ class BaseNl2SqlServiceTest {
 
 		// Mock 依赖方法的返回值
 		List<String> mockEvidences = Arrays.asList("evidence1");
-		when(vectorStoreService.getDocuments(eq(query), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
+		when(vectorStoreService.getDocuments(anyString(), eq("evidence")))
+			.thenReturn(createMockDocuments(mockEvidences));
 
 		SchemaDTO mockSchemaDTO = createMockSchemaDTO();
 		when(schemaService.mixRag(anyString(), anyList())).thenReturn(mockSchemaDTO);
-		when(aiService.call(anyString())).thenReturn("[\"unclear\"]") // extractKeywords
+		when(aiService.call(anyString())).thenReturn(query) // processTimeExpressions
+			.thenReturn("[\"unclear\"]") // extractKeywords
 			.thenReturn("[]") // fineSelect
 			.thenReturn("需求类型：《需要澄清》\n需求内容：需要更多信息"); // buildRewritePrompt
 
@@ -192,11 +198,14 @@ class BaseNl2SqlServiceTest {
 
 		// Mock 依赖方法的返回值
 		List<String> mockEvidences = Arrays.asList("evidence1", "evidence2");
-		when(vectorStoreService.getDocuments(eq(query), eq("evidence"))).thenReturn(createMockDocuments(mockEvidences));
+		when(vectorStoreService.getDocuments(anyString(), eq("evidence")))
+			.thenReturn(createMockDocuments(mockEvidences));
 
 		SchemaDTO mockSchemaDTO = createMockSchemaDTO();
 		when(schemaService.mixRag(anyString(), anyList())).thenReturn(mockSchemaDTO);
-		when(aiService.call(anyString())).thenReturn("[\"keyword1\", \"keyword2\"]");
+		when(aiService.call(anyString())).thenReturn(query) // processTimeExpressions
+			.thenReturn("[\"keyword1\", \"keyword2\"]") // extractKeywords
+			.thenReturn("[]"); // fineSelect
 
 		Flux<ChatResponse> mockFlux = Flux.just(chatResponse);
 		when(aiService.streamCall(anyString())).thenReturn(mockFlux);
@@ -467,7 +476,6 @@ class BaseNl2SqlServiceTest {
 		// Configure DbConfig Mock
 		when(dbConfig.getDialectType()).thenReturn("mysql");
 
-		when(aiService.call(anyString())).thenReturn("[\"2024-01-01\"]");
 		when(aiService.callWithSystemPrompt(anyString(), anyString())).thenReturn("```sql\n" + expectedSql + "\n```");
 
 		// Execute test
@@ -476,8 +484,6 @@ class BaseNl2SqlServiceTest {
 		// Verify result
 		assertEquals(expectedSql, result);
 
-		// Verify method call
-		verify(aiService, times(1)).call(anyString());
 		verify(aiService, times(1)).callWithSystemPrompt(anyString(), anyString());
 
 		log.info("GenerateSql test passed with result: {}", result);
@@ -497,8 +503,7 @@ class BaseNl2SqlServiceTest {
 		// Configure DbConfig Mock
 		when(dbConfig.getDialectType()).thenReturn("mysql");
 
-		when(aiService.call(anyString())).thenReturn("[\"2024-01-01\"]") // buildDateTimeExtractPrompt
-			.thenReturn("```sql\n" + expectedSql + "\n```"); // buildSqlErrorFixerPrompt
+		when(aiService.call(anyString())).thenReturn("```sql\n" + expectedSql + "\n```"); // buildSqlErrorFixerPrompt
 
 		// Execute test
 		String result = baseNl2SqlService.generateSql(evidenceList, query, schemaDTO, existingSql, exceptionMessage);
@@ -506,8 +511,7 @@ class BaseNl2SqlServiceTest {
 		// Verify result
 		assertEquals(expectedSql, result);
 
-		// Verify method call
-		verify(aiService, times(2)).call(anyString());
+		verify(aiService, times(1)).call(anyString());
 
 		log.info("GenerateSql with existing SQL test passed with result: {}", result);
 	}
