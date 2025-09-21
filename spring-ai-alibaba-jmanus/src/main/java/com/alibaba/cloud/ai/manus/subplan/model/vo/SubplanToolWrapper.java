@@ -209,7 +209,7 @@ public class SubplanToolWrapper extends AbstractBaseTool<Map<String, Object>> {
 			logger.info("Using provided toolCallId: {} for subplan execution: {}", toolCallId, newPlanId);
 
 			CompletableFuture<PlanExecutionResult> future = planningCoordinator.executeByPlan(plan, rootPlanId,
-					currentPlanId, newPlanId, toolCallId,false);
+					currentPlanId, newPlanId, toolCallId, false);
 
 			PlanExecutionResult result = future.get();
 

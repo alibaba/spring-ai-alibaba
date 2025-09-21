@@ -59,7 +59,7 @@ public class HumanFeedbackNode implements NodeAction {
 
 		// 处理反馈结果
 		Map<String, Object> feedbackData = humanFeedback.data();
-		boolean approved = (boolean) feedbackData.getOrDefault("feed_back", true);
+		boolean approved = (boolean) feedbackData.getOrDefault("feedback", true);
 
 		if (approved) {
 			logger.info("Plan approved → execution");
@@ -74,9 +74,11 @@ public class HumanFeedbackNode implements NodeAction {
 			updated.put(HUMAN_REVIEW_ENABLED, true);
 
 			// 保存用户反馈内容
-			String feedbackContent = feedbackData.getOrDefault("feed_back_content", "").toString();
+			String feedbackContent = feedbackData.getOrDefault("feedback_content", "").toString();
 			updated.put(PLAN_VALIDATION_ERROR,
 					StringUtils.hasLength(feedbackContent) ? feedbackContent : "Plan rejected by user");
+			// 这边清空旧的计划输出
+			updated.put(PLANNER_NODE_OUTPUT, "");
 			state.withoutResume();
 		}
 

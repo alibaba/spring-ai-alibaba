@@ -87,7 +87,7 @@ public class GraphProcess {
 
 	public void handleHumanFeedback(GraphId graphId, ChatRequest chatRequest, Map<String, Object> objectMap,
 			RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) throws GraphRunnerException {
-		objectMap.put("feed_back", chatRequest.interruptFeedback());
+		objectMap.put("feedback", chatRequest.interruptFeedback());
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
 		OverAllState state = stateSnapshot.state();
 		state.withResume();

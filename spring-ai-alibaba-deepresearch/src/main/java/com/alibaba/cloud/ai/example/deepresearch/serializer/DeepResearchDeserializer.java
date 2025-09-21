@@ -36,7 +36,7 @@ public class DeepResearchDeserializer extends JsonDeserializer<OverAllState> {
 	}
 
 	@Override
-	public OverAllState deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+	public OverAllState deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
 		ObjectNode node = objectMapper.readTree(p);
 
 		Map<String, Object> data = objectMapper.convertValue(node.get("data"), new TypeReference<>() {

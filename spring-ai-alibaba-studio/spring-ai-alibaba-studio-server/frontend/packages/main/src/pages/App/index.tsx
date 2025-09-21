@@ -58,6 +58,11 @@ const HomePage: React.FC = () => {
     console.log('GitHub import feature not implemented yet');
   };
 
+  const handleAgentSchemaCardClick = () => {
+    // Navigate to Agent Schema creation page
+    navigate('/agent-schema');
+  };
+
   return (
     <InnerLayout
       breadcrumbLinks={[
@@ -142,6 +147,28 @@ const HomePage: React.FC = () => {
                   },
                 ]}
                 onClick={handleCopilotCardClick}
+                className={styles.clickableCard}
+              />
+            </div>
+
+            <div className={styles.cardItem}>
+              <ProCard
+                title="Agent Schema 方式创建智能体"
+                logo={
+                  <div className={styles.cardIcon}>
+                    <img
+                      src="/images/agentSchema.svg"
+                      alt="Agent Schema Agent Creation"
+                      className={styles.iconImage}
+                    />
+                  </div>
+                }
+                info={[
+                  {
+                    content: '通过 Agent Schema 方式，快速创建和配置智能体',
+                  },
+                ]}
+                onClick={handleAgentSchemaCardClick}
                 className={styles.clickableCard}
               />
             </div>

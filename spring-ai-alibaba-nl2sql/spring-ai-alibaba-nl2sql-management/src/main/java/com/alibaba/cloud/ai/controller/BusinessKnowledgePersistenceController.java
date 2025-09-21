@@ -65,28 +65,28 @@ public class BusinessKnowledgePersistenceController {
 
 	// Get data by datasetId
 	@GetMapping("/dataset/{datasetId}")
-	public ResponseEntity<List<BusinessKnowledge>> getDataSetById(@PathVariable String datasetId) {
+	public ResponseEntity<List<BusinessKnowledge>> getDataSetById(@PathVariable(value = "datasetId") String datasetId) {
 		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.getFieldByDataSetId(datasetId);
 		return ResponseEntity.ok(knowledge);
 	}
 
 	// Search
 	@GetMapping("/search")
-	public ResponseEntity<List<BusinessKnowledge>> searchFields(@RequestParam String content) {
+	public ResponseEntity<List<BusinessKnowledge>> searchFields(@RequestParam(value = "content") String content) {
 		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.searchFields(content);
 		return ResponseEntity.ok(knowledge);
 	}
 
 	// Delete by id
 	@DeleteMapping("/delete/{id}")
-	public ResponseEntity<ApiResponse> deleteFieldById(@PathVariable long id) {
+	public ResponseEntity<ApiResponse> deleteFieldById(@PathVariable(value = "id") long id) {
 		businessKnowledgePersistenceService.deleteFieldById(id);
 		return ResponseEntity.ok(ApiResponse.success("业务知识删除成功"));
 	}
 
 	// Edit update
 	@PutMapping("/update/{id}")
-	public ResponseEntity<ApiResponse> updateField(@PathVariable long id,
+	public ResponseEntity<ApiResponse> updateField(@PathVariable(value = "id") long id,
 			@RequestBody BusinessKnowledgeDTO knowledgeDTO) {
 		businessKnowledgePersistenceService.updateField(knowledgeDTO, id);
 		return ResponseEntity.ok(ApiResponse.success("业务知识更新成功"));
@@ -94,14 +94,15 @@ public class BusinessKnowledgePersistenceController {
 
 	// Get business knowledge list by agent ID
 	@GetMapping("/agent/{agentId}")
-	public ResponseEntity<List<BusinessKnowledge>> getKnowledgeByAgentId(@PathVariable String agentId) {
+	public ResponseEntity<List<BusinessKnowledge>> getKnowledgeByAgentId(
+			@PathVariable(value = "agentId") String agentId) {
 		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.getKnowledgeByAgentId(agentId);
 		return ResponseEntity.ok(knowledge);
 	}
 
 	// Add business knowledge for agent
 	@PostMapping("/agent/{agentId}/add")
-	public ResponseEntity<ApiResponse> addKnowledgeForAgent(@PathVariable String agentId,
+	public ResponseEntity<ApiResponse> addKnowledgeForAgent(@PathVariable(value = "agentId") String agentId,
 			@RequestBody BusinessKnowledgeDTO knowledgeDTO) {
 		knowledgeDTO.setAgentId(agentId);
 		businessKnowledgePersistenceService.addKnowledge(knowledgeDTO);
@@ -110,7 +111,7 @@ public class BusinessKnowledgePersistenceController {
 
 	// Batch add business knowledge for agent
 	@PostMapping("/agent/{agentId}/addList")
-	public ResponseEntity<ApiResponse> addKnowledgeListForAgent(@PathVariable String agentId,
+	public ResponseEntity<ApiResponse> addKnowledgeListForAgent(@PathVariable(value = "agentId") String agentId,
 			@RequestBody List<BusinessKnowledgeDTO> knowledgeDTOs) {
 		knowledgeDTOs.forEach(dto -> dto.setAgentId(agentId));
 		businessKnowledgePersistenceService.addKnowledgeList(knowledgeDTOs);
@@ -119,15 +120,15 @@ public class BusinessKnowledgePersistenceController {
 
 	// Delete all business knowledge by agent ID
 	@DeleteMapping("/agent/{agentId}")
-	public ResponseEntity<ApiResponse> deleteKnowledgeByAgentId(@PathVariable String agentId) {
+	public ResponseEntity<ApiResponse> deleteKnowledgeByAgentId(@PathVariable(value = "agentId") String agentId) {
 		businessKnowledgePersistenceService.deleteKnowledgeByAgentId(agentId);
 		return ResponseEntity.ok(ApiResponse.success("智能体业务知识删除成功"));
 	}
 
 	// Search business knowledge within agent scope
 	@GetMapping("/agent/{agentId}/search")
-	public ResponseEntity<List<BusinessKnowledge>> searchKnowledgeInAgent(@PathVariable String agentId,
-			@RequestParam String content) {
+	public ResponseEntity<List<BusinessKnowledge>> searchKnowledgeInAgent(
+			@PathVariable(value = "agentId") String agentId, @RequestParam(value = "content") String content) {
 		List<BusinessKnowledge> knowledge = businessKnowledgePersistenceService.searchKnowledgeInAgent(agentId,
 				content);
 		return ResponseEntity.ok(knowledge);

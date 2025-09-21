@@ -192,42 +192,7 @@
                 </div>
                 <div class="assistant-message-body">
                   <div class="text-message">
-                    <!-- 报告格式选择按钮 - 嵌入到报告内容中 -->
-                    <div v-if="isReportMessage(message)" class="report-controls-inline">
-                      <div class="format-section">
-                        <span class="format-label">查看格式：</span>
-                        <div class="format-selector">
-                          <button
-                            class="format-btn"
-                            :class="{ active: getMessageFormat(message.id) === 'markdown' }"
-                            @click="setMessageFormat(message.id, 'markdown')"
-                            title="切换到Markdown格式查看"
-                          >
-                            <i class="bi bi-markdown"></i>
-                            Markdown
-                          </button>
-                          <button
-                            class="format-btn"
-                            :class="{ active: getMessageFormat(message.id) === 'html' }"
-                            @click="setMessageFormat(message.id, 'html')"
-                            title="切换到HTML格式查看"
-                          >
-                            <i class="bi bi-code-slash"></i>
-                            HTML
-                          </button>
-                        </div>
-                      </div>
-                      <div class="export-actions">
-                        <button
-                          class="export-btn"
-                          @click="exportMessageReport(message)"
-                          title="导出当前格式的报告文件"
-                        >
-                          <i class="bi bi-download"></i>
-                          导出报告
-                        </button>
-                      </div>
-                    </div>
+                    <!-- 已移除内联导出按钮，保留下载功能于预览面板 -->
                     <!-- 🔥 统一使用getDisplayContent处理，在函数内部处理报告隐藏 -->
                     <div v-html="getDisplayContent(message)"></div>
 
@@ -2675,8 +2640,8 @@ export default {
         const eventSource = new EventSource(`/nl2sql/human-feedback?${new URLSearchParams({
           sessionId: currentSessionId.value,
           threadId: currentThreadId.value,
-          feedBack: true,
-          feedBackContent: ''
+          feedback: true,
+          feedbackContent: ''
         })}`)
         
         displayEventSourceMessage(eventSource);
@@ -2693,8 +2658,8 @@ export default {
         const eventSource = new EventSource(`/nl2sql/human-feedback?${new URLSearchParams({
           sessionId: currentSessionId.value,
           threadId: currentThreadId.value,
-          feedBack: false,
-          feedBackContent: humanReviewSuggestion.value || '用户拒绝了计划，请重新生成'
+          feedback: false,
+          feedbackContent: humanReviewSuggestion.value || '用户拒绝了计划，请重新生成'
         })}`)
 
         displayEventSourceMessage(eventSource);
@@ -3568,19 +3533,19 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  margin: 0 0 16px 0;
-  background: linear-gradient(135deg, #f0f7ff 0%, #e6f3ff 100%);
-  border-radius: 8px;
-  border: 1px solid #d6e4ff;
-  position: relative;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  padding: 0;
+  margin: 0 0 8px 0;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  position: static;
+  box-shadow: none;
+  transition: none;
 }
 
 .report-controls-inline:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
+  box-shadow: none;
+  transform: none;
 }
 
 .format-section {

@@ -459,16 +459,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		}
 	}
 
-	/**
-	 * Execute plan synchronously and build response
-	 * @param planTemplateId The plan template ID to execute
-	 * @param uploadedFiles List of uploaded files (can be null)
-	 * @return ResponseEntity with execution result
-	 */
-	private ResponseEntity<Map<String, Object>> executePlanSyncAndBuildResponse(String planTemplateId,
-			List<Map<String, Object>> uploadedFiles) {
-		return executePlanSyncAndBuildResponse(planTemplateId, uploadedFiles, null, false);
-	}
 
 	/**
 	 * Execute plan synchronously and build response with parameter replacement support

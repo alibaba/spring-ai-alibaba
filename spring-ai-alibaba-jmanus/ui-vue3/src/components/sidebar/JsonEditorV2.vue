@@ -19,8 +19,19 @@
       <Icon icon="carbon:code" width="16" />
       <span>{{ $t('sidebar.dynamicAgentPlan') }}</span>
     </div>
+    <!-- Error Display -->
+    <div v-if="planTypeError" class="error-section">
+      <div class="error-message">
+        <Icon icon="carbon:warning" width="16" />
+        <div class="error-content">
+          <div class="error-title">{{ $t('sidebar.planTypeError') }}</div>
+          <div class="error-description">{{ planTypeError }}</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Visual JSON Editor -->
-    <div class="visual-editor">
+    <div v-else class="visual-editor">
       <!-- Plan Basic Info -->
       <div class="plan-basic-info">
         <div class="form-row">
@@ -117,15 +128,16 @@
                 ></textarea>
               </div>
               
-               <!-- Task Output Requirements Description -->
+               <!-- Terminate Columns -->
                <div class="form-row">
                  <label class="form-label">{{ $t('sidebar.terminateColumns') }}</label>
-                 <input 
+                 <textarea 
                    v-model="step.terminateColumns"
-                   type="text"
-                   class="form-input"
+                   class="form-textarea auto-resize"
                    :placeholder="$t('sidebar.terminateColumnsPlaceholder')"
-                 />
+                   rows="4"
+                   @input="autoResizeTextarea($event)"
+                 ></textarea>
                </div>
 
 

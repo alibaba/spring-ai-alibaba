@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.a2a.server;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.Flow;
 import java.util.function.Function;
 
@@ -34,6 +35,7 @@ import io.a2a.spec.JSONRPCErrorResponse;
 import io.a2a.spec.JSONRPCRequest;
 import io.a2a.spec.JSONRPCResponse;
 import io.a2a.spec.ListTaskPushNotificationConfigRequest;
+import io.a2a.spec.MessageSendParams;
 import io.a2a.spec.NonStreamingJSONRPCRequest;
 import io.a2a.spec.SendMessageRequest;
 import io.a2a.spec.SendStreamingMessageRequest;
@@ -98,7 +100,12 @@ public class JsonRpcA2aRequestHandler implements A2aRequestHandler {
 		StreamingJSONRPCRequest<?> request = Utils.OBJECT_MAPPER.readValue(body, StreamingJSONRPCRequest.class);
 		Flow.Publisher<? extends JSONRPCResponse<?>> publisher;
 		if (request instanceof SendStreamingMessageRequest req) {
-			publisher = jsonRpcHandler.onMessageSendStream(req);
+			SendStreamingMessageRequest.Builder newReqBuilder = new SendStreamingMessageRequest.Builder()
+				.id(req.getId())
+				.jsonrpc(req.getJsonrpc())
+				.method(req.getMethod())
+				.params(injectStreamMetadata(req.getParams(), true));
+			publisher = jsonRpcHandler.onMessageSendStream(newReqBuilder.build());
 			LOGGER.info("get Stream publisher {}", publisher);
 		}
 		else if (request instanceof TaskResubscriptionRequest req) {
@@ -118,7 +125,11 @@ public class JsonRpcA2aRequestHandler implements A2aRequestHandler {
 			return jsonRpcHandler.onGetTask(req);
 		}
 		else if (request instanceof SendMessageRequest req) {
-			return jsonRpcHandler.onMessageSend(req);
+			SendMessageRequest.Builder newReqBuilder = new SendMessageRequest.Builder().id(req.getId())
+				.jsonrpc(req.getJsonrpc())
+				.method(req.getMethod())
+				.params(injectStreamMetadata(req.getParams(), false));
+			return jsonRpcHandler.onMessageSend(newReqBuilder.build());
 		}
 		else if (request instanceof CancelTaskRequest req) {
 			return jsonRpcHandler.onCancelTask(req);
@@ -142,6 +153,20 @@ public class JsonRpcA2aRequestHandler implements A2aRequestHandler {
 
 	private static JSONRPCErrorResponse generateErrorResponse(JSONRPCRequest<?> request, JSONRPCError error) {
 		return new JSONRPCErrorResponse(request.getId(), error);
+	}
+
+	private MessageSendParams injectStreamMetadata(MessageSendParams original, boolean isStreaming) {
+		if (null == original.metadata()) {
+			MessageSendParams.Builder newBuilder = new MessageSendParams.Builder();
+			newBuilder.configuration(original.configuration());
+			newBuilder.metadata(Map.of(GraphAgentExecutor.STREAMING_METADATA_KEY, isStreaming));
+			newBuilder.message(original.message());
+			return newBuilder.build();
+		}
+		else {
+			original.metadata().put(GraphAgentExecutor.STREAMING_METADATA_KEY, isStreaming);
+			return original;
+		}
 	}
 
 }

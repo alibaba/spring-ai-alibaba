@@ -121,10 +121,18 @@
                         <i class="bi bi-arrow-clockwise"></i>
                         重新生成
                       </button>
-                      <button type="button" class="btn btn-outline">
-                        <i class="bi bi-upload"></i>
-                        上传图片
+                      <button type="button" class="btn btn-outline" @click="triggerFileUpload" :disabled="uploading">
+                        <i class="bi bi-upload" v-if="!uploading"></i>
+                        <i class="bi bi-hourglass-split" v-if="uploading"></i>
+                        {{ uploading ? '上传中...' : '上传图片' }}
                       </button>
+                      <input 
+                        ref="fileInput" 
+                        type="file" 
+                        accept="image/*" 
+                        style="display: none" 
+                        @change="handleFileUpload"
+                      >
                     </div>
                   </div>
                 </div>
@@ -235,7 +243,7 @@
 <script>
 import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { agentApi } from '../utils/api.js'
+import { agentApi, fileUploadApi } from '../utils/api.js'
 import { generateRandomAvatar, generateProfessionalAvatar } from '../utils/avatar.js'
 
 export default {
@@ -243,6 +251,8 @@ export default {
   setup() {
     const router = useRouter()
     const loading = ref(false)
+    const fileInput = ref(null)
+    const uploading = ref(false)
 
     const agentForm = reactive({
       name: '',
@@ -342,6 +352,80 @@ export default {
       console.log('Regenerated avatar:', agentForm.avatar)
     }
 
+    // 触发文件选择
+    const triggerFileUpload = () => {
+      if (fileInput.value) {
+        fileInput.value.click()
+      }
+    }
+
+    // 处理文件上传
+    const handleFileUpload = async (event) => {
+      const file = event.target.files[0]
+      if (!file) return
+
+      // 验证文件类型
+      if (!file.type.startsWith('image/')) {
+        alert('请选择图片文件')
+        return
+      }
+
+      // 验证文件大小 (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('图片大小不能超过5MB')
+        return
+      }
+
+      try {
+        uploading.value = true
+        
+        // 保存当前头像，用于失败时恢复
+        const originalAvatar = agentForm.avatar
+        
+        // 显示上传中的预览（使用base64）
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          agentForm.avatar = e.target.result
+        }
+        reader.readAsDataURL(file)
+
+        // 上传文件
+        const response = await fileUploadApi.uploadAvatar(file)
+        
+        if (response.success) {
+          // 上传成功，使用服务器返回的URL
+          agentForm.avatar = response.url
+          console.log('头像上传成功:', response.url)
+        } else {
+          throw new Error(response.message || '上传失败')
+        }
+      } catch (error) {
+        console.error('头像上传失败:', error)
+        alert('头像上传失败: ' + error.message)
+        // 恢复之前的头像
+        agentForm.avatar = generateFallbackAvatar()
+      } finally {
+        uploading.value = false
+        // 清空文件输入
+        if (fileInput.value) {
+          fileInput.value.value = ''
+        }
+      }
+    }
+
+    // 图片加载成功处理
+    const handleImageLoad = (event) => {
+      console.log('头像图片加载成功:', event.target.src)
+    }
+
+    // 图片加载失败处理
+    const handleImageError = (event) => {
+      console.error('头像图片加载失败:', event.target.src)
+      console.error('错误详情:', event)
+      // 可以在这里设置一个默认头像
+      // agentForm.avatar = generateFallbackAvatar()
+    }
+
     const createAgent = async () => {
       if (!agentForm.name.trim()) {
         alert('请填写智能体名称')
@@ -376,6 +460,8 @@ export default {
     return {
       agentForm,
       loading,
+      fileInput,
+      uploading,
       goBack,
       goToAgentList,
       goToWorkspace,
@@ -385,6 +471,10 @@ export default {
       saveDraft,
       regenerateAvatar,
       generateFallbackAvatar,
+      triggerFileUpload,
+      handleFileUpload,
+      handleImageLoad,
+      handleImageError,
       createAgent
     }
   }

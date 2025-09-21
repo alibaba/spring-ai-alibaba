@@ -2,7 +2,7 @@ server:
   port: 8065
 spring:
   datasource:
-    url: ${NL2SQL_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/nl2sql_database?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai}
+    url: ${NL2SQL_DATASOURCE_URL:jdbc:mysql://127.0.0.1:3306/nl2sql?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&allowMultiQueries=true&allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Shanghai}
     username: ${NL2SQL_DATASOURCE_USERNAME:root}
     password: ${NL2SQL_DATASOURCE_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -54,6 +54,16 @@ spring:
         code-executor:
           # 运行Python代码的环境（生产环境建议使用docker，不建议使用local）
           code-pool-executor: local
+        file:
+          upload:
+            path: ./uploads
+            url-prefix: /uploads
+            imageSize: 2097152
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
 
 # MyBatis Plus 配置
 mybatis-plus:

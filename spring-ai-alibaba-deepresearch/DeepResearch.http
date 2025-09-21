@@ -28,14 +28,14 @@ Content-Type: application/json
 }
 
 
-### 人类反馈2:feed_back为是否接受当前计划，false时feed_back_content生效
+### 人类反馈2:feedback为是否接受当前计划，false时feedback_content生效
 POST http://localhost:8080/chat/resume
 Content-Type: application/json
 
 {
   "thread_id": "__default__",
-  "feed_back": false,
-  "feed_back_content": "巧克力蛋糕制作技巧"
+  "feedback": false,
+  "feedback_content": "巧克力蛋糕制作技巧"
 }
 
 

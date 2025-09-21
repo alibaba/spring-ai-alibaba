@@ -15,10 +15,21 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.DefaultChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -26,20 +37,8 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-
 import org.springframework.util.StringUtils;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import reactor.core.publisher.Flux;
 
 public class LlmNode implements NodeAction {
 
@@ -158,6 +157,14 @@ public class LlmNode implements NodeAction {
 		}
 	}
 
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	public void setSystemPrompt(String systemPrompt) {
+		this.systemPrompt = systemPrompt;
+	}
+
 	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
 		PromptTemplate promptTemplate = new PromptTemplate(prompt);
 		return promptTemplate.render(params);
@@ -172,13 +179,28 @@ public class LlmNode implements NodeAction {
 	}
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec() {
+
+		List<Message> selectMessage = new ArrayList<>(messages);
+		List<Message> historyMessages = new ArrayList<>();
+		Iterator<Message> messageIterator = selectMessage.iterator();
+		boolean isFirstUserMessage = false;
+		while (messageIterator.hasNext()) {
+			Message message = messageIterator.next();
+			if (message instanceof UserMessage) {
+				if (!isFirstUserMessage) {
+					isFirstUserMessage = true;
+				}
+				else {
+					historyMessages.add(message);
+					messageIterator.remove();
+				}
+			}
+		}
+
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-			.options(ToolCallingChatOptions.builder()
 				.toolCallbacks(toolCallbacks)
-				.internalToolExecutionEnabled(false)
-				.build())
-			.messages(messages)
-			.advisors(advisors);
+				.messages(selectMessage)
+				.advisors(advisors);
 
 		if (StringUtils.hasLength(systemPrompt)) {
 			if (!params.isEmpty()) {
@@ -193,7 +215,22 @@ public class LlmNode implements NodeAction {
 			}
 			chatClientRequestSpec.user(userPrompt);
 		}
+		if (historyMessages.size() > 1) {
 
+			String systemText = ((DefaultChatClient.DefaultChatClientRequestSpec) chatClientRequestSpec).getSystemText();
+
+			StringBuilder historyMessage = new StringBuilder();
+			for (int i = 0; i < historyMessages.size(); i++) {
+				if (historyMessages.get(i) instanceof UserMessage) {
+					historyMessage.append(i).append(":").append(historyMessages.get(i).getText()).append("\n");
+				}
+			}
+
+			String promptWithHistory = (systemText == null ? "" : systemText) + "\n Here is a previous question the user asked me. If it's relevant to the current question, please try to extract useful information; otherwise, feel free to ignore it and focus solely on the current question. The historical question is as follows: "
+					+ "\n"
+					+ historyMessage;
+			chatClientRequestSpec.system(promptWithHistory);
+		}
 		return chatClientRequestSpec;
 	}
 
@@ -290,13 +327,13 @@ public class LlmNode implements NodeAction {
 		String role = roleObj != null ? roleObj.toString().toLowerCase() : "user";
 
 		switch (role) {
-			case "system":
-				return new SystemMessage(content);
-			case "assistant":
-				return new AssistantMessage(content);
-			case "user":
-			default:
-				return new UserMessage(content);
+		case "system":
+			return new SystemMessage(content);
+		case "assistant":
+			return new AssistantMessage(content);
+		case "user":
+		default:
+			return new UserMessage(content);
 		}
 	}
 

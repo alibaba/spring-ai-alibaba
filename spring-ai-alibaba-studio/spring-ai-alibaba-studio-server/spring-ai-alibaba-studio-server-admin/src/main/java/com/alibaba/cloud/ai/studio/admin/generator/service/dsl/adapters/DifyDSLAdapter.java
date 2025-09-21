@@ -111,7 +111,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 
 	@Override
 	public Workflow mapToWorkflow(Map<String, Object> data) {
-		Map<String, Object> workflowData = (Map<String, Object>) data.get("workflow");
+		Map<String, Object> workflowData = MapReadUtil.safeCastToMapWithStringKey(data.get("workflow"));
 		Workflow workflow = new Workflow();
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -119,21 +119,16 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 		List<Variable> convVars = new ArrayList<>();
 		if (workflowData.containsKey("conversation_variables")) {
-			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData
-				.get("conversation_variables");
-			convVars = variables.stream()
-				.map(variable -> convertToVariable(variable, objectMapper))
-				.peek(v -> v.setName("conversation_" + v.getName()))
-				.toList();
+			List<Map<String, Object>> variables = MapReadUtil
+				.safeCastToListWithMap(workflowData.get("conversation_variables"));
+			convVars = variables.stream().map(this::convertToVariable).toList();
 		}
 
 		List<Variable> envVars = List.of();
 		if (workflowData.containsKey("environment_variables")) {
-			List<Map<String, Object>> variables = (List<Map<String, Object>>) workflowData.get("environment_variables");
-			envVars = variables.stream()
-				.map(variable -> convertToVariable(variable, objectMapper))
-				.peek(v -> v.setName("env_" + v.getName()))
-				.toList();
+			List<Map<String, Object>> variables = MapReadUtil
+				.safeCastToListWithMap(workflowData.get("environment_variables"));
+			envVars = variables.stream().map(this::convertToVariable).toList();
 		}
 		List<Variable> sysVars = List.of(new Variable("sys_query", VariableType.STRING),
 				new Variable("sys_files", VariableType.ARRAY_FILE),
@@ -144,7 +139,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 				new Variable("sys_workflow_run_id", VariableType.STRING));
 		workflow.setEnvVars(Stream.of(envVars, sysVars).flatMap(List::stream).toList());
 
-		Graph graph = constructGraph((Map<String, Object>) workflowData.get("graph"));
+		Graph graph = constructGraph(MapReadUtil.safeCastToMapWithStringKey(workflowData.get("graph")));
 
 		workflow.setGraph(graph);
 		// register overAllState output key
@@ -296,7 +291,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			NodeData data = converter.parseMapData(nodeDataMap, DSLDialectType.DIFY);
 
 			// Generate a readable varName and inject it into NodeData
-			int count = counters.merge(nodeType, 1, Integer::sum);
+			int count = counters.merge(NodeType.isEmpty(nodeType) ? NodeType.EMPTY : nodeType, 1, Integer::sum);
 			String varName = converter.generateVarName(count);
 
 			data.setVarName(varName);
@@ -404,20 +399,17 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 		return DSLDialectType.DIFY.equals(dialectType);
 	}
 
-	private Variable convertToVariable(Map<String, Object> variableMap, ObjectMapper objectMapper) {
-		try {
-			Map<String, Object> processedMap = new HashMap<>(variableMap);
-
-			Object value = processedMap.get("value");
-			if (value != null && !(value instanceof String)) {
-				processedMap.put("value", objectMapper.writeValueAsString(value));
-			}
-
-			return objectMapper.convertValue(processedMap, Variable.class);
-		}
-		catch (Exception e) {
-			throw new IllegalArgumentException("Failed to convert variable: " + variableMap, e);
-		}
+	private Variable convertToVariable(Map<String, Object> variableMap) {
+		String name = String.join("_",
+				Optional.ofNullable(MapReadUtil.safeCastToList(variableMap.get("selector"), String.class))
+					.orElseThrow(() -> new IllegalArgumentException("Invalid variable selector")));
+		String value = Optional.ofNullable(variableMap.get("value")).map(Object::toString).orElse(null);
+		VariableType type = VariableType
+			.fromDifyValue(Optional.ofNullable(variableMap.get("value_type"))
+				.map(Object::toString)
+				.orElse(VariableType.OBJECT.difyValue()))
+			.orElse(VariableType.OBJECT);
+		return new Variable(name, type).setValue(value);
 	}
 
 }

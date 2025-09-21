@@ -27,6 +27,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-observation-extension</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
             <optional>true</optional>

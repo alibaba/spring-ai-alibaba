@@ -31,7 +31,6 @@ import com.alibaba.cloud.ai.studio.core.base.constants.CacheConstants;
 import com.alibaba.cloud.ai.studio.core.base.entity.McpServerEntity;
 import com.alibaba.cloud.ai.studio.core.utils.LogUtils;
 import com.alibaba.cloud.ai.studio.core.utils.concurrent.ThreadPoolUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
@@ -90,8 +89,10 @@ public class MCPManager {
 		HttpClient.Builder builder1 = HttpClient.newBuilder()
 			.version(HttpClient.Version.HTTP_1_1)
 			.connectTimeout(Duration.ofSeconds(60));
-		McpClientTransport transport = new HttpClientSseClientTransport(builder1, host, remoteEndpoint,
-				new ObjectMapper());
+		McpClientTransport transport = HttpClientSseClientTransport.builder(host)
+			.clientBuilder(builder1)
+			.sseEndpoint(remoteEndpoint)
+			.build();
 		McpClient.SyncSpec builder = McpClient.sync(transport)
 			.requestTimeout(Duration.ofSeconds(60))
 			.initializationTimeout(Duration.ofSeconds(60))
