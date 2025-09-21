@@ -50,22 +50,22 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 			// Support both English comma (,) and Chinese comma (，) as separators
 			String[] columns = expectedReturnInfo.split("[,，]");
 			String exampleJson = generateExampleJson(columns);
-			
-			return String.format("""
-					"message": {
-					  "type": "array",
-					  "items": {
-					    "type": "object",
-					    "properties": {
-					      %s
-					    }
-					  },
-					  "description": "Comprehensive termination message that should include all relevant facts, viewpoints, details, and conclusions from the execution step. This message should provide a complete summary of what was accomplished, any important observations, key findings, and final outcomes. The message must be returned as a JSON array containing objects with the following columns: %s. Example format: %s"
-					}""", 
-					generateColumnProperties(columns),
-					expectedReturnInfo,
-					exampleJson);
-		} else {
+
+			return String.format(
+					"""
+							"message": {
+							  "type": "array",
+							  "items": {
+							    "type": "object",
+							    "properties": {
+							      %s
+							    }
+							  },
+							  "description": "Comprehensive termination message that should include all relevant facts, viewpoints, details, and conclusions from the execution step. This message should provide a complete summary of what was accomplished, any important observations, key findings, and final outcomes. The message must be returned as a JSON array containing objects with the following columns: %s. Example format: %s"
+							}""",
+					generateColumnProperties(columns), expectedReturnInfo, exampleJson);
+		}
+		else {
 			// Default string type for empty or null expectedReturnInfo
 			return """
 					"message": {
@@ -74,17 +74,23 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 					}""";
 		}
 	}
-	
+
 	private static String generateExampleJson(String[] columns) {
 		StringBuilder exampleJson = new StringBuilder();
 		exampleJson.append("[");
-		
+
 		// Generate example structure with sample data
 		for (int i = 0; i < 2; i++) {
 			exampleJson.append("{");
 			for (int j = 0; j < columns.length; j++) {
 				String column = columns[j].trim();
-				exampleJson.append("\\\"").append(column).append("\\\":\\\"sample_row").append(i + 1).append("_").append(column).append("\\\"");
+				exampleJson.append("\\\"")
+					.append(column)
+					.append("\\\":\\\"sample_row")
+					.append(i + 1)
+					.append("_")
+					.append(column)
+					.append("\\\"");
 				if (j < columns.length - 1) {
 					exampleJson.append(",");
 				}
@@ -97,7 +103,7 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 		exampleJson.append("]");
 		return exampleJson.toString();
 	}
-	
+
 	private static String generateColumnProperties(String[] columns) {
 		StringBuilder properties = new StringBuilder();
 		for (int i = 0; i < columns.length; i++) {
@@ -163,7 +169,6 @@ public class TerminateTool extends AbstractBaseTool<Map<String, Object>> impleme
 
 		return String.format(template, messageField);
 	}
-
 
 	@Override
 	public String getCurrentToolStateString() {

@@ -84,8 +84,8 @@ public class SmartContentSavingService implements ISmartContentSavingService {
 	 */
 	public SmartProcessResult processContent(String planId, String content, String callingMethod) {
 		if (planId == null || content == null) {
-			log.warn("processContent called with null parameters: planId={}, content={}, callingMethod={}", 
-					planId, content, callingMethod);
+			log.warn("processContent called with null parameters: planId={}, content={}, callingMethod={}", planId,
+					content, callingMethod);
 			return new SmartProcessResult(null, content != null ? content : "No content available");
 		}
 

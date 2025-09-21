@@ -44,181 +44,172 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 @Service
 public class PlanFinalizer {
 
-    private static final Logger log = LoggerFactory.getLogger(PlanFinalizer.class);
+	private static final Logger log = LoggerFactory.getLogger(PlanFinalizer.class);
 
-    private final ILlmService llmService;
-    private final PlanExecutionRecorder recorder;
-    private final PromptService promptService;
-    private final ManusProperties manusProperties;
-    private final StreamingResponseHandler streamingResponseHandler;
+	private final ILlmService llmService;
 
-    public PlanFinalizer(ILlmService llmService, PlanExecutionRecorder recorder, 
-                                 PromptService promptService, ManusProperties manusProperties, 
-                                 StreamingResponseHandler streamingResponseHandler) {
-        this.llmService = llmService;
-        this.recorder = recorder;
-        this.promptService = promptService;
-        this.manusProperties = manusProperties;
-        this.streamingResponseHandler = streamingResponseHandler;
-    }
+	private final PlanExecutionRecorder recorder;
 
-    /**
-     * Generate the execution summary of the plan
-     */
-    public void generateSummary(ExecutionContext context) {
-        validateContextWithPlan(context, "ExecutionContext or its plan cannot be null");
-        
-        if (!context.isNeedSummary()) {
-            generateCodeBasedSummary(context);
-            return;
-        }
+	private final PromptService promptService;
 
-        try {
-            String executionDetail = context.getPlan().getPlanExecutionStateStringFormat(false);
-            String userRequest = context.getUserRequest();
-            
-            Map<String, Object> promptVariables = Map.of(
-                "executionDetail", executionDetail, 
-                "userRequest", userRequest
-            );
-            
-            String result = generateLlmResponse(
-                context, 
-                PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(),
-                promptVariables,
-                "Summary generation"
-            );
-            
-            context.setResultSummary(result);
-            recordPlanCompletion(context, result);
-            log.info("Generated summary: {}", result);
-            
-        } catch (Exception e) {
-            handleLlmError("summary", e);
-        }
-    }
+	private final ManusProperties manusProperties;
 
-    /**
-     * Generate direct LLM response for simple requests
-     */
-    public void generateDirectResponse(ExecutionContext context) {
-        validateContext(context, "ExecutionContext or user request cannot be null");
-        validateUserRequest(context.getUserRequest());
+	private final StreamingResponseHandler streamingResponseHandler;
 
-        String userRequest = context.getUserRequest();
-        log.info("Generating direct response for user request: {}", userRequest);
+	public PlanFinalizer(ILlmService llmService, PlanExecutionRecorder recorder, PromptService promptService,
+			ManusProperties manusProperties, StreamingResponseHandler streamingResponseHandler) {
+		this.llmService = llmService;
+		this.recorder = recorder;
+		this.promptService = promptService;
+		this.manusProperties = manusProperties;
+		this.streamingResponseHandler = streamingResponseHandler;
+	}
 
-        try {
-            Map<String, Object> promptVariables = Map.of("userRequest", userRequest);
-            
-            String result = generateLlmResponse(
-                context,
-                PromptEnum.DIRECT_RESPONSE.getPromptName(),
-                promptVariables,
-                "Direct response"
-            );
-            
-            context.setResultSummary(result);
-            recordPlanCompletion(context, result);
-            log.info("Generated direct response: {}", result);
-            
-        } catch (Exception e) {
-            handleLlmError("direct response", e);
-        }
-    }
+	/**
+	 * Generate the execution summary of the plan
+	 */
+	public void generateSummary(ExecutionContext context) {
+		validateContextWithPlan(context, "ExecutionContext or its plan cannot be null");
 
-    /**
-     * Generate code-based summary when LLM is not needed
-     */
-    private void generateCodeBasedSummary(ExecutionContext context) {
-        log.info("No need to generate summary, use code generate summary instead");
-        String summary = context.getPlan().getPlanExecutionStateStringFormat(false);
-        context.setResultSummary(summary);
-        recordPlanCompletion(context, summary);
-    }
+		if (!context.isNeedSummary()) {
+			generateCodeBasedSummary(context);
+			return;
+		}
 
-    /**
-     * Core method for generating LLM responses with common logic
-     */
-    private String generateLlmResponse(ExecutionContext context, String promptName, 
-                                     Map<String, Object> variables, String operationName) {
-        Message message = promptService.createUserMessage(promptName, variables);
-        Prompt prompt = new Prompt(List.of(message));
-        
-        ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
-        configureMemoryAdvisors(requestSpec, context);
-        
-        Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
-        return streamingResponseHandler.processStreamingTextResponse(
-            responseFlux, operationName, context.getCurrentPlanId()
-        );
-    }
+		try {
+			String executionDetail = context.getPlan().getPlanExecutionStateStringFormat(false);
+			String userRequest = context.getUserRequest();
 
-    /**
-     * Configure memory advisors for the request
-     */
-    private void configureMemoryAdvisors(ChatClient.ChatClientRequestSpec requestSpec, ExecutionContext context) {
-        if (!context.isUseMemory() || context.getMemoryId() == null) {
-            return;
-        }
+			Map<String, Object> promptVariables = Map.of("executionDetail", executionDetail, "userRequest",
+					userRequest);
 
-        requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
-        requestSpec.advisors(
-            CustomMessageChatMemoryAdvisor
-                .builder(
-                    llmService.getConversationMemory(manusProperties.getMaxMemory()),
-                    context.getUserRequest(), 
-                    CustomMessageChatMemoryAdvisor.AdvisorType.AFTER
-                )
-                .build()
-        );
-    }
+			String result = generateLlmResponse(context, PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(),
+					promptVariables, "Summary generation");
 
-    /**
-     * Record plan completion with the given context and summary
-     */
-    private void recordPlanCompletion(ExecutionContext context, String summary) {
-        if (context == null || context.getPlan() == null) {
-            log.warn("Cannot record plan completion: context or plan is null");
-            return;
-        }
+			context.setResultSummary(result);
+			recordPlanCompletion(context, result);
+			log.info("Generated summary: {}", result);
 
-        String currentPlanId = context.getPlan().getCurrentPlanId();
-        recorder.recordPlanCompletion(currentPlanId, summary);
-    }
+		}
+		catch (Exception e) {
+			handleLlmError("summary", e);
+		}
+	}
 
-    /**
-     * Validate execution context
-     */
-    private void validateContext(ExecutionContext context, String errorMessage) {
-        if (context == null) {
-            throw new IllegalArgumentException(errorMessage);
-        }
-    }
+	/**
+	 * Generate direct LLM response for simple requests
+	 */
+	public void generateDirectResponse(ExecutionContext context) {
+		validateContext(context, "ExecutionContext or user request cannot be null");
+		validateUserRequest(context.getUserRequest());
 
-    /**
-     * Validate execution context with plan validation
-     */
-    private void validateContextWithPlan(ExecutionContext context, String errorMessage) {
-        if (context == null || context.getPlan() == null) {
-            throw new IllegalArgumentException(errorMessage);
-        }
-    }
+		String userRequest = context.getUserRequest();
+		log.info("Generating direct response for user request: {}", userRequest);
 
-    /**
-     * Validate user request
-     */
-    private void validateUserRequest(String userRequest) {
-        if (userRequest == null) {
-            throw new IllegalArgumentException("User request cannot be null");
-        }
-    }
+		try {
+			Map<String, Object> promptVariables = Map.of("userRequest", userRequest);
 
-    /**
-     * Handle LLM generation errors with consistent error handling
-     */
-    private void handleLlmError(String operationType, Exception e) {
-        log.error("Error generating {} with LLM", operationType, e);
-        throw new RuntimeException("Failed to generate " + operationType, e);
-    }
+			String result = generateLlmResponse(context, PromptEnum.DIRECT_RESPONSE.getPromptName(), promptVariables,
+					"Direct response");
+
+			context.setResultSummary(result);
+			recordPlanCompletion(context, result);
+			log.info("Generated direct response: {}", result);
+
+		}
+		catch (Exception e) {
+			handleLlmError("direct response", e);
+		}
+	}
+
+	/**
+	 * Generate code-based summary when LLM is not needed
+	 */
+	private void generateCodeBasedSummary(ExecutionContext context) {
+		log.info("No need to generate summary, use code generate summary instead");
+		String summary = context.getPlan().getPlanExecutionStateStringFormat(false);
+		context.setResultSummary(summary);
+		recordPlanCompletion(context, summary);
+	}
+
+	/**
+	 * Core method for generating LLM responses with common logic
+	 */
+	private String generateLlmResponse(ExecutionContext context, String promptName, Map<String, Object> variables,
+			String operationName) {
+		Message message = promptService.createUserMessage(promptName, variables);
+		Prompt prompt = new Prompt(List.of(message));
+
+		ChatClient.ChatClientRequestSpec requestSpec = llmService.getPlanningChatClient().prompt(prompt);
+		configureMemoryAdvisors(requestSpec, context);
+
+		Flux<ChatResponse> responseFlux = requestSpec.stream().chatResponse();
+		return streamingResponseHandler.processStreamingTextResponse(responseFlux, operationName,
+				context.getCurrentPlanId());
+	}
+
+	/**
+	 * Configure memory advisors for the request
+	 */
+	private void configureMemoryAdvisors(ChatClient.ChatClientRequestSpec requestSpec, ExecutionContext context) {
+		if (!context.isUseMemory() || context.getMemoryId() == null) {
+			return;
+		}
+
+		requestSpec.advisors(memoryAdvisor -> memoryAdvisor.param(CONVERSATION_ID, context.getMemoryId()));
+		requestSpec.advisors(
+				CustomMessageChatMemoryAdvisor
+					.builder(llmService.getConversationMemory(manusProperties.getMaxMemory()), context.getUserRequest(),
+							CustomMessageChatMemoryAdvisor.AdvisorType.AFTER)
+					.build());
+	}
+
+	/**
+	 * Record plan completion with the given context and summary
+	 */
+	private void recordPlanCompletion(ExecutionContext context, String summary) {
+		if (context == null || context.getPlan() == null) {
+			log.warn("Cannot record plan completion: context or plan is null");
+			return;
+		}
+
+		String currentPlanId = context.getPlan().getCurrentPlanId();
+		recorder.recordPlanCompletion(currentPlanId, summary);
+	}
+
+	/**
+	 * Validate execution context
+	 */
+	private void validateContext(ExecutionContext context, String errorMessage) {
+		if (context == null) {
+			throw new IllegalArgumentException(errorMessage);
+		}
+	}
+
+	/**
+	 * Validate execution context with plan validation
+	 */
+	private void validateContextWithPlan(ExecutionContext context, String errorMessage) {
+		if (context == null || context.getPlan() == null) {
+			throw new IllegalArgumentException(errorMessage);
+		}
+	}
+
+	/**
+	 * Validate user request
+	 */
+	private void validateUserRequest(String userRequest) {
+		if (userRequest == null) {
+			throw new IllegalArgumentException("User request cannot be null");
+		}
+	}
+
+	/**
+	 * Handle LLM generation errors with consistent error handling
+	 */
+	private void handleLlmError(String operationType, Exception e) {
+		log.error("Error generating {} with LLM", operationType, e);
+		throw new RuntimeException("Failed to generate " + operationType, e);
+	}
+
 }

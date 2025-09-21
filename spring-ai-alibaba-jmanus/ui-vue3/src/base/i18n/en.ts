@@ -875,7 +875,7 @@ const words: I18nType = {
   stepRequirement: 'Task Requirement',
   stepRequirementPlaceholder: 'Please enter the specific requirements and description for this task...',
   terminateColumns: 'Task Output Requirements Description',
-  terminateColumnsPlaceholder: 'Please specify what specific content you expect as the end of the model to output, e.g., a list containing username, url, description fields.',
+  terminateColumnsPlaceholder: 'Specify structured return values. If specified, returns a JSON list where each row contains your specified columns. For example: col1,col2 will output [(col1:val1,col2:val2), (col1:val3,col2:val4)]',
     titlePlaceholder: 'Please enter plan title...',
     moveUp: 'Move Up',
     moveDown: 'Move Down',

@@ -111,10 +111,11 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		if (isVueRequest == null) {
 			isVueRequest = false;
 		}
-		
-		return isVueRequest == null? false: isVueRequest;
-		
+
+		return isVueRequest == null ? false : isVueRequest;
+
 	}
+
 	/**
 	 * Asynchronous execution of Manus request using PlanningCoordinator
 	 * @param request Request containing user query
@@ -128,14 +129,14 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		}
 		boolean isVueRequest = isVue(request);
 
-
 		// Log request source
 		if (isVueRequest) {
 			logger.info("🌐 [VUE] Received query request from Vue frontend: ");
-		} else {
+		}
+		else {
 			logger.info("🔗 [HTTP] Received query request from HTTP client: ");
 		}
-		
+
 		String planId = null;
 		try {
 			// Use sessionPlanId from frontend if available, otherwise generate new one
@@ -226,7 +227,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		// Log request source
 		if (isVueRequest) {
 			logger.info("🌐 [VUE] Received query request from Vue frontend: ");
-		} else {
+		}
+		else {
 			logger.info("🔗 [HTTP] Received query request from HTTP client: ");
 		}
 
@@ -321,7 +323,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		// Log request source
 		if (isVueRequest) {
 			logger.info("🌐 [VUE] Received query request from Vue frontend: ");
-		} else {
+		}
+		else {
 			logger.info("🔗 [HTTP] Received query request from HTTP client: ");
 		}
 
@@ -459,7 +462,6 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 		}
 	}
 
-
 	/**
 	 * Execute plan synchronously and build response with parameter replacement support
 	 * @param planTemplateId The plan template ID to execute
@@ -472,7 +474,8 @@ public class ManusController implements JmanusListener<PlanExceptionEvent> {
 			List<Map<String, Object>> uploadedFiles, Map<String, Object> replacementParams, boolean isVueRequest) {
 		try {
 			// Execute the plan template using the new unified method
-			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, uploadedFiles, null, replacementParams, isVueRequest);
+			PlanExecutionWrapper wrapper = executePlanTemplate(planTemplateId, uploadedFiles, null, replacementParams,
+					isVueRequest);
 			PlanExecutionResult planExecutionResult = wrapper.getResult().get();
 
 			// Return success with execution result

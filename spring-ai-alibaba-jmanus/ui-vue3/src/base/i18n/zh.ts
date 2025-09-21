@@ -842,7 +842,7 @@ const words: I18nType = {
   stepRequirement: '任务需求',
   stepRequirementPlaceholder: '请输入任务的具体需求和描述...',
   terminateColumns: '任务输出要求描述',
-  terminateColumnsPlaceholder: '请输入你期望模型以什么具体的内容做当前agent的结束输出，例如 一个列表，包含用户名，url，描述 三个字段。',
+  terminateColumnsPlaceholder: '指定结构化返回值，如果指定，则返回为一个json 列表 ，每一行都是你指定的col。 例如： col1,col2 ，最后会输出 [(col1:val1,col2:val2), (col1:val3,col2:val4)]',
     titlePlaceholder: '请输入计划标题...',
     moveUp: '上移',
     moveDown: '下移',
