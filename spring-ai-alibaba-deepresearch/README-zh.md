@@ -43,8 +43,8 @@
 **编程节点(给大模型提供编程能力)**
 
 - Coder节点的Python执行器跑在Docker容器中，需要额外为其配置Docker信息
-  - 在配置文件的`spring.ai.alibaba.deepreserch.python-coder.docker-host`字段中设置DockerHost，默认为`unix:///var/run/docker.sock`。
-  本项目需要使用`python:3-slim`镜像创建临时容器，也可以自己定制包含一些常用的第三方库的镜像，第三方库需要安装在镜像的`/app/dependency`文件夹里，在配置文件中设置`spring.ai.alibaba.deepreserch.python-coder.image-name`的值指定镜像名称。
+  - 在配置文件的`spring.ai.alibaba.deepresearch.python-coder.docker-host`字段中设置DockerHost，默认为`unix:///var/run/docker.sock`。
+  本项目需要使用`python:3-slim`镜像创建临时容器，也可以自己定制包含一些常用的第三方库的镜像，第三方库需要安装在镜像的`/app/dependency`文件夹里，在配置文件中设置`spring.ai.alibaba.deepresearch.python-coder.image-name`的值指定镜像名称。
 
 **RAG**
 
