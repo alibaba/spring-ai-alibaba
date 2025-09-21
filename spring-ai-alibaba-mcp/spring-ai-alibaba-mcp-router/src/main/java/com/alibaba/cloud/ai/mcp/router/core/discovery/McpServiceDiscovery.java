@@ -19,16 +19,8 @@ package com.alibaba.cloud.ai.mcp.router.core.discovery;
 
 import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
 
-/**
- * MCP 服务发现接口
- */
 public interface McpServiceDiscovery {
 
-	/**
-	 * 获取指定服务信息
-	 * @param serviceName 服务名
-	 * @return 服务信息
-	 */
 	McpServerInfo getService(String serviceName);
 
 }

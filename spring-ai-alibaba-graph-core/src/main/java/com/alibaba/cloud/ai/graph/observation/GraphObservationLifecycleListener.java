@@ -108,7 +108,7 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 
 		// Add input state using Documentation constant
 		nodeObservation.highCardinalityKeyValue(
-				GraphNodeObservationDocumentation.HighCardinalityKeyNames.GEN_AI_PROMPT.asString(),
+				GraphNodeObservationDocumentation.HighCardinalityKeyNames.NODE_BEFOR_STATE.asString(),
 				state != null ? state.toString() : "");
 
 		nodeObservation.start();
@@ -140,7 +140,7 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 		if (nodeObservation != null) {
 			// Add output state using Documentation constant
 			nodeObservation.highCardinalityKeyValue(
-					GraphNodeObservationDocumentation.HighCardinalityKeyNames.GEN_AI_COMPLETION.asString(),
+					GraphNodeObservationDocumentation.HighCardinalityKeyNames.NODE_AFTER_STATE.asString(),
 					state != null ? state.toString() : "");
 
 			nodeObservation.stop();
@@ -172,7 +172,7 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 		if (nodeObservation != null) {
 			// Add error state using Documentation constant
 			nodeObservation.highCardinalityKeyValue(
-					GraphNodeObservationDocumentation.HighCardinalityKeyNames.GEN_AI_COMPLETION.asString(),
+					GraphNodeObservationDocumentation.HighCardinalityKeyNames.NODE_AFTER_STATE.asString(),
 					state != null ? state.toString() : "");
 
 			nodeObservation.error(ex).stop();
@@ -193,44 +193,54 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 	public void onComplete(String nodeId, Map<String, Object> state, RunnableConfig config) {
 		log.debug("Graph execution completed");
 
-		nodeScopes.values().forEach(scope -> {
-			try {
-				scope.close();
-			}
-			catch (Exception e) {
-				log.debug("Error closing node scope: {}", e.getMessage());
-			}
-		});
+		// Close all node scopes with proper error handling
+		nodeScopes.values().forEach(this::safeCloseScope);
 		nodeScopes.clear();
 
-		nodeObservations.values().forEach(observation -> {
-			try {
-				observation.stop();
-			}
-			catch (Exception e) {
-				log.debug("Error stopping node observation: {}", e.getMessage());
-			}
-		});
+		// Stop all node observations with proper error handling
+		nodeObservations.values().forEach(this::safeStopObservation);
 		nodeObservations.clear();
 
+		// Close graph scope with proper error handling
 		if (graphScope != null) {
-			try {
-				graphScope.close();
-			}
-			catch (Exception e) {
-				log.debug("Error closing graph scope: {}", e.getMessage());
-			}
+			safeCloseScope(graphScope);
 			graphScope = null;
 		}
 
+		// Stop graph observation with proper error handling
 		if (graphObservation != null) {
-			try {
-				graphObservation.stop();
-			}
-			catch (Exception e) {
-				log.debug("Error stopping graph observation: {}", e.getMessage());
-			}
+			safeStopObservation(graphObservation);
 			graphObservation = null;
+		}
+	}
+
+	/**
+	 * Safely close an observation scope, catching and logging any exceptions.
+	 * @param scope the scope to close
+	 */
+	private void safeCloseScope(Observation.Scope scope) {
+		try {
+			if (scope != null) {
+				scope.close();
+			}
+		}
+		catch (Exception e) {
+			log.debug("Error closing observation scope: {}", e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Safely stop an observation, catching and logging any exceptions.
+	 * @param observation the observation to stop
+	 */
+	private void safeStopObservation(Observation observation) {
+		try {
+			if (observation != null) {
+				observation.stop();
+			}
+		}
+		catch (Exception e) {
+			log.debug("Error stopping observation: {}", e.getMessage(), e);
 		}
 	}
 

@@ -37,10 +37,10 @@ public record FeedbackRequest(
 		/**
 		 * 是否接受Planner的计划，true为接受，false为重新生成
 		 */
-		@JsonProperty(value = "feed_back", defaultValue = "true") Boolean feedBack,
+		@JsonProperty(value = "feedback", defaultValue = "true") Boolean feedback,
 
 		/**
 		 * 用户反馈内容，重新生成Planner计划是给予额外的上下文信息
 		 */
-		@JsonProperty(value = "feed_back_content", defaultValue = "") String feedBackContent) {
+		@JsonProperty(value = "feedback_content", defaultValue = "") String feedbackContent) {
 }

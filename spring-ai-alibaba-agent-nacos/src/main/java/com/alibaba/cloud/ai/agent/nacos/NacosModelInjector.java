@@ -21,23 +21,19 @@ import java.lang.reflect.Method;
 
 import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.common.utils.StringUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 
 public class NacosModelInjector {
 
 
-	public static ModelVO getModelByAgentId(NacosOptions nacosOptions, String agentId) {
+	public static ModelVO getModelByAgentName(NacosOptions nacosOptions) {
 		try {
 			String dataIdT = String.format(nacosOptions.isModelConfigEncrypted() ? "cipher-kms-aes-256-model-%s.json" : "model.json");
-			String config = nacosOptions.getNacosConfigService().getConfig(dataIdT, "ai-agent-" + agentId, 3000L);
+			String config = nacosOptions.getNacosConfigService()
+					.getConfig(dataIdT, "ai-agent-" + nacosOptions.getAgentName(), 3000L);
 			return JSON.parseObject(config, ModelVO.class);
 		}
 		catch (NacosException e) {
@@ -45,72 +41,6 @@ public class NacosModelInjector {
 		}
 	}
 
-	public static ChatModel initModel(NacosOptions nacosOptions, ModelVO model) {
-
-		OpenAiApi openAiApi = OpenAiApi.builder()
-				.apiKey(model.getApiKey()).baseUrl(model.getBaseUrl())
-				.build();
-
-		OpenAiChatOptions.Builder chatOptionsBuilder = OpenAiChatOptions.builder();
-		if (model.getTemperature() != null) {
-			chatOptionsBuilder.temperature(Double.parseDouble(model.getTemperature()));
-		}
-		if (model.getMaxTokens() != null) {
-			chatOptionsBuilder.maxTokens(Integer.parseInt(model.getMaxTokens()));
-		}
-		chatOptionsBuilder.internalToolExecutionEnabled(false);
-		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
-				.model(model.getModel())
-				.build();
-		OpenAiChatModel.Builder builder = OpenAiChatModel.builder().defaultOptions(openaiChatOptions)
-				.openAiApi(openAiApi);
-
-		//inject observation config.
-		ObservationConfigration observationConfigration = nacosOptions.getObservationConfigration();
-		if (observationConfigration != null) {
-			if (observationConfigration.getToolCallingManager() != null) {
-				builder.toolCallingManager(observationConfigration.getToolCallingManager());
-			}
-			if (observationConfigration.getObservationRegistry() != null) {
-				builder.observationRegistry(observationConfigration.getObservationRegistry());
-			}
-		}
-
-		OpenAiChatModel openAiChatModel = builder.build();
-		if (observationConfigration != null && observationConfigration.getChatModelObservationConvention() != null) {
-			openAiChatModel.setObservationConvention(observationConfigration
-					.getChatModelObservationConvention());
-		}
-
-		return openAiChatModel;
-	}
-
-	public static void registerModelListener(ChatClient chatClient, NacosOptions nacosOptions, String agentId) {
-		if (StringUtils.isBlank(agentId)) {
-			return;
-		}
-		try {
-			String dataIdT = String.format(nacosOptions.isModelConfigEncrypted() ? "cipher-kms-aes-256-model.json" : "model.json", agentId);
-
-			nacosOptions.getNacosConfigService()
-					.addListener(dataIdT, "ai-agent-" + agentId, new AbstractListener() {
-						@Override
-						public void receiveConfigInfo(String configInfo) {
-							ModelVO modelVO = JSON.parseObject(configInfo, ModelVO.class);
-							try {
-								ChatModel chatModelNew = initModel(nacosOptions, modelVO);
-								replaceModel(chatClient, chatModelNew);
-							}
-							catch (Exception e) {
-								throw new RuntimeException(e);
-							}
-						}
-					});
-		}
-		catch (NacosException e) {
-			throw new RuntimeException(e);
-		}
-	}
 
 	public static void replaceModel(ChatClient chatClient, ChatModel chatModel) throws Exception {
 		Object defaultChatClientRequest = getField(chatClient, "defaultChatClientRequest");
