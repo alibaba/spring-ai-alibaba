@@ -192,8 +192,8 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("user_upload_file", new ReplaceStrategy());
 			keyStrategyHashMap.put("session_id", new ReplaceStrategy());
 
-			keyStrategyHashMap.put("feed_back", new ReplaceStrategy());
-			keyStrategyHashMap.put("feed_back_content", new ReplaceStrategy());
+			keyStrategyHashMap.put("feedback", new ReplaceStrategy());
+			keyStrategyHashMap.put("feedback_content", new ReplaceStrategy());
 
 			// 专业知识库决策相关
 			keyStrategyHashMap.put("use_professional_kb", new ReplaceStrategy());

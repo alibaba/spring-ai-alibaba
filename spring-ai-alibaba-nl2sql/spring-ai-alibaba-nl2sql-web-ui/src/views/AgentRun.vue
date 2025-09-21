@@ -2640,8 +2640,8 @@ export default {
         const eventSource = new EventSource(`/nl2sql/human-feedback?${new URLSearchParams({
           sessionId: currentSessionId.value,
           threadId: currentThreadId.value,
-          feedBack: true,
-          feedBackContent: ''
+          feedback: true,
+          feedbackContent: ''
         })}`)
         
         displayEventSourceMessage(eventSource);
@@ -2658,8 +2658,8 @@ export default {
         const eventSource = new EventSource(`/nl2sql/human-feedback?${new URLSearchParams({
           sessionId: currentSessionId.value,
           threadId: currentThreadId.value,
-          feedBack: false,
-          feedBackContent: humanReviewSuggestion.value || '用户拒绝了计划，请重新生成'
+          feedback: false,
+          feedbackContent: humanReviewSuggestion.value || '用户拒绝了计划，请重新生成'
         })}`)
 
         displayEventSourceMessage(eventSource);
