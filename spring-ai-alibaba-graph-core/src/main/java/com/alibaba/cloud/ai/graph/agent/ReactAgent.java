@@ -304,7 +304,6 @@ public class ReactAgent extends BaseAgent {
 
 	public void setInstruction(String instruction) {
 		this.instruction = instruction;
-		llmNode.setSystemPrompt(instruction);
 	}
 
 	/**
