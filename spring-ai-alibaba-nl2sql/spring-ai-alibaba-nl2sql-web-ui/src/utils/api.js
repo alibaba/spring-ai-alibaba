@@ -18,7 +18,8 @@
  * 统一处理 API 请求和响应
  */
 
-const API_BASE_URL = '/api'
+// 这个是后端服务接口地址
+const API_BASE_URL = 'http://localhost:8065/api'
 
 /**
  * 发送 HTTP 请求的通用方法
@@ -45,7 +46,11 @@ async function request(url, options = {}) {
         errorData = await response.json()
       } catch (e) {
         // 如果无法解析JSON，使用默认错误信息
-        errorData = { message: response.statusText }
+        errorData = { 
+          message: response.statusText,
+          status: response.status,
+          url: `${API_BASE_URL}${url}`
+        }
       }
       
       const error = new Error(`HTTP ${response.status}: ${response.statusText}`)
@@ -69,6 +74,10 @@ async function request(url, options = {}) {
     }
   } catch (error) {
     console.error('API 请求失败:', error)
+    // 提供更详细的错误信息
+    if (!error.response) {
+      error.message = `网络错误或服务器无响应: ${error.message}`
+    }
     throw error
   }
 }
@@ -125,7 +134,7 @@ export const presetQuestionApi = {
 export const agentApi = {
   // 获取智能体列表
   getList(params) {
-    return get('/agent', params)
+    return get('/agent/list', params)
   },
 
   // 创建智能体
@@ -181,11 +190,13 @@ export const businessKnowledgeApi = {
   // 搜索业务知识
   search(keyword) {
     return get('/knowledge/search', { content: keyword })
+
   },
 
   // 在智能体范围内搜索业务知识
   searchInAgent(agentId, keyword) {
     return get(`/knowledge/agent/${agentId}/search`, { content: keyword })
+
   },
 
   // 创建业务知识
@@ -240,6 +251,7 @@ export const businessKnowledgeApi = {
 export const semanticModelApi = {
   // 获取语义模型列表
   getList(params) {
+    // 处理params可能为空的情况
     if (params && params.agentId) {
       // 如果有agentId参数，使用agent端点
       return get(`/fields/agent/${params.agentId}`)
@@ -486,6 +498,27 @@ export const agentDebugApi = {
   }
 }
 
+/**
+ * 头像上传 API
+ */
+export const fileUploadApi = {
+  // 上传头像
+  uploadAvatar(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    return fetch(`${API_BASE_URL}/upload/avatar`, {
+      method: 'POST',
+      body: formData
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return response.json()
+    })
+  }
+}
+
 export default {
   get,
   post,
@@ -496,5 +529,6 @@ export default {
   semanticModelApi,
   agentKnowledgeApi,
   datasourceApi,
-  agentDebugApi
+  agentDebugApi,
+  fileUploadApi
 }

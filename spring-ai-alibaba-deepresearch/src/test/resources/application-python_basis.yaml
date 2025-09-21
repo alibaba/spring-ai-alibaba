@@ -1,6 +1,6 @@
 spring:
   ai:
     alibaba:
-      deepreserch:
+      deepresearch:
         python-coder:
           code-timeout: "1s"

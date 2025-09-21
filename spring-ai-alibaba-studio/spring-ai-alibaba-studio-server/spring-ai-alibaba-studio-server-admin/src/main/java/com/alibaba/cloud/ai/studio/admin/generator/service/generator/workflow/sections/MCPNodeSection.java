@@ -17,18 +17,31 @@
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.sections;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.MCPNodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
+import com.alibaba.cloud.ai.studio.core.base.entity.McpServerEntity;
+import com.alibaba.cloud.ai.studio.core.base.service.McpServerService;
+import com.alibaba.cloud.ai.studio.core.context.RequestContextHolder;
+import com.alibaba.cloud.ai.studio.runtime.domain.RequestContext;
+import com.alibaba.cloud.ai.studio.runtime.domain.mcp.McpServerDeployConfig;
+import com.alibaba.cloud.ai.studio.runtime.utils.JsonUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MCPNodeSection implements NodeSection<MCPNodeData> {
+
+	private final McpServerService mcpServerService;
+
+	public MCPNodeSection(@Autowired(required = false) McpServerService mcpServerService) {
+		this.mcpServerService = mcpServerService;
+	}
 
 	@Override
 	public boolean support(NodeType nodeType) {
@@ -37,57 +50,85 @@ public class MCPNodeSection implements NodeSection<MCPNodeData> {
 
 	@Override
 	public String render(Node node, String varName) {
-		MCPNodeData d = (MCPNodeData) node.getData();
-		String id = node.getId();
-		StringBuilder sb = new StringBuilder();
+		if (this.mcpServerService == null) {
+			throw new IllegalArgumentException(
+					"The current mode does not support Studio's MCP node code generation. Please start the complete StudioApplication class");
+		}
+		MCPNodeData nodeData = (MCPNodeData) node.getData();
 
-		sb.append(String.format("// —— McpNode [%s] ——%n", id));
-		sb.append(String.format("McpNode %s = McpNode.builder()%n", varName));
-
-		if (d.getUrl() != null) {
-			sb.append(String.format(".url(\"%s\")%n", escape(d.getUrl())));
+		RequestContext context = RequestContextHolder.getRequestContext();
+		McpServerEntity mcpServerEntity = mcpServerService.getMcpByCode(context.getWorkspaceId(),
+				nodeData.getServerCode(), null);
+		if (mcpServerEntity == null) {
+			throw new IllegalArgumentException("MCP Server [" + nodeData.getServerCode() + "] not found!");
 		}
 
-		if (d.getTool() != null) {
-			sb.append(String.format(".tool(\"%s\")%n", escape(d.getTool())));
-		}
+		McpServerDeployConfig deployConfig = JsonUtils.fromJson(mcpServerEntity.getDeployConfig(),
+				McpServerDeployConfig.class);
+		String endPoint = deployConfig.getRemoteEndpoint();
+		String baseUri = deployConfig.getRemoteAddress();
 
-		Map<String, String> headers = d.getHeaders();
-		if (headers != null) {
-			for (Map.Entry<String, String> entry : headers.entrySet()) {
-				sb.append(String.format(".header(\"%s\", \"%s\")%n", escape(entry.getKey()), escape(entry.getValue())));
-			}
-		}
+		return String.format("""
+				// -- MCP Node [%s] --
+				stateGraph.addNode("%s", AsyncNodeAction.node_async(
+				    createMcpNodeAction(%s, %s, %s, %s, %s, %s)
+				));
 
-		Map<String, Object> params = d.getParams();
-		if (params != null) {
-			for (Map.Entry<String, Object> entry : params.entrySet()) {
-				Object val = entry.getValue();
-				String valLiteral;
-				if (val instanceof String) {
-					valLiteral = String.format("\"%s\"", escape((String) val));
-				}
-				else {
-					valLiteral = String.valueOf(val);
-				}
-				sb.append(String.format(".param(\"%s\", %s)%n", escape(entry.getKey()), valLiteral));
-			}
-		}
+				""", nodeData.getServerName(), varName, ObjectToCodeUtil.toCode(baseUri),
+				ObjectToCodeUtil.toCode(endPoint), ObjectToCodeUtil.toCode(nodeData.getToolName()),
+				ObjectToCodeUtil.toCode(nodeData.getInputJsonTemplate()),
+				ObjectToCodeUtil.toCode(nodeData.getInputKeys()), ObjectToCodeUtil.toCode(nodeData.getOutputKey()));
+	}
 
-		if (d.getOutputKey() != null) {
-			sb.append(String.format(".outputKey(\"%s\")%n", escape(d.getOutputKey())));
-		}
+	@Override
+	public String assistMethodCode(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case STUDIO ->
+				"""
+						private NodeAction createMcpNodeAction(String baseUri, String endPoint, String toolName,
+						                                       String inputTemplate, List<String> keys, String outputKey) {
+						    return state -> {
+						        // create client
+						        McpSyncClient client = McpClient.sync(
+						                HttpClientSseClientTransport
+						                        .builder(baseUri)
+						                        .sseEndpoint(endPoint)
+						                        .build()
+						        ).build();
+						        client.initialize();
+						        SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(client);
 
-		List<String> ipk = d.getInputParamKeys();
-		if (ipk != null && !ipk.isEmpty()) {
-			String joined = ipk.stream().map(this::escape).map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
-			sb.append(String.format(".inputParamKeys(List.of(%s))%n", joined));
-		}
+						        // get tools
+						        ToolCallback[] toolCallbacks = provider.getToolCallbacks();
+						        ToolCallback toolCallback = Arrays.stream(toolCallbacks)
+						                .filter(t -> t.getToolDefinition().name().contains(toolName))
+						                .findFirst()
+						                .orElseThrow(() -> new IllegalStateException("toolName [" + toolName + "] not found!"));
 
-		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
+						        // prepare input
+						        String input = inputTemplate;
+						                          for(String key : keys) {
+						                              input = input.replace("{" + key + "}", state.value(key).orElse("").toString());
+						                          }
 
-		return sb.toString();
+						        // call
+						        String call = toolCallback.call(input);
+						        System.out.println(call);
+						        client.close();
+						        return Map.of(outputKey, call);
+						    };
+						}
+						""";
+			default -> NodeSection.super.assistMethodCode(dialectType);
+		};
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("io.modelcontextprotocol.client.McpSyncClient", "io.modelcontextprotocol.client.McpClient",
+				"io.modelcontextprotocol.client.transport.HttpClientSseClientTransport",
+				"org.springframework.ai.mcp.SyncMcpToolCallbackProvider", "org.springframework.ai.tool.ToolCallback",
+				"java.util.Arrays");
 	}
 
 }

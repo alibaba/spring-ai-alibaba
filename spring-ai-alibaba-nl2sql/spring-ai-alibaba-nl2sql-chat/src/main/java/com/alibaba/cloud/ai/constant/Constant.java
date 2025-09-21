@@ -43,6 +43,10 @@ public class Constant {
 
 	public static final String TABLE_RELATION_OUTPUT = "TABLE_RELATION_OUTPUT";
 
+	public static final String TABLE_RELATION_EXCEPTION_OUTPUT = "TABLE_RELATION_EXCEPTION_OUTPUT";
+
+	public static final String TABLE_RELATION_RETRY_COUNT = "TABLE_RELATION_RETRY_COUNT";
+
 	public static final String BUSINESS_KNOWLEDGE = "BUSINESS_KNOWLEDGE";
 
 	public static final String SEMANTIC_MODEL = "SEMANTIC_MODEL";
@@ -134,5 +138,8 @@ public class Constant {
 	public static final String IS_ONLY_NL2SQL = "IS_ONLY_NL2SQL";
 
 	public static final String ONLY_NL2SQL_OUTPUT = "ONLY_NL2SQL_OUTPUT";
+
+	// 人类复核相关
+	public static final String HUMAN_REVIEW_ENABLED = "HUMAN_REVIEW_ENABLED";
 
 }

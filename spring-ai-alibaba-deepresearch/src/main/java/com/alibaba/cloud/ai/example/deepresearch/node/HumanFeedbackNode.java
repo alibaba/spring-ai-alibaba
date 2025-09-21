@@ -55,16 +55,16 @@ public class HumanFeedbackNode implements NodeAction {
 		// iterations+1
 		updated.put("plan_iterations", StateUtil.getPlanIterations(state) + 1);
 
-		Map<String, Object> feedBackData = state.humanFeedback().data();
-		boolean feedback = (boolean) feedBackData.getOrDefault("feed_back", true);
+		Map<String, Object> feedbackData = state.humanFeedback().data();
+		boolean feedback = (boolean) feedbackData.getOrDefault("feedback", true);
 
 		if (!feedback) {
 			nextStep = "planner";
 			updated.put("human_next_node", nextStep);
 
-			String feedbackContent = feedBackData.getOrDefault("feed_back_content", "").toString();
+			String feedbackContent = feedbackData.getOrDefault("feedback_content", "").toString();
 			if (StringUtils.hasLength(feedbackContent)) {
-				updated.put("feed_back_content", feedbackContent);
+				updated.put("feedback_content", feedbackContent);
 				logger.info("Human feedback content: {}", feedbackContent);
 			}
 			state.withoutResume();

@@ -16,12 +16,12 @@
 
 package com.alibaba.cloud.ai.graph.node.code;
 
+import com.alibaba.cloud.ai.graph.node.code.entity.CodeStyle;
 import com.alibaba.cloud.ai.graph.node.code.entity.RunnerAndPreload;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,8 +38,8 @@ public abstract class TemplateTransformer {
 
 	protected static final String RESULT_TAG = "<<RESULT>>";
 
-	public RunnerAndPreload transformCaller(String code, List<Object> inputs) throws Exception {
-		String runnerScript = assembleRunnerScript(code, inputs);
+	public RunnerAndPreload transformCaller(String code, Map<String, Object> inputs, CodeStyle style) throws Exception {
+		String runnerScript = assembleRunnerScript(code, inputs, style);
 		String preloadScript = getPreloadScript();
 
 		return new RunnerAndPreload(runnerScript, preloadScript);
@@ -52,7 +52,7 @@ public abstract class TemplateTransformer {
 				mapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
 	}
 
-	public abstract String getRunnerScript();
+	public abstract String getRunnerScript(CodeStyle style);
 
 	private String extractResultStrFromResponse(String response) {
 		Pattern pattern = Pattern.compile(RESULT_TAG + "(.*?)" + RESULT_TAG, Pattern.DOTALL);
@@ -66,14 +66,14 @@ public abstract class TemplateTransformer {
 		}
 	}
 
-	private String serializeInputs(List<Object> inputs) throws Exception {
+	private String serializeInputs(Map<String, Object> inputs) throws Exception {
 		ObjectMapper mapper = new ObjectMapper();
 		String inputsJsonStr = mapper.writeValueAsString(inputs);
 		return Base64.getEncoder().encodeToString(inputsJsonStr.getBytes(StandardCharsets.UTF_8));
 	}
 
-	private String assembleRunnerScript(String code, List<Object> inputs) throws Exception {
-		String script = getRunnerScript();
+	private String assembleRunnerScript(String code, Map<String, Object> inputs, CodeStyle style) throws Exception {
+		String script = getRunnerScript(style);
 		script = script.replace(CODE_PLACEHOLDER, code);
 		script = script.replace(INPUTS_PLACEHOLDER, serializeInputs(inputs));
 		return script;

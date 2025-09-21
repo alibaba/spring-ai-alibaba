@@ -17,11 +17,12 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -97,27 +98,46 @@ public class AssignerNodeTest {
 	}
 
 	@Test
+	public void testBatchInputConstant() {
+		OverAllState state = new OverAllState();
+		state.registerKeyAndStrategy("x", new ReplaceStrategy());
+		state.registerKeyAndStrategy("y", new ReplaceStrategy());
+		state.registerKeyAndStrategy("z", new ReplaceStrategy());
+		state.updateState(Map.of("x", "something", "y", new ArrayList<>(List.of(1, 2, 3)), "z", 42));
+
+		AssignerNode node = AssignerNode.builder().addConst("x", "x").addConst("y", "y").addConst("z", "z").build();
+
+		Map<String, Object> result = node.apply(state);
+		assertEquals("x", result.get("x"));
+		assertEquals("y", result.get("y"));
+		assertEquals("z", result.get("z"));
+	}
+
+	@Test
 	public void testMixBatch() {
 		OverAllState state = new OverAllState();
 		state.registerKeyAndStrategy("a", new ReplaceStrategy());
 		state.registerKeyAndStrategy("b", new ReplaceStrategy());
 		state.registerKeyAndStrategy("c", new ReplaceStrategy());
+		state.registerKeyAndStrategy("d", new ReplaceStrategy());
 		state.registerKeyAndStrategy("input1", new ReplaceStrategy());
 		state.registerKeyAndStrategy("input2", new ReplaceStrategy());
 		state.registerKeyAndStrategy("input3", new ReplaceStrategy());
 		state.updateState(Map.of("input1", "A", "input2", "B", "input3", "C", "a", new ArrayList<>(List.of("a0")), "b",
-				"to be cleared", "c", 999));
+				"to be cleared", "c", 999, "d", false));
 
 		AssignerNode node = AssignerNode.builder()
 			.addItem("a", "input1", AssignerNode.WriteMode.APPEND)
 			.addItem("b", null, AssignerNode.WriteMode.CLEAR)
 			.addItem("c", "input3", AssignerNode.WriteMode.OVER_WRITE)
+			.addConst("d", true)
 			.build();
 
 		Map<String, Object> result = node.apply(state);
 		assertEquals(List.of("a0", "A"), result.get("a"));
 		assertEquals("", result.get("b"));
 		assertEquals("C", result.get("c"));
+		assertTrue((Boolean) result.get("d"));
 	}
 
 	@Test

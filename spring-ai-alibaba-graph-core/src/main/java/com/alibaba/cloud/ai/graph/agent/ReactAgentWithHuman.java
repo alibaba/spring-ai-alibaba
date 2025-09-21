@@ -380,7 +380,7 @@ public class ReactAgentWithHuman {
 		@Override
 		public Map<String, Object> apply(OverAllState parentState, RunnableConfig config) throws Exception {
 			RunnableConfig subConfig = RunnableConfig.builder()
-				.threadId(uuid + "-" + config.threadId())
+				.threadId("subgraph-" + config.threadId())
 				.nextNode(config.nextNode().orElse(null))
 				.checkPointId(config.checkPointId().orElse(null))
 				.streamMode(config.streamMode())
@@ -397,7 +397,7 @@ public class ReactAgentWithHuman {
 				List<Message> messages = List.of(message);
 
 				// invoke child graph
-				childState = childGraph.invoke(Map.of("messages", messages), subConfig).get();
+				childState = childGraph.call(Map.of("messages", messages), subConfig).get();
 			}
 
 			// extract output from child graph

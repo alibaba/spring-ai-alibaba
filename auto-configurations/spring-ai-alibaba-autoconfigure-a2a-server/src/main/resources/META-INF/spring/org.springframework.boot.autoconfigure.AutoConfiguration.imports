@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aAgentCardAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aServerAgentCardAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aServerHandlerAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aServerAutoConfiguration
-
+com.alibaba.cloud.ai.autoconfigure.a2a.server.A2aServerRegistryAutoConfiguration
 

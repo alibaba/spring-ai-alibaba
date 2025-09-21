@@ -65,7 +65,7 @@ public class PlannerNode implements NodeAction {
 		// 1.1 添加预置提示消息
 		messages.add(TemplateUtil.getMessage("planner", state));
 		// 1.2 添加用户提问
-		messages.add(TemplateUtil.getOptQuryMessage(state));
+		messages.add(TemplateUtil.getOptQueryMessage(state));
 		// 1.3 添加背景调查消息
 		if (state.value("enable_deepresearch", true)) {
 			List<String> backgroundInvestigationResults = state.value("background_investigation_results",
@@ -78,9 +78,9 @@ public class PlannerNode implements NodeAction {
 			}
 		}
 		// 1.4 添加用户反馈消息
-		String feedBackContent = state.value("feed_back_content", "").toString();
-		if (StringUtils.hasText(feedBackContent)) {
-			messages.add(new UserMessage(feedBackContent));
+		String feedbackContent = state.value("feedback_content", "").toString();
+		if (StringUtils.hasText(feedbackContent)) {
+			messages.add(new UserMessage(feedbackContent));
 		}
 		// 1.5 添加用户上传的RAG查询结果
 		String ragContent = StateUtil.getRagContent(state);

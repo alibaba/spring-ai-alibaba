@@ -79,7 +79,7 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 				data.put("outputs", outputsMap);
 				return data;
 			}
-		}), STUDIO(new DialectConverter<EndNodeData>() {
+		}), STUDIO(new DialectConverter<>() {
 			@Override
 			public Boolean supportDialect(DSLDialectType dialectType) {
 				return DSLDialectType.STUDIO.equals(dialectType);

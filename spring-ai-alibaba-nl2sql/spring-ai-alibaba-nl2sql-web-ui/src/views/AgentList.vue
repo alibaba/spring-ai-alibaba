@@ -127,7 +127,10 @@
           @click="enterAgent(agent.id)"
         >
           <div class="agent-avatar">
-            <div class="avatar-icon" :style="{ backgroundColor: getRandomColor(agent.id) }">
+            <div v-if="agent.avatar && agent.avatar.trim()" class="avatar-image">
+              <img :src="agent.avatar" :alt="agent.name" @error="handleAvatarError(agent)">
+            </div>
+            <div v-else class="avatar-icon" :style="{ backgroundColor: getRandomColor(agent.id) }">
               <i :class="getRandomIcon(agent.id)"></i>
             </div>
           </div>
@@ -318,10 +321,25 @@ export default {
         }
       } catch (error) {
         console.error('加载智能体列表失败:', error)
+        let errorMessage = '加载失败，请重试'
+        
+        // 提供更具体的错误信息
+        if (error.response) {
+          if (error.response.status === 500) {
+            errorMessage = '服务器内部错误，请稍后重试或联系管理员'
+          } else if (error.response.status === 404) {
+            errorMessage = '请求的资源未找到'
+          } else if (error.response.data && error.response.data.message) {
+            errorMessage = error.response.data.message
+          }
+        } else if (error.message) {
+          errorMessage = error.message
+        }
+        
         if (useMockData.value) {
           agents.value = mockAgents
         } else {
-          alert('加载失败，请重试')
+          alert(errorMessage)
         }
       } finally {
         loading.value = false
@@ -475,6 +493,13 @@ export default {
       return icons[index]
     }
 
+    // 头像加载失败处理
+    const handleAvatarError = (agent) => {
+      console.error('智能体头像加载失败:', agent.name, agent.avatar)
+      // 清空avatar字段，这样会显示默认图标
+      agent.avatar = ''
+    }
+
     const goToWorkspace = () => {
       router.push('/workspace')
     }
@@ -512,6 +537,7 @@ export default {
       formatTime,
       getRandomColor,
       getRandomIcon,
+      handleAvatarError,
       refreshAgentList,
       goToWorkspace,
       openHelp,
@@ -842,6 +868,21 @@ export default {
   box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
+}
+
+.avatar-image {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.avatar-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .avatar-icon::before {

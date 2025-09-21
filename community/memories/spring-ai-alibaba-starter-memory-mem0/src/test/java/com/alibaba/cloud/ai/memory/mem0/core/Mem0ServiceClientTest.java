@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.memory.mem0.core;
 
-import com.alibaba.cloud.ai.memory.mem0.config.Mem0ChatMemoryProperties;
 import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,10 +28,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 单元测试 for Mem0ServiceClient
+ * Unit tests for Mem0ServiceClientTest
  *
  * @author Morain Miao
  * @since 1.0.0
@@ -43,19 +41,22 @@ class Mem0ServiceClientTest {
 	@Mock
 	private ResourceLoader resourceLoader;
 
-	private Mem0ChatMemoryProperties properties;
+	private Mem0Client mem0Client;
+
+	private Mem0Server mem0Server;
 
 	private Mem0ServiceClient client;
 
 	@BeforeEach
 	void setUp() {
-		properties = new Mem0ChatMemoryProperties();
-		Mem0ChatMemoryProperties.Client clientConfig = new Mem0ChatMemoryProperties.Client();
-		clientConfig.setBaseUrl("http://localhost:8888");
-		clientConfig.setTimeoutSeconds(30);
-		properties.setClient(clientConfig);
+		Mem0Client mem0Client = Mem0Client.builder().baseUrl("http://localhost:8888").enableCache(true).build();
+		this.mem0Client = mem0Client;
 
-		client = new Mem0ServiceClient(properties, resourceLoader);
+		Mem0Server mem0Server = Mem0Server.builder().version("v1.1").build();
+		;
+		this.mem0Server = mem0Server;
+
+		client = new Mem0ServiceClient(mem0Client, mem0Server, resourceLoader);
 	}
 
 	@Test
@@ -64,17 +65,10 @@ class Mem0ServiceClientTest {
 	}
 
 	@Test
-	void testConstructorWithNullProperties() {
-		// 由于构造函数没有null检查，这里会抛出NullPointerException
-		// 但不是在构造函数中，而是在后续使用config时
-		assertThatThrownBy(() -> new Mem0ServiceClient(null, resourceLoader)).isInstanceOf(NullPointerException.class);
-	}
-
-	@Test
 	void testConstructorWithNullResourceLoader() {
-		// 由于构造函数没有null检查，这里不会抛出异常
-		// 但在后续使用resourceLoader时会抛出异常
-		Mem0ServiceClient client = new Mem0ServiceClient(properties, null);
+		// Since the constructor lacks null checks, no exception will be thrown here
+		// But an exception will be thrown when resourceLoader is subsequently used
+		Mem0ServiceClient client = new Mem0ServiceClient(this.mem0Client, this.mem0Server, null);
 		assertThat(client).isNotNull();
 	}
 
@@ -88,8 +82,10 @@ class Mem0ServiceClientTest {
 			.runId("test-run")
 			.build();
 
-		// When & Then - 由于需要真实的HTTP连接，这里主要测试方法调用不会抛出异常
-		// 在实际测试中，应该使用WireMock或TestContainers来模拟HTTP服务
+		// When & Then - Since a real HTTP connection is required, this primarily tests
+		// that the method invocation does not throw exceptions
+		// In actual testing, WireMock or TestContainers should be used to mock the HTTP
+		// service
 		assertThat(memoryCreate).isNotNull();
 		assertThat(memoryCreate.getUserId()).isEqualTo("test-user");
 		assertThat(memoryCreate.getAgentId()).isEqualTo("test-agent");
@@ -101,7 +97,7 @@ class Mem0ServiceClientTest {
 		// Given
 		String memoryId = "test-memory-id";
 
-		// When & Then - 测试方法存在且可以调用
+		// When & Then - Test that the method exists and can be invoked
 		assertThat(memoryId).isEqualTo("test-memory-id");
 	}
 
@@ -114,21 +110,11 @@ class Mem0ServiceClientTest {
 		searchRequest.setAgentId("test-agent");
 		searchRequest.setRunId("test-run");
 
-		// When & Then - 测试请求对象创建正确
+		// When & Then - Verify that the request object is created correctly
 		assertThat(searchRequest.getQuery()).isEqualTo("test query");
 		assertThat(searchRequest.getUserId()).isEqualTo("test-user");
 		assertThat(searchRequest.getAgentId()).isEqualTo("test-agent");
 		assertThat(searchRequest.getRunId()).isEqualTo("test-run");
-	}
-
-	@Test
-	void testConfigure() {
-		// Given
-		Mem0ChatMemoryProperties.Server serverConfig = new Mem0ChatMemoryProperties.Server();
-		serverConfig.setVersion("v1.1");
-
-		// When & Then - 测试配置对象创建正确
-		assertThat(serverConfig.getVersion()).isEqualTo("v1.1");
 	}
 
 	@Test

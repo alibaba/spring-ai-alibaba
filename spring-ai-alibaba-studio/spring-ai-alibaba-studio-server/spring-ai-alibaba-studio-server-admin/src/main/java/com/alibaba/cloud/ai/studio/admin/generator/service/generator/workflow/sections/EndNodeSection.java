@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.EndNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -49,25 +50,24 @@ public class EndNodeSection implements NodeSection<EndNodeData> {
 		if ("text".equalsIgnoreCase(data.getOutputType())) {
 			// 如果输出类型为text，则使用对应的输出模板输出最终结果
 			if (data.getTextTemplateVars().isEmpty()) {
-				codeStr = String.format("state -> Map.of(\"output\", \"%s\")", data.getTextTemplate());
+				codeStr = String.format("state -> Map.of(\"%s\", %s)", data.getOutputKey(),
+						ObjectToCodeUtil.toCode(data.getTextTemplate()));
 			}
 			else {
 				codeStr = String.format("""
 						state -> {
-						    String template = "%s";
-						    Map<String, Object> params = Stream.of(%s)
+						    String template = %s;
+						    Map<String, Object> params = %s.stream()
 						            .collect(Collectors.toMap(
 						                    key -> key,
 						                    key -> state.value(key).orElse(""),
 						                    (o1, o2) -> o2));
 						    template = new PromptTemplate(template).render(params);
-						    return Map.of("output", template);
+						    return Map.of("%s", template);
 						}
-						""", data.getTextTemplate(),
-						data.getTextTemplateVars()
-							.stream()
-							.map(s -> String.format("\"%s\"", s))
-							.collect(Collectors.joining(", ")));
+
+						""", ObjectToCodeUtil.toCode(data.getTextTemplate()),
+						ObjectToCodeUtil.toCode(data.getTextTemplateVars()), data.getOutputKey());
 			}
 		}
 		else {
@@ -86,7 +86,14 @@ public class EndNodeSection implements NodeSection<EndNodeData> {
 			.append("\", AsyncNodeAction.node_async(")
 			.append(codeStr)
 			.append("));");
+		sb.append(String.format("%n"));
 		return sb.toString();
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("java.util.stream.Stream", "java.util.stream.Collectors",
+				"org.springframework.ai.chat.prompt.PromptTemplate");
 	}
 
 }

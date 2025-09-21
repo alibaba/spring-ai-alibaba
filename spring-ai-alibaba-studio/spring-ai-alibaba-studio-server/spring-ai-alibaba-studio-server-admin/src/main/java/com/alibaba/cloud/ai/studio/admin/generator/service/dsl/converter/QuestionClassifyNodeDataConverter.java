@@ -15,12 +15,11 @@
  */
 package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
@@ -28,12 +27,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.QuestionClassifierNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
-import com.alibaba.cloud.ai.studio.admin.generator.utils.StringTemplateUtil;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import org.apache.commons.collections4.CollectionUtils;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.springframework.stereotype.Component;
 
@@ -67,117 +62,101 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 
 			@Override
 			public QuestionClassifierNodeData parse(Map<String, Object> data) {
-				List<VariableSelector> inputs = Optional.ofNullable((List<String>) data.get("query_variable_selector"))
-					.filter(CollectionUtils::isNotEmpty)
-					.map(variables -> Collections
-						.singletonList(new VariableSelector(variables.get(0), variables.get(1))))
-					.orElse(Collections.emptyList());
+				QuestionClassifierNodeData nodeData = new QuestionClassifierNodeData();
 
-				// convert model config
-				Map<String, Object> modelData = (Map<String, Object>) data.get("model");
-				ObjectMapper objectMapper = new ObjectMapper();
-				objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-				objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-				QuestionClassifierNodeData.ModelConfig modelConfig = new QuestionClassifierNodeData.ModelConfig()
-					.setMode((String) modelData.get("mode"))
-					.setName((String) modelData.get("name"))
-					.setProvider((String) modelData.get("provider"))
-					.setCompletionParams(objectMapper.convertValue(modelData.get("completion_params"),
-							QuestionClassifierNodeData.CompletionParams.class));
+				// 获取必要的信息
+				String modeName = this.exactChatModelName(DSLDialectType.DIFY, data);
+				Map<String, Object> modeParams = this.exactChatModelParam(DSLDialectType.DIFY, data);
+				List<String> inputSelectorList = Optional
+					.ofNullable(MapReadUtil.safeCastToList(
+							MapReadUtil.getMapDeepValue(data, List.class, "query_variable_selector"), String.class))
+					.orElseThrow();
+				VariableSelector selector = new VariableSelector(inputSelectorList.get(0), inputSelectorList.get(1));
+				String outputKey = QuestionClassifierNodeData.getDefaultOutputSchema(DSLDialectType.DIFY).getName();
+				List<QuestionClassifierNodeData.ClassConfig> classes = Optional
+					.ofNullable(
+							MapReadUtil.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "classes")))
+					.orElseThrow()
+					.stream()
+					.filter(map -> map.containsKey("id") && map.containsKey("name"))
+					.map(map -> new QuestionClassifierNodeData.ClassConfig(map.get("id").toString(),
+							map.get("name").toString()))
+					.toList();
+				String promptTemplate = Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, String.class, "instruction"))
+					.orElse("");
 
-				QuestionClassifierNodeData nodeData = new QuestionClassifierNodeData(inputs,
-						List.of(QuestionClassifierNodeData.getDefaultOutputSchema()))
-					.setModel(modelConfig);
-
-				// convert instructions
-				String instruction = (String) data.get("instructions");
-				if (instruction != null && !instruction.isBlank()) {
-					nodeData.setInstruction(instruction);
-				}
-
-				// convert classes
-				if (data.containsKey("classes")) {
-					List<Map<String, Object>> classes = (List<Map<String, Object>>) data.get("classes");
-					nodeData.setClasses(classes.stream()
-						.map(item -> new QuestionClassifierNodeData.ClassConfig().setId((String) item.get("id"))
-							.setText((String) item.get("name")))
-						.toList());
-				}
-
-				// convert memory config
-				if (data.containsKey("memory")) {
-					Map<String, Object> memoryData = (Map<String, Object>) data.get("memory");
-					String lastMessageTemplate = (String) memoryData.get("query_prompt_template");
-					Map<String, Object> window = (Map<String, Object>) memoryData.get("window");
-					Boolean windowEnabled = (Boolean) window.get("enabled");
-					Integer windowSize = (Integer) window.get("size");
-					QuestionClassifierNodeData.MemoryConfig memory = new QuestionClassifierNodeData.MemoryConfig()
-						.setWindowEnabled(windowEnabled)
-						.setWindowSize(windowSize)
-						.setLastMessageTemplate(lastMessageTemplate)
-						.setIncludeLastMessage(false);
-					nodeData.setMemoryConfig(memory);
-				}
-
-				// output_key
-				String outputKey = (String) data.get("output_key");
+				// 设置基本信息
+				nodeData.setChatModeName(modeName);
+				nodeData.setModeParams(modeParams);
+				nodeData.setInputSelector(selector);
 				nodeData.setOutputKey(outputKey);
-
-				// input_text_key
-
+				nodeData.setClasses(classes);
+				nodeData.setPromptTemplate(promptTemplate);
 				return nodeData;
 			}
 
 			@Override
 			public Map<String, Object> dump(QuestionClassifierNodeData nodeData) {
-				Map<String, Object> data = new HashMap<>();
-				ObjectMapper objectMapper = new ObjectMapper();
-				objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-				objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CASE);
-				objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
-				// put memory
-				QuestionClassifierNodeData.MemoryConfig memory = nodeData.getMemoryConfig();
-				if (memory != null) {
-					data.put("memory",
-							Map.of("query_prompt_template",
-									StringTemplateUtil.toDifyTmpl(memory.getLastMessageTemplate()), "role_prefix",
-									Map.of("assistant", "", "user", ""), "window",
-									Map.of("enabled", memory.getWindowEnabled(), "size", memory.getWindowSize())));
-				}
-
-				// put model
-				QuestionClassifierNodeData.ModelConfig model = nodeData.getModel();
-				data.put("model",
-						Map.of("mode", model.getMode(), "name", model.getName(), "provider", model.getProvider(),
-								"completion_params",
-								objectMapper.convertValue(model.getCompletionParams(), Map.class)));
-
-				// put query_variable_selector
-				List<VariableSelector> inputs = nodeData.getInputs();
-				Optional.ofNullable(inputs)
-					.filter(CollectionUtils::isNotEmpty)
-					.map(inputList -> inputList.stream()
-						.findFirst()
-						.map(input -> List.of(input.getNamespace(), input.getName()))
-						.orElse(Collections.emptyList()))
-					.ifPresent(variables -> data.put("query_variable_selector", variables));
-
-				// put instructions
-				data.put("instructions", nodeData.getInstruction() != null ? nodeData.getInstruction() : "");
-
-				// put Classes
-				if (!CollectionUtils.isEmpty(nodeData.getClasses())) {
-					data.put("classes",
-							nodeData.getClasses()
-								.stream()
-								.map(item -> Map.of("id", item.getId(), "text", item.getText()))
-								.toList());
-				}
-
-				return data;
+				throw new UnsupportedOperationException();
 			}
-		}), CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(QuestionClassifierNodeData.class));
+		})
+
+		, STUDIO(new DialectConverter<>() {
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
+			@Override
+			public QuestionClassifierNodeData parse(Map<String, Object> data) throws JsonProcessingException {
+				QuestionClassifierNodeData nodeData = new QuestionClassifierNodeData();
+				// 从data中提取必要信息
+				String modeName = this.exactChatModelName(DSLDialectType.STUDIO, data);
+				Map<String, Object> modeParams = this.exactChatModelParam(DSLDialectType.STUDIO, data);
+
+				VariableSelector selector = this.varTemplateToSelector(DSLDialectType.STUDIO, MapReadUtil
+					.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "input_params"))
+					.get(0)
+					.get("value")
+					.toString());
+				String outputKey = QuestionClassifierNodeData.getDefaultOutputSchema(DSLDialectType.STUDIO).getName();
+				List<QuestionClassifierNodeData.ClassConfig> classes = Optional
+					.ofNullable(MapReadUtil.safeCastToListWithMap(
+							MapReadUtil.getMapDeepValue(data, List.class, "config", "node_param", "conditions")))
+					.orElseThrow()
+					.stream()
+					.filter(map -> map.containsKey("id") && map.containsKey("subject"))
+					.map(map -> {
+						String id = map.get("id").toString();
+						String subject = map.get("subject").toString();
+						if ("default".equalsIgnoreCase(id)) {
+							subject = "default";
+						}
+						return new QuestionClassifierNodeData.ClassConfig(id, subject);
+					})
+					.toList();
+				String promptTemplate = Optional
+					.ofNullable(MapReadUtil.getMapDeepValue(data, String.class, "config", "node_param", "instruction"))
+					.orElse("");
+
+				// 设置基本信息
+				nodeData.setChatModeName(modeName);
+				nodeData.setModeParams(modeParams);
+				nodeData.setInputSelector(selector);
+				nodeData.setOutputKey(outputKey);
+				nodeData.setClasses(classes);
+				nodeData.setPromptTemplate(promptTemplate);
+				return nodeData;
+			}
+
+			@Override
+			public Map<String, Object> dump(QuestionClassifierNodeData nodeData) {
+				throw new UnsupportedOperationException();
+			}
+		})
+
+		, CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(QuestionClassifierNodeData.class));
 
 		private final DialectConverter<QuestionClassifierNodeData> dialectConverter;
 
@@ -197,12 +176,38 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 
 	@Override
 	public BiConsumer<QuestionClassifierNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		BiConsumer<QuestionClassifierNodeData, Map<String, String>> consumer = emptyProcessConsumer()
+			.andThen((nodeData, idToVarName) -> {
+				nodeData.setOutputs(List.of(QuestionClassifierNodeData.getDefaultOutputSchema(dialectType)));
+				nodeData.setInputs(List.of(nodeData.getInputSelector()));
+			})
+			.andThen(super.postProcessConsumer(dialectType))
+			.andThen((nodeData, idToVarName) -> {
+				nodeData.setOutputKey(nodeData.getOutputs().get(0).getName());
+				nodeData.setInputSelector(nodeData.getInputs().get(0));
+				// 替换掉类别和指导中的占位变量
+				nodeData
+					.setPromptTemplate(this.convertVarTemplate(dialectType, nodeData.getPromptTemplate(), idToVarName));
+				nodeData.setClasses(nodeData.getClasses()
+					.stream()
+					.map(classConfig -> new QuestionClassifierNodeData.ClassConfig(classConfig.id(),
+							this.convertVarTemplate(dialectType, classConfig.classTemplate(), idToVarName)))
+					.toList());
+			});
 		return switch (dialectType) {
-			case DIFY -> emptyProcessConsumer().andThen((data, map) -> {
-				data.setOutputKey(
-						data.getVarName() + "_" + QuestionClassifierNodeData.getDefaultOutputSchema().getName());
-				data.setOutputs(List.of(QuestionClassifierNodeData.getDefaultOutputSchema()));
-			}).andThen(super.postProcessConsumer(dialectType));
+			case DIFY -> consumer;
+			case STUDIO -> consumer.andThen((nodeData, idToVarName) -> {
+				// 将classConfig的id里添加nodeId（为了与Edge里的sourceHandle保持一致）
+				Map<String, String> varNameToId = idToVarName.entrySet()
+					.stream()
+					.collect(Collectors.toUnmodifiableMap(Map.Entry::getValue, Map.Entry::getKey));
+				String nodeId = varNameToId.getOrDefault(nodeData.getVarName(), nodeData.getVarName());
+				nodeData.setClasses(nodeData.getClasses()
+					.stream()
+					.map(classConfig -> new QuestionClassifierNodeData.ClassConfig(nodeId + "_" + classConfig.id(),
+							classConfig.classTemplate()))
+					.toList());
+			});
 			default -> super.postProcessConsumer(dialectType);
 		};
 	}

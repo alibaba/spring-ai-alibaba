@@ -23,6 +23,85 @@
   width: calc(100% - 0px);
   flex-shrink: 0;
   transition: width 0.5s ease;
+
+  // 独立滚动条样式
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--ag-ant-color-fill-secondary);
+    border-radius: 6px;
+    border: 1px solid var(--ag-ant-color-border);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--ag-ant-color-text-tertiary);
+    border-radius: 6px;
+    border: 2px solid var(--ag-ant-color-bg-base);
+    background-clip: padding-box;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--ag-ant-color-text-secondary);
+    }
+
+    &:active {
+      background: var(--ag-ant-color-text);
+    }
+  }
+
+  &::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  // Firefox 支持
+  scrollbar-width: thin;
+  scrollbar-color: var(--ag-ant-color-text-tertiary) var(--ag-ant-color-fill-secondary);
+}
+
+// 为配置时间线添加独立滚动条
+.configTimelineContainer {
+  height: calc(100% - 80px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  margin-right: -4px;
+  border-radius: 8px;
+
+  // 独立滚动条样式
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--ag-ant-color-fill-alter);
+    border-radius: 4px;
+    margin: 4px 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--ag-ant-color-text-disabled);
+    border-radius: 4px;
+    min-height: 30px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--ag-ant-color-text-tertiary);
+    }
+
+    &:active {
+      background: var(--ag-ant-color-text-secondary);
+    }
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  // Firefox 支持
+  scrollbar-width: thin;
+  scrollbar-color: var(--ag-ant-color-text-disabled) var(--ag-ant-color-fill-alter);
 }
 
 .container {

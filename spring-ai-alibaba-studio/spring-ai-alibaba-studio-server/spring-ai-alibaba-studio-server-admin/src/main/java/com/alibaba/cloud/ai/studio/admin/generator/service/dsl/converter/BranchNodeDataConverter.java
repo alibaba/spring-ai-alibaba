@@ -16,9 +16,10 @@
 package com.alibaba.cloud.ai.studio.admin.generator.service.dsl.converter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,6 +34,8 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.Branc
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractNodeDataConverter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.MapReadUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -75,39 +78,115 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 							String difyVarType = (String) conditionMap.get("varType");
 							VariableType variableType = VariableType.fromDifyValue(difyVarType)
 								.orElse(VariableType.OBJECT);
-							return new Case.Condition().setValue((String) conditionMap.get("value"))
-								.setVarType(variableType.value())
-								.setComparisonOperator(ComparisonOperatorType
-									.fromDifyValue((String) conditionMap.get("comparison_operator")))
-								.setVariableSelector(new VariableSelector(selectors.get(0), selectors.get(1)));
+							return new Case.Condition().setReferenceValue((String) conditionMap.get("value"))
+								.setVarType(variableType)
+								.setComparisonOperator(ComparisonOperatorType.fromDslValue(DSLDialectType.DIFY,
+										(String) conditionMap.get("comparison_operator"), variableType))
+								.setTargetSelector(new VariableSelector(selectors.get(0), selectors.get(1)));
 						}).collect(Collectors.toList());
 						cases.add(new Case().setId((String) caseData.get("id"))
 							.setLogicalOperator(
-									LogicalOperatorType.fromDifyValue((String) caseData.get("logical_operator")))
+									LogicalOperatorType.fromValue((String) caseData.get("logical_operator")))
 							.setConditions(conditions));
 					}
 				}
 
-				return new BranchNodeData(List.of(), List.of()).setCases(cases);
+				return new BranchNodeData().setCases(cases).setDefaultCase("false");
 			}
 
 			@Override
 			public Map<String, Object> dump(BranchNodeData nodeData) {
-				Map<String, Object> data = new HashMap<>();
-				List<Map<String, Object>> caseMaps = nodeData.getCases().stream().map(c -> {
-					List<Map<String, Object>> conditions = c.getConditions()
+				throw new UnsupportedOperationException();
+			}
+		}),
+
+		STUDIO(new DialectConverter<>() {
+			@Override
+			public Boolean supportDialect(DSLDialectType dialectType) {
+				return DSLDialectType.STUDIO.equals(dialectType);
+			}
+
+			@Override
+			public BranchNodeData parse(Map<String, Object> data) throws JsonProcessingException {
+				BranchNodeData nodeData = new BranchNodeData();
+
+				// 获取条件信息
+				List<Map<String, Object>> caseList = Optional
+					.ofNullable(MapReadUtil.safeCastToListWithMap(
+							MapReadUtil.getMapDeepValue(data, List.class, "config", "node_param", "branches")))
+					.orElse(List.of())
+					.stream()
+					.filter(caseMap -> caseMap.containsKey("id"))
+					.toList();
+				String defaultCase = caseList.stream()
+					.filter(map -> !map.containsKey("conditions"))
+					.map(map -> map.get("id").toString())
+					.findFirst()
+					.orElse("default");
+				List<Case> cases = caseList.stream().filter(map -> map.containsKey("conditions")).map(map -> {
+					String id = MapReadUtil.getMapDeepValue(map, String.class, "id");
+					LogicalOperatorType logicalOperatorType = LogicalOperatorType
+						.fromValue(Optional.ofNullable(MapReadUtil.getMapDeepValue(map, String.class, "logic"))
+							.orElse(LogicalOperatorType.AND.getValue()));
+
+					// 提取Conditions
+					List<Map<String, Object>> conditionMap = Optional
+						.ofNullable(MapReadUtil
+							.safeCastToListWithMap(MapReadUtil.getMapDeepValue(map, List.class, "conditions")))
+						.orElse(List.of())
 						.stream()
-						.map(condition -> Map.of("comparison_operator",
-								condition.getComparisonOperator().getDifyValue(), "value", condition.getValue(),
-								"varType", condition.getVarType(), "variable_selector",
-								List.of(condition.getVariableSelector().getNamespace(),
-										condition.getVariableSelector().getName())))
+						.filter(mp -> mp.containsKey("left") && mp.containsKey("right") && mp.containsKey("operator"))
 						.toList();
-					return Map.of("id", c.getId(), "case_id", c.getId(), "conditions", conditions, "logical_operator",
-							c.getLogicalOperator().getDifyValue());
+					List<Case.Condition> conditions = conditionMap.stream().map(mp -> {
+						String rightFrom = MapReadUtil.getMapDeepValue(mp, String.class, "right", "value_from");
+						String leftValue = MapReadUtil.getMapDeepValue(mp, String.class, "left", "value");
+						String rightValue = MapReadUtil.getMapDeepValue(mp, String.class, "right", "value");
+
+						VariableType variableType = VariableType
+							.fromStudioValue(
+									Optional.ofNullable(MapReadUtil.getMapDeepValue(mp, String.class, "left", "type"))
+										.orElse(VariableType.OBJECT.studioValue()))
+							.orElseThrow();
+						VariableType referenceType = VariableType
+							.fromStudioValue(
+									Optional.ofNullable(MapReadUtil.getMapDeepValue(mp, String.class, "right", "type"))
+										.orElse(VariableType.OBJECT.studioValue()))
+							.orElseThrow();
+
+						ComparisonOperatorType comparisonOperatorType = ComparisonOperatorType.fromDslValue(
+								DSLDialectType.STUDIO, MapReadUtil.getMapDeepValue(mp, String.class, "operator"),
+								variableType);
+
+						VariableSelector targetSelector = this.varTemplateToSelector(DSLDialectType.STUDIO, leftValue);
+						Case.Condition condition = new Case.Condition().setVarType(variableType)
+							.setReferenceType(referenceType)
+							.setTargetSelector(targetSelector)
+							.setComparisonOperator(comparisonOperatorType);
+
+						if ("refer".equalsIgnoreCase(rightFrom)) {
+							VariableSelector referenceSelector = this.varTemplateToSelector(DSLDialectType.STUDIO,
+									rightValue);
+							condition.setReferenceSelector(referenceSelector);
+						}
+						else {
+							condition.setReferenceValue(rightValue);
+						}
+
+						return condition;
+					}).toList();
+
+					return new Case().setId(id).setLogicalOperator(logicalOperatorType).setConditions(conditions);
 				}).toList();
-				data.put("cases", caseMaps);
-				return data;
+
+				// 设置基本信息
+				nodeData.setCases(cases);
+				nodeData.setDefaultCase(defaultCase);
+				return nodeData;
+			}
+
+			@Override
+			public Map<String, Object> dump(BranchNodeData nodeData) {
+				throw new UnsupportedOperationException();
 			}
 		}),
 
@@ -133,6 +212,44 @@ public class BranchNodeDataConverter extends AbstractNodeDataConverter<BranchNod
 	@Override
 	public Stream<Variable> extractWorkflowVars(BranchNodeData data) {
 		return Stream.empty();
+	}
+
+	@Override
+	public BiConsumer<BranchNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
+		BiConsumer<BranchNodeData, Map<String, String>> consumer = super.postProcessConsumer(dialectType)
+			.andThen((nodeData, idToVarName) -> {
+				// 处理条件里的VariableSelector
+				nodeData.getCases().forEach(c -> {
+					c.getConditions().forEach(condition -> {
+						VariableSelector selector = condition.getTargetSelector();
+						selector
+							.setNameInCode(idToVarName.getOrDefault(selector.getNamespace(), selector.getNamespace())
+									+ "_" + selector.getName());
+						VariableSelector referenceSelector = condition.getReferenceSelector();
+						if (referenceSelector != null) {
+							referenceSelector.setNameInCode(idToVarName.getOrDefault(referenceSelector.getNamespace(),
+									referenceSelector.getNamespace()) + "_" + referenceSelector.getName());
+						}
+					});
+				});
+			});
+
+		return switch (dialectType) {
+			case DIFY -> consumer;
+			case STUDIO -> consumer.andThen((nodeData, idToVarName) -> {
+				// 将Case的caseId里添加nodeId（为了与Edge里的sourceHandle保持一致）
+				String varName = nodeData.getVarName();
+				String prefix = idToVarName.entrySet()
+					.stream()
+					.filter(entry -> entry.getValue().equals(varName))
+					.map(Map.Entry::getKey)
+					.findFirst()
+					.orElseThrow() + "_";
+				nodeData.getCases().forEach(c -> c.setId(prefix + c.getId()));
+				nodeData.setDefaultCase(prefix + nodeData.getDefaultCase());
+			});
+			default -> super.postProcessConsumer(dialectType);
+		};
 	}
 
 }

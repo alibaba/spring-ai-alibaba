@@ -69,7 +69,7 @@ public class DatasourceController {
 	 * Get data source details by ID
 	 */
 	@GetMapping("/{id}")
-	public ResponseEntity<Datasource> getDatasourceById(@PathVariable Integer id) {
+	public ResponseEntity<Datasource> getDatasourceById(@PathVariable(value = "id") Integer id) {
 		Datasource datasource = datasourceService.getDatasourceById(id);
 		if (datasource != null) {
 			return ResponseEntity.ok(datasource);
@@ -97,7 +97,8 @@ public class DatasourceController {
 	 * Update data source
 	 */
 	@PutMapping("/{id}")
-	public ResponseEntity<Datasource> updateDatasource(@PathVariable Integer id, @RequestBody Datasource datasource) {
+	public ResponseEntity<Datasource> updateDatasource(@PathVariable(value = "id") Integer id,
+			@RequestBody Datasource datasource) {
 		try {
 			Datasource updated = datasourceService.updateDatasource(id, datasource);
 			return ResponseEntity.ok(updated);
@@ -111,7 +112,7 @@ public class DatasourceController {
 	 * Delete data source
 	 */
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Map<String, Object>> deleteDatasource(@PathVariable Integer id) {
+	public ResponseEntity<Map<String, Object>> deleteDatasource(@PathVariable(value = "id") Integer id) {
 		try {
 			datasourceService.deleteDatasource(id);
 			Map<String, Object> response = new HashMap<>();
@@ -131,7 +132,7 @@ public class DatasourceController {
 	 * Test data source connection
 	 */
 	@PostMapping("/{id}/test")
-	public ResponseEntity<Map<String, Object>> testConnection(@PathVariable Integer id) {
+	public ResponseEntity<Map<String, Object>> testConnection(@PathVariable(value = "id") Integer id) {
 		try {
 			boolean success = datasourceService.testConnection(id);
 			Map<String, Object> response = new HashMap<>();
@@ -165,7 +166,7 @@ public class DatasourceController {
 	 * Get data source list associated with agent
 	 */
 	@GetMapping("/agent/{agentId}")
-	public ResponseEntity<List<AgentDatasource>> getAgentDatasources(@PathVariable Integer agentId) {
+	public ResponseEntity<List<AgentDatasource>> getAgentDatasources(@PathVariable(value = "agentId") Integer agentId) {
 		try {
 			List<AgentDatasource> agentDatasources = datasourceService.getAgentDatasources(agentId);
 			return ResponseEntity.ok(agentDatasources);

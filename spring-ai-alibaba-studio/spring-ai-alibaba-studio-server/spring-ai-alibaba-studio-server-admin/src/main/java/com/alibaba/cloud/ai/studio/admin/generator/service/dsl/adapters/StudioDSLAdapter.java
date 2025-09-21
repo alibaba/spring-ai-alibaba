@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Workflow;
+import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.IterationNodeData;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.AbstractDSLAdapter;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.NodeDataConverter;
@@ -42,6 +43,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,6 +53,7 @@ import java.util.stream.Stream;
  * @author vlsmb
  * @since 2025/8/27
  */
+// TODO: 与DifyDSLAdapter合并一些重复代码
 @Component
 public class StudioDSLAdapter extends AbstractDSLAdapter {
 
@@ -118,13 +122,86 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 	private Graph constructGraph(Map<String, Object> data) {
 		Graph graph = new Graph();
 
-		List<Map<String, Object>> nodeMap = MapReadUtil
-			.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "nodes"));
-		List<Map<String, Object>> edgeMap = MapReadUtil
-			.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "edges"));
+		List<Map<String, Object>> nodeMap = new ArrayList<>(Optional
+			.ofNullable(
+					MapReadUtil.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "nodes")))
+			.orElse(List.of()));
+		List<Map<String, Object>> edgeMap = new ArrayList<>(Optional
+			.ofNullable(
+					MapReadUtil.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, List.class, "config", "edges")))
+			.orElse(List.of()));
+
+		List<Map<String, Object>> innerNodeMaps = new ArrayList<>();
+		List<Map<String, Object>> innerEdgeMaps = new ArrayList<>();
+
+		// 展开迭代节点内部的Node和Edge
+		nodeMap.forEach(map -> {
+			NodeType type = NodeType.fromStudioValue(MapReadUtil.getMapDeepValue(map, String.class, "type"))
+				.orElseThrow(() -> new UnsupportedOperationException("unsupported node type " + map.get("type")));
+			if (NodeType.ITERATION.equals(type)) {
+				List<Map<String, Object>> innerNode = MapReadUtil.safeCastToListWithMap(
+						MapReadUtil.getMapDeepValue(map, List.class, "config", "node_param", "block", "nodes"));
+				if (innerNode != null) {
+					innerNodeMaps.addAll(innerNode);
+				}
+				List<Map<String, Object>> innerEdge = MapReadUtil.safeCastToListWithMap(
+						MapReadUtil.getMapDeepValue(map, List.class, "config", "node_param", "block", "edges"));
+				if (innerEdge != null) {
+					innerEdgeMaps.addAll(innerEdge);
+				}
+			}
+		});
+		nodeMap.addAll(innerNodeMaps);
+		edgeMap.addAll(innerEdgeMaps);
 
 		List<Node> nodes = this.constructNodes(nodeMap);
 		List<Edge> edges = this.constructEdges(edgeMap);
+
+		Map<String, String> varNames = nodes.stream()
+			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
+		Map<String, Node> nodeIdMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
+
+		// 根据parnetId进行分组，为了给迭代节点的起始节点传递迭代数据
+		Map<String, List<Node>> groupByParentId = nodes.stream()
+			.filter(node -> Objects.nonNull(node.getParentId()))
+			.collect(Collectors.groupingBy(Node::getParentId));
+
+		groupByParentId.forEach((parentId, subNodes) -> {
+			subNodes.forEach(node -> {
+				if (NodeType.ITERATION_START.equals(node.getType())) {
+					IterationNodeData nodeData = new IterationNodeData(
+							(IterationNodeData) nodeIdMap.get(parentId).getData());
+					nodeData.setVarName(nodeIdMap.get(parentId).getData().getVarName() + "_start");
+					varNames.put(node.getId(), nodeData.getVarName());
+					node.setData(nodeData);
+				}
+				else if (NodeType.ITERATION_END.equals(node.getType())) {
+					IterationNodeData nodeData = new IterationNodeData(
+							(IterationNodeData) nodeIdMap.get(parentId).getData());
+					nodeData.setVarName(nodeIdMap.get(parentId).getData().getVarName() + "_end");
+					varNames.put(node.getId(), nodeData.getVarName());
+					node.setData(nodeData);
+				}
+			});
+		});
+
+		// 将Edge里的source和target都转换成varName
+		edges.forEach(edge -> {
+			edge.setSource(varNames.getOrDefault(edge.getSource(), edge.getSource()));
+			edge.setTarget(varNames.getOrDefault(edge.getTarget(), edge.getTarget()));
+		});
+
+		// 将Iteration节点起始改为iteration_start，并将Iteration节点结束改为iteration_end
+		Map<String, Node> nodeVarMap = nodes.stream().collect(Collectors.toMap(n -> n.getData().getVarName(), n -> n));
+		edges.forEach(edge -> {
+			if (NodeType.ITERATION.equals(nodeVarMap.get(edge.getSource()).getType())) {
+				edge.setSource(edge.getSource() + "_end");
+			}
+			if (NodeType.ITERATION.equals(nodeVarMap.get(edge.getTarget()).getType())) {
+				edge.setTarget(edge.getTarget() + "_start");
+			}
+		});
+
 		graph.setNodes(nodes);
 		graph.setEdges(edges);
 		return graph;
@@ -153,7 +230,10 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 
 			// 构造Node
 			Node node = new Node();
-			node.setId(nodeId).setType(nodeType).setTitle(nodeTitle);
+			node.setId(nodeId)
+				.setType(nodeType)
+				.setTitle(nodeTitle)
+				.setParentId(MapReadUtil.getMapDeepValue(nodeMap, String.class, "parent_id"));
 
 			// convert node data using specific WorkflowNodeDataConverter
 			@SuppressWarnings("unchecked")
@@ -162,7 +242,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 			NodeData data = converter.parseMapData(nodeMap, DSLDialectType.STUDIO);
 
 			// Generate a readable varName and inject it into NodeData
-			int count = counters.merge(nodeType, 1, Integer::sum);
+			int count = counters.merge(NodeType.isEmpty(nodeType) ? NodeType.EMPTY : nodeType, 1, Integer::sum);
 			String varName = converter.generateVarName(count);
 
 			data.setVarName(varName);
@@ -202,8 +282,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 				.setSource(source)
 				.setTarget(target)
 				.setSourceHandle(sourceHandle)
-				.setTargetHandle(targetHandle)
-				.setDify(false);
+				.setTargetHandle(targetHandle);
 			return edge;
 		}).toList();
 	}

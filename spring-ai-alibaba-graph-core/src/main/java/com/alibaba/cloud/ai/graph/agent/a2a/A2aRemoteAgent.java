@@ -17,9 +17,9 @@ package com.alibaba.cloud.ai.graph.agent.a2a;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
@@ -29,22 +29,18 @@ import io.a2a.spec.AgentCard;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Logger;
 
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public class A2aRemoteAgent extends BaseAgent {
 
-	private final AgentCard agentCard;
-
-	private final StateGraph graph;
+	private final AgentCardWrapper agentCard;
 
 	private CompiledGraph compiledGraph;
 
 	private KeyStrategyFactory keyStrategyFactory;
 
-	private A2aNode a2aNode;
+	private A2aNodeWithConfig a2aNode;
 
 	private CompileConfig compileConfig;
 
@@ -55,7 +51,7 @@ public class A2aRemoteAgent extends BaseAgent {
 	Logger logger = Logger.getLogger(A2aRemoteAgent.class.getName());
 
 	// Private constructor for Builder pattern
-	private A2aRemoteAgent(A2aNode a2aNode, Builder builder) throws GraphStateException {
+	private A2aRemoteAgent(A2aNodeWithConfig a2aNode, Builder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.outputKey);
 		this.agentCard = builder.agentCard;
 		this.keyStrategyFactory = builder.keyStrategyFactory;
@@ -63,10 +59,10 @@ public class A2aRemoteAgent extends BaseAgent {
 		this.inputKey = builder.inputKey;
 		this.streaming = builder.streaming;
 		this.a2aNode = a2aNode;
-		this.graph = initGraph();
 	}
 
-	private StateGraph initGraph() throws GraphStateException {
+	@Override
+	protected StateGraph initGraph() throws GraphStateException {
 		if (keyStrategyFactory == null) {
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
@@ -76,7 +72,7 @@ public class A2aRemoteAgent extends BaseAgent {
 		}
 
 		StateGraph graph = new StateGraph(name, this.keyStrategyFactory);
-		graph.addNode("A2aNode", node_async(a2aNode));
+		graph.addNode("A2aNode", AsyncNodeActionWithConfig.node_async(a2aNode));
 		graph.addEdge(StateGraph.START, "A2aNode");
 		graph.addEdge("A2aNode", StateGraph.END);
 		return graph;
@@ -84,31 +80,16 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	@Override
 	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) {
-		return node_async(new A2aNode(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
+		return AsyncNodeAction.node_async(new A2aNode(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
 	}
 
-	@Override
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.invoke(input);
+	public AsyncNodeActionWithConfig asAsyncNodeActionWithConfig(String inputKeyFromParent, String outputKeyToParent) {
+		return AsyncNodeActionWithConfig.node_async(new A2aNodeWithConfig(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
 	}
 
 	@Override
 	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException, GraphRunnerException {
 		throw new UnsupportedOperationException("A2aRemoteAgent has not support schedule.");
-	}
-
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> input)
-			throws GraphStateException, GraphRunnerException {
-		if (!streaming) {
-			logger.warning("Streaming is not enabled for this agent.");
-		}
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return this.compiledGraph.stream(input);
 	}
 
 	public StateGraph getStateGraph() {
@@ -121,16 +102,6 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	public CompiledGraph getAndCompileGraph(CompileConfig compileConfig) throws GraphStateException {
 		this.compiledGraph = getStateGraph().compile(compileConfig);
-		return this.compiledGraph;
-	}
-
-	public CompiledGraph getAndCompileGraph() throws GraphStateException {
-		if (this.compileConfig == null) {
-			this.compiledGraph = getStateGraph().compile();
-		}
-		else {
-			this.compiledGraph = getStateGraph().compile(this.compileConfig);
-		}
 		return this.compiledGraph;
 	}
 
@@ -155,7 +126,9 @@ public class A2aRemoteAgent extends BaseAgent {
 		private String outputKey = "output";
 
 		// A2aRemoteAgent specific properties
-		private AgentCard agentCard;
+		private AgentCardWrapper agentCard;
+
+		private AgentCardProvider agentCardProvider;
 
 		private String inputKey = "input";
 
@@ -181,7 +154,12 @@ public class A2aRemoteAgent extends BaseAgent {
 		}
 
 		public Builder agentCard(AgentCard agentCard) {
-			this.agentCard = agentCard;
+			this.agentCard = new AgentCardWrapper(agentCard);
+			return this;
+		}
+
+		public Builder agentCardProvider(AgentCardProvider agentCardProvider) {
+			this.agentCardProvider = agentCardProvider;
 			return this;
 		}
 
@@ -214,11 +192,19 @@ public class A2aRemoteAgent extends BaseAgent {
 				throw new IllegalArgumentException("Description must be provided");
 			}
 			if (agentCard == null) {
-				throw new IllegalArgumentException("AgentCard must be provided");
+				if (null == agentCardProvider) {
+					throw new IllegalArgumentException("AgentCard or AgentCardProvider must be provided");
+				}
+				if (agentCardProvider.supportGetAgentCardByName()) {
+					agentCard = agentCardProvider.getAgentCard(name);
+				}
+				else {
+					agentCard = agentCardProvider.getAgentCard();
+				}
 			}
 
 			this.streaming = agentCard.capabilities().streaming();
-			A2aNode a2aNode = new A2aNode(agentCard, inputKey, outputKey, streaming);
+			A2aNodeWithConfig a2aNode = new A2aNodeWithConfig(agentCard, inputKey, outputKey, streaming);
 
 			return new A2aRemoteAgent(a2aNode, this);
 		}
@@ -247,7 +233,7 @@ public class A2aRemoteAgent extends BaseAgent {
 						"Input key '" + inputKeyFromParent + "' not found in state: " + parentState));
 
 			// invoke child graph with input
-			OverAllState childState = childGraph.invoke(Map.of("input", inputValue)).get();
+			OverAllState childState = childGraph.call(Map.of("input", inputValue)).get();
 
 			// extract output from child graph
 			Object outputValue = childState.value(outputKeyToParent)

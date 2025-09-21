@@ -37,23 +37,22 @@ public class EmptyNodeDataConverter extends AbstractNodeDataConverter<EmptyNodeD
 
 	public enum EmptyNodeDialectConverter {
 
-		DIFY(new DialectConverter<EmptyNodeData>() {
+		ALL(new DialectConverter<>() {
 			@Override
 			public Boolean supportDialect(DSLDialectType dialectType) {
-				return dialectType.equals(DSLDialectType.DIFY);
+				return true;
 			}
 
 			@Override
 			public EmptyNodeData parse(Map<String, Object> data) throws JsonProcessingException {
-				String id = (String) data.get("id");
-				return new EmptyNodeData(id);
+				return new EmptyNodeData();
 			}
 
 			@Override
 			public Map<String, Object> dump(EmptyNodeData nodeData) {
-				return Map.of();
+				throw new UnsupportedOperationException();
 			}
-		}), CUSTOM(AbstractNodeDataConverter.defaultCustomDialectConverter(EmptyNodeData.class));
+		});
 
 		private final DialectConverter<EmptyNodeData> dialectConverter;
 
@@ -76,12 +75,12 @@ public class EmptyNodeDataConverter extends AbstractNodeDataConverter<EmptyNodeD
 
 	@Override
 	public Boolean supportNodeType(NodeType nodeType) {
-		return nodeType.equals(NodeType.DIFY_ITERATION_START);
+		return NodeType.isEmpty(nodeType);
 	}
 
 	@Override
 	public String generateVarName(int count) {
-		return "__empty__node_" + count;
+		return "emptyNode" + count;
 	}
 
 }

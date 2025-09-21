@@ -17,8 +17,10 @@
 package com.alibaba.cloud.ai.util;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.document.Document;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -28,6 +30,8 @@ import java.util.function.Supplier;
  * @author zhangshenghang
  */
 public class StateUtils {
+
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	/**
 	 * Safely get string type state value
@@ -60,7 +64,7 @@ public class StateUtils {
 	 */
 	public static <T> T getObjectValue(OverAllState state, String key, Class<T> type) {
 		return state.value(key)
-			.map(type::cast)
+			.map(value -> deserializeIfNeeded(value, type))
 			.orElseThrow(() -> new IllegalStateException("State key not found: " + key));
 	}
 
@@ -68,7 +72,24 @@ public class StateUtils {
 	 * Safely get object type state value with default value
 	 */
 	public static <T> T getObjectValue(OverAllState state, String key, Class<T> type, T defaultValue) {
-		return state.value(key).map(type::cast).orElse(defaultValue);
+		return state.value(key).map(value -> deserializeIfNeeded(value, type)).orElse(defaultValue);
+	}
+
+	/**
+	 * Handle deserialization of HashMap to target type when needed
+	 */
+	private static <T> T deserializeIfNeeded(Object value, Class<T> type) {
+		// If already the correct type, return as-is
+		if (type.isInstance(value)) {
+			return type.cast(value);
+		}
+
+		// If it's a HashMap but we need a complex object, use JSON conversion
+		if (value instanceof HashMap && !type.equals(HashMap.class)) {
+			return OBJECT_MAPPER.convertValue(value, type);
+		}
+
+		return type.cast(value);
 	}
 
 	/**

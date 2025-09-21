@@ -18,13 +18,16 @@ package com.alibaba.cloud.ai.studio.admin.generator.service.dsl;
 import java.util.Arrays;
 import java.util.Optional;
 
+// TODO: 移动到model包中
 public enum DSLDialectType {
 
 	DIFY("dify", ".yml"),
 
 	STUDIO("studio", ".json"),
 
-	CUSTOM("custom", ".yml");
+	CUSTOM("custom", ".yml"),
+
+	SAA_AGENT("saa-agent", ".yaml");
 
 	private final String value;
 
