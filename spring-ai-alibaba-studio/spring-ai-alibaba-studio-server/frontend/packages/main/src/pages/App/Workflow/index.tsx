@@ -70,6 +70,7 @@ import {
 } from './types';
 import { getMCPNodeInputParams } from './utils';
 import { transformToBizData, transformToFlowData } from './utils/transform';
+import { convertDifyToSpringAI } from '@/services/difyConverter';
 
 interface IProps {
   onSave: (data: IBizFlowData) => void;
@@ -81,12 +82,13 @@ interface IProps {
 interface IFlowBaseProps extends Omit<IProps, 'setActiveTab' | 'onSave'> {
   actionLoading: boolean;
   handlePublish: () => void;
+  handleExportSAA: () => void;
 }
 
 const lang = $i18n.getCurrentLanguage();
 
 export const FlowBase = memo((props: IFlowBaseProps) => {
-  const { actionLoading, init, appDetail, handlePublish } = props;
+  const { actionLoading, init, appDetail, handlePublish, handleExportSAA } = props;
   const setShowTest = useWorkflowAppStore((state) => state.setShowTest);
   const { initDebug } = useInitDebug();
   const portal = useInnerLayout();
@@ -191,6 +193,13 @@ export const FlowBase = memo((props: IFlowBaseProps) => {
                 </Button>
                 <CheckListBtn />
               </Space.Compact>
+              {/* 新增“导出SAA工程代码”按钮 */}
+              <Button
+                disabled={actionLoading}
+                onClick={handleExportSAA}
+              >
+                导出SAA工程代码
+              </Button>
               <Button
                 disabled={actionLoading}
                 onClick={() => {
@@ -273,6 +282,55 @@ export const FlowEditor = memo((props: IProps) => {
         setActionLoading(false);
       });
   }, []);
+
+  const handleExportSAA = useCallback(async () => {
+    if (!props.appDetail) return;
+
+    console.log(props.appDetail);
+
+    setActionLoading(true);
+    try {
+      // 准备请求参数
+      const params = {
+        dependencies: 'spring-ai-alibaba-graph,web,spring-ai-alibaba-starter-dashscope,spring-ai-starter-mcp-client',
+        appMode: 'workflow',
+        dslDialectType: 'studio',
+        type: 'maven-project',
+        language: 'java',
+        bootVersion: '3.5.0',
+        baseDir: 'demo',
+        groupId: 'com.example',
+        artifactId: 'demo',
+        name: 'demo',
+        description: 'Demo project for Spring Boot',
+        packageName: 'com.example.demo',
+        packaging: 'jar',
+        javaVersion: '17',
+        dsl: JSON.stringify(props.appDetail),
+      };
+
+      // 调用转换服务
+      const response = await convertDifyToSpringAI(params);
+
+      // 处理 zip 文件下载
+      const blob = response.data;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'spring-ai-alibaba-demo.zip';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      message.success('转换成功！项目文件已开始下载');
+    } catch (error) {
+      console.error('转换失败:', error);
+      message.error(`转换失败：${error.message || '请重试'}`);
+    } finally {
+      setActionLoading(false); // 重置加载状态
+    }
+  }, [props.appDetail]);
 
   const handleSave = useCallback(
     async (data: { nodes: IWorkFlowNode[]; edges: Edge[] }) => {
@@ -413,6 +471,7 @@ export const FlowEditor = memo((props: IProps) => {
           appDetail={props.appDetail}
           actionLoading={actionLoading}
           handlePublish={handlePublish}
+          handleExportSAA={handleExportSAA}
           init={props.init}
         />
 

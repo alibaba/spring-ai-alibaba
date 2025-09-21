@@ -26,22 +26,18 @@ import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
+import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 public abstract class FlowAgent extends BaseAgent {
-
-	protected CompileConfig compileConfig;
 
 	protected String inputKey;
 
 	protected KeyStrategyFactory keyStrategyFactory;
 
 	protected List<BaseAgent> subAgents;
-
-	protected StateGraph graph;
-
-	protected CompiledGraph compiledGraph;
 
 	protected FlowAgent(String name, String description, String outputKey, String inputKey,
 			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig, List<BaseAgent> subAgents)
@@ -53,6 +49,7 @@ public abstract class FlowAgent extends BaseAgent {
 		this.subAgents = subAgents;
 	}
 
+	@Override
 	protected StateGraph initGraph() throws GraphStateException {
 		// Use FlowGraphBuilder to construct the graph
 		FlowGraphBuilder.FlowGraphConfig config = FlowGraphBuilder.FlowGraphConfig.builder()
@@ -83,17 +80,13 @@ public abstract class FlowAgent extends BaseAgent {
 			this.compiledGraph = getAndCompileGraph();
 		}
 		return node_async(
-				new ReactAgent.SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
+				new ReactAgent.SubGraphStreamingNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
 	}
 
-	public CompiledGraph getAndCompileGraph() throws GraphStateException {
-		if (this.compileConfig == null) {
-			this.compiledGraph = graph.compile();
-		}
-		else {
-			this.compiledGraph = graph.compile(this.compileConfig);
-		}
-		return this.compiledGraph;
+	@Override
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.schedule(scheduleConfig);
 	}
 
 	public CompileConfig compileConfig() {

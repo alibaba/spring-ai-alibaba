@@ -1,0 +1,1062 @@
+// 覆盖InnerLayout的content-area样式
+:global {
+  #InnerLayout .content-area {
+    height: auto !important; // 覆盖height: 0
+    flex: none !important; // 覆盖flex: 1
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+}
+
+.container {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  height: calc(100vh - 120px); // 设置固定高度，减去头部导航等高度
+  min-height: 600px; // 设置最小高度
+  overflow: hidden; // 改为hidden，让子组件控制滚动
+  display: flex;
+  flex-direction: column;
+}
+
+.threeColumnLayout {
+  display: flex;
+  flex: 1; // 改回flex: 1，占满父容器高度
+  height: 100%; // 设置固定高度
+  gap: 0;
+}
+
+.leftPanel {
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
+  flex-shrink: 0;
+  border-right: 1px solid #e5e7eb;
+  background: #f9fafb;
+  height: 100%; // 设置为100%，占满父容器高度
+  overflow: hidden; // 改为hidden，让内部组件控制滚动
+}
+
+.centerPanel {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid #e5e7eb;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  height: 100%; // 设置为100%，占满父容器高度
+  overflow: hidden; // 改为hidden，让内部组件控制滚动
+}
+
+.rightPanel {
+  width: 400px;
+  flex-shrink: 0;
+  background: #f9fafb;
+  height: 100%; // 设置为100%，占满父容器高度
+  overflow: hidden; // 改为hidden，让内部组件控制滚动
+}
+
+.savedAgentsCard {
+  height: 100%; // 占满左侧Panel的高度
+  border: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+
+  .ant-card-head {
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+    flex-shrink: 0;
+    padding: 16px 20px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .ant-card-body {
+    padding: 8px 12px;
+    flex: 1; // 改为flex: 1，占满剩余空间
+    overflow: hidden; // 让内部div控制滚动
+    min-height: 0;
+
+    // 强制显示滚动条样式
+    &::-webkit-scrollbar {
+      width: 8px !important;
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f3f4 !important;
+      border-radius: 4px;
+      margin: 2px 0;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1 !important;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      min-height: 20px;
+
+      &:hover {
+        background: #a8a8a8 !important;
+      }
+
+      &:active {
+        background: #888888 !important;
+      }
+    }
+
+    &::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    // Firefox 支持
+    scrollbar-width: thin !important;
+    scrollbar-color: #c1c1c1 #f1f3f4 !important;
+  }
+
+  // 确保Antd List组件的滚动
+  .ant-list {
+    max-height: 300px; // 对应减少高度
+    overflow-y: auto !important;
+
+    &::-webkit-scrollbar {
+      width: 8px !important;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f3f4 !important;
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #c1c1c1 !important;
+      border-radius: 4px;
+      min-height: 20px;
+
+      &:hover {
+        background: #a8a8a8 !important;
+      }
+    }
+  }
+}
+
+// 列表容器样式 - 强制显示滚动条
+.listContainer {
+  overflow-y: scroll !important; /* 强制显示垂直滚动条 */
+  overflow-x: hidden !important;
+  background: #ffffff; /* 确保容器背景是白色 */
+
+  /* WebKit 浏览器滚动条样式 */
+  &::-webkit-scrollbar {
+    width: 10px !important;
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f8f9fa !important;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #adb5bd 0%, #6c757d 100%) !important;
+    border-radius: 5px;
+    border: 2px solid #f8f9fa;
+    min-height: 30px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+
+    &:hover {
+      background: linear-gradient(180deg, #6c757d 0%, #495057 100%) !important;
+    }
+
+    &:active {
+      background: linear-gradient(180deg, #495057 0%, #343a40 100%) !important;
+    }
+  }
+
+  &::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  /* Firefox 滚动条样式 */
+  scrollbar-width: thin !important;
+  scrollbar-color: #6c757d #f8f9fa !important;
+}
+
+// 强制显示滚动条的通用类（保留作为备用）
+.forceScrollbar {
+  overflow-y: scroll !important; /* 强制显示垂直滚动条 */
+  overflow-x: hidden;
+  background: #ffffff; /* 确保容器背景是白色 */
+
+  &::-webkit-scrollbar {
+    width: 8px !important;
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f3f4 !important;
+    border-radius: 4px;
+    margin: 2px 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1 !important;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    min-height: 20px;
+
+    &:hover {
+      background: #a8a8a8 !important;
+    }
+
+    &:active {
+      background: #888888 !important;
+    }
+  }
+
+  // Firefox 支持
+  scrollbar-width: thin !important;
+  scrollbar-color: #c1c1c1 #f1f3f4 !important;
+}
+
+.configCard {
+  height: 100%; // 占满中间Panel的高度
+  border: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+
+  .ant-card-head {
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+    flex-shrink: 0;
+    padding: 16px 24px;
+  }
+
+  .ant-card-body {
+    padding: 0 !important;
+    flex: 1; // 改为flex: 1，占满剩余空间
+    overflow: hidden; // 让内部组件控制滚动
+    display: flex !important;
+    flex-direction: column;
+  }
+}
+
+.yamlCard {
+  height: 100%; // 占满右侧Panel的高度
+  border: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+
+  .ant-card-head {
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+    flex-shrink: 0;
+  }
+
+  .ant-card-body {
+    padding: 16px;
+    flex: 1; // 改为flex: 1，占满剩余空间
+    overflow-y: auto;
+    min-height: 0;
+  }
+}
+
+.agentItem {
+  padding: 12px 16px !important;
+  margin: 4px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+
+  &:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+
+    .deleteButton {
+      opacity: 1;
+    }
+  }
+
+  &.selectedAgent {
+    background: #eff6ff;
+    border-color: #3b82f6;
+
+    .deleteButton {
+      opacity: 1;
+    }
+  }
+
+  // 删除按钮样式
+  .deleteButton {
+    opacity: 0.6;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    
+    &:hover {
+      opacity: 1;
+      background: rgba(255, 77, 79, 0.1);
+      transform: scale(1.1);
+    }
+    
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+}
+
+.agentInfo {
+  width: 100%;
+}
+
+.agentName {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.agentDescription {
+  display: block;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.agentType {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.newAgentButton {
+  margin-top: 8px;
+}
+
+.yamlHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.copyButton {
+  padding: 4px 8px;
+  height: auto;
+  font-size: 12px;
+}
+
+.yamlContent {
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  min-height: 200px; // 设置最小高度
+  max-height: 450px; // 设置最大高度，防止过度扩展
+  overflow-y: auto; // 内容过多时显示滚动条
+}
+
+.tooltipText {
+  margin-left: 4px;
+  cursor: help;
+}
+
+.keyRow {
+  display: flex;
+  gap: 16px;
+
+  .keyItem {
+    flex: 1;
+  }
+}
+
+// 原始复选框组样式
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .ant-checkbox-wrapper {
+    margin: 0;
+  }
+}
+
+// 新的选择器样式 - 参考图片中的Argo工具样式
+.selectorGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 8px 0;
+
+  // 自定义滚动条
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 2px;
+
+    &:hover {
+      background: #9ca3af;
+    }
+  }
+}
+
+.selectorItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #ffffff;
+  min-height: 44px;
+
+  &:hover {
+    border-color: #3b82f6;
+    background: #f8faff;
+  }
+
+  &.selected {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    box-shadow: 0 0 0 1px #3b82f6;
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: #f9fafb;
+
+    &:hover {
+      border-color: #e5e7eb;
+      background: #f9fafb;
+    }
+  }
+}
+
+.selectorItemIcon {
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+  border-radius: 4px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #6b7280;
+  flex-shrink: 0;
+
+  .selected & {
+    background: #3b82f6;
+    color: #ffffff;
+  }
+}
+
+.selectorItemContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.selectorItemTitle {
+  font-weight: 500;
+  font-size: 13px;
+  color: #1f2937;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.selectorItemDescription {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectorCheckbox {
+  margin-left: 8px;
+  flex-shrink: 0;
+
+  .ant-checkbox {
+    display: none;
+  }
+
+  .ant-checkbox-wrapper {
+    margin: 0;
+  }
+}
+
+// 展开/折叠按钮样式
+.expandButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed #d1d5db;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  margin-top: 8px;
+
+  &:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    background: #f8faff;
+  }
+
+  .anticon {
+    margin-right: 4px;
+  }
+}
+
+.configActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  margin-top: auto;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.scrollContainer {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  background: #ffffff; /* 确保容器背景是白色 */
+
+  // 自定义滚动条样式 - 更显眼的独立滚动条
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #6c757d;
+    border-radius: 6px;
+    border: 2px solid #f8f9fa;
+    background-clip: padding-box;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #495057;
+    }
+
+    &:active {
+      background: #343a40;
+    }
+  }
+
+  &::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  // Firefox 支持
+  scrollbar-width: thin;
+  scrollbar-color: #6c757d #f8f9fa;
+}
+
+// 独立滚动条容器类 - 与左侧面板保持一致的显眼样式
+.independentScrollContainer {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-right: 2px solid #e9ecef;
+  position: relative;
+  background: #ffffff; /* 确保容器背景是白色 */
+
+  // 自定义滚动条样式 - 与左侧面板一致
+  &::-webkit-scrollbar {
+    width: 10px !important;
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f8f9fa !important;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #adb5bd 0%, #6c757d 100%) !important;
+    border-radius: 5px;
+    border: 2px solid #f8f9fa;
+    min-height: 30px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: linear-gradient(180deg, #6c757d 0%, #495057 100%) !important;
+    }
+
+    &:active {
+      background: linear-gradient(180deg, #495057 0%, #343a40 100%) !important;
+    }
+  }
+
+  &::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  // Firefox 支持 - 与左侧面板一致
+  scrollbar-width: thin !important;
+  scrollbar-color: #6c757d #f8f9fa !important;
+}
+
+// 为表单部分添加滚动条 - 与左侧面板保持一致的显眼样式
+.formScrollContainer {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  margin-right: -8px;
+  border-radius: 8px;
+  background: #ffffff; /* 确保容器背景是白色 */
+
+  // 自定义滚动条样式 - 与左侧面板一致
+  &::-webkit-scrollbar {
+    width: 10px !important;
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f8f9fa !important;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #adb5bd 0%, #6c757d 100%) !important;
+    border-radius: 5px;
+    border: 2px solid #f8f9fa;
+    min-height: 30px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: linear-gradient(180deg, #6c757d 0%, #495057 100%) !important;
+    }
+
+    &:active {
+      background: linear-gradient(180deg, #495057 0%, #343a40 100%) !important;
+    }
+  }
+
+  &::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  // Firefox 支持 - 与左侧面板一致
+  scrollbar-width: thin !important;
+  scrollbar-color: #6c757d #f8f9fa !important;
+}
+
+.form {
+  margin-bottom: 24px;
+
+  .ant-form-item-label > label {
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .ant-input,
+  .ant-select-selector,
+  .ant-input-number,
+  .ant-input {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: #3b82f6;
+    }
+
+    &:focus,
+    &.ant-input-focused,
+    &.ant-select-focused .ant-select-selector {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  }
+
+  // 限制 TextArea 的最大高度
+  .ant-input {
+    max-height: 200px;
+    resize: vertical;
+  }
+}
+
+// 响应式设计
+@media (max-width: 1200px) {
+  .threeColumnLayout {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .leftPanel,
+  .centerPanel,
+  .rightPanel {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .leftPanel {
+    height: 200px;
+  }
+
+  .rightPanel {
+    height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    height: auto;
+    min-height: calc(100vh - 64px);
+  }
+
+  .keyRow {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .checkboxGroup {
+    flex-direction: column;
+  }
+
+  .configActions {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+// 深色模式支持
+@media (prefers-color-scheme: dark) {
+  .leftPanel,
+  .rightPanel {
+    background: #1f2937;
+  }
+
+  .centerPanel {
+    background: #111827;
+  }
+
+  .savedAgentsCard,
+  .configCard,
+  .yamlCard {
+    .ant-card-head {
+      background: #1f2937;
+      border-bottom-color: #374151;
+    }
+
+    // 深色模式下的滚动条
+    .ant-card-body {
+      &::-webkit-scrollbar-track {
+        background: #374151 !important;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #9ca3af !important;
+
+        &:hover {
+          background: #d1d5db !important;
+        }
+
+        &:active {
+          background: #f3f4f6 !important;
+        }
+      }
+
+      scrollbar-color: #9ca3af #374151 !important;
+    }
+
+    .ant-list {
+      &::-webkit-scrollbar-track {
+        background: #374151 !important;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #9ca3af !important;
+
+        &:hover {
+          background: #d1d5db !important;
+        }
+      }
+    }
+  }
+
+  .agentItem {
+    &:hover {
+      background: #374151;
+
+      .deleteButton {
+        opacity: 1;
+      }
+    }
+
+    &.selectedAgent {
+      background: #1e40af;
+
+      .deleteButton {
+        opacity: 1;
+      }
+    }
+
+    .deleteButton {
+      &:hover {
+        background: rgba(255, 77, 79, 0.2);
+      }
+    }
+  }
+
+  .form {
+    .ant-form-item-label > label {
+      color: #f9fafb;
+    }
+
+    .ant-input,
+    .ant-select-selector,
+    .ant-input-number {
+      background: #374151;
+      border-color: #4b5563;
+      color: #f9fafb;
+
+      &:hover {
+        border-color: #3b82f6;
+      }
+
+      &:focus,
+      &.ant-input-focused,
+      &.ant-select-focused .ant-select-selector {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+    }
+  }
+
+  .configActions {
+    border-top-color: #374151;
+  }
+
+  // 深色模式滚动条样式
+  .scrollContainer {
+    &::-webkit-scrollbar-track {
+      background: #374151;
+      border-color: #4b5563;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #9ca3af;
+      border-color: #374151;
+
+      &:hover {
+        background: #d1d5db;
+      }
+
+      &:active {
+        background: #f3f4f6;
+      }
+    }
+
+    scrollbar-color: #9ca3af #374151;
+  }
+
+  .independentScrollContainer {
+    border-right-color: #374151;
+
+    &::-webkit-scrollbar-track {
+      background: #374151 !important;
+      border-color: #4b5563;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%) !important;
+      border-color: #374151;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+
+      &:hover {
+        background: linear-gradient(180deg, #d1d5db 0%, #9ca3af 100%) !important;
+      }
+
+      &:active {
+        background: linear-gradient(180deg, #f3f4f6 0%, #d1d5db 100%) !important;
+      }
+    }
+
+    scrollbar-color: #9ca3af #374151 !important;
+  }
+
+  .formScrollContainer {
+    &::-webkit-scrollbar-track {
+      background: #374151 !important;
+      border-color: #4b5563;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%) !important;
+      border-color: #374151;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+
+      &:hover {
+        background: linear-gradient(180deg, #d1d5db 0%, #9ca3af 100%) !important;
+      }
+
+      &:active {
+        background: linear-gradient(180deg, #f3f4f6 0%, #d1d5db 100%) !important;
+      }
+    }
+
+    scrollbar-color: #9ca3af #374151 !important;
+  }
+
+  // 深色模式下的选择器样式
+  .selectorGroup {
+    &::-webkit-scrollbar-thumb {
+      background: #9ca3af;
+
+      &:hover {
+        background: #d1d5db;
+      }
+    }
+
+    scrollbar-color: #9ca3af #374151;
+  }
+
+  .selectorItem {
+    background: #374151;
+    border-color: #4b5563;
+
+    &:hover {
+      border-color: #3b82f6;
+      background: #1e3a8a;
+    }
+
+    &.selected {
+      border-color: #3b82f6;
+      background: #1e40af;
+      box-shadow: 0 0 0 1px #3b82f6;
+    }
+
+    &.disabled {
+      background: #1f2937;
+
+      &:hover {
+        border-color: #4b5563;
+        background: #1f2937;
+      }
+    }
+  }
+
+  .selectorItemIcon {
+    background: #4b5563;
+    color: #9ca3af;
+
+    .selected & {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+  }
+
+  .selectorItemTitle {
+    color: #f9fafb;
+  }
+
+  .selectorItemDescription {
+    color: #9ca3af;
+  }
+
+  .expandButton {
+    border-color: #4b5563;
+    color: #9ca3af;
+
+    &:hover {
+      border-color: #3b82f6;
+      color: #3b82f6;
+      background: #1e3a8a;
+    }
+  }
+
+  // 深色模式下的列表容器样式
+  .listContainer {
+    &::-webkit-scrollbar {
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #374151 !important;
+      border-color: #4b5563;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%) !important;
+      border-color: #374151;
+
+      &:hover {
+        background: linear-gradient(180deg, #d1d5db 0%, #9ca3af 100%) !important;
+      }
+
+      &:active {
+        background: linear-gradient(180deg, #f3f4f6 0%, #d1d5db 100%) !important;
+      }
+    }
+
+    scrollbar-color: #9ca3af #374151 !important;
+  }
+
+  // 深色模式下的强制滚动条样式
+  .forceScrollbar {
+    &::-webkit-scrollbar-track {
+      background: #374151 !important;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #9ca3af !important;
+
+      &:hover {
+        background: #d1d5db !important;
+      }
+
+      &:active {
+        background: #f3f4f6 !important;
+      }
+    }
+
+    scrollbar-color: #9ca3af #374151 !important;
+  }
+}

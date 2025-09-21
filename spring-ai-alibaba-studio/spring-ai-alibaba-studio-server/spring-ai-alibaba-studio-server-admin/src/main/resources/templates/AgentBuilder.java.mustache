@@ -1,0 +1,16 @@
+package {{packageName}}.graph;
+
+{{importSection}}
+
+@Component
+public class AgentBuilder {
+
+    @Bean(name = "buildGraph")
+        public CompiledGraph buildCompiledGraph(ChatModel chatModel{{#hasResolver}}, ObjectProvider<ToolCallbackResolver> toolCallbackResolverProvider{{/hasResolver}}) throws Exception {
+            {{#hasResolver}}
+            ToolCallbackResolver toolCallbackResolver = toolCallbackResolverProvider != null ? toolCallbackResolverProvider.getIfAvailable() : null;
+            {{/hasResolver}}
+    {{{agentSection}}}
+        }
+}
+

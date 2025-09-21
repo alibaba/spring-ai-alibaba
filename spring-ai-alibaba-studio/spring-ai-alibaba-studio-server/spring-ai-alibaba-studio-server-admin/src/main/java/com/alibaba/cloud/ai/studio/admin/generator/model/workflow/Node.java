@@ -21,8 +21,10 @@ public class Node implements RunnableModel {
 
 	private String id;
 
-	// todo: 使用NodeTypeEnum
-	private String type;
+	// 如果在循环节点里，则有父节点ID
+	private String parentId;
+
+	private NodeType type;
 
 	private String title;
 
@@ -55,11 +57,20 @@ public class Node implements RunnableModel {
 		return this;
 	}
 
-	public String getType() {
+	public String getParentId() {
+		return parentId;
+	}
+
+	public Node setParentId(String parentId) {
+		this.parentId = parentId;
+		return this;
+	}
+
+	public NodeType getType() {
 		return type;
 	}
 
-	public Node setType(String type) {
+	public Node setType(NodeType type) {
 		this.type = type;
 		return this;
 	}

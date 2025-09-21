@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.autoconfigure.arms;
 
+import com.alibaba.cloud.ai.observation.model.semconv.MessageMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -33,12 +34,89 @@ public class ArmsCommonProperties {
 	 */
 	private boolean enabled = false;
 
+	private ModelProperties model = new ModelProperties();
+
+	private ToolProperties tool = new ToolProperties();
+
 	public boolean isEnabled() {
 		return enabled;
 	}
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public ModelProperties getModel() {
+		return model;
+	}
+
+	public void setModel(ModelProperties model) {
+		this.model = model;
+	}
+
+	public ToolProperties getTool() {
+		return tool;
+	}
+
+	public void setTool(ToolProperties tool) {
+		this.tool = tool;
+	}
+
+	public static class ModelProperties {
+
+		/**
+		 * Enable Arms instrumentations and conventions.
+		 */
+		private boolean captureInput = false;
+
+		/**
+		 * Enable Arms instrumentations and conventions.
+		 */
+		private boolean captureOutput = false;
+
+		/**
+		 * Arms export type enumeration.
+		 */
+		private MessageMode messageMode = MessageMode.OPEN_TELEMETRY;
+
+		public boolean isCaptureInput() {
+			return captureInput;
+		}
+
+		public void setCaptureInput(boolean captureInput) {
+			this.captureInput = captureInput;
+		}
+
+		public boolean isCaptureOutput() {
+			return captureOutput;
+		}
+
+		public void setCaptureOutput(boolean captureOutput) {
+			this.captureOutput = captureOutput;
+		}
+
+		public MessageMode getMessageMode() {
+			return messageMode;
+		}
+
+		public void setMessageMode(MessageMode messageMode) {
+			this.messageMode = messageMode;
+		}
+
+	}
+
+	public static class ToolProperties {
+
+		private boolean enabled = true;
+
+		public boolean isEnabled() {
+			return enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
 	}
 
 }

@@ -100,7 +100,7 @@
           type="text"
           v-model="debugQuery"
           class="debug-input"
-          placeholder="请输入测试问题..."
+          placeholder="请输入问题..."
           :disabled="isDebugging || isInitializing"
           @keyup.enter="startDebug"
           ref="debugInput"
@@ -128,12 +128,16 @@
         <button
           class="init-button"
           :disabled="isInitializing || isDebugging"
-          :class="{ loading: isInitializing }"
+          :class="{ 
+            loading: isInitializing,
+            'init-success': isInitialized && !isInitializing,
+            'init-pending': !isInitialized && !isInitializing
+          }"
           @click="initializeDataSource"
-          style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 0.4rem; font-weight: 500; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);"
+          :style="getInitButtonStyle()"
         >
-          <i class="bi bi-database-add" v-if="!isInitializing && !isInitialized" style="font-size: 0.8rem;"></i>
-          <i class="bi bi-check-circle" v-if="!isInitializing && isInitialized" style="font-size: 0.8rem;"></i>
+          <i class="bi bi-database-gear" v-if="!isInitializing && !isInitialized" style="font-size: 0.8rem;"></i>
+          <i class="bi bi-check-circle-fill" v-if="!isInitializing && isInitialized" style="font-size: 0.8rem;"></i>
           <div class="spinner" v-if="isInitializing"></div>
           {{ getInitButtonText() }}
         </button>
@@ -274,7 +278,7 @@ export default {
     const debugAgentId = props.agentId + DEBUG_AGENT_ID_OFFSET
 
     // 响应式数据
-    const debugQuery = ref('查询用户总数')
+    const debugQuery = ref('')
     const isDebugging = ref(false)
     const isInitializing = ref(false)
     const isInitialized = ref(false)
@@ -309,8 +313,50 @@ export default {
     // 获取初始化按钮文本
     const getInitButtonText = () => {
       if (isInitializing.value) return '检查中...'
-      if (isInitialized.value) return '已初始化'
+      if (isInitialized.value) return '重新检查状态'
       return '检查初始化状态'
+    }
+
+    // 获取初始化按钮样式
+    const getInitButtonStyle = () => {
+      const baseStyle = {
+        padding: '0.75rem 1rem',
+        border: 'none',
+        borderRadius: '8px',
+        fontSize: '0.8rem',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.4rem',
+        fontWeight: '500',
+        minWidth: '140px',
+        justifyContent: 'center'
+      }
+
+      if (isInitializing.value) {
+        return {
+          ...baseStyle,
+          background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+          color: 'white',
+          cursor: 'not-allowed',
+          boxShadow: '0 2px 8px rgba(107, 114, 128, 0.25)'
+        }
+      } else if (isInitialized.value) {
+        return {
+          ...baseStyle,
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          color: 'white',
+          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)'
+        }
+      } else {
+        return {
+          ...baseStyle,
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          color: 'white',
+          boxShadow: '0 2px 8px rgba(245, 158, 11, 0.25)'
+        }
+      }
     }
 
     // 处理调试按钮点击
@@ -319,7 +365,7 @@ export default {
       if (isDebugging.value) return
 
       if (!debugQuery.value || !debugQuery.value.trim()) {
-        debugQuery.value = '查询用户总数'
+        debugQuery.value = ''
       }
 
       startDebug()
@@ -716,7 +762,7 @@ export default {
         }
     };
 
-    // 初始化数据源
+    // 初始化数据源状态检查
     const initializeDataSource = async () => {
       if (isInitializing.value || isDebugging.value) return
 
@@ -724,21 +770,55 @@ export default {
         isInitializing.value = true
         debugStatus.value = '正在检查初始化状态...'
 
-        setTimeout(() => {
-          isInitialized.value = true
-          debugStatus.value = '数据源已初始化，可以开始调试'
-          isInitializing.value = false
-
-          setTimeout(() => {
-            debugStatus.value = ''
-          }, 3000)
-        }, 1000)
-
+        // 真正调用接口检查初始化状态
+        const response = await fetch(`/api/agent/${debugAgentId}/schema/statistics`)
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        
+        const result = await response.json()
+        
+        if (result.success) {
+          const hasData = result.data && result.data.documentCount > 0
+          isInitialized.value = hasData
+          schemaStatistics.value = result.data
+          
+          if (hasData) {
+            debugStatus.value = `✅ 数据源已初始化，共有 ${result.data.documentCount} 个向量文档，可以开始调试`
+            console.log('初始化状态检查成功:', result.data)
+          } else {
+            debugStatus.value = '⚠️ 数据源未初始化，请点击"初始化信息源"进行配置'
+            console.log('检测到未初始化状态:', result.data)
+          }
+        } else {
+          isInitialized.value = false
+          schemaStatistics.value = null
+          debugStatus.value = `❌ 检查失败: ${result.message || '未知错误'}`
+          console.error('获取统计信息失败:', result.message)
+        }
+        
       } catch (error) {
         console.error('检查初始化状态错误:', error)
-        debugStatus.value = '检查失败，请确保智能体配置正确'
         isInitialized.value = false
+        schemaStatistics.value = null
+        
+        // 根据错误类型提供不同的提示
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          debugStatus.value = '❌ 网络连接失败，请检查网络状态或后端服务是否正常'
+        } else if (error.message.includes('HTTP error')) {
+          debugStatus.value = `❌ 服务异常 (${error.message})，请联系管理员`
+        } else {
+          debugStatus.value = '❌ 检查失败，请确保智能体配置正确'
+        }
+      } finally {
         isInitializing.value = false
+        
+        // 5秒后清空状态消息（成功状态保留更长时间）
+        const clearDelay = isInitialized.value ? 5000 : 8000
+        setTimeout(() => {
+          debugStatus.value = ''
+        }, clearDelay)
       }
     }
 
@@ -1001,6 +1081,7 @@ export default {
       getStatusClass,
       useExampleQuery,
       getInitButtonText,
+      getInitButtonStyle,
       handleDebugClick,
       startDebug,
       initializeDataSource,

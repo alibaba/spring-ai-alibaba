@@ -38,21 +38,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
+import org.springframework.dao.DataAccessException;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.alibaba.cloud.ai.constant.Constant.AGENT_ID;
-import static com.alibaba.cloud.ai.constant.Constant.BUSINESS_KNOWLEDGE;
-import static com.alibaba.cloud.ai.constant.Constant.COLUMN_DOCUMENTS_BY_KEYWORDS_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.EVIDENCES;
-import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
-import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_MODEL;
-import static com.alibaba.cloud.ai.constant.Constant.SQL_GENERATE_SCHEMA_MISSING_ADVICE;
-import static com.alibaba.cloud.ai.constant.Constant.TABLE_DOCUMENTS_FOR_SCHEMA_OUTPUT;
-import static com.alibaba.cloud.ai.constant.Constant.TABLE_RELATION_OUTPUT;
-
+import static com.alibaba.cloud.ai.constant.Constant.*;
 import static com.alibaba.cloud.ai.prompt.PromptHelper.buildBusinessKnowledgePrompt;
 import static com.alibaba.cloud.ai.prompt.PromptHelper.buildSemanticModelPrompt;
 
@@ -94,6 +86,8 @@ public class TableRelationNode implements NodeAction {
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		logger.info("Entering {} node", this.getClass().getSimpleName());
 
+		int retryCount = StateUtils.getObjectValue(state, TABLE_RELATION_RETRY_COUNT, Integer.class, 0);
+
 		// Get necessary input parameters
 		String input = StateUtils.getStringValue(state, INPUT_KEY);
 		List<String> evidenceList = StateUtils.getListValue(state, EVIDENCES);
@@ -111,9 +105,20 @@ public class TableRelationNode implements NodeAction {
 		SchemaDTO schemaDTO = buildInitialSchema(columnDocumentsByKeywords, tableDocuments);
 		SchemaDTO result = processSchemaSelection(schemaDTO, input, evidenceList, state);
 
-		// Extract business knowledge and semantic model
-		List<BusinessKnowledgeDTO> businessKnowledges = businessKnowledgeRecallService.getFieldByDataSetId(dataSetId);
-		List<SemanticModelDTO> semanticModel = semanticModelRecallService.getFieldByDataSetId(String.valueOf(agentId));
+		List<BusinessKnowledgeDTO> businessKnowledges;
+		List<SemanticModelDTO> semanticModel;
+		try {
+			// Extract business knowledge and semantic model
+			businessKnowledges = businessKnowledgeRecallService.getFieldByDataSetId(dataSetId);
+			semanticModel = semanticModelRecallService.getFieldByDataSetId(String.valueOf(agentId));
+		}
+		catch (DataAccessException e) {
+			logger.warn("Database query failed (attempt {}): {}", retryCount + 1, e.getMessage());
+
+			String errorType = classifyDatabaseError(e);
+			return Map.of(TABLE_RELATION_EXCEPTION_OUTPUT, errorType + ": " + e.getMessage(),
+					TABLE_RELATION_RETRY_COUNT, retryCount + 1);
+		}
 		// load prompt template
 		String businessKnowledgePrompt = buildBusinessKnowledgePrompt(businessKnowledges);
 		String semanticModelPrompt = buildSemanticModelPrompt(semanticModel);
@@ -137,8 +142,21 @@ public class TableRelationNode implements NodeAction {
 						businessKnowledgePrompt, SEMANTIC_MODEL, semanticModelPrompt),
 				displayFlux, StreamResponseType.SCHEMA_DEEP_RECALL);
 
+		// need to reset retry count and exception
 		return Map.of(TABLE_RELATION_OUTPUT, generator, BUSINESS_KNOWLEDGE, businessKnowledgePrompt, SEMANTIC_MODEL,
-				semanticModelPrompt);
+				semanticModelPrompt, TABLE_RELATION_RETRY_COUNT, 0, TABLE_RELATION_EXCEPTION_OUTPUT, "");
+
+	}
+
+	private String classifyDatabaseError(DataAccessException e) {
+		String message = e.getMessage();
+		if (message != null) {
+			// timeout, connection, network can be retried
+			if (message.contains("timeout") || message.contains("connection") || message.contains("network")) {
+				return "RETRYABLE";
+			}
+		}
+		return "NON_RETRYABLE";
 	}
 
 	/**

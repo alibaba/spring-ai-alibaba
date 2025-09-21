@@ -16,18 +16,17 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.sections;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Edge;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.QuestionClassifierNodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
-import com.google.common.base.Strings;
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 
 import org.springframework.stereotype.Component;
 
@@ -41,95 +40,97 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 
 	@Override
 	public String render(Node node, String varName) {
-		QuestionClassifierNodeData data = (QuestionClassifierNodeData) node.getData();
-		String id = node.getId();
+		QuestionClassifierNodeData nodeData = (QuestionClassifierNodeData) node.getData();
+		return String.format("""
+				// —— QuestionClassifierNode [%s] ——
+				stateGraph.addNode("%s", AsyncNodeAction.node_async(
+				    createQuestionClassifierAction(chatModel, %s, %s, "%s", "%s", %s, %s)
+				));
 
-		StringBuilder sb = new StringBuilder();
-		sb.append(String.format("// —— QuestionClassifierNode [%s] ——%n", id));
-		sb.append(String.format("QuestionClassifierNode %s = QuestionClassifierNode.builder()%n", varName));
-
-		sb.append(".chatClient(chatClient)\n");
-
-		List<VariableSelector> inputs = data.getInputs();
-		if (inputs != null && !inputs.isEmpty()) {
-			String key = inputs.get(0).getNameInCode();
-			sb.append(String.format(".inputTextKey(\"%s\")%n", escape(key)));
-		}
-		else {
-			sb.append(".inputTextKey(\"input\")\n");
-		}
-
-		List<String> categoryIds = data.getClasses()
-			.stream()
-			.map(QuestionClassifierNodeData.ClassConfig::getText)
-			.toList();
-		if (!categoryIds.isEmpty()) {
-			String joined = categoryIds.stream()
-				.map(this::escape)
-				.map(s -> "\"" + s + "\"")
-				.collect(Collectors.joining(", "));
-			sb.append(String.format(".categories(List.of(%s))%n", joined));
-		}
-
-		String outputKey = data.getOutputKey();
-		if (!Strings.isNullOrEmpty(outputKey)) {
-			sb.append(String.format(".outputKey(\"%s\")%n", escape(outputKey)));
-		}
-
-		String instr = data.getInstruction();
-		if (instr != null && !instr.isBlank()) {
-			sb.append(String.format(".classificationInstructions(List.of(\"%s\"))%n", escape(instr)));
-		}
-		else {
-			sb.append(".classificationInstructions(List.of(\"请根据输入内容选择对应分类\"))\n");
-		}
-
-		sb.append(".build();\n");
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
-
-		return sb.toString();
-	}
-
-	private String resolveConditionKey(QuestionClassifierNodeData classifier, String handleId) {
-		return classifier.getClasses()
-			.stream()
-			.filter(c -> c.getId().equals(handleId))
-			.map(QuestionClassifierNodeData.ClassConfig::getText)
-			.findFirst()
-			.orElse(handleId);
+				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getChatModeName()),
+				ObjectToCodeUtil.toCode(nodeData.getModeParams()), nodeData.getInputSelector().getNameInCode(),
+				nodeData.getOutputKey(),
+				ObjectToCodeUtil.toCode(nodeData.getClasses()
+					.stream()
+					.collect(Collectors.toUnmodifiableMap(QuestionClassifierNodeData.ClassConfig::id,
+							QuestionClassifierNodeData.ClassConfig::classTemplate, (a, b) -> b))),
+				ObjectToCodeUtil.toCode(List.of(nodeData.getPromptTemplate())));
 	}
 
 	@Override
-	public String renderConditionalEdges(QuestionClassifierNodeData nodeData, Map<String, Node> nodeMap,
-			Map.Entry<String, List<Edge>> entry, Map<String, String> varNames) {
-		String sourceId = entry.getKey();
-		List<Edge> condEdges = entry.getValue();
-		List<String> conditions = new ArrayList<>();
-		List<String> mappings = new ArrayList<>();
-		String srcVar = varNames.get(sourceId);
-		StringBuilder sb = new StringBuilder();
+	public String renderEdges(QuestionClassifierNodeData nodeData, List<Edge> edges) {
+		Map<String, String> classIdToName = nodeData.getClassIdToName();
+		// 规定edge的sourceHandle为caseId，前面的转化需要符合这条规则
+		String edgeCode = String.format("""
+				state -> {
+				    String result = state.value("%s").orElseThrow().toString();
+				    %s
+				    throw new RuntimeException("invalid output");
+				}
+				""", nodeData.getOutputKey(),
+				nodeData.getClasses()
+					.stream()
+					.map(QuestionClassifierNodeData.ClassConfig::id)
+					.map(id -> String.format("""
+							if("%s".equals(result)) {
+							    return "%s";
+							}
+							""", id, classIdToName.getOrDefault(id, id)))
+					.collect(Collectors.joining("\n")));
 
-		// 如果输出的都不是预定分类，则使用最后一个分类
-		String lastConditionKey = "unknown";
+		Map<String, String> caseToTarget = edges.stream()
+			.collect(Collectors.toUnmodifiableMap(
+					e -> classIdToName.getOrDefault(e.getSourceHandle(), e.getSourceHandle()), Edge::getTarget));
 
-		for (Edge e : condEdges) {
-			String conditionKey = resolveConditionKey(nodeData, e.getSourceHandle());
-			String tgtVar2 = varNames.get(e.getTarget());
-			lastConditionKey = conditionKey;
-			conditions.add(String.format("if (value.contains(\"%s\")) return \"%s\";", conditionKey, conditionKey));
-			mappings.add(String.format("\"%s\", \"%s\"", conditionKey, tgtVar2));
-		}
+		return String.format("""
+				// render QuestionNode [%s]'s edge
+				stateGraph.addConditionalEdges("%s", AsyncEdgeAction.edge_async(%s), %s);
 
-		String lambdaContent = String.join("\n", conditions);
-		String mapContent = String.join(", ", mappings);
+				""", nodeData.getVarName(), nodeData.getVarName(), edgeCode, ObjectToCodeUtil.toCode(caseToTarget));
+	}
 
-		sb.append(String.format(
-				"stateGraph.addConditionalEdges(\"%s\",%n" + "            edge_async(state -> {%n"
-						+ "String value = state.value(\"%s_class_name\", String.class).orElse(\"\");%n" + "%s%n"
-						+ "return \"%s\";%n" + "            }),%n" + "            Map.of(%s)%n" + ");%n",
-				srcVar, srcVar, lambdaContent, lastConditionKey, mapContent));
+	@Override
+	public String assistMethodCode(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY, STUDIO ->
+				"""
+						private NodeAction createQuestionClassifierAction(
+						        ChatModel chatModel,
+						        String chatModelName, Map<String, Number> modeParams,
+						        String inputKey, String outputKey,
+						        Map<String, String> categories, List<String> instructions) {
+						    // build ChatClient
+						    var chatOptionsBuilder = DashScopeChatOptions.builder().withModel(chatModelName);
+						    Optional.ofNullable(modeParams.get("temperature"))
+						            .ifPresent(val -> chatOptionsBuilder.withTemperature(val.doubleValue()));
+						    Optional.ofNullable(modeParams.get("seed")).ifPresent(val -> chatOptionsBuilder.withSeed(val.intValue()));
+						    Optional.ofNullable(modeParams.get("top_p")).ifPresent(val -> chatOptionsBuilder.withTopP(val.doubleValue()));
+						    Optional.ofNullable(modeParams.get("top_k")).ifPresent(val -> chatOptionsBuilder.withTopK(val.intValue()));
+						    Optional.ofNullable(modeParams.get("max_tokens"))
+						            .ifPresent(val -> chatOptionsBuilder.withMaxToken(val.intValue()));
+						    Optional.ofNullable(modeParams.get("repetition_penalty"))
+						            .ifPresent(val -> chatOptionsBuilder.withRepetitionPenalty(val.doubleValue()));
+						    final ChatClient chatClient = ChatClient.builder(chatModel).defaultOptions(chatOptionsBuilder.build()).build();
 
-		return sb.toString();
+						    // build Node
+						    return QuestionClassifierNode.builder()
+						            .chatClient(chatClient)
+						            .inputTextKey(inputKey)
+						            .outputKey(outputKey)
+						            .categories(categories)
+						            .classificationInstructions(instructions)
+						            .build();
+						}
+						""";
+			default -> "";
+		};
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.QuestionClassifierNode",
+				"org.springframework.beans.factory.annotation.Autowired",
+				"com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions", "java.util.Optional");
 	}
 
 }

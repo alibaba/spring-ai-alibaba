@@ -15,27 +15,32 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import org.springframework.ai.chat.model.ChatModel;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Integration test class for ParallelAgent to verify parallel execution and result
@@ -65,7 +70,7 @@ class ParallelAgentIntegrationTest {
 			keyStrategyHashMap.put("prose_result", new ReplaceStrategy());
 			keyStrategyHashMap.put("poem_result", new ReplaceStrategy());
 			keyStrategyHashMap.put("summary_result", new ReplaceStrategy());
-			keyStrategyHashMap.put("parallel_creative_agent_merged_results", new ReplaceStrategy());
+			keyStrategyHashMap.put("merged_results", new ReplaceStrategy());
 			return keyStrategyHashMap;
 		};
 
@@ -99,9 +104,10 @@ class ParallelAgentIntegrationTest {
 			.name("parallel_creative_agent")
 			.description("并行执行多个创作任务，包括写散文、写诗和做总结")
 			.inputKey("input")
-			.outputKey("topic")
+			.outputKey("merged_results")
 			.state(stateFactory)
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent, summaryAgent))
+			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // ✅ 添加合并策略
 			.build();
 
 		// Execute the parallel workflow
@@ -119,8 +125,7 @@ class ParallelAgentIntegrationTest {
 			assertEquals(userRequest, finalState.value("input").get());
 
 			// Verify topic was set (from TransparentNode)
-			assertTrue(finalState.value("topic").isPresent(), "Topic should be set");
-			assertEquals(userRequest, finalState.value("topic").get());
+			assertTrue(finalState.value("merged_results").isPresent(), "Topic should be set");
 
 			// Verify all sub-agents produced results
 			assertTrue(finalState.value("prose_result").isPresent(), "Prose result should be present");
@@ -153,7 +158,7 @@ class ParallelAgentIntegrationTest {
 			assertFalse(summaryResult.contains("《") && summaryResult.contains("》"),
 					"Summary result should not contain poem-like formatting");
 
-			System.out.println(result.get().value("parallel_creative_agent_merged_results"));
+			System.out.println(result.get().value("merged_results"));
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();

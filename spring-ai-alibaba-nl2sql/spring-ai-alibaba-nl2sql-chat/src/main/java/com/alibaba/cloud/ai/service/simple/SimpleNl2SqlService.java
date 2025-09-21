@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.service.simple;
 
-import com.alibaba.cloud.ai.connector.*;
 import com.alibaba.cloud.ai.connector.accessor.Accessor;
 import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.service.LlmService;

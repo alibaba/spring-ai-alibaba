@@ -16,12 +16,14 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.sections;
 
+import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.node.HttpNode;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.HttpNodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
+// TODO: 支持失败时默认值以及异常分支、支持Studio的多字段输出模式
 @Component
 public class HttpNodeSection implements NodeSection<HttpNodeData> {
 
@@ -76,11 +79,11 @@ public class HttpNodeSection implements NodeSection<HttpNodeData> {
 		HttpNode.AuthConfig ac = d.getAuthConfig();
 		if (ac != null) {
 			if (ac.isBasic()) {
-				sb.append(String.format(".auth(AuthConfig.basic(\"%s\", \"%s\"))%n", escape(ac.getUsername()),
+				sb.append(String.format(".auth(HttpNode.AuthConfig.basic(\"%s\", \"%s\"))%n", escape(ac.getUsername()),
 						escape(ac.getPassword())));
 			}
 			else if (ac.isBearer()) {
-				sb.append(String.format(".auth(AuthConfig.bearer(\"%s\"))%n", escape(ac.getToken())));
+				sb.append(String.format(".auth(HttpNode.AuthConfig.bearer(\"%s\"))%n", escape(ac.getToken())));
 			}
 		}
 
@@ -97,23 +100,50 @@ public class HttpNodeSection implements NodeSection<HttpNodeData> {
 		sb.append(".build();\n");
 
 		// 辅助节点，用于转换HttpNode的结果
-		String assistNodeCode = String.format("""
-				state -> {
-				   String varName = "%s";
-				   String key = varName + "_body";
-				   Map<String, Object> result = %s.apply(state);
-				   Object object = result.get(key);
-				   if(!(object instanceof Map<?, ?> map)) {
-				       return Map.of();
-				   }
-				   return Map.of(varName + "_headers", map.get("headers"), key, map.get("body"),
-				       varName + "_status_code", map.get("status"));
-				}
-				""", varName, varName);
+		String assistNodeCode = String.format("wrapperHttpNodeAction(%s, \"%s\")", varName, varName);
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
 				assistNodeCode));
 
 		return sb.toString();
+	}
+
+	@Override
+	public String assistMethodCode(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY -> """
+					 private NodeAction wrapperHttpNodeAction(NodeAction httpNodeAction, String varName) {
+					     return state -> {
+					         String key = varName + "_body";
+					         Map<String, Object> result = httpNodeAction.apply(state);
+					         Object object = result.get(key);
+					         if(!(object instanceof Map<?, ?> map)) {
+					             return Map.of();
+					         }
+					         return Map.of(varName + "_headers", map.get("headers"), key, map.get("body"),
+					                 varName + "_status_code", map.get("status"));
+					     };
+					 }
+					""";
+			case STUDIO -> """
+					 private NodeAction wrapperHttpNodeAction(NodeAction httpNodeAction, String varName) {
+					     return state -> {
+					         String key = varName + "_output";
+					         Map<String, Object> result = httpNodeAction.apply(state);
+					         Object object = result.get(key);
+					         if(!(object instanceof Map<?, ?> map)) {
+					             return Map.of();
+					         }
+					         return Map.of(key, map.get("body"));
+					     };
+					 }
+					""";
+			default -> "";
+		};
+	}
+
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.HttpNode", "org.springframework.http.HttpMethod");
 	}
 
 }

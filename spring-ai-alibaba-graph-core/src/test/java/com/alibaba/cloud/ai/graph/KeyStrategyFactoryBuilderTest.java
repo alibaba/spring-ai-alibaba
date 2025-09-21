@@ -15,17 +15,17 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import java.util.Map;
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.Optional;
-
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class KeyStrategyFactoryBuilderTest {
 
@@ -45,7 +45,7 @@ class KeyStrategyFactoryBuilderTest {
 
 		CompiledGraph app = workflow.compile();
 
-		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		Optional<OverAllState> result = app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 		System.out.println("result = " + result);
 		assertTrue(result.isPresent());
 

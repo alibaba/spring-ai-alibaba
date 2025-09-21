@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
@@ -71,7 +72,11 @@ public class ParallelGraphBuildingStrategy implements FlowGraphBuildingStrategy 
 		// Process sub-agents for parallel execution
 		for (BaseAgent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
-			graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(rootAgent.outputKey(), subAgent.outputKey()));
+			if (subAgent instanceof A2aRemoteAgent subA2aAgent) {
+				graph.addNode(subAgent.name(), subA2aAgent.asAsyncNodeAction(rootAgent.outputKey(), subAgent.outputKey()));
+			} else {
+				graph.addNode(subAgent.name(), subAgent.asAsyncNodeAction(rootAgent.outputKey(), subAgent.outputKey()));
+			}
 			// Connect root to each sub-agent (fan-out)
 			graph.addEdge(rootAgent.name(), subAgent.name());
 			// Connect each sub-agent to aggregator (gather)

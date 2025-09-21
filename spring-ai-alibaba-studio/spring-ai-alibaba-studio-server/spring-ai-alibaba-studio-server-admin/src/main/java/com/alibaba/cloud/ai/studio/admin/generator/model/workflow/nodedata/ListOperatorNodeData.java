@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.ComparisonOperatorType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 
 /**
  * NodeData for ListOperatorNode, which contains all the configurable properties in the
@@ -32,7 +33,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 public class ListOperatorNodeData extends NodeData {
 
 	public static Variable defaultOutputSchema() {
-		return new Variable("result", VariableType.ARRAY_OBJECT.value());
+		return new Variable("result", VariableType.ARRAY_OBJECT);
 	}
 
 	/**
@@ -56,7 +57,7 @@ public class ListOperatorNodeData extends NodeData {
 				return null;
 			}
 			for (ComparisonOperatorType e : ComparisonOperatorType.values()) {
-				if (e.getDifyValue().equalsIgnoreCase(condition)) {
+				if (e.getDslValue(DSLDialectType.DIFY).equalsIgnoreCase(condition)) {
 					return new FilterCondition(e, value);
 				}
 			}

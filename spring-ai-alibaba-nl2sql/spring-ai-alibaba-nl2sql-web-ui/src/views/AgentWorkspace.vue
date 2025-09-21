@@ -195,6 +195,15 @@ import { ref, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { agentApi, presetQuestionApi } from '../utils/api.js';
 
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github.css';
+import python from 'highlight.js/lib/languages/python';
+import sql from 'highlight.js/lib/languages/sql'
+
+// 注册语言
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('sql', sql);
+
 export default {
   name: 'AgentWorkspace',
   setup() {
@@ -422,6 +431,9 @@ export default {
     const formatContentByType = (type, data) => {
         if (data === null || data === undefined) return '';
 
+        console.log(type);
+        console.log(data);
+
         if (type === 'sql') {
             let cleanedData = data.replace(/^```\s*sql?\s*/i, '').replace(/```\s*$/, '').trim();
             // 处理SQL中的转义换行符
@@ -431,6 +443,25 @@ export default {
         
         if (type === 'result') {
             return convertJsonToHTMLTable(data);
+        }
+
+        if (type === 'python_generate') {
+            // 处理可能存在的Markdown标记（正常情况下不会有）
+            let cleanedData = data.replace(/^```\s*python?\s*/i, '').replace(/```\s*$/, '').trim();
+
+            // 创建code元素
+            const codeElement = document.createElement('code');
+            codeElement.className = 'language-python';
+            codeElement.textContent = cleanedData;
+
+            // 高亮代码
+            hljs.highlightElement(codeElement);
+
+            // 创建pre元素并包装code元素
+            const preElement = document.createElement('pre');
+            preElement.appendChild(codeElement);
+
+            return preElement.outerHTML;
         }
 
         // 直接处理数据，简化逻辑

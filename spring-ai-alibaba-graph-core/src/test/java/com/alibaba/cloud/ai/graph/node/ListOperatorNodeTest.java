@@ -19,16 +19,17 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -73,23 +74,6 @@ public class ListOperatorNodeTest {
 			.limitNumber(10)
 			.build();
 		assertEquals(Arrays.asList("123456", "12345678"), node.apply(t).getOrDefault("output", null));
-	}
-
-	record FileElement(String type, Integer size, String name, String url, String extension,
-			@JsonProperty("mime_type") String mimeType, @JsonProperty("transfer_method") String transferMethod) {
-
-		public boolean sizeNoLessThan(int sz) {
-			return this.size() >= sz;
-		}
-
-		public boolean excludeExtension(String... extensions) {
-			for (String extension : extensions) {
-				if (this.extension().equals(extension)) {
-					return false;
-				}
-			}
-			return true;
-		}
 	}
 
 	@Test
@@ -147,10 +131,27 @@ public class ListOperatorNodeTest {
 			.compile();
 		assertEquals(Arrays.asList(23, 9, 8, 7, 5, 4, 4, 3, 2, 2),
 				compiledGraph
-					.invoke(Map.of("input", Arrays.asList(1, 3, 4, 5.6, 2, 3.5, 1, 2, 0.3, 4, 5, 0.6, 7, 8, 9, 23)))
+					.call(Map.of("input", Arrays.asList(1, 3, 4, 5.6, 2, 3.5, 1, 2, 0.3, 4, 5, 0.6, 7, 8, 9, 23)))
 					.orElseThrow()
 					.value("output")
 					.orElseThrow());
+	}
+
+	record FileElement(String type, Integer size, String name, String url, String extension,
+			@JsonProperty("mime_type") String mimeType, @JsonProperty("transfer_method") String transferMethod) {
+
+		public boolean sizeNoLessThan(int sz) {
+			return this.size() >= sz;
+		}
+
+		public boolean excludeExtension(String... extensions) {
+			for (String extension : extensions) {
+				if (this.extension().equals(extension)) {
+					return false;
+				}
+			}
+			return true;
+		}
 	}
 
 }

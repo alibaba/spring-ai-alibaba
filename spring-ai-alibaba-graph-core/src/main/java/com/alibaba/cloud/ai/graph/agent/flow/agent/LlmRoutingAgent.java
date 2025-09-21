@@ -15,18 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import org.springframework.ai.chat.model.ChatModel;
 
-import java.util.Map;
-import java.util.Optional;
+import org.springframework.ai.chat.model.ChatModel;
 
 public class LlmRoutingAgent extends FlowAgent {
 
@@ -36,23 +31,16 @@ public class LlmRoutingAgent extends FlowAgent {
 		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory,
 				builder.compileConfig, builder.subAgents);
 		this.chatModel = builder.chatModel;
-		this.graph = initGraph();
 	}
 
-	@Override
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphStateException, GraphRunnerException {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.invoke(input);
+	public static LlmRoutingAgentBuilder builder() {
+		return new LlmRoutingAgentBuilder();
 	}
 
 	@Override
 	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		config.setChatModel(this.chatModel);
 		return FlowGraphBuilder.buildGraph(FlowAgentEnum.ROUTING.getType(), config);
-	}
-
-	public static LlmRoutingAgentBuilder builder() {
-		return new LlmRoutingAgentBuilder();
 	}
 
 	/**

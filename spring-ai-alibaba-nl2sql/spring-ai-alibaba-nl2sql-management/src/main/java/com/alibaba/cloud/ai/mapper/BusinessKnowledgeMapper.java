@@ -35,13 +35,13 @@ public interface BusinessKnowledgeMapper extends BaseMapper<BusinessKnowledge> {
 	/**
 	 * Query business knowledge list by dataset ID
 	 */
-	@Select("SELECT * FROM business_knowledge WHERE dataset_id = #{datasetId} ORDER BY created_time DESC")
+	@Select("SELECT * FROM business_knowledge WHERE data_set_id = #{datasetId} ORDER BY created_time DESC")
 	List<BusinessKnowledge> selectByDatasetId(@Param("datasetId") String datasetId);
 
 	/**
 	 * Get all dataset ID list
 	 */
-	@Select("SELECT DISTINCT dataset_id FROM business_knowledge WHERE dataset_id IS NOT NULL ORDER BY dataset_id")
+	@Select("SELECT DISTINCT data_set_id FROM business_knowledge WHERE data_set_id IS NOT NULL ORDER BY data_set_id")
 	List<String> selectDistinctDatasetIds();
 
 	/**
@@ -61,7 +61,7 @@ public interface BusinessKnowledgeMapper extends BaseMapper<BusinessKnowledge> {
 	/**
 	 * Query business knowledge by dataset ID and default recall status
 	 */
-	@Select("SELECT * FROM business_knowledge WHERE dataset_id = #{datasetId} AND default_recall = #{defaultRecall} ORDER BY created_time DESC")
+	@Select("SELECT * FROM business_knowledge WHERE data_set_id = #{datasetId} AND is_recall = #{defaultRecall} ORDER BY created_time DESC")
 	List<BusinessKnowledge> selectByDatasetIdAndDefaultRecall(@Param("datasetId") String datasetId,
 			@Param("defaultRecall") Boolean defaultRecall);
 

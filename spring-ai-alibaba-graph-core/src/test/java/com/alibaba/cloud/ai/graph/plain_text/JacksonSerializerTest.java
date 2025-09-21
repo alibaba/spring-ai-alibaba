@@ -17,9 +17,10 @@ package com.alibaba.cloud.ai.graph.plain_text;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSerializer;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mapOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -14,36 +14,11 @@
 # limitations under the License.
 #
 server:
-  port: 18080
+  port: 28080
 spring:
   application:
     name: spring-ai-alibaba-graph-example
   ai:
-    mcp:
-      server:
-        name: my-weather-server
-        version: 0.0.1
-        type: ASYNC # Recommended for reactive applications
-        # Configure the root path for sse, default is /sse
-        # The final path below will be ip:port/sse/mcp
-        sse-endpoint: /sse
-        sse-message-endpoint: /mcp
-        capabilities:
-          tool: true
-          resource: true
-          prompt: true
-          completion: true
-    alibaba:
-      toolcalling:
-        weather:
-          enabled: true
-          api-key: ${WEATHER_API_KEY}
-        baidu:
-          search:
-            enabled: true
-        tavilysearch:
-          api-key: ${TAVILY_API_KEY}
-          enabled: true
     dashscope:
       api-key: ${DASHSCOPE_API_KEY}
     openai:

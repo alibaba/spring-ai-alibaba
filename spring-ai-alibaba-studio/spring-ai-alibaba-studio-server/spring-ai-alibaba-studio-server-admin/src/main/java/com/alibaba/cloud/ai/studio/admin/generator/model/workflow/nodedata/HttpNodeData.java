@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import org.springframework.http.HttpMethod;
 
 /**
@@ -37,27 +38,30 @@ import org.springframework.http.HttpMethod;
  */
 public class HttpNodeData extends NodeData {
 
-	public static List<Variable> getDefaultOutputSchemas() {
-		return List.of(new Variable("body", VariableType.STRING.value()),
-				new Variable("status_code", VariableType.NUMBER.value()),
-				new Variable("headers", VariableType.OBJECT.value()),
-				new Variable("files", VariableType.ARRAY_FILE.value()));
+	public static List<Variable> getDefaultOutputSchemas(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY ->
+				List.of(new Variable("body", VariableType.STRING), new Variable("status_code", VariableType.NUMBER),
+						new Variable("headers", VariableType.OBJECT), new Variable("files", VariableType.ARRAY_FILE));
+			case STUDIO -> List.of(new Variable("output", VariableType.STRING));
+			default -> List.of();
+		};
 	}
 
 	/** HTTP method, default GET */
-	private HttpMethod method = HttpMethod.GET;
+	private HttpMethod method;
 
 	/** Request URL */
 	private String url;
 
 	/** Request header */
-	private Map<String, String> headers = Collections.emptyMap();
+	private Map<String, String> headers;
 
 	/** queryParams */
-	private Map<String, String> queryParams = Collections.emptyMap();
+	private Map<String, String> queryParams;
 
 	/** body */
-	private HttpRequestNodeBody body = new HttpRequestNodeBody();
+	private HttpRequestNodeBody body;
 
 	/**
 	 * rawBodyMap
@@ -68,7 +72,7 @@ public class HttpNodeData extends NodeData {
 	private AuthConfig authConfig;
 
 	/** retryConfig */
-	private RetryConfig retryConfig = new RetryConfig(3, 1000, true);
+	private RetryConfig retryConfig;
 
 	/** TimeoutConfig */
 	private TimeoutConfig timeoutConfig;
@@ -90,12 +94,6 @@ public class HttpNodeData extends NodeData {
 		this.timeoutConfig = timeoutConfig;
 		this.outputKey = outputKey;
 		this.rawBodyMap = null;
-	}
-
-	public HttpNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
-		this(inputs, outputs, HttpMethod.GET, null, Collections.emptyMap(), Collections.emptyMap(),
-				new HttpRequestNodeBody(), null, new RetryConfig(3, 1000, true),
-				new TimeoutConfig(10, 60, 20, 300, 600, 6000), null);
 	}
 
 	public HttpMethod getMethod() {
@@ -138,6 +136,14 @@ public class HttpNodeData extends NodeData {
 		this.body = body;
 	}
 
+	public Map<String, Object> getRawBodyMap() {
+		return rawBodyMap;
+	}
+
+	public void setRawBodyMap(Map<String, Object> rawBodyMap) {
+		this.rawBodyMap = rawBodyMap;
+	}
+
 	public AuthConfig getAuthConfig() {
 		return authConfig;
 	}
@@ -154,20 +160,20 @@ public class HttpNodeData extends NodeData {
 		this.retryConfig = retryConfig;
 	}
 
+	public TimeoutConfig getTimeoutConfig() {
+		return timeoutConfig;
+	}
+
+	public void setTimeoutConfig(TimeoutConfig timeoutConfig) {
+		this.timeoutConfig = timeoutConfig;
+	}
+
 	public String getOutputKey() {
 		return outputKey;
 	}
 
 	public void setOutputKey(String outputKey) {
 		this.outputKey = outputKey;
-	}
-
-	public Map<String, Object> getRawBodyMap() {
-		return rawBodyMap;
-	}
-
-	public void setRawBodyMap(Map<String, Object> rawBodyMap) {
-		this.rawBodyMap = rawBodyMap;
 	}
 
 }

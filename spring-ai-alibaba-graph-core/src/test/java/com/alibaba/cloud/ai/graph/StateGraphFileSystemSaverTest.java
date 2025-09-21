@@ -15,19 +15,22 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -35,7 +38,13 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit test for simple App.
@@ -87,7 +96,11 @@ public class StateGraphFileSystemSaverTest {
 
 			for (int execution = 0; execution < 2; execution++) {
 
-				Optional<OverAllState> state = app.invoke(Map.of(), runnableConfig_1);
+				// Clear checkpoints at the start of each execution to ensure clean slate
+				saver.deleteFile(runnableConfig_1);
+				saver.deleteFile(runnableConfig_2);
+
+				Optional<OverAllState> state = app.call(Map.of(), runnableConfig_1);
 
 				assertTrue(state.isPresent());
 				assertEquals(expectedSteps + (execution * 2), (int) state.get().data().get("steps"));
@@ -109,7 +122,7 @@ public class StateGraphFileSystemSaverTest {
 
 				// SUBMIT NEW THREAD 2
 
-				state = app.invoke(emptyMap(), runnableConfig_2);
+				state = app.call(emptyMap(), runnableConfig_2);
 
 				assertTrue(state.isPresent());
 				assertEquals(expectedSteps + execution, (int) state.get().data().get("steps"));
@@ -120,7 +133,7 @@ public class StateGraphFileSystemSaverTest {
 				assertEquals(expectedSteps + execution, messages.size());
 
 				// RE-SUBMIT THREAD 1
-				state = app.invoke(Map.of(), runnableConfig_1);
+				state = app.call(Map.of(), runnableConfig_1);
 
 				assertTrue(state.isPresent());
 				assertEquals(expectedSteps + 1 + execution * 2, (int) state.get().data().get("steps"));
@@ -133,9 +146,9 @@ public class StateGraphFileSystemSaverTest {
 			}
 		}
 		finally {
-
-			// saver.clear(runnableConfig_1);
-			// saver.clear(runnableConfig_2);
+			// Cleanup checkpoints after test completion
+			saver.deleteFile(runnableConfig_1);
+			saver.deleteFile(runnableConfig_2);
 		}
 	}
 
@@ -176,7 +189,7 @@ public class StateGraphFileSystemSaverTest {
 
 		RunnableConfig runnableConfig_2 = RunnableConfig.builder().threadId("thread_2").build();
 
-		var state = app.invoke(Map.of(), runnableConfig_1);
+		var state = app.call(Map.of(), runnableConfig_1);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, (int) state.get().data().get("steps"));
@@ -203,7 +216,7 @@ public class StateGraphFileSystemSaverTest {
 
 		// SUBMIT NEW THREAD 2
 
-		state = app.invoke(emptyMap(), runnableConfig_2);
+		state = app.call(emptyMap(), runnableConfig_2);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, (int) state.get().data().get("steps"));
@@ -221,7 +234,7 @@ public class StateGraphFileSystemSaverTest {
 		assertEquals(expectedSteps, messages.size());
 
 		// RE-SUBMIT THREAD 1
-		state = app.invoke(Map.of(), runnableConfig_1);
+		state = app.call(Map.of(), runnableConfig_1);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, (int) state.get().data().get("steps"));
@@ -275,7 +288,7 @@ public class StateGraphFileSystemSaverTest {
 
 		var runnableConfig_2 = RunnableConfig.builder().threadId("thread_2").build();
 
-		var state_1 = app.invoke(Map.of(), runnableConfig_1);
+		var state_1 = app.call(Map.of(), runnableConfig_1);
 
 		assertTrue(state_1.isPresent());
 		assertEquals(expectedSteps, (int) state_1.get().data().get("steps"));
@@ -300,7 +313,7 @@ public class StateGraphFileSystemSaverTest {
 
 		// SUBMIT NEW THREAD 2
 
-		var state_2 = app.invoke(emptyMap(), runnableConfig_2);
+		var state_2 = app.call(emptyMap(), runnableConfig_2);
 
 		assertTrue(state_2.isPresent());
 		assertEquals(expectedSteps, (int) state_2.get().data().get("steps"));
@@ -316,13 +329,24 @@ public class StateGraphFileSystemSaverTest {
 		assertEquals(expectedSteps, messages.size());
 
 		// RE-SUBMIT THREAD 1
-		var iterator = app.stream(Map.of(), runnableConfig_1);
+		var dataFlux = app.fluxDataStream(Map.of(), runnableConfig_1);
 
-		state_1 = iterator.stream().reduce((a, b) -> b).map(NodeOutput::state);
+		AtomicReference<Object> lastResult = new AtomicReference<>();
+		state_1 = dataFlux.flatMap(data -> {
+			if (data.isDone()) {
+				// TODO, collect data.resultValue if necessary.
+				lastResult.set(data.resultValue());
+				return Flux.empty();
+			}
+			if (data.isError()) {
+				return Mono.fromFuture(data.getOutput()).onErrorMap(throwable -> throwable).flux();
+			}
+			return Mono.fromFuture(data.getOutput()).flux();
+		}).reduce((a, b) -> b).map(NodeOutput::state).blockOptional();
+
 		assertTrue(state_1.isPresent());
-		assertInstanceOf(AsyncGenerator.HasResultValue.class, iterator);
 
-		var result = ((AsyncGenerator.HasResultValue) iterator).resultValue();
+		var result = (Optional<Object>) lastResult.get();
 
 		assertTrue(result.isPresent());
 		assertInstanceOf(BaseCheckpointSaver.Tag.class, result.get());

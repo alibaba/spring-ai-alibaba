@@ -258,7 +258,7 @@ public class BaseNl2SqlService {
 	public List<String> extractEvidences(String query, String agentId) {
 		logger.debug("Extracting evidences for query: {} with agentId: {}", query, agentId);
 		List<Document> evidenceDocuments;
-		if (agentId != null) {
+		if (agentId != null && !agentId.trim().isEmpty()) {
 			evidenceDocuments = vectorStoreService.getDocumentsForAgent(agentId, query, "evidence");
 		}
 		else {
@@ -421,7 +421,7 @@ public class BaseNl2SqlService {
 				// java.lang.IllegalStateException:
 				// Please provide database schema information so I can filter relevant
 				// tables based on your question.
-				// TODO 目前异常接口直接返回500，未返回向异常常信息，后续优化将异常返回给用户
+				// TODO 目前异常接口直接返回500，未返回异常信息，后续优化将异常返回给用户
 				logger.error("Failed to parse fine selection response: {}", jsonContent, e);
 				throw new IllegalStateException(jsonContent);
 			}

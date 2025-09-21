@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.request.DeleteRequest;
 import com.alibaba.cloud.ai.request.EvidenceRequest;
 import com.alibaba.cloud.ai.request.SchemaInitRequest;
 import com.google.gson.Gson;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -150,12 +151,18 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 			columnInfoBO.setSamples(gson.toJson(sampleColumn));
 		}
 
-		ColumnInfoBO primaryColumnDO = columnInfoBOS.stream()
+		List<ColumnInfoBO> targetPrimaryList = columnInfoBOS.stream()
 			.filter(ColumnInfoBO::isPrimary)
-			.findFirst()
-			.orElse(new ColumnInfoBO());
-
-		tableInfoBO.setPrimaryKey(primaryColumnDO.getName());
+			.collect(Collectors.toList());
+		if (CollectionUtils.isNotEmpty(targetPrimaryList)) {
+			List<String> columnNames = targetPrimaryList.stream()
+				.map(ColumnInfoBO::getName)
+				.collect(Collectors.toList());
+			tableInfoBO.setPrimaryKeys(columnNames);
+		}
+		else {
+			tableInfoBO.setPrimaryKeys(new ArrayList<>());
+		}
 		tableInfoBO.setForeignKey(String.join("、", buildForeignKeyList(tableInfoBO.getName())));
 	}
 
@@ -180,7 +187,7 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 		Map<String, Object> metadata = Map.of("schema", Optional.ofNullable(tableInfoBO.getSchema()).orElse(""), "name",
 				tableInfoBO.getName(), "description", Optional.ofNullable(tableInfoBO.getDescription()).orElse(""),
 				"foreignKey", Optional.ofNullable(tableInfoBO.getForeignKey()).orElse(""), "primaryKey",
-				Optional.ofNullable(tableInfoBO.getPrimaryKey()).orElse(""), "vectorType", "table");
+				Optional.ofNullable(tableInfoBO.getPrimaryKeys()).orElse(new ArrayList<>()), "vectorType", "table");
 		return new Document(tableInfoBO.getName(), text, metadata);
 	}
 
@@ -210,8 +217,12 @@ public class SimpleVectorStoreManagementService implements VectorStoreManagement
 			else if (deleteRequest.getVectorType() != null && !deleteRequest.getVectorType().isEmpty()) {
 				FilterExpressionBuilder b = new FilterExpressionBuilder();
 				Filter.Expression expression = b.eq("vectorType", "column").build();
-				List<Document> documents = vectorStore.similaritySearch(
-						SearchRequest.builder().topK(Integer.MAX_VALUE).filterExpression(expression).build());
+				List<Document> documents = vectorStore.similaritySearch(SearchRequest.builder()
+					.query("*") // 使用通配符查询来获取所有匹配的文档
+					.topK(Integer.MAX_VALUE)
+					.similarityThreshold(0.0) // 设置为0.0以接受所有结果
+					.filterExpression(expression)
+					.build());
 				vectorStore.delete(documents.stream().map(Document::getId).toList());
 			}
 			else {

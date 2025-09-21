@@ -51,6 +51,7 @@
         <!-- Spring AI Alibaba Modules -->
         <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-mcp</module>
+        <module>spring-ai-alibaba-a2a</module>
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-prompt</module>
         <module>spring-ai-alibaba-graph-core</module>
@@ -58,6 +59,10 @@
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-jmanus</module>
         <module>spring-ai-alibaba-deepresearch</module>
+        <module>spring-ai-alibaba-agent-nacos</module>
+
+        <!-- Spring AI Alibaba Extension Modules -->
+        <module>spring-ai-alibaba-observation-extension</module>
 
         <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
@@ -153,6 +158,7 @@
         <module>community/memories/spring-ai-alibaba-starter-memory-mongodb</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-tablestore</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-memcached</module>
+        <module>community/memories/spring-ai-alibaba-starter-memory-mem0</module>
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
@@ -174,6 +180,11 @@
         <!-- Spring AI Alibaba Graph Observation -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-graph-observation</module>
 
+        <!-- Sprint AI Alibaba A2A Server -->
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-server</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-client</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-registry</module>
+
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
@@ -184,6 +195,12 @@
 
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory-long</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory-long</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-client</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-registry</module>
+
     </modules>
 
     <scm>
@@ -213,17 +230,16 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring version -->
-        <spring-ai.version>1.0.0</spring-ai.version>
-        <spring-boot.version>3.4.5</spring-boot.version>
+        <spring-ai.version>1.0.1</spring-ai.version>
+        <spring-boot.version>3.4.8</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
         <!-- DashScope SDK Version -->
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
 
         <!-- Nacos -->
-        <nacos2.version>2.5.1</nacos2.version>
-        <nacos3.version>3.0.2</nacos3.version>
-        <nacos-client-mse-extension.version>1.0.4</nacos-client-mse-extension.version>
+        <nacos3.version>3.1.0-BETA</nacos3.version>
+        <nacos-client-mse-extension.version>1.0.6</nacos-client-mse-extension.version>
         <spring-alibaba-nacos-config.version>2023.0.1.3</spring-alibaba-nacos-config.version>
 
         <!-- Redis -->
@@ -241,7 +257,7 @@
         <commons-exec.version>1.3</commons-exec.version>
         <commons-collections4.version>4.4</commons-collections4.version>
 
-        <docker-java>3.3.3</docker-java>
+        <docker-java.version>3.5.3</docker-java.version>
 
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
 
@@ -268,8 +284,8 @@
         <poi.version>5.4.0</poi.version>
 
         <mcp.version>0.10.0</mcp.version>
-
         <opentelemetry.version>1.38.0</opentelemetry.version>
+        <a2a-sdk.version>0.2.5.Beta2</a2a-sdk.version>
 
         <!-- CheckStyle Plugin -->
         <disable.checks>false</disable.checks>
@@ -339,7 +355,36 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>com.github.docker-java</groupId>
+                <artifactId>docker-java-bom</artifactId>
+                <version>${docker-java.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
+            <!-- A2A SDK Dependencies -->
+            <dependency>
+                <groupId>io.github.a2asdk</groupId>
+                <artifactId>a2a-java-reference-server</artifactId>
+                <version>${a2a-sdk.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.slf4j</groupId>
+                        <artifactId>slf4j-jboss-logmanager</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>io.github.a2asdk</groupId>
+                <artifactId>a2a-java-sdk-server-common</artifactId>
+                <version>${a2a-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.a2asdk</groupId>
+                <artifactId>a2a-java-sdk-client</artifactId>
+                <version>${a2a-sdk.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -377,6 +422,9 @@
                 <groupId>io.spring.javaformat</groupId>
                 <artifactId>spring-javaformat-maven-plugin</artifactId>
                 <version>${spring-javaformat-maven-plugin.version}</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

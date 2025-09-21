@@ -24,7 +24,6 @@ import com.alibaba.cloud.ai.example.deepresearch.dispatcher.InformationDispatche
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ProfessionalKbDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.ResearchTeamDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.dispatcher.RewriteAndMultiQueryDispatcher;
-import com.alibaba.cloud.ai.example.deepresearch.dispatcher.UserFileRagDispatcher;
 import com.alibaba.cloud.ai.example.deepresearch.model.enums.ParallelEnum;
 
 import com.alibaba.cloud.ai.example.deepresearch.node.BackgroundInvestigationNode;
@@ -193,8 +192,8 @@ public class DeepResearchConfiguration {
 			keyStrategyHashMap.put("user_upload_file", new ReplaceStrategy());
 			keyStrategyHashMap.put("session_id", new ReplaceStrategy());
 
-			keyStrategyHashMap.put("feed_back", new ReplaceStrategy());
-			keyStrategyHashMap.put("feed_back_content", new ReplaceStrategy());
+			keyStrategyHashMap.put("feedback", new ReplaceStrategy());
+			keyStrategyHashMap.put("feedback_content", new ReplaceStrategy());
 
 			// 专业知识库决策相关
 			keyStrategyHashMap.put("use_professional_kb", new ReplaceStrategy());
@@ -252,8 +251,7 @@ public class DeepResearchConfiguration {
 							END))
 			.addConditionalEdges("background_investigator", edge_async(new BackgroundInvestigationDispatcher()),
 					Map.of("reporter", "reporter", "planner", "planner", END, END))
-			.addConditionalEdges("user_file_rag", edge_async(new UserFileRagDispatcher()),
-					Map.of("background_investigator", "background_investigator", END, END))
+			.addEdge("user_file_rag", "background_investigator")
 			.addEdge("planner", "information")
 			.addConditionalEdges("information", edge_async(new InformationDispatcher()),
 					Map.of("reporter", "reporter", "human_feedback", "human_feedback", "planner", "planner",

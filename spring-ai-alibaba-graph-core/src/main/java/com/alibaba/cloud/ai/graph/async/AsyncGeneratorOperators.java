@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
+@Deprecated
 public interface AsyncGeneratorOperators<E> {
 
 	AsyncGenerator.Data<E> next();

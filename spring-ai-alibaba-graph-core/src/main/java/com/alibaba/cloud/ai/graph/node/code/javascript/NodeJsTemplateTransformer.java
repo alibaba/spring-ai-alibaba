@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.node.code.javascript;
 
+import com.alibaba.cloud.ai.graph.node.code.entity.CodeStyle;
 import com.alibaba.cloud.ai.graph.node.code.TemplateTransformer;
 
 /**
@@ -24,22 +25,39 @@ import com.alibaba.cloud.ai.graph.node.code.TemplateTransformer;
 public class NodeJsTemplateTransformer extends TemplateTransformer {
 
 	@Override
-	public String getRunnerScript() {
-		return """
-				// declare main function
-				%s
+	public String getRunnerScript(CodeStyle style) {
+		return switch (style) {
+			case EXPLICIT_PARAMETERS -> String.format("""
+					// declare main function
+					%s
 
-				// decode and prepare input object
-				var inputs_obj = JSON.parse(Buffer.from('%s', 'base64').toString('utf-8'))
+					// decode and prepare input object
+					var inputs_obj = JSON.parse(Buffer.from('%s', 'base64').toString('utf-8'))
 
-				// execute main function
-				var output_obj = main(inputs_obj)
+					// execute main function
+					var output_obj = main(inputs_obj)
 
-				// convert output to json and print
-				var output_json = JSON.stringify(output_obj)
-				var result = `<<RESULT>>${output_json}<<RESULT>>`
-				console.log(result)
-				""".formatted(CODE_PLACEHOLDER, INPUTS_PLACEHOLDER);
+					// convert output to json and print
+					var output_json = JSON.stringify(output_obj)
+					var result = `%s${output_json}%s`
+					console.log(result)
+					""", CODE_PLACEHOLDER, INPUTS_PLACEHOLDER, RESULT_TAG, RESULT_TAG);
+			case GLOBAL_DICTIONARY -> String.format("""
+					// decode and prepare input object
+					let params = JSON.parse(Buffer.from('%s', 'base64').toString('utf-8'))
+
+					// declare main function
+					%s
+
+					// execute main function
+					var output_obj = main()
+
+					// convert output to json and print
+					var output_json = JSON.stringify(output_obj)
+					var result = `%s${output_json}%s`
+					console.log(result)
+					""", INPUTS_PLACEHOLDER, CODE_PLACEHOLDER, RESULT_TAG, RESULT_TAG);
+		};
 	}
 
 }

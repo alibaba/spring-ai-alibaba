@@ -17,17 +17,15 @@
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.sections;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.ParameterParsingNodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 @Component
 public class ParameterParsingNodeSection implements NodeSection<ParameterParsingNodeData> {
@@ -39,58 +37,84 @@ public class ParameterParsingNodeSection implements NodeSection<ParameterParsing
 
 	@Override
 	public String render(Node node, String varName) {
-		ParameterParsingNodeData d = (ParameterParsingNodeData) node.getData();
-		String id = node.getId();
-		StringBuilder sb = new StringBuilder();
+		ParameterParsingNodeData nodeData = ((ParameterParsingNodeData) node.getData());
+		return String.format("""
+				// -- ParameterParsingNode [%s] --
+				stateGraph.addNode("%s", AsyncNodeAction.node_async(
+				    createParameterParsingAction(chatModel, %s, %s, %s, %s, %s, %s, %s, %s, "%s")
+				));
 
-		sb.append(String.format("// —— ParameterParsingNode [%s] ——%n", id));
-		sb.append(String.format("ParameterParsingNode %s = ParameterParsingNode.builder()%n", varName));
+				""", node.getId(), varName, ObjectToCodeUtil.toCode(nodeData.getChatModeName()),
+				ObjectToCodeUtil.toCode(nodeData.getModeParams()),
+				ObjectToCodeUtil.toCode(nodeData.getInputSelector().getNameInCode()),
+				ObjectToCodeUtil.toCode(nodeData.getParameters()), ObjectToCodeUtil.toCode(nodeData.getSuccessKey()),
+				ObjectToCodeUtil.toCode(nodeData.getDataKey()), ObjectToCodeUtil.toCode(nodeData.getReasonKey()),
+				ObjectToCodeUtil.toCode(nodeData.getInstruction()), varName);
+	}
 
-		if (d.getInputTextKey() != null) {
-			sb.append(String.format(".inputTextKey(\"%s\")%n", escape(d.getInputTextKey())));
-		}
-
-		sb.append(".chatClient(chatClient)\n");
-
-		List<Map<String, Object>> params = d.getParameters();
-		if (!CollectionUtils.isEmpty(params)) {
-			String joined = params.stream().map(m -> {
-				String mapCode = Stream
-					.of("name", m.getOrDefault("name", "unknown").toString(), "type",
-							m.getOrDefault("type", "string").toString(), "description",
-							m.getOrDefault("description", "").toString())
-					.map(s -> "\"" + s + "\"")
-					.collect(Collectors.joining(", "));
-				return String.format("Map.of(%s)", mapCode);
-			}).collect(Collectors.joining(", "));
-			sb.append(String.format(".parameters(List.of(%s))%n", joined));
-		}
-
-		if (d.getOutputKey() != null) {
-			sb.append(String.format(".outputKey(\"%s\")%n", escape(d.getOutputKey())));
-		}
-
-		sb.append(".build();\n");
-
-		// 辅助节点
-		String assistNodeCode = String.format(
+	@Override
+	public String assistMethodCode(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY, STUDIO ->
 				"""
-						(state) -> {
-							String key = "%s";
-							Map<String, Object> result = %s.apply(state);
-							Object object = result.get("%s");
-							if(!(object instanceof Map<?,?> map)) {
-								return Map.of();
-							}
-							return map.entrySet().stream().collect(Collectors.toMap(e -> key + "_" + e.getKey(), Map.Entry::getValue));
+						private NodeAction createParameterParsingAction(
+						        ChatModel chatModel,
+						        String chatModelName, Map<String, Number> modeParams,
+						        String inputKey, List<ParameterParsingNode.Param> parameters,
+						        String successKey, String dataKey, String reasonKey, String instruction, String outputKeyPrefix) {
+						    // build ChatClient
+						    var chatOptionsBuilder = DashScopeChatOptions.builder().withModel(chatModelName);
+						    Optional.ofNullable(modeParams.get("temperature"))
+						            .ifPresent(val -> chatOptionsBuilder.withTemperature(val.doubleValue()));
+						    Optional.ofNullable(modeParams.get("seed")).ifPresent(val -> chatOptionsBuilder.withSeed(val.intValue()));
+						    Optional.ofNullable(modeParams.get("top_p")).ifPresent(val -> chatOptionsBuilder.withTopP(val.doubleValue()));
+						    Optional.ofNullable(modeParams.get("top_k")).ifPresent(val -> chatOptionsBuilder.withTopK(val.intValue()));
+						    Optional.ofNullable(modeParams.get("max_tokens"))
+						            .ifPresent(val -> chatOptionsBuilder.withMaxToken(val.intValue()));
+						    Optional.ofNullable(modeParams.get("repetition_penalty"))
+						            .ifPresent(val -> chatOptionsBuilder.withRepetitionPenalty(val.doubleValue()));
+						    final ChatClient chatClient = ChatClient.builder(chatModel).defaultOptions(chatOptionsBuilder.build()).build();
+
+						    // build Node
+						    ParameterParsingNode node = ParameterParsingNode.builder()
+						                              .inputText("")
+						                              .inputTextKey(inputKey)
+						                              .chatClient(chatClient)
+						                              .parameters(parameters)
+						                              .successKey(successKey)
+						                              .dataKey(dataKey)
+						                              .reasonKey(reasonKey)
+						                              .instruction(instruction)
+						                              .build();
+
+						                      // unpack answer
+						                      return state -> {
+						                          Map<String, Object> res = node.apply(state);
+						                          if(!(Boolean) res.get(successKey)) {
+						                              return res;
+						                          }
+						                          Map<String, Object> finalRes = new HashMap<>(res);
+						                          Map<String, Object> data = (Map<String, Object>) finalRes.remove(dataKey);
+						                          finalRes.putAll(data.entrySet()
+						                                    .stream()
+						                                    .filter(e -> e.getValue() != null)
+						                                    .map(e ->
+						                                            Map.entry(outputKeyPrefix + "_" + e.getKey(), e.getValue()))
+						                                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+						                            );
+						                          return finalRes;
+						                      };
 						}
-						""",
-				varName, varName, d.getOutputKey());
+						""";
+			default -> "";
+		};
+	}
 
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
-				assistNodeCode));
-
-		return sb.toString();
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.ParameterParsingNode",
+				"com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions", "java.util.Optional",
+				"java.util.stream.Collectors");
 	}
 
 }

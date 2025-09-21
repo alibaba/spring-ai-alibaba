@@ -17,8 +17,12 @@ package com.alibaba.cloud.ai.memory.memcached;
 
 import com.alibaba.cloud.ai.memory.memcached.serializer.MessageDeserializer;
 import com.alibaba.cloud.ai.toolcalling.memcached.MemcachedService;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +50,11 @@ public class MemcachedChatMemoryRepository implements ChatMemoryRepository, Auto
 
 	public MemcachedChatMemoryRepository(MemcachedService memcachedService) {
 		this.memcachedService = memcachedService;
-		this.objectMapper = new ObjectMapper();
+		this.objectMapper = JsonMapper.builder()
+			.configure(MapperFeature.AUTO_DETECT_GETTERS, false)
+			.configure(MapperFeature.AUTO_DETECT_IS_GETTERS, false)
+			.visibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+			.build();
 		SimpleModule module = new SimpleModule();
 		module.addDeserializer(Message.class, new MessageDeserializer());
 		this.objectMapper.registerModule(module);

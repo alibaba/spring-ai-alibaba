@@ -15,15 +15,18 @@
  */
 package com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.sections;
 
-import java.util.stream.Collectors;
-
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.Node;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeType;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata.CodeNodeData;
+import com.alibaba.cloud.ai.studio.admin.generator.service.dsl.DSLDialectType;
 import com.alibaba.cloud.ai.studio.admin.generator.service.generator.workflow.NodeSection;
 
+import com.alibaba.cloud.ai.studio.admin.generator.utils.ObjectToCodeUtil;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
+// TODO: 支持异常分支
 @Component
 public class CodeNodeSection implements NodeSection<CodeNodeData> {
 
@@ -34,58 +37,91 @@ public class CodeNodeSection implements NodeSection<CodeNodeData> {
 
 	@Override
 	public String render(Node node, String varName) {
-		CodeNodeData data = (CodeNodeData) node.getData();
-		StringBuilder sb = new StringBuilder();
-		String id = node.getId();
+		CodeNodeData nodeData = ((CodeNodeData) node.getData());
+		return String.format("""
+				// —— CodeNode [%s] ——
+				CodeExecutorNodeAction %s = CodeExecutorNodeAction.builder()
+				        .codeExecutor(codeExecutor)
+				        .codeLanguage("%s")
+				        .code(%s)
+				        .codeStyle(%s)
+				        .config(codeExecutionConfig)
+				        .params(%s)
+				        .outputKey("%s")
+				        .build();
+				stateGraph.addNode("%s", AsyncNodeAction.node_async(
+				    wrapperCodeNodeAction(%s, "%s", "%s", %d, %d, %s)
+				));
 
-		sb.append(String.format("// —— CodeNode [%s] ——%n", id));
+				""", node.getId(), varName, nodeData.getCodeLanguage(), ObjectToCodeUtil.toCode(nodeData.getCode()),
+				ObjectToCodeUtil.toCode(nodeData.getCodeStyle()), ObjectToCodeUtil.toCode(nodeData.getInputParams()),
+				nodeData.getOutputKey(), varName, varName, nodeData.getOutputKey(), varName,
+				nodeData.getMaxRetryCount(), nodeData.getRetryIntervalMs(),
+				ObjectToCodeUtil.toCode(nodeData.getDefaultValue()));
+	}
 
-		sb.append(String.format("CodeExecutorNodeAction %s = CodeExecutorNodeAction.builder()%n", varName));
+	@Override
+	public String assistMethodCode(DSLDialectType dialectType) {
+		return switch (dialectType) {
+			case DIFY, STUDIO ->
+				"""
+						   private static final CodeExecutionConfig codeExecutionConfig;
+						   private static final CodeExecutor codeExecutor;
 
-		sb.append("    .codeExecutor(codeExecutor)  // 注入的 CodeExecutor Bean\n");
+						   static {
+						       // todo: configure your own code execution configuration
+						       try {
+						           Path tempDir = Files.createTempDirectory("code-execution-workdir-");
+						           tempDir.toFile().deleteOnExit();
+						           codeExecutionConfig = new CodeExecutionConfig().setWorkDir(tempDir.toString());
+						           codeExecutor = new LocalCommandlineCodeExecutor();
+						       } catch (Exception e) {
+						           throw new RuntimeException(e);
+						       }
+						   }
 
-		sb.append(String.format("    .codeLanguage(\"%s\")%n", data.getCodeLanguage()));
+						   private NodeAction wrapperCodeNodeAction(NodeAction codeNodeAction, String key,
+						                    String nodeName, int maxRetryCount, int retryIntervalMs, Map<String, Object> defaultValue) {
+						       return state -> {
+						           int count = maxRetryCount;
+						           while (count-- > 0) {
+						               try {
+						                   // 将代码运行的结果拆包
+						                   Map<String, Object> result = codeNodeAction.apply(state);
+						                   Object object = result.get(key);
+						                   if(!(object instanceof Map)) {
+						                       throw new RuntimeException("unexcepted result");
+						                   }
+						                   return ((Map<String, Object>) object).entrySet().stream()
+						                           .collect(Collectors.toMap(
+						                                   entry -> nodeName + "_" + entry.getKey(),
+						                                   Map.Entry::getValue
+						                           ));
+						               } catch (Exception e) {
+						                   Thread.sleep(retryIntervalMs);
+						               }
+						           }
+						           if(defaultValue != null) {
+						               return defaultValue;
+						           } else {
+						               throw new RuntimeException("code execution failed!");
+						           }
+						       };
+						   }
+						""";
+			default -> "";
+		};
+	}
 
-		String escaped = data.getCode().replace("\\", "\\\\").replace("\"\"\"", "\\\"\\\"\\\"");
-		sb.append("    .code(\"\"\"\n").append(escaped).append("\n\"\"\")\n");
-
-		sb.append("    .config(codeExecutionConfig)  // 注入的 CodeExecutionConfig Bean\n");
-
-		if (!data.getInputs().isEmpty()) {
-			String params = data.getInputs()
-				.stream()
-				.map(sel -> String.format("\"%s\", \"%s\"", sel.getLabel(), sel.getNameInCode()))
-				.collect(Collectors.joining(", "));
-			sb.append(String.format("    .params(Map.of(%s))%n", params));
-		}
-		if (data.getOutputKey() != null) {
-			sb.append(String.format(".outputKey(\"%s\")%n", escape(data.getOutputKey())));
-		}
-
-		sb.append("    .build();\n");
-
-		// 辅助节点代码，包装codeNode，将他的返回值变量解包
-		String assistantNodeCode = String.format("""
-				(state) -> {
-				            // 将代码运行的结果拆包
-				            Map<String, Object> result = %s.apply(state);
-				            String key = "%s";
-				            Object object = result.get(key);
-				            if(!(object instanceof Map)) {
-				            	return Map.of();
-				            }
-				            return ((Map<String, Object>) object).entrySet().stream()
-				            		.collect(Collectors.toMap(
-				                    	entry -> "%s_" + entry.getKey(),
-				                    	Map.Entry::getValue
-				                    ));
-				        }
-				""", varName, data.getOutputKey(), varName);
-
-		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
-				assistantNodeCode));
-
-		return sb.toString();
+	@Override
+	public List<String> getImports() {
+		return List.of("com.alibaba.cloud.ai.graph.node.code.CodeExecutorNodeAction",
+				"com.alibaba.cloud.ai.graph.node.code.entity.CodeExecutionConfig",
+				"com.alibaba.cloud.ai.graph.node.code.CodeExecutor",
+				"com.alibaba.cloud.ai.graph.node.code.LocalCommandlineCodeExecutor", "java.io.IOException",
+				"java.nio.file.Files", "java.nio.file.Path", "java.util.stream.Collectors",
+				"com.alibaba.cloud.ai.graph.node.code.entity.CodeParam",
+				"com.alibaba.cloud.ai.graph.node.code.entity.CodeStyle");
 	}
 
 }

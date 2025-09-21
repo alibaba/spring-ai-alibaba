@@ -16,92 +16,71 @@
 
 package com.alibaba.cloud.ai.studio.admin.generator.model.workflow.nodedata;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import com.alibaba.cloud.ai.studio.admin.generator.model.VariableSelector;
 import com.alibaba.cloud.ai.studio.admin.generator.model.workflow.NodeData;
 
-/**
- * NodeData for McpNode: Contains fields such as url, tool, headers, params, outputKey,
- * inputParamKeys, etc.
- */
+import java.util.List;
+
+// 本类仅考虑Studio的MCP使用，Dify的MCP使用ToolNode定义
 public class MCPNodeData extends NodeData {
 
-	private String url;
+	private String toolName;
 
-	private String tool;
+	private String serverName;
 
-	private Map<String, String> headers;
+	private String serverCode;
 
-	private Map<String, Object> params;
+	private String inputJsonTemplate = "";
 
-	private String outputKey;
+	private List<String> inputKeys = List.of();
 
-	private List<String> inputParamKeys;
+	private String outputKey = "output";
 
-	public MCPNodeData() {
-		super(Collections.emptyList(), Collections.emptyList());
+	public String getToolName() {
+		return toolName;
 	}
 
-	public MCPNodeData(List<VariableSelector> inputs,
-			List<com.alibaba.cloud.ai.studio.admin.generator.model.Variable> outputs) {
-		super(inputs, outputs);
+	public void setToolName(String toolName) {
+		this.toolName = toolName;
 	}
 
-	public String getUrl() {
-		return url;
+	public String getServerName() {
+		return serverName;
 	}
 
-	public MCPNodeData setUrl(String url) {
-		this.url = url;
-		return this;
+	public void setServerName(String serverName) {
+		this.serverName = serverName;
 	}
 
-	public String getTool() {
-		return tool;
+	public String getServerCode() {
+		return serverCode;
 	}
 
-	public MCPNodeData setTool(String tool) {
-		this.tool = tool;
-		return this;
+	public void setServerCode(String serverCode) {
+		this.serverCode = serverCode;
 	}
 
-	public Map<String, String> getHeaders() {
-		return headers;
+	public String getInputJsonTemplate() {
+		return inputJsonTemplate;
 	}
 
-	public MCPNodeData setHeaders(Map<String, String> headers) {
-		this.headers = headers;
-		return this;
+	public void setInputJsonTemplate(String inputJsonTemplate) {
+		this.inputJsonTemplate = inputJsonTemplate;
 	}
 
-	public Map<String, Object> getParams() {
-		return params;
+	public List<String> getInputKeys() {
+		return inputKeys;
 	}
 
-	public MCPNodeData setParams(Map<String, Object> params) {
-		this.params = params;
-		return this;
+	public void setInputKeys(List<String> inputKeys) {
+		this.inputKeys = inputKeys;
 	}
 
 	public String getOutputKey() {
 		return outputKey;
 	}
 
-	public MCPNodeData setOutputKey(String outputKey) {
+	public void setOutputKey(String outputKey) {
 		this.outputKey = outputKey;
-		return this;
-	}
-
-	public List<String> getInputParamKeys() {
-		return inputParamKeys;
-	}
-
-	public MCPNodeData setInputParamKeys(List<String> inputParamKeys) {
-		this.inputParamKeys = inputParamKeys;
-		return this;
 	}
 
 }
