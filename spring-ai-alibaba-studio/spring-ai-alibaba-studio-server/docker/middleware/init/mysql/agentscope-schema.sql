@@ -449,3 +449,36 @@ INSERT INTO `model` (`workspace_id`,`icon`,`name`,`type`,`mode`,`model_id`,`prov
 INSERT INTO `model` (`workspace_id`,`icon`,`name`,`type`,`mode`,`model_id`,`provider`,`enable`,`tags`,`source`,`gmt_create`,`gmt_modified`,`creator`,`modifier`) VALUES ('1',null,'gte-rerank-v2','rerank','chat','gte-rerank-v2','Tongyi',1,null,'preset',now(),now(),null,null);
 
 INSERT INTO `model` (`workspace_id`,`icon`,`name`,`type`,`mode`,`model_id`,`provider`,`enable`,`tags`,`source`,`gmt_create`,`gmt_modified`,`creator`,`modifier`) VALUES ('1',null,'deepseek-r1','llm','chat','deepseek-r1','Tongyi',1,'reasoning','preset',now(),now(),null,null);
+
+/******************************************/
+/*   table = agent_schema                 */
+/******************************************/
+DROP TABLE IF EXISTS `agent_schema`;
+CREATE TABLE `agent_schema`
+(
+    `id`           BIGINT(20) UNSIGNED AUTO_INCREMENT NOT NULL COMMENT 'pk',
+    `agent_id`     VARCHAR(64)                                 DEFAULT NULL COMMENT 'agent id',
+    `workspace_id` VARCHAR(64)                        NOT NULL COMMENT 'workspace id',
+    `name`         VARCHAR(255)                       NOT NULL COMMENT 'agent name',
+    `description`  VARCHAR(4096)                               DEFAULT NULL COMMENT 'agent description',
+    `type`         VARCHAR(64)                        NOT NULL COMMENT 'agent type: ReactAgent, ParallelAgent, SequentialAgent, LLMRoutingAgent, LoopAgent',
+    `instruction`  TEXT                                        DEFAULT NULL COMMENT 'system instruction',
+    `input_keys`   TEXT                                        DEFAULT NULL COMMENT 'input keys JSON',
+    `output_key`   VARCHAR(255)                                DEFAULT NULL COMMENT 'output key',
+    `handle`       LONGTEXT                                    DEFAULT NULL COMMENT 'handle configuration JSON',
+    `sub_agents`   LONGTEXT                                    DEFAULT NULL COMMENT 'sub agents configuration JSON',
+    `yaml_schema`  LONGTEXT                                    DEFAULT NULL COMMENT 'generated YAML schema',
+    `status`       VARCHAR(64)                        NOT NULL DEFAULT 'DRAFT' COMMENT 'agent status: DRAFT, PUBLISHED, ARCHIVED',
+    `enabled`      TINYINT(4)                         NOT NULL DEFAULT 1 COMMENT 'enabled: 0-disabled, 1-enabled',
+    `gmt_create`   DATETIME                           NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `gmt_modified` DATETIME                           NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `creator`      VARCHAR(64)                        NOT NULL COMMENT 'creator uid',
+    `modifier`     VARCHAR(64)                        NOT NULL COMMENT 'modifier uid',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_agent_id` (`agent_id`),
+    KEY `idx_workspace_type` (`workspace_id`, `type`),
+    KEY `idx_workspace_status` (`workspace_id`, `status`)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 10000
+  DEFAULT CHARSET = utf8mb4
+    COMMENT ='agent schema info';

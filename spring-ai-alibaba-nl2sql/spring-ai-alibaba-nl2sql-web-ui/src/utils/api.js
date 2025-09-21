@@ -498,6 +498,27 @@ export const agentDebugApi = {
   }
 }
 
+/**
+ * 头像上传 API
+ */
+export const fileUploadApi = {
+  // 上传头像
+  uploadAvatar(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    return fetch(`${API_BASE_URL}/upload/avatar`, {
+      method: 'POST',
+      body: formData
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return response.json()
+    })
+  }
+}
+
 export default {
   get,
   post,
@@ -508,5 +529,6 @@ export default {
   semanticModelApi,
   agentKnowledgeApi,
   datasourceApi,
-  agentDebugApi
+  agentDebugApi,
+  fileUploadApi
 }

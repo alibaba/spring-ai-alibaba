@@ -54,6 +54,16 @@ spring:
         code-executor:
           # 运行Python代码的环境（生产环境建议使用docker，不建议使用local）
           code-pool-executor: local
+        file:
+          upload:
+            path: ./uploads
+            url-prefix: /uploads
+            imageSize: 2097152
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
 
 # MyBatis Plus 配置
 mybatis-plus:
