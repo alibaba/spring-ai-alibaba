@@ -16,28 +16,32 @@
 
 package com.alibaba.cloud.ai.agent.nacos;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.alibaba.cloud.ai.agent.nacos.vo.AgentVO;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
+import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
+import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
+import lombok.Data;
 
-public class NacosAgentInjector {
+@Data
+public class NacosContextHolder {
 
-	/**
-	 * load prompt by agent id.
-	 *
-	 * @param nacosOptions
-	 * @return
-	 */
-	public static AgentVO loadAgentVO(NacosOptions nacosOptions) {
-		try {
-			String config = nacosOptions.getNacosConfigService()
-					.getConfig("agent-base.json", "ai-agent-" + nacosOptions.getAgentName(),
-							3000L);
-			return JSON.parseObject(config, AgentVO.class);
-		}
-		catch (NacosException e) {
-			throw new RuntimeException(e);
-		}
-	}
+	AgentVO agentVO;
+
+	PromptVO promptVO;
+
+	ModelVO modelVO;
+
+	McpServersVO mcpServersVO;
+
+	ObservationMetadataAwareOptions observationMetadataAwareOptions;
+
+	ReactAgent reactAgent;
+
+	Map<String, PromptListener> promptListeners = new HashMap<>();
 
 }
