@@ -513,21 +513,21 @@ public class Nl2sqlForGraphController {
 	 */
 	@GetMapping(value = "/human-feedback", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ServerSentEvent<String>> handleHumanFeedback(@RequestParam String sessionId,
-			@RequestParam String threadId, @RequestParam boolean feedBack,
-			@RequestParam(required = false, defaultValue = "") String feedBackContent) throws GraphStateException {
-		logger.info("Processing feedback: {} ({})", feedBack ? "approved" : "rejected",
-				feedBack ? "continue" : feedBackContent);
+			@RequestParam String threadId, @RequestParam boolean feedback,
+			@RequestParam(required = false, defaultValue = "") String feedbackContent) throws GraphStateException {
+		logger.info("Processing feedback: {} ({})", feedback ? "approved" : "rejected",
+				feedback ? "continue" : feedbackContent);
 
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 
 		CompletableFuture.runAsync(() -> {
 			try {
-				Map<String, Object> feedbackData = Map.of("feed_back", feedBack, "feed_back_content",
-						feedBackContent != null ? feedBackContent : "");
+				Map<String, Object> feedbackData = Map.of("feedback", feedback, "feedback_content",
+						feedbackContent != null ? feedbackContent : "");
 				OverAllState.HumanFeedback humanFeedback = new OverAllState.HumanFeedback(feedbackData,
 						"human_feedback");
 
-				if (feedBack) {
+				if (feedback) {
 					sink.tryEmitNext(ServerSentEvent.builder("执行中...").build());
 					executeApprovedPlanWithResume(humanFeedback, threadId, sink);
 				}

@@ -201,8 +201,8 @@ const sendResumeStream  =  async(message: string | undefined, onUpdate: (content
             Accept: 'text/event-stream',
           },
           body: {
-            feed_back_content: message,
-            feed_back: true,
+            feedback_content: message,
+            feedback: true,
             session_id: convId,
             thread_id: current.threadId,
           },

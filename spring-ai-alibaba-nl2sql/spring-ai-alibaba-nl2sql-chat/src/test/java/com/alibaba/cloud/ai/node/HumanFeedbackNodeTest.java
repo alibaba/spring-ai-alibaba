@@ -44,7 +44,7 @@ class HumanFeedbackNodeTest {
 
 	@Test
 	void testApproveFlow() throws Exception {
-		state.withHumanFeedback(new OverAllState.HumanFeedback(Map.of("feed_back", true), null));
+		state.withHumanFeedback(new OverAllState.HumanFeedback(Map.of("feedback", true), null));
 
 		Map<String, Object> result = node.apply(state);
 		assertEquals(PLAN_EXECUTOR_NODE, result.get("human_next_node"));
@@ -56,7 +56,7 @@ class HumanFeedbackNodeTest {
 	void testRejectFlowWithContent() throws Exception {
 		state.updateState(Map.of(PLAN_REPAIR_COUNT, 0));
 		state.withHumanFeedback(
-				new OverAllState.HumanFeedback(Map.of("feed_back", false, "feed_back_content", "需要补充过滤条件"), null));
+				new OverAllState.HumanFeedback(Map.of("feedback", false, "feedback_content", "需要补充过滤条件"), null));
 
 		Map<String, Object> result = node.apply(state);
 		assertEquals(PLANNER_NODE, result.get("human_next_node"));
@@ -69,7 +69,7 @@ class HumanFeedbackNodeTest {
 	@Test
 	void testRejectFlowWithoutContent() throws Exception {
 		state.updateState(Map.of(PLAN_REPAIR_COUNT, 2));
-		state.withHumanFeedback(new OverAllState.HumanFeedback(Map.of("feed_back", false), null));
+		state.withHumanFeedback(new OverAllState.HumanFeedback(Map.of("feedback", false), null));
 
 		Map<String, Object> result = node.apply(state);
 		assertEquals(PLANNER_NODE, result.get("human_next_node"));
@@ -96,7 +96,7 @@ class HumanFeedbackNodeTest {
 	void testRejectFlowClearsPlanNextNode() throws Exception {
 		state.updateState(Map.of(PLAN_REPAIR_COUNT, 0));
 		state.withHumanFeedback(
-				new OverAllState.HumanFeedback(Map.of("feed_back", false, "feed_back_content", "再次修正"), null));
+				new OverAllState.HumanFeedback(Map.of("feedback", false, "feedback_content", "再次修正"), null));
 
 		Map<String, Object> result = node.apply(state);
 		assertEquals(PLANNER_NODE, result.get("human_next_node"));
