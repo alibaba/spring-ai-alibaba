@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -173,8 +174,9 @@ public class GraphAgentExecutor implements AgentExecutor {
 			throws GraphStateException, GraphRunnerException {
 		RunnableConfig runnableConfig = getRunnableConfig(context);
 		var result = executeAgent.invoke(input, runnableConfig);
-		String outputText = result.get().data().containsKey(executeAgent.outputKey())
-				? String.valueOf(result.get().data().get(executeAgent.outputKey())) : "No output key in result.";
+		// FIXME: currently only support ReactAgent and A2aRemoteAgent as the root agent
+		String outputText = result.get().data().containsKey(((BaseAgent)executeAgent).getOutputKey())
+				? String.valueOf(result.get().data().get(((BaseAgent)executeAgent).getOutputKey())) : "No output key in result.";
 
 		Task task = context.getTask();
 		if (task == null) {

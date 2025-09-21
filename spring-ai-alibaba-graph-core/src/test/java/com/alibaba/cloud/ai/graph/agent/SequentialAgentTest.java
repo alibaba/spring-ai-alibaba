@@ -32,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -159,6 +158,7 @@ class SequentialAgentTest {
 
 			Optional<OverAllState> result = blogAgentParent.invoke(Map.of("messages", "帮我写一个100字左右的散文"));
 			System.out.println(result.get());
+
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();

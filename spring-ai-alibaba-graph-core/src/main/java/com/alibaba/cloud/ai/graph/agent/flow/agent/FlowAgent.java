@@ -16,16 +16,28 @@
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
+
+import org.springframework.ai.chat.messages.UserMessage;
+
+import reactor.core.publisher.Flux;
+
+import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
 
 public abstract class FlowAgent extends Agent {
 
@@ -53,6 +65,38 @@ public abstract class FlowAgent extends Agent {
 
 		// Delegate to specific graph builder based on agent type
 		return buildSpecificGraph(config);
+	}
+
+	public Optional<OverAllState> invoke(String message) throws GraphRunnerException {
+		return invoke(createInputMap(message));
+	}
+
+	public Optional<OverAllState> invoke(UserMessage message) throws GraphRunnerException {
+		return invoke(createInputMap(message));
+	}
+
+	public Optional<OverAllState> invoke(String message, RunnableConfig runnableConfig) throws GraphRunnerException {
+		return invoke(createInputMap(message), runnableConfig);
+	}
+
+	public Optional<OverAllState> invoke(UserMessage message, RunnableConfig runnableConfig) throws GraphRunnerException {
+		return invoke(createInputMap(message), runnableConfig);
+	}
+
+	public Flux<NodeOutput> stream(String message) throws GraphRunnerException {
+		return stream(createInputMap(message));
+	}
+
+	public Flux<NodeOutput> stream(UserMessage message) throws GraphRunnerException {
+		return stream(createInputMap(message));
+	}
+
+	public Flux<NodeOutput> stream(String message, RunnableConfig runnableConfig) throws GraphRunnerException {
+		return stream(createInputMap(message), runnableConfig);
+	}
+
+	public Flux<NodeOutput> stream(UserMessage message, RunnableConfig runnableConfig) throws GraphRunnerException {
+		return stream(createInputMap(message), runnableConfig);
 	}
 
 	@Override
@@ -92,5 +136,20 @@ public abstract class FlowAgent extends Agent {
 	public List<Agent> subAgents() {
 		return this.subAgents;
 	}
+
+	/**
+	 * Creates a map with messages and input for String message
+	 */
+	private Map<String, Object> createInputMap(String message) {
+		return Map.of("messages", convertToMessages(message), "input", message);
+	}
+
+	/**
+	 * Creates a map with messages and input for UserMessage
+	 */
+	private Map<String, Object> createInputMap(UserMessage message) {
+		return Map.of("messages", convertToMessages(message), "input", message.getText());
+	}
+
 
 }

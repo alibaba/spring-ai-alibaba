@@ -32,6 +32,7 @@ import java.util.logging.Logger;
 
 
 public class A2aRemoteAgent extends BaseAgent {
+	Logger logger = Logger.getLogger(A2aRemoteAgent.class.getName());
 
 	private final AgentCardWrapper agentCard;
 
@@ -41,7 +42,7 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	private boolean streaming;
 
-	Logger logger = Logger.getLogger(A2aRemoteAgent.class.getName());
+	private boolean shareState;
 
 	// Private constructor for Builder pattern
 	private A2aRemoteAgent(Builder builder) throws GraphStateException {
@@ -52,6 +53,7 @@ public class A2aRemoteAgent extends BaseAgent {
 		this.includeContents = builder.includeContents;
 		this.streaming = builder.streaming;
 		this.instruction = builder.instruction;
+		this.shareState = builder.shareState;
 	}
 
 	@Override
@@ -82,7 +84,7 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	@Override
 	public Node asNode(boolean includeContents, String outputKeyToParent) {
-		return new A2aRemoteAgentNode(this.name, includeContents, outputKeyToParent, this.instruction, this.agentCard, this.streaming, this.getAndCompileGraph());
+		return new A2aRemoteAgentNode(this.name, includeContents, outputKeyToParent, this.instruction, this.agentCard, this.streaming, this.shareState, this.getAndCompileGraph());
 	}
 
 	/**
@@ -94,9 +96,9 @@ public class A2aRemoteAgent extends BaseAgent {
 
 		private final CompiledGraph subGraph;
 
-		public A2aRemoteAgentNode(String id, boolean includeContents, String outputKeyToParent, String instruction, AgentCardWrapper agentCard, boolean streaming, CompiledGraph subGraph) {
+		public A2aRemoteAgentNode(String id, boolean includeContents, String outputKeyToParent, String instruction, AgentCardWrapper agentCard, boolean streaming, boolean shareState, CompiledGraph subGraph) {
 			super(Objects.requireNonNull(id, "id cannot be null"),
-					(config) -> AsyncNodeActionWithConfig.node_async(new A2aNodeActionWithConfig(agentCard, includeContents, outputKeyToParent, instruction, streaming, config)));
+					(config) -> AsyncNodeActionWithConfig.node_async(new A2aNodeActionWithConfig(agentCard, includeContents, outputKeyToParent, instruction, streaming, shareState, config)));
 			this.subGraph = subGraph;
 		}
 
@@ -131,6 +133,8 @@ public class A2aRemoteAgent extends BaseAgent {
 		private CompileConfig compileConfig;
 
 		private boolean streaming = false;
+
+		private boolean shareState = true;
 
 		public Builder name(String name) {
 			this.name = name;
@@ -184,6 +188,11 @@ public class A2aRemoteAgent extends BaseAgent {
 
 		public Builder streaming(boolean streaming) {
 			this.streaming = streaming;
+			return this;
+		}
+
+		public Builder shareState(boolean shareState) {
+			this.shareState = shareState;
 			return this;
 		}
 

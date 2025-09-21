@@ -75,7 +75,7 @@ public interface FlowGraphBuildingStrategy {
 		if (config.getKeyStrategyFactory() == null) {
 			// Generate a new KeyStrategyFactory based on agent keys
 			KeyStrategyFactory generatedFactory = generateKeyStrategyFactory(config);
-			config.setKeyStrategyFactory(generatedFactory);
+			config.keyStrategyFactory(generatedFactory);
 		}
 	}
 

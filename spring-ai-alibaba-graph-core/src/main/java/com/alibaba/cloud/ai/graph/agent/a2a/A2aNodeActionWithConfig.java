@@ -67,6 +67,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
 	private final String instruction;
 
+	private boolean shareState;
+
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	private CompileConfig parentCompileConfig;
@@ -78,11 +80,13 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		this.outputKeyToParent = outputKeyToParent;
 		this.streaming = streaming;
 		this.instruction = instruction;
+		this.shareState = false;
 	}
 
-	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, boolean includeContents, String outputKeyToParent, String instruction, boolean streaming, CompileConfig compileConfig) {
+	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, boolean includeContents, String outputKeyToParent, String instruction, boolean streaming, boolean shareState, CompileConfig compileConfig) {
 		this(agentCard, includeContents, outputKeyToParent, instruction, streaming);
 		this.parentCompileConfig = compileConfig;
+		this.shareState = shareState;
 	}
 
 	@Override
@@ -105,6 +109,9 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	}
 
 	private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
+		if (shareState) {
+			return config;
+		}
 		return RunnableConfig.builder(config)
 				.threadId(config.threadId()
 						.map(threadId -> format("%s_%s", threadId, subGraphId()))
@@ -680,6 +687,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		if (StringUtils.hasLength(this.instruction)) {
 			PromptTemplate template = PromptTemplate.builder().template(this.instruction).build();
 			return template.render(state.data());
+		} else if (!shareState || (shareState && state.value("messages").isEmpty())) {
+			throw new IllegalStateException("Instruction is empty and shareState is false");
 		}
 		return "";
 	}

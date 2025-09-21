@@ -89,7 +89,7 @@ public class ReactAgent extends BaseAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	protected ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
+	public ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.includeContents, builder.outputKey, builder.outputKeyStrategy);
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
@@ -118,31 +118,59 @@ public class ReactAgent extends BaseAgent {
 		return compiledGraph.schedule(scheduleConfig);
 	}
 
-	public AssistantMessage invoke(String message) throws GraphStateException, GraphRunnerException {
+	public AssistantMessage invoke(String message) throws GraphRunnerException {
 		return invokeMessage(message);
 	}
 
-	public AssistantMessage invoke(UserMessage userMessage) throws GraphStateException, GraphRunnerException {
+	public AssistantMessage invoke(String message, RunnableConfig config) throws GraphRunnerException {
+		return invokeMessage(message, config);
+	}
+
+	public AssistantMessage invoke(UserMessage userMessage) throws GraphRunnerException {
 		return invokeMessage(userMessage);
 	}
 
-	public AssistantMessage invoke(List<Message> messages) throws GraphStateException, GraphRunnerException {
+	public AssistantMessage invoke(UserMessage userMessage, RunnableConfig config) throws GraphRunnerException {
+		return invokeMessage(userMessage, config);
+	}
+
+	public AssistantMessage invoke(List<Message> messages) throws GraphRunnerException {
 		return invokeMessage(messages);
 	}
 
-	public Flux<NodeOutput> stream(String message) throws GraphStateException, GraphRunnerException {
+	public AssistantMessage invoke(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
+		return invokeMessage(messages, config);
+	}
+
+	public Flux<NodeOutput> stream(String message) throws GraphRunnerException {
 		return stream(Map.of("messages", convertToMessages(message)));
 	}
 
-	public Flux<NodeOutput> stream(UserMessage userMessage) throws GraphStateException, GraphRunnerException {
+	public Flux<NodeOutput> stream(String message, RunnableConfig config) throws GraphRunnerException {
+		return stream(Map.of("messages", convertToMessages(message)), config);
+	}
+
+	public Flux<NodeOutput> stream(UserMessage userMessage) throws GraphRunnerException {
 		return stream(Map.of("messages", convertToMessages(userMessage)));
 	}
 
-	public Flux<NodeOutput> stream(List<Message> messages) throws GraphStateException, GraphRunnerException {
+	public Flux<NodeOutput> stream(UserMessage userMessage, RunnableConfig config) throws GraphRunnerException {
+		return stream(Map.of("messages", convertToMessages(userMessage)), config);
+	}
+
+	public Flux<NodeOutput> stream(List<Message> messages) throws GraphRunnerException {
 		return stream(Map.of("messages", messages));
 	}
 
-	private AssistantMessage invokeMessage(Object message) throws GraphStateException, GraphRunnerException {
+	public Flux<NodeOutput> stream(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
+		return stream(Map.of("messages", messages), config);
+	}
+
+	private AssistantMessage invokeMessage(Object message) throws GraphRunnerException {
+		return invokeMessage(message, RunnableConfig.builder().build());
+	}
+
+	private AssistantMessage invokeMessage(Object message, RunnableConfig config) throws GraphRunnerException {
 		List<Message> messages;
 		if (message instanceof List) {
 			messages = (List<Message>) message;
@@ -150,12 +178,15 @@ public class ReactAgent extends BaseAgent {
 			messages = convertToMessages(message);
 		}
 
-		Optional<OverAllState> state = invoke(Map.of("messages", messages));
+		Optional<OverAllState> state = invoke(Map.of("messages", messages), config);
 
 		return state.flatMap(s -> s.value("messages"))
 				.map(messageList -> (List<Message>) messageList)
-				.filter(messageList -> !messageList.isEmpty())
-				.map(messageList -> (AssistantMessage) messageList.get(0))
+				.stream()
+				.flatMap(messageList -> messageList.stream())
+				.filter(msg -> msg instanceof AssistantMessage)
+				.map(msg -> (AssistantMessage) msg)
+				.reduce((first, second) -> second)
 				.orElse(new AssistantMessage("No response generated"));
 	}
 
