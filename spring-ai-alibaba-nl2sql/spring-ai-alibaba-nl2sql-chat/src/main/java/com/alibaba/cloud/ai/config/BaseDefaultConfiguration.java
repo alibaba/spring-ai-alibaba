@@ -39,7 +39,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public class BaseDefaultConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(Nl2sqlConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(BaseDefaultConfiguration.class);
 
 	private final Accessor dbAccessor;
 
@@ -47,10 +47,10 @@ public class BaseDefaultConfiguration {
 
 	private BaseDefaultConfiguration(DbConfig dbConfig, @Qualifier("mysqlAccessor") Accessor mysqlDbAccessor,
 			@Qualifier("h2Accessor") Accessor h2DbAccessor, @Qualifier("postgreAccessor") Accessor postgreDbAccessor) {
-		if (dbConfig.getDialectType().equals("h2")) {
+		if ("h2".equals(dbConfig.getDialectType())) {
 			dbAccessor = h2DbAccessor;
 		}
-		else if (dbConfig.getDialectType().equals("postgre")) {
+		else if ("postgre".equals(dbConfig.getDialectType())) {
 			dbAccessor = postgreDbAccessor;
 		}
 		else {
