@@ -123,7 +123,8 @@ public class PlanningCoordinator {
 			// Add post-execution processing
 			return executionFuture.thenCompose(result -> {
 				try {
-					return handlePostExecution(context, result);
+					PlanExecutionResult processedResult = planFinalizer.handlePostExecution(context, result);
+					return CompletableFuture.completedFuture(processedResult);
 				}
 				catch (Exception e) {
 					log.error("Error during post-execution processing for plan: {}", context.getCurrentPlanId(), e);
@@ -194,7 +195,8 @@ public class PlanningCoordinator {
 			// Add post-execution processing
 			return executionFuture.thenCompose(result -> {
 				try {
-					return handlePostExecution(context, result);
+					PlanExecutionResult processedResult = planFinalizer.handlePostExecution(context, result);
+					return CompletableFuture.completedFuture(processedResult);
 				}
 				catch (Exception e) {
 					log.error("Error during post-execution processing for plan: {}", context.getCurrentPlanId(), e);
@@ -210,45 +212,6 @@ public class PlanningCoordinator {
 			errorResult.setErrorMessage("Direct plan execution failed: " + e.getMessage());
 			return CompletableFuture.completedFuture(errorResult);
 		}
-	}
-
-	/**
-	 * Handle post-execution processing based on context requirements
-	 * @param context Execution context
-	 * @param result Execution result
-	 * @return A CompletableFuture that completes with the execution result
-	 */
-	private CompletableFuture<PlanExecutionResult> handlePostExecution(ExecutionContext context,
-			PlanExecutionResult result) {
-		if (context == null || result == null) {
-			return CompletableFuture.completedFuture(result);
-		}
-
-		try {
-			// Check if we need to generate a summary
-			if (context.isNeedSummary() && result.isSuccess()) {
-				log.debug("Generating summary for plan: {}", context.getCurrentPlanId());
-				planFinalizer.generateSummary(context);
-				result.setFinalResult(context.getResultSummary());
-			}
-
-			// Check if this is a direct response plan
-			if (context.getPlan() != null && context.getPlan().isDirectResponse()) {
-				log.debug("Generating direct response for plan: {}", context.getCurrentPlanId());
-				planFinalizer.generateDirectResponse(context);
-				result.setFinalResult(context.getResultSummary());
-			}
-
-			log.debug("Post-execution processing completed for plan: {}", context.getCurrentPlanId());
-
-		}
-		catch (Exception e) {
-			log.warn("Error during post-execution processing for plan: {}, but continuing", context.getCurrentPlanId(),
-					e);
-			// Don't fail the entire execution for post-processing errors
-		}
-
-		return CompletableFuture.completedFuture(result);
 	}
 
 }

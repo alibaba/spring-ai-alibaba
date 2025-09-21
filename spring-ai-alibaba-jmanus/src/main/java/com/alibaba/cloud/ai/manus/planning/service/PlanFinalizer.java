@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.manus.prompt.model.enums.PromptEnum;
 import com.alibaba.cloud.ai.manus.prompt.service.PromptService;
 import com.alibaba.cloud.ai.manus.recorder.service.PlanExecutionRecorder;
 import com.alibaba.cloud.ai.manus.runtime.entity.vo.ExecutionContext;
+import com.alibaba.cloud.ai.manus.runtime.entity.vo.PlanExecutionResult;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ public class PlanFinalizer {
 	/**
 	 * Generate the execution summary of the plan
 	 */
-	public void generateSummary(ExecutionContext context) {
+	private void generateSummary(ExecutionContext context) {
 		validateContextWithPlan(context, "ExecutionContext or its plan cannot be null");
 
 		if (!context.isNeedSummary()) {
@@ -76,50 +77,26 @@ public class PlanFinalizer {
 			return;
 		}
 
-		try {
-			String executionDetail = context.getPlan().getPlanExecutionStateStringFormat(false);
-			String userRequest = context.getUserRequest();
+		Map<String, Object> promptVariables = Map.of("executionDetail",
+				context.getPlan().getPlanExecutionStateStringFormat(false), "userRequest", context.getUserRequest());
 
-			Map<String, Object> promptVariables = Map.of("executionDetail", executionDetail, "userRequest",
-					userRequest);
-
-			String result = generateLlmResponse(context, PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(),
-					promptVariables, "Summary generation");
-
-			context.setResultSummary(result);
-			recordPlanCompletion(context, result);
-			log.info("Generated summary: {}", result);
-
-		}
-		catch (Exception e) {
-			handleLlmError("summary", e);
-		}
+		generateWithLlm(context, PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(), promptVariables, "summary",
+				"Generated summary: {}");
 	}
 
 	/**
 	 * Generate direct LLM response for simple requests
 	 */
-	public void generateDirectResponse(ExecutionContext context) {
-		validateContext(context, "ExecutionContext or user request cannot be null");
-		validateUserRequest(context.getUserRequest());
+	private void generateDirectResponse(ExecutionContext context) {
+		validateForGeneration(context, "ExecutionContext or user request cannot be null");
 
 		String userRequest = context.getUserRequest();
 		log.info("Generating direct response for user request: {}", userRequest);
 
-		try {
-			Map<String, Object> promptVariables = Map.of("userRequest", userRequest);
+		Map<String, Object> promptVariables = Map.of("userRequest", userRequest);
 
-			String result = generateLlmResponse(context, PromptEnum.DIRECT_RESPONSE.getPromptName(), promptVariables,
-					"Direct response");
-
-			context.setResultSummary(result);
-			recordPlanCompletion(context, result);
-			log.info("Generated direct response: {}", result);
-
-		}
-		catch (Exception e) {
-			handleLlmError("direct response", e);
-		}
+		generateWithLlm(context, PromptEnum.DIRECT_RESPONSE.getPromptName(), promptVariables, "direct response",
+				"Generated direct response: {}");
 	}
 
 	/**
@@ -178,15 +155,6 @@ public class PlanFinalizer {
 	}
 
 	/**
-	 * Validate execution context
-	 */
-	private void validateContext(ExecutionContext context, String errorMessage) {
-		if (context == null) {
-			throw new IllegalArgumentException(errorMessage);
-		}
-	}
-
-	/**
 	 * Validate execution context with plan validation
 	 */
 	private void validateContextWithPlan(ExecutionContext context, String errorMessage) {
@@ -196,10 +164,75 @@ public class PlanFinalizer {
 	}
 
 	/**
-	 * Validate user request
+	 * Handle post-execution processing based on context requirements
+	 * @param context Execution context
+	 * @param result Execution result
+	 * @return The processed execution result
 	 */
-	private void validateUserRequest(String userRequest) {
-		if (userRequest == null) {
+	public PlanExecutionResult handlePostExecution(ExecutionContext context, PlanExecutionResult result) {
+		if (context == null || result == null) {
+			return result;
+		}
+
+		try {
+			// Check if we need to generate a summary
+			if (context.isNeedSummary() && result.isSuccess()) {
+				log.debug("Generating summary for plan: {}", context.getCurrentPlanId());
+				generateSummary(context);
+				result.setFinalResult(context.getResultSummary());
+			}
+
+			// Check if this is a direct response plan
+			if (context.getPlan() != null && context.getPlan().isDirectResponse()) {
+				log.debug("Generating direct response for plan: {}", context.getCurrentPlanId());
+				generateDirectResponse(context);
+				result.setFinalResult(context.getResultSummary());
+			}
+
+			log.debug("Post-execution processing completed for plan: {}", context.getCurrentPlanId());
+
+		}
+		catch (Exception e) {
+			log.warn("Error during post-execution processing for plan: {}, but continuing", context.getCurrentPlanId(),
+					e);
+			// Don't fail the entire execution for post-processing errors
+		}
+
+		return result;
+	}
+
+	/**
+	 * Unified method for generating LLM responses with common processing
+	 */
+	private void generateWithLlm(ExecutionContext context, String promptName, Map<String, Object> variables,
+			String operationType, String successLogTemplate) {
+		try {
+			String result = generateLlmResponse(context, promptName, variables,
+					Character.toUpperCase(operationType.charAt(0)) + operationType.substring(1) + " generation");
+			processAndRecordResult(context, result, successLogTemplate);
+		}
+		catch (Exception e) {
+			handleLlmError(operationType, e);
+		}
+	}
+
+	/**
+	 * Common result processing and recording logic
+	 */
+	private void processAndRecordResult(ExecutionContext context, String result, String logTemplate) {
+		context.setResultSummary(result);
+		recordPlanCompletion(context, result);
+		log.info(logTemplate, result);
+	}
+
+	/**
+	 * Unified validation for generation methods
+	 */
+	private void validateForGeneration(ExecutionContext context, String errorMessage) {
+		if (context == null) {
+			throw new IllegalArgumentException(errorMessage);
+		}
+		if (context.getUserRequest() == null) {
 			throw new IllegalArgumentException("User request cannot be null");
 		}
 	}

@@ -230,19 +230,6 @@ public class ExecutionContext {
 		this.resultSummary = resultSummary;
 	}
 
-	/**
-	 * Update current instance with content from another ExecutionContext instance
-	 * <p>
-	 * This method copies the plan entity, user request, and result summary from the
-	 * passed context to the current instance
-	 * @param context Source execution context instance
-	 */
-	public void updateContext(ExecutionContext context) {
-		this.plan = context.getPlan();
-		this.userRequest = context.getUserRequest();
-		this.resultSummary = context.getResultSummary();
-	}
-
 	public boolean isUseMemory() {
 		return useMemory;
 	}
