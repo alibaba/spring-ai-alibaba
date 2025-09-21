@@ -85,9 +85,6 @@ public class DirectResponseExecutor extends AbstractPlanExecutor {
 			catch (Exception e) {
 				log.error("Error during direct response execution for planId: {}", context.getCurrentPlanId(), e);
 				context.setSuccess(false);
-				// Set error message as result summary
-				context.setResultSummary("Direct response execution failed: " + e.getMessage());
-
 				// Create failed result
 				PlanExecutionResult result = new PlanExecutionResult();
 				result.setSuccess(false);

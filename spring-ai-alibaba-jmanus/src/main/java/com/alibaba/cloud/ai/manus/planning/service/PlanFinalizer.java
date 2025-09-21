@@ -67,27 +67,22 @@ public class PlanFinalizer {
 	}
 
 	/**
-	 * Generate the execution summary of the plan
+	 * Generate the execution summary of the plan using LLM
 	 */
-	private void generateSummary(ExecutionContext context) {
+	private void generateSummary(ExecutionContext context, PlanExecutionResult result) {
 		validateContextWithPlan(context, "ExecutionContext or its plan cannot be null");
-
-		if (!context.isNeedSummary()) {
-			generateCodeBasedSummary(context);
-			return;
-		}
 
 		Map<String, Object> promptVariables = Map.of("executionDetail",
 				context.getPlan().getPlanExecutionStateStringFormat(false), "userRequest", context.getUserRequest());
 
-		generateWithLlm(context, PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(), promptVariables, "summary",
+		generateWithLlm(context, result, PromptEnum.PLANNING_PLAN_FINALIZER.getPromptName(), promptVariables, "summary",
 				"Generated summary: {}");
 	}
 
 	/**
 	 * Generate direct LLM response for simple requests
 	 */
-	private void generateDirectResponse(ExecutionContext context) {
+	private void generateDirectResponse(ExecutionContext context, PlanExecutionResult result) {
 		validateForGeneration(context, "ExecutionContext or user request cannot be null");
 
 		String userRequest = context.getUserRequest();
@@ -95,17 +90,19 @@ public class PlanFinalizer {
 
 		Map<String, Object> promptVariables = Map.of("userRequest", userRequest);
 
-		generateWithLlm(context, PromptEnum.DIRECT_RESPONSE.getPromptName(), promptVariables, "direct response",
+		generateWithLlm(context, result, PromptEnum.DIRECT_RESPONSE.getPromptName(), promptVariables, "direct response",
 				"Generated direct response: {}");
 	}
 
 	/**
 	 * Generate code-based summary when LLM is not needed
 	 */
-	private void generateCodeBasedSummary(ExecutionContext context) {
+	private void generateCodeBasedSummary(ExecutionContext context, PlanExecutionResult result) {
 		log.info("No need to generate summary, use code generate summary instead");
 		String summary = context.getPlan().getPlanExecutionStateStringFormat(false);
-		context.setResultSummary(summary);
+
+		// Set result in PlanExecutionResult
+		result.setFinalResult(summary);
 		recordPlanCompletion(context, summary);
 	}
 
@@ -176,17 +173,17 @@ public class PlanFinalizer {
 
 		try {
 			// Check if we need to generate a summary
-			if (context.isNeedSummary() && result.isSuccess()) {
-				log.debug("Generating summary for plan: {}", context.getCurrentPlanId());
-				generateSummary(context);
-				result.setFinalResult(context.getResultSummary());
+			if (context.isNeedSummary()) {
+				log.debug("Generating LLM summary for plan: {}", context.getCurrentPlanId());
+				generateSummary(context, result);
+				return result;
 			}
 
 			// Check if this is a direct response plan
 			if (context.getPlan() != null && context.getPlan().isDirectResponse()) {
 				log.debug("Generating direct response for plan: {}", context.getCurrentPlanId());
-				generateDirectResponse(context);
-				result.setFinalResult(context.getResultSummary());
+				generateDirectResponse(context, result);
+				return result;
 			}
 
 			log.debug("Post-execution processing completed for plan: {}", context.getCurrentPlanId());
@@ -204,12 +201,12 @@ public class PlanFinalizer {
 	/**
 	 * Unified method for generating LLM responses with common processing
 	 */
-	private void generateWithLlm(ExecutionContext context, String promptName, Map<String, Object> variables,
-			String operationType, String successLogTemplate) {
+	private void generateWithLlm(ExecutionContext context, PlanExecutionResult result, String promptName,
+			Map<String, Object> variables, String operationType, String successLogTemplate) {
 		try {
-			String result = generateLlmResponse(context, promptName, variables,
+			String llmResult = generateLlmResponse(context, promptName, variables,
 					Character.toUpperCase(operationType.charAt(0)) + operationType.substring(1) + " generation");
-			processAndRecordResult(context, result, successLogTemplate);
+			processAndRecordResult(context, result, llmResult, successLogTemplate);
 		}
 		catch (Exception e) {
 			handleLlmError(operationType, e);
@@ -219,10 +216,12 @@ public class PlanFinalizer {
 	/**
 	 * Common result processing and recording logic
 	 */
-	private void processAndRecordResult(ExecutionContext context, String result, String logTemplate) {
-		context.setResultSummary(result);
-		recordPlanCompletion(context, result);
-		log.info(logTemplate, result);
+	private void processAndRecordResult(ExecutionContext context, PlanExecutionResult result, String llmResult,
+			String logTemplate) {
+		// Set result in PlanExecutionResult
+		result.setFinalResult(llmResult);
+		recordPlanCompletion(context, llmResult);
+		log.info(logTemplate, llmResult);
 	}
 
 	/**

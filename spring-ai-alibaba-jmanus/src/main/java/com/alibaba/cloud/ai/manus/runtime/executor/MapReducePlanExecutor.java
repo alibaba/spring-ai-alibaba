@@ -856,7 +856,6 @@ public class MapReducePlanExecutor extends AbstractPlanExecutor {
 		copiedContext.setCurrentPlanId(originalContext.getCurrentPlanId());
 		copiedContext.setRootPlanId(originalContext.getRootPlanId());
 		copiedContext.setUserRequest(originalContext.getUserRequest());
-		copiedContext.setResultSummary(originalContext.getResultSummary());
 		copiedContext.setNeedSummary(originalContext.isNeedSummary());
 		copiedContext.setSuccess(originalContext.isSuccess());
 		copiedContext.setUseMemory(originalContext.isUseMemory());

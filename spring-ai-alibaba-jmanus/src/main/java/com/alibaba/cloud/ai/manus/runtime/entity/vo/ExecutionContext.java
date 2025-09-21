@@ -53,9 +53,6 @@ public class ExecutionContext {
 	/** User's original request content */
 	private String userRequest;
 
-	/** Result summary after plan execution completion */
-	private String resultSummary;
-
 	/**
 	 * Whether to call large model to generate summary for execution results, true calls
 	 * large model, false does not call and outputs results directly
@@ -212,22 +209,6 @@ public class ExecutionContext {
 	 */
 	public void setUserRequest(String userRequest) {
 		this.userRequest = userRequest;
-	}
-
-	/**
-	 * Get execution result summary
-	 * @return Summary description of execution results
-	 */
-	public String getResultSummary() {
-		return resultSummary;
-	}
-
-	/**
-	 * Set execution result summary
-	 * @param resultSummary Summary description of execution results
-	 */
-	public void setResultSummary(String resultSummary) {
-		this.resultSummary = resultSummary;
 	}
 
 	public boolean isUseMemory() {
