@@ -39,14 +39,23 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public class BaseDefaultConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(Nl2sqlConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(BaseDefaultConfiguration.class);
 
 	private final Accessor dbAccessor;
 
 	private final DbConfig dbConfig;
 
-	private BaseDefaultConfiguration(@Qualifier("mysqlAccessor") Accessor accessor, DbConfig dbConfig) {
-		this.dbAccessor = accessor;
+	private BaseDefaultConfiguration(DbConfig dbConfig, @Qualifier("mysqlAccessor") Accessor mysqlDbAccessor,
+			@Qualifier("h2Accessor") Accessor h2DbAccessor, @Qualifier("postgreAccessor") Accessor postgreDbAccessor) {
+		if ("h2".equals(dbConfig.getDialectType())) {
+			dbAccessor = h2DbAccessor;
+		}
+		else if ("postgre".equals(dbConfig.getDialectType())) {
+			dbAccessor = postgreDbAccessor;
+		}
+		else {
+			dbAccessor = mysqlDbAccessor;
+		}
 		this.dbConfig = dbConfig;
 	}
 
@@ -68,6 +77,12 @@ public class BaseDefaultConfiguration {
 
 		logger.info("Creating default BaseSchemaService implementation");
 		return new SimpleSchemaService(dbConfig, gson, vectorStoreService);
+	}
+
+	@Bean("dbAccessor")
+	@ConditionalOnMissingBean(name = "dbAccessor")
+	public Accessor dbAccessor() {
+		return dbAccessor;
 	}
 
 }

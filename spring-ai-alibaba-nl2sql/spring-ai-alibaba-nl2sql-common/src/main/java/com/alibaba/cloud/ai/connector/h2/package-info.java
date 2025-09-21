@@ -13,26 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.enums;
 
-public enum DatabaseDialectEnum {
+package com.alibaba.cloud.ai.connector.h2;
 
-	MYSQL("MySQL"),
-
-	SQLite("SQLite"),
-
-	POSTGRESQL("PostgreSQL"),
-
-	H2("H2");
-
-	public String code;
-
-	DatabaseDialectEnum(String code) {
-		this.code = code;
-	}
-
-	public String getCode() {
-		return code;
-	}
-
-}
+// DataAgent H2 Data provider

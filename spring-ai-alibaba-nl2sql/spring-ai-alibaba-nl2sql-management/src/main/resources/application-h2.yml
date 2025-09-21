@@ -1,0 +1,124 @@
+server:
+  port: 8065
+spring:
+  datasource:
+    url: ${NL2SQL_DATASOURCE_URL:jdbc:h2:mem:nl2sql_database;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=true;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${NL2SQL_DATASOURCE_USERNAME:root}
+    password: ${NL2SQL_DATASOURCE_PASSWORD:root}
+    driver-class-name: org.h2.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      schema-locations:
+        - classpath:sql/h2/schema-h2.sql
+        - classpath:sql/h2/product_schema.sql
+      data-locations:
+        - classpath:sql/h2/data-h2.sql
+        - classpath:sql/h2/product_data.sql
+      continue-on-error: true
+      separator: ;
+      encoding: utf-8
+  ai:
+    openai:
+      base-url: https://dashscope.aliyuncs.com/compatible-mode
+      api-key: ${AI_DASHSCOPE_API_KEY}
+      model: qwen-max
+      embedding:
+        model: text-embedding-v4
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY}
+    mcp:
+      server:
+        name: xiyan-server    # MCP服务器名称
+        version: 0.0.1           # 服务器版本号
+    vectorstore:
+      analytic:
+        enabled: false
+        collectName: chatBi
+        regionId:
+        dbInstanceId:
+        managerAccount:
+        managerAccountPassword:
+        namespace: chat
+        namespacePassword: chat
+        defaultTopK: 6
+        defaultSimilarityThreshold: 0.75
+        accessKeyId:
+        accessKeySecret:
+    alibaba:
+      nl2sql:
+        code-executor:
+          # 运行Python代码的环境（生产环境建议使用docker，不建议使用local）
+          code-pool-executor: local
+  h2:
+    console:
+      enabled: true
+
+# MyBatis Plus 配置
+mybatis-plus:
+  configuration:
+    # 开启驼峰命名转换
+    map-underscore-to-camel-case: true
+    # SQL 日志打印（生产环境建议关闭或使用 slf4j）
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    # 设置全局缓存开关
+    cache-enabled: true
+    # 延迟加载的核心开关
+    lazy-loading-enabled: true
+    # 按需加载属性
+    aggressive-lazy-loading: false
+    # 设置默认执行器类型
+    default-executor-type: reuse
+    # 设置默认语句超时时间
+    default-statement-timeout: 30
+  global-config:
+    # 数据库配置
+    db-config:
+      # 主键类型（AUTO 自增，ASSIGN_ID 雪花算法，ASSIGN_UUID UUID）
+      id-type: auto
+      # 逻辑删除字段名
+      logic-delete-field: deleted
+      # 逻辑删除值（删除时设置的值）
+      logic-delete-value: 1
+      # 逻辑未删除值（正常时的值）
+      logic-not-delete-value: 0
+      # 字段验证策略
+      insert-strategy: not_null
+      update-strategy: not_null
+      where-strategy: not_null
+    # 关闭 MyBatis Plus 启动横幅
+    banner: false
+    # 是否开启 LOGO
+    enable-sql-runner: false
+  # Mapper XML 文件位置（如果有的话）
+  mapper-locations: classpath*:/mapper/**/*.xml
+  # 实体扫描，多个package用逗号或者分号分隔
+  type-aliases-package: com.alibaba.cloud.ai.entity
+
+# 日志配置
+logging:
+  level:
+    com.alibaba.cloud.ai.mapper: debug
+    org.springframework.jdbc: debug
+
+# 数据库配置
+chatbi:
+  dbconfig:
+    # 数据源配置
+    url: ${JDBC_URL:jdbc:h2:mem:nl2sql_database;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=true;MODE=MySQL;DB_CLOSE_ON_EXIT=FALSE}        # 如：jdbc:mysql://host:port/database
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    # 连接参数
+    connectiontype: jdbc
+    dialecttype: h2      # 可选：mysql、postgresql、h2
+    schema: ${DB_SCHEMA:product_db}    # PostgreSQL h2需要
