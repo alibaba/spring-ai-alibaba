@@ -78,7 +78,7 @@ public interface AgentMapper extends BaseMapper<Agent> {
 	int update(Agent agent);
 
 	@Delete("""
-			DELETE FROM agent WHERE id = ?
+			DELETE FROM agent WHERE id = #{id}
 			""")
 	int deleteById(Long id);
 }
