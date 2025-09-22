@@ -20,7 +20,6 @@ import java.util.List;
 
 import com.alibaba.cloud.ai.agent.nacos.tools.NacosMcpGatewayToolsInitializer;
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.exception.NacosException;
 import org.slf4j.Logger;
@@ -46,11 +45,8 @@ public class NacosMcpToolsInjector {
 
 	public static List<ToolCallback> convert(NacosOptions nacosOptions, McpServersVO mcpServersVO) {
 
-		NacosMcpGatewayProperties nacosMcpGatewayProperties = new NacosMcpGatewayProperties();
-		nacosMcpGatewayProperties.setServiceNames(mcpServersVO.getMcpServers().stream()
-				.map(McpServersVO.McpServerVO::getMcpServerName).toList());
 		NacosMcpGatewayToolsInitializer nacosMcpGatewayToolsInitializer = new NacosMcpGatewayToolsInitializer(
-				nacosOptions.mcpOperationService, nacosMcpGatewayProperties, mcpServersVO.getMcpServers());
+				nacosOptions.mcpOperationService, mcpServersVO.getMcpServers());
 		return nacosMcpGatewayToolsInitializer.initializeTools();
 	}
 

@@ -31,7 +31,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * 基于CGLIB的动态代理工厂
  * 通过创建子类的方式实现多接口功能
  */
-public class CglibProxyFactory {
+public class ChatOptionsProxy {
 
 	/**
 	 * 创建同时实现ChatOptions和ObservationMetadataAwareOptions接口的代理对象
@@ -129,7 +129,7 @@ public class CglibProxyFactory {
 			}
 
 			// 创建新的代理对象（深拷贝 metadata）
-			return CglibProxyFactory.createProxy(
+			return ChatOptionsProxy.createProxy(
 					copiedChatOptions,
 					new HashMap<>(this.observationMetadata)
 			);
