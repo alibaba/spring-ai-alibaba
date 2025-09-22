@@ -34,6 +34,7 @@ target/
 
 # node_modules
 **/node_modules
+yarn.lock
 
 # Generated Files
 spring-ai-alibaba-examples/playground-flight-booking/frontend/generated/
