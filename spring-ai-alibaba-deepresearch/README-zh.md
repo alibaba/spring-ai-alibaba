@@ -21,7 +21,7 @@
 
 ### 必配
 
-- DashScope API: `${AI_DASHSCOPE_API_KEY}`
+- DashScope API: `${DASHSCOPE_API_KEY}`
 - TavilySearch API: `${TAVILY_API_KEY}`
 - 报告导出路径: `${AI_DEEPRESEARCH_EXPORT_PATH}`
   TIP：不填会存储在项目根路径下
@@ -67,7 +67,7 @@
     "researchAgent": {
         "mcp-servers": [
             {
-                "url": "https://mcp.amap.com?key=${AI_DASHSCOPE_API_KEY}",
+                "url": "https://mcp.amap.com?key=${DASHSCOPE_API_KEY}",
                 "sse-endpoint": null,
                 "description": "这是一个高德地图服务",
                 "enabled": false
@@ -109,7 +109,7 @@ docker build -t alibaba-deepresearch:v1.0 .
 ```shell
 docker run -d \
   --name alibaba-deepresearch \
-  -e AI_DASHSCOPE_API_KEY="your_key_here" \
+  -e DASHSCOPE_API_KEY="your_key_here" \
   -e TAVILY_API_KEY="your_key_here" \
 #  -e JINA_API_KEY="your_key_here" \ 选填
   -p 8080:8080 \

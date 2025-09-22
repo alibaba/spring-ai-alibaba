@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * Integration test class for ParallelAgent to verify parallel execution and result
  * merging functionality. Tests the actual execution flow with real LLM agents.
  */
-@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 class ParallelAgentIntegrationTest {
 
 	private ChatModel chatModel;
@@ -54,7 +54,7 @@ class ParallelAgentIntegrationTest {
 	@BeforeEach
 	void setUp() {
 		// Create DashScopeApi instance using the API key from environment variable
-		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("DASHSCOPE_API_KEY")).build();
 
 		// Create DashScope ChatModel instance
 		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();

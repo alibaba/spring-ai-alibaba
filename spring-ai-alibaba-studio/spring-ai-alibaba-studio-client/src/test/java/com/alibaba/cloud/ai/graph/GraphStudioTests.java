@@ -34,7 +34,7 @@ class GraphStudioTests {
 	private int port;
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 	void contextLoads() throws IOException {
 		System.in.read();
 	}

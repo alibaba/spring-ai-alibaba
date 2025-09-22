@@ -33,14 +33,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 public class ParameterParsingNodeTest {
 
 	private ChatClient chatClient;
 
 	@BeforeEach
 	public void setUp() {
-		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("DASHSCOPE_API_KEY")).build();
 		ChatModel chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
 		chatClient = ChatClient.builder(chatModel).build();
 	}

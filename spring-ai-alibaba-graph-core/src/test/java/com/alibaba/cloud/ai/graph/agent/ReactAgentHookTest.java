@@ -57,7 +57,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 class ReactAgentHookTest {
 
 	@Mock
@@ -81,7 +81,7 @@ class ReactAgentHookTest {
 	void setUp() {
 
 		// Create DashScopeApi instance using the API key from environment variable
-		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("DASHSCOPE_API_KEY")).build();
 
 		// Create DashScope ChatModel instance
 		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();

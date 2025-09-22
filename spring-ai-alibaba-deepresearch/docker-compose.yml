@@ -77,7 +77,7 @@ services:
     image: alibaba-deepresearch:v1.0
     container_name: deep-research-app
     environment:
-      AI_DASHSCOPE_API_KEY: ${AI_DASHSCOPE_API_KEY}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
       TAVILY_API_KEY: ${TAVILY_API_KEY}
       SERPAPI_KEY: ${SERPAPI_KEY}
       SPRING_CONFIG_LOCATION: classpath:/,file:/app/config/custom-config.yml

@@ -62,14 +62,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for DashScope Chat functionality. These tests will only run if
- * AI_DASHSCOPE_API_KEY environment variable is set.
+ * DASHSCOPE_API_KEY environment variable is set.
  *
  * @author Lumian
  * @since 1.0.0-M6.1
  */
 @Tag("integration")
 @SpringBootTest(classes = ArmsToolCallingObservationIT.Config.class)
-@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 public class ArmsToolCallingObservationIT {
 
 	// Test constants
@@ -77,7 +77,7 @@ public class ArmsToolCallingObservationIT {
 
 	private static final String TEST_MODEL = "qwen-max-latest";
 
-	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
+	private static final String API_KEY_ENV = "DASHSCOPE_API_KEY";
 
 	private static final Logger logger = LoggerFactory.getLogger(ArmsToolCallingObservationIT.class);
 

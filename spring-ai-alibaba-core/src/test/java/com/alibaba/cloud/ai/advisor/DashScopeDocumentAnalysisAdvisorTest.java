@@ -101,10 +101,10 @@ class DashScopeDocumentAnalysisAdvisorTest {
 
 	@Test
 	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 	void test_upload() {
 
-		ApiKey apiKey = new SimpleApiKey(System.getenv("AI_DASHSCOPE_API_KEY"));
+		ApiKey apiKey = new SimpleApiKey(System.getenv("DASHSCOPE_API_KEY"));
 		DashScopeDocumentAnalysisAdvisor advisor = new DashScopeDocumentAnalysisAdvisor(apiKey);
 
 		Resource testFile = new DefaultResourceLoader().getResource("classpath:/test-file.pdf");
@@ -119,9 +119,9 @@ class DashScopeDocumentAnalysisAdvisorTest {
 
 	@Test
 	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 	void test_before() {
-		ApiKey apiKey = new SimpleApiKey(System.getenv("AI_DASHSCOPE_API_KEY"));
+		ApiKey apiKey = new SimpleApiKey(System.getenv("DASHSCOPE_API_KEY"));
 		DashScopeDocumentAnalysisAdvisor advisor = new DashScopeDocumentAnalysisAdvisor(apiKey);
 
 		Resource testFile = new DefaultResourceLoader().getResource("classpath:/test-file.pdf");

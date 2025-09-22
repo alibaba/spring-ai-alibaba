@@ -39,7 +39,7 @@ public final class DashScopeApiConstants {
 
 	public static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com";
 
-	public static final String AI_DASHSCOPE_API_KEY = "AI_DASHSCOPE_API_KEY";
+	public static final String DASHSCOPE_API_KEY = "DASHSCOPE_API_KEY";
 
 	public static final String AUDIO_TRANSCRIPTION_RESTFUL_URL = "/api/v1/services/audio/asr/transcription";
 

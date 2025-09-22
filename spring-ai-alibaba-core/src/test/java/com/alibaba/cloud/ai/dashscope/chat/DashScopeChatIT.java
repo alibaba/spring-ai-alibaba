@@ -32,13 +32,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for DashScope Chat functionality. These tests will only run if
- * AI_DASHSCOPE_API_KEY environment variable is set.
+ * DASHSCOPE_API_KEY environment variable is set.
  *
  * @author brianxiadong
  * @since 1.0.0-M5.1
  */
 @Tag("integration")
-@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 class DashScopeChatIT {
 
 	// Test constants
@@ -46,7 +46,7 @@ class DashScopeChatIT {
 
 	private static final String TEST_PROMPT = "你好，请介绍一下你自己。";
 
-	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
+	private static final String API_KEY_ENV = "DASHSCOPE_API_KEY";
 
 	private String apiKey;
 

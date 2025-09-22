@@ -63,7 +63,7 @@ public class KnowledgeRetrievalNodeTest {
 
 					)));
 
-	String apiKey = System.getenv().getOrDefault("AI_DASHSCOPE_API_KEY", "test-api-key");
+	String apiKey = System.getenv().getOrDefault("DASHSCOPE_API_KEY", "test-api-key");
 
 	DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
 
@@ -106,7 +106,7 @@ public class KnowledgeRetrievalNodeTest {
 	}
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 	void testValueFirst() throws Exception {
 		simpleVectorStore.add(documents);
 
@@ -120,7 +120,7 @@ public class KnowledgeRetrievalNodeTest {
 	}
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 	void testTopK() throws Exception {
 
 		simpleVectorStore.add(documents);
@@ -140,7 +140,7 @@ public class KnowledgeRetrievalNodeTest {
 	}
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 	void testSimilarityThreshold() throws Exception {
 
 		simpleVectorStore.add(documents);
@@ -160,7 +160,7 @@ public class KnowledgeRetrievalNodeTest {
 	}
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 	void testFilterExpression() throws Exception {
 
 		simpleVectorStore.add(documents);
@@ -180,7 +180,7 @@ public class KnowledgeRetrievalNodeTest {
 	}
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 	void testRerank() throws Exception {
 
 		simpleVectorStore.add(documents);

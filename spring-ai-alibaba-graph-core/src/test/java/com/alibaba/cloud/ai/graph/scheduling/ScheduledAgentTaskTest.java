@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * Test for ScheduledAgentTask using external TaskScheduler
  */
-@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 public class ScheduledAgentTaskTest {
 
 	private ChatModel chatModel;
@@ -49,7 +49,7 @@ public class ScheduledAgentTaskTest {
 	@BeforeEach
 	void setUp() {
 		// 先创建 DashScopeApi 实例
-		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("DASHSCOPE_API_KEY")).build();
 
 		// 创建 DashScope ChatModel 实例
 		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();

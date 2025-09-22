@@ -76,7 +76,7 @@ public class StateGraphStreamTest {
 	/**
 	 * Environment variable name containing the DashScope API key
 	 */
-	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
+	private static final String API_KEY_ENV = "DASHSCOPE_API_KEY";
 
 	/**
 	 * API key for authentication with DashScope services
@@ -330,7 +330,7 @@ public class StateGraphStreamTest {
 	 */
 	@Test
 	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 	public void testToModelNodeActionStream() throws Exception {
 		StateGraph stateGraph = new StateGraph(() -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
@@ -356,7 +356,7 @@ public class StateGraphStreamTest {
 	 */
 	@Test
 	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 	public void testToModelNodeActionAndConditionEdgeStream() throws Exception {
 		StateGraph stateGraph = new StateGraph(() -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
@@ -425,7 +425,7 @@ public class StateGraphStreamTest {
 
 	@Test
 	@Tag("integration")
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".+")
 	public void testParallelNodeStream() throws Exception {
 		StateGraph stateGraph = new StateGraph(() -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();

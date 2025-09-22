@@ -72,7 +72,7 @@ class DashScopeImageModelObservationTests {
 
 	@Test
 	@Tag("observation")
-	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = "sk.+")
+	@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = "sk.+")
 	void imageModelObservationTest() {
 
 		DashScopeImageOptions options = DashScopeImageOptions.builder()
