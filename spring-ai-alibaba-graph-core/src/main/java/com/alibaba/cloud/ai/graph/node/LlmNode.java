@@ -17,34 +17,28 @@ package com.alibaba.cloud.ai.graph.node;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.DefaultChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
 
+import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
+
 public class LlmNode implements NodeAction {
 
 	public static final String LLM_RESPONSE_KEY = "llm_response";
-
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	private String systemPrompt;
 
@@ -97,13 +91,13 @@ public class LlmNode implements NodeAction {
 
 		// add streaming support
 		if (Boolean.TRUE.equals(stream)) {
-			Flux<ChatResponse> chatResponseFlux = stream();
+			Flux<ChatResponse> chatResponseFlux = stream(state);
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
 		}
 		else {
 			AssistantMessage responseOutput;
 			try {
-				ChatResponse response = call();
+				ChatResponse response = call(state);
 				responseOutput = response.getResult().getOutput();
 			}
 			catch (Exception e) {
@@ -161,50 +155,31 @@ public class LlmNode implements NodeAction {
 		this.toolCallbacks = toolCallbacks;
 	}
 
-	public void setSystemPrompt(String systemPrompt) {
-		this.systemPrompt = systemPrompt;
-	}
-
 	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
 		PromptTemplate promptTemplate = new PromptTemplate(prompt);
 		return promptTemplate.render(params);
 	}
 
-	public Flux<ChatResponse> stream() {
-		return buildChatClientRequestSpec().stream().chatResponse();
+	public Flux<ChatResponse> stream(OverAllState state) {
+		return buildChatClientRequestSpec(state).stream().chatResponse();
 	}
 
-	public ChatResponse call() {
-		return buildChatClientRequestSpec().call().chatResponse();
+	public ChatResponse call(OverAllState state) {
+		return buildChatClientRequestSpec(state).call().chatResponse();
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec() {
-
-		List<Message> selectMessage = new ArrayList<>(messages);
-		List<Message> historyMessages = new ArrayList<>();
-		Iterator<Message> messageIterator = selectMessage.iterator();
-		boolean isFirstUserMessage = false;
-		while (messageIterator.hasNext()) {
-			Message message = messageIterator.next();
-			if (message instanceof UserMessage) {
-				if (!isFirstUserMessage) {
-					isFirstUserMessage = true;
-				}
-				else {
-					historyMessages.add(message);
-					messageIterator.remove();
-				}
-			}
-		}
-
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state) {
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
 				.toolCallbacks(toolCallbacks)
-				.messages(selectMessage)
+				.messages(messages)
 				.advisors(advisors);
 
 		if (StringUtils.hasLength(systemPrompt)) {
 			if (!params.isEmpty()) {
 				systemPrompt = renderPromptTemplate(systemPrompt, params);
+			} else {
+				// try render with state
+				systemPrompt = renderPromptTemplate(systemPrompt, state.data());
 			}
 			chatClientRequestSpec.system(systemPrompt);
 		}
@@ -215,161 +190,8 @@ public class LlmNode implements NodeAction {
 			}
 			chatClientRequestSpec.user(userPrompt);
 		}
-		if (historyMessages.size() > 1) {
 
-			String systemText = ((DefaultChatClient.DefaultChatClientRequestSpec) chatClientRequestSpec).getSystemText();
-
-			StringBuilder historyMessage = new StringBuilder();
-			for (int i = 0; i < historyMessages.size(); i++) {
-				if (historyMessages.get(i) instanceof UserMessage) {
-					historyMessage.append(i).append(":").append(historyMessages.get(i).getText()).append("\n");
-				}
-			}
-
-			String promptWithHistory = (systemText == null ? "" : systemText) + "\n Here is a previous question the user asked me. If it's relevant to the current question, please try to extract useful information; otherwise, feel free to ignore it and focus solely on the current question. The historical question is as follows: "
-					+ "\n"
-					+ historyMessage;
-			chatClientRequestSpec.system(promptWithHistory);
-		}
 		return chatClientRequestSpec;
-	}
-
-	/**
-	 * 通用方法，将各种类型的消息转换为 List<Message> 支持的类型： 1. String - 转换为 UserMessage 2. Map (如
-	 * {"role": "user", "text": "测试"}) - 根据role创建相应的Message 3. Spring AI Message - 直接使用 4.
-	 * List - 递归处理列表中的每个元素
-	 */
-	private List<Message> convertToMessages(Object value) {
-		List<Message> result = new ArrayList<>();
-
-		if (value == null) {
-			return result;
-		}
-
-		if (value instanceof List<?>) {
-			List<?> list = (List<?>) value;
-			if (list.isEmpty()) {
-				return result;
-			}
-
-			for (Object item : list) {
-				result.addAll(convertToMessages(item));
-			}
-		}
-		else if (value instanceof Message) {
-			// 如果已经是 Spring AI Message，直接添加
-			result.add((Message) value);
-		}
-		else if (value instanceof String) {
-			// 如果是字符串，转换为 UserMessage
-			String text = (String) value;
-			if (StringUtils.hasLength(text)) {
-				result.add(new UserMessage(text));
-			}
-		}
-		else if (value instanceof Map) {
-			// 如果是 Map，尝试解析为 Message
-			Map<?, ?> map = (Map<?, ?>) value;
-			Message message = convertMapToMessage(map);
-			if (message != null) {
-				result.add(message);
-			}
-		}
-		else {
-			// 对于其他类型，尝试通过 JSON 序列化/反序列化转换
-			try {
-				String json = objectMapper.writeValueAsString(value);
-				JsonNode jsonNode = objectMapper.readTree(json);
-				if (jsonNode.isObject()) {
-					Message message = convertJsonNodeToMessage(jsonNode);
-					if (message != null) {
-						result.add(message);
-					}
-				}
-			}
-			catch (Exception e) {
-				// 如果转换失败，将其作为字符串处理
-				String text = value.toString();
-				if (StringUtils.hasLength(text)) {
-					result.add(new UserMessage(text));
-				}
-			}
-		}
-
-		return result;
-	}
-
-	/**
-	 * 将 Map 转换为 Message
-	 */
-	private Message convertMapToMessage(Map<?, ?> map) {
-		if (map == null || map.isEmpty()) {
-			return null;
-		}
-
-		Object roleObj = map.get("role");
-		Object textObj = map.get("text");
-		Object contentObj = map.get("content");
-
-		// 优先使用 content，然后是 text
-		String content = null;
-		if (contentObj != null) {
-			content = contentObj.toString();
-		}
-		else if (textObj != null) {
-			content = textObj.toString();
-		}
-
-		if (!StringUtils.hasLength(content)) {
-			return null;
-		}
-
-		String role = roleObj != null ? roleObj.toString().toLowerCase() : "user";
-
-		switch (role) {
-		case "system":
-			return new SystemMessage(content);
-		case "assistant":
-			return new AssistantMessage(content);
-		case "user":
-		default:
-			return new UserMessage(content);
-		}
-	}
-
-	/**
-	 * 将 JsonNode 转换为 Message
-	 */
-	private Message convertJsonNodeToMessage(JsonNode jsonNode) {
-		if (jsonNode == null || !jsonNode.isObject()) {
-			return null;
-		}
-
-		JsonNode roleNode = jsonNode.get("role");
-		JsonNode textNode = jsonNode.get("text");
-		JsonNode contentNode = jsonNode.get("content");
-
-		// 优先使用 content，然后是 text
-		String content = null;
-		if (contentNode != null && contentNode.isTextual()) {
-			content = contentNode.asText();
-		}
-		else if (textNode != null && textNode.isTextual()) {
-			content = textNode.asText();
-		}
-
-		if (!StringUtils.hasLength(content)) {
-			return null;
-		}
-
-		String role = roleNode != null && roleNode.isTextual() ? roleNode.asText().toLowerCase() : "user";
-
-		return switch (role) {
-			case "system" -> new SystemMessage(content);
-			case "assistant" -> new AssistantMessage(content);
-			case "user" -> new UserMessage(content);
-			default -> new UserMessage(content);
-		};
 	}
 
 	public static class Builder {
