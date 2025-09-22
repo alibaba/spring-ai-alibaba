@@ -24,8 +24,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
-import com.alibaba.cloud.ai.mcp.gateway.core.McpGatewayToolDefinition;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
@@ -59,7 +57,7 @@ import org.springframework.util.StringUtils;
 
 public class NacosMcpGatewayToolCallback implements ToolCallback {
 
-	private static final Logger logger = LoggerFactory.getLogger(com.alibaba.cloud.ai.mcp.gateway.nacos.callback.NacosMcpGatewayToolCallback.class);
+	private static final Logger logger = LoggerFactory.getLogger(NacosMcpGatewayToolCallback.class);
 
 	private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*(\\.[\\w]+(?:\\.[\\w]+)*)\\s*\\}\\}");
 
@@ -515,7 +513,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 
 				HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl.toString())
 						.sseEndpoint(sseEndpoint.toString());
-				if (mcpServerVO.getHeaders()!=null){
+				if (mcpServerVO.getHeaders() != null) {
 					transportBuilder.customizeRequest(requestBuilder -> {
 						for (Map.Entry<String, String> headerName : mcpServerVO.getHeaders().entrySet())
 							requestBuilder.header(headerName.getKey(), headerName.getValue());

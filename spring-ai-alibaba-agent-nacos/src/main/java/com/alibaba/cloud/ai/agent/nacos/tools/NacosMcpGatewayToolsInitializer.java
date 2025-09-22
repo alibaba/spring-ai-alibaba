@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.definition.NacosMcpGatewayToolDefinition;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
@@ -39,21 +37,17 @@ public class NacosMcpGatewayToolsInitializer {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosMcpGatewayToolsInitializer.class);
 
-	private final NacosMcpGatewayProperties nacosMcpGatewayProperties;
-
 	private final NacosMcpOperationService nacosMcpOperationService;
 
 	private List<McpServersVO.McpServerVO> mcpServers;
 
-	public NacosMcpGatewayToolsInitializer(NacosMcpOperationService nacosMcpOperationService,
-			NacosMcpGatewayProperties nacosMcpGatewayProperties, List<McpServersVO.McpServerVO> mcpServers) {
-		this.nacosMcpGatewayProperties = nacosMcpGatewayProperties;
+	public NacosMcpGatewayToolsInitializer(NacosMcpOperationService nacosMcpOperationService, List<McpServersVO.McpServerVO> mcpServers) {
 		this.nacosMcpOperationService = nacosMcpOperationService;
 		this.mcpServers = mcpServers;
 	}
 
 	public List<ToolCallback> initializeTools() {
-		List<String> serviceNames = nacosMcpGatewayProperties.getServiceNames();
+		List<String> serviceNames = mcpServers.stream().map(McpServersVO.McpServerVO::getMcpServerName).toList();
 		if (serviceNames == null || serviceNames.isEmpty()) {
 			logger.warn("No service names configured, no tools will be initialized");
 			return new ArrayList<>();

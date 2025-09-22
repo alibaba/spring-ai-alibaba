@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.agent.nacos;
 import java.util.List;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.agent.nacos.utils.CglibProxyFactory;
+import com.alibaba.cloud.ai.agent.nacos.utils.ChatOptionsProxy;
 import com.alibaba.cloud.ai.agent.nacos.vo.AgentVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
@@ -238,7 +238,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
 				.model(model.getModel())
 				.build();
-		return (OpenAiChatOptions) CglibProxyFactory.createProxy(openaiChatOptions, metadata);
+		return (OpenAiChatOptions) ChatOptionsProxy.createProxy(openaiChatOptions, metadata);
 
 	}
 
