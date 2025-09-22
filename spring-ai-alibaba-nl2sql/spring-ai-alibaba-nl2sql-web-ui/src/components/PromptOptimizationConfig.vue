@@ -44,10 +44,49 @@
     <div class="optimization-configs">
       <div class="config-list-header">
         <h4>优化配置列表</h4>
-        <button class="add-config-btn" @click="showAddConfigDialog = true">
-          <i class="icon-plus"></i>
-          添加优化配置
-        </button>
+        <div class="header-actions">
+          <button 
+            v-if="optimizationConfigs.length > 0"
+            class="batch-action-btn" 
+            @click="showBatchActions = !showBatchActions"
+          >
+            <i class="icon-settings"></i>
+            批量操作
+          </button>
+          <button class="add-config-btn" @click="showAddConfigDialog = true">
+            <i class="icon-plus"></i>
+            添加优化配置
+          </button>
+        </div>
+      </div>
+
+      <!-- 批量操作面板 -->
+      <div v-if="showBatchActions" class="batch-actions-panel">
+        <div class="batch-actions-content">
+          <div class="batch-selection">
+            <input 
+              type="checkbox" 
+              :checked="isAllSelected" 
+              :indeterminate="isIndeterminate"
+              @change="toggleSelectAll"
+              class="select-all-checkbox"
+            />
+            <span class="batch-info">
+              {{ isAllSelected ? '已全选' : `已选择 ${selectedConfigs.length} 个配置` }}
+            </span>
+          </div>
+          <div class="batch-buttons">
+            <button class="batch-btn enable" @click="batchEnable" :disabled="selectedConfigs.length === 0">
+              批量启用
+            </button>
+            <button class="batch-btn disable" @click="batchDisable" :disabled="selectedConfigs.length === 0">
+              批量禁用
+            </button>
+            <button class="batch-btn cancel" @click="clearSelection">
+              取消选择
+            </button>
+          </div>
+        </div>
       </div>
 
       <div v-if="optimizationConfigs.length === 0" class="empty-state">
@@ -59,12 +98,21 @@
           v-for="config in optimizationConfigs"
           :key="config.id"
           class="config-item"
-          :class="{ disabled: !config.enabled }"
+          :class="{ disabled: !config.enabled, selected: selectedConfigs.includes(config.id) }"
         >
           <div class="config-header">
-                    <div class="config-info">
-          <span class="config-name">{{ config.name }}</span>
-        </div>
+            <div class="config-info">
+              <input 
+                type="checkbox" 
+                :value="config.id" 
+                v-model="selectedConfigs"
+                class="config-checkbox"
+              />
+              <span class="config-name">{{ config.name }}</span>
+              <span class="config-priority" v-if="config.priority !== undefined">
+                优先级: {{ config.priority }}
+              </span>
+            </div>
             <div class="config-actions">
               <button
                 class="toggle-btn"
@@ -74,6 +122,7 @@
                 {{ config.enabled ? '已启用' : '已禁用' }}
               </button>
               <button class="edit-btn" @click="editConfig(config)">编辑</button>
+              <button class="priority-btn" @click="showPriorityDialog(config)">优先级</button>
               <button class="delete-btn" @click="deleteConfig(config.id)">删除</button>
             </div>
           </div>
@@ -129,9 +178,73 @@
             ></textarea>
           </div>
 
+          <div class="form-row">
+            <div class="form-group">
+              <label for="priority">优先级</label>
+              <input
+                id="priority"
+                v-model.number="formData.priority"
+                type="number"
+                min="0"
+                max="100"
+                placeholder="0-100，数字越大优先级越高"
+              />
+            </div>
+            <div class="form-group">
+              <label for="displayOrder">显示顺序</label>
+              <input
+                id="displayOrder"
+                v-model.number="formData.displayOrder"
+                type="number"
+                min="0"
+                placeholder="显示顺序，数字越小越靠前"
+              />
+            </div>
+          </div>
+
           <div class="form-actions">
             <button type="button" class="cancel-btn" @click="closeDialog">取消</button>
             <button type="submit" class="save-btn">保存配置</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 优先级设置对话框 -->
+    <div v-if="showPriorityDialog" class="dialog-overlay" @click="closePriorityDialog">
+      <div class="dialog-content" @click.stop>
+        <div class="dialog-header">
+          <h3>设置优先级</h3>
+          <button class="close-btn" @click="closePriorityDialog">×</button>
+        </div>
+        <form @submit.prevent="updatePriority" class="priority-form">
+          <div class="form-group">
+            <label for="priorityValue">优先级 (0-100)</label>
+            <input
+              id="priorityValue"
+              v-model.number="priorityForm.priority"
+              type="number"
+              min="0"
+              max="100"
+              placeholder="数字越大优先级越高"
+              required
+            />
+            <p class="form-hint">优先级越高，该配置在多个配置中的执行顺序越靠前</p>
+          </div>
+          <div class="form-group">
+            <label for="displayOrderValue">显示顺序</label>
+            <input
+              id="displayOrderValue"
+              v-model.number="priorityForm.displayOrder"
+              type="number"
+              min="0"
+              placeholder="数字越小越靠前"
+            />
+            <p class="form-hint">控制配置在列表中的显示顺序</p>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" @click="closePriorityDialog">取消</button>
+            <button type="submit" class="save-btn">保存</button>
           </div>
         </form>
       </div>
@@ -157,10 +270,20 @@ export default {
       optimizationConfigs: [],
       showAddConfigDialog: false,
       editingConfig: null,
+      showBatchActions: false,
+      showPriorityDialog: false,
+      selectedConfigs: [],
+      editingPriorityConfig: null,
       formData: {
         name: '',
         description: '',
-        optimizationPrompt: ''
+        optimizationPrompt: '',
+        priority: 0,
+        displayOrder: 0
+      },
+      priorityForm: {
+        priority: 0,
+        displayOrder: 0
       },
       loading: false,
       message: {
@@ -168,6 +291,18 @@ export default {
         text: '',
         type: 'success'
       }
+    }
+  },
+  computed: {
+    // 是否全选
+    isAllSelected() {
+      return this.optimizationConfigs.length > 0 && 
+             this.selectedConfigs.length === this.optimizationConfigs.length
+    },
+    // 是否部分选择（半选状态）
+    isIndeterminate() {
+      return this.selectedConfigs.length > 0 && 
+             this.selectedConfigs.length < this.optimizationConfigs.length
     }
   },
   mounted() {
@@ -181,6 +316,11 @@ export default {
         const result = await response.json()
         if (result.success) {
           this.optimizationConfigs = result.data || []
+          // 如果配置列表为空，自动关闭批量操作面板
+          if (this.optimizationConfigs.length === 0) {
+            this.showBatchActions = false
+            this.selectedConfigs = []
+          }
         }
       } catch (error) {
         console.error('加载优化配置失败:', error)
@@ -196,7 +336,9 @@ export default {
           ...this.formData,
           promptType: this.promptType,
           enabled: true,
-          creator: 'user'
+          creator: 'user',
+          priority: this.formData.priority || 0,
+          displayOrder: this.formData.displayOrder || 0
         }
 
         if (this.editingConfig) {
@@ -260,6 +402,8 @@ export default {
         if (result.success) {
           this.showMessage(result.message, 'success')
           this.loadOptimizationConfigs()
+          // 删除后从选中列表中移除
+          this.selectedConfigs = this.selectedConfigs.filter(id => id !== configId)
         } else {
           this.showMessage(result.message, 'error')
         }
@@ -274,7 +418,9 @@ export default {
       this.formData = {
         name: config.name,
         description: config.description,
-        optimizationPrompt: config.optimizationPrompt
+        optimizationPrompt: config.optimizationPrompt,
+        priority: config.priority || 0,
+        displayOrder: config.displayOrder || 0
       }
     },
 
@@ -284,7 +430,121 @@ export default {
       this.formData = {
         name: '',
         description: '',
-        optimizationPrompt: ''
+        optimizationPrompt: '',
+        priority: 0,
+        displayOrder: 0
+      }
+    },
+
+    // 批量操作相关方法
+    async batchEnable() {
+      if (this.selectedConfigs.length === 0) return
+      
+      try {
+        const response = await fetch('/api/prompt-config/batch-enable', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(this.selectedConfigs)
+        })
+        
+        const result = await response.json()
+        if (result.success) {
+          this.showMessage(result.message, 'success')
+          this.loadOptimizationConfigs()
+          this.clearSelection()
+        } else {
+          this.showMessage(result.message, 'error')
+        }
+      } catch (error) {
+        console.error('批量启用失败:', error)
+        this.showMessage('批量启用失败', 'error')
+      }
+    },
+
+    async batchDisable() {
+      if (this.selectedConfigs.length === 0) return
+      
+      try {
+        const response = await fetch('/api/prompt-config/batch-disable', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(this.selectedConfigs)
+        })
+        
+        const result = await response.json()
+        if (result.success) {
+          this.showMessage(result.message, 'success')
+          this.loadOptimizationConfigs()
+          this.clearSelection()
+        } else {
+          this.showMessage(result.message, 'error')
+        }
+      } catch (error) {
+        console.error('批量禁用失败:', error)
+        this.showMessage('批量禁用失败', 'error')
+      }
+    },
+
+    clearSelection() {
+      this.selectedConfigs = []
+      this.showBatchActions = false
+    },
+
+    // 全选/取消全选
+    toggleSelectAll() {
+      if (this.isAllSelected) {
+        // 如果已全选，则取消全选
+        this.selectedConfigs = []
+      } else {
+        // 如果未全选，则全选所有配置
+        this.selectedConfigs = this.optimizationConfigs.map(config => config.id)
+      }
+    },
+
+    // 优先级相关方法
+    showPriorityDialog(config) {
+      this.editingPriorityConfig = config
+      this.priorityForm = {
+        priority: config.priority || 0,
+        displayOrder: config.displayOrder || 0
+      }
+      this.showPriorityDialog = true
+    },
+
+    async updatePriority() {
+      try {
+        const response = await fetch(`/api/prompt-config/${this.editingPriorityConfig.id}/priority`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ priority: this.priorityForm.priority })
+        })
+        
+        const result = await response.json()
+        if (result.success) {
+          this.showMessage('优先级更新成功', 'success')
+          this.loadOptimizationConfigs()
+          this.closePriorityDialog()
+        } else {
+          this.showMessage(result.message, 'error')
+        }
+      } catch (error) {
+        console.error('更新优先级失败:', error)
+        this.showMessage('更新优先级失败', 'error')
+      }
+    },
+
+    closePriorityDialog() {
+      this.showPriorityDialog = false
+      this.editingPriorityConfig = null
+      this.priorityForm = {
+        priority: 0,
+        displayOrder: 0
       }
     },
 
@@ -410,6 +670,12 @@ export default {
   margin-bottom: 16px;
 }
 
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .config-list-header h4 {
   margin: 0;
   color: #333;
@@ -417,6 +683,7 @@ export default {
   font-weight: 600;
 }
 
+.batch-action-btn,
 .add-config-btn {
   padding: 8px 16px;
   background: #1890ff;
@@ -427,8 +694,17 @@ export default {
   font-size: 14px;
 }
 
+.batch-action-btn:hover,
 .add-config-btn:hover {
   background: #40a9ff;
+}
+
+.batch-action-btn {
+  background: #52c41a;
+}
+
+.batch-action-btn:hover {
+  background: #73d13d;
 }
 
 .empty-state {
@@ -453,6 +729,11 @@ export default {
   background: #fafafa;
 }
 
+.config-item.selected {
+  border-color: #1890ff;
+  background: #f0f8ff;
+}
+
 .config-header {
   display: flex;
   justify-content: space-between;
@@ -466,9 +747,21 @@ export default {
   align-items: center;
 }
 
+.config-checkbox {
+  margin-right: 8px;
+}
+
 .config-name {
   font-weight: 600;
   color: #333;
+}
+
+.config-priority {
+  font-size: 12px;
+  color: #666;
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
 }
 
 
@@ -480,6 +773,7 @@ export default {
 
 .toggle-btn,
 .edit-btn,
+.priority-btn,
 .delete-btn {
   padding: 4px 8px;
   border: 1px solid #ddd;
@@ -498,6 +792,11 @@ export default {
 .edit-btn:hover {
   border-color: #1890ff;
   color: #1890ff;
+}
+
+.priority-btn:hover {
+  border-color: #fa8c16;
+  color: #fa8c16;
 }
 
 .delete-btn:hover {
@@ -650,5 +949,101 @@ export default {
 
 .save-btn:hover {
   background: #40a9ff;
+}
+
+/* 批量操作面板样式 */
+.batch-actions-panel {
+  background: #f8f9fa;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.batch-actions-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.batch-selection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.batch-info {
+  color: #666;
+  font-size: 14px;
+}
+
+.select-all-checkbox {
+  margin-right: 4px;
+  cursor: pointer;
+}
+
+.batch-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.batch-btn {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  background: white;
+}
+
+.batch-btn.enable {
+  color: #52c41a;
+  border-color: #52c41a;
+}
+
+.batch-btn.enable:hover {
+  background: #52c41a;
+  color: white;
+}
+
+.batch-btn.disable {
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.batch-btn.disable:hover {
+  background: #ff4d4f;
+  color: white;
+}
+
+.batch-btn.cancel {
+  color: #666;
+  border-color: #ddd;
+}
+
+.batch-btn.cancel:hover {
+  background: #f5f5f5;
+}
+
+.batch-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 表单行样式 */
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+  margin-bottom: 0;
 }
 </style>

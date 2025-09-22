@@ -64,6 +64,18 @@ public class UserPromptConfig {
 	private String description;
 
 	/**
+	 * Configuration priority (higher number = higher priority)
+	 */
+	@TableField("priority")
+	private Integer priority;
+
+	/**
+	 * Configuration order for display
+	 */
+	@TableField("display_order")
+	private Integer displayOrder;
+
+	/**
 	 * Creation time
 	 */
 	@TableField(value = "create_time", fill = FieldFill.INSERT)
@@ -84,6 +96,8 @@ public class UserPromptConfig {
 	// Constructors
 	public UserPromptConfig() {
 		this.enabled = true;
+		this.priority = 0;
+		this.displayOrder = 0;
 	}
 
 	public UserPromptConfig(String promptType, String systemPrompt) {
@@ -163,6 +177,22 @@ public class UserPromptConfig {
 
 	public void setCreator(String creator) {
 		this.creator = creator;
+	}
+
+	public Integer getPriority() {
+		return priority;
+	}
+
+	public void setPriority(Integer priority) {
+		this.priority = priority;
+	}
+
+	public Integer getDisplayOrder() {
+		return displayOrder;
+	}
+
+	public void setDisplayOrder(Integer displayOrder) {
+		this.displayOrder = displayOrder;
 	}
 
 	public String getOptimizationPrompt() {
