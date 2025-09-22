@@ -71,7 +71,7 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 
 			if (context.getCurrentNodeId() != null && context.getConfig().isInterrupted(context.getCurrentNodeId())) {
 				context.getConfig().withNodeResumed(context.getCurrentNodeId());
-				return Flux.just(GraphResponse.done(GraphResponse.done(context.getCurrentState())));
+				return Flux.just(GraphResponse.done(GraphResponse.done(context.getCurrentStateData())));
 			}
 
 			if (context.isStartNode()) {
@@ -86,7 +86,7 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 			if (resumeFrom.isPresent()) {
 				if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
 						&& java.util.Objects.equals(context.getNextNodeId(), INTERRUPT_AFTER)) {
-					var nextNodeCommand = context.nextNodeId(resumeFrom.get(), context.getCurrentState());
+					var nextNodeCommand = context.nextNodeId(resumeFrom.get(), context.getCurrentStateData());
 					context.setNextNodeId(nextNodeCommand.gotoNode());
 					context.updateCurrentState(nextNodeCommand.update());
 					context.setCurrentNodeId(null);
@@ -96,7 +96,7 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 			if (context.shouldInterrupt()) {
 				try {
 					InterruptionMetadata metadata = InterruptionMetadata
-						.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentState()))
+						.builder(context.getCurrentNodeId(), context.cloneState(context.getCurrentStateData()))
 						.build();
 					return Flux.just(GraphResponse.done(metadata));
 				}

@@ -28,8 +28,7 @@ public class LlmRoutingAgent extends FlowAgent {
 	private final ChatModel chatModel;
 
 	protected LlmRoutingAgent(LlmRoutingAgentBuilder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.outputKey, builder.inputKey, builder.keyStrategyFactory,
-				builder.compileConfig, builder.subAgents);
+		super(builder.name, builder.description, builder.keyStrategyFactory, builder.compileConfig, builder.subAgents);
 		this.chatModel = builder.chatModel;
 	}
 

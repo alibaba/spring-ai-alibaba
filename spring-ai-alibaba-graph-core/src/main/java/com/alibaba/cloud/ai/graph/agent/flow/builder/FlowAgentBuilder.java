@@ -19,7 +19,7 @@ import java.util.List;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
@@ -37,15 +37,11 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 
 	public String description;
 
-	public String outputKey;
-
-	public String inputKey;
-
 	public KeyStrategyFactory keyStrategyFactory;
 
 	public CompileConfig compileConfig;
 
-	public List<BaseAgent> subAgents;
+	public List<Agent> subAgents;
 
 	/**
 	 * Sets the agent name.
@@ -64,26 +60,6 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	 */
 	public B description(String description) {
 		this.description = description;
-		return self();
-	}
-
-	/**
-	 * Sets the output key for the agent's result.
-	 * @param outputKey the output key
-	 * @return this builder instance for method chaining
-	 */
-	public B outputKey(String outputKey) {
-		this.outputKey = outputKey;
-		return self();
-	}
-
-	/**
-	 * Sets the input key for the agent.
-	 * @param inputKey the input key
-	 * @return this builder instance for method chaining
-	 */
-	public B inputKey(String inputKey) {
-		this.inputKey = inputKey;
 		return self();
 	}
 
@@ -112,7 +88,7 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	 * @param subAgents the list of sub-agents
 	 * @return this builder instance for method chaining
 	 */
-	public B subAgents(List<BaseAgent> subAgents) {
+	public B subAgents(List<Agent> subAgents) {
 		this.subAgents = subAgents;
 		return self();
 	}

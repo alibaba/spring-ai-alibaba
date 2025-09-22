@@ -15,11 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphResponse;
@@ -29,27 +24,40 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.SubGraphNode;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+
+import reactor.core.publisher.Flux;
+
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
+import static java.lang.String.format;
 
 public class ReactAgent extends BaseAgent {
 
@@ -81,10 +89,8 @@ public class ReactAgent extends BaseAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	private String inputKey;
-
 	public ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.outputKey);
+		super(builder.name, builder.description, builder.includeContents, builder.outputKey, builder.outputKeyStrategy);
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
@@ -95,7 +101,15 @@ public class ReactAgent extends BaseAgent {
 		this.postLlmHook = builder.postLlmHook;
 		this.preToolHook = builder.preToolHook;
 		this.postToolHook = builder.postToolHook;
-		this.inputKey = builder.inputKey;
+		this.includeContents = builder.includeContents;
+	}
+
+	public static Builder builder() {
+		return new DefaultAgentBuilderFactory().builder();
+	}
+
+	public static Builder builder(AgentBuilderFactory agentBuilderFactory) {
+		return agentBuilderFactory.builder();
 	}
 
 	@Override
@@ -104,57 +118,102 @@ public class ReactAgent extends BaseAgent {
 		return compiledGraph.schedule(scheduleConfig);
 	}
 
+	public AssistantMessage invoke(String message) throws GraphRunnerException {
+		return invokeMessage(message);
+	}
+
+	public AssistantMessage invoke(String message, RunnableConfig config) throws GraphRunnerException {
+		return invokeMessage(message, config);
+	}
+
+	public AssistantMessage invoke(UserMessage userMessage) throws GraphRunnerException {
+		return invokeMessage(userMessage);
+	}
+
+	public AssistantMessage invoke(UserMessage userMessage, RunnableConfig config) throws GraphRunnerException {
+		return invokeMessage(userMessage, config);
+	}
+
+	public AssistantMessage invoke(List<Message> messages) throws GraphRunnerException {
+		return invokeMessage(messages);
+	}
+
+	public AssistantMessage invoke(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
+		return invokeMessage(messages, config);
+	}
+
+	public Flux<NodeOutput> stream(String message) throws GraphRunnerException {
+		return stream(Map.of("messages", convertToMessages(message)));
+	}
+
+	public Flux<NodeOutput> stream(String message, RunnableConfig config) throws GraphRunnerException {
+		return stream(Map.of("messages", convertToMessages(message)), config);
+	}
+
+	public Flux<NodeOutput> stream(UserMessage userMessage) throws GraphRunnerException {
+		return stream(Map.of("messages", convertToMessages(userMessage)));
+	}
+
+	public Flux<NodeOutput> stream(UserMessage userMessage, RunnableConfig config) throws GraphRunnerException {
+		return stream(Map.of("messages", convertToMessages(userMessage)), config);
+	}
+
+	public Flux<NodeOutput> stream(List<Message> messages) throws GraphRunnerException {
+		return stream(Map.of("messages", messages));
+	}
+
+	public Flux<NodeOutput> stream(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
+		return stream(Map.of("messages", messages), config);
+	}
+
+	private AssistantMessage invokeMessage(Object message) throws GraphRunnerException {
+		return invokeMessage(message, RunnableConfig.builder().build());
+	}
+
+	private AssistantMessage invokeMessage(Object message, RunnableConfig config) throws GraphRunnerException {
+		List<Message> messages;
+		if (message instanceof List) {
+			messages = (List<Message>) message;
+		} else {
+			messages = convertToMessages(message);
+		}
+
+		Optional<OverAllState> state = invoke(Map.of("messages", messages), config);
+
+		return state.flatMap(s -> s.value("messages"))
+				.map(messageList -> (List<Message>) messageList)
+				.stream()
+				.flatMap(messageList -> messageList.stream())
+				.filter(msg -> msg instanceof AssistantMessage)
+				.map(msg -> (AssistantMessage) msg)
+				.reduce((first, second) -> second)
+				.orElse(new AssistantMessage("No response generated"));
+	}
+
 	public StateGraph getStateGraph() {
 		return graph;
 	}
 
-	public CompiledGraph getCompiledGraph() throws GraphStateException {
+	public CompiledGraph getCompiledGraph() {
 		return compiledGraph;
 	}
 
-	public NodeAction asNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException {
+	@Override
+	public Node asNode(boolean includeContents, String outputKeyToParent) {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return new SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph);
+		return new AgentSubGraphNode(this.name, includeContents, outputKeyToParent, this.compiledGraph);
 	}
 
-	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
-			throws GraphStateException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return node_async(new SubGraphStreamingNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
-	}
 
 	@Override
 	protected StateGraph initGraph() throws GraphStateException {
-		if (keyStrategyFactory == null) {
-			this.keyStrategyFactory = () -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				if (inputKey != null) {
-					keyStrategyHashMap.put(inputKey, new ReplaceStrategy());
-				}
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			};
-		}
-		else {
-			KeyStrategyFactory originalFactory = this.keyStrategyFactory;
-			this.keyStrategyFactory = () -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>(originalFactory.apply());
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			};
-		}
+		insureMessagesKeyStrategyFactory();
 
 		NodeAction effectivePreLlmHook = this.preLlmHook;
 		if (effectivePreLlmHook == null) {
 			effectivePreLlmHook = state -> {
-				if (state.value("messages").isPresent()) {
-					List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
-					state.updateState(Map.of(this.inputKey, messages));
-				}
 				return Map.of();
 			};
 		}
@@ -203,6 +262,24 @@ public class ReactAgent extends BaseAgent {
 		return graph;
 	}
 
+	private void insureMessagesKeyStrategyFactory() {
+		if (keyStrategyFactory == null) {
+			this.keyStrategyFactory = () -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				return keyStrategyHashMap;
+			};
+		}
+		else {
+			KeyStrategyFactory originalFactory = this.keyStrategyFactory;
+			this.keyStrategyFactory = () -> {
+				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>(originalFactory.apply());
+				keyStrategyHashMap.put("messages", new AppendStrategy());
+				return keyStrategyHashMap;
+			};
+		}
+	}
+
 	private String think(OverAllState state) {
 		if (iterations > max_iterations) {
 			return "end";
@@ -227,7 +304,6 @@ public class ReactAgent extends BaseAgent {
 
 	public void setInstruction(String instruction) {
 		this.instruction = instruction;
-		llmNode.setSystemPrompt(instruction);
 	}
 
 	/**
@@ -294,77 +370,118 @@ public class ReactAgent extends BaseAgent {
 		this.shouldContinueFunc = shouldContinueFunc;
 	}
 
-	public static Builder builder() {
-		return new DefaultAgentBuilderFactory().builder();
+	public boolean isIncludeContents() {
+		return includeContents;
 	}
 
-	public static Builder builder(AgentBuilderFactory agentBuilderFactory) {
-		return agentBuilderFactory.builder();
+	public void setIncludeContents(boolean includeContents) {
+		this.includeContents = includeContents;
 	}
 
-	public static class SubGraphNodeAdapter implements NodeAction {
+	public String getOutputKey() {
+		return outputKey;
+	}
 
-		private String inputKeyFromParent;
+	public void setOutputKey(String outputKey) {
+		this.outputKey = outputKey;
+	}
+
+	public KeyStrategy getOutputKeyStrategy() {
+		return outputKeyStrategy;
+	}
+
+	public void setOutputKeyStrategy(KeyStrategy outputKeyStrategy) {
+		this.outputKeyStrategy = outputKeyStrategy;
+	}
+
+	public static class SubGraphNodeAdapter implements NodeActionWithConfig {
+
+		private boolean includeContents;
 
 		private String outputKeyToParent;
 
 		private CompiledGraph childGraph;
 
-		public SubGraphNodeAdapter(String inputKeyFromParent, String outputKeyToParent, CompiledGraph childGraph) {
-			this.inputKeyFromParent = inputKeyFromParent;
+		private CompileConfig parentCompileConfig;
+
+		public SubGraphNodeAdapter(boolean includeContents, String outputKeyToParent,
+				CompiledGraph childGraph, CompileConfig parentCompileConfig) {
+			this.includeContents = includeContents;
 			this.outputKeyToParent = outputKeyToParent;
 			this.childGraph = childGraph;
+			this.parentCompileConfig = parentCompileConfig;
+		}
+
+		public String subGraphId() {
+			return format("subgraph_%s", childGraph.stateGraph.getName());
 		}
 
 		@Override
-		public Map<String, Object> apply(OverAllState parentState) throws Exception {
+		public Map<String, Object> apply(OverAllState parentState, RunnableConfig config) throws Exception {
+			RunnableConfig subGraphRunnableConfig = getSubGraphRunnableConfig(config);
+			Flux<GraphResponse<NodeOutput>> subGraphFlux;
+			Object parentMessages = null;
+			if (includeContents) {
+				// by default, includeContents is true, we pass down the messages from the parent state
+				subGraphFlux = childGraph.fluxDataStream(parentState, subGraphRunnableConfig);
+			} else {
+				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
+				parentMessages = stateForChild.remove("messages");
+				// use the instruction directly, without any user message or parent messages.
+				subGraphFlux = childGraph.fluxDataStream(stateForChild, subGraphRunnableConfig);
+			}
 
-			// prepare input for child graph
-			String input = (String) parentState.value(inputKeyFromParent).orElseThrow();
-			Message message = new UserMessage(input);
-			List<Message> messages = List.of(message);
+			Map<String, Object> result = new HashMap<>();
+			result.put(outputKeyToParent, subGraphFlux);
+			if (parentMessages != null) {
+				result.put("messages", parentMessages);
+			}
+			return result;
+		}
 
-			// invoke child graph
-			OverAllState childState = childGraph.call(Map.of("messages", messages)).get();
+		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
+			RunnableConfig subGraphRunnableConfig = config;
+			var parentSaver = parentCompileConfig.checkpointSaver();
+			var subGraphSaver = childGraph.compileConfig.checkpointSaver();
 
-			// extract output from child graph
-			List<Message> reactMessages = (List<Message>) childState.value("messages").orElseThrow();
-			AssistantMessage assistantMessage = (AssistantMessage) reactMessages.get(reactMessages.size() - 1);
-			String reactResult = assistantMessage.getText();
+			if (subGraphSaver.isPresent()) {
+				if (parentSaver.isEmpty()) {
+					throw new IllegalStateException("Missing CheckpointSaver in parent graph!");
+				}
 
-			// update parent state
-			return Map.of(outputKeyToParent, reactResult);
+				// Check saver are the same instance
+				if (parentSaver.get() == subGraphSaver.get()) {
+					subGraphRunnableConfig = RunnableConfig.builder(config)
+							.threadId(config.threadId()
+									.map(threadId -> format("%s_%s", threadId, subGraphId()))
+									.orElseGet(this::subGraphId))
+							.nextNode(null)
+							.checkPointId(null)
+							.build();
+				}
+			}
+			return subGraphRunnableConfig;
 		}
 
 	}
 
-	public static class SubGraphStreamingNodeAdapter implements NodeAction {
+	/**
+	 * Internal class that adapts a ReactAgent to be used as a SubGraph Node.
+	 * Similar to SubCompiledGraphNode but uses SubGraphNodeAdapter internally.
+	 */
+	private static class AgentSubGraphNode extends Node implements SubGraphNode {
 
-		private String inputKeyFromParent;
+		private final CompiledGraph subGraph;
 
-		private String outputKeyToParent;
-
-		private CompiledGraph childGraph;
-
-		public SubGraphStreamingNodeAdapter(String inputKeyFromParent, String outputKeyToParent,
-				CompiledGraph childGraph) {
-			this.inputKeyFromParent = inputKeyFromParent;
-			this.outputKeyToParent = outputKeyToParent;
-			this.childGraph = childGraph;
+		public AgentSubGraphNode(String id, boolean includeContents, String outputKeyToParent, CompiledGraph subGraph) {
+			super(Objects.requireNonNull(id, "id cannot be null"),
+					(config) -> AsyncNodeActionWithConfig.node_async(new SubGraphNodeAdapter(includeContents, outputKeyToParent, subGraph, config)));
+			this.subGraph = subGraph;
 		}
 
 		@Override
-		public Map<String, Object> apply(OverAllState parentState) throws Exception {
-			String input = (String) parentState.value(inputKeyFromParent).orElseThrow();
-			Message message = new UserMessage(input);
-			List<Message> messages = List.of(message);
-
-			Flux<GraphResponse<NodeOutput>> subGraphFlux = childGraph.fluxDataStream(Map.of("messages", messages),
-					RunnableConfig.builder().build());
-
-			return Map.of(outputKeyToParent, subGraphFlux);
+		public StateGraph subGraph() {
+			return subGraph.stateGraph;
 		}
-
 	}
-
 }

@@ -59,7 +59,7 @@ public abstract class BaseGraphExecutor {
 					resultValue.set(tag);
 				}
 				else {
-					resultValue.set(context.getCurrentState());
+					resultValue.set(context.getCurrentStateData());
 				}
 				return Flux.just(GraphResponse.done(resultValue.get()));
 			}

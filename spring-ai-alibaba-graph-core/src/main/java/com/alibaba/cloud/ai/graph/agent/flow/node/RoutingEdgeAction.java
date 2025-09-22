@@ -20,25 +20,24 @@ import java.util.concurrent.CompletableFuture;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import org.apache.tika.utils.StringUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 
 public class RoutingEdgeAction implements AsyncEdgeAction {
 
-	private ChatClient chatClient;
+	private final ChatClient chatClient;
 
-	private String taskKey;
-
-	public RoutingEdgeAction(ChatModel chatModel, BaseAgent current, List<BaseAgent> subAgents) {
+	public RoutingEdgeAction(ChatModel chatModel, Agent current, List<Agent> subAgents) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("You are responsible for task routing in a graph-based AI system.\n");
 
 		if (current instanceof ReactAgent reactAgent) {
-			sb.append("The instruction that you should follow is to finish this task is: ");
+			sb.append("The instruction that you should follow to finish this task is: ");
 			sb.append(StringUtils.isEmpty(reactAgent.instruction()) ? reactAgent.description()
 					: reactAgent.instruction());
 		}
@@ -51,7 +50,7 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 		sb.append(
 				"There're a few agents that can handle this task, you can delegate the task to one of the following.");
 		sb.append("The agents ability are listed in a 'name:description' format as below:\n");
-		for (BaseAgent agent : subAgents) {
+		for (Agent agent : subAgents) {
 			sb.append("- ").append(agent.name()).append(": ").append(agent.description()).append("\n");
 		}
 		sb.append("\n\n");
@@ -64,20 +63,78 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 				"For example, if you want to delegate the task to the agent named 'agent1', you should return 'agent1'.");
 
 		this.chatClient = ChatClient.builder(chatModel).defaultSystem(sb.toString()).build();
-		this.taskKey = current.outputKey();
 	}
 
 	@Override
 	public CompletableFuture<String> apply(OverAllState state) {
 		CompletableFuture<String> result = new CompletableFuture<>();
 		try {
-			String taskDetail = state.value(taskKey, "");
-			result.complete(this.chatClient.prompt(taskDetail).call().content());
+			List<Message> messages = (List<Message>)state.value("messages").orElseThrow();
+			result.complete(this.chatClient.prompt(getFormatedPrompt(messages)).call().content());
 		}
 		catch (Exception e) {
 			result.completeExceptionally(e);
 		}
 		return result;
+	}
+
+	private String getFormatedPrompt(List<Message> messages) {
+		if (messages == null || messages.isEmpty()) {
+			return "Query from user:\n \n, Conversation History: \n <history></history> \n";
+		}
+
+		StringBuilder sb = new StringBuilder();
+		sb.append("Query from user:\n ");
+
+		// Find the first UserMessage
+		String firstMessageContent = "";
+		for (Message message : messages) {
+			if (message instanceof org.springframework.ai.chat.messages.UserMessage) {
+				firstMessageContent = getMessageContent(message);
+				break;
+			}
+		}
+
+		sb.append(firstMessageContent != null ? firstMessageContent : "");
+		sb.append(" \n, Conversation History: \n");
+		sb.append("content below between <history></history> tag are conversation histories. \n <history>");
+
+		// Convert remaining messages as history
+		if (messages.size() > 1) {
+			for (int i = 1; i < messages.size(); i++) {
+				String messageContent = getMessageContent(messages.get(i));
+				if (messageContent != null) {
+					sb.append(messageContent);
+				}
+				// Add newline between messages (except for the last one)
+				if (i < messages.size() - 1) {
+					sb.append("\n");
+				}
+			}
+		}
+
+		sb.append("</history> \n");
+		return sb.toString();
+	}
+
+	private String getMessageContent(Message message) {
+		if (message instanceof org.springframework.ai.chat.messages.ToolResponseMessage toolMessage) {
+			// Special handling for ToolResponseMessage
+			StringBuilder toolContent = new StringBuilder();
+
+			for (org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse response : toolMessage.getResponses()) {
+				if (!toolContent.isEmpty()) {
+					toolContent.append("\n");
+				}
+				toolContent.append("Tool Response [").append(response.id()).append("]: ");
+				toolContent.append(response.responseData());
+			}
+
+			return toolContent.toString();
+		}
+
+		// For other message types, use getText() method
+		return message.getText();
 	}
 
 }

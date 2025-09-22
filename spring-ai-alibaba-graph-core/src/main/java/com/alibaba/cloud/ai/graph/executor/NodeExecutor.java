@@ -86,7 +86,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 			if (action instanceof InterruptableAction) {
 				Optional<InterruptionMetadata> interruptMetadata = ((InterruptableAction) action)
-					.interrupt(currentNodeId, context.cloneState(context.getCurrentState()));
+					.interrupt(currentNodeId, context.cloneState(context.getCurrentStateData()));
 				if (interruptMetadata.isPresent()) {
 					resultValue.set(interruptMetadata.get());
 					return Flux.just(GraphResponse.done(interruptMetadata.get()));
@@ -142,7 +142,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				context.setNextNodeId(INTERRUPT_AFTER);
 			}
 			else {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
+				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 				context.updateCurrentState(nextCommand.update());
 			}
@@ -302,7 +302,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 						.filter(e -> !(e.getValue() instanceof Flux))
 						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-					Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
+					Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentStateData(),
 							partialStateWithoutFlux, context.getKeyStrategyMap());
 					var currentState = OverAllState.updateState(intermediateState, (Map<String, Object>) value,
 							context.getKeyStrategyMap());
@@ -315,9 +315,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 
 			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
+				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 				context.updateCurrentState(nextCommand.update());
+
+				// save checkpoint after embedded flux completes
+				context.buildCurrentNodeOutput();
 			}
 			catch (Exception e) {
 				throw new RuntimeException(e);
@@ -380,7 +383,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 								.filter(e -> !(e.getValue() instanceof Flux))
 								.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-							Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
+							Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentStateData(),
 									partialStateWithoutFlux, context.getKeyStrategyMap());
 							var currentState = OverAllState.updateState(intermediateState,
 									(Map<String, Object>) nodeResultValue, context.getKeyStrategyMap());
@@ -399,7 +402,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 		}).concatWith(Flux.defer(() -> {
 			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
+				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 				context.updateCurrentState(nextCommand.update());
 
