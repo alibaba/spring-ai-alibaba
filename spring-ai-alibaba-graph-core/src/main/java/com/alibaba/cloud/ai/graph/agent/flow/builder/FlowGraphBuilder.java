@@ -15,12 +15,14 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.builder;
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.HashMap;
@@ -56,11 +58,11 @@ public class FlowGraphBuilder {
 
 		private KeyStrategyFactory keyStrategyFactory;
 
-		private BaseAgent rootAgent;
+		private Agent rootAgent;
 
-		private List<BaseAgent> subAgents;
+		private List<Agent> subAgents;
 
-		private Map<String, BaseAgent> conditionalAgents;
+		private Map<String, Agent> conditionalAgents;
 
 		private ChatModel chatModel;
 
@@ -79,31 +81,27 @@ public class FlowGraphBuilder {
 			return keyStrategyFactory;
 		}
 
-		public void setKeyStrategyFactory(KeyStrategyFactory keyStrategyFactory) {
-			this.keyStrategyFactory = keyStrategyFactory;
-		}
-
-		public BaseAgent getRootAgent() {
+		public Agent getRootAgent() {
 			return rootAgent;
 		}
 
-		public void setRootAgent(BaseAgent rootAgent) {
+		public void setRootAgent(Agent rootAgent) {
 			this.rootAgent = rootAgent;
 		}
 
-		public List<BaseAgent> getSubAgents() {
+		public List<Agent> getSubAgents() {
 			return subAgents;
 		}
 
-		public void setSubAgents(List<BaseAgent> subAgents) {
+		public void setSubAgents(List<Agent> subAgents) {
 			this.subAgents = subAgents;
 		}
 
-		public Map<String, BaseAgent> getConditionalAgents() {
+		public Map<String, Agent> getConditionalAgents() {
 			return conditionalAgents;
 		}
 
-		public void setConditionalAgents(Map<String, BaseAgent> conditionalAgents) {
+		public void setConditionalAgents(Map<String, Agent> conditionalAgents) {
 			this.conditionalAgents = conditionalAgents;
 		}
 
@@ -126,21 +124,37 @@ public class FlowGraphBuilder {
 		}
 
 		public FlowGraphConfig keyStrategyFactory(KeyStrategyFactory factory) {
-			this.keyStrategyFactory = factory;
+			if (factory == null) {
+				return this;
+			}
+
+			// Check if the factory's result contains "messages" key
+			// FIXME, executing factory method in advance might cause side effects.
+			Map<String, KeyStrategy> strategyMap = factory.apply();
+			if (!strategyMap.containsKey("messages")) {
+				// Create a new factory that includes all existing values plus "messages" key
+				this.keyStrategyFactory = () -> {
+					Map<String, KeyStrategy> newStrategyMap = new HashMap<>(strategyMap);
+					newStrategyMap.put("messages", new AppendStrategy());
+					return newStrategyMap;
+				};
+			} else {
+				this.keyStrategyFactory = factory;
+			}
 			return this;
 		}
 
-		public FlowGraphConfig rootAgent(BaseAgent agent) {
+		public FlowGraphConfig rootAgent(Agent agent) {
 			this.rootAgent = agent;
 			return this;
 		}
 
-		public FlowGraphConfig subAgents(List<BaseAgent> agents) {
+		public FlowGraphConfig subAgents(List<Agent> agents) {
 			this.subAgents = agents;
 			return this;
 		}
 
-		public FlowGraphConfig conditionalAgents(Map<String, BaseAgent> agents) {
+		public FlowGraphConfig conditionalAgents(Map<String, Agent> agents) {
 			this.conditionalAgents = agents;
 			return this;
 		}

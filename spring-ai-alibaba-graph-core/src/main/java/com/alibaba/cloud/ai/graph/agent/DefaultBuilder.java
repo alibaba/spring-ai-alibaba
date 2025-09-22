@@ -48,13 +48,10 @@ public class DefaultBuilder extends Builder {
 
 		LlmNode.Builder llmNodeBuilder = LlmNode.builder()
 				.stream(true)
+				.systemPromptTemplate(instruction)
 				.chatClient(chatClient)
 				.messagesKey(this.inputKey);
-		// For graph built from ReactAgent, the only legal key used inside must be
-		// messages.
-		// if (outputKey != null && !outputKey.isEmpty()) {
-		// llmNodeBuilder.outputKey(outputKey);
-		// }
+
 		if (CollectionUtils.isNotEmpty(tools)) {
 			llmNodeBuilder.toolCallbacks(tools);
 		}

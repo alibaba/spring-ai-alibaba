@@ -16,49 +16,44 @@
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
 import com.alibaba.cloud.ai.graph.*;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.SubGraphNode;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import io.a2a.spec.AgentCard;
 
 import java.util.HashMap;
-import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 
 public class A2aRemoteAgent extends BaseAgent {
+	Logger logger = Logger.getLogger(A2aRemoteAgent.class.getName());
 
 	private final AgentCardWrapper agentCard;
 
-	private CompiledGraph compiledGraph;
-
 	private KeyStrategyFactory keyStrategyFactory;
 
-	private A2aNodeWithConfig a2aNode;
-
-	private CompileConfig compileConfig;
-
-	private String inputKey;
+	private String instruction;
 
 	private boolean streaming;
 
-	Logger logger = Logger.getLogger(A2aRemoteAgent.class.getName());
+	private boolean shareState;
 
 	// Private constructor for Builder pattern
-	private A2aRemoteAgent(A2aNodeWithConfig a2aNode, Builder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.outputKey);
+	private A2aRemoteAgent(Builder builder) throws GraphStateException {
+		super(builder.name, builder.description, builder.includeContents, builder.outputKey, builder.outputKeyStrategy);
 		this.agentCard = builder.agentCard;
 		this.keyStrategyFactory = builder.keyStrategyFactory;
 		this.compileConfig = builder.compileConfig;
-		this.inputKey = builder.inputKey;
+		this.includeContents = builder.includeContents;
 		this.streaming = builder.streaming;
-		this.a2aNode = a2aNode;
+		this.instruction = builder.instruction;
+		this.shareState = builder.shareState;
 	}
 
 	@Override
@@ -72,48 +67,45 @@ public class A2aRemoteAgent extends BaseAgent {
 		}
 
 		StateGraph graph = new StateGraph(name, this.keyStrategyFactory);
-		graph.addNode("A2aNode", AsyncNodeActionWithConfig.node_async(a2aNode));
+		graph.addNode("A2aNode", AsyncNodeActionWithConfig.node_async(new A2aNodeActionWithConfig(agentCard, includeContents, outputKey, instruction, streaming)));
 		graph.addEdge(StateGraph.START, "A2aNode");
 		graph.addEdge("A2aNode", StateGraph.END);
 		return graph;
 	}
 
 	@Override
-	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent) {
-		return AsyncNodeAction.node_async(new A2aNode(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
-	}
-
-	public AsyncNodeActionWithConfig asAsyncNodeActionWithConfig(String inputKeyFromParent, String outputKeyToParent) {
-		return AsyncNodeActionWithConfig.node_async(new A2aNodeWithConfig(agentCard, inputKeyFromParent, outputKeyToParent, streaming));
-	}
-
-	@Override
-	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException, GraphRunnerException {
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
 		throw new UnsupportedOperationException("A2aRemoteAgent has not support schedule.");
-	}
-
-	public StateGraph getStateGraph() {
-		return graph;
-	}
-
-	public CompiledGraph getCompiledGraph() throws GraphStateException {
-		return compiledGraph;
-	}
-
-	public CompiledGraph getAndCompileGraph(CompileConfig compileConfig) throws GraphStateException {
-		this.compiledGraph = getStateGraph().compile(compileConfig);
-		return this.compiledGraph;
-	}
-
-	public NodeAction asNodeAction(String inputKeyFromParent, String outputKeyToParent) throws GraphStateException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return new SubGraphNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph);
 	}
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	@Override
+	public Node asNode(boolean includeContents, String outputKeyToParent) {
+		return new A2aRemoteAgentNode(this.name, includeContents, outputKeyToParent, this.instruction, this.agentCard, this.streaming, this.shareState, this.getAndCompileGraph());
+	}
+
+	/**
+	 * Internal class that adapts an A2aRemoteAgent to be used as a Node.
+	 * Similar to AgentSubGraphNode but uses A2aNodeActionWithConfig internally.
+	 * Implements SubGraphNode interface to provide subgraph functionality.
+	 */
+	private static class A2aRemoteAgentNode extends Node implements SubGraphNode {
+
+		private final CompiledGraph subGraph;
+
+		public A2aRemoteAgentNode(String id, boolean includeContents, String outputKeyToParent, String instruction, AgentCardWrapper agentCard, boolean streaming, boolean shareState, CompiledGraph subGraph) {
+			super(Objects.requireNonNull(id, "id cannot be null"),
+					(config) -> AsyncNodeActionWithConfig.node_async(new A2aNodeActionWithConfig(agentCard, includeContents, outputKeyToParent, instruction, streaming, shareState, config)));
+			this.subGraph = subGraph;
+		}
+
+		@Override
+		public StateGraph subGraph() {
+			return subGraph.stateGraph;
+		}
 	}
 
 	public static class Builder {
@@ -123,20 +115,26 @@ public class A2aRemoteAgent extends BaseAgent {
 
 		private String description;
 
+		private String instruction;
+
 		private String outputKey = "output";
+
+		private KeyStrategy outputKeyStrategy;
 
 		// A2aRemoteAgent specific properties
 		private AgentCardWrapper agentCard;
 
 		private AgentCardProvider agentCardProvider;
 
-		private String inputKey = "input";
+		private boolean includeContents = true;
 
 		private KeyStrategyFactory keyStrategyFactory;
 
 		private CompileConfig compileConfig;
 
 		private boolean streaming = false;
+
+		private boolean shareState = true;
 
 		public Builder name(String name) {
 			this.name = name;
@@ -148,8 +146,18 @@ public class A2aRemoteAgent extends BaseAgent {
 			return this;
 		}
 
+		public Builder instruction(String instruction) {
+			this.instruction = instruction;
+			return this;
+		}
+
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
+			return this;
+		}
+
+		public Builder outputKeyStrategy(KeyStrategy outputKeyStrategy) {
+			this.outputKeyStrategy = outputKeyStrategy;
 			return this;
 		}
 
@@ -163,8 +171,8 @@ public class A2aRemoteAgent extends BaseAgent {
 			return this;
 		}
 
-		public Builder inputKey(String inputKey) {
-			this.inputKey = inputKey;
+		public Builder includeContents(boolean includeContents) {
+			this.includeContents = includeContents;
 			return this;
 		}
 
@@ -180,6 +188,11 @@ public class A2aRemoteAgent extends BaseAgent {
 
 		public Builder streaming(boolean streaming) {
 			this.streaming = streaming;
+			return this;
+		}
+
+		public Builder shareState(boolean shareState) {
+			this.shareState = shareState;
 			return this;
 		}
 
@@ -204,46 +217,9 @@ public class A2aRemoteAgent extends BaseAgent {
 			}
 
 			this.streaming = agentCard.capabilities().streaming();
-			A2aNodeWithConfig a2aNode = new A2aNodeWithConfig(agentCard, inputKey, outputKey, streaming);
 
-			return new A2aRemoteAgent(a2aNode, this);
+			return new A2aRemoteAgent(this);
 		}
 
 	}
-
-	public static class SubGraphNodeAdapter implements NodeAction {
-
-		private final String inputKeyFromParent;
-
-		private final String outputKeyToParent;
-
-		private final CompiledGraph childGraph;
-
-		public SubGraphNodeAdapter(String inputKeyFromParent, String outputKeyToParent, CompiledGraph childGraph) {
-			this.inputKeyFromParent = inputKeyFromParent;
-			this.outputKeyToParent = outputKeyToParent;
-			this.childGraph = childGraph;
-		}
-
-		@Override
-		public Map<String, Object> apply(OverAllState parentState) throws Exception {
-			// prepare input for child graph
-			Object inputValue = parentState.value(inputKeyFromParent)
-				.orElseThrow(() -> new IllegalArgumentException(
-						"Input key '" + inputKeyFromParent + "' not found in state: " + parentState));
-
-			// invoke child graph with input
-			OverAllState childState = childGraph.call(Map.of("input", inputValue)).get();
-
-			// extract output from child graph
-			Object outputValue = childState.value(outputKeyToParent)
-				.orElseThrow(() -> new IllegalArgumentException(
-						"Output key '" + outputKeyToParent + "' not found in child state"));
-
-			// update parent state
-			return Map.of(outputKeyToParent, outputValue);
-		}
-
-	}
-
 }

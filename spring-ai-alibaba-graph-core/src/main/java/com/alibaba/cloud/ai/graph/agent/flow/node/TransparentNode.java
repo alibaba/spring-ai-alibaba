@@ -15,62 +15,19 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 
-import org.springframework.util.StringUtils;
 
 public class TransparentNode implements NodeAction {
 
-	private final String inputKey;
-
-	private final String outputKey;
-
-	public TransparentNode(String outputKey, String inputKey) {
-		if (!StringUtils.hasLength(inputKey) || !StringUtils.hasLength(outputKey)) {
-			throw new IllegalArgumentException("inputKey and outputKey must not be null or empty.");
-		}
-		this.inputKey = inputKey;
-		this.outputKey = outputKey;
+	public TransparentNode() {
 	}
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		Map<String, Object> updatedState = new HashMap<>();
-		Object value = state.value(inputKey)
-			.orElseThrow(
-					() -> new IllegalArgumentException("Input key '" + inputKey + "' not found in state: " + state));
-		updatedState.put(this.outputKey, value);
-		return updatedState;
+		return Map.of();
 	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
-
-		private String outputKey;
-
-		private String inputKey;
-
-		public TransparentNode build() {
-			return new TransparentNode(outputKey, inputKey);
-		}
-
-		public Builder outputKey(String outputKey) {
-			this.outputKey = outputKey;
-			return this;
-		}
-
-		public Builder inputKey(String inputKey) {
-			this.inputKey = inputKey;
-			return this;
-		}
-
-	}
-
 }
