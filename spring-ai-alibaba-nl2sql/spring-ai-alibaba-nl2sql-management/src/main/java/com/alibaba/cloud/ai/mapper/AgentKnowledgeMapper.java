@@ -22,6 +22,11 @@ import org.apache.ibatis.annotations.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * AgentKnowledge Mapper Interface
+ *
+ * @author Alibaba Cloud AI
+ */
 public interface AgentKnowledgeMapper extends BaseMapper<AgentKnowledge>  {
 
     @Select("SELECT * FROM agent_knowledge WHERE agent_id = #{agentId} ORDER BY create_time DESC")

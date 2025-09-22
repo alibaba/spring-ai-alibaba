@@ -21,6 +21,11 @@ import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
+/**
+ * AgentPresetQuestion Mapper Interface
+ *
+ * @author Alibaba Cloud AI
+ */
 public interface AgentPresetQuestionMapper extends BaseMapper<AgentPresetQuestion> {
 
     @Select("""
