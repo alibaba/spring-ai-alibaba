@@ -13,7 +13,7 @@
 ## Core Features
 
 <p align="center">
-    <img src="https://spring-ai-alibaba-github.oss-cn-beijing.aliyuncs.com/spring-ai-alibaba/imgs/spring-ai-alibaba-architecture.png?Expires=1758535449&OSSAccessKeyId=TMP.3Kphv3f5xfpWx7VacGXrFroG3Z8n948opA6HimqRPo8QdY2RgrXU8LpBwNf1zP4QxrFGN1oARr26ektDfDSxdXkgFWTNTB&Signature=i0MdeLJl0s16zdUm93b5xymqi7c%3D" alt="architecture" style="max-width: 740px; height: 508px" /> 
+    <img src="./docs/imgs/spring-ai-alibaba-architecture.png" alt="architecture" style="max-width: 740px; height: 508px" />
 </p>
 
 
@@ -61,7 +61,7 @@ Please check [Quick Start](https://java2ai.com/docs/1.0.0.3/get-started/chatbot)
 The community has developed a [Playground](https://github.com/springaialibaba/spring-ai-alibaba-examples/tree/main/spring-ai-alibaba-playground) agent that includes a complete front-end UI and back-end implementation. The Playground back-end is developed using Spring AI Alibaba and gives users a quick overview of all core framework capabilities such as chatbot, multi-round conversations, image generation, multi-modality, tool calling, MCP, and RAG.
 
 <p align="center">
-    <img src="https://spring-ai-alibaba-github.oss-cn-beijing.aliyuncs.com/spring-ai-alibaba/imgs/playground.png?Expires=1758535720&OSSAccessKeyId=TMP.3Kphv3f5xfpWx7VacGXrFroG3Z8n948opA6HimqRPo8QdY2RgrXU8LpBwNf1zP4QxrFGN1oARr26ektDfDSxdXkgFWTNTB&Signature=DYlvmYERyCU%2BKRWRGjtqb%2F%2Be8YE%3D" alt="PlayGround" style="max-width: 949px; height: 537px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" /> 
+    <img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 949px; height: 537px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" />
 </p>
 
 You can [deploy the Playground example locally](https://github.com/springaialibaba/spring-ai-alibaba-examples) and access the experience through your browser, or copy the source code and tweak it to your own business needs to build your own set of AI apps more quickly.
@@ -106,7 +106,7 @@ The emergence of Manus has given people unlimited space with the ability of gene
 JManus is not just a Spring AI Alibaba version Manus replica, it's also designed as a platform that can help developers to build their own fine-tuned agents targeting specific business scenarios. The typical characteristic of enterprise level agent is determinism, that means we need customized tools and sub agents, as well as stable and deterministic planning and processes. Therefore, we hope that JManus can become an intelligent agent development platform, allowing users to build their own domain specific intelligent agent implementations in the most intuitive and low-cost way.
 
 <p align="center">
-    <img src="https://spring-ai-alibaba-github.oss-cn-beijing.aliyuncs.com/spring-ai-alibaba/imgs/jmanus.png?Expires=1758535811&OSSAccessKeyId=TMP.3Kphv3f5xfpWx7VacGXrFroG3Z8n948opA6HimqRPo8QdY2RgrXU8LpBwNf1zP4QxrFGN1oARr26ektDfDSxdXkgFWTNTB&Signature=XoX1yP5gsFTea3LMPH2k%2FcAJuPM%3D" alt="jmanus" style="max-width: 749px; height: 467px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" /> 
+    <img src="./docs/imgs/jmanus.png" alt="jmanus" style="max-width: 749px; height: 467px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" />
 </p>
 
 ### DeepResearch
@@ -114,7 +114,7 @@ JManus is not just a Spring AI Alibaba version Manus replica, it's also designed
 Spring AI Alibaba DeepResearch is a deep research agent developed based on the Spring AI Alibaba Graph, which includes a complete front-end web UI (under development) and back-end implementation. DeepResearch can help users complete various deep research reports with the help of large models and a series of carefully designed tools such as Web Search, Crawling, Python script engine, etc.
 
 <p align="center">
-    <img src="https://spring-ai-alibaba-github.oss-cn-beijing.aliyuncs.com/spring-ai-alibaba/imgs/deepresearch.png?Expires=1758535834&OSSAccessKeyId=TMP.3Kphv3f5xfpWx7VacGXrFroG3Z8n948opA6HimqRPo8QdY2RgrXU8LpBwNf1zP4QxrFGN1oARr26ektDfDSxdXkgFWTNTB&Signature=HrYiT0hAyzzaKNi%2F%2FE5xx%2BK9pTk%3D" alt="Deep Research" style="max-width: 770px; height: 850px">
+    <img src="./docs/imgs/deepresearch.png" alt="Deep Research" style="max-width: 770px; height: 850px">
 </p>
 
 ## Contribution Guide
@@ -127,7 +127,7 @@ Alibaba.
 * Dingtalk Group (钉钉群), search `94405033092` and join.
 * WeChat Group (微信公众号), scan the QR code below and follow us.
 
-<img src="https://spring-ai-alibaba-github.oss-cn-beijing.aliyuncs.com/spring-ai-alibaba/imgs/wechat-account.png?Expires=1758535850&OSSAccessKeyId=TMP.3Kphv3f5xfpWx7VacGXrFroG3Z8n948opA6HimqRPo8QdY2RgrXU8LpBwNf1zP4QxrFGN1oARr26ektDfDSxdXkgFWTNTB&Signature=heEk6ljx2iEkenuKBpwf0h20oVk%3D" alt="Deep Research" style="max-width: 200px; height: 200px;">
+<img src="./docs/imgs/wechat-account.png" alt="Deep Research" style="max-width: 200px; height: 200px;">
 
 ## Credits
 
