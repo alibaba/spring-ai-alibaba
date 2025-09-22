@@ -19,14 +19,9 @@ import com.alibaba.cloud.ai.entity.Agent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
+import com.alibaba.cloud.ai.mapper.AgentMapper;
 import org.springframework.stereotype.Service;
 
-import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -39,60 +34,25 @@ public class AgentService {
 	private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
 	@Autowired
-	private JdbcTemplate jdbcTemplate;
+	private AgentMapper agentMapper;
 
 	@Autowired
 	private AgentVectorService agentVectorService;
 
-	private static final String SELECT_ALL = """
-			SELECT * FROM agent ORDER BY create_time DESC
-			""";
-
-	private static final String SELECT_BY_ID = """
-			SELECT * FROM agent WHERE id = ?
-			""";
-
-	private static final String SELECT_BY_STATUS = """
-			SELECT * FROM agent WHERE status = ? ORDER BY create_time DESC
-			""";
-
-	private static final String SEARCH_BY_KEYWORD = """
-			SELECT * FROM agent
-			WHERE (name LIKE ? OR description LIKE ? OR tags LIKE ?)
-			ORDER BY create_time DESC
-			""";
-
-	private static final String INSERT = """
-			INSERT INTO agent (name, description, avatar, status, prompt, category, admin_id, tags, create_time, update_time, human_review_enabled)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-			""";
-
-	private static final String UPDATE = """
-			UPDATE agent SET name = ?, description = ?, avatar = ?, status = ?, prompt = ?,
-			category = ?, admin_id = ?, tags = ?, update_time = ?, human_review_enabled = ? WHERE id = ?
-			""";
-
-	private static final String DELETE = """
-			DELETE FROM agent WHERE id = ?
-			""";
-
 	public List<Agent> findAll() {
-		return jdbcTemplate.query(SELECT_ALL, new BeanPropertyRowMapper<>(Agent.class));
+		return agentMapper.findAll();
 	}
 
 	public Agent findById(Long id) {
-		List<Agent> results = jdbcTemplate.query(SELECT_BY_ID, new BeanPropertyRowMapper<>(Agent.class), id);
-		return results.isEmpty() ? null : results.get(0);
+		return agentMapper.findById(id);
 	}
 
 	public List<Agent> findByStatus(String status) {
-		return jdbcTemplate.query(SELECT_BY_STATUS, new BeanPropertyRowMapper<>(Agent.class), status);
+		return agentMapper.findByStatus(status);
 	}
 
 	public List<Agent> search(String keyword) {
-		String searchPattern = "%" + keyword + "%";
-		return jdbcTemplate.query(SEARCH_BY_KEYWORD, new BeanPropertyRowMapper<>(Agent.class), searchPattern,
-				searchPattern, searchPattern);
+		return agentMapper.searchByKeyword(keyword);
 	}
 
 	public Agent save(Agent agent) {
@@ -107,27 +67,7 @@ public class AgentService {
 				agent.setHumanReviewEnabled(0);
 			}
 
-			KeyHolder keyHolder = new GeneratedKeyHolder();
-			jdbcTemplate.update(connection -> {
-				PreparedStatement ps = connection.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS);
-				ps.setString(1, agent.getName());
-				ps.setString(2, agent.getDescription());
-				ps.setString(3, agent.getAvatar());
-				ps.setString(4, agent.getStatus());
-				ps.setString(5, agent.getPrompt());
-				ps.setString(6, agent.getCategory());
-				ps.setObject(7, agent.getAdminId());
-				ps.setString(8, agent.getTags());
-				ps.setObject(9, agent.getCreateTime());
-				ps.setObject(10, agent.getUpdateTime());
-				ps.setObject(11, agent.getHumanReviewEnabled());
-				return ps;
-			}, keyHolder);
-
-			Number key = keyHolder.getKey();
-			if (key != null) {
-				agent.setId(key.longValue());
-			}
+			agentMapper.insert(agent);
 		}
 		else {
 			// Update
@@ -136,9 +76,7 @@ public class AgentService {
 			if (agent.getHumanReviewEnabled() == null) {
 				agent.setHumanReviewEnabled(0);
 			}
-			jdbcTemplate.update(UPDATE, agent.getName(), agent.getDescription(), agent.getAvatar(), agent.getStatus(),
-					agent.getPrompt(), agent.getCategory(), agent.getAdminId(), agent.getTags(), agent.getUpdateTime(),
-					agent.getHumanReviewEnabled(), agent.getId());
+			agentMapper.updateById(agent);
 		}
 
 		return agent;
@@ -147,7 +85,7 @@ public class AgentService {
 	public void deleteById(Long id) {
 		try {
 			// Delete agent record from database
-			jdbcTemplate.update(DELETE, id);
+			agentMapper.deleteById(id);
 
 			// Also clean up the agent's vector data
 			if (agentVectorService != null) {

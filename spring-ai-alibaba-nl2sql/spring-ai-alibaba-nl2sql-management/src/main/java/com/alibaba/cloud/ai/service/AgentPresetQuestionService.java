@@ -17,107 +17,80 @@
 package com.alibaba.cloud.ai.service;
 
 import com.alibaba.cloud.ai.entity.AgentPresetQuestion;
+import com.alibaba.cloud.ai.mapper.AgentPresetQuestionMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
 
-import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.util.List;
 
+/**
+ * AgentPresetQuestion Service Class
+ */
 @Service
 public class AgentPresetQuestionService {
 
-	@Autowired
-	private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private AgentPresetQuestionMapper agentPresetQuestionMapper;
 
-	private static final String SELECT_BY_AGENT_ID = """
-			SELECT * FROM agent_preset_question
-			WHERE agent_id = ? AND is_active = 1
-			ORDER BY sort_order ASC, id ASC
-			""";
+    /**
+     * Get the list of preset questions by agent ID (only active ones, ordered by sort_order and id)
+     */
+    public List<AgentPresetQuestion> findByAgentId(Long agentId) {
+        return agentPresetQuestionMapper.selectByAgentId(agentId);
+    }
 
-	private static final String INSERT = """
-			INSERT INTO agent_preset_question (agent_id, question, sort_order, is_active, create_time, update_time)
-			VALUES (?, ?, ?, ?, NOW(), NOW())
-			""";
+    /**
+     * Create a new preset question
+     */
+    public AgentPresetQuestion create(AgentPresetQuestion question) {
+        // Ensure default values
+        if (question.getSortOrder() == null) {
+            question.setSortOrder(0);
+        }
+        if (question.getIsActive() == null) {
+            question.setIsActive(true);
+        }
 
-	private static final String UPDATE = """
-			UPDATE agent_preset_question
-			SET question = ?, sort_order = ?, is_active = ?, update_time = NOW()
-			WHERE id = ?
-			""";
+        agentPresetQuestionMapper.insert(question);
+        return question; // ID will be auto-filled by MyBatis
+    }
 
-	private static final String DELETE = """
-			DELETE FROM agent_preset_question WHERE id = ?
-			""";
+    /**
+     * Update an existing preset question
+     */
+    public void update(Long id, AgentPresetQuestion question) {
+        question.setId(id); // Ensure the ID is set
+        agentPresetQuestionMapper.update(question);
+    }
 
-	private static final String DELETE_BY_AGENT_ID = """
-			DELETE FROM agent_preset_question WHERE agent_id = ?
-			""";
+    /**
+     * Delete a preset question by ID
+     */
+    public void deleteById(Long id) {
+        agentPresetQuestionMapper.deleteById(id);
+    }
 
-	/**
-	 * Get preset question list by agent ID
-	 */
-	public List<AgentPresetQuestion> findByAgentId(Long agentId) {
-		return jdbcTemplate.query(SELECT_BY_AGENT_ID, new BeanPropertyRowMapper<>(AgentPresetQuestion.class), agentId);
-	}
+    /**
+     * Delete all preset questions for a given agent
+     */
+    public void deleteByAgentId(Long agentId) {
+        agentPresetQuestionMapper.deleteByAgentId(agentId);
+    }
 
-	/**
-	 * Create preset question
-	 */
-	public AgentPresetQuestion create(AgentPresetQuestion question) {
-		KeyHolder keyHolder = new GeneratedKeyHolder();
-		jdbcTemplate.update(connection -> {
-			PreparedStatement ps = connection.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS);
-			ps.setLong(1, question.getAgentId());
-			ps.setString(2, question.getQuestion());
-			ps.setInt(3, question.getSortOrder() != null ? question.getSortOrder() : 0);
-			ps.setBoolean(4, question.getIsActive() != null ? question.getIsActive() : true);
-			return ps;
-		}, keyHolder);
-		question.setId(keyHolder.getKey().longValue());
-		return question;
-	}
+    /**
+     * Batch save preset questions: delete all existing ones for the agent, then insert the new list
+     */
+    public void batchSave(Long agentId, List<AgentPresetQuestion> questions) {
+        // Step 1: Delete all existing preset questions for the agent
+        deleteByAgentId(agentId);
 
-	/**
-	 * Update preset question
-	 */
-	public void update(Long id, AgentPresetQuestion question) {
-		jdbcTemplate.update(UPDATE, question.getQuestion(), question.getSortOrder(), question.getIsActive(), id);
-	}
-
-	/**
-	 * Delete preset question
-	 */
-	public void deleteById(Long id) {
-		jdbcTemplate.update(DELETE, id);
-	}
-
-	/**
-	 * Delete all preset questions of agent
-	 */
-	public void deleteByAgentId(Long agentId) {
-		jdbcTemplate.update(DELETE_BY_AGENT_ID, agentId);
-	}
-
-	/**
-	 * Batch save preset questions (delete first then insert)
-	 */
-	public void batchSave(Long agentId, List<AgentPresetQuestion> questions) {
-		// First delete all preset questions of the agent
-		deleteByAgentId(agentId);
-		// Batch insert new preset questions
-		for (int i = 0; i < questions.size(); i++) {
-			AgentPresetQuestion question = questions.get(i);
-			question.setAgentId(agentId);
-			question.setSortOrder(i);
-			question.setIsActive(true);
-			create(question);
-		}
-	}
-
+        // Step 2: Insert new questions with proper order and active status
+        for (int i = 0; i < questions.size(); i++) {
+            AgentPresetQuestion question = questions.get(i);
+            question.setAgentId(agentId);
+            question.setSortOrder(i);
+            question.setIsActive(true);
+            create(question); // Reuses create() which sets defaults and inserts
+        }
+    }
 }
