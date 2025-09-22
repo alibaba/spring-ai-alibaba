@@ -70,7 +70,7 @@ public class NacosMcpRouterAutoConfiguration {
 	@ConditionalOnMissingBean
 	public EmbeddingModel embeddingModel() {
 		if (apiKey == null || apiKey.isEmpty() || "default_api_key".equals(apiKey)) {
-			throw new IllegalArgumentException("Environment variable AI_DASHSCOPE_API_KEY is not set.");
+			throw new IllegalArgumentException("Environment variable DASHSCOPE_API_KEY is not set.");
 		}
 		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
 

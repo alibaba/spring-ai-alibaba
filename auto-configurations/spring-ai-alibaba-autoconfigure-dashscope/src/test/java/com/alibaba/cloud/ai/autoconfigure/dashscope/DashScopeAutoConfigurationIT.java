@@ -49,13 +49,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
 
-@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "DASHSCOPE_API_KEY", matches = ".*")
 public class DashScopeAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(DashScopeAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("AI_DASHSCOPE_API_KEY"));
+		.withPropertyValues("spring.ai.dashscope.api-key=" + System.getenv("DASHSCOPE_API_KEY"));
 
 	@Test
 	void chatCall() {

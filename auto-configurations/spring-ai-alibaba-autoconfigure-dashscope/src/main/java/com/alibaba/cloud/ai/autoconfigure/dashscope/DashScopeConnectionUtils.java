@@ -54,8 +54,8 @@ public final class DashScopeConnectionUtils {
 
 		// Get apikey from system env.
 		if (Objects.isNull(apiKey)) {
-			if (Objects.nonNull(System.getenv(DashScopeApiConstants.AI_DASHSCOPE_API_KEY))) {
-				apiKey = System.getenv(DashScopeApiConstants.AI_DASHSCOPE_API_KEY);
+			if (Objects.nonNull(System.getenv(DashScopeApiConstants.DASHSCOPE_API_KEY))) {
+				apiKey = System.getenv(DashScopeApiConstants.DASHSCOPE_API_KEY);
 			}
 		}
 
