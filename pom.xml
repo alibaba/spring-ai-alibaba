@@ -53,114 +53,12 @@
         <module>spring-ai-alibaba-mcp</module>
         <module>spring-ai-alibaba-a2a</module>
         <module>spring-ai-alibaba-core</module>
-        <module>spring-ai-alibaba-prompt</module>
         <module>spring-ai-alibaba-graph-core</module>
-        <module>spring-ai-alibaba-nl2sql</module>
         <module>spring-ai-alibaba-studio</module>
-        <module>spring-ai-alibaba-jmanus</module>
-        <module>spring-ai-alibaba-deepresearch</module>
         <module>spring-ai-alibaba-agent-nacos</module>
 
         <!-- Spring AI Alibaba Extension Modules -->
         <module>spring-ai-alibaba-observation-extension</module>
-
-        <!-- Spring AI Alibaba Tool Call Plugins -->
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-aliyunaisearch</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidusearch</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidutranslate</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-baidumap</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-bravesearch</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-dingtalk</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-sensitivefilter</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-amap</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-googlescholar</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-weather</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-wikipedia</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-larksuite</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-microsofttranslate</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-jinacrawler</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-firecrawl</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-regex</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-jsonprocessor</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-serpapi</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-githubtoolkit</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-sinanews</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-toutiaonews</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-yuque</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-kuaidi100</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-googletranslate</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-googletrends</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-alitranslate</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-youdaotranslate</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-duckduckgo</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tavilysearch</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-searches</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-worldbankdata</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tencentmap</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tushare</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-ollamasearchmodel</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-minio</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-memcached</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-metaso</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-openalex</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-opentripmap</module>
-        <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-tripadvisor</module>
-
-        <!-- Spring AI Alibaba Document Readers -->
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-arxiv</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-github</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-poi</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-tencent-cos</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-larksuite</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-yuque</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-obsidian</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-onenote</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-notion</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-chatgpt-data</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-gpt-repo</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-gitlab</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-gitbook</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-huggingface-fs</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-email</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mbox</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mongodb</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-mysql</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-sqlite</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-bilibili</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-youtube</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-elasticsearch</module>
-        <module>community/document-readers/spring-ai-alibaba-starter-document-reader-archive</module>
-
-        <!-- Spring AI Alibaba Document Parsers -->
-        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-apache-pdfbox</module>
-        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-markdown</module>
-        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-tika</module>
-        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-pdf-tables</module>
-        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-bshtml</module>
-        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-bibtex</module>
-        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-multi-modality</module>
-        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-directory</module>
-        <module>community/document-parsers/spring-ai-alibaba-starter-document-parser-yaml</module>
-
-        <!-- Spring AI Alibaba Vector Stores -->
-        <module>community/vector-stores/spring-ai-alibaba-starter-tair-store</module>
-        <module>community/vector-stores/spring-ai-alibaba-starter-analyticdb-store</module>
-        <module>community/vector-stores/spring-ai-alibaba-starter-opensearch-store</module>
-        <module>community/vector-stores/spring-ai-alibaba-starter-oceanbase-store</module>
-        <module>community/vector-stores/spring-ai-alibaba-starter-tablestore-store</module>
-
-        <!-- Spring AI Alibaba Chat Memory Support -->
-        <module>community/memories/spring-ai-alibaba-starter-memory-redis</module>
-        <module>community/memories/spring-ai-alibaba-starter-memory-jdbc</module>
-        <module>community/memories/spring-ai-alibaba-starter-memory-elasticsearch</module>
-        <module>community/memories/spring-ai-alibaba-starter-memory-mongodb</module>
-        <module>community/memories/spring-ai-alibaba-starter-memory-tablestore</module>
-        <module>community/memories/spring-ai-alibaba-starter-memory-memcached</module>
-        <module>community/memories/spring-ai-alibaba-starter-memory-mem0</module>
-
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
         <!-- Spring AI Alibaba ARMS Extension -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-arms-observation</module>
@@ -174,9 +72,6 @@
 
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-router</module>
 
-        <!-- Spring AI Alibaba Nacos Prompt Template -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-nacos-prompt</module>
-
         <!-- Spring AI Alibaba Graph Observation -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-graph-observation</module>
 
@@ -186,18 +81,12 @@
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-registry</module>
 
         <!-- Spring AI Alibaba Spring Boot Starters -->
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nacos-prompt</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-registry</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-router</module>
-
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-nl2sql</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory-long</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory-long</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-client</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-registry</module>
 

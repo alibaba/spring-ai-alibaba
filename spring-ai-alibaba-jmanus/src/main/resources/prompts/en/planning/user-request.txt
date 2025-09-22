@@ -1,2 +1,0 @@
-The current user request is:
-{userRequest}
