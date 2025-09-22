@@ -192,11 +192,15 @@ CREATE TABLE IF NOT EXISTS user_prompt_config (
   system_prompt TEXT NOT NULL COMMENT '用户自定义系统Prompt内容',
   enabled TINYINT DEFAULT 1 COMMENT '是否启用该配置：0-禁用，1-启用',
   description TEXT COMMENT '配置描述',
+  priority INT DEFAULT 0 COMMENT '配置优先级，数字越大优先级越高',
+  display_order INT DEFAULT 0 COMMENT '配置显示顺序，数字越小越靠前',
   create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   creator VARCHAR(255) COMMENT '创建者',
   PRIMARY KEY (id),
   INDEX idx_prompt_type (prompt_type),
   INDEX idx_enabled (enabled),
-  INDEX idx_create_time (create_time)
+  INDEX idx_create_time (create_time),
+  INDEX idx_prompt_type_enabled_priority (prompt_type, enabled, priority DESC),
+  INDEX idx_display_order (display_order ASC)
 ) ENGINE = InnoDB COMMENT = '用户Prompt配置表';

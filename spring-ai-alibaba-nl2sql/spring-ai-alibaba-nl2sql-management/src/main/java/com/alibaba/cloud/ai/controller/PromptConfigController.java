@@ -53,27 +53,16 @@ public class PromptConfigController {
 	 */
 	@PostMapping("/save")
 	public ResponseEntity<Map<String, Object>> saveConfig(@RequestBody PromptConfigDTO configDTO) {
-		try {
-			logger.info("保存提示词优化配置请求：{}", configDTO);
+		logger.info("保存提示词优化配置请求：{}", configDTO);
 
-			UserPromptConfig savedConfig = promptConfigService.saveOrUpdateConfig(configDTO);
+		UserPromptConfig savedConfig = promptConfigService.saveOrUpdateConfig(configDTO);
 
-			Map<String, Object> response = new HashMap<>();
-			response.put("success", true);
-			response.put("message", "优化配置保存成功");
-			response.put("data", savedConfig);
+		Map<String, Object> response = new HashMap<>();
+		response.put("success", true);
+		response.put("message", "优化配置保存成功");
+		response.put("data", savedConfig);
 
-			return ResponseEntity.ok(response);
-		}
-		catch (Exception e) {
-			logger.error("保存提示词优化配置失败", e);
-
-			Map<String, Object> response = new HashMap<>();
-			response.put("success", false);
-			response.put("message", "优化配置保存失败：" + e.getMessage());
-
-			return ResponseEntity.badRequest().body(response);
-		}
+		return ResponseEntity.ok(response);
 	}
 
 	/**
@@ -83,30 +72,19 @@ public class PromptConfigController {
 	 */
 	@GetMapping("/{id}")
 	public ResponseEntity<Map<String, Object>> getConfig(@PathVariable(value = "id") String id) {
-		try {
-			UserPromptConfig config = promptConfigService.getConfigById(id);
+		UserPromptConfig config = promptConfigService.getConfigById(id);
 
-			Map<String, Object> response = new HashMap<>();
-			if (config != null) {
-				response.put("success", true);
-				response.put("data", config);
-			}
-			else {
-				response.put("success", false);
-				response.put("message", "配置不存在");
-			}
-
-			return ResponseEntity.ok(response);
+		Map<String, Object> response = new HashMap<>();
+		if (config != null) {
+			response.put("success", true);
+			response.put("data", config);
 		}
-		catch (Exception e) {
-			logger.error("获取配置失败", e);
-
-			Map<String, Object> response = new HashMap<>();
+		else {
 			response.put("success", false);
-			response.put("message", "获取配置失败：" + e.getMessage());
-
-			return ResponseEntity.badRequest().body(response);
+			response.put("message", "配置不存在");
 		}
+
+		return ResponseEntity.ok(response);
 	}
 
 	/**
@@ -115,25 +93,14 @@ public class PromptConfigController {
 	 */
 	@GetMapping("/list")
 	public ResponseEntity<Map<String, Object>> getAllConfigs() {
-		try {
-			List<UserPromptConfig> configs = promptConfigService.getAllConfigs();
+		List<UserPromptConfig> configs = promptConfigService.getAllConfigs();
 
-			Map<String, Object> response = new HashMap<>();
-			response.put("success", true);
-			response.put("data", configs);
-			response.put("total", configs.size());
+		Map<String, Object> response = new HashMap<>();
+		response.put("success", true);
+		response.put("data", configs);
+		response.put("total", configs.size());
 
-			return ResponseEntity.ok(response);
-		}
-		catch (Exception e) {
-			logger.error("获取配置列表失败", e);
-
-			Map<String, Object> response = new HashMap<>();
-			response.put("success", false);
-			response.put("message", "获取配置列表失败：" + e.getMessage());
-
-			return ResponseEntity.badRequest().body(response);
-		}
+		return ResponseEntity.ok(response);
 	}
 
 	/**
@@ -143,25 +110,14 @@ public class PromptConfigController {
 	 */
 	@GetMapping("/list-by-type/{promptType}")
 	public ResponseEntity<Map<String, Object>> getConfigsByType(@PathVariable(value = "promptType") String promptType) {
-		try {
-			List<UserPromptConfig> configs = promptConfigService.getConfigsByType(promptType);
+		List<UserPromptConfig> configs = promptConfigService.getConfigsByType(promptType);
 
-			Map<String, Object> response = new HashMap<>();
-			response.put("success", true);
-			response.put("data", configs);
-			response.put("total", configs.size());
+		Map<String, Object> response = new HashMap<>();
+		response.put("success", true);
+		response.put("data", configs);
+		response.put("total", configs.size());
 
-			return ResponseEntity.ok(response);
-		}
-		catch (Exception e) {
-			logger.error("根据类型获取配置列表失败", e);
-
-			Map<String, Object> response = new HashMap<>();
-			response.put("success", false);
-			response.put("message", "获取配置列表失败：" + e.getMessage());
-
-			return ResponseEntity.badRequest().body(response);
-		}
+		return ResponseEntity.ok(response);
 	}
 
 	/**
@@ -171,25 +127,14 @@ public class PromptConfigController {
 	 */
 	@GetMapping("/active/{promptType}")
 	public ResponseEntity<Map<String, Object>> getActiveConfig(@PathVariable(value = "promptType") String promptType) {
-		try {
-			UserPromptConfig config = promptConfigService.getActiveConfigByType(promptType);
+		UserPromptConfig config = promptConfigService.getActiveConfigByType(promptType);
 
-			Map<String, Object> response = new HashMap<>();
-			response.put("success", true);
-			response.put("data", config);
-			response.put("hasCustomConfig", config != null);
+		Map<String, Object> response = new HashMap<>();
+		response.put("success", true);
+		response.put("data", config);
+		response.put("hasCustomConfig", config != null);
 
-			return ResponseEntity.ok(response);
-		}
-		catch (Exception e) {
-			logger.error("获取启用配置失败", e);
-
-			Map<String, Object> response = new HashMap<>();
-			response.put("success", false);
-			response.put("message", "获取启用配置失败：" + e.getMessage());
-
-			return ResponseEntity.badRequest().body(response);
-		}
+		return ResponseEntity.ok(response);
 	}
 
 	/**
@@ -199,26 +144,15 @@ public class PromptConfigController {
 	 */
 	@GetMapping("/active-all/{promptType}")
 	public ResponseEntity<Map<String, Object>> getActiveConfigs(@PathVariable(value = "promptType") String promptType) {
-		try {
-			List<UserPromptConfig> configs = promptConfigService.getActiveConfigsByType(promptType);
+		List<UserPromptConfig> configs = promptConfigService.getActiveConfigsByType(promptType);
 
-			Map<String, Object> response = new HashMap<>();
-			response.put("success", true);
-			response.put("data", configs);
-			response.put("total", configs.size());
-			response.put("hasOptimizationConfigs", !configs.isEmpty());
+		Map<String, Object> response = new HashMap<>();
+		response.put("success", true);
+		response.put("data", configs);
+		response.put("total", configs.size());
+		response.put("hasOptimizationConfigs", !configs.isEmpty());
 
-			return ResponseEntity.ok(response);
-		}
-		catch (Exception e) {
-			logger.error("获取启用配置列表失败", e);
-
-			Map<String, Object> response = new HashMap<>();
-			response.put("success", false);
-			response.put("message", "获取启用配置列表失败：" + e.getMessage());
-
-			return ResponseEntity.badRequest().body(response);
-		}
+		return ResponseEntity.ok(response);
 	}
 
 	/**
@@ -228,30 +162,19 @@ public class PromptConfigController {
 	 */
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Map<String, Object>> deleteConfig(@PathVariable(value = "id") String id) {
-		try {
-			boolean deleted = promptConfigService.deleteConfig(id);
+		boolean deleted = promptConfigService.deleteConfig(id);
 
-			Map<String, Object> response = new HashMap<>();
-			if (deleted) {
-				response.put("success", true);
-				response.put("message", "配置删除成功");
-			}
-			else {
-				response.put("success", false);
-				response.put("message", "配置不存在或删除失败");
-			}
-
-			return ResponseEntity.ok(response);
+		Map<String, Object> response = new HashMap<>();
+		if (deleted) {
+			response.put("success", true);
+			response.put("message", "配置删除成功");
 		}
-		catch (Exception e) {
-			logger.error("删除配置失败", e);
-
-			Map<String, Object> response = new HashMap<>();
+		else {
 			response.put("success", false);
-			response.put("message", "删除配置失败：" + e.getMessage());
-
-			return ResponseEntity.badRequest().body(response);
+			response.put("message", "配置不存在或删除失败");
 		}
+
+		return ResponseEntity.ok(response);
 	}
 
 	/**
@@ -261,30 +184,19 @@ public class PromptConfigController {
 	 */
 	@PostMapping("/{id}/enable")
 	public ResponseEntity<Map<String, Object>> enableConfig(@PathVariable(value = "id") String id) {
-		try {
-			boolean enabled = promptConfigService.enableConfig(id);
+		boolean enabled = promptConfigService.enableConfig(id);
 
-			Map<String, Object> response = new HashMap<>();
-			if (enabled) {
-				response.put("success", true);
-				response.put("message", "配置启用成功");
-			}
-			else {
-				response.put("success", false);
-				response.put("message", "配置不存在或启用失败");
-			}
-
-			return ResponseEntity.ok(response);
+		Map<String, Object> response = new HashMap<>();
+		if (enabled) {
+			response.put("success", true);
+			response.put("message", "配置启用成功");
 		}
-		catch (Exception e) {
-			logger.error("启用配置失败", e);
-
-			Map<String, Object> response = new HashMap<>();
+		else {
 			response.put("success", false);
-			response.put("message", "启用配置失败：" + e.getMessage());
-
-			return ResponseEntity.badRequest().body(response);
+			response.put("message", "配置不存在或启用失败");
 		}
+
+		return ResponseEntity.ok(response);
 	}
 
 	/**
@@ -294,30 +206,19 @@ public class PromptConfigController {
 	 */
 	@PostMapping("/{id}/disable")
 	public ResponseEntity<Map<String, Object>> disableConfig(@PathVariable(value = "id") String id) {
-		try {
-			boolean disabled = promptConfigService.disableConfig(id);
+		boolean disabled = promptConfigService.disableConfig(id);
 
-			Map<String, Object> response = new HashMap<>();
-			if (disabled) {
-				response.put("success", true);
-				response.put("message", "配置禁用成功");
-			}
-			else {
-				response.put("success", false);
-				response.put("message", "配置不存在或禁用失败");
-			}
-
-			return ResponseEntity.ok(response);
+		Map<String, Object> response = new HashMap<>();
+		if (disabled) {
+			response.put("success", true);
+			response.put("message", "配置禁用成功");
 		}
-		catch (Exception e) {
-			logger.error("禁用配置失败", e);
-
-			Map<String, Object> response = new HashMap<>();
+		else {
 			response.put("success", false);
-			response.put("message", "禁用配置失败：" + e.getMessage());
-
-			return ResponseEntity.badRequest().body(response);
+			response.put("message", "配置不存在或禁用失败");
 		}
+
+		return ResponseEntity.ok(response);
 	}
 
 	/**
@@ -326,25 +227,108 @@ public class PromptConfigController {
 	 */
 	@GetMapping("/types")
 	public ResponseEntity<Map<String, Object>> getSupportedPromptTypes() {
-		try {
-			// Supported prompt types
-			String[] types = { "report-generator", "planner", "sql-generator", "python-generator", "rewrite" };
+		// Supported prompt types
+		String[] types = { "report-generator", "planner", "sql-generator", "python-generator", "rewrite" };
 
-			Map<String, Object> response = new HashMap<>();
+		Map<String, Object> response = new HashMap<>();
+		response.put("success", true);
+		response.put("data", types);
+
+		return ResponseEntity.ok(response);
+	}
+
+	/**
+	 * 批量启用配置
+	 * @param ids 配置ID列表
+	 * @return 操作结果
+	 */
+	@PostMapping("/batch-enable")
+	public ResponseEntity<Map<String, Object>> batchEnableConfigs(@RequestBody List<String> ids) {
+		boolean success = promptConfigService.enableConfigs(ids);
+
+		Map<String, Object> response = new HashMap<>();
+		if (success) {
 			response.put("success", true);
-			response.put("data", types);
-
-			return ResponseEntity.ok(response);
+			response.put("message", "批量启用配置成功");
 		}
-		catch (Exception e) {
-			logger.error("获取支持的提示词类型失败", e);
-
-			Map<String, Object> response = new HashMap<>();
+		else {
 			response.put("success", false);
-			response.put("message", "获取支持的提示词类型失败：" + e.getMessage());
-
-			return ResponseEntity.badRequest().body(response);
+			response.put("message", "批量启用配置失败");
 		}
+
+		return ResponseEntity.ok(response);
+	}
+
+	/**
+	 * 批量禁用配置
+	 * @param ids 配置ID列表
+	 * @return 操作结果
+	 */
+	@PostMapping("/batch-disable")
+	public ResponseEntity<Map<String, Object>> batchDisableConfigs(@RequestBody List<String> ids) {
+		boolean success = promptConfigService.disableConfigs(ids);
+
+		Map<String, Object> response = new HashMap<>();
+		if (success) {
+			response.put("success", true);
+			response.put("message", "批量禁用配置成功");
+		}
+		else {
+			response.put("success", false);
+			response.put("message", "批量禁用配置失败");
+		}
+
+		return ResponseEntity.ok(response);
+	}
+
+	/**
+	 * 更新配置优先级
+	 * @param id 配置ID
+	 * @param requestBody 包含优先级的请求体
+	 * @return 操作结果
+	 */
+	@PostMapping("/{id}/priority")
+	public ResponseEntity<Map<String, Object>> updatePriority(@PathVariable(value = "id") String id, 
+			@RequestBody Map<String, Object> requestBody) {
+		Integer priority = (Integer) requestBody.get("priority");
+		boolean success = promptConfigService.updatePriority(id, priority);
+
+		Map<String, Object> response = new HashMap<>();
+		if (success) {
+			response.put("success", true);
+			response.put("message", "更新优先级成功");
+		}
+		else {
+			response.put("success", false);
+			response.put("message", "更新优先级失败");
+		}
+
+		return ResponseEntity.ok(response);
+	}
+
+	/**
+	 * 更新配置显示顺序
+	 * @param id 配置ID
+	 * @param requestBody 包含显示顺序的请求体
+	 * @return 操作结果
+	 */
+	@PostMapping("/{id}/display-order")
+	public ResponseEntity<Map<String, Object>> updateDisplayOrder(@PathVariable(value = "id") String id, 
+			@RequestBody Map<String, Object> requestBody) {
+		Integer displayOrder = (Integer) requestBody.get("displayOrder");
+		boolean success = promptConfigService.updateDisplayOrder(id, displayOrder);
+
+		Map<String, Object> response = new HashMap<>();
+		if (success) {
+			response.put("success", true);
+			response.put("message", "更新显示顺序成功");
+		}
+		else {
+			response.put("success", false);
+			response.put("message", "更新显示顺序失败");
+		}
+
+		return ResponseEntity.ok(response);
 	}
 
 }

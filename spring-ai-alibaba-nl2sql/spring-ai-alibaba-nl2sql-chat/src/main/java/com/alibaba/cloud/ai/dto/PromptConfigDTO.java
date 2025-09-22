@@ -28,10 +28,12 @@ public record PromptConfigDTO(String id, // Configuration ID (required for updat
 		String optimizationPrompt, // User-defined system prompt content
 		Boolean enabled, // Whether to enable this configuration
 		String description, // Configuration description
-		String creator // Creator
+		String creator, // Creator
+		Integer priority, // Configuration priority
+		Integer displayOrder // Configuration display order
 ) {
 	public PromptConfigDTO(String promptType, String optimizationPrompt) {
-		this(null, null, promptType, optimizationPrompt, true, null, null);
+		this(null, null, promptType, optimizationPrompt, true, null, null, 0, 0);
 	}
 
 	@Override
@@ -74,5 +76,15 @@ public record PromptConfigDTO(String id, // Configuration ID (required for updat
 	@Override
 	public String description() {
 		return description;
+	}
+
+	@Override
+	public Integer priority() {
+		return priority;
+	}
+
+	@Override
+	public Integer displayOrder() {
+		return displayOrder;
 	}
 }
