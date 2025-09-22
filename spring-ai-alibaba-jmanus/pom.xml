@@ -4,19 +4,27 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.alibaba.cloud.ai</groupId>
-    <name>Spring AI Alibaba JManus</name>
-    <artifactId>spring-ai-alibaba-jmanus</artifactId>
+    <groupId>com.jmanus</groupId>
+    <name>JManus - AI Agent Management System</name>
+    <artifactId>jmanus</artifactId>
     <version>4.0.2-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
-    <!-- The required dependencies are maintained separately by the JManus module -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.6</version>
+        <relativePath/>
+    </parent>
+
+    <description>JManus - AI Agent Management System built on Spring AI Alibaba</description>
     <properties>
         <java.version>17</java.version>
         <jsoup-version>1.18.1</jsoup-version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring-ai.version>1.0.1</spring-ai.version>
-        <spring-boot.version>3.4.8</spring-boot.version>
+        <spring-boot.version>3.5.6</spring-boot.version>
         <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
@@ -42,23 +50,11 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-bom</artifactId>
                 <version>${spring-ai.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-starter</artifactId>
-                <version>${spring-ai-alibaba.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -83,6 +79,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
 
         <!-- Spring Native support -->
         <dependency>
