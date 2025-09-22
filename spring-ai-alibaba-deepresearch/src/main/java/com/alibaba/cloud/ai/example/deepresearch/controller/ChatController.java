@@ -156,8 +156,8 @@ public class ChatController {
 			throws GraphRunnerException {
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(humanFeedback.threadId()).build();
 		Map<String, Object> objectMap = new HashMap<>();
-		objectMap.put("feed_back", humanFeedback.feedBack());
-		objectMap.put("feed_back_content", humanFeedback.feedBackContent());
+		objectMap.put("feedback", humanFeedback.feedback());
+		objectMap.put("feedback_content", humanFeedback.feedbackContent());
 
 		// Create a unicast sink to emit ServerSentEvents
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();

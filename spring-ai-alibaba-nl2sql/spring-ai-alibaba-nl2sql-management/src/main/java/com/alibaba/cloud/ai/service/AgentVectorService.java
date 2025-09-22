@@ -275,7 +275,7 @@ public class AgentVectorService {
 	private DatasourceService datasourceService;
 
 	@Autowired
-	@Qualifier("mysqlAccessor")
+	@Qualifier("dbAccessor")
 	private com.alibaba.cloud.ai.connector.accessor.Accessor dbAccessor;
 
 	/**
@@ -345,10 +345,11 @@ public class AgentVectorService {
 			}
 
 			// Check data source type, currently only supports MySQL
-			if (!"mysql".equalsIgnoreCase(datasource.getType())) {
-				log.warn("Unsupported datasource type: {}, only MySQL is supported currently", datasource.getType());
-				return new ArrayList<>();
-			}
+			// if (!"mysql".equalsIgnoreCase(datasource.getType())) {
+			// log.warn("Unsupported datasource type: {}, only MySQL is supported
+			// currently", datasource.getType());
+			// return new ArrayList<>();
+			// }
 
 			// Create database configuration
 			DbConfig dbConfig = createDbConfigFromDatasource(datasource);
@@ -392,6 +393,10 @@ public class AgentVectorService {
 		if ("mysql".equalsIgnoreCase(datasource.getType())) {
 			dbConfig.setConnectionType("jdbc");
 			dbConfig.setDialectType("mysql");
+		}
+		else if ("h2".equalsIgnoreCase(datasource.getType())) {
+			dbConfig.setConnectionType("jdbc");
+			dbConfig.setDialectType("h2");
 		}
 		// Support for other database types can be extended here
 		// else if ("postgresql".equalsIgnoreCase(datasource.getType())) {

@@ -28,11 +28,7 @@ import lombok.Data;
 @Data
 public class NacosOptions {
 
-	protected boolean modelSpecified;
-
 	protected boolean modelConfigEncrypted;
-
-	protected boolean promptSpecified;
 
 	String promptKey;
 

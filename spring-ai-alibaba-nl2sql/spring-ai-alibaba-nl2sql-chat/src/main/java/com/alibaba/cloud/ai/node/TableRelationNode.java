@@ -16,13 +16,17 @@
 
 package com.alibaba.cloud.ai.node;
 
+import com.alibaba.cloud.ai.connector.config.DbConfig;
 import com.alibaba.cloud.ai.constant.Constant;
 import com.alibaba.cloud.ai.dto.BusinessKnowledgeDTO;
 import com.alibaba.cloud.ai.dto.SemanticModelDTO;
-import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
+import com.alibaba.cloud.ai.entity.AgentDatasource;
+import com.alibaba.cloud.ai.entity.Datasource;
 import com.alibaba.cloud.ai.enums.StreamResponseType;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.dto.schema.SchemaDTO;
+import com.alibaba.cloud.ai.service.DatasourceService;
 import com.alibaba.cloud.ai.service.base.BaseNl2SqlService;
 import com.alibaba.cloud.ai.service.base.BaseSchemaService;
 import com.alibaba.cloud.ai.service.business.BusinessKnowledgeRecallService;
@@ -66,13 +70,16 @@ public class TableRelationNode implements NodeAction {
 
 	private final SemanticModelRecallService semanticModelRecallService;
 
+	private final DatasourceService datasourceService;
+
 	public TableRelationNode(BaseSchemaService baseSchemaService, BaseNl2SqlService baseNl2SqlService,
 			BusinessKnowledgeRecallService businessKnowledgeRecallService,
-			SemanticModelRecallService semanticModelRecallService) {
+			SemanticModelRecallService semanticModelRecallService, DatasourceService datasourceService) {
 		this.baseSchemaService = baseSchemaService;
 		this.baseNl2SqlService = baseNl2SqlService;
 		this.businessKnowledgeRecallService = businessKnowledgeRecallService;
 		this.semanticModelRecallService = semanticModelRecallService;
+		this.datasourceService = datasourceService;
 	}
 
 	@Override
@@ -164,20 +171,103 @@ public class TableRelationNode implements NodeAction {
 	}
 
 	/**
+	 * Dynamically get the data source configuration for an agent
+	 * @param state The state object containing the agent ID
+	 * @return The database configuration corresponding to the agent, or null if not found
+	 */
+	private DbConfig getAgentDbConfig(OverAllState state) {
+		try {
+			// Get the agent ID from the state
+			String agentIdStr = StateUtils.getStringValue(state, Constant.AGENT_ID, null);
+			if (agentIdStr == null || agentIdStr.trim().isEmpty()) {
+				logger.debug("AgentId is null or empty, will use default dbConfig");
+				return null;
+			}
+
+			Integer agentId = Integer.valueOf(agentIdStr);
+			logger.debug("Getting datasource config for agent: {}", agentId);
+
+			// Get the enabled data source for the agent
+			List<AgentDatasource> agentDatasources = datasourceService.getAgentDatasources(agentId);
+			if (agentDatasources.isEmpty()) {
+				// TODO 调试AgentID不一致，暂时手动处理
+				agentDatasources = datasourceService.getAgentDatasources(agentId - 999999);
+			}
+
+			AgentDatasource activeDatasource = agentDatasources.stream()
+				.filter(ad -> ad.getIsActive() == 1)
+				.findFirst()
+				.orElse(null);
+
+			if (activeDatasource == null) {
+				logger.debug("Agent {} has no active datasource, will use default dbConfig", agentId);
+				return null;
+			}
+
+			// Convert to DbConfig
+			DbConfig dbConfig = createDbConfigFromDatasource(activeDatasource.getDatasource());
+			logger.debug("Successfully created DbConfig for agent {}: url={}, schema={}, type={}", agentId,
+					dbConfig.getUrl(), dbConfig.getSchema(), dbConfig.getDialectType());
+
+			return dbConfig;
+		}
+		catch (Exception e) {
+			logger.warn("Failed to get agent datasource config, will use default dbConfig: {}", e.getMessage());
+			return null;
+		}
+	}
+
+	/**
+	 * Create database configuration from data source entity
+	 * @param datasource The data source entity
+	 * @return The database configuration object
+	 */
+	private DbConfig createDbConfigFromDatasource(Datasource datasource) {
+		DbConfig dbConfig = new DbConfig();
+
+		// Set basic connection information
+		dbConfig.setUrl(datasource.getConnectionUrl());
+		dbConfig.setUsername(datasource.getUsername());
+		dbConfig.setPassword(datasource.getPassword());
+
+		// Set database type
+		if ("mysql".equalsIgnoreCase(datasource.getType())) {
+			dbConfig.setConnectionType("jdbc");
+			dbConfig.setDialectType("mysql");
+		}
+		else if ("postgresql".equalsIgnoreCase(datasource.getType())) {
+			dbConfig.setConnectionType("jdbc");
+			dbConfig.setDialectType("postgresql");
+		}
+		else {
+			throw new RuntimeException("不支持的数据库类型: " + datasource.getType());
+		}
+
+		// Set Schema to the database name of the data source
+		dbConfig.setSchema(datasource.getDatabaseName());
+
+		return dbConfig;
+	}
+
+	/**
 	 * Processes schema selection based on input, evidence, and optional advice.
 	 */
 	private SchemaDTO processSchemaSelection(SchemaDTO schemaDTO, String input, List<String> evidenceList,
 			OverAllState state) {
 		String schemaAdvice = StateUtils.getStringValue(state, SQL_GENERATE_SCHEMA_MISSING_ADVICE, null);
 
+		// 动态获取Agent对应的数据库配置
+		DbConfig agentDbConfig = getAgentDbConfig(state);
+		logger.debug("Using agent-specific dbConfig: {}", agentDbConfig != null ? agentDbConfig.getUrl() : "default");
+
 		if (schemaAdvice != null) {
 			logger.info("[{}] Processing with schema supplement advice: {}", this.getClass().getSimpleName(),
 					schemaAdvice);
-			return baseNl2SqlService.fineSelect(schemaDTO, input, evidenceList, schemaAdvice);
+			return baseNl2SqlService.fineSelect(schemaDTO, input, evidenceList, schemaAdvice, agentDbConfig);
 		}
 		else {
 			logger.info("[{}] Executing regular schema selection", this.getClass().getSimpleName());
-			return baseNl2SqlService.fineSelect(schemaDTO, input, evidenceList);
+			return baseNl2SqlService.fineSelect(schemaDTO, input, evidenceList, null, agentDbConfig);
 		}
 	}
 

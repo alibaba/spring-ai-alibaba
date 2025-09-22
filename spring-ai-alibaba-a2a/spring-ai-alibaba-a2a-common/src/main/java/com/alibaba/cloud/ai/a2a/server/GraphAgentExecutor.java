@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -118,9 +119,35 @@ public class GraphAgentExecutor implements AgentExecutor {
 		return (boolean) params.metadata().get(STREAMING_METADATA_KEY);
 	}
 
+	private RunnableConfig getRunnableConfig(RequestContext context) {
+		RunnableConfig.Builder builder = RunnableConfig.builder();
+
+		// Get metadata from context
+		MessageSendParams params = context.getParams();
+		if (params != null && params.metadata() != null) {
+			Map<String, Object> metadata = params.metadata();
+
+			// Check if threadId exists in metadata and add it to RunnableConfig
+			if (metadata.containsKey("threadId")) {
+				Object threadIdObj = metadata.get("threadId");
+				if (threadIdObj instanceof String) {
+					builder.threadId((String) threadIdObj);
+				}
+			}
+
+			// Add all metadata to RunnableConfig
+			for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+				builder.addMetadata(entry.getKey(), entry.getValue());
+			}
+		}
+
+		return builder.build();
+	}
+
 	private void executeStreamTask(Map<String, Object> input, RequestContext context, EventQueue eventQueue)
 			throws GraphStateException, GraphRunnerException {
-		Flux<NodeOutput> generator = executeAgent.stream(input);
+		RunnableConfig runnableConfig = getRunnableConfig(context);
+		Flux<NodeOutput> generator = executeAgent.stream(input, runnableConfig);
 		Task task = context.getTask();
 		if (task == null) {
 			task = newTask(context.getMessage());
@@ -137,7 +164,8 @@ public class GraphAgentExecutor implements AgentExecutor {
 
 	private void executeForNonStreamTask(Map<String, Object> input, RequestContext context, EventQueue eventQueue)
 			throws GraphStateException, GraphRunnerException {
-		var result = executeAgent.invoke(input);
+		RunnableConfig runnableConfig = getRunnableConfig(context);
+		var result = executeAgent.invoke(input, runnableConfig);
 		String outputText = result.get().data().containsKey(executeAgent.outputKey())
 				? String.valueOf(result.get().data().get(executeAgent.outputKey())) : "No output key in result.";
 

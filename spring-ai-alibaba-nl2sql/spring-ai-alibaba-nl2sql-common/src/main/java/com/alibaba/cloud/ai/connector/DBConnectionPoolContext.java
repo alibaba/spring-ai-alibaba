@@ -53,6 +53,7 @@ public class DBConnectionPoolContext {
 			case "mysql", "mysqljdbcconnectionpool" -> poolMap.get("mysqlJdbcConnectionPool");
 			case "postgresql", "postgres", "postgresqljdbcconnectionpool" ->
 				poolMap.get("postgreSqlJdbcConnectionPool");
+			case "h2", "h2jdbcconnectionpool" -> poolMap.get("h2JdbcConnectionPool");
 			default -> null;
 		};
 	}

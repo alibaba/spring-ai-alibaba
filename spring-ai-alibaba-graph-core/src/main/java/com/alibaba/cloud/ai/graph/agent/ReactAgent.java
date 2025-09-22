@@ -225,6 +225,11 @@ public class ReactAgent extends BaseAgent {
 		return instruction;
 	}
 
+	public void setInstruction(String instruction) {
+		this.instruction = instruction;
+		llmNode.setSystemPrompt(instruction);
+	}
+
 	/**
 	 * Gets the agent's unique name.
 	 * @return the unique name of the agent.

@@ -21,7 +21,9 @@ public enum DatabaseDialectEnum {
 
 	SQLite("SQLite"),
 
-	POSTGRESQL("PostgreSQL");
+	POSTGRESQL("PostgreSQL"),
+
+	H2("H2");
 
 	public String code;
 

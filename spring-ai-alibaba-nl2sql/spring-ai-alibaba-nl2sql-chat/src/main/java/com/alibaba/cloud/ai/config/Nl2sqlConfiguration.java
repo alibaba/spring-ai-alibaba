@@ -80,7 +80,7 @@ public class Nl2sqlConfiguration {
 
 	public Nl2sqlConfiguration(@Qualifier("nl2SqlServiceImpl") BaseNl2SqlService nl2SqlService,
 			@Qualifier("schemaServiceImpl") BaseSchemaService schemaService,
-			@Qualifier("mysqlAccessor") Accessor dbAccessor, DbConfig dbConfig,
+			@Qualifier("dbAccessor") Accessor dbAccessor, DbConfig dbConfig,
 			CodeExecutorProperties codeExecutorProperties, CodePoolExecutorService codePoolExecutor,
 			SemanticModelRecallService semanticModelRecallService,
 			BusinessKnowledgeRecallService businessKnowledgeRecallService, UserPromptConfigService promptConfigService,
@@ -168,7 +168,7 @@ public class Nl2sqlConfiguration {
 			.addNode(SCHEMA_RECALL_NODE, node_async(new SchemaRecallNode(schemaService)))
 			.addNode(TABLE_RELATION_NODE,
 					node_async(new TableRelationNode(schemaService, nl2SqlService, businessKnowledgeRecallService,
-							semanticModelRecallService)))
+							semanticModelRecallService, datasourceService)))
 			.addNode(SQL_GENERATE_NODE, node_async(new SqlGenerateNode(chatClientBuilder, nl2SqlService)))
 			.addNode(PLANNER_NODE, node_async(new PlannerNode(chatClientBuilder)))
 			.addNode(PLAN_EXECUTOR_NODE, node_async(new PlanExecutorNode()))

@@ -68,4 +68,20 @@ public class IdGenerator {
 		return UUID.randomUUID().toString().replace("-", "");
 	}
 
+	/**
+	 * Generates a unique agent ID with "agent_" prefix
+	 * @return agent ID string
+	 */
+	public static String generateAgentId() {
+		return "agent_" + uuid32().substring(0, 16).toLowerCase();
+	}
+
+	/**
+	 * Generates a unique tool ID with "tool_" prefix
+	 * @return tool ID string
+	 */
+	public static String generateToolId() {
+		return "tool_" + uuid32().substring(0, 16).toLowerCase();
+	}
+
 }

@@ -87,7 +87,7 @@ public class GraphProcess {
 
 	public void handleHumanFeedback(GraphId graphId, ChatRequest chatRequest, Map<String, Object> objectMap,
 			RunnableConfig runnableConfig, Sinks.Many<ServerSentEvent<String>> sink) throws GraphRunnerException {
-		objectMap.put("feed_back", chatRequest.interruptFeedback());
+		objectMap.put("feedback", chatRequest.interruptFeedback());
 		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
 		OverAllState state = stateSnapshot.state();
 		state.withResume();
@@ -122,6 +122,46 @@ public class GraphProcess {
 					if (next.isDone()) {
 						break;
 					}
+
+					if (next.isError()) {
+						// 处理节点执行异常，确保异常能够正确传播并阻止重试
+						Throwable error = null;
+
+						try {
+							next.getData().get();
+						}
+						catch (ExecutionException ee) {
+							error = ee.getCause() != null ? ee.getCause() : ee;
+						}
+						catch (InterruptedException ie) {
+							Thread.currentThread().interrupt();
+							error = ie;
+						}
+						catch (Exception e) {
+							error = e;
+						}
+
+						// 确保我们获得了异常信息
+						if (error == null) {
+							error = new RuntimeException("Unknown node execution error");
+						}
+
+						logger.error("Node execution error detected: {}", error.getMessage(), error);
+
+						// 发送错误信息给前端
+						sink.tryEmitNext(ServerSentEvent
+							.builder(String.format(TASK_STOPPED_MESSAGE_TEMPLATE, graphIdStr,
+									"节点执行异常: " + error.getMessage()))
+							.build());
+
+						// 向 sink 传播错误，触发错误处理链
+						sink.tryEmitError(error);
+
+						// 从任务Map中移除，防止后续重试
+						graphTaskFutureMap.remove(graphId);
+						return;
+					}
+
 					// 获取NodeOutput
 					output = next.getData().get();
 				}

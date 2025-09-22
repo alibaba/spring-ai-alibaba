@@ -37,6 +37,7 @@ import static com.alibaba.cloud.ai.constant.Constant.INPUT_KEY;
 import static com.alibaba.cloud.ai.constant.Constant.IS_ONLY_NL2SQL;
 import static com.alibaba.cloud.ai.constant.Constant.PLANNER_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.PLAN_VALIDATION_ERROR;
+import static com.alibaba.cloud.ai.constant.Constant.QUERY_REWRITE_NODE_OUTPUT;
 import static com.alibaba.cloud.ai.constant.Constant.SEMANTIC_MODEL;
 import static com.alibaba.cloud.ai.constant.Constant.TABLE_RELATION_OUTPUT;
 
@@ -56,6 +57,11 @@ public class PlannerNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		String input = (String) state.value(INPUT_KEY).orElseThrow();
+		// 使用经过时间表达式处理的重写查询，如果没有则回退到原始输入
+		String processedQuery = StateUtils.getStringValue(state, QUERY_REWRITE_NODE_OUTPUT, input);
+		logger.info("Using processed query for planning: {}", processedQuery);
+
+		// 是否为NL2SQL模式
 		Boolean onlyNl2sql = state.value(IS_ONLY_NL2SQL, false);
 
 		// 检查是否为修复模式
@@ -74,7 +80,7 @@ public class PlannerNode implements NodeAction {
 		String schemaStr = PromptHelper.buildMixMacSqlDbPrompt(schemaDTO, true);
 
 		// 构建用户提示
-		String userPrompt = buildUserPrompt(input, validationError, state);
+		String userPrompt = buildUserPrompt(processedQuery, validationError, state);
 
 		// 构建模板参数
 		Map<String, Object> params = Map.of("user_question", userPrompt, "schema", schemaStr, "business_knowledge",

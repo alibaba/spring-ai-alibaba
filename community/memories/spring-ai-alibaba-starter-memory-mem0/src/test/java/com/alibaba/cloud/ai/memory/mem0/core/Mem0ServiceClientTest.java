@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.memory.mem0.core;
 
-import com.alibaba.cloud.ai.memory.mem0.config.Mem0ChatMemoryProperties;
 import com.alibaba.cloud.ai.memory.mem0.model.Mem0ServerRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,10 +28,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Unit tests for Mem0ServiceClient
+ * Unit tests for Mem0ServiceClientTest
  *
  * @author Morain Miao
  * @since 1.0.0
@@ -43,19 +41,22 @@ class Mem0ServiceClientTest {
 	@Mock
 	private ResourceLoader resourceLoader;
 
-	private Mem0ChatMemoryProperties properties;
+	private Mem0Client mem0Client;
+
+	private Mem0Server mem0Server;
 
 	private Mem0ServiceClient client;
 
 	@BeforeEach
 	void setUp() {
-		properties = new Mem0ChatMemoryProperties();
-		Mem0ChatMemoryProperties.Client clientConfig = new Mem0ChatMemoryProperties.Client();
-		clientConfig.setBaseUrl("http://localhost:8888");
-		clientConfig.setTimeoutSeconds(30);
-		properties.setClient(clientConfig);
+		Mem0Client mem0Client = Mem0Client.builder().baseUrl("http://localhost:8888").enableCache(true).build();
+		this.mem0Client = mem0Client;
 
-		client = new Mem0ServiceClient(properties, resourceLoader);
+		Mem0Server mem0Server = Mem0Server.builder().version("v1.1").build();
+		;
+		this.mem0Server = mem0Server;
+
+		client = new Mem0ServiceClient(mem0Client, mem0Server, resourceLoader);
 	}
 
 	@Test
@@ -64,18 +65,10 @@ class Mem0ServiceClientTest {
 	}
 
 	@Test
-	void testConstructorWithNullProperties() {
-		// Since the constructor lacks null checks, a NullPointerException will be thrown
-		// here
-		// Not in the constructor itself, but when the config is subsequently used
-		assertThatThrownBy(() -> new Mem0ServiceClient(null, resourceLoader)).isInstanceOf(NullPointerException.class);
-	}
-
-	@Test
 	void testConstructorWithNullResourceLoader() {
 		// Since the constructor lacks null checks, no exception will be thrown here
 		// But an exception will be thrown when resourceLoader is subsequently used
-		Mem0ServiceClient client = new Mem0ServiceClient(properties, null);
+		Mem0ServiceClient client = new Mem0ServiceClient(this.mem0Client, this.mem0Server, null);
 		assertThat(client).isNotNull();
 	}
 
@@ -122,16 +115,6 @@ class Mem0ServiceClientTest {
 		assertThat(searchRequest.getUserId()).isEqualTo("test-user");
 		assertThat(searchRequest.getAgentId()).isEqualTo("test-agent");
 		assertThat(searchRequest.getRunId()).isEqualTo("test-run");
-	}
-
-	@Test
-	void testConfigure() {
-		// Given
-		Mem0ChatMemoryProperties.Server serverConfig = new Mem0ChatMemoryProperties.Server();
-		serverConfig.setVersion("v1.1");
-
-		// When & Then - Verify that the configuration object is created correctly
-		assertThat(serverConfig.getVersion()).isEqualTo("v1.1");
 	}
 
 	@Test

@@ -181,6 +181,13 @@ public class NodeExecutor extends BaseGraphExecutor {
 						return lastGraphResponse;
 					}
 
+					if (response.getResult() == null) {
+						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
+								.of(new StreamingOutput("", context.getCurrentNodeId(), context.getOverallState()));
+						lastGraphResponseRef.set(lastGraphResponse);
+						return lastGraphResponse;
+					}
+
 					final var currentMessage = response.getResult().getOutput();
 
 					if (currentMessage.hasToolCalls()) {
