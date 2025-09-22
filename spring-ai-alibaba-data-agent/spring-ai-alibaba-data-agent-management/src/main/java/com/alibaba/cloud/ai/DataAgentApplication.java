@@ -34,10 +34,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 		AnalyticDbVectorStoreProperties.class,
 		CodeExecutorProperties.class,
 })
-public class Application {
+public class DataAgentApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
+		SpringApplication.run(DataAgentApplication.class, args);
 	}
 
 }

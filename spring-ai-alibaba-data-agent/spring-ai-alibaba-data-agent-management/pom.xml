@@ -3,13 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.alibaba.cloud.ai</groupId>
-        <artifactId>spring-ai-alibaba-nl2sql</artifactId>
+        <artifactId>spring-ai-alibaba-data-agent</artifactId>
         <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-nl2sql-management</artifactId>
-    <name>Spring AI Alibaba NL2SQL Management</name>
+    <artifactId>spring-ai-alibaba-data-agent-management</artifactId>
+    <name>Spring AI Alibaba DataAgent Management</name>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
         <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
@@ -20,8 +20,8 @@
     <dependencies>
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-nl2sql-chat</artifactId>
-            <version>${project.version}</version>
+            <artifactId>spring-ai-alibaba-data-agent-chat</artifactId>
+            <version>${revision}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.jboss.slf4j</groupId>
@@ -106,14 +106,14 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-core</artifactId>
-            <version>${project.version}</version>
+            <version>${spring-ai-alibaba.version}</version>
         </dependency>
 
         <!-- Spring AI Alibaba DashScope Starter -->
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-            <version>${project.version}</version>
+            <version>${spring-ai-alibaba.version}</version>
         </dependency>
 
         <dependency>
@@ -167,7 +167,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.alibaba.cloud.ai.Application</mainClass>
+                    <mainClass>com.alibaba.cloud.ai.DataAgentApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>

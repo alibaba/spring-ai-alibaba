@@ -40,7 +40,7 @@
     在 `src/main/resources` 目录下，修改 `application.properties` 或 `application.yml` 文件，填入你的数据库连接信息 (URL, 用户名, 密码)。
 
 2.  **构建并运行应用**:
-    你可以直接在 IDE 中运行 `com.alibaba.cloud.ai.Application` 类中的 `main` 方法来启动应用，或者使用以下 Maven 命令：
+    你可以直接在 IDE 中运行 `com.alibaba.cloud.ai.DataAgentApplication` 类中的 `main` 方法来启动应用，或者使用以下 Maven 命令：
 
     ```bash
     mvn spring-boot:run
