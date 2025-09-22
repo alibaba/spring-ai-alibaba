@@ -124,8 +124,11 @@ public class FlowGraphBuilder {
 		}
 
 		public FlowGraphConfig keyStrategyFactory(KeyStrategyFactory factory) {
-			// Check if the factory's result contains "messages" key
+			if (factory == null) {
+				return this;
+			}
 
+			// Check if the factory's result contains "messages" key
 			// FIXME, executing factory method in advance might cause side effects.
 			Map<String, KeyStrategy> strategyMap = factory.apply();
 			if (!strategyMap.containsKey("messages")) {
