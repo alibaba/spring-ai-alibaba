@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.web.client.RestClient;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -76,6 +78,88 @@ class DashScopeApiTests {
 		assertEquals("document", EmbeddingTextType.DOCUMENT.getValue(),
 				"EmbeddingTextType.DOCUMENT should have value 'document'");
 		assertEquals("query", EmbeddingTextType.QUERY.getValue(), "EmbeddingTextType.QUERY should have value 'query'");
+	}
+
+	@Test
+	void testEmbeddingRequestInputParametersNullTextTypeHandling() {
+		// Test null textType handling for FastJson compatibility.
+		DashScopeApi.EmbeddingRequestInputParameters parameters = DashScopeApi.EmbeddingRequestInputParameters.builder()
+			.textType(null)
+			.dimension(1024)
+			.build();
+			
+		// Should use default when null.
+		assertEquals(DashScopeApi.DEFAULT_EMBEDDING_TEXT_TYPE, parameters.textType(),
+				"Null textType should be replaced with default embedding text type");
+	}
+
+	@Test
+	void testEmbeddingRequestInputParametersEmptyTextTypeHandling() {
+		// Test empty textType preservation.
+		DashScopeApi.EmbeddingRequestInputParameters parameters = DashScopeApi.EmbeddingRequestInputParameters.builder()
+			.textType("")
+			.dimension(1024)
+			.build();
+			
+		// Should preserve user's explicit empty string.
+		assertEquals("", parameters.textType(),
+				"Empty textType should be preserved as user's explicit choice");
+	}
+
+	@Test
+	void testEmbeddingRequestInputParametersValidTextTypeHandling() {
+		// Test valid textType preservation.
+		DashScopeApi.EmbeddingRequestInputParameters documentsParameters = DashScopeApi.EmbeddingRequestInputParameters.builder()
+			.textType("document")
+			.dimension(1024)
+			.build();
+			
+		assertEquals("document", documentsParameters.textType(),
+				"Valid textType should be preserved");
+				
+		DashScopeApi.EmbeddingRequestInputParameters queryParameters = DashScopeApi.EmbeddingRequestInputParameters.builder()
+			.textType("query")
+			.dimension(1024)
+			.build();
+			
+		assertEquals("query", queryParameters.textType(),
+				"Valid textType should be preserved");
+	}
+
+	@Test
+	void testDeprecatedEmbeddingRequestConstructorNullTextTypeHandling() {
+		// Test deprecated single text constructor with null textType
+		@SuppressWarnings("deprecation")
+		DashScopeApi.EmbeddingRequest singleTextRequest = new DashScopeApi.EmbeddingRequest(
+				"test text", "test-model", null);
+		
+		assertEquals(DashScopeApi.DEFAULT_EMBEDDING_TEXT_TYPE, singleTextRequest.parameters().textType(),
+				"Deprecated constructor should handle null textType");
+		
+		// Test deprecated list texts constructor with null textType
+		@SuppressWarnings("deprecation")
+		DashScopeApi.EmbeddingRequest listTextsRequest = new DashScopeApi.EmbeddingRequest(
+				List.of("text1", "text2"), "test-model", null);
+		
+		assertEquals(DashScopeApi.DEFAULT_EMBEDDING_TEXT_TYPE, listTextsRequest.parameters().textType(),
+				"Deprecated constructor should handle null textType");
+	}
+
+	@Test
+	void testDeprecatedEmbeddingRequestInputParametersConstructorNullTextTypeHandling() {
+		// Test deprecated single parameter constructor with null textType
+		@SuppressWarnings("deprecation")
+		DashScopeApi.EmbeddingRequestInputParameters parameters = new DashScopeApi.EmbeddingRequestInputParameters(null);
+		
+		assertEquals(DashScopeApi.DEFAULT_EMBEDDING_TEXT_TYPE, parameters.textType(),
+				"Deprecated single parameter constructor should handle null textType");
+		
+		// Test deprecated single parameter constructor with valid textType
+		@SuppressWarnings("deprecation")
+		DashScopeApi.EmbeddingRequestInputParameters validParameters = new DashScopeApi.EmbeddingRequestInputParameters("query");
+		
+		assertEquals("query", validParameters.textType(),
+				"Deprecated single parameter constructor should preserve valid textType");
 	}
 
 }
