@@ -24,9 +24,6 @@ public class NacosAgentInjector {
 
 	/**
 	 * load prompt by agent id.
-	 *
-	 * @param nacosOptions
-	 * @return
 	 */
 	public static AgentVO loadAgentVO(NacosOptions nacosOptions) {
 		try {

@@ -38,7 +38,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-nl2sql-chat</artifactId>
+            <artifactId>spring-ai-alibaba-data-agent-chat</artifactId>
             <version>${revision}</version>
         </dependency>
 

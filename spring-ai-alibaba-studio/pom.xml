@@ -40,4 +40,8 @@
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
 
+    <properties>
+        <central.publishing.skip>true</central.publishing.skip>
+    </properties>
+
 </project>

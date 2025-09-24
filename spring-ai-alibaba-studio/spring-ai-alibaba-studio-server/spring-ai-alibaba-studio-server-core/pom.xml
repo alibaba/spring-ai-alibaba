@@ -9,10 +9,18 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-studio-server-core</artifactId>
+    <name>Spring AI Alibaba Studio Server Core</name>
     <description>Shared core components of studio server</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
     <properties>
         <java.version>17</java.version>
+        <central.publishing.skip>true</central.publishing.skip>
     </properties>
 
     <dependencies>

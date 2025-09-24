@@ -17,6 +17,10 @@
         <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
 
+    <properties>
+        <central.publishing.skip>true</central.publishing.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>

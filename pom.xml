@@ -58,6 +58,7 @@
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-jmanus</module>
         <module>spring-ai-alibaba-deepresearch</module>
+        <module>spring-ai-alibaba-data-agent</module>
         <module>spring-ai-alibaba-agent-nacos</module>
 
         <!-- Spring AI Alibaba Extension Modules -->
