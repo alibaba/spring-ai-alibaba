@@ -143,7 +143,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			else {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
 				context.setNextNodeId(nextCommand.gotoNode());
-				context.setCurrentStatData(nextCommand.update());
+				context.setCurrentState(nextCommand.update());
 			}
 
 			NodeOutput output = context.buildCurrentNodeOutput();
@@ -313,7 +313,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			try {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
 				context.setNextNodeId(nextCommand.gotoNode());
-				context.setCurrentStatData(nextCommand.update());
+				context.setCurrentState(nextCommand.update());
 
 				// save checkpoint after embedded flux completes
 				context.buildCurrentNodeOutput();
@@ -383,7 +383,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 									partialStateWithoutFlux, context.getKeyStrategyMap());
 							var currentState = OverAllState.updateState(intermediateState,
 									(Map<String, Object>) nodeResultValue, context.getKeyStrategyMap());
-							context.setCurrentStatData(currentState);
+							context.setCurrentState(currentState);
 							context.getOverallState().updateState(currentState);
 						}
 						else {
@@ -400,7 +400,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			try {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
 				context.setNextNodeId(nextCommand.gotoNode());
-				context.setCurrentStatData(nextCommand.update());
+				context.setCurrentState(nextCommand.update());
 
 				return mainGraphExecutor.execute(context, resultValue);
 			}
