@@ -133,8 +133,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return handleEmbeddedGenerator(context, embedGenerator.get(), updateState, resultValue);
 			}
 
-			context.updateCurrentState(updateState);
-			context.getOverallState().updateState(updateState);
+			context.updateState(updateState);
 
 			if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
 					&& context.getCompiledGraph().compileConfig.interruptsAfter()
@@ -144,7 +143,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			else {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
 				context.setNextNodeId(nextCommand.gotoNode());
-				context.updateCurrentState(nextCommand.update());
+				context.setCurrentState(nextCommand.update());
 			}
 
 			NodeOutput output = context.buildCurrentNodeOutput();
@@ -294,20 +293,17 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return;
 			}
 
+			Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
+					.stream()
+					.filter(e -> !(e.getValue() instanceof Flux))
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+			context.updateState(partialStateWithoutFlux);
+
 			if (nodeResultValue.isPresent()) {
 				Object value = nodeResultValue.get();
 				if (value instanceof Map<?, ?>) {
-					Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
-						.stream()
-						.filter(e -> !(e.getValue() instanceof Flux))
-						.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-					Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentState(),
-							partialStateWithoutFlux, context.getKeyStrategyMap());
-					var currentState = OverAllState.updateState(intermediateState, (Map<String, Object>) value,
-							context.getKeyStrategyMap());
-					context.updateCurrentState(currentState);
-					context.getOverallState().updateState(currentState);
+					context.updateState((Map<String, Object>) value);
 				}
 				else {
 					throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
@@ -317,7 +313,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			try {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
 				context.setNextNodeId(nextCommand.gotoNode());
-				context.updateCurrentState(nextCommand.update());
+				context.setCurrentState(nextCommand.update());
 
 				// save checkpoint after embedded flux completes
 				context.buildCurrentNodeOutput();
@@ -387,7 +383,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 									partialStateWithoutFlux, context.getKeyStrategyMap());
 							var currentState = OverAllState.updateState(intermediateState,
 									(Map<String, Object>) nodeResultValue, context.getKeyStrategyMap());
-							context.updateCurrentState(currentState);
+							context.setCurrentState(currentState);
 							context.getOverallState().updateState(currentState);
 						}
 						else {
@@ -404,7 +400,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			try {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
 				context.setNextNodeId(nextCommand.gotoNode());
-				context.updateCurrentState(nextCommand.update());
+				context.setCurrentState(nextCommand.update());
 
 				return mainGraphExecutor.execute(context, resultValue);
 			}
