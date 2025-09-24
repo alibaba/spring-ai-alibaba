@@ -286,8 +286,20 @@ public class GraphRunnerContext {
 	// State Management Methods
 	// ================================================================================================================
 
-	public void updateCurrentState(Map<String, Object> state) {
-		this.currentStateData = OverAllState.updateState(this.currentStateData, state, getKeyStrategyMap());
+	public void setCurrentStatData(Map<String, Object> state) {
+		this.currentStateData = state;
+	}
+
+	/**
+	 * Updates the intermediate state with the provided state updates.
+	 * This method updates both the current state data and the overall state.
+	 *
+	 * @param updateState the state updates to apply
+	 */
+	public void updateState(Map<String, Object> updateState) {
+		this.currentStateData = OverAllState.updateState(this.currentStateData,
+				updateState, getKeyStrategyMap());
+		this.overallState.updateState(updateState);
 	}
 
 	// ================================================================================================================
