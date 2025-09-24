@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.agent.nacos;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.agent.nacos.utils.CglibProxyFactory;
+import com.alibaba.cloud.ai.agent.nacos.utils.ChatOptionsProxy;
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.cloud.ai.graph.agent.DefaultBuilder;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
@@ -86,7 +86,7 @@ public class NacosAgentPromptBuilder extends DefaultBuilder {
 					this.chatOptions = new OpenAiChatOptions();
 				}
 				if (!(this.chatOptions instanceof ObservationMetadataAwareOptions)) {
-					this.chatOptions = (ChatOptions) CglibProxyFactory.createProxy(this.chatOptions, getMetadata(promptVO));
+					this.chatOptions = (ChatOptions) ChatOptionsProxy.createProxy(this.chatOptions, getMetadata(promptVO));
 				}
 
 				observationMetadataAwareOptions = (ObservationMetadataAwareOptions) this.chatOptions;

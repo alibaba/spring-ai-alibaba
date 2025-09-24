@@ -419,11 +419,14 @@ public class InteractiveElementRegistry {
 			        var documentClone = window.document.cloneNode(true);
 			        const reader = new Readability(documentClone);
 			        const article = reader.parse();
-			        const html = article.content;
-			        const turndownService = new TurndownService({
-			            headingStyle: 'atx',
-			        });
-			        return turndownService.turndown(html);
+			        if (article && article.content) {
+			            const html = article.content;
+			                     const turndownService = new TurndownService({
+			                         headingStyle: 'atx',
+			                     });
+			                     return turndownService.turndown(html);
+			        }
+			        return "";
 			    })
 			""";
 

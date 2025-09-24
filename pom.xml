@@ -55,7 +55,6 @@
         <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-prompt</module>
         <module>spring-ai-alibaba-graph-core</module>
-        <module>spring-ai-alibaba-nl2sql</module>
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-jmanus</module>
         <module>spring-ai-alibaba-deepresearch</module>
@@ -220,7 +219,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0.4-SNAPSHOT</revision>
+        <revision>1.0.0.4</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>

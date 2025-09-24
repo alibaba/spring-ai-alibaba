@@ -123,9 +123,20 @@ public class GraphRunnerContext {
 		// Use CompiledGraph's getInitialState method
 		Map<String, Object> inputs = initialState.data();
 		setCurrentState(compiledGraph.getInitialState(inputs != null ? inputs : new HashMap<>(), config));
-		setOverallState(initialState.input(getCurrentState()));
+		setOverallState(stateCreate(getCurrentState(), initialState));
 		setCurrentNodeId(START);
 		setNextNodeId(null);
+	}
+
+	// FIXME, duplicated method with CompiledGraph.stateCreate, need to have a unified way of when and how to do OverallState creation.
+	// This temporary fix is to make sure the message provided by user is always the last element in the messages list.
+	private OverAllState stateCreate(Map<String, Object> inputs, OverAllState initialState) {
+		// Creates a new OverAllState instance using key strategies from the graph and provided input data.
+		return OverAllStateBuilder.builder()
+				.withKeyStrategies(initialState.keyStrategies())
+				.withData(inputs)
+				.withStore(initialState.getStore())
+				.build();
 	}
 
 	// ================================================================================================================

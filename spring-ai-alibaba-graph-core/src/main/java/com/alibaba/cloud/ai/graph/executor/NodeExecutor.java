@@ -318,6 +318,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentState());
 				context.setNextNodeId(nextCommand.gotoNode());
 				context.updateCurrentState(nextCommand.update());
+
+				// save checkpoint after embedded flux completes
+				context.buildCurrentNodeOutput();
 			}
 			catch (Exception e) {
 				throw new RuntimeException(e);

@@ -96,12 +96,12 @@ public class BackgroundInvestigationNode implements NodeAction {
 			// 使用支持工具调用的搜索方法
 			results = searchInfoService.searchInfo(StateUtil.isSearchFilter(state), searchSelection.getSearchEnum(),
 					query, searchSelection.getSearchPlatform());
-			resultMap.put("site_information", results);
 			resultsList.add(results);
 		}
+		resultMap.put("site_information", resultsList);
 
 		List<String> backgroundResults = new ArrayList<>();
-		assert resultsList.size() != queries.size();
+		assert resultsList.size() == queries.size();
 
 		for (int i = 0; i < resultsList.size(); i++) {
 			List<Map<String, String>> searchResults = resultsList.get(i);
