@@ -36,7 +36,7 @@
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
-
+        <central.publishing.skip>true</central.publishing.skip>
     </properties>
 
     <dependencyManagement>

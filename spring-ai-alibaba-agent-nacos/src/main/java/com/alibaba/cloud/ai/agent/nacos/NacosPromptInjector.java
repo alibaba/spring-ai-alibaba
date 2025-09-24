@@ -18,16 +18,14 @@ package com.alibaba.cloud.ai.agent.nacos;
 
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.fastjson.JSON;
-import com.alibaba.nacos.api.exception.NacosException;
 
 public class NacosPromptInjector {
 
 	/**
 	 * load promot by prompt key.
 	 *
-	 * @param nacosOptions
-	 * @return
-	 * @throws NacosException
+	 * @param nacosOptions nacos hosted model options
+	 * @return PromptVO
 	 */
 	public static PromptVO getPromptByKey(NacosOptions nacosOptions) {
 
@@ -46,10 +44,6 @@ public class NacosPromptInjector {
 
 	/**
 	 * load promot by prompt key.
-	 *
-	 * @param nacosOptions
-	 * @return
-	 * @throws NacosException
 	 */
 	public static PromptVO getPromptByKey(NacosOptions nacosOptions, String promptKey) {
 

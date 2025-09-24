@@ -36,6 +36,8 @@
 
         <opentelemetry.spring.boot.starter.version>2.9.0</opentelemetry.spring.boot.starter.version>
         <commons-io.version>2.18.0</commons-io.version>
+
+        <central.publishing.skip>true</central.publishing.skip>
     </properties>
 
 

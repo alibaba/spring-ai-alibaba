@@ -37,10 +37,9 @@ public final class CodeGenUtils {
 	}
 
 	/**
-	 * 转义字符串用于 Java 代码生成
-	 * <p>
-	 * 主要用于生成 Java 字符串字面量，会转义反斜杠和双引号
-	 * </p>
+	 * 转义字符串用于 Java 代码生成。
+	 * 主要用于生成 Java 字符串字面量，会转义反斜杠和双引号。
+	 *
 	 * @param s 输入字符串
 	 * @return 转义后的字符串
 	 */
@@ -58,16 +57,8 @@ public final class CodeGenUtils {
 	}
 
 	/**
-	 * 对象转整数（安全转换）
-	 * <p>
-	 * 支持以下类型的转换：
-	 * <ul>
-	 * <li>Integer - 直接返回</li>
-	 * <li>Number - 调用 intValue()</li>
-	 * <li>String - 尝试解析为整数</li>
-	 * <li>其他 - 返回 null</li>
-	 * </ul>
-	 * </p>
+	 * 对象转整数（安全转换）。
+	 *
 	 * @param v 输入值
 	 * @return 整数值，无法转换时返回 null
 	 */

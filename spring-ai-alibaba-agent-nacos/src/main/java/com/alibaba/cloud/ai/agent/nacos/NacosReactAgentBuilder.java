@@ -182,8 +182,6 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 
 	/**
 	 * register prompt with key.
-	 * @param nacosOptions
-	 * @param promptKey
 	 */
 	static void registerPromptListener(NacosOptions nacosOptions, NacosContextHolder nacosContextHolder,
 			String promptKey, ReactAgent reactAgent) {

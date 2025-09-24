@@ -2,11 +2,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.alibaba.cloud.ai</groupId>
+    <parent>
+        <groupId>com.alibaba.cloud.ai</groupId>
+        <artifactId>spring-ai-alibaba</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
     <artifactId>spring-ai-alibaba-data-agent</artifactId>
     <packaging>pom</packaging>
     <name>Spring AI Alibaba Data Agent</name>
-    <version>${revision}</version>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
 
     <modules>
@@ -14,6 +19,7 @@
         <module>spring-ai-alibaba-data-agent-management</module>
         <module>spring-ai-alibaba-data-agent-common</module>
     </modules>
+
     <scm>
         <connection>git://github.com/spring-ai-alibaba/DataAgent.git</connection>
         <developerConnection>git@github.com:spring-ai-alibaba/DataAgent.git</developerConnection>
@@ -22,9 +28,8 @@
 
     <properties>
         <!-- Spring AI Alibaba Version -->
-        <spring-ai-alibaba.version>1.0.0.4-SNAPSHOT</spring-ai-alibaba.version>
-        <!-- Spring AI Alibaba DataAgent Version -->
-        <revision>0.1.0-SNAPSHOT</revision>
+        <spring-ai-alibaba.version>1.0.0.4</spring-ai-alibaba.version>
+
         <!-- DashScope SDK Version -->
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
 
@@ -191,7 +196,7 @@
                         <inherited>true</inherited>
                     </execution>
                 </executions>
-        </plugin>
+            </plugin>
         </plugins>
     </build>
 
