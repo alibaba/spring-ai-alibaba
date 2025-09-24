@@ -291,7 +291,6 @@ public class GraphRunnerContext {
 	}
 
 	/**
-	 * Updates the intermediate state with the provided state updates.
 	 * This method updates both the current state data and the overall state.
 	 *
 	 * @param updateState the state updates to apply
