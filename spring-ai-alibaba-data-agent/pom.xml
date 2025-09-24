@@ -53,6 +53,8 @@
         <netty-transport-native-epoll.version>4.1.114.Final</netty-transport-native-epoll.version>
         <jsonschema.version>4.37.0</jsonschema.version>
         <h2.version>2.3.232</h2.version>
+
+        <central.publishing.skip>true</central.publishing.skip>
     </properties>
 
     <dependencyManagement>

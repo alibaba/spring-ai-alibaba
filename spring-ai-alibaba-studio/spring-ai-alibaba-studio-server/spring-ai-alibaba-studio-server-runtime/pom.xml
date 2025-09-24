@@ -9,7 +9,18 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-studio-server-runtime</artifactId>
+    <name>Spring AI Alibaba Studio Server Runtime</name>
     <description>Runtime for running apps developed on studio server admin.</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
+
+    <properties>
+        <central.publishing.skip>true</central.publishing.skip>
+    </properties>
 
     <dependencies>
         <dependency>

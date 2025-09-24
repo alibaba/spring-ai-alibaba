@@ -9,19 +9,12 @@
     </parent>
     <artifactId>spring-ai-alibaba-agent-nacos</artifactId>
     <name>Spring AI Alibaba Agent Nacos</name>
-    <description>spring-ai-alibaba-agent-nacos</description>
-    <url></url>
-    <licenses>
-        <license></license>
-    </licenses>
-    <developers>
-        <developer></developer>
-    </developers>
+    <description>Nacos Config for Spring AI Alibaba</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
-        <connection></connection>
-        <developerConnection></developerConnection>
-        <tag></tag>
-        <url></url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
     <properties>
         <java.version>17</java.version>

@@ -89,6 +89,7 @@
         <flatten-maven-plugin.version>1.2.7</flatten-maven-plugin.version>
 
         <maven.deploy.skip>true</maven.deploy.skip>
+        <central.publishing.skip>true</central.publishing.skip>
     </properties>
 
     <dependencyManagement>

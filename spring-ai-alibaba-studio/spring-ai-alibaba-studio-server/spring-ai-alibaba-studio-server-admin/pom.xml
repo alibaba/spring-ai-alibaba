@@ -9,7 +9,18 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-studio-server-admin</artifactId>
-    <description>Backend implementation of the visualized studio for building applications.</description>
+    <name>Spring AI Alibaba Studio Server Admin</name>
+    <description>Admin for Spring AI Alibaba Studio</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
+
+    <properties>
+        <central.publishing.skip>true</central.publishing.skip>
+    </properties>
 
     <dependencies>
         <dependency>

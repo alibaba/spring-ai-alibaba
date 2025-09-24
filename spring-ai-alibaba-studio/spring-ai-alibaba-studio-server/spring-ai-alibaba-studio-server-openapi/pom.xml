@@ -9,7 +9,18 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-studio-server-openapi</artifactId>
+    <name>Spring AI Alibaba Studio Server OpenAPI</name>
     <description>OpenAPI of studio server.</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
+
+    <properties>
+        <central.publishing.skip>true</central.publishing.skip>
+    </properties>
 
     <dependencies>
         <dependency>
