@@ -78,7 +78,7 @@ class LlmRoutingAgentTest {
 			.name("prose_writer_agent")
 			.model(chatModel)
 			.description("可以写散文文章。")
-			.instruction("你是一个���名的作家，擅长写散文。请根据用户的提问进行回答。")
+			.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
 			.outputKey("prose_article")
 			.build();
 
@@ -86,7 +86,7 @@ class LlmRoutingAgentTest {
 			.name("poem_writer_agent")
 			.model(chatModel)
 			.description("可以写现代诗。")
-			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问，调用工具进行回���。")
+			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问，调用工具进行回复。")
 			.outputKey("poem_article")
 			.tools(List.of(createToolCallback()))
 			.build();
