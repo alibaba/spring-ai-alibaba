@@ -38,8 +38,9 @@ import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.DirectAppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -135,7 +136,7 @@ public class ReactAgent extends BaseAgent {
 				if (inputKey != null) {
 					keyStrategyHashMap.put(inputKey, new ReplaceStrategy());
 				}
-				keyStrategyHashMap.put("messages", new AppendStrategy());
+				keyStrategyHashMap.put("messages", new DirectAppendStrategy());
 				return keyStrategyHashMap;
 			};
 		}
@@ -143,7 +144,7 @@ public class ReactAgent extends BaseAgent {
 			KeyStrategyFactory originalFactory = this.keyStrategyFactory;
 			this.keyStrategyFactory = () -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>(originalFactory.apply());
-				keyStrategyHashMap.put("messages", new AppendStrategy());
+				keyStrategyHashMap.put("messages", new DirectAppendStrategy());
 				return keyStrategyHashMap;
 			};
 		}
@@ -151,10 +152,6 @@ public class ReactAgent extends BaseAgent {
 		NodeAction effectivePreLlmHook = this.preLlmHook;
 		if (effectivePreLlmHook == null) {
 			effectivePreLlmHook = state -> {
-				if (state.value("messages").isPresent()) {
-					List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
-					state.updateState(Map.of(this.inputKey, messages));
-				}
 				return Map.of();
 			};
 		}
