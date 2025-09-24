@@ -41,6 +41,7 @@
         <testcontainers.version>1.19.3</testcontainers.version>
         <httpclient.version>4.5.14</httpclient.version>
         <community.components.version>1.0.0.3</community.components.version>
+        <jackson.version>2.18.4</jackson.version>
     </properties>
 
     <dependencies>
@@ -119,6 +120,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>
