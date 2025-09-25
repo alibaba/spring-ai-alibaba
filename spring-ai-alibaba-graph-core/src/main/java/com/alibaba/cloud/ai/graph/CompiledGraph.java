@@ -426,8 +426,8 @@ public class CompiledGraph {
 	public Flux<GraphResponse<NodeOutput>> fluxDataStream(OverAllState state, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 		try {
-			GraphRunner runner = new GraphRunner(this, state, config);
-			return runner.run();
+			GraphRunner runner = new GraphRunner(this, config);
+			return runner.run(state);
 		}
 		catch (Exception e) {
 			return Flux.error(e);
@@ -454,8 +454,8 @@ public class CompiledGraph {
 	public Flux<NodeOutput> fluxStreamFromInitialNode(OverAllState overAllState, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 		try {
-			GraphRunner runner = new GraphRunner(this, overAllState, config);
-			return runner.run().flatMap(data -> {
+			GraphRunner runner = new GraphRunner(this, config);
+			return runner.run(overAllState).flatMap(data -> {
 				if (data.isDone()) {
 					// TODO, collect data.resultValue if necessary.
 					return Flux.empty();

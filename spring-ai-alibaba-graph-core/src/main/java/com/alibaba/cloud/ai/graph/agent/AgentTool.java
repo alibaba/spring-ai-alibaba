@@ -20,7 +20,6 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ToolContext;
@@ -53,7 +52,7 @@ public class AgentTool implements BiFunction<String, ToolContext, String> {
 				toolResult = toolResponseMessage.getText();
 			}
 		}
-		catch (GraphStateException e) {
+		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		return toolResult;

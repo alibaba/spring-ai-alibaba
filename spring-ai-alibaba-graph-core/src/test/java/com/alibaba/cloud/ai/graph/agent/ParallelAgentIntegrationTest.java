@@ -103,8 +103,7 @@ class ParallelAgentIntegrationTest {
 		ParallelAgent parallelAgent = ParallelAgent.builder()
 			.name("parallel_creative_agent")
 			.description("并行执行多个创作任务，包括写散文、写诗和做总结")
-			.inputKey("input")
-			.outputKey("merged_results")
+			.mergeOutputKey("merged_results")
 			.state(stateFactory)
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent, summaryAgent))
 			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // ✅ 添加合并策略
@@ -201,7 +200,7 @@ class ParallelAgentIntegrationTest {
 	// ParallelAgent dataCollector = ParallelAgent.builder()
 	// .name("DataCollector")
 	// .description("并行收集天气和新闻数据")
-	// .inputKey("input") // 改为input，避免与ReactAgent的messages冲突
+	// .inputKeys("input") // 改为input，避免与ReactAgent的messages冲突
 	// .outputKey("raw_data")
 	// .state(sharedStateFactory)
 	// .subAgents(List.of(fetchWeatherAgent, fetchNewsAgent))
@@ -228,7 +227,7 @@ class ParallelAgentIntegrationTest {
 	// SequentialAgent dailyWorkflow = SequentialAgent.builder()
 	// .name("DailyWorkflow")
 	// .description("收集数据并行执行，然后合成结果")
-	// .inputKey("input") // 改为input，与dataCollector保持一致
+	// .inputKeys("input") // 改为input，与dataCollector保持一致
 	// .outputKey("workflow_output")
 	// .state(sharedStateFactory)
 	// .subAgents(List.of(dataCollector, synthesizer))
@@ -290,8 +289,7 @@ class ParallelAgentIntegrationTest {
 			ParallelAgent.builder()
 				.name("duplicate_key_test")
 				.description("测试重复outputKey的验证")
-				.inputKey("input")
-				.outputKey("output")
+				.mergeOutputKey("output")
 				.subAgents(List.of(agent1, agent2))
 				.build();
 		}, "Should throw exception when sub-agents have duplicate output keys");
@@ -328,8 +326,7 @@ class ParallelAgentIntegrationTest {
 		ParallelAgent listMergeAgent = ParallelAgent.builder()
 			.name("list_merge_test")
 			.description("测试列表合并策略")
-			.inputKey("input")
-			.outputKey("merged_list")
+			.mergeOutputKey("merged_list")
 			.state(() -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 				keyStrategyHashMap.put("input", new ReplaceStrategy());
@@ -356,7 +353,7 @@ class ParallelAgentIntegrationTest {
 		// Test ParallelAgent with concurrency control
 
 		// Create multiple agents
-		List<BaseAgent> agents = new java.util.ArrayList<>();
+		List<Agent> agents = new java.util.ArrayList<>();
 		for (int i = 0; i < 5; i++) {
 			agents.add(ReactAgent.builder()
 				.name("worker_" + i)
@@ -370,8 +367,7 @@ class ParallelAgentIntegrationTest {
 		ParallelAgent concurrencyAgent = ParallelAgent.builder()
 			.name("concurrency_test")
 			.description("测试并发控制")
-			.inputKey("input")
-			.outputKey("concurrency_results")
+			.mergeOutputKey("concurrency_results")
 			.state(() -> {
 				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 				keyStrategyHashMap.put("input", new ReplaceStrategy());

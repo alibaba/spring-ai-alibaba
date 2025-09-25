@@ -64,8 +64,6 @@ class ParallelAgentTest {
 		assertNotNull(parallelAgent);
 		assertEquals("dataProcessingPipeline", parallelAgent.name());
 		assertEquals("Processes data through multiple parallel operations", parallelAgent.description());
-		assertEquals("processing_result", parallelAgent.outputKey());
-		assertEquals("raw_data", parallelAgent.inputKey());
 		assertEquals(3, parallelAgent.subAgents().size());
 		assertEquals(3, parallelAgent.maxConcurrency());
 		assertTrue(parallelAgent.mergeStrategy() instanceof ParallelAgent.DefaultMergeStrategy);
@@ -80,8 +78,6 @@ class ParallelAgentTest {
 		assertNotNull(parallelAgent);
 		assertEquals("reportGenerator", parallelAgent.name());
 		assertEquals("Generates comprehensive reports in parallel", parallelAgent.description());
-		assertEquals("complete_report", parallelAgent.outputKey());
-		assertEquals("report_data", parallelAgent.inputKey());
 		assertEquals(3, parallelAgent.subAgents().size());
 		assertEquals(5, parallelAgent.maxConcurrency());
 		assertTrue(parallelAgent.mergeStrategy() instanceof ParallelAgent.ListMergeStrategy);
@@ -96,8 +92,6 @@ class ParallelAgentTest {
 		assertNotNull(parallelAgent);
 		assertEquals("contentCreator", parallelAgent.name());
 		assertEquals("Creates content through parallel writing", parallelAgent.description());
-		assertEquals("final_content", parallelAgent.outputKey());
-		assertEquals("content_requirements", parallelAgent.inputKey());
 		assertEquals(3, parallelAgent.subAgents().size());
 		assertNull(parallelAgent.maxConcurrency()); // No concurrency limit set
 		assertTrue(parallelAgent.mergeStrategy() instanceof ParallelAgent.ConcatenationMergeStrategy);
@@ -137,8 +131,7 @@ class ParallelAgentTest {
 		ParallelAgent parallelAgent = ParallelAgent.builder()
 			.name("parallelProcessor")
 			.description("Processes data in parallel")
-			.outputKey("parallel_result")
-			.inputKey("input_data")
+			.mergeOutputKey("parallel_result")
 			.subAgents(List.of(agent1, agent2))
 			.mergeStrategy(new ParallelAgent.ListMergeStrategy())
 			.maxConcurrency(5)
@@ -152,8 +145,6 @@ class ParallelAgentTest {
 		assertNotNull(parallelAgent);
 		assertEquals("parallelProcessor", parallelAgent.name());
 		assertEquals("Processes data in parallel", parallelAgent.description());
-		assertEquals("parallel_result", parallelAgent.outputKey());
-		assertEquals("input_data", parallelAgent.inputKey());
 		assertEquals(2, parallelAgent.subAgents().size());
 		assertNotNull(parallelAgent.mergeStrategy());
 		assertEquals(5, parallelAgent.maxConcurrency());
@@ -306,8 +297,7 @@ class ParallelAgentTest {
 		return ParallelAgent.builder()
 			.name("dataProcessingPipeline")
 			.description("Processes data through multiple parallel operations")
-			.outputKey("processing_result")
-			.inputKey("raw_data")
+			.mergeOutputKey("processing_result")
 			.subAgents(List.of(dataAnalyzer, dataValidator, dataCleaner))
 			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // Returns Map
 			.maxConcurrency(3) // Limit to 3 concurrent operations
@@ -368,8 +358,7 @@ class ParallelAgentTest {
 		return ParallelAgent.builder()
 			.name("reportGenerator")
 			.description("Generates comprehensive reports in parallel")
-			.outputKey("complete_report")
-			.inputKey("report_data")
+			.mergeOutputKey("complete_report")
 			.subAgents(List.of(summaryGenerator, detailsGenerator, chartsGenerator))
 			.mergeStrategy(new ParallelAgent.ListMergeStrategy()) // Returns List
 			.maxConcurrency(5)
@@ -430,8 +419,7 @@ class ParallelAgentTest {
 		return ParallelAgent.builder()
 			.name("contentCreator")
 			.description("Creates content through parallel writing")
-			.outputKey("final_content")
-			.inputKey("content_requirements")
+			.mergeOutputKey("final_content")
 			.subAgents(List.of(introWriter, bodyWriter, conclusionWriter))
 			.mergeStrategy(new ParallelAgent.ConcatenationMergeStrategy("\n\n")) // Join
 			// with

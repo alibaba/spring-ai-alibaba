@@ -80,8 +80,6 @@ class StreamAgentTest {
 			.model(chatModel)
 			.state(stateFactory)
 			.description("可以根据用户给定的主题写文章或作诗。")
-			.inputKey("input")
-			.outputKey("topic")
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent))
 			.build();
 

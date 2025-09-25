@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
@@ -39,8 +40,6 @@ public abstract class Builder {
 	protected String description;
 
 	protected String instruction;
-
-	protected String outputKey;
 
 	protected ChatModel model;
 
@@ -67,6 +66,12 @@ public abstract class Builder {
 	protected NodeAction preToolHook;
 
 	protected NodeAction postToolHook;
+
+	protected boolean includeContents = true;
+
+	protected String outputKey;
+
+	protected KeyStrategy outputKeyStrategy;
 
 	protected String inputKey = "messages";
 
@@ -132,6 +137,16 @@ public abstract class Builder {
 
 	public Builder outputKey(String outputKey) {
 		this.outputKey = outputKey;
+		return this;
+	}
+
+	public Builder outputKeyStrategy(KeyStrategy outputKeyStrategy) {
+		this.outputKeyStrategy = outputKeyStrategy;
+		return this;
+	}
+
+	public Builder includeContents(boolean includeContents) {
+		this.includeContents = includeContents;
 		return this;
 	}
 

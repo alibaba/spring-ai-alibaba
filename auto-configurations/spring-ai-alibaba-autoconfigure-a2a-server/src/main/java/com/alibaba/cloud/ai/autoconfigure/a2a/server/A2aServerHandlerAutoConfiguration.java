@@ -22,7 +22,10 @@ import com.alibaba.cloud.ai.a2a.server.DefaultA2aServerExecutorProvider;
 import com.alibaba.cloud.ai.a2a.server.GraphAgentExecutor;
 import com.alibaba.cloud.ai.a2a.server.JsonRpcA2aRequestHandler;
 import com.alibaba.cloud.ai.a2a.server.ServerTypeEnum;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
+
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.events.InMemoryQueueManager;
 import io.a2a.server.events.QueueManager;
@@ -51,7 +54,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration(after = A2aServerAgentCardAutoConfiguration.class)
 @EnableConfigurationProperties({ A2aServerProperties.class })
-@ConditionalOnBean({ AgentCard.class, BaseAgent.class })
+@ConditionalOnBean({ AgentCard.class, Agent.class })
 public class A2aServerHandlerAutoConfiguration {
 
 	@Bean
@@ -62,7 +65,12 @@ public class A2aServerHandlerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AgentExecutor agentExecutor(BaseAgent rootAgent) {
+	public AgentExecutor agentExecutor(Agent rootAgent) {
+		// FIXME: currently only ReactAgent and A2aRemoteAgent are supported as the root
+		if (!(rootAgent instanceof ReactAgent) && !(rootAgent instanceof A2aRemoteAgent)) {
+			throw new IllegalArgumentException(
+					"The root agent must be an instance of ReactAgent or A2aRemoteAgent, other type will be supported later.");
+		}
 		return new GraphAgentExecutor(rootAgent);
 	}
 

@@ -22,8 +22,10 @@ import java.util.Optional;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,13 +41,13 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 
 	private final String outputKey;
 
-	private final List<BaseAgent> subAgents;
+	private final List<Agent> subAgents;
 
 	private final Object mergeStrategy;
 
 	private final Integer maxConcurrency;
 
-	public EnhancedParallelResultAggregator(String outputKey, List<BaseAgent> subAgents, Object mergeStrategy,
+	public EnhancedParallelResultAggregator(String outputKey, List<Agent> subAgents, Object mergeStrategy,
 			Integer maxConcurrency) {
 		this.outputKey = outputKey;
 		this.subAgents = subAgents;
@@ -61,8 +63,13 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 		Map<String, Object> subAgentResults = new HashMap<>();
 
 		// Collect results from all sub-agents
-		for (BaseAgent subAgent : subAgents) {
-			String subAgentOutputKey = subAgent.outputKey();
+		for (Agent subAgent : subAgents) {
+			String subAgentOutputKey = null;
+			if (subAgent instanceof ReactAgent subReactAgent) {
+				subAgentOutputKey = subReactAgent.getOutputKey();
+			} else if (subAgent instanceof A2aRemoteAgent remoteAgent) { // a2a remote agent
+				subAgentOutputKey = remoteAgent.getOutputKey();
+			}
 			if (subAgentOutputKey != null) {
 				Optional<Object> agentResult = state.value(subAgentOutputKey);
 				if (agentResult.isPresent()) {

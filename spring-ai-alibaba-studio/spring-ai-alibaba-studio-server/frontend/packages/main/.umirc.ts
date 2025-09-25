@@ -147,6 +147,10 @@ export default defineConfig({
       path: '/setting/apiKeys',
       component: 'Setting/APIKeys',
     },
+    {
+      path: '/agent-schema',
+      component: 'AgentSchema/index',
+    },
   ],
   clickToComponent: {},
   tailwindcss: {},

@@ -1,3 +1,0 @@
-- 当前步骤的环境信息:
-
-{current_step_env_data}

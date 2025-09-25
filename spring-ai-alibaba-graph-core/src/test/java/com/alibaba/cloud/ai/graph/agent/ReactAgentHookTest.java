@@ -132,7 +132,6 @@ class ReactAgentHookTest {
 			.name("weather_agent")
 			.model(chatModel)
 			.tools(List.of(toolCallback))
-			.inputKey("llm_input_messages")
 			.preLlmHook(state -> {
 				if (!state.value("messages").isPresent()) {
 					return Map.of();
@@ -152,7 +151,7 @@ class ReactAgentHookTest {
 					messages = resultMessages;
 				}
 
-				state.updateState(Map.of("llm_input_messages", messages));
+				state.updateState(Map.of("messages", messages));
 				return Map.of();
 			})
 			.build();
@@ -161,7 +160,7 @@ class ReactAgentHookTest {
 
 		// 创建包含时间查询的提示词
 		List<Message> messages = List.of(new UserMessage("查询北京天气"));
-		Optional<OverAllState> result = graph.call(Map.of("llm_input_messages", messages));
+		Optional<OverAllState> result = graph.call(Map.of("messages", messages));
 		System.out.println(result.get());
 
 		System.out.println("==testReactAgentWithPreLlmHook==");
@@ -180,7 +179,6 @@ class ReactAgentHookTest {
 		ReactAgent agent = ReactAgent.builder()
 			.name("dataAgent")
 			.model(chatModel)
-			.inputKey("llm_input_messages")
 			.tools(List.of(toolCallback))
 			.postLlmHook(state -> {
 
@@ -188,7 +186,7 @@ class ReactAgentHookTest {
 			})
 			.postToolHook(state -> {
 				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-				state.updateState(Map.of("llm_input_messages", messages));
+				state.updateState(Map.of("messages", messages));
 				return Map.of();
 			})
 			.build();
@@ -214,7 +212,6 @@ class ReactAgentHookTest {
 			.name("dataAgent")
 			.model(chatModel)
 			.tools(List.of(toolCallback))
-			.inputKey("llm_input_messages")
 			.preToolHook(state -> {
 				// 在preToolHook中获取最新的时间戳 传给toolCall保证时效性
 				long currentTimestamp = System.currentTimeMillis();
@@ -253,7 +250,7 @@ class ReactAgentHookTest {
 											updatedToolCalls, Collections.emptyList());
 									List<Message> updatedMessages = new ArrayList<>(messages);
 									updatedMessages.set(updatedMessages.size() - 1, updatedAssistantMessage);
-									state.updateState(Map.of("llm_input_messages", updatedMessages));
+									state.updateState(Map.of("messages", updatedMessages));
 									break;
 								}
 							}
@@ -266,7 +263,7 @@ class ReactAgentHookTest {
 
 		CompiledGraph graph = agent.getAndCompileGraph();
 		List<Message> messages = List.of(new UserMessage("查询北京天气"));
-		Optional<OverAllState> result = graph.call(Map.of("llm_input_messages", messages));
+		Optional<OverAllState> result = graph.call(Map.of("messages", messages));
 		System.out.println(result);
 
 		System.out.println("==testReactAgentWithPreToolHook==");

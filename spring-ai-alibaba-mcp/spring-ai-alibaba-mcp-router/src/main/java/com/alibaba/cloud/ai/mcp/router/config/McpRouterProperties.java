@@ -17,6 +17,7 @@
 
 package com.alibaba.cloud.ai.mcp.router.config;
 
+import com.alibaba.cloud.ai.mcp.router.model.McpServerInfo;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.ArrayList;
@@ -27,13 +28,10 @@ public class McpRouterProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.alibaba.mcp.router";
 
-	/**
-	 * 是否启用 MCP 路由器
-	 */
 	private boolean enabled = true;
 
 	/**
-	 * MCP 路由器服务名称
+	 * MCP router service names
 	 */
 	private List<String> serviceNames = new ArrayList<>();
 
@@ -51,6 +49,33 @@ public class McpRouterProperties {
 
 	public void setServiceNames(final List<String> serviceNames) {
 		this.serviceNames = serviceNames;
+	}
+
+	/**
+	 * MCP router service configurations
+	 */
+	private List<McpServerInfo> services = new ArrayList<>();
+
+	public List<McpServerInfo> getServices() {
+		return services;
+	}
+
+	public void setServices(List<McpServerInfo> services) {
+		this.services = services;
+	}
+
+	/**
+	 * MCP router service discovery search order 支持多种发现方式同时使用，按顺序查找服务 例如: ["file",
+	 * "database", "nacos"]
+	 */
+	private List<String> discoveryOrder = List.of("nacos");
+
+	public List<String> getDiscoveryOrder() {
+		return discoveryOrder;
+	}
+
+	public void setDiscoveryOrder(List<String> discoveryOrder) {
+		this.discoveryOrder = discoveryOrder;
 	}
 
 }

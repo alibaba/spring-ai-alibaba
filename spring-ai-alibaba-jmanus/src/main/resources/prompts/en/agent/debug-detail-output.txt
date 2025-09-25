@@ -1,2 +1,0 @@
-1. When using tool calls, you must provide explanations describing the reason for using this tool and the thinking behind it
-2. Briefly describe what all previous steps have accomplished

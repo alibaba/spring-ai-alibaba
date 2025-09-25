@@ -13,10 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+com.alibaba.cloud.ai.autoconfigure.mcp.router.McpServiceDiscoveryAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.router.FileMcpRouterAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.mcp.router.DbMcpRouterAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.mcp.router.NacosMcpRouterAutoConfiguration
 
 com.alibaba.cloud.ai.autoconfigure.mcp.gateway.core.McpGatewayServerAutoConfiguration
 #com.alibaba.cloud.ai.autoconfigure.mcp.gateway.core.McpGatewaySseServerAutoConfiguration
 #com.alibaba.cloud.ai.autoconfigure.mcp.gateway.core.McpGatewayStreamableServerAutoConfiguration
 com.alibaba.cloud.ai.autoconfigure.mcp.gateway.nacos.NacosMcpGatewayAutoConfiguration
-

@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
+import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.collections4.CollectionUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -31,25 +32,26 @@ public class DefaultBuilder extends Builder {
 			if (model == null) {
 				throw new IllegalArgumentException("Either chatClient or model must be provided");
 			}
-			ChatClient.Builder clientBuilder = ChatClient.builder(model);
+
+			ChatClient.Builder clientBuilder = ChatClient.builder(model, this.observationRegistry == null ? ObservationRegistry.NOOP : this.observationRegistry,
+					this.customObservationConvention);
+
 			if (chatOptions != null) {
 				clientBuilder.defaultOptions(chatOptions);
 			}
 			if (instruction != null) {
 				clientBuilder.defaultSystem(instruction);
 			}
+
 			chatClient = clientBuilder.build();
 		}
 
 		LlmNode.Builder llmNodeBuilder = LlmNode.builder()
 				.stream(true)
+				.systemPromptTemplate(instruction)
 				.chatClient(chatClient)
 				.messagesKey(this.inputKey);
-		// For graph built from ReactAgent, the only legal key used inside must be
-		// messages.
-		// if (outputKey != null && !outputKey.isEmpty()) {
-		// llmNodeBuilder.outputKey(outputKey);
-		// }
+
 		if (CollectionUtils.isNotEmpty(tools)) {
 			llmNodeBuilder.toolCallbacks(tools);
 		}

@@ -44,9 +44,35 @@ public final class CodeGenUtils {
 	 * @param s 输入字符串
 	 * @return 转义后的字符串
 	 */
-	public static String esc(String s) {
-		return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
-	}
+    public static String esc(String s) {
+        if (s == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '\\':
+                    sb.append("\\\\");
+                    break;
+                case '"':
+                    sb.append("\\\"");
+                    break;
+                case '\n':
+                    sb.append("\\n");
+                    break;
+                case '\r':
+                    sb.append("\\r");
+                    break;
+                case '\t':
+                    sb.append("\\t");
+                    break;
+                default:
+                    sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
 
 	/**
 	 * 对象转字符串

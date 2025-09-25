@@ -1,5 +1,0 @@
-# Response Rules:
-- You must select and call from the provided tools. You can make repeated calls to a single tool, call multiple tools simultaneously, or use a mixed calling approach to improve problem-solving efficiency and accuracy.
-- In your response, you must call at least one tool, which is an indispensable operation step.
-- To maximize the advantages of tools, when you have the ability to call tools multiple times simultaneously, you should actively do so, avoiding single calls that waste time and resources. Pay special attention to the inherent relationships between multiple tool calls, ensuring these calls can cooperate and work together to achieve optimal problem-solving solutions.
-- Ignore the response rules provided in subsequent <AgentInfo>, and only respond using the response rules in <SystemInfo>.

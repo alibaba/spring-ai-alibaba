@@ -21,7 +21,7 @@ import java.util.List;
 import com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties;
 import com.alibaba.cloud.ai.a2a.A2aServerProperties;
 import com.alibaba.cloud.ai.a2a.constants.A2aConstants;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import io.a2a.spec.AgentCapabilities;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentInterface;
@@ -46,8 +46,8 @@ public class A2aServerAgentCardAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnBean({ BaseAgent.class })
-	public AgentCard agentCard(BaseAgent rootAgent, A2aServerProperties a2aServerProperties,
+	@ConditionalOnBean({ Agent.class })
+	public AgentCard agentCard(Agent rootAgent, A2aServerProperties a2aServerProperties,
 			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
 		return new AgentCard.Builder().name(getName(rootAgent, a2AServerAgentCardProperties))
 			.description(getDescription(rootAgent, a2AServerAgentCardProperties))
@@ -69,29 +69,29 @@ public class A2aServerAgentCardAutoConfiguration {
 			.build();
 	}
 
-	private String getName(BaseAgent rootAgent, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
+	private String getName(Agent rootAgent, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
 		return StringUtils.hasLength(a2AServerAgentCardProperties.getName()) ? a2AServerAgentCardProperties.getName()
 				: rootAgent.name();
 	}
 
-	private String getDescription(BaseAgent rootAgent, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
+	private String getDescription(Agent rootAgent, A2aServerAgentCardProperties a2AServerAgentCardProperties) {
 		return StringUtils.hasLength(a2AServerAgentCardProperties.getDescription())
 				? a2AServerAgentCardProperties.getDescription() : rootAgent.name();
 	}
 
-	private List<String> getDefaultInputModes(BaseAgent rootAgent,
+	private List<String> getDefaultInputModes(Agent rootAgent,
 			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
 		return null != a2AServerAgentCardProperties.getDefaultInputModes()
 				? a2AServerAgentCardProperties.getDefaultInputModes() : List.of("text/plain");
 	}
 
-	private AgentCapabilities getCapabilities(BaseAgent rootAgent,
+	private AgentCapabilities getCapabilities(Agent rootAgent,
 			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
 		return null != a2AServerAgentCardProperties.getCapabilities() ? a2AServerAgentCardProperties.getCapabilities()
 				: new AgentCapabilities.Builder().streaming(true).build();
 	}
 
-	private List<String> getDefaultOutputModes(BaseAgent rootAgent,
+	private List<String> getDefaultOutputModes(Agent rootAgent,
 			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
 		return null != a2AServerAgentCardProperties.getDefaultOutputModes()
 				? a2AServerAgentCardProperties.getDefaultOutputModes() : List.of("text/plain");
@@ -103,7 +103,7 @@ public class A2aServerAgentCardAutoConfiguration {
 				: buildUrl(a2aServerProperties);
 	}
 
-	private List<AgentSkill> getAgentSkills(BaseAgent rootAgent,
+	private List<AgentSkill> getAgentSkills(Agent rootAgent,
 			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
 		return null != a2AServerAgentCardProperties.getSkills() ? a2AServerAgentCardProperties.getSkills() : List.of();
 	}

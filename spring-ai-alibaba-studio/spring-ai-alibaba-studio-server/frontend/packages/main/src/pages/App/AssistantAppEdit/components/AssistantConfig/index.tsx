@@ -106,10 +106,11 @@ export default function AssistantConfig() {
                 <ModelConfig></ModelConfig>
               </Flex>
             </div>
-            <Timeline
-              className={styles.configTimeline}
-              style={{ padding: '0 20px', marginTop: 8 }}
-              items={compact([
+            <div className={styles.configTimelineContainer}>
+              <Timeline
+                className={styles.configTimeline}
+                style={{ padding: '0 20px', marginTop: 8 }}
+                items={compact([
                 {
                   children: (
                     <div>
@@ -183,6 +184,7 @@ export default function AssistantConfig() {
                 },
               ])}
             ></Timeline>
+            </div>
           </ConfigProvider>
         </Panel>
         <PanelResizeHandle className={styles.resizeHandle}>

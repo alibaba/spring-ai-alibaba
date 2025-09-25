@@ -16,35 +16,40 @@
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+import org.springframework.ai.chat.messages.UserMessage;
 
-public abstract class FlowAgent extends BaseAgent {
+import reactor.core.publisher.Flux;
 
-	protected String inputKey;
+import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
+
+public abstract class FlowAgent extends Agent {
 
 	protected KeyStrategyFactory keyStrategyFactory;
 
-	protected List<BaseAgent> subAgents;
+	protected List<Agent> subAgents;
 
-	protected FlowAgent(String name, String description, String outputKey, String inputKey,
-			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig, List<BaseAgent> subAgents)
+	protected FlowAgent(String name, String description,
+			KeyStrategyFactory keyStrategyFactory, CompileConfig compileConfig, List<Agent> subAgents)
 			throws GraphStateException {
-		super(name, description, outputKey);
+		super(name, description);
 		this.compileConfig = compileConfig;
-		this.inputKey = inputKey;
 		this.keyStrategyFactory = keyStrategyFactory;
 		this.subAgents = subAgents;
 	}
@@ -62,6 +67,48 @@ public abstract class FlowAgent extends BaseAgent {
 		return buildSpecificGraph(config);
 	}
 
+	public Optional<OverAllState> invoke(String message) throws GraphRunnerException {
+		return invoke(createInputMap(message));
+	}
+
+	public Optional<OverAllState> invoke(UserMessage message) throws GraphRunnerException {
+		return invoke(createInputMap(message));
+	}
+
+	public Optional<OverAllState> invoke(String message, RunnableConfig runnableConfig) throws GraphRunnerException {
+		return invoke(createInputMap(message), runnableConfig);
+	}
+
+	public Optional<OverAllState> invoke(UserMessage message, RunnableConfig runnableConfig) throws GraphRunnerException {
+		return invoke(createInputMap(message), runnableConfig);
+	}
+
+	public Flux<NodeOutput> stream(String message) throws GraphRunnerException {
+		return stream(createInputMap(message));
+	}
+
+	public Flux<NodeOutput> stream(UserMessage message) throws GraphRunnerException {
+		return stream(createInputMap(message));
+	}
+
+	public Flux<NodeOutput> stream(String message, RunnableConfig runnableConfig) throws GraphRunnerException {
+		return stream(createInputMap(message), runnableConfig);
+	}
+
+	public Flux<NodeOutput> stream(UserMessage message, RunnableConfig runnableConfig) throws GraphRunnerException {
+		return stream(createInputMap(message), runnableConfig);
+	}
+
+	@Override
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.schedule(scheduleConfig);
+	}
+
+	public StateGraph asStateGraph(){
+		return getGraph();
+	}
+
 	/**
 	 * Abstract method for subclasses to specify their graph building strategy. This
 	 * method should be implemented by concrete FlowAgent subclasses to define how their
@@ -73,36 +120,36 @@ public abstract class FlowAgent extends BaseAgent {
 	protected abstract StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config)
 			throws GraphStateException;
 
-	@Override
-	public AsyncNodeAction asAsyncNodeAction(String inputKeyFromParent, String outputKeyToParent)
-			throws GraphStateException {
-		if (this.compiledGraph == null) {
-			this.compiledGraph = getAndCompileGraph();
-		}
-		return node_async(
-				new ReactAgent.SubGraphStreamingNodeAdapter(inputKeyFromParent, outputKeyToParent, this.compiledGraph));
-	}
-
-	@Override
-	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.schedule(scheduleConfig);
-	}
-
 	public CompileConfig compileConfig() {
 		return compileConfig;
 	}
 
-	public String inputKey() {
-		return inputKey;
-	}
+	/**
+	 * Gets the input keys with strategy factory for the agent.
+	 * @return the input keys with strategy factory.
+	 */
 
 	public KeyStrategyFactory keyStrategyFactory() {
 		return keyStrategyFactory;
 	}
 
-	public List<BaseAgent> subAgents() {
+	public List<Agent> subAgents() {
 		return this.subAgents;
 	}
+
+	/**
+	 * Creates a map with messages and input for String message
+	 */
+	private Map<String, Object> createInputMap(String message) {
+		return Map.of("messages", convertToMessages(message), "input", message);
+	}
+
+	/**
+	 * Creates a map with messages and input for UserMessage
+	 */
+	private Map<String, Object> createInputMap(UserMessage message) {
+		return Map.of("messages", convertToMessages(message), "input", message.getText());
+	}
+
 
 }

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import io.spring.initializr.generator.project.contributor.ProjectContributor;
+import org.springframework.core.annotation.Order;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.ToolFactory;
 import org.eclipse.jdt.core.formatter.CodeFormatter;
@@ -35,6 +36,7 @@ import org.eclipse.text.edits.TextEdit;
  * Use the CodeFormatter from Eclipse JDT Core to format all generated Java files.
  */
 // TODO: 移除未使用的import语句
+@Order(org.springframework.core.Ordered.LOWEST_PRECEDENCE)
 public class EclipseJdtFormatProjectContributor implements ProjectContributor {
 
 	@Override

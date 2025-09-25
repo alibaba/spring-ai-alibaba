@@ -106,10 +106,10 @@ public enum GraphNodeObservationDocumentation implements ObservationDocumentatio
 		 * convention). Note: This key is dynamically added by
 		 * GraphObservationLifecycleListener, not by Convention.
 		 */
-		GEN_AI_PROMPT {
+		NODE_BEFOR_STATE {
 			@Override
 			public String asString() {
-				return "gen_ai.prompt";
+				return "node.before.state";
 			}
 		},
 
@@ -118,10 +118,10 @@ public enum GraphNodeObservationDocumentation implements ObservationDocumentatio
 		 * semantic convention). Note: This key is dynamically added by
 		 * GraphObservationLifecycleListener, not by Convention.
 		 */
-		GEN_AI_COMPLETION {
+		NODE_AFTER_STATE {
 			@Override
 			public String asString() {
-				return "gen_ai.completion";
+				return "node.after.state";
 			}
 		}
 

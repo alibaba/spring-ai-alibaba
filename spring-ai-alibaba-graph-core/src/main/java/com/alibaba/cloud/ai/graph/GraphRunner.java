@@ -31,8 +31,6 @@ public class GraphRunner {
 
 	private final CompiledGraph compiledGraph;
 
-	private final OverAllState initialState;
-
 	private final RunnableConfig config;
 
 	private final AtomicReference<Object> resultValue = new AtomicReference<>();
@@ -40,15 +38,14 @@ public class GraphRunner {
 	// Handler for main execution flow - demonstrates encapsulation
 	private final MainGraphExecutor mainGraphExecutor;
 
-	public GraphRunner(CompiledGraph compiledGraph, OverAllState initialState, RunnableConfig config) {
+	public GraphRunner(CompiledGraph compiledGraph, RunnableConfig config) {
 		this.compiledGraph = compiledGraph;
-		this.initialState = initialState;
 		this.config = config;
 		// Initialize the main execution handler - demonstrates encapsulation
 		this.mainGraphExecutor = new MainGraphExecutor();
 	}
 
-	public Flux<GraphResponse<NodeOutput>> run() {
+	public Flux<GraphResponse<NodeOutput>> run(OverAllState initialState) {
 		return Flux.defer(() -> {
 			try {
 				GraphRunnerContext context = new GraphRunnerContext(initialState, config, compiledGraph);

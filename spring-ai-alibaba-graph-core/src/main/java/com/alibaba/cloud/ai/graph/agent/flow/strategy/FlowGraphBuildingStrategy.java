@@ -16,8 +16,19 @@
 package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Strategy interface for building StateGraphs for different FlowAgent types. This design
@@ -58,11 +69,83 @@ public interface FlowGraphBuildingStrategy {
 		if (config.getName() == null || config.getName().trim().isEmpty()) {
 			throw new IllegalArgumentException("Graph name must be provided");
 		}
-		if (config.getKeyStrategyFactory() == null) {
-			throw new IllegalArgumentException("KeyStrategyFactory must be provided");
-		}
 		if (config.getRootAgent() == null) {
 			throw new IllegalArgumentException("Root agent must be provided");
+		}
+		if (config.getKeyStrategyFactory() == null) {
+			// Generate a new KeyStrategyFactory based on agent keys
+			KeyStrategyFactory generatedFactory = generateKeyStrategyFactory(config);
+			config.keyStrategyFactory(generatedFactory);
+		}
+	}
+
+	/**
+	 * Generates a KeyStrategyFactory based on the root agent and sub-agents.
+	 * @param config the configuration containing agents
+	 * @return the generated KeyStrategyFactory
+	 */
+	default KeyStrategyFactory generateKeyStrategyFactory(FlowGraphBuilder.FlowGraphConfig config) {
+		return () -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			KeyStrategy defaultStrategy = new ReplaceStrategy();
+
+			// Process sub-agents
+			if (config.getSubAgents() != null) {
+				for (Agent subAgent : config.getSubAgents()) {
+					processAgentKeyStrategies(subAgent, keyStrategyMap, defaultStrategy);
+				}
+			}
+
+			keyStrategyMap.put("messages", new AppendStrategy());
+
+			return keyStrategyMap;
+		};
+	}
+
+	/**
+	 * Recursively processes key strategies for an agent and its sub-agents.
+	 * @param agent the agent to process
+	 * @param keyStrategyMap the map to populate with key strategies
+	 * @param defaultStrategy the default strategy to use when none is specified
+	 */
+	default void processAgentKeyStrategies(Agent agent, Map<String, KeyStrategy> keyStrategyMap, KeyStrategy defaultStrategy) {
+		if (agent instanceof ReactAgent reactAgent) {
+			// ReactAgent: only handle outputKey
+			processOutputKey(reactAgent.getOutputKey(), reactAgent.getOutputKeyStrategy(), keyStrategyMap, defaultStrategy);
+		} else if (agent instanceof FlowAgent flowAgent) {
+			// FlowAgent: recursively process sub-agents
+			if (flowAgent.subAgents() != null) {
+				for (Agent subAgent : flowAgent.subAgents()) {
+					processAgentKeyStrategies(subAgent, keyStrategyMap, defaultStrategy);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Processes output key and strategy for an agent.
+	 * @param outputKey the output key to process
+	 * @param outputKeyStrategy the strategy for the output key
+	 * @param keyStrategyMap the map to populate
+	 * @param defaultStrategy the default strategy to use when none is specified
+	 */
+	default void processOutputKey(String outputKey, KeyStrategy outputKeyStrategy, Map<String, KeyStrategy> keyStrategyMap, KeyStrategy defaultStrategy) {
+		if (outputKey != null) {
+			if (outputKeyStrategy != null) {
+				keyStrategyMap.put(outputKey, outputKeyStrategy);
+			} else {
+				keyStrategyMap.put(outputKey, defaultStrategy);
+			}
+		}
+	}
+
+	static void addSubAgentNode(Agent subAgent, StateGraph newGraph) throws GraphStateException {
+		if (subAgent instanceof FlowAgent flowAgent) {
+			newGraph.addNode(flowAgent.name(), flowAgent.asStateGraph());
+		} else if (subAgent instanceof BaseAgent baseAgent) {
+			newGraph.addNode(baseAgent.name(), baseAgent.asNode(baseAgent.isIncludeContents(), baseAgent.getOutputKey()));
+		} else {
+			throw new IllegalArgumentException(subAgent.getClass().getName() + " only supports FlowAgent and BaseAgent types");
 		}
 	}
 
