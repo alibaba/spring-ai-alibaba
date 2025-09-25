@@ -31,11 +31,11 @@ public class NacosMcpToolsInjector {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosMcpToolsInjector.class);
 
-
 	public static McpServersVO getMcpServersVO(NacosOptions nacosOptions) {
 		try {
+			String dataId = (nacosOptions.isMcpServersEncrypted() ? "cipher-kms-aes-256-" : "") + "mcp-servers.json";
 			String config = nacosOptions.getNacosConfigService()
-					.getConfig("mcp-servers.json", "ai-agent-" + nacosOptions.getAgentName(), 3000L);
+					.getConfig(dataId, "ai-agent-" + nacosOptions.getAgentName(), 3000L);
 			return JSON.parseObject(config, McpServersVO.class);
 		}
 		catch (NacosException e) {

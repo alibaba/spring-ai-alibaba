@@ -145,8 +145,9 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 	private void registryMcpServerListener(LlmNode llmNode, ToolNode toolNode, NacosOptions nacosOptions) {
 
 		try {
+			String dataId = (nacosOptions.isMcpServersEncrypted() ? "cipher-kms-aes-256-" : "") + "mcp-servers.json";
 			nacosOptions.getNacosConfigService()
-					.addListener("mcp-servers.json", "ai-agent-" + nacosOptions.getAgentName(), new AbstractListener() {
+					.addListener(dataId, "ai-agent-" + nacosOptions.getAgentName(), new AbstractListener() {
 						@Override
 						public void receiveConfigInfo(String configInfo) {
 							McpServersVO mcpServersVO = JSON.parseObject(configInfo, McpServersVO.class);
@@ -169,7 +170,8 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		try {
 			NacosConfigService nacosConfigService = nacosOptions.getNacosConfigService();
 			//1. register agent base listener
-			nacosConfigService.addListener("agent-base.json", "ai-agent-" + nacosOptions.getAgentName(),
+			String dataIdT = (nacosOptions.isAgentBaseEncrypted() ? "cipher-kms-aes-256-" : "") + "agent-base.json";
+			nacosConfigService.addListener(dataIdT, "ai-agent-" + nacosOptions.getAgentName(),
 					new AgentBaseListener(nacosOptions, agentVO.getPromptKey(), nacosContextHolder));
 			//2. registry prompt vo listener
 			registerPromptListener(nacosOptions, nacosContextHolder, agentVO.getPromptKey(), reactAgent);
@@ -187,7 +189,9 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 			String promptKey, ReactAgent reactAgent) {
 		try {
 			PromptListener promptListener = new PromptListener(nacosContextHolder, reactAgent);
-			nacosOptions.getNacosConfigService().addListener(String.format("prompt-%s.json", promptKey),
+			String dataId = (nacosOptions.isPromptEncrypted() ? "cipher-kms-aes-256-" : "") + String.format("prompt-%s.json", promptKey);
+
+			nacosOptions.getNacosConfigService().addListener(dataId,
 					"nacos-ai-meta", promptListener);
 			nacosContextHolder.promptListeners.put(promptKey, promptListener);
 		}
@@ -200,7 +204,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 
 		try {
 			String agentName = nacosOptions.getAgentName();
-			String dataIdT = String.format(nacosOptions.isModelConfigEncrypted() ? "cipher-kms-aes-256-model.json" : "model.json", agentName);
+			String dataIdT = (nacosOptions.isModelEncrypted() ? "cipher-kms-aes-256-" : "") + "model.json";
 			nacosOptions.getNacosConfigService()
 					.addListener(dataIdT, "ai-agent-" + agentName, new AbstractListener() {
 						@Override
@@ -209,7 +213,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 							try {
 								OpenAiChatOptions openAiChatOptions = buildProxyChatOptions(modelVO, getMetadata(agentVOHolder.promptVO));
 								ChatModel chatModelNew = createModel(nacosOptions, modelVO, openAiChatOptions);
-								replaceModel(chatClient, chatModelNew);
+								replaceModel(chatClient, chatModelNew, openAiChatOptions);
 								agentVOHolder.setObservationMetadataAwareOptions((ObservationMetadataAwareOptions) openAiChatOptions);
 							}
 							catch (Exception e) {
@@ -339,7 +343,8 @@ class AgentBaseListener extends AbstractListener {
 		}
 		if (nacosContextHolder.getPromptListeners().containsKey(currentPromptKey)) {
 			Listener listener = nacosContextHolder.getPromptListeners().remove(currentPromptKey);
-			nacosOptions.getNacosConfigService().removeListener(String.format("prompt-%s.json", currentPromptKey),
+			String dataId = (nacosOptions.isPromptEncrypted() ? "cipher-kms-aes-256-" : "") + String.format("prompt-%s.json", currentPromptKey);
+			nacosOptions.getNacosConfigService().removeListener(dataId,
 					"nacos-ai-meta", listener);
 		}
 

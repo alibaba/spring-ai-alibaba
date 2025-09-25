@@ -20,36 +20,16 @@ import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.fastjson.JSON;
 
 public class NacosPromptInjector {
-
-	/**
-	 * load promot by prompt key.
-	 *
-	 * @param nacosOptions nacos hosted model options
-	 * @return PromptVO
-	 */
-	public static PromptVO getPromptByKey(NacosOptions nacosOptions) {
-
-		try {
-			String promptConfig = nacosOptions.getNacosConfigService()
-					.getConfig(String.format("prompt-%s.json", nacosOptions.promptKey), "nacos-ai-meta",
-							3000L);
-			PromptVO promptVO = JSON.parseObject(promptConfig, PromptVO.class);
-			promptVO.setPromptKey(nacosOptions.promptKey);
-			return promptVO;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
+	
 	/**
 	 * load promot by prompt key.
 	 */
 	public static PromptVO getPromptByKey(NacosOptions nacosOptions, String promptKey) {
 
 		try {
+			String dataId = (nacosOptions.isPromptEncrypted() ? "cipher-kms-aes-256-" : "") + String.format("prompt-%s.json", promptKey);
 			String promptConfig = nacosOptions.getNacosConfigService()
-					.getConfig(String.format("prompt-%s.json", promptKey), "nacos-ai-meta",
+					.getConfig(dataId, "nacos-ai-meta",
 							3000L);
 			PromptVO promptVO = JSON.parseObject(promptConfig, PromptVO.class);
 			promptVO.setPromptKey(promptKey);

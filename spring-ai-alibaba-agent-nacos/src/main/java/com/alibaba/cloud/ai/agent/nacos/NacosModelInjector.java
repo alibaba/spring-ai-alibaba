@@ -25,13 +25,14 @@ import com.alibaba.nacos.api.exception.NacosException;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 
 public class NacosModelInjector {
 
 
 	public static ModelVO getModelByAgentName(NacosOptions nacosOptions) {
 		try {
-			String dataIdT = String.format(nacosOptions.isModelConfigEncrypted() ? "cipher-kms-aes-256-model-%s.json" : "model.json");
+			String dataIdT = (nacosOptions.isModelEncrypted() ? "cipher-kms-aes-256-" : "") + "model.json";
 			String config = nacosOptions.getNacosConfigService()
 					.getConfig(dataIdT, "ai-agent-" + nacosOptions.getAgentName(), 3000L);
 			return JSON.parseObject(config, ModelVO.class);
@@ -42,9 +43,10 @@ public class NacosModelInjector {
 	}
 
 
-	public static void replaceModel(ChatClient chatClient, ChatModel chatModel) throws Exception {
+	public static void replaceModel(ChatClient chatClient, ChatModel chatModel, OpenAiChatOptions openAiChatOptions) throws Exception {
 		Object defaultChatClientRequest = getField(chatClient, "defaultChatClientRequest");
 		modifyFinalField(defaultChatClientRequest, "chatModel", chatModel);
+		modifyFinalField(defaultChatClientRequest, "chatOptions", openAiChatOptions);
 	}
 
 	private static Object getField(Object obj, String fieldName) throws Exception {

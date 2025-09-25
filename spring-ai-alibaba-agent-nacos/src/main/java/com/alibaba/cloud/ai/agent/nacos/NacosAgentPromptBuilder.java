@@ -79,7 +79,7 @@ public class NacosAgentPromptBuilder extends DefaultBuilder {
 		PromptVO promptVO = null;
 		ObservationMetadataAwareOptions observationMetadataAwareOptions = null;
 		if (nacosOptions.getPromptKey() != null) {
-			promptVO = NacosPromptInjector.getPromptByKey(nacosOptions);
+			promptVO = NacosPromptInjector.getPromptByKey(nacosOptions, nacosOptions.getPromptKey());
 			if (promptVO != null) {
 				this.instruction = promptVO.getTemplate();
 				if (this.chatOptions == null) {
