@@ -125,9 +125,10 @@ public class ParallelNode extends Node {
 					return mergedState;
 				}
 				else {
+					Map<String, Object> initialState = new HashMap<>();
 					// No streaming output, directly merge all results
 					return results.stream()
-						.reduce(state.data(),
+						.reduce(initialState,
 								(result, actionResult) -> OverAllState.updateState(result, actionResult, channels));
 				}
 			});
