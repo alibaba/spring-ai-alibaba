@@ -118,7 +118,7 @@ public class LlmNode implements NodeAction {
 		String localSystemPrompt = this.systemPrompt;
 		Map<String, Object> localParams = new HashMap<>(this.params);
 		List<Message> localMessages = new ArrayList<>(this.messages);
-		
+
 		if (StringUtils.hasLength(userPromptKey)) {
 			localUserPrompt = (String) state.value(userPromptKey).orElse(localUserPrompt);
 		}
@@ -150,11 +150,23 @@ public class LlmNode implements NodeAction {
 				localMessages = convertedMessages.isEmpty() ? localMessages : convertedMessages;
 			}
 		}
+
+		String renderedUserPrompt = localUserPrompt;
+		String renderedSystemPrompt = localSystemPrompt;
+
 		if (StringUtils.hasLength(localUserPrompt) && !localParams.isEmpty()) {
-			localUserPrompt = renderPromptTemplate(localUserPrompt, localParams);
+			renderedUserPrompt = renderPromptTemplate(localUserPrompt, localParams);
 		}
-		
-		return new ExecutionContext(localSystemPrompt, localUserPrompt, localParams, localMessages, state);
+
+		if (StringUtils.hasLength(localSystemPrompt)) {
+			if (!localParams.isEmpty()) {
+				renderedSystemPrompt = renderPromptTemplate(localSystemPrompt, localParams);
+			} else {
+				renderedSystemPrompt = renderPromptTemplate(localSystemPrompt, state.data());
+			}
+		}
+
+		return new ExecutionContext(renderedSystemPrompt, renderedUserPrompt, localParams, localMessages, state);
 	}
 
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
@@ -181,14 +193,7 @@ public class LlmNode implements NodeAction {
 				.advisors(advisors);
 
 		if (StringUtils.hasLength(context.systemPrompt)) {
-			String renderedSystemPrompt;
-			if (!context.params.isEmpty()) {
-				renderedSystemPrompt = renderPromptTemplate(context.systemPrompt, context.params);
-			} else {
-				// try render with state
-				renderedSystemPrompt = renderPromptTemplate(context.systemPrompt, context.state.data());
-			}
-			chatClientRequestSpec.system(renderedSystemPrompt);
+			chatClientRequestSpec.system(context.systemPrompt);
 		}
 
 		if (StringUtils.hasLength(context.userPrompt)) {
