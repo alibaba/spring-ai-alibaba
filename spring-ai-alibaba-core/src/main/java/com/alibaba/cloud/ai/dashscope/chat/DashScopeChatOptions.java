@@ -172,6 +172,12 @@ public class DashScopeChatOptions implements ToolCallingChatOptions {
   private @JsonProperty("enable_thinking") Boolean enableThinking = false;
 
   /**
+   * The maximum length of the thinking process takes effect when enable_thinking is true,
+   * and is suitable for Qwen3 full system model.
+   */
+  private @JsonProperty("thinking_budget") Integer thinkingBudget;
+
+  /**
    * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
    */
   @JsonIgnore
@@ -307,6 +313,13 @@ public class DashScopeChatOptions implements ToolCallingChatOptions {
 	return responseFormat;
   }
 
+  public Integer getThinkingBudget() {
+        return thinkingBudget;
+    }
+
+    public void setThinkingBudget(Integer thinkingBudget) {
+        this.thinkingBudget = thinkingBudget;
+    }
   public void setResponseFormat(DashScopeResponseFormat responseFormat) {
 
 	this.responseFormat = responseFormat;
@@ -583,6 +596,11 @@ public class DashScopeChatOptions implements ToolCallingChatOptions {
       return this;
     }
 
+    public DashscopeChatOptionsBuilder withThinkingBudget(Integer thinkingBudget) {
+        this.options.thinkingBudget = thinkingBudget;
+        return this;
+    }
+
     public DashScopeChatOptions build() {
       return this.options;
     }
@@ -611,6 +629,7 @@ public class DashScopeChatOptions implements ToolCallingChatOptions {
             .withMultiModel(fromOptions.getMultiModel())
             .withVlHighResolutionImages(fromOptions.getVlHighResolutionImages())
             .withEnableThinking(fromOptions.getEnableThinking())
+            .withThinkingBudget(fromOptions.getThinkingBudget())
             .withParallelToolCalls(fromOptions.getParallelToolCalls())
             .withSearchOptions(fromOptions.getSearchOptions())
             .withHttpHeaders(fromOptions.getHttpHeaders())
@@ -639,6 +658,7 @@ public class DashScopeChatOptions implements ToolCallingChatOptions {
             Objects.equals(toolChoice, that.toolChoice) &&
             Objects.equals(vlHighResolutionImages, that.vlHighResolutionImages) &&
             Objects.equals(enableThinking, that.enableThinking) &&
+            Objects.equals(thinkingBudget, that.thinkingBudget) &&
             Objects.equals(toolCallbacks, that.toolCallbacks) &&
             Objects.equals(toolNames, that.toolNames) &&
             Objects.equals(internalToolExecutionEnabled, that.internalToolExecutionEnabled) &&
@@ -653,7 +673,7 @@ public class DashScopeChatOptions implements ToolCallingChatOptions {
   public int hashCode() {
     return Objects.hash(model, stream, temperature, seed, topP, topK, stop, enableSearch,
             responseFormat, incrementalOutput, repetitionPenalty, tools, toolChoice,
-            vlHighResolutionImages, enableThinking, toolCallbacks, toolNames,
+            vlHighResolutionImages, enableThinking, thinkingBudget, toolCallbacks, toolNames,
             internalToolExecutionEnabled, multiModel, searchOptions, parallelToolCalls, httpHeaders, toolContext);
   }
 
