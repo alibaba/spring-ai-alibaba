@@ -23,7 +23,6 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>spring-ai-alibaba-observation-extension</artifactId>
-    <version>${revision}</version>
     <packaging>jar</packaging>
     <name>Spring AI Alibaba Observation Extension</name>
     <description>Spring AI Alibaba Observation Extension Module, ARMS Implementation</description>
