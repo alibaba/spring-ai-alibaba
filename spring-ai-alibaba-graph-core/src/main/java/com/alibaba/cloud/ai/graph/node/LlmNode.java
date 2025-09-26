@@ -87,17 +87,17 @@ public class LlmNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		initNodeWithState(state);
+		ExecutionContext context = initNodeWithState(state);
 
 		// add streaming support
 		if (Boolean.TRUE.equals(stream)) {
-			Flux<ChatResponse> chatResponseFlux = stream(state);
+			Flux<ChatResponse> chatResponseFlux = stream(context);
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
 		}
 		else {
 			AssistantMessage responseOutput;
 			try {
-				ChatResponse response = call(state);
+				ChatResponse response = call(context);
 				responseOutput = response.getResult().getOutput();
 			}
 			catch (Exception e) {
@@ -113,19 +113,24 @@ public class LlmNode implements NodeAction {
 		}
 	}
 
-	private void initNodeWithState(OverAllState state) {
+	private ExecutionContext initNodeWithState(OverAllState state) {
+		String localUserPrompt = this.userPrompt;
+		String localSystemPrompt = this.systemPrompt;
+		Map<String, Object> localParams = new HashMap<>(this.params);
+		List<Message> localMessages = new ArrayList<>(this.messages);
+
 		if (StringUtils.hasLength(userPromptKey)) {
-			this.userPrompt = (String) state.value(userPromptKey).orElse(this.userPrompt);
+			localUserPrompt = (String) state.value(userPromptKey).orElse(localUserPrompt);
 		}
 		if (StringUtils.hasLength(systemPromptKey)) {
-			this.systemPrompt = (String) state.value(systemPromptKey).orElse(this.systemPrompt);
+			localSystemPrompt = (String) state.value(systemPromptKey).orElse(localSystemPrompt);
 		}
 		if (StringUtils.hasLength(paramsKey)) {
-			this.params = (Map<String, Object>) state.value(paramsKey).orElse(this.params);
+			localParams = (Map<String, Object>) state.value(paramsKey).orElse(localParams);
 		}
 		// Used for adapting the dify's DSL conversion
-		if (!this.params.isEmpty()) {
-			Map<String, Object> rawParams = this.params;
+		if (!localParams.isEmpty()) {
+			Map<String, Object> rawParams = localParams;
 			Map<String, Object> filledParams = new HashMap<>();
 			for (Map.Entry<String, Object> entry : rawParams.entrySet()) {
 				if (entry.getValue().equals("null")) {
@@ -136,19 +141,32 @@ public class LlmNode implements NodeAction {
 					filledParams.put(entry.getKey(), entry.getValue());
 				}
 			}
-
-			this.params = filledParams;
+			localParams = filledParams;
 		}
 		if (StringUtils.hasLength(messagesKey)) {
 			Object messagesValue = state.value(messagesKey).orElse(null);
 			if (messagesValue != null) {
 				List<Message> convertedMessages = convertToMessages(messagesValue);
-				this.messages = convertedMessages.isEmpty() ? this.messages : convertedMessages;
+				localMessages = convertedMessages.isEmpty() ? localMessages : convertedMessages;
 			}
 		}
-		if (StringUtils.hasLength(userPrompt) && !params.isEmpty()) {
-			this.userPrompt = renderPromptTemplate(userPrompt, params);
+
+		String renderedUserPrompt = localUserPrompt;
+		String renderedSystemPrompt = localSystemPrompt;
+
+		if (StringUtils.hasLength(localUserPrompt) && !localParams.isEmpty()) {
+			renderedUserPrompt = renderPromptTemplate(localUserPrompt, localParams);
 		}
+
+		if (StringUtils.hasLength(localSystemPrompt)) {
+			if (!localParams.isEmpty()) {
+				renderedSystemPrompt = renderPromptTemplate(localSystemPrompt, localParams);
+			} else {
+				renderedSystemPrompt = renderPromptTemplate(localSystemPrompt, state.data());
+			}
+		}
+
+		return new ExecutionContext(renderedSystemPrompt, renderedUserPrompt, localParams, localMessages, state);
 	}
 
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
@@ -160,35 +178,26 @@ public class LlmNode implements NodeAction {
 		return promptTemplate.render(params);
 	}
 
-	public Flux<ChatResponse> stream(OverAllState state) {
-		return buildChatClientRequestSpec(state).stream().chatResponse();
+	public Flux<ChatResponse> stream(ExecutionContext context) {
+		return buildChatClientRequestSpec(context).stream().chatResponse();
 	}
 
-	public ChatResponse call(OverAllState state) {
-		return buildChatClientRequestSpec(state).call().chatResponse();
+	public ChatResponse call(ExecutionContext context) {
+		return buildChatClientRequestSpec(context).call().chatResponse();
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state) {
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ExecutionContext context) {
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
 				.toolCallbacks(toolCallbacks)
-				.messages(messages)
+				.messages(context.messages)
 				.advisors(advisors);
 
-		if (StringUtils.hasLength(systemPrompt)) {
-			if (!params.isEmpty()) {
-				systemPrompt = renderPromptTemplate(systemPrompt, params);
-			} else {
-				// try render with state
-				systemPrompt = renderPromptTemplate(systemPrompt, state.data());
-			}
-			chatClientRequestSpec.system(systemPrompt);
+		if (StringUtils.hasLength(context.systemPrompt)) {
+			chatClientRequestSpec.system(context.systemPrompt);
 		}
 
-		if (StringUtils.hasLength(userPrompt)) {
-			if (!params.isEmpty()) {
-				userPrompt = renderPromptTemplate(userPrompt, params);
-			}
-			chatClientRequestSpec.user(userPrompt);
+		if (StringUtils.hasLength(context.userPrompt)) {
+			chatClientRequestSpec.user(context.userPrompt);
 		}
 
 		return chatClientRequestSpec;
@@ -313,6 +322,23 @@ public class LlmNode implements NodeAction {
 			return llmNode;
 		}
 
+	}
+
+	private static class ExecutionContext {
+		final String systemPrompt;
+		final String userPrompt;
+		final Map<String, Object> params;
+		final List<Message> messages;
+		final OverAllState state;
+
+		ExecutionContext(String systemPrompt, String userPrompt, Map<String, Object> params,
+						List<Message> messages, OverAllState state) {
+			this.systemPrompt = systemPrompt;
+			this.userPrompt = userPrompt;
+			this.params = params;
+			this.messages = messages;
+			this.state = state;
+		}
 	}
 
 }
