@@ -24,9 +24,9 @@ import com.alibaba.cloud.ai.a2a.server.JsonRpcA2aRequestHandler;
 import io.a2a.spec.JSONRPCResponse;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.util.Utils;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.lang.NonNull;
 import reactor.core.publisher.Flux;
 
 import org.springframework.http.HttpStatus;
@@ -71,9 +71,9 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
     private record AgentCardHandler(
             JsonRpcA2aRequestHandler a2aRequestHandler) implements HandlerFunction<ServerResponse> {
 
-        @NotNull
+        @NonNull
         @Override
-        public ServerResponse handle(@NotNull ServerRequest request) throws Exception {
+        public ServerResponse handle(@NonNull ServerRequest request) throws Exception {
             try {
                 return ServerResponse.ok().body(a2aRequestHandler.getAgentCard());
             } catch (Exception e) {
@@ -87,9 +87,9 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
     private record MessageHandler(
             JsonRpcA2aRequestHandler a2aRequestHandler) implements HandlerFunction<ServerResponse> {
 
-        @NotNull
+        @NonNull
         @Override
-        public ServerResponse handle(@NotNull ServerRequest request) throws Exception {
+        public ServerResponse handle(@NonNull ServerRequest request) throws Exception {
             try {
                 String bodyString = request.body(String.class);
                 Object result = a2aRequestHandler.onHandler(bodyString, request.headers());
