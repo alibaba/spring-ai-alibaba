@@ -93,11 +93,11 @@ public class NacosAgentPromptBuilder extends DefaultBuilder {
 				observationMetadataAwareOptions.getObservationMetadata().putAll(getMetadata(promptVO));
 			}
 		}
-		if (this.observationRegistry == null && nacosOptions.getObservationConfigration() != null) {
-			this.observationRegistry = nacosOptions.getObservationConfigration().getObservationRegistry();
+		if (this.observationRegistry == null && nacosOptions.getObservationConfiguration() != null) {
+			this.observationRegistry = nacosOptions.getObservationConfiguration().getObservationRegistry();
 		}
-		if (this.customObservationConvention == null && nacosOptions.getObservationConfigration() != null) {
-			this.customObservationConvention = nacosOptions.getObservationConfigration()
+		if (this.customObservationConvention == null && nacosOptions.getObservationConfiguration() != null) {
+			this.customObservationConvention = nacosOptions.getObservationConfiguration()
 					.getChatClientObservationConvention();
 		}
 

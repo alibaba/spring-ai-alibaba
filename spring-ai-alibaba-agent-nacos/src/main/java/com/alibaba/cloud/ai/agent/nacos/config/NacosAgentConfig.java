@@ -22,7 +22,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.agent.nacos.NacosOptions;
-import com.alibaba.cloud.ai.agent.nacos.ObservationConfigration;
+import com.alibaba.cloud.ai.agent.nacos.ObservationConfiguration;
 import com.alibaba.nacos.api.exception.NacosException;
 import io.micrometer.observation.ObservationRegistry;
 
@@ -58,9 +58,9 @@ public class NacosAgentConfig {
 	}
 
 	@Bean
-	public NacosOptions nacosOptions(Properties nacosAgentProxyProperties, ObservationConfigration observationConfigration) throws NacosException {
+	public NacosOptions nacosOptions(Properties nacosAgentProxyProperties, ObservationConfiguration observationConfiguration) throws NacosException {
 		NacosOptions nacosOptions = new NacosOptions(nacosAgentProxyProperties);
-		nacosOptions.setObservationConfigration(observationConfigration);
+		nacosOptions.setObservationConfiguration(observationConfiguration);
 		if (nacosAgentProxyProperties.containsKey("promptKey")) {
 			nacosOptions.setPromptKey(nacosAgentProxyProperties.getProperty("promptKey"));
 		}
@@ -72,10 +72,10 @@ public class NacosAgentConfig {
 	}
 
 	@Bean
-	public ObservationConfigration observationConfigration(ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<ToolCallingManager> toolCallingManager,
+	public ObservationConfiguration observationConfiguration(ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<ToolCallingManager> toolCallingManager,
 			ObjectProvider<ChatModelObservationConvention> chatModelObservationConvention,
 			ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention) {
-		return new ObservationConfigration(observationRegistry.getIfAvailable(), toolCallingManager.getIfAvailable(), chatModelObservationConvention.getIfAvailable(), chatClientObservationConvention.getIfAvailable());
+		return new ObservationConfiguration(observationRegistry.getIfAvailable(), toolCallingManager.getIfAvailable(), chatModelObservationConvention.getIfAvailable(), chatClientObservationConvention.getIfAvailable());
 	}
 
 }

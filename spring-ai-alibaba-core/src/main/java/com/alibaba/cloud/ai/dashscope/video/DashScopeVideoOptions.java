@@ -45,7 +45,7 @@ public class DashScopeVideoOptions implements VideoOptions {
 
 	/**
 	 * The size parameter should be set directly to the specific value of the target
-	 * resolution (such as 1280720), rather than the aspect ratio (such as 1:1) or the
+	 * resolution (such as 1280x720), rather than the aspect ratio (such as 1:1) or the
 	 * resolution gear name (such as 480P or 720P).
 	 */
 	@JsonProperty("size")

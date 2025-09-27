@@ -38,7 +38,7 @@ public class NacosOptions {
 
 	NacosMcpOperationService mcpOperationService;
 
-	private ObservationConfigration observationConfigration;
+	private ObservationConfiguration observationConfiguration;
 
 	private String agentName;
 
