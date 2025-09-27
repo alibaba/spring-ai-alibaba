@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.a2a.server.JsonRpcA2aRequestHandler;
 import io.a2a.spec.JSONRPCResponse;
 import io.a2a.spec.TaskStatusUpdateEvent;
 import io.a2a.util.Utils;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -67,88 +68,75 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
 				.build();
 	}
 
-	private class AgentCardHandler implements HandlerFunction<ServerResponse> {
+    private record AgentCardHandler(
+            JsonRpcA2aRequestHandler a2aRequestHandler) implements HandlerFunction<ServerResponse> {
 
-		private final JsonRpcA2aRequestHandler a2aRequestHandler;
+        @NotNull
+        @Override
+        public ServerResponse handle(@NotNull ServerRequest request) throws Exception {
+            try {
+                return ServerResponse.ok().body(a2aRequestHandler.getAgentCard());
+            } catch (Exception e) {
+                log.error("Failed to get Agent Card: {}", e.getMessage());
+                return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
+        }
 
-		public AgentCardHandler(JsonRpcA2aRequestHandler a2aRequestHandler) {
-			this.a2aRequestHandler = a2aRequestHandler;
-		}
+    }
 
-		@Override
-		public ServerResponse handle(ServerRequest request) throws Exception {
-			try {
-				return ServerResponse.ok().body(a2aRequestHandler.getAgentCard());
-			}
-			catch (Exception e) {
-				log.error("Failed to get Agent Card: {}", e.getMessage());
-				return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-			}
-		}
+    private record MessageHandler(
+            JsonRpcA2aRequestHandler a2aRequestHandler) implements HandlerFunction<ServerResponse> {
 
-	}
+        @NotNull
+        @Override
+        public ServerResponse handle(@NotNull ServerRequest request) throws Exception {
+            try {
+                String bodyString = request.body(String.class);
+                Object result = a2aRequestHandler.onHandler(bodyString, request.headers());
+                if (result instanceof Flux<?>) {
+                    return buildSseResponse((Flux<?>) result);
+                } else {
+                    return buildJsonRpcResponse(result);
+                }
+            } catch (Exception e) {
+                log.error("Failed to handle request: {}", e.getMessage());
+                return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
+        }
 
-	private class MessageHandler implements HandlerFunction<ServerResponse> {
+        private ServerResponse buildJsonRpcResponse(Object result) {
+            return ServerResponse.ok().body(result);
+        }
 
-		private final JsonRpcA2aRequestHandler a2aRequestHandler;
+        private ServerResponse buildSseResponse(Flux<?> result) {
+            return ServerResponse.sse(sseBuilder -> {
+                sseBuilder.onComplete(() -> {
+                    log.debug("Agent SSE connection completed.");
+                });
+                sseBuilder.onTimeout(() -> {
+                    log.debug("Agent SSE connection timeout.");
+                });
+                result.subscribe((Consumer<Object>) o -> {
+                    if (o instanceof JSONRPCResponse) {
+                        try {
+                            String sseBody = Utils.OBJECT_MAPPER.writeValueAsString(o);
+                            if (log.isDebugEnabled()) {
+                                log.debug("send sse body to agent: {}", sseBody);
+                            }
+                            sseBuilder.data(sseBody);
+                            if (((JSONRPCResponse<?>) o).getResult() instanceof TaskStatusUpdateEvent event) {
+                                if (event.isFinal()) {
+                                    sseBuilder.complete();
+                                }
+                            }
+                        } catch (IOException e) {
+                            sseBuilder.error(e);
+                        }
+                    }
+                });
+            }, Duration.ZERO);
+        }
 
-		private MessageHandler(JsonRpcA2aRequestHandler a2aRequestHandler) {
-			this.a2aRequestHandler = a2aRequestHandler;
-		}
-
-		@Override
-		public ServerResponse handle(ServerRequest request) throws Exception {
-			try {
-				String bodyString = request.body(String.class);
-				Object result = a2aRequestHandler.onHandler(bodyString, request.headers());
-				if (result instanceof Flux<?>) {
-					return buildSseResponse((Flux<?>) result);
-				}
-				else {
-					return buildJsonRpcResponse(result);
-				}
-			}
-			catch (Exception e) {
-				log.error("Failed to handle request: {}", e.getMessage());
-				return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-			}
-		}
-
-		private ServerResponse buildJsonRpcResponse(Object result) {
-			return ServerResponse.ok().body(result);
-		}
-
-		private ServerResponse buildSseResponse(Flux<?> result) {
-			return ServerResponse.sse(sseBuilder -> {
-				sseBuilder.onComplete(() -> {
-					log.debug("Agent SSE connection completed.");
-				});
-				sseBuilder.onTimeout(() -> {
-					log.debug("Agent SSE connection timeout.");
-				});
-				result.subscribe((Consumer<Object>) o -> {
-					if (o instanceof JSONRPCResponse) {
-						try {
-							String sseBody = Utils.OBJECT_MAPPER.writeValueAsString(o);
-							if (log.isDebugEnabled()) {
-								log.debug("send sse body to agent: {}", sseBody);
-							}
-							sseBuilder.data(sseBody);
-							if (((JSONRPCResponse<?>) o).getResult() instanceof TaskStatusUpdateEvent) {
-								TaskStatusUpdateEvent event = (TaskStatusUpdateEvent) ((JSONRPCResponse<?>) o).getResult();
-								if (event.isFinal()) {
-									sseBuilder.complete();
-								}
-							}
-						}
-						catch (IOException e) {
-							sseBuilder.error(e);
-						}
-					}
-				});
-			}, Duration.ZERO);
-		}
-
-	}
+    }
 
 }

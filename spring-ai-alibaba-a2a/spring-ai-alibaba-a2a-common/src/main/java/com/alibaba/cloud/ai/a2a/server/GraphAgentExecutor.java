@@ -16,16 +16,13 @@
 
 package com.alibaba.cloud.ai.a2a.server;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
@@ -173,30 +170,35 @@ public class GraphAgentExecutor implements AgentExecutor {
 	private void executeForNonStreamTask(Map<String, Object> input, RequestContext context, EventQueue eventQueue)
 			throws GraphStateException, GraphRunnerException {
 		RunnableConfig runnableConfig = getRunnableConfig(context);
-		var result = executeAgent.invoke(input, runnableConfig);
+        Optional<OverAllState> result = executeAgent.invoke(input, runnableConfig);
 		// FIXME: currently only support ReactAgent and A2aRemoteAgent as the root agent
-		String outputText = result.get().data().containsKey(((BaseAgent)executeAgent).getOutputKey())
-				? String.valueOf(result.get().data().get(((BaseAgent)executeAgent).getOutputKey())) : "No output key in result.";
-
+        String outputText = result.flatMap(
+                    overAllState -> {
+                        Map<String, Object> data = overAllState.data();
+                        return Optional.ofNullable(data.get(((BaseAgent) executeAgent).getOutputKey()));
+                    }
+                )
+                .map(String::valueOf)
+                .orElse("No output key in result.");
 		Task task = context.getTask();
 		if (task == null) {
 			task = newTask(context.getMessage());
 			eventQueue.enqueueEvent(task);
 		}
 		TaskUpdater taskUpdater = new TaskUpdater(context, eventQueue);
-		boolean taskComplete = true;
-		boolean requireUserInput = false;
-		if (!taskComplete && !requireUserInput) {
-			taskUpdater.startWork(taskUpdater.newAgentMessage(List.of(new TextPart(outputText)), Map.of()));
-		}
-		else if (requireUserInput) {
-			taskUpdater.startWork(taskUpdater.newAgentMessage(List.of(new TextPart(outputText)), Map.of()));
-		}
-		else {
+//		boolean taskComplete = true;
+//		boolean requireUserInput = false;
+//		if (!taskComplete && !requireUserInput) {
+//			taskUpdater.startWork(taskUpdater.newAgentMessage(List.of(new TextPart(outputText)), Map.of()));
+//		}
+//		else if (requireUserInput) {
+//			taskUpdater.startWork(taskUpdater.newAgentMessage(List.of(new TextPart(outputText)), Map.of()));
+//		}
+//		else {
 			taskUpdater.addArtifact(List.of(new TextPart(outputText)), UUID.randomUUID().toString(),
 					"conversation_result", Map.of("output", outputText));
 			taskUpdater.complete();
-		}
+//		}
 	}
 
 	private void waitTaskCompleted(Task task) {

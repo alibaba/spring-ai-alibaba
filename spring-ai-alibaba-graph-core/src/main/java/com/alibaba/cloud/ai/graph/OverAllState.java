@@ -205,7 +205,7 @@ public final class OverAllState implements Serializable {
 	 * @param keyStrategies the key strategies
 	 * @param resume the resume
 	 */
-	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
+	OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume) {
 		this.data = data != null ? data : new HashMap<>();
 		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
@@ -219,8 +219,8 @@ public final class OverAllState implements Serializable {
 	 * @param resume the resume
 	 * @param store the store instance
 	 */
-	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume,
-			Store store) {
+    OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies, Boolean resume,
+                 Store store) {
 		this.data = data != null ? data : new HashMap<>();
 		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
@@ -325,15 +325,16 @@ public final class OverAllState implements Serializable {
 			withResume();
 			return this;
 		}
-
 		if (CollectionUtils.isEmpty(input)) {
 			return this;
 		}
-
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
-		input.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
-			this.data.put(key, keyStrategies.get(key).apply(value(key, null), input.get(key)));
-		});
+		input.keySet()
+				.stream()
+				.filter(keyStrategies::containsKey)
+				.forEach(
+						key -> this.data.put(key, keyStrategies.get(key).apply(value(key, null), input.get(key)))
+				);
 		return this;
 	}
 
@@ -343,7 +344,8 @@ public final class OverAllState implements Serializable {
 	 * @param strategy the strategy
 	 * @return the over all state
 	 */
-	public OverAllState registerKeyAndStrategy(String key, KeyStrategy strategy) {
+	@SuppressWarnings("UnusedReturnValue")
+    public OverAllState registerKeyAndStrategy(String key, KeyStrategy strategy) {
 		this.keyStrategies.put(key, strategy);
 		return this;
 	}
@@ -406,7 +408,7 @@ public final class OverAllState implements Serializable {
 	 * Key verify boolean.
 	 * @return the boolean
 	 */
-	protected boolean keyVerify() {
+    private boolean keyVerify() {
 		return hasCommonKey(this.data, getKeyStrategies());
 	}
 
@@ -541,7 +543,7 @@ public final class OverAllState implements Serializable {
 	 * Data map.
 	 * @return the map
 	 */
-	public final Map<String, Object> data() {
+	public Map<String, Object> data() {
 		return data != null ? unmodifiableMap(data) : unmodifiableMap(new HashMap<>());
 	}
 
@@ -551,7 +553,8 @@ public final class OverAllState implements Serializable {
 	 * @param key the key
 	 * @return the optional
 	 */
-	public final <T> Optional<T> value(String key) {
+	@SuppressWarnings("unchecked")
+    public <T> Optional<T> value(String key) {
 		return ofNullable((T) data().get(key));
 	}
 
@@ -575,18 +578,18 @@ public final class OverAllState implements Serializable {
 		try {
 			// Direct type conversion
 			if (type.isInstance(value)) {
-				return ofNullable(type.cast(value));
+				return Optional.of(type.cast(value));
 			}
 
 			// Special handling for List type
 			if (List.class.isAssignableFrom(type) && value instanceof List) {
 				@SuppressWarnings("unchecked")
 				T castedList = (T) value;
-				return ofNullable(castedList);
+				return Optional.of(castedList);
 			}
 
 			// If no match, try direct conversion (maintain original behavior)
-			return ofNullable(type.cast(value));
+			return Optional.of(type.cast(value));
 		}
 		catch (ClassCastException e) {
 			// Return empty Optional when conversion fails
@@ -601,7 +604,8 @@ public final class OverAllState implements Serializable {
 	 * @param defaultValue the default value
 	 * @return the t
 	 */
-	public final <T> T value(String key, T defaultValue) {
+	@SuppressWarnings("unchecked")
+    public <T> T value(String key, T defaultValue) {
 		return (T) value(key).orElse(defaultValue);
 	}
 

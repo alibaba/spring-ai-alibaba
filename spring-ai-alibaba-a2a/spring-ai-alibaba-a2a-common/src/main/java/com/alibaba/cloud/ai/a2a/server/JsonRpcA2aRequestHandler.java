@@ -74,9 +74,10 @@ public class JsonRpcA2aRequestHandler implements A2aRequestHandler {
 	@Override
 	public Object onHandler(String body, ServerRequest.Headers headers) {
 		boolean streaming = isStreamingRequest(body);
-		Object result = null;
+		Object result;
 		try {
-			result = streaming ? handleStreamRequest(body) : handleNonStreamRequest(body);
+            //noinspection ReactiveStreamsUnusedPublisher
+            result = streaming ? handleStreamRequest(body) : handleNonStreamRequest(body);
 		}
 		catch (JsonProcessingException e) {
 			result = new JSONRPCErrorResponse(null, new JSONParseError());

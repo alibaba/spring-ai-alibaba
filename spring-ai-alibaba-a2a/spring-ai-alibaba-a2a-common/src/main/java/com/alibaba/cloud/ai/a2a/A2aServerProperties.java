@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.a2a.constants.A2aConstants;
 import com.alibaba.cloud.ai.a2a.route.JsonRpcA2aRouterProvider;
 import com.alibaba.cloud.ai.a2a.utils.InetUtils;
 import jakarta.annotation.PostConstruct;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +123,7 @@ public class A2aServerProperties implements EnvironmentAware {
 	}
 
 	@Override
-	public void setEnvironment(Environment environment) {
+	public void setEnvironment(@NotNull Environment environment) {
 		this.environment = environment;
 	}
 
