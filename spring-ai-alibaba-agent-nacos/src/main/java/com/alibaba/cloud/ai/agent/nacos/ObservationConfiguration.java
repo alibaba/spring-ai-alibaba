@@ -24,7 +24,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.tool.ToolCallingManager;
 
 @Data
-public class ObservationConfigration {
+public class ObservationConfiguration {
 
 	private ObservationRegistry observationRegistry;
 
@@ -34,7 +34,7 @@ public class ObservationConfigration {
 
 	private ChatClientObservationConvention chatClientObservationConvention;
 
-	public ObservationConfigration(ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
+	public ObservationConfiguration(ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
 			ChatModelObservationConvention chatModelObservationConvention,
 			ChatClientObservationConvention chatClientObservationConvention) {
 		this.observationRegistry = observationRegistry;

@@ -86,12 +86,12 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 
 		//5.build chat client
 		ChatClient.Builder clientBuilder = null;
-		ObservationConfigration observationConfigration = nacosOptions.getObservationConfigration();
-		if (observationConfigration == null) {
+		ObservationConfiguration observationConfiguration = nacosOptions.getObservationConfiguration();
+		if (observationConfiguration == null) {
 			clientBuilder = ChatClient.builder(model);
 		}
 		else {
-			clientBuilder = ChatClient.builder(model, observationConfigration.getObservationRegistry() == null ? ObservationRegistry.NOOP : observationConfigration.getObservationRegistry(), nacosOptions.getObservationConfigration()
+			clientBuilder = ChatClient.builder(model, observationConfiguration.getObservationRegistry() == null ? ObservationRegistry.NOOP : observationConfiguration.getObservationRegistry(), nacosOptions.getObservationConfiguration()
 					.getChatClientObservationConvention());
 		}
 
@@ -253,19 +253,19 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		OpenAiChatModel.Builder builder = OpenAiChatModel.builder().defaultOptions(openAiChatOptions)
 				.openAiApi(openAiApi);
 		//inject observation config.
-		ObservationConfigration observationConfigration = nacosOptions.getObservationConfigration();
-		if (observationConfigration != null) {
-			if (observationConfigration.getToolCallingManager() != null) {
-				builder.toolCallingManager(observationConfigration.getToolCallingManager());
+		ObservationConfiguration observationConfiguration = nacosOptions.getObservationConfiguration();
+		if (observationConfiguration != null) {
+			if (observationConfiguration.getToolCallingManager() != null) {
+				builder.toolCallingManager(observationConfiguration.getToolCallingManager());
 			}
-			if (observationConfigration.getObservationRegistry() != null) {
-				builder.observationRegistry(observationConfigration.getObservationRegistry());
+			if (observationConfiguration.getObservationRegistry() != null) {
+				builder.observationRegistry(observationConfiguration.getObservationRegistry());
 			}
 		}
 
 		OpenAiChatModel openAiChatModel = builder.build();
-		if (observationConfigration != null && observationConfigration.getChatModelObservationConvention() != null) {
-			openAiChatModel.setObservationConvention(observationConfigration
+		if (observationConfiguration != null && observationConfiguration.getChatModelObservationConvention() != null) {
+			openAiChatModel.setObservationConvention(observationConfiguration
 					.getChatModelObservationConvention());
 		}
 
