@@ -379,7 +379,7 @@ public class DashScopeApi {
 
 		@Deprecated
 		public EmbeddingRequestInputParameters(String textType) {
-			this(textType, null);
+			this(textType == null ? DEFAULT_EMBEDDING_TEXT_TYPE : textType, null);
 		}
 
 		public static Builder builder() {
@@ -407,7 +407,9 @@ public class DashScopeApi {
 			}
 
 			public EmbeddingRequestInputParameters build() {
-				return new EmbeddingRequestInputParameters(textType, dimension);
+				// Handle null textType for FastJson compatibility.
+				String finalTextType = textType == null ? DEFAULT_EMBEDDING_TEXT_TYPE : textType;
+				return new EmbeddingRequestInputParameters(finalTextType, dimension);
 			}
 
 		}
@@ -435,7 +437,8 @@ public class DashScopeApi {
 
 		@Deprecated
 		public EmbeddingRequest(String text, String model, String textType) {
-			this(model, new EmbeddingRequestInput(List.of(text)), new EmbeddingRequestInputParameters(textType));
+			this(model, new EmbeddingRequestInput(List.of(text)), new EmbeddingRequestInputParameters(
+					textType == null ? DEFAULT_EMBEDDING_TEXT_TYPE : textType));
 		}
 
 		@Deprecated
@@ -452,7 +455,8 @@ public class DashScopeApi {
 
 		@Deprecated
 		public EmbeddingRequest(List<String> texts, String model, String textType) {
-			this(model, new EmbeddingRequestInput(texts), new EmbeddingRequestInputParameters(textType));
+			this(model, new EmbeddingRequestInput(texts), new EmbeddingRequestInputParameters(
+					textType == null ? DEFAULT_EMBEDDING_TEXT_TYPE : textType));
 		}
 
 		public static Builder builder() {
