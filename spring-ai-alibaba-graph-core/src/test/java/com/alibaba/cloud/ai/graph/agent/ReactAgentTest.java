@@ -105,7 +105,7 @@ class ReactAgentTest {
 		System.out.println(message.getText());
 	}
 
-		private static CompileConfig getCompileConfig() {
+	private static CompileConfig getCompileConfig() {
 		SaverConfig saverConfig = SaverConfig.builder()
 				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
 				.build();

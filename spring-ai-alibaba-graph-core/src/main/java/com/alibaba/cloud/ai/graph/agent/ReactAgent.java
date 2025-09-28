@@ -77,7 +77,7 @@ public class ReactAgent extends BaseAgent {
 
 	private List<String> tools;
 
-	private int max_iterations = 10;
+	private int maxIterations = 10;
 
 	private int iterations = 0;
 
@@ -102,6 +102,7 @@ public class ReactAgent extends BaseAgent {
 		this.preToolHook = builder.preToolHook;
 		this.postToolHook = builder.postToolHook;
 		this.includeContents = builder.includeContents;
+		this.maxIterations = builder.maxIterations;
 	}
 
 	public static Builder builder() {
@@ -281,7 +282,7 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	private String think(OverAllState state) {
-		if (iterations > max_iterations) {
+		if (iterations > maxIterations) {
 			return "end";
 		}
 
@@ -330,12 +331,12 @@ public class ReactAgent extends BaseAgent {
 		this.tools = tools;
 	}
 
-	int getMax_iterations() {
-		return max_iterations;
+	int getMaxIterations() {
+		return maxIterations;
 	}
 
-	void setMax_iterations(int max_iterations) {
-		this.max_iterations = max_iterations;
+	void setMaxIterations(int maxIterations) {
+		this.maxIterations = maxIterations;
 	}
 
 	int getIterations() {
