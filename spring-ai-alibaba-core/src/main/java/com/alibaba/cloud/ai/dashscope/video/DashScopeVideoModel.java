@@ -98,7 +98,7 @@ public class DashScopeVideoModel implements VideoModel {
 						logger.info("Video generation task completed successfully: {}", taskId);
 						return toVideoResponse(resp);
 					}
-					case "FAILED", "CANCELED", "UNKNOWN" -> {
+					case "FAILED" -> {
 						logger.error("Video generation task failed: {}", resp.getOutput());
 						return new VideoResponse(null);
 					}
