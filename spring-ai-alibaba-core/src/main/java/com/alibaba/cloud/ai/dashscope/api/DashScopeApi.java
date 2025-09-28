@@ -1486,11 +1486,21 @@ public class DashScopeApi {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record SearchInfo(@JsonProperty("search_results") List<SearchResult> searchResults) {
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record SearchInfo(@JsonProperty("search_results") List<SearchResult> searchResults,
+			@JsonProperty("extra_tool_info") List<ExtraToolInfo> extraToolInfo) {
+
 		@JsonInclude(JsonInclude.Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record SearchResult(@JsonProperty("site_name") String siteName, @JsonProperty("icon") String icon,
 				@JsonProperty("index") Integer index, @JsonProperty("title") String title,
-				@JsonProperty("url") String url) {
+				@JsonProperty("url") String url, @JsonProperty("description") String description,
+				@JsonProperty("summary") String summary) {
+		}
+
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record ExtraToolInfo(@JsonProperty("result") String result, @JsonProperty("tool") String tool) {
 		}
 	}
 
@@ -1764,7 +1774,8 @@ public class DashScopeApi {
 	public record SearchOptions(@JsonProperty("enable_source") Boolean enableSource,
 			@JsonProperty("enable_citation") Boolean enableCitation,
 			@JsonProperty("citation_format") String citationFormat, @JsonProperty("forced_search") Boolean forcedSearch,
-			@JsonProperty("search_strategy") String searchStrategy) {
+			@JsonProperty("search_strategy") String searchStrategy,
+			@JsonProperty("prepend_search_result") Boolean prependSearchResult) {
 
 		public static Builder builder() {
 			return new Builder();
@@ -1781,6 +1792,8 @@ public class DashScopeApi {
 			private Boolean forcedSearch;
 
 			private String searchStrategy;
+
+			private Boolean prependSearchResult;
 
 			public Builder enableSource(Boolean enableSource) {
 				this.enableSource = enableSource;
@@ -1807,8 +1820,14 @@ public class DashScopeApi {
 				return this;
 			}
 
+			public Builder prependSearchResult(Boolean prependSearchResult) {
+				this.prependSearchResult = prependSearchResult;
+				return this;
+			}
+
 			public SearchOptions build() {
-				return new SearchOptions(enableSource, enableCitation, citationFormat, forcedSearch, searchStrategy);
+				return new SearchOptions(enableSource, enableCitation, citationFormat, forcedSearch, searchStrategy,
+						prependSearchResult);
 			}
 
 		}

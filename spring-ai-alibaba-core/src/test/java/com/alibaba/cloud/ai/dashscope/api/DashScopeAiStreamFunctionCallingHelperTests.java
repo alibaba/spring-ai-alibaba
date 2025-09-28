@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.Rol
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionMessage.ToolCall;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatCompletionOutput.Choice;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.SearchInfo;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.TokenUsage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +80,22 @@ public class DashScopeAiStreamFunctionCallingHelperTests {
 		assertNotNull(result);
 		assertEquals("request-1", result.requestId());
 		assertEquals(" World", result.output().choices().get(0).message().content());
+	}
+
+	@Test
+	void testMergePreservesSearchInfo() {
+		SearchInfo.SearchResult result = new SearchInfo.SearchResult("site", "icon", 0, "title", "url", "desc",
+				"summary");
+		SearchInfo searchInfo = new SearchInfo(List.of(result), List.of(new SearchInfo.ExtraToolInfo("extra", "tool")));
+		ChatCompletionChunk previous = createSimpleChunk("request-1", "Hello", Role.ASSISTANT, null);
+		ChatCompletionChunk current = createSimpleChunk("request-1", " World", Role.ASSISTANT, null, searchInfo);
+
+		ChatCompletionChunk resultChunk = helper.merge(previous, current);
+
+		assertNotNull(resultChunk.output().searchInfo());
+		assertEquals("url", resultChunk.output().searchInfo().searchResults().get(0).url());
+		assertEquals("desc", resultChunk.output().searchInfo().searchResults().get(0).description());
+		assertEquals("tool", resultChunk.output().searchInfo().extraToolInfo().get(0).tool());
 	}
 
 	@Test
@@ -215,9 +232,14 @@ public class DashScopeAiStreamFunctionCallingHelperTests {
 	// Helper method: Create a simple ChatCompletionChunk
 	private ChatCompletionChunk createSimpleChunk(String requestId, String content, Role role,
 			ChatCompletionFinishReason finishReason) {
+		return createSimpleChunk(requestId, content, role, finishReason, null);
+	}
+
+	private ChatCompletionChunk createSimpleChunk(String requestId, String content, Role role,
+			ChatCompletionFinishReason finishReason, SearchInfo searchInfo) {
 		ChatCompletionMessage message = new ChatCompletionMessage(content, role);
 		Choice choice = new Choice(finishReason, message, null);
-		ChatCompletionOutput output = new ChatCompletionOutput(null, List.of(choice), null);
+		ChatCompletionOutput output = new ChatCompletionOutput(null, List.of(choice), searchInfo);
 		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
 		return new ChatCompletionChunk(requestId, output, usage);
 	}

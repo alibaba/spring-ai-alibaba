@@ -61,6 +61,7 @@ public class DashScopeAiStreamFunctionCallingHelper {
 
 		String id = (current.requestId() != null ? current.requestId() : previous.requestId());
 		TokenUsage usage = (current.usage() != null ? current.usage() : previous.usage());
+		DashScopeApi.SearchInfo searchInfo = resolveSearchInfo(previous, current);
 
 		Choice previousChoice0 = previous.output() == null ? null
 				: CollectionUtils.isEmpty(previous.output().choices()) ? null : previous.output().choices().get(0);
@@ -70,17 +71,27 @@ public class DashScopeAiStreamFunctionCallingHelper {
 		// compatibility of incremental_output false for streaming function call
 		if (!incrementalOutput && isStreamingToolFunctionCall(current)) {
 			if (!isStreamingToolFunctionCallFinish(current)) {
-				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(), null), usage);
+				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, List.of(), searchInfo), usage);
 			}
 			else {
 				List<Choice> choices = currentChoice0 == null ? List.of() : List.of(currentChoice0);
-				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, choices, null), usage);
+				return new ChatCompletionChunk(id, new ChatCompletionOutput(null, choices, searchInfo), usage);
 			}
 		}
 
 		Choice choice = merge(previousChoice0, currentChoice0);
 		List<Choice> chunkChoices = choice == null ? List.of() : List.of(choice);
-		return new ChatCompletionChunk(id, new ChatCompletionOutput(null, chunkChoices, null), usage);
+		return new ChatCompletionChunk(id, new ChatCompletionOutput(null, chunkChoices, searchInfo), usage);
+	}
+
+	private DashScopeApi.SearchInfo resolveSearchInfo(ChatCompletionChunk previous, ChatCompletionChunk current) {
+		if (current != null && current.output() != null && current.output().searchInfo() != null) {
+			return current.output().searchInfo();
+		}
+		if (previous != null && previous.output() != null) {
+			return previous.output().searchInfo();
+		}
+		return null;
 	}
 
 	private Choice merge(Choice previous, Choice current) {
