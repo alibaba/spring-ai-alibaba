@@ -59,9 +59,10 @@ public class TemplateTransformNode implements NodeAction {
 			String key = matcher.group(1).trim();
 			String replacement;
 
+			// Support nested object access (e.g., "http_response.body")
+			Object val = getNestedValue(state, key);
 			// Check if the key exists in the state data (even if the value is null)
-			if (state.data().containsKey(key)) {
-				Object val = state.data().get(key);
+			if (state.data().containsKey(key) || val != null) {
 				replacement = val != null ? val.toString() : "null";
 				// Escape special regex characters in replacement
 				replacement = replacement.replace("\\", "\\\\").replace("$", "\\$");
@@ -85,6 +86,45 @@ public class TemplateTransformNode implements NodeAction {
 		Map<String, Object> result = new HashMap<>();
 		result.put(outputKey, resolved);
 		return result;
+	}
+
+	/**
+	 * Get nested value from state using dot notation (e.g., "http_response.body")
+	 * @param state the overall state
+	 * @param key the key path (supports dot notation)
+	 * @return the value or null if not found
+	 */
+	private Object getNestedValue(OverAllState state, String key) {
+		if (key == null || key.trim().isEmpty()) {
+			return null;
+		}
+
+		String[] parts = key.split("\\.");
+		Object current = null;
+
+		String rootKey = parts[0];
+		if (state.data().containsKey(rootKey)) {
+			current = state.data().get(rootKey);
+			// For single key (no dots), return the value even if it's null
+			if (parts.length == 1) {
+				return current;
+			}
+		} else {
+			return null;
+		}
+
+		for (int i = 1; i < parts.length && current != null; i++) {
+			String part = parts[i];
+			if (current instanceof Map) {
+				@SuppressWarnings("unchecked")
+				Map<String, Object> map = (Map<String, Object>) current;
+				current = map.get(part);
+			} else {
+				return null;
+			}
+		}
+
+		return current;
 	}
 
 	public static Builder builder() {

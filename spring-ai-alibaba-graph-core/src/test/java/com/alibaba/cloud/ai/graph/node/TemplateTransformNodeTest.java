@@ -214,4 +214,72 @@ class TemplateTransformNodeTest {
 		assertEquals("success", result.get("custom"));
 	}
 
+	@Test
+	void testNestedObjectAccess() {
+		Map<String, Object> httpResponse = new HashMap<>();
+		httpResponse.put("status", 200);
+		httpResponse.put("body", "HTTP response content");
+		
+		Map<String, Object> headers = new HashMap<>();
+		headers.put("Content-Type", "application/json");
+		httpResponse.put("headers", headers);
+		
+		OverAllState state = new OverAllState(Map.of("http_response", httpResponse));
+		
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("{{http_response.body}}")
+			.outputKey("extracted_body")
+			.build();
+		
+		Map<String, Object> result = node.apply(state);
+		
+		assertEquals("HTTP response content", result.get("extracted_body"));
+	}
+
+	@Test
+	void testMultipleNestedAccess() {
+		Map<String, Object> httpResponse = new HashMap<>();
+		httpResponse.put("status", 200);
+		httpResponse.put("body", "Success");
+		
+		Map<String, Object> headers = new HashMap<>();
+		headers.put("Content-Type", "application/json");
+		httpResponse.put("headers", headers);
+		
+		OverAllState state = new OverAllState(Map.of("http_response", httpResponse));
+		
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Status: {{http_response.status}}, Body: {{http_response.body}}, Type: {{http_response.headers.Content-Type}}")
+			.build();
+		
+		Map<String, Object> result = node.apply(state);
+		assertEquals("Status: 200, Body: Success, Type: application/json", result.get("result"));
+	}
+
+	@Test
+	void testHttpNodeToLlmNodeDataTypeConversion() {
+		Map<String, Object> httpResponse = new HashMap<>();
+		httpResponse.put("status", 200);
+		httpResponse.put("headers", Map.of("Content-Type", "application/json"));
+		httpResponse.put("body", "This is the actual HTTP response body content that LlmNode needs as String");
+		
+		Map<String, Object> httpNodeOutput = new HashMap<>();
+		httpNodeOutput.put("messages", httpResponse);
+		httpNodeOutput.put("http_response", httpResponse);
+		
+		OverAllState state = new OverAllState(httpNodeOutput);
+		
+		TemplateTransformNode transformer = TemplateTransformNode.builder()
+			.template("{{http_response.body}}")
+			.outputKey("llm_input")
+			.build();
+		
+		Map<String, Object> result = transformer.apply(state);
+		
+		String llmInput = (String) result.get("llm_input");
+		assertEquals("This is the actual HTTP response body content that LlmNode needs as String", llmInput);
+		
+		assertTrue(state.data().get("http_response") instanceof Map);
+	}
+
 }
