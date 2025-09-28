@@ -43,13 +43,13 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-autoconfigure-a2a-server</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${revision}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-autoconfigure-a2a-client</artifactId>
-            <version>${project.parent.version}</version>
+            <version>${revision}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

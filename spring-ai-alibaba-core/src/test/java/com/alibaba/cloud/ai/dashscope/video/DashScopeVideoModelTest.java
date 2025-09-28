@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// package com.alibaba.cloud.ai.dashscope.video;
+ package com.alibaba.cloud.ai.dashscope.video;
 //
 // import static org.junit.jupiter.api.Assertions.assertNotNull;
 //
