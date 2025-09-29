@@ -160,10 +160,8 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			if (toolConfig == null || toolConfig.isEmpty()) {
 				return Mono.error(new IllegalArgumentException("Tool configuration is empty or invalid"));
 			}
-
-			Map<String, Object> processedArgs = args;
-
-			JsonNode requestTemplate = toolConfig.path("requestTemplate");
+            
+            JsonNode requestTemplate = toolConfig.path("requestTemplate");
 			JsonNode argsPosition = requestTemplate.path("argsPosition");
 			String url = requestTemplate.path("url").asText();
 			String method = requestTemplate.path("method").asText();
@@ -188,7 +186,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 
 			// 构建并执行请求
 			return buildAndExecuteRequest(client, requestTemplate, argsPosition, toolConfig.path("responseTemplate"),
-					processedArgs, baseUrl)
+                    args, baseUrl)
 				.onErrorResume(e -> {
 					logger.error("Failed to execute tool request: {}", e.getMessage(), e);
 					return Mono.error(new RuntimeException("Tool execution failed: " + e.getMessage(), e));
