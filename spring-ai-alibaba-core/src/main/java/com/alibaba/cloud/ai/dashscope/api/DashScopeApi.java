@@ -828,7 +828,7 @@ public class DashScopeApi {
 			@JsonProperty("data_sources") List<DelePipelineDocumentDataSource> dataSources) {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DelePipelineDocumentDataSource(@JsonProperty("source_type") String sourceType,
-				@JsonProperty("component") List<DelePipelineDocumentDataSourceComponent> component) {
+				@JsonProperty("component") DelePipelineDocumentDataSourceComponent component) {
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -961,7 +961,7 @@ public class DashScopeApi {
 	public boolean deletePipelineDocument(String pipelineId, List<String> idList) {
 		DelePipelineDocumentRequest request = new DelePipelineDocumentRequest(Arrays
 			.asList(new DelePipelineDocumentRequest.DelePipelineDocumentDataSource("DATA_CENTER_FILE",
-					Arrays.asList(new DelePipelineDocumentRequest.DelePipelineDocumentDataSourceComponent(idList)))));
+					new DelePipelineDocumentRequest.DelePipelineDocumentDataSourceComponent(idList))));
 		ResponseEntity<DelePipelineDocumentResponse> deleDocumentResponse = this.restClient.post()
 			.uri("/api/v1/indices/pipeline/{pipeline_id}/delete", pipelineId)
 			.body(request)
