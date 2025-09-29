@@ -25,9 +25,9 @@ import com.alibaba.nacos.api.exception.NacosException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NacosPartenerAgentsInjector {
+public class NacosPartnerAgentsInjector {
 
-	private static final Logger logger = LoggerFactory.getLogger(NacosPartenerAgentsInjector.class);
+	private static final Logger logger = LoggerFactory.getLogger(NacosPartnerAgentsInjector.class);
 
 	public static void registry(LlmNode llmNode, ToolNode toolNode, NacosOptions nacosOptions, String agentName) {
 
@@ -47,7 +47,7 @@ public class NacosPartenerAgentsInjector {
 
 	}
 
-	public static PartnerAgentsVO getPartenerVO(NacosOptions nacosOptions, String agentName) {
+	public static PartnerAgentsVO getPartnerVO(NacosOptions nacosOptions, String agentName) {
 		try {
 			String config = nacosOptions.getNacosConfigService()
 					.getConfig("parterner-agents.json", "ai-agent-" + agentName, 3000L);
