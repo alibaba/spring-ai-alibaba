@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.core.env.Environment;
+import org.springframework.lang.NonNull;
 import org.springframework.util.StringUtils;
 
 /**
@@ -122,7 +123,7 @@ public class A2aServerProperties implements EnvironmentAware {
 	}
 
 	@Override
-	public void setEnvironment(Environment environment) {
+	public void setEnvironment(@NonNull Environment environment) {
 		this.environment = environment;
 	}
 
