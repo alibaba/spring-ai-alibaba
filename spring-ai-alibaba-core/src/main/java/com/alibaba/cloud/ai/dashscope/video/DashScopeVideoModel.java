@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.retry.TransientAiException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -103,7 +104,7 @@ public class DashScopeVideoModel implements VideoModel {
 					}
 				}
 			}
-			throw new RuntimeException("Video generation still pending, retry ...");
+			throw new TransientAiException("Video generation still pending, retry ...");
 		});
 	}
 

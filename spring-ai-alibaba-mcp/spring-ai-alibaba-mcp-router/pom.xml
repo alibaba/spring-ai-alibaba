@@ -9,7 +9,6 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-mcp-router</artifactId>
-    <version>${revision}</version>
     <name>Spring AI Alibaba MCP Router</name>
     <description>Spring AI Alibaba MCP Router</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
@@ -82,7 +81,6 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>${commons-lang3.version}</version>
         </dependency>
 
         <dependency>

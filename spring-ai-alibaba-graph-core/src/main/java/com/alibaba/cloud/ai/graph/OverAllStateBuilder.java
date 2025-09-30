@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.store.Store;
+import com.alibaba.cloud.ai.graph.utils.SerializationUtils;
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
@@ -64,9 +65,9 @@ import java.util.Map;
  */
 public class OverAllStateBuilder {
 
-	private Map<String, Object> data = new HashMap<>();
+	private final Map<String, Object> data = new HashMap<>();
 
-	private Map<String, KeyStrategy> keyStrategies = new HashMap<>();
+	private final Map<String, KeyStrategy> keyStrategies = new HashMap<>();
 
 	private Boolean resume = false;
 
@@ -109,7 +110,9 @@ public class OverAllStateBuilder {
 			return this;
 		}
 
-		data.putAll(dataMap);
+		// deep copy to avoid side effects
+		Map<String, Object> deepCopiedData = SerializationUtils.deepCopyMap(dataMap);
+		data.putAll(deepCopiedData);
 		return this;
 	}
 

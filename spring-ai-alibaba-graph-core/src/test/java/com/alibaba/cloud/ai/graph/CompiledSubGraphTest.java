@@ -44,7 +44,7 @@ public class CompiledSubGraphTest {
 	private static KeyStrategyFactory getStrategyFactory() {
 		return KeyStrategy.builder()
 			.addStrategy("newAttribute", new ReplaceStrategy())
-			.addStrategy("messages", new AppendStrategy())
+			.addStrategy("messages", new AppendStrategy(false))
 			.build();
 	}
 

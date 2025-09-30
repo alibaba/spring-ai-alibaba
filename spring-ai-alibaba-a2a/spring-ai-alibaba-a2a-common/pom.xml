@@ -9,7 +9,6 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-a2a-common</artifactId>
-    <version>${revision}</version>
     <name>Spring AI Alibaba A2A Common</name>
     <description>A2A common for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>

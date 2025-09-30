@@ -24,7 +24,6 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-a2a-registry</artifactId>
-    <version>${revision}</version>
     <name>Spring AI Alibaba A2A Nacos Registry</name>
     <description>A2A Nacos Registry for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>

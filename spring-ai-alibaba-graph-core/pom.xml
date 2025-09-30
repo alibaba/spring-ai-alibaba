@@ -41,6 +41,7 @@
         <testcontainers.version>1.19.3</testcontainers.version>
         <httpclient.version>4.5.14</httpclient.version>
         <community.components.version>1.0.0.3</community.components.version>
+        <jackson.version>2.18.4</jackson.version>
     </properties>
 
     <dependencies>
@@ -52,17 +53,14 @@
         <dependency>
             <groupId>io.github.a2asdk</groupId>
             <artifactId>a2a-java-reference-server</artifactId>
-            <version>${a2a-sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.a2asdk</groupId>
             <artifactId>a2a-java-sdk-server-common</artifactId>
-            <version>${a2a-sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>io.github.a2asdk</groupId>
             <artifactId>a2a-java-sdk-client</artifactId>
-            <version>${a2a-sdk.version}</version>
         </dependency>
 
         <dependency>
@@ -117,6 +115,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.github.docker-java</groupId>
             <artifactId>docker-java</artifactId>
             <exclusions>
@@ -163,7 +166,6 @@
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>${commons-codec.version}</version>
         </dependency>
 
         <dependency>
@@ -212,7 +214,6 @@
         <dependency>
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-api</artifactId>
-            <version>${opentelemetry.version}</version>
         </dependency>
 
         <dependency>
@@ -239,14 +240,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
-            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
 

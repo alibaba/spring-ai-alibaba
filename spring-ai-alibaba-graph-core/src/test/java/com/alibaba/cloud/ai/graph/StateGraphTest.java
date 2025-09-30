@@ -493,10 +493,10 @@ public class StateGraphTest {
 		final OverAllState[] finalState2 = new OverAllState[1];
 		app.fluxStream(Map.of(),
 				RunnableConfig.builder().addParallelNodeExecutor(START, Executors.newSingleThreadExecutor()).build())
-			.doOnNext(output -> System.out.println(output)) // 实时输出每个节点执行结果
+			.doOnNext(output -> System.out.println(output))
 			.map(NodeOutput::state)
-			.doOnNext(state -> finalState2[0] = state) // 保存最后的状态
-			.blockLast(); // 只等待流完成，不阻塞中间过程
+			.doOnNext(state -> finalState2[0] = state)
+			.blockLast();
 
 		assertTrue(finalState2[0] != null);
 		List<String> messages2 = (List<String>) finalState2[0].value("messages").get();

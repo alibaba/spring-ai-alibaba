@@ -206,9 +206,8 @@ public class GraphRunnerContext {
 			if (result == null) {
 				throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
 			}
-			var updatedState = OverAllState.updateState(state, command.update(), getKeyStrategyMap());
-			this.overallState.updateState(command.update());
-			return new Command(result, updatedState);
+			this.mergeIntoCurrentState(command.update());
+			return new Command(result, this.currentStateData);
 		}
 		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}
@@ -286,8 +285,19 @@ public class GraphRunnerContext {
 	// State Management Methods
 	// ================================================================================================================
 
-	public void updateCurrentState(Map<String, Object> state) {
-		this.currentStateData = OverAllState.updateState(this.currentStateData, state, getKeyStrategyMap());
+	public void setCurrentStatData(Map<String, Object> state) {
+		this.currentStateData = state;
+	}
+
+	/**
+	 * This method updates both the current state data and the overall state.
+	 *
+	 * @param updateState the state updates to apply
+	 */
+	public void mergeIntoCurrentState(Map<String , Object> updateState) {
+		this.currentStateData = OverAllState.updateState(this.currentStateData,
+				updateState, getKeyStrategyMap());
+		this.overallState.updateState(updateState);
 	}
 
 	// ================================================================================================================

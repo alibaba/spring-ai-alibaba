@@ -30,6 +30,15 @@ import static java.util.Collections.unmodifiableList;
 
 public class AppendStrategy implements KeyStrategy {
 
+	private boolean allowDuplicate = true;
+
+	public AppendStrategy() {
+	}
+
+	public AppendStrategy(boolean allowDuplicate) {
+		this.allowDuplicate = allowDuplicate;
+	}
+
 	@Override
 	public Object apply(Object oldValue, Object newValue) {
 		if (newValue == null) {
@@ -67,10 +76,16 @@ public class AppendStrategy implements KeyStrategy {
 				}
 				if (oldValueIsList) {
 					var result = evaluateRemoval((List<Object>) oldValue, list);
-					List<Object> mergedList = Stream.concat(result.oldValues().stream(), result.newValues().stream())
-						.distinct()
-						.collect(Collectors.toList());
-					return mergedList;
+					if (allowDuplicate) {
+						return Stream.concat(result.oldValues().stream(), result.newValues()
+										.stream())
+								.collect(Collectors.toList());
+					} else {
+						return Stream.concat(result.oldValues().stream(), result.newValues()
+										.stream())
+								.distinct()
+								.collect(Collectors.toList());
+					}
 				}
 				oldList.addAll(list);
 			}
