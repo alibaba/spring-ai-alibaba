@@ -18,39 +18,37 @@ import java.util.stream.Collectors;
 @RequestMapping("/observability/v1/flows")
 public class GraphFlowController {
 
-    private final SAAGraphFlowRegistry graphFlowRegistry;
-    private final GraphFlowService graphFlowService;
+	private final SAAGraphFlowRegistry graphFlowRegistry;
 
-    public GraphFlowController(SAAGraphFlowRegistry graphFlowRegistry,GraphFlowService graphFlowService) {
-        this.graphFlowRegistry = graphFlowRegistry;
-        this.graphFlowService = graphFlowService;
-    }
+	private final GraphFlowService graphFlowService;
 
-    @GetMapping("")
-    @Operation(summary = "Get Flows by Owner", description = "Retrieves a list of all graph flows owned by a specific user.")
-    public List<SAAGraphFlowInfoDTO> getFlowsByOwner(
-        @Parameter(description = "The unique identifier of the owner.", required = true, example = "saa")
-        @RequestParam("ownerID") String ownerID) {
-        
-        List<SAAGraphFlow> userFlows = graphFlowRegistry.findByOwnerID(ownerID);
-        
-        return userFlows.stream()
-                .map(graphFlowService::convertToDTO)
-                .collect(Collectors.toList());
-    }
+	public GraphFlowController(SAAGraphFlowRegistry graphFlowRegistry, GraphFlowService graphFlowService) {
+		this.graphFlowRegistry = graphFlowRegistry;
+		this.graphFlowService = graphFlowService;
+	}
 
-    @GetMapping("/{flowId}")
-    @Operation(summary = "Get Flow by ID", description = "Retrieves a specific graph flow by its unique identifier.")
-    public SAAGraphFlowInfoDTO getFlowById(
-        @Parameter(description = "The unique identifier of the flow.", required = true, example = "test")
-        @PathVariable String flowId) {
-        
-        SAAGraphFlowInfoDTO flow = graphFlowService.findFlowById(flowId);
-        if (flow == null) {
-            throw new GraphFlowNotFoundException(flowId);
-        }
-        
-        return flow;
-    }
+	@GetMapping("")
+	@Operation(summary = "Get Flows by Owner", description = "Retrieves a list of all graph flows owned by a specific user.")
+	public List<SAAGraphFlowInfoDTO> getFlowsByOwner(
+			@Parameter(description = "The unique identifier of the owner.", required = true,
+					example = "saa") @RequestParam("ownerID") String ownerID) {
+
+		List<SAAGraphFlow> userFlows = graphFlowRegistry.findByOwnerID(ownerID);
+
+		return userFlows.stream().map(graphFlowService::convertToDTO).collect(Collectors.toList());
+	}
+
+	@GetMapping("/{flowId}")
+	@Operation(summary = "Get Flow by ID", description = "Retrieves a specific graph flow by its unique identifier.")
+	public SAAGraphFlowInfoDTO getFlowById(@Parameter(description = "The unique identifier of the flow.",
+			required = true, example = "test") @PathVariable String flowId) {
+
+		SAAGraphFlowInfoDTO flow = graphFlowService.findFlowById(flowId);
+		if (flow == null) {
+			throw new GraphFlowNotFoundException(flowId);
+		}
+
+		return flow;
+	}
 
 }

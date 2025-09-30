@@ -26,6 +26,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of {@link CurrentGraphService} that manages the currently active graph.
+ *
+ */
 @Service
 @Data
 @Slf4j
@@ -140,19 +144,18 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
         return Flux.create(sink -> {
             try {
                 Map<String, LocalDateTime> nodeStartTimes = new ConcurrentHashMap<>();
-                int[] executionOrder = {0}; // 使用数组来保证在lambda中可变
-                StateGraph stateGraph = getCurrentGraph().stateGraph(); // TODO: 获取父节点
+                int[] executionOrder = {0}; // Use an array to make it mutable in lambda
+                StateGraph stateGraph = getCurrentGraph().stateGraph();
 
                 compiledGraph.stream(Map.of("original_text", inputText), cfg)
                         .forEachAsync(node -> {
                             String nodeId = node.node();
                             Map<String, Object> nodeData = node.state().data();
 
-//                          TODO  List<String> parentNodes = stateGraph.getPredecessors(nodeId).stream()
-//                                    .map(predecessor -> predecessor.getId())
-//                                    .collect(Collectors.toList());
-                            List<String> parentNodes = Collections.emptyList();
-                            // 构建增强的节点输出
+                            List<String> parentNodes = stateGraph.getPredecessors(nodeId).stream()
+                                    .map(predecessor -> predecessor.toString())
+                                    .collect(Collectors.toList());
+                            // Build the enhanced node output
                             EnhancedNodeOutput enhancedOutput = EnhancedNodeOutput.builder()
                                     .nodeId(nodeId)
                                     .executionStatus("SUCCESS")
@@ -170,7 +173,7 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
                         })
                         .whenComplete((v, e) -> {
                             if (e != null) {
-                                // execute Error
+                                // Execute Error
                                 EnhancedNodeOutput errorOutput = EnhancedNodeOutput.builder()
                                         .nodeId("ERROR")
                                         .executionStatus("FAILED")
@@ -190,12 +193,12 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
     }
 
     /**
-     * 从节点数据中提取节点类型
+     * Extracts the node type from the node data.
      */
     private String extractNodeType(Map<String, Object> nodeData) {
         if (nodeData == null) return "UNKNOWN";
-        
-        // 根据数据内容判断节点类型
+
+        // Determine node type based on data content
         if (nodeData.containsKey("summary")) {
             return "SUMMARIZER";
         } else if (nodeData.containsKey("reworded")) {
@@ -210,7 +213,7 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
     }
 
     /**
-     * 计算执行耗时
+     * Calculates the execution duration.
      */
     private Long calculateDuration(LocalDateTime startTime) {
         if (startTime == null) return 0L;
@@ -218,11 +221,11 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
     }
 
     /**
-     * 判断是否为最后一个节点
-     * 可根据实际的图结构进行判断
+     * Checks if it is the last node.
+     * This can be determined based on the actual graph structure.
      */
     private Boolean isLastNode(String nodeId) {
-        // 简单的判断逻辑，可以根据实际需求调整
+        // Simple logic, can be adjusted based on actual needs
         return "titleGenerator".equals(nodeId) || nodeId.contains("end") || nodeId.contains("final");
     }
 
@@ -241,7 +244,7 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
             log.warn("Cannot run: No graph is compiled.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-        // TODO: 实现运行逻辑，例如: compiledGraph.invoke(...)
+        // TODO: Implement the run logic, e.g., compiledGraph.invoke(...)
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 }

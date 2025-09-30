@@ -38,8 +38,6 @@ import org.springframework.stereotype.Service;
  *   <li>Error handling and logging</li>
  * </ul>
  * 
- * @author Spring AI Alibaba Team
- * @since 1.0.0
  */
 @Service
 public class GraphFlowServiceImpl implements GraphFlowService {

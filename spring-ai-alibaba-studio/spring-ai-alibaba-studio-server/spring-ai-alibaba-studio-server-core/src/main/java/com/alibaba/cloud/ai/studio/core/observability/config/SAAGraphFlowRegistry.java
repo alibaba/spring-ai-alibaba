@@ -46,17 +46,13 @@ import java.util.stream.Collectors;
  *   <li>Complete flow lifecycle management</li>
  * </ul>
  * 
- * @author Spring AI Alibaba Team
- * @since 1.0.0
- * @see SAAGraphFlow
  */
 @Service
 public class SAAGraphFlowRegistry {
 
 	private final ApplicationContext applicationContext;
 
-	// Thread-safe registry with flowId as key
-	// 以 flowId 为键的线程安全注册表
+	// Thread-safe registry with flowId as key.
 	private final Map<String, SAAGraphFlow> flowRegistry = new ConcurrentHashMap<>();
 
 	public SAAGraphFlowRegistry(ApplicationContext applicationContext) {
@@ -77,8 +73,7 @@ public class SAAGraphFlowRegistry {
 	public void init() {
 		Collection<SAAGraphFlow> flows = applicationContext.getBeansOfType(SAAGraphFlow.class).values();
 
-		// Register all discovered flows in our internal map
-		// 将它们注册到我们的 Map 中
+		// Register all discovered flows in our internal map.
 		flows.forEach(flow -> {
 			if (flowRegistry.containsKey(flow.graphId())) {
 				throw new IllegalStateException("Duplicate Flow ID found: " + flow.graphId());
@@ -91,12 +86,10 @@ public class SAAGraphFlowRegistry {
 
 	/**
 	 * Finds and returns all flows owned by a specific user.
-	 * 根据 ownerID 查询并返回该用户拥有的所有流程。
-	 * 
-	 * @param ownerID The unique identifier of the owner
-	 *                用户的唯一标识符
-	 * @return List of SAAGraphFlow objects owned by the specified user, or empty list if none found
-	 *         该用户拥有的 SAAGraphFlow 列表
+	 *
+	 * @param ownerID The unique identifier of the owner.
+	 * @return List of SAAGraphFlow objects owned by the specified user, or empty list if
+	 * none found.
 	 */
 	public List<SAAGraphFlow> findByOwnerID(String ownerID) {
 		if (ownerID == null || ownerID.isBlank()) {
@@ -111,12 +104,9 @@ public class SAAGraphFlowRegistry {
 
 	/**
 	 * Finds and returns a specific flow by its unique identifier.
-	 * 根据 flowId 查询并返回指定的流程。
-	 * 
-	 * @param flowId The unique identifier of the flow to search for
-	 *               流程的唯一标识符
-	 * @return The matching SAAGraphFlow, or null if not found
-	 *         匹配的 SAAGraphFlow，如果不存在则返回 null
+	 *
+	 * @param flowId The unique identifier of the flow to search for.
+	 * @return The matching SAAGraphFlow, or null if not found.
 	 */
 	public SAAGraphFlow findById(String flowId) {
 		if (flowId == null || flowId.isBlank()) {
@@ -127,12 +117,9 @@ public class SAAGraphFlowRegistry {
 
 	/**
 	 * Checks if a flow with the specified ID exists in the registry.
-	 * 检查指定的 flowId 是否存在。
-	 * 
-	 * @param flowId The unique identifier of the flow to check
-	 *               流程的唯一标识符
-	 * @return true if the flow exists, false otherwise
-	 *         如果存在返回 true，否则返回 false
+	 *
+	 * @param flowId The unique identifier of the flow to check.
+	 * @return true if the flow exists, false otherwise.
 	 */
 	public boolean existsById(String flowId) {
 		if (flowId == null || flowId.isBlank()) {
@@ -143,10 +130,8 @@ public class SAAGraphFlowRegistry {
 
 	/**
 	 * Returns all registered flows in the system.
-	 * 提供一个方法来获取所有流程
-	 * 
-	 * @return An immutable list of all registered SAAGraphFlow objects
-	 *         所有已注册的 SAAGraphFlow 对象的不可变列表
+	 *
+	 * @return An immutable list of all registered SAAGraphFlow objects.
 	 */
 	public List<SAAGraphFlow> findAll() {
 		return List.copyOf(flowRegistry.values());

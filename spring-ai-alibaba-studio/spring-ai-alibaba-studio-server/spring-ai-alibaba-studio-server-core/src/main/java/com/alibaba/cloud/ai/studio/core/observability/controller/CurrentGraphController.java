@@ -18,59 +18,59 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/observability/v1/graph")
-@Tag(name = "Observability", description = "APIs for managing graph execution and runtime operations, including real-time node output streaming.")
+@Tag(name = "Observability",
+		description = "APIs for managing graph execution and runtime operations, including real-time node output streaming.")
 public class CurrentGraphController {
-    private final CurrentGraphService currentGraphProxy;
-    private final SAAGraphFlowRegistry graphFlowRegistry;
 
-    public CurrentGraphController(CurrentGraphService currentGraphProxy, SAAGraphFlowRegistry saaGraphFlowRegistry) {
-        this.currentGraphProxy = currentGraphProxy;
-        this.graphFlowRegistry = saaGraphFlowRegistry;
-    }
+	private final CurrentGraphService currentGraphProxy;
 
-    @PostMapping("setCurrentGraph")
-    @Operation(summary = "Set Current Active Graph", 
-               description = "Switches the system to use the specified graph for subsequent operations")
-    public ResponseEntity<?> setCurrentGraph(
-            @Parameter(description = "Unique identifier of the graph to activate", required = true, example = "sentiment-analysis-flow")
-            @RequestParam String graphId) {
-        return currentGraphProxy.switchTo(graphId);
-    }
+	private final SAAGraphFlowRegistry graphFlowRegistry;
 
-    @GetMapping("getCurrentGraph") 
-    @Operation(summary = "Get Current Active Graph", 
-               description = "Retrieves information about the currently active graph in the system")
-    public SAAGraphFlow getCurrentGraph() {
-        return currentGraphProxy.getCurrentGraph();
-    }
+	public CurrentGraphController(CurrentGraphService currentGraphProxy, SAAGraphFlowRegistry saaGraphFlowRegistry) {
+		this.currentGraphProxy = currentGraphProxy;
+		this.graphFlowRegistry = saaGraphFlowRegistry;
+	}
 
-    @GetMapping(path = "node/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "Stream Basic Node Outputs", 
-               description = "获取当前图的基础流式输出 - Streams raw output from each node in the current graph as it executes")
-    public Flux<NodeOutput> writeStream(
-            @Parameter(description = "Input text to process through the graph pipeline / 输入文本", 
-                      example = "今天我去了西湖，天气特别好，感觉特别开心")
-            @RequestParam("text") String inputText) {
-        return currentGraphProxy.writeStream(inputText);
-    }
+	@PostMapping("setCurrentGraph")
+	@Operation(summary = "Set Current Active Graph",
+			description = "Switches the system to use the specified graph for subsequent operations")
+	public ResponseEntity<?> setCurrentGraph(
+			@Parameter(description = "Unique identifier of the graph to activate", required = true,
+					example = "sentiment-analysis-flow") @RequestParam String graphId) {
+		return currentGraphProxy.switchTo(graphId);
+	}
 
-    @GetMapping(path = "node/stream_snapshots", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "Stream Node State Snapshots", 
-               description = "获取当前图的流式快照 - Streams state snapshots after each node completes execution")
-    public Flux<Map<String, Object>> writeStreamSnapshots(
-            @Parameter(description = "Input text to process through the graph pipeline / 输入文本", 
-                      example = "今天我去了西湖，天气特别好，感觉特别开心")
-            @RequestParam("text") String inputText) {
-        return currentGraphProxy.writeStreamSnapshots(inputText);
-    }
+	@GetMapping("getCurrentGraph")
+	@Operation(summary = "Get Current Active Graph",
+			description = "Retrieves information about the currently active graph in the system")
+	public SAAGraphFlow getCurrentGraph() {
+		return currentGraphProxy.getCurrentGraph();
+	}
 
-    @GetMapping(path = "node/stream_enhanced", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "Stream Enhanced Node Outputs", 
-               description = "获取当前图的增强流式输出 - Streams comprehensive node information including execution status, timing, and metadata")
-    public Flux<EnhancedNodeOutput> writeStreamEnhanced(
-            @Parameter(description = "Input text to process through the graph pipeline / 输入文本", 
-                      example = "今天我去了西湖，天气特别好，感觉特别开心")
-            @RequestParam("text") String inputText) {
-        return currentGraphProxy.writeStreamEnhanced(inputText);
-    }
+	@GetMapping(path = "node/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@Operation(summary = "Stream Basic Node Outputs",
+			description = "Streams raw output from each node in the current graph as it executes")
+	public Flux<NodeOutput> writeStream(@Parameter(description = "Input text to process through the graph pipeline",
+			example = "I went to the West Lake today, the weather was very good, and I felt very happy") @RequestParam("text") String inputText) {
+		return currentGraphProxy.writeStream(inputText);
+	}
+
+	@GetMapping(path = "node/stream_snapshots", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@Operation(summary = "Stream Node State Snapshots",
+			description = "Streams state snapshots after each node completes execution")
+	public Flux<Map<String, Object>> writeStreamSnapshots(
+			@Parameter(description = "Input text to process through the graph pipeline",
+					example = "I went to the West Lake today, the weather was very good, and I felt very happy") @RequestParam("text") String inputText) {
+		return currentGraphProxy.writeStreamSnapshots(inputText);
+	}
+
+	@GetMapping(path = "node/stream_enhanced", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@Operation(summary = "Stream Enhanced Node Outputs",
+			description = "Streams comprehensive node information including execution status, timing, and metadata")
+	public Flux<EnhancedNodeOutput> writeStreamEnhanced(
+			@Parameter(description = "Input text to process through the graph pipeline",
+					example = "I went to the West Lake today, the weather was very good, and I felt very happy") @RequestParam("text") String inputText) {
+		return currentGraphProxy.writeStreamEnhanced(inputText);
+	}
+
 }

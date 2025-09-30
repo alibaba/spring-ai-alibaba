@@ -39,9 +39,6 @@ import java.util.Map;
  * 
  * <p>All endpoints return Server-Sent Events (SSE) streams for real-time monitoring
  * capabilities. These streams provide live updates as nodes execute within the graph.</p>
- * 
- * @author Spring AI Alibaba Team
- * @since 1.0.0
  * @see CurrentGraphService
  * @see EnhancedNodeOutput
  */
@@ -50,40 +47,35 @@ import java.util.Map;
 @Tag(name = "Node Streaming", description = "Real-time streaming APIs for node execution monitoring")
 public class StreamNodeController {
 
-    private final CurrentGraphService currentGraphProxy;
+	private final CurrentGraphService currentGraphProxy;
 
-    public StreamNodeController(CurrentGraphService currentGraphProxy) {
-        this.currentGraphProxy = currentGraphProxy;
-    }
-    
-    @GetMapping(path = "/stream_snapshots", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "Stream Node State Snapshots", 
-               description = "获取节点流式快照 - Streams state snapshots after each node completes, containing only business data")
-    public Flux<Map<String, Object>> writeStreamSnapshots(
-            @Parameter(description = "Input text to process / 输入文本", 
-                      example = "今天我去了西湖，天气特别好，感觉特别开心")
-            @RequestParam("text") String inputText) {
-        return currentGraphProxy.writeStreamSnapshots(inputText);
-    }
-    
-    @GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "Stream Basic Node Outputs", 
-               description = "获取基础流式输出 - Streams raw node outputs in NodeOutput format")
-    public Flux<NodeOutput> writeStream(
-            @Parameter(description = "Input text to process / 输入文本", 
-                      example = "今天我去了西湖，天气特别好，感觉特别开心")
-            @RequestParam("text") String inputText) {
-        return currentGraphProxy.writeStream(inputText);
-    }
-    
-    @GetMapping(path = "/stream_enhanced", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "Stream Enhanced Node Outputs", 
-               description = "获取增强流式输出 - Streams comprehensive node information including execution status, timing, and metadata")
-    public Flux<EnhancedNodeOutput> writeStreamEnhanced(
-            @Parameter(description = "Input text to process / 输入文本", 
-                      example = "今天我去了西湖，天气特别好，感觉特别开心")
-            @RequestParam("text") String inputText) {
-        return currentGraphProxy.writeStreamEnhanced(inputText);
-    }
+	public StreamNodeController(CurrentGraphService currentGraphProxy) {
+		this.currentGraphProxy = currentGraphProxy;
+	}
+
+	@GetMapping(path = "/stream_snapshots", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@Operation(summary = "Stream Node State Snapshots",
+			description = "Streams state snapshots after each node completes, containing only business data")
+	public Flux<Map<String, Object>> writeStreamSnapshots(
+			@Parameter(description = "Input text to process",
+					example = "I went to the West Lake today, the weather was very good, and I felt very happy") @RequestParam("text") String inputText) {
+		return currentGraphProxy.writeStreamSnapshots(inputText);
+	}
+
+	@GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@Operation(summary = "Stream Basic Node Outputs", description = "Streams raw node outputs in NodeOutput format")
+	public Flux<NodeOutput> writeStream(@Parameter(description = "Input text to process",
+			example = "I went to the West Lake today, the weather was very good, and I felt very happy") @RequestParam("text") String inputText) {
+		return currentGraphProxy.writeStream(inputText);
+	}
+
+	@GetMapping(path = "/stream_enhanced", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@Operation(summary = "Stream Enhanced Node Outputs",
+			description = "Streams comprehensive node information including execution status, timing, and metadata")
+	public Flux<EnhancedNodeOutput> writeStreamEnhanced(
+			@Parameter(description = "Input text to process",
+					example = "I went to the West Lake today, the weather was very good, and I felt very happy") @RequestParam("text") String inputText) {
+		return currentGraphProxy.writeStreamEnhanced(inputText);
+	}
 
 }

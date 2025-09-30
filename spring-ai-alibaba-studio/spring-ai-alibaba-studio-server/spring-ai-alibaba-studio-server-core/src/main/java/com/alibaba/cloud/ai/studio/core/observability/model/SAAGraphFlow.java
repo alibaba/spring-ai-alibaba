@@ -7,6 +7,18 @@ import java.util.Objects;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 
+/**
+ * Represents a graph flow, including its metadata and the underlying state graph.
+ *
+ * @param graphId The unique identifier of the graph flow.
+ * @param title The human-readable title of the graph flow.
+ * @param description A detailed description of the graph flow's purpose.
+ * @param tags A list of tags for categorization.
+ * @param ownerID The identifier of the owner of the graph flow.
+ * @param compileConfig The configuration for compiling the graph.
+ * @param stateGraph The actual state graph object containing the execution logic.
+ *
+ */
 public record SAAGraphFlow(String graphId, String title, String description, List<String> tags, String ownerID,
 		CompileConfig compileConfig, StateGraph stateGraph) {
 

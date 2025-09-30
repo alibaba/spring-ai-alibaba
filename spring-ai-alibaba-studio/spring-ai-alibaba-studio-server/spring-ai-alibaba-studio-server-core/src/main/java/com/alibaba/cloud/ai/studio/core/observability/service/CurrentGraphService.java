@@ -9,31 +9,46 @@ import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
+/**
+ * Service interface for managing and interacting with the current graph.
+ */
 public interface CurrentGraphService {
 
-    ResponseEntity<Void> run();
+	ResponseEntity<Void> run();
 
-    ResponseEntity<ResponseBody> switchTo(String graphId);
+	ResponseEntity<ResponseBody> switchTo(String graphId);
 
-    SAAGraphFlow getCurrentGraph( );
+	SAAGraphFlow getCurrentGraph();
 
-    /**
-     * 流式调用写作助手 - 快照模式（获取每个节点完成后的状态快照）
-     * 示例请求：GET /write/stream_snapshots?text=今天我去了西湖，天气特别好，感觉特别开心
-     */
-    Flux<Map<String, Object>> writeStreamSnapshots(String inputText);
+	/**
+	 * Streams state snapshots after each node completes.
+	 *
+	 * Example Request: GET /write/stream_snapshots?text=I went to the West Lake today, the weather was very good, and I felt very happy
+	 *
+	 * @param inputText The input text to process.
+	 * @return A Flux of maps representing the state snapshots.
+	 */
+	Flux<Map<String, Object>> writeStreamSnapshots(String inputText);
 
-    /**
-     * 流式调用写作助手 - 基础流式输出（获取每个节点的输出）
-     * 示例请求：GET /write/stream?text=今天我去了西湖，天气特别好，感觉特别开心
-     */
-    Flux<NodeOutput> writeStream(String inputText);
+	/**
+	 * Streams basic node outputs as they are generated.
+	 *
+	 * Example Request: GET /write/stream?text=I went to the West Lake today, the weather was very good, and I felt very happy
+	 *
+	 * @param inputText The input text to process.
+	 * @return A Flux of {@link NodeOutput}.
+	 */
+	Flux<NodeOutput> writeStream(String inputText);
 
-    /**
-     * 流式调用写作助手 - 增强流式输出（获取包含完整节点信息的输出）
-     * 包含节点名称、ID、执行状态、时间戳等完整信息
-     * 示例请求：GET /write/stream_enhanced?text=今天我去了西湖，天气特别好，感觉特别开心
-     */
-    Flux<EnhancedNodeOutput> writeStreamEnhanced(String inputText);
+	/**
+	 * Streams enhanced node outputs with complete information.
+	 *
+	 * This includes node name, ID, execution status, timestamps, etc.
+	 * Example Request: GET /write/stream_enhanced?text=I went to the West Lake today, the weather was very good, and I felt very happy
+	 *
+	 * @param inputText The input text to process.
+	 * @return A Flux of {@link EnhancedNodeOutput}.
+	 */
+	Flux<EnhancedNodeOutput> writeStreamEnhanced(String inputText);
 
 }
