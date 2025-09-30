@@ -187,6 +187,9 @@ export default function () {
       case 'edit':
         gotoAppDetail(item);
         break;
+      case 'graphDebug':
+        navigate(`/graph-debug/${item.app_id}`);
+        break;
       case 'editName':
         setState({
           activeRecord: item,

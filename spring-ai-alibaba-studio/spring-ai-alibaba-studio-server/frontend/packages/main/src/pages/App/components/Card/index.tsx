@@ -83,6 +83,13 @@ const AppCard: React.FC<AppCardProps> = ({
               items: [
                 {
                   label: $i18n.get({
+                    id: 'main.pages.App.components.Card.index.graphDebug',
+                    dm: '图形调试',
+                  }),
+                  key: 'graphDebug',
+                },
+                {
+                  label: $i18n.get({
                     id: 'main.pages.App.components.Card.index.modifyAppName',
                     dm: '修改应用名',
                   }),
