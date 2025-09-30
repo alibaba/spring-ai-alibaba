@@ -151,6 +151,14 @@ export default defineConfig({
       path: '/agent-schema',
       component: 'AgentSchema/index',
     },
+    {
+      path: '/graph-debug',
+      component: 'GraphDebug/index',
+    },
+    {
+      path: '/graph-debug/:appId',
+      component: 'GraphDebug/Detail',
+    },
   ],
   clickToComponent: {},
   tailwindcss: {},
