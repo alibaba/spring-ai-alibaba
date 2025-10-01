@@ -177,7 +177,7 @@ public class CompiledGraph {
 							throw new RuntimeException("Failed to create parallel node action", ex);
 						}
 					})
-					.collect(Collectors.toList());
+					.toList();
 
 				var parallelNode = new ParallelNode(e.sourceId(), actions, keyStrategyMap, compileConfig);
 
