@@ -393,7 +393,7 @@ public class CompiledGraph {
 		try {
 			return factory != null ? factory.apply(compileConfig) : null;
 		} catch (GraphStateException e) {
-			throw new RuntimeException("Failed to create node action for nodeId: " + nodeId, e);
+			throw new RuntimeException("Failed to create node action for nodeId: " + nodeId + ". Cause: " + e.getMessage(), e);
 		}
 	}
 
