@@ -17,7 +17,9 @@ package com.alibaba.cloud.ai.graph.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -280,6 +282,416 @@ class TemplateTransformNodeTest {
 		assertEquals("This is the actual HTTP response body content that LlmNode needs as String", llmInput);
 		
 		assertTrue(state.data().get("http_response") instanceof Map);
+	}
+
+
+	@Test
+	void testArrayIndexAccess() {
+		List<Map<String, Object>> users = new ArrayList<>();
+		Map<String, Object> user1 = new HashMap<>();
+		user1.put("name", "Alice");
+		user1.put("age", 25);
+		users.add(user1);
+
+		Map<String, Object> user2 = new HashMap<>();
+		user2.put("name", "Bob");
+		user2.put("age", 30);
+		users.add(user2);
+
+		OverAllState state = new OverAllState(Map.of("users", users));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("First user: {{users[0].name}}, Second user: {{users[1].name}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+		assertEquals("First user: Alice, Second user: Bob", result.get("result"));
+	}
+
+	@Test
+	void testArrayIndexAccessWithNestedObjects() {
+		List<Map<String, Object>> products = new ArrayList<>();
+
+		Map<String, Object> product1 = new HashMap<>();
+		product1.put("name", "Laptop");
+		Map<String, Object> price1 = new HashMap<>();
+		price1.put("amount", 1200);
+		price1.put("currency", "USD");
+		product1.put("price", price1);
+		products.add(product1);
+
+		Map<String, Object> product2 = new HashMap<>();
+		product2.put("name", "Mouse");
+		Map<String, Object> price2 = new HashMap<>();
+		price2.put("amount", 25);
+		price2.put("currency", "USD");
+		product2.put("price", price2);
+		products.add(product2);
+
+		OverAllState state = new OverAllState(Map.of("products", products));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Product: {{products[0].name}} costs {{products[0].price.amount}} {{products[0].price.currency}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Product: Laptop costs 1200 USD", result.get("result"));
+	}
+
+	@Test
+	void testArrayIndexOutOfBounds() {
+		List<String> items = List.of("item1", "item2");
+		OverAllState state = new OverAllState(Map.of("items", items));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Item: {{items[5].name}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Item: {{items[5].name}}", result.get("result"));
+	}
+
+	@Test
+	void testRootArrayAccess() {
+		List<String> colors = List.of("red", "green", "blue");
+		OverAllState state = new OverAllState(Map.of("colors", colors));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Color: {{colors[1]}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Color: green", result.get("result"));
+	}
+
+	@Test
+	void testPojoReflectionAccess() {
+		TestUser user = new TestUser("Charlie", "charlie@example.com", 28);
+		OverAllState state = new OverAllState(Map.of("user", user));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("User: {{user.name}} ({{user.email}}), Age: {{user.age}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+		assertEquals("User: Charlie (charlie@example.com), Age: 28", result.get("result"));
+	}
+
+	@Test
+	void testPojoWithNestedPojo() {
+		TestAddress address = new TestAddress("123 Main St", "New York", "10001");
+		TestUser user = new TestUser("David", "david@example.com", 35);
+		user.setAddress(address);
+
+		OverAllState state = new OverAllState(Map.of("user", user));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("{{user.name}} lives in {{user.address.city}}, {{user.address.zipCode}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("David lives in New York, 10001", result.get("result"));
+	}
+
+	@Test
+	void testPojoListAccess() {
+		List<TestUser> users = new ArrayList<>();
+		users.add(new TestUser("Eve", "eve@example.com", 22));
+		users.add(new TestUser("Frank", "frank@example.com", 45));
+
+		OverAllState state = new OverAllState(Map.of("users", users));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Users: {{users[0].name}} and {{users[1].name}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Users: Eve and Frank", result.get("result"));
+	}
+
+	@Test
+	void testJsonStringParsing() {
+		String jsonString = "{\"status\": 200, \"message\": \"Success\", \"data\": {\"id\": 123, \"name\": \"Product\"}}";
+		OverAllState state = new OverAllState(Map.of("response", jsonString));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Status: {{response.status}}, Message: {{response.message}}, Product: {{response.data.name}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Status: 200, Message: Success, Product: Product", result.get("result"));
+	}
+
+	@Test
+	void testJsonArrayStringParsing() {
+		String jsonArrayString = "[{\"name\": \"Apple\", \"price\": 1.2}, {\"name\": \"Banana\", \"price\": 0.8}]";
+		OverAllState state = new OverAllState(Map.of("fruits", jsonArrayString));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("First: {{fruits[0].name}} (${{fruits[0].price}}), Second: {{fruits[1].name}} (${{fruits[1].price}})")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("First: Apple ($1.2), Second: Banana ($0.8)", result.get("result"));
+	}
+
+	@Test
+	void testMixedNestedAccessWithJsonAndPojo() {
+		String jsonData = "{\"product\": \"Keyboard\", \"quantity\": 5}";
+		TestUser user = new TestUser("Grace", "grace@example.com", 29);
+
+		Map<String, Object> order = new HashMap<>();
+		order.put("user", user);
+		order.put("data", jsonData);
+
+		OverAllState state = new OverAllState(Map.of("order", order));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Order: {{order.data.product}} x {{order.data.quantity}} for {{order.user.name}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Order: Keyboard x 5 for Grace", result.get("result"));
+	}
+
+	@Test
+	void testInvalidJsonStringKeepsPlaceholder() {
+		String invalidJson = "{invalid json}";
+		OverAllState state = new OverAllState(Map.of("data", invalidJson));
+
+		TemplateTransformNode node = TemplateTransformNode.builder().template("Value: {{data.field}}").build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Value: {{data.field}}", result.get("result"));
+	}
+
+
+	@Test
+	void testElvisOperatorWithNullValue() {
+		Map<String, Object> dataMap = new HashMap<>();
+		dataMap.put("name", null);
+		OverAllState state = new OverAllState(dataMap);
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("用户名：{{name ?: '匿名用户'}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("用户名：匿名用户", result.get("result"));
+	}
+
+	@Test
+	void testElvisOperatorWithMissingKey() {
+		OverAllState state = new OverAllState(Map.of("other", "value"));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Status: {{status ?: 'unknown'}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Status: unknown", result.get("result"));
+	}
+
+	@Test
+	void testElvisOperatorWithExistingValue() {
+		OverAllState state = new OverAllState(Map.of("name", "Alice"));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Hello {{name ?: 'Guest'}}!")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+		assertEquals("Hello Alice!", result.get("result"));
+	}
+
+	@Test
+	void testElvisOperatorWithDoubleQuotes() {
+		Map<String, Object> dataMap = new HashMap<>();
+		dataMap.put("email", null);
+		OverAllState state = new OverAllState(dataMap);
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Email: {{email ?: \"not provided\"}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Email: not provided", result.get("result"));
+	}
+
+	@Test
+	void testElvisOperatorWithNestedAccess() {
+		Map<String, Object> user = new HashMap<>();
+		user.put("profile", null);
+		OverAllState state = new OverAllState(Map.of("user", user));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("City: {{user.profile.city ?: 'Not specified'}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("City: Not specified", result.get("result"));
+	}
+
+	@Test
+	void testElvisOperatorWithArrayAccess() {
+		List<String> items = List.of("item1");
+		OverAllState state = new OverAllState(Map.of("items", items));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Second item: {{items[1] ?: 'N/A'}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Second item: N/A", result.get("result"));
+	}
+
+	@Test
+	void testMultipleElvisOperators() {
+		Map<String, Object> dataMap = new HashMap<>();
+		dataMap.put("name", "Bob");
+		dataMap.put("age", null);
+		OverAllState state = new OverAllState(dataMap);
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("User: {{name ?: 'Unknown'}}, Age: {{age ?: '18'}}, City: {{city ?: 'N/A'}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("User: Bob, Age: 18, City: N/A", result.get("result"));
+	}
+
+	@Test
+	void testElvisOperatorWithEmptyStringDefault() {
+		OverAllState state = new OverAllState(Map.of("other", "value"));
+
+		TemplateTransformNode node = TemplateTransformNode.builder().template("Value: {{missing ?: ''}}").build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Value: ", result.get("result"));
+	}
+
+	@Test
+	void testElvisOperatorWithSpaces() {
+		Map<String, Object> dataMap = new HashMap<>();
+		dataMap.put("value", null);
+		OverAllState state = new OverAllState(dataMap);
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Test: {{value?:'default'}} and {{value  ?:  'spaced'}}")
+			.build();
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Test: default and spaced", result.get("result"));
+	}
+
+	@Test
+	void testElvisOperatorWithNumericDefault() {
+		Map<String, Object> dataMap = new HashMap<>();
+		dataMap.put("count", null);
+		OverAllState state = new OverAllState(dataMap);
+
+		TemplateTransformNode node = TemplateTransformNode.builder().template("Count: {{count ?: 0}}").build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Count: 0", result.get("result"));
+	}
+
+	@Test
+	void testElvisOperatorWithPojoNullField() {
+		TestUser user = new TestUser("Charlie", null, 28);
+		OverAllState state = new OverAllState(Map.of("user", user));
+
+		TemplateTransformNode node = TemplateTransformNode.builder()
+			.template("Email: {{user.email ?: 'no-email@example.com'}}")
+			.build();
+
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Email: no-email@example.com", result.get("result"));
+	}
+
+
+	private static class TestUser {
+
+		private String name;
+
+		private String email;
+
+		private int age;
+
+		private TestAddress address;
+
+		public TestUser(String name, String email, int age) {
+			this.name = name;
+			this.email = email;
+			this.age = age;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getEmail() {
+			return email;
+		}
+
+		public int getAge() {
+			return age;
+		}
+
+		public TestAddress getAddress() {
+			return address;
+		}
+
+		public void setAddress(TestAddress address) {
+			this.address = address;
+		}
+
+	}
+
+	private static class TestAddress {
+
+		private String street;
+
+		private String city;
+
+		private String zipCode;
+
+		public TestAddress(String street, String city, String zipCode) {
+			this.street = street;
+			this.city = city;
+			this.zipCode = zipCode;
+		}
+
+		public String getStreet() {
+			return street;
+		}
+
+		public String getCity() {
+			return city;
+		}
+
+		public String getZipCode() {
+			return zipCode;
+		}
+
 	}
 
 }
