@@ -38,7 +38,7 @@ import java.util.List;
 @AutoConfiguration
 @EnableConfigurationProperties(McpRouterProperties.class)
 @ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+		matchIfMissing = false)
 public class McpServiceDiscoveryAutoConfiguration {
 
 	private static final Logger log = LoggerFactory.getLogger(McpServiceDiscoveryAutoConfiguration.class);
