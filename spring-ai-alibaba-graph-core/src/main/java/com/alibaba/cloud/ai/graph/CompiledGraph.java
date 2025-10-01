@@ -174,7 +174,7 @@ public class CompiledGraph {
 						try {
 							return nodeFactories.get(target.id()).apply(compileConfig);
 						} catch (GraphStateException ex) {
-							throw new RuntimeException("Failed to create parallel node action", ex);
+							throw new RuntimeException("Failed to create parallel node action for target: " + target.id(), ex);
 						}
 					})
 					.toList();
