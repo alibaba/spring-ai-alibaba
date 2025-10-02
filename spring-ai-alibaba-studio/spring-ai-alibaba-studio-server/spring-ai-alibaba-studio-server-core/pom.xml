@@ -45,6 +45,13 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-graph-core</artifactId>
+            <version>1.0.0.4-SNAPSHOT</version>
+        </dependency>
+
+
         <!-- db -->
         <dependency>
             <groupId>com.alibaba</groupId>
