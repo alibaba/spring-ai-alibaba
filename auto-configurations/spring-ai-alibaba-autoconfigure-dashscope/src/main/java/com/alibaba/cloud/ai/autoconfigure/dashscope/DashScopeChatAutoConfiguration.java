@@ -76,7 +76,7 @@ public class DashScopeChatAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		public DashScopeChatModel dashscopeChatModel(
+		public DashScopeChatModel dashScopeChatModel(
 				RetryTemplate retryTemplate,
 				ToolCallingManager toolCallingManager,
 				DashScopeChatProperties chatProperties,
