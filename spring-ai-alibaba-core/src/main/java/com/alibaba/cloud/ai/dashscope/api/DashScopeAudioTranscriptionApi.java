@@ -109,11 +109,6 @@ public class DashScopeAudioTranscriptionApi {
 				.baseUrl(baseUrl)
 				.defaultHeaders(authHeaders)
 				.defaultStatusHandler(responseErrorHandler)
-				.defaultRequest(requestHeadersSpec -> {
-					if (!(apiKey instanceof NoopApiKey)) {
-						requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
-					}
-				})
 				.build();
 
 		this.webSocketClient = new DashScopeWebSocketClient(DashScopeWebSocketClientOptions.builder()
