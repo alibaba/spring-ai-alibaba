@@ -3,6 +3,7 @@ import React from 'react';
 import styles from './index.module.less';
 
 export interface ProCardInfo {
+  label?: string;
   content: string;
 }
 
@@ -15,6 +16,7 @@ export interface ProCardProps {
   statusNode?: React.ReactNode;
   footerDescNode?: React.ReactNode;
   footerOperateNode?: React.ReactNode;
+  labelWidth?: number;
 }
 
 const ProCard: React.FC<ProCardProps> = ({
@@ -26,6 +28,7 @@ const ProCard: React.FC<ProCardProps> = ({
   statusNode,
   footerDescNode,
   footerOperateNode,
+  labelWidth,
 }) => {
   return (
     <Card
@@ -47,6 +50,14 @@ const ProCard: React.FC<ProCardProps> = ({
         <div className={styles.cardBody}>
           {info.map((item, index) => (
             <div key={index} className={styles.infoItem}>
+              {item.label && (
+                <span 
+                  className={styles.label}
+                  style={{ width: labelWidth ? `${labelWidth}px` : undefined }}
+                >
+                  {item.label}
+                </span>
+              )}
               <span className={styles.content}>{item.content}</span>
             </div>
           ))}

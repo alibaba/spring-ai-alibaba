@@ -91,7 +91,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages }) => {
           <div className={styles.messageContent}>
             <div className={styles.messageBubble}>
               <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {message.content}
+                {message.content || ''}
               </div>
               {renderAttachments(message.attachments)}
             </div>
