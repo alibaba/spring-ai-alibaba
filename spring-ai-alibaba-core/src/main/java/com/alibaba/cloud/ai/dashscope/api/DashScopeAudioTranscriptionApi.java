@@ -97,7 +97,13 @@ public class DashScopeAudioTranscriptionApi {
 		this.restClientBuilder = restClientBuilder;
 		this.responseErrorHandler = responseErrorHandler;
 
-		Consumer<HttpHeaders> authHeaders = h -> h.addAll(headers);
+		Consumer<HttpHeaders> authHeaders = h -> {
+			h.addAll(headers);
+			if (!(apiKey instanceof NoopApiKey)) {
+				h.set(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				h.set("X-DashScope-Async", "enable");
+			}
+		};
 
 		this.restClient = restClientBuilder.clone()
 				.baseUrl(baseUrl)
