@@ -401,10 +401,17 @@ public class DashScopeChatModel implements ChatModel {
 		return ChatResponseMetadata.builder().id(result.requestId()).usage(usage).model("").build();
 	}
 
-	private DefaultUsage getDefaultUsage(DashScopeApi.TokenUsage usage) {
-		return new DefaultUsage(usage.inputTokens(), usage.outputTokens(), usage.inputTokens() + usage.outputTokens(),
-				usage);
-	}
+    private DefaultUsage getDefaultUsage(DashScopeApi.TokenUsage usage) {
+        if (usage == null) {
+            return new DefaultUsage(0, 0, 0);
+        }
+
+        int promptTokens = usage.inputTokens() != null ? usage.inputTokens() : 0;
+        int generationTokens = usage.outputTokens() != null ? usage.outputTokens() : 0;
+        int totalTokens = usage.totalTokens() != null ? usage.totalTokens() : 0;
+
+        return new DefaultUsage(promptTokens, generationTokens, totalTokens);
+    }
 
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
