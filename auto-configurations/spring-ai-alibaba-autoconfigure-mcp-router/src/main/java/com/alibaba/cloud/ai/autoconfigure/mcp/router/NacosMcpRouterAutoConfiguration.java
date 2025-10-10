@@ -40,7 +40,6 @@ import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -54,11 +53,10 @@ import java.util.Properties;
  *
  * @author aias00
  */
-@AutoConfiguration
 @AutoConfigureAfter(McpServiceDiscoveryAutoConfiguration.class)
 @EnableConfigurationProperties({ McpRouterProperties.class, NacosMcpProperties.class, McpServerProperties.class })
 @ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+		matchIfMissing = false)
 public class NacosMcpRouterAutoConfiguration {
 
 	private static final Logger log = LoggerFactory.getLogger(NacosMcpRouterAutoConfiguration.class);
