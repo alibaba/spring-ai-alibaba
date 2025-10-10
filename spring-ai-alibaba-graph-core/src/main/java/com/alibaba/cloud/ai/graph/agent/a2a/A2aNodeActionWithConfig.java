@@ -50,7 +50,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Schedulers;
 
 import static java.lang.String.format;
@@ -130,45 +132,71 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	 * forward compatibility for converting AsyncGenerator to reactive streams.
 	 * @return a Flux that emits the elements from this AsyncGenerator
 	 */
-	private <E> Flux<GraphResponse<E>> toFlux(AsyncGenerator generator) {
+	private <E> Flux<GraphResponse<E>> toFlux(AsyncGenerator<E> generator) {
 		return Flux.create(sink -> {
-			Schedulers.boundedElastic().schedule(() -> {
-				try {
-					AsyncGenerator.Data<E> data;
-					while (!(data = generator.next()).isDone()) {
-						if (data.isError()) {
-							// Handle error case
-							try {
-								data.getData().join(); // This will throw the exception
-							}
-							catch (Exception e) {
-								sink.error(e);
-								return;
-							}
-						}
-						else {
-							// Emit the element
-							try {
-								E element = data.getData().join();
-								sink.next(GraphResponse.of(element));
-							}
-							catch (Exception e) {
-								sink.error(e);
-								return;
-							}
-						}
-					}
+			Disposable disposable = Schedulers.boundedElastic().schedule(() -> drainGenerator(generator, sink));
+			sink.onCancel(disposable::dispose);
+			sink.onDispose(disposable::dispose);
+		});
+	}
 
-					if (data.resultValue().isPresent()) {
-						sink.next(GraphResponse.done(data.resultValue().get()));
-					}
-					sink.complete();
-				}
-				catch (Exception e) {
-					sink.error(e);
+	private <E> void drainGenerator(AsyncGenerator<E> generator, FluxSink<GraphResponse<E>> sink) {
+		if (sink.isCancelled()) {
+			return;
+		}
+
+		final AsyncGenerator.Data<E> data;
+		try {
+			data = generator.next();
+		}
+		catch (Exception ex) {
+			sink.error(ex);
+			return;
+		}
+
+		if (data.isDone()) {
+			data.resultValue().ifPresent(result -> {
+				if (!sink.isCancelled()) {
+					sink.next(GraphResponse.done(result));
 				}
 			});
+			if (!sink.isCancelled()) {
+				sink.complete();
+			}
+			return;
+		}
+
+		var future = data.getData();
+		if (future == null) {
+			sink.error(new IllegalStateException("AsyncGenerator data is null without completion signal"));
+			return;
+		}
+
+		future.whenComplete((value, throwable) -> {
+			if (sink.isCancelled()) {
+				return;
+			}
+
+			if (throwable != null) {
+				Throwable actual = unwrapCompletionException(throwable);
+				sink.error(actual);
+				return;
+			}
+
+			if (!sink.isCancelled()) {
+				sink.next(GraphResponse.of(value));
+			}
+
+			drainGenerator(generator, sink);
 		});
+	}
+
+	private Throwable unwrapCompletionException(Throwable throwable) {
+		if (throwable instanceof java.util.concurrent.CompletionException completionException
+				&& completionException.getCause() != null) {
+			return completionException.getCause();
+		}
+		return throwable;
 	}
 
 	/**
