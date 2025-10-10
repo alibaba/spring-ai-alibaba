@@ -49,46 +49,46 @@
 
     <modules>
         <!-- Spring AI Alibaba Modules -->
-        <module>spring-ai-alibaba-bom</module>
-        <module>spring-ai-alibaba-mcp</module>
-        <module>spring-ai-alibaba-a2a</module>
-        <module>spring-ai-alibaba-core</module>
+<!--        <module>spring-ai-alibaba-bom</module>-->
+<!--        <module>spring-ai-alibaba-mcp</module>-->
+<!--        <module>spring-ai-alibaba-a2a</module>-->
+<!--        <module>spring-ai-alibaba-core</module>-->
         <module>spring-ai-alibaba-graph-core</module>
-        <module>spring-ai-alibaba-studio</module>
-        <module>spring-ai-alibaba-agent-nacos</module>
+<!--        <module>spring-ai-alibaba-studio</module>-->
+<!--        <module>spring-ai-alibaba-agent-nacos</module>-->
 
-        <!-- Spring AI Alibaba Extension Modules -->
-        <module>spring-ai-alibaba-observation-extension</module>
+<!--        &lt;!&ndash; Spring AI Alibaba Extension Modules &ndash;&gt;-->
+<!--        <module>spring-ai-alibaba-observation-extension</module>-->
 
-        <!-- Spring AI Alibaba ARMS Extension -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-arms-observation</module>
+<!--        &lt;!&ndash; Spring AI Alibaba ARMS Extension &ndash;&gt;-->
+<!--        <module>auto-configurations/spring-ai-alibaba-autoconfigure-arms-observation</module>-->
 
-        <!-- Spring AI Alibaba Autoconfigure -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
+<!--        &lt;!&ndash; Spring AI Alibaba Autoconfigure &ndash;&gt;-->
+<!--        <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>-->
 
-        <!-- Spring AI Alibaba MCP -->
-        <!-- Nacos3 version -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-registry</module>
+<!--        &lt;!&ndash; Spring AI Alibaba MCP &ndash;&gt;-->
+<!--        &lt;!&ndash; Nacos3 version &ndash;&gt;-->
+<!--        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-registry</module>-->
 
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-router</module>
+<!--        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-router</module>-->
 
-        <!-- Spring AI Alibaba Graph Observation -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-graph-observation</module>
+<!--        &lt;!&ndash; Spring AI Alibaba Graph Observation &ndash;&gt;-->
+<!--        <module>auto-configurations/spring-ai-alibaba-autoconfigure-graph-observation</module>-->
 
-        <!-- Sprint AI Alibaba A2A Server -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-server</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-client</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-registry</module>
+<!--        &lt;!&ndash; Sprint AI Alibaba A2A Server &ndash;&gt;-->
+<!--        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-server</module>-->
+<!--        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-client</module>-->
+<!--        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-registry</module>-->
 
-        <!-- Spring AI Alibaba Spring Boot Starters -->
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-registry</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-router</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-client</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-registry</module>
+<!--        &lt;!&ndash; Spring AI Alibaba Spring Boot Starters &ndash;&gt;-->
+<!--        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>-->
+<!--        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>-->
+<!--        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-registry</module>-->
+<!--        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-router</module>-->
+<!--        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>-->
+<!--        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>-->
+<!--        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-client</module>-->
+<!--        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-registry</module>-->
 
     </modules>
 
