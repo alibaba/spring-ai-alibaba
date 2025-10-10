@@ -157,8 +157,11 @@ public class ParallelNode extends Node {
 				mergedState.put("__parallel_graph_flux__", parallelGraphFlux);
 				return mergedState;
 			} else {
-				// No streaming output - return merged state directly
-				return mergedState;
+				Map<String, Object> initialState = new HashMap<>();
+				// No streaming output, directly merge all results
+				return results.stream()
+						.reduce(initialState,
+								(result, actionResult) -> OverAllState.updateState(result, actionResult, channels));
 			}
 		}
 

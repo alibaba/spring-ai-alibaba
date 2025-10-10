@@ -518,7 +518,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 */
 	private Flux<GraphResponse<NodeOutput>> handleParallelGraphFlux(GraphRunnerContext context,
 			ParallelGraphFlux parallelGraphFlux, Map<String, Object> partialState,
-			AtomicReference<Object> resultValue) {
+			AtomicReference<Object> resultValue) throws Exception {
 
 		if (parallelGraphFlux.isEmpty()) {
 			// Handle empty ParallelGraphFlux
@@ -601,33 +601,24 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @return Flux of GraphResponse with non-streaming result
 	 */
 	private Flux<GraphResponse<NodeOutput>> handleNonStreamingResult(GraphRunnerContext context,
-			Map<String, Object> partialState, AtomicReference<Object> resultValue) {
+			Map<String, Object> partialState, AtomicReference<Object> resultValue) throws Exception {
 		context.mergeIntoCurrentState(partialState);
 
 		if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
 				&& context.getCompiledGraph().compileConfig.interruptsAfter()
-					.contains(context.getCurrentNodeId())) {
+				.contains(context.getCurrentNodeId())) {
 			context.setNextNodeId(INTERRUPT_AFTER);
 		}
 		else {
-			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
-				context.setCurrentStatData(nextCommand.update());
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+			Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
+			context.setNextNodeId(nextCommand.gotoNode());
+			context.setCurrentStatData(nextCommand.update());
 		}
 
-		NodeOutput output;
-		try {
-			output = context.buildCurrentNodeOutput();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		NodeOutput output = context.buildCurrentNodeOutput();
 		// Recursively call the main execution handler
 		return Flux.just(GraphResponse.of(output))
-			.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
+				.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
 	}
 
 }
