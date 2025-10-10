@@ -463,7 +463,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 				}
 
 				// Create StreamingOutput with GraphFlux's nodeId (preserves real node identity)
-				StreamingOutput output = new StreamingOutput(element, effectiveNodeId, context.getOverallState());
+				StreamingOutput output = graphFlux.hasChunkResult() ?
+						new StreamingOutput(element, effectiveNodeId, context.getOverallState()) :
+						new StreamingOutput(graphFlux.getChunkResult().apply(element), element, effectiveNodeId, context.getOverallState());
 				output.setSubGraph(true);
 				return GraphResponse.<NodeOutput>of(output);
 			})
@@ -537,7 +539,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 					.map(element -> {
 						nodeDataRef.set(graphFlux.getMapResult().apply(element));
 						// Create StreamingOutput with specific nodeId (preserves parallel node identity)
-						StreamingOutput output = new StreamingOutput(element, nodeId, context.getOverallState());
+						StreamingOutput output = graphFlux.hasChunkResult() ?
+								new StreamingOutput(element, nodeId, context.getOverallState()) :
+								new StreamingOutput(graphFlux.getChunkResult().apply(element), element, nodeId, context.getOverallState());
 						output.setSubGraph(true);
 						return GraphResponse.<NodeOutput>of(output);
 					})

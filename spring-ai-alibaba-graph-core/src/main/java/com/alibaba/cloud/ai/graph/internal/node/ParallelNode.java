@@ -130,7 +130,7 @@ public class ParallelNode extends Node {
 							@SuppressWarnings("unchecked")
 							GraphFlux<Object> castedFlux = (GraphFlux<Object>) graphFlux;
 							graphFlux = GraphFlux.of(graphFluxNodeId,entry.getKey(), castedFlux.getFlux(),
-								castedFlux.getMapResult());
+								castedFlux.getMapResult(),castedFlux.getChunkResult());
 						}
 						
 						graphFluxList.add(graphFlux);

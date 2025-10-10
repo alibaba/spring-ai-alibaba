@@ -32,6 +32,12 @@ public class StreamingOutput<T> extends NodeOutput {
 		this.chunk = null;
 	}
 
+	public StreamingOutput(String chunk, T originData,String node, OverAllState state) {
+		super(node, state);
+		this.chunk = chunk;
+		this.originData = originData;
+	}
+
 	public StreamingOutput(String chunk, String node, OverAllState state) {
 		super(node, state);
 		this.chunk = chunk;

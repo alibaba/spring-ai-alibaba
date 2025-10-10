@@ -53,16 +53,21 @@ public class GraphFlux<T> {
      */
     private final Function<T,?> mapResult;
 
+    /**
+     * chunk result
+     */
+    private final Function<Object,String> chunkResult;
 
 
     /**
      * 私有构造函数，通过静态工厂方法创建实例
      */
-    private GraphFlux(String nodeId, Flux<T> flux, String key, Function<T,?> mapResult) {
+    private GraphFlux(String nodeId, Flux<T> flux, String key, Function<T,?> mapResult, Function<Object, String> chunkResult) {
         this.nodeId = nodeId;
         this.flux = flux;
         this.key = key;
         this.mapResult = mapResult;
+        this.chunkResult = chunkResult;
     }
 
     /**
@@ -74,7 +79,7 @@ public class GraphFlux<T> {
      * @return GraphFlux实例
      */
     public static <T> GraphFlux<T> of(String nodeId, Flux<T> flux) {
-        return new GraphFlux<>(nodeId, flux,null, null);
+        return new GraphFlux<>(nodeId, flux,null, null,null);
     }
 
     /**
@@ -86,10 +91,13 @@ public class GraphFlux<T> {
      * @param <T>       流式数据类型
      * @return GraphFlux实例
      */
-    public static <T> GraphFlux<T> of(String nodeId, String key, Flux<T> flux, Function<T, ?> mapResult) {
-        return new GraphFlux<>(nodeId, flux, key, mapResult);
+    public static <T> GraphFlux<T> of(String nodeId, String key, Flux<T> flux, Function<T, ?> mapResult, Function<T, String> chunkResult) {
+        return new GraphFlux<>(nodeId, flux, key, mapResult, o -> chunkResult.apply((T) o));
     }
 
+    public Function<Object,String> getChunkResult() {
+        return chunkResult;
+    }
 
     /**
      * 获取节点标识
@@ -130,6 +138,11 @@ public class GraphFlux<T> {
      */
     public boolean hasMapResult() {
         return mapResult != null;
+    }
+
+
+    public boolean hasChunkResult() {
+        return chunkResult != null;
     }
 
 

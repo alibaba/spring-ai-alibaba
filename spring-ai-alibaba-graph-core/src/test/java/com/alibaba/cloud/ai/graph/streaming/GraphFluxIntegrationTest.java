@@ -62,8 +62,9 @@ public class GraphFluxIntegrationTest {
 
             Function<String, Map<String, Object>> mapResult = lastChunk ->
                 Map.of("final_result", "All chunks processed: " + lastChunk);
+            Function<String, String> chunkResult = chunk -> chunk;
 
-            GraphFlux<String> graphFlux = GraphFlux.of("streaming_node", "stream_output", dataStream, mapResult);
+            GraphFlux<String> graphFlux = GraphFlux.of("streaming_node", "stream_output", dataStream, mapResult,chunkResult);
                 
             return CompletableFuture.completedFuture(Map.of("stream_output", graphFlux));
         };
@@ -85,7 +86,7 @@ public class GraphFluxIntegrationTest {
                 streamCount.incrementAndGet();
                 lastNodeId[0] = streamingOutput.node();
                 System.out.println("Streaming from node: " + streamingOutput.node() + 
-                                 ", chunk: " + streamingOutput.chatResponse());
+                                 ", chunk: " + streamingOutput.chunk());
             })
             .blockLast();
 
@@ -110,22 +111,26 @@ public class GraphFluxIntegrationTest {
         AsyncNodeAction node1 = state -> {
             Flux<String> stream1 = Flux.just("node1_chunk1", "node1_chunk2")
                 .delayElements(Duration.ofMillis(10));
+            StringBuilder sb = new StringBuilder("Node1 completed: ");
+            Function<String, String> mapResult1 = lastChunk ->
+                sb.append(lastChunk+"\t").toString();
 
-            Function<String, Map<String, Object>> mapResult1 = lastChunk ->
-                Map.of("node1_result", "Node1 completed: " + lastChunk);
+            Function<String, String> chunkResult1 = chunk -> chunk;
 
-            GraphFlux<String> graphFlux1 = GraphFlux.of("parallel_node_1","stream1", stream1, mapResult1);
+            GraphFlux<String> graphFlux1 = GraphFlux.of("parallel_node_1","stream1", stream1, mapResult1,chunkResult1);
             return CompletableFuture.completedFuture(Map.of("stream1", graphFlux1));
         };
 
         AsyncNodeAction node2 = state -> {
             Flux<String> stream2 = Flux.just("node2_chunk1", "node2_chunk2")
                 .delayElements(Duration.ofMillis(15));
+            StringBuilder sb = new StringBuilder("Node2 completed: ");
+            Function<String, String> mapResult2 = lastChunk ->
+                    sb.append(lastChunk+"\t").toString();
 
-            Function<String, Map<String, Object>> mapResult2 = lastChunk ->
-                Map.of("node2_result", "Node2 completed: " + lastChunk);
+            Function<String, String> chunkResult2 = chunk -> chunk;
 
-            GraphFlux<String> graphFlux2 = GraphFlux.of("parallel_node_2","stream2", stream2, mapResult2);
+            GraphFlux<String> graphFlux2 = GraphFlux.of("parallel_node_2","stream2", stream2, mapResult2,chunkResult2);
             return CompletableFuture.completedFuture(Map.of("stream2", graphFlux2));
         };
 
@@ -172,91 +177,57 @@ public class GraphFluxIntegrationTest {
 
         System.out.println("Node stream counts: " + nodeStreamCounts);
     }
-//
-//    /**
-//     * Test 3: Backward compatibility - traditional Flux should still work
-//     */
-//    @Test
-//    public void testBackwardCompatibilityWithTraditionalFlux() throws Exception {
-//        StateGraph stateGraph = new StateGraph(() -> {
-//            Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-//            keyStrategyMap.put("messages", new AppendStrategy());
-//            return keyStrategyMap;
-//        });
-//
-//        // Node that returns traditional Flux (backward compatibility)
-//        AsyncNodeAction traditionalNode = state -> {
-//            Flux<String> traditionalFlux = Flux.just("traditional1", "traditional2")
-//                .delayElements(Duration.ofMillis(10));
-//            return CompletableFuture.completedFuture(Map.of("traditional_stream", traditionalFlux));
-//        };
-//
-//        stateGraph.addNode("traditional_node", traditionalNode)
-//                .addEdge(START, "traditional_node")
-//                .addEdge("traditional_node", END);
-//
-//        CompiledGraph app = stateGraph.compile();
-//
-//        // Should still work with traditional Flux
-//        AtomicInteger streamCount = new AtomicInteger(0);
-//
-//        app.fluxStream(Map.of("input", "test"))
-//            .filter(output -> output instanceof StreamingOutput)
-//            .doOnNext(output -> streamCount.incrementAndGet())
-//            .blockLast();
-//
-//        assertTrue(streamCount.get() > 0, "Traditional Flux should still produce streaming output");
-//    }
-//
-//    /**
-//     * Test 4: Mixed scenario - GraphFlux and traditional objects in the same graph
-//     */
-//    @Test
-//    public void testMixedGraphFluxAndTraditionalObjects() throws Exception {
-//        StateGraph stateGraph = new StateGraph(() -> {
-//            Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-//            keyStrategyMap.put("messages", new AppendStrategy());
-//            keyStrategyMap.put("static_data", new ReplaceStrategy());
-//            return keyStrategyMap;
-//        });
-//
-//        // Node that returns both GraphFlux and regular objects
-//        AsyncNodeAction mixedNode = state -> {
-//            Flux<String> stream = Flux.just("mixed1", "mixed2")
-//                .delayElements(Duration.ofMillis(10));
-//
-//            GraphFlux<String> graphFlux = GraphFlux.of("mixed_node","stream_output", stream,
-//                data -> Map.of("stream_final", "Stream completed with: " + data));
-//
-//            return CompletableFuture.completedFuture(Map.of(
-//                "stream_output", graphFlux,
-//                "static_data", "This is static data",
-//                "timestamp", System.currentTimeMillis()
-//            ));
-//        };
-//
-//        stateGraph.addNode("mixed_node", mixedNode)
-//                .addEdge(START, "mixed_node")
-//                .addEdge("mixed_node", END);
-//
-//        CompiledGraph app = stateGraph.compile();
-//
-//        boolean hasStreamingOutput = false;
-//        boolean hasStaticData = false;
-//
-//        for (NodeOutput output : app.fluxStream(Map.of("input", "test")).toIterable()) {
-//            if (output instanceof StreamingOutput) {
-//                hasStreamingOutput = true;
-//                assertEquals("mixed_node", output.node(), "Should preserve mixed_node ID");
-//            } else {
-//                Map<String, Object> state = output.state().data();
-//                if (state.containsKey("static_data")) {
-//                    hasStaticData = true;
-//                }
-//            }
-//        }
-//
-//        assertTrue(hasStreamingOutput, "Should have streaming output");
-//        assertTrue(hasStaticData, "Should have static data");
-//    }
+
+
+    /**
+     * Test 4: Mixed scenario - GraphFlux and traditional objects in the same graph
+     */
+    @Test
+    public void testMixedGraphFluxAndTraditionalObjects() throws Exception {
+        StateGraph stateGraph = new StateGraph(() -> {
+            Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+            keyStrategyMap.put("messages", new AppendStrategy());
+            keyStrategyMap.put("static_data", new ReplaceStrategy());
+            return keyStrategyMap;
+        });
+
+        // Node that returns both GraphFlux and regular objects
+        AsyncNodeAction mixedNode = state -> {
+            Flux<String> stream = Flux.just("mixed1", "mixed2")
+                .delayElements(Duration.ofMillis(10));
+
+            GraphFlux<String> graphFlux = GraphFlux.of("mixed_node", "stream_output", stream,
+                    data -> Map.of("stream_final", "Stream completed with: " + data), s -> s);
+
+            return CompletableFuture.completedFuture(Map.of(
+                "stream_output", graphFlux,
+                "static_data", "This is static data",
+                "timestamp", System.currentTimeMillis()
+            ));
+        };
+
+        stateGraph.addNode("mixed_node", mixedNode)
+                .addEdge(START, "mixed_node")
+                .addEdge("mixed_node", END);
+
+        CompiledGraph app = stateGraph.compile();
+
+        boolean hasStreamingOutput = false;
+        boolean hasStaticData = false;
+
+        for (NodeOutput output : app.fluxStream(Map.of("input", "test")).toIterable()) {
+            if (output instanceof StreamingOutput) {
+                hasStreamingOutput = true;
+                assertEquals("mixed_node", output.node(), "Should preserve mixed_node ID");
+            } else {
+                Map<String, Object> state = output.state().data();
+                if (state.containsKey("static_data")) {
+                    hasStaticData = true;
+                }
+            }
+        }
+
+        assertTrue(hasStreamingOutput, "Should have streaming output");
+        assertTrue(hasStaticData, "Should have static data");
+    }
 }
