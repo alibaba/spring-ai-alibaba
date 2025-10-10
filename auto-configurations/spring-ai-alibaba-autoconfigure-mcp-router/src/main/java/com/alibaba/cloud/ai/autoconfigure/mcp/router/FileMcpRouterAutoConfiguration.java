@@ -24,7 +24,6 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.server.autoconfigure.McpServerProperties;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -35,11 +34,10 @@ import org.springframework.context.annotation.Bean;
  *
  * @author digitzh
  */
-@AutoConfiguration
 @AutoConfigureAfter(McpServiceDiscoveryAutoConfiguration.class)
 @EnableConfigurationProperties({ McpRouterProperties.class, McpServerProperties.class })
 @ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+		matchIfMissing = false)
 public class FileMcpRouterAutoConfiguration {
 
 	private static final Logger log = LoggerFactory.getLogger(FileMcpRouterAutoConfiguration.class);
