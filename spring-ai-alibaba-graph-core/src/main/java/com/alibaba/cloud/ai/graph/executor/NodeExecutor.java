@@ -133,7 +133,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return handleEmbeddedGenerator(context, embedGenerator.get(), updateState, resultValue);
 			}
 
-			context.updateState(updateState);
+			context.mergeIntoCurrentState(updateState);
 
 			if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
 					&& context.getCompiledGraph().compileConfig.interruptsAfter()
@@ -298,12 +298,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 					.filter(e -> !(e.getValue() instanceof Flux))
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-			context.updateState(partialStateWithoutFlux);
+			context.mergeIntoCurrentState(partialStateWithoutFlux);
 
 			if (nodeResultValue.isPresent()) {
 				Object value = nodeResultValue.get();
 				if (value instanceof Map<?, ?>) {
-					context.updateState((Map<String, Object>) value);
+					context.mergeIntoCurrentState((Map<String, Object>) value);
 				}
 				else {
 					throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");

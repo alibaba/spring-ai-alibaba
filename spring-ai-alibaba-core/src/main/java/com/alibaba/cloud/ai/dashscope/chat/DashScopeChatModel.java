@@ -609,7 +609,7 @@ public class DashScopeChatModel implements ChatModel {
 				options.getTemperature(), options.getStop(), options.getEnableSearch(), options.getResponseFormat(),
 				incrementalOutput, options.getTools(), options.getToolChoice(), stream,
 				options.getVlHighResolutionImages(), options.getEnableThinking(), options.getSearchOptions(),
-				options.getParallelToolCalls(), null, null, null, null, null, null);
+				options.getParallelToolCalls(), options.getThinkingBudget(), null, null, null, null, null);
 	}
 
 	/**

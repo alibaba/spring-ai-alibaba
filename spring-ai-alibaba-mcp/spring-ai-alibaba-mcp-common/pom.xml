@@ -10,7 +10,6 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-mcp-common</artifactId>
-    <version>${revision}</version>
     <name>Spring AI Alibaba MCP Nacos Common</name>
     <description>Nacos3 MCP for Spring AI Alibaba</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
@@ -83,7 +82,6 @@
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
-            <version>${json-path.version}</version>
         </dependency>
 
     </dependencies>

@@ -109,7 +109,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0.4-SNAPSHOT</revision>
+        <revision>1.1.0.0-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -172,7 +172,7 @@
 
         <poi.version>5.4.0</poi.version>
 
-        <mcp.version>0.10.0</mcp.version>
+        <mcp.version>0.11.2</mcp.version>
         <opentelemetry.version>1.38.0</opentelemetry.version>
         <a2a-sdk.version>0.2.5.Beta2</a2a-sdk.version>
 
@@ -273,6 +273,13 @@
                 <groupId>io.github.a2asdk</groupId>
                 <artifactId>a2a-java-sdk-client</artifactId>
                 <version>${a2a-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp-bom</artifactId>
+                <version>${mcp.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
