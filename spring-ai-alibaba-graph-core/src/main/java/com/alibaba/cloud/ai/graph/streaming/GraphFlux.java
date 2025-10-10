@@ -20,47 +20,47 @@ import reactor.core.publisher.Flux;
 import java.util.function.Function;
 
 /**
- * GraphFlux是一个泛型包装类，用于统一管理流式输出并关联节点标识。
+ * GraphFlux is a generic wrapper class for managing streaming output and associating it with a node identifier.
  * <p>
- * 核心特性：
- * - 统一包装Flux流式数据并附加节点标识
- * - 支持自定义结果映射函数
- * - 保持向后兼容性，无需修改现有接口
+ * Core features:
+ * - Uniformly wraps Flux streaming data and attaches a node identifier
+ * - Supports custom result mapping functions
+ * - Maintains backward compatibility without modifying existing interfaces
  *
- * @param <T> 流式数据的类型
+ * @param <T> the type of streaming data
  * @author disaster
  * @since 1.0.4
  */
 public class GraphFlux<T> {
 
     /**
-     * 节点标识
+     * Node identifier
      */
     private final String nodeId;
 
     /**
-     * 流式数据
+     * Streaming data
      */
     private final Flux<T> flux;
 
     /**
-     * 存储key
+     * Storage key
      */
     private final String key;
 
     /**
-     * 结果映射函数，用于将流式数据的最终结果转换为Map格式
+     * Result mapping function, used to convert the final result of streaming data into Map format
      */
     private final Function<T,?> mapResult;
 
     /**
-     * chunk result
+     * Chunk result function, used to process individual chunks of data
      */
     private final Function<Object,String> chunkResult;
 
 
     /**
-     * 私有构造函数，通过静态工厂方法创建实例
+     * Private constructor, instances are created through static factory methods
      */
     private GraphFlux(String nodeId, Flux<T> flux, String key, Function<T,?> mapResult, Function<Object, String> chunkResult) {
         this.nodeId = nodeId;
@@ -71,25 +71,27 @@ public class GraphFlux<T> {
     }
 
     /**
-     * 创建GraphFlux实例的静态工厂方法
+     * Static factory method to create a GraphFlux instance
      *
-     * @param nodeId 节点标识
-     * @param flux   流式数据
-     * @param <T>    流式数据类型
-     * @return GraphFlux实例
+     * @param nodeId node identifier
+     * @param flux   streaming data
+     * @param <T>    type of streaming data
+     * @return GraphFlux instance
      */
     public static <T> GraphFlux<T> of(String nodeId, Flux<T> flux) {
         return new GraphFlux<>(nodeId, flux,null, null,null);
     }
 
     /**
-     * 创建GraphFlux实例的静态工厂方法，带有结果映射函数
+     * Static factory method to create a GraphFlux instance with a result mapping function
      *
-     * @param nodeId    节点标识
-     * @param flux      流式数据
-     * @param mapResult 结果映射函数
-     * @param <T>       流式数据类型
-     * @return GraphFlux实例
+     * @param nodeId    node identifier
+     * @param key       storage key
+     * @param flux      streaming data
+     * @param mapResult result mapping function
+     * @param chunkResult chunk processing function
+     * @param <T>       type of streaming data
+     * @return GraphFlux instance
      */
     public static <T> GraphFlux<T> of(String nodeId, String key, Flux<T> flux, Function<T, ?> mapResult, Function<T, String> chunkResult) {
         return new GraphFlux<>(nodeId, flux, key, mapResult, o -> chunkResult.apply((T) o));
@@ -100,9 +102,9 @@ public class GraphFlux<T> {
     }
 
     /**
-     * 获取节点标识
+     * Get the node identifier
      *
-     * @return 节点标识
+     * @return node identifier
      */
     public String getNodeId() {
         return nodeId;
@@ -113,18 +115,18 @@ public class GraphFlux<T> {
     }
 
     /**
-     * 获取流式数据
+     * Get the streaming data
      *
-     * @return Flux流式数据
+     * @return Flux streaming data
      */
     public Flux<T> getFlux() {
         return flux;
     }
 
     /**
-     * 获取结果映射函数
+     * Get the result mapping function
      *
-     * @return 结果映射函数，可能为null
+     * @return result mapping function, may be null
      */
     public Function getMapResult() {
         return mapResult;
@@ -132,9 +134,9 @@ public class GraphFlux<T> {
 
 
     /**
-     * 检查是否有结果映射函数
+     * Check if there is a result mapping function
      *
-     * @return 如果有结果映射函数返回true，否则返回false
+     * @return true if there is a result mapping function, false otherwise
      */
     public boolean hasMapResult() {
         return mapResult != null;
