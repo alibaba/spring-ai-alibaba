@@ -65,6 +65,7 @@
 
         <!-- Spring AI Alibaba Autoconfigure -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-store-analyticdb</module>
 
         <!-- Spring AI Alibaba MCP -->
         <!-- Nacos3 version -->
@@ -82,6 +83,7 @@
 
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-store-analyticdb</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-registry</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-router</module>

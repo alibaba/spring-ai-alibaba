@@ -461,6 +461,12 @@
             <!-- Spring AI Alibaba Vector Stores -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-autoconfigure-store-analyticdb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-store-analyticdb</artifactId>
                 <version>${project.version}</version>
             </dependency>
