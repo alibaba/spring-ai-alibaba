@@ -482,12 +482,12 @@ class TemplateTransformNodeTest {
 		OverAllState state = new OverAllState(dataMap);
 
 		TemplateTransformNode node = TemplateTransformNode.builder()
-			.template("用户名：{{name ?: '匿名用户'}}")
+			.template("Username: {{name ?: 'Anonymous'}}")
 			.build();
 
 		Map<String, Object> result = node.apply(state);
 
-		assertEquals("用户名：匿名用户", result.get("result"));
+		assertEquals("Username: Anonymous", result.get("result"));
 	}
 
 	@Test
