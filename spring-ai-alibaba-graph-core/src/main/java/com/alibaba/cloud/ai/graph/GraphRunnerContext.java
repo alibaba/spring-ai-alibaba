@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.springframework.util.CollectionUtils;
@@ -262,13 +263,13 @@ public class GraphRunnerContext {
 						listener.onStart(getCurrentNodeId(), getCurrentStateData(), config);
 						break;
 					case END:
-						listener.onComplete(getCurrentNodeId(), getCurrentStateData(), config);
+						listener.onComplete(END, getCurrentStateData(), config);
 						break;
 					case NODE_BEFORE:
-						listener.onStart(getCurrentNodeId(), getCurrentStateData(), config);
+						listener.before(getCurrentNodeId(), getCurrentStateData(), config, SystemClock.now());
 						break;
 					case NODE_AFTER:
-						listener.onComplete(getCurrentNodeId(), getCurrentStateData(), config);
+						listener.after(getCurrentNodeId(), getCurrentStateData(), config, SystemClock.now());
 						break;
 					case ERROR:
 						listener.onError(getCurrentNodeId(), getCurrentStateData(), e, config);
