@@ -213,7 +213,8 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 			// 去重并排序
 			return documents.stream().filter(doc -> {
 				// 降低分数阈值，或者对于关键词匹配的结果不进行分数过滤
-				double score = doc.getScore();
+				Double scoreObj = doc.getScore();
+				double score = (scoreObj != null) ? scoreObj.doubleValue() : 0.0;
 				Object keywordScore = doc.getMetadata().get("keywordScore");
 				if (keywordScore != null) {
 					// 关键词匹配的结果，使用关键词分数
@@ -429,7 +430,8 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 				serverInfo.setScore(((Number) keywordScore).doubleValue());
 			}
 			else {
-				serverInfo.setScore(document.getScore());
+				Double scoreObj = document.getScore();
+				serverInfo.setScore((scoreObj != null) ? scoreObj.doubleValue() : 0.0);
 			}
 
 			return serverInfo;
