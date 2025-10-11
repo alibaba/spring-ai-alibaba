@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests for {@link AnalyticDbVectorStoreAutoConfiguration}.
  *
- * @author Alibaba Cloud
+ * @author saladday
  */
 class AnalyticDbVectorStoreAutoConfigurationTests {
 

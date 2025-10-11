@@ -64,7 +64,7 @@ import org.springframework.util.CollectionUtils;
 /**
  * Vector store implementation backed by AnalyticDB.
  *
- * @author Alibaba Cloud
+ * @author saladday
  */
 public class AnalyticDbVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -218,12 +218,12 @@ public class AnalyticDbVectorStore extends AbstractObservationVectorStore implem
 				throw new RuntimeException("Failed to serialise metadata for document id = " + document.getId(), ex);
 			}
 
-			float[] vector = embeddings.get(index);
-			List<Float> embeddingVector = IntStream.range(0, vector.length)
-				.mapToObj(i -> vector[i])
-				.collect(Collectors.toList());
+		float[] vector = embeddings.get(index);
+		List<Double> embeddingVector = IntStream.range(0, vector.length)
+			.mapToObj(i -> (double) vector[i])
+			.collect(Collectors.toList());
 
-			rows.add(new UpsertCollectionDataRequestRows().setVector(embeddingVector).setMetadata(metadata));
+		rows.add(new UpsertCollectionDataRequestRows().setVector(embeddingVector).setMetadata(metadata));
 		}
 
 		UpsertCollectionDataRequest request = new UpsertCollectionDataRequest()

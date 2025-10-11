@@ -24,7 +24,7 @@ package com.alibaba.cloud.ai.vectorstore.analyticdb;
  * object is created programmatically (for example in the auto-configuration).
  * </p>
  *
- * @author Alibaba Cloud
+ * @author saladday
  */
 public class AnalyticDbConfig {
 

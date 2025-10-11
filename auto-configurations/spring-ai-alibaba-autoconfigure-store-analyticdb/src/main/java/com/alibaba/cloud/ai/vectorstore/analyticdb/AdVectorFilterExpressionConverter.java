@@ -31,7 +31,7 @@ import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpress
  * exception for unsupported variants.
  * </p>
  *
- * @author Alibaba Cloud
+ * @author saladday
  */
 public class AdVectorFilterExpressionConverter extends AbstractFilterExpressionConverter {
 

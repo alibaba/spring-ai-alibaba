@@ -40,7 +40,7 @@ import org.springframework.context.annotation.ConfigurationCondition;
  * {@code spring.ai.vectorstore.type=analyticdb} (or the legacy
  * {@code spring.ai.vectorstore.analytic.enabled=true}) is present.
  *
- * @author Alibaba Cloud
+ * @author saladday
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, Client.class, AnalyticDbVectorStore.class })

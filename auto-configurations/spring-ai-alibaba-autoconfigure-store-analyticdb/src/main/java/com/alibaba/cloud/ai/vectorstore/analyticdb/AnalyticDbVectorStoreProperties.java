@@ -25,7 +25,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * Configuration properties that control the AnalyticDB vector store integration.
  *
- * @author Alibaba Cloud
+ * @author saladday
  */
 @ConfigurationProperties(AnalyticDbVectorStoreProperties.CONFIG_PREFIX)
 public class AnalyticDbVectorStoreProperties extends CommonVectorStoreProperties {
