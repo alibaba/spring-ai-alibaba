@@ -33,6 +33,25 @@ public class TemplateTransformNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(TemplateTransformNode.class);
 
+	/**
+	 * Regex pattern to match template placeholders of the form:
+	 *   {{ key }} or {{ key ?: defaultValue }}
+	 *
+	 * Structure:
+	 *   - \\{\\{         : Matches the opening double curly braces.
+	 *   - \\s*           : Optional whitespace.
+	 *   - (.+?)          : Capture group 1 - the key (variable name or path).
+	 *   - (?:            : Non-capturing group for the Elvis operator.
+	 *       \\s*\\?:\\s* : Matches optional whitespace, the Elvis operator '?:', and more optional whitespace.
+	 *       (.+?)        : Capture group 2 - the default value if provided.
+	 *     )?             : The non-capturing group is optional (for cases without a default value).
+	 *   - \\s*           : Optional whitespace.
+	 *   - \\}\\}         : Matches the closing double curly braces.
+	 *
+	 * Capture groups:
+	 *   1. key           : The variable name or path to be replaced.
+	 *   2. defaultValue  : The default value to use if the key is not found (may be null).
+	 */
 	private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{\\s*(.+?)(?:\\s*\\?:\\s*(.+?))?\\s*\\}\\}");
 
 	private static final Pattern ARRAY_INDEX_PATTERN = Pattern.compile("^(.+?)\\[(\\d+)\\]$");
