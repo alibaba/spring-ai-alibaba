@@ -322,8 +322,13 @@ public class TemplateTransformNode implements NodeAction {
 			return false;
 		}
 		String trimmed = str.trim();
-		return (trimmed.startsWith("{") && trimmed.endsWith("}"))
-				|| (trimmed.startsWith("[") && trimmed.endsWith("]"));
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			mapper.readTree(trimmed);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 	/**
