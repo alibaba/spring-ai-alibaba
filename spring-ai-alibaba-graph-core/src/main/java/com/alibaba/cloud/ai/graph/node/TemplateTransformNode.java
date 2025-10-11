@@ -247,14 +247,12 @@ public class TemplateTransformNode implements NodeAction {
 		try {
 			String getterName = "get" + capitalize(propertyName);
 			Method getter = clazz.getMethod(getterName);
-			getter.setAccessible(true);
 			return getter.invoke(obj);
 		}
 		catch (Exception e) {
 			try {
 				String booleanGetterName = "is" + capitalize(propertyName);
 				Method booleanGetter = clazz.getMethod(booleanGetterName);
-				booleanGetter.setAccessible(true);
 				return booleanGetter.invoke(obj);
 			}
 			catch (Exception ex) {
