@@ -34,13 +34,13 @@ public class RecursiveCharacterTextSplitterTest {
 
 	@Test
 	public void testSplitText_BasicFunctionality() {
-		String text = "Hello, this is a test text.";
+		String text = "你好，这是一个测试文本。";
 		List<String> result = splitter.splitText(text);
 
 		assertNotNull(result);
 		assertEquals(2, result.size());
-		assertEquals("Hello", result.get(0));
-		assertEquals("this is a test text", result.get(1));
+		assertEquals("你好", result.get(0));
+		assertEquals("这是一个测试文本", result.get(1));
 	}
 
 	@Test
@@ -136,12 +136,11 @@ public class RecursiveCharacterTextSplitterTest {
 
 	@Test
 	public void testSplitText_WithSpecialCharacters() {
-		String text = "Special character test!@#$%^&*()_+{}[]";
+		String text = "特殊字符测试！@#$%^&*()_+{}[]";
 		List<String> result = splitter.splitText(text);
-
 		assertNotNull(result);
 		assertFalse(result.isEmpty());
-		assertEquals("Special character test", result.get(0));
+		assertEquals("特殊字符测试", result.get(0));
 		assertEquals("@#$%^&*()_", result.get(1));
 		assertEquals("+{}[]", result.get(2));
 	}
