@@ -69,17 +69,17 @@ public class DashScopeMultiModalChatTests {
 
 	private static final String TEST_REQUEST_ID = "test-request-id";
 
-	private static final String TEST_PROMPT = "这些是什么？";
+	private static final String TEST_PROMPT = "What are these?";
 
-	private static final String TEST_RESPONSE = "图片中是一个小女孩和一只狗在户外。";
+	private static final String TEST_RESPONSE = "The image shows a little girl and a dog outdoors.";
 
-	private static final String TEST_VIDEO_PROMPT = "这是一组从视频中提取的图片帧，请描述此视频中的内容。";
+	private static final String TEST_VIDEO_PROMPT = "This is a set of image frames extracted from a video, please describe the content of this video.";
 
-	private static final String TEST_AUDIO_PROMPT = "这是一个音频文件，请描述此音频中的内容。";
+	private static final String TEST_AUDIO_PROMPT = "This is an audio file, please describe the content of this audio.";
 
-	private static final String TEST_VIDEO_RESPONSE = "视频展示了一系列连续的画面，内容是...";
+	private static final String TEST_VIDEO_RESPONSE = "The video shows a series of continuous frames, the content is...";
 
-	private static final String TEST_AUDIO_RESPONSE = "音频中是一个男性的声音，说的是...";
+	private static final String TEST_AUDIO_RESPONSE = "The audio contains a male voice saying...";
 
 	private DashScopeApi dashScopeApi;
 
@@ -260,15 +260,15 @@ public class DashScopeMultiModalChatTests {
 	@Test
 	void testStreamImageResponse() {
 		// Setup mock streaming response
-		ChatCompletionMessage chunkMessage1 = new ChatCompletionMessage("图片中是一个", ChatCompletionMessage.Role.ASSISTANT);
-		ChatCompletionMessage chunkMessage2 = new ChatCompletionMessage("小女孩和一只狗在户外。",
+		ChatCompletionMessage chunkMessage1 = new ChatCompletionMessage("The image shows a", ChatCompletionMessage.Role.ASSISTANT);
+		ChatCompletionMessage chunkMessage2 = new ChatCompletionMessage("little girl and a dog outdoors.",
 				ChatCompletionMessage.Role.ASSISTANT);
 
 		Choice choice1 = new Choice(null, chunkMessage1, null);
 		Choice choice2 = new Choice(ChatCompletionFinishReason.STOP, chunkMessage2, null);
 
-		ChatCompletionOutput output1 = new ChatCompletionOutput("图片中是一个", List.of(choice1), null);
-		ChatCompletionOutput output2 = new ChatCompletionOutput("小女孩和一只狗在户外。", List.of(choice2), null);
+		ChatCompletionOutput output1 = new ChatCompletionOutput("The image shows a", List.of(choice1), null);
+		ChatCompletionOutput output2 = new ChatCompletionOutput("little girl and a dog outdoors.", List.of(choice2), null);
 
 		ChatCompletionChunk chunk1 = new ChatCompletionChunk(TEST_REQUEST_ID, output1, null);
 		ChatCompletionChunk chunk2 = new ChatCompletionChunk(TEST_REQUEST_ID, output2,
@@ -293,13 +293,13 @@ public class DashScopeMultiModalChatTests {
 
 		// Verify streaming response
 		StepVerifier.create(responseFlux).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("图片中是一个");
+			assertThat(response.getResult().getOutput().getText()).isEqualTo("The image shows a");
 		}).assertNext(response -> {
-			assertThat(response.getResult().getOutput().getText()).isEqualTo("小女孩和一只狗在户外。");
+			assertThat(response.getResult().getOutput().getText()).isEqualTo("little girl and a dog outdoors.");
 		}).verifyComplete();
 	}
 
-	// =============== 集成测试案例 ===============
+	// =============== Integration Test Cases ===============
 
 	/**
 	 * Integration test for image processing with URL This test will only run if
@@ -514,7 +514,7 @@ public class DashScopeMultiModalChatTests {
 
 		// Create user message with resource media and custom prompt
 		UserMessage message = UserMessage.builder()
-			.text("请详细描述这张图片中的场景，包括人物、动物、环境等细节，并分析图片的情感基调。")
+			.text("Please describe in detail the scene in this image, including characters, animals, environment and other details, and analyze the emotional tone of the image.")
 			.media(new Media(MimeTypeUtils.IMAGE_JPEG, new ClassPathResource("multimodel/dog_and_girl.jpeg")))
 			.build();
 		message.getMetadata().put(MESSAGE_FORMAT, MessageFormat.IMAGE);

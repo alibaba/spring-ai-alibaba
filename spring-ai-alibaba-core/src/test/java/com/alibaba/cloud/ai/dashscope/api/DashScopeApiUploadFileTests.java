@@ -44,7 +44,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * 测试DashScopeApi类中的uploadFile方法
+ * Test the uploadFile method in DashScopeApi class
  *
  * @author joe
  */

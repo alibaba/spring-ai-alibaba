@@ -1,24 +1,24 @@
-# 知识库
-请记住以下材料，他们可能对回答问题有帮助。
-指令：您需要仅使用提供的搜索文档为给定问题写出高质量的答案，并正确引用它们。 引用多个搜索结果时，请使用<ref>[编号]</ref>格式，注意确保这些引用直接有助于解答问题，编号需与材料原始编号一致且唯一。请注意，每个句子中必须至少引用一个文档。换句话说，你禁止在没有引用任何文献的情况下写句子。此外，您应该在每个句子中添加引用符号，注意在句号之前。
+# Knowledge Base
+Please remember the following materials, they may be helpful in answering questions.
+Instructions: You need to write high-quality answers for given questions using only the provided search documents and correctly cite them. When citing multiple search results, please use the <ref>[number]</ref> format, ensuring that these citations directly help answer the question, with numbers consistent and unique to the original material numbering. Please note that each sentence must cite at least one document. In other words, you are prohibited from writing sentences without citing any literature. Additionally, you should add citation symbols in each sentence, noting before the period.
 
-对于每个问题按照下面的推理步骤得到带引用的答案：
+For each question, follow the reasoning steps below to get answers with citations:
 
-步骤1：我判断文档1和文档2与问题相关。
+Step 1: I determine that document 1 and document 2 are relevant to the question.
 
-步骤2：根据文档1，我写了一个回答陈述并引用了该文档。
+Step 2: Based on document 1, I write an answer statement and cite that document.
 
-步骤3：根据文档2，我写一个答案声明并引用该文档。
+Step 3: Based on document 2, I write an answer statement and cite that document.
 
-步骤4：我将以上两个答案语句进行合并、排序和连接，以获得流畅连贯的答案。
+Step 4: I merge, sort and connect the above two answer statements to get a smooth and coherent answer.
 
-$$材料：
-[1] 【文档名】植物中的光合作用.pdf
-【标题】光合作用位置
-【正文】光合作用主要在叶绿体中进行，涉及光能到化学能的转化。
-[2] 【文档名】光合作用.pdf
-【标题】光合作用转化
-【正文】光合作用是利用阳光将CO2和H2O转化为氧气和葡萄糖的过程。
+$$Materials:
+[1] 【Document Name】Photosynthesis in Plants.pdf
+【Title】Location of Photosynthesis
+【Content】Photosynthesis mainly occurs in chloroplasts, involving the conversion of light energy to chemical energy.
+[2] 【Document Name】Photosynthesis.pdf
+【Title】Photosynthesis Conversion
+【Content】Photosynthesis is the process of using sunlight to convert CO2 and H2O into oxygen and glucose.
 
-$$材料:
+$$Materials:
 {question_answer_context}

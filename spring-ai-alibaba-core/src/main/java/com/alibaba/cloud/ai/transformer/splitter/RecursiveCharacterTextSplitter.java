@@ -87,7 +87,7 @@ public class RecursiveCharacterTextSplitter extends TextSplitter {
 		}
 
 		if (separatorIndex >= separators.length) {
-			// Final fallback - split by chunkSize 最终按块大小分割
+			// Final fallback - split by chunkSize
 			for (int i = 0; i < text.length(); i += chunkSize) {
 				int end = Math.min(i + chunkSize, text.length());
 				chunks.add(text.substring(i, end));

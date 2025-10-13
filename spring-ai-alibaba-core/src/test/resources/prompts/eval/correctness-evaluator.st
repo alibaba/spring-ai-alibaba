@@ -1,6 +1,6 @@
-你的任务是评估Query返回的Response是否符合提供的Context信息。
-你有两个选项来回答，要么是"YES"/"NO"。
-如果查询的响应与上下文信息一致，回答"YES"，否则回答"NO"。
+Your task is to evaluate whether the Response returned by Query is consistent with the provided Context information.
+You have two options to answer, either "YES"/"NO".
+If the query response is consistent with the context information, answer "YES", otherwise answer "NO".
 
 Query:  {query}
 Response:  {response}
