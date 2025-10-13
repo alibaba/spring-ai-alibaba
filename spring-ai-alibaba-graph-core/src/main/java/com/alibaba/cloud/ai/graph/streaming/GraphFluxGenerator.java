@@ -67,7 +67,6 @@ public interface GraphFluxGenerator {
 
 		private GraphFlux<ChatResponse> buildInternal(Flux<ChatResponse> flux) {
 			Objects.requireNonNull(flux, "flux cannot be null");
-			Objects.requireNonNull(outKey, "outKey cannot be null");
 
 			var result = new AtomicReference<ChatResponse>(null);
 

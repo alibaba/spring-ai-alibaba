@@ -15,16 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.node;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import reactor.core.publisher.Flux;
-
+import com.alibaba.cloud.ai.graph.streaming.GraphFluxGenerator;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -33,6 +26,13 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
 
@@ -92,7 +92,8 @@ public class LlmNode implements NodeAction {
 		// add streaming support
 		if (Boolean.TRUE.equals(stream)) {
 			Flux<ChatResponse> chatResponseFlux = stream(state);
-			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
+			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", GraphFluxGenerator.builder()
+					.build(chatResponseFlux));
 		}
 		else {
 			AssistantMessage responseOutput;
