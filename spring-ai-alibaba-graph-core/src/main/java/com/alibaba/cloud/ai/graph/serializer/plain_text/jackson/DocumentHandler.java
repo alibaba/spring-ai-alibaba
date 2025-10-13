@@ -56,18 +56,19 @@ public interface DocumentHandler {
 		public void serialize(Document document, JsonGenerator gen, SerializerProvider provider) throws IOException {
 			gen.writeStartObject();
 			gen.writeStringField("@type", "DOCUMENT");
-		gen.writeStringField(Field.ID.name, document.getId());
-		gen.writeStringField(Field.TEXT.name, document.getText());
+			gen.writeStringField(Field.ID.name, document.getId());
+			gen.writeStringField(Field.TEXT.name, document.getText());
 
-		// Serialize media field
-		if (document.getMedia() != null) {
-			gen.writeObjectField(Field.MEDIA.name, document.getMedia());
-		}
+			// Serialize media field
+			if (document.getMedia() != null) {
+				gen.writeObjectField(Field.MEDIA.name, document.getMedia());
+			}
 
-		// Serialize score field
-		if (document.getScore() != null) {
-			gen.writeNumberField(Field.SCORE.name, document.getScore());
-		}			serializeMetadata(gen, document.getMetadata());
+			// Serialize score field
+			if (document.getScore() != null) {
+				gen.writeNumberField(Field.SCORE.name, document.getScore());
+			}
+			serializeMetadata(gen, document.getMetadata());
 			gen.writeEndObject();
 		}
 
@@ -84,21 +85,22 @@ public interface DocumentHandler {
 			var mapper = (ObjectMapper) jsonParser.getCodec();
 			ObjectNode node = mapper.readTree(jsonParser);
 
-		var id = node.get(Field.ID.name).asText();
-		var text = node.get(Field.TEXT.name).asText();
-		var metadata = deserializeMetadata(mapper, node);
+			var id = node.get(Field.ID.name).asText();
+			var text = node.get(Field.TEXT.name).asText();
+			var metadata = deserializeMetadata(mapper, node);
 
-		// Deserialize media field
-		Media media = null;
-		if (node.has(Field.MEDIA.name) && !node.get(Field.MEDIA.name).isNull()) {
-			media = mapper.treeToValue(node.get(Field.MEDIA.name), Media.class);
-		}
+			// Deserialize media field
+			Media media = null;
+			if (node.has(Field.MEDIA.name) && !node.get(Field.MEDIA.name).isNull()) {
+				media = mapper.treeToValue(node.get(Field.MEDIA.name), Media.class);
+			}
 
-		// Deserialize score field
-		Double score = null;
-		if (node.has(Field.SCORE.name) && !node.get(Field.SCORE.name).isNull()) {
-			score = node.get(Field.SCORE.name).asDouble();
-		}			return Document.builder().id(id).text(text).media(media).metadata(metadata).score(score).build();
+			// Deserialize score field
+			Double score = null;
+			if (node.has(Field.SCORE.name) && !node.get(Field.SCORE.name).isNull()) {
+				score = node.get(Field.SCORE.name).asDouble();
+			}
+			return Document.builder().id(id).text(text).media(media).metadata(metadata).score(score).build();
 		}
 
 	}
