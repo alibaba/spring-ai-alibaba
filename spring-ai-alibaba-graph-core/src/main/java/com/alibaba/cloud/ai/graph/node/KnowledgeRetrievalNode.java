@@ -79,7 +79,7 @@ public class KnowledgeRetrievalNode implements NodeAction {
 
 	List<Document> documents;
 
-	// 当一些属性同时设置了键和值（例如userPrompt和userPromptKey），优先使用state键里对应的值，还是预设值
+	// When some properties have both key and value set (e.g. userPrompt and userPromptKey), prioritize using the value from state key or the preset value
 	private boolean isKeyFirst = true;
 
 	private String outputKey;

@@ -19,9 +19,9 @@ package com.alibaba.cloud.ai.graph.node.code.entity;
 /**
  * @author vlsmb
  * @since 2025/9/11
- * @param argName 参数在代码中对应的名称
- * @param value 参数值，如果为null，则从OverallState中获取
- * @param stateKey 参数在OverallState中的key，如果value不为null，则忽略stateKey
+ * @param argName the name corresponding to the parameter in the code
+ * @param value the parameter value, if null, obtained from OverallState
+ * @param stateKey the key of the parameter in OverallState, ignored if value is not null
  */
 public record CodeParam(String argName, Object value, String stateKey) {
 	public CodeParam(String argName, String stateKey) {

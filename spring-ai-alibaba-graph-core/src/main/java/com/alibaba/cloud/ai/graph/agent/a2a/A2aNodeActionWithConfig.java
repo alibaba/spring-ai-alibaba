@@ -432,7 +432,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 //		Flux<GraphResponse<NodeOutput>> graphResponseFlux = toFlux(generator);
 //
 //		// Convert Flux<GraphResponse<NodeOutput>> to Flux<NodeOutput>
-//		return graphResponseFlux.filter(graphResponse -> !graphResponse.isDone()) // 过滤掉完成信号
+//		return graphResponseFlux.filter(graphResponse -> !graphResponse.isDone()) // Filter out completion signals
 //			.map(graphResponse -> {
 //				try {
 //					return graphResponse.getOutput().join();

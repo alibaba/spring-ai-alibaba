@@ -34,7 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-// Agent节点
+// Agent node
 public class AgentNode implements NodeAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentNode.class);
@@ -45,7 +45,7 @@ public class AgentNode implements NodeAction {
 
 	private final Strategy strategy;
 
-	// Prompt内可以有变量，格式为{varName}，将在正式调用Client前替换占位变量
+	// Prompt can contain variables in the format {varName}, which will be replaced before calling the Client
 	private final String systemPrompt;
 
 	private final String userPrompt;
@@ -74,15 +74,15 @@ public class AgentNode implements NodeAction {
 			throw new IllegalArgumentException("ChatClient is required");
 		}
 
-		// 初始化retryTemplate
+		// Initialize retryTemplate
 		this.retryTemplate = new RetryTemplate();
 		SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
 		retryPolicy.setMaxAttempts(this.maxIterations);
 		this.retryTemplate.setRetryPolicy(retryPolicy);
 
-		// 初始化toolCallbacks
+		// Initialize toolCallbacks
 		this.toolCallbacks = Arrays.stream(toolCallbacks).map(toolCallback -> {
-			// ToolCalling策略调用完工具后直接返回，需要包装一层使得returnDirect为true
+			// ToolCalling strategy returns directly after calling the tool, needs to be wrapped to set returnDirect to true
 			if (this.strategy == Strategy.TOOL_CALLING && !toolCallback.getToolMetadata().returnDirect()) {
 				final ToolMetadata toolMetadata = ToolMetadata.builder().returnDirect(true).build();
 				return new ToolCallback() {
@@ -93,7 +93,7 @@ public class AgentNode implements NodeAction {
 
 					@Override
 					public ToolMetadata getToolMetadata() {
-						// returnDirect为true的ToolMetadata
+						// ToolMetadata with returnDirect set to true
 						return toolMetadata;
 					}
 
@@ -121,7 +121,7 @@ public class AgentNode implements NodeAction {
 		String systemPrompt = new PromptTemplate(this.systemPrompt).render(state.data());
 		String output = switch (this.strategy) {
 			case TOOL_CALLING, REACT -> {
-				// 重试机制
+				// Retry mechanism
 				try {
 					yield this.retryTemplate.execute(retryContext -> {
 						String content = this.chatClient.prompt(systemPrompt)
