@@ -44,7 +44,7 @@ class DashScopeChatIT {
 	// Test constants
 	private static final String TEST_MODEL = "qwen-turbo";
 
-	private static final String TEST_PROMPT = "Hello, please introduce yourself.";
+	private static final String TEST_PROMPT = "你好，请介绍一下你自己。";
 
 	private static final String API_KEY_ENV = "AI_DASHSCOPE_API_KEY";
 
