@@ -30,12 +30,12 @@ import org.springframework.ai.transformer.splitter.TextSplitter;
 public class RecursiveCharacterTextSplitter extends TextSplitter {
 
 	/**
-	 * Maximum size of each chunk 最大块大小
+	 * Maximum size of each chunk
 	 */
 	private final int chunkSize;
 
 	/**
-	 * Array of separators to use for splitting 分隔符
+	 * Array of separators to use for splitting
 	 */
 	private final String[] separators;
 
@@ -87,7 +87,7 @@ public class RecursiveCharacterTextSplitter extends TextSplitter {
 		}
 
 		if (separatorIndex >= separators.length) {
-			// Final fallback - split by chunkSize 最终按块大小分割
+			// Final fallback - split by chunkSize
 			for (int i = 0; i < text.length(); i += chunkSize) {
 				int end = Math.min(i + chunkSize, text.length());
 				chunks.add(text.substring(i, end));

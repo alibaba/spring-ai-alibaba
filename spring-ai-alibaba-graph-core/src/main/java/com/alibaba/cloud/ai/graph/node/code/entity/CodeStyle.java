@@ -23,12 +23,12 @@ package com.alibaba.cloud.ai.graph.node.code.entity;
 public enum CodeStyle {
 
 	/**
-	 * 参数直接作为函数形参的风格 示例: def main(x: int, y: int) -> dict:
+	 * Style where parameters are directly used as function formal parameters. Example: def main(x: int, y: int) -> dict:
 	 */
 	EXPLICIT_PARAMETERS,
 
 	/**
-	 * 参数通过全局字典访问的风格 示例: def main(): x = params['x']
+	 * Style where parameters are accessed through global dictionary. Example: def main(): x = params['x']
 	 */
 	GLOBAL_DICTIONARY
 

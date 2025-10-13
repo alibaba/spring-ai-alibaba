@@ -82,7 +82,7 @@ public class DocumentExtractorNode implements NodeAction {
 	}
 
 	/**
-	 * 支持本地或者网络获取输入流
+	 * Supports obtaining input stream from local or network sources
 	 */
 	private InputStream getInputStream(String filePath) throws IOException {
 		URI uri;
@@ -127,7 +127,7 @@ public class DocumentExtractorNode implements NodeAction {
 				fileList = Arrays.asList((String[]) fileObj);
 			}
 			else {
-				// 尝试以Json字符串解析，如果失败则说明输入无效
+				// Try to parse as Json string, if failed the input is invalid
 				try {
 					fileList = JsonParser.fromJson(fileObj.toString(), new TypeReference<List<String>>() {
 					});
@@ -141,7 +141,7 @@ public class DocumentExtractorNode implements NodeAction {
 			}
 		}
 		else {
-			// 单个文件，直接添加进列表
+			// Single file, add directly to the list
 			fileList = List.of(fileObj.toString());
 		}
 		List<String> documentContents = this.getDocument(fileList);

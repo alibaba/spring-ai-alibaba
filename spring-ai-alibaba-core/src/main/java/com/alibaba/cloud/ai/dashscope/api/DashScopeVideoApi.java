@@ -792,7 +792,7 @@ public class DashScopeVideoApi {
 
 	public enum VideoTemplate {
 
-		// 通用特效
+		// General effects
 
 		/**
 		 * 解压捏捏
@@ -819,7 +819,7 @@ public class DashScopeVideoApi {
 		 */
 		DISSOLVE("dissolve"),
 
-		// 单人特效
+		// Single person effects
 
 		/**
 		 * 时光木马
@@ -866,7 +866,7 @@ public class DashScopeVideoApi {
 		 */
 		MONEY("money"),
 
-		// 单人或动物特效
+		// Single person or animal effects
 
 		/**
 		 * 魔法悬浮
@@ -883,7 +883,7 @@ public class DashScopeVideoApi {
 		 */
 		CRYSTALROSE("crystalrose"),
 
-		// 双人特效
+		// Two person effects
 
 		/**
 		 * 爱的抱抱

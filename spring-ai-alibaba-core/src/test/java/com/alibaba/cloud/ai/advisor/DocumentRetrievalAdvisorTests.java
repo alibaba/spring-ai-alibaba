@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
  * @author brianxiadong
  * @since 1.0.0-M5.1
  */
-@Disabled("1.0.0-RC1删除API，测试类需要重构")
+@Disabled("1.0.0-RC1 API removed, test class needs refactoring")
 @ExtendWith(MockitoExtension.class)
 class DocumentRetrievalAdvisorTests {
 

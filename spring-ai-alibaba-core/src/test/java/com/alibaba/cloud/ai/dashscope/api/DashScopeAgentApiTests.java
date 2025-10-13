@@ -110,7 +110,7 @@ class DashScopeAgentApiTests {
 					return ResponseEntity.ok(null);
 				}
 				try {
-					// 使用mock的RestClient
+					// Use mock RestClient
 					return restClient.post()
 						.uri("/api/v1/apps/" + request.appId() + "/completion")
 						.body(request)
@@ -118,7 +118,7 @@ class DashScopeAgentApiTests {
 						.toEntity(DashScopeAgentResponse.class);
 				}
 				catch (Exception e) {
-					// 处理可能的异常，例如NullPointerException
+					// Handle possible exceptions, such as NullPointerException
 					return ResponseEntity.ok(null);
 				}
 			}
@@ -129,7 +129,7 @@ class DashScopeAgentApiTests {
 					return Flux.empty();
 				}
 				try {
-					// 使用mock的WebClient
+					// Use mock WebClient
 					return webClient.post()
 						.uri("/api/v1/apps/" + request.appId() + "/completion")
 						.body(Mono.just(request), DashScopeAgentResponse.class)
@@ -137,7 +137,7 @@ class DashScopeAgentApiTests {
 						.bodyToFlux(DashScopeAgentResponse.class);
 				}
 				catch (Exception e) {
-					// 处理可能的异常，例如NullPointerException
+					// Handle possible exceptions, such as NullPointerException
 					return Flux.empty();
 				}
 			}
@@ -171,7 +171,7 @@ class DashScopeAgentApiTests {
 		DashScopeAgentApi.DashScopeAgentRequest request = createTestRequest();
 		DashScopeAgentApi.DashScopeAgentResponse response = createTestResponse();
 
-		// 创建一个特定的mock实例用于此测试
+		// Create a specific mock instance for this test
 		DashScopeAgentApi mockApi = new DashScopeAgentApi(TEST_API_KEY) {
 			@Override
 			public ResponseEntity<DashScopeAgentResponse> call(DashScopeAgentRequest req) {
@@ -197,7 +197,7 @@ class DashScopeAgentApiTests {
 		DashScopeAgentApi.DashScopeAgentRequest request = createTestRequest();
 		DashScopeAgentApi.DashScopeAgentResponse response = createTestResponse();
 
-		// 创建一个特定的mock实例用于此测试
+		// Create a specific mock instance for this test
 		DashScopeAgentApi mockApi = new DashScopeAgentApi(TEST_API_KEY) {
 			@Override
 			public Flux<DashScopeAgentResponse> stream(DashScopeAgentRequest req) {
@@ -224,7 +224,7 @@ class DashScopeAgentApiTests {
 		DashScopeAgentApi.DashScopeAgentRequest request = createTestRequest();
 		DashScopeAgentApi.DashScopeAgentResponse errorResponse = createErrorResponse();
 
-		// 创建一个特定的mock实例用于此测试
+		// Create a specific mock instance for this test
 		DashScopeAgentApi mockApi = new DashScopeAgentApi(TEST_API_KEY) {
 			@Override
 			public ResponseEntity<DashScopeAgentResponse> call(DashScopeAgentRequest req) {
@@ -251,11 +251,11 @@ class DashScopeAgentApiTests {
 		DashScopeAgentApi.DashScopeAgentRequest request = createTestRequest();
 		DashScopeAgentApi.DashScopeAgentResponse errorResponse = createErrorResponse();
 
-		// Mock WebClient behavior - 使用lenient()避免不必要的stubbing警告
+		// Mock WebClient behavior - use lenient() to avoid unnecessary stubbing warnings
 		lenient().when(responseSpec.bodyToFlux(DashScopeAgentApi.DashScopeAgentResponse.class))
 			.thenReturn(Flux.just(errorResponse));
 
-		// 创建一个特定的mock实例用于此测试
+		// Create a specific mock instance for this test
 		DashScopeAgentApi mockApi = new DashScopeAgentApi(TEST_API_KEY) {
 			@Override
 			public Flux<DashScopeAgentResponse> stream(DashScopeAgentRequest req) {
@@ -279,7 +279,7 @@ class DashScopeAgentApiTests {
 	 */
 	@Test
 	void testCallWithNullRequest() {
-		// 创建一个特定的mock实例用于此测试
+		// Create a specific mock instance for this test
 		DashScopeAgentApi mockApi = new DashScopeAgentApi(TEST_API_KEY) {
 			@Override
 			public ResponseEntity<DashScopeAgentResponse> call(DashScopeAgentRequest req) {
@@ -300,7 +300,7 @@ class DashScopeAgentApiTests {
 	 */
 	@Test
 	void testStreamWithNullRequest() {
-		// 创建一个特定的mock实例用于此测试
+		// Create a specific mock instance for this test
 		DashScopeAgentApi mockApi = new DashScopeAgentApi(TEST_API_KEY) {
 			@Override
 			public Flux<DashScopeAgentResponse> stream(DashScopeAgentRequest req) {
@@ -329,7 +329,7 @@ class DashScopeAgentApiTests {
 		// Create empty response
 		DashScopeAgentApi.DashScopeAgentResponse emptyResponse = createEmptyResponse();
 
-		// 创建一个特定的mock实例用于此测试
+		// Create a specific mock instance for this test
 		DashScopeAgentApi mockApi = new DashScopeAgentApi(TEST_API_KEY) {
 			@Override
 			public ResponseEntity<DashScopeAgentResponse> call(DashScopeAgentRequest req) {
@@ -358,7 +358,7 @@ class DashScopeAgentApiTests {
 		// Create empty response
 		DashScopeAgentApi.DashScopeAgentResponse emptyResponse = createEmptyResponse();
 
-		// 创建一个特定的mock实例用于此测试
+		// Create a specific mock instance for this test
 		DashScopeAgentApi mockApi = new DashScopeAgentApi(TEST_API_KEY) {
 			@Override
 			public Flux<DashScopeAgentResponse> stream(DashScopeAgentRequest req) {
@@ -386,7 +386,7 @@ class DashScopeAgentApiTests {
 		DashScopeAgentApi.DashScopeAgentRequest request = createCustomParametersRequest();
 		DashScopeAgentApi.DashScopeAgentResponse response = createTestResponse();
 
-		// 创建一个特定的mock实例用于此测试
+		// Create a specific mock instance for this test
 		DashScopeAgentApi mockApi = new DashScopeAgentApi(TEST_API_KEY) {
 			@Override
 			public ResponseEntity<DashScopeAgentResponse> call(DashScopeAgentRequest req) {
@@ -411,7 +411,7 @@ class DashScopeAgentApiTests {
 		DashScopeAgentApi.DashScopeAgentRequest request = createCustomParametersRequest();
 		DashScopeAgentApi.DashScopeAgentResponse response = createTestResponse();
 
-		// 创建一个特定的mock实例用于此测试
+		// Create a specific mock instance for this test
 		DashScopeAgentApi mockApi = new DashScopeAgentApi(TEST_API_KEY) {
 			@Override
 			public Flux<DashScopeAgentResponse> stream(DashScopeAgentRequest req) {
@@ -437,7 +437,7 @@ class DashScopeAgentApiTests {
 		DashScopeAgentApi.DashScopeAgentRequest request = createRequestWithThoughts();
 		DashScopeAgentApi.DashScopeAgentResponse response = createResponseWithThoughts();
 
-		// 创建一个特定的mock实例用于此测试
+		// Create a specific mock instance for this test
 		DashScopeAgentApi mockApi = new DashScopeAgentApi(TEST_API_KEY) {
 			@Override
 			public ResponseEntity<DashScopeAgentResponse> call(DashScopeAgentRequest req) {

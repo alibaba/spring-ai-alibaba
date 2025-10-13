@@ -528,7 +528,7 @@ public class CompiledGraph {
 	 */
 	public Optional<OverAllState> call(OverAllState overAllState, RunnableConfig config) {
 		return Optional
-			.ofNullable(fluxStreamFromInitialNode(overAllState, config).last().map(NodeOutput::state).block()); // 阻塞等待结果
+			.ofNullable(fluxStreamFromInitialNode(overAllState, config).last().map(NodeOutput::state).block()); // Block and wait for result
 	}
 
 	/**
@@ -554,7 +554,7 @@ public class CompiledGraph {
 			resumeState.withHumanFeedback(feedback);
 
 			return Optional
-				.ofNullable(fluxStreamFromInitialNode(resumeState, config).last().map(NodeOutput::state).block()); // 阻塞等待结果
+				.ofNullable(fluxStreamFromInitialNode(resumeState, config).last().map(NodeOutput::state).block()); // Block and wait for result
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Resume execution failed", e);
