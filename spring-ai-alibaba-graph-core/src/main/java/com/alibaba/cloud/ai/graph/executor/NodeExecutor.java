@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -126,7 +127,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			context.doListeners(NODE_AFTER, null);
 
 			// Priority 1: Check for GraphFlux (highest priority)
-			Optional<GraphFlux<?>> embedGraphFlux = getEmbedGraphFlux(updateState);
+			Optional<GraphFlux<?>> embedGraphFlux = getEmbedGraphFlux(updateState,context);
 			if (embedGraphFlux.isPresent()) {
 				return handleGraphFlux(context, embedGraphFlux.get(), updateState, resultValue);
 			}
@@ -416,12 +417,19 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @param partialState the partial state containing GraphFlux instances
 	 * @return an Optional containing GraphFlux if found, empty otherwise
 	 */
-	private Optional<GraphFlux<?>> getEmbedGraphFlux(Map<String, Object> partialState) {
+	private Optional<GraphFlux<?>> getEmbedGraphFlux(Map<String, Object> partialState, GraphRunnerContext context) {
 		return partialState.entrySet()
-			.stream()
-			.filter(e -> e.getValue() instanceof GraphFlux)
-			.findFirst()
-			.map(e -> (GraphFlux<?>) e.getValue());
+				.stream()
+				.filter(e -> e.getValue() instanceof GraphFlux)
+				.findFirst()
+				.map(e -> {
+					GraphFlux<Object> graphFlux = (GraphFlux<Object>) e.getValue();
+					return GraphFlux.of(StringUtils.hasText(graphFlux.getNodeId()) ? graphFlux.getNodeId() : context.getCurrentNodeId(),
+							StringUtils.hasText(graphFlux.getKey()) ? graphFlux.getKey() : e.getKey(),
+							graphFlux.getFlux(),
+							graphFlux.getMapResult(),
+							graphFlux.getChunkResult());
+				});
 	}
 
 	/**
