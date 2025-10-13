@@ -24,11 +24,13 @@ import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 
 /**
  * @author HeYQ
@@ -37,8 +39,7 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, Client.class, AnalyticDbVectorStore.class })
 @EnableConfigurationProperties({ AnalyticDbVectorStoreProperties.class })
-@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@Conditional(AnalyticDbVectorStoreAutoConfiguration.OnAnalyticDbVectorStoreCondition.class)
 public class AnalyticDbVectorStoreAutoConfiguration {
 
 	@Bean
@@ -90,6 +91,23 @@ public class AnalyticDbVectorStoreAutoConfiguration {
 			builder.defaultSimilarityThreshold(properties.getDefaultSimilarityThreshold());
 		}
 		return builder.build();
+	}
+
+	static class OnAnalyticDbVectorStoreCondition extends AnyNestedCondition {
+
+		OnAnalyticDbVectorStoreCondition() {
+			super(ConfigurationPhase.REGISTER_BEAN);
+		}
+
+		@ConditionalOnProperty(prefix = "spring.ai.vectorstore", name = "type", havingValue = "analyticdb")
+		static class OnVectorStoreType {
+
+		}
+
+		@ConditionalOnProperty(prefix = "spring.ai.vectorstore.analytic", name = "enabled", havingValue = "true")
+		static class OnLegacyEnabledFlag {
+
+		}
 	}
 
 }
