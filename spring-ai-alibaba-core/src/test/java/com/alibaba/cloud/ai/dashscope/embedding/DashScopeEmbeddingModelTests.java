@@ -202,4 +202,59 @@ class DashScopeEmbeddingModelTests {
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isZero();
 	}
 
+	@Test
+	void testNullTextTypeHandling() {
+		// Test that null textType is properly handled at API level to prevent FastJson WriteNullStringAsEmpty issues
+		float[] embeddingVector = { 0.1f, 0.2f, 0.3f };
+		Embedding embedding = new Embedding(0, embeddingVector);
+		Embeddings embeddings = new Embeddings(List.of(embedding));
+		EmbeddingUsage usage = new EmbeddingUsage(10L);
+		EmbeddingList embeddingList = new EmbeddingList(TEST_REQUEST_ID, null, null, embeddings, usage);
+		ResponseEntity<EmbeddingList> responseEntity = ResponseEntity.ok(embeddingList);
+
+		when(dashScopeApi.embeddings(any())).thenReturn(responseEntity);
+
+		// Create options with null textType (simulating the issue scenario)
+		DashScopeEmbeddingOptions optionsWithNullTextType = DashScopeEmbeddingOptions.builder()
+			.withModel(TEST_MODEL)
+			.withTextType(null) // null textType
+			.withDimensions(TEST_DIMENSION)
+			.build();
+
+		EmbeddingRequest request = new EmbeddingRequest(List.of(TEST_TEXT), optionsWithNullTextType);
+		EmbeddingResponse response = embeddingModel.call(request);
+
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput()).containsExactly(embeddingVector);
+		assertThat(response.getResults().get(0).getIndex()).isEqualTo(0);
+	}
+
+	@Test
+	void testEmptyTextTypeHandling() {
+		// Test empty textType preservation.
+		float[] embeddingVector = { 0.1f, 0.2f, 0.3f };
+		Embedding embedding = new Embedding(0, embeddingVector);
+		Embeddings embeddings = new Embeddings(List.of(embedding));
+		EmbeddingUsage usage = new EmbeddingUsage(10L);
+		EmbeddingList embeddingList = new EmbeddingList(TEST_REQUEST_ID, null, null, embeddings, usage);
+		ResponseEntity<EmbeddingList> responseEntity = ResponseEntity.ok(embeddingList);
+
+		when(dashScopeApi.embeddings(any())).thenReturn(responseEntity);
+
+		// Test empty textType handling.
+		DashScopeEmbeddingOptions optionsWithEmptyTextType = DashScopeEmbeddingOptions.builder()
+			.withModel(TEST_MODEL)
+			.withTextType("") // Empty textType - user's explicit choice.
+			.withDimensions(TEST_DIMENSION)
+			.build();
+
+		EmbeddingRequest request = new EmbeddingRequest(List.of(TEST_TEXT), optionsWithEmptyTextType);
+		EmbeddingResponse response = embeddingModel.call(request);
+
+		// Note: Mocked response passes, real API may fail with empty textType.
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput()).containsExactly(embeddingVector);
+		assertThat(response.getResults().get(0).getIndex()).isEqualTo(0);
+	}
+
 }

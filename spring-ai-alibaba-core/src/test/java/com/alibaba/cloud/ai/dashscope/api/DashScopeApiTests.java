@@ -17,13 +17,19 @@ package com.alibaba.cloud.ai.dashscope.api;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.ChatModel;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.EmbeddingModel;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.EmbeddingRequest;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.EmbeddingRequestInput;
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.EmbeddingRequestInputParameters;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi.EmbeddingTextType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.web.client.RestClient;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -76,6 +82,57 @@ class DashScopeApiTests {
 		assertEquals("document", EmbeddingTextType.DOCUMENT.getValue(),
 				"EmbeddingTextType.DOCUMENT should have value 'document'");
 		assertEquals("query", EmbeddingTextType.QUERY.getValue(), "EmbeddingTextType.QUERY should have value 'query'");
+	}
+
+	@Test
+	void testEmbeddingRequestWithNullTextType() {
+		// Test null textType handling in EmbeddingRequestInputParameters.Builder
+		EmbeddingRequestInputParameters params = EmbeddingRequestInputParameters.builder()
+				.textType(null)
+				.build();
+		
+		// Should default to "document" when textType is null
+		assertEquals("document", params.textType(), "Null textType should default to 'document'");
+	}
+
+	@Test
+	void testEmbeddingRequestWithEmptyTextType() {
+		// Test empty string textType handling
+		EmbeddingRequestInputParameters params = EmbeddingRequestInputParameters.builder()
+				.textType("")
+				.build();
+		
+		// Empty string should be preserved (not converted to null)
+		assertEquals("", params.textType(), "Empty textType should be preserved");
+	}
+
+	@Test
+	void testEmbeddingRequestWithValidTextType() {
+		// Test valid textType values
+		EmbeddingRequestInputParameters queryParams = EmbeddingRequestInputParameters.builder()
+				.textType("query")
+				.build();
+		assertEquals("query", queryParams.textType(), "Valid textType 'query' should be preserved");
+
+		EmbeddingRequestInputParameters docParams = EmbeddingRequestInputParameters.builder()
+				.textType("document")
+				.build();
+		assertEquals("document", docParams.textType(), "Valid textType 'document' should be preserved");
+	}
+
+	@Test
+	void testEmbeddingRequestBuilderWithNullTextType() {
+		// Test EmbeddingRequest creation with null textType through constructor
+		EmbeddingRequestInput input = new EmbeddingRequestInput(List.of("text1", "text2"));
+		EmbeddingRequestInputParameters params = EmbeddingRequestInputParameters.builder()
+				.textType(null)
+				.build();
+		EmbeddingRequest request = new EmbeddingRequest("test-model", input, params);
+		
+		// Verify the request was created successfully with default textType
+		assertNotNull(request, "EmbeddingRequest should be created successfully");
+		assertEquals("document", request.parameters().textType(), 
+				"Request should have default textType 'document' when null is provided");
 	}
 
 }
