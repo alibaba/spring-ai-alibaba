@@ -73,7 +73,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
     
     private static final Logger logger = LoggerFactory.getLogger(NacosMcpGatewayToolCallback.class);
     
-    private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*(\\.[\\w]+(?:\\.[\\w]+)*)\\s*\\}\\}");
+    private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*(\\.(?:[\\w]+(?:\\.[\\w]+)*)?)\\s*\\}\\}");
     
     // 匹配 {{ ${nacos.dataId/group} }} 或 {{ ${nacos.dataId/group}.key1.key2 }}
     private static final Pattern NACOS_TEMPLATE_PATTERN = Pattern
@@ -532,14 +532,19 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
      * @return 解析后的值
      */
     private String resolvePathValue(String fullPath, Map<String, Object> args, String extendedData) {
-        if (StringUtils.isBlank(fullPath)) {
-            return "";
+        if (fullPath == null) {
+            return extendedData != null ? extendedData : "";
         }
+
         // 移除开头的点号
         if (fullPath.startsWith(".")) {
             fullPath = fullPath.substring(1);
         }
-        
+
+        if (StringUtils.isBlank(fullPath)) {
+            return extendedData != null ? extendedData : "";
+        }
+
         String[] pathParts = fullPath.split("\\.");
         if (pathParts.length == 0) {
             return "";
