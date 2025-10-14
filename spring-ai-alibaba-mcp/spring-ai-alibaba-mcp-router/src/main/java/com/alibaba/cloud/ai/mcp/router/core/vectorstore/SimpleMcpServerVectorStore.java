@@ -220,7 +220,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 					return ((Number) keywordScore).doubleValue() > 0.0;
 				}
 				// 向量搜索的结果，使用较低的阈值
-				return score != null && score > 0.05; // 进一步降低阈值
+				return score != null && score > 0.05; // 进一步降低阈值(增加空值检验)
 			})
 				.map(this::convertFromDocument)
 				.filter(Objects::nonNull)
