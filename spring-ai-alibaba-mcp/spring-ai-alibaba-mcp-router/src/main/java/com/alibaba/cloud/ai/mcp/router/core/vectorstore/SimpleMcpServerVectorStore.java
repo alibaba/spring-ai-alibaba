@@ -213,14 +213,14 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 			// 去重并排序
 			return documents.stream().filter(doc -> {
 				// 降低分数阈值，或者对于关键词匹配的结果不进行分数过滤
-				double score = doc.getScore();
+				Double score = doc.getScore();
 				Object keywordScore = doc.getMetadata().get("keywordScore");
 				if (keywordScore != null) {
 					// 关键词匹配的结果，使用关键词分数
 					return ((Number) keywordScore).doubleValue() > 0.0;
 				}
 				// 向量搜索的结果，使用较低的阈值
-				return score > 0.05; // 进一步降低阈值
+				return score != null && score > 0.05; // 进一步降低阈值
 			})
 				.map(this::convertFromDocument)
 				.filter(Objects::nonNull)
@@ -429,7 +429,8 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 				serverInfo.setScore(((Number) keywordScore).doubleValue());
 			}
 			else {
-				serverInfo.setScore(document.getScore());
+			  Double documentScore = document.getScore();
+				serverInfo.setScore(documentScore != null ? documentScore : 0.0);
 			}
 
 			return serverInfo;
