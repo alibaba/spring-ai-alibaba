@@ -171,20 +171,19 @@ public class NodeExecutor extends BaseGraphExecutor {
 			var lastChatResponseRef = new AtomicReference<org.springframework.ai.chat.model.ChatResponse>(null);
 			var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
 
-			return chatFlux.map(element -> {
+            return chatFlux.filter(element -> {
+                // skip ChatResponse.getResult() == null
+                if (element instanceof org.springframework.ai.chat.model.ChatResponse response) {
+                    return response.getResult() != null;
+                }
+                return true;
+            }).map(element -> {
 				if (element instanceof org.springframework.ai.chat.model.ChatResponse response) {
 					org.springframework.ai.chat.model.ChatResponse lastResponse = lastChatResponseRef.get();
 					if (lastResponse == null) {
 						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
 							.of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(), context.getOverallState()));
 						lastChatResponseRef.set(response);
-						lastGraphResponseRef.set(lastGraphResponse);
-						return lastGraphResponse;
-					}
-
-					if (response.getResult() == null) {
-						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-								.of(new StreamingOutput("", context.getCurrentNodeId(), context.getOverallState()));
 						lastGraphResponseRef.set(lastGraphResponse);
 						return lastGraphResponse;
 					}
