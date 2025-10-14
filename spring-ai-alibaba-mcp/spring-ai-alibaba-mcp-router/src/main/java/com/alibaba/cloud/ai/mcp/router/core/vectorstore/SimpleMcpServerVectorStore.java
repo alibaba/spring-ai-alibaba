@@ -212,7 +212,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 
 			// 去重并排序
 			return documents.stream().filter(doc -> {
-				// 降低分数阈值，或者对于关键词匹配的结果不进行分数过滤
+				// 降低分数阈值，或者对于关键词匹配的结果不进行分数过滤 
 				Double score = doc.getScore();
 				Object keywordScore = doc.getMetadata().get("keywordScore");
 				if (keywordScore != null) {
