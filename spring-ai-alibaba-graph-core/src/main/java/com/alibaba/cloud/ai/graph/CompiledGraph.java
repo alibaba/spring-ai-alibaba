@@ -169,17 +169,18 @@ public class CompiledGraph {
 					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
 				}
 
-				var actions = parallelNodeStream.get()
-					.map(target -> {
-						try {
-							return nodeFactories.get(target.id()).apply(compileConfig);
-						} catch (GraphStateException ex) {
-							throw new RuntimeException("Failed to create parallel node action for target: " + target.id() + ". Cause: " + ex.getMessage(), ex);
-						}
-					})
-					.toList();
+			var actionFactories = parallelNodeStream.get()
+				.map(target -> {
+					var factory = nodeFactories.get(target.id());
+					if (factory == null) {
+						throw new IllegalStateException(
+								"Missing action factory for parallel node target: " + target.id());
+					}
+					return factory;
+				})
+				.toList();
 
-				var parallelNode = new ParallelNode(e.sourceId(), actions, keyStrategyMap, compileConfig);
+			var parallelNode = new ParallelNode(e.sourceId(), actionFactories, keyStrategyMap);
 
 				nodeFactories.put(parallelNode.id(), parallelNode.actionFactory());
 

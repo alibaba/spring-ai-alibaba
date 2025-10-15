@@ -52,6 +52,13 @@ public class ToolNode implements NodeAction {
 		this.toolCallbackResolver = resolver;
 	}
 
+	public ToolNode copy() {
+		ToolNode clone = new ToolNode(new ArrayList<>(this.toolCallbacks), this.toolCallbackResolver);
+		clone.llmResponseKey = this.llmResponseKey;
+		clone.outputKey = this.outputKey;
+		return clone;
+	}
+
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		this.toolCallbacks = toolCallbacks;
 	}

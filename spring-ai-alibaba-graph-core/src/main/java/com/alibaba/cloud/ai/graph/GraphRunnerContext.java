@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.springframework.util.CollectionUtils;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -68,6 +69,8 @@ public class GraphRunnerContext {
 	String resumeFrom;
 
 	ReturnFromEmbed returnFromEmbed;
+
+	private final Map<String, AsyncNodeActionWithConfig> runtimeNodeCache = new HashMap<>();
 
 	public GraphRunnerContext(OverAllState initialState, RunnableConfig config, CompiledGraph compiledGraph)
 			throws Exception {
@@ -180,7 +183,18 @@ public class GraphRunnerContext {
 	// ================================================================================================================
 
 	public AsyncNodeActionWithConfig getNodeAction(String nodeId) {
-		return compiledGraph.getNodeAction(nodeId);
+		if (nodeId == null) {
+			return null;
+		}
+		var action = runtimeNodeCache.get(nodeId);
+		if (action != null) {
+			return action;
+		}
+		var created = compiledGraph.getNodeAction(nodeId);
+		if (created != null) {
+			runtimeNodeCache.put(nodeId, created);
+		}
+		return created;
 	}
 
 	public Command getEntryPoint() throws Exception {

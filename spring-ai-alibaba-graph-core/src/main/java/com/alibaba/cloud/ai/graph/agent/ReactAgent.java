@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
@@ -49,6 +50,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import reactor.core.publisher.Flux;
 
@@ -222,7 +224,7 @@ public class ReactAgent extends BaseAgent {
 		StateGraph graph = new StateGraph(name, this.keyStrategyFactory);
 
 		graph.addNode("preLlm", node_async(effectivePreLlmHook));
-		graph.addNode("llm", node_async(this.llmNode));
+		graph.addNode("llm", createNodeWithFactory("llm", () -> this.llmNode.copy()));
 		if (postLlmHook != null) {
 			graph.addNode("postLlm", node_async(this.postLlmHook));
 		}
@@ -231,7 +233,7 @@ public class ReactAgent extends BaseAgent {
 			graph.addNode("preTool", node_async(this.preToolHook));
 		}
 
-		graph.addNode("tool", node_async(this.toolNode));
+		graph.addNode("tool", createNodeWithFactory("tool", () -> this.toolNode.copy()));
 
 		if (postToolHook != null) {
 			graph.addNode("postTool", node_async(this.postToolHook));
@@ -261,6 +263,12 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		return graph;
+	}
+
+	private Node createNodeWithFactory(String id, Supplier<? extends NodeAction> actionSupplier)
+			throws GraphStateException {
+		return new Node(id,
+				(config) -> AsyncNodeActionWithConfig.of(AsyncNodeAction.node_async(actionSupplier.get())));
 	}
 
 	private void insureMessagesKeyStrategyFactory() {

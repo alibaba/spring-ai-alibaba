@@ -176,10 +176,14 @@ public class ParallelNode extends Node {
 		}
 	}
 
-	public ParallelNode(String id, List<AsyncNodeActionWithConfig> actions, Map<String, KeyStrategy> channels,
-			CompileConfig compileConfig) {
-		super(formatNodeId(id),
-				(config) -> new AsyncParallelNodeAction(formatNodeId(id), actions, channels, compileConfig));
+	public ParallelNode(String id, List<Node.ActionFactory> actionFactories, Map<String, KeyStrategy> channels) {
+		super(formatNodeId(id), (config) -> {
+			List<AsyncNodeActionWithConfig> actions = new ArrayList<>(actionFactories.size());
+			for (Node.ActionFactory factory : actionFactories) {
+				actions.add(factory.apply(config));
+			}
+			return new AsyncParallelNodeAction(formatNodeId(id), actions, channels, config);
+		});
 	}
 
 	@Override

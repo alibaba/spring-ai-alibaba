@@ -85,6 +85,24 @@ public class LlmNode implements NodeAction {
 		return new Builder();
 	}
 
+	public LlmNode copy() {
+		LlmNode clone = new LlmNode();
+		clone.systemPrompt = this.systemPrompt;
+		clone.userPrompt = this.userPrompt;
+		clone.params = this.params != null ? new HashMap<>(this.params) : new HashMap<>();
+		clone.messages = this.messages != null ? new ArrayList<>(this.messages) : new ArrayList<>();
+		clone.advisors = this.advisors != null ? new ArrayList<>(this.advisors) : new ArrayList<>();
+		clone.toolCallbacks = this.toolCallbacks != null ? new ArrayList<>(this.toolCallbacks) : new ArrayList<>();
+		clone.systemPromptKey = this.systemPromptKey;
+		clone.userPromptKey = this.userPromptKey;
+		clone.paramsKey = this.paramsKey;
+		clone.messagesKey = this.messagesKey;
+		clone.outputKey = this.outputKey;
+		clone.chatClient = this.chatClient;
+		clone.stream = this.stream;
+		return clone;
+	}
+
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		initNodeWithState(state);
