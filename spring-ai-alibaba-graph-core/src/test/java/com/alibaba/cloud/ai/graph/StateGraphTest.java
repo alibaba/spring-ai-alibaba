@@ -375,7 +375,7 @@ public class StateGraphTest {
 
 		// 使用实时流式处理，收集最后一个状态
 		final OverAllState[] finalState = new OverAllState[1];
-		workflowParent.fluxStream(Map.of())
+		workflowParent.stream(Map.of())
 			.doOnNext(System.out::println) // 实时输出每个节点执行结果
 			.map(NodeOutput::state)
 			.doOnNext(state -> finalState[0] = state) // 保存最后的状态
@@ -448,7 +448,7 @@ public class StateGraphTest {
 		}).build());
 
 		final OverAllState[] finalState = new OverAllState[1];
-		app.fluxStream(Map.of(),
+		app.stream(Map.of(),
 				RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
 			.doOnNext(output -> System.out.println(output))
 			.map(NodeOutput::state)
@@ -491,7 +491,7 @@ public class StateGraphTest {
 
 		// 第二个测试也使用实时流式处理
 		final OverAllState[] finalState2 = new OverAllState[1];
-		app.fluxStream(Map.of(),
+		app.stream(Map.of(),
 				RunnableConfig.builder().addParallelNodeExecutor(START, Executors.newSingleThreadExecutor()).build())
 			.doOnNext(output -> System.out.println(output)) // 实时输出每个节点执行结果
 			.map(NodeOutput::state)
@@ -532,7 +532,7 @@ public class StateGraphTest {
 			.addEdge("C", END);
 		var app = workflow.compile();
 
-		app.fluxStream(Map.of()).subscribe(output -> {
+		app.stream(Map.of()).subscribe(output -> {
 			System.out.println("Node output: " + output);
 		});
 	}
@@ -555,7 +555,7 @@ public class StateGraphTest {
 
 		// 使用实时流式处理，收集所有步骤用于测试验证
 		final List<NodeOutput> allSteps = new ArrayList<>();
-		graph.fluxStream(Map.of())
+		graph.stream(Map.of())
 			.doOnNext(System.out::println) // 实时输出每个节点执行结果
 			.doOnNext(allSteps::add) // 收集所有步骤
 			.blockLast(); // 只等待流完成，不阻塞中间过程
@@ -592,7 +592,7 @@ public class StateGraphTest {
 
 		// resume - 使用实时流式处理
 		final OverAllState[] resumeState = new OverAllState[1];
-		app.fluxStream(null, runnableConfig)
+		app.stream(null, runnableConfig)
 			.doOnNext(output -> System.out.println("Resume: " + output)) // 实时输出恢复过程
 			.map(NodeOutput::state)
 			.doOnNext(state -> resumeState[0] = state) // 保存最后的状态
@@ -971,7 +971,7 @@ public class StateGraphTest {
 		assertTrue(result.isPresent());
 
 		// resume
-		result = app.fluxStream(null, runnableConfig).reduce((a, b) -> b).map(NodeOutput::state).blockOptional();
+		result = app.stream(null, runnableConfig).reduce((a, b) -> b).map(NodeOutput::state).blockOptional();
 		System.out.println("result = " + result);
 		assertTrue(result.isPresent());
 

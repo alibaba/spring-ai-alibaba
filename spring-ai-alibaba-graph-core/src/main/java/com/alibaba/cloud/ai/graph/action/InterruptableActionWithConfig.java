@@ -24,7 +24,7 @@ import java.util.Optional;
  * Defines a contract for actions that can interrupt the execution of a graph.
  *
  */
-public interface InterruptableAction {
+public interface InterruptableActionWithConfig {
 
 	/**
 	 * Determines whether the graph execution should be interrupted at the current node.

@@ -23,7 +23,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -74,7 +73,7 @@ class AgentToolTest {
 
 		try {
 			Optional<OverAllState> result = blogAgent
-				.invoke(Map.of("messages", List.of(new UserMessage("帮我写一个100字左右的散文"))));
+				.invoke(new UserMessage("帮我写一个100字左右的散文"));
 
 			// 验证结果不为空
 			assertTrue(result.isPresent(), "Result should be present");

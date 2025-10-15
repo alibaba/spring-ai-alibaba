@@ -73,10 +73,9 @@ public class GraphRunnerContext {
 		this.compiledGraph = compiledGraph;
 		this.config = config;
 
-		if (initialState.isResume()) {
+		if (config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY).isPresent()) {
 			initializeFromResume(initialState, config);
-		}
-		else {
+		} else {
 			initializeFromStart(initialState, config);
 		}
 	}

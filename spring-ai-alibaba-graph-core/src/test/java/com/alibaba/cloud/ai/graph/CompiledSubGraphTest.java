@@ -68,9 +68,8 @@ public class CompiledSubGraphTest {
 		return node_async(state -> {
 
 			var output = subGraph.streamFromInitialNode(state, runnableConfig)
-				.stream()
-				.reduce((a, b) -> b)
-				.orElseThrow();
+				.last()
+				.block();
 
 			if (!output.isEND()) {
 				throw new SubGraphInterruptionException(parentNodeId, output.node(),
@@ -126,7 +125,7 @@ public class CompiledSubGraphTest {
 		Map<String, Object> input = Map.of();
 		do {
 			try {
-				for (var output : parentGraph.fluxStream(input, runnableConfig).toIterable()) {
+				for (var output : parentGraph.stream(input, runnableConfig).toIterable()) {
 					System.out.println("output: " + output);
 				}
 
@@ -196,7 +195,7 @@ public class CompiledSubGraphTest {
 
 		Map<String, Object> input = Map.of();
 
-		var results = parentGraph.fluxStream(input, runnableConfig).collectList().block();
+		var results = parentGraph.stream(input, runnableConfig).collectList().block();
 		var output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 		assertTrue(output.isPresent());
@@ -213,7 +212,7 @@ public class CompiledSubGraphTest {
 
 		input = null;
 
-		results = parentGraph.fluxStream(input, runnableConfig).collectList().block();
+		results = parentGraph.stream(input, runnableConfig).collectList().block();
 		output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 		assertTrue(output.isPresent());
@@ -253,7 +252,7 @@ public class CompiledSubGraphTest {
 
 		Map<String, Object> input = Map.of();
 
-		var results = parentGraph.fluxStream(input, runnableConfig).collectList().block();
+		var results = parentGraph.stream(input, runnableConfig).collectList().block();
 		var output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 		assertTrue(output.isPresent());
@@ -270,7 +269,7 @@ public class CompiledSubGraphTest {
 
 		input = null;
 
-		results = parentGraph.fluxStream(input, runnableConfig).collectList().block();
+		results = parentGraph.stream(input, runnableConfig).collectList().block();
 		output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 		assertTrue(output.isPresent());
@@ -315,7 +314,7 @@ public class CompiledSubGraphTest {
 
 		Map<String, Object> input = Map.of();
 
-		var results = stateGraph.fluxStream(input, runnableConfig).collectList().block();
+		var results = stateGraph.stream(input, runnableConfig).collectList().block();
 		var output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 	}

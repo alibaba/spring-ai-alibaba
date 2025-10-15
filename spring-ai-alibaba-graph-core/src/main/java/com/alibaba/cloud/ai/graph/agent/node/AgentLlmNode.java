@@ -13,17 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.node;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -33,11 +26,20 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
+
 import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
 
-public class LlmNode implements NodeAction {
+public class AgentLlmNode implements NodeAction {
 
 	public static final String LLM_RESPONSE_KEY = "llm_response";
 
@@ -69,10 +71,10 @@ public class LlmNode implements NodeAction {
 
 	private Boolean stream = Boolean.FALSE;
 
-	public LlmNode() {
+	public AgentLlmNode() {
 	}
 
-	public LlmNode(String systemPrompt, String prompt, Map<String, Object> params, List<Message> messages,
+	public AgentLlmNode(String systemPrompt, String prompt, Map<String, Object> params, List<Message> messages,
 			List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient, boolean stream) {
 		this.systemPrompt = systemPrompt;
 		this.userPrompt = prompt;
@@ -312,8 +314,8 @@ public class LlmNode implements NodeAction {
 			return this;
 		}
 
-		public LlmNode build() {
-			LlmNode llmNode = new LlmNode();
+		public AgentLlmNode build() {
+			AgentLlmNode llmNode = new AgentLlmNode();
 			llmNode.systemPrompt = this.systemPromptTemplate;
 			llmNode.userPrompt = this.userPromptTemplate;
 			llmNode.systemPromptKey = this.systemPromptTemplateKey;

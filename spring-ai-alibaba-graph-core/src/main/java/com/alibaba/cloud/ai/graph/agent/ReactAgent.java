@@ -26,85 +26,79 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
+import com.alibaba.cloud.ai.graph.agent.hook.AfterAgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.AfterModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.BeforeAgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.BeforeModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.Hook;
+import com.alibaba.cloud.ai.graph.agent.hook.HookType;
+import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
-import com.alibaba.cloud.ai.graph.node.LlmNode;
-import com.alibaba.cloud.ai.graph.node.ToolNode;
-import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
-import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
+import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
+import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
+import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import reactor.core.publisher.Flux;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
-import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
 import static java.lang.String.format;
+
 
 public class ReactAgent extends BaseAgent {
 
-	private final LlmNode llmNode;
+	private final AgentLlmNode llmNode;
 
-	private final ToolNode toolNode;
+	private final AgentToolNode toolNode;
 
 	private CompiledGraph compiledGraph;
 
-	private NodeAction preLlmHook;
-
-	private NodeAction postLlmHook;
-
-	private NodeAction preToolHook;
-
-	private NodeAction postToolHook;
-
-	private List<String> tools;
+	private List<Hook> hooks;
 
 	private int max_iterations = 10;
 
 	private int iterations = 0;
 
-	private CompileConfig compileConfig;
-
-	private KeyStrategyFactory keyStrategyFactory;
-
 	private String instruction;
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	public ReactAgent(LlmNode llmNode, ToolNode toolNode, Builder builder) throws GraphStateException {
+	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, Builder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.includeContents, builder.outputKey, builder.outputKeyStrategy);
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
-		this.keyStrategyFactory = builder.keyStrategyFactory;
 		this.compileConfig = builder.compileConfig;
 		this.shouldContinueFunc = builder.shouldContinueFunc;
-		this.preLlmHook = builder.preLlmHook;
-		this.postLlmHook = builder.postLlmHook;
-		this.preToolHook = builder.preToolHook;
-		this.postToolHook = builder.postToolHook;
+		this.hooks = builder.hooks;
 		this.includeContents = builder.includeContents;
 	}
 
-	public static Builder builder() {
+	public static com.alibaba.cloud.ai.graph.agent.Builder builder() {
 		return new DefaultAgentBuilderFactory().builder();
 	}
 
@@ -112,74 +106,39 @@ public class ReactAgent extends BaseAgent {
 		return agentBuilderFactory.builder();
 	}
 
-	@Override
-	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.schedule(scheduleConfig);
+	public AssistantMessage call(String message) throws GraphRunnerException {
+		return doMessageInvoke(message, RunnableConfig.builder().build());
 	}
 
-	public AssistantMessage invoke(String message) throws GraphRunnerException {
-		return invokeMessage(message);
+	public AssistantMessage call(String message, RunnableConfig config) throws GraphRunnerException {
+		return doMessageInvoke(message, config);
 	}
 
-	public AssistantMessage invoke(String message, RunnableConfig config) throws GraphRunnerException {
-		return invokeMessage(message, config);
+	public AssistantMessage call(UserMessage message) throws GraphRunnerException {
+		return doMessageInvoke(message, RunnableConfig.builder().build());
 	}
 
-	public AssistantMessage invoke(UserMessage userMessage) throws GraphRunnerException {
-		return invokeMessage(userMessage);
+	public AssistantMessage call(UserMessage message, RunnableConfig config) throws GraphRunnerException {
+		return doMessageInvoke(message, config);
 	}
 
-	public AssistantMessage invoke(UserMessage userMessage, RunnableConfig config) throws GraphRunnerException {
-		return invokeMessage(userMessage, config);
+	public AssistantMessage call(List<Message> messages) throws GraphRunnerException {
+		return doMessageInvoke(messages, RunnableConfig.builder().build());
 	}
 
-	public AssistantMessage invoke(List<Message> messages) throws GraphRunnerException {
-		return invokeMessage(messages);
+	public AssistantMessage call(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
+		return doMessageInvoke(messages, config);
 	}
 
-	public AssistantMessage invoke(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
-		return invokeMessage(messages, config);
-	}
+	private AssistantMessage doMessageInvoke(Object message, RunnableConfig config) throws GraphRunnerException {
+		Map<String, Object> inputs= buildMessageInput(message);
+		Optional<OverAllState> state = doInvoke(inputs, config);
 
-	public Flux<NodeOutput> stream(String message) throws GraphRunnerException {
-		return stream(Map.of("messages", convertToMessages(message)));
-	}
-
-	public Flux<NodeOutput> stream(String message, RunnableConfig config) throws GraphRunnerException {
-		return stream(Map.of("messages", convertToMessages(message)), config);
-	}
-
-	public Flux<NodeOutput> stream(UserMessage userMessage) throws GraphRunnerException {
-		return stream(Map.of("messages", convertToMessages(userMessage)));
-	}
-
-	public Flux<NodeOutput> stream(UserMessage userMessage, RunnableConfig config) throws GraphRunnerException {
-		return stream(Map.of("messages", convertToMessages(userMessage)), config);
-	}
-
-	public Flux<NodeOutput> stream(List<Message> messages) throws GraphRunnerException {
-		return stream(Map.of("messages", messages));
-	}
-
-	public Flux<NodeOutput> stream(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
-		return stream(Map.of("messages", messages), config);
-	}
-
-	private AssistantMessage invokeMessage(Object message) throws GraphRunnerException {
-		return invokeMessage(message, RunnableConfig.builder().build());
-	}
-
-	private AssistantMessage invokeMessage(Object message, RunnableConfig config) throws GraphRunnerException {
-		List<Message> messages;
-		if (message instanceof List) {
-			messages = (List<Message>) message;
-		} else {
-			messages = convertToMessages(message);
+		if (StringUtils.hasLength(outputKey)) {
+			return state.flatMap(s -> s.value(outputKey))
+					.map(msg -> (AssistantMessage) msg)
+					.orElseThrow(() -> new IllegalStateException("Output key " + outputKey + " not found in agent state") );
 		}
-
-		Optional<OverAllState> state = invoke(Map.of("messages", messages), config);
-
 		return state.flatMap(s -> s.value("messages"))
 				.map(messageList -> (List<Message>) messageList)
 				.stream()
@@ -187,7 +146,7 @@ public class ReactAgent extends BaseAgent {
 				.filter(msg -> msg instanceof AssistantMessage)
 				.map(msg -> (AssistantMessage) msg)
 				.reduce((first, second) -> second)
-				.orElse(new AssistantMessage("No response generated"));
+				.orElseThrow(() -> new IllegalStateException("No AssistantMessage found in 'messages' state") );
 	}
 
 	public StateGraph getStateGraph() {
@@ -206,96 +165,356 @@ public class ReactAgent extends BaseAgent {
 		return new AgentSubGraphNode(this.name, includeContents, outputKeyToParent, this.compiledGraph);
 	}
 
-
 	@Override
 	protected StateGraph initGraph() throws GraphStateException {
-		insureMessagesKeyStrategyFactory();
+		KeyStrategyFactory keyStrategyFactory = buildMessagesKeyStrategyFactory();
 
-		NodeAction effectivePreLlmHook = this.preLlmHook;
-		if (effectivePreLlmHook == null) {
-			effectivePreLlmHook = state -> {
-				return Map.of();
-			};
+		if (hooks == null) {
+			hooks = new ArrayList<>();
 		}
 
-		StateGraph graph = new StateGraph(name, this.keyStrategyFactory);
-
-		graph.addNode("preLlm", node_async(effectivePreLlmHook));
-		graph.addNode("llm", node_async(this.llmNode));
-		if (postLlmHook != null) {
-			graph.addNode("postLlm", node_async(this.postLlmHook));
+		// Validate hook uniqueness
+		Set<String> hookNames = new HashSet<>();
+		for (Hook hook : hooks) {
+			if (!hookNames.add(hook.getName())) {
+				throw new IllegalArgumentException("Duplicate hook instances found");
+			}
 		}
 
-		if (preToolHook != null) {
-			graph.addNode("preTool", node_async(this.preToolHook));
-		}
+		// Create graph
+		StateGraph graph = new StateGraph(name, keyStrategyFactory);
 
+		graph.addNode("model", node_async(this.llmNode));
 		graph.addNode("tool", node_async(this.toolNode));
 
-		if (postToolHook != null) {
-			graph.addNode("postTool", node_async(this.postToolHook));
+		// Add hook nodes
+		for (Hook hook : hooks) {
+			String nodeName = hook.getName() + "." + hook.getHookType();
+			graph.addNode(nodeName, hook );
 		}
 
-		graph.addEdge(START, "preLlm").addEdge("preLlm", "llm");
+		// Categorize hook by hook type
+		List<Hook> beforeAgentHooks = filterHooks(hooks, BeforeAgentHook.class);
+		List<Hook> beforeModelHooks = filterHooks(hooks, BeforeModelHook.class);
+		List<Hook> afterModelHooks = filterHooks(hooks, AfterModelHook.class);
+		List<Hook> afterAgentHooks = filterHooks(hooks, AfterAgentHook.class);
+		// Determine node flow
+		String entryNode = determineEntryNode(beforeAgentHooks, beforeModelHooks);
+		String loopEntryNode = determineLoopEntryNode(beforeModelHooks);
+		String loopExitNode = determineLoopExitNode(afterModelHooks);
+		String exitNode = determineExitNode(afterAgentHooks);
 
-		if (postLlmHook != null) {
-			graph.addEdge("llm", "postLlm")
-				.addConditionalEdges("postLlm", edge_async(this::think),
-						Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
-		}
-		else {
-			graph.addConditionalEdges("llm", edge_async(this::think),
-					Map.of("continue", preToolHook != null ? "preTool" : "tool", "end", END));
-		}
-
-		// Add tool-related edges
-		if (preToolHook != null) {
-			graph.addEdge("preTool", "tool");
-		}
-		if (postToolHook != null) {
-			graph.addEdge("tool", "postTool").addEdge("postTool", "preLlm");
-		}
-		else {
-			graph.addEdge("tool", "preLlm");
-		}
-
+		// Set up edges
+		graph.addEdge(START, entryNode);
+		setupHookEdges(graph, beforeAgentHooks, beforeModelHooks, afterModelHooks, afterAgentHooks,
+				entryNode, loopEntryNode, loopExitNode, exitNode, true, this);
 		return graph;
 	}
 
-	private void insureMessagesKeyStrategyFactory() {
-		if (keyStrategyFactory == null) {
-			this.keyStrategyFactory = () -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			};
-		}
-		else {
-			KeyStrategyFactory originalFactory = this.keyStrategyFactory;
-			this.keyStrategyFactory = () -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>(originalFactory.apply());
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			};
+	private static List<Hook> filterHooks(
+			List<Hook> hooks, Class<?> clazz) {
+		return hooks.stream()
+				.filter(clazz::isInstance)
+				.collect(java.util.stream.Collectors.toList());
+	}
+
+	private static String determineEntryNode(
+			List<Hook> beforeAgentHook,
+			List<Hook> beforeModelHook) {
+
+		if (!beforeAgentHook.isEmpty()) {
+			return beforeAgentHook.get(0).getName() + "." + HookType.BEFORE_AGENT;
+		} else if (!beforeModelHook.isEmpty()) {
+			return beforeModelHook.get(0).getName() + "." + HookType.BEFORE_MODEL;
+		} else {
+			return "model";
 		}
 	}
 
-	private String think(OverAllState state) {
-		if (iterations > max_iterations) {
-			return "end";
+	private static String determineLoopEntryNode(
+			List<Hook> beforeModelHook) {
+
+		if (!beforeModelHook.isEmpty()) {
+			return beforeModelHook.get(0).getName() + "." + HookType.BEFORE_MODEL;
+		} else {
+			return "model";
+		}
+	}
+
+	private static String determineLoopExitNode(
+			List<Hook> afterModelHook) {
+
+		if (!afterModelHook.isEmpty()) {
+			return afterModelHook.get(0).getName() + "." + HookType.AFTER_MODEL;
+		} else {
+			return "model";
+		}
+	}
+
+	private static String determineExitNode(
+			List<Hook> afterAgentHook) {
+
+		if (!afterAgentHook.isEmpty()) {
+			return afterAgentHook.get(afterAgentHook.size() - 1).getName() + "." + HookType.AFTER_AGENT;
+		} else {
+			return StateGraph.END;
+		}
+	}
+
+	private static void setupHookEdges(
+			StateGraph graph,
+			List<Hook> beforeAgentHook,
+			List<Hook> beforeModelHook,
+			List<Hook> afterModelHook,
+			List<Hook> afterAgentHook,
+			String entryNode,
+			String loopEntryNode,
+			String loopExitNode,
+			String exitNode,
+			boolean hasTools,
+			ReactAgent agentInstance) throws GraphStateException {
+
+		// Chain before_agent hook
+		chainHook(graph, beforeAgentHook, HookType.BEFORE_AGENT, loopEntryNode, loopEntryNode, exitNode);
+
+		// Chain before_model hook
+		chainHook(graph, beforeModelHook, HookType.BEFORE_MODEL, "model", loopEntryNode, exitNode);
+
+		// Chain after_model hook (reverse order)
+		chainHookReverse(graph, afterModelHook, HookType.AFTER_MODEL, "model", loopEntryNode, exitNode);
+
+		// Chain after_agent hook (reverse order)
+		chainHookReverse(graph, afterAgentHook, HookType.AFTER_AGENT, StateGraph.END, loopEntryNode, exitNode);
+
+		// Add tool routing if tools exist
+		if (hasTools) {
+			setupToolRouting(graph, loopExitNode, loopEntryNode, exitNode, agentInstance);
+		} else if (!loopExitNode.equals("model")) {
+			// No tools but have after_model - connect to exit
+			addHookEdge(graph, loopExitNode, exitNode, loopEntryNode, exitNode, afterModelHook.get(0).canJumpTo());
+		} else {
+			// No tools and no after_model - direct to exit
+			graph.addEdge(loopExitNode, exitNode);
+		}
+	}
+
+	private static void chainHookReverse(
+			StateGraph graph,
+			List<Hook> hooks,
+			HookType hookType,
+			String defaultNext,
+			String modelDestination,
+			String endDestination) throws GraphStateException {
+		if (!hooks.isEmpty()) {
+			Hook last = hooks.get(0);
+			addHookEdge(graph,
+					last.getName() + "." + hookType,
+					defaultNext,
+					modelDestination, endDestination,
+					last.canJumpTo());
 		}
 
-		if (shouldContinueFunc != null && !shouldContinueFunc.apply(state)) {
-			return "end";
+		for (int i = hooks.size() - 1; i > 0; i--) {
+			Hook m1 = hooks.get(i);
+			Hook m2 = hooks.get(i - 1);
+			addHookEdge(graph,
+					m1.getName() + "." +  hookType,
+					m2.getName() + "." +  hookType,
+					modelDestination, endDestination,
+					m1.canJumpTo());
+		}
+	}
+
+	private static void chainHook(
+			StateGraph graph,
+			List<Hook> hooks,
+			HookType hookType,
+			String defaultNext,
+			String modelDestination,
+			String endDestination) throws GraphStateException {
+
+		for (int i = 0; i < hooks.size() - 1; i++) {
+			Hook m1 = hooks.get(i);
+			Hook m2 = hooks.get(i + 1);
+			addHookEdge(graph,
+					m1.getName() + "." + hookType,
+					m2.getName() + "." + hookType,
+					modelDestination, endDestination,
+					m1.canJumpTo());
 		}
 
-		List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
-		AssistantMessage message = (AssistantMessage) messages.get(messages.size() - 1);
-		if (message.hasToolCalls()) {
-			return "continue";
+		if (!hooks.isEmpty()) {
+			Hook last = hooks.get(hooks.size() - 1);
+			addHookEdge(graph,
+					last.getName() + "." + hookType,
+					defaultNext,
+					modelDestination, endDestination,
+					last.canJumpTo());
+		}
+	}
+
+	private static void addHookEdge(
+			StateGraph graph,
+			String name,
+			String defaultDestination,
+			String modelDestination,
+			String endDestination,
+			List<JumpTo> canJumpTo) throws GraphStateException {
+
+		if (canJumpTo != null && !canJumpTo.isEmpty()) {
+			EdgeAction router = state -> {
+				JumpTo jumpTo = (JumpTo)state.value("jump_to").orElse(null);
+				return resolveJump(jumpTo, modelDestination, endDestination, defaultDestination);
+			};
+
+			Map<String, String> destinations = new HashMap<>();
+			destinations.put(defaultDestination, defaultDestination);
+
+			if (canJumpTo.contains(JumpTo.end)) {
+				destinations.put(endDestination, endDestination);
+			}
+			if (canJumpTo.contains(JumpTo.tools)) {
+				destinations.put("tools", "tools");
+			}
+			if (canJumpTo.contains(JumpTo.model) && !name.equals(modelDestination)) {
+				destinations.put(modelDestination, modelDestination);
+			}
+
+			graph.addConditionalEdges(name, edge_async(router), destinations);
+		} else {
+			graph.addEdge(name, defaultDestination);
+		}
+	}
+
+	private static void setupToolRouting(
+			StateGraph graph,
+			String loopExitNode,
+			String loopEntryNode,
+			String exitNode,
+			ReactAgent agentInstance) throws GraphStateException {
+
+		// Model to tools routing
+		graph.addConditionalEdges(loopExitNode, edge_async(agentInstance.makeModelToTools(loopEntryNode, exitNode)), Map.of("tool", "tool", exitNode, exitNode, loopEntryNode, loopEntryNode));
+
+		// Tools to model routing
+		graph.addConditionalEdges("tool", edge_async(agentInstance.makeToolsToModelEdge(loopEntryNode, exitNode)), Map.of(loopEntryNode, loopEntryNode, exitNode, exitNode));
+	}
+
+	private static String resolveJump(JumpTo jumpTo, String modelDestination, String endDestination, String defaultDestination) {
+		if (jumpTo == null) {
+			return defaultDestination;
 		}
 
-		return "end";
+		return switch (jumpTo) {
+			case model -> modelDestination;
+			case end -> endDestination;
+			case tools -> "tools";
+		};
+	}
+
+	private KeyStrategyFactory buildMessagesKeyStrategyFactory() {
+		return () -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("messages", new AppendStrategy());
+			return keyStrategyHashMap;
+		};
+	}
+
+	private EdgeAction makeModelToTools(String modelDestination, String endDestination) {
+		return state -> {
+			if (iterations++ > max_iterations) {
+				return endDestination;
+			}
+
+			if (shouldContinueFunc != null && !shouldContinueFunc.apply(state)) {
+				return endDestination;
+			}
+
+			List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+			if (messages.isEmpty()) {
+				return endDestination;
+			}
+
+			Message lastMessage = messages.get(messages.size() - 1);
+
+			// 1. Check the last message type
+			if (lastMessage instanceof AssistantMessage) {
+				// 2. If last message is AssistantMessage
+				AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
+				if (assistantMessage.hasToolCalls()) {
+					return "tool";
+				} else {
+					return endDestination;
+				}
+			} else if (lastMessage instanceof ToolResponseMessage) {
+				// 3. If last message is ToolResponseMessage
+				if (messages.size() < 2) {
+					// Should not happen in a valid ReAct loop, but as a safeguard.
+					throw new RuntimeException("Less than 2 messages in state when last message is ToolResponseMessage");
+				}
+
+				Message secondLastMessage = messages.get(messages.size() - 2);
+				if (secondLastMessage instanceof AssistantMessage) {
+					AssistantMessage assistantMessage = (AssistantMessage) secondLastMessage;
+					ToolResponseMessage toolResponseMessage = (ToolResponseMessage) lastMessage;
+
+					if (assistantMessage.hasToolCalls()) {
+						Set<String> requestedToolNames = assistantMessage.getToolCalls().stream()
+								.map(toolCall -> toolCall.name())
+								.collect(java.util.stream.Collectors.toSet());
+
+						Set<String> executedToolNames = toolResponseMessage.getResponses().stream()
+								.map(response -> response.name())
+								.collect(java.util.stream.Collectors.toSet());
+
+						if (executedToolNames.containsAll(requestedToolNames)) {
+							return modelDestination; // All requested tools were executed or responded
+						} else {
+							return "tool"; // Some tools are still pending
+						}
+					}
+				}
+			}
+
+			return endDestination;
+		};
+	}
+
+	private EdgeAction makeToolsToModelEdge(String modelDestination, String endDestination) {
+		return state -> {
+			// 1. Extract last AI message and corresponding tool messages
+			ToolResponseMessage toolResponseMessage = fetchLastToolResponseMessage(state);
+			// 2. Exit condition: All executed tools have return_direct=True
+			if (toolResponseMessage != null && !toolResponseMessage.getResponses().isEmpty()) {
+				boolean allReturnDirect = toolResponseMessage.getResponses().stream().allMatch(toolResponse -> {
+					String toolName = toolResponse.name();
+					return false; // FIXME
+				});
+				if (allReturnDirect) {
+					return endDestination;
+				}
+			}
+
+			// 3. Default: Continue the loop
+			//    Tool execution completed successfully, route back to the model
+			//    so it can process the tool results and decide the next action.
+			return modelDestination;
+		};
+	}
+
+	private ToolResponseMessage fetchLastToolResponseMessage(OverAllState state) {
+		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<Message>());
+
+		ToolResponseMessage toolResponseMessage = null;
+
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			if (messages.get(i) instanceof ToolResponseMessage) {
+				toolResponseMessage = (ToolResponseMessage) messages.get(i);
+				break;
+			}
+		}
+
+		return toolResponseMessage;
 	}
 
 	public String instruction() {
@@ -320,54 +539,6 @@ public class ReactAgent extends BaseAgent {
 	 */
 	public String description() {
 		return description;
-	}
-
-	List<String> getTools() {
-		return tools;
-	}
-
-	void setTools(List<String> tools) {
-		this.tools = tools;
-	}
-
-	int getMax_iterations() {
-		return max_iterations;
-	}
-
-	void setMax_iterations(int max_iterations) {
-		this.max_iterations = max_iterations;
-	}
-
-	int getIterations() {
-		return iterations;
-	}
-
-	void setIterations(int iterations) {
-		this.iterations = iterations;
-	}
-
-	CompileConfig getCompileConfig() {
-		return compileConfig;
-	}
-
-	void setCompileConfig(CompileConfig compileConfig) {
-		this.compileConfig = compileConfig;
-	}
-
-	KeyStrategyFactory getKeyStrategyFactory() {
-		return keyStrategyFactory;
-	}
-
-	void setOverAllStateFactory(KeyStrategyFactory keyStrategyFactory) {
-		this.keyStrategyFactory = keyStrategyFactory;
-	}
-
-	Function<OverAllState, Boolean> getShouldContinueFunc() {
-		return shouldContinueFunc;
-	}
-
-	void setShouldContinueFunc(Function<OverAllState, Boolean> shouldContinueFunc) {
-		this.shouldContinueFunc = shouldContinueFunc;
 	}
 
 	public boolean isIncludeContents() {
@@ -423,12 +594,12 @@ public class ReactAgent extends BaseAgent {
 			Object parentMessages = null;
 			if (includeContents) {
 				// by default, includeContents is true, we pass down the messages from the parent state
-				subGraphFlux = childGraph.fluxDataStream(parentState, subGraphRunnableConfig);
+				subGraphFlux = childGraph.graphResponseStream(parentState, subGraphRunnableConfig);
 			} else {
 				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
 				parentMessages = stateForChild.remove("messages");
 				// use the instruction directly, without any user message or parent messages.
-				subGraphFlux = childGraph.fluxDataStream(stateForChild, subGraphRunnableConfig);
+				subGraphFlux = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			}
 
 			Map<String, Object> result = new HashMap<>();

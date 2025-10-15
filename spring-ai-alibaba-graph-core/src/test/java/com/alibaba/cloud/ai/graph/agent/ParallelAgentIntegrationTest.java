@@ -17,18 +17,13 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import org.springframework.ai.chat.model.ChatModel;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -62,18 +57,6 @@ class ParallelAgentIntegrationTest {
 
 	@Test
 	public void testParallelAgentBasicFunctionality() throws Exception {
-		// Configure KeyStrategyFactory for state management
-		KeyStrategyFactory stateFactory = () -> {
-			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			keyStrategyHashMap.put("input", new ReplaceStrategy());
-			keyStrategyHashMap.put("topic", new ReplaceStrategy());
-			keyStrategyHashMap.put("prose_result", new ReplaceStrategy());
-			keyStrategyHashMap.put("poem_result", new ReplaceStrategy());
-			keyStrategyHashMap.put("summary_result", new ReplaceStrategy());
-			keyStrategyHashMap.put("merged_results", new ReplaceStrategy());
-			return keyStrategyHashMap;
-		};
-
 		// Create specialized sub-agents with unique output keys and specific instructions
 		ReactAgent proseWriterAgent = ReactAgent.builder()
 			.name("prose_writer_agent")
@@ -104,7 +87,6 @@ class ParallelAgentIntegrationTest {
 			.name("parallel_creative_agent")
 			.description("并行执行多个创作任务，包括写散文、写诗和做总结")
 			.mergeOutputKey("merged_results")
-			.state(stateFactory)
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent, summaryAgent))
 			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // ✅ 添加合并策略
 			.build();
@@ -113,7 +95,7 @@ class ParallelAgentIntegrationTest {
 		try {
 			String userRequest = "以'西湖'为主题";
 
-			Optional<OverAllState> result = parallelAgent.invoke(Map.of("input", userRequest));
+			Optional<OverAllState> result = parallelAgent.invoke(userRequest);
 
 			// Verify the results
 			assertTrue(result.isPresent(), "Result should be present");
@@ -327,19 +309,11 @@ class ParallelAgentIntegrationTest {
 			.name("list_merge_test")
 			.description("测试列表合并策略")
 			.mergeOutputKey("merged_list")
-			.state(() -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put("input", new ReplaceStrategy());
-				keyStrategyHashMap.put("merged_list", new ReplaceStrategy());
-				keyStrategyHashMap.put("result1", new ReplaceStrategy());
-				keyStrategyHashMap.put("result2", new ReplaceStrategy());
-				return keyStrategyHashMap;
-			})
 			.mergeStrategy(new ParallelAgent.ListMergeStrategy())
 			.subAgents(List.of(agent1, agent2))
 			.build();
 
-		Optional<OverAllState> result = listMergeAgent.invoke(Map.of("input", "test"));
+		Optional<OverAllState> result = listMergeAgent.invoke("test");
 		assertTrue(result.isPresent());
 
 		OverAllState state = result.get();
@@ -368,20 +342,11 @@ class ParallelAgentIntegrationTest {
 			.name("concurrency_test")
 			.description("测试并发控制")
 			.mergeOutputKey("concurrency_results")
-			.state(() -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put("input", new ReplaceStrategy());
-				keyStrategyHashMap.put("concurrency_results", new ReplaceStrategy());
-				for (int i = 0; i < 5; i++) {
-					keyStrategyHashMap.put("result_" + i, new ReplaceStrategy());
-				}
-				return keyStrategyHashMap;
-			})
 			.maxConcurrency(3) // 限制最大并发数为3
 			.subAgents(agents)
 			.build();
 
-		Optional<OverAllState> result = concurrencyAgent.invoke(Map.of("input", "test concurrency"));
+		Optional<OverAllState> result = concurrencyAgent.invoke("test concurrency");
 		assertTrue(result.isPresent());
 
 		OverAllState state = result.get();

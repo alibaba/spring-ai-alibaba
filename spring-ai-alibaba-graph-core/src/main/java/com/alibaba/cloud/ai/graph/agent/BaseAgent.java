@@ -19,7 +19,15 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 
+import java.lang.reflect.Type;
+
 public abstract class BaseAgent extends Agent {
+
+	protected String inputSchema;
+	protected Type inputType;
+
+	protected String outputSchema;
+	protected Class<?> outputType;
 
 	/** The output key for the agent's result */
 	protected String outputKey;
@@ -58,4 +66,31 @@ public abstract class BaseAgent extends Agent {
 		this.outputKeyStrategy = outputKeyStrategy;
 	}
 
+	String getInputSchema() {
+		return inputSchema;
+	}
+
+	void setInputSchema(String inputSchema) {
+		this.inputSchema = inputSchema;
+	}
+
+	Type getInputType() {
+		return inputType;
+	}
+
+	void setInputType(Type inputType) {
+		this.inputType = inputType;
+	}
+
+	String getOutputSchema() {
+		return outputSchema;
+	}
+
+	void setOutputSchema(String outputSchema) {
+		this.outputSchema = outputSchema;
+	}
+
+	void setIncludeContents(boolean includeContents) {
+		this.includeContents = includeContents;
+	}
 }

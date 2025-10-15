@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.LogManager;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -283,7 +282,7 @@ public class StateGraphMemorySaverTest {
 
 		var runnableConfig = RunnableConfig.builder().threadId("thread_1").build();
 
-		var results = app.fluxStreamSnapshots(inputs, runnableConfig).collectList().block();
+		var results = app.streamSnapshots(inputs, runnableConfig).collectList().block();
 
 		results.forEach(r -> log.info("{}: Node: {} - {}", r.getClass().getSimpleName(), r.node(),
 				r.state().value("messages").get()));
@@ -310,7 +309,7 @@ public class StateGraphMemorySaverTest {
 			log.info("SNAPSHOT HISTORY:\n{}\n", s);
 		}
 
-		results = app.fluxStream(null, runnableConfig).collectList().block();
+		results = app.stream(null, runnableConfig).collectList().block();
 
 		assertNotNull(results);
 		assertFalse(results.isEmpty());
@@ -329,7 +328,7 @@ public class StateGraphMemorySaverTest {
 		var toReplay = firstSnapshot.get().config();
 
 		toReplay = app.updateState(toReplay, Map.of("messages", "i'm bartolo"));
-		results = app.fluxStream(null, toReplay).collectList().block();
+		results = app.stream(null, toReplay).collectList().block();
 
 		assertNotNull(results);
 		assertFalse(results.isEmpty());
@@ -365,9 +364,7 @@ public class StateGraphMemorySaverTest {
 		log.info("FIRST CALL WITH INTERRUPT BEFORE 'tools'");
 		Map<String, Object> inputs = Map.of("messages", "whether in Naples?");
 		var results = app.stream(inputs, runnableConfig)
-			.stream()
-			.peek(n -> log.info("{}", n))
-			.collect(Collectors.toList());
+			.doOnNext(n -> log.info("{}", n)).collectList().block();
 		assertNotNull(results);
 		assertEquals(2, results.size());
 		assertEquals(START, results.get(0).node());
@@ -382,7 +379,7 @@ public class StateGraphMemorySaverTest {
 		assertEquals("tools", state.next());
 
 		log.info("RESUME CALL");
-		results = app.stream(null, state.config()).stream().peek(n -> log.info("{}", n)).collect(Collectors.toList());
+		results = app.stream(null, state.config()).doOnNext(n -> log.info("{}", n)).collectList().block();
 
 		assertNotNull(results);
 		assertEquals(3, results.size());

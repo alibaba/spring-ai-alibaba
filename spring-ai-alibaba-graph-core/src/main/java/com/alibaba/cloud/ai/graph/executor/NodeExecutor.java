@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.GraphRunnerContext;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
@@ -27,6 +28,7 @@ import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -85,8 +87,15 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 
 			if (action instanceof InterruptableAction) {
+				context.getConfig().metadata(RunnableConfig.STATE_UPDATE_METADATA_KEY).ifPresent(updateFromFeedback -> {
+					if (updateFromFeedback instanceof Map<?, ?>) {
+						context.updateState((Map<String, Object>) updateFromFeedback);
+					} else {
+						throw new RuntimeException();
+					}
+				});
 				Optional<InterruptionMetadata> interruptMetadata = ((InterruptableAction) action)
-					.interrupt(currentNodeId, context.cloneState(context.getCurrentStateData()));
+					.interrupt(currentNodeId, context.cloneState(context.getCurrentStateData()), context.getConfig());
 				if (interruptMetadata.isPresent()) {
 					resultValue.set(interruptMetadata.get());
 					return Flux.just(GraphResponse.done(interruptMetadata.get()));
@@ -247,8 +256,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 				}
 				else {
 					return Mono.fromCallable(() -> {
-						Map<String, Object> completionResult = Map.of(e.getKey(),
-								lastChatResponseRef.get().getResult().getOutput());
+						Map<String, Object> completionResult = new HashMap<>();
+						completionResult.put(e.getKey(), lastChatResponseRef.get().getResult().getOutput());
+						if (!e.getKey().equals("messages")) {
+							completionResult.put("messages", lastChatResponseRef.get().getResult().getOutput());
+						}
 						return GraphResponse.done(completionResult);
 					});
 				}

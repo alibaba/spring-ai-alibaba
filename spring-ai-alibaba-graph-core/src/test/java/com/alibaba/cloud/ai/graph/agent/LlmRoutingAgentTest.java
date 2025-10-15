@@ -29,7 +29,6 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +77,7 @@ class LlmRoutingAgentTest {
 			.name("prose_writer_agent")
 			.model(chatModel)
 			.description("可以写散文文章。")
-			.instruction("你是一个���名的作家，擅长写散文。请根据用户的提问进行回答。")
+			.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
 			.outputKey("prose_article")
 			.build();
 
@@ -86,7 +85,7 @@ class LlmRoutingAgentTest {
 			.name("poem_writer_agent")
 			.model(chatModel)
 			.description("可以写现代诗。")
-			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问，调用工具进行回���。")
+			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问，调用工具进行回复。")
 			.outputKey("poem_article")
 			.tools(List.of(createToolCallback()))
 			.build();
@@ -94,15 +93,14 @@ class LlmRoutingAgentTest {
 		LlmRoutingAgent blogAgent = LlmRoutingAgent.builder()
 			.name("blog_agent")
 			.model(chatModel)
-			.state(stateFactory)
 			.description("可以根据用户给定的主题写文章或作诗。")
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent))
 			.build();
 
 		try {
-			Optional<OverAllState> result = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的现代诗"));
-			blogAgent.invoke(Map.of("input", "帮我写一个100字左右的现代诗"));
-			Optional<OverAllState> result3 = blogAgent.invoke(Map.of("input", "帮我写一个100字左右的现代诗"));
+			Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的现代诗");
+			blogAgent.invoke("帮我写一个100字左右的现代诗");
+			Optional<OverAllState> result3 = blogAgent.invoke("帮我写一个100字左右的现代诗");
 
 			// 验证结果不为空
 			assertTrue(result.isPresent(), "Result should be present");

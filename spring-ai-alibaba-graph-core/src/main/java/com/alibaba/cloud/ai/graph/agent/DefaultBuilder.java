@@ -16,12 +16,16 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.node.LlmNode;
-import com.alibaba.cloud.ai.graph.node.ToolNode;
+import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
+import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.collections4.CollectionUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.converter.FormatProvider;
+
+import org.springframework.util.StringUtils;
 
 public class DefaultBuilder extends Builder {
 
@@ -46,26 +50,41 @@ public class DefaultBuilder extends Builder {
 			chatClient = clientBuilder.build();
 		}
 
-		LlmNode.Builder llmNodeBuilder = LlmNode.builder()
+		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
 				.stream(true)
 				.systemPromptTemplate(instruction)
-				.chatClient(chatClient)
-				.messagesKey(this.inputKey);
+				.chatClient(chatClient);
+
+		if (outputKey != null && !outputKey.isEmpty()) {
+			llmNodeBuilder.outputKey(outputKey);
+		}
+
+		String outputSchema = null;
+		if (StringUtils.hasLength(this.outputSchema) ) {
+			outputSchema = this.outputSchema;
+		} else if (this.outputType != null) {
+			FormatProvider formatProvider = new BeanOutputConverter<>(this.outputType);
+			outputSchema = formatProvider.getFormat();
+		}
+
+		if (StringUtils.hasLength(outputSchema)) {
+			llmNodeBuilder.outputSchema(outputSchema);
+		}
 
 		if (CollectionUtils.isNotEmpty(tools)) {
 			llmNodeBuilder.toolCallbacks(tools);
 		}
-		LlmNode llmNode = llmNodeBuilder.build();
+		AgentLlmNode llmNode = llmNodeBuilder.build();
 
-		ToolNode toolNode = null;
+		AgentToolNode toolNode = null;
 		if (resolver != null) {
-			toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
+			toolNode = AgentToolNode.builder().toolCallbackResolver(resolver).build();
 		}
 		else if (tools != null) {
-			toolNode = ToolNode.builder().toolCallbacks(tools).build();
+			toolNode = AgentToolNode.builder().toolCallbacks(tools).build();
 		}
 		else {
-			toolNode = ToolNode.builder().build();
+			toolNode = AgentToolNode.builder().build();
 		}
 
 		return new ReactAgent(llmNode, toolNode, this);

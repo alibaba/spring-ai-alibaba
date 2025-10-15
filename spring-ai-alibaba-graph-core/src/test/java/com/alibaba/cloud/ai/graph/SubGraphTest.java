@@ -43,8 +43,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SubGraphTest {
 
@@ -94,7 +94,7 @@ public class SubGraphTest {
 	 * @throws Exception If an error occurs during execution.
 	 */
 	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
-		return workflow.fluxStream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
+		return workflow.stream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
 			.collectList()
@@ -422,14 +422,14 @@ public class SubGraphTest {
 			.compile(compileConfig);
 
 		var result = workflowParent.stream()
-			.stream()
-			.peek(n -> log.info("{}", n))
+			.doOnNext(n -> log.info("{}", n))
 			.reduce((a, b) -> b)
-			.map(NodeOutput::state);
+			.map(NodeOutput::state)
+			.block();
 
-		assertTrue(result.isPresent());
+		assertNotNull(result);
 		assertIterableEquals(List.of("step1", "step2", "child:step1", "child:step2", "child:step3", "step3"),
-				(List<String>) result.get().value("messages").get());
+				(List<String>) result.value("messages").get());
 
 	}
 
@@ -454,7 +454,7 @@ public class SubGraphTest {
 			.addNode("step_3", _makeNode("step3"))
 			.addNode("subgraph", AsyncNodeActionWithConfig.node_async((t, config) -> {
 				// Reference the parent class Overallstate or create a new one
-				return workflowChild.compile().invoke(Map.copyOf(t.data())).orElseThrow().data();
+				return workflowChild.compile().call(Map.copyOf(t.data())).orElseThrow().data();
 			}))
 			.addEdge(START, "step_1")
 			.addEdge("step_1", "step_2")
@@ -464,12 +464,12 @@ public class SubGraphTest {
 			.compile(compileConfig);
 
 		var result = workflowParent.stream()
-			.stream()
-			.peek(n -> log.info("{}", n))
+			.doOnNext(n -> log.info("{}", n))
 			.reduce((a, b) -> b)
-			.map(NodeOutput::state);
+			.map(NodeOutput::state)
+			.block();
 
-		assertTrue(result.isPresent());
+		assertNotNull(result);
 	}
 
 	@Test
@@ -519,7 +519,7 @@ public class SubGraphTest {
 
 		CompiledGraph compile = parentGraph.compile();
 		System.out.println(compile.getGraph(GraphRepresentation.Type.PLANTUML).content());
-		OverAllState state = compile.invoke(Map.of()).orElseThrow();
+		OverAllState state = compile.call(Map.of()).orElseThrow();
 		assertEquals(
 				Map.of("messages", List.of("go to p_node1", "p_node1", "p_node2", "go to node 1", "node1", "node2")),
 				state.data());
@@ -561,12 +561,12 @@ public class SubGraphTest {
 			.compile(compileConfig);
 
 		var result = workflowParent.stream()
-			.stream()
-			.peek(n -> log.info("{}", n))
+			.doOnNext(n -> log.info("{}", n))
 			.reduce((a, b) -> b)
-			.map(NodeOutput::state);
+			.map(NodeOutput::state)
+			.block();
 
-		assertTrue(result.isPresent());
+		assertNotNull(result);
 	}
 
 }

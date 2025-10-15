@@ -27,8 +27,6 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -61,9 +59,9 @@ class ReactAgentTest {
 
 		try {
 			Optional<OverAllState> result = agent
-				.invoke(Map.of("messages", List.of(new UserMessage("帮我写一篇100字左右散文。"))));
-			Optional<OverAllState> result2 = agent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一首现代诗歌。"))));
-			Optional<OverAllState> result3 = agent.invoke(Map.of("messages", List.of(new UserMessage("帮我写一首现代诗歌2。"))));
+				.invoke("帮我写一篇100字左右散文。");
+			Optional<OverAllState> result2 = agent.invoke(new UserMessage("帮我写一首现代诗歌。"));
+			Optional<OverAllState> result3 = agent.invoke("帮我写一首现代诗歌2。");
 
 
 			// 验证第一个结果不为空
@@ -101,7 +99,7 @@ class ReactAgentTest {
 		CompileConfig compileConfig = getCompileConfig();
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).compileConfig(compileConfig)
 				.build();
-		AssistantMessage message = agent.invoke("帮我写一篇100字左右散文。");
+		AssistantMessage message = agent.call("帮我写一篇100字左右散文。");
 		System.out.println(message.getText());
 	}
 

@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,9 +30,16 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
+import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+
 import reactor.core.publisher.Flux;
 
 import org.springframework.scheduling.Trigger;
+
+import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
 
 /**
  * Abstract base class for all agents in the graph system. Contains common properties and
@@ -118,26 +127,6 @@ public abstract class Agent {
 		return this.compiledGraph;
 	}
 
-	public Optional<OverAllState> invoke(Map<String, Object> input) throws GraphRunnerException {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.call(input);
-	}
-
-	public Optional<OverAllState> invoke(Map<String, Object> input, RunnableConfig runnableConfig) throws GraphRunnerException {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.call(input, runnableConfig);
-	}
-
-	public Flux<NodeOutput> stream(Map<String, Object> input) throws GraphRunnerException {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.fluxStream(input);
-	}
-
-	public Flux<NodeOutput> stream(Map<String, Object> input, RunnableConfig runnableConfig) throws GraphRunnerException {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.fluxStream(input, runnableConfig);
-	}
-
 	/**
 	 * Schedule the agent task with trigger.
 	 * @param trigger the schedule configuration
@@ -158,6 +147,115 @@ public abstract class Agent {
 	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
 		CompiledGraph compiledGraph = getAndCompileGraph();
 		return compiledGraph.schedule(scheduleConfig);
+	}
+
+	public StateSnapshot getCurrentState(RunnableConfig config) throws GraphRunnerException {
+		return compiledGraph.getState(config);
+	}
+
+	public Optional<OverAllState> invoke(String message) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doInvoke(inputs);
+	}
+
+	public Optional<OverAllState> invoke(String message, RunnableConfig config) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doInvoke(inputs, config);
+	}
+
+	public Optional<OverAllState> invoke(UserMessage message) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doInvoke(inputs);
+	}
+
+	public Optional<OverAllState> invoke(UserMessage message, RunnableConfig config) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doInvoke(inputs, config);
+	}
+
+	public Optional<OverAllState> invoke(List<Message> messages) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(messages);
+		return doInvoke(inputs);
+	}
+
+	public Optional<OverAllState> invoke(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(messages);
+		return doInvoke(inputs, config);
+	}
+
+	public Flux<NodeOutput> stream(String message) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doStream(inputs);
+	}
+
+	public Flux<NodeOutput> stream(String message, RunnableConfig config) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doStream(inputs, config);
+	}
+
+	public Flux<NodeOutput> stream(UserMessage message) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doStream(inputs);
+	}
+
+	public Flux<NodeOutput> stream(UserMessage message, RunnableConfig config) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doStream(inputs, config);
+	}
+
+	public Flux<NodeOutput> stream(List<Message> messages) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(messages);
+		return doStream(inputs);
+	}
+
+	public Flux<NodeOutput> stream(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(messages);
+		return doStream(inputs, config);
+	}
+
+	protected Optional<OverAllState> doInvoke(Map<String, Object> input) throws GraphRunnerException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.call(input);
+	}
+
+	protected Optional<OverAllState> doInvoke(Map<String, Object> input, RunnableConfig runnableConfig) throws GraphRunnerException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.call(input, runnableConfig);
+	}
+
+	protected Flux<NodeOutput> doStream(Map<String, Object> input) throws GraphRunnerException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.stream(input);
+	}
+
+	protected Flux<NodeOutput> doStream(Map<String, Object> input, RunnableConfig runnableConfig) throws GraphRunnerException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.stream(input, runnableConfig);
+	}
+
+	protected Map<String, Object> buildMessageInput(Object message) {
+		List<Message> messages;
+		if (message instanceof List) {
+			messages = (List<Message>) message;
+		} else {
+			messages = convertToMessages(message);
+		}
+
+		Map<String, Object> inputs = new HashMap<>();
+		inputs.put("messages", messages);
+
+		UserMessage lastUserMessage = null;
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			Message msg = messages.get(i);
+			if (msg instanceof UserMessage) {
+				lastUserMessage = (UserMessage) msg;
+				break;
+			}
+		}
+		if (lastUserMessage != null) {
+			inputs.put("input", lastUserMessage.getText());
+		}
+		return inputs;
 	}
 
 	protected abstract StateGraph initGraph() throws GraphStateException;

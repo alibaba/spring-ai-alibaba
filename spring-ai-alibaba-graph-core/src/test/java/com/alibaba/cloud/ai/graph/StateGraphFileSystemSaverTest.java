@@ -329,7 +329,7 @@ public class StateGraphFileSystemSaverTest {
 		assertEquals(expectedSteps, messages.size());
 
 		// RE-SUBMIT THREAD 1
-		var dataFlux = app.fluxDataStream(Map.of(), runnableConfig_1);
+		var dataFlux = app.graphResponseStream(Map.of(), runnableConfig_1);
 
 		AtomicReference<Object> lastResult = new AtomicReference<>();
 		state_1 = dataFlux.flatMap(data -> {

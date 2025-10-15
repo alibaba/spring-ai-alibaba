@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow;
 
-import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
@@ -26,13 +25,11 @@ import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.SequentialGraphBuildingStrategy;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
-import java.util.HashMap;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +75,6 @@ class FlowAgentArchitectureTest {
 			.name("sequentialWorkflow")
 			.description("A sequential workflow")
 			.subAgents(List.of(subAgent))
-			.state(() -> createDefaultStrategies())
 			.build();
 
 		// Verify agent properties
@@ -101,7 +97,6 @@ class FlowAgentArchitectureTest {
 			.description("Routes tasks intelligently")
 			.subAgents(List.of(agent1, agent2))
 			.model(chatModel) // LLM-specific configuration
-			.state(() -> createDefaultStrategies())
 			.build();
 
 		// Verify agent properties
@@ -127,7 +122,6 @@ class FlowAgentArchitectureTest {
 			.subAgents(List.of(agent1, agent2, agent3))
 			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
 			.maxConcurrency(3)
-			.state(() -> createDefaultStrategies())
 			.build();
 
 		// Verify agent properties
@@ -243,15 +237,8 @@ class FlowAgentArchitectureTest {
 			.description("Mock agent: " + name)
 			.outputKey(outputKey)
 			.chatClient(chatClient)
-			.state(() -> createDefaultStrategies())
 			.resolver(resolver)
 			.build();
-	}
-
-	private HashMap<String, KeyStrategy> createDefaultStrategies() {
-		HashMap<String, KeyStrategy> strategies = new HashMap<>();
-		strategies.put("messages", new AppendStrategy());
-		return strategies;
 	}
 
 }

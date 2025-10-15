@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -76,7 +75,7 @@ class SequentialAgentTest {
 			.build();
 
 		try {
-			Optional<OverAllState> result = blogAgent.invoke(Map.of("messages", "帮我写一个100字左右的散文"));
+			Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的散文");
 
 			// 验证结果不为空
 			assertTrue(result.isPresent(), "Result should be present");
@@ -156,7 +155,7 @@ class SequentialAgentTest {
 
 //			blogAgent_child1.invoke(Map.of("input", "帮我写一个100字左右的散文"));
 
-			Optional<OverAllState> result = blogAgentParent.invoke(Map.of("messages", "帮我写一个100字左右的散文"));
+			Optional<OverAllState> result = blogAgentParent.invoke( "帮我写一个100字左右的散文");
 			System.out.println(result.get());
 
 		}

@@ -15,14 +15,14 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.function.Function;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import io.micrometer.observation.ObservationRegistry;
 
@@ -55,17 +55,9 @@ public abstract class Builder {
 
 	protected CompileConfig compileConfig;
 
-	protected KeyStrategyFactory keyStrategyFactory;
-
 	protected Function<OverAllState, Boolean> shouldContinueFunc;
 
-	protected NodeAction preLlmHook;
-
-	protected NodeAction postLlmHook;
-
-	protected NodeAction preToolHook;
-
-	protected NodeAction postToolHook;
+	protected List<Hook> hooks;
 
 	protected boolean includeContents = true;
 
@@ -73,7 +65,15 @@ public abstract class Builder {
 
 	protected KeyStrategy outputKeyStrategy;
 
-	protected String inputKey = "messages";
+	protected String inputSchema;
+	protected Type inputType;
+
+	protected String outputSchema;
+	protected Class<?> outputType;
+
+	protected ObservationRegistry observationRegistry;
+
+	protected ChatClientObservationConvention customObservationConvention;
 
 	public Builder name(String name) {
 		this.name = name;
@@ -110,11 +110,6 @@ public abstract class Builder {
 		return this;
 	}
 
-	public Builder state(KeyStrategyFactory keyStrategyFactory) {
-		this.keyStrategyFactory = keyStrategyFactory;
-		return this;
-	}
-
 	public Builder compileConfig(CompileConfig compileConfig) {
 		this.compileConfig = compileConfig;
 		return this;
@@ -145,39 +140,35 @@ public abstract class Builder {
 		return this;
 	}
 
+	public Builder inputSchema(String inputSchema) {
+		this.inputSchema = inputSchema;
+		return this;
+	}
+
+	public Builder inputType(Type inputType) {
+		this.inputType = inputType;
+		return this;
+	}
+
+	public Builder outputSchema(String outputSchema) {
+		this.outputSchema = outputSchema;
+		return this;
+	}
+
+	public Builder outputType(Class<?> outputType) {
+		this.outputType = outputType;
+		return this;
+	}
+
 	public Builder includeContents(boolean includeContents) {
 		this.includeContents = includeContents;
 		return this;
 	}
 
-	public Builder preLlmHook(NodeAction preLlmHook) {
-		this.preLlmHook = preLlmHook;
+	public Builder hooks(List<Hook> hooks) {
+		this.hooks = hooks;
 		return this;
 	}
-
-	public Builder postLlmHook(NodeAction postLlmHook) {
-		this.postLlmHook = postLlmHook;
-		return this;
-	}
-
-	public Builder preToolHook(NodeAction preToolHook) {
-		this.preToolHook = preToolHook;
-		return this;
-	}
-
-	public Builder postToolHook(NodeAction postToolHook) {
-		this.postToolHook = postToolHook;
-		return this;
-	}
-
-	public Builder inputKey(String inputKey) {
-		this.inputKey = inputKey;
-		return this;
-	}
-
-	protected ObservationRegistry observationRegistry;
-
-	protected ChatClientObservationConvention customObservationConvention;
 
 	public Builder observationRegistry(ObservationRegistry observationRegistry) {
 		this.observationRegistry = observationRegistry;
