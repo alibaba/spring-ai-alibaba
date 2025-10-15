@@ -113,7 +113,7 @@ public class SerializationUtils {
 			return objectMapper.readValue(json, value.getClass());
 		} catch (Exception e) {
 			// If serialization fails, log a warning and return the original object (shallow copy)
-			log.info("Could not deep copy object of type " +
+			log.debug("Could not deep copy object of type " +
 				value.getClass().getName() + ", using shallow copy instead: " + e.getMessage());
 			return value;
 		}
