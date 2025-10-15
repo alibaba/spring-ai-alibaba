@@ -25,6 +25,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 
 import org.springframework.util.StringUtils;
@@ -40,8 +41,6 @@ import reactor.core.publisher.Flux;
 import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
 
 public class AgentLlmNode implements NodeAction {
-
-	public static final String LLM_RESPONSE_KEY = "llm_response";
 
 	private String systemPrompt;
 
@@ -190,7 +189,10 @@ public class AgentLlmNode implements NodeAction {
 		augmentUserMessage(outputSchema);
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.toolCallbacks(toolCallbacks)
+				.options(ToolCallingChatOptions.builder()
+						.toolCallbacks(toolCallbacks)
+						.internalToolExecutionEnabled(false)
+						.build())
 				.messages(messages)
 				.advisors(advisors);
 

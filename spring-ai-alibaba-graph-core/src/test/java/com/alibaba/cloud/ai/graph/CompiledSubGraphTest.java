@@ -45,6 +45,7 @@ public class CompiledSubGraphTest {
 		return KeyStrategy.builder()
 			.addStrategy("newAttribute", new ReplaceStrategy())
 			.addStrategy("messages", new AppendStrategy())
+				.addStrategy("resume_subgraph", new ReplaceStrategy())
 			.build();
 	}
 
@@ -66,8 +67,14 @@ public class CompiledSubGraphTest {
 	private AsyncNodeAction _makeSubgraphNode(String parentNodeId, CompiledGraph subGraph) {
 		final var runnableConfig = RunnableConfig.builder().threadId(format("%s_subgraph", parentNodeId)).build();
 		return node_async(state -> {
+			RunnableConfig resumeConfig = null;
+			if (state.value("resume_subgraph", Boolean.class).orElse(false)) {
+				resumeConfig = RunnableConfig.builder(runnableConfig)
+						.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+						.build();
+			}
 
-			var output = subGraph.streamFromInitialNode(state, runnableConfig)
+			var output = subGraph.streamFromInitialNode(state, resumeConfig != null ? resumeConfig : runnableConfig)
 				.last()
 				.block();
 
@@ -75,6 +82,7 @@ public class CompiledSubGraphTest {
 				throw new SubGraphInterruptionException(parentNodeId, output.node(),
 						mergeMap(output.state().data(), Map.of("resume_subgraph", true)));
 			}
+
 			return Map.of();
 		});
 	}
@@ -122,11 +130,18 @@ public class CompiledSubGraphTest {
 			.addEdge("NODE5", END)
 			.compile(compileConfig);
 		var runnableConfig = RunnableConfig.builder().build();
+		RunnableConfig resumeConfig = null;
 		Map<String, Object> input = Map.of();
 		do {
 			try {
-				for (var output : parentGraph.stream(input, runnableConfig).toIterable()) {
-					System.out.println("output: " + output);
+				if (resumeConfig != null) {
+					for (var output : parentGraph.stream(input, resumeConfig).toIterable()) {
+						System.out.println("output: " + output);
+					}
+				} else {
+					for (var output : parentGraph.stream(input, runnableConfig).toIterable()) {
+						System.out.println("output: " + output);
+					}
 				}
 
 				break;
@@ -154,6 +169,9 @@ public class CompiledSubGraphTest {
 					// RESUME
 					var nodeBeforeSubgraph = "NODE2";
 					runnableConfig = parentGraph.updateState(runnableConfig, interruptionState, nodeBeforeSubgraph);
+					resumeConfig = RunnableConfig.builder(runnableConfig)
+							.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+							.build();
 					input = null;
 
 					System.out.println("RESUME GRAPH FROM END OF NODE: " + nodeBeforeSubgraph);
@@ -212,7 +230,11 @@ public class CompiledSubGraphTest {
 
 		input = null;
 
-		results = parentGraph.stream(input, runnableConfig).collectList().block();
+		RunnableConfig resumeConfig = RunnableConfig.builder(runnableConfig)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
+
+		results = parentGraph.stream(input, resumeConfig).collectList().block();
 		output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 		assertTrue(output.isPresent());
@@ -269,7 +291,10 @@ public class CompiledSubGraphTest {
 
 		input = null;
 
-		results = parentGraph.stream(input, runnableConfig).collectList().block();
+		RunnableConfig resumeConfig = RunnableConfig.builder(runnableConfig)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
+		results = parentGraph.stream(input, resumeConfig).collectList().block();
 		output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
 		assertTrue(output.isPresent());

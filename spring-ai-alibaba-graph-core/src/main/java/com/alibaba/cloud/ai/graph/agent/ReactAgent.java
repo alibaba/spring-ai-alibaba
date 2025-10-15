@@ -611,7 +611,7 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
-			RunnableConfig subGraphRunnableConfig = config;
+			RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config).checkPointId(null).nextNode(null).build();
 			var parentSaver = parentCompileConfig.checkpointSaver();
 			var subGraphSaver = childGraph.compileConfig.checkpointSaver();
 

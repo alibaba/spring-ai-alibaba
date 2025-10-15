@@ -101,6 +101,15 @@ public class SubGraphTest {
 			.block();
 	}
 
+	private List<String> _resume(CompiledGraph workflow, Map<String, Object> input) throws Exception {
+		RunnableConfig resumeConfig = RunnableConfig.builder().threadId("SubGraphTest").addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder").build();
+		return workflow.stream(input, resumeConfig)
+				.doOnNext(System.out::println)
+				.map(NodeOutput::node)
+				.collectList()
+				.block();
+	}
+
 	/**
 	 * Test basic subgraph merging functionality without conditional edges.
 	 */
@@ -242,7 +251,7 @@ public class SubGraphTest {
 		assertIterableEquals(List.of(START, "A", B_B1), _execute(interruptAfterB1, Map.of()));
 
 		// RESUME AFTER B1
-		assertIterableEquals(List.of(B_B2, B_C, "C", END), _execute(interruptAfterB1, null));
+		assertIterableEquals(List.of(B_B2, B_C, "C", END), _resume(interruptAfterB1, null));
 
 		// INTERRUPT AFTER B2
 		var interruptAfterB2 = workflowParent
@@ -251,7 +260,7 @@ public class SubGraphTest {
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2), _execute(interruptAfterB2, Map.of()));
 
 		// RESUME AFTER B2
-		assertIterableEquals(List.of(B_C, "C", END), _execute(interruptAfterB2, null));
+		assertIterableEquals(List.of(B_C, "C", END), _resume(interruptAfterB2, null));
 
 		// INTERRUPT BEFORE C
 		var interruptBeforeC = workflowParent
@@ -260,7 +269,7 @@ public class SubGraphTest {
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C), _execute(interruptBeforeC, Map.of()));
 
 		// RESUME AFTER B2
-		assertIterableEquals(List.of("C", END), _execute(interruptBeforeC, null));
+		assertIterableEquals(List.of("C", END), _resume(interruptBeforeC, null));
 
 		// INTERRUPT BEFORE SUBGRAPH B
 		var interruptBeforeSubgraphB = workflowParent
@@ -268,7 +277,7 @@ public class SubGraphTest {
 		assertIterableEquals(List.of(START, "A"), _execute(interruptBeforeSubgraphB, Map.of()));
 
 		// RESUME AFTER SUBGRAPH B
-		assertIterableEquals(List.of(B_B1, B_B2, B_C, "C", END), _execute(interruptBeforeSubgraphB, null));
+		assertIterableEquals(List.of(B_B1, B_B2, B_C, "C", END), _resume(interruptBeforeSubgraphB, null));
 
 		// INTERRUPT AFTER SUBGRAPH B
 		var exception = assertThrows(GraphStateException.class,
@@ -357,7 +366,7 @@ public class SubGraphTest {
 		assertIterableEquals(List.of(START, "A", B_B1), _execute(interruptAfterB1, Map.of()));
 
 		// RESUME AFTER B1
-		assertIterableEquals(List.of(B_B2, B_C, "C1", "C", END), _execute(interruptAfterB1, null));
+		assertIterableEquals(List.of(B_B2, B_C, "C1", "C", END), _resume(interruptAfterB1, null));
 
 		// INTERRUPT AFTER B2
 		var interruptAfterB2 = workflowParent
@@ -366,7 +375,7 @@ public class SubGraphTest {
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2), _execute(interruptAfterB2, Map.of()));
 
 		// RESUME AFTER B2
-		assertIterableEquals(List.of(B_C, "C1", "C", END), _execute(interruptAfterB2, null));
+		assertIterableEquals(List.of(B_C, "C1", "C", END), _resume(interruptAfterB2, null));
 
 		// INTERRUPT BEFORE C
 		var interruptBeforeC = workflowParent
@@ -375,7 +384,7 @@ public class SubGraphTest {
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C1"), _execute(interruptBeforeC, Map.of()));
 
 		// RESUME BEFORE C
-		assertIterableEquals(List.of("C", END), _execute(interruptBeforeC, null));
+		assertIterableEquals(List.of("C", END), _resume(interruptBeforeC, null));
 
 		// INTERRUPT BEFORE SUBGRAPH B
 		var interruptBeforeB = workflowParent
@@ -383,7 +392,7 @@ public class SubGraphTest {
 		assertIterableEquals(List.of(START, "A"), _execute(interruptBeforeB, Map.of()));
 
 		// RESUME BEFORE SUBGRAPH B
-		assertIterableEquals(List.of(B_B1, B_B2, B_C, "C1", "C", END), _execute(interruptBeforeB, null));
+		assertIterableEquals(List.of(B_B1, B_B2, B_C, "C1", "C", END), _resume(interruptBeforeB, null));
 
 		// INTERRUPT AFTER SUBGRAPH B
 		var exception = assertThrows(GraphStateException.class,
