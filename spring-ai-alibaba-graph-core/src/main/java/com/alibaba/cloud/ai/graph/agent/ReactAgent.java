@@ -34,6 +34,7 @@ import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
+import com.alibaba.cloud.ai.graph.internal.node.NodeScope;
 import com.alibaba.cloud.ai.graph.node.LlmNode;
 import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
@@ -267,8 +268,9 @@ public class ReactAgent extends BaseAgent {
 
 	private Node createNodeWithFactory(String id, Supplier<? extends NodeAction> actionSupplier)
 			throws GraphStateException {
-		return new Node(id,
-				(config) -> AsyncNodeActionWithConfig.of(AsyncNodeAction.node_async(actionSupplier.get())));
+	return new Node(id,
+			(config) -> AsyncNodeActionWithConfig.of(AsyncNodeAction.node_async(actionSupplier.get())),
+			NodeScope.PROTOTYPE);
 	}
 
 	private void insureMessagesKeyStrategyFactory() {

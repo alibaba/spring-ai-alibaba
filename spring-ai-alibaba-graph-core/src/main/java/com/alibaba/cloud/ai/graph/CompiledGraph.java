@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
+import com.alibaba.cloud.ai.graph.internal.node.NodeScope;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
@@ -81,6 +82,8 @@ public class CompiledGraph {
 	 */
 	final Map<String, Node.ActionFactory> nodeFactories = new LinkedHashMap<>();
 
+	final Map<String, NodeScope> nodeScopes = new LinkedHashMap<>();
+
 	/**
 	 * The Edges.
 	 */
@@ -132,6 +135,7 @@ public class CompiledGraph {
 			var factory = n.actionFactory();
 			Objects.requireNonNull(factory, format("action factory for node id '%s' is null!", n.id()));
 			nodeFactories.put(n.id(), factory);
+			nodeScopes.put(n.id(), n.scope());
 		}
 
 		// EVALUATE EDGES
@@ -183,6 +187,7 @@ public class CompiledGraph {
 			var parallelNode = new ParallelNode(e.sourceId(), actionFactories, keyStrategyMap);
 
 				nodeFactories.put(parallelNode.id(), parallelNode.actionFactory());
+				nodeScopes.put(parallelNode.id(), parallelNode.scope());
 
 				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
 
@@ -191,6 +196,10 @@ public class CompiledGraph {
 			}
 
 		}
+	}
+
+	public NodeScope getNodeScope(String nodeId) {
+		return nodeScopes.getOrDefault(nodeId, NodeScope.SINGLETON_PER_REQUEST);
 	}
 
 	public Collection<StateSnapshot> getStateHistory(RunnableConfig config) {

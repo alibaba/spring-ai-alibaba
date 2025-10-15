@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
+import com.alibaba.cloud.ai.graph.internal.node.NodeScope;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -701,6 +702,122 @@ public class NodeFactoryPatternTest {
         }
     }
 
+	@Test
+	public void testGraphRunnerContextHonorsPrototypeScope() throws Exception {
+        AtomicInteger factoryCallCount = new AtomicInteger(0);
+        AtomicInteger instanceCreationCount = new AtomicInteger(0);
+        
+        Node.ActionFactory statefulNodeFactory = compileConfig -> {
+            int factoryCall = factoryCallCount.incrementAndGet();
+            int instanceId = instanceCreationCount.incrementAndGet();
+            
+            NodeAction statefulNode = state -> {
+                return Map.of(
+                    "factoryCallId", factoryCall,
+                    "instanceId", instanceId,
+                    "messages", "Response from instance " + instanceId,
+                    "timestamp", System.currentTimeMillis()
+                );
+            };
+            
+            return AsyncNodeActionWithConfig.node_async((state, config) -> {
+                try {
+                    return statefulNode.apply(state);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        };
+        
+		TestableCompiledGraph compiledGraph = new TestableCompiledGraph();
+		compiledGraph.putNodeFactory("llmNode", statefulNodeFactory, NodeScope.PROTOTYPE);
+        
+        OverAllState initialState = new OverAllState(new HashMap<>());
+        RunnableConfig config = RunnableConfig.builder().build();
+        GraphRunnerContext context = new GraphRunnerContext(initialState, config, compiledGraph);
+        
+		AsyncNodeActionWithConfig action1 = context.getNodeAction("llmNode");
+		assertNotNull(action1, "First action should not be null");
+		assertEquals(1, factoryCallCount.get(), "Factory should be called once");
+		assertEquals(1, instanceCreationCount.get(), "Should create one instance");
+
+		AsyncNodeActionWithConfig action2 = context.getNodeAction("llmNode");
+		assertNotNull(action2, "Second action should not be null");
+		assertEquals(2, factoryCallCount.get(), "Factory should be called twice for prototype scope");
+		assertEquals(2, instanceCreationCount.get(), "Prototype scope should create two instances");
+		assertNotSame(action1, action2, "Prototype scope must return different instances");
+        
+        
+        Map<String, Object> input = Map.of("input", "test message");
+        OverAllState state1 = new OverAllState(input);
+        OverAllState state2 = new OverAllState(input);
+        
+        CompletableFuture<Map<String, Object>> result1 = action1.apply(state1, config);
+        CompletableFuture<Map<String, Object>> result2 = action2.apply(state2, config);
+        
+        Map<String, Object> output1 = result1.get();
+        Map<String, Object> output2 = result2.get();
+        
+		assertNotEquals(output1.get("instanceId"), output2.get("instanceId"),
+			"Different instanceId proves prototype scope isolation");
+    }
+
+    @Test
+    public void testCorrectSolutionWithoutRuntimeCache() throws Exception {
+        AtomicInteger factoryCallCount = new AtomicInteger(0);
+        AtomicInteger instanceCreationCount = new AtomicInteger(0);
+        
+        Node.ActionFactory statefulNodeFactory = compileConfig -> {
+            int factoryCall = factoryCallCount.incrementAndGet();
+            int instanceId = instanceCreationCount.incrementAndGet();
+            
+            NodeAction statefulNode = state -> {
+                return Map.of(
+                    "factoryCallId", factoryCall,
+                    "instanceId", instanceId,
+                    "messages", "Response from instance " + instanceId,
+                    "timestamp", System.currentTimeMillis()
+                );
+            };
+            
+            return AsyncNodeActionWithConfig.node_async((state, config) -> {
+                try {
+                    return statefulNode.apply(state);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        };
+        
+        TestableCompiledGraph compiledGraph = new TestableCompiledGraph();
+        compiledGraph.putNodeFactory("llmNode", statefulNodeFactory);
+        
+        AsyncNodeActionWithConfig action1 = compiledGraph.getNodeAction("llmNode");
+        assertNotNull(action1, "First action should not be null");
+        assertEquals(1, factoryCallCount.get(), "Factory should be called once");
+        
+        AsyncNodeActionWithConfig action2 = compiledGraph.getNodeAction("llmNode");
+        assertNotNull(action2, "Second action should not be null");
+        assertEquals(2, factoryCallCount.get(), "Factory should be called twice");
+        
+        assertNotSame(action1, action2, "Should return different instances each time");
+        
+        Map<String, Object> input = Map.of("input", "test message");
+        OverAllState state1 = new OverAllState(input);
+        OverAllState state2 = new OverAllState(input);
+        RunnableConfig config = RunnableConfig.builder().build();
+        
+        CompletableFuture<Map<String, Object>> result1 = action1.apply(state1, config);
+        CompletableFuture<Map<String, Object>> result2 = action2.apply(state2, config);
+        
+        Map<String, Object> output1 = result1.get();
+        Map<String, Object> output2 = result2.get();
+        
+        assertNotEquals(output1.get("instanceId"), output2.get("instanceId"), 
+            "Different instanceIds prove they are different instances - solving thread safety");
+        
+    }
+
     private static class TestableCompiledGraph extends CompiledGraph {
 
         public TestableCompiledGraph() throws GraphStateException {
@@ -708,7 +825,12 @@ public class NodeFactoryPatternTest {
         }
 
         public void putNodeFactory(String nodeId, Node.ActionFactory factory) {
-            this.nodeFactories.put(nodeId, factory);
+			putNodeFactory(nodeId, factory, NodeScope.SINGLETON_PER_REQUEST);
+		}
+
+		public void putNodeFactory(String nodeId, Node.ActionFactory factory, NodeScope scope) {
+			this.nodeFactories.put(nodeId, factory);
+			this.nodeScopes.put(nodeId, scope);
         }
 
         private static StateGraph createMinimalStateGraph() throws GraphStateException {

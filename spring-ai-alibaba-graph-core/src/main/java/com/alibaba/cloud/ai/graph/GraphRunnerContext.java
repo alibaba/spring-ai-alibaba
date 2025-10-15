@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
+import com.alibaba.cloud.ai.graph.internal.node.NodeScope;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
@@ -186,15 +187,19 @@ public class GraphRunnerContext {
 		if (nodeId == null) {
 			return null;
 		}
-		var action = runtimeNodeCache.get(nodeId);
-		if (action != null) {
-			return action;
-		}
-		var created = compiledGraph.getNodeAction(nodeId);
-		if (created != null) {
-			runtimeNodeCache.put(nodeId, created);
-		}
-		return created;
+	NodeScope scope = compiledGraph.getNodeScope(nodeId);
+	if (scope == NodeScope.PROTOTYPE) {
+		return compiledGraph.getNodeAction(nodeId);
+	}
+	var action = runtimeNodeCache.get(nodeId);
+	if (action != null) {
+		return action;
+	}
+	var created = compiledGraph.getNodeAction(nodeId);
+	if (created != null) {
+		runtimeNodeCache.put(nodeId, created);
+	}
+	return created;
 	}
 
 	public Command getEntryPoint() throws Exception {
