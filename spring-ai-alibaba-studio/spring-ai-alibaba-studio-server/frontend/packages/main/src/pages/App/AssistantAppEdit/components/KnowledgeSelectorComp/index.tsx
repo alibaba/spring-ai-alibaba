@@ -4,7 +4,7 @@ import { KnowledgeSelectorDrawer } from '@/pages/App/components/KnowledgeSelecto
 import { IKnowledgeListItem } from '@/types/knowledge';
 import { Button, IconFont, Switch, Tag } from '@spark-ai/design';
 import { useSetState } from 'ahooks';
-import { Divider, Flex } from 'antd';
+import { Divider, Flex, InputNumber } from 'antd';
 import cls from 'classnames';
 import { useContext, useEffect } from 'react';
 import { AssistantAppContext } from '../../AssistantAppContext';
@@ -165,6 +165,85 @@ export default function KnowledgeBaseSelectorComp() {
                 ),
             )}
           </Flex>
+          {kbs.length > 0 && (
+            <>
+              <Divider className="my-[12px]" />
+              <Flex vertical gap={12}>
+                <Flex align="center" justify="space-between">
+                  <Flex align="center" gap={8}>
+                    <span
+                      className="text-[13px] font-medium leading-[20px]"
+                      style={{ color: 'var(--ag-ant-color-text)' }}
+                    >
+                      Top-K
+                    </span>
+                    <span
+                      className="text-[12px] leading-[20px]"
+                      style={{ color: 'var(--ag-ant-color-text-tertiary)' }}
+                    >
+                      ({$i18n.get({ id: 'main.components.KnowledgeSelectorComp.index.returnDocCount', dm: '返回文档数' })})
+                    </span>
+                  </Flex>
+                  <InputNumber
+                    min={1}
+                    max={20}
+                    placeholder="3"
+                    value={file_search?.top_k}
+                    onChange={(val) => {
+                      onAppConfigChange({
+                        file_search: {
+                          ...file_search,
+                          top_k: val || undefined,
+                        },
+                      });
+                    }}
+                    style={{ width: 120 }}
+                  />
+                </Flex>
+                <div className={styles.desc}>
+                  {$i18n.get({
+                    id: 'main.components.KnowledgeSelectorComp.index.topKDesc',
+                    dm: '从所有知识库的检索结果中返回前 K 个最相关的文档，默认为 3',
+                  })}
+                </div>
+                <Flex align="center" justify="space-between">
+                  <Flex align="center" gap={8}>
+                    <span
+                      className="text-[13px] font-medium leading-[20px]"
+                      style={{ color: 'var(--ag-ant-color-text)' }}
+                    >
+                      {$i18n.get({
+                        id: 'main.components.KnowledgeSelectorComp.index.similarityThreshold',
+                        dm: '相似度阈值',
+                      })}
+                    </span>
+                  </Flex>
+                  <InputNumber
+                    min={0}
+                    max={1}
+                    step={0.1}
+                    placeholder="0.2"
+                    value={file_search?.similarity_threshold}
+                    onChange={(val) => {
+                      onAppConfigChange({
+                        file_search: {
+                          ...file_search,
+                          similarity_threshold: val || undefined,
+                        },
+                      });
+                    }}
+                    style={{ width: 120 }}
+                  />
+                </Flex>
+                <div className={styles.desc}>
+                  {$i18n.get({
+                    id: 'main.components.KnowledgeSelectorComp.index.thresholdDesc',
+                    dm: '过滤掉相似度低于此阈值的文档，范围 0-1，默认为 0.2',
+                  })}
+                </div>
+              </Flex>
+            </>
+          )}
         </>
       )}
       {state.selectVisible && (

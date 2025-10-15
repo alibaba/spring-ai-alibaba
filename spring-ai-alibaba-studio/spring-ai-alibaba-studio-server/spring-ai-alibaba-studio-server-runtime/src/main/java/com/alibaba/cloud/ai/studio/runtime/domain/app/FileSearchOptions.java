@@ -52,7 +52,8 @@ public class FileSearchOptions implements Serializable {
 
 	/** Number of top results to return, default to 3 */
 	@JsonProperty("top_k")
-	private Integer topK;
+	@Builder.Default
+	private Integer topK = 3;
 
 	/** Maximum length of retrieved content */
 	@JsonProperty("retrieve_max_length")
@@ -60,7 +61,8 @@ public class FileSearchOptions implements Serializable {
 
 	/** Minimum similarity threshold for search results, default to 0.2 */
 	@JsonProperty("similarity_threshold")
-	private Float similarityThreshold;
+	@Builder.Default
+	private Float similarityThreshold = 0.2f;
 
 	/** Weight for hybrid search algorithm, default to 0.7 */
 	@JsonProperty("hybrid_weight")

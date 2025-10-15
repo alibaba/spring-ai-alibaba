@@ -233,8 +233,9 @@ public class AppComponentManager {
 		queryParams.setType("String");
 		queryParams.setRequired(true);
 		queryParams.setAlias(SYS_QUERY_KEY);
+		queryParams.setDescription("用户输入的查询内容");
+		queryParams.setDisplay(true);
 		systemParams.add(queryParams);
-
 	}
 
 	/**

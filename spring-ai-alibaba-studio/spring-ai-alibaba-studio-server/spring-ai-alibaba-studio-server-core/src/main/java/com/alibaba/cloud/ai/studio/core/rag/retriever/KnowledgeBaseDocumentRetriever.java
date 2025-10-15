@@ -92,15 +92,19 @@ public class KnowledgeBaseDocumentRetriever implements DocumentRetriever {
 
 		try {
 			List<Document> documents = new ArrayList<>();
-			for (CompletableFuture<List<Document>> future : futureList) {
-				documents.addAll(future.get(SEARCH_TIMEOUT, TimeUnit.SECONDS));
-			}
+		for (CompletableFuture<List<Document>> future : futureList) {
+			documents.addAll(future.get(SEARCH_TIMEOUT, TimeUnit.SECONDS));
+		}
 
-			List<Document> results = documents.stream()
-				.sorted(Comparator.comparing(Document::getScore, Comparator.nullsLast(Comparator.reverseOrder())))
-				.filter(x -> x.getScore() != null && x.getScore() > searchOptions.getSimilarityThreshold())
-				.limit(searchOptions.getTopK())
-				.toList();
+		// Use default values if searchOptions fields are null
+		float threshold = searchOptions.getSimilarityThreshold() != null ? searchOptions.getSimilarityThreshold() : 0.2f;
+		int topK = searchOptions.getTopK() != null ? searchOptions.getTopK() : 3;
+		
+		List<Document> results = documents.stream()
+			.sorted(Comparator.comparing(Document::getScore, Comparator.nullsLast(Comparator.reverseOrder())))
+			.filter(x -> x.getScore() != null && x.getScore() > threshold)
+			.limit(topK)
+			.toList();
 
 			LogUtils.monitor("DocumentRetriever", "retrieve", start, SUCCESS, query.text(), results.size());
 			return results;
