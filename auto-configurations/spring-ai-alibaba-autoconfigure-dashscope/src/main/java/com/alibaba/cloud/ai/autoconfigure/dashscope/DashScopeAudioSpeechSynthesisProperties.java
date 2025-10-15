@@ -21,8 +21,6 @@ import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioSpeechOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
-
 /**
  * @author kevinlin09
  */
@@ -58,9 +56,5 @@ public class DashScopeAudioSpeechSynthesisProperties extends DashScopeParentProp
 		.speed(SPEED)
 		.responseFormat(DEFAULT_RESPONSE_FORMAT)
 		.build();
-
-	public DashScopeAudioSpeechSynthesisProperties() {
-		super.setBaseUrl(DEFAULT_BASE_URL);
-	}
 
 }

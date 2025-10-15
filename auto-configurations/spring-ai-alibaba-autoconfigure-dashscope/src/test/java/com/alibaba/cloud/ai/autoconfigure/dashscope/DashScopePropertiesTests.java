@@ -33,7 +33,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -63,7 +62,7 @@ public class DashScopePropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 
 				assertThat(chatProperties.getApiKey()).isNull();
-				assertThat(chatProperties.getBaseUrl()).isEqualTo(DEFAULT_BASE_URL);
+				assertThat(chatProperties.getBaseUrl()).isNull();
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_CUSTOM");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.80);
@@ -88,7 +87,7 @@ public class DashScopePropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 
 				assertThat(transcriptionProperties.getApiKey()).isNull();
-				assertThat(transcriptionProperties.getBaseUrl()).isEqualTo(DEFAULT_BASE_URL);
+				assertThat(transcriptionProperties.getBaseUrl()).isNull();
 
 				assertThat(transcriptionProperties.getOptions().getModel()).isEqualTo("MODEL_CUSTOM");
 			});
@@ -169,7 +168,7 @@ public class DashScopePropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 
 				assertThat(speechProperties.getApiKey()).isNull();
-				assertThat(speechProperties.getBaseUrl()).isEqualTo(DEFAULT_BASE_URL);
+				assertThat(speechProperties.getBaseUrl()).isNull();
 
 				assertThat(speechProperties.getOptions().getModel()).isEqualTo("TTS_1");
 				assertThat(speechProperties.getOptions().getVoice()).isEqualTo("longhua_test");
