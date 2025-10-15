@@ -268,9 +268,9 @@ public class ReactAgent extends BaseAgent {
 
 	private Node createNodeWithFactory(String id, Supplier<? extends NodeAction> actionSupplier)
 			throws GraphStateException {
-	return new Node(id,
-			(config) -> AsyncNodeActionWithConfig.of(AsyncNodeAction.node_async(actionSupplier.get())),
-			NodeScope.PROTOTYPE);
+		return new Node(id,
+				(config) -> AsyncNodeActionWithConfig.of(AsyncNodeAction.node_async(actionSupplier.get())),
+				NodeScope.PROTOTYPE);
 	}
 
 	private void insureMessagesKeyStrategyFactory() {

@@ -42,7 +42,7 @@ public class Node {
 
 	public interface ActionFactory {
 
-    AsyncNodeActionWithConfig apply(CompileConfig config) throws GraphStateException;
+		AsyncNodeActionWithConfig apply(CompileConfig config) throws GraphStateException;
 
 	}
 
@@ -50,10 +50,10 @@ public class Node {
 
 	private final ActionFactory actionFactory;
 
-    private final NodeScope scope;
+	private final NodeScope scope;
 
 	public Node(String id, ActionFactory actionFactory) {
-        this(id, actionFactory, NodeScope.SINGLETON_PER_REQUEST);
+		this(id, actionFactory, NodeScope.SINGLETON_PER_REQUEST);
 	}
 
 	/**
@@ -61,13 +61,13 @@ public class Node {
 	 * @param id the unique identifier for the node
 	 */
 	public Node(String id) {
-        this(id, null, NodeScope.SINGLETON_PER_REQUEST);
-    }
+		this(id, null, NodeScope.SINGLETON_PER_REQUEST);
+	}
 
-    public Node(String id, ActionFactory actionFactory, NodeScope scope) {
-        this.id = id;
-        this.actionFactory = actionFactory;
-        this.scope = scope == null ? NodeScope.SINGLETON_PER_REQUEST : scope;
+	public Node(String id, ActionFactory actionFactory, NodeScope scope) {
+		this.id = id;
+		this.actionFactory = actionFactory;
+		this.scope = scope == null ? NodeScope.SINGLETON_PER_REQUEST : scope;
 	}
 
 	public void validate() throws GraphStateException {
@@ -101,17 +101,17 @@ public class Node {
 		return actionFactory;
 	}
 
-    public NodeScope scope() {
-        return scope;
-    }
+	public NodeScope scope() {
+		return scope;
+	}
 
 	public boolean isParallel() {
 		// return id.startsWith(PARALLEL_PREFIX);
 		return false;
 	}
 
-    public Node withIdUpdated(Function<String, String> newId) {
-        return new Node(newId.apply(id), actionFactory, scope);
+	public Node withIdUpdated(Function<String, String> newId) {
+		return new Node(newId.apply(id), actionFactory, scope);
 	}
 
 	/**

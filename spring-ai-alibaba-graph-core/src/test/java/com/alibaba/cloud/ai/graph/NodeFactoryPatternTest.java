@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-
 public class NodeFactoryPatternTest {
 
     @Test
@@ -60,8 +59,6 @@ public class NodeFactoryPatternTest {
 
         verify(mockFactory, times(2)).apply(any(CompileConfig.class));
     }
-
-
 
     @Test
     public void testGraphRunnerContextNodeCaching() throws Exception {
@@ -188,8 +185,6 @@ public class NodeFactoryPatternTest {
         verify(statefulFactory, times(20)).apply(any(CompileConfig.class));
     }
 
-
-
     @Test
     public void testFactoryExceptionHandling() throws Exception {
         Node.ActionFactory faultyFactory = mock(Node.ActionFactory.class);
@@ -295,10 +290,6 @@ public class NodeFactoryPatternTest {
         assertEquals(30, factoryCallCount.get(), "Factory should be called exactly 30 times");
         assertEquals(30, instanceIds.size(), "Should create 30 unique instances");
     }
-
-
-
-
 
     @Test
     public void testCorrectNodeFactoryPatternSolution() throws Exception {
