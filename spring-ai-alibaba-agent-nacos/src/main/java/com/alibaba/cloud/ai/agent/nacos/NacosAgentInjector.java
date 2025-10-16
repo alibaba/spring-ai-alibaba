@@ -24,14 +24,12 @@ public class NacosAgentInjector {
 
 	/**
 	 * load prompt by agent id.
-	 *
-	 * @param nacosOptions
-	 * @return
 	 */
 	public static AgentVO loadAgentVO(NacosOptions nacosOptions) {
 		try {
+			String dataIdT = (nacosOptions.isAgentBaseEncrypted() ? "cipher-kms-aes-256-" : "") + "agent-base.json";
 			String config = nacosOptions.getNacosConfigService()
-					.getConfig("agent-base.json", "ai-agent-" + nacosOptions.getAgentName(),
+					.getConfig(dataIdT, "ai-agent-" + nacosOptions.getAgentName(),
 							3000L);
 			return JSON.parseObject(config, AgentVO.class);
 		}

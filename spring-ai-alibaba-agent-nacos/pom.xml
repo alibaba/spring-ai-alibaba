@@ -9,19 +9,12 @@
     </parent>
     <artifactId>spring-ai-alibaba-agent-nacos</artifactId>
     <name>Spring AI Alibaba Agent Nacos</name>
-    <description>spring-ai-alibaba-agent-nacos</description>
-    <url></url>
-    <licenses>
-        <license></license>
-    </licenses>
-    <developers>
-        <developer></developer>
-    </developers>
+    <description>Nacos Config for Spring AI Alibaba</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
     <scm>
-        <connection></connection>
-        <developerConnection></developerConnection>
-        <tag></tag>
-        <url></url>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
     </scm>
     <properties>
         <java.version>17</java.version>
@@ -56,12 +49,23 @@
             <artifactId>spring-ai-commons</artifactId>
         </dependency>
 
+        <!-- CGLIB 动态代理依赖 -->
         <dependency>
             <groupId>cglib</groupId>
             <artifactId>cglib</artifactId>
             <version>3.3.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>9.2</version>
+        </dependency>
 
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-commons</artifactId>
+            <version>9.2</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-retry</artifactId>
@@ -102,22 +106,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-mcp-router</artifactId>
-            <version>${revision}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.alibaba.nacos</groupId>
-                    <artifactId>nacos-client</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.alibaba.nacos</groupId>
-                    <artifactId>nacos-common</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
             <version>${nacos3.version}</version>
@@ -131,8 +119,15 @@
         </dependency>
 
         <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client-mse-extension</artifactId>
+            <version>1.0.6</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
         </dependency>
 
         <dependency>
