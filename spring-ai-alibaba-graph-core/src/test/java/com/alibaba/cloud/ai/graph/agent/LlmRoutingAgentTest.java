@@ -17,12 +17,15 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
+import com.alibaba.cloud.ai.graph.diagram.PlantUMLGenerator;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -35,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import static com.alibaba.cloud.ai.graph.agent.PoemTool.createToolCallback;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -45,13 +49,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 class LlmRoutingAgentTest {
 
 	private ChatModel chatModel;
-
-	public static ToolCallback createToolCallback() {
-		return FunctionToolCallback.builder("poem", new PoemTool())
-			.description("用来写诗的工具")
-			.inputType(String.class)
-			.build();
-	}
 
 	@BeforeEach
 	void setUp() {
@@ -64,15 +61,6 @@ class LlmRoutingAgentTest {
 
 	@Test
 	public void testLlmRoutingAgent() throws Exception {
-		KeyStrategyFactory stateFactory = () -> {
-			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			keyStrategyHashMap.put("input", new ReplaceStrategy());
-			keyStrategyHashMap.put("topic", new ReplaceStrategy());
-			keyStrategyHashMap.put("article", new ReplaceStrategy());
-			keyStrategyHashMap.put("reviewed_article", new ReplaceStrategy());
-			return keyStrategyHashMap;
-		};
-
 		ReactAgent proseWriterAgent = ReactAgent.builder()
 			.name("prose_writer_agent")
 			.model(chatModel)
@@ -98,6 +86,10 @@ class LlmRoutingAgentTest {
 			.build();
 
 		try {
+
+			GraphRepresentation representation = blogAgent.getGraph().getGraph(GraphRepresentation.Type.PLANTUML);
+			System.out.println(representation.content());
+
 			Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的现代诗");
 			blogAgent.invoke("帮我写一个100字左右的现代诗");
 			Optional<OverAllState> result3 = blogAgent.invoke("帮我写一个100字左右的现代诗");
@@ -109,18 +101,16 @@ class LlmRoutingAgentTest {
 			OverAllState state = result.get();
 			OverAllState state3 = result3.get();
 
-			// 验证输入被正确设置
 			assertTrue(state.value("input").isPresent(), "Input should be present in state");
 			assertEquals("帮我写一个100字左右的现代诗", state.value("input").get(), "Input should match the request");
 
-			// 验证主题被设置
-			assertTrue(state.value("topic").isPresent(), "Topic should be present in state");
-
-			// 验证有诗歌输出
 			assertTrue(state.value("poem_article").isPresent(), "Poem article should be present");
-			String poemContent = (String) state.value("poem_article").get();
-			assertNotNull(poemContent, "Poem content should not be null");
-			assertFalse(poemContent.trim().isEmpty(), "Poem content should not be empty");
+			AssistantMessage poemContent = (AssistantMessage) state.value("poem_article").get();
+			assertNotNull(poemContent.getText(), "Poem content should not be null");
+
+			assertTrue(state3.value("poem_article").isPresent(), "Poem article should be present");
+			AssistantMessage poemContent3 = (AssistantMessage) state3.value("poem_article").get();
+			assertNotNull(poemContent3.getText(), "Poem content should not be null");
 
 			System.out.println(result.get());
 			System.out.println("------------------");

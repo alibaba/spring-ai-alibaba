@@ -41,6 +41,8 @@ public abstract class Builder {
 
 	protected String instruction;
 
+	protected String systemPrompt;
+
 	protected ChatModel model;
 
 	protected ChatOptions chatOptions;
@@ -127,6 +129,11 @@ public abstract class Builder {
 
 	public Builder instruction(String instruction) {
 		this.instruction = instruction;
+		return this;
+	}
+
+	public Builder systemPrompt(String systemPrompt) {
+		this.systemPrompt = systemPrompt;
 		return this;
 	}
 

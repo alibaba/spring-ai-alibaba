@@ -88,7 +88,7 @@ class ParallelAgentIntegrationTest {
 			.description("并行执行多个创作任务，包括写散文、写诗和做总结")
 			.mergeOutputKey("merged_results")
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent, summaryAgent))
-			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // ✅ 添加合并策略
+			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
 			.build();
 
 		// Execute the parallel workflow

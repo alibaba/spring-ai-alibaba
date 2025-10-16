@@ -19,6 +19,17 @@ package com.alibaba.cloud.ai.graph.agent.hook.hip;
 public class ToolConfig {
 	private String description;
 
+	public ToolConfig() {
+	}
+
+	private ToolConfig(Builder builder) {
+		this.description = builder.description;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	String getDescription() {
 		return description;
 	}
@@ -26,4 +37,18 @@ public class ToolConfig {
 	void setDescription(String description) {
 		this.description = description;
 	}
+
+	public static class Builder {
+		private String description;
+
+		public Builder description(String description) {
+			this.description = description;
+			return this;
+		}
+
+		public ToolConfig build() {
+			return new ToolConfig(this);
+		}
+	}
+
 }

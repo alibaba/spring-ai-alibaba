@@ -44,6 +44,7 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 		super(requireNonNull(builder.nodeId, "nodeId cannot be null!"),
 				requireNonNull(builder.state, "state cannot be null!"));
 		this.metadata = builder.metadata();
+		this.toolFeedbacks = new ArrayList<>(builder.toolFeedbacks);
 	}
 
 	/**
@@ -109,6 +110,7 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 		public Builder(String nodeId, OverAllState state) {
 			this.nodeId = nodeId;
 			this.state = state;
+			this.toolFeedbacks = new ArrayList<>();
 		}
 
 		public Builder nodeId(String nodeId) {
@@ -175,6 +177,15 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 			return new Builder();
 		}
 
+		public static Builder builder(ToolFeedback toolFeedback) {
+			return new Builder()
+				.id(toolFeedback.getId())
+				.name(toolFeedback.getName())
+				.arguments(toolFeedback.getArguments())
+				.result(toolFeedback.getResult())
+				.description(toolFeedback.getDescription());
+		}
+
 		public static class Builder {
 			String id;
 			String name;
@@ -194,6 +205,11 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 
 			public Builder arguments(String arguments) {
 				this.arguments = arguments;
+				return this;
+			}
+
+			public Builder result(FeedbackResult result) {
+				this.result = result;
 				return this;
 			}
 

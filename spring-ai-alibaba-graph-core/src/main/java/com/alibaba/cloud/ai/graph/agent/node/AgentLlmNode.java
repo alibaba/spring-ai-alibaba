@@ -34,13 +34,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
 
 public class AgentLlmNode implements NodeAction {
+
+	private String userPromptTemplate;
 
 	private String systemPrompt;
 
@@ -59,8 +60,8 @@ public class AgentLlmNode implements NodeAction {
 	public AgentLlmNode() {
 	}
 
-	public AgentLlmNode(String systemPrompt, List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient, boolean stream) {
-		this.systemPrompt = systemPrompt;
+	public AgentLlmNode(String userPromptTemplate, List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient, boolean stream) {
+		this.userPromptTemplate = userPromptTemplate;
 		this.advisors = advisors;
 		this.toolCallbacks = toolCallbacks;
 		this.chatClient = chatClient;
@@ -73,8 +74,16 @@ public class AgentLlmNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		Object messagesValue = state.value("messages").orElseThrow();
-		List<Message> messages = convertToMessages(messagesValue);
+		List<Message> messages = new ArrayList<>();
+		if (state.value("messages").isPresent()) {
+			Object messagesValue = state.value("messages").get();
+			messages = (List<Message>)messagesValue;
+//			messages = convertToMessages(messagesValue);
+		}
+
+		if (messages.isEmpty()) {
+			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be provided");
+		}
 
 		// add streaming support
 		if (Boolean.TRUE.equals(stream)) {
@@ -134,11 +143,19 @@ public class AgentLlmNode implements NodeAction {
 				.advisors(advisors);
 
 		if (StringUtils.hasLength(systemPrompt)) {
-			if (!params.isEmpty()) {
-				String renderedSystemPrompt = renderPromptTemplate(systemPrompt, params);
-				chatClientRequestSpec.system(renderedSystemPrompt);
-			}
 			chatClientRequestSpec.system(systemPrompt);
+		}
+
+		if (messages.isEmpty() && !StringUtils.hasLength(userPromptTemplate)) {
+			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be provided for agent definition.");
+		}
+
+		if (StringUtils.hasLength(userPromptTemplate)) {
+			if (!params.isEmpty()) {
+				messages.add(new UserMessage(renderPromptTemplate(userPromptTemplate, params)));
+			} else {
+				messages.add(new UserMessage(userPromptTemplate));
+			}
 		}
 
 		return chatClientRequestSpec;
@@ -152,7 +169,9 @@ public class AgentLlmNode implements NodeAction {
 
 		private ChatClient chatClient;
 
-		private String systemPromptTemplate;
+		private String userPromptTemplate;
+
+		private String systemPrompt;
 
 		private List<Advisor> advisors;
 
@@ -160,8 +179,13 @@ public class AgentLlmNode implements NodeAction {
 
 		private Boolean stream;
 
-		public Builder systemPromptTemplate(String systemPromptTemplate) {
-			this.systemPromptTemplate = systemPromptTemplate;
+		public Builder userPromptTemplate(String userPromptTemplate) {
+			this.userPromptTemplate = userPromptTemplate;
+			return this;
+		}
+
+		public Builder systemPrompt(String systemPrompt) {
+			this.systemPrompt = systemPrompt;
 			return this;
 		}
 
@@ -197,7 +221,8 @@ public class AgentLlmNode implements NodeAction {
 
 		public AgentLlmNode build() {
 			AgentLlmNode llmNode = new AgentLlmNode();
-			llmNode.systemPrompt = this.systemPromptTemplate;
+			llmNode.userPromptTemplate = this.userPromptTemplate;
+			llmNode.systemPrompt = this.systemPrompt;
 			llmNode.outputKey = this.outputKey;
 			llmNode.outputSchema = this.outputSchema;
 			llmNode.stream = this.stream;

@@ -47,8 +47,12 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 
 	private Map<String, ToolConfig> approvalOn;
 
-	public HumanInTheLoopHook() {
-		this.approvalOn = new HashMap<>();
+	private HumanInTheLoopHook(Builder builder) {
+		this.approvalOn = new HashMap<>(builder.approvalOn);
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	@Override
@@ -169,7 +173,6 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 		if (toolFeedbacks.size() != approvalOn.size()) {
 			return false;
 		}
-
 		for (InterruptionMetadata.ToolFeedback toolFeedback : toolFeedbacks) {
 			if (!approvalOn.containsKey(toolFeedback.getName())) {
 				return false;
@@ -192,4 +195,30 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 	public List<JumpTo> canJumpTo() {
 		return List.of();
 	}
+
+	public static class Builder {
+		private Map<String, ToolConfig> approvalOn = new HashMap<>();
+
+		public Builder approvalOn(String toolName, ToolConfig toolConfig) {
+			this.approvalOn.put(toolName, toolConfig);
+			return this;
+		}
+
+		public Builder approvalOn(String toolName, String description) {
+			ToolConfig config = new ToolConfig();
+			config.setDescription(description);
+			this.approvalOn.put(toolName, config);
+			return this;
+		}
+
+		public Builder approvalOn(Map<String, ToolConfig> approvalOn) {
+			this.approvalOn.putAll(approvalOn);
+			return this;
+		}
+
+		public HumanInTheLoopHook build() {
+			return new HumanInTheLoopHook(this);
+		}
+	}
+
 }

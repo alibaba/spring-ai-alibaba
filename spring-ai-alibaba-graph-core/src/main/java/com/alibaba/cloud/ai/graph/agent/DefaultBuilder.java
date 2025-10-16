@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
@@ -43,8 +44,8 @@ public class DefaultBuilder extends Builder {
 			if (chatOptions != null) {
 				clientBuilder.defaultOptions(chatOptions);
 			}
-			if (instruction != null) {
-				clientBuilder.defaultSystem(instruction);
+			if (systemPrompt != null) {
+				clientBuilder.defaultSystem(systemPrompt);
 			}
 
 			chatClient = clientBuilder.build();
@@ -52,7 +53,8 @@ public class DefaultBuilder extends Builder {
 
 		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
 				.stream(true)
-				.systemPromptTemplate(instruction)
+				.userPromptTemplate(instruction)
+				.systemPrompt(systemPrompt)
 				.chatClient(chatClient);
 
 		if (outputKey != null && !outputKey.isEmpty()) {

@@ -19,15 +19,20 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
+import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.tool.ToolCallback;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -35,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import static com.alibaba.cloud.ai.graph.agent.PoemTool.createToolCallback;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
@@ -57,8 +63,13 @@ public class InterruptionTest {
 				.name("single_agent")
 				.model(chatModel)
 				.compileConfig(getCompileConfig())
+				.tools(List.of(createToolCallback()))
+				.hooks(List.of(HumanInTheLoopHook.builder().approvalOn("poem", ToolConfig.builder().description("Please confirm tool execution.").build()).build()))
 				.outputKey("article")
 				.build();
+
+		GraphRepresentation representation = agent.getGraph().getGraph(GraphRepresentation.Type.PLANTUML);
+		System.out.println(representation.content());
 
 		try {
 			RunnableConfig runnableConfig = RunnableConfig.builder().threadId("123").build();
@@ -70,11 +81,15 @@ public class InterruptionTest {
 				System.out.println("interruption metadata: " + interruptionMetadata);
 			}
 
-			RunnableConfig resumeRunnableConfig = RunnableConfig.builder().threadId("123")
-					.addHumanFeedback(Map.of("type", "resume"))
-					.addStateUpdate(Map.of("type", "resume"))
-					.build();
+			InterruptionMetadata interruptionMetadata = (InterruptionMetadata) obj;
+			InterruptionMetadata.Builder newBuilder = InterruptionMetadata.builder();
+			interruptionMetadata.getToolFeedbacks().forEach(toolFeedback -> {
+				newBuilder.addToolFeedback(InterruptionMetadata.ToolFeedback.builder(toolFeedback).result(InterruptionMetadata.ToolFeedback.FeedbackResult.REJECTED).build());
+			});
 
+			RunnableConfig resumeRunnableConfig = RunnableConfig.builder().threadId("123")
+					.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, newBuilder.build())
+					.build();
 			result = agent.invoke("", resumeRunnableConfig);
 			System.out.println(result.get());
 		} catch (java.util.concurrent.CompletionException e) {

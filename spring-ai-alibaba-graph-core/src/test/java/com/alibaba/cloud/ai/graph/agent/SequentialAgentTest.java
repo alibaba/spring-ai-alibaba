@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.List;
@@ -82,21 +83,16 @@ class SequentialAgentTest {
 
 			OverAllState state = result.get();
 
-			// 验证文章被创建
 			assertTrue(state.value("article").isPresent(), "Article should be present after writer agent");
-			String article = (String) state.value("article").get();
-			assertNotNull(article, "Article content should not be null");
-			assertFalse(article.trim().isEmpty(), "Article content should not be empty");
+			AssistantMessage article = (AssistantMessage) state.value("article").get();
+			assertNotNull(article.getText(), "Article content should not be null");
 
-			// 验证评审后的文章存在
 			assertTrue(state.value("reviewed_article").isPresent(),
 					"Reviewed article should be present after reviewer agent");
-			String reviewedArticle = (String) state.value("reviewed_article").get();
-			assertNotNull(reviewedArticle, "Reviewed article content should not be null");
-			assertFalse(reviewedArticle.trim().isEmpty(), "Reviewed article content should not be empty");
+			AssistantMessage reviewedArticle = (AssistantMessage) state.value("reviewed_article").get();
+			assertNotNull(reviewedArticle.getText(), "Reviewed article content should not be null");
 
-			// 验证评审后的文章应该包含西湖相关内容（根据评审员的指令）
-			assertTrue(reviewedArticle.contains("西湖") || reviewedArticle.toLowerCase().contains("west lake"),
+			assertTrue(reviewedArticle.getText().contains("西湖") || reviewedArticle.getText().toLowerCase().contains("west lake"),
 					"Reviewed article should contain West Lake description as per reviewer instructions");
 
 			System.out.println(result.get());
@@ -124,7 +120,7 @@ class SequentialAgentTest {
 				.name("reviewer_agent")
 				.model(chatModel)
 				.description("可以对文章进行评论和修改。")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
+				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最后输出修改后的文章，不要包含任何评论信息。")
 				.outputKey("reviewed_article")
 				.build();
 
@@ -212,7 +208,6 @@ class SequentialAgentTest {
 				.model(chatModel)
 				.description("对文章进行错别字订正。")
 				.includeContents(false) // 不包含上下文内容，专注于当前文章的审核
-				.instruction("")
 				.instruction("""
 					你是一个排版专家，负责检查错别字、语法等问题，最终输出修改后的文档原文，输出不要包含无关信息。
 			

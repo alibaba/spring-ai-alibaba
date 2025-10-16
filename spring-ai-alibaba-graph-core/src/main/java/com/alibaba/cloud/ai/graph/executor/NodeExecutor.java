@@ -137,11 +137,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return handleEmbeddedFlux(context, embedFlux.get(), updateState, resultValue);
 			}
 
-			Optional<AsyncGenerator<NodeOutput>> embedGenerator = getEmbedGenerator(updateState);
-			if (embedGenerator.isPresent()) {
-				return handleEmbeddedGenerator(context, embedGenerator.get(), updateState, resultValue);
-			}
-
 			context.updateState(updateState);
 
 			if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
@@ -337,89 +332,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 		return processedFlux
 			.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
-	}
-
-	/**
-	 * Gets embed generator from partial state.
-	 * @param partialState the partial state containing generator instances
-	 * @return an Optional containing Data with the generator if found, empty otherwise
-	 */
-	private Optional<AsyncGenerator<NodeOutput>> getEmbedGenerator(Map<String, Object> partialState) {
-		return partialState.entrySet()
-			.stream()
-			.filter(e -> e.getValue() instanceof AsyncGenerator)
-			.findFirst()
-			.map(generatorEntry -> (AsyncGenerator<NodeOutput>) generatorEntry.getValue());
-	}
-
-	/**
-	 * Handles embedded generator processing.
-	 * @param context the graph runner context
-	 * @param generator the embedded generator to handle
-	 * @param partialState the partial state
-	 * @param resultValue the atomic reference to store the result value
-	 * @return Flux of GraphResponse with embedded generator handling result
-	 */
-	private Flux<GraphResponse<NodeOutput>> handleEmbeddedGenerator(GraphRunnerContext context,
-			AsyncGenerator<NodeOutput> generator, Map<String, Object> partialState,
-			AtomicReference<Object> resultValue) {
-
-		return Flux.<GraphResponse<NodeOutput>>create(sink -> {
-			try {
-				generator.stream().peek(output -> {
-					if (output != null) {
-						output.setSubGraph(true);
-						sink.next(GraphResponse.of(output));
-					}
-				});
-
-				var iteratorResult = AsyncGenerator.resultValue(generator);
-
-				if (iteratorResult.isPresent()) {
-					var nodeResultValue = iteratorResult.get();
-
-					if (nodeResultValue instanceof InterruptionMetadata) {
-						context.setReturnFromEmbedWithValue(nodeResultValue);
-						sink.complete();
-						return;
-					}
-
-					if (nodeResultValue != null) {
-						if (nodeResultValue instanceof Map<?, ?>) {
-							Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
-								.stream()
-								.filter(e -> !(e.getValue() instanceof Flux))
-								.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-							Map<String, Object> intermediateState = OverAllState.updateState(context.getCurrentStateData(),
-									partialStateWithoutFlux, context.getKeyStrategyMap());
-							var currentState = OverAllState.updateState(intermediateState,
-									(Map<String, Object>) nodeResultValue, context.getKeyStrategyMap());
-							context.setCurrentStatData(currentState);
-							context.getOverallState().updateState(currentState);
-						}
-						else {
-							throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
-						}
-					}
-				}
-				sink.complete();
-			}
-			catch (Exception e) {
-				sink.error(e);
-			}
-		}).concatWith(Flux.defer(() -> {
-			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
-				context.setCurrentStatData(nextCommand.update());
-
-				return mainGraphExecutor.execute(context, resultValue);
-			}
-			catch (Exception e) {
-				return Flux.just(GraphResponse.error(e));
-			}
-		}));
 	}
 
 }

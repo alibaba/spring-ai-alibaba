@@ -85,6 +85,8 @@ public class ReactAgent extends BaseAgent {
 
 	private String instruction;
 
+	private String systemPrompt;
+
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, Builder builder) throws GraphStateException {
@@ -96,6 +98,10 @@ public class ReactAgent extends BaseAgent {
 		this.shouldContinueFunc = builder.shouldContinueFunc;
 		this.hooks = builder.hooks;
 		this.includeContents = builder.includeContents;
+		this.inputSchema = builder.inputSchema;
+		this.inputType = builder.inputType;
+		this.outputSchema = builder.outputSchema;
+		this.outputType = builder.outputType;
 	}
 
 	public static com.alibaba.cloud.ai.graph.agent.Builder builder() {
@@ -306,10 +312,10 @@ public class ReactAgent extends BaseAgent {
 			String modelDestination,
 			String endDestination) throws GraphStateException {
 		if (!hooks.isEmpty()) {
-			Hook last = hooks.get(0);
+			Hook last = hooks.get(hooks.size() - 1);
 			addHookEdge(graph,
-					last.getName() + "." + hookType,
 					defaultNext,
+					last.getName() + "." + hookType,
 					modelDestination, endDestination,
 					last.canJumpTo());
 		}
