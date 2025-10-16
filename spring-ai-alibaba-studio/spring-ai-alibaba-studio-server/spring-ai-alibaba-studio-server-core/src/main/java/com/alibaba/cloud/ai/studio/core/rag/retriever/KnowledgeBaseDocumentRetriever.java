@@ -92,15 +92,26 @@ public class KnowledgeBaseDocumentRetriever implements DocumentRetriever {
 
 		try {
 			List<Document> documents = new ArrayList<>();
-			for (CompletableFuture<List<Document>> future : futureList) {
-				documents.addAll(future.get(SEARCH_TIMEOUT, TimeUnit.SECONDS));
-			}
+		for (CompletableFuture<List<Document>> future : futureList) {
+			documents.addAll(future.get(SEARCH_TIMEOUT, TimeUnit.SECONDS));
+		}
 
-			List<Document> results = documents.stream()
-				.sorted(Comparator.comparing(Document::getScore, Comparator.nullsLast(Comparator.reverseOrder())))
-				.filter(x -> x.getScore() != null && x.getScore() > searchOptions.getSimilarityThreshold())
-				.limit(searchOptions.getTopK())
-				.toList();
+		// Check required parameters and provide user prompts if missing
+		if (searchOptions.getSimilarityThreshold() == null) {
+			throw new BizException(ErrorCode.MISSING_PARAMS.toError("similarityThreshold"), "请设置相似度阈值参数 similarityThreshold");
+		}
+		if (searchOptions.getTopK() == null) {
+			throw new BizException(ErrorCode.MISSING_PARAMS.toError("topK"), "请设置返回文档数量参数 topK");
+		}
+		
+		float threshold = searchOptions.getSimilarityThreshold();
+		int topK = searchOptions.getTopK();
+		
+		List<Document> results = documents.stream()
+			.sorted(Comparator.comparing(Document::getScore, Comparator.nullsLast(Comparator.reverseOrder())))
+			.filter(x -> x.getScore() != null && x.getScore() > threshold)
+			.limit(topK)
+			.toList();
 
 			LogUtils.monitor("DocumentRetriever", "retrieve", start, SUCCESS, query.text(), results.size());
 			return results;
