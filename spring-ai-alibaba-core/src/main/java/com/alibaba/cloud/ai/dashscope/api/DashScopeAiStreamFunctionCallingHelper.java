@@ -139,7 +139,7 @@ public class DashScopeAiStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, reasoningContent);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, reasoningContent, null);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {

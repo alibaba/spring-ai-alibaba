@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.mcp.router.core.vectorstore.SimpleMcpServerVectorSto
 import com.alibaba.cloud.ai.mcp.router.nacos.NacosMcpServiceDiscovery;
 import com.alibaba.cloud.ai.mcp.router.service.McpProxyService;
 import com.alibaba.cloud.ai.mcp.router.service.McpRouterService;
+import com.alibaba.cloud.ai.mcp.router.session.McpSessionStore;
 import com.alibaba.nacos.api.exception.NacosException;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -53,7 +54,7 @@ import java.util.Properties;
  *
  * @author aias00
  */
-@AutoConfigureAfter(McpServiceDiscoveryAutoConfiguration.class)
+@AutoConfigureAfter({ McpServiceDiscoveryAutoConfiguration.class, McpSessionStoreAutoConfiguration.class })
 @EnableConfigurationProperties({ McpRouterProperties.class, NacosMcpProperties.class, McpServerProperties.class })
 @ConditionalOnProperty(prefix = McpRouterProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = false)
@@ -109,8 +110,9 @@ public class NacosMcpRouterAutoConfiguration {
 	 */
 	@Bean
 	@ConditionalOnMissingBean
-	public McpProxyService mcpProxyService(NacosMcpOperationService nacosMcpOperationService) {
-		return new McpProxyService(nacosMcpOperationService);
+	public McpProxyService mcpProxyService(NacosMcpOperationService nacosMcpOperationService,
+			McpSessionStore sessionStore) {
+		return new McpProxyService(nacosMcpOperationService, sessionStore);
 	}
 
 	/**

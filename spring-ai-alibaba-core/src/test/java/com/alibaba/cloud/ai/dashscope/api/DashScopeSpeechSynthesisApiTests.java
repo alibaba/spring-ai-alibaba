@@ -128,4 +128,26 @@ class DashScopeSpeechSynthesisApiTests {
 		assertEquals("mp3", DashScopeAudioSpeechApi.ResponseFormat.MP3.getValue(), "MP3 should have value 'mp3'");
 	}
 
+	@Test
+	void testTTSModelEnum() {
+		// Test TTSModel enum values including new models
+		assertEquals("sambert-zhichu-v1", DashScopeAudioSpeechApi.TTSModel.SAM_BERT_ZHICHU_V1.getValue(),
+				"SAM_BERT_ZHICHU_V1 should have correct value");
+		assertEquals("cosyvoice-v1", DashScopeAudioSpeechApi.TTSModel.COSYVOICE_V1.getValue(),
+				"COSYVOICE_V1 should have value 'cosyvoice-v1'");
+		assertEquals("qwen3-tts-flash", DashScopeAudioSpeechApi.TTSModel.QWEN3_TTS_FLASH.getValue(),
+				"QWEN3_TTS_FLASH should have value 'qwen3-tts-flash'");
+	}
+
+	@Test
+	void testAudioSpeechModelEnum() {
+		// Test AudioSpeechModel enum values including new models
+		assertEquals("sambert-zhichu-v1", DashScopeAudioSpeechApi.AudioSpeechModel.SAM_BERT_ZHICHU_V1.getValue(),
+				"SAM_BERT_ZHICHU_V1 should have correct value");
+		assertEquals("cosyvoice-v1", DashScopeAudioSpeechApi.AudioSpeechModel.COSYVOICE_V1.getValue(),
+				"COSYVOICE_V1 should have value 'cosyvoice-v1'");
+		assertEquals("qwen3-tts-flash", DashScopeAudioSpeechApi.AudioSpeechModel.QWEN3_TTS_FLASH.getValue(),
+				"QWEN3_TTS_FLASH should have value 'qwen3-tts-flash'");
+	}
+
 }

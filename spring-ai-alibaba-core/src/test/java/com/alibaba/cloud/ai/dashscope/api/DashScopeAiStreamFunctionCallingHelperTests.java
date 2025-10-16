@@ -234,7 +234,7 @@ public class DashScopeAiStreamFunctionCallingHelperTests {
 		ChatCompletionFunction function = new ChatCompletionFunction(functionName, arguments);
 		ToolCall toolCall = new ToolCall(toolId, "function", function);
 		ChatCompletionMessage message = new ChatCompletionMessage("", Role.ASSISTANT, null, null, List.of(toolCall),
-				null);
+				null, null);
 		Choice choice = new Choice(finishReason, message, null);
 		ChatCompletionOutput output = new ChatCompletionOutput(null, List.of(choice), null);
 		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);
@@ -248,7 +248,7 @@ public class DashScopeAiStreamFunctionCallingHelperTests {
 		ChatCompletionFunction function2 = new ChatCompletionFunction("function-2", "{\"param2\":\"value2\"}");
 		ToolCall toolCall2 = new ToolCall("tool-2", "function", function2);
 		ChatCompletionMessage message = new ChatCompletionMessage("", Role.ASSISTANT, null, null,
-				List.of(toolCall1, toolCall2), null);
+				List.of(toolCall1, toolCall2), null, null);
 		Choice choice = new Choice(null, message, null);
 		ChatCompletionOutput output = new ChatCompletionOutput(null, List.of(choice), null);
 		TokenUsage usage = new TokenUsage(10, 5, 15, null, null, null, null, null, null);

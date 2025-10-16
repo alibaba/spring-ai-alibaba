@@ -17,6 +17,8 @@
 package com.alibaba.cloud.ai.mcp.router.service;
 
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
+import com.alibaba.cloud.ai.mcp.router.session.McpSessionStore;
+import com.alibaba.cloud.ai.mcp.router.session.SessionInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
@@ -37,11 +39,18 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * MCP 代理服务 参考 spring-ai-alibaba-mcp-gateway-nacos 的实现，提供完整的 MCP 服务代理功能
+ * MCP Proxy Service
+ *
+ * <p>
+ * Provides MCP service proxy functionality with dual-layer session management.
+ * </p>
+ *
+ * @author spring-ai-alibaba
+ * @since 2025.0.0
  */
 public class McpProxyService {
 
@@ -51,11 +60,14 @@ public class McpProxyService {
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
-	// 缓存已建立的连接
+	private final McpSessionStore sessionStore;
+
 	private final Map<String, McpSyncClient> clientConnections = new ConcurrentHashMap<>();
 
-	public McpProxyService(NacosMcpOperationService nacosMcpOperationService) {
+	public McpProxyService(NacosMcpOperationService nacosMcpOperationService, McpSessionStore sessionStore) {
 		this.nacosMcpOperationService = nacosMcpOperationService;
+		this.sessionStore = sessionStore;
+		logger.info("Initialized McpProxyService with SessionStore: {}", sessionStore.getClass().getSimpleName());
 	}
 
 	/**
@@ -393,8 +405,11 @@ public class McpProxyService {
 			// 根据协议类型建立连接
 			McpSyncClient client = createClient(protocol, mcpEndpointInfo, remoteConfig);
 			if (client != null) {
+				// 双层存储：本地缓存连接对象 + SessionStore 存储元信息
 				clientConnections.put(serviceName, client);
-				logger.info("Successfully established connection to service: {}", serviceName);
+				sessionStore.put(serviceName, new SessionInfo(serviceName));
+				logger.info("Successfully established connection to service: {} (stored in both local cache and session store)",
+						serviceName);
 				return true;
 			}
 
@@ -444,7 +459,9 @@ public class McpProxyService {
 		if (client != null) {
 			try {
 				client.close();
-				logger.info("Closed connection to service: {}", serviceName);
+				sessionStore.remove(serviceName);
+				logger.info("Closed connection to service: {} (removed from both local cache and session store)",
+						serviceName);
 			}
 			catch (Exception e) {
 				logger.warn("Failed to close connection to service: {}", serviceName, e);
@@ -466,23 +483,44 @@ public class McpProxyService {
 			}
 		}
 		clientConnections.clear();
+		sessionStore.clear();
+		logger.info("Closed all connections (cleared both local cache and session store)");
 	}
 
 	/**
 	 * 检查连接状态
+	 * <p>
+	 * 检查顺序：
+	 * <ol>
+	 * <li>检查本地连接缓存（实际连接对象）</li>
+	 * <li>检查 SessionStore（会话元信息）- 支持跨实例发现</li>
+	 * </ol>
 	 * @param serviceName 服务名称
 	 * @return 是否已连接
 	 */
 	public boolean isConnected(String serviceName) {
-		return clientConnections.containsKey(serviceName);
+		// 优先检查本地连接缓存
+		if (clientConnections.containsKey(serviceName)) {
+			return true;
+		}
+		// 检查 SessionStore - 如果其他实例已初始化，则本实例也应建立连接
+		return sessionStore.contains(serviceName);
 	}
 
 	/**
 	 * 获取连接数量
-	 * @return 当前连接数量
+	 * @return 当前连接数量（本地缓存）
 	 */
 	public int getConnectionCount() {
 		return clientConnections.size();
+	}
+
+	/**
+	 * 获取已初始化服务数量（跨实例）
+	 * @return 在 SessionStore 中记录的服务数量
+	 */
+	public int getInitializedServiceCount() {
+		return sessionStore.size();
 	}
 
 	/**
@@ -566,10 +604,19 @@ public class McpProxyService {
 	/**
 	 * 获取客户端连接（用于调试）
 	 * @param serviceName 服务名称
-	 * @return MCP客户端
+	 * @return MCP客户端，如果本地不存在则返回 null
 	 */
 	public McpSyncClient getClient(String serviceName) {
 		return clientConnections.get(serviceName);
+	}
+
+	/**
+	 * 获取 Session 元信息（用于调试和监控）
+	 * @param serviceName 服务名称
+	 * @return Session 元信息
+	 */
+	public SessionInfo getSessionInfo(String serviceName) {
+		return sessionStore.get(serviceName);
 	}
 
 }

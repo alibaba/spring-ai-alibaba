@@ -124,7 +124,13 @@ public class DashScopeAudioSpeechApi {
 		SAM_BERT_ZHIWEI_V1("sambert-zhiwei-v1"),
 
 		@JsonProperty("sambert-zhiting-v1")
-		SAM_BERT_ZHITING_V1("sambert-zhiting-v1");
+		SAM_BERT_ZHITING_V1("sambert-zhiting-v1"),
+
+		@JsonProperty("cosyvoice-v1")
+		COSYVOICE_V1("cosyvoice-v1"),
+
+		@JsonProperty("qwen3-tts-flash")
+		QWEN3_TTS_FLASH("qwen3-tts-flash");
 
 		private final String model;
 
@@ -159,7 +165,13 @@ public class DashScopeAudioSpeechApi {
 		SAM_BERT_ZHIWEI_V1("sambert-zhiwei-v1"),
 
 		@JsonProperty("sambert-zhiting-v1")
-		SAM_BERT_ZHITING_V1("sambert-zhiting-v1");
+		SAM_BERT_ZHITING_V1("sambert-zhiting-v1"),
+
+		@JsonProperty("cosyvoice-v1")
+		COSYVOICE_V1("cosyvoice-v1"),
+
+		@JsonProperty("qwen3-tts-flash")
+		QWEN3_TTS_FLASH("qwen3-tts-flash");
 
 		public final String value;
 
