@@ -187,7 +187,7 @@ export default function KnowledgeBaseSelectorComp() {
                   <InputNumber
                     min={1}
                     max={20}
-                    placeholder="3"
+                    placeholder="0"
                     value={file_search?.top_k}
                     onChange={(val) => {
                       onAppConfigChange({
@@ -203,7 +203,7 @@ export default function KnowledgeBaseSelectorComp() {
                 <div className={styles.desc}>
                   {$i18n.get({
                     id: 'main.components.KnowledgeSelectorComp.index.topKDesc',
-                    dm: '从所有知识库的检索结果中返回前 K 个最相关的文档，默认为 3',
+                    dm: '从所有知识库的检索结果中返回前 K 个最相关的文档',
                   })}
                 </div>
                 <Flex align="center" justify="space-between">
@@ -222,7 +222,7 @@ export default function KnowledgeBaseSelectorComp() {
                     min={0}
                     max={1}
                     step={0.1}
-                    placeholder="0.2"
+                    placeholder="0"
                     value={file_search?.similarity_threshold}
                     onChange={(val) => {
                       onAppConfigChange({
@@ -238,7 +238,7 @@ export default function KnowledgeBaseSelectorComp() {
                 <div className={styles.desc}>
                   {$i18n.get({
                     id: 'main.components.KnowledgeSelectorComp.index.thresholdDesc',
-                    dm: '过滤掉相似度低于此阈值的文档，范围 0-1，默认为 0.2',
+                    dm: '过滤掉相似度低于此阈值的文档，范围 0-1',
                   })}
                 </div>
               </Flex>
