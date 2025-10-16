@@ -42,6 +42,7 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 
 import java.util.HashMap;
 import java.util.List;
@@ -291,7 +292,27 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
-		AssistantMessage message = (AssistantMessage) messages.get(messages.size() - 1);
+
+        if (messages.isEmpty()) {
+            return "end";
+        }
+
+        Object last = messages.get(messages.size() - 1);
+		AssistantMessage message = null;
+
+        //兼容Spring AI新旧版本
+        if (last instanceof AssistantMessage) {
+            message = (AssistantMessage) last;
+        } else if (last instanceof chatResponse) {
+            ChatResponse chatResponse = (ChatResponse) last;
+            if (chatResponse.getResult() == null || chatResponse.getResult().getOutput() == null) {
+                return "end";
+            }
+            message = chatResponse.getResult().getOutput();
+        } else {
+            throw new IllegalStateException("Unexpected message type: " + last.getClass());
+        }
+
 		if (message.hasToolCalls()) {
 			return "continue";
 		}
