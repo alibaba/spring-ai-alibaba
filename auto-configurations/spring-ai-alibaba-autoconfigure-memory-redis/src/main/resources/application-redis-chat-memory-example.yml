@@ -6,30 +6,30 @@ spring:
     alibaba:
       memory:
         redis:
-            # Enable Redis Memory (default: true)
-            enabled: true
-            
-            # Redis Server Configuration
-            host: localhost
-            port: 6379
-            
-            # Database Index - THIS IS THE KEY FEATURE!
-            # Redis supports 16 databases (0-15)
-            # Different applications or environments can use different databases
-            # for isolation
-            database: 0  # Change to 1, 2, etc. for different environments
-            
-            # Optional: Redis password
-            # password: your-redis-password
-            
-            # Connection timeout in milliseconds
-            timeout: 2000
-            
-            # Connection Pool Configuration
-            # Adjust these based on your application's concurrency requirements
-            max-total: 8     # Maximum number of connections in the pool
-            max-idle: 8      # Maximum number of idle connections
-            min-idle: 0      # Minimum number of idle connections
+          # Enable Redis Memory (default: true)
+          enabled: true
+
+          # Redis Server Configuration
+          host: localhost
+          port: 6379
+
+          # Database Index - THIS IS THE KEY FEATURE!
+          # Redis supports 16 databases (0-15)
+          # Different applications or environments can use different databases
+          # for isolation
+          database: 0  # Change to 1, 2, etc. for different environments
+
+          # Optional: Redis password
+          # password: your-redis-password
+
+          # Connection timeout in milliseconds
+          timeout: 2000
+
+          # Connection Pool Configuration
+          # Adjust these based on your application's concurrency requirements
+          max-total: 8     # Maximum number of connections in the pool
+          max-idle: 8      # Maximum number of idle connections
+          min-idle: 0      # Minimum number of idle connections
 
 ---
 # Example: Development environment using database 0
@@ -41,8 +41,8 @@ spring:
     alibaba:
       memory:
         redis:
-            database: 0
-            host: localhost
+          database: 0
+          host: localhost
 
 ---
 # Example: Test environment using database 1
@@ -52,11 +52,10 @@ spring:
       on-profile: test
   ai:
     alibaba:
-      redis:
-        chat:
-          memory:
-            database: 1
-            host: localhost
+      memory:
+        redis:
+          database: 1
+          host: localhost
 
 ---
 # Example: Production environment using database 2 with password
@@ -66,14 +65,12 @@ spring:
       on-profile: prod
   ai:
     alibaba:
-      redis:
-        chat:
-          memory:
-            database: 2
-            host: redis.production.example.com
-            port: 6379
-            password: ${REDIS_PASSWORD}  # Use environment variable for security
-            max-total: 20
-            max-idle: 10
-            min-idle: 5
-
+      memory:
+        redis:
+          database: 2
+          host: redis.production.example.com
+          port: 6379
+          password: ${REDIS_PASSWORD}  # Use environment variable for security
+          max-total: 20
+          max-idle: 10
+          min-idle: 5
