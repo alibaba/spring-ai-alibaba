@@ -24,7 +24,6 @@ import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.entryOf;
@@ -75,6 +74,7 @@ import static java.util.Optional.ofNullable;
  * @since 1.0.0.1
  */
 public final class OverAllState implements Serializable {
+	public static final Object MARK_FOR_REMOVAL = new Object();
 
 	/**
 	 * Internal map storing the actual state data. All get/set operations on state values
@@ -267,7 +267,11 @@ public final class OverAllState implements Serializable {
 			if (strategy == null) {
 				strategy = KeyStrategy.REPLACE;
 			}
-			this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
+			if (partialState.get(key) == MARK_FOR_REMOVAL) {
+				this.data.remove(key);
+			} else {
+				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
+			}
 		});
 		return data();
 	}
@@ -325,8 +329,15 @@ public final class OverAllState implements Serializable {
 			return state;
 		}
 
-		return Stream.concat(state.entrySet().stream(), partialState.entrySet().stream())
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, OverAllState::mergeFunction));
+		Map<String, Object> result = new HashMap<>(state);
+		for (Map.Entry<String, Object> entry : partialState.entrySet()) {
+			if (entry.getValue() == MARK_FOR_REMOVAL) {
+				result.remove(entry.getKey());
+			} else {
+				result.put(entry.getKey(), entry.getValue());
+			}
+		}
+		return result;
 	}
 
 	/**
@@ -364,6 +375,9 @@ public final class OverAllState implements Serializable {
 		}
 
 		return partialState.entrySet().stream().map(entry -> {
+			if (entry.getValue() == MARK_FOR_REMOVAL) {
+				return entryOf(entry.getKey(), null);
+			}
 			KeyStrategy channel = keyStrategies != null ? keyStrategies.get(entry.getKey()) : null;
 
 			// If no specific strategy is found, use the default REPLACE strategy

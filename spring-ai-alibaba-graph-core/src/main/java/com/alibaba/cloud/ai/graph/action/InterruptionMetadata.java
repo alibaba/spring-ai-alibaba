@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,7 +60,11 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 		return ofNullable(metadata).map(m -> m.get(key));
 	}
 
-	public List<ToolFeedback> getToolFeedbacks() {
+	public Optional<Map<String, Object>> metadata() {
+		return Optional.of(Collections.unmodifiableMap(metadata));
+	}
+
+	public List<ToolFeedback> toolFeedbacks() {
 		if (toolFeedbacks == null) {
 			return new ArrayList<>();
 		}
@@ -88,6 +93,12 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 		return new Builder();
 	}
 
+	public static Builder builder(InterruptionMetadata interruptionMetadata) {
+		return new Builder(interruptionMetadata.metadata().orElse(Map.of()))
+			.nodeId(interruptionMetadata.node())
+			.state(interruptionMetadata.state());
+	}
+
 	/**
 	 * A builder for creating instances of {@link InterruptionMetadata}.
 	 *
@@ -113,6 +124,11 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 			this.toolFeedbacks = new ArrayList<>();
 		}
 
+		public Builder(Map<String, Object> metadata) {
+			super(metadata);
+			this.toolFeedbacks = new ArrayList<>();
+		}
+
 		public Builder nodeId(String nodeId) {
 			this.nodeId = nodeId;
 			return this;
@@ -125,6 +141,11 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 
 		public Builder addToolFeedback(ToolFeedback toolFeedback) {
 			this.toolFeedbacks.add(toolFeedback);
+			return this;
+		}
+
+		public Builder toolFeedbacks(List<ToolFeedback> toolFeedbacks) {
+			this.toolFeedbacks = new ArrayList<>(toolFeedbacks);
 			return this;
 		}
 
@@ -229,7 +250,9 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 		}
 
 		public enum FeedbackResult {
-			APPROVED, REJECTED, EDITED
+			APPROVED,
+			REJECTED,
+			EDITED;
 		}
 	}
 

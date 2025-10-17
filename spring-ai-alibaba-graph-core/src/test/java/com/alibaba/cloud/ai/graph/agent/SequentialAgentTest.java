@@ -65,13 +65,13 @@ class SequentialAgentTest {
 			.name("reviewer_agent")
 			.model(chatModel)
 			.description("可以对文章进行评论和修改。")
-			.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
+			.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最终只返回修改后的文章，不要包含任何评论信息。")
 			.outputKey("reviewed_article")
 			.build();
 
 		SequentialAgent blogAgent = SequentialAgent.builder()
 			.name("blog_agent")
-			.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
+			.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论。")
 			.subAgents(List.of(writerAgent, reviewerAgent))
 			.build();
 

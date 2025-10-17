@@ -153,6 +153,8 @@ public abstract class Agent {
 		return compiledGraph.getState(config);
 	}
 
+	// ------------------- Invoke with OverAllState as return value -------------------
+
 	public Optional<OverAllState> invoke(String message) throws GraphRunnerException {
 		Map<String, Object> inputs = buildMessageInput(message);
 		return doInvoke(inputs);
@@ -182,6 +184,40 @@ public abstract class Agent {
 		Map<String, Object> inputs = buildMessageInput(messages);
 		return doInvoke(inputs, config);
 	}
+
+	// ------------------- Invoke  methods with Output as return value -------------------
+
+	public Optional<NodeOutput> invokeAndGetOutput(String message) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doInvokeAndGetOutput(inputs);
+	}
+
+	public Optional<NodeOutput> invokeAndGetOutput(String message, RunnableConfig config) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doInvokeAndGetOutput(inputs, config);
+	}
+
+	public Optional<NodeOutput> invokeAndGetOutput(UserMessage message) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doInvokeAndGetOutput(inputs);
+	}
+
+	public Optional<NodeOutput> invokeAndGetOutput(UserMessage message, RunnableConfig config) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(message);
+		return doInvokeAndGetOutput(inputs, config);
+	}
+
+	public Optional<NodeOutput> invokeAndGetOutput(List<Message> messages) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(messages);
+		return doInvokeAndGetOutput(inputs);
+	}
+
+	public Optional<NodeOutput> invokeAndGetOutput(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
+		Map<String, Object> inputs = buildMessageInput(messages);
+		return doInvokeAndGetOutput(inputs, config);
+	}
+
+	// ------------------- Stream methods -------------------
 
 	public Flux<NodeOutput> stream(String message) throws GraphRunnerException {
 		Map<String, Object> inputs = buildMessageInput(message);
@@ -215,12 +251,22 @@ public abstract class Agent {
 
 	protected Optional<OverAllState> doInvoke(Map<String, Object> input) throws GraphRunnerException {
 		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.call(input);
+		return compiledGraph.invoke(input);
 	}
 
 	protected Optional<OverAllState> doInvoke(Map<String, Object> input, RunnableConfig runnableConfig) throws GraphRunnerException {
 		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.call(input, runnableConfig);
+		return compiledGraph.invoke(input, runnableConfig);
+	}
+
+	protected Optional<NodeOutput> doInvokeAndGetOutput(Map<String, Object> input) throws GraphRunnerException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.invokeAndGetOutput(input);
+	}
+
+	protected Optional<NodeOutput> doInvokeAndGetOutput(Map<String, Object> input, RunnableConfig runnableConfig) throws GraphRunnerException {
+		CompiledGraph compiledGraph = getAndCompileGraph();
+		return compiledGraph.invokeAndGetOutput(input, runnableConfig);
 	}
 
 	protected Flux<NodeOutput> doStream(Map<String, Object> input) throws GraphRunnerException {

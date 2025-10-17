@@ -207,7 +207,7 @@ public class StateGraphMemorySaverTest {
 
 		var runnableConfig = RunnableConfig.builder().threadId("thread_1").build();
 
-		var state = app.call(inputs, runnableConfig);
+		var state = app.invoke(inputs, runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, state.get().value("steps").get());
@@ -232,7 +232,7 @@ public class StateGraphMemorySaverTest {
 		// SUBMIT NEW THREAD 2
 		runnableConfig = RunnableConfig.builder().threadId("thread_2").build();
 
-		state = app.call(inputs, runnableConfig);
+		state = app.invoke(inputs, runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, state.get().value("steps").get());
@@ -246,7 +246,7 @@ public class StateGraphMemorySaverTest {
 		}
 
 		// RE-SUBMIT THREAD 1
-		state = app.call(Map.of(), runnableConfig);
+		state = app.invoke(Map.of(), runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps + 1, state.get().value("steps").get());

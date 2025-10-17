@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -37,13 +38,7 @@ import java.util.Map;
 
 import reactor.core.publisher.Flux;
 
-import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
-
 public class AgentLlmNode implements NodeAction {
-
-	private String userPromptTemplate;
-
-	private String systemPrompt;
 
 	private List<Advisor> advisors = new ArrayList<>();
 
@@ -57,15 +52,23 @@ public class AgentLlmNode implements NodeAction {
 
 	private Boolean stream = Boolean.FALSE;
 
-	public AgentLlmNode() {
-	}
+	private ToolCallingChatOptions toolCallingChatOptions;
 
-	public AgentLlmNode(String userPromptTemplate, List<Advisor> advisors, List<ToolCallback> toolCallbacks, ChatClient chatClient, boolean stream) {
-		this.userPromptTemplate = userPromptTemplate;
-		this.advisors = advisors;
-		this.toolCallbacks = toolCallbacks;
-		this.chatClient = chatClient;
-		this.stream = stream;
+	public AgentLlmNode(Builder builder) {
+		this.outputKey = builder.outputKey;
+		this.outputSchema = builder.outputSchema;
+		this.stream = builder.stream;
+		if (builder.advisors != null) {
+			this.advisors = builder.advisors;
+		}
+		if (builder.toolCallbacks != null) {
+			this.toolCallbacks = builder.toolCallbacks;
+		}
+		this.chatClient = builder.chatClient;
+		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
+				.toolCallbacks(toolCallbacks)
+				.internalToolExecutionEnabled(false)
+				.build();
 	}
 
 	public static Builder builder() {
@@ -74,26 +77,15 @@ public class AgentLlmNode implements NodeAction {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
-		List<Message> messages = new ArrayList<>();
-		if (state.value("messages").isPresent()) {
-			Object messagesValue = state.value("messages").get();
-			messages = (List<Message>)messagesValue;
-//			messages = convertToMessages(messagesValue);
-		}
-
-		if (messages.isEmpty()) {
-			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be provided");
-		}
-
 		// add streaming support
 		if (Boolean.TRUE.equals(stream)) {
-			Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(messages, state.data()).stream().chatResponse();
+			Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(state).stream().chatResponse();
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
 		}
 		else {
 			AssistantMessage responseOutput;
 			try {
-				ChatResponse response = buildChatClientRequestSpec(messages, state.data()).call().chatResponse();
+				ChatResponse response = buildChatClientRequestSpec(state).call().chatResponse();
 				responseOutput = response.getResult().getOutput();
 			}
 			catch (Exception e) {
@@ -105,6 +97,7 @@ public class AgentLlmNode implements NodeAction {
 			if (StringUtils.hasLength(this.outputKey)) {
 				updatedState.put(this.outputKey, responseOutput);
 			}
+
 			return updatedState;
 		}
 	}
@@ -119,44 +112,54 @@ public class AgentLlmNode implements NodeAction {
 	}
 
 	public void augmentUserMessage(List<Message> messages, String outputSchema) {
+		if (!StringUtils.hasText(outputSchema)) {
+			return;
+		}
+
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
 			if (message instanceof UserMessage userMessage) {
 				messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema).build());
 				break;
 			}
+			if (message instanceof AgentInstructionMessage templatedUserMessage) {
+				messages.set(i, templatedUserMessage.mutate().text(templatedUserMessage.getText() + System.lineSeparator() + outputSchema).build());
+				break;
+			}
+
 			if (i == 0) {
 				messages.add(new UserMessage(outputSchema));
 			}
 		}
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(List<Message> messages, Map<String, Object> params) {
-		augmentUserMessage(messages, outputSchema);
-
-		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.options(ToolCallingChatOptions.builder()
-						.toolCallbacks(toolCallbacks)
-						.internalToolExecutionEnabled(false)
-						.build())
-				.messages(messages)
-				.advisors(advisors);
-
-		if (StringUtils.hasLength(systemPrompt)) {
-			chatClientRequestSpec.system(systemPrompt);
-		}
-
-		if (messages.isEmpty() && !StringUtils.hasLength(userPromptTemplate)) {
-			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be provided for agent definition.");
-		}
-
-		if (StringUtils.hasLength(userPromptTemplate)) {
-			if (!params.isEmpty()) {
-				messages.add(new UserMessage(renderPromptTemplate(userPromptTemplate, params)));
-			} else {
-				messages.add(new UserMessage(userPromptTemplate));
+	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params) {
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			Message message = messages.get(i);
+			if (message instanceof AgentInstructionMessage instructionMessage) {
+				AgentInstructionMessage newMessage = instructionMessage.mutate().text(renderPromptTemplate(instructionMessage.getText(), params)).build();
+				messages.set(i, newMessage);
+				break;
 			}
 		}
+	}
+
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state) {
+		if (state.value("messages").isEmpty()) {
+			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
+		}
+
+		@SuppressWarnings("unchecked")
+		List<Message> messages = (List<Message>) state.value("messages").get();
+
+		augmentUserMessage(messages, outputSchema);
+
+		renderTemplatedUserMessage(messages, state.data());
+
+		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
+				.options(toolCallingChatOptions)
+				.messages(messages)
+				.advisors(advisors);
 
 		return chatClientRequestSpec;
 	}
@@ -169,25 +172,11 @@ public class AgentLlmNode implements NodeAction {
 
 		private ChatClient chatClient;
 
-		private String userPromptTemplate;
-
-		private String systemPrompt;
-
 		private List<Advisor> advisors;
 
 		private List<ToolCallback> toolCallbacks;
 
 		private Boolean stream;
-
-		public Builder userPromptTemplate(String userPromptTemplate) {
-			this.userPromptTemplate = userPromptTemplate;
-			return this;
-		}
-
-		public Builder systemPrompt(String systemPrompt) {
-			this.systemPrompt = systemPrompt;
-			return this;
-		}
 
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
@@ -220,20 +209,7 @@ public class AgentLlmNode implements NodeAction {
 		}
 
 		public AgentLlmNode build() {
-			AgentLlmNode llmNode = new AgentLlmNode();
-			llmNode.userPromptTemplate = this.userPromptTemplate;
-			llmNode.systemPrompt = this.systemPrompt;
-			llmNode.outputKey = this.outputKey;
-			llmNode.outputSchema = this.outputSchema;
-			llmNode.stream = this.stream;
-			if (this.advisors != null) {
-				llmNode.advisors = this.advisors;
-			}
-			if (this.toolCallbacks != null) {
-				llmNode.toolCallbacks = this.toolCallbacks;
-			}
-			llmNode.chatClient = this.chatClient;
-			return llmNode;
+			return new AgentLlmNode(this);
 		}
 
 	}

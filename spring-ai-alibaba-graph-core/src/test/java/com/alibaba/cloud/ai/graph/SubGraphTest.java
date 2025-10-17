@@ -463,7 +463,7 @@ public class SubGraphTest {
 			.addNode("step_3", _makeNode("step3"))
 			.addNode("subgraph", AsyncNodeActionWithConfig.node_async((t, config) -> {
 				// Reference the parent class Overallstate or create a new one
-				return workflowChild.compile().call(Map.copyOf(t.data())).orElseThrow().data();
+				return workflowChild.compile().invoke(Map.copyOf(t.data())).orElseThrow().data();
 			}))
 			.addEdge(START, "step_1")
 			.addEdge("step_1", "step_2")
@@ -528,7 +528,7 @@ public class SubGraphTest {
 
 		CompiledGraph compile = parentGraph.compile();
 		System.out.println(compile.getGraph(GraphRepresentation.Type.PLANTUML).content());
-		OverAllState state = compile.call(Map.of()).orElseThrow();
+		OverAllState state = compile.invoke(Map.of()).orElseThrow();
 		assertEquals(
 				Map.of("messages", List.of("go to p_node1", "p_node1", "p_node2", "go to node 1", "node1", "node2")),
 				state.data());

@@ -72,7 +72,7 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 			ToolResponseMessage rejectedMessage = new ToolResponseMessage(responses);
 
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-				Optional<ToolFeedback> toolFeedbackOpt = interruptionMetadata.getToolFeedbacks().stream()
+				Optional<ToolFeedback> toolFeedbackOpt = interruptionMetadata.toolFeedbacks().stream()
 						.filter(tf -> tf.getName().equals(toolCall.name()))
 						.findFirst();
 
@@ -86,7 +86,7 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 						AssistantMessage.ToolCall editedToolCall = new AssistantMessage.ToolCall(toolCall.id(), toolCall.type(), toolCall.name(), toolFeedback.getArguments());
 						newToolCalls.add(editedToolCall);
 					} else if (result == FeedbackResult.REJECTED) {
-						ToolResponseMessage.ToolResponse response = new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(), "Tool call rejected by human.");
+						ToolResponseMessage.ToolResponse response = new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(), String.format("Tool call request for %s has been rejected by human. The reason for why this tool is rejected and the suggestion for next possible tool choose is listed as below:\n %s.", toolFeedback.getName(), toolFeedback.getDescription()));
 						responses.add(response);
 					}
 				} else {
@@ -156,11 +156,11 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 	}
 
 	private boolean validateFeedback(InterruptionMetadata feedback) {
-		if (feedback == null || feedback.getToolFeedbacks() == null || feedback.getToolFeedbacks().isEmpty()) {
+		if (feedback == null || feedback.toolFeedbacks() == null || feedback.toolFeedbacks().isEmpty()) {
 			return false;
 		}
 
-		List<InterruptionMetadata.ToolFeedback> toolFeedbacks = feedback.getToolFeedbacks();
+		List<InterruptionMetadata.ToolFeedback> toolFeedbacks = feedback.toolFeedbacks();
 
 		// 1. Ensure each ToolFeedback's result is not empty
 		for (InterruptionMetadata.ToolFeedback toolFeedback : toolFeedbacks) {

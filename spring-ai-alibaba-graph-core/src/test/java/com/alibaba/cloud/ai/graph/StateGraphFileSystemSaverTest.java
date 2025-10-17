@@ -100,7 +100,7 @@ public class StateGraphFileSystemSaverTest {
 				saver.deleteFile(runnableConfig_1);
 				saver.deleteFile(runnableConfig_2);
 
-				Optional<OverAllState> state = app.call(Map.of(), runnableConfig_1);
+				Optional<OverAllState> state = app.invoke(Map.of(), runnableConfig_1);
 
 				assertTrue(state.isPresent());
 				assertEquals(expectedSteps + (execution * 2), (int) state.get().data().get("steps"));
@@ -122,7 +122,7 @@ public class StateGraphFileSystemSaverTest {
 
 				// SUBMIT NEW THREAD 2
 
-				state = app.call(emptyMap(), runnableConfig_2);
+				state = app.invoke(emptyMap(), runnableConfig_2);
 
 				assertTrue(state.isPresent());
 				assertEquals(expectedSteps + execution, (int) state.get().data().get("steps"));
@@ -133,7 +133,7 @@ public class StateGraphFileSystemSaverTest {
 				assertEquals(expectedSteps + execution, messages.size());
 
 				// RE-SUBMIT THREAD 1
-				state = app.call(Map.of(), runnableConfig_1);
+				state = app.invoke(Map.of(), runnableConfig_1);
 
 				assertTrue(state.isPresent());
 				assertEquals(expectedSteps + 1 + execution * 2, (int) state.get().data().get("steps"));
@@ -189,7 +189,7 @@ public class StateGraphFileSystemSaverTest {
 
 		RunnableConfig runnableConfig_2 = RunnableConfig.builder().threadId("thread_2").build();
 
-		var state = app.call(Map.of(), runnableConfig_1);
+		var state = app.invoke(Map.of(), runnableConfig_1);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, (int) state.get().data().get("steps"));
@@ -216,7 +216,7 @@ public class StateGraphFileSystemSaverTest {
 
 		// SUBMIT NEW THREAD 2
 
-		state = app.call(emptyMap(), runnableConfig_2);
+		state = app.invoke(emptyMap(), runnableConfig_2);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, (int) state.get().data().get("steps"));
@@ -234,7 +234,7 @@ public class StateGraphFileSystemSaverTest {
 		assertEquals(expectedSteps, messages.size());
 
 		// RE-SUBMIT THREAD 1
-		state = app.call(Map.of(), runnableConfig_1);
+		state = app.invoke(Map.of(), runnableConfig_1);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, (int) state.get().data().get("steps"));
@@ -288,7 +288,7 @@ public class StateGraphFileSystemSaverTest {
 
 		var runnableConfig_2 = RunnableConfig.builder().threadId("thread_2").build();
 
-		var state_1 = app.call(Map.of(), runnableConfig_1);
+		var state_1 = app.invoke(Map.of(), runnableConfig_1);
 
 		assertTrue(state_1.isPresent());
 		assertEquals(expectedSteps, (int) state_1.get().data().get("steps"));
@@ -313,7 +313,7 @@ public class StateGraphFileSystemSaverTest {
 
 		// SUBMIT NEW THREAD 2
 
-		var state_2 = app.call(emptyMap(), runnableConfig_2);
+		var state_2 = app.invoke(emptyMap(), runnableConfig_2);
 
 		assertTrue(state_2.isPresent());
 		assertEquals(expectedSteps, (int) state_2.get().data().get("steps"));

@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.graph.agent.hook;
 
 public enum JumpTo {
-	tools,
+	tool,
 	model,
 	end
 }

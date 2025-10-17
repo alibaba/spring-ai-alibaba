@@ -53,8 +53,6 @@ public class DefaultBuilder extends Builder {
 
 		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
 				.stream(true)
-				.userPromptTemplate(instruction)
-				.systemPrompt(systemPrompt)
 				.chatClient(chatClient);
 
 		if (outputKey != null && !outputKey.isEmpty()) {

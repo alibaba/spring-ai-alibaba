@@ -454,12 +454,16 @@ public class CompiledGraph {
 			GraphRunner runner = new GraphRunner(this, config);
 			return runner.run(overAllState).flatMap(data -> {
 				if (data.isDone()) {
-					// TODO, collect data.resultValue if necessary.
-					return Flux.empty();
+					if (data.resultValue().isPresent() && data.resultValue().get() instanceof NodeOutput) {
+						return Flux.just((NodeOutput)data.resultValue().get());
+					} else {
+						return Flux.empty();
+					}
 				}
 				if (data.isError()) {
 					return Mono.fromFuture(data.getOutput()).onErrorMap(throwable -> throwable).flux();
 				}
+
 				return Mono.fromFuture(data.getOutput()).flux();
 			});
 		}
@@ -502,7 +506,7 @@ public class CompiledGraph {
 	 * @param config the invoke configuration
 	 * @return an Optional containing the final state
 	 */
-	public Optional<OverAllState> call(Map<String, Object> inputs, RunnableConfig config) {
+	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config) {
 		return Optional.ofNullable(stream(inputs, config).last().map(NodeOutput::state).block());
 	}
 
@@ -512,9 +516,9 @@ public class CompiledGraph {
 	 * @param config the configuration
 	 * @return an Optional containing the final state
 	 */
-	public Optional<OverAllState> call(OverAllState overAllState, RunnableConfig config) {
+	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
 		return Optional
-			.ofNullable(streamFromInitialNode(overAllState, config).last().map(NodeOutput::state).block()); // 阻塞等待结果
+			.ofNullable(streamFromInitialNode(overAllState, config).last().map(NodeOutput::state).block());
 	}
 
 	/**
@@ -522,8 +526,20 @@ public class CompiledGraph {
 	 * @param inputs the input map
 	 * @return an Optional containing the final state
 	 */
-	public Optional<OverAllState> call(Map<String, Object> inputs) {
-		return call(inputs, RunnableConfig.builder().build());
+	public Optional<OverAllState> invoke(Map<String, Object> inputs) {
+		return invoke(inputs, RunnableConfig.builder().build());
+	}
+
+	public Optional<NodeOutput> invokeAndGetOutput(OverAllState overAllState, RunnableConfig config) {
+		return Optional.ofNullable(streamFromInitialNode(overAllState, config).last().block());
+	}
+
+	public Optional<NodeOutput> invokeAndGetOutput(Map<String, Object> inputs, RunnableConfig config) {
+		return Optional.ofNullable(stream(inputs, config).last().block());
+	}
+
+	public Optional<NodeOutput> invokeAndGetOutput(Map<String, Object> inputs) {
+		return invokeAndGetOutput(inputs, RunnableConfig.builder().build());
 	}
 
 	/**

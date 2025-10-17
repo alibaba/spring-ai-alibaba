@@ -51,7 +51,7 @@ public class AgentTool implements BiFunction<String, ToolContext, AssistantMessa
 			UserMessage userMessage = new UserMessage(input);
 			Map<String, Object> inputs = newState.updateState(Map.of("messages", userMessage));
 
-			Optional<OverAllState> resultState = agent.getAndCompileGraph().call(inputs);
+			Optional<OverAllState> resultState = agent.getAndCompileGraph().invoke(inputs);
 
 			Optional<List> messages = resultState.flatMap(overAllState -> overAllState.value("messages", List.class));
 			if (messages.isPresent()) {

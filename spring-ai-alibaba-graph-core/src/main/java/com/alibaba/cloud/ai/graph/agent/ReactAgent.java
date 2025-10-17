@@ -37,6 +37,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.BeforeModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookType;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
+import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
@@ -84,8 +85,6 @@ public class ReactAgent extends BaseAgent {
 	private int iterations = 0;
 
 	private String instruction;
-
-	private String systemPrompt;
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
@@ -168,7 +167,7 @@ public class ReactAgent extends BaseAgent {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return new AgentSubGraphNode(this.name, includeContents, outputKeyToParent, this.compiledGraph);
+		return new AgentSubGraphNode(this.name, includeContents, outputKeyToParent, this.compiledGraph, this.instruction);
 	}
 
 	@Override
@@ -379,8 +378,8 @@ public class ReactAgent extends BaseAgent {
 			if (canJumpTo.contains(JumpTo.end)) {
 				destinations.put(endDestination, endDestination);
 			}
-			if (canJumpTo.contains(JumpTo.tools)) {
-				destinations.put("tools", "tools");
+			if (canJumpTo.contains(JumpTo.tool)) {
+				destinations.put("tool", "tool");
 			}
 			if (canJumpTo.contains(JumpTo.model) && !name.equals(modelDestination)) {
 				destinations.put(modelDestination, modelDestination);
@@ -414,7 +413,7 @@ public class ReactAgent extends BaseAgent {
 		return switch (jumpTo) {
 			case model -> modelDestination;
 			case end -> endDestination;
-			case tools -> "tools";
+			case tool -> "tool";
 		};
 	}
 
@@ -575,6 +574,8 @@ public class ReactAgent extends BaseAgent {
 
 		private boolean includeContents;
 
+		private String instruction;
+
 		private String outputKeyToParent;
 
 		private CompiledGraph childGraph;
@@ -582,8 +583,9 @@ public class ReactAgent extends BaseAgent {
 		private CompileConfig parentCompileConfig;
 
 		public SubGraphNodeAdapter(boolean includeContents, String outputKeyToParent,
-				CompiledGraph childGraph, CompileConfig parentCompileConfig) {
+				CompiledGraph childGraph, String instruction, CompileConfig parentCompileConfig) {
 			this.includeContents = includeContents;
+			this.instruction = instruction;
 			this.outputKeyToParent = outputKeyToParent;
 			this.childGraph = childGraph;
 			this.parentCompileConfig = parentCompileConfig;
@@ -600,11 +602,18 @@ public class ReactAgent extends BaseAgent {
 			Object parentMessages = null;
 			if (includeContents) {
 				// by default, includeContents is true, we pass down the messages from the parent state
+				if (StringUtils.hasLength(instruction)) {
+					// instruction will be added as a special UserMessage to the child graph.
+					parentState.updateState(Map.of("messages", new AgentInstructionMessage(instruction)));
+				}
 				subGraphFlux = childGraph.graphResponseStream(parentState, subGraphRunnableConfig);
 			} else {
 				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
 				parentMessages = stateForChild.remove("messages");
-				// use the instruction directly, without any user message or parent messages.
+				if (StringUtils.hasLength(instruction)) {
+					// instruction will be added as a special UserMessage to the child graph.
+					stateForChild.put("messages", new AgentInstructionMessage(instruction));
+				}
 				subGraphFlux = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			}
 
@@ -650,9 +659,9 @@ public class ReactAgent extends BaseAgent {
 
 		private final CompiledGraph subGraph;
 
-		public AgentSubGraphNode(String id, boolean includeContents, String outputKeyToParent, CompiledGraph subGraph) {
+		public AgentSubGraphNode(String id, boolean includeContents, String outputKeyToParent, CompiledGraph subGraph, String instruction) {
 			super(Objects.requireNonNull(id, "id cannot be null"),
-					(config) -> AsyncNodeActionWithConfig.node_async(new SubGraphNodeAdapter(includeContents, outputKeyToParent, subGraph, config)));
+					(config) -> AsyncNodeActionWithConfig.node_async(new SubGraphNodeAdapter(includeContents, outputKeyToParent, subGraph, instruction, config)));
 			this.subGraph = subGraph;
 		}
 
