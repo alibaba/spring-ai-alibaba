@@ -65,6 +65,7 @@
 
         <!-- Spring AI Alibaba Autoconfigure -->
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
+        <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory-redis</module>
 
         <!-- Spring AI Alibaba MCP -->
         <!-- Nacos3 version -->
@@ -89,6 +90,7 @@
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-client</module>
         <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-registry</module>
+        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-memory-redis</module>
 
     </modules>
 
