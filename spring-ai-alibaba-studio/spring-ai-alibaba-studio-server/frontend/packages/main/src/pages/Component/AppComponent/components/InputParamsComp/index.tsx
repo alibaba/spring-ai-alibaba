@@ -31,8 +31,8 @@ export interface IOutputParamItem {
 }
 
 export interface IConfigInput {
-  user_params: IUserParamItem[];
-  system_params: IParamItem[];
+  user_params?: IUserParamItem[];
+  system_params?: IParamItem[];
 }
 
 interface IProps {
@@ -42,7 +42,7 @@ interface IProps {
 }
 
 interface IInputCompItemProps {
-  params: IParamItem[];
+  params?: IParamItem[];
   name: string;
   onChange: (val: IParamItem[]) => void;
   disabled?: boolean;
@@ -52,10 +52,10 @@ export function InputCompItem(props: IInputCompItemProps) {
   const [expand, setExpand] = useState(true);
   const changeRowItem = (payload: Partial<IParamItem>, ind: number) => {
     props.onChange(
-      props.params.map((item, index) => ({
+      props.params?.map((item, index) => ({
         ...item,
         ...(ind === index ? payload : {}),
-      })),
+      })) || [],
     );
   };
   return (
@@ -125,7 +125,7 @@ export function InputCompItem(props: IInputCompItemProps) {
               })}
             </span>
           </Flex>
-          {props.params.map((item, index) => (
+          {props.params?.map((item, index) => (
             <Flex
               key={`${item.field}_${index}`}
               className={styles['form-row-item']}
@@ -259,14 +259,14 @@ export function InputCompItem(props: IInputCompItemProps) {
 
 export default function InputParamsComp(props: IProps) {
   const handleChangeUserParams = (params: IParamItem[], code: string) => {
-    const newUserParams = props.input.user_params.map((item) => {
+    const newUserParams = props.input.user_params?.map((item) => {
       if (item.code === code)
         return {
           ...item,
           params,
         };
       return item;
-    });
+    }) || [];
     props.onChange({
       user_params: newUserParams,
     });
@@ -274,7 +274,7 @@ export default function InputParamsComp(props: IProps) {
 
   return (
     <Flex vertical gap={20}>
-      {props.input.user_params.map((item) => (
+      {props.input.user_params?.map((item) => (
         <InputCompItem
           onChange={(val) => handleChangeUserParams(val, item.code)}
           name={item.name}

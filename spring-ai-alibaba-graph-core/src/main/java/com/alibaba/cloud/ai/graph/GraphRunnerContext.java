@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.springframework.util.CollectionUtils;
@@ -205,9 +206,8 @@ public class GraphRunnerContext {
 			if (result == null) {
 				throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
 			}
-			var updatedState = OverAllState.updateState(state, command.update(), getKeyStrategyMap());
-			this.overallState.updateState(command.update());
-			return new Command(result, updatedState);
+			this.mergeIntoCurrentState(command.update());
+			return new Command(result, this.currentStateData);
 		}
 		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}
@@ -262,13 +262,13 @@ public class GraphRunnerContext {
 						listener.onStart(getCurrentNodeId(), getCurrentStateData(), config);
 						break;
 					case END:
-						listener.onComplete(getCurrentNodeId(), getCurrentStateData(), config);
+						listener.onComplete(END, getCurrentStateData(), config);
 						break;
 					case NODE_BEFORE:
-						listener.onStart(getCurrentNodeId(), getCurrentStateData(), config);
+						listener.before(getCurrentNodeId(), getCurrentStateData(), config, SystemClock.now());
 						break;
 					case NODE_AFTER:
-						listener.onComplete(getCurrentNodeId(), getCurrentStateData(), config);
+						listener.after(getCurrentNodeId(), getCurrentStateData(), config, SystemClock.now());
 						break;
 					case ERROR:
 						listener.onError(getCurrentNodeId(), getCurrentStateData(), e, config);
@@ -294,7 +294,7 @@ public class GraphRunnerContext {
 	 *
 	 * @param updateState the state updates to apply
 	 */
-	public void updateState(Map<String, Object> updateState) {
+	public void mergeIntoCurrentState(Map<String , Object> updateState) {
 		this.currentStateData = OverAllState.updateState(this.currentStateData,
 				updateState, getKeyStrategyMap());
 		this.overallState.updateState(updateState);

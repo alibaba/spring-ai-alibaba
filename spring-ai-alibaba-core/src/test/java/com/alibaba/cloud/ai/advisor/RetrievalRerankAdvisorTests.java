@@ -52,14 +52,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
- * RetrievalRerankAdvisor 的测试类
+ * Test class for RetrievalRerankAdvisor
  *
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  * @author brianxiadong
  * @since 1.0.0-M5.1
  */
-@Disabled("1.0.0-RC1删除API，测试类需要重构")
+@Disabled("1.0.0-RC1 API removed, test class needs refactoring")
 @ExtendWith(MockitoExtension.class)
 class RetrievalRerankAdvisorTests {
 
@@ -94,26 +94,26 @@ class RetrievalRerankAdvisorTests {
 
 	@BeforeEach
 	void setUp() {
-		// 使用默认设置初始化
+		// Initialize with default settings
 		advisor = new RetrievalRerankAdvisor(vectorStore, rerankModel);
 
-		// 设置测试文档
+		// Set test documents
 		testDocument = new Document(TEST_DOCUMENT_TEXT);
 
-		// 设置测试请求
+		// Set test request
 		testRequest = ChatClientRequest.builder()
 			.prompt(new Prompt(TEST_USER_TEXT, ChatOptions.builder().model(DashScopeApi.DEFAULT_CHAT_MODEL).build()))
 
 			.build();
 
-		// 设置测试响应
+		// Set test response
 		Generation generation = new Generation(new AssistantMessage(TEST_DOCUMENT_TEXT));
 		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 		testResponse = ChatClientResponse.builder().chatResponse(chatResponse).build();
 	}
 
 	/**
-	 * 测试默认构造函数
+	 * Test default constructor
 	 */
 	@Test
 	void testDefaultConstructor() {
@@ -124,7 +124,7 @@ class RetrievalRerankAdvisorTests {
 	}
 
 	/**
-	 * 测试带有自定义分数的构造函数
+	 * Test constructor with custom score
 	 */
 	@Test
 	void testConstructorWithScore() {
@@ -134,7 +134,7 @@ class RetrievalRerankAdvisorTests {
 	}
 
 	/**
-	 * 测试带有搜索请求的构造函数
+	 * Test constructor with search request
 	 */
 	@Test
 	void testConstructorWithSearchRequest() {
@@ -145,18 +145,18 @@ class RetrievalRerankAdvisorTests {
 	}
 
 	/**
-	 * 测试成功检索和重排序文档的 aroundCall
+	 * Test successful document retrieval and reranking aroundCall
 	 */
 	@Test
 	void testAroundCallWithDocuments() {
-		// 准备测试数据
+		// Prepare test data
 		List<Document> documents = List.of(testDocument);
 		DocumentWithScore documentWithScore = DocumentWithScore.builder()
 			.withDocument(testDocument)
 			.withScore(0.8)
 			.build();
 
-		// 创建包含文档列表的 adviseContext
+		// Create adviseContext containing document list
 		Map<String, Object> adviseContext = new HashMap<>();
 		adviseContext.put(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS, documents);
 		ChatClientResponse mockResponse = ChatClientResponse.builder()
@@ -164,15 +164,15 @@ class RetrievalRerankAdvisorTests {
 			.context(adviseContext)
 			.build();
 
-		// 设置 Mock 行为
+		// Set Mock behavior
 		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(documents);
 		when(rerankModel.call(any(RerankRequest.class))).thenReturn(new RerankResponse(List.of(documentWithScore)));
 		when(callChain.nextCall(any())).thenReturn(mockResponse);
 
-		// 执行测试
+		// Execute test
 		ChatClientResponse response = advisor.adviseCall(testRequest, callChain);
 
-		// 验证响应
+		// Verify response
 		assertThat(response).isNotNull();
 		assertThat(response.chatResponse().getResults()).hasSize(1);
 		assertThat(response.context()).containsKey(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS);
@@ -184,14 +184,14 @@ class RetrievalRerankAdvisorTests {
 	}
 
 	/**
-	 * 测试空文档检索的 aroundCall
+	 * Test aroundCall with empty document retrieval
 	 */
 	@Test
 	void testAroundCallWithEmptyDocuments() {
-		// 设置 Mock 行为返回空列表
+		// Set Mock behavior to return empty list
 		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(Collections.emptyList());
 
-		// 创建包含空文档列表的 adviseContext
+		// Create adviseContext containing empty document list
 		Map<String, Object> adviseContext = new HashMap<>();
 		adviseContext.put(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS, Collections.emptyList());
 		ChatClientResponse mockResponse = ChatClientResponse.builder()
@@ -201,10 +201,10 @@ class RetrievalRerankAdvisorTests {
 
 		when(callChain.nextCall(any())).thenReturn(mockResponse);
 
-		// 执行测试
+		// Execute test
 		ChatClientResponse response = advisor.adviseCall(testRequest, callChain);
 
-		// 验证响应
+		// Verify response
 		assertThat(response).isNotNull();
 		assertThat(response.context()).containsKey(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS);
 		assertThat(response.context().get(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS)).isNotNull()
@@ -214,26 +214,26 @@ class RetrievalRerankAdvisorTests {
 	}
 
 	/**
-	 * 测试流式处理的 aroundStream
+	 * Test streaming aroundStream
 	 */
 	@Test
 	void testAroundStream() {
-		// 准备测试数据
+		// Prepare test data
 		List<Document> documents = List.of(testDocument);
 		DocumentWithScore documentWithScore = DocumentWithScore.builder()
 			.withDocument(testDocument)
 			.withScore(0.8)
 			.build();
 
-		// 设置 Mock 行为
+		// Set Mock behavior
 		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(documents);
 		when(rerankModel.call(any(RerankRequest.class))).thenReturn(new RerankResponse(List.of(documentWithScore)));
 		when(streamChain.nextStream(any())).thenReturn(Flux.just(testResponse));
 
-		// 执行测试
+		// Execute test
 		Flux<ChatClientResponse> responseFlux = advisor.adviseStream(testRequest, streamChain);
 
-		// 验证响应
+		// Verify response
 		StepVerifier.create(responseFlux).assertNext(response -> {
 			assertThat(response).isNotNull();
 			assertThat(response.chatResponse().getResults()).hasSize(1);
@@ -241,11 +241,11 @@ class RetrievalRerankAdvisorTests {
 	}
 
 	/**
-	 * 测试过滤表达式处理
+	 * Test filter expression handling
 	 */
 	@Test
 	void testFilterExpression() {
-		// 准备测试数据
+		// Prepare test data
 		Map<String, Object> context = new HashMap<>();
 		context.put(RetrievalRerankAdvisor.FILTER_EXPRESSION, "type == 'test'");
 
@@ -254,7 +254,7 @@ class RetrievalRerankAdvisorTests {
 			.context(context)
 			.build();
 
-		// 创建包含过滤表达式的 adviseContext
+		// Create adviseContext containing filter expression
 		Map<String, Object> responseContext = new HashMap<>();
 		responseContext.put(RetrievalRerankAdvisor.FILTER_EXPRESSION, "type == 'test'");
 		responseContext.put(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS, List.of(testDocument));
@@ -263,14 +263,14 @@ class RetrievalRerankAdvisorTests {
 			.context(responseContext)
 			.build();
 
-		// 设置 Mock 行为
+		// Set Mock behavior
 		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(testDocument));
 		when(callChain.nextCall(any())).thenReturn(mockResponse);
 
-		// 执行测试
+		// Execute test
 		ChatClientResponse response = advisor.adviseCall(request, callChain);
 
-		// 验证响应
+		// Verify response
 		assertThat(response).isNotNull();
 		assertThat(response.context()).containsKey(RetrievalRerankAdvisor.FILTER_EXPRESSION);
 		assertThat(response.context().get(RetrievalRerankAdvisor.FILTER_EXPRESSION)).isNotNull()
@@ -278,21 +278,21 @@ class RetrievalRerankAdvisorTests {
 	}
 
 	/**
-	 * 测试低于最小分数的文档过滤
+	 * Test filtering documents below minimum score
 	 */
 	@Test
 	void testScoreFiltering() {
-		// 创建带有自定义最小分数的 advisor
+		// Create advisor with custom minimum score
 		advisor = new RetrievalRerankAdvisor(vectorStore, rerankModel, 0.9);
 
-		// 准备测试数据
+		// Prepare test data
 		List<Document> documents = List.of(testDocument);
 		DocumentWithScore documentWithScore = DocumentWithScore.builder()
 			.withDocument(testDocument)
-			.withScore(0.8) // 分数低于最小值
+			.withScore(0.8) // Score below minimum value
 			.build();
 
-		// 创建包含空文档列表的 adviseContext
+		// Create adviseContext containing empty document list
 		Map<String, Object> adviseContext = new HashMap<>();
 		adviseContext.put(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS, Collections.emptyList());
 		ChatClientResponse mockResponse = ChatClientResponse.builder()
@@ -300,15 +300,15 @@ class RetrievalRerankAdvisorTests {
 			.context(adviseContext)
 			.build();
 
-		// 设置 Mock 行为
+		// Set Mock behavior
 		when(vectorStore.similaritySearch(any(SearchRequest.class))).thenReturn(documents);
 		when(rerankModel.call(any(RerankRequest.class))).thenReturn(new RerankResponse(List.of(documentWithScore)));
 		when(callChain.nextCall(any())).thenReturn(mockResponse);
 
-		// 执行测试
+		// Execute test
 		ChatClientResponse response = advisor.adviseCall(testRequest, callChain);
 
-		// 验证响应 - 应该过滤掉低分文档
+		// Verify response - should filter out low-score documents
 		assertThat(response).isNotNull();
 		assertThat(response.context()).containsKey(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS);
 		assertThat(response.context().get(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS)).isNotNull()

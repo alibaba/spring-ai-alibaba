@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * 从自然语言中提取参数。返回三部分：{@code is_success}、{@code data}、{@code reason}
+ * Extract parameters from natural language. Returns three parts: {@code is_success}, {@code data}, {@code reason}
  */
 public class ParameterParsingNode implements NodeAction {
 
@@ -118,7 +118,7 @@ public class ParameterParsingNode implements NodeAction {
 
 	private final String reasonKey;
 
-	// 由用户提供的一个指令，可以有{}占位符号
+	// An instruction provided by the user, can have {} placeholders
 	private final String instruction;
 
 	public ParameterParsingNode(ChatClient chatClient, String inputText, String inputTextKey, List<Param> parameters,
@@ -189,7 +189,7 @@ public class ParameterParsingNode implements NodeAction {
 				.getResult()
 				.getOutput()
 				.getText();
-			// 去掉Markdown标记
+			// Remove Markdown markers
 			if (rawJson != null) {
 				rawJson = rawJson.replace("```json", "").replace("```", "").trim();
 			}

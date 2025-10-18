@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
@@ -74,9 +75,9 @@ public class CompiledGraph {
 	public final CompileConfig compileConfig;
 
 	/**
-	 * The Nodes.
+	 * The Node Factories - stores factory functions instead of instances to ensure thread safety.
 	 */
-	final Map<String, AsyncNodeActionWithConfig> nodes = new LinkedHashMap<>();
+	final Map<String, Node.ActionFactory> nodeFactories = new LinkedHashMap<>();
 
 	/**
 	 * The Edges.
@@ -124,11 +125,11 @@ public class CompiledGraph {
 			.interruptsAfter(processedData.interruptsAfter())
 			.build();
 
-		// EVALUATES NODES
+		// STORE NODE FACTORIES - for thread safety, we store factories instead of instances
 		for (var n : processedData.nodes().elements) {
 			var factory = n.actionFactory();
 			Objects.requireNonNull(factory, format("action factory for node id '%s' is null!", n.id()));
-			nodes.put(n.id(), factory.apply(compileConfig));
+			nodeFactories.put(n.id(), factory);
 		}
 
 		// EVALUATE EDGES
@@ -139,7 +140,7 @@ public class CompiledGraph {
 			}
 			else {
 				Supplier<Stream<EdgeValue>> parallelNodeStream = () -> targets.stream()
-					.filter(target -> nodes.containsKey(target.id()));
+					.filter(target -> nodeFactories.containsKey(target.id()));
 
 				var parallelNodeEdges = parallelNodeStream.get()
 					.map(target -> new Edge(target.id()))
@@ -167,13 +168,18 @@ public class CompiledGraph {
 				}
 
 				var actions = parallelNodeStream.get()
-					// .map( target -> nodes.remove(target.id()) )
-					.map(target -> nodes.get(target.id()))
+					.map(target -> {
+						try {
+							return nodeFactories.get(target.id()).apply(compileConfig);
+						} catch (GraphStateException ex) {
+							throw new RuntimeException("Failed to create parallel node action for target: " + target.id() + ". Cause: " + ex.getMessage(), ex);
+						}
+					})
 					.toList();
 
 				var parallelNode = new ParallelNode(e.sourceId(), actions, keyStrategyMap, compileConfig);
 
-				nodes.put(parallelNode.id(), parallelNode.actionFactory().apply(compileConfig));
+				nodeFactories.put(parallelNode.id(), parallelNode.actionFactory());
 
 				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
 
@@ -377,10 +383,15 @@ public class CompiledGraph {
 	}
 
 	/**
-	 * Package-private access to nodes for ReactiveNodeGenerator
+	 * Package-private access to nodes for ReactiveNodeGenerator.
 	 */
 	public AsyncNodeActionWithConfig getNodeAction(String nodeId) {
-		return nodes.get(nodeId);
+		Node.ActionFactory factory = nodeFactories.get(nodeId);
+		try {
+			return factory != null ? factory.apply(compileConfig) : null;
+		} catch (GraphStateException e) {
+			throw new RuntimeException("Failed to create node action for nodeId: " + nodeId + ". Cause: " + e.getMessage(), e);
+		}
 	}
 
 	/**

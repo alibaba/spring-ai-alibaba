@@ -299,7 +299,7 @@ public class DashScopeMultiModalChatTests {
 		}).verifyComplete();
 	}
 
-	// =============== 集成测试案例 ===============
+	// =============== Integration Test Cases ===============
 
 	/**
 	 * Integration test for image processing with URL This test will only run if

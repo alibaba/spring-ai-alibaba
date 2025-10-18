@@ -138,7 +138,6 @@ public class RecursiveCharacterTextSplitterTest {
 	public void testSplitText_WithSpecialCharacters() {
 		String text = "特殊字符测试！@#$%^&*()_+{}[]";
 		List<String> result = splitter.splitText(text);
-
 		assertNotNull(result);
 		assertFalse(result.isEmpty());
 		assertEquals("特殊字符测试", result.get(0));

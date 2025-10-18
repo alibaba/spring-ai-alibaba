@@ -30,20 +30,20 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 /**
- * 对某一个列表进行过滤、排序、获取数据
+ * Filter, sort, and retrieve data from a list
  *
- * @param <T> 列表中的元素
+ * @param <T> the elements in the list
  */
 public class ListOperatorNode<T> implements NodeAction {
 
 	private static final Logger log = LoggerFactory.getLogger(ListOperatorNode.class);
 
-	// 输入输出的类型
+	// Input/output type
 	public enum Mode {
 
-		JSON_STR, // JSON字符串
-		LIST, // 列表
-		ARRAY // 数组
+		JSON_STR, // JSON string
+		LIST, // List
+		ARRAY // Array
 
 	}
 

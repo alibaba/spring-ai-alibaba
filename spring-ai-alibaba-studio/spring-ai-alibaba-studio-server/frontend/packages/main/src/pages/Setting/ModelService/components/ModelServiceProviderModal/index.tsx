@@ -28,6 +28,8 @@ const ModelServiceProviderModal: React.FC<ModelServiceProviderModalProps> = ({
       setProtocols(res.data);
       form.setFieldsValue({
         protocol: res.data[0],
+        completionsPath: '/v1/chat/completions',
+        embeddingsPath: '/v1/embeddings',
       });
     });
   }, []);
@@ -43,6 +45,8 @@ const ModelServiceProviderModal: React.FC<ModelServiceProviderModalProps> = ({
         credential_config: {
           api_key: values.api_key,
           endpoint: values.endpoint,
+          completions_path: values.completionsPath || '/v1/chat/completions',
+          embeddings_path: values.embeddingsPath || '/v1/embeddings',
         },
       };
 
@@ -179,6 +183,26 @@ const ModelServiceProviderModal: React.FC<ModelServiceProviderModalProps> = ({
               id: 'main.pages.Setting.ModelService.components.ModelServiceProviderModal.index.enterYourApiUrl',
               dm: '输入您的API URL，请在服务商文档获取，如 https://dashscope.aliyuncs.com/compatible-mode',
             })}
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="completionsPath"
+          label="Completions Path"
+          tooltip="Chat补全接口路径，默认为 /v1/chat/completions"
+        >
+          <Input
+            placeholder="/v1/chat/completions"
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="embeddingsPath"
+          label="Embeddings Path"
+          tooltip="嵌入接口路径，默认为 /v1/embeddings"
+        >
+          <Input
+            placeholder="/v1/embeddings"
           />
         </Form.Item>
 

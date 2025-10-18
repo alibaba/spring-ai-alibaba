@@ -83,10 +83,10 @@ public class QuestionClassifierNode implements NodeAction {
 
 	private String inputText;
 
-	// 类别里可能存在{}这样的占位变量需要处理
+	// Categories may contain {} placeholder variables that need to be processed
 	private final Map<String, String> categories;
 
-	// 分类指导里可能存在{}这样的占位变量需要处理
+	// Classification instructions may contain {} placeholder variables that need to be processed
 	private final List<String> classificationInstructions;
 
 	private final String inputTextKey;
@@ -203,15 +203,15 @@ public class QuestionClassifierNode implements NodeAction {
 		}
 
 		/**
-		 * 需要一个Map对象，key为类别ID，value为具体的类别名称。
-		 * 类别名称里可以存在{@code {var_name}}这样的变量占位符，节点将从{@code OverAllState}里获取变量值进行替换。
+		 * Requires a Map object where key is category ID and value is the specific category name.
+		 * Category names can contain variable placeholders like {@code {var_name}}, which will be replaced with values from {@code OverAllState}.
 		 */
 		public Builder categories(Map<String, String> categories) {
 			this.categories = categories;
 			return this;
 		}
 
-		// 兼容旧版本
+		// Compatible with old version
 		@Deprecated
 		public Builder categories(List<String> categories) {
 			this.categories = categories.stream().collect(Collectors.toMap(k -> k, k -> k, (a, b) -> b));
@@ -219,7 +219,7 @@ public class QuestionClassifierNode implements NodeAction {
 		}
 
 		/**
-		 * 指导说明列表。 指导说明里可以存在{@code {var_name}}这样的变量占位符，节点将从{@code OverAllState}里获取变量值进行替换。
+		 * List of classification instructions. Instructions can contain variable placeholders like {@code {var_name}}, which will be replaced with values from {@code OverAllState}.
 		 */
 		public Builder classificationInstructions(List<String> classificationInstructions) {
 			this.classificationInstructions = classificationInstructions;

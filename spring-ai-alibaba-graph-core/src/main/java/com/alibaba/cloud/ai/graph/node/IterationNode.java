@@ -37,8 +37,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * 迭代节点，将JSON数组的所有元素进行相同的操作，并将结果保存到JSON数组中保存。输入输出的JSON数组均以JSON字符串表示。
- * 节点使用方法：IterationNode.Start -> SubStateGraphNode -> IterationNode.End
+ * Iteration node that performs the same operation on all elements of a JSON array and saves the results in a JSON array. Both input and output JSON arrays are represented as JSON strings.
+ * Node usage: IterationNode.Start -> SubStateGraphNode -> IterationNode.End
  *
  * @author vlsmb
  * @since 2025/7/19
@@ -50,34 +50,34 @@ public class IterationNode {
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	/**
-	 * 迭代的起始节点，从JSON数组中读取一个元素，传递给下一个节点
+	 * Starting node of iteration, reads one element from JSON array and passes it to the next node
 	 *
-	 * @param <ElementInput> 输入元素的类型
+	 * @param <ElementInput> type of input element
 	 */
 	public static class Start<ElementInput> implements NodeAction {
 
 		/**
-		 * 输入JSON数组的key，元素类型应为JSON字符串，策略应为更新策略
+		 * Key of input JSON array, element type should be JSON string, strategy should be update
 		 */
 		private final String inputArrayJsonKey;
 
 		/**
-		 * 保存需要迭代的对象的Key，元素类型应为List，策略应为更新策略
+		 * Key to save the object to be iterated, element type should be List, strategy should be update
 		 */
 		private final String inputArrayKey;
 
 		/**
-		 * 保存仍需处理的索引的Key，类型为List，策略为更新策略
+		 * Key to save indexes still to be processed, type is List, strategy is update
 		 */
 		private final String taskIndexListKey;
 
 		/**
-		 * 迭代过程中元素的key
+		 * Key of element during iteration
 		 */
 		private final String outputItemKey;
 
 		/**
-		 * 输出是否需要迭代的key，类型为Boolean
+		 * Key to output whether iteration is needed, type is Boolean
 		 */
 		private final String outputStartIterationKey;
 
@@ -95,13 +95,13 @@ public class IterationNode {
 			try {
 				List<ElementInput> list;
 				List<Integer> indexes;
-				// 第一次迭代初始化，将JSON字符串转化为List
+				// First iteration initialization, convert JSON string to List
 				if (state.value(this.inputArrayKey, List.class).orElse(null) == null) {
 					Object inputs = state.value(this.inputArrayJsonKey).orElse(null);
 					if (inputs == null) {
 						return Map.of(this.outputStartIterationKey, false);
 					}
-					// 用户的输入可以为List，或者JSON字符串
+					// User input can be either List or JSON string
 
 					if (inputs instanceof List) {
 						list = List.copyOf((List<ElementInput>) inputs);
@@ -120,7 +120,7 @@ public class IterationNode {
 					}
 				}
 				else {
-					// 从state里读取list和indexes
+					// Read list and indexes from state
 					list = (List<ElementInput>) state.value(this.inputArrayKey).orElseThrow();
 					indexes = (List<Integer>) state.value(this.taskIndexListKey).orElseThrow();
 				}
@@ -128,7 +128,7 @@ public class IterationNode {
 				if (indexes.isEmpty()) {
 					return Map.of(this.outputStartIterationKey, false);
 				}
-				// 获取要处理的第一个元素
+				// Get the first element to process
 				int index = indexes.get(0);
 				indexes.remove(0);
 				return Map.of(this.outputItemKey, list.get(index), this.outputStartIterationKey, true,
@@ -195,30 +195,30 @@ public class IterationNode {
 	}
 
 	/**
-	 * 迭代的终止节点，接收迭代过程处理的结果，并判断是否需要跳回起始节点
+	 * Termination node of iteration, receives results processed during iteration and determines whether to jump back to start node
 	 *
-	 * @param <ElementInput> 输入元素的类型
-	 * @param <ElementOutput> 输出元素的类型
+	 * @param <ElementInput> type of input element
+	 * @param <ElementOutput> type of output element
 	 */
 	public static class End<ElementInput, ElementOutput> implements NodeAction {
 
 		/**
-		 * 当前还剩余的元素索引List的Key
+		 * Key of the List of remaining element indexes
 		 */
 		private final String taskIndexSetKey;
 
 		/**
-		 * 输入子图节点处理的结果key
+		 * Key of result processed by subgraph node
 		 */
 		private final String inputResultKey;
 
 		/**
-		 * 输出整个迭代节点处理的JSON结果数组，应为替换策略
+		 * JSON result array output from entire iteration node processing, should be replace strategy
 		 */
 		private final String outputArrayJsonKey;
 
 		/**
-		 * 输出是否需要继续迭代的Boolean值
+		 * Boolean value to output whether to continue iteration
 		 */
 		private final String outputContinueIterationKey;
 
@@ -240,14 +240,14 @@ public class IterationNode {
 						OBJECT_MAPPER.readValue(state.value(this.outputArrayJsonKey, String.class).orElse("[]"),
 								new TypeReference<List<ElementOutput>>() {
 								}));
-				// 判断是不是空迭代节点（即outputStartIterationKey为false）
+				// Check if it's an empty iteration node (i.e. outputStartIterationKey is false)
 				if (!state.value(this.outputStartIterationKey, Boolean.class).orElse(false)) {
 					return Map.of(this.outputContinueIterationKey, false, this.outputArrayJsonKey,
 							OBJECT_MAPPER.writeValueAsString(outputList));
 				}
 				List<Integer> indexes = (List<Integer>) state.value(this.taskIndexSetKey, List.class).orElseThrow();
 				ElementOutput result = (ElementOutput) state.value(this.inputResultKey).orElseThrow();
-				// 将子图节点的处理结果加入到最终结果数组中
+				// Add subgraph node processing result to final result array
 				outputList.add(result);
 				return Map.of(this.outputArrayJsonKey, OBJECT_MAPPER.writeValueAsString(outputList),
 						this.outputContinueIterationKey, !indexes.isEmpty());
@@ -321,35 +321,35 @@ public class IterationNode {
 	}
 
 	/**
-	 * 将迭代节点包装为StateGraph，或者将迭代节点以及条件边添加到已有的StateGraph上
+	 * Wrap iteration node as StateGraph, or add iteration node and conditional edges to existing StateGraph
 	 *
-	 * @param <ElementInput> 迭代元素输入类型
-	 * @param <ElementOutput> 迭代元素输出类型
+	 * @param <ElementInput> iteration element input type
+	 * @param <ElementOutput> iteration element output type
 	 */
 	public static class Converter<ElementInput, ElementOutput> {
 
 		/**
-		 * 输入JSON数组的key，元素类型应为JSON字符串，策略应为更新策略
+		 * Key of input JSON array, element type should be JSON string, strategy should be update
 		 */
 		private String inputArrayJsonKey;
 
 		/**
-		 * 输出整个迭代节点处理的JSON结果数组，应为替换策略
+		 * JSON result array output from entire iteration node processing, should be replace strategy
 		 */
 		private String outputArrayJsonKey;
 
 		/**
-		 * 迭代子图当前迭代元素的key
+		 * Key of current iteration element in iteration subgraph
 		 */
 		private String iteratorItemKey;
 
 		/**
-		 * 迭代子图处理结果的Key
+		 * Key of processing result in iteration subgraph
 		 */
 		private String iteratorResultKey;
 
 		/**
-		 * 单元素操作子图
+		 * Subgraph for single element operation
 		 */
 		private StateGraph subGraph = null;
 
@@ -357,7 +357,7 @@ public class IterationNode {
 
 		private String subGraphEndNodeName = null;
 
-		// 迭代节点临时变量名称
+		// Temporary variable names for iteration node
 
 		private String tempArrayKey;
 
@@ -423,8 +423,8 @@ public class IterationNode {
 		}
 
 		/**
-		 * 创建一个完整的迭代图（IterationNode.Start -> SubStateGraphNode -> IterationNode.End ->
-		 * TempClear（清理迭代中临时变量的值）-> END），作为子图，可供其他图嵌套使用。
+		 * Create a complete iteration graph (IterationNode.Start -> SubStateGraphNode -> IterationNode.End ->
+		 * TempClear (clear temporary variable values during iteration) -> END) as a subgraph that can be nested by other graphs.
 		 */
 		public StateGraph convertToStateGraph() throws GraphStateException {
 			if (!StringUtils.hasText(this.inputArrayJsonKey) || !StringUtils.hasText(this.outputArrayJsonKey)
@@ -488,10 +488,10 @@ public class IterationNode {
 		}
 
 		/**
-		 * 将迭代的Start和End节点直接加在已有的StateGraph上，只提供处理单个元素子图的开始和终止节点名称即可
-		 * @param stateGraph 原有的stateGraph
-		 * @param iterationName 迭代节点的名称
-		 * @param iterationOutName 迭代节点的出边名称
+		 * Add iteration Start and End nodes directly to existing StateGraph, only provide start and end node names of the subgraph for processing single element
+		 * @param stateGraph the original stateGraph
+		 * @param iterationName the name of iteration node
+		 * @param iterationOutName the name of iteration node outgoing edge
 		 */
 		public void appendToStateGraph(StateGraph stateGraph, String iterationName, String iterationOutName)
 				throws GraphStateException {
@@ -504,7 +504,7 @@ public class IterationNode {
 					|| !StringUtils.hasText(iterationOutName)) {
 				throw new IllegalArgumentException("There are some empty fields");
 			}
-			// 注册临时变量的替换策略
+			// Register replacement strategy for temporary variables
 			stateGraph
 				.addNode(iterationName,
 						node_async(IterationNode.<ElementInput>start()

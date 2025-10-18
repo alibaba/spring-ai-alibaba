@@ -85,6 +85,12 @@ public interface FluxConverter {
 							startingState));
 		}
 
+		public Flux<GraphResponse<StreamingOutput>> buildWithChatResponse(Flux<ChatResponse> flux) {
+			return buildInternal(flux,
+					chatResponse -> new StreamingOutput(chatResponse, startingNode,
+							startingState));
+		}
+
 		private Flux<GraphResponse<StreamingOutput>> buildInternal(Flux<ChatResponse> flux,
 				Function<ChatResponse, StreamingOutput> outputMapper) {
 			Objects.requireNonNull(flux, "flux cannot be null");
@@ -123,7 +129,7 @@ public interface FluxConverter {
 			return flux.filter(response -> response.getResult() != null && response.getResult().getOutput() != null)
 				.doOnNext(mergeMessage)
 				.map(next -> GraphResponse
-					.of(new StreamingOutput(next.getResult().getOutput().getText(), startingNode, startingState)))
+					.of(outputMapper.apply(next)))
 				.concatWith(Mono.fromCallable(() -> {
 					Map<String, Object> completionResult = mapResult.apply(result.get());
 					return GraphResponse.done(completionResult);

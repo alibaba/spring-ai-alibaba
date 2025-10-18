@@ -19,8 +19,6 @@ import com.alibaba.cloud.ai.dashscope.audio.DashScopeAudioTranscriptionOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
-
 /**
  * @author xYLiu
  * @author yuluo
@@ -37,10 +35,6 @@ public class DashScopeAudioTranscriptionProperties extends DashScopeParentProper
 
 	@NestedConfigurationProperty
 	private DashScopeAudioTranscriptionOptions options = DashScopeAudioTranscriptionOptions.builder().build();
-
-	public DashScopeAudioTranscriptionProperties() {
-		super.setBaseUrl(DEFAULT_BASE_URL);
-	}
 
 	public DashScopeAudioTranscriptionOptions getOptions() {
 		return this.options;
