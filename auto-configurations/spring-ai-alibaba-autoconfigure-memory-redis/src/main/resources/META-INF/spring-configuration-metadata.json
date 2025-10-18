@@ -1,0 +1,65 @@
+{
+  "groups": [
+    {
+      "name": "spring.ai.alibaba.memory.redis",
+      "type": "com.alibaba.cloud.ai.autoconfigure.redis.memory.RedisChatMemoryProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.redis.memory.RedisChatMemoryProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "spring.ai.alibaba.memory.redis.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable Redis Chat Memory.",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.alibaba.memory.redis.host",
+      "type": "java.lang.String",
+      "description": "Redis host.",
+      "defaultValue": "localhost"
+    },
+    {
+      "name": "spring.ai.alibaba.memory.redis.port",
+      "type": "java.lang.Integer",
+      "description": "Redis port.",
+      "defaultValue": 6379
+    },
+    {
+      "name": "spring.ai.alibaba.memory.redis.database",
+      "type": "java.lang.Integer",
+      "description": "Redis database index.",
+      "defaultValue": 0
+    },
+    {
+      "name": "spring.ai.alibaba.memory.redis.password",
+      "type": "java.lang.String",
+      "description": "Redis password. Optional."
+    },
+    {
+      "name": "spring.ai.alibaba.memory.redis.timeout",
+      "type": "java.lang.Integer",
+      "description": "Connection timeout in milliseconds.",
+      "defaultValue": 2000
+    },
+    {
+      "name": "spring.ai.alibaba.memory.redis.max-total",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of connections in the pool.",
+      "defaultValue": 8
+    },
+    {
+      "name": "spring.ai.alibaba.memory.redis.max-idle",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of idle connections in the pool.",
+      "defaultValue": 8
+    },
+    {
+      "name": "spring.ai.alibaba.memory.redis.min-idle",
+      "type": "java.lang.Integer",
+      "description": "Minimum number of idle connections in the pool.",
+      "defaultValue": 0
+    }
+  ]
+}
+
