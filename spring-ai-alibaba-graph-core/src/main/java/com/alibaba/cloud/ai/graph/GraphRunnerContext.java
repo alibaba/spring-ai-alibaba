@@ -63,8 +63,6 @@ public class GraphRunnerContext {
 
 	String nextNodeId;
 
-	Map<String, Object> initialStateData;
-
 	String resumeFrom;
 
 	ReturnFromEmbed returnFromEmbed;
