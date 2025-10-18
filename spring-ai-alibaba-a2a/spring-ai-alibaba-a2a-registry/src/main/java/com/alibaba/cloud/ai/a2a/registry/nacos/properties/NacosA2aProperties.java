@@ -36,6 +36,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertyResolver;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.PropertySources;
+import org.springframework.lang.NonNull;
 
 /**
  * Nacos properties for A2A.
@@ -179,7 +180,8 @@ public class NacosA2aProperties implements EnvironmentAware {
 			for (String name : getPropertyNames(source)) {
 				if (!subProperties.containsKey(name) && name.startsWith(prefix)) {
 					String subName = name.substring(prefix.length() + 1);
-					if (!subProperties.containsKey(subName)) { // take first one
+					// take first one
+					if (!subProperties.containsKey(subName)) {
 						Object value = source.getProperty(name);
 						if (value instanceof String) {
 							value = propertyResolver.resolvePlaceholders((String) value);
@@ -192,7 +194,7 @@ public class NacosA2aProperties implements EnvironmentAware {
 		return Collections.unmodifiableMap(subProperties);
 	}
 
-	private String[] getPropertyNames(PropertySource propertySource) {
+	private String[] getPropertyNames(PropertySource<?> propertySource) {
 
 		String[] propertyNames = propertySource instanceof EnumerablePropertySource
 				? ((EnumerablePropertySource<?>) propertySource).getPropertyNames() : null;
@@ -204,7 +206,7 @@ public class NacosA2aProperties implements EnvironmentAware {
 	}
 
 	@Override
-	public void setEnvironment(Environment environment) {
+	public void setEnvironment(@NonNull Environment environment) {
 		this.environment = environment;
 	}
 
