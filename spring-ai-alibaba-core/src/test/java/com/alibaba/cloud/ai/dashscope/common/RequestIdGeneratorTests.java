@@ -94,7 +94,7 @@ class RequestIdGeneratorTests {
 	@Test
 	void testGenerateIdWithNullParameters() {
 		// Test ID generation with null parameters
-		String id1 = generator.generateId(null);
+		String id1 = generator.generateId((Object) null);
 		String id2 = generator.generateId(null, null);
 
 		// Verify IDs generated with null parameters are not null
