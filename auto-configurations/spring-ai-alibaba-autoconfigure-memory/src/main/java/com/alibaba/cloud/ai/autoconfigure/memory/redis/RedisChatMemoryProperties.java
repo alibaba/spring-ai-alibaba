@@ -55,6 +55,11 @@ public class RedisChatMemoryProperties {
 	private int timeout = 2000;
 
 	/**
+	 * Redis database index.
+	 */
+	private int database = 0;
+
+	/**
 	 * Type of client to use. By default, auto-detected according to the classpath.
 	 */
 	private ClientType clientType;
@@ -112,6 +117,14 @@ public class RedisChatMemoryProperties {
 
 	public void setTimeout(int timeout) {
 		this.timeout = timeout;
+	}
+
+	public int getDatabase() {
+		return database;
+	}
+
+	public void setDatabase(int database) {
+		this.database = database;
 	}
 
 	public Cluster getCluster() {

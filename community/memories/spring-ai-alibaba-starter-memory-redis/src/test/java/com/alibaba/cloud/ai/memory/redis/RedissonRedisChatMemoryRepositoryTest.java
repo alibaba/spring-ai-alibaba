@@ -277,6 +277,65 @@ public class RedissonRedisChatMemoryRepositoryTest {
 			.contains("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 	}
 
+	@Test
+	void testDatabaseIsolation() {
+		var conversationId = UUID.randomUUID().toString();
+
+		var db0Repository = RedissonRedisChatMemoryRepository.builder()
+			.host(redisContainer.getHost())
+			.port(redisContainer.getMappedPort(REDIS_PORT))
+			.database(0)
+			.build();
+
+		var db1Repository = RedissonRedisChatMemoryRepository.builder()
+			.host(redisContainer.getHost())
+			.port(redisContainer.getMappedPort(REDIS_PORT))
+			.database(1)
+			.build();
+
+		var db0Messages = List.<Message>of(new UserMessage("Message in DB0 - " + conversationId));
+		var db1Messages = List.<Message>of(new UserMessage("Message in DB1 - " + conversationId));
+
+		db0Repository.saveAll(conversationId, db0Messages);
+		db1Repository.saveAll(conversationId, db1Messages);
+
+		var retrievedDb0 = db0Repository.findByConversationId(conversationId);
+		var retrievedDb1 = db1Repository.findByConversationId(conversationId);
+
+		assertThat(retrievedDb0).hasSize(1);
+		assertThat(retrievedDb1).hasSize(1);
+		assertThat(retrievedDb0.get(0).getText()).contains("DB0");
+		assertThat(retrievedDb1.get(0).getText()).contains("DB1");
+
+		db0Repository.deleteByConversationId(conversationId);
+		db1Repository.deleteByConversationId(conversationId);
+	}
+
+	@Test
+	void testDefaultDatabaseIsZero() {
+		var conversationId = UUID.randomUUID().toString();
+
+		var defaultRepository = RedissonRedisChatMemoryRepository.builder()
+			.host(redisContainer.getHost())
+			.port(redisContainer.getMappedPort(REDIS_PORT))
+			.build();
+
+		var db0Repository = RedissonRedisChatMemoryRepository.builder()
+			.host(redisContainer.getHost())
+			.port(redisContainer.getMappedPort(REDIS_PORT))
+			.database(0)
+			.build();
+
+		var messages = List.<Message>of(new UserMessage("Test default database - " + conversationId));
+		defaultRepository.saveAll(conversationId, messages);
+
+		var retrieved = db0Repository.findByConversationId(conversationId);
+		assertThat(retrieved).hasSize(1);
+		assertThat(retrieved.get(0).getText()).isEqualTo(messages.get(0).getText());
+
+		defaultRepository.deleteByConversationId(conversationId);
+	}
+
 	@SpringBootConfiguration
 	static class TestConfiguration {
 

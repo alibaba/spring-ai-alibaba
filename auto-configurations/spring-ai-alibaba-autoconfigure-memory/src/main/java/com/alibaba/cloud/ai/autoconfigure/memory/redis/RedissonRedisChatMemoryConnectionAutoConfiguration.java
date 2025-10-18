@@ -67,6 +67,7 @@ public class RedissonRedisChatMemoryConnectionAutoConfiguration
 			.username(standaloneConfiguration.username())
 			.password(standaloneConfiguration.password())
 			.timeout(standaloneConfiguration.timeout())
+			.database(standaloneConfiguration.database())
 			.sslBundles(standaloneConfiguration.sslBundles())
 			.useSsl(standaloneConfiguration.ssl().isEnabled())
 			.bundle(standaloneConfiguration.ssl().getBundle())

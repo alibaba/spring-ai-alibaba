@@ -108,7 +108,7 @@ public abstract class RedisChatMemoryConnectionAutoConfiguration<T extends ChatM
 		RedisMemoryConnectionDetails.Standalone standalone = connectionDetails.getStandalone();
 		return new RedisChatMemoryStandaloneConfiguration(standalone.getHost(), standalone.getPort(),
 				connectionDetails.getUsername(), connectionDetails.getPassword(), properties.getTimeout(),
-				properties.getSsl(), sslBundles);
+				properties.getDatabase(), properties.getSsl(), sslBundles);
 	}
 
 	/**
