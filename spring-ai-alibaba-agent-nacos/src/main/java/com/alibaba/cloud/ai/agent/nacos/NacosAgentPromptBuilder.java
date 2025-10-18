@@ -19,7 +19,7 @@ package com.alibaba.cloud.ai.agent.nacos;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.agent.nacos.utils.CglibProxyFactory;
+import com.alibaba.cloud.ai.agent.nacos.utils.ChatOptionsProxy;
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.cloud.ai.graph.agent.DefaultBuilder;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
@@ -79,25 +79,25 @@ public class NacosAgentPromptBuilder extends DefaultBuilder {
 		PromptVO promptVO = null;
 		ObservationMetadataAwareOptions observationMetadataAwareOptions = null;
 		if (nacosOptions.getPromptKey() != null) {
-			promptVO = NacosPromptInjector.getPromptByKey(nacosOptions);
+			promptVO = NacosPromptInjector.getPromptByKey(nacosOptions, nacosOptions.getPromptKey());
 			if (promptVO != null) {
 				this.instruction = promptVO.getTemplate();
 				if (this.chatOptions == null) {
 					this.chatOptions = new OpenAiChatOptions();
 				}
 				if (!(this.chatOptions instanceof ObservationMetadataAwareOptions)) {
-					this.chatOptions = (ChatOptions) CglibProxyFactory.createProxy(this.chatOptions, getMetadata(promptVO));
+					this.chatOptions = (ChatOptions) ChatOptionsProxy.createProxy(this.chatOptions, getMetadata(promptVO));
 				}
 
 				observationMetadataAwareOptions = (ObservationMetadataAwareOptions) this.chatOptions;
 				observationMetadataAwareOptions.getObservationMetadata().putAll(getMetadata(promptVO));
 			}
 		}
-		if (this.observationRegistry == null && nacosOptions.getObservationConfigration() != null) {
-			this.observationRegistry = nacosOptions.getObservationConfigration().getObservationRegistry();
+		if (this.observationRegistry == null && nacosOptions.getObservationConfiguration() != null) {
+			this.observationRegistry = nacosOptions.getObservationConfiguration().getObservationRegistry();
 		}
-		if (this.customObservationConvention == null && nacosOptions.getObservationConfigration() != null) {
-			this.customObservationConvention = nacosOptions.getObservationConfigration()
+		if (this.customObservationConvention == null && nacosOptions.getObservationConfiguration() != null) {
+			this.customObservationConvention = nacosOptions.getObservationConfiguration()
 					.getChatClientObservationConvention();
 		}
 

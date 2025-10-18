@@ -28,37 +28,37 @@ import net.sf.cglib.proxy.MethodProxy;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
- * Dynamic proxy factory based on CGLIB
- * Implements multi-interface functionality by creating subclasses
+ * 基于CGLIB的动态代理工厂
+ * 通过创建子类的方式实现多接口功能
  */
-public class CglibProxyFactory {
+public class ChatOptionsProxy {
 
 	/**
-	 * Create a proxy object that implements both ChatOptions and ObservationMetadataAwareOptions interfaces
+	 * 创建同时实现ChatOptions和ObservationMetadataAwareOptions接口的代理对象
 	 *
-	 * @param chatOptions Original ChatOptions object
-	 * @param initialMetadata Initial observation metadata
-	 * @return Proxy object that implements both ChatOptions and ObservationMetadataAwareOptions interfaces
+	 * @param chatOptions 原始的ChatOptions对象
+	 * @param initialMetadata 初始的观察元数据
+	 * @return 代理对象，同时实现了ChatOptions和ObservationMetadataAwareOptions接口
 	 */
 	public static Object createProxy(ChatOptions chatOptions, Map<String, String> initialMetadata) {
-		// Create CGLIB enhancer
+		// 创建CGLIB增强器
 		Enhancer enhancer = new Enhancer();
 
-		// Set parent class to ChatOptionsImpl
+		// 设置父类为ChatOptionsImpl
 		enhancer.setSuperclass(chatOptions.getClass());
 
-		// Set interfaces to implement
+		// 设置要实现的接口
 		enhancer.setInterfaces(new Class[] {ChatOptions.class, ObservationMetadataAwareOptions.class});
 
-		// Set callback handler
+		// 设置回调处理器
 		enhancer.setCallback(new CglibMethodInterceptor(chatOptions, initialMetadata));
 
-		// Create proxy object
+		// 创建代理对象
 		return enhancer.create();
 	}
 
 	/**
-	 * CGLIB method interceptor
+	 * CGLIB方法拦截器
 	 */
 	private static class CglibMethodInterceptor implements MethodInterceptor {
 
@@ -79,27 +79,27 @@ public class CglibProxyFactory {
 			String methodName = method.getName();
 			Class<?> declaringClass = method.getDeclaringClass();
 
-			// 1. Intercept copy()
+			// 1. 拦截 copy()
 			if (isCopyMethod(method)) {
 				return createCopiedProxy();
 			}
 
-			// Handle ChatOptions interface methods - forward directly to original object
+			// 处理ChatOptions接口的方法 - 直接转发到原始对象
 			if (declaringClass == ChatOptions.class) {
 				return method.invoke(chatOptions, args);
 			}
 
-			// Handle ObservationMetadataAwareOptions interface methods
+			// 处理ObservationMetadataAwareOptions接口的方法
 			if (declaringClass == ObservationMetadataAwareOptions.class) {
 				return handleObservationMethod(methodName, args);
 			}
 
-			// Handle Object class methods
+			// 处理Object类的方法
 			if (declaringClass == Object.class) {
 				return handleObjectMethod(methodName, args, obj);
 			}
 
-			// Handle parent class methods - forward to original object
+			// 处理父类方法 - 转发到原始对象
 			return method.invoke(chatOptions, args);
 		}
 
@@ -113,7 +113,7 @@ public class CglibProxyFactory {
 			ChatOptions copiedChatOptions;
 			try {
 				Method copyMethod = chatOptions.getClass().getMethod("copy");
-				// If it's private or protected, need to set setAccessible(true)
+				// 如果是 private 或 protected，需要 setAccessible(true)
 				copyMethod.setAccessible(true);
 				Object result = copyMethod.invoke(chatOptions);
 				if (!(result instanceof ChatOptions)) {
@@ -128,15 +128,15 @@ public class CglibProxyFactory {
 				throw new RuntimeException("Failed to invoke copy() method", e);
 			}
 
-			// Create new proxy object (deep copy metadata)
-			return CglibProxyFactory.createProxy(
+			// 创建新的代理对象（深拷贝 metadata）
+			return ChatOptionsProxy.createProxy(
 					copiedChatOptions,
 					new HashMap<>(this.observationMetadata)
 			);
 		}
 
 		/**
-		 * Handle observation methods - dynamic processing based on method name
+		 * 处理观察方法 - 基于方法名动态处理
 		 */
 		private Object handleObservationMethod(String methodName, Object[] args) {
 			switch (methodName) {
@@ -180,7 +180,7 @@ public class CglibProxyFactory {
 		}
 
 		/**
-		 * Handle Object class methods
+		 * 处理Object类的方法
 		 */
 		private Object handleObjectMethod(String methodName, Object[] args, Object obj) {
 			switch (methodName) {
