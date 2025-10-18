@@ -16,7 +16,9 @@
 package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -34,7 +36,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class AgentToolNode implements NodeAction {
+public class AgentToolNode implements NodeActionWithConfig {
 
 	private String outputKey;
 
@@ -60,7 +62,7 @@ public class AgentToolNode implements NodeAction {
 	}
 
 	@Override
-	public Map<String, Object> apply(OverAllState state) throws Exception {
+	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
 		List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
 		Message lastMessage = messages.get(messages.size() - 1);
 

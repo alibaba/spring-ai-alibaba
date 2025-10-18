@@ -416,6 +416,14 @@ public class CompiledGraph {
 		this.maxIterations = maxIterations;
 	}
 
+	public GraphResponse<NodeOutput> invokeAndGetResponse(Map<String, Object> inputs, RunnableConfig config) {
+		return graphResponseStream(inputs, config).last().block();
+	}
+
+	public GraphResponse<NodeOutput> invokeAndGetResponse(OverAllState state, RunnableConfig config) {
+		return graphResponseStream(state, config).last().block();
+	}
+
 	public Flux<GraphResponse<NodeOutput>> graphResponseStream(Map<String, Object> inputs, RunnableConfig config) {
 		return graphResponseStream(stateCreate(inputs), config);
 	}

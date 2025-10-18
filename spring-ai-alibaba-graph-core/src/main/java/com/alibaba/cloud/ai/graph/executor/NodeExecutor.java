@@ -28,6 +28,8 @@ import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -240,7 +242,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 							if (!resultMap.containsKey(e.getKey()) && resultMap.containsKey("messages")) {
 								List<Object> messages = (List<Object>) resultMap.get("messages");
 								Object lastMessage = messages.get(messages.size() - 1);
-								if (lastMessage instanceof org.springframework.ai.chat.messages.AssistantMessage lastAssistantMessage) {
+								if (lastMessage instanceof AssistantMessage lastAssistantMessage) {
 									resultMap.put(e.getKey(), lastAssistantMessage.getText());
 								}
 							}

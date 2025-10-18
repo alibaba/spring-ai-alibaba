@@ -44,6 +44,7 @@ import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -60,13 +61,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_async;
 import static java.lang.String.format;
 
 
@@ -112,7 +115,7 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	public AssistantMessage call(String message) throws GraphRunnerException {
-		return doMessageInvoke(message, RunnableConfig.builder().build());
+		return doMessageInvoke(message, null);
 	}
 
 	public AssistantMessage call(String message, RunnableConfig config) throws GraphRunnerException {
@@ -120,7 +123,7 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	public AssistantMessage call(UserMessage message) throws GraphRunnerException {
-		return doMessageInvoke(message, RunnableConfig.builder().build());
+		return doMessageInvoke(message, null);
 	}
 
 	public AssistantMessage call(UserMessage message, RunnableConfig config) throws GraphRunnerException {
@@ -128,7 +131,7 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	public AssistantMessage call(List<Message> messages) throws GraphRunnerException {
-		return doMessageInvoke(messages, RunnableConfig.builder().build());
+		return doMessageInvoke(messages, null);
 	}
 
 	public AssistantMessage call(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
@@ -598,15 +601,16 @@ public class ReactAgent extends BaseAgent {
 		@Override
 		public Map<String, Object> apply(OverAllState parentState, RunnableConfig config) throws Exception {
 			RunnableConfig subGraphRunnableConfig = getSubGraphRunnableConfig(config);
-			Flux<GraphResponse<NodeOutput>> subGraphFlux;
+			Flux<GraphResponse<NodeOutput>> subGraphResult;
 			Object parentMessages = null;
+
 			if (includeContents) {
 				// by default, includeContents is true, we pass down the messages from the parent state
 				if (StringUtils.hasLength(instruction)) {
 					// instruction will be added as a special UserMessage to the child graph.
 					parentState.updateState(Map.of("messages", new AgentInstructionMessage(instruction)));
 				}
-				subGraphFlux = childGraph.graphResponseStream(parentState, subGraphRunnableConfig);
+				subGraphResult = childGraph.graphResponseStream(parentState, subGraphRunnableConfig);
 			} else {
 				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
 				parentMessages = stateForChild.remove("messages");
@@ -614,11 +618,46 @@ public class ReactAgent extends BaseAgent {
 					// instruction will be added as a special UserMessage to the child graph.
 					stateForChild.put("messages", new AgentInstructionMessage(instruction));
 				}
-				subGraphFlux = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
+				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			}
 
+			Flux<GraphResponse<NodeOutput>> processedSubGraphResult = Flux.create(sink -> {
+				AtomicReference<GraphResponse<NodeOutput>> lastRef = new AtomicReference<>();
+				subGraphResult.subscribe(item -> {
+					GraphResponse<NodeOutput> previous = lastRef.getAndSet(item);
+					if (previous != null) {
+						sink.next(previous);
+					}
+				}, sink::error, () -> {
+					GraphResponse<NodeOutput> lastResponse = lastRef.get();
+					if (lastResponse != null) {
+						lastResponse.resultValue().ifPresent(resultValue -> {
+							if (resultValue instanceof Map) {
+								@SuppressWarnings("unchecked")
+								Map<String, Object> resultMap = (Map<String, Object>) resultValue;
+								if (resultMap.get("messages") instanceof List) {
+									@SuppressWarnings("unchecked")
+									List<Object> messages = (List<Object>) resultMap.get("messages");
+									if (!messages.isEmpty()) {
+										Object lastMessage = messages.get(messages.size() - 1);
+										Map<String, Object> newResultMap = new HashMap<>(resultMap);
+										newResultMap.put("messages", List.of(lastMessage));
+										sink.next(GraphResponse.done(newResultMap));
+										sink.complete();
+										return;
+									}
+								}
+							}
+						});
+					}
+						sink.next(lastResponse);
+						sink.complete();
+
+				});
+			});
+
 			Map<String, Object> result = new HashMap<>();
-			result.put(outputKeyToParent, subGraphFlux);
+			result.put(outputKeyToParent, processedSubGraphResult);
 			if (parentMessages != null) {
 				result.put("messages", parentMessages);
 			}
@@ -661,7 +700,7 @@ public class ReactAgent extends BaseAgent {
 
 		public AgentSubGraphNode(String id, boolean includeContents, String outputKeyToParent, CompiledGraph subGraph, String instruction) {
 			super(Objects.requireNonNull(id, "id cannot be null"),
-					(config) -> AsyncNodeActionWithConfig.node_async(new SubGraphNodeAdapter(includeContents, outputKeyToParent, subGraph, instruction, config)));
+					(config) -> node_async(new SubGraphNodeAdapter(includeContents, outputKeyToParent, subGraph, instruction, config)));
 			this.subGraph = subGraph;
 		}
 

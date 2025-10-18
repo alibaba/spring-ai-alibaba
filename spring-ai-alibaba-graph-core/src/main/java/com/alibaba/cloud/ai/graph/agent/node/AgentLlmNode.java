@@ -16,8 +16,11 @@
 package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
+import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -38,7 +41,7 @@ import java.util.Map;
 
 import reactor.core.publisher.Flux;
 
-public class AgentLlmNode implements NodeAction {
+public class AgentLlmNode implements NodeActionWithConfig {
 
 	private List<Advisor> advisors = new ArrayList<>();
 
@@ -50,14 +53,11 @@ public class AgentLlmNode implements NodeAction {
 
 	private ChatClient chatClient;
 
-	private Boolean stream = Boolean.FALSE;
-
 	private ToolCallingChatOptions toolCallingChatOptions;
 
 	public AgentLlmNode(Builder builder) {
 		this.outputKey = builder.outputKey;
 		this.outputSchema = builder.outputSchema;
-		this.stream = builder.stream;
 		if (builder.advisors != null) {
 			this.advisors = builder.advisors;
 		}
@@ -76,13 +76,13 @@ public class AgentLlmNode implements NodeAction {
 	}
 
 	@Override
-	public Map<String, Object> apply(OverAllState state) throws Exception {
+	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
 		// add streaming support
-		if (Boolean.TRUE.equals(stream)) {
+		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
+		if (stream) {
 			Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(state).stream().chatResponse();
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
-		}
-		else {
+		} else {
 			AssistantMessage responseOutput;
 			try {
 				ChatResponse response = buildChatClientRequestSpec(state).call().chatResponse();
@@ -176,8 +176,6 @@ public class AgentLlmNode implements NodeAction {
 
 		private List<ToolCallback> toolCallbacks;
 
-		private Boolean stream;
-
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
 			return this;
@@ -200,11 +198,6 @@ public class AgentLlmNode implements NodeAction {
 
 		public Builder chatClient(ChatClient chatClient) {
 			this.chatClient = chatClient;
-			return this;
-		}
-
-		public Builder stream(Boolean stream) {
-			this.stream = stream;
 			return this;
 		}
 
