@@ -97,6 +97,7 @@ public class JedisRedisChatMemoryRepository extends BaseRedisChatMemoryRepositor
 			}
 			else {
 				RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration(host, port);
+				standaloneConfig.setDatabase(database);
 				if (StringUtils.hasText(username)) {
 					standaloneConfig.setUsername(username);
 				}

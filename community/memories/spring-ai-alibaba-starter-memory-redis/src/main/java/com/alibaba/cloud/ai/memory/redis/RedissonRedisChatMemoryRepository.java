@@ -126,7 +126,11 @@ public class RedissonRedisChatMemoryRepository extends BaseRedisChatMemoryReposi
 					config.useSingleServer().setSslTrustManagerFactory(managers.getTrustManagerFactory());
 					nodeUrl = "rediss://" + host + ":" + port;
 				}
-				config.useSingleServer().setAddress(nodeUrl).setConnectionPoolSize(poolSize).setConnectTimeout(timeout);
+				config.useSingleServer()
+					.setAddress(nodeUrl)
+					.setConnectionPoolSize(poolSize)
+					.setConnectTimeout(timeout)
+					.setDatabase(database);
 				if (StringUtils.hasLength(username)) {
 					config.useSingleServer().setUsername(username);
 				}

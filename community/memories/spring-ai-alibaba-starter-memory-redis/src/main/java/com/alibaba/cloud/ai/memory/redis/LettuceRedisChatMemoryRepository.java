@@ -102,6 +102,7 @@ public class LettuceRedisChatMemoryRepository extends BaseRedisChatMemoryReposit
 			}
 			else {
 				RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration(host, port);
+				standaloneConfig.setDatabase(database);
 				if (StringUtils.hasText(username)) {
 					standaloneConfig.setUsername(username);
 				}
