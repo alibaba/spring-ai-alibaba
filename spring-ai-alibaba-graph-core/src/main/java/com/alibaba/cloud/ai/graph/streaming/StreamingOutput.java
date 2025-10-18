@@ -17,39 +17,34 @@ package com.alibaba.cloud.ai.graph.streaming;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import org.springframework.ai.chat.model.ChatResponse;
 
 import static java.lang.String.format;
 
-public class StreamingOutput<T> extends NodeOutput {
+public class StreamingOutput extends NodeOutput {
 
 	private final String chunk; // null
 
-	private final T originData;
+	private final ChatResponse chatResponse;
 
-	public StreamingOutput(T originData, String node, OverAllState state) {
+	public StreamingOutput(ChatResponse chatResponse, String node, OverAllState state) {
 		super(node, state);
-		this.originData = originData;
+		this.chatResponse = chatResponse;
 		this.chunk = null;
-	}
-
-	public StreamingOutput(String chunk, T originData,String node, OverAllState state) {
-		super(node, state);
-		this.chunk = chunk;
-		this.originData = originData;
 	}
 
 	public StreamingOutput(String chunk, String node, OverAllState state) {
 		super(node, state);
 		this.chunk = chunk;
-		this.originData = null;
+		this.chatResponse = null;
 	}
 
 	public String chunk() {
 		return chunk;
 	}
 
-	public T chatResponse() {
-		return originData;
+	public ChatResponse chatResponse() {
+		return chatResponse;
 	}
 
 	@Override
