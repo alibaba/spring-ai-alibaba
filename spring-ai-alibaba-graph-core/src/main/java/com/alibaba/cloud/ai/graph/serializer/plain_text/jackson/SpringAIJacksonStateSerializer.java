@@ -44,7 +44,6 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 		}).register(new TypeMapper.Reference<Document>("DOCUMENT") {
 		});
 
-		objectMapper.findAndRegisterModules();
 		objectMapper.registerModule(module);
 	}
 
