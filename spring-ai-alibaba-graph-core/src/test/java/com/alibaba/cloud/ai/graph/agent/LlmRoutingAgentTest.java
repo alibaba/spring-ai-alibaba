@@ -18,19 +18,12 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
-import com.alibaba.cloud.ai.graph.diagram.PlantUMLGenerator;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,7 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import static com.alibaba.cloud.ai.graph.agent.PoemTool.createToolCallback;
+import static com.alibaba.cloud.ai.graph.agent.tools.PoetTool.createPoetToolCallback;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -75,7 +68,7 @@ class LlmRoutingAgentTest {
 			.description("可以写现代诗。")
 			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问，调用工具进行回复。")
 			.outputKey("poem_article")
-			.tools(List.of(createToolCallback()))
+			.tools(List.of(createPoetToolCallback()))
 			.build();
 
 		LlmRoutingAgent blogAgent = LlmRoutingAgent.builder()

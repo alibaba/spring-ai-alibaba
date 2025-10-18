@@ -36,15 +36,18 @@ public abstract class BaseAgent extends Agent {
 
 	protected boolean includeContents;
 
-	public BaseAgent(String name, String description, boolean includeContents, String outputKey,
+	protected boolean returnReasoningContents;
+
+	public BaseAgent(String name, String description, boolean includeContents, boolean returnReasoningContents, String outputKey,
 			KeyStrategy outputKeyStrategy) throws GraphStateException {
 		super(name, description);
 		this.includeContents = includeContents;
+		this.returnReasoningContents = returnReasoningContents;
 		this.outputKey = outputKey;
 		this.outputKeyStrategy = outputKeyStrategy;
 	}
 
-	public abstract Node asNode(boolean includeContents, String outputKeyToParent);
+	public abstract Node asNode(boolean includeContents, boolean returnReasoningContents, String outputKeyToParent);
 
 	public boolean isIncludeContents() {
 		return includeContents;
@@ -92,5 +95,13 @@ public abstract class BaseAgent extends Agent {
 
 	void setIncludeContents(boolean includeContents) {
 		this.includeContents = includeContents;
+	}
+
+	public boolean isReturnReasoningContents() {
+		return returnReasoningContents;
+	}
+
+	public void setReturnReasoningContents(boolean returnReasoningContents) {
+		this.returnReasoningContents = returnReasoningContents;
 	}
 }

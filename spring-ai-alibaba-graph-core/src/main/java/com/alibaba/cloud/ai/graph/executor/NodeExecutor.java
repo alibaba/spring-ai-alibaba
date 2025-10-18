@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 
 import java.util.HashMap;
 import java.util.List;
@@ -91,7 +92,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			if (action instanceof InterruptableAction) {
 				context.getConfig().metadata(RunnableConfig.STATE_UPDATE_METADATA_KEY).ifPresent(updateFromFeedback -> {
 					if (updateFromFeedback instanceof Map<?, ?>) {
-						context.updateState((Map<String, Object>) updateFromFeedback);
+						context.mergeIntoCurrentState((Map<String, Object>) updateFromFeedback);
 					} else {
 						throw new RuntimeException();
 					}
@@ -139,7 +140,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return handleEmbeddedFlux(context, embedFlux.get(), updateState, resultValue);
 			}
 
-			context.updateState(updateState);
+			context.mergeIntoCurrentState(updateState);
 
 			if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
 					&& context.getCompiledGraph().compileConfig.interruptsAfter()
@@ -149,7 +150,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 			else {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
-				context.setCurrentStatData(nextCommand.update());
 			}
 
 			NodeOutput output = context.buildCurrentNodeOutput();
@@ -172,18 +172,18 @@ public class NodeExecutor extends BaseGraphExecutor {
 			Map<String, Object> partialState) {
 		return partialState.entrySet().stream().filter(e -> e.getValue() instanceof Flux<?>).findFirst().map(e -> {
 			var chatFlux = (Flux<?>) e.getValue();
-			var lastChatResponseRef = new AtomicReference<org.springframework.ai.chat.model.ChatResponse>(null);
+			var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
 			var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
 
             return chatFlux.filter(element -> {
                 // skip ChatResponse.getResult() == null
-                if (element instanceof org.springframework.ai.chat.model.ChatResponse response) {
+                if (element instanceof ChatResponse response) {
                     return response.getResult() != null;
                 }
                 return true;
             }).map(element -> {
-				if (element instanceof org.springframework.ai.chat.model.ChatResponse response) {
-					org.springframework.ai.chat.model.ChatResponse lastResponse = lastChatResponseRef.get();
+				if (element instanceof ChatResponse response) {
+					ChatResponse lastResponse = lastChatResponseRef.get();
 					if (lastResponse == null) {
 						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
 							.of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(), context.getOverallState()));
@@ -321,7 +321,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 			try {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
-				context.setCurrentStatData(nextCommand.update());
 
 				// save checkpoint after embedded flux completes
 				context.buildCurrentNodeOutput();

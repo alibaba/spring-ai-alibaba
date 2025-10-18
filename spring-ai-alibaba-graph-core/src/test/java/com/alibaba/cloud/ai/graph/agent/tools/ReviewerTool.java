@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent;
+package com.alibaba.cloud.ai.graph.agent.tools;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -22,23 +22,22 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.function.BiFunction;
 
-public class PoemTool implements BiFunction<String, ToolContext, String> {
+public class ReviewerTool implements BiFunction<String, ToolContext, String> {
 
-	public PoemTool() {
+	public ReviewerTool() {
 	}
 
 	@Override
 	public String apply(
-			@ToolParam(description = "The original user query that triggered this tool call") String originalUserQuery,
+			@ToolParam(description = "The poem or article that needs to be reviewed.") String article,
 			ToolContext toolContext) {
-		System.out.println("tool called : " + originalUserQuery);
-		return "在城市的缝隙里，  \n" + "一束光悄悄发芽，  \n" + "穿过钢筋水泥的沉默，  \n" + "在风中轻轻说话。  \n" + "\n" + "夜色如墨，却不再黑，  \n"
-				+ "星星点亮了每一个角落，  \n" + "我站在时间的边缘，  \n" + "等一朵云，轻轻落下";
+		System.out.println("tool called : " + article);
+		return "晨光初透，薄雾如纱，轻轻覆在西湖的湖面上。断桥残影映水，柳丝拂波，露珠悬于草尖，欲坠未坠。远处山色空蒙，画舫轻移，划开一池碧琉璃。风过处，荷香暗送，落叶轻旋，似在低语岁月的秘密。原来人间至美，不过西湖一瞬的静谧与诗意。";
 	}
 
-	public static ToolCallback createToolCallback() {
-		return FunctionToolCallback.builder("poem", new PoemTool())
-				.description("用来写诗的工具")
+	public static ToolCallback createReviewerToolCallback() {
+		return FunctionToolCallback.builder("reviewer", new ReviewerTool())
+				.description("用来评论或修改诗、散文的工具")
 				.inputType(String.class)
 				.build();
 	}

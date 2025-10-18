@@ -62,6 +62,7 @@ public abstract class Builder {
 	protected List<Hook> hooks;
 
 	protected boolean includeContents = true;
+	protected boolean returnReasoningContents;
 
 	protected String outputKey;
 
@@ -169,6 +170,11 @@ public abstract class Builder {
 
 	public Builder includeContents(boolean includeContents) {
 		this.includeContents = includeContents;
+		return this;
+	}
+
+	public Builder returnReasoningContents(boolean returnReasoningContents) {
+		this.returnReasoningContents = returnReasoningContents;
 		return this;
 	}
 

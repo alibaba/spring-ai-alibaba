@@ -40,7 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import static com.alibaba.cloud.ai.graph.agent.PoemTool.createToolCallback;
+import static com.alibaba.cloud.ai.graph.agent.tools.PoetTool.createPoetToolCallback;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
@@ -128,7 +128,7 @@ public class HumanInTheLoopTest {
 				.name("single_agent")
 				.model(chatModel)
 				.compileConfig(getCompileConfig())
-				.tools(List.of(createToolCallback()))
+				.tools(List.of(createPoetToolCallback()))
 				.hooks(List.of(HumanInTheLoopHook.builder().approvalOn("poem", ToolConfig.builder().description("Please confirm tool execution.").build()).build()))
 				.outputKey("article")
 				.build();

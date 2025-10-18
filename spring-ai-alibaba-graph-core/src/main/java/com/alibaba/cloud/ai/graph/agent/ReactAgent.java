@@ -64,6 +64,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -92,7 +93,7 @@ public class ReactAgent extends BaseAgent {
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, Builder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.includeContents, builder.outputKey, builder.outputKeyStrategy);
+		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
@@ -166,11 +167,11 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	@Override
-	public Node asNode(boolean includeContents, String outputKeyToParent) {
+	public Node asNode(boolean includeContents, boolean returnReasoningContents, String outputKeyToParent) {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
 		}
-		return new AgentSubGraphNode(this.name, includeContents, outputKeyToParent, this.compiledGraph, this.instruction);
+		return new AgentSubGraphNode(this.name, includeContents, returnReasoningContents, outputKeyToParent, this.compiledGraph, this.instruction);
 	}
 
 	@Override
@@ -577,6 +578,8 @@ public class ReactAgent extends BaseAgent {
 
 		private boolean includeContents;
 
+		private boolean returnReasoningContents;
+
 		private String instruction;
 
 		private String outputKeyToParent;
@@ -585,9 +588,10 @@ public class ReactAgent extends BaseAgent {
 
 		private CompileConfig parentCompileConfig;
 
-		public SubGraphNodeAdapter(boolean includeContents, String outputKeyToParent,
+		public SubGraphNodeAdapter(boolean includeContents, boolean returnReasoningContents, String outputKeyToParent,
 				CompiledGraph childGraph, String instruction, CompileConfig parentCompileConfig) {
 			this.includeContents = includeContents;
+			this.returnReasoningContents = returnReasoningContents;
 			this.instruction = instruction;
 			this.outputKeyToParent = outputKeyToParent;
 			this.childGraph = childGraph;
@@ -621,7 +625,16 @@ public class ReactAgent extends BaseAgent {
 				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			}
 
-			Flux<GraphResponse<NodeOutput>> processedSubGraphResult = Flux.create(sink -> {
+			Map<String, Object> result = new HashMap<>();
+			result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult));
+			if (parentMessages != null) {
+				result.put("messages", parentMessages);
+			}
+			return result;
+		}
+
+		private @NotNull Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(OverAllState parentState, Flux<GraphResponse<NodeOutput>> subGraphResult) {
+			return Flux.create(sink -> {
 				AtomicReference<GraphResponse<NodeOutput>> lastRef = new AtomicReference<>();
 				subGraphResult.subscribe(item -> {
 					GraphResponse<NodeOutput> previous = lastRef.getAndSet(item);
@@ -631,37 +644,45 @@ public class ReactAgent extends BaseAgent {
 				}, sink::error, () -> {
 					GraphResponse<NodeOutput> lastResponse = lastRef.get();
 					if (lastResponse != null) {
-						lastResponse.resultValue().ifPresent(resultValue -> {
+						if (lastResponse.resultValue().isPresent()) {
+							Object resultValue = lastResponse.resultValue().get();
 							if (resultValue instanceof Map) {
 								@SuppressWarnings("unchecked")
 								Map<String, Object> resultMap = (Map<String, Object>) resultValue;
 								if (resultMap.get("messages") instanceof List) {
 									@SuppressWarnings("unchecked")
-									List<Object> messages = (List<Object>) resultMap.get("messages");
+									List<Object> messages = new ArrayList<>((List<Object>) resultMap.get("messages"));
 									if (!messages.isEmpty()) {
-										Object lastMessage = messages.get(messages.size() - 1);
+										parentState.value("messages").ifPresent(parentMsgs -> {
+											if (parentMsgs instanceof List) {
+												messages.removeAll((List<?>) parentMsgs);
+											}
+										});
+
+										List<Object> finalMessages;
+										if (returnReasoningContents) {
+											finalMessages = messages;
+										}
+										else {
+											if (!messages.isEmpty()) {
+												finalMessages = List.of(messages.get(messages.size() - 1));
+											} else {
+												finalMessages = List.of();
+											}
+										}
+
 										Map<String, Object> newResultMap = new HashMap<>(resultMap);
-										newResultMap.put("messages", List.of(lastMessage));
-										sink.next(GraphResponse.done(newResultMap));
-										sink.complete();
-										return;
+										newResultMap.put("messages", finalMessages);
+										lastResponse = GraphResponse.done(newResultMap);
 									}
 								}
 							}
-						});
+						}
 					}
-						sink.next(lastResponse);
-						sink.complete();
-
+					sink.next(lastResponse);
+					sink.complete();
 				});
 			});
-
-			Map<String, Object> result = new HashMap<>();
-			result.put(outputKeyToParent, processedSubGraphResult);
-			if (parentMessages != null) {
-				result.put("messages", parentMessages);
-			}
-			return result;
 		}
 
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
@@ -698,9 +719,9 @@ public class ReactAgent extends BaseAgent {
 
 		private final CompiledGraph subGraph;
 
-		public AgentSubGraphNode(String id, boolean includeContents, String outputKeyToParent, CompiledGraph subGraph, String instruction) {
+		public AgentSubGraphNode(String id, boolean includeContents, boolean returnReasoningContents, String outputKeyToParent, CompiledGraph subGraph, String instruction) {
 			super(Objects.requireNonNull(id, "id cannot be null"),
-					(config) -> node_async(new SubGraphNodeAdapter(includeContents, outputKeyToParent, subGraph, instruction, config)));
+					(config) -> node_async(new SubGraphNodeAdapter(includeContents, returnReasoningContents, outputKeyToParent, subGraph, instruction, config)));
 			this.subGraph = subGraph;
 		}
 

@@ -63,7 +63,7 @@ public class GraphRunnerContext {
 
 	String nextNodeId;
 
-	Map<String, Object> currentStateData;
+	Map<String, Object> initialStateData;
 
 	String resumeFrom;
 
@@ -103,10 +103,9 @@ public class GraphRunnerContext {
 			this.config = config.withCheckPointId(null);
 		}
 
-		this.currentStateData = checkpoint.getState();
 		this.currentNodeId = null;
 		this.nextNodeId = checkpoint.getNextNodeId();
-		this.overallState = initialState.input(this.currentStateData);
+		this.overallState = initialState.input(checkpoint.getState());
 		this.resumeFrom = checkpoint.getNodeId();
 
 		log.trace("RESUME FROM {}", checkpoint.getNodeId());
@@ -122,9 +121,7 @@ public class GraphRunnerContext {
 		}
 
 		// Use CompiledGraph's getInitialState method
-		this.currentStateData = compiledGraph.getInitialState(inputs, config);
-		// fixme
-		this.overallState = stateCreate(currentStateData, initialState);
+		this.overallState = stateCreate(compiledGraph.getInitialState(inputs, config), initialState);
 		this.currentNodeId = START;
 		this.nextNodeId = null;
 	}
@@ -184,7 +181,7 @@ public class GraphRunnerContext {
 
 	public Command getEntryPoint() throws Exception {
 		var entryPoint = compiledGraph.getEdge(START);
-		return nextNodeId(entryPoint, currentStateData, "entryPoint");
+		return nextNodeId(entryPoint, overallState.data(), "entryPoint");
 	}
 
 	public Command nextNodeId(String nodeId, Map<String, Object> state) throws Exception {
@@ -207,7 +204,7 @@ public class GraphRunnerContext {
 				throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
 			}
 			this.mergeIntoCurrentState(command.update());
-			return new Command(result, this.currentStateData);
+			return new Command(result, state);
 		}
 		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}
@@ -218,7 +215,7 @@ public class GraphRunnerContext {
 
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
-			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(currentStateData)).nextNodeId(nextNodeId).build();
+			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(overallState.data())).nextNodeId(nextNodeId).build();
 			compiledGraph.compileConfig.checkpointSaver().get().put(config, cp);
 			return Optional.of(cp);
 		}
@@ -243,7 +240,7 @@ public class GraphRunnerContext {
 	}
 
 	public NodeOutput buildNodeOutput(String nodeId) throws Exception {
-		return NodeOutput.of(nodeId, cloneState(currentStateData));
+		return NodeOutput.of(nodeId, cloneState(this.overallState.data()));
 	}
 
 	public OverAllState cloneState(Map<String, Object> data) throws Exception {
@@ -281,22 +278,12 @@ public class GraphRunnerContext {
 		}
 	}
 
-	// ================================================================================================================
-	// State Management Methods
-	// ================================================================================================================
-
-	public void setCurrentStatData(Map<String, Object> state) {
-		this.currentStateData = state;
-	}
-
 	/**
 	 * This method updates both the current state data and the overall state.
 	 *
 	 * @param updateState the state updates to apply
 	 */
 	public void mergeIntoCurrentState(Map<String , Object> updateState) {
-		this.currentStateData = OverAllState.updateState(this.currentStateData,
-				updateState, getKeyStrategyMap());
 		this.overallState.updateState(updateState);
 	}
 
@@ -321,7 +308,7 @@ public class GraphRunnerContext {
 	}
 
 	public Map<String, Object> getCurrentStateData() {
-		return currentStateData;
+		return overallState.data();
 	}
 
 	public OverAllState getOverallState() {

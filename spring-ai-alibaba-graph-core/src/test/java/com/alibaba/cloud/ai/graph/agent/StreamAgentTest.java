@@ -22,12 +22,19 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 
 import org.springframework.ai.chat.model.ChatModel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.testcontainers.shaded.org.checkerframework.checker.units.qual.A;
+import org.testcontainers.shaded.org.checkerframework.checker.units.qual.N;
 import reactor.core.publisher.Flux;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class StreamAgentTest {
@@ -69,17 +76,23 @@ class StreamAgentTest {
 			.build();
 
 		try {
+			List<NodeOutput> outputs = new ArrayList<>();
+
 			Flux<NodeOutput> result = blogAgent.stream("帮我写一个100字左右的散文");
 			result.doOnNext(nodeOutput -> {
-				System.out.println("Node: " + nodeOutput);
+				System.out.println(nodeOutput);
+				outputs.add(nodeOutput);
 			}).then().block();
-			System.out.println("Waiting for the streaming to complete...");
+
+			assertFalse(outputs.isEmpty());
+			var last = outputs.get(outputs.size() - 1);
+			var finalState = last.state();
+			assertTrue(finalState.value("prose_article").isPresent());
+			assertFalse(finalState.value("poem_article").isPresent());
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-
-		// Verify all hooks were executed
 	}
 
 }
