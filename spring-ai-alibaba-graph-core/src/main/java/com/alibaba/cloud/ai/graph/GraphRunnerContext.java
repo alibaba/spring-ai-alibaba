@@ -20,12 +20,14 @@ import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
+import com.alibaba.cloud.ai.graph.internal.node.NodeScope;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.springframework.util.CollectionUtils;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -68,6 +70,8 @@ public class GraphRunnerContext {
 	String resumeFrom;
 
 	ReturnFromEmbed returnFromEmbed;
+
+	private final Map<String, AsyncNodeActionWithConfig> runtimeNodeCache = new HashMap<>();
 
 	public GraphRunnerContext(OverAllState initialState, RunnableConfig config, CompiledGraph compiledGraph)
 			throws Exception {
@@ -180,7 +184,22 @@ public class GraphRunnerContext {
 	// ================================================================================================================
 
 	public AsyncNodeActionWithConfig getNodeAction(String nodeId) {
+		if (nodeId == null) {
+			return null;
+		}
+	NodeScope scope = compiledGraph.getNodeScope(nodeId);
+	if (scope == NodeScope.PROTOTYPE) {
 		return compiledGraph.getNodeAction(nodeId);
+	}
+	var action = runtimeNodeCache.get(nodeId);
+	if (action != null) {
+		return action;
+	}
+	var created = compiledGraph.getNodeAction(nodeId);
+	if (created != null) {
+		runtimeNodeCache.put(nodeId, created);
+	}
+	return created;
 	}
 
 	public Command getEntryPoint() throws Exception {
