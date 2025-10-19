@@ -48,23 +48,14 @@
     </developers>
 
     <modules>
-        <!-- Spring AI Alibaba Modules -->
         <module>spring-ai-alibaba-bom</module>
-        <module>spring-ai-alibaba-a2a</module>
-        <module>spring-ai-alibaba-graph</module>
+        <module>spring-ai-alibaba-graph-core</module>
         <module>spring-ai-alibaba-agent-framework</module>
         <module>spring-ai-alibaba-studio</module>
-        <module>spring-ai-alibaba-agent-nacos</module>
-
-        <!-- Sprint AI Alibaba A2A Server -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-server</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-client</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-registry</module>
 
         <!-- Spring AI Alibaba Spring Boot Starters -->
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-client</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-registry</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-a2a-nacos</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-config-nacos</module>
 
     </modules>
 
