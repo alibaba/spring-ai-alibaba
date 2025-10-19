@@ -13,16 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent;
+package com.alibaba.cloud.ai.graph.agent.tools;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.function.BiFunction;
 
-public class PoemTool implements BiFunction<String, ToolContext, String> {
+public class PoetTool implements BiFunction<String, ToolContext, String> {
 
-	public PoemTool() {
+	public PoetTool() {
 	}
 
 	@Override
@@ -32,6 +34,13 @@ public class PoemTool implements BiFunction<String, ToolContext, String> {
 		System.out.println("tool called : " + originalUserQuery);
 		return "在城市的缝隙里，  \n" + "一束光悄悄发芽，  \n" + "穿过钢筋水泥的沉默，  \n" + "在风中轻轻说话。  \n" + "\n" + "夜色如墨，却不再黑，  \n"
 				+ "星星点亮了每一个角落，  \n" + "我站在时间的边缘，  \n" + "等一朵云，轻轻落下";
+	}
+
+	public static ToolCallback createPoetToolCallback() {
+		return FunctionToolCallback.builder("poem", new PoetTool())
+				.description("用来写诗的工具")
+				.inputType(String.class)
+				.build();
 	}
 
 }

@@ -27,6 +27,8 @@ import org.springframework.ai.document.Document;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
+import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
+
 public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 	public SpringAIJacksonStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
@@ -42,6 +44,7 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 		}).register(new TypeMapper.Reference<UserMessage>(MessageType.USER.name()) {
 		}).register(new TypeMapper.Reference<AssistantMessage>(MessageType.ASSISTANT.name()) {
 		}).register(new TypeMapper.Reference<Document>("DOCUMENT") {
+		}).register(new TypeMapper.Reference<AgentInstructionMessage>("TEMPLATED_USER") {
 		});
 
 		objectMapper.registerModule(module);
@@ -59,12 +62,15 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		DocumentHandler.Deserializer document = new DocumentHandler.Deserializer();
 
+		AgentInstructionMessageHandler.Deserializer templatedUser = new AgentInstructionMessageHandler.Deserializer();
+
 		static void registerTo(SimpleModule module) {
 			module.addDeserializer(ToolResponseMessage.class, tool)
 				.addDeserializer(SystemMessage.class, system)
 				.addDeserializer(UserMessage.class, user)
 				.addDeserializer(AssistantMessage.class, ai)
-				.addDeserializer(Document.class, document);
+				.addDeserializer(Document.class, document)
+				.addDeserializer(AgentInstructionMessage.class, templatedUser);
 		}
 
 	}
@@ -81,12 +87,15 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		DocumentHandler.Serializer document = new DocumentHandler.Serializer();
 
+		AgentInstructionMessageHandler.Serializer templatedUser = new AgentInstructionMessageHandler.Serializer();
+
 		static void registerTo(SimpleModule module) {
 			module.addSerializer(ToolResponseMessage.class, tool)
 				.addSerializer(SystemMessage.class, system)
 				.addSerializer(UserMessage.class, user)
 				.addSerializer(AssistantMessage.class, ai)
-				.addSerializer(Document.class, document);
+				.addSerializer(Document.class, document)
+				.addSerializer(AgentInstructionMessage.class, templatedUser);
 
 		}
 

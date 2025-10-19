@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.graph.agent.flow.builder;
 import java.util.List;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -36,8 +35,6 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	public String name;
 
 	public String description;
-
-	public KeyStrategyFactory keyStrategyFactory;
 
 	public CompileConfig compileConfig;
 
@@ -60,16 +57,6 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	 */
 	public B description(String description) {
 		this.description = description;
-		return self();
-	}
-
-	/**
-	 * Sets the key strategy factory for state management.
-	 * @param keyStrategyFactory the key strategy factory
-	 * @return this builder instance for method chaining
-	 */
-	public B state(KeyStrategyFactory keyStrategyFactory) {
-		this.keyStrategyFactory = keyStrategyFactory;
 		return self();
 	}
 

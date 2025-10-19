@@ -45,7 +45,7 @@ class KeyStrategyFactoryBuilderTest {
 
 		CompiledGraph app = workflow.compile();
 
-		Optional<OverAllState> result = app.call(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 		System.out.println("result = " + result);
 		assertTrue(result.isPresent());
 

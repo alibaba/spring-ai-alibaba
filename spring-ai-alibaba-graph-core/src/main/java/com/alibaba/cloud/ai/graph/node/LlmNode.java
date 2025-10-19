@@ -29,6 +29,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
@@ -61,6 +62,8 @@ public class LlmNode implements NodeAction {
 	private String messagesKey;
 
 	private String outputKey;
+
+	private String outputSchema;
 
 	private ChatClient chatClient;
 
@@ -168,7 +171,22 @@ public class LlmNode implements NodeAction {
 		return buildChatClientRequestSpec(state).call().chatResponse();
 	}
 
+	public void augmentUserMessage(String outputSchema) {
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			Message message = messages.get(i);
+			if (message instanceof UserMessage userMessage) {
+				messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema).build());
+				break;
+			}
+			if (i == 0) {
+				messages.add(new UserMessage(outputSchema));
+			}
+		}
+	}
+
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state) {
+		augmentUserMessage(outputSchema);
+
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
 				.toolCallbacks(toolCallbacks)
 				.messages(messages)
@@ -205,6 +223,8 @@ public class LlmNode implements NodeAction {
 		private String messagesKey;
 
 		private String outputKey;
+
+		private String outputSchema;
 
 		private ChatClient chatClient;
 
@@ -267,6 +287,11 @@ public class LlmNode implements NodeAction {
 			return this;
 		}
 
+		public Builder outputSchema(String outputSchema) {
+			this.outputSchema = outputSchema;
+			return this;
+		}
+
 		public Builder advisors(List<Advisor> advisors) {
 			this.advisors = advisors;
 			return this;
@@ -296,6 +321,7 @@ public class LlmNode implements NodeAction {
 			llmNode.paramsKey = this.paramsKey;
 			llmNode.messagesKey = this.messagesKey;
 			llmNode.outputKey = this.outputKey;
+			llmNode.outputSchema = this.outputSchema;
 			llmNode.stream = this.stream;
 			if (this.params != null) {
 				llmNode.params = this.params;

@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.LogManager;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -208,7 +207,7 @@ public class StateGraphMemorySaverTest {
 
 		var runnableConfig = RunnableConfig.builder().threadId("thread_1").build();
 
-		var state = app.call(inputs, runnableConfig);
+		var state = app.invoke(inputs, runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, state.get().value("steps").get());
@@ -233,7 +232,7 @@ public class StateGraphMemorySaverTest {
 		// SUBMIT NEW THREAD 2
 		runnableConfig = RunnableConfig.builder().threadId("thread_2").build();
 
-		state = app.call(inputs, runnableConfig);
+		state = app.invoke(inputs, runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps, state.get().value("steps").get());
@@ -247,7 +246,7 @@ public class StateGraphMemorySaverTest {
 		}
 
 		// RE-SUBMIT THREAD 1
-		state = app.call(Map.of(), runnableConfig);
+		state = app.invoke(Map.of(), runnableConfig);
 
 		assertTrue(state.isPresent());
 		assertEquals(expectedSteps + 1, state.get().value("steps").get());
@@ -283,7 +282,7 @@ public class StateGraphMemorySaverTest {
 
 		var runnableConfig = RunnableConfig.builder().threadId("thread_1").build();
 
-		var results = app.fluxStreamSnapshots(inputs, runnableConfig).collectList().block();
+		var results = app.streamSnapshots(inputs, runnableConfig).collectList().block();
 
 		results.forEach(r -> log.info("{}: Node: {} - {}", r.getClass().getSimpleName(), r.node(),
 				r.state().value("messages").get()));
@@ -310,7 +309,11 @@ public class StateGraphMemorySaverTest {
 			log.info("SNAPSHOT HISTORY:\n{}\n", s);
 		}
 
-		results = app.fluxStream(null, runnableConfig).collectList().block();
+		RunnableConfig resumeConfig = RunnableConfig.builder()
+				.threadId("thread_1")
+			.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+			.build();
+		results = app.stream(null, resumeConfig).collectList().block();
 
 		assertNotNull(results);
 		assertFalse(results.isEmpty());
@@ -329,7 +332,11 @@ public class StateGraphMemorySaverTest {
 		var toReplay = firstSnapshot.get().config();
 
 		toReplay = app.updateState(toReplay, Map.of("messages", "i'm bartolo"));
-		results = app.fluxStream(null, toReplay).collectList().block();
+		RunnableConfig toReplayResumeConfig = RunnableConfig.builder(toReplay)
+				.threadId("thread_1")
+			.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+			.build();
+		results = app.stream(null, toReplayResumeConfig).collectList().block();
 
 		assertNotNull(results);
 		assertFalse(results.isEmpty());
@@ -365,9 +372,7 @@ public class StateGraphMemorySaverTest {
 		log.info("FIRST CALL WITH INTERRUPT BEFORE 'tools'");
 		Map<String, Object> inputs = Map.of("messages", "whether in Naples?");
 		var results = app.stream(inputs, runnableConfig)
-			.stream()
-			.peek(n -> log.info("{}", n))
-			.collect(Collectors.toList());
+			.doOnNext(n -> log.info("{}", n)).collectList().block();
 		assertNotNull(results);
 		assertEquals(2, results.size());
 		assertEquals(START, results.get(0).node());
@@ -382,7 +387,10 @@ public class StateGraphMemorySaverTest {
 		assertEquals("tools", state.next());
 
 		log.info("RESUME CALL");
-		results = app.stream(null, state.config()).stream().peek(n -> log.info("{}", n)).collect(Collectors.toList());
+		RunnableConfig resumeConfig = RunnableConfig.builder(runnableConfig)
+			.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+			.build();
+		results = app.stream(null, resumeConfig).doOnNext(n -> log.info("{}", n)).collectList().block();
 
 		assertNotNull(results);
 		assertEquals(3, results.size());

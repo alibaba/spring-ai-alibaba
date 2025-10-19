@@ -51,7 +51,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.StringUtils;
 
 public class GraphAgentExecutor implements AgentExecutor {
@@ -92,18 +91,15 @@ public class GraphAgentExecutor implements AgentExecutor {
 			}
 			// TODO adapter for all agent type, now only support react agent
 			String input = sb.toString().trim();
-			Map<String, Object> messages = Map.of();
-			if (StringUtils.hasLength(input)) {
-				messages = Map.of("messages", List.of(new UserMessage(input)));
-			} else {
+			if (!StringUtils.hasLength(input)) {
 				LOGGER.info("Instruction in remote agent is empty, this agent will share messages with remote agent by using the same threadId.");
 			}
 
 			if (isStreamRequest(context)) {
-				executeStreamTask(messages, context, eventQueue);
+				executeStreamTask(input, context, eventQueue);
 			}
 			else {
-				executeForNonStreamTask(messages, context, eventQueue);
+				executeForNonStreamTask(input, context, eventQueue);
 			}
 		}
 		catch (Exception e) {
@@ -152,10 +148,10 @@ public class GraphAgentExecutor implements AgentExecutor {
 		return builder.build();
 	}
 
-	private void executeStreamTask(Map<String, Object> input, RequestContext context, EventQueue eventQueue)
+	private void executeStreamTask(String inputMessage, RequestContext context, EventQueue eventQueue)
 			throws GraphStateException, GraphRunnerException {
 		RunnableConfig runnableConfig = getRunnableConfig(context);
-		Flux<NodeOutput> generator = executeAgent.stream(input, runnableConfig);
+		Flux<NodeOutput> generator = executeAgent.stream(inputMessage, runnableConfig);
 		Task task = context.getTask();
 		if (task == null) {
 			task = newTask(context.getMessage());
@@ -170,10 +166,10 @@ public class GraphAgentExecutor implements AgentExecutor {
 		waitTaskCompleted(task);
 	}
 
-	private void executeForNonStreamTask(Map<String, Object> input, RequestContext context, EventQueue eventQueue)
+	private void executeForNonStreamTask(String inputMessage, RequestContext context, EventQueue eventQueue)
 			throws GraphStateException, GraphRunnerException {
 		RunnableConfig runnableConfig = getRunnableConfig(context);
-		var result = executeAgent.invoke(input, runnableConfig);
+		var result = executeAgent.invoke(inputMessage, runnableConfig);
 		// FIXME: currently only support ReactAgent and A2aRemoteAgent as the root agent
 		String outputText = result.get().data().containsKey(((BaseAgent)executeAgent).getOutputKey())
 				? String.valueOf(result.get().data().get(((BaseAgent)executeAgent).getOutputKey())) : "No output key in result.";

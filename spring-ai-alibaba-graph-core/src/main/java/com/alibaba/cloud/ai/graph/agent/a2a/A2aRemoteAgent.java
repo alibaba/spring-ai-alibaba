@@ -46,7 +46,7 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	// Private constructor for Builder pattern
 	private A2aRemoteAgent(Builder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.includeContents, builder.outputKey, builder.outputKeyStrategy);
+		super(builder.name, builder.description, builder.includeContents, builder.build().isReturnReasoningContents(), builder.outputKey, builder.outputKeyStrategy);
 		this.agentCard = builder.agentCard;
 		this.keyStrategyFactory = builder.keyStrategyFactory;
 		this.compileConfig = builder.compileConfig;
@@ -83,8 +83,8 @@ public class A2aRemoteAgent extends BaseAgent {
 	}
 
 	@Override
-	public Node asNode(boolean includeContents, String outputKeyToParent) {
-		return new A2aRemoteAgentNode(this.name, includeContents, outputKeyToParent, this.instruction, this.agentCard, this.streaming, this.shareState, this.getAndCompileGraph());
+	public Node asNode(boolean includeContents, boolean returnReasoningContents, String outputKeyToParent) {
+		return new A2aRemoteAgentNode(this.name, includeContents, returnReasoningContents, outputKeyToParent, this.instruction, this.agentCard, this.streaming, this.shareState, this.getAndCompileGraph());
 	}
 
 	/**
@@ -96,7 +96,7 @@ public class A2aRemoteAgent extends BaseAgent {
 
 		private final CompiledGraph subGraph;
 
-		public A2aRemoteAgentNode(String id, boolean includeContents, String outputKeyToParent, String instruction, AgentCardWrapper agentCard, boolean streaming, boolean shareState, CompiledGraph subGraph) {
+		public A2aRemoteAgentNode(String id, boolean includeContents, boolean returnReasoningContents, String outputKeyToParent, String instruction, AgentCardWrapper agentCard, boolean streaming, boolean shareState, CompiledGraph subGraph) {
 			super(Objects.requireNonNull(id, "id cannot be null"),
 					(config) -> AsyncNodeActionWithConfig.node_async(new A2aNodeActionWithConfig(agentCard, includeContents, outputKeyToParent, instruction, streaming, shareState, config)));
 			this.subGraph = subGraph;
