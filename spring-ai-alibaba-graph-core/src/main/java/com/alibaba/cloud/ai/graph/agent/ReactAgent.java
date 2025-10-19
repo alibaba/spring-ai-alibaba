@@ -48,6 +48,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 
 import org.springframework.util.StringUtils;
 
@@ -411,6 +412,30 @@ public class ReactAgent extends BaseAgent {
 			return defaultDestination;
 		}
 
+		List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
+
+        if (messages.isEmpty()) {
+            return "end";
+        }
+
+        Object last = messages.get(messages.size() - 1);
+		AssistantMessage message = null;
+
+        //兼容Spring AI新旧版本
+        if (last instanceof AssistantMessage) {
+            message = (AssistantMessage) last;
+        } else if (last instanceof ChatResponse) {
+            ChatResponse chatResponse = (ChatResponse) last;
+            if (chatResponse.getResult() == null || chatResponse.getResult().getOutput() == null) {
+                return "end";
+            }
+            message = chatResponse.getResult().getOutput();
+        } else {
+            throw new IllegalStateException("Unexpected message type: " + last.getClass());
+        }
+
+		if (message.hasToolCalls()) {
+			return "continue";
 		return switch (jumpTo) {
 			case model -> modelDestination;
 			case end -> endDestination;
