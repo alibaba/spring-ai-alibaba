@@ -1270,6 +1270,9 @@ public class DashScopeApi {
 	 * "https://help.aliyun.com/zh/model-studio/developer-reference/deepseek">DeepSeek
 	 * ReasoningContent</a> Applicable only for {@link Role#ASSISTANT} role and null
 	 * otherwise.
+	 * @param partial Indicates whether this message is a partial prefix for code completion.
+	 * When set to true, the model will continue generating from the provided content.
+	 * Applicable only for {@link Role#ASSISTANT} role and null otherwise.
 	 */
 	// format: off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
@@ -1277,7 +1280,8 @@ public class DashScopeApi {
 	public record ChatCompletionMessage(@JsonProperty("content") Object rawContent, @JsonProperty("role") Role role,
 			@JsonProperty("name") String name, @JsonProperty("tool_call_id") String toolCallId,
 			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
-			@JsonProperty("reasoning_content") String reasoningContent) {
+			@JsonProperty("reasoning_content") String reasoningContent,
+			@JsonProperty("partial") Boolean partial) {
 
 		/**
 		 * Get message content as String.
@@ -1316,7 +1320,7 @@ public class DashScopeApi {
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
 
-			this(content, role, null, null, null, null);
+			this(content, role, null, null, null, null, null);
 		}
 		// format: on
 

@@ -482,17 +482,28 @@ public class DashScopeChatModel implements ChatModel {
 						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
-				var assistantMessage = (AssistantMessage) message;
-				List<ToolCall> toolCalls = null;
-				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
-						var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
-						return new ToolCall(toolCall.id(), toolCall.type(), function);
-					}).toList();
-				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null));
+			var assistantMessage = (AssistantMessage) message;
+			List<ToolCall> toolCalls = null;
+			if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+				toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
+					var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
+					return new ToolCall(toolCall.id(), toolCall.type(), function);
+				}).toList();
 			}
+			// Extract partial flag from metadata
+			Boolean partial = null;
+			if (assistantMessage.getMetadata() != null) {
+				Object partialValue = assistantMessage.getMetadata().get("partial");
+				if (partialValue instanceof Boolean) {
+					partial = (Boolean) partialValue;
+				}
+				else if (partialValue instanceof String) {
+					partial = Boolean.parseBoolean((String) partialValue);
+				}
+			}
+			return List.of(new ChatCompletionMessage(assistantMessage.getText(),
+					ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, partial));
+		}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 
@@ -501,11 +512,11 @@ public class DashScopeChatModel implements ChatModel {
 					Assert.isTrue(response.name() != null, "ToolResponseMessage must have a name");
 				});
 
-				return toolMessage.getResponses()
-					.stream()
-					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null, null))
-					.toList();
+			return toolMessage.getResponses()
+				.stream()
+				.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
+						tr.id(), null, null, null))
+				.toList();
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
