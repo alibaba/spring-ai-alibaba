@@ -268,7 +268,7 @@ public class SubGraphTest {
 		var interruptBeforeC = workflowParent
 			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
 
-		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C), _execute(interruptBeforeC, Map.of()));
+		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, B_C), _execute(interruptBeforeC, Map.of()));
 
 		// RESUME AFTER B2
 		assertIterableEquals(List.of("C", END), _resume(interruptBeforeC, null));
@@ -276,7 +276,7 @@ public class SubGraphTest {
 		// INTERRUPT BEFORE SUBGRAPH B
 		var interruptBeforeSubgraphB = workflowParent
 			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
-		assertIterableEquals(List.of(START, "A"), _execute(interruptBeforeSubgraphB, Map.of()));
+		assertIterableEquals(List.of(START, "A", "A"), _execute(interruptBeforeSubgraphB, Map.of()));
 
 		// RESUME AFTER SUBGRAPH B
 		assertIterableEquals(List.of(B_B1, B_B2, B_C, "C", END), _resume(interruptBeforeSubgraphB, null));
@@ -383,7 +383,7 @@ public class SubGraphTest {
 		var interruptBeforeC = workflowParent
 			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
 
-		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C1"), _execute(interruptBeforeC, Map.of()));
+		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C1", "C1"), _execute(interruptBeforeC, Map.of()));
 
 		// RESUME BEFORE C
 		assertIterableEquals(List.of("C", END), _resume(interruptBeforeC, null));
@@ -391,7 +391,7 @@ public class SubGraphTest {
 		// INTERRUPT BEFORE SUBGRAPH B
 		var interruptBeforeB = workflowParent
 			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
-		assertIterableEquals(List.of(START, "A"), _execute(interruptBeforeB, Map.of()));
+		assertIterableEquals(List.of(START, "A", "A"), _execute(interruptBeforeB, Map.of()));
 
 		// RESUME BEFORE SUBGRAPH B
 		assertIterableEquals(List.of(B_B1, B_B2, B_C, "C1", "C", END), _resume(interruptBeforeB, null));
