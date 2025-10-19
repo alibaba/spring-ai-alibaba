@@ -150,15 +150,44 @@ public class ModelFactory {
 			.apiKey(credential.getApiKey())
 			.responseErrorHandler(ErrorHandlerUtils.OPENAI_RESPONSE_ERROR_HANDLER)
 			.headers(ApiUtils.getBaseHeaders());
+		
 		if (StringUtils.isNotBlank(credential.getEndpoint())) {
 			String endpoint = credential.getEndpoint();
+			
+			// Get custom API paths from credential, use defaults if not provided
+			String completionsPath = StringUtils.isNotBlank(credential.getCompletionsPath()) 
+				? credential.getCompletionsPath() 
+				: "/v1/chat/completions";
+			String embeddingsPath = StringUtils.isNotBlank(credential.getEmbeddingsPath()) 
+				? credential.getEmbeddingsPath() 
+				: "/v1/embeddings";
 
-			// to remove the /v1 part as spring ai client will add it
+			// Remove path suffix from endpoint to avoid duplication
+			// Example: https://ark.cn-beijing.volces.com/api/v3 + /api/v3/chat/completions
+			// Extract the common prefix from completionsPath (e.g., /api/v3 from /api/v3/chat/completions)
+			if (completionsPath.startsWith("/") && completionsPath.contains("/")) {
+				int lastSlashIndex = completionsPath.lastIndexOf("/");
+				if (lastSlashIndex > 0) {
+					String pathPrefix = completionsPath.substring(0, lastSlashIndex);
+					if (StringUtils.isNotBlank(pathPrefix) && endpoint.endsWith(pathPrefix)) {
+						endpoint = endpoint.substring(0, endpoint.length() - pathPrefix.length());
+						log.debug("Removed path prefix '{}' from endpoint to avoid duplication", pathPrefix);
+					}
+				}
+			}
+			
+			// Also remove /v1 suffix for standard OpenAI compatible APIs
 			if (endpoint.endsWith("/v1") || endpoint.endsWith("/v1/")) {
 				endpoint = endpoint.replaceAll("/v1/?$", "");
 			}
-
+			
+			// Set endpoint and custom paths
 			openAiApiBuilder.baseUrl(endpoint);
+			openAiApiBuilder.completionsPath(completionsPath);
+			openAiApiBuilder.embeddingsPath(embeddingsPath);
+			
+			log.debug("Built OpenAI API - endpoint: {}, completionsPath: {}, embeddingsPath: {}", 
+				endpoint, completionsPath, embeddingsPath);
 		}
 
 		return openAiApiBuilder.build();

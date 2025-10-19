@@ -17,11 +17,9 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.Errors;
-import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
@@ -372,8 +370,7 @@ public class CompiledGraph {
 	 */
 	OverAllState cloneState(Map<String, Object> data, OverAllState overAllState)
 			throws IOException, ClassNotFoundException {
-		return new OverAllState(stateGraph.getStateSerializer().cloneObject(data).data(), overAllState.keyStrategies(),
-				overAllState.isResume(), overAllState.getStore());
+		return new OverAllState(stateGraph.getStateSerializer().cloneObject(data).data(), overAllState.keyStrategies(), overAllState.getStore());
 	}
 
 	/**
@@ -430,11 +427,19 @@ public class CompiledGraph {
 		this.maxIterations = maxIterations;
 	}
 
-	public Flux<GraphResponse<NodeOutput>> fluxDataStream(Map<String, Object> inputs, RunnableConfig config) {
-		return fluxDataStream(stateCreate(inputs), config);
+	public GraphResponse<NodeOutput> invokeAndGetResponse(Map<String, Object> inputs, RunnableConfig config) {
+		return graphResponseStream(inputs, config).last().block();
 	}
 
-	public Flux<GraphResponse<NodeOutput>> fluxDataStream(OverAllState state, RunnableConfig config) {
+	public GraphResponse<NodeOutput> invokeAndGetResponse(OverAllState state, RunnableConfig config) {
+		return graphResponseStream(state, config).last().block();
+	}
+
+	public Flux<GraphResponse<NodeOutput>> graphResponseStream(Map<String, Object> inputs, RunnableConfig config) {
+		return graphResponseStream(stateCreate(inputs), config);
+	}
+
+	public Flux<GraphResponse<NodeOutput>> graphResponseStream(OverAllState state, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 		try {
 			GraphRunner runner = new GraphRunner(this, config);
@@ -452,8 +457,8 @@ public class CompiledGraph {
 	 * @param config the invoke configuration
 	 * @return a Flux stream of NodeOutput
 	 */
-	public Flux<NodeOutput> fluxStream(Map<String, Object> inputs, RunnableConfig config) {
-		return fluxStreamFromInitialNode(stateCreate(inputs), config);
+	public Flux<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) {
+		return streamFromInitialNode(stateCreate(inputs), config);
 	}
 
 	/**
@@ -462,18 +467,22 @@ public class CompiledGraph {
 	 * @param config the configuration
 	 * @return a Flux stream of NodeOutput
 	 */
-	public Flux<NodeOutput> fluxStreamFromInitialNode(OverAllState overAllState, RunnableConfig config) {
+	public Flux<NodeOutput> streamFromInitialNode(OverAllState overAllState, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
 		try {
 			GraphRunner runner = new GraphRunner(this, config);
 			return runner.run(overAllState).flatMap(data -> {
 				if (data.isDone()) {
-					// TODO, collect data.resultValue if necessary.
-					return Flux.empty();
+					if (data.resultValue().isPresent() && data.resultValue().get() instanceof NodeOutput) {
+						return Flux.just((NodeOutput)data.resultValue().get());
+					} else {
+						return Flux.empty();
+					}
 				}
 				if (data.isError()) {
 					return Mono.fromFuture(data.getOutput()).onErrorMap(throwable -> throwable).flux();
 				}
+
 				return Mono.fromFuture(data.getOutput()).flux();
 			});
 		}
@@ -487,16 +496,16 @@ public class CompiledGraph {
 	 * @param inputs the input map
 	 * @return a Flux stream of NodeOutput
 	 */
-	public Flux<NodeOutput> fluxStream(Map<String, Object> inputs) {
-		return fluxStream(inputs, RunnableConfig.builder().build());
+	public Flux<NodeOutput> stream(Map<String, Object> inputs) {
+		return stream(inputs, RunnableConfig.builder().build());
 	}
 
 	/**
 	 * Creates a Flux stream with empty inputs.
 	 * @return a Flux stream of NodeOutput
 	 */
-	public Flux<NodeOutput> fluxStream() {
-		return fluxStream(Map.of());
+	public Flux<NodeOutput> stream() {
+		return stream(Map.of());
 	}
 
 	/**
@@ -505,9 +514,9 @@ public class CompiledGraph {
 	 * @param config the invoke configuration
 	 * @return a Flux stream of NodeOutput containing snapshots
 	 */
-	public Flux<NodeOutput> fluxStreamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
+	public Flux<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config) {
 		Objects.requireNonNull(config, "config cannot be null");
-		return fluxStream(inputs, config.withStreamMode(StreamMode.SNAPSHOTS));
+		return stream(inputs, config.withStreamMode(StreamMode.SNAPSHOTS));
 	}
 
 	/**
@@ -516,8 +525,8 @@ public class CompiledGraph {
 	 * @param config the invoke configuration
 	 * @return an Optional containing the final state
 	 */
-	public Optional<OverAllState> call(Map<String, Object> inputs, RunnableConfig config) {
-		return Optional.ofNullable(fluxStream(inputs, config).last().map(NodeOutput::state).block());
+	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config) {
+		return Optional.ofNullable(stream(inputs, config).last().map(NodeOutput::state).block());
 	}
 
 	/**
@@ -526,9 +535,9 @@ public class CompiledGraph {
 	 * @param config the configuration
 	 * @return an Optional containing the final state
 	 */
-	public Optional<OverAllState> call(OverAllState overAllState, RunnableConfig config) {
+	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
 		return Optional
-			.ofNullable(fluxStreamFromInitialNode(overAllState, config).last().map(NodeOutput::state).block()); // Block and wait for result
+			.ofNullable(streamFromInitialNode(overAllState, config).last().map(NodeOutput::state).block());
 	}
 
 	/**
@@ -536,29 +545,20 @@ public class CompiledGraph {
 	 * @param inputs the input map
 	 * @return an Optional containing the final state
 	 */
-	public Optional<OverAllState> call(Map<String, Object> inputs) {
-		return call(inputs, RunnableConfig.builder().build());
+	public Optional<OverAllState> invoke(Map<String, Object> inputs) {
+		return invoke(inputs, RunnableConfig.builder().build());
 	}
 
-	/**
-	 * Resumes graph execution reactively.
-	 * @param feedback the human feedback
-	 * @param config the configuration
-	 * @return an Optional containing the final state
-	 */
-	public Optional<OverAllState> resume(OverAllState.HumanFeedback feedback, RunnableConfig config) {
-		try {
-			StateSnapshot stateSnapshot = this.getState(config);
-			OverAllState resumeState = stateCreate(stateSnapshot.state().data());
-			resumeState.withResume();
-			resumeState.withHumanFeedback(feedback);
+	public Optional<NodeOutput> invokeAndGetOutput(OverAllState overAllState, RunnableConfig config) {
+		return Optional.ofNullable(streamFromInitialNode(overAllState, config).last().block());
+	}
 
-			return Optional
-				.ofNullable(fluxStreamFromInitialNode(resumeState, config).last().map(NodeOutput::state).block()); // Block and wait for result
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Resume execution failed", e);
-		}
+	public Optional<NodeOutput> invokeAndGetOutput(Map<String, Object> inputs, RunnableConfig config) {
+		return Optional.ofNullable(stream(inputs, config).last().block());
+	}
+
+	public Optional<NodeOutput> invokeAndGetOutput(Map<String, Object> inputs) {
+		return invokeAndGetOutput(inputs, RunnableConfig.builder().build());
 	}
 
 	/**
@@ -624,150 +624,6 @@ public class CompiledGraph {
 	 */
 	public GraphRepresentation getGraph(GraphRepresentation.Type type) {
 		return getGraph(type, "Graph Diagram", true);
-	}
-
-	/**
-	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
-	 * @deprecated Use {@link #fluxStream(Map, RunnableConfig)} which returns Flux instead
-	 * @param inputs the input map
-	 * @param config the invoke configuration
-	 * @return an AsyncGenerator stream of NodeOutput
-	 */
-	@Deprecated(since = "1.0.4", forRemoval = true)
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config)
-			throws GraphRunnerException {
-		Objects.requireNonNull(config, "config cannot be null");
-		// Convert Flux to AsyncGenerator for backward compatibility
-		Flux<NodeOutput> flux = fluxStream(inputs, config);
-		return AsyncGenerator.fromFlux(flux);
-	}
-
-	// ========================================
-	// DEPRECATED METHODS FROM CompiledGraph2
-	// ========================================
-
-	/**
-	 * Stream async generator from initial node.
-	 * @deprecated Use {@link #fluxStreamFromInitialNode(OverAllState, RunnableConfig)}
-	 * which returns Flux instead
-	 * @param overAllState the over all state
-	 * @param config the config
-	 * @return the async generator
-	 */
-	@Deprecated(since = "1.0.4", forRemoval = true)
-	public AsyncGenerator<NodeOutput> streamFromInitialNode(OverAllState overAllState, RunnableConfig config)
-			throws GraphRunnerException {
-		Objects.requireNonNull(config, "config cannot be null");
-		// Convert Flux to AsyncGenerator for backward compatibility
-		Flux<NodeOutput> flux = fluxStreamFromInitialNode(overAllState, config);
-		return AsyncGenerator.fromFlux(flux);
-	}
-
-	/**
-	 * Creates an AsyncGenerator stream of NodeOutput based on the provided inputs.
-	 * @deprecated Use {@link #fluxStream(Map)} which returns Flux instead
-	 * @param inputs the input map
-	 * @return an AsyncGenerator stream of NodeOutput
-	 */
-	@Deprecated(since = "1.0.4", forRemoval = true)
-	public AsyncGenerator<NodeOutput> stream(Map<String, Object> inputs) throws GraphRunnerException {
-		// Convert Flux to AsyncGenerator for backward compatibility
-		Flux<NodeOutput> flux = fluxStream(inputs);
-		return AsyncGenerator.fromFlux(flux);
-	}
-
-	/**
-	 * Stream async generator with empty inputs.
-	 * @deprecated Use {@link #fluxStream()} which returns Flux instead
-	 * @return the async generator
-	 */
-	@Deprecated(since = "1.0.4", forRemoval = true)
-	public AsyncGenerator<NodeOutput> stream() throws GraphRunnerException {
-		// Convert Flux to AsyncGenerator for backward compatibility
-		Flux<NodeOutput> flux = fluxStream();
-		return AsyncGenerator.fromFlux(flux);
-	}
-
-	/**
-	 * Invokes the graph execution with the provided inputs and returns the final state.
-	 * @deprecated Use {@link #call(Map, RunnableConfig)} which returns
-	 * Optional&lt;OverAllState&gt; instead
-	 * @param inputs the input map
-	 * @param config the invoke configuration
-	 * @return an Optional containing the final state if present, otherwise an empty
-	 * Optional
-	 */
-	@Deprecated(since = "1.0.4", forRemoval = true)
-	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config)
-			throws GraphRunnerException {
-		try {
-			return call(inputs, config);
-		}
-		catch (Exception e) {
-			if (e instanceof GraphRunnerException) {
-				throw e;
-			}
-			throw new GraphRunnerException("Invoke execution failed", e);
-		}
-	}
-
-	/**
-	 * Invoke with initial state.
-	 * @deprecated Use {@link #call(OverAllState, RunnableConfig)} which returns
-	 * Optional&lt;OverAllState&gt; instead
-	 * @param overAllState the over all state
-	 * @param config the config
-	 * @return the optional
-	 */
-	@Deprecated(since = "1.0.4", forRemoval = true)
-	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) throws GraphRunnerException {
-		try {
-			return call(overAllState, config);
-		}
-		catch (Exception e) {
-			if (e instanceof GraphRunnerException) {
-				throw e;
-			}
-			throw new GraphRunnerException("Invoke execution failed", e);
-		}
-	}
-
-	/**
-	 * Invokes the graph execution with the provided inputs and returns the final state.
-	 * @deprecated Use {@link #call(Map)} which returns Optional&lt;OverAllState&gt;
-	 * instead
-	 * @param inputs the input map
-	 * @return an Optional containing the final state if present, otherwise an empty
-	 * Optional
-	 */
-	@Deprecated(since = "1.0.4", forRemoval = true)
-	public Optional<OverAllState> invoke(Map<String, Object> inputs) throws GraphRunnerException {
-		try {
-			return call(inputs);
-		}
-		catch (Exception e) {
-			if (e instanceof GraphRunnerException) {
-				throw e;
-			}
-			throw new GraphRunnerException("Invoke execution failed", e);
-		}
-	}
-
-	/**
-	 * Creates an AsyncGenerator stream for snapshots based on the provided inputs.
-	 * @deprecated Use {@link #fluxStreamSnapshots(Map, RunnableConfig)} which returns
-	 * Flux instead
-	 * @param inputs the input map
-	 * @param config the invoke configuration
-	 * @return an AsyncGenerator stream of NodeOutput
-	 */
-	@Deprecated(since = "1.0.4", forRemoval = true)
-	public AsyncGenerator<NodeOutput> streamSnapshots(Map<String, Object> inputs, RunnableConfig config)
-			throws GraphRunnerException {
-		Objects.requireNonNull(config, "config cannot be null");
-		// Convert Flux to AsyncGenerator for backward compatibility
-		Flux<NodeOutput> flux = fluxStreamSnapshots(inputs, config);
-		return AsyncGenerator.fromFlux(flux);
 	}
 
 	/**

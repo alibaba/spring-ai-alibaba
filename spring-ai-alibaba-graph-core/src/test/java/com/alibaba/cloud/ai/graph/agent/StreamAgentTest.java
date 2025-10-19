@@ -17,22 +17,21 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import org.springframework.ai.chat.model.ChatModel;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class StreamAgentTest {
@@ -50,15 +49,6 @@ class StreamAgentTest {
 
 	@Test
 	public void testStreamLlmRoutingAgent() throws Exception {
-		KeyStrategyFactory stateFactory = () -> {
-			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			keyStrategyHashMap.put("input", new ReplaceStrategy());
-			keyStrategyHashMap.put("topic", new ReplaceStrategy());
-			keyStrategyHashMap.put("article", new ReplaceStrategy());
-			keyStrategyHashMap.put("reviewed_article", new ReplaceStrategy());
-			return keyStrategyHashMap;
-		};
-
 		ReactAgent proseWriterAgent = ReactAgent.builder()
 			.name("prose_writer_agent")
 			.model(chatModel)
@@ -78,23 +68,28 @@ class StreamAgentTest {
 		LlmRoutingAgent blogAgent = LlmRoutingAgent.builder()
 			.name("blog_agent")
 			.model(chatModel)
-			.state(stateFactory)
 			.description("可以根据用户给定的主题写文章或作诗。")
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent))
 			.build();
 
 		try {
-			Flux<NodeOutput> result = blogAgent.stream(Map.of("input", "帮我写一个100字左右的散文"));
+			List<NodeOutput> outputs = new ArrayList<>();
+
+			Flux<NodeOutput> result = blogAgent.stream("帮我写一个100字左右的散文");
 			result.doOnNext(nodeOutput -> {
-				System.out.println("Node: " + nodeOutput);
+				System.out.println(nodeOutput);
+				outputs.add(nodeOutput);
 			}).then().block();
-			System.out.println("Waiting for the streaming to complete...");
+
+			assertFalse(outputs.isEmpty());
+			var last = outputs.get(outputs.size() - 1);
+			var finalState = last.state();
+			assertTrue(finalState.value("prose_article").isPresent());
+			assertFalse(finalState.value("poem_article").isPresent());
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
-
-		// Verify all hooks were executed
 	}
 
 }

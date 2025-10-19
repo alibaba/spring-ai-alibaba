@@ -15,14 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.builder;
 
-import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.HashMap;
@@ -124,23 +122,7 @@ public class FlowGraphBuilder {
 		}
 
 		public FlowGraphConfig keyStrategyFactory(KeyStrategyFactory factory) {
-			if (factory == null) {
-				return this;
-			}
-
-			// Check if the factory's result contains "messages" key
-			// FIXME, executing factory method in advance might cause side effects.
-			Map<String, KeyStrategy> strategyMap = factory.apply();
-			if (!strategyMap.containsKey("messages")) {
-				// Create a new factory that includes all existing values plus "messages" key
-				this.keyStrategyFactory = () -> {
-					Map<String, KeyStrategy> newStrategyMap = new HashMap<>(strategyMap);
-					newStrategyMap.put("messages", new AppendStrategy());
-					return newStrategyMap;
-				};
-			} else {
-				this.keyStrategyFactory = factory;
-			}
+			this.keyStrategyFactory = factory;
 			return this;
 		}
 

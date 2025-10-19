@@ -88,7 +88,6 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 						&& java.util.Objects.equals(context.getNextNodeId(), INTERRUPT_AFTER)) {
 					var nextNodeCommand = context.nextNodeId(resumeFrom.get(), context.getCurrentStateData());
 					context.setNextNodeId(nextNodeCommand.gotoNode());
-					context.setCurrentStatData(nextNodeCommand.update());
 					context.setCurrentNodeId(null);
 				}
 			}
@@ -125,7 +124,6 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 			context.doListeners(START, null);
 			Command nextCommand = context.getEntryPoint();
 			context.setNextNodeId(nextCommand.gotoNode());
-			context.setCurrentStatData(nextCommand.update());
 
 			Optional<Checkpoint> cp = context.addCheckpoint(START, context.getNextNodeId());
 			NodeOutput output = context.buildOutput(START, cp);
