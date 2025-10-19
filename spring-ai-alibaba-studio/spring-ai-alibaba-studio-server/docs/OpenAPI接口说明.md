@@ -16,19 +16,19 @@ https://localhost:8080/api/v1/apps/chat/completions
 
 |  一级参数  |  二级参数  |  类型  |  必选  |  描述  |
 | --- | --- | --- | --- | --- |
-|  Headers (HTTP 请求头)  |  Content-Type  |  string  |  是  |  请求类型：application/json  |
-|  |  Authorization  |  string  |  是  |  API-Key，例如：Bearer sk-d1\*\*2a  |
+|  Headers (HTTP 请求头)  |  Content-Type  |  string  |  是  |  请求类型：application/json。  |
+|  |  Authorization  |  string  |  是  |  API-Key，例如：Bearer sk-d1\*\*2a。  |
 |  |  X-Aagentscope-WorkSpace  |  string  |  是  |  业务空间id。  |
 |  app\_id  |   |  string  |  是  |  智能体应用唯一标识。  |
 |  conversation\_id  |   |  string  |  否  |  对话历史会话唯一标识, 传入conversation\_id后，将在云端存储对话历史进行记录。  |
-|  stream  |   |  bool  |  是  |  是否流式输出  |
+|  stream  |   |  bool  |  是  |  是否流式输出。  |
 |  messages  |   |  list  |  是  |  由历史对话组成的消息列表。  |
 |  |  role  |  string  |  是  |  用户消息的角色，固定为user。  |
 |  |  content  |  string\|map  |  是  |  消息内容， 包括文本，图像，音频等类型。  |
-|  |  content\_type  |  string  |  是  |  内容类型，默认为text text: content为string类型的文本 multimodal: 多模态类型数组  |
-|  prompt\_variables  |   |  map  |  否  |  prompt自定义变量  |
+|  |  content\_type  |  string  |  是  |  内容类型，默认为text text: content为string类型的文本 multimodal: 多模态类型数组。  |
+|  prompt\_variables  |   |  map  |  否  |  prompt自定义变量。  |
 |  extra\_params  |   |  map  |  否  |  插件和流程画布的补充参数信息。传入此参数后，调用插件api时会传入此参数值。 { "tool\_xxxxxx": { "user\_id": 10001, "location": "北京" } }  |
-|  is\_draft  |   |  bool  |  否  |  是否调用草稿版本，默认为false  |
+|  is\_draft  |   |  bool  |  否  |  是否调用草稿版本，默认为false。  |
 
 **MultimodelContent定义**:
 
@@ -45,25 +45,25 @@ https://localhost:8080/api/v1/apps/chat/completions
 |  一级参数  |  二级参数  |  三级参数  |  四级参数  |  类型  |  描述  |
 | --- | --- | --- | --- | --- | --- |
 |  调用是否成功（http status code）  |   |   |   |  int  |  调用是否成功通过 http 的返回 code 来判断，返回 200 则表示此次调用成功，返回其他值，则通过 code 和 message 来设置对应的失败信息。  |
-|  conversation\_id  |   |   |   |  string  |  多轮会话id  |
-|  status  |   |   |   |  string  |  有三种情况： completed failed in\_progress  |
+|  conversation\_id  |   |   |   |  string  |  多轮会话id。  |
+|  status  |   |   |   |  string  |  有三种情况： completed、 failed、 in\_progress。  |
 |  message  |   |   |   |  object  |  模型生成回复为message。  |
-|   |  role  |   |   |  string  |  包括assisistant、plugin或者function。  |
-|   |  name  |   |   |  string  |  role为plugin或者function时对应插件名或者函数名  |
+|   |  role  |   |   |  string  |  包括assistant、plugin或者function。  |
+|   |  name  |   |   |  string  |  role为plugin或者function时对应插件名或者函数名。  |
 |   |  content  |   |   |  string  |  模型生成的内容。  |
-|   |  tool\_calls  |   |   |  list  |  插件返回的状态  |
+|   |  tool\_calls  |   |   |  list  |  插件返回的状态。  |
 |   |   |  id  |   |  string  |  插件唯一标识。  |
-|   |   |  type  |   |  string  |  函数调用类型, 默认为function。 function: 本地函数 tool\_call: 远程函数调用 tool\_result: 远程函数调用结果。 file\_search\_call: 文档检索调用 file\_search\_result: 文档检索结果  |
+|   |   |  type  |   |  string  |  函数调用类型, 默认为function。 function: 本地函数 tool\_call: 远程函数调用 tool\_result: 远程函数调用结果。 file\_search\_call: 文档检索调用 file\_search\_result: 文档检索结果。  |
 |   |   |  function  |   |  map  |  执行的工具信息。  |
 |   |   |   |  name  |  string  |  工具名。  |
 |   |   |   |  arguments  |  string  |  json字符串格式的工具调用参数。  |
 |   |   |   |  output  |  string  |  json字符串格式的工具调用结果。  |
 |  usage  |  prompt\_tokens  |   |   |  int  |  输入的token数量。  |
 |  |  completion\_tokens  |   |   |  int  |  输出的token数量。  |
-|  |  total\_tokens  |   |   |  int  |  输入为文本时候返回，为input\_tokens和output\_tokens的和  |
+|  |  total\_tokens  |   |   |  int  |  输入为文本时候返回，为input\_tokens和output\_tokens的和。  |
 |  error  |  code  |   |   |  string  |  出错的时候的错误代码，参考标准错误码列表。  |
 |   |  message  |   |   |  string  |  出错的时候的详细错误信息。  |
-|  request\_id  |   |   |   |  string  |  本次请求的系统唯一码  |
+|  request\_id  |   |   |   |  string  |  本次请求的系统唯一码。  |
 
 ##### 请求示例（SSE 打开）
 
@@ -185,18 +185,18 @@ https://localhost:8080/api/v1/apps/workflow/completions
 
 |  一级参数  |  二级参数  |  类型  |  必选  |  描述  |
 | --- | --- | --- | --- | --- |
-|  Headers (HTTP 请求头)  |  Content-Type  |  string  |  是  |  请求类型：application/json  |
-|  |  Authorization  |  string  |  是  |  API-Key，例如：Bearer sk-d1\*\*2a  |
+|  Headers (HTTP 请求头)  |  Content-Type  |  string  |  是  |  请求类型：application/json。  |
+|  |  Authorization  |  string  |  是  |  API-Key，例如：Bearer sk-d1\*\*2a。  |
 |  |  X-Aagentscope-WorkSpace  |  string  |  是  |  业务空间id。  |
 |  app\_id  |   |  string  |  是  |  工作流应用唯一标识。  |
 |  conversation\_id  |   |  string  |  否  |  对话历史会话唯一标识, 传入conversation\_id后，将在云端存储对话历史进行记录。  |
-|  stream  |   |  bool  |  否  |  是否流式输出，默认为false  |
+|  stream  |   |  bool  |  否  |  是否流式输出，默认为false。  |
 |  messages  |   |  list  |  是  |  由历史对话组成的消息列表。  |
 |  |  role  |  string  |  是  |  用户消息的角色，固定为user。  |
 |  |  content  |  string\|map  |  是  |  消息内容， 包括文本，图像，音频等类型。  |
-|  |  content\_type  |  string  |  是  |  内容类型，默认为text text: content为string类型的文本 multimodal: 多模态类型数组  |
+|  |  content\_type  |  string  |  是  |  内容类型，默认为text text: content为string类型的文本 multimodal: 多模态类型数组。  |
 |  input\_params  |   |  list  |  否  |  工作流执行入参，包含系统参数query和开始节点入参 \[ { "key": "query", "type": "String", "desc": "用户问句", "required": false, "source": "sys", "value": "杭州" } \]  |
-|  draft  |   |  bool  |  否  |  是否调用草稿版本，默认为false  |
+|  draft  |   |  bool  |  否  |  是否调用草稿版本，默认为false。  |
 
 **MultimodelContent定义**:
 
@@ -213,21 +213,21 @@ https://localhost:8080/api/v1/apps/workflow/completions
 |  一级参数  |  二级参数  |  类型  |  描述  |
 | --- | --- | --- | --- |
 |  调用是否成功（http status code）  |   |  int  |  调用是否成功通过 http 的返回 code 来判断，返回 200 则表示此次调用成功，返回其他值，则通过 code 和 message 来设置对应的失败信息。  |
-|  conversation\_id  |   |  string  |  多轮会话id  |
-|  status  |   |  string  |  有三种情况： completed failed in\_progress  |
+|  conversation\_id  |   |  string  |  多轮会话id。  |
+|  status  |   |  string  |  有三种情况： completed、failed、in\_progress。  |
 |  message  |   |  object  |  模型生成回复为message。  |
-|   |  role  |  string  |  包括assisistant  |
+|   |  role  |  string  |  包括assistant。  |
 |   |  content  |  string  |  模型生成的内容。  |
 |  error  |  code  |  string  |  出错的时候的错误代码，参考标准错误码列表。  |
 |   |  message  |  string  |  出错的时候的详细错误信息。  |
-|  task\_id  |   |  string  |  工作流执行任务id  |
-|  node\_id  |   |  string  |  输出当前内容的节点的id  |
-|  node\_name  |   |  string  |  输出当前内容的节点的name  |
-|  node\_type  |   |  string  |  输出当前内容的节点的类型  |
-|  node\_status  |   |  string  |  输出当前内容的节点的状态  |
-|  node\_msg\_seq\_id  |   |  int  |  当前应用推送出的第x包数据  |
-|  node\_is\_completed  |   |  bool  |  输出当前内容的节点是否输出完成  |
-|  request\_id  |   |  string  |  本次请求的系统唯一码  |
+|  task\_id  |   |  string  |  工作流执行任务id。  |
+|  node\_id  |   |  string  |  输出当前内容的节点的id。  |
+|  node\_name  |   |  string  |  输出当前内容的节点的name。  |
+|  node\_type  |   |  string  |  输出当前内容的节点的类型。  |
+|  node\_status  |   |  string  |  输出当前内容的节点的状态。  |
+|  node\_msg\_seq\_id  |   |  int  |  当前应用推送出的第x包数据。  |
+|  node\_is\_completed  |   |  bool  |  输出当前内容的节点是否输出完成。  |
+|  request\_id  |   |  string  |  本次请求的系统唯一码。  |
 
 ##### 请求示例（SSE 打开）
 
