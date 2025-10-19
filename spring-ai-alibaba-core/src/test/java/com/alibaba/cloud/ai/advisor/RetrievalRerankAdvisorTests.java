@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -178,7 +179,7 @@ class RetrievalRerankAdvisorTests {
 		assertThat(response.context()).containsKey(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS);
 		assertThat(response.context().get(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS)).isNotNull()
 			.isInstanceOf(List.class)
-			.asList()
+			.asInstanceOf(LIST)
 			.hasSize(1)
 			.contains(testDocument);
 	}
@@ -209,7 +210,7 @@ class RetrievalRerankAdvisorTests {
 		assertThat(response.context()).containsKey(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS);
 		assertThat(response.context().get(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS)).isNotNull()
 			.isInstanceOf(List.class)
-			.asList()
+			.asInstanceOf(LIST)
 			.isEmpty();
 	}
 
@@ -313,7 +314,7 @@ class RetrievalRerankAdvisorTests {
 		assertThat(response.context()).containsKey(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS);
 		assertThat(response.context().get(RetrievalRerankAdvisor.RETRIEVED_DOCUMENTS)).isNotNull()
 			.isInstanceOf(List.class)
-			.asList()
+			.asInstanceOf(LIST)
 			.isEmpty();
 	}
 
