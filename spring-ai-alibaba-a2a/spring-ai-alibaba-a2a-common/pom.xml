@@ -27,7 +27,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-graph-core</artifactId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
     </dependencies>

@@ -74,7 +74,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-core</artifactId>
+            <artifactId>spring-ai-alibaba-dashscope</artifactId>
             <version>${revision}</version>
         </dependency>
 
@@ -92,7 +92,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-graph-core</artifactId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
             <version>${revision}</version>
         </dependency>
         <dependency>

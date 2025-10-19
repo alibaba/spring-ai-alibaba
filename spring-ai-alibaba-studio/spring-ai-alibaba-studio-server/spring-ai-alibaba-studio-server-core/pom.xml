@@ -91,7 +91,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-core</artifactId>
+            <artifactId>spring-ai-alibaba-dashscope</artifactId>
         </dependency>
 
         <dependency>
