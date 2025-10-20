@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
@@ -374,9 +375,10 @@ public class StateGraphMemorySaverTest {
 		var results = app.stream(inputs, runnableConfig)
 			.doOnNext(n -> log.info("{}", n)).collectList().block();
 		assertNotNull(results);
-		assertEquals(2, results.size());
+		assertEquals(3, results.size());
 		assertEquals(START, results.get(0).node());
 		assertEquals("agent", results.get(1).node());
+		assertInstanceOf(InterruptionMetadata.class, results.get(2));
 		List<String> messages = results.get(1).state().value("messages", List.class).get();
 		messages.get(messages.size() - 1);
 		assertTrue(messages.get(messages.size() - 1) != null);
