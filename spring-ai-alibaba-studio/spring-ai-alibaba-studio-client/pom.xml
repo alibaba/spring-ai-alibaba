@@ -151,7 +151,7 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-autoconfigure-dashscope</artifactId>
-            <version>${project.version}</version>
+            <version>${spring-ai-extensions.version}</version>
         </dependency>
         <dependency>
             <groupId>io.modelcontextprotocol.sdk</groupId>
