@@ -56,7 +56,6 @@
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-boot-starters/spring-ai-alibaba-starter-a2a-nacos</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-config-nacos</module>
-
     </modules>
 
     <scm>
@@ -87,6 +86,7 @@
 
         <!-- Spring version -->
         <spring-ai.version>1.0.1</spring-ai.version>
+        <spring-ai-extensions.version>1.0.0.4</spring-ai-extensions.version>
         <spring-boot.version>3.4.8</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 

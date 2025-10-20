@@ -50,8 +50,8 @@
     <dependencies>
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-dashscope</artifactId>
-            <version>${project.version}</version>
+            <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+            <version>${spring-ai-extensions.version}</version>
         </dependency>
 
         <dependency>
