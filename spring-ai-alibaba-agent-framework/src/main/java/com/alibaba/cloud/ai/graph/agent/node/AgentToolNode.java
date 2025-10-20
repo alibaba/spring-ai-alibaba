@@ -37,8 +37,6 @@ import java.util.stream.Collectors;
 
 public class AgentToolNode implements NodeActionWithConfig {
 
-	private String outputKey;
-
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	private ToolCallbackResolver toolCallbackResolver;
@@ -75,7 +73,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 				ToolCallback toolCallback = this.resolve(toolName);
 
-				String toolResult = toolCallback.call(toolArgs, new ToolContext(Map.of("state", state)));
+				String toolResult = toolCallback.call(toolArgs, new ToolContext(Map.of("state", state, "config", config)));
 				toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
 			}
 
@@ -105,7 +103,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				String toolName = toolCall.name();
 				String toolArgs = toolCall.arguments();
 				ToolCallback toolCallback = this.resolve(toolName);
-				String toolResult = toolCallback.call(toolArgs, new ToolContext(Map.of("state", state)));
+				String toolResult = toolCallback.call(toolArgs, new ToolContext(Map.of("state", state, "config", config)));
 				allResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
 			}
 
@@ -135,8 +133,6 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	public static class Builder {
 
-		private String outputKey;
-
 		private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 		private List<String> toolNames = new ArrayList<>();
@@ -144,12 +140,6 @@ public class AgentToolNode implements NodeActionWithConfig {
 		private ToolCallbackResolver toolCallbackResolver;
 
 		private Builder() {
-		}
-
-
-		public Builder outputKey(String outputKey) {
-			this.outputKey = outputKey;
-			return this;
 		}
 
 		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
@@ -169,7 +159,6 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		public AgentToolNode build() {
 			AgentToolNode toolNode = new AgentToolNode(toolCallbackResolver);
-			toolNode.outputKey = this.outputKey;
 			toolNode.setToolCallbacks(this.toolCallbacks);
 			toolNode.setToolCallbackResolver(this.toolCallbackResolver);
 			return toolNode;
