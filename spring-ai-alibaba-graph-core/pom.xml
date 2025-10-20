@@ -40,7 +40,6 @@
     <properties>
         <testcontainers.version>1.19.3</testcontainers.version>
         <httpclient.version>4.5.14</httpclient.version>
-        <community.components.version>1.0.0.3</community.components.version>
         <jackson.version>2.18.4</jackson.version>
     </properties>
 
@@ -83,25 +82,25 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-document-parser-tika</artifactId>
-            <version>${community.components.version}</version>
+            <version>${spring-ai-extensions.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-document-parser-markdown</artifactId>
-            <version>${community.components.version}</version>
+            <version>${spring-ai-extensions.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-document-parser-bshtml</artifactId>
-            <version>${community.components.version}</version>
+            <version>${spring-ai-extensions.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-document-parser-yaml</artifactId>
-            <version>${community.components.version}</version>
+            <version>${spring-ai-extensions.version}</version>
         </dependency>
 
         <dependency>

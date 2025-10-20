@@ -75,7 +75,7 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-mcp-registry</artifactId>
-            <version>${revision}</version>
+            <version>${spring-ai-extensions.version}</version>
         </dependency>
 
         <dependency>
@@ -93,13 +93,13 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-observation-extension</artifactId>
-            <version>${revision}</version>
+            <version>${spring-ai-extensions.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-mcp-router</artifactId>
-            <version>${revision}</version>
+            <version>${spring-ai-extensions.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.alibaba.nacos</groupId>
