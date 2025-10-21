@@ -73,6 +73,8 @@ For scenarios requiring more complex process control, Agent Framework offers bui
 </dependencies>
 ```
 
+> Clone this project and build from source using `mvn clean install -DskipTests` before we make an official release.
+
 ### Create Your First Agent
 
 **1. A simple ReactAgent**
