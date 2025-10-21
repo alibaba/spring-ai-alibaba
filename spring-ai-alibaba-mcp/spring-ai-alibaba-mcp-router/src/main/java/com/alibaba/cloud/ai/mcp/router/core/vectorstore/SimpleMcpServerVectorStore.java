@@ -435,7 +435,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 
 			return serverInfo;
 		}
-		catch (Exception e) {
+		catch (Exception e) { 
 			logger.error("Failed to convert document to McpServerInfo", e);
 			return null;
 		}
