@@ -435,7 +435,8 @@ public class ReactAgent extends BaseAgent {
         }
 
 		if (message.hasToolCalls()) {
-			return "continue";
+            return "continue";
+        }
 		return switch (jumpTo) {
 			case model -> modelDestination;
 			case end -> endDestination;
