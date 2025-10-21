@@ -20,11 +20,14 @@
 
 ## What's Agent Framework
 
-![spring ai alibaba architecture](./docs/imgs/saa-architecture.png)
+<p align="center">
+    <img src="./docs/imgs/saa-architecture.png" alt="architecture" style="max-width: 740px; height: 508px" />
+</p>
 
-Agent Framework is an agent development framework centered around the design philosophy of **ReactAgent**, enabling developers to build agents with core capabilities such as automatic **Context Engineering** and **Human In The Loop** interaction. For scenarios requiring more complex process control, Agent Framework offers built-in workflows like `SequentialAgent`, `ParallelAgent`, `RoutingAgent`, and `LoopAgen`t based on its **Graph Runtime**. Developers can also flexibly orchestrate more complex workflows using the Graph API.
+Spring AI Alibaba Agent Framework is an agent development framework centered around the design philosophy of **ReactAgent**, enabling developers to build agents with core capabilities such as automatic **Context Engineering** and **Human In The Loop** interaction. For scenarios requiring more complex process control, Agent Framework offers built-in workflows like `SequentialAgent`, `ParallelAgent`, `RoutingAgent`, and `LoopAgen`t based on its **Graph Runtime**. Developers can also flexibly orchestrate more complex workflows using the Graph API.
 
 ## Core Features
+
 * **ReactAgent**: Build intelligent agents with reasoning and acting capabilities, following the ReAct (Reasoning + Acting) paradigm for iterative problem-solving.
 
 * **Multi-Agent Orchestration**: Compose multiple agents with built-in patterns including `SequentialAgent`, `ParallelAgent`, `LlmRoutingAgent`, and `LoopAgent` for complex task execution.
