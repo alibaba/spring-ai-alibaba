@@ -42,8 +42,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.GraphRunnerContext.INTERRUPT_AFTER;
-import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
-import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
+import static com.alibaba.cloud.ai.graph.StateGraph.*;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -110,11 +109,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 					context.getConfig());
 
 			return Mono.fromFuture(future)
-				.flatMapMany(updateState -> handleActionResult(context, updateState, resultValue))
-				.onErrorResume(error -> {
-					context.doListeners(NODE_AFTER, null);
-					return Flux.just(GraphResponse.error(error));
-				});
+					.flatMapMany(updateState -> handleActionResult(context, updateState, resultValue))
+					.onErrorResume(error -> {
+						context.doListeners(ERROR, new Exception(error));
+						return Flux.just(GraphResponse.error(error));
+					});
 
 		}
 		catch (Exception e) {
