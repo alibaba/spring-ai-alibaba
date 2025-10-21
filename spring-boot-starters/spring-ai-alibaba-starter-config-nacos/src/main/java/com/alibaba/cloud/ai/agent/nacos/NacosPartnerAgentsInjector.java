@@ -17,20 +17,19 @@
 package com.alibaba.cloud.ai.agent.nacos;
 
 import com.alibaba.cloud.ai.agent.nacos.vo.PartnerAgentsVO;
-import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
-import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
-
+import com.alibaba.cloud.ai.graph.node.LlmNode;
+import com.alibaba.cloud.ai.graph.node.ToolNode;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
 import com.alibaba.nacos.api.exception.NacosException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NacosPartenerAgentsInjector {
+public class NacosPartnerAgentsInjector {
 
-	private static final Logger logger = LoggerFactory.getLogger(NacosPartenerAgentsInjector.class);
+	private static final Logger logger = LoggerFactory.getLogger(NacosPartnerAgentsInjector.class);
 
-	public static void registry(AgentLlmNode llmNode, AgentToolNode toolNode, NacosOptions nacosOptions, String agentName) {
+	public static void registry(LlmNode llmNode, ToolNode toolNode, NacosOptions nacosOptions, String agentName) {
 
 		try {
 			nacosOptions.getNacosConfigService()
@@ -48,7 +47,7 @@ public class NacosPartenerAgentsInjector {
 
 	}
 
-	public static PartnerAgentsVO getPartenerVO(NacosOptions nacosOptions, String agentName) {
+	public static PartnerAgentsVO getPartnerVO(NacosOptions nacosOptions, String agentName) {
 		try {
 			String config = nacosOptions.getNacosConfigService()
 					.getConfig("parterner-agents.json", "ai-agent-" + agentName, 3000L);

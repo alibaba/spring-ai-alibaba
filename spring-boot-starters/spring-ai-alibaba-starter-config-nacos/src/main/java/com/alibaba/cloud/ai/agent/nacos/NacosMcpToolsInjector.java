@@ -20,7 +20,6 @@ import java.util.List;
 
 import com.alibaba.cloud.ai.agent.nacos.tools.NacosMcpGatewayToolsInitializer;
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
-import com.alibaba.cloud.ai.mcp.gateway.nacos.properties.NacosMcpGatewayProperties;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.exception.NacosException;
 import org.slf4j.Logger;
@@ -32,11 +31,11 @@ public class NacosMcpToolsInjector {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosMcpToolsInjector.class);
 
-
 	public static McpServersVO getMcpServersVO(NacosOptions nacosOptions) {
 		try {
+			String dataId = (nacosOptions.isMcpServersEncrypted() ? "cipher-kms-aes-256-" : "") + "mcp-servers.json";
 			String config = nacosOptions.getNacosConfigService()
-					.getConfig("mcp-servers.json", "ai-agent-" + nacosOptions.getAgentName(), 3000L);
+					.getConfig(dataId, "ai-agent-" + nacosOptions.getAgentName(), 3000L);
 			return JSON.parseObject(config, McpServersVO.class);
 		}
 		catch (NacosException e) {
@@ -46,11 +45,8 @@ public class NacosMcpToolsInjector {
 
 	public static List<ToolCallback> convert(NacosOptions nacosOptions, McpServersVO mcpServersVO) {
 
-		NacosMcpGatewayProperties nacosMcpGatewayProperties = new NacosMcpGatewayProperties();
-		nacosMcpGatewayProperties.setServiceNames(mcpServersVO.getMcpServers().stream()
-				.map(McpServersVO.McpServerVO::getMcpServerName).toList());
 		NacosMcpGatewayToolsInitializer nacosMcpGatewayToolsInitializer = new NacosMcpGatewayToolsInitializer(
-				nacosOptions.mcpOperationService, nacosMcpGatewayProperties, mcpServersVO.getMcpServers());
+				nacosOptions.mcpOperationService, mcpServersVO.getMcpServers());
 		return nacosMcpGatewayToolsInitializer.initializeTools();
 	}
 
