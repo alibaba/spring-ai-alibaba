@@ -13,42 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook.toolretry;
+package com.alibaba.cloud.ai.graph.agent.interceptor.toolretry;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.agent.hook.AfterAgentHook;
-import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.function.Predicate;
-
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
 /**
- * Hook that automatically retries failed tool calls with configurable backoff.
+ * Tool interceptor that automatically retries failed tool calls with configurable backoff.
  *
  * Supports retrying on specific exceptions and exponential backoff.
  *
  * Example:
  * <pre>
- * ToolRetryHook retry = ToolRetryHook.builder()
+ * ToolRetryInterceptor interceptor = ToolRetryInterceptor.builder()
  *     .maxRetries(3)
  *     .backoffFactor(2.0)
  *     .initialDelay(1000)
  *     .build();
  * </pre>
  */
-public class ToolRetryHook extends AfterAgentHook {
+public class ToolRetryInterceptor extends ToolInterceptor {
 
-	private static final Logger log = LoggerFactory.getLogger(ToolRetryHook.class);
+	private static final Logger log = LoggerFactory.getLogger(ToolRetryInterceptor.class);
 
 	private final int maxRetries;
 	private final Set<String> toolNames;
@@ -60,7 +56,7 @@ public class ToolRetryHook extends AfterAgentHook {
 	private final long maxDelayMs;
 	private final boolean jitter;
 
-	private ToolRetryHook(Builder builder) {
+	private ToolRetryInterceptor(Builder builder) {
 		this.maxRetries = builder.maxRetries;
 		this.toolNames = builder.toolNames != null ? new HashSet<>(builder.toolNames) : null;
 		this.retryOn = builder.retryOn;
@@ -76,13 +72,13 @@ public class ToolRetryHook extends AfterAgentHook {
 		return new Builder();
 	}
 
-	/**
-	 * Execute a tool call with retry logic.
-	 */
-	public <T> T executeWithRetry(String toolName, ToolCallable<T> callable) throws Exception {
+	@Override
+	public ToolCallResponse wrapToolCall(ToolCallRequest request, ToolCallHandler handler) {
+		String toolName = request.getToolName();
+
 		// Check if this tool should be retried
 		if (toolNames != null && !toolNames.contains(toolName)) {
-			return callable.call();
+			return handler.call(request);
 		}
 
 		Exception lastException = null;
@@ -90,13 +86,13 @@ public class ToolRetryHook extends AfterAgentHook {
 
 		while (attempt <= maxRetries) {
 			try {
-				return callable.call();
-			}
-			catch (Exception e) {
+				return handler.call(request);
+			} catch (Exception e) {
 				lastException = e;
 
 				// Check if we should retry this exception
 				if (!retryOn.test(e)) {
+					log.debug("Exception {} not configured for retry, re-throwing", e.getClass().getSimpleName());
 					throw e;
 				}
 
@@ -108,14 +104,13 @@ public class ToolRetryHook extends AfterAgentHook {
 				// Calculate delay
 				long delay = calculateDelay(attempt);
 				log.warn("Tool '{}' failed (attempt {}/{}), retrying in {}ms: {}",
-						toolName, attempt + 1, maxRetries + 1, delay, e.getMessage());
+					toolName, attempt + 1, maxRetries + 1, delay, e.getMessage());
 
 				try {
 					Thread.sleep(delay);
-				}
-				catch (InterruptedException ie) {
+				} catch (InterruptedException ie) {
 					Thread.currentThread().interrupt();
-					throw e;
+					throw new RuntimeException("Retry interrupted", ie);
 				}
 
 				attempt++;
@@ -124,15 +119,15 @@ public class ToolRetryHook extends AfterAgentHook {
 
 		// All retries exhausted
 		if (onFailure == OnFailureBehavior.RAISE) {
-			throw lastException;
-		}
-		else {
+			throw new RuntimeException("Tool call failed after " + (maxRetries + 1) + " attempts", lastException);
+		} else {
+			// Return error message as tool response
 			String errorMessage = errorFormatter != null
-					? errorFormatter.apply(lastException)
-					: "Tool call failed after " + (maxRetries + 1) + " attempts: " + lastException.getMessage();
+				? errorFormatter.apply(lastException)
+				: "Tool call failed after " + (maxRetries + 1) + " attempts: " + lastException.getMessage();
+
 			log.error("Tool '{}' failed after {} attempts: {}", toolName, maxRetries + 1, lastException.getMessage());
-			// Return error message (this would be wrapped in a ToolMessage in actual usage)
-			return null;
+			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), errorMessage);
 		}
 	}
 
@@ -150,29 +145,19 @@ public class ToolRetryHook extends AfterAgentHook {
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-		// This hook integrates with tool execution pipeline
-		return CompletableFuture.completedFuture(Map.of());
-	}
-
-	@Override
 	public String getName() {
 		return "ToolRetry";
 	}
 
 	@Override
-	public List<JumpTo> canJumpTo() {
-		return List.of();
+	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
+		// This is a ToolInterceptor, not a Hook node
+		return Map.of();
 	}
 
 	public enum OnFailureBehavior {
 		RAISE,
 		RETURN_MESSAGE
-	}
-
-	@FunctionalInterface
-	public interface ToolCallable<T> {
-		T call() throws Exception;
 	}
 
 	public static class Builder {
@@ -207,7 +192,8 @@ public class ToolRetryHook extends AfterAgentHook {
 			return this;
 		}
 
-		public Builder retryOn(Class<? extends Exception>... exceptionTypes) {
+		@SafeVarargs
+		public final Builder retryOn(Class<? extends Exception>... exceptionTypes) {
 			Set<Class<? extends Exception>> types = new HashSet<>(Arrays.asList(exceptionTypes));
 			this.retryOn = e -> {
 				for (Class<? extends Exception> type : types) {
@@ -256,8 +242,8 @@ public class ToolRetryHook extends AfterAgentHook {
 			return this;
 		}
 
-		public ToolRetryHook build() {
-			return new ToolRetryHook(this);
+		public ToolRetryInterceptor build() {
+			return new ToolRetryInterceptor(this);
 		}
 	}
 }

@@ -20,6 +20,11 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
+import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -46,6 +51,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
+	private List<ModelInterceptor> modelInterceptors = new ArrayList<>();
+
 	private String outputKey;
 
 	private String outputSchema;
@@ -63,6 +70,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		if (builder.toolCallbacks != null) {
 			this.toolCallbacks = builder.toolCallbacks;
 		}
+		if (builder.modelInterceptors != null) {
+			this.modelInterceptors = builder.modelInterceptors;
+		}
 		this.chatClient = builder.chatClient;
 		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
 				.toolCallbacks(toolCallbacks)
@@ -74,6 +84,14 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		return new Builder();
 	}
 
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	public void setModelInterceptors(List<ModelInterceptor> modelInterceptors) {
+		this.modelInterceptors = modelInterceptors;
+	}
+
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
 		// add streaming support
@@ -83,13 +101,34 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
 		} else {
 			AssistantMessage responseOutput;
-			try {
-				ChatResponse response = buildChatClientRequestSpec(state).call().chatResponse();
-				responseOutput = response.getResult().getOutput();
-			}
-			catch (Exception e) {
-				responseOutput = new AssistantMessage("Exception: " + e.getMessage());
-			}
+
+			// Build the base model call handler
+			@SuppressWarnings("unchecked")
+			List<Message> messages = (List<Message>) state.value("messages").get();
+
+			// Create ModelRequest
+			ModelRequest modelRequest = ModelRequest.builder()
+					.messages(messages)
+					.options(toolCallingChatOptions)
+					.build();
+
+			// Create base handler that actually calls the model
+			ModelCallHandler baseHandler = request -> {
+				try {
+					ChatResponse response = buildChatClientRequestSpec(state).call().chatResponse();
+					return ModelResponse.of(response.getResult().getOutput());
+				} catch (Exception e) {
+					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
+				}
+			};
+
+			// Chain interceptors if any
+			ModelCallHandler chainedHandler = InterceptorChain.chainModelInterceptors(
+					modelInterceptors, baseHandler);
+
+			// Execute the chained handler
+			ModelResponse modelResponse = chainedHandler.call(modelRequest);
+			responseOutput = modelResponse.getMessage();
 
 			Map<String, Object> updatedState = new HashMap<>();
 			updatedState.put("messages", responseOutput);
@@ -101,8 +140,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 	}
 
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		this.toolCallbacks = toolCallbacks;
+	public void setAdvisors(List<Advisor> advisors) {
+		this.advisors = advisors;
 	}
 
 	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
@@ -175,6 +214,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private List<ToolCallback> toolCallbacks;
 
+		private List<ModelInterceptor> modelInterceptors;
+
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
 			return this;
@@ -192,6 +233,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.toolCallbacks = toolCallbacks;
+			return this;
+		}
+
+		public Builder modelInterceptors(List<ModelInterceptor> modelInterceptors) {
+			this.modelInterceptors = modelInterceptors;
 			return this;
 		}
 

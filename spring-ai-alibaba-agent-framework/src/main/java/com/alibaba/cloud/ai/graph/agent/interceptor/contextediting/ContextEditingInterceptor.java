@@ -13,31 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook.contextediting;
+package com.alibaba.cloud.ai.graph.agent.interceptor.contextediting;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.agent.hook.BeforeModelHook;
-import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
-import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
+import com.alibaba.cloud.ai.graph.agent.hook.summarization.TokenCounter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.*;
 
 /**
- * Context editing hook that clears older tool results once the conversation
+ * Context editing interceptor that clears older tool results once the conversation
  * grows beyond a configurable token threshold.
  *
  * This mirrors Anthropic's context editing capabilities by managing tool result
@@ -45,16 +39,16 @@ import org.slf4j.LoggerFactory;
  *
  * Example:
  * <pre>
- * ContextEditingHook editor = ContextEditingHook.builder()
+ * ContextEditingInterceptor interceptor = ContextEditingInterceptor.builder()
  *     .trigger(100000)
  *     .keep(3)
  *     .clearAtLeast(1000)
  *     .build();
  * </pre>
  */
-public class ContextEditingHook extends BeforeModelHook {
+public class ContextEditingInterceptor extends ModelInterceptor {
 
-	private static final Logger log = LoggerFactory.getLogger(ContextEditingHook.class);
+	private static final Logger log = LoggerFactory.getLogger(ContextEditingInterceptor.class);
 	private static final String DEFAULT_PLACEHOLDER = "[cleared]";
 
 	private final int trigger;
@@ -65,14 +59,14 @@ public class ContextEditingHook extends BeforeModelHook {
 	private final String placeholder;
 	private final TokenCounter tokenCounter;
 
-	private ContextEditingHook(Builder builder) {
+	private ContextEditingInterceptor(Builder builder) {
 		this.trigger = builder.trigger;
 		this.clearAtLeast = builder.clearAtLeast;
 		this.keep = builder.keep;
 		this.clearToolInputs = builder.clearToolInputs;
 		this.excludeTools = builder.excludeTools != null
-				? new HashSet<>(builder.excludeTools)
-				: new HashSet<>();
+			? new HashSet<>(builder.excludeTools)
+			: new HashSet<>();
 		this.placeholder = builder.placeholder;
 		this.tokenCounter = builder.tokenCounter;
 	}
@@ -82,13 +76,14 @@ public class ContextEditingHook extends BeforeModelHook {
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+	public ModelResponse wrapModelCall(ModelRequest request, ModelCallHandler handler) {
+		List<Message> messages = new ArrayList<>(request.getMessages());
 
 		int tokens = tokenCounter.countTokens(messages);
 
 		if (tokens <= trigger) {
-			return CompletableFuture.completedFuture(Map.of());
+			// Token count is below trigger, no editing needed
+			return handler.call(request);
 		}
 
 		log.info("Token count {} exceeds trigger {}, clearing tool results", tokens, trigger);
@@ -98,11 +93,10 @@ public class ContextEditingHook extends BeforeModelHook {
 
 		if (candidates.isEmpty()) {
 			log.debug("No tool messages to clear");
-			return CompletableFuture.completedFuture(Map.of());
+			return handler.call(request);
 		}
 
 		int clearedTokens = 0;
-		List<Message> updatedMessages = new ArrayList<>();
 		Set<Integer> indicesToClear = new HashSet<>();
 
 		// Clear tool results until we meet the clearAtLeast threshold
@@ -116,6 +110,7 @@ public class ContextEditingHook extends BeforeModelHook {
 		}
 
 		// Build updated message list
+		List<Message> updatedMessages = new ArrayList<>();
 		for (int i = 0; i < messages.size(); i++) {
 			Message msg = messages.get(i);
 
@@ -125,26 +120,30 @@ public class ContextEditingHook extends BeforeModelHook {
 
 				for (ToolResponseMessage.ToolResponse resp : toolMsg.getResponses()) {
 					clearedResponses.add(new ToolResponseMessage.ToolResponse(
-							resp.id(), resp.name(), placeholder));
+						resp.id(), resp.name(), placeholder));
 				}
 
 				updatedMessages.add(new ToolResponseMessage(clearedResponses, toolMsg.getMetadata()));
-			}
-			else {
+			} else {
 				updatedMessages.add(msg);
 			}
 		}
 
 		if (clearedTokens > 0) {
 			log.info("Cleared approximately {} tokens from {} tool messages",
-					clearedTokens, indicesToClear.size());
+				clearedTokens, indicesToClear.size());
 
-			Map<String, Object> updates = new HashMap<>();
-			updates.put("messages", updatedMessages);
-			return CompletableFuture.completedFuture(updates);
+			// Create a new request with updated messages
+			ModelRequest updatedRequest = ModelRequest.builder()
+				.messages(updatedMessages)
+				.options(request.getOptions())
+				.tools(request.getTools())
+				.build();
+
+			return handler.call(updatedRequest);
 		}
 
-		return CompletableFuture.completedFuture(Map.of());
+		return handler.call(request);
 	}
 
 	private List<ClearableToolMessage> findClearableCandidates(List<Message> messages) {
@@ -191,8 +190,7 @@ public class ContextEditingHook extends BeforeModelHook {
 		// Sort oldest first, exclude the most recent 'keep' messages
 		if (candidates.size() > keep) {
 			candidates = candidates.subList(0, candidates.size() - keep);
-		}
-		else {
+		} else {
 			candidates.clear();
 		}
 
@@ -215,8 +213,9 @@ public class ContextEditingHook extends BeforeModelHook {
 	}
 
 	@Override
-	public List<JumpTo> canJumpTo() {
-		return List.of();
+	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
+		// This is a ModelInterceptor, not a Hook node
+		return Map.of();
 	}
 
 	private static class ClearableToolMessage {
@@ -278,8 +277,9 @@ public class ContextEditingHook extends BeforeModelHook {
 			return this;
 		}
 
-		public ContextEditingHook build() {
-			return new ContextEditingHook(this);
+		public ContextEditingInterceptor build() {
+			return new ContextEditingInterceptor(this);
 		}
 	}
 }
+

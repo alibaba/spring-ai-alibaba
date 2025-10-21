@@ -36,6 +36,8 @@ import com.alibaba.cloud.ai.graph.agent.hook.BeforeModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookType;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -81,6 +83,10 @@ public class ReactAgent extends BaseAgent {
 
 	private List<Hook> hooks;
 
+	private List<ModelInterceptor> modelInterceptors;
+
+	private List<ToolInterceptor> toolInterceptors;
+
 	private int max_iterations = 10;
 
 	private int iterations = 0;
@@ -97,11 +103,21 @@ public class ReactAgent extends BaseAgent {
 		this.compileConfig = builder.compileConfig;
 		this.shouldContinueFunc = builder.shouldContinueFunc;
 		this.hooks = builder.hooks;
+		this.modelInterceptors = builder.modelInterceptors;
+		this.toolInterceptors = builder.toolInterceptors;
 		this.includeContents = builder.includeContents;
 		this.inputSchema = builder.inputSchema;
 		this.inputType = builder.inputType;
 		this.outputSchema = builder.outputSchema;
 		this.outputType = builder.outputType;
+
+		// Set interceptors to nodes
+		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
+			this.llmNode.setModelInterceptors(this.modelInterceptors);
+		}
+		if (this.toolInterceptors != null && !this.toolInterceptors.isEmpty()) {
+			this.toolNode.setToolInterceptors(this.toolInterceptors);
+		}
 	}
 
 	public static com.alibaba.cloud.ai.graph.agent.Builder builder() {

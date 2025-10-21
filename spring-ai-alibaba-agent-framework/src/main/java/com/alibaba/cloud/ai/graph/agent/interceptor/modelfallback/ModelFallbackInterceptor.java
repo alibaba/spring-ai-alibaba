@@ -13,24 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook.modelfallback;
+package com.alibaba.cloud.ai.graph.agent.interceptor.modelfallback;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.agent.hook.BeforeModelHook;
-import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
-
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Automatic fallback to alternative models on errors.
@@ -40,20 +38,19 @@ import org.slf4j.LoggerFactory;
  *
  * Example:
  * <pre>
- * ModelFallbackHook fallback = ModelFallbackHook.builder()
+ * ModelFallbackInterceptor interceptor = ModelFallbackInterceptor.builder()
  *     .addFallbackModel(gpt4oMiniModel)
  *     .addFallbackModel(claude35SonnetModel)
  *     .build();
  * </pre>
  */
-public class ModelFallbackHook extends BeforeModelHook {
+public class ModelFallbackInterceptor extends ModelInterceptor {
 
-	private static final Logger log = LoggerFactory.getLogger(ModelFallbackHook.class);
+	private static final Logger log = LoggerFactory.getLogger(ModelFallbackInterceptor.class);
 
 	private final List<ChatModel> fallbackModels;
-	private ChatModel currentModel;
 
-	private ModelFallbackHook(Builder builder) {
+	private ModelFallbackInterceptor(Builder builder) {
 		this.fallbackModels = new ArrayList<>(builder.fallbackModels);
 	}
 
@@ -62,49 +59,36 @@ public class ModelFallbackHook extends BeforeModelHook {
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-		// This hook wraps model calls and handles fallback logic
-		// The actual implementation would integrate with the model execution pipeline
-		return CompletableFuture.completedFuture(Map.of());
-	}
-
-	/**
-	 * Attempts to call a model with fallback support.
-	 *
-	 * @param primaryModel The primary model to try first
-	 * @param prompt The prompt to send
-	 * @return The response from a successful model call
-	 * @throws Exception if all models fail
-	 */
-	public ChatResponse callWithFallback(
-			ChatModel primaryModel,
-			Prompt prompt) throws Exception {
-
+	public ModelResponse wrapModelCall(ModelRequest request, ModelCallHandler handler) {
 		Exception lastException = null;
 
 		// Try primary model first
 		try {
-			return primaryModel.call(prompt);
-		}
-		catch (Exception e) {
+			return handler.call(request);
+		} catch (Exception e) {
 			log.warn("Primary model failed: {}", e.getMessage());
 			lastException = e;
 		}
 
-		// Try fallback models
-		for (ChatModel fallbackModel : fallbackModels) {
+		// Try fallback models in sequence
+		for (int i = 0; i < fallbackModels.size(); i++) {
+			ChatModel fallbackModel = fallbackModels.get(i);
 			try {
-				log.info("Trying fallback model: {}", fallbackModel.getClass().getSimpleName());
-				return fallbackModel.call(prompt);
-			}
-			catch (Exception e) {
-				log.warn("Fallback model failed: {}", e.getMessage());
+				log.info("Trying fallback model {} of {}", i + 1, fallbackModels.size());
+				
+				// Call the fallback model directly
+				Prompt prompt = new Prompt(request.getMessages(), request.getOptions());
+				var response = fallbackModel.call(prompt);
+				
+				return ModelResponse.of(response.getResult().getOutput());
+			} catch (Exception e) {
+				log.warn("Fallback model {} failed: {}", i + 1, e.getMessage());
 				lastException = e;
 			}
 		}
 
 		// All models failed
-		throw lastException;
+		throw new RuntimeException("All models failed after " + (fallbackModels.size() + 1) + " attempts", lastException);
 	}
 
 	@Override
@@ -113,8 +97,9 @@ public class ModelFallbackHook extends BeforeModelHook {
 	}
 
 	@Override
-	public List<JumpTo> canJumpTo() {
-		return List.of();
+	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
+		// This is a ModelInterceptor, not a Hook node
+		return Map.of();
 	}
 
 	public static class Builder {
@@ -130,11 +115,11 @@ public class ModelFallbackHook extends BeforeModelHook {
 			return this;
 		}
 
-		public ModelFallbackHook build() {
+		public ModelFallbackInterceptor build() {
 			if (fallbackModels.isEmpty()) {
 				throw new IllegalArgumentException("At least one fallback model must be specified");
 			}
-			return new ModelFallbackHook(this);
+			return new ModelFallbackInterceptor(this);
 		}
 	}
 }
