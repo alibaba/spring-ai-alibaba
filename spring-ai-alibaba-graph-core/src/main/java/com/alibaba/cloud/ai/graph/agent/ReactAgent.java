@@ -303,7 +303,7 @@ public class ReactAgent extends BaseAgent {
         //兼容Spring AI新旧版本
         if (last instanceof AssistantMessage) {
             message = (AssistantMessage) last;
-        } else if (last instanceof ChatResponse) {
+        } else if (last instanceof ChatResponse) { 
             ChatResponse chatResponse = (ChatResponse) last;
             if (chatResponse.getResult() == null || chatResponse.getResult().getOutput() == null) {
                 return "end";
