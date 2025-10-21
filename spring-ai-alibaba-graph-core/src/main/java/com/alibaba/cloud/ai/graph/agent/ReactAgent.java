@@ -371,7 +371,7 @@ public class ReactAgent extends BaseAgent {
 		if (canJumpTo != null && !canJumpTo.isEmpty()) {
 			EdgeAction router = state -> {
 				JumpTo jumpTo = (JumpTo)state.value("jump_to").orElse(null);
-				return resolveJump(jumpTo, modelDestination, endDestination, defaultDestination);
+				return resolveJump(jumpTo, modelDestination, endDestination, defaultDestination, state);
 			};
 
 			Map<String, String> destinations = new HashMap<>();
@@ -407,7 +407,7 @@ public class ReactAgent extends BaseAgent {
 		graph.addConditionalEdges("tool", edge_async(agentInstance.makeToolsToModelEdge(loopEntryNode, exitNode)), Map.of(loopEntryNode, loopEntryNode, exitNode, exitNode));
 	}
 
-	private static String resolveJump(JumpTo jumpTo, String modelDestination, String endDestination, String defaultDestination) {
+    private static String resolveJump(JumpTo jumpTo, String modelDestination, String endDestination, String defaultDestination, OverAllState state) {
 		if (jumpTo == null) {
 			return defaultDestination;
 		}

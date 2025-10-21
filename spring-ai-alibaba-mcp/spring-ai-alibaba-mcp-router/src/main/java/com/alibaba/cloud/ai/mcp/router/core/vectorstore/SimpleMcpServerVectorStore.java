@@ -212,7 +212,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 
 			// 去重并排序
 			return documents.stream().filter(doc -> {
-				// 降低分数阈值，或者对于关键词匹配的结果不进行分数过滤 
+				// 降低分数阈值，或者对于关键词匹配的结果不进行分数过滤
 				Double score = doc.getScore();
 				Object keywordScore = doc.getMetadata().get("keywordScore");
 				if (keywordScore != null) {
@@ -435,7 +435,7 @@ public class SimpleMcpServerVectorStore implements McpServerVectorStore {
 
 			return serverInfo;
 		}
-		catch (Exception e) { 
+		catch (Exception e) {
 			logger.error("Failed to convert document to McpServerInfo", e);
 			return null;
 		}
