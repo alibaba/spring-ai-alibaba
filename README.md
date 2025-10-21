@@ -45,8 +45,6 @@ Agent Framework is an agent development framework centered around the design phi
 
 ## Getting Started
 
-To quickly get started with Spring AI Alibaba, add Agent Framework dependency to your java project.
-
 ### Prerequisites
 
 * Requires JDK 17+.
@@ -73,6 +71,7 @@ To quickly get started with Spring AI Alibaba, add Agent Framework dependency to
 ### Create Your First Agent
 
 **1. A simple ReactAgent**
+
 Initialize `ChatModel` instance first.
 
 ```java
@@ -95,6 +94,7 @@ ReactAgent writerAgent = ReactAgent.builder()
 ```
 
 **2. A workflow agent that composes two agents**
+
 Let's create another agent called `reviewer_agent` and compose these two agents with `SequentialAgent` workflow agent.
 
 ```java
@@ -113,10 +113,26 @@ SequentialAgent blogAgent = SequentialAgent.builder()
 	.build();
 ```
 
+**3. Call the agent**
+
+```java
+// Call a single agent
+AssistantMessage message = writerAgent.call("帮我写一篇100字左右散文。");
+
+// Call SequentialAgent
+Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的散文");
+```
+
 Please check [Quick Start](https://java2ai.com/docs/1.0.0.3/get-started/chatbot) on our official website to learn more details.
 
 > NOTE!.
 > If you have encountered any `spring-ai` dependency issue, please lean how to configure the `spring-milestones` Maven repository on [FAQ page](https://java2ai.com/docs/1.0.0.3/faq).
+
+## 📚 Documentation (Working In Progress...)
+* Overview - High level overview of the framework
+* Quick Start - Get started with a simple agent
+* Tutorials - Step by step tutorials
+* User Guide - In-depth user guide for building agents and workflows
 
 ## Project Structure
 
@@ -126,9 +142,11 @@ This project consists of three core components:
 
 * **Graph**: The underlying runtime for Agent Framework. We recommend developers to use Agent Framework but it's totally fine to use the Graph API directly. Graph is a low-level workflow and multi-agent orchestration framework that enables developers to implement complex application orchestration. Inspired by LangGraph, it features a rich set of prebuilt nodes and simplified Graph State definitions, making it easier to integrate with low-code platforms and implement popular multi-agent patterns.
 
-* **Spring AI Extensions**: Extended implementations for Spring AI core concepts, providing additional model integrations (DashScopeChatModel, etc.), MCP (Model Context Protocol) registry, and enhanced features for building AI applications.
+* **Spring Boot Starters**: Starters integrating Agent Framework with Nacos to provide A2A and dynamic config features.
 
 ## More Projects
+ Repository | Description | ⭐
+  --- | --- | ---
 | [Spring AI Alibaba Graph](https://github.com/alibaba/spring-ai-alibaba/tree/main/spring-ai-alibaba-graph-core) | A low-level orchestration framework and runtime for building, managing, and deploying long-running, stateful agents. | ![GitHub Repo stars](https://img.shields.io/github/stars/alibaba/spring-ai-alibaba?style=for-the-badge&label=)
 | [Spring AI Alibaba Admin](https://github.com/spring-ai-alibaba/spring-ai-alibaba-admin) |  Local visualization toolkit for the development of agent applications, supporting project management, runtime visualization, tracing, and agent evaluation. | ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/spring-ai-alibaba-admin?style=for-the-badge&label=)
 | [Spring AI Extensions](https://github.com/spring-ai-alibaba/spring-ai-extensions) | Extended implementations for Spring AI core concepts, including DashScopeChatModel, MCP registry, etc. |  ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/spring-ai-extensions?style=for-the-badge&label=)
@@ -142,8 +160,10 @@ This project consists of three core components:
 * Dingtalk Group (钉钉群), search `130240015687` and join.
 * WeChat Group (微信公众号), scan the QR code below and follow us.
 
-<img src="./docs/imgs/wechat-account.png" alt="Deep Research" style="max-width: 200px; height: 200px;">
 
+## Star History
+
+[![Star History Chart](https://starchart.cc/alibaba/spring-ai-alibaba.svg?variant=adaptive)](https://starchart.cc/alibaba/spring-ai-alibaba)
 
 ---
 
