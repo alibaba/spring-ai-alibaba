@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.PersistentConfig;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -49,7 +48,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -140,7 +138,7 @@ public class GraphServiceImpl implements GraphService, ApplicationContextAware {
 			});
 		}
 
-		AsyncGenerator<? extends NodeOutput> generator = null;
+		Flux<? extends NodeOutput> nodeOutputStream = null;
 
 		if (resume) {
 			log.trace("RESUME REQUEST PREPARE");
@@ -163,7 +161,7 @@ public class GraphServiceImpl implements GraphService, ApplicationContextAware {
 
 			log.trace("RESUME REQUEST STREAM {}", config);
 
-			generator = compiledGraph.streamSnapshots(null, config);
+			nodeOutputStream = compiledGraph.streamSnapshots(null, config);
 		}
 		else {
 			log.trace("dataMap: {}", dataMap);
@@ -175,25 +173,30 @@ public class GraphServiceImpl implements GraphService, ApplicationContextAware {
 				compiledGraphMap.put(persistentConfig, compiledGraph);
 			}
 
-			generator = compiledGraph.streamSnapshots(dataMap, runnableConfig(persistentConfig));
+			nodeOutputStream = compiledGraph.streamSnapshots(dataMap, runnableConfig(persistentConfig));
 		}
 
 		Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
 		Flux<ServerSentEvent<String>> flux = sink.asFlux();
-		generator.forEachAsync(s -> {
-			try {
-				String output = serializeOutput(threadId, s);
-				sink.tryEmitNext(ServerSentEvent.builder(output).build());
-				TimeUnit.SECONDS.sleep(1);
-			}
-			catch (InterruptedException e) {
-				throw new CompletionException(e);
-			}
-		}).thenAccept(v -> sink.tryEmitComplete()).exceptionally(e -> {
-			log.error("Error streaming", e);
-			sink.tryEmitError(e);
-			return null;
-		});
+
+		// Convert Flux<NodeOutput> to ServerSentEvent stream
+		nodeOutputStream
+			.doOnNext(s -> {
+				try {
+					String output = serializeOutput(threadId, s);
+					sink.tryEmitNext(ServerSentEvent.builder(output).build());
+					TimeUnit.SECONDS.sleep(1);
+				}
+				catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			})
+			.doOnComplete(() -> sink.tryEmitComplete())
+			.doOnError(e -> {
+				log.error("Error streaming", e);
+				sink.tryEmitError(e);
+			})
+			.subscribe();
 
 		return flux;
 	}

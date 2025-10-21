@@ -26,8 +26,8 @@ import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.node.LlmNode;
-import com.alibaba.cloud.ai.graph.node.ToolNode;
+import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
+import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
@@ -106,25 +106,25 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		this.tools = convert(nacosOptions, mcpServersVO);
 
 		//7. build tools
-		LlmNode.Builder llmNodeBuilder = LlmNode.builder().stream(true).chatClient(chatClient)
-				.messagesKey(this.inputKey);
+		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder().chatClient(chatClient);
+
 		if (outputKey != null && !outputKey.isEmpty()) {
 			llmNodeBuilder.outputKey(outputKey);
 		}
 		if (CollectionUtils.isNotEmpty(tools)) {
 			llmNodeBuilder.toolCallbacks(tools);
 		}
-		LlmNode llmNode = llmNodeBuilder.build();
+		AgentLlmNode llmNode = llmNodeBuilder.build();
 
-		ToolNode toolNode = null;
+		AgentToolNode toolNode = null;
 		if (resolver != null) {
-			toolNode = ToolNode.builder().toolCallbackResolver(resolver).build();
+			toolNode = AgentToolNode.builder().toolCallbackResolver(resolver).build();
 		}
 		else if (tools != null) {
-			toolNode = ToolNode.builder().toolCallbacks(tools).build();
+			toolNode = AgentToolNode.builder().toolCallbacks(tools).build();
 		}
 		else {
-			toolNode = ToolNode.builder().build();
+			toolNode = AgentToolNode.builder().build();
 		}
 
 		// register listeners.
@@ -142,7 +142,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		return reactAgent;
 	}
 
-	private void registryMcpServerListener(LlmNode llmNode, ToolNode toolNode, NacosOptions nacosOptions) {
+	private void registryMcpServerListener(AgentLlmNode llmNode, AgentToolNode toolNode, NacosOptions nacosOptions) {
 
 		try {
 			nacosOptions.getNacosConfigService()

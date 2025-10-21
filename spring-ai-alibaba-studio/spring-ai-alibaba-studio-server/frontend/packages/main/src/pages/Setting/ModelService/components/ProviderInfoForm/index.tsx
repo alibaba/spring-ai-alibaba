@@ -84,6 +84,8 @@ const ProviderInfoForm: React.FC<ProviderInfoFormProps> = ({
       name: provider?.name,
       apiKey: provider?.credential?.api_key || '',
       endpoint: provider?.credential?.endpoint || '',
+      completionsPath: provider?.credential?.completions_path || '/v1/chat/completions',
+      embeddingsPath: provider?.credential?.embeddings_path || '/v1/embeddings',
     });
   };
 
@@ -97,6 +99,8 @@ const ProviderInfoForm: React.FC<ProviderInfoFormProps> = ({
         credential_config: {
           api_key: values.apiKey,
           endpoint: values.endpoint,
+          completions_path: values.completionsPath || '/v1/chat/completions',
+          embeddings_path: values.embeddingsPath || '/v1/embeddings',
         },
       }).then((response) => {
         if (response) {
@@ -244,6 +248,24 @@ const ProviderInfoForm: React.FC<ProviderInfoFormProps> = ({
                 id: 'main.pages.Setting.ModelService.components.ProviderInfoForm.index.enterApiUrl',
                 dm: '输入您的API URL，请在服务商文档中获取，如https://dashscope.aliyuncs.com/compatible-mode',
               })}
+            />
+          </Form.Item>
+          <Form.Item
+            name="completionsPath"
+            label="Completions Path"
+            tooltip="Chat补全接口路径，默认为 /v1/chat/completions"
+          >
+            <Input
+              placeholder="/v1/chat/completions"
+            />
+          </Form.Item>
+          <Form.Item
+            name="embeddingsPath"
+            label="Embeddings Path"
+            tooltip="嵌入接口路径，默认为 /v1/embeddings"
+          >
+            <Input
+              placeholder="/v1/embeddings"
             />
           </Form.Item>
           <Form.Item>

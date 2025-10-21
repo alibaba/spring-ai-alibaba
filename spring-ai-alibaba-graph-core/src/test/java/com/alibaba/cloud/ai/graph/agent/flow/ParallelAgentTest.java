@@ -15,10 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow;
 
-import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
@@ -106,11 +104,6 @@ class ParallelAgentTest {
 			.description("Analyzes data")
 			.outputKey("analysis_result")
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 
@@ -119,11 +112,6 @@ class ParallelAgentTest {
 			.description("Validates data")
 			.outputKey("validation_result")
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 
@@ -135,11 +123,6 @@ class ParallelAgentTest {
 			.subAgents(List.of(agent1, agent2))
 			.mergeStrategy(new ParallelAgent.ListMergeStrategy())
 			.maxConcurrency(5)
-			.state(() -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put("parallel_state", new AppendStrategy());
-				return keyStrategyHashMap;
-			})
 			.build();
 
 		assertNotNull(parallelAgent);
@@ -173,11 +156,7 @@ class ParallelAgentTest {
 		}
 
 		exception = assertThrows(IllegalArgumentException.class, () -> {
-			ParallelAgent.builder().name("testAgent").subAgents(List.of(agents)).state(() -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			}).build();
+			ParallelAgent.builder().name("testAgent").subAgents(List.of(agents)).build();
 		});
 		assertTrue(exception.getMessage().contains("maximum 10 sub-agents"));
 	}
@@ -190,11 +169,7 @@ class ParallelAgentTest {
 		ReactAgent agent2 = createMockAgent("agent2", "same_output"); // Same output key
 
 		Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-			ParallelAgent.builder().name("testAgent").subAgents(List.of(agent1, agent2)).state(() -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			}).build();
+			ParallelAgent.builder().name("testAgent").subAgents(List.of(agent1, agent2)).build();
 		});
 		assertTrue(exception.getMessage().contains("Duplicate output keys"));
 	}
@@ -239,11 +214,6 @@ class ParallelAgentTest {
 			.description("Mock agent")
 			.outputKey(outputKey)
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-				keyStrategyHashMap.put("messages", new AppendStrategy());
-				return keyStrategyHashMap;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 	}
@@ -259,11 +229,6 @@ class ParallelAgentTest {
 			.description("Analyzes data patterns and trends")
 			.outputKey("analysis_result")
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("messages", new AppendStrategy());
-				return strategies;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 
@@ -272,11 +237,6 @@ class ParallelAgentTest {
 			.description("Validates data quality and integrity")
 			.outputKey("validation_result")
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("messages", new AppendStrategy());
-				return strategies;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 
@@ -285,11 +245,6 @@ class ParallelAgentTest {
 			.description("Cleans and preprocesses data")
 			.outputKey("cleaning_result")
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("messages", new AppendStrategy());
-				return strategies;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 
@@ -301,11 +256,6 @@ class ParallelAgentTest {
 			.subAgents(List.of(dataAnalyzer, dataValidator, dataCleaner))
 			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // Returns Map
 			.maxConcurrency(3) // Limit to 3 concurrent operations
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("processing_state", new AppendStrategy());
-				return strategies;
-			})
 			.build();
 	}
 
@@ -320,11 +270,6 @@ class ParallelAgentTest {
 			.description("Generates executive summary")
 			.outputKey("summary_section")
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("messages", new AppendStrategy());
-				return strategies;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 
@@ -333,11 +278,6 @@ class ParallelAgentTest {
 			.description("Generates detailed analysis")
 			.outputKey("details_section")
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("messages", new AppendStrategy());
-				return strategies;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 
@@ -346,11 +286,6 @@ class ParallelAgentTest {
 			.description("Generates charts and visualizations")
 			.outputKey("charts_section")
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("messages", new AppendStrategy());
-				return strategies;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 
@@ -362,11 +297,6 @@ class ParallelAgentTest {
 			.subAgents(List.of(summaryGenerator, detailsGenerator, chartsGenerator))
 			.mergeStrategy(new ParallelAgent.ListMergeStrategy()) // Returns List
 			.maxConcurrency(5)
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("report_state", new AppendStrategy());
-				return strategies;
-			})
 			.build();
 	}
 
@@ -381,11 +311,6 @@ class ParallelAgentTest {
 			.description("Writes introduction content")
 			.outputKey("intro_content")
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("messages", new AppendStrategy());
-				return strategies;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 
@@ -394,11 +319,6 @@ class ParallelAgentTest {
 			.description("Writes main body content")
 			.outputKey("body_content")
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("messages", new AppendStrategy());
-				return strategies;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 
@@ -407,11 +327,6 @@ class ParallelAgentTest {
 			.description("Writes conclusion content")
 			.outputKey("conclusion_content")
 			.chatClient(chatClient)
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("messages", new AppendStrategy());
-				return strategies;
-			})
 			.resolver(toolCallbackResolver)
 			.build();
 
@@ -422,14 +337,6 @@ class ParallelAgentTest {
 			.mergeOutputKey("final_content")
 			.subAgents(List.of(introWriter, bodyWriter, conclusionWriter))
 			.mergeStrategy(new ParallelAgent.ConcatenationMergeStrategy("\n\n")) // Join
-			// with
-			// double
-			// newline
-			.state(() -> {
-				HashMap<String, KeyStrategy> strategies = new HashMap<>();
-				strategies.put("content_state", new AppendStrategy());
-				return strategies;
-			})
 			.build();
 	}
 

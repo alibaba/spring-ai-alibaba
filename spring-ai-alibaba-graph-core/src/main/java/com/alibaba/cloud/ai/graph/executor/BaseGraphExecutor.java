@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import reactor.core.publisher.Flux;
 
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -57,9 +58,8 @@ public abstract class BaseGraphExecutor {
 						.get()
 						.release(context.getConfig());
 					resultValue.set(tag);
-				}
-				else {
-					resultValue.set(context.getCurrentStateData());
+				} else {
+					resultValue.set(new HashMap<>(context.getOverallState().data()));
 				}
 				return Flux.just(GraphResponse.done(resultValue.get()));
 			}

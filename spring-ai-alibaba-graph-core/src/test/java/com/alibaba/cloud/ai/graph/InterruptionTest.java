@@ -63,7 +63,7 @@ public class InterruptionTest {
 
 		var runnableConfig = RunnableConfig.builder().build();
 
-		var results = workflow.fluxStream(Map.of(), runnableConfig)
+		var results = workflow.stream(Map.of(), runnableConfig)
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
 			.collectList()
@@ -71,7 +71,11 @@ public class InterruptionTest {
 
 		assertIterableEquals(List.of(START, "A", "B"), results);
 
-		results = workflow.fluxStream(null, runnableConfig)
+
+		RunnableConfig resumeConfig = RunnableConfig.builder()
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
+		results = workflow.stream(null, resumeConfig)
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
 			.collectList()
@@ -84,9 +88,12 @@ public class InterruptionTest {
 			.findFirst()
 			.orElseThrow();
 
+		// FIXME
 		runnableConfig = workflow.updateState(snapshotForNodeB.config(), Map.of("messages", "C"));
-
-		results = workflow.fluxStream(null, runnableConfig)
+		resumeConfig = RunnableConfig.builder(runnableConfig)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
+		results = workflow.stream(null, resumeConfig)
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
 			.collectList()
@@ -117,7 +124,7 @@ public class InterruptionTest {
 
 		var runnableConfig = RunnableConfig.builder().build();
 
-		var results = workflow.fluxStream(Map.of(), runnableConfig)
+		var results = workflow.stream(Map.of(), runnableConfig)
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
 			.collectList()
@@ -126,7 +133,11 @@ public class InterruptionTest {
 		assertIterableEquals(List.of(START, "A", "B"), results);
 
 		runnableConfig = workflow.updateState(runnableConfig, Map.of("messages", "C"));
-		results = workflow.fluxStream(null, runnableConfig)
+		// FIXME
+		RunnableConfig resumeConfig = RunnableConfig.builder(runnableConfig)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
+		results = workflow.stream(null, resumeConfig)
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
 			.collectList()

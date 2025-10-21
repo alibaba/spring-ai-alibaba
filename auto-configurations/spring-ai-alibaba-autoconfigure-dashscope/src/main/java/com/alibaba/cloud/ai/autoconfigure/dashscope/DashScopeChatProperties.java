@@ -20,8 +20,6 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-import static com.alibaba.cloud.ai.dashscope.common.DashScopeApiConstants.DEFAULT_BASE_URL;
-
 /**
  * @author yuluo
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
@@ -56,10 +54,6 @@ public class DashScopeChatProperties extends DashScopeParentProperties {
 		.withModel(DEFAULT_DEPLOYMENT_NAME)
 		.withTemperature(DEFAULT_TEMPERATURE)
 		.build();
-
-	public DashScopeChatProperties() {
-		super.setBaseUrl(DEFAULT_BASE_URL);
-	}
 
 	public DashScopeChatOptions getOptions() {
 
