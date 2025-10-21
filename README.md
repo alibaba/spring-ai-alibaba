@@ -11,8 +11,8 @@
       A code-first framework for building and Agentic, Workflow, and Multi-agent applications.
     </h3>
     <h3 align="center">
-      <a href="https://java2ai.com/">Agent Framework Docs</a>,
-      <a href="https://java2ai.com/">Graph Docs</a>,
+      <a href="https://java2ai.com/">Agent Framework Docs(WIP)</a>,
+      <a href="https://java2ai.com/">Graph Docs(WIP)</a>,
       <a href="https://github.com/spring-ai-alibaba/spring-ai-extensions">Spring AI</a>,
       <a href="https://github.com/spring-ai-alibaba/examples">Examples</a>.
     </h3>
