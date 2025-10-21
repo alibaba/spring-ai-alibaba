@@ -531,38 +531,6 @@ public class ReactAgent extends BaseAgent {
 		this.instruction = instruction;
 	}
 
-	/**
-	 * Gets the agent's unique name.
-	 * @return the unique name of the agent.
-	 */
-	public String name() {
-		return name;
-	}
-
-	/**
-	 * Gets the one-line description of the agent's capability.
-	 * @return the description of the agent.
-	 */
-	public String description() {
-		return description;
-	}
-
-	public boolean isIncludeContents() {
-		return includeContents;
-	}
-
-	public void setIncludeContents(boolean includeContents) {
-		this.includeContents = includeContents;
-	}
-
-	public String getOutputKey() {
-		return outputKey;
-	}
-
-	public void setOutputKey(String outputKey) {
-		this.outputKey = outputKey;
-	}
-
 	public KeyStrategy getOutputKeyStrategy() {
 		return outputKeyStrategy;
 	}
@@ -623,7 +591,8 @@ public class ReactAgent extends BaseAgent {
 			}
 
 			Map<String, Object> result = new HashMap<>();
-			result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult));
+
+			result.put(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages", getGraphResponseFlux(parentState, subGraphResult));
 			if (parentMessages != null) {
 				result.put("messages", parentMessages);
 			}
