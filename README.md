@@ -151,7 +151,7 @@ This project consists of three core components:
 
 * **Spring Boot Starters**: Starters integrating Agent Framework with Nacos to provide A2A and dynamic config features.
 
-## More Projects
+## Spring AI Alibaba Ecosystem
  Repository | Description | ⭐
   --- | --- | ---
 | [Spring AI Alibaba Graph](https://github.com/alibaba/spring-ai-alibaba/tree/main/spring-ai-alibaba-graph-core) | A low-level orchestration framework and runtime for building, managing, and deploying long-running, stateful agents. | ![GitHub Repo stars](https://img.shields.io/github/stars/alibaba/spring-ai-alibaba?style=for-the-badge&label=)
