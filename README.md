@@ -128,7 +128,7 @@ AssistantMessage message = writerAgent.call("帮我写一篇100字左右散文�
 Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的散文");
 ```
 
-Please check [Quick Start](https://java2ai.com/docs/1.0.0.3/get-started/chatbot) on our official website to learn more details.
+While the documentation is still working in progress, you can also [check Unit Tests for more usage references](https://github.com/alibaba/spring-ai-alibaba/tree/main/spring-ai-alibaba-agent-framework/src/test/java/com/alibaba/cloud/ai/graph/agent).
 
 > NOTE!.
 > If you have encountered any `spring-ai` dependency issue, please lean how to configure the `spring-milestones` Maven repository on [FAQ page](https://java2ai.com/docs/1.0.0.3/faq).
