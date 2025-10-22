@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -21,6 +20,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -30,191 +30,180 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import reactor.core.publisher.Flux;
+
 public class AgentLlmNode implements NodeActionWithConfig {
-    
-    private List<Advisor> advisors = new ArrayList<>();
-    
-    private List<ToolCallback> toolCallbacks = new ArrayList<>();
-    
-    private String outputKey;
-    
-    private String outputSchema;
-    
-    private String instruction;
-    
-    private ChatClient chatClient;
-    
-    private ToolCallingChatOptions toolCallingChatOptions;
-    
-    public AgentLlmNode(Builder builder) {
-        this.outputKey = builder.outputKey;
-        this.outputSchema = builder.outputSchema;
-        if (builder.advisors != null) {
-            this.advisors = builder.advisors;
-        }
-        if (builder.toolCallbacks != null) {
-            this.toolCallbacks = builder.toolCallbacks;
-        }
-        this.instruction = builder.instruction;
-        this.chatClient = builder.chatClient;
-        this.toolCallingChatOptions = ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks)
-                .internalToolExecutionEnabled(false).build();
-    }
-    
-    public void setInstruction(String instruction) {
-        this.instruction = instruction;
-    }
-    
-    public static Builder builder() {
-        return new Builder();
-    }
-    
-    @Override
-    public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
-        // add streaming support
-        boolean stream = config.metadata("_stream_", new TypeRef<Boolean>() {
-        }).orElse(true);
-        if (stream) {
-            Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(state).stream().chatResponse();
-            return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
-        } else {
-            AssistantMessage responseOutput;
-            try {
-                ChatResponse response = buildChatClientRequestSpec(state).call().chatResponse();
-                responseOutput = response.getResult().getOutput();
-            } catch (Exception e) {
-                responseOutput = new AssistantMessage("Exception: " + e.getMessage());
-            }
-            
-            Map<String, Object> updatedState = new HashMap<>();
-            updatedState.put("messages", responseOutput);
-            if (StringUtils.hasLength(this.outputKey)) {
-                updatedState.put(this.outputKey, responseOutput);
-            }
-            
-            return updatedState;
-        }
-    }
-    
-    public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-        this.toolCallbacks = toolCallbacks;
-    }
-    
-    private String renderPromptTemplate(String prompt, Map<String, Object> params) {
-        PromptTemplate promptTemplate = new PromptTemplate(prompt);
-        return promptTemplate.render(params);
-    }
-    
-    public void augmentUserMessage(List<Message> messages, String outputSchema) {
-        if (!StringUtils.hasText(outputSchema)) {
-            return;
-        }
-        
-        for (int i = messages.size() - 1; i >= 0; i--) {
-            Message message = messages.get(i);
-            if (message instanceof UserMessage userMessage) {
-                messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema)
-                        .build());
-                break;
-            }
-            if (message instanceof AgentInstructionMessage templatedUserMessage) {
-                messages.set(i, templatedUserMessage.mutate()
-                        .text(templatedUserMessage.getText() + System.lineSeparator() + outputSchema).build());
-                break;
-            }
-            
-            if (i == 0) {
-                messages.add(new UserMessage(outputSchema));
-            }
-        }
-    }
-    
-    public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params) {
-        for (int i = messages.size() - 1; i >= 0; i--) {
-            Message message = messages.get(i);
-            if (message instanceof AgentInstructionMessage instructionMessage) {
-                AgentInstructionMessage newMessage = instructionMessage.mutate()
-                        .text(renderPromptTemplate(instructionMessage.getText(), params)).build();
-                messages.set(i, newMessage);
-                break;
-            }
-        }
-    }
-    
-    private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state) {
-        if (state.value("messages").isEmpty()) {
-            throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
-        }
-        
-        @SuppressWarnings("unchecked") List<Message> messages = (List<Message>) state.value("messages").get();
-        
-        augmentUserMessage(messages, outputSchema);
-        
-        renderTemplatedUserMessage(messages, state.data());
-        
-        ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt().options(toolCallingChatOptions)
-                .messages(messages).system(instruction).advisors(advisors);
-        
-        return chatClientRequestSpec;
-    }
-    
-    public static class Builder {
-        
-        private String instruction;
-        
-        private String outputKey;
-        
-        private String outputSchema;
-        
-        private ChatClient chatClient;
-        
-        private List<Advisor> advisors;
-        
-        private List<ToolCallback> toolCallbacks;
-        
-        public Builder outputKey(String outputKey) {
-            this.outputKey = outputKey;
-            return this;
-        }
-        
-        public Builder instruction(String instruction) {
-            this.instruction = instruction;
-            return this;
-        }
-        
-        
-        public Builder outputSchema(String outputSchema) {
-            this.outputSchema = outputSchema;
-            return this;
-        }
-        
-        public Builder advisors(List<Advisor> advisors) {
-            this.advisors = advisors;
-            return this;
-        }
-        
-        public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
-            this.toolCallbacks = toolCallbacks;
-            return this;
-        }
-        
-        public Builder chatClient(ChatClient chatClient) {
-            this.chatClient = chatClient;
-            return this;
-        }
-        
-        public AgentLlmNode build() {
-            return new AgentLlmNode(this);
-        }
-        
-    }
-    
+
+	private List<Advisor> advisors = new ArrayList<>();
+
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+
+	private String outputKey;
+
+	private String outputSchema;
+
+	private ChatClient chatClient;
+
+	private ToolCallingChatOptions toolCallingChatOptions;
+
+	public AgentLlmNode(Builder builder) {
+		this.outputKey = builder.outputKey;
+		this.outputSchema = builder.outputSchema;
+		if (builder.advisors != null) {
+			this.advisors = builder.advisors;
+		}
+		if (builder.toolCallbacks != null) {
+			this.toolCallbacks = builder.toolCallbacks;
+		}
+		this.chatClient = builder.chatClient;
+		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
+				.toolCallbacks(toolCallbacks)
+				.internalToolExecutionEnabled(false)
+				.build();
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	@Override
+	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
+		// add streaming support
+		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
+		if (stream) {
+			Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(state).stream().chatResponse();
+			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
+		} else {
+			AssistantMessage responseOutput;
+			try {
+				ChatResponse response = buildChatClientRequestSpec(state).call().chatResponse();
+				responseOutput = response.getResult().getOutput();
+			}
+			catch (Exception e) {
+				responseOutput = new AssistantMessage("Exception: " + e.getMessage());
+			}
+
+			Map<String, Object> updatedState = new HashMap<>();
+			updatedState.put("messages", responseOutput);
+			if (StringUtils.hasLength(this.outputKey)) {
+				updatedState.put(this.outputKey, responseOutput);
+			}
+
+			return updatedState;
+		}
+	}
+
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
+		PromptTemplate promptTemplate = new PromptTemplate(prompt);
+		return promptTemplate.render(params);
+	}
+
+	public void augmentUserMessage(List<Message> messages, String outputSchema) {
+		if (!StringUtils.hasText(outputSchema)) {
+			return;
+		}
+
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			Message message = messages.get(i);
+			if (message instanceof UserMessage userMessage) {
+				messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema).build());
+				break;
+			}
+			if (message instanceof AgentInstructionMessage templatedUserMessage) {
+				messages.set(i, templatedUserMessage.mutate().text(templatedUserMessage.getText() + System.lineSeparator() + outputSchema).build());
+				break;
+			}
+
+			if (i == 0) {
+				messages.add(new UserMessage(outputSchema));
+			}
+		}
+	}
+
+	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params) {
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			Message message = messages.get(i);
+			if (message instanceof AgentInstructionMessage instructionMessage) {
+				AgentInstructionMessage newMessage = instructionMessage.mutate().text(renderPromptTemplate(instructionMessage.getText(), params)).build();
+				messages.set(i, newMessage);
+				break;
+			}
+		}
+	}
+
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state) {
+		if (state.value("messages").isEmpty()) {
+			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
+		}
+
+		@SuppressWarnings("unchecked")
+		List<Message> messages = (List<Message>) state.value("messages").get();
+
+		augmentUserMessage(messages, outputSchema);
+
+		renderTemplatedUserMessage(messages, state.data());
+
+		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
+				.options(toolCallingChatOptions)
+				.messages(messages)
+				.advisors(advisors);
+
+		return chatClientRequestSpec;
+	}
+
+	public static class Builder {
+
+		private String outputKey;
+
+		private String outputSchema;
+
+		private ChatClient chatClient;
+
+		private List<Advisor> advisors;
+
+		private List<ToolCallback> toolCallbacks;
+
+		public Builder outputKey(String outputKey) {
+			this.outputKey = outputKey;
+			return this;
+		}
+
+		public Builder outputSchema(String outputSchema) {
+			this.outputSchema = outputSchema;
+			return this;
+		}
+
+		public Builder advisors(List<Advisor> advisors) {
+			this.advisors = advisors;
+			return this;
+		}
+
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
+			this.toolCallbacks = toolCallbacks;
+			return this;
+		}
+
+		public Builder chatClient(ChatClient chatClient) {
+			this.chatClient = chatClient;
+			return this;
+		}
+
+		public AgentLlmNode build() {
+			return new AgentLlmNode(this);
+		}
+
+	}
+
 }
