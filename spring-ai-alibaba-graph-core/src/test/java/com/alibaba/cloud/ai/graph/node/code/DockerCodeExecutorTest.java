@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -33,7 +34,8 @@ class DockerCodeExecutorTest {
 	private static boolean isCI() {
 		return "true".equalsIgnoreCase(System.getProperty("CI", System.getenv("CI")));
 	}
-
+	
+	@EnabledIfDockerAvailable
 	@EnabledIf(value = "isCI", disabledReason = "this test is designed to run only in the GitHub CI environment.")
 	@Test
 	void testPython3Sum() throws Exception {

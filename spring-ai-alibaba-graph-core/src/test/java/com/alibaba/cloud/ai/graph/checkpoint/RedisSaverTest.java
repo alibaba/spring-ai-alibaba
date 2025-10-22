@@ -38,6 +38,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
@@ -47,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-
+@EnabledIfDockerAvailable
 @EnabledIf(value = "isCI", disabledReason = "this test is designed to run only in the GitHub CI environment.")
 @Testcontainers
 class RedisSaverTest {

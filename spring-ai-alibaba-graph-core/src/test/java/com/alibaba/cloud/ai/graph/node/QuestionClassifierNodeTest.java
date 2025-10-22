@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+@EnabledIfDockerAvailable
 public class QuestionClassifierNodeTest {
 
 	private ChatClient chatClient;
