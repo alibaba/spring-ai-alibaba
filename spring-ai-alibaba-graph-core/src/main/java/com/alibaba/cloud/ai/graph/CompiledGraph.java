@@ -167,17 +167,21 @@ public class CompiledGraph {
 					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
 				}
 
-				var actions = parallelNodeStream.get()
-					.map(target -> {
-						try {
-							return nodeFactories.get(target.id()).apply(compileConfig);
-						} catch (GraphStateException ex) {
-							throw new RuntimeException("Failed to create parallel node action for target: " + target.id() + ". Cause: " + ex.getMessage(), ex);
-						}
-					})
-					.toList();
+			var targetList = parallelNodeStream.get().toList();
 
-				var parallelNode = new ParallelNode(e.sourceId(), actions, keyStrategyMap, compileConfig);
+			var actions = targetList.stream()
+				.map(target -> {
+					try {
+						return nodeFactories.get(target.id()).apply(compileConfig);
+					} catch (GraphStateException ex) {
+						throw new RuntimeException("Failed to create parallel node action for target: " + target.id() + ". Cause: " + ex.getMessage(), ex);
+					}
+				})
+				.toList();
+
+			var actionNodeIds = targetList.stream().map(EdgeValue::id).toList();
+
+			var parallelNode = new ParallelNode(e.sourceId(), actions, actionNodeIds, keyStrategyMap, compileConfig);
 
 				nodeFactories.put(parallelNode.id(), parallelNode.actionFactory());
 

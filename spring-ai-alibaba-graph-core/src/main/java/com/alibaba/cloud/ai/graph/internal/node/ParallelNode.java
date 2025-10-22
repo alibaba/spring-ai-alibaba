@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
@@ -46,54 +45,58 @@ public class ParallelNode extends Node {
 	}
 
 	public record AsyncParallelNodeAction(String nodeId, List<AsyncNodeActionWithConfig> actions,
-										  Map<String, KeyStrategy> channels, CompileConfig compileConfig) implements AsyncNodeActionWithConfig {
+			List<String> actionNodeIds, Map<String, KeyStrategy> channels, CompileConfig compileConfig)
+			implements AsyncNodeActionWithConfig {
 
-		@SuppressWarnings("unchecked")
 		private CompletableFuture<Map<String, Object>> evalNodeActionSync(AsyncNodeActionWithConfig action,
-																		  OverAllState state, RunnableConfig config) {
-			LifeListenerUtil.processListenersLIFO(nodeId, new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()),
-					state.data(), config, NODE_BEFORE, null);
+				String actualNodeId, OverAllState state, RunnableConfig config) {
+			LifeListenerUtil.processListenersLIFO(actualNodeId,
+					new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()), state.data(), config, NODE_BEFORE,
+					null);
 			return action.apply(state, config)
-					.whenComplete((stringObjectMap, throwable) -> LifeListenerUtil.processListenersLIFO(nodeId,
-							new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()), state.data(), config, NODE_AFTER,
-							throwable));
+				.whenComplete((stringObjectMap, throwable) -> LifeListenerUtil.processListenersLIFO(actualNodeId,
+						new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()), state.data(), config, NODE_AFTER,
+						throwable));
 		}
 
-		private CompletableFuture<Map<String, Object>> evalNodeActionAsync(AsyncNodeActionWithConfig action,
-																		   OverAllState state, RunnableConfig config, Executor executor) {
-			return CompletableFuture.supplyAsync(() -> {
-				try {
-					return evalNodeActionSync(action, state, config).join();
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}, executor);
+	private CompletableFuture<Map<String, Object>> evalNodeActionAsync(AsyncNodeActionWithConfig action,
+			String actualNodeId, OverAllState state, RunnableConfig config, Executor executor) {
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				return evalNodeActionSync(action, actualNodeId, state, config).join();
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+	}, executor);
+	}
+
+	@Override
+	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+		List<CompletableFuture<Map<String, Object>>> futures = new ArrayList<>();
+		for (int i = 0; i < actions.size(); i++) {
+			AsyncNodeActionWithConfig action = actions.get(i);
+			String actualNodeId = actionNodeIds.get(i);
+
+			CompletableFuture<Map<String, Object>> future = config.metadata(nodeId)
+				.filter(value -> value instanceof Executor)
+				.map(Executor.class::cast)
+				.map(executor -> evalNodeActionAsync(action, actualNodeId, state, config, executor))
+				.orElseGet(() -> evalNodeActionSync(action, actualNodeId, state, config));
+
+			futures.add(future);
 		}
 
-		@Override
-		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-			Function<AsyncNodeActionWithConfig, CompletableFuture<Map<String, Object>>> evalNodeAction = config
-					.metadata(nodeId)
-					.filter(value -> value instanceof Executor)
-					.map(Executor.class::cast)
-					.map(executor -> (Function<AsyncNodeActionWithConfig, CompletableFuture<Map<String, Object>>>) action -> evalNodeActionAsync(
-							action, state, config, executor))
-					.orElseGet(() -> action -> evalNodeActionSync(action, state, config));
+		// Wait for all tasks to complete
+		return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
+			// Collect all results
+			List<Map<String, Object>> results = futures.stream()
+				.map(CompletableFuture::join)
+				.collect(Collectors.toList());
 
-			// Execute all actions in parallel
-			List<CompletableFuture<Map<String, Object>>> futures = actions.stream().map(evalNodeAction).toList();
-
-			// Wait for all tasks to complete
-			return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
-				// Collect all results
-				List<Map<String, Object>> results = futures.stream()
-						.map(CompletableFuture::join)
-						.collect(Collectors.toList());
-
-				return processParallelResults(results, state, actions);
-			});
-		}
+			return processParallelResults(results, state, actions);
+		});
+	}
 
 		/**
 		 * Process parallel execution results, handling GraphFlux, traditional Flux, and regular objects.
@@ -128,14 +131,18 @@ public class ParallelNode extends Node {
 						if (!graphFluxNodeId.equals(graphFlux.getNodeId())) {
 							@SuppressWarnings("unchecked")
 							GraphFlux<Object> castedFlux = (GraphFlux<Object>) graphFlux;
-							graphFlux = GraphFlux.of(graphFluxNodeId,entry.getKey(), castedFlux.getFlux(),
-									castedFlux.getMapResult(),castedFlux.getChunkResult());
+							@SuppressWarnings("unchecked")
+							GraphFlux<Object> newGraphFlux = GraphFlux.of(graphFluxNodeId, entry.getKey(), 
+									castedFlux.getFlux(), castedFlux.getMapResult(), castedFlux.getChunkResult());
+							graphFlux = newGraphFlux;
 						}
 
 						graphFluxList.add(graphFlux);
 						graphFluxNodeIds.add(graphFluxNodeId);
-					} else if (value instanceof Flux flux) {
+					} else if (value instanceof Flux) {
 						// Traditional Flux - wrap it in GraphFlux for unified processing
+						@SuppressWarnings("unchecked")
+						Flux<Object> flux = (Flux<Object>) value;
 						fluxList.add(flux);
 					} else {
 						// Regular object - add to merged state
@@ -176,10 +183,10 @@ public class ParallelNode extends Node {
 		}
 	}
 
-	public ParallelNode(String id, List<AsyncNodeActionWithConfig> actions, Map<String, KeyStrategy> channels,
-						CompileConfig compileConfig) {
+	public ParallelNode(String id, List<AsyncNodeActionWithConfig> actions, List<String> actionNodeIds,
+			Map<String, KeyStrategy> channels, CompileConfig compileConfig) {
 		super(formatNodeId(id),
-				(config) -> new AsyncParallelNodeAction(formatNodeId(id), actions, channels, compileConfig));
+				(config) -> new AsyncParallelNodeAction(formatNodeId(id), actions, actionNodeIds, channels, compileConfig));
 	}
 
 	@Override
