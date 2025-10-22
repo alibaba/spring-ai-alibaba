@@ -106,7 +106,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		this.tools = convert(nacosOptions, mcpServersVO);
 
 		//7. build tools
-		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder().chatClient(chatClient);
+		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder().instruction(instruction).chatClient(chatClient);
 		if (outputKey != null && !outputKey.isEmpty()) {
 			llmNodeBuilder.outputKey(outputKey);
 		}
@@ -294,8 +294,12 @@ class PromptListener extends AbstractListener {
 		PromptVO promptVO = JSON.parseObject(configInfo, PromptVO.class);
 
 		if (promptVO != null && promptVO.getTemplate() != null) {
-			nacosContextHolder.getObservationMetadataAwareOptions().getObservationMetadata()
-					.putAll(getMetadata(promptVO));
+			if(nacosContextHolder.getObservationMetadataAwareOptions() != null) {
+				if (nacosContextHolder.getObservationMetadataAwareOptions().getObservationMetadata()!=null){
+					nacosContextHolder.getObservationMetadataAwareOptions().getObservationMetadata()
+							.putAll(getMetadata(promptVO));
+				}
+			}
 			reactAgent.setInstruction(promptVO.getTemplate());
 		}
 
