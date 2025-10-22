@@ -17,9 +17,10 @@ package com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.agent.hook.BeforeModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
-
+import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 
@@ -30,20 +31,21 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Hook that tracks model call counts and enforces limits.
+ * Hook that tracks and limits model call counts.
  *
  * This hook monitors the number of model calls made during agent execution
  * and can terminate the agent when specified limits are reached. It supports
  * both thread-level and run-level call counting with configurable exit behaviors.
  */
-public class ModelCallLimitHook extends BeforeModelHook {
+@HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
+public class ModelCallLimitHook implements ModelHook {
+
+	private static final String THREAD_COUNT_KEY = "__model_call_limit_thread_count__";
+	private static final String RUN_COUNT_KEY = "__model_call_limit_run_count__";
 
 	private final Integer threadLimit;
 	private final Integer runLimit;
 	private final ExitBehavior exitBehavior;
-
-	private int threadModelCallCount = 0;
-	private int runModelCallCount = 0;
 
 	private ModelCallLimitHook(Builder builder) {
 		this.threadLimit = builder.threadLimit;
@@ -56,12 +58,12 @@ public class ModelCallLimitHook extends BeforeModelHook {
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-		// Increment counters
-		threadModelCallCount++;
-		runModelCallCount++;
+	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+		// Read current counts from state
+		int threadModelCallCount = state.value(THREAD_COUNT_KEY, Integer.class).orElse(0);
+		int runModelCallCount = state.value(RUN_COUNT_KEY, Integer.class).orElse(0);
 
-		// Check if limits are exceeded
+		// Check if limits are already exceeded (before making the call)
 		boolean threadLimitExceeded = threadLimit != null && threadModelCallCount >= threadLimit;
 		boolean runLimitExceeded = runLimit != null && runModelCallCount >= runLimit;
 
@@ -96,6 +98,19 @@ public class ModelCallLimitHook extends BeforeModelHook {
 		return CompletableFuture.completedFuture(Map.of());
 	}
 
+	@Override
+	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+		// Read current counts from state
+		int threadModelCallCount = state.value(THREAD_COUNT_KEY, Integer.class).orElse(0);
+		int runModelCallCount = state.value(RUN_COUNT_KEY, Integer.class).orElse(0);
+
+		// Increment counters after the model call
+		Map<String, Object> updates = new HashMap<>();
+		updates.put(THREAD_COUNT_KEY, threadModelCallCount + 1);
+		updates.put(RUN_COUNT_KEY, runModelCallCount + 1);
+		return CompletableFuture.completedFuture(updates);
+	}
+
 	private String buildLimitExceededMessage(int threadCount, int runCount, Integer threadLimit, Integer runLimit) {
 		List<String> exceededLimits = new ArrayList<>();
 		if (threadLimit != null && threadCount >= threadLimit) {
@@ -107,8 +122,15 @@ public class ModelCallLimitHook extends BeforeModelHook {
 		return "Model call limits exceeded: " + String.join(", ", exceededLimits);
 	}
 
-	public void resetRunCount() {
-		this.runModelCallCount = 0;
+	/**
+	 * Reset the run count in the state.
+	 * @param state the state to update
+	 * @return updates map containing the reset run count
+	 */
+	public Map<String, Object> resetRunCount(OverAllState state) {
+		Map<String, Object> updates = new HashMap<>();
+		updates.put(RUN_COUNT_KEY, 0);
+		return updates;
 	}
 
 	@Override
@@ -157,4 +179,3 @@ public class ModelCallLimitHook extends BeforeModelHook {
 		}
 	}
 }
-

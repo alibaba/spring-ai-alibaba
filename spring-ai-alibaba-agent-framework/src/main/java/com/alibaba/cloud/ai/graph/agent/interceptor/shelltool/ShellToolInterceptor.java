@@ -16,8 +16,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.shelltool;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
@@ -249,12 +247,6 @@ public class ShellToolInterceptor extends ToolInterceptor {
 			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(),
 				"Error: " + e.getMessage());
 		}
-	}
-
-	@Override
-	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
-		// This interceptor doesn't modify state directly
-		return Collections.emptyMap();
 	}
 
 	@SuppressWarnings("unchecked")

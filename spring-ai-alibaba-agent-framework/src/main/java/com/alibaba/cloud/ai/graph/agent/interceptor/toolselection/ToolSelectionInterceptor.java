@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.toolselection;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
@@ -184,12 +182,6 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 	@Override
 	public String getName() {
 		return "ToolSelection";
-	}
-
-	@Override
-	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
-		// This is a ModelInterceptor, not a Hook node
-		return Map.of();
 	}
 
 	private static class ToolSelectionResponse {

@@ -15,9 +15,25 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook;
 
-public abstract class BeforeModelHook implements Hook {
-	@Override
-	public HookType getHookType() {
-		return HookType.BEFORE_MODEL;
-	}
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
+public interface ModelHook extends Hook {
+
+    default CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+        return CompletableFuture.completedFuture(Map.of());
+    }
+
+    default CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+        return CompletableFuture.completedFuture(Map.of());
+    }
+
+    @Override
+    default HookType getHookType() {
+        return HookType.MODEL;
+    }
 }
+

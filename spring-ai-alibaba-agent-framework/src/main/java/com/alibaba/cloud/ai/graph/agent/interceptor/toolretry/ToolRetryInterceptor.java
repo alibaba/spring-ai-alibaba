@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.toolretry;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
@@ -147,12 +145,6 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 	@Override
 	public String getName() {
 		return "ToolRetry";
-	}
-
-	@Override
-	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
-		// This is a ToolInterceptor, not a Hook node
-		return Map.of();
 	}
 
 	public enum OnFailureBehavior {

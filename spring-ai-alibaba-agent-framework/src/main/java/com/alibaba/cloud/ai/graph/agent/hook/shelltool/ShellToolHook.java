@@ -18,39 +18,27 @@ package com.alibaba.cloud.ai.graph.agent.hook.shelltool;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.agent.hook.BeforeAgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
+import com.alibaba.cloud.ai.graph.agent.hook.HookType;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.interceptor.shelltool.ShellToolInterceptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Before-agent hook that initializes the shell session before agent execution starts.
- *
- * This hook works in conjunction with ShellToolInterceptor to provide persistent
- * shell execution capabilities. It must be paired with ShellToolAfterAgentHook
- * to ensure proper cleanup.
- *
- * Example:
- * <pre>
- * ShellToolInterceptor interceptor = ShellToolInterceptor.builder()
- *     .workspaceRoot("/tmp/agent-workspace")
- *     .commandTimeout(30000)
- *     .build();
- *
- * ShellToolBeforeAgentHook beforeHook = new ShellToolBeforeAgentHook(interceptor);
- * ShellToolAfterAgentHook afterHook = new ShellToolAfterAgentHook(interceptor);
- *
- * // Register both hooks in agent
- * </pre>
- */
-public class ShellToolBeforeAgentHook extends BeforeAgentHook {
+@HookPositions({HookPosition.BEFORE_AGENT, HookPosition.AFTER_AGENT})
+public class ShellToolHook implements AgentHook {
+
+	private static final Logger log = LoggerFactory.getLogger(ShellToolHook.class);
 
 	private final ShellToolInterceptor interceptor;
 
-	public ShellToolBeforeAgentHook(ShellToolInterceptor interceptor) {
+	public ShellToolHook(ShellToolInterceptor interceptor) {
 		if (interceptor == null) {
 			throw new IllegalArgumentException("ShellToolInterceptor cannot be null");
 		}
@@ -58,7 +46,7 @@ public class ShellToolBeforeAgentHook extends BeforeAgentHook {
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+	public CompletableFuture<Map<String, Object>> beforeAgent(OverAllState state, RunnableConfig config) {
 		try {
 			// Initialize shell session and run startup commands
 			interceptor.beforeAgent();
@@ -71,12 +59,31 @@ public class ShellToolBeforeAgentHook extends BeforeAgentHook {
 	}
 
 	@Override
+	public CompletableFuture<Map<String, Object>> afterAgent(OverAllState state, RunnableConfig config) {
+		try {
+			// Run shutdown commands and cleanup resources
+			interceptor.afterAgent();
+			return CompletableFuture.completedFuture(Map.of());
+		} catch (Exception e) {
+			log.error("Failed to cleanup shell session", e);
+			// Don't fail the agent run if cleanup fails, just log it
+			return CompletableFuture.completedFuture(Map.of());
+		}
+	}
+
+	@Override
 	public String getName() {
-		return "ShellToolBeforeAgent";
+		return "ShellToolHook";
+	}
+
+	@Override
+	public HookType getHookType() {
+		return HookType.MODEL;
 	}
 
 	@Override
 	public List<JumpTo> canJumpTo() {
 		return List.of();
 	}
+
 }

@@ -17,8 +17,8 @@ package com.alibaba.cloud.ai.graph.agent.hook.summarization;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.agent.hook.BeforeModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
+import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -52,9 +52,10 @@ import org.slf4j.LoggerFactory;
  *     .maxTokensBeforeSummary(4000)
  *     .messagesToKeep(20)
  *     .build();
+@HookPositions(HookPosition.BEFORE_MODEL)
  * </pre>
  */
-public class SummarizationHook extends BeforeModelHook {
+public class SummarizationHook implements ModelHook {
 
 	private static final Logger log = LoggerFactory.getLogger(SummarizationHook.class);
 
@@ -94,7 +95,7 @@ public class SummarizationHook extends BeforeModelHook {
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
 		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
 
 		if (maxTokensBeforeSummary == null) {

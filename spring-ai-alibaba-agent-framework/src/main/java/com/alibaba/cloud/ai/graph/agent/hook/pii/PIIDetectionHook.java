@@ -17,8 +17,8 @@ package com.alibaba.cloud.ai.graph.agent.hook.pii;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.agent.hook.BeforeModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
+import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -46,9 +46,10 @@ import java.util.concurrent.CompletableFuture;
  *     .strategy(RedactionStrategy.REDACT)
  *     .applyToInput(true)
  *     .build();
+@HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
  * </pre>
  */
-public class PIIDetectionHook extends BeforeModelHook {
+public class PIIDetectionHook implements ModelHook {
 
 	private final PIIType piiType;
 	private final RedactionStrategy strategy;
@@ -71,7 +72,7 @@ public class PIIDetectionHook extends BeforeModelHook {
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
 		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
 		List<Message> processedMessages = new ArrayList<>();
 		boolean hasChanges = false;
@@ -91,6 +92,72 @@ public class PIIDetectionHook extends BeforeModelHook {
 		}
 
 		return CompletableFuture.completedFuture(Map.of());
+	}
+
+	@Override
+	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+		// Only process if applyToOutput is enabled
+		if (!applyToOutput) {
+			return CompletableFuture.completedFuture(Map.of());
+		}
+
+		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+
+		if (messages.isEmpty()) {
+			return CompletableFuture.completedFuture(Map.of());
+		}
+
+		// Find the last AI message
+		AssistantMessage aiMessage = null;
+		int lastIndex = -1;
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			if (messages.get(i) instanceof AssistantMessage am) {
+				aiMessage = am;
+				lastIndex = i;
+				break;
+			}
+		}
+
+		if (aiMessage == null) {
+			return CompletableFuture.completedFuture(Map.of());
+		}
+
+		String content = aiMessage.getText();
+
+		if (content == null || content.isEmpty()) {
+			return CompletableFuture.completedFuture(Map.of());
+		}
+
+		// Detect PII
+		ProcessResult result = processText(content);
+
+		if (!result.hasMatches) {
+			return CompletableFuture.completedFuture(Map.of());
+		}
+
+		// Apply strategy
+		if (result.hasMatches && strategy == RedactionStrategy.BLOCK) {
+			throw new PIIDetectionException(piiType.name(), result.matches);
+		}
+
+		if (result.redactedText.equals(content)) {
+			return CompletableFuture.completedFuture(Map.of());
+		}
+
+		// Create updated message
+		AssistantMessage updatedMessage = new AssistantMessage(
+			result.redactedText,
+			aiMessage.getMetadata(),
+			aiMessage.getToolCalls(),
+			aiMessage.getMedia()
+		);
+
+		List<Message> updatedMessages = new ArrayList<>(messages);
+		updatedMessages.set(lastIndex, updatedMessage);
+
+		Map<String, Object> updates = new HashMap<>();
+		updates.put("messages", updatedMessages);
+		return CompletableFuture.completedFuture(updates);
 	}
 
 	private Message processMessage(Message message) {

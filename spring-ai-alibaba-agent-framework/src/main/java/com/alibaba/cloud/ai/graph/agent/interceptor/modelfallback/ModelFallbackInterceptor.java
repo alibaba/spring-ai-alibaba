@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.modelfallback;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
@@ -28,7 +26,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Automatic fallback to alternative models on errors.
@@ -94,12 +91,6 @@ public class ModelFallbackInterceptor extends ModelInterceptor {
 	@Override
 	public String getName() {
 		return "ModelFallback";
-	}
-
-	@Override
-	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
-		// This is a ModelInterceptor, not a Hook node
-		return Map.of();
 	}
 
 	public static class Builder {

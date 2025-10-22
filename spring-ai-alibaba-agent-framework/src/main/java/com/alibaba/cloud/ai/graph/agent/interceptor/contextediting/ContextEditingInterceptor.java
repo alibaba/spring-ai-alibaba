@@ -15,13 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.contextediting;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
-import com.alibaba.cloud.ai.graph.agent.hook.summarization.TokenCounter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -210,12 +208,6 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 	@Override
 	public String getName() {
 		return "ContextEditing";
-	}
-
-	@Override
-	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
-		// This is a ModelInterceptor, not a Hook node
-		return Map.of();
 	}
 
 	private static class ClearableToolMessage {

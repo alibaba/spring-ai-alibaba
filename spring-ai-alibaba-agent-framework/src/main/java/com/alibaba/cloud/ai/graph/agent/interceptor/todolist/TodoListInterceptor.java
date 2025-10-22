@@ -16,8 +16,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.todolist;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
@@ -26,9 +24,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Model interceptor that provides todo list management capabilities to agents.
@@ -160,7 +156,7 @@ public class TodoListInterceptor extends ModelInterceptor {
 			for (int i = 0; i < enhancedMessages.size(); i++) {
 				Message msg = enhancedMessages.get(i);
 				if (msg instanceof SystemMessage systemMsg) {
-					String enhancedContent = systemMsg.getContent() + "\n\n" + systemPrompt;
+					String enhancedContent = systemMsg.getText() + "\n\n" + systemPrompt;
 					enhancedMessages.set(i, new SystemMessage(enhancedContent));
 					break;
 				}
@@ -179,12 +175,6 @@ public class TodoListInterceptor extends ModelInterceptor {
 
 		// Call the handler with enhanced request
 		return handler.call(enhancedRequest);
-	}
-
-	@Override
-	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
-		// This interceptor doesn't modify state directly
-		return Collections.emptyMap();
 	}
 
 	/**

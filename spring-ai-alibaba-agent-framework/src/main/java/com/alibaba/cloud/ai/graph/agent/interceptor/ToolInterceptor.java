@@ -22,11 +22,6 @@ package com.alibaba.cloud.ai.graph.agent.interceptor;
  */
 public abstract class ToolInterceptor implements Interceptor {
 
-	@Override
-	public InterceptorType getHookType() {
-		return InterceptorType.TOOL;
-	}
-
 	/**
 	 * Wrap a tool call with custom logic.
 	 *

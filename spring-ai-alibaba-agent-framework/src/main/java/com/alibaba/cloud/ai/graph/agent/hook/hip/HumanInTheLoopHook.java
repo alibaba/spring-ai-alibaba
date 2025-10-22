@@ -21,8 +21,10 @@ import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
-import com.alibaba.cloud.ai.graph.agent.hook.AfterModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
+import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -39,7 +41,8 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HumanInTheLoopHook extends AfterModelHook implements InterruptableAction {
+@HookPositions(HookPosition.AFTER_MODEL)
+public class HumanInTheLoopHook implements ModelHook, InterruptableAction {
 	private static final Logger log = LoggerFactory.getLogger(HumanInTheLoopHook.class);
 
 	private Map<String, ToolConfig> approvalOn;
@@ -53,7 +56,7 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
 		Optional<Object> feedback = config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY);
 		InterruptionMetadata interruptionMetadata = (InterruptionMetadata) feedback.orElseThrow(() -> new RuntimeException("Human feedback is required but not provided in RuntimeConfig."));
 

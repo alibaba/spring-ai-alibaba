@@ -16,10 +16,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor;
 
-import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
-
-public interface Interceptor extends NodeActionWithConfig {
+interface Interceptor {
 	String getName();
-
-	InterceptorType getHookType();
 }

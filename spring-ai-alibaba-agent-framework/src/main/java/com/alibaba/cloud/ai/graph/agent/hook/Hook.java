@@ -15,14 +15,33 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook;
 
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 
 import java.util.List;
 
-public interface Hook extends AsyncNodeActionWithConfig {
+public interface Hook {
 	String getName();
 
 	HookType getHookType();
 
 	List<JumpTo> canJumpTo();
+
+	/**
+	 * Get the positions where this hook should be executed.
+	 * By default, this method checks for the @HookPositions annotation on the implementing class.
+	 *
+	 * @return array of HookPosition values
+	 */
+	default HookPosition[] getHookPositions() {
+		HookPositions annotation = this.getClass().getAnnotation(HookPositions.class);
+		if (annotation != null) {
+			return annotation.value();
+		}
+		// Default fallback based on hook type
+		if (this instanceof AgentHook) {
+			return new HookPosition[]{HookPosition.BEFORE_AGENT, HookPosition.AFTER_AGENT};
+		} else if (this instanceof ModelHook) {
+			return new HookPosition[]{HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL};
+		}
+		return new HookPosition[0];
+	}
 }

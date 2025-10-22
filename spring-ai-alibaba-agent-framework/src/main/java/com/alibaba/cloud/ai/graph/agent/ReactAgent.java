@@ -29,13 +29,11 @@ import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
-import com.alibaba.cloud.ai.graph.agent.hook.AfterAgentHook;
-import com.alibaba.cloud.ai.graph.agent.hook.AfterModelHook;
-import com.alibaba.cloud.ai.graph.agent.hook.BeforeAgentHook;
-import com.alibaba.cloud.ai.graph.agent.hook.BeforeModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
-import com.alibaba.cloud.ai.graph.agent.hook.HookType;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
+import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
@@ -54,6 +52,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -211,15 +210,26 @@ public class ReactAgent extends BaseAgent {
 
 		// Add hook nodes
 		for (Hook hook : hooks) {
-			String nodeName = hook.getName() + "." + hook.getHookType();
-			graph.addNode(nodeName, hook );
+			if (hook instanceof AgentHook) {
+				var agentHook = (AgentHook) hook;
+				graph.addNode(hook.getName() + ".before", agentHook::beforeAgent);
+				graph.addNode(hook.getName() + ".after", agentHook::afterAgent);
+			} else if (hook instanceof ModelHook) {
+				var modelHook = (ModelHook) hook;
+				graph.addNode(hook.getName() + ".beforeModel", modelHook::beforeModel);
+				graph.addNode(hook.getName() + ".afterModel", modelHook::afterModel);
+			}
+			else {
+				throw new UnsupportedOperationException("Unsupported hook type: " + hook.getClass().getName());
+			}
 		}
 
-		// Categorize hook by hook type
-		List<Hook> beforeAgentHooks = filterHooks(hooks, BeforeAgentHook.class);
-		List<Hook> beforeModelHooks = filterHooks(hooks, BeforeModelHook.class);
-		List<Hook> afterModelHooks = filterHooks(hooks, AfterModelHook.class);
-		List<Hook> afterAgentHooks = filterHooks(hooks, AfterAgentHook.class);
+		// Categorize hooks by position
+		List<Hook> beforeAgentHooks = filterHooksByPosition(hooks, HookPosition.BEFORE_AGENT);
+		List<Hook> afterAgentHooks = filterHooksByPosition(hooks, HookPosition.AFTER_AGENT);
+		List<Hook> beforeModelHooks = filterHooksByPosition(hooks, HookPosition.BEFORE_MODEL);
+		List<Hook> afterModelHooks = filterHooksByPosition(hooks, HookPosition.AFTER_MODEL);
+
 		// Determine node flow
 		String entryNode = determineEntryNode(beforeAgentHooks, beforeModelHooks);
 		String loopEntryNode = determineLoopEntryNode(beforeModelHooks);
@@ -228,56 +238,66 @@ public class ReactAgent extends BaseAgent {
 
 		// Set up edges
 		graph.addEdge(START, entryNode);
-		setupHookEdges(graph, beforeAgentHooks, beforeModelHooks, afterModelHooks, afterAgentHooks,
+		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
 				entryNode, loopEntryNode, loopExitNode, exitNode, true, this);
 		return graph;
 	}
 
-	private static List<Hook> filterHooks(
-			List<Hook> hooks, Class<?> clazz) {
+	/**
+	 * Filter hooks by their position based on @HookPositions annotation.
+	 * A hook will be included if its getHookPositions() contains the specified position.
+	 *
+	 * @param hooks the list of hooks to filter
+	 * @param position the position to filter by
+	 * @return list of hooks that should execute at the specified position
+	 */
+	private static List<Hook> filterHooksByPosition(List<Hook> hooks, HookPosition position) {
 		return hooks.stream()
-				.filter(clazz::isInstance)
+				.filter(hook -> {
+					HookPosition[] positions = hook.getHookPositions();
+					return Arrays.asList(positions).contains(position);
+				})
 				.collect(java.util.stream.Collectors.toList());
 	}
 
 	private static String determineEntryNode(
-			List<Hook> beforeAgentHook,
-			List<Hook> beforeModelHook) {
+			List<Hook> agentHooks,
+			List<Hook> modelHooks) {
 
-		if (!beforeAgentHook.isEmpty()) {
-			return beforeAgentHook.get(0).getName() + "." + HookType.BEFORE_AGENT;
-		} else if (!beforeModelHook.isEmpty()) {
-			return beforeModelHook.get(0).getName() + "." + HookType.BEFORE_MODEL;
+		if (!agentHooks.isEmpty()) {
+			return agentHooks.get(0).getName() + ".before";
+		} else if (!modelHooks.isEmpty()) {
+			return modelHooks.get(0).getName() + ".beforeModel";
 		} else {
 			return "model";
 		}
 	}
 
 	private static String determineLoopEntryNode(
-			List<Hook> beforeModelHook) {
+			List<Hook> modelHooks) {
 
-		if (!beforeModelHook.isEmpty()) {
-			return beforeModelHook.get(0).getName() + "." + HookType.BEFORE_MODEL;
+		if (!modelHooks.isEmpty()) {
+			return modelHooks.get(0).getName() + ".beforeModel";
 		} else {
 			return "model";
 		}
 	}
 
 	private static String determineLoopExitNode(
-			List<Hook> afterModelHook) {
+			List<Hook> modelHooks) {
 
-		if (!afterModelHook.isEmpty()) {
-			return afterModelHook.get(0).getName() + "." + HookType.AFTER_MODEL;
+		if (!modelHooks.isEmpty()) {
+			return modelHooks.get(modelHooks.size() - 1).getName() + ".afterModel";
 		} else {
 			return "model";
 		}
 	}
 
 	private static String determineExitNode(
-			List<Hook> afterAgentHook) {
+			List<Hook> agentHooks) {
 
-		if (!afterAgentHook.isEmpty()) {
-			return afterAgentHook.get(afterAgentHook.size() - 1).getName() + "." + HookType.AFTER_AGENT;
+		if (!agentHooks.isEmpty()) {
+			return agentHooks.get(agentHooks.size() - 1).getName() + ".after";
 		} else {
 			return StateGraph.END;
 		}
@@ -285,10 +305,10 @@ public class ReactAgent extends BaseAgent {
 
 	private static void setupHookEdges(
 			StateGraph graph,
-			List<Hook> beforeAgentHook,
-			List<Hook> beforeModelHook,
-			List<Hook> afterModelHook,
-			List<Hook> afterAgentHook,
+			List<Hook> beforeAgentHooks,
+			List<Hook> afterAgentHooks,
+			List<Hook> beforeModelHooks,
+			List<Hook> afterModelHooks,
 			String entryNode,
 			String loopEntryNode,
 			String loopExitNode,
@@ -297,23 +317,23 @@ public class ReactAgent extends BaseAgent {
 			ReactAgent agentInstance) throws GraphStateException {
 
 		// Chain before_agent hook
-		chainHook(graph, beforeAgentHook, HookType.BEFORE_AGENT, loopEntryNode, loopEntryNode, exitNode);
+		chainHook(graph, beforeAgentHooks, ".before", loopEntryNode, loopEntryNode, exitNode);
 
 		// Chain before_model hook
-		chainHook(graph, beforeModelHook, HookType.BEFORE_MODEL, "model", loopEntryNode, exitNode);
+		chainHook(graph, beforeModelHooks, ".beforeModel", "model", loopEntryNode, exitNode);
 
 		// Chain after_model hook (reverse order)
-		chainHookReverse(graph, afterModelHook, HookType.AFTER_MODEL, "model", loopEntryNode, exitNode);
+		chainHookReverse(graph, afterModelHooks, ".afterModel", "model", loopEntryNode, exitNode);
 
 		// Chain after_agent hook (reverse order)
-		chainHookReverse(graph, afterAgentHook, HookType.AFTER_AGENT, StateGraph.END, loopEntryNode, exitNode);
+		chainHookReverse(graph, afterAgentHooks, ".after", StateGraph.END, loopEntryNode, exitNode);
 
 		// Add tool routing if tools exist
 		if (hasTools) {
 			setupToolRouting(graph, loopExitNode, loopEntryNode, exitNode, agentInstance);
 		} else if (!loopExitNode.equals("model")) {
 			// No tools but have after_model - connect to exit
-			addHookEdge(graph, loopExitNode, exitNode, loopEntryNode, exitNode, afterModelHook.get(0).canJumpTo());
+			addHookEdge(graph, loopExitNode, exitNode, loopEntryNode, exitNode, afterModelHooks.get(afterModelHooks.size() - 1).canJumpTo());
 		} else {
 			// No tools and no after_model - direct to exit
 			graph.addEdge(loopExitNode, exitNode);
@@ -323,7 +343,7 @@ public class ReactAgent extends BaseAgent {
 	private static void chainHookReverse(
 			StateGraph graph,
 			List<Hook> hooks,
-			HookType hookType,
+			String nameSuffix,
 			String defaultNext,
 			String modelDestination,
 			String endDestination) throws GraphStateException {
@@ -331,7 +351,7 @@ public class ReactAgent extends BaseAgent {
 			Hook last = hooks.get(hooks.size() - 1);
 			addHookEdge(graph,
 					defaultNext,
-					last.getName() + "." + hookType,
+					last.getName() + nameSuffix,
 					modelDestination, endDestination,
 					last.canJumpTo());
 		}
@@ -340,8 +360,8 @@ public class ReactAgent extends BaseAgent {
 			Hook m1 = hooks.get(i);
 			Hook m2 = hooks.get(i - 1);
 			addHookEdge(graph,
-					m1.getName() + "." +  hookType,
-					m2.getName() + "." +  hookType,
+					m1.getName() + nameSuffix,
+					m2.getName() + nameSuffix,
 					modelDestination, endDestination,
 					m1.canJumpTo());
 		}
@@ -350,7 +370,7 @@ public class ReactAgent extends BaseAgent {
 	private static void chainHook(
 			StateGraph graph,
 			List<Hook> hooks,
-			HookType hookType,
+			String nameSuffix,
 			String defaultNext,
 			String modelDestination,
 			String endDestination) throws GraphStateException {
@@ -359,8 +379,8 @@ public class ReactAgent extends BaseAgent {
 			Hook m1 = hooks.get(i);
 			Hook m2 = hooks.get(i + 1);
 			addHookEdge(graph,
-					m1.getName() + "." + hookType,
-					m2.getName() + "." + hookType,
+					m1.getName() + nameSuffix,
+					m2.getName() + nameSuffix,
 					modelDestination, endDestination,
 					m1.canJumpTo());
 		}
@@ -368,7 +388,7 @@ public class ReactAgent extends BaseAgent {
 		if (!hooks.isEmpty()) {
 			Hook last = hooks.get(hooks.size() - 1);
 			addHookEdge(graph,
-					last.getName() + "." + hookType,
+					last.getName() + nameSuffix,
 					defaultNext,
 					modelDestination, endDestination,
 					last.canJumpTo());

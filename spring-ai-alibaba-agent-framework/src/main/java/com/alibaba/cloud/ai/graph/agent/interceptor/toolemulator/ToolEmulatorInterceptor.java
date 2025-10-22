@@ -16,8 +16,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.toolemulator;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
@@ -108,7 +106,7 @@ public class ToolEmulatorInterceptor extends ToolInterceptor {
 
 			// Get emulated response from LLM
 			ChatResponse response = emulatorModel.call(new Prompt(new UserMessage(prompt)));
-			String emulatedResult = response.getResult().getOutput().getContent();
+			String emulatedResult = response.getResult().getOutput().getText();
 
 			log.debug("Emulated tool '{}' returned: {}", toolName,
 				emulatedResult.length() > 100 ? emulatedResult.substring(0, 100) + "..." : emulatedResult);
@@ -121,12 +119,6 @@ public class ToolEmulatorInterceptor extends ToolInterceptor {
 			// Fall back to actual execution on emulation failure
 			return handler.call(request);
 		}
-	}
-
-	@Override
-	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
-		// This interceptor doesn't modify state directly
-		return Collections.emptyMap();
 	}
 
 	public static class Builder {
