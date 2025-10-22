@@ -13,13 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.graph.agent.node;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -30,15 +37,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-
 import org.springframework.util.StringUtils;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import reactor.core.publisher.Flux;
 
 public class AgentLlmNode implements NodeActionWithConfig {
 
@@ -49,6 +48,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	private String outputKey;
 
 	private String outputSchema;
+
+	private String instruction;
 
 	private ChatClient chatClient;
 
@@ -63,11 +64,14 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		if (builder.toolCallbacks != null) {
 			this.toolCallbacks = builder.toolCallbacks;
 		}
+		this.instruction = builder.instruction;
 		this.chatClient = builder.chatClient;
-		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
-				.toolCallbacks(toolCallbacks)
-				.internalToolExecutionEnabled(false)
-				.build();
+		this.toolCallingChatOptions = ToolCallingChatOptions.builder().toolCallbacks(toolCallbacks)
+				.internalToolExecutionEnabled(false).build();
+	}
+
+	public void setInstruction(String instruction) {
+		this.instruction = instruction;
 	}
 
 	public static Builder builder() {
@@ -77,11 +81,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
 		// add streaming support
-		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
+		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>() {
+		}).orElse(true);
 		if (stream) {
 			Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(state).stream().chatResponse();
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
-		} else {
+		}
+		else {
 			AssistantMessage responseOutput;
 			try {
 				ChatResponse response = buildChatClientRequestSpec(state).call().chatResponse();
@@ -118,11 +124,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
 			if (message instanceof UserMessage userMessage) {
-				messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema).build());
+				messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema)
+						.build());
 				break;
 			}
 			if (message instanceof AgentInstructionMessage templatedUserMessage) {
-				messages.set(i, templatedUserMessage.mutate().text(templatedUserMessage.getText() + System.lineSeparator() + outputSchema).build());
+				messages.set(i, templatedUserMessage.mutate()
+						.text(templatedUserMessage.getText() + System.lineSeparator() + outputSchema).build());
 				break;
 			}
 
@@ -136,7 +144,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
 			if (message instanceof AgentInstructionMessage instructionMessage) {
-				AgentInstructionMessage newMessage = instructionMessage.mutate().text(renderPromptTemplate(instructionMessage.getText(), params)).build();
+				AgentInstructionMessage newMessage = instructionMessage.mutate()
+						.text(renderPromptTemplate(instructionMessage.getText(), params)).build();
 				messages.set(i, newMessage);
 				break;
 			}
@@ -148,22 +157,21 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
 		}
 
-		@SuppressWarnings("unchecked")
-		List<Message> messages = (List<Message>) state.value("messages").get();
+		@SuppressWarnings("unchecked") List<Message> messages = (List<Message>) state.value("messages").get();
 
 		augmentUserMessage(messages, outputSchema);
 
 		renderTemplatedUserMessage(messages, state.data());
 
-		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.options(toolCallingChatOptions)
-				.messages(messages)
-				.advisors(advisors);
+		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt().options(toolCallingChatOptions)
+				.messages(messages).system(instruction).advisors(advisors);
 
 		return chatClientRequestSpec;
 	}
 
 	public static class Builder {
+
+		private String instruction;
 
 		private String outputKey;
 
@@ -179,6 +187,12 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			this.outputKey = outputKey;
 			return this;
 		}
+
+		public Builder instruction(String instruction) {
+			this.instruction = instruction;
+			return this;
+		}
+
 
 		public Builder outputSchema(String outputSchema) {
 			this.outputSchema = outputSchema;
