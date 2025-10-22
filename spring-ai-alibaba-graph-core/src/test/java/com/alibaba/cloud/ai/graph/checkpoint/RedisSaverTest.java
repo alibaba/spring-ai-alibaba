@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
@@ -45,9 +46,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+
+
+@EnabledIf(value = "isCI", disabledReason = "this test is designed to run only in the GitHub CI environment.")
 @Testcontainers
 class RedisSaverTest {
-
+	
+	private static boolean isCI() {
+		return "true".equalsIgnoreCase(System.getProperty("CI", System.getenv("CI")));
+	}
+	
 	// 使用较为稳定的版本
 
 	@Container
