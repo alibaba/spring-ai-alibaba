@@ -978,15 +978,10 @@ public class StateGraphTest {
 	}
 
 	/**
-	 * Test to verify that lifecycle listeners receive correct nodeId in parallel node
-	 * scenarios. This test specifically validates the fix for issue #2625, ensuring that:
-	 * 1. Child nodes (A1, A2, A3) trigger lifecycle events with their actual node IDs
-	 * 2. The parallel container node triggers events with the container ID
-	 * __PARALLEL__(A)
+	 * Tests that lifecycle listeners receive correct nodeId for parallel node children.
 	 */
 	@Test
 	void testParallelNodeLifecycleListenerNodeId() throws Exception {
-		// Track all nodeIds received by lifecycle listeners
 		List<String> beforeNodeIds = new ArrayList<>();
 		List<String> afterNodeIds = new ArrayList<>();
 
@@ -1022,44 +1017,32 @@ public class StateGraphTest {
 			}
 		}).build());
 
-		// Execute the graph with parallel execution enabled
 		app.stream(Map.of(), RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
 			.blockLast();
 
-		// Verify that all expected nodeIds were received
 		log.info("Before nodeIds: {}", beforeNodeIds);
 		log.info("After nodeIds: {}", afterNodeIds);
 
-		// Verify node A was executed
-		assertTrue(beforeNodeIds.contains("A"), "Node A should trigger before event");
-		assertTrue(afterNodeIds.contains("A"), "Node A should trigger after event");
+		assertTrue(beforeNodeIds.contains("A"));
+		assertTrue(afterNodeIds.contains("A"));
 
-		// Verify parallel container node was executed
-		assertTrue(beforeNodeIds.contains("__PARALLEL__(A)"),
-				"Parallel container should trigger before event with ID __PARALLEL__(A)");
-		assertTrue(afterNodeIds.contains("__PARALLEL__(A)"),
-				"Parallel container should trigger after event with ID __PARALLEL__(A)");
+		assertTrue(beforeNodeIds.contains("__PARALLEL__(A)"));
+		assertTrue(afterNodeIds.contains("__PARALLEL__(A)"));
 
-		// Verify child nodes (A1, A2, A3) were executed with their actual node IDs,
-		// NOT with __PARALLEL__(A)
-		assertTrue(beforeNodeIds.contains("A1"), "Child node A1 should trigger before event with actual ID 'A1'");
-		assertTrue(afterNodeIds.contains("A1"), "Child node A1 should trigger after event with actual ID 'A1'");
+		assertTrue(beforeNodeIds.contains("A1"));
+		assertTrue(afterNodeIds.contains("A1"));
 
-		assertTrue(beforeNodeIds.contains("A2"), "Child node A2 should trigger before event with actual ID 'A2'");
-		assertTrue(afterNodeIds.contains("A2"), "Child node A2 should trigger after event with actual ID 'A2'");
+		assertTrue(beforeNodeIds.contains("A2"));
+		assertTrue(afterNodeIds.contains("A2"));
 
-		assertTrue(beforeNodeIds.contains("A3"), "Child node A3 should trigger before event with actual ID 'A3'");
-		assertTrue(afterNodeIds.contains("A3"), "Child node A3 should trigger after event with actual ID 'A3'");
+		assertTrue(beforeNodeIds.contains("A3"));
+		assertTrue(afterNodeIds.contains("A3"));
 
-		// Verify node B was executed
-		assertTrue(beforeNodeIds.contains("B"), "Node B should trigger before event");
-		assertTrue(afterNodeIds.contains("B"), "Node B should trigger after event");
+		assertTrue(beforeNodeIds.contains("B"));
+		assertTrue(afterNodeIds.contains("B"));
 
-		// Verify that child nodes did NOT report with parallel container ID
-		// (this is the key fix for issue #2625)
 		long parallelIdCount = beforeNodeIds.stream().filter(id -> id.equals("__PARALLEL__(A)")).count();
-		assertEquals(1, parallelIdCount,
-				"Only the parallel container itself should use ID __PARALLEL__(A), not child nodes");
+		assertEquals(1, parallelIdCount);
 	}
 
 }
