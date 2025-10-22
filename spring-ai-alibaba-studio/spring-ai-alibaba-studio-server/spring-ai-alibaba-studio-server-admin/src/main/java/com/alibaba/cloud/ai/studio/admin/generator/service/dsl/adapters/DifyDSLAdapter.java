@@ -216,8 +216,12 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			NodeData nodeData = new IterationNodeData((IterationNodeData) nodeIdMap.get(parentId).getData());
 			nodeData.setVarName(nodeData.getVarName() + "_end");
 			Node endNode = new Node();
-			endNode.setData(nodeData).setType(NodeType.ITERATION_END).setParentId(parentId);
+			// 生成唯一的ID以避免多个迭代节点时ID重复问题
+			String endNodeId = parentId + "_end_" + UUID.randomUUID().toString();
+			endNode.setId(endNodeId).setData(nodeData).setType(NodeType.ITERATION_END).setParentId(parentId);
 			nodes.add(endNode);
+			// 将生成的endNode的ID加入到varNames映射中
+			varNames.put(endNodeId, nodeData.getVarName());
 
 			// 计算每个节点的出度，出度为0的点将与迭代终止节点相连接
 			subNodes.stream().map(Node::getId).filter(id -> !nodeIdHasOut.contains(id)).forEach(id -> {
