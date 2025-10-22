@@ -18,14 +18,13 @@ package com.alibaba.cloud.ai.graph.stream;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-
+import com.alibaba.cloud.ai.graph.streaming.GraphFluxGenerator;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import reactor.core.publisher.Flux;
 
 import java.util.Map;
-
-import reactor.core.publisher.Flux;
 
 public class LLmNodeAction implements NodeAction {
 
@@ -47,7 +46,11 @@ public class LLmNodeAction implements NodeAction {
 		// Create prompt with user message
 		UserMessage message = new UserMessage((String) state.value(OverAllState.DEFAULT_INPUT_KEY).get());
 		Flux<ChatResponse> stream = chatModel.stream(new Prompt(message));
-		return Map.of("messages", stream);
+		return Map.of("messages", GraphFluxGenerator
+				.builder()
+				.startingNode(nodeId)
+				.outKey("messages")
+				.build(stream));
 	}
 
 }
