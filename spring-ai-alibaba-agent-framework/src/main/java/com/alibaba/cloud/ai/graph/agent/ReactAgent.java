@@ -35,6 +35,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
+import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
@@ -64,6 +65,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
@@ -215,14 +217,16 @@ public class ReactAgent extends BaseAgent {
 
 		// Add hook nodes
 		for (Hook hook : hooks) {
-			if (hook instanceof AgentHook) {
-				var agentHook = (AgentHook) hook;
+			if (hook instanceof AgentHook agentHook) {
 				graph.addNode(hook.getName() + ".before", agentHook::beforeAgent);
 				graph.addNode(hook.getName() + ".after", agentHook::afterAgent);
-			} else if (hook instanceof ModelHook) {
-				var modelHook = (ModelHook) hook;
+			} else if (hook instanceof ModelHook modelHook) {
 				graph.addNode(hook.getName() + ".beforeModel", modelHook::beforeModel);
-				graph.addNode(hook.getName() + ".afterModel", modelHook::afterModel);
+				if (modelHook instanceof HumanInTheLoopHook humanInTheLoopHook) {
+					graph.addNode(hook.getName() + ".afterModel", humanInTheLoopHook);
+				} else {
+					graph.addNode(hook.getName() + ".afterModel", modelHook::afterModel);
+				}
 			}
 			else {
 				throw new UnsupportedOperationException("Unsupported hook type: " + hook.getClass().getName());
@@ -329,7 +333,7 @@ public class ReactAgent extends BaseAgent {
 					HookPosition[] positions = hook.getHookPositions();
 					return Arrays.asList(positions).contains(position);
 				})
-				.collect(java.util.stream.Collectors.toList());
+				.collect(Collectors.toList());
 	}
 
 	private static String determineEntryNode(

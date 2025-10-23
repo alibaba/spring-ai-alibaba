@@ -17,10 +17,12 @@ package com.alibaba.cloud.ai.graph.agent.hook.hip;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
+import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
@@ -42,7 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @HookPositions(HookPosition.AFTER_MODEL)
-public class HumanInTheLoopHook implements ModelHook, InterruptableAction {
+public class HumanInTheLoopHook implements ModelHook, AsyncNodeActionWithConfig, InterruptableAction {
 	private static final Logger log = LoggerFactory.getLogger(HumanInTheLoopHook.class);
 
 	private Map<String, ToolConfig> approvalOn;
@@ -53,6 +55,11 @@ public class HumanInTheLoopHook implements ModelHook, InterruptableAction {
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	@Override
+	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+		return afterModel(state, config);
 	}
 
 	@Override
