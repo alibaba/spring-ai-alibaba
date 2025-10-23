@@ -20,10 +20,15 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+import com.alibaba.cloud.ai.graph.agent.tools.WriteTodosTool;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -125,12 +130,25 @@ public class TodoListInterceptor extends ModelInterceptor {
 		Remember: If you only need to make a few tool calls to complete a task, and it is clear what you need to do, it is better to just do the task directly and NOT call this tool at all.
 		""";
 
+	private final List<ToolCallback> tools;
 	private final String systemPrompt;
 	private final String toolDescription;
 
 	private TodoListInterceptor(Builder builder) {
+		// Create the write_todos tool with the custom description
+		this.tools = Collections.singletonList(
+				WriteTodosTool.builder().
+						withName("write_todos")
+						.withDescription(builder.toolDescription)
+						.build()
+		);
 		this.systemPrompt = builder.systemPrompt;
 		this.toolDescription = builder.toolDescription;
+	}
+
+	@Override
+	public List<ToolCallback> getTools() {
+		return tools;
 	}
 
 	public static Builder builder() {

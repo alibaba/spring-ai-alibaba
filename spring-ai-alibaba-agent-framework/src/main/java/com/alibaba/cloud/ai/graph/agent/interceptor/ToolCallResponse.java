@@ -17,6 +17,10 @@ package com.alibaba.cloud.ai.graph.agent.interceptor;
 
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Response object for tool calls.
  */
@@ -25,11 +29,19 @@ public class ToolCallResponse {
 	private final String result;
 	private final String toolName;
 	private final String toolCallId;
+	private final String status;
+	private final Map<String, Object> metadata;
 
 	public ToolCallResponse(String result, String toolName, String toolCallId) {
+		this(result, toolName, toolCallId, null, null);
+	}
+
+	public ToolCallResponse(String result, String toolName, String toolCallId, String status, Map<String, Object> metadata) {
 		this.result = result;
 		this.toolName = toolName;
 		this.toolCallId = toolCallId;
+		this.status = status;
+		this.metadata = metadata != null ? new HashMap<>(metadata) : Collections.emptyMap();
 	}
 
 	public String getResult() {
@@ -44,12 +56,61 @@ public class ToolCallResponse {
 		return toolCallId;
 	}
 
+	public String getStatus() {
+		return status;
+	}
+
+	public Map<String, Object> getMetadata() {
+		return Collections.unmodifiableMap(metadata);
+	}
+
 	public ToolResponseMessage.ToolResponse toToolResponse() {
 		return new ToolResponseMessage.ToolResponse(toolCallId, toolName, result);
 	}
 
 	public static ToolCallResponse of(String toolCallId, String toolName, String result) {
 		return new ToolCallResponse(result, toolName, toolCallId);
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+		private String content;
+		private String toolName;
+		private String toolCallId;
+		private String status;
+		private Map<String, Object> metadata;
+
+		public Builder content(String content) {
+			this.content = content;
+			return this;
+		}
+
+		public Builder toolName(String toolName) {
+			this.toolName = toolName;
+			return this;
+		}
+
+		public Builder toolCallId(String toolCallId) {
+			this.toolCallId = toolCallId;
+			return this;
+		}
+
+		public Builder status(String status) {
+			this.status = status;
+			return this;
+		}
+
+		public Builder metadata(Map<String, Object> metadata) {
+			this.metadata = metadata;
+			return this;
+		}
+
+		public ToolCallResponse build() {
+			return new ToolCallResponse(content, toolName, toolCallId, status, metadata);
+		}
 	}
 }
 

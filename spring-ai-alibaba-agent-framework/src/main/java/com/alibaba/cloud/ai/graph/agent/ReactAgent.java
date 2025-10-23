@@ -34,6 +34,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
@@ -48,6 +49,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.tool.ToolCallback;
 
 import org.springframework.util.StringUtils;
 
@@ -208,6 +210,9 @@ public class ReactAgent extends BaseAgent {
 		graph.addNode("model", node_async(this.llmNode));
 		graph.addNode("tool", node_async(this.toolNode));
 
+		// some hooks may need tools so they can do some initialization/cleanup on start/end of agent loop
+		setupToolsForHooks(hooks, toolNode);
+
 		// Add hook nodes
 		for (Hook hook : hooks) {
 			if (hook instanceof AgentHook) {
@@ -241,6 +246,73 @@ public class ReactAgent extends BaseAgent {
 		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
 				entryNode, loopEntryNode, loopExitNode, exitNode, true, this);
 		return graph;
+	}
+
+	/**
+	 * Setup and inject tools for hooks that implement ToolInjection interface.
+	 * Only the tool matching the hook's required tool name or type will be injected.
+	 *
+	 * @param hooks the list of hooks
+	 * @param toolNode the agent tool node containing available tools
+	 */
+	private void setupToolsForHooks(List<Hook> hooks, AgentToolNode toolNode) {
+		if (hooks == null || hooks.isEmpty() || toolNode == null) {
+			return;
+		}
+
+		List<ToolCallback> availableTools = toolNode.getToolCallbacks();
+		if (availableTools == null || availableTools.isEmpty()) {
+			return;
+		}
+
+		for (Hook hook : hooks) {
+			if (hook instanceof ToolInjection) {
+				ToolInjection toolInjection = (ToolInjection) hook;
+				ToolCallback toolToInject = findToolForHook(toolInjection, availableTools);
+				if (toolToInject != null) {
+					toolInjection.injectTool(toolToInject);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Find the matching tool based on hook's requirements.
+	 * Matching priority: 1) by name, 2) by type, 3) first available tool
+	 *
+	 * @param toolInjection the hook that needs a tool
+	 * @param availableTools all available tool callbacks
+	 * @return the matching tool, or null if no match found
+	 */
+	private ToolCallback findToolForHook(ToolInjection toolInjection, List<ToolCallback> availableTools) {
+		String requiredToolName = toolInjection.getRequiredToolName();
+		Class<? extends ToolCallback> requiredToolType = toolInjection.getRequiredToolType();
+
+		// Priority 1: Match by tool name
+		if (requiredToolName != null) {
+			for (ToolCallback tool : availableTools) {
+				String toolName = tool.getToolDefinition().name();
+				if (requiredToolName.equals(toolName)) {
+					return tool;
+				}
+			}
+		}
+
+		// Priority 2: Match by tool type
+		if (requiredToolType != null) {
+			for (ToolCallback tool : availableTools) {
+				if (requiredToolType.isInstance(tool)) {
+					return tool;
+				}
+			}
+		}
+
+		// Priority 3: If no specific requirement, return the first available tool
+		if (requiredToolName == null && requiredToolType == null && !availableTools.isEmpty()) {
+			return availableTools.get(0);
+		}
+
+		return null;
 	}
 
 	/**
@@ -715,7 +787,6 @@ public class ReactAgent extends BaseAgent {
 
 	/**
 	 * Internal class that adapts a ReactAgent to be used as a SubGraph Node.
-	 * Similar to SubCompiledGraphNode but uses SubGraphNodeAdapter internally.
 	 */
 	private static class AgentSubGraphNode extends Node implements SubGraphNode {
 

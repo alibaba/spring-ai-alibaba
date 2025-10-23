@@ -14,51 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.interceptor.shelltool;
+package com.alibaba.cloud.ai.graph.agent.tools;
 
-import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
-import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
-import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
-import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
 
 /**
- * Tool interceptor that provides persistent shell execution capabilities.
- *
- * This interceptor manages a long-lived shell session that can execute commands
- * sequentially, maintaining state between executions. It supports:
- * - Persistent shell sessions with state preservation
- * - Command timeout and output truncation
- * - Startup and shutdown command execution
- * - Working directory management
- * - Output redaction for sensitive data
- *
- * Example:
- * <pre>
- * ShellToolInterceptor interceptor = ShellToolInterceptor.builder()
- *     .workspaceRoot("/tmp/agent-workspace")
- *     .commandTimeout(30000)
- *     .maxOutputLines(1000)
- *     .addStartupCommand("source ~/.bashrc")
- *     .build();
- * </pre>
+ * Manages shell sessions and command execution.
+ * Provides persistent shell execution capabilities with state preservation.
  */
-public class ShellToolInterceptor extends ToolInterceptor {
+public class ShellSessionManager {
 
-	private static final Logger log = LoggerFactory.getLogger(ShellToolInterceptor.class);
+	private static final Logger log = LoggerFactory.getLogger(ShellSessionManager.class);
 	private static final String DONE_MARKER_PREFIX = "__LC_SHELL_DONE__";
-	private static final String SHELL_TOOL_NAME = "shell";
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	private final Path workspaceRoot;
 	private final boolean useTemporaryWorkspace;
@@ -77,7 +52,7 @@ public class ShellToolInterceptor extends ToolInterceptor {
 	private final ThreadLocal<ShellSession> sessionHolder = new ThreadLocal<>();
 	private final ThreadLocal<Path> tempDirHolder = new ThreadLocal<>();
 
-	private ShellToolInterceptor(Builder builder) {
+	private ShellSessionManager(Builder builder) {
 		this.workspaceRoot = builder.workspaceRoot;
 		this.useTemporaryWorkspace = builder.workspaceRoot == null;
 		this.startupCommands = new ArrayList<>(builder.startupCommands);
@@ -96,15 +71,10 @@ public class ShellToolInterceptor extends ToolInterceptor {
 		return new Builder();
 	}
 
-	@Override
-	public String getName() {
-		return "ShellTool";
-	}
-
 	/**
-	 * Initialize shell session before agent execution starts.
+	 * Initialize shell session.
 	 */
-	public void beforeAgent() {
+	public void initialize() {
 		try {
 			Path workspace = workspaceRoot;
 			if (useTemporaryWorkspace) {
@@ -123,7 +93,7 @@ public class ShellToolInterceptor extends ToolInterceptor {
 
 			// Run startup commands
 			for (String command : startupCommands) {
-				CommandResult result = session.execute(command, startupTimeout);
+				CommandResult result = session.execute(command, startupTimeout, maxOutputLines, maxOutputBytes);
 				if (result.isTimedOut() || (result.getExitCode() != null && result.getExitCode() != 0)) {
 					throw new RuntimeException("Startup command failed: " + command + ", exit code: " + result.getExitCode());
 				}
@@ -135,27 +105,27 @@ public class ShellToolInterceptor extends ToolInterceptor {
 	}
 
 	/**
-	 * Clean up shell session after agent execution completes.
+	 * Clean up shell session.
 	 */
-	public void afterAgent() {
+	public void cleanup() {
 		try {
 			ShellSession session = sessionHolder.get();
 			if (session != null) {
 				// Run shutdown commands
 				for (String command : shutdownCommands) {
 					try {
-						session.execute(command, commandTimeout);
+						session.execute(command, commandTimeout, maxOutputLines, maxOutputBytes);
 					} catch (Exception e) {
 						log.warn("Shutdown command failed: {}", command, e);
 					}
 				}
 			}
 		} finally {
-			cleanup();
+			doCleanup();
 		}
 	}
 
-	private void cleanup() {
+	private void doCleanup() {
 		ShellSession session = sessionHolder.get();
 		if (session != null) {
 			session.stop(terminationTimeout);
@@ -173,102 +143,74 @@ public class ShellToolInterceptor extends ToolInterceptor {
 		}
 	}
 
-	@Override
-	public ToolCallResponse wrapToolCall(ToolCallRequest request, ToolCallHandler handler) {
-		// Only intercept shell tool calls
-		if (!SHELL_TOOL_NAME.equals(request.getToolName())) {
-			return handler.call(request);
-		}
-
+	/**
+	 * Execute a command in the current shell session.
+	 */
+	public CommandResult executeCommand(String command) {
 		ShellSession session = sessionHolder.get();
 		if (session == null) {
-			throw new IllegalStateException("Shell session not initialized. Call beforeAgent() first.");
+			throw new IllegalStateException("Shell session not initialized. Call initialize() first.");
 		}
 
-		try {
-			Map<String, Object> args = parseArguments(request.getArguments());
+		log.info("Executing shell command: {}", command);
+		CommandResult result = session.execute(command, commandTimeout, maxOutputLines, maxOutputBytes);
 
-			// Handle restart request
-			if (Boolean.TRUE.equals(args.get("restart"))) {
-				log.info("Restarting shell session");
-				session.restart();
+		// Apply redactions and track matches
+		String output = result.getOutput();
+		Map<String, List<String>> allMatches = new HashMap<>();
 
-				// Re-run startup commands
-				for (String command : startupCommands) {
-					session.execute(command, startupTimeout);
-				}
-
-				return ToolCallResponse.of(request.getToolCallId(), request.getToolName(),
-					"Shell session restarted successfully.");
+		for (RedactionRule rule : redactionRules) {
+			RedactionResult redactionResult = rule.applyWithMatches(output);
+			output = redactionResult.getRedactedContent();
+			if (!redactionResult.getMatches().isEmpty()) {
+				allMatches.computeIfAbsent(rule.getPiiType(), k -> new ArrayList<>())
+					.addAll(redactionResult.getMatches());
 			}
+		}
 
-			// Execute command
-			String command = (String) args.get("command");
-			if (command == null || command.trim().isEmpty()) {
-				throw new IllegalArgumentException("Command cannot be empty");
-			}
+		return new CommandResult(output, result.getExitCode(), result.isTimedOut(),
+			result.isTruncatedByLines(), result.isTruncatedByBytes(),
+			result.getTotalLines(), result.getTotalBytes(), allMatches);
+	}
 
-			log.info("Executing shell command: {}", command);
-			CommandResult result = session.execute(command, commandTimeout);
+	/**
+	 * Restart the shell session.
+	 */
+	public void restartSession() {
+		ShellSession session = sessionHolder.get();
+		if (session == null) {
+			throw new IllegalStateException("Shell session not initialized.");
+		}
 
-			// Handle timeout
-			if (result.isTimedOut()) {
-				return ToolCallResponse.of(request.getToolCallId(), request.getToolName(),
-					String.format("Error: Command timed out after %.1f seconds.", commandTimeout / 1000.0));
-			}
+		log.info("Restarting shell session");
+		session.restart();
 
-			// Apply redactions
-			String output = result.getOutput();
-			for (RedactionRule rule : redactionRules) {
-				output = rule.apply(output);
-			}
-
-			// Format output
-			output = output.isEmpty() ? "<no output>" : output;
-
-			if (result.isTruncatedByLines()) {
-				output += String.format("\n\n... Output truncated at %d lines (observed %d).",
-					maxOutputLines, result.getTotalLines());
-			}
-
-			if (result.isTruncatedByBytes() && maxOutputBytes != null) {
-				output += String.format("\n\n... Output truncated at %d bytes (observed %d).",
-					maxOutputBytes, result.getTotalBytes());
-			}
-
-			if (result.getExitCode() != null && result.getExitCode() != 0) {
-				output += "\n\nExit code: " + result.getExitCode();
-			}
-
-			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), output);
-
-		} catch (Exception e) {
-			log.error("Shell command execution failed", e);
-			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(),
-				"Error: " + e.getMessage());
+		// Re-run startup commands
+		for (String command : startupCommands) {
+			session.execute(command, startupTimeout, maxOutputLines, maxOutputBytes);
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	private Map<String, Object> parseArguments(String arguments) {
-		try {
-			return objectMapper.readValue(arguments, Map.class);
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to parse tool arguments", e);
-		}
+	public int getMaxOutputLines() {
+		return maxOutputLines;
+	}
+
+	public Long getMaxOutputBytes() {
+		return maxOutputBytes;
 	}
 
 	private void deleteDirectory(Path directory) throws IOException {
 		if (Files.exists(directory)) {
-			Files.walk(directory)
-				.sorted(Comparator.reverseOrder())
-				.forEach(path -> {
-					try {
-						Files.delete(path);
-					} catch (IOException e) {
-						log.warn("Failed to delete: {}", path, e);
-					}
-				});
+			try (var stream = Files.walk(directory)) {
+				stream.sorted(Comparator.reverseOrder())
+					.forEach(path -> {
+						try {
+							Files.delete(path);
+						} catch (IOException e) {
+							log.warn("Failed to delete: {}", path, e);
+						}
+					});
+			}
 		}
 	}
 
@@ -281,7 +223,7 @@ public class ShellToolInterceptor extends ToolInterceptor {
 		private final Map<String, String> env;
 		private Process process;
 		private BufferedWriter stdin;
-		private BlockingQueue<String> outputQueue;
+		private BlockingQueue<OutputLine> outputQueue;
 		private volatile boolean terminated;
 
 		ShellSession(Path workspace, List<String> command, Map<String, String> env) {
@@ -295,22 +237,38 @@ public class ShellToolInterceptor extends ToolInterceptor {
 			ProcessBuilder pb = new ProcessBuilder(command);
 			pb.directory(workspace.toFile());
 			pb.environment().putAll(env);
-			pb.redirectErrorStream(true);
+			pb.redirectErrorStream(false); // Keep stderr separate for better error tracking
 
 			process = pb.start();
 			stdin = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
 
-			// Start output reader thread
+			// Start stdout reader thread
 			new Thread(() -> {
 				try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
 					String line;
 					while ((line = reader.readLine()) != null) {
-						outputQueue.offer(line);
+						outputQueue.offer(new OutputLine("stdout", line));
 					}
 				} catch (IOException e) {
-					log.debug("Output reader terminated", e);
+					log.debug("Stdout reader terminated", e);
+				} finally {
+					outputQueue.offer(new OutputLine("stdout", null)); // EOF marker
 				}
-			}, "shell-output-reader").start();
+			}, "shell-stdout-reader").start();
+
+			// Start stderr reader thread
+			new Thread(() -> {
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+					String line;
+					while ((line = reader.readLine()) != null) {
+						outputQueue.offer(new OutputLine("stderr", line));
+					}
+				} catch (IOException e) {
+					log.debug("Stderr reader terminated", e);
+				} finally {
+					outputQueue.offer(new OutputLine("stderr", null)); // EOF marker
+				}
+			}, "shell-stderr-reader").start();
 		}
 
 		void restart() {
@@ -351,7 +309,7 @@ public class ShellToolInterceptor extends ToolInterceptor {
 			}
 		}
 
-		CommandResult execute(String command, long timeoutMs) {
+		CommandResult execute(String command, long timeoutMs, int maxOutputLines, Long maxOutputBytes) {
 			if (process == null || !process.isAlive()) {
 				throw new IllegalStateException("Shell session is not running");
 			}
@@ -372,14 +330,14 @@ public class ShellToolInterceptor extends ToolInterceptor {
 				stdin.flush();
 
 				// Collect output
-				return collectOutput(marker, deadline);
+				return collectOutput(marker, deadline, maxOutputLines, maxOutputBytes);
 
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to execute command", e);
 			}
 		}
 
-		private CommandResult collectOutput(String marker, long deadline) {
+		private CommandResult collectOutput(String marker, long deadline, int maxOutputLines, Long maxOutputBytes) {
 			List<String> lines = new ArrayList<>();
 			int totalLines = 0;
 			long totalBytes = 0;
@@ -398,15 +356,22 @@ public class ShellToolInterceptor extends ToolInterceptor {
 				}
 
 				try {
-					String line = outputQueue.poll(remaining, TimeUnit.MILLISECONDS);
-					if (line == null) {
+					OutputLine outputLine = outputQueue.poll(remaining, TimeUnit.MILLISECONDS);
+					if (outputLine == null) {
 						timedOut = true;
 						restart();
 						break;
 					}
 
-					// Check for completion marker
-					if (line.startsWith(marker)) {
+					// Skip EOF markers
+					if (outputLine.content == null) {
+						continue;
+					}
+
+					String line = outputLine.content;
+
+					// Check for completion marker (only in stdout)
+					if ("stdout".equals(outputLine.source) && line.startsWith(marker)) {
 						String[] parts = line.split(" ", 2);
 						if (parts.length > 1) {
 							try {
@@ -419,11 +384,18 @@ public class ShellToolInterceptor extends ToolInterceptor {
 					}
 
 					totalLines++;
-					totalBytes += line.getBytes().length + 1; // +1 for newline
+
+					// Format line with stderr label if needed
+					String formattedLine = line;
+					if ("stderr".equals(outputLine.source)) {
+						formattedLine = "[stderr] " + line;
+					}
+
+					totalBytes += formattedLine.getBytes().length + 1; // +1 for newline
 
 					if (totalLines <= maxOutputLines) {
 						if (maxOutputBytes == null || totalBytes <= maxOutputBytes) {
-							lines.add(line);
+							lines.add(formattedLine);
 						} else {
 							truncatedByBytes = true;
 						}
@@ -444,9 +416,22 @@ public class ShellToolInterceptor extends ToolInterceptor {
 	}
 
 	/**
+	 * Output line with source (stdout/stderr).
+	 */
+	private static class OutputLine {
+		final String source;
+		final String content;
+
+		OutputLine(String source, String content) {
+			this.source = source;
+			this.content = content;
+		}
+	}
+
+	/**
 	 * Result of command execution.
 	 */
-	private static class CommandResult {
+	public static class CommandResult {
 		private final String output;
 		private final Integer exitCode;
 		private final boolean timedOut;
@@ -454,10 +439,18 @@ public class ShellToolInterceptor extends ToolInterceptor {
 		private final boolean truncatedByBytes;
 		private final int totalLines;
 		private final long totalBytes;
+		private final Map<String, List<String>> redactionMatches;
 
-		CommandResult(String output, Integer exitCode, boolean timedOut,
+		public CommandResult(String output, Integer exitCode, boolean timedOut,
 					  boolean truncatedByLines, boolean truncatedByBytes,
 					  int totalLines, long totalBytes) {
+			this(output, exitCode, timedOut, truncatedByLines, truncatedByBytes,
+				 totalLines, totalBytes, new HashMap<>());
+		}
+
+		public CommandResult(String output, Integer exitCode, boolean timedOut,
+					  boolean truncatedByLines, boolean truncatedByBytes,
+					  int totalLines, long totalBytes, Map<String, List<String>> redactionMatches) {
 			this.output = output;
 			this.exitCode = exitCode;
 			this.timedOut = timedOut;
@@ -465,22 +458,52 @@ public class ShellToolInterceptor extends ToolInterceptor {
 			this.truncatedByBytes = truncatedByBytes;
 			this.totalLines = totalLines;
 			this.totalBytes = totalBytes;
+			this.redactionMatches = new HashMap<>(redactionMatches);
 		}
 
-		String getOutput() { return output; }
-		Integer getExitCode() { return exitCode; }
-		boolean isTimedOut() { return timedOut; }
-		boolean isTruncatedByLines() { return truncatedByLines; }
-		boolean isTruncatedByBytes() { return truncatedByBytes; }
-		int getTotalLines() { return totalLines; }
-		long getTotalBytes() { return totalBytes; }
+		public String getOutput() { return output; }
+		public Integer getExitCode() { return exitCode; }
+		public boolean isTimedOut() { return timedOut; }
+		public boolean isTruncatedByLines() { return truncatedByLines; }
+		public boolean isTruncatedByBytes() { return truncatedByBytes; }
+		public int getTotalLines() { return totalLines; }
+		public long getTotalBytes() { return totalBytes; }
+		public Map<String, List<String>> getRedactionMatches() { return new HashMap<>(redactionMatches); }
+
+		public boolean isSuccess() {
+			return !timedOut && (exitCode == null || exitCode == 0);
+		}
+	}
+
+	/**
+	 * Result of redaction operation with match information.
+	 */
+	public static class RedactionResult {
+		private final String redactedContent;
+		private final List<String> matches;
+
+		public RedactionResult(String redactedContent, List<String> matches) {
+			this.redactedContent = redactedContent;
+			this.matches = new ArrayList<>(matches);
+		}
+
+		public String getRedactedContent() { return redactedContent; }
+		public List<String> getMatches() { return new ArrayList<>(matches); }
 	}
 
 	/**
 	 * Redaction rule for sanitizing command output.
 	 */
 	public interface RedactionRule {
-		String apply(String content);
+		/**
+		 * Apply redaction to content and return redacted content with matches.
+		 */
+		RedactionResult applyWithMatches(String content);
+
+		/**
+		 * Get the PII type this rule detects.
+		 */
+		String getPiiType();
 	}
 
 	/**
@@ -489,15 +512,30 @@ public class ShellToolInterceptor extends ToolInterceptor {
 	public static class PatternRedactionRule implements RedactionRule {
 		private final Pattern pattern;
 		private final String replacement;
+		private final String piiType;
 
-		public PatternRedactionRule(String pattern, String replacement) {
+		public PatternRedactionRule(String pattern, String replacement, String piiType) {
 			this.pattern = Pattern.compile(pattern);
 			this.replacement = replacement;
+			this.piiType = piiType;
 		}
 
 		@Override
-		public String apply(String content) {
-			return pattern.matcher(content).replaceAll(replacement);
+		public RedactionResult applyWithMatches(String content) {
+			List<String> matches = new ArrayList<>();
+			java.util.regex.Matcher matcher = pattern.matcher(content);
+
+			while (matcher.find()) {
+				matches.add(matcher.group());
+			}
+
+			String redacted = matcher.replaceAll(replacement);
+			return new RedactionResult(redacted, matches);
+		}
+
+		@Override
+		public String getPiiType() {
+			return piiType;
 		}
 	}
 
@@ -515,7 +553,7 @@ public class ShellToolInterceptor extends ToolInterceptor {
 		private final List<RedactionRule> redactionRules = new ArrayList<>();
 
 		public Builder workspaceRoot(String path) {
-			this.workspaceRoot = Paths.get(path);
+			this.workspaceRoot = Path.of(path);
 			return this;
 		}
 
@@ -531,6 +569,16 @@ public class ShellToolInterceptor extends ToolInterceptor {
 
 		public Builder addShutdownCommand(String command) {
 			this.shutdownCommands.add(command);
+			return this;
+		}
+
+		public Builder setStartupCommand(List<String> commands) {
+			this.startupCommands.addAll(commands);
+			return this;
+		}
+
+		public Builder setShutdownCommand(List<String> commands) {
+			this.shutdownCommands.addAll(commands);
 			return this;
 		}
 
@@ -574,8 +622,8 @@ public class ShellToolInterceptor extends ToolInterceptor {
 			return this;
 		}
 
-		public ShellToolInterceptor build() {
-			return new ShellToolInterceptor(this);
+		public ShellSessionManager build() {
+			return new ShellSessionManager(this);
 		}
 	}
 }

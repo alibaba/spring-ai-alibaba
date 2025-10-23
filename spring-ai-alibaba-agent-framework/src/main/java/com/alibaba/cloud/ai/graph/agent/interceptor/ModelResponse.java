@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.graph.agent.interceptor;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import reactor.core.publisher.Flux;
 
 /**
  * Response object for model calls.
@@ -23,18 +25,22 @@ import org.springframework.ai.chat.messages.AssistantMessage;
  */
 public class ModelResponse {
 
-	private final AssistantMessage message;
+	private final Object message;
 
-	public ModelResponse(AssistantMessage message) {
+	public ModelResponse(Object message) {
 		this.message = message;
 	}
 
-	public AssistantMessage getMessage() {
+	public Object getMessage() {
 		return message;
 	}
 
 	public static ModelResponse of(AssistantMessage message) {
 		return new ModelResponse(message);
+	}
+
+	public static ModelResponse of(Flux<ChatResponse> flux) {
+		return new ModelResponse(flux);
 	}
 }
 

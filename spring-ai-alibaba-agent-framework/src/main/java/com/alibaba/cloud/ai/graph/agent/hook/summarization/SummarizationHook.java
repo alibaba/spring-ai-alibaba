@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.graph.agent.hook.summarization;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
@@ -55,6 +57,7 @@ import org.slf4j.LoggerFactory;
 @HookPositions(HookPosition.BEFORE_MODEL)
  * </pre>
  */
+@HookPositions({HookPosition.BEFORE_MODEL})
 public class SummarizationHook implements ModelHook {
 
 	private static final Logger log = LoggerFactory.getLogger(SummarizationHook.class);

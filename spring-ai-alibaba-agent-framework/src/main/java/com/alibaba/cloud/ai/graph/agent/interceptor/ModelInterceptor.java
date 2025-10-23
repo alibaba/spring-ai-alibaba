@@ -16,6 +16,11 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor;
 
+import org.springframework.ai.tool.ToolCallback;
+
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Model interceptor that can wrap model calls.
  * Implementations can modify requests, responses, or add behavior like retry, fallback, etc.
@@ -36,4 +41,14 @@ public abstract class ModelInterceptor implements Interceptor {
 	 * @return The model response
 	 */
 	public abstract ModelResponse wrapModelCall(ModelRequest request, ModelCallHandler handler);
+
+	/**
+	 * Get tools provided by this interceptor.
+	 * Interceptors can provide built-in tools that will be automatically added to the agent.
+	 *
+	 * @return List of tools provided by this interceptor, empty list by default
+	 */
+	public List<ToolCallback> getTools() {
+		return Collections.emptyList();
+	}
 }

@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.graph.agent.hook.pii;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 
@@ -49,6 +51,7 @@ import java.util.concurrent.CompletableFuture;
 @HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
  * </pre>
  */
+@HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
 public class PIIDetectionHook implements ModelHook {
 
 	private final PIIType piiType;

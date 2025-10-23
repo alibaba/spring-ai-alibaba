@@ -97,8 +97,33 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		// add streaming support
 		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
 		if (stream) {
-			Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(state).stream().chatResponse();
-			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
+			// Build the base model call handler
+			@SuppressWarnings("unchecked")
+			List<Message> messages = (List<Message>) state.value("messages").get();
+
+			// Create ModelRequest
+			ModelRequest modelRequest = ModelRequest.builder()
+					.messages(messages)
+					.options(toolCallingChatOptions)
+					.build();
+
+			// Create base handler that actually calls the model with streaming
+			ModelCallHandler baseHandler = request -> {
+				try {
+					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(state, request).stream().chatResponse();
+					return ModelResponse.of(chatResponseFlux);
+				} catch (Exception e) {
+					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
+				}
+			};
+
+			// Chain interceptors if any
+			ModelCallHandler chainedHandler = InterceptorChain.chainModelInterceptors(
+					modelInterceptors, baseHandler);
+
+			// Execute the chained handler
+			ModelResponse modelResponse = chainedHandler.call(modelRequest);
+			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", modelResponse.getMessage());
 		} else {
 			AssistantMessage responseOutput;
 
@@ -115,7 +140,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			// Create base handler that actually calls the model
 			ModelCallHandler baseHandler = request -> {
 				try {
-					ChatResponse response = buildChatClientRequestSpec(state).call().chatResponse();
+					ChatResponse response = buildChatClientRequestSpec(state, request).call().chatResponse();
 					return ModelResponse.of(response.getResult().getOutput());
 				} catch (Exception e) {
 					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
@@ -128,7 +153,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			// Execute the chained handler
 			ModelResponse modelResponse = chainedHandler.call(modelRequest);
-			responseOutput = modelResponse.getMessage();
+			responseOutput = (AssistantMessage) modelResponse.getMessage();
 
 			Map<String, Object> updatedState = new HashMap<>();
 			updatedState.put("messages", responseOutput);
@@ -182,7 +207,23 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state) {
+	/**
+	 * Filter tool callbacks based on the tools specified in ModelRequest.
+	 * @param modelRequest the model request containing the list of tool names to filter by
+	 * @return filtered list of tool callbacks matching the requested tools
+	 */
+	private List<ToolCallback> filterToolCallbacks(ModelRequest modelRequest) {
+		if (modelRequest == null || modelRequest.getTools() == null || modelRequest.getTools().isEmpty()) {
+			return toolCallbacks;
+		}
+
+		List<String> requestedTools = modelRequest.getTools();
+		return toolCallbacks.stream()
+				.filter(callback -> requestedTools.contains(callback.getToolDefinition().name()))
+				.toList();
+	}
+
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state, ModelRequest modelRequest) {
 		if (state.value("messages").isEmpty()) {
 			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
 		}
@@ -193,6 +234,12 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		augmentUserMessage(messages, outputSchema);
 
 		renderTemplatedUserMessage(messages, state.data());
+
+		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
+		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
+				.toolCallbacks(filteredToolCallbacks)
+				.internalToolExecutionEnabled(false)
+				.build();
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
 				.options(toolCallingChatOptions)

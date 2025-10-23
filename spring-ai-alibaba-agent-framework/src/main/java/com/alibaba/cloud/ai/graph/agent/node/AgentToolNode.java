@@ -69,18 +69,23 @@ public class AgentToolNode implements NodeActionWithConfig {
 		this.toolCallbackResolver = toolCallbackResolver;
 	}
 
+	public List<ToolCallback> getToolCallbacks() {
+		return toolCallbacks;
+	}
+
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
 		List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
 		Message lastMessage = messages.get(messages.size() - 1);
 
 		Map<String, Object> updatedState = new HashMap<>();
+		Map<String, Object> extraStateFromToolCall = new HashMap<>();
 		if (lastMessage instanceof AssistantMessage assistantMessage) {
 			// execute the tool function
 			List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				// Execute tool call with interceptor chain
-				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config);
+				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall);
 				toolResponses.add(response.toToolResponse());
 			}
 
@@ -108,7 +113,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				}
 
 				// Execute tool call with interceptor chain
-				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config);
+				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall);
 				allResponses.add(response.toToolResponse());
 			}
 
@@ -121,6 +126,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 			throw new IllegalStateException("Last message is not an AssistantMessage or ToolResponseMessage");
 		}
 
+		// Merge extra state from tool calls
+		updatedState.putAll(extraStateFromToolCall);
 		return updatedState;
 	}
 
@@ -130,7 +137,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 	private ToolCallResponse executeToolCallWithInterceptors(
 			AssistantMessage.ToolCall toolCall,
 			OverAllState state,
-			RunnableConfig config) {
+			RunnableConfig config,
+			Map<String, Object> extraStateFromToolCall) {
 
 		// Create ToolCallRequest
 		ToolCallRequest request = ToolCallRequest.from(toolCall);
@@ -140,7 +148,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			ToolCallback toolCallback = resolve(req.getToolName());
 			String result = toolCallback.call(
 				req.getArguments(),
-				new ToolContext(Map.of("state", state, "config", config))
+				new ToolContext(Map.of("state", state, "config", config, "extraState", extraStateFromToolCall))
 			);
 			return ToolCallResponse.of(req.getToolCallId(), req.getToolName(), result);
 		};

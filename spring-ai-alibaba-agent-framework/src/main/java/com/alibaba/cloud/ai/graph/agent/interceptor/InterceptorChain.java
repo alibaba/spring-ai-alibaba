@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Utility class for chaining model and tool interceptors.
  *
- * This implements the Chain of Responsibility pattern similar to Python's middleware chaining.
+ * This implements the Chain of Responsibility pattern.
  * Interceptors are composed so that the first in the list becomes the outermost layer.
  */
 public class InterceptorChain {
