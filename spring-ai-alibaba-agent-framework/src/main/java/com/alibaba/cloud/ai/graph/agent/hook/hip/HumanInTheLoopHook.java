@@ -22,7 +22,6 @@ import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
-import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
@@ -192,10 +191,6 @@ public class HumanInTheLoopHook implements ModelHook, AsyncNodeActionWithConfig,
 		}
 
 		return true;
-	}
-
-	public void approvalOn(String name, ToolConfig toolConfig) {
-		this.approvalOn.put(name, toolConfig);
 	}
 
 	@Override

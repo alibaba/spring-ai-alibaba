@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.graph.agent.tools.WriteTodosTool;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.ArrayList;
 import java.util.Collections;
