@@ -19,6 +19,11 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
+import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -39,6 +44,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
+	private List<ToolInterceptor> toolInterceptors = new ArrayList<>();
+
 	private ToolCallbackResolver toolCallbackResolver;
 
 	public AgentToolNode(ToolCallbackResolver resolver) {
@@ -54,8 +61,16 @@ public class AgentToolNode implements NodeActionWithConfig {
 		this.toolCallbacks = toolCallbacks;
 	}
 
+	public void setToolInterceptors(List<ToolInterceptor> toolInterceptors) {
+		this.toolInterceptors = toolInterceptors;
+	}
+
 	void setToolCallbackResolver(ToolCallbackResolver toolCallbackResolver) {
 		this.toolCallbackResolver = toolCallbackResolver;
+	}
+
+	public List<ToolCallback> getToolCallbacks() {
+		return toolCallbacks;
 	}
 
 	@Override
@@ -64,17 +79,14 @@ public class AgentToolNode implements NodeActionWithConfig {
 		Message lastMessage = messages.get(messages.size() - 1);
 
 		Map<String, Object> updatedState = new HashMap<>();
+		Map<String, Object> extraStateFromToolCall = new HashMap<>();
 		if (lastMessage instanceof AssistantMessage assistantMessage) {
 			// execute the tool function
 			List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-				String toolName = toolCall.name();
-				String toolArgs = toolCall.arguments();
-
-				ToolCallback toolCallback = this.resolve(toolName);
-
-				String toolResult = toolCallback.call(toolArgs, new ToolContext(Map.of("state", state, "config", config)));
-				toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
+				// Execute tool call with interceptor chain
+				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall);
+				toolResponses.add(response.toToolResponse());
 			}
 
 			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(toolResponses, Map.of());
@@ -100,11 +112,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 					continue;
 				}
 
-				String toolName = toolCall.name();
-				String toolArgs = toolCall.arguments();
-				ToolCallback toolCallback = this.resolve(toolName);
-				String toolResult = toolCallback.call(toolArgs, new ToolContext(Map.of("state", state, "config", config)));
-				allResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
+				// Execute tool call with interceptor chain
+				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall);
+				allResponses.add(response.toToolResponse());
 			}
 
 			List<Object> newMessages = new ArrayList<>();
@@ -116,7 +126,39 @@ public class AgentToolNode implements NodeActionWithConfig {
 			throw new IllegalStateException("Last message is not an AssistantMessage or ToolResponseMessage");
 		}
 
+		// Merge extra state from tool calls
+		updatedState.putAll(extraStateFromToolCall);
 		return updatedState;
+	}
+
+	/**
+	 * Execute a tool call with interceptor chain support.
+	 */
+	private ToolCallResponse executeToolCallWithInterceptors(
+			AssistantMessage.ToolCall toolCall,
+			OverAllState state,
+			RunnableConfig config,
+			Map<String, Object> extraStateFromToolCall) {
+
+		// Create ToolCallRequest
+		ToolCallRequest request = ToolCallRequest.from(toolCall);
+
+		// Create base handler that actually executes the tool
+		ToolCallHandler baseHandler = req -> {
+			ToolCallback toolCallback = resolve(req.getToolName());
+			String result = toolCallback.call(
+				req.getArguments(),
+				new ToolContext(Map.of("state", state, "config", config, "extraState", extraStateFromToolCall))
+			);
+			return ToolCallResponse.of(req.getToolCallId(), req.getToolName(), result);
+		};
+
+		// Chain interceptors if any
+		ToolCallHandler chainedHandler = InterceptorChain.chainToolInterceptors(
+			toolInterceptors, baseHandler);
+
+		// Execute the chained handler
+		return chainedHandler.call(request);
 	}
 
 	private ToolCallback resolve(String toolName) {
@@ -124,7 +166,6 @@ public class AgentToolNode implements NodeActionWithConfig {
 			.filter(callback -> callback.getToolDefinition().name().equals(toolName))
 			.findFirst()
 			.orElseGet(() -> toolCallbackResolver.resolve(toolName));
-
 	}
 
 	public static Builder builder() {

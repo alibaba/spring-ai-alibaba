@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook;
+package com.alibaba.cloud.ai.graph.agent.interceptor;
 
-public enum HookType {
-	AGENT,
-	MODEL
+interface Interceptor {
+	String getName();
 }
-

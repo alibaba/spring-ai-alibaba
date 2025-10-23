@@ -13,10 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook;
+package com.alibaba.cloud.ai.graph.agent.hook.pii;
 
-public enum HookType {
-	AGENT,
-	MODEL
+import java.util.List;
+
+/**
+ * Functional interface for detecting PII in text.
+ */
+@FunctionalInterface
+public interface PIIDetector {
+	/**
+	 * Detect PII matches in the given content.
+	 *
+	 * @param content The text to scan for PII
+	 * @return List of detected PII matches
+	 */
+	List<PIIMatch> detect(String content);
 }
 

@@ -13,10 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook;
+package com.alibaba.cloud.ai.graph.agent.hook.pii;
 
-public enum HookType {
-	AGENT,
-	MODEL
+/**
+ * Represents a detected instance of PII in text.
+ */
+public class PIIMatch {
+
+	public final String type;
+	public final String value;
+	public final int start;
+	public final int end;
+
+	public PIIMatch(String type, String value, int start, int end) {
+		this.type = type;
+		this.value = value;
+		this.start = start;
+		this.end = end;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("PIIMatch{type='%s', value='%s', start=%d, end=%d}",
+				type, value, start, end);
+	}
 }
 

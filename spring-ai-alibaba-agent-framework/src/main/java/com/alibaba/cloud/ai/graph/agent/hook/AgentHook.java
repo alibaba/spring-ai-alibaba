@@ -15,8 +15,21 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook;
 
-public enum HookType {
-	AGENT,
-	MODEL
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
+public interface AgentHook extends Hook {
+
+    default CompletableFuture<Map<String, Object>> beforeAgent(OverAllState state, RunnableConfig config) {
+        return CompletableFuture.completedFuture(Map.of());
+    }
+
+    default CompletableFuture<Map<String, Object>> afterAgent(OverAllState state, RunnableConfig config) {
+        return CompletableFuture.completedFuture(Map.of());
+    }
+
 }
 

@@ -13,10 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook;
+package com.alibaba.cloud.ai.graph.agent.hook.pii;
 
-public enum HookType {
-	AGENT,
-	MODEL
+/**
+ * Strategies for handling detected PII.
+ */
+public enum RedactionStrategy {
+	/** Raise an exception when PII is detected */
+	BLOCK,
+
+	/** Replace PII with [REDACTED_TYPE] placeholders */
+	REDACT,
+
+	/** Partially mask PII (e.g., ****-****-****-1234 for credit card) */
+	MASK,
+
+	/** Replace PII with deterministic hash */
+	HASH
 }
 

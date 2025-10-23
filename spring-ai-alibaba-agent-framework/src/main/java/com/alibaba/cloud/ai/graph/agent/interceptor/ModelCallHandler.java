@@ -13,11 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook;
+package com.alibaba.cloud.ai.graph.agent.interceptor;
 
-public abstract class AfterAgentHook implements Hook {
-	@Override
-	public HookType getHookType() {
-		return HookType.AFTER_AGENT;
-	}
+/**
+ * Handler interface for model call interceptors.
+ * Implementations can wrap and modify model calls.
+ */
+@FunctionalInterface
+public interface ModelCallHandler {
+
+	/**
+	 * Execute a model call request.
+	 *
+	 * @param request The model request
+	 * @return The model response
+	 */
+	ModelResponse call(ModelRequest request);
 }

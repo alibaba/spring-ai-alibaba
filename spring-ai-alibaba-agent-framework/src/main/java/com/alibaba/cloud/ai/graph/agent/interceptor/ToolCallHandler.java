@@ -13,11 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook;
+package com.alibaba.cloud.ai.graph.agent.interceptor;
 
-public abstract class BeforeModelHook implements Hook {
-	@Override
-	public HookType getHookType() {
-		return HookType.BEFORE_MODEL;
-	}
+/**
+ * Handler interface for tool call interceptors.
+ * Implementations can wrap and modify tool calls.
+ */
+@FunctionalInterface
+public interface ToolCallHandler {
+
+	/**
+	 * Execute a tool call request.
+	 *
+	 * @param request The tool call request
+	 * @return The tool call response
+	 */
+	ToolCallResponse call(ToolCallRequest request);
 }

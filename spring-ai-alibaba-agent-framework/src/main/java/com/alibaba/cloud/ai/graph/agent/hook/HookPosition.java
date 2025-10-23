@@ -15,8 +15,28 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook;
 
-public enum HookType {
-	AGENT,
-	MODEL
+/**
+ * Enum representing the position where a hook should be executed in the agent workflow.
+ */
+public enum HookPosition {
+	/**
+	 * Hook executes before the agent starts processing
+	 */
+	BEFORE_AGENT,
+
+	/**
+	 * Hook executes after the agent completes processing
+	 */
+	AFTER_AGENT,
+
+	/**
+	 * Hook executes before the model is called
+	 */
+	BEFORE_MODEL,
+
+	/**
+	 * Hook executes after the model returns a response
+	 */
+	AFTER_MODEL
 }
 

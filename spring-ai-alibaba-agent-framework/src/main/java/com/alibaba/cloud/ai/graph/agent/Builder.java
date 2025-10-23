@@ -23,6 +23,8 @@ import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import io.micrometer.observation.ObservationRegistry;
 
@@ -60,6 +62,8 @@ public abstract class Builder {
 	protected Function<OverAllState, Boolean> shouldContinueFunc;
 
 	protected List<Hook> hooks;
+	protected List<ModelInterceptor> modelInterceptors;
+	protected List<ToolInterceptor> toolInterceptors;
 
 	protected boolean includeContents = true;
 	protected boolean returnReasoningContents;
@@ -180,6 +184,16 @@ public abstract class Builder {
 
 	public Builder hooks(List<Hook> hooks) {
 		this.hooks = hooks;
+		return this;
+	}
+
+	public Builder modelInterceptors(List<ModelInterceptor> modelInterceptors) {
+		this.modelInterceptors = modelInterceptors;
+		return this;
+	}
+
+	public Builder toolInterceptors(List<ToolInterceptor> toolInterceptors) {
+		this.toolInterceptors = toolInterceptors;
 		return this;
 	}
 
