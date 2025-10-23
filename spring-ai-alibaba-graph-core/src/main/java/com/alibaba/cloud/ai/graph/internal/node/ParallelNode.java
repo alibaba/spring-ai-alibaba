@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.graph.internal.node;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
+import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import reactor.core.publisher.Flux;
 import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
 
@@ -27,7 +29,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
@@ -44,101 +45,148 @@ public class ParallelNode extends Node {
 	}
 
 	public record AsyncParallelNodeAction(String nodeId, List<AsyncNodeActionWithConfig> actions,
-			Map<String, KeyStrategy> channels, CompileConfig compileConfig) implements AsyncNodeActionWithConfig {
+			List<String> actionNodeIds, Map<String, KeyStrategy> channels, CompileConfig compileConfig)
+			implements AsyncNodeActionWithConfig {
 
-		@SuppressWarnings("unchecked")
 		private CompletableFuture<Map<String, Object>> evalNodeActionSync(AsyncNodeActionWithConfig action,
-				OverAllState state, RunnableConfig config) {
-			LifeListenerUtil.processListenersLIFO(nodeId, new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()),
-					state.data(), config, NODE_BEFORE, null);
+				String actualNodeId, OverAllState state, RunnableConfig config) {
+			LifeListenerUtil.processListenersLIFO(actualNodeId,
+					new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()), state.data(), config, NODE_BEFORE,
+					null);
 			return action.apply(state, config)
-				.whenComplete((stringObjectMap, throwable) -> LifeListenerUtil.processListenersLIFO(nodeId,
+				.whenComplete((stringObjectMap, throwable) -> LifeListenerUtil.processListenersLIFO(actualNodeId,
 						new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()), state.data(), config, NODE_AFTER,
 						throwable));
 		}
 
-		private CompletableFuture<Map<String, Object>> evalNodeActionAsync(AsyncNodeActionWithConfig action,
-				OverAllState state, RunnableConfig config, Executor executor) {
-			return CompletableFuture.supplyAsync(() -> {
-				try {
-					return evalNodeActionSync(action, state, config).join();
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}, executor);
-		}
+	private CompletableFuture<Map<String, Object>> evalNodeActionAsync(AsyncNodeActionWithConfig action,
+			String actualNodeId, OverAllState state, RunnableConfig config, Executor executor) {
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				return evalNodeActionSync(action, actualNodeId, state, config).join();
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+	}, executor);
+	}
 
-		@Override
-		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-			Function<AsyncNodeActionWithConfig, CompletableFuture<Map<String, Object>>> evalNodeAction = config
-				.metadata(nodeId)
+	@Override
+	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+		List<CompletableFuture<Map<String, Object>>> futures = new ArrayList<>();
+		for (int i = 0; i < actions.size(); i++) {
+			AsyncNodeActionWithConfig action = actions.get(i);
+			String actualNodeId = actionNodeIds.get(i);
+
+			CompletableFuture<Map<String, Object>> future = config.metadata(nodeId)
 				.filter(value -> value instanceof Executor)
 				.map(Executor.class::cast)
-				.map(executor -> (Function<AsyncNodeActionWithConfig, CompletableFuture<Map<String, Object>>>) action -> evalNodeActionAsync(
-						action, state, config, executor))
-				.orElseGet(() -> action -> evalNodeActionSync(action, state, config));
+				.map(executor -> evalNodeActionAsync(action, actualNodeId, state, config, executor))
+				.orElseGet(() -> evalNodeActionSync(action, actualNodeId, state, config));
 
-			// Execute all actions in parallel
-			List<CompletableFuture<Map<String, Object>>> futures = actions.stream().map(evalNodeAction).toList();
+			futures.add(future);
+		}
 
-			// Wait for all tasks to complete
-			return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
-				// Collect all results
-				List<Map<String, Object>> results = futures.stream()
-					.map(CompletableFuture::join)
-					.collect(Collectors.toList());
+		// Wait for all tasks to complete
+		return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
+			// Collect all results
+			List<Map<String, Object>> results = futures.stream()
+				.map(CompletableFuture::join)
+				.collect(Collectors.toList());
 
-				// Check if any result contains streaming output (Flux)
-				boolean hasFlux = results.stream()
-					.flatMap(map -> map.values().stream())
-					.anyMatch(value -> value instanceof Flux);
+			return processParallelResults(results, state, actions);
+		});
+	}
 
-				if (hasFlux) {
-					// If there is any streaming output, merge all Flux streams
-					List<Flux<Object>> fluxList = new ArrayList<>();
-					Map<String, Object> mergedState = new HashMap<>();
-					mergedState.putAll(state.data());
+		/**
+		 * Process parallel execution results, handling GraphFlux, traditional Flux, and regular objects.
+		 * Priority: GraphFlux > traditional Flux > regular objects
+		 */
+		private Map<String, Object> processParallelResults(List<Map<String, Object>> results,
+														   OverAllState state, List<AsyncNodeActionWithConfig> actionList) {
 
-					for (Map<String, Object> result : results) {
-						// Process non-Flux entries
-						Map<String, Object> nonFluxEntries = result.entrySet()
-							.stream()
-							.filter(e -> !(e.getValue() instanceof Flux))
-							.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+			// Check if any result contains GraphFlux or traditional Flux
+			List<GraphFlux<?>> graphFluxList = new ArrayList<>();
+			List<String> graphFluxNodeIds = new ArrayList<>();
 
-						mergedState = OverAllState.updateState(mergedState, nonFluxEntries, channels);
+			// Collect non-streaming state
+			Map<String, Object> mergedState = new HashMap<>();
+			List<Flux<Object>> fluxList = new ArrayList<>();
+			// First pass: collect GraphFlux and traditional Flux instances
+			for (int i = 0; i < results.size(); i++) {
+				Map<String, Object> result = results.get(i);
+				AsyncNodeActionWithConfig action = actionList.get(i);
+				String effectiveNodeId = generateEffectiveNodeId(action, i);
 
-						// Collect all Flux streams
-						result.entrySet()
-							.stream()
-							.filter(e -> e.getValue() instanceof Flux)
-							.forEach(e -> fluxList.add((Flux<Object>) e.getValue()));
+				for (Map.Entry<String, Object> entry : result.entrySet()) {
+					Object value = entry.getValue();
+
+					if (value instanceof GraphFlux) {
+						GraphFlux<?> graphFlux = (GraphFlux<?>) value;
+						// Use GraphFlux's own nodeId, or generate one if not set properly
+						String graphFluxNodeId = graphFlux.getNodeId() != null ?
+								graphFlux.getNodeId() : effectiveNodeId;
+
+						// Create new GraphFlux with correct nodeId if needed
+						if (!graphFluxNodeId.equals(graphFlux.getNodeId())) {
+							@SuppressWarnings("unchecked")
+							GraphFlux<Object> castedFlux = (GraphFlux<Object>) graphFlux;
+							@SuppressWarnings("unchecked")
+							GraphFlux<Object> newGraphFlux = GraphFlux.of(graphFluxNodeId, entry.getKey(), 
+									castedFlux.getFlux(), castedFlux.getMapResult(), castedFlux.getChunkResult());
+							graphFlux = newGraphFlux;
+						}
+
+						graphFluxList.add(graphFlux);
+						graphFluxNodeIds.add(graphFluxNodeId);
+					} else if (value instanceof Flux) {
+						// Traditional Flux - wrap it in GraphFlux for unified processing
+						@SuppressWarnings("unchecked")
+						Flux<Object> flux = (Flux<Object>) value;
+						fluxList.add(flux);
+					} else {
+						// Regular object - add to merged state
+						Map<String, Object> singleEntryMap = Map.of(entry.getKey(), value);
+						mergedState = OverAllState.updateState(mergedState, singleEntryMap, channels);
 					}
-
-					// If there are Flux streams, merge them into one
-					if (!fluxList.isEmpty()) {
-						Flux<Object> mergedFlux = Flux.merge(fluxList);
-						mergedState.put("__merged_stream__", mergedFlux);
-					}
-
-					return mergedState;
 				}
-				else {
-					Map<String, Object> initialState = new HashMap<>();
-					// No streaming output, directly merge all results
-					return results.stream()
+			}
+
+			// Handle the results based on what we found
+			if (!graphFluxList.isEmpty()) {
+				// We have GraphFlux instances - create ParallelGraphFlux with node identity preservation
+				ParallelGraphFlux parallelGraphFlux = ParallelGraphFlux.of(graphFluxList);
+
+				mergedState.put("__parallel_graph_flux__", parallelGraphFlux);
+				return mergedState;
+			} else if (!fluxList.isEmpty()) {
+				Flux<Object> mergedFlux = Flux.merge(fluxList);
+				mergedState.put("__merged_stream__", mergedFlux);
+				return mergedState;
+			} else {
+				Map<String, Object> initialState = new HashMap<>();
+				// No streaming output, directly merge all results
+				return results.stream()
 						.reduce(initialState,
 								(result, actionResult) -> OverAllState.updateState(result, actionResult, channels));
-				}
-			});
+			}
+		}
+
+		/**
+		 * Generate effective node ID for parallel execution.
+		 * This ensures each parallel branch has a unique and traceable identifier.
+		 */
+		private String generateEffectiveNodeId(AsyncNodeActionWithConfig action, int index) {
+			// Try to extract meaningful identifier from action
+			String actionClass = action.getClass().getSimpleName();
+			return String.format("%s_parallel_%d_%s", nodeId, index, actionClass);
 		}
 	}
 
-	public ParallelNode(String id, List<AsyncNodeActionWithConfig> actions, Map<String, KeyStrategy> channels,
-			CompileConfig compileConfig) {
+	public ParallelNode(String id, List<AsyncNodeActionWithConfig> actions, List<String> actionNodeIds,
+			Map<String, KeyStrategy> channels, CompileConfig compileConfig) {
 		super(formatNodeId(id),
-				(config) -> new AsyncParallelNodeAction(formatNodeId(id), actions, channels, compileConfig));
+				(config) -> new AsyncParallelNodeAction(formatNodeId(id), actions, actionNodeIds, channels, compileConfig));
 	}
 
 	@Override

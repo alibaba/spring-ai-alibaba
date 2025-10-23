@@ -977,4 +977,72 @@ public class StateGraphTest {
 
 	}
 
+	/**
+	 * Tests that lifecycle listeners receive correct nodeId for parallel node children.
+	 */
+	@Test
+	void testParallelNodeLifecycleListenerNodeId() throws Exception {
+		List<String> beforeNodeIds = new ArrayList<>();
+		List<String> afterNodeIds = new ArrayList<>();
+
+		var workflow = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
+			.addNode("A1", makeNode("A1"))
+			.addNode("A2", makeNode("A2"))
+			.addNode("A3", makeNode("A3"))
+			.addNode("B", makeNode("B"))
+			.addEdge("A", "A1")
+			.addEdge("A", "A2")
+			.addEdge("A", "A3")
+			.addEdge("A1", "B")
+			.addEdge("A2", "B")
+			.addEdge("A3", "B")
+			.addEdge(START, "A")
+			.addEdge("B", END);
+
+		var app = workflow.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+			@Override
+			public void before(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
+				synchronized (beforeNodeIds) {
+					beforeNodeIds.add(nodeId);
+					log.info("Lifecycle before: nodeId = {}", nodeId);
+				}
+			}
+
+			@Override
+			public void after(String nodeId, Map<String, Object> state, RunnableConfig config, Long curTime) {
+				synchronized (afterNodeIds) {
+					afterNodeIds.add(nodeId);
+					log.info("Lifecycle after: nodeId = {}", nodeId);
+				}
+			}
+		}).build());
+
+		app.stream(Map.of(), RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
+			.blockLast();
+
+		log.info("Before nodeIds: {}", beforeNodeIds);
+		log.info("After nodeIds: {}", afterNodeIds);
+
+		assertTrue(beforeNodeIds.contains("A"));
+		assertTrue(afterNodeIds.contains("A"));
+
+		assertTrue(beforeNodeIds.contains("__PARALLEL__(A)"));
+		assertTrue(afterNodeIds.contains("__PARALLEL__(A)"));
+
+		assertTrue(beforeNodeIds.contains("A1"));
+		assertTrue(afterNodeIds.contains("A1"));
+
+		assertTrue(beforeNodeIds.contains("A2"));
+		assertTrue(afterNodeIds.contains("A2"));
+
+		assertTrue(beforeNodeIds.contains("A3"));
+		assertTrue(afterNodeIds.contains("A3"));
+
+		assertTrue(beforeNodeIds.contains("B"));
+		assertTrue(afterNodeIds.contains("B"));
+
+		long parallelIdCount = beforeNodeIds.stream().filter(id -> id.equals("__PARALLEL__(A)")).count();
+		assertEquals(1, parallelIdCount);
+	}
+
 }
