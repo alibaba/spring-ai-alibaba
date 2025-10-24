@@ -29,9 +29,9 @@ public interface ScheduleLifecycleListener {
 	}
 
 	/**
-	 * 当调度事件发生时触发的回调方法
-	 * @param event 调度事件类型
-	 * @param data 与事件相关的数据对象
+	 * Callback method triggered when a schedule event occurs
+	 * @param event the schedule event type
+	 * @param data the data object associated with the event
 	 */
 	default void onEvent(ScheduleEvent event, Object data) {
 	}

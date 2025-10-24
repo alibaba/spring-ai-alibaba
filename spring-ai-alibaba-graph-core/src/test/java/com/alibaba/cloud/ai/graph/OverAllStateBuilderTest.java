@@ -55,7 +55,6 @@ class OverAllStateBuilderTest {
 		// Assert
 		assertThat(state).isNotNull();
 		assertThat(state.data()).containsEntry("input", "Hello World").containsEntry("count", 1);
-		assertThat(state.isResume()).isTrue();
 		assertThat(state.containStrategy("input")).isTrue();
 		assertThat(state.value("input", String.class)).hasValue("Hello World");
 	}
@@ -94,15 +93,6 @@ class OverAllStateBuilderTest {
 		Map<String, Object> updates = Map.of("otherKey", "newValue");
 		state.updateState(updates);
 		assertThat(state.value("otherKey", String.class)).hasValue("newValue");
-	}
-
-	@Test
-	void testBuildWithResumeFlag_shouldSetResumeCorrectly() {
-		// Act
-		OverAllState state = OverAllStateBuilder.builder().setResume(true).build();
-
-		// Assert
-		assertThat(state.isResume()).isTrue();
 	}
 
 }

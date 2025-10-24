@@ -67,9 +67,9 @@ export default function EditDrawer(props: IProps) {
   const handleSave = () => {
     form.validateFields().then((formValues: any) => {
       const { input } = state;
-      let params = [...input.system_params];
-      input.user_params.forEach((item) => {
-        params = [...params, ...item.params];
+      let params = [...(input.system_params || [])];
+      (input.user_params || []).forEach((item) => {
+        params = [...params, ...(item.params || [])];
       });
       if (params.some((item) => !item.alias && item.display)) {
         message.warning(
@@ -167,8 +167,11 @@ export default function EditDrawer(props: IProps) {
         if (!res) return;
         const componentDetailCfg = JSON.parse(res.config);
         setState({
-          input: componentDetailCfg.input,
-          output: componentDetailCfg.output,
+          input: {
+            system_params: componentDetailCfg.input?.systemParams || [],
+            user_params: componentDetailCfg.input?.userParams || [],
+          },
+          output: componentDetailCfg.output || [],
           detail: res,
         });
         form.setFieldsValue({
@@ -179,8 +182,11 @@ export default function EditDrawer(props: IProps) {
         const ret = await getConfigByAppId(props.data.app_id as string);
         const componentParams = JSON.parse(ret.config);
         setState({
-          input: componentParams.input,
-          output: componentParams.output,
+          input: {
+            system_params: componentParams.input?.systemParams || [],
+            user_params: componentParams.input?.userParams || [],
+          },
+          output: componentParams.output || [],
           // @ts-ignore
           detail: {
             app_name: ret.app_name,

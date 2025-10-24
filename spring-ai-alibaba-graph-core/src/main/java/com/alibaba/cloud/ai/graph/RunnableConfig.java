@@ -35,6 +35,9 @@ import static java.util.Optional.ofNullable;
  */
 public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder> {
 
+	public static final String HUMAN_FEEDBACK_METADATA_KEY = "HUMAN_FEEDBACK";
+	public static final String STATE_UPDATE_METADATA_KEY = "STATE_UPDATE";
+
 	private final String threadId;
 
 	private final String checkPointId;
@@ -271,6 +274,14 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		public Builder streamMode(CompiledGraph.StreamMode streamMode) {
 			this.streamMode = streamMode;
 			return this;
+		}
+
+		public Builder addHumanFeedback(Map<String, Object> humanFeedback) {
+			return addMetadata(HUMAN_FEEDBACK_METADATA_KEY, humanFeedback);
+		}
+
+		public Builder addStateUpdate(Map<String, Object> stateUpdate) {
+			return addMetadata(STATE_UPDATE_METADATA_KEY, stateUpdate);
 		}
 
 		/**

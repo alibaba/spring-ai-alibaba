@@ -142,13 +142,10 @@ public class ProviderController {
 		// Handle credential information
 		if (request.getCredentialConfig() != null) {
 			Map<String, Object> credentialConfig = request.getCredentialConfig();
-			ModelCredential credential = new ModelCredential();
+			ModelCredential credential = null;
 			// For OpenAI protocol, handle API key encryption
 			if (StringUtils.isBlank(request.getProtocol()) || "openai".equals(request.getProtocol().toLowerCase())) {
-				String endpoint = MapUtils.getString(credentialConfig, "endpoint");
-				String apikey = MapUtils.getString(credentialConfig, "api_key");
-				credential.setEndpoint(endpoint);
-				credential.setApiKey(RSACryptUtils.encrypt(apikey));
+				credential = buildOpenaiCredentialConfig(credentialConfig);
 			}
 			providerConfigInfo.setCredential(credential);
 		}
@@ -234,10 +231,14 @@ public class ProviderController {
 	private ModelCredential buildOpenaiCredentialConfig(Map<String, Object> credentialConfig) {
 		String endpoint = MapUtils.getString(credentialConfig, "endpoint");
 		String apikey = MapUtils.getString(credentialConfig, "api_key");
+		String completionsPath = MapUtils.getString(credentialConfig, "completions_path");
+		String embeddingsPath = MapUtils.getString(credentialConfig, "embeddings_path");
 
 		ModelCredential credential = new ModelCredential();
 		credential.setEndpoint(endpoint);
 		credential.setApiKey(RSACryptUtils.encrypt(apikey));
+		credential.setCompletionsPath(completionsPath);
+		credential.setEmbeddingsPath(embeddingsPath);
 
 		return credential;
 	}

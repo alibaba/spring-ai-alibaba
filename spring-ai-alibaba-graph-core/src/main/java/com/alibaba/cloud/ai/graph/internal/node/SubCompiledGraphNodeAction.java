@@ -69,7 +69,8 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 		final boolean resumeSubgraph = config.metadata(resumeSubGraphId(), new TypeRef<Boolean>() {
 		}).orElse(false);
 
-		RunnableConfig subGraphRunnableConfig = config;
+		RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config).checkPointId(null).nextNode(null).build();
+
 		var parentSaver = parentCompileConfig.checkpointSaver();
 		var subGraphSaver = subGraph.compileConfig.checkpointSaver();
 
@@ -81,10 +82,12 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 
 			// Check saver are the same instance
 			if (parentSaver.get() == subGraphSaver.get()) {
-				subGraphRunnableConfig = RunnableConfig.builder()
+				subGraphRunnableConfig = RunnableConfig.builder(config)
 					.threadId(config.threadId()
 						.map(threadId -> format("%s_%s", threadId, subGraphId()))
 						.orElseGet(this::subGraphId))
+					.nextNode(null)
+					.checkPointId(null)
 					.build();
 			}
 		}
@@ -96,7 +99,7 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 				subGraphRunnableConfig = subGraph.updateState(subGraphRunnableConfig, state.data());
 			}
 
-			var fluxStream = subGraph.fluxDataStream(state, subGraphRunnableConfig);
+			var fluxStream = subGraph.graphResponseStream(state, subGraphRunnableConfig);
 
 			future.complete(Map.of(format("%s_%s", subGraphId(), UUID.randomUUID()), fluxStream));
 

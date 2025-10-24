@@ -50,8 +50,8 @@
     <dependencies>
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-core</artifactId>
-            <version>${project.version}</version>
+            <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+            <version>${spring-ai-extensions.version}</version>
         </dependency>
 
         <dependency>
@@ -151,12 +151,11 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-autoconfigure-dashscope</artifactId>
-            <version>${project.version}</version>
+            <version>${spring-ai-extensions.version}</version>
         </dependency>
         <dependency>
             <groupId>io.modelcontextprotocol.sdk</groupId>
             <artifactId>mcp</artifactId>
-            <version>0.11.2</version>
             <scope>compile</scope>
         </dependency>
 

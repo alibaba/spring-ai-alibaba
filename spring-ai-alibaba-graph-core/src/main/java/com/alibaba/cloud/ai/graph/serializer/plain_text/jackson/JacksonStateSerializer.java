@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 /**
  * Base Implementation of {@link PlainTextStateSerializer} using Jackson library. Need to
@@ -53,6 +54,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		super(stateFactory);
 		this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper cannot be null");
 
+		this.objectMapper.registerModule(new Jdk8Module());
 		this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_INTEGER_FOR_INTS,
 				false);
 		this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS,

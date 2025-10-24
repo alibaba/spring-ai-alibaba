@@ -45,33 +45,21 @@ jobs:
             style
           scopes: |
             core
-            vector-stores
-            document-readers
-            document-parsers
-            deepresearch
-            docs
-            memories
-            tool-calls
+            doc
             graph
-            jmanus
             mcp
             prompt
             studio
             autoconf
             ci
-            nl2sql
             community
             a2a
+            agent
           # e.g. feat(core): add new feature
           # if false: feat: add new feature
           requireScope: true
           disallowScopes: |
             [A-Z]+
-          subjectPattern: ^(?![A-Z]).+$
-          subjectPatternError: |
-            The subject "{subject}" found in the pull request title "{title}"
-            didn't match the configured pattern. Please ensure that the subject
-            doesn't start with an uppercase character.
           # if true, the PR title must match the commit message
           validateSingleCommit: false
           # if true, the PR title must match the single commit message

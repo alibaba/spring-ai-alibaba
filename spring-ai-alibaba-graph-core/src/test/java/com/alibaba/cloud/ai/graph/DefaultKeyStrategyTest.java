@@ -82,8 +82,7 @@ public class DefaultKeyStrategyTest {
 		// Create state with null key strategies map
 		Map<String, Object> initialData = new HashMap<>();
 		initialData.put("key1", "value1");
-		OverAllState state = new OverAllState(initialData, null, // null key strategies
-				false);
+		OverAllState state = new OverAllState(initialData);
 
 		// Update should still work with default REPLACE strategy
 		Map<String, Object> updates = new HashMap<>();

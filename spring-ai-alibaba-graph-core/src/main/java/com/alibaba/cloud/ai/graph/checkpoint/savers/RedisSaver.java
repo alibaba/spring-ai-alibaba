@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -31,6 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -57,8 +59,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 	 * @param redisson the redisson
 	 */
 	public RedisSaver(RedissonClient redisson) {
-		this.redisson = redisson;
-		this.objectMapper = new ObjectMapper();
+		this(redisson, new ObjectMapper());
 	}
 
 	/**
@@ -67,7 +68,13 @@ public class RedisSaver implements BaseCheckpointSaver {
 	 */
 	public RedisSaver(RedissonClient redisson, ObjectMapper objectMapper) {
 		this.redisson = redisson;
-		this.objectMapper = objectMapper;
+		this.objectMapper = configureObjectMapper(objectMapper);
+	}
+
+	private static ObjectMapper configureObjectMapper(ObjectMapper objectMapper) {
+		ObjectMapper mapper = Objects.requireNonNull(objectMapper, "objectMapper cannot be null");
+		mapper.registerModule(new Jdk8Module());
+		return mapper;
 	}
 
 	@Override

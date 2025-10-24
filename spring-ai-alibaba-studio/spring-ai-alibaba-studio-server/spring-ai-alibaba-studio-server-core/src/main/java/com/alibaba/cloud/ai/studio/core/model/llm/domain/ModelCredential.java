@@ -36,4 +36,12 @@ public class ModelCredential implements Serializable {
 	@JsonProperty("api_key")
 	private String apiKey;
 
+	/** Chat completions API path, default is /v1/chat/completions */
+	@JsonProperty("completions_path")
+	private String completionsPath;
+
+	/** Embeddings API path, default is /v1/embeddings */
+	@JsonProperty("embeddings_path")
+	private String embeddingsPath;
+
 }

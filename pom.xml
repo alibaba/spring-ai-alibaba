@@ -48,48 +48,14 @@
     </developers>
 
     <modules>
-        <!-- Spring AI Alibaba Modules -->
         <module>spring-ai-alibaba-bom</module>
-        <module>spring-ai-alibaba-mcp</module>
-        <module>spring-ai-alibaba-a2a</module>
-        <module>spring-ai-alibaba-core</module>
         <module>spring-ai-alibaba-graph-core</module>
+        <module>spring-ai-alibaba-agent-framework</module>
         <module>spring-ai-alibaba-studio</module>
-        <module>spring-ai-alibaba-agent-nacos</module>
-
-        <!-- Spring AI Alibaba Extension Modules -->
-        <module>spring-ai-alibaba-observation-extension</module>
-
-        <!-- Spring AI Alibaba ARMS Extension -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-arms-observation</module>
-
-        <!-- Spring AI Alibaba Autoconfigure -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-dashscope</module>
-
-        <!-- Spring AI Alibaba MCP -->
-        <!-- Nacos3 version -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-registry</module>
-
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-mcp-router</module>
-
-        <!-- Spring AI Alibaba Graph Observation -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-graph-observation</module>
-
-        <!-- Sprint AI Alibaba A2A Server -->
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-server</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-client</module>
-        <module>auto-configurations/spring-ai-alibaba-autoconfigure-a2a-registry</module>
 
         <!-- Spring AI Alibaba Spring Boot Starters -->
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-dashscope</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-arms-observation</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-registry</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-mcp-router</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-server</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-client</module>
-        <module>spring-ai-alibaba-spring-boot-starters/spring-ai-alibaba-starter-a2a-registry</module>
-
+        <module>spring-boot-starters/spring-ai-alibaba-starter-a2a-nacos</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-config-nacos</module>
     </modules>
 
     <scm>
@@ -120,6 +86,8 @@
 
         <!-- Spring version -->
         <spring-ai.version>1.0.1</spring-ai.version>
+        <spring-ai-extensions.version>1.1.0.0-SNAPSHOT</spring-ai-extensions.version>
+        <spring-ai-graph.version>1.1.0.0-SNAPSHOT</spring-ai-graph.version>
         <spring-boot.version>3.4.8</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
@@ -172,7 +140,7 @@
 
         <poi.version>5.4.0</poi.version>
 
-        <mcp.version>0.10.0</mcp.version>
+        <mcp.version>0.11.2</mcp.version>
         <opentelemetry.version>1.38.0</opentelemetry.version>
         <a2a-sdk.version>0.2.5.Beta2</a2a-sdk.version>
 
@@ -274,6 +242,13 @@
                 <artifactId>a2a-java-sdk-client</artifactId>
                 <version>${a2a-sdk.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp-bom</artifactId>
+                <version>${mcp.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -293,6 +268,29 @@
             <id>spring-snapshots</id>
             <name>Spring Snapshots</name>
             <url>https://repo.spring.io/snapshot</url>
+        </repository>
+        <repository>
+            <id>snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>sonatype-snapshots</id>
+            <name>Sonatype Snapshot Repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
         </repository>
     </repositories>
 

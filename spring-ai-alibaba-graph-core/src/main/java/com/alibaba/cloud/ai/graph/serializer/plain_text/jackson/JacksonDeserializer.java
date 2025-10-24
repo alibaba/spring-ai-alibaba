@@ -68,7 +68,7 @@ public interface JacksonDeserializer<T> {
 			}
 			case BOOLEAN -> valueNode.asBoolean();
 			case NUMBER -> {
-				// 保持原始数字类型的逻辑
+				// Preserve original number type logic
 				if (valueNode.isInt()) {
 					yield valueNode.asInt();
 				}
@@ -88,7 +88,7 @@ public interface JacksonDeserializer<T> {
 					yield valueNode.decimalValue();
 				}
 				else {
-					// 回退到原始行为
+					// Fall back to original behavior
 					yield valueNode.numberValue();
 				}
 			}

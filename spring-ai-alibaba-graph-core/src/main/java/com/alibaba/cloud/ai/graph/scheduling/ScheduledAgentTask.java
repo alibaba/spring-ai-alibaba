@@ -130,7 +130,7 @@ public class ScheduledAgentTask {
 				String threadId = String.format("%s-%d", taskId, System.currentTimeMillis());
 				runnableConfig = RunnableConfig.builder().threadId(threadId).build();
 			}
-			Optional<OverAllState> result = graph.call(initialState, runnableConfig);
+			Optional<OverAllState> result = graph.invoke(initialState, runnableConfig);
 			notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_COMPLETED, result.orElse(null));
 		}
 		catch (Exception e) {

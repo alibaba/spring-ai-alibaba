@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -23,6 +24,7 @@ import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 
@@ -30,6 +32,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_async;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 public class InterruptionTest {
@@ -63,15 +66,25 @@ public class InterruptionTest {
 
 		var runnableConfig = RunnableConfig.builder().build();
 
-		var results = workflow.fluxStream(Map.of(), runnableConfig)
-			.doOnNext(System.out::println)
+		AtomicReference<NodeOutput> lastOutputRef = new AtomicReference<>();
+		var results = workflow.stream(Map.of(), runnableConfig)
+			.doOnNext( output -> {
+				System.out.println(output);
+				lastOutputRef.set(output);
+			})
 			.map(NodeOutput::node)
 			.collectList()
 			.block();
 
-		assertIterableEquals(List.of(START, "A", "B"), results);
+		//The last 'B' node is duplicated because an InterruptionMetadata NodeOutput is emitted after the edge evaluation of node 'B'.
+		assertIterableEquals(List.of(START, "A", "B", "B"), results);
+		assertInstanceOf(InterruptionMetadata.class, lastOutputRef.get());
 
-		results = workflow.fluxStream(null, runnableConfig)
+
+		RunnableConfig resumeConfig = RunnableConfig.builder()
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
+		results = workflow.stream(null, resumeConfig)
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
 			.collectList()
@@ -84,9 +97,12 @@ public class InterruptionTest {
 			.findFirst()
 			.orElseThrow();
 
+		// FIXME
 		runnableConfig = workflow.updateState(snapshotForNodeB.config(), Map.of("messages", "C"));
-
-		results = workflow.fluxStream(null, runnableConfig)
+		resumeConfig = RunnableConfig.builder(runnableConfig)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
+		results = workflow.stream(null, resumeConfig)
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
 			.collectList()
@@ -117,16 +133,25 @@ public class InterruptionTest {
 
 		var runnableConfig = RunnableConfig.builder().build();
 
-		var results = workflow.fluxStream(Map.of(), runnableConfig)
-			.doOnNext(System.out::println)
+		AtomicReference<NodeOutput> lastOutputRef = new AtomicReference<>();
+		var results = workflow.stream(Map.of(), runnableConfig)
+			.doOnNext( output -> {
+				System.out.println(output);
+				lastOutputRef.set(output);
+			})
 			.map(NodeOutput::node)
 			.collectList()
 			.block();
 
-		assertIterableEquals(List.of(START, "A", "B"), results);
+		assertIterableEquals(List.of(START, "A", "B", "B"), results);
+		assertInstanceOf(InterruptionMetadata.class, lastOutputRef.get());
 
 		runnableConfig = workflow.updateState(runnableConfig, Map.of("messages", "C"));
-		results = workflow.fluxStream(null, runnableConfig)
+		// FIXME
+		RunnableConfig resumeConfig = RunnableConfig.builder(runnableConfig)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
+		results = workflow.stream(null, resumeConfig)
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
 			.collectList()

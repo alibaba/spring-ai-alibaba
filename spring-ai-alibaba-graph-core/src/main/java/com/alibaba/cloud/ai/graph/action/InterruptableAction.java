@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.action;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 
 import java.util.Optional;
 
@@ -33,6 +34,6 @@ public interface InterruptableAction {
 	 * execution should be interrupted. Returns an empty {@link Optional} to continue
 	 * execution.
 	 */
-	Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state);
+	Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config);
 
 }
