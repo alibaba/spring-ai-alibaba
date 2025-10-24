@@ -39,13 +39,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class ToolEmulatorTest {
 
 	private ChatModel chatModel;
 	private ChatModel emulatorModel;
+
+	private static CompileConfig getCompileConfig() {
+		SaverConfig saverConfig = SaverConfig.builder()
+				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.build();
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
+		return compileConfig;
+	}
 
 	@BeforeEach
 	void setUp() {
@@ -89,20 +99,21 @@ class ToolEmulatorTest {
 
 				// Assert that messages contain at least one ToolResponseMessage with name "weather_tool"
 				boolean hasWeatherToolResponse = messages.stream()
-					.filter(msg -> msg instanceof ToolResponseMessage)
-					.map(msg -> (ToolResponseMessage) msg)
-					.flatMap(toolMsg -> toolMsg.getResponses().stream())
-					.anyMatch(response -> "weather_tool".equals(response.name()));
+						.filter(msg -> msg instanceof ToolResponseMessage)
+						.map(msg -> (ToolResponseMessage) msg)
+						.flatMap(toolMsg -> toolMsg.getResponses().stream())
+						.anyMatch(response -> "weather_tool".equals(response.name()));
 
 				assertTrue(hasWeatherToolResponse,
-					"Messages should contain at least one ToolResponseMessage with ToolResponse name 'weather_tool'");
+						"Messages should contain at least one ToolResponseMessage with ToolResponse name 'weather_tool'");
 
 				// Verify the weather tool was NOT actually called (count should be 0 because it was emulated)
 				assertEquals(0, weatherTool.counter,
-					"Weather tool should not be actually called when emulated");
+						"Weather tool should not be actually called when emulated");
 			});
 
-		} catch (java.util.concurrent.CompletionException e) {
+		}
+		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
@@ -137,9 +148,10 @@ class ToolEmulatorTest {
 
 			// Verify the weather tool was NOT actually called (emulated instead)
 			assertEquals(0, weatherTool.counter,
-				"Weather tool should not be called when emulate all is enabled");
+					"Weather tool should not be called when emulate all is enabled");
 
-		} catch (java.util.concurrent.CompletionException e) {
+		}
+		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
@@ -174,20 +186,13 @@ class ToolEmulatorTest {
 
 			// Verify the weather tool WAS actually called (not in emulation list)
 			assertTrue(weatherTool.counter > 0,
-				"Weather tool should be called when not in emulation list");
+					"Weather tool should be called when not in emulation list");
 
-		} catch (java.util.concurrent.CompletionException e) {
+		}
+		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
-	}
-
-	private static CompileConfig getCompileConfig() {
-		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
-				.build();
-		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
-		return compileConfig;
 	}
 
 }

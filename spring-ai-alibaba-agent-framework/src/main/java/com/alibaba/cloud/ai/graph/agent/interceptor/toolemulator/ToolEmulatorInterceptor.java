@@ -19,14 +19,18 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tool interceptor that emulates specified tools using an LLM instead of executing them.
@@ -99,21 +103,22 @@ public class ToolEmulatorInterceptor extends ToolInterceptor {
 		try {
 			// Build prompt for emulator LLM
 			String prompt = String.format(promptTemplate,
-				toolName,
-				"No description available", // TODO: Tool descriptions not available in ToolCallRequest
-				request.getArguments());
+					toolName,
+					"No description available", // TODO: Tool descriptions not available in ToolCallRequest
+					request.getArguments());
 
 			// Get emulated response from LLM
 			ChatResponse response = emulatorModel.call(new Prompt(new UserMessage(prompt)));
 			String emulatedResult = response.getResult().getOutput().getText();
 
 			log.debug("Emulated tool '{}' returned: {}", toolName,
-				emulatedResult.length() > 100 ? emulatedResult.substring(0, 100) + "..." : emulatedResult);
+					emulatedResult.length() > 100 ? emulatedResult.substring(0, 100) + "..." : emulatedResult);
 
 			// Short-circuit: return emulated result without executing real tool
 			return ToolCallResponse.of(request.getToolCallId(), toolName, emulatedResult);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.error("Failed to emulate tool call for: {}", toolName, e);
 			// Fall back to actual execution on emulation failure
 			return handler.call(request);
@@ -121,20 +126,20 @@ public class ToolEmulatorInterceptor extends ToolInterceptor {
 	}
 
 	public static class Builder {
+		private final Set<String> toolsToEmulate = new HashSet<>();
 		private ChatModel emulatorModel;
 		private boolean emulateAll = true; // Default: emulate all tools
-		private final Set<String> toolsToEmulate = new HashSet<>();
 		private String promptTemplate = """
-			You are emulating a tool call for testing purposes.
-			
-			Tool: %s
-			Description: %s
-			Arguments: %s
-			
-			Generate a realistic response that this tool would return given these arguments.
-			Return ONLY the tool's output, no explanation or preamble.
-			Introduce variation into your responses.
-			""";
+				You are emulating a tool call for testing purposes.
+				
+				Tool: %s
+				Description: %s
+				Arguments: %s
+				
+				Generate a realistic response that this tool would return given these arguments.
+				Return ONLY the tool's output, no explanation or preamble.
+				Introduce variation into your responses.
+				""";
 
 		/**
 		 * Set the chat model used for emulation.

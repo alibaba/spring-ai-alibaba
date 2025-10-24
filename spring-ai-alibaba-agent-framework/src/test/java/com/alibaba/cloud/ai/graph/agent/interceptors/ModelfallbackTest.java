@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.graph.agent.interceptors;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
@@ -26,13 +25,10 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -40,8 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -50,6 +44,14 @@ class ModelfallbackTest {
 
 	private ChatModelCallCounter chatModel;
 	private ChatModelCallCounter fallbackModel;
+
+	private static CompileConfig getCompileConfig() {
+		SaverConfig saverConfig = SaverConfig.builder()
+				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.build();
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
+		return compileConfig;
+	}
 
 	@BeforeEach
 	void setUp() {
@@ -75,11 +77,11 @@ class ModelfallbackTest {
 
 		ReactAgent agent =
 				ReactAgent.builder()
-				.name("single_agent")
-				.model(chatModel)
-				.interceptors(modelFallbackInterceptor)
-				.compileConfig(compileConfig)
-				.build();
+						.name("single_agent")
+						.model(chatModel)
+						.interceptors(modelFallbackInterceptor)
+						.compileConfig(compileConfig)
+						.build();
 
 		try {
 			Optional<OverAllState> result = agent.invoke("帮我写一篇100字左右散文。");
@@ -104,14 +106,6 @@ class ModelfallbackTest {
 			e.printStackTrace();
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
-	}
-
-	private static CompileConfig getCompileConfig() {
-		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
-				.build();
-		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
-		return compileConfig;
 	}
 
 }

@@ -15,12 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.modelfallback;
 
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
-import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -28,6 +26,9 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Automatic fallback to alternative models on errors.
@@ -64,11 +65,12 @@ public class ModelFallbackInterceptor extends ModelInterceptor {
 		// Try primary model first
 		try {
 			ModelResponse modelResponse = handler.call(request);
-			Message message = (Message)modelResponse.getMessage();
+			Message message = (Message) modelResponse.getMessage();
 			if (message.getText() != null && message.getText().contains("Exception:")) {
 				throw new RuntimeException(message.getText());
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.warn("Primary model failed: {}", e.getMessage());
 			lastException = e;
 		}
@@ -78,13 +80,14 @@ public class ModelFallbackInterceptor extends ModelInterceptor {
 			ChatModel fallbackModel = fallbackModels.get(i);
 			try {
 				log.info("Trying fallback model {} of {}", i + 1, fallbackModels.size());
-				
+
 				// Call the fallback model directly
 				Prompt prompt = new Prompt(request.getMessages(), request.getOptions());
 				var response = fallbackModel.call(prompt);
-				
+
 				return ModelResponse.of(response.getResult().getOutput());
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				log.warn("Fallback model {} failed: {}", i + 1, e.getMessage());
 				lastException = e;
 			}

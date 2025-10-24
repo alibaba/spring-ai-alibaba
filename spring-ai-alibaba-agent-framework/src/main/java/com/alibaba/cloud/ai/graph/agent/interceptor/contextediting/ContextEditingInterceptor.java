@@ -16,18 +16,23 @@
 package com.alibaba.cloud.ai.graph.agent.interceptor.contextediting;
 
 import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
-import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Context editing interceptor that clears older tool results once the conversation
@@ -64,8 +69,8 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 		this.keep = builder.keep;
 		this.clearToolInputs = builder.clearToolInputs;
 		this.excludeTools = builder.excludeTools != null
-			? new HashSet<>(builder.excludeTools)
-			: new HashSet<>();
+				? new HashSet<>(builder.excludeTools)
+				: new HashSet<>();
 		this.placeholder = builder.placeholder;
 		this.tokenCounter = builder.tokenCounter;
 	}
@@ -120,7 +125,7 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 
 					for (ToolResponseMessage.ToolResponse resp : toolMsg.getResponses()) {
 						clearedResponses.add(new ToolResponseMessage.ToolResponse(
-							resp.id(), resp.name(), placeholder));
+								resp.id(), resp.name(), placeholder));
 					}
 
 					updatedMessages.add(new ToolResponseMessage(clearedResponses, toolMsg.getMetadata()));
@@ -133,33 +138,34 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 					if (assistantMsg.getToolCalls() != null) {
 						for (AssistantMessage.ToolCall toolCall : assistantMsg.getToolCalls()) {
 							clearedToolCalls.add(new AssistantMessage.ToolCall(
-								toolCall.id(), toolCall.type(), toolCall.name(), placeholder));
+									toolCall.id(), toolCall.type(), toolCall.name(), placeholder));
 						}
 					}
 
 					// Create new AssistantMessage with cleared tool calls
 					AssistantMessage clearedAssistantMsg = new AssistantMessage(
-						assistantMsg.getText(),
-						assistantMsg.getMetadata(),
-						clearedToolCalls
+							assistantMsg.getText(),
+							assistantMsg.getMetadata(),
+							clearedToolCalls
 					);
 					updatedMessages.add(clearedAssistantMsg);
 				}
-			} else {
+			}
+			else {
 				updatedMessages.add(msg);
 			}
 		}
 
 		if (clearedTokens > 0) {
 			log.info("Cleared approximately {} tokens from {} tool messages",
-				clearedTokens, indicesToClear.size());
+					clearedTokens, indicesToClear.size());
 
 			// Create a new request with updated messages
 			ModelRequest updatedRequest = ModelRequest.builder()
-				.messages(updatedMessages)
-				.options(request.getOptions())
-				.tools(request.getTools())
-				.build();
+					.messages(updatedMessages)
+					.options(request.getOptions())
+					.tools(request.getTools())
+					.build();
 
 			return handler.call(updatedRequest);
 		}
@@ -246,7 +252,8 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 		// Sort oldest first, exclude the most recent 'keep' messages
 		if (candidates.size() > keep) {
 			candidates = candidates.subList(0, candidates.size() - keep);
-		} else {
+		}
+		else {
 			candidates.clear();
 		}
 

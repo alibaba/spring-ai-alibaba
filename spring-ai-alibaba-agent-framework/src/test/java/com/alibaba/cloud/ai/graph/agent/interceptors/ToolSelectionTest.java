@@ -41,13 +41,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class ToolSelectionTest {
 
 	private ChatModel chatModel;
 	private ChatModel selectionModel;
+
+	private static CompileConfig getCompileConfig() {
+		SaverConfig saverConfig = SaverConfig.builder()
+				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.build();
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
+		return compileConfig;
+	}
 
 	@BeforeEach
 	void setUp() {
@@ -259,14 +268,6 @@ class ToolSelectionTest {
 			e.printStackTrace();
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
-	}
-
-	private static CompileConfig getCompileConfig() {
-		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
-				.build();
-		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
-		return compileConfig;
 	}
 }
 

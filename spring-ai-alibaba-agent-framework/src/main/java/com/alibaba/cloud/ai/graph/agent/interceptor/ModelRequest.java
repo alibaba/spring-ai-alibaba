@@ -36,6 +36,10 @@ public class ModelRequest {
 		this.tools = tools;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public List<Message> getMessages() {
 		return messages;
 	}
@@ -46,10 +50,6 @@ public class ModelRequest {
 
 	public List<String> getTools() {
 		return tools;
-	}
-
-	public static Builder builder() {
-		return new Builder();
 	}
 
 	public static class Builder {

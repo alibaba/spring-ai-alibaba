@@ -44,6 +44,14 @@ class ContextEditingTest {
 
 	private ChatModel chatModel;
 
+	private static CompileConfig getCompileConfig() {
+		SaverConfig saverConfig = SaverConfig.builder()
+				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.build();
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
+		return compileConfig;
+	}
+
 	@BeforeEach
 	void setUp() {
 		// Create DashScopeApi instance using the API key from environment variable
@@ -66,12 +74,12 @@ class ContextEditingTest {
 
 		ReactAgent agent =
 				ReactAgent.builder()
-				.name("single_agent")
-				.model(chatModel)
-				.tools(PoetTool.createPoetToolCallback("poem", poetTool), ReviewerTool.createReviewerToolCallback("reviewer", reviewerTool))
-				.interceptors(contextEditingInterceptor)
-				.compileConfig(compileConfig)
-				.build();
+						.name("single_agent")
+						.model(chatModel)
+						.tools(PoetTool.createPoetToolCallback("poem", poetTool), ReviewerTool.createReviewerToolCallback("reviewer", reviewerTool))
+						.interceptors(contextEditingInterceptor)
+						.compileConfig(compileConfig)
+						.build();
 
 		try {
 			Optional<OverAllState> result = agent.invoke("帮我写一篇100字左右散文。"
@@ -87,14 +95,6 @@ class ContextEditingTest {
 			e.printStackTrace();
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
-	}
-
-	private static CompileConfig getCompileConfig() {
-		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
-				.build();
-		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
-		return compileConfig;
 	}
 
 }

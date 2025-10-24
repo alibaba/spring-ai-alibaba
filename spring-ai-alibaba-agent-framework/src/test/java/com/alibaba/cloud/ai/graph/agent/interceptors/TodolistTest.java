@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.agent.interceptor.modelfallback.ModelFallbackInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.todolist.TodoListInterceptor;
 import com.alibaba.cloud.ai.graph.agent.tools.HotelTool;
 import com.alibaba.cloud.ai.graph.agent.tools.TicketTool;
@@ -50,6 +49,14 @@ class TodolistTest {
 
 	private ChatModel chatModel;
 
+	private static CompileConfig getCompileConfig() {
+		SaverConfig saverConfig = SaverConfig.builder()
+				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.build();
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
+		return compileConfig;
+	}
+
 	@BeforeEach
 	void setUp() {
 		// Create DashScopeApi instance using the API key from environment variable
@@ -71,12 +78,12 @@ class TodolistTest {
 
 		ReactAgent agent =
 				ReactAgent.builder()
-				.name("single_agent")
-				.model(chatModel)
-				.interceptors(todoListInterceptor)
-				.tools(weatherTool, ticketTool, hotelTool)
-				.compileConfig(compileConfig)
-				.build();
+						.name("single_agent")
+						.model(chatModel)
+						.interceptors(todoListInterceptor)
+						.tools(weatherTool, ticketTool, hotelTool)
+						.compileConfig(compileConfig)
+						.build();
 
 		try {
 			Optional<OverAllState> result = agent.invoke("帮我制定一个12月30日开始去北京的3天旅游计划，并完成车票和酒店预订。这个任务比较复杂，你先分解成几个小任务，然后逐个完成每个小任务，最后汇总输出整个旅游计划。调用 `write_todos` 记录并跟踪任务执行过程。");
@@ -87,13 +94,13 @@ class TodolistTest {
 
 				// Assert that messages contain at least one ToolResponseMessage with name "write_todos"
 				boolean hasWriteTodosToolResponse = messages.stream()
-					.filter(msg -> msg instanceof ToolResponseMessage)
-					.map(msg -> (ToolResponseMessage) msg)
-					.flatMap(toolMsg -> toolMsg.getResponses().stream())
-					.anyMatch(response -> "write_todos".equals(response.name()));
+						.filter(msg -> msg instanceof ToolResponseMessage)
+						.map(msg -> (ToolResponseMessage) msg)
+						.flatMap(toolMsg -> toolMsg.getResponses().stream())
+						.anyMatch(response -> "write_todos".equals(response.name()));
 
 				assertTrue(hasWriteTodosToolResponse,
-					"Messages should contain at least one ToolResponseMessage with ToolResponse name 'write_todos'");
+						"Messages should contain at least one ToolResponseMessage with ToolResponse name 'write_todos'");
 			});
 
 		}
@@ -101,14 +108,6 @@ class TodolistTest {
 			e.printStackTrace();
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
-	}
-
-	private static CompileConfig getCompileConfig() {
-		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
-				.build();
-		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
-		return compileConfig;
 	}
 
 }

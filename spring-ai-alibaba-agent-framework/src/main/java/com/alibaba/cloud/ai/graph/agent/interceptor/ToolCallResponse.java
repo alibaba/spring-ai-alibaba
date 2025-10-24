@@ -44,6 +44,14 @@ public class ToolCallResponse {
 		this.metadata = metadata != null ? new HashMap<>(metadata) : Collections.emptyMap();
 	}
 
+	public static ToolCallResponse of(String toolCallId, String toolName, String result) {
+		return new ToolCallResponse(result, toolName, toolCallId);
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public String getResult() {
 		return result;
 	}
@@ -66,14 +74,6 @@ public class ToolCallResponse {
 
 	public ToolResponseMessage.ToolResponse toToolResponse() {
 		return new ToolResponseMessage.ToolResponse(toolCallId, toolName, result);
-	}
-
-	public static ToolCallResponse of(String toolCallId, String toolName, String result) {
-		return new ToolCallResponse(result, toolName, toolCallId);
-	}
-
-	public static Builder builder() {
-		return new Builder();
 	}
 
 	public static class Builder {

@@ -32,6 +32,10 @@ public class ToolCallRequest {
 		this.toolCallId = toolCallId;
 	}
 
+	public static ToolCallRequest from(AssistantMessage.ToolCall toolCall) {
+		return new ToolCallRequest(toolCall.name(), toolCall.arguments(), toolCall.id());
+	}
+
 	public String getToolName() {
 		return toolName;
 	}
@@ -42,10 +46,6 @@ public class ToolCallRequest {
 
 	public String getToolCallId() {
 		return toolCallId;
-	}
-
-	public static ToolCallRequest from(AssistantMessage.ToolCall toolCall) {
-		return new ToolCallRequest(toolCall.name(), toolCall.arguments(), toolCall.id());
 	}
 }
 

@@ -39,12 +39,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class ToolRetryTest {
 
 	private ChatModel chatModel;
+
+	private static CompileConfig getCompileConfig() {
+		SaverConfig saverConfig = SaverConfig.builder()
+				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.build();
+		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
+		return compileConfig;
+	}
 
 	@BeforeEach
 	void setUp() {
@@ -88,13 +99,14 @@ class ToolRetryTest {
 
 			// Verify the tool was called multiple times (original + retry)
 			assertTrue(failingTool.getCallCount() >= 2,
-				"Failing tool should be called at least twice (original + 1 retry)");
+					"Failing tool should be called at least twice (original + 1 retry)");
 
 			// Verify it eventually succeeded
 			assertTrue(failingTool.hasSucceeded(),
-				"Tool should eventually succeed after retry");
+					"Tool should eventually succeed after retry");
 
-		} catch (java.util.concurrent.CompletionException e) {
+		}
+		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
@@ -134,13 +146,14 @@ class ToolRetryTest {
 
 			// Verify the tool was called exactly maxRetries + 1 times
 			assertEquals(3, alwaysFailingTool.getCallCount(),
-				"Tool should be called maxRetries + 1 times (1 original + 2 retries)");
+					"Tool should be called maxRetries + 1 times (1 original + 2 retries)");
 
 			// Verify it did not succeed
 			assertFalse(alwaysFailingTool.hasSucceeded(),
-				"Tool should not succeed when it always fails");
+					"Tool should not succeed when it always fails");
 
-		} catch (RuntimeException e) {
+		}
+		catch (RuntimeException e) {
 			// This is expected when RETURN_ERROR behavior is used
 			assertTrue(e.getMessage().contains("Tool call failed after 3 attempts"));
 		}
@@ -184,21 +197,14 @@ class ToolRetryTest {
 
 			// Verify the specific tool was retried
 			assertTrue(failingTool.getCallCount() >= 2,
-				"Specific tool should be retried");
+					"Specific tool should be retried");
 
-		} catch (java.util.concurrent.CompletionException e) {
+		}
+		catch (java.util.concurrent.CompletionException e) {
 			// Expected if tool keeps failing
 			assertTrue(failingTool.getCallCount() > 1,
-				"Tool should have been retried before final failure");
+					"Tool should have been retried before final failure");
 		}
-	}
-
-	private static CompileConfig getCompileConfig() {
-		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
-				.build();
-		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
-		return compileConfig;
 	}
 
 	/**

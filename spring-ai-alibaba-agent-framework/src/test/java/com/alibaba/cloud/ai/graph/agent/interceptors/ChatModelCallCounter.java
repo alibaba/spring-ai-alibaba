@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptors;
 
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
