@@ -71,7 +71,7 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 	}
 
 	@Override
-	public ToolCallResponse wrapToolCall(ToolCallRequest request, ToolCallHandler handler) {
+	public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
 		String toolName = request.getToolName();
 
 		// Check if this tool should be retried

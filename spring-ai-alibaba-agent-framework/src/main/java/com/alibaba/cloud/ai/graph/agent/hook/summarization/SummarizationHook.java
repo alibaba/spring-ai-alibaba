@@ -211,7 +211,7 @@ public class SummarizationHook implements ModelHook {
 		private ChatModel model;
 		private Integer maxTokensBeforeSummary;
 		private int messagesToKeep = DEFAULT_MESSAGES_TO_KEEP;
-		private TokenCounter tokenCounter = TokenCounter.approximateCounter();
+		private TokenCounter tokenCounter = TokenCounter.approximateMsgCounter();
 		private String summaryPrompt = DEFAULT_SUMMARY_PROMPT;
 		private String summaryPrefix = SUMMARY_PREFIX;
 

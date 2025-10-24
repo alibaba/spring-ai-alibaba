@@ -75,7 +75,7 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 	}
 
 	@Override
-	public ModelResponse wrapModelCall(ModelRequest request, ModelCallHandler handler) {
+	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 		List<String> availableTools = request.getTools();
 
 		// If no tools or already within limit, skip selection

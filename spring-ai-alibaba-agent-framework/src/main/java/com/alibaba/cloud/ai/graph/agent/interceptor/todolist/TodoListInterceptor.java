@@ -20,6 +20,9 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.tools.WriteTodosTool;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -159,7 +162,7 @@ public class TodoListInterceptor extends ModelInterceptor {
 	}
 
 	@Override
-	public ModelResponse wrapModelCall(ModelRequest request, ModelCallHandler handler) {
+	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 		// Enhance the system prompt with todo guidance
 		List<Message> enhancedMessages = new ArrayList<>(request.getMessages());
 
@@ -233,6 +236,7 @@ public class TodoListInterceptor extends ModelInterceptor {
 	/**
 	 * Todo item status.
 	 */
+	@JsonFormat(shape = JsonFormat.Shape.STRING)
 	public enum TodoStatus {
 		PENDING("pending"),
 		IN_PROGRESS("in_progress"),
@@ -244,17 +248,32 @@ public class TodoListInterceptor extends ModelInterceptor {
 			this.value = value;
 		}
 
+		@JsonValue
 		public String getValue() {
 			return value;
 		}
 
+		@JsonCreator
 		public static TodoStatus fromValue(String value) {
+			if (value == null) {
+				throw new IllegalArgumentException("Status value cannot be null");
+			}
+
+			// First try to match against the lowercase values
 			for (TodoStatus status : values()) {
 				if (status.value.equals(value)) {
 					return status;
 				}
 			}
-			throw new IllegalArgumentException("Unknown status: " + value);
+
+			// Fallback: try to match against enum constant names (case-insensitive)
+			try {
+				return TodoStatus.valueOf(value.toUpperCase());
+			} catch (IllegalArgumentException e) {
+				// If that fails too, throw a helpful error
+				throw new IllegalArgumentException(
+					"Unknown status: " + value + ". Valid values are: pending, in_progress, completed");
+			}
 		}
 	}
 

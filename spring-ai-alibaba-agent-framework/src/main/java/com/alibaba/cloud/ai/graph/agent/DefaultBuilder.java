@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
@@ -71,6 +74,21 @@ public class DefaultBuilder extends Builder {
 
 		if (StringUtils.hasLength(outputSchema)) {
 			llmNodeBuilder.outputSchema(outputSchema);
+		}
+
+		// Separate unified interceptors by type
+		if (CollectionUtils.isNotEmpty(interceptors)) {
+			modelInterceptors = new ArrayList<>();
+			toolInterceptors = new ArrayList<>();
+
+			for (Interceptor interceptor : interceptors) {
+				if (interceptor instanceof ModelInterceptor) {
+					modelInterceptors.add((ModelInterceptor) interceptor);
+				}
+				if (interceptor instanceof ToolInterceptor) {
+					toolInterceptors.add((ToolInterceptor) interceptor);
+				}
+			}
 		}
 
 		// Collect tools from interceptors

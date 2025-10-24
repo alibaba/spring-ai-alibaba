@@ -53,7 +53,7 @@ public class InterceptorChain {
 			ModelCallHandler nextHandler = current;
 
 			// Create a wrapper that calls the interceptor's wrap method
-			current = request -> interceptor.wrapModelCall(request, nextHandler);
+			current = request -> interceptor.interceptModel(request, nextHandler);
 		}
 
 		return current;
@@ -87,7 +87,7 @@ public class InterceptorChain {
 			ToolCallHandler nextHandler = current;
 
 			// Create a wrapper that calls the interceptor's wrap method
-			current = request -> interceptor.wrapToolCall(request, nextHandler);
+			current = request -> interceptor.interceptToolCall(request, nextHandler);
 		}
 
 		return current;

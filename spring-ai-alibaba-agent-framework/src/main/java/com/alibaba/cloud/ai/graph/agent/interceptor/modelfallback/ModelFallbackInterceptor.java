@@ -21,6 +21,8 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 
@@ -56,12 +58,16 @@ public class ModelFallbackInterceptor extends ModelInterceptor {
 	}
 
 	@Override
-	public ModelResponse wrapModelCall(ModelRequest request, ModelCallHandler handler) {
+	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 		Exception lastException = null;
 
 		// Try primary model first
 		try {
-			return handler.call(request);
+			ModelResponse modelResponse = handler.call(request);
+			Message message = (Message)modelResponse.getMessage();
+			if (message.getText() != null && message.getText().contains("Exception:")) {
+				throw new RuntimeException(message.getText());
+			}
 		} catch (Exception e) {
 			log.warn("Primary model failed: {}", e.getMessage());
 			lastException = e;
