@@ -507,7 +507,6 @@
                 <updatePolicy>always</updatePolicy>
             </snapshots>
         </repository>
-        <!-- Sonatype OSS 快照仓库 - 阿里云的开源项目通常发布在这里 -->
         <repository>
             <id>sonatype-snapshots</id>
             <name>Sonatype Snapshot Repository</name>
@@ -518,15 +517,6 @@
             <snapshots>
                 <enabled>true</enabled>
                 <updatePolicy>always</updatePolicy>
-            </snapshots>
-        </repository>
-        <!-- 阿里云公共仓库（备选） -->
-        <repository>
-            <id>aliyun-snapshots</id>
-            <name>Aliyun Snapshot Repository</name>
-            <url>https://maven.aliyun.com/repository/public</url>
-            <snapshots>
-                <enabled>true</enabled>
             </snapshots>
         </repository>
     </repositories>
