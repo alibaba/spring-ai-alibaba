@@ -34,5 +34,5 @@ public abstract class ToolInterceptor implements Interceptor {
 	 * @param handler The next handler in the chain (or base handler)
 	 * @return The tool call response
 	 */
-	public abstract ToolCallResponse wrapToolCall(ToolCallRequest request, ToolCallHandler handler);
+	public abstract ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler);
 }

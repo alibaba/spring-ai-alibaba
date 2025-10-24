@@ -19,18 +19,24 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Uses an LLM to select relevant tools before calling the main model.
@@ -52,7 +58,7 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 	private static final Logger log = LoggerFactory.getLogger(ToolSelectionInterceptor.class);
 
 	private static final String DEFAULT_SYSTEM_PROMPT =
-		"Your goal is to select the most relevant tools for answering the user's query.";
+			"Your goal is to select the most relevant tools for answering the user's query.";
 
 	private final ChatModel selectionModel;
 	private final String systemPrompt;
@@ -65,8 +71,8 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		this.systemPrompt = builder.systemPrompt;
 		this.maxTools = builder.maxTools;
 		this.alwaysInclude = builder.alwaysInclude != null
-			? new HashSet<>(builder.alwaysInclude)
-			: new HashSet<>();
+				? new HashSet<>(builder.alwaysInclude)
+				: new HashSet<>();
 		this.objectMapper = new ObjectMapper();
 	}
 
@@ -75,12 +81,12 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 	}
 
 	@Override
-	public ModelResponse wrapModelCall(ModelRequest request, ModelCallHandler handler) {
+	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 		List<String> availableTools = request.getTools();
 
 		// If no tools or already within limit, skip selection
 		if (availableTools == null || availableTools.isEmpty() ||
-			(maxTools != null && availableTools.size() <= maxTools)) {
+				(maxTools != null && availableTools.size() <= maxTools)) {
 			return handler.call(request);
 		}
 
@@ -95,19 +101,19 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		Set<String> selectedToolNames = selectTools(availableTools, lastUserQuery);
 
 		log.info("Selected {} tools from {} available: {}",
-			selectedToolNames.size(), availableTools.size(), selectedToolNames);
+				selectedToolNames.size(), availableTools.size(), selectedToolNames);
 
 		// Filter tools based on selection
 		List<String> filteredTools = availableTools.stream()
-			.filter(selectedToolNames::contains)
-			.collect(Collectors.toList());
+				.filter(selectedToolNames::contains)
+				.collect(Collectors.toList());
 
 		// Create new request with filtered tools
 		ModelRequest filteredRequest = ModelRequest.builder()
-			.messages(request.getMessages())
-			.options(request.getOptions())
-			.tools(filteredTools)
-			.build();
+				.messages(request.getMessages())
+				.options(request.getOptions())
+				.tools(filteredTools)
+				.build();
 
 		return handler.call(filteredRequest);
 	}
@@ -131,16 +137,16 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 			}
 
 			String maxToolsInstruction = maxTools != null
-				? "\nIMPORTANT: List the tool names in order of relevance. " +
-				  "Select at most " + maxTools + " tools."
-				: "";
+					? "\nIMPORTANT: List the tool names in order of relevance. " +
+					"Select at most " + maxTools + " tools."
+					: "";
 
 			// Create selection prompt
 			List<Message> selectionMessages = List.of(
-				new SystemMessage(systemPrompt + maxToolsInstruction),
-				new UserMessage("Available tools:\n" + toolList +
-					"\nUser query: " + userQuery +
-					"\n\nRespond with a JSON object containing a 'tools' array with the selected tool names: {\"tools\": [\"tool1\", \"tool2\"]}")
+					new SystemMessage(systemPrompt + maxToolsInstruction),
+					new UserMessage("Available tools:\n" + toolList +
+							"\nUser query: " + userQuery +
+							"\n\nRespond with a JSON object containing a 'tools' array with the selected tool names: {\"tools\": [\"tool1\", \"tool2\"]}")
 			);
 
 			Prompt prompt = new Prompt(selectionMessages);
@@ -161,7 +167,8 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 
 			return selected;
 
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			log.warn("Tool selection failed, using all tools: {}", e.getMessage());
 			return new HashSet<>(toolNames);
 		}
@@ -172,7 +179,8 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 			// Try to parse as JSON
 			ToolSelectionResponse response = objectMapper.readValue(responseText, ToolSelectionResponse.class);
 			return new HashSet<>(response.tools);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			// Fallback: extract tool names from text
 			log.debug("Failed to parse JSON, using fallback extraction");
 			return new HashSet<>();

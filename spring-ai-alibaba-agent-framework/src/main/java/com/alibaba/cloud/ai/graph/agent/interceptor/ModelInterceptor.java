@@ -39,7 +39,7 @@ public abstract class ModelInterceptor implements Interceptor {
 	 * @param handler The next handler in the chain (or base handler)
 	 * @return The model response
 	 */
-	public abstract ModelResponse wrapModelCall(ModelRequest request, ModelCallHandler handler);
+	public abstract ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler);
 
 	/**
 	 * Get tools provided by this interceptor.

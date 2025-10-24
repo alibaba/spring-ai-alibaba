@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
@@ -23,6 +24,7 @@ import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
+import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -62,6 +64,7 @@ public abstract class Builder {
 	protected Function<OverAllState, Boolean> shouldContinueFunc;
 
 	protected List<Hook> hooks;
+	protected List<Interceptor> interceptors;
 	protected List<ModelInterceptor> modelInterceptors;
 	protected List<ToolInterceptor> toolInterceptors;
 
@@ -104,6 +107,11 @@ public abstract class Builder {
 
 	public Builder tools(List<ToolCallback> tools) {
 		this.tools = tools;
+		return this;
+	}
+
+	public Builder tools(ToolCallback... tools) {
+		this.tools = Arrays.asList(tools);
 		return this;
 	}
 
@@ -187,13 +195,18 @@ public abstract class Builder {
 		return this;
 	}
 
-	public Builder modelInterceptors(List<ModelInterceptor> modelInterceptors) {
-		this.modelInterceptors = modelInterceptors;
+	public Builder hooks(Hook... hooks) {
+		this.hooks = Arrays.asList(hooks);
 		return this;
 	}
 
-	public Builder toolInterceptors(List<ToolInterceptor> toolInterceptors) {
-		this.toolInterceptors = toolInterceptors;
+	public Builder interceptors(List<Interceptor> interceptors) {
+		this.interceptors = interceptors;
+		return this;
+	}
+
+	public Builder interceptors(Interceptor... interceptors) {
+		this.interceptors = Arrays.asList(interceptors);
 		return this;
 	}
 

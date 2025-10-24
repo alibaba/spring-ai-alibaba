@@ -15,7 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 
 import java.util.List;
 
@@ -38,37 +40,44 @@ import java.util.List;
  */
 @FunctionalInterface
 public interface TokenCounter {
+	int DEFAULT_CHARS_PER_TOKEN = 4;
 
-	/**
-	 * Creates a simple approximation token counter.
-	 * Uses the heuristic: 1 token ≈ 4 characters.
-	 *
-	 * @return A token counter using character-based approximation
-	 */
-	static TokenCounter approximateCounter() {
-		return messages -> {
-			int total = 0;
-			for (Message msg : messages) {
-				if (msg.getText() != null) {
-					// Rough approximation: 1 token ≈ 4 characters
-					total += msg.getText().length() / 4;
-				}
-			}
-			return total;
-		};
+	static TokenCounter approximateMsgCounter() {
+		return approximateMsgCounter(DEFAULT_CHARS_PER_TOKEN);
 	}
 
 	/**
 	 * Creates a token counter with a custom character-to-token ratio.
+	 * Handles ToolResponseMessage (processing ToolResponse) and AssistantMessage (processing ToolCall).
 	 *
 	 * @param charsPerToken The average number of characters per token
 	 * @return A token counter using the specified ratio
 	 */
-	static TokenCounter approximateCounter(int charsPerToken) {
+	static TokenCounter approximateMsgCounter(int charsPerToken) {
 		return messages -> {
 			int total = 0;
 			for (Message msg : messages) {
-				if (msg.getText() != null) {
+				// Handle ToolResponseMessage - count tokens in tool responses
+				if (msg instanceof ToolResponseMessage toolResponseMessage) {
+					for (ToolResponseMessage.ToolResponse response : toolResponseMessage.getResponses()) {
+						// Count tokens in tool response data
+						total += response.responseData().length() / charsPerToken;
+					}
+				}
+				// Handle AssistantMessage - count tokens in tool calls
+				else if (msg instanceof AssistantMessage assistantMessage) {
+					// Count tokens in regular text content
+					if (msg.getText() != null) {
+						total += msg.getText().length() / charsPerToken;
+					}
+					// Count tokens in tool calls
+					for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+						// Count tokens in tool arguments (JSON string)
+						total += toolCall.arguments().length() / charsPerToken;
+					}
+				}
+				// Handle other message types
+				else if (msg.getText() != null) {
 					total += msg.getText().length() / charsPerToken;
 				}
 			}

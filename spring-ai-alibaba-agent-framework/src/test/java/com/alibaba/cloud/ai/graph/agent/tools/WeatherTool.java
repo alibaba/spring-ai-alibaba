@@ -22,32 +22,24 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.function.BiFunction;
 
-public class PoetTool implements BiFunction<String, ToolContext, String> {
-	public int count = 0;
+public class WeatherTool implements BiFunction<String, ToolContext, String> {
+	public int counter = 0;
 
-	public PoetTool() {
+	public WeatherTool() {
 	}
 
 	@Override
 	public String apply(
-			@ToolParam(description = "The original user query that triggered this tool call") String originalUserQuery,
+			@ToolParam(description = "The city or region to check the weather information." ) String location,
 			ToolContext toolContext) {
-		count++;
-		System.out.println("Poet tool called : " + originalUserQuery);
-		return "在城市的缝隙里，  \n" + "一束光悄悄发芽，  \n" + "穿过钢筋水泥的沉默，  \n" + "在风中轻轻说话。  \n" + "\n" + "夜色如墨，却不再黑，  \n"
-				+ "星星点亮了每一个角落，  \n" + "我站在时间的边缘，  \n" + "等一朵云，轻轻落下";
+		counter++;
+		System.out.println("Weather tool called : " + location);
+		return "Sunny, 25°C, light breeze from the east.";
 	}
 
-	public static ToolCallback createPoetToolCallback() {
-		return FunctionToolCallback.builder("poem", new PoetTool())
-				.description("用来写诗的工具")
-				.inputType(String.class)
-				.build();
-	}
-
-	public static ToolCallback createPoetToolCallback(String name, PoetTool poetTool) {
+	public static ToolCallback createWeatherTool(String name, WeatherTool poetTool) {
 		return FunctionToolCallback.builder(name, poetTool)
-				.description("用来写诗的工具")
+				.description("Weather information tool")
 				.inputType(String.class)
 				.build();
 	}

@@ -16,17 +16,23 @@
 package com.alibaba.cloud.ai.graph.agent.interceptor.contextediting;
 
 import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
-import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Context editing interceptor that clears older tool results once the conversation
@@ -63,8 +69,8 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 		this.keep = builder.keep;
 		this.clearToolInputs = builder.clearToolInputs;
 		this.excludeTools = builder.excludeTools != null
-			? new HashSet<>(builder.excludeTools)
-			: new HashSet<>();
+				? new HashSet<>(builder.excludeTools)
+				: new HashSet<>();
 		this.placeholder = builder.placeholder;
 		this.tokenCounter = builder.tokenCounter;
 	}
@@ -74,7 +80,7 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 	}
 
 	@Override
-	public ModelResponse wrapModelCall(ModelRequest request, ModelCallHandler handler) {
+	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 		List<Message> messages = new ArrayList<>(request.getMessages());
 
 		int tokens = tokenCounter.countTokens(messages);
@@ -112,31 +118,54 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 		for (int i = 0; i < messages.size(); i++) {
 			Message msg = messages.get(i);
 
-			if (indicesToClear.contains(i) && msg instanceof ToolResponseMessage) {
-				ToolResponseMessage toolMsg = (ToolResponseMessage) msg;
-				List<ToolResponseMessage.ToolResponse> clearedResponses = new ArrayList<>();
+			if (indicesToClear.contains(i)) {
+				if (msg instanceof ToolResponseMessage) {
+					ToolResponseMessage toolMsg = (ToolResponseMessage) msg;
+					List<ToolResponseMessage.ToolResponse> clearedResponses = new ArrayList<>();
 
-				for (ToolResponseMessage.ToolResponse resp : toolMsg.getResponses()) {
-					clearedResponses.add(new ToolResponseMessage.ToolResponse(
-						resp.id(), resp.name(), placeholder));
+					for (ToolResponseMessage.ToolResponse resp : toolMsg.getResponses()) {
+						clearedResponses.add(new ToolResponseMessage.ToolResponse(
+								resp.id(), resp.name(), placeholder));
+					}
+
+					updatedMessages.add(new ToolResponseMessage(clearedResponses, toolMsg.getMetadata()));
 				}
+				else if (msg instanceof AssistantMessage) {
+					AssistantMessage assistantMsg = (AssistantMessage) msg;
+					List<AssistantMessage.ToolCall> clearedToolCalls = new ArrayList<>();
 
-				updatedMessages.add(new ToolResponseMessage(clearedResponses, toolMsg.getMetadata()));
-			} else {
+					// Clear tool call arguments by replacing with placeholder
+					if (assistantMsg.getToolCalls() != null) {
+						for (AssistantMessage.ToolCall toolCall : assistantMsg.getToolCalls()) {
+							clearedToolCalls.add(new AssistantMessage.ToolCall(
+									toolCall.id(), toolCall.type(), toolCall.name(), placeholder));
+						}
+					}
+
+					// Create new AssistantMessage with cleared tool calls
+					AssistantMessage clearedAssistantMsg = new AssistantMessage(
+							assistantMsg.getText(),
+							assistantMsg.getMetadata(),
+							clearedToolCalls
+					);
+					updatedMessages.add(clearedAssistantMsg);
+				}
+			}
+			else {
 				updatedMessages.add(msg);
 			}
 		}
 
 		if (clearedTokens > 0) {
 			log.info("Cleared approximately {} tokens from {} tool messages",
-				clearedTokens, indicesToClear.size());
+					clearedTokens, indicesToClear.size());
 
 			// Create a new request with updated messages
 			ModelRequest updatedRequest = ModelRequest.builder()
-				.messages(updatedMessages)
-				.options(request.getOptions())
-				.tools(request.getTools())
-				.build();
+					.messages(updatedMessages)
+					.options(request.getOptions())
+					.tools(request.getTools())
+					.build();
 
 			return handler.call(updatedRequest);
 		}
@@ -151,8 +180,7 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 		for (int i = 0; i < messages.size(); i++) {
 			Message msg = messages.get(i);
 
-			if (msg instanceof ToolResponseMessage) {
-				ToolResponseMessage toolMsg = (ToolResponseMessage) msg;
+			if (msg instanceof ToolResponseMessage toolMsg) {
 
 				// Check if already cleared
 				boolean alreadyCleared = false;
@@ -180,7 +208,43 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 					continue;
 				}
 
-				int tokens = estimateTokens(toolMsg);
+				int tokens = TokenCounter.approximateMsgCounter().countTokens(List.of(toolMsg));
+				candidates.add(new ClearableToolMessage(i, tokens));
+			}
+			else if (msg instanceof AssistantMessage assistantMsg) {
+
+				// Check if message has tool calls
+				if (assistantMsg.getToolCalls().isEmpty()) {
+					continue;
+				}
+
+				// Check if already cleared (tool calls have placeholder as arguments)
+				boolean alreadyCleared = false;
+				for (AssistantMessage.ToolCall toolCall : assistantMsg.getToolCalls()) {
+					if (placeholder.equals(toolCall.arguments())) {
+						alreadyCleared = true;
+						break;
+					}
+				}
+
+				if (alreadyCleared) {
+					continue;
+				}
+
+				// Check if tool is excluded
+				boolean excluded = false;
+				for (AssistantMessage.ToolCall toolCall : assistantMsg.getToolCalls()) {
+					if (excludeTools.contains(toolCall.name())) {
+						excluded = true;
+						break;
+					}
+				}
+
+				if (excluded) {
+					continue;
+				}
+
+				int tokens = TokenCounter.approximateMsgCounter().countTokens(List.of(assistantMsg));
 				candidates.add(new ClearableToolMessage(i, tokens));
 			}
 		}
@@ -188,22 +252,14 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 		// Sort oldest first, exclude the most recent 'keep' messages
 		if (candidates.size() > keep) {
 			candidates = candidates.subList(0, candidates.size() - keep);
-		} else {
+		}
+		else {
 			candidates.clear();
 		}
 
 		return candidates;
 	}
 
-	private int estimateTokens(ToolResponseMessage message) {
-		int total = 0;
-		for (ToolResponseMessage.ToolResponse resp : message.getResponses()) {
-			if (resp.responseData() != null) {
-				total += resp.responseData().length() / 4; // Rough approximation
-			}
-		}
-		return total;
-	}
 
 	@Override
 	public String getName() {
@@ -227,7 +283,7 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 		private boolean clearToolInputs = false;
 		private Set<String> excludeTools;
 		private String placeholder = DEFAULT_PLACEHOLDER;
-		private TokenCounter tokenCounter = TokenCounter.approximateCounter();
+		private TokenCounter tokenCounter = TokenCounter.approximateMsgCounter();
 
 		public Builder trigger(int trigger) {
 			this.trigger = trigger;

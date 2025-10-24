@@ -15,6 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor;
 
-interface Interceptor {
+public interface Interceptor {
 	String getName();
 }

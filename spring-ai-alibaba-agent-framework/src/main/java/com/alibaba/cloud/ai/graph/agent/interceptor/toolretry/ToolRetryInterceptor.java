@@ -15,16 +15,19 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.toolretry;
 
-import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
-import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tool interceptor that automatically retries failed tool calls with configurable backoff.
@@ -71,7 +74,7 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 	}
 
 	@Override
-	public ToolCallResponse wrapToolCall(ToolCallRequest request, ToolCallHandler handler) {
+	public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
 		String toolName = request.getToolName();
 
 		// Check if this tool should be retried
@@ -85,7 +88,8 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 		while (attempt <= maxRetries) {
 			try {
 				return handler.call(request);
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				lastException = e;
 
 				// Check if we should retry this exception
@@ -102,11 +106,12 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 				// Calculate delay
 				long delay = calculateDelay(attempt);
 				log.warn("Tool '{}' failed (attempt {}/{}), retrying in {}ms: {}",
-					toolName, attempt + 1, maxRetries + 1, delay, e.getMessage());
+						toolName, attempt + 1, maxRetries + 1, delay, e.getMessage());
 
 				try {
 					Thread.sleep(delay);
-				} catch (InterruptedException ie) {
+				}
+				catch (InterruptedException ie) {
 					Thread.currentThread().interrupt();
 					throw new RuntimeException("Retry interrupted", ie);
 				}
@@ -118,11 +123,12 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 		// All retries exhausted
 		if (onFailure == OnFailureBehavior.RAISE) {
 			throw new RuntimeException("Tool call failed after " + (maxRetries + 1) + " attempts", lastException);
-		} else {
+		}
+		else {
 			// Return error message as tool response
 			String errorMessage = errorFormatter != null
-				? errorFormatter.apply(lastException)
-				: "Tool call failed after " + (maxRetries + 1) + " attempts: " + lastException.getMessage();
+					? errorFormatter.apply(lastException)
+					: "Tool call failed after " + (maxRetries + 1) + " attempts: " + lastException.getMessage();
 
 			log.error("Tool '{}' failed after {} attempts: {}", toolName, maxRetries + 1, lastException.getMessage());
 			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), errorMessage);

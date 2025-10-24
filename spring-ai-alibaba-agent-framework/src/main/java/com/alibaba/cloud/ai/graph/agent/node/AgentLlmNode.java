@@ -97,9 +97,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		// add streaming support
 		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
 		if (stream) {
-			// Build the base model call handler
+			if (state.value("messages").isEmpty()) {
+				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
+			}
 			@SuppressWarnings("unchecked")
 			List<Message> messages = (List<Message>) state.value("messages").get();
+			augmentUserMessage(messages, outputSchema);
+			renderTemplatedUserMessage(messages, state.data());
 
 			// Create ModelRequest
 			ModelRequest modelRequest = ModelRequest.builder()
@@ -110,7 +114,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			// Create base handler that actually calls the model with streaming
 			ModelCallHandler baseHandler = request -> {
 				try {
-					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(state, request).stream().chatResponse();
+					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request).stream().chatResponse();
 					return ModelResponse.of(chatResponseFlux);
 				} catch (Exception e) {
 					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
@@ -128,8 +132,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			AssistantMessage responseOutput;
 
 			// Build the base model call handler
+			if (state.value("messages").isEmpty()) {
+				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
+			}
 			@SuppressWarnings("unchecked")
 			List<Message> messages = (List<Message>) state.value("messages").get();
+			augmentUserMessage(messages, outputSchema);
+			renderTemplatedUserMessage(messages, state.data());
 
 			// Create ModelRequest
 			ModelRequest modelRequest = ModelRequest.builder()
@@ -140,7 +149,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			// Create base handler that actually calls the model
 			ModelCallHandler baseHandler = request -> {
 				try {
-					ChatResponse response = buildChatClientRequestSpec(state, request).call().chatResponse();
+					ChatResponse response = buildChatClientRequestSpec(request).call().chatResponse();
 					return ModelResponse.of(response.getResult().getOutput());
 				} catch (Exception e) {
 					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
@@ -223,17 +232,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.toList();
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state, ModelRequest modelRequest) {
-		if (state.value("messages").isEmpty()) {
-			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
-		}
-
-		@SuppressWarnings("unchecked")
-		List<Message> messages = (List<Message>) state.value("messages").get();
-
-		augmentUserMessage(messages, outputSchema);
-
-		renderTemplatedUserMessage(messages, state.data());
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest) {
 
 		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
 		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
@@ -243,7 +242,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
 				.options(toolCallingChatOptions)
-				.messages(messages)
+				.messages(modelRequest.getMessages())
 				.advisors(advisors);
 
 		return chatClientRequestSpec;
