@@ -140,12 +140,9 @@ public class StructuredOutputManager {
         }
         
         private StructuredOutputStrategy selectStrategy(ChatOptions options) {
-            // 如果是OpenAI ChatOptions，优先使用Native
             if (options instanceof OpenAiChatOptions) {
                 return new NativeStrategy();
             }
-            
-            // 其他情况使用Prompt策略
             return new PromptStrategy();
         }
     }
