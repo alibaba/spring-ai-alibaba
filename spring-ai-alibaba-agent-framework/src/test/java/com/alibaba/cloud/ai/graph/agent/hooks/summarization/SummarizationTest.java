@@ -61,7 +61,6 @@ public class SummarizationTest {
         SummarizationHook hook = SummarizationHook.builder()
                 .model(chatModel)
                 .maxTokensBeforeSummary(200) // 设置较低的阈值以便触发总结
-                .tokenCounter(TokenCounter.approximateCounter(2)) // 2个字符约等于1个token
                 .messagesToKeep(10) // 保留最近10条消息
                 .build();
 
@@ -77,13 +76,11 @@ public class SummarizationTest {
         assertTrue(result.isPresent(), "结果应该存在");
         Object messagesObj = result.get().value("messages").get();
         assertNotNull(messagesObj, "消息应该存在于结果中");
-        
-        // 检查消息是否被总结了
+
         if (messagesObj instanceof List) {
             List<Message> messages = (List<Message>) messagesObj;
             System.out.println("总结后消息数量: " + messages.size());
-            
-            // 验证第一条消息是否是总结消息
+
             if (!messages.isEmpty()) {
                 Message firstMessage = messages.get(0);
                 if (firstMessage.getText().contains("summary of the conversation")) {
