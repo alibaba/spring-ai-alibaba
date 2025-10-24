@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
 import com.alibaba.cloud.ai.graph.agent.hook.summarization.SummarizationHook;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
