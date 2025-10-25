@@ -29,8 +29,8 @@ const HomePage: React.FC = () => {
   };
 
   const handleGraphDebugCardClick = () => {
-    // TODO: Navigate to Graph workflow debug page
-    console.log('Navigate to Graph workflow debug page');
+    // Navigate to Graph workflow debug page
+    navigate('/graph-debug');
   };
 
   const handleAgentManagementCardClick = () => {
