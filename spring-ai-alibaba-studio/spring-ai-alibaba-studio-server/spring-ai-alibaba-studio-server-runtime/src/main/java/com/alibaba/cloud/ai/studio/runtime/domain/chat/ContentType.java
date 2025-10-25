@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.studio.runtime.domain.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -28,7 +27,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum ContentType {
 
 	/**
@@ -41,11 +39,15 @@ public enum ContentType {
 	 * Represents multimodal content (e.g., text with images)
 	 */
 	@JsonProperty("multimodal")
-	MULTIMODAL("multimodal"),;
+	MULTIMODAL("multimodal");
 
 	/**
 	 * The string value of the content type
 	 */
 	private final String value;
+	ContentType(String value) {
+		this.value = value;
+	}
+
 
 }

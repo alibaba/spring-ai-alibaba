@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -28,7 +27,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum ToolStatus {
 
 	@JsonProperty("deleted")
@@ -41,11 +39,16 @@ public enum ToolStatus {
 	PUBLISHED(2, "published"),
 
 	@JsonProperty("published_editing")
-	PUBLISHED_EDITING(3, "published_editing"),;
+	PUBLISHED_EDITING(3, "published_editing");
 
 	@EnumValue
 	private final Integer status; // Numeric status code
 
-	private final String value; // String representation of the status
+	private final String value;
+	ToolStatus(Integer status, String value) {
+		this.status = status;
+		this.value = value;
+	}
+ // String representation of the status
 
 }

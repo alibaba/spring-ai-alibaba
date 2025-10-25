@@ -44,6 +44,7 @@ import com.alibaba.cloud.ai.studio.core.utils.LogUtils;
 import com.google.common.collect.Lists;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
