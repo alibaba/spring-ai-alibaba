@@ -35,13 +35,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  *
  * @author Spring AI Alibaba
  */
-class MemoryStoreTest {
+class InMemoryStoreTest {
 
-	private InMemoryStore memoryStore;
+	private InMemoryStore inMemoryStore;
 
 	@BeforeEach
 	void setUp() {
-		memoryStore = new InMemoryStore();
+		inMemoryStore = new InMemoryStore();
 	}
 
 	@Test
@@ -53,8 +53,8 @@ class MemoryStoreTest {
 		StoreItem item = StoreItem.of(namespace, key, value);
 
 		// When
-		memoryStore.putItem(item);
-		Optional<StoreItem> retrieved = memoryStore.getItem(namespace, key);
+		inMemoryStore.putItem(item);
+		Optional<StoreItem> retrieved = inMemoryStore.getItem(namespace, key);
 
 		// Then
 		assertThat(retrieved).isPresent();
@@ -71,16 +71,16 @@ class MemoryStoreTest {
 		Map<String, Object> value = Map.of("data", "test_value");
 		StoreItem item = StoreItem.of(namespace, key, value);
 
-		memoryStore.putItem(item);
-		assertThat(memoryStore.getItem(namespace, key)).isPresent();
+		inMemoryStore.putItem(item);
+		assertThat(inMemoryStore.getItem(namespace, key)).isPresent();
 
 		// When
-		boolean deleted = memoryStore.deleteItem(namespace, key);
+		boolean deleted = inMemoryStore.deleteItem(namespace, key);
 
 		// Then
 		assertThat(deleted).isTrue();
-		assertThat(memoryStore.getItem(namespace, key)).isEmpty();
-		assertThat(memoryStore.deleteItem(namespace, key)).isFalse(); // Already deleted
+		assertThat(inMemoryStore.getItem(namespace, key)).isEmpty();
+		assertThat(inMemoryStore.deleteItem(namespace, key)).isFalse(); // Already deleted
 	}
 
 	@Test
@@ -90,7 +90,7 @@ class MemoryStoreTest {
 
 		// When - search all items
 		StoreSearchRequest request = StoreSearchRequest.builder().build();
-		StoreSearchResult result = memoryStore.searchItems(request);
+		StoreSearchResult result = inMemoryStore.searchItems(request);
 
 		// Then
 		assertThat(result.getItems()).hasSize(3);
@@ -104,7 +104,7 @@ class MemoryStoreTest {
 
 		// When
 		NamespaceListRequest request = NamespaceListRequest.builder().build();
-		List<String> namespaces = memoryStore.listNamespaces(request);
+		List<String> namespaces = inMemoryStore.listNamespaces(request);
 
 		// Then
 		assertThat(namespaces).hasSize(6);
@@ -115,41 +115,41 @@ class MemoryStoreTest {
 	@Test
 	void testValidationErrors() {
 		// Test null item
-		assertThrows(IllegalArgumentException.class, () -> memoryStore.putItem(null));
+		assertThrows(IllegalArgumentException.class, () -> inMemoryStore.putItem(null));
 
 		// Test null namespace
-		assertThrows(IllegalArgumentException.class, () -> memoryStore.getItem(null, "key"));
+		assertThrows(IllegalArgumentException.class, () -> inMemoryStore.getItem(null, "key"));
 
 		// Test null key
-		assertThrows(IllegalArgumentException.class, () -> memoryStore.getItem(List.of("namespace"), null));
+		assertThrows(IllegalArgumentException.class, () -> inMemoryStore.getItem(List.of("namespace"), null));
 
 		// Test empty key
-		assertThrows(IllegalArgumentException.class, () -> memoryStore.getItem(List.of("namespace"), ""));
+		assertThrows(IllegalArgumentException.class, () -> inMemoryStore.getItem(List.of("namespace"), ""));
 
 		// Test null search request
-		assertThrows(IllegalArgumentException.class, () -> memoryStore.searchItems(null));
+		assertThrows(IllegalArgumentException.class, () -> inMemoryStore.searchItems(null));
 
 		// Test null namespace request
-		assertThrows(IllegalArgumentException.class, () -> memoryStore.listNamespaces(null));
+		assertThrows(IllegalArgumentException.class, () -> inMemoryStore.listNamespaces(null));
 	}
 
 	@Test
 	void testSizeAndClear() {
 		// Given
-		assertThat(memoryStore.isEmpty()).isTrue();
-		assertThat(memoryStore.size()).isEqualTo(0);
+		assertThat(inMemoryStore.isEmpty()).isTrue();
+		assertThat(inMemoryStore.size()).isEqualTo(0);
 
 		setupTestData();
 
 		// When
-		assertThat(memoryStore.isEmpty()).isFalse();
-		assertThat(memoryStore.size()).isEqualTo(3);
+		assertThat(inMemoryStore.isEmpty()).isFalse();
+		assertThat(inMemoryStore.size()).isEqualTo(3);
 
-		memoryStore.clear();
+		inMemoryStore.clear();
 
 		// Then
-		assertThat(memoryStore.isEmpty()).isTrue();
-		assertThat(memoryStore.size()).isEqualTo(0);
+		assertThat(inMemoryStore.isEmpty()).isTrue();
+		assertThat(inMemoryStore.size()).isEqualTo(0);
 	}
 
 	@Test
@@ -159,7 +159,7 @@ class MemoryStoreTest {
 
 		// When
 		StoreSearchRequest request = StoreSearchRequest.builder().namespace(List.of("users", "user1")).build();
-		StoreSearchResult result = memoryStore.searchItems(request);
+		StoreSearchResult result = inMemoryStore.searchItems(request);
 
 		// Then
 		assertThat(result.getItems()).hasSize(1);
@@ -177,7 +177,7 @@ class MemoryStoreTest {
 
 		// When
 		StoreSearchRequest request = StoreSearchRequest.builder().query("Administrator").build();
-		StoreSearchResult result = memoryStore.searchItems(request);
+		StoreSearchResult result = inMemoryStore.searchItems(request);
 
 		// Then
 		assertThat(result.getItems()).hasSize(1);
@@ -191,7 +191,7 @@ class MemoryStoreTest {
 
 		// When
 		StoreSearchRequest request = StoreSearchRequest.builder().filter(Map.of("theme", "dark")).build();
-		StoreSearchResult result = memoryStore.searchItems(request);
+		StoreSearchResult result = inMemoryStore.searchItems(request);
 
 		// Then
 		assertThat(result.getItems()).hasSize(1);
@@ -205,7 +205,7 @@ class MemoryStoreTest {
 
 		// When
 		StoreSearchRequest request = StoreSearchRequest.builder().offset(1).limit(1).build();
-		StoreSearchResult result = memoryStore.searchItems(request);
+		StoreSearchResult result = inMemoryStore.searchItems(request);
 
 		// Then
 		assertThat(result.getItems()).hasSize(1);
@@ -222,31 +222,31 @@ class MemoryStoreTest {
 		Map<String, Object> originalValue = Map.of("version", 1);
 		StoreItem originalItem = StoreItem.of(namespace, key, originalValue);
 
-		memoryStore.putItem(originalItem);
+		inMemoryStore.putItem(originalItem);
 
 		// When - update the same item
 		Map<String, Object> updatedValue = Map.of("version", 2, "updated", true);
 		StoreItem updatedItem = StoreItem.of(namespace, key, updatedValue);
-		memoryStore.putItem(updatedItem);
+		inMemoryStore.putItem(updatedItem);
 
 		// Then
-		Optional<StoreItem> retrieved = memoryStore.getItem(namespace, key);
+		Optional<StoreItem> retrieved = inMemoryStore.getItem(namespace, key);
 		assertThat(retrieved).isPresent();
 		assertThat(retrieved.get().getValue()).isEqualTo(updatedValue);
-		assertThat(memoryStore.size()).isEqualTo(1); // Should still be 1 item
+		assertThat(inMemoryStore.size()).isEqualTo(1); // Should still be 1 item
 	}
 
 	private void setupTestData() {
 		// User admin data
-		memoryStore.putItem(
+		inMemoryStore.putItem(
 				StoreItem.of(List.of("users", "admin"), "profile", Map.of("name", "Administrator", "role", "admin")));
 
 		// User1 preferences
-		memoryStore.putItem(StoreItem.of(List.of("users", "user1", "preferences"), "ui_settings",
+		inMemoryStore.putItem(StoreItem.of(List.of("users", "user1", "preferences"), "ui_settings",
 				Map.of("theme", "dark", "language", "en-US")));
 
 		// User2 preferences
-		memoryStore.putItem(StoreItem.of(List.of("users", "user2", "preferences"), "ui_settings",
+		inMemoryStore.putItem(StoreItem.of(List.of("users", "user2", "preferences"), "ui_settings",
 				Map.of("theme", "light", "language", "zh-CN")));
 	}
 
