@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputIntegration;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
@@ -97,6 +98,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				updatedState.put(this.outputKey, responseOutput);
 			}
 
+			StructuredOutputIntegration.processStructuredOutput(updatedState, responseOutput, outputSchema);
+
 			return updatedState;
 		}
 	}
@@ -155,8 +158,12 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		renderTemplatedUserMessage(messages, state.data());
 
+		ToolCallingChatOptions structuredOptions = StructuredOutputIntegration.prepareStructuredOutputTool(
+			outputSchema, toolCallingChatOptions, toolCallbacks
+		);
+
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.options(toolCallingChatOptions)
+				.options(structuredOptions)
 				.messages(messages)
 				.advisors(advisors);
 
