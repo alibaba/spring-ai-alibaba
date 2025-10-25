@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -29,7 +28,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum AppType {
 
 	/**
@@ -42,12 +40,16 @@ public enum AppType {
 	 * Workflow application type
 	 */
 	@JsonProperty("workflow")
-	WORKFLOW("workflow"),;
+	WORKFLOW("workflow");
 
 	/**
 	 * The string value representing the application type
 	 */
 	@EnumValue
 	private final String value;
+	AppType(String value) {
+		this.value = value;
+	}
+
 
 }

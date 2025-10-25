@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -29,7 +28,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum DocumentIndexStatus {
 
 	/** Document has been uploaded but not yet processed */
@@ -46,7 +44,7 @@ public enum DocumentIndexStatus {
 
 	/** Document processing has failed */
 	@JsonProperty("failed")
-	FAILED(4, "failed"),;
+	FAILED(4, "failed");
 
 	/** Numeric status code used for database storage */
 	@EnumValue
@@ -54,5 +52,10 @@ public enum DocumentIndexStatus {
 
 	/** String representation of the status */
 	private final String value;
+	DocumentIndexStatus(Integer status, String value) {
+		this.status = status;
+		this.value = value;
+	}
+
 
 }

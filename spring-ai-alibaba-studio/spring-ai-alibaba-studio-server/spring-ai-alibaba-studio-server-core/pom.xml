@@ -48,9 +48,8 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-graph-core</artifactId>
-            <version>1.0.0.4-SNAPSHOT</version>
+            <version>${spring-ai-graph.version}</version>
         </dependency>
-
 
         <!-- db -->
         <dependency>

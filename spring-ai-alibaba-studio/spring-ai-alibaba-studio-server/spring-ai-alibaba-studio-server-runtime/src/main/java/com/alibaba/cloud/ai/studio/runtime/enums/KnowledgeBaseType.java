@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -29,7 +28,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum KnowledgeBaseType {
 
 	/**
@@ -42,12 +40,16 @@ public enum KnowledgeBaseType {
 	 * Represents structured knowledge base type
 	 */
 	@JsonProperty("structured")
-	STRUCTURED("structured"),;
+	STRUCTURED("structured");
 
 	/**
 	 * The string value of the enum
 	 */
 	@EnumValue
 	private final String value;
+	KnowledgeBaseType(String value) {
+		this.value = value;
+	}
+
 
 }

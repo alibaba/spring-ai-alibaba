@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -98,21 +97,9 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
                 .streamMode(CompiledGraph.StreamMode.SNAPSHOTS)
                 .build();
 
-        return Flux.create(sink -> {
-            try {
-                compiledGraph.stream(Map.of("original_text", inputText), cfg)
-                        .forEachAsync(node -> sink.next(node.state().data()))
-                        .whenComplete((v, e) -> {
-                            if (e != null) {
-                                sink.error(e);
-                            } else {
-                                sink.complete();
-                            }
-                        });
-            } catch (GraphRunnerException e) {
-                sink.error(new RuntimeException("Error in snapshot stream execution: " + e.getMessage(), e));
-            }
-        });
+        return compiledGraph.stream(Map.of("original_text", inputText), cfg)
+                .map(node -> node.state().data())
+                .onErrorResume(e -> Flux.error(new RuntimeException("Error in snapshot stream execution: " + e.getMessage(), e)));
     }
 
 
@@ -123,11 +110,7 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
             return Flux.error(new IllegalStateException("No graph is currently active. Please select a graph first."));
         }
 
-        try {
-            return Flux.fromStream(compiledGraph.stream(Map.of("original_text", inputText)).stream());
-        } catch (GraphRunnerException e) {
-            return Flux.error(new RuntimeException("Error in stream execution: " + e.getMessage(), e));
-        }
+        return compiledGraph.stream(Map.of("original_text", inputText));
     }
 
     @Override
@@ -141,55 +124,42 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
                 .streamMode(CompiledGraph.StreamMode.SNAPSHOTS)
                 .build();
 
-        return Flux.create(sink -> {
-            try {
-                Map<String, LocalDateTime> nodeStartTimes = new ConcurrentHashMap<>();
-                int[] executionOrder = {0}; // Use an array to make it mutable in lambda
-                StateGraph stateGraph = getCurrentGraph().stateGraph();
+        Map<String, LocalDateTime> nodeStartTimes = new ConcurrentHashMap<>();
+        int[] executionOrder = {0}; // Use an array to make it mutable in lambda
+        StateGraph stateGraph = getCurrentGraph().stateGraph();
 
-                compiledGraph.stream(Map.of("original_text", inputText), cfg)
-                        .forEachAsync(node -> {
-                            String nodeId = node.node();
-                            Map<String, Object> nodeData = node.state().data();
+        return compiledGraph.stream(Map.of("original_text", inputText), cfg)
+                .map(node -> {
+                    String nodeId = node.node();
+                    Map<String, Object> nodeData = node.state().data();
 
-                            List<String> parentNodes = stateGraph.getPredecessors(nodeId).stream()
-                                    .map(predecessor -> predecessor.toString())
-                                    .collect(Collectors.toList());
-                            // Build the enhanced node output
-                            EnhancedNodeOutput enhancedOutput = EnhancedNodeOutput.builder()
-                                    .nodeId(nodeId)
-                                    .executionStatus("SUCCESS")
-                                    .startTime(nodeStartTimes.getOrDefault(nodeId, LocalDateTime.now()))
-                                    .endTime(LocalDateTime.now())
-                                    .durationMs(calculateDuration(nodeStartTimes.get(nodeId)))
-                                    .inputData(node.state().data())
-                                    .data(nodeData)
-                                    .parentNodes(parentNodes)
-                                    .executionOrder(++executionOrder[0])
-                                    .isFinal(isLastNode(nodeId))
-                                    .build();
-
-                            sink.next(enhancedOutput);
-                        })
-                        .whenComplete((v, e) -> {
-                            if (e != null) {
-                                // Execute Error
-                                EnhancedNodeOutput errorOutput = EnhancedNodeOutput.builder()
-                                        .nodeId("ERROR")
-                                        .executionStatus("FAILED")
-                                        .endTime(LocalDateTime.now())
-                                        .errorMessage(e.getMessage())
-                                        .build();
-                                sink.next(errorOutput);
-                                sink.error(e);
-                            } else {
-                                sink.complete();
-                            }
-                        });
-            } catch (GraphRunnerException e) {
-                sink.error(new RuntimeException("Error in enhanced stream execution: " + e.getMessage(), e));
-            }
-        });
+                    List<String> parentNodes = stateGraph.getEdges().edgesByTargetId(nodeId).stream()
+                            .map(edge -> edge.sourceId())
+                            .collect(Collectors.toList());
+                    // Build the enhanced node output
+                    return EnhancedNodeOutput.builder()
+                            .nodeId(nodeId)
+                            .executionStatus("SUCCESS")
+                            .startTime(nodeStartTimes.getOrDefault(nodeId, LocalDateTime.now()))
+                            .endTime(LocalDateTime.now())
+                            .durationMs(calculateDuration(nodeStartTimes.get(nodeId)))
+                            .inputData(node.state().data())
+                            .data(nodeData)
+                            .parentNodes(parentNodes)
+                            .executionOrder(++executionOrder[0])
+                            .isFinal(isLastNode(nodeId))
+                            .build();
+                })
+                .onErrorResume(e -> {
+                    // Execute Error
+                    EnhancedNodeOutput errorOutput = EnhancedNodeOutput.builder()
+                            .nodeId("ERROR")
+                            .executionStatus("FAILED")
+                            .endTime(LocalDateTime.now())
+                            .errorMessage(e.getMessage())
+                            .build();
+                    return Flux.concat(Flux.just(errorOutput), Flux.error(e));
+                });
     }
 
     /**

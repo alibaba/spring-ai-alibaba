@@ -47,7 +47,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 @Component
 public class ComplexSupportGraphBuilder {
 
-	@Value("classpath:tes/manual.txt")
+	@Value("classpath:data/manual.txt")
 	private Resource manualResource;
 
 	@Bean

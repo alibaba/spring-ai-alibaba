@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -28,7 +27,6 @@ import lombok.Getter;
  * @since 1.0.0.3
  */
 @Getter
-@AllArgsConstructor
 public enum DocumentType {
 
 	/**
@@ -54,5 +52,9 @@ public enum DocumentType {
 	 */
 	@EnumValue
 	private final String value;
+	DocumentType(String value) {
+		this.value = value;
+	}
+
 
 }

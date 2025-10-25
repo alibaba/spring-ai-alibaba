@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -28,7 +27,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum ToolTestStatus {
 
 	@JsonProperty("not_test")
@@ -38,12 +36,17 @@ public enum ToolTestStatus {
 	PASSED(2, "passed"),
 
 	@JsonProperty("failed")
-	FAILED(3, "failed"),;
+	FAILED(3, "failed");
 
 	@EnumValue
 	private final Integer status;
 
 	/** String representation of the status */
 	private final String value;
+	ToolTestStatus(Integer status, String value) {
+		this.status = status;
+		this.value = value;
+	}
+
 
 }

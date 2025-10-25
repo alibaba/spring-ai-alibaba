@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.studio.runtime.domain.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -28,7 +27,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum ToolCallType {
 
 	/** Standard function call type */
@@ -65,9 +63,13 @@ public enum ToolCallType {
 
 	/** Result of a file search operation */
 	@JsonProperty("file_search_result")
-	FILE_SEARCH_RESULT("file_search_result"),;
+	FILE_SEARCH_RESULT("file_search_result");
 
 	/** The string value representing this tool call type */
 	private final String value;
+	
+	ToolCallType(String value) {
+		this.value = value;
+	}
 
 }

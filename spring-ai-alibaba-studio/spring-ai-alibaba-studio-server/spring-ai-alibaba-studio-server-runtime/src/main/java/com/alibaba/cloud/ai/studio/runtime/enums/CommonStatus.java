@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -29,7 +28,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum CommonStatus {
 
 	/**
@@ -42,7 +40,7 @@ public enum CommonStatus {
 	 * Represents a normal/active entity
 	 */
 	@JsonProperty("normal")
-	NORMAL(1, "normal"),;
+	NORMAL(1, "normal");
 
 	/**
 	 * Numeric status code
@@ -54,6 +52,12 @@ public enum CommonStatus {
 	 * String representation of the status
 	 */
 	private final String value;
+	
+	CommonStatus(Integer status, String value) {
+		this.status = status;
+		this.value = value;
+	}
+
 
 	/**
 	 * Converts a numeric status code to its corresponding enum value
