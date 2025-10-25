@@ -37,11 +37,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 class MemoryStoreTest {
 
-	private MemoryStore memoryStore;
+	private InMemoryStore memoryStore;
 
 	@BeforeEach
 	void setUp() {
-		memoryStore = new MemoryStore();
+		memoryStore = new InMemoryStore();
 	}
 
 	@Test

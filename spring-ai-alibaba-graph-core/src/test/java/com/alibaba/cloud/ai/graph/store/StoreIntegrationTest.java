@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.graph.store;
 
 import com.alibaba.cloud.ai.graph.store.stores.DatabaseStore;
 import com.alibaba.cloud.ai.graph.store.stores.FileSystemStore;
-import com.alibaba.cloud.ai.graph.store.stores.MemoryStore;
+import com.alibaba.cloud.ai.graph.store.stores.InMemoryStore;
 import com.alibaba.cloud.ai.graph.store.stores.MongoStore;
 import com.alibaba.cloud.ai.graph.store.stores.RedisStore;
 
@@ -47,7 +47,7 @@ public class StoreIntegrationTest {
 	@Test
 	void testAllStoreImplementations() {
 		// Create instances of all Store implementations
-		List<Store> stores = Arrays.asList(new MemoryStore(), new FileSystemStore(tempDir), createDatabaseStore(),
+		List<Store> stores = Arrays.asList(new InMemoryStore(), new FileSystemStore(tempDir), createDatabaseStore(),
 				new RedisStore(), new MongoStore());
 
 		for (Store store : stores) {
@@ -59,7 +59,7 @@ public class StoreIntegrationTest {
 	@Test
 	void testStoreSearchAndNamespaceOperations() {
 		// Test with MemoryStore as representative
-		Store store = new MemoryStore();
+		Store store = new InMemoryStore();
 
 		// Setup test data with hierarchical namespaces
 		setupHierarchicalTestData(store);
@@ -76,7 +76,7 @@ public class StoreIntegrationTest {
 	@Test
 	void testStoreConsistencyAcrossImplementations() {
 		// Create instances of all Store implementations
-		List<Store> stores = Arrays.asList(new MemoryStore(), new FileSystemStore(tempDir.resolve("consistency")),
+		List<Store> stores = Arrays.asList(new InMemoryStore(), new FileSystemStore(tempDir.resolve("consistency")),
 				createDatabaseStore(), new RedisStore(), new MongoStore());
 
 		// Test data
