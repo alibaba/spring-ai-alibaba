@@ -15,29 +15,28 @@
  */
 package com.alibaba.cloud.ai.graph.stream;
 
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-
+import com.alibaba.cloud.ai.graph.streaming.GraphFluxGenerator;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
-import reactor.core.publisher.Flux;
-
 public class LLmNodeAction implements NodeAction {
 
-	private DashScopeChatModel chatModel;
+	private ChatModel chatModel;
 
 	private String nodeId;
 
-	public LLmNodeAction(DashScopeChatModel chatModel) {
+	public LLmNodeAction(ChatModel chatModel) {
 		this.chatModel = chatModel;
 	}
 
-	public LLmNodeAction(DashScopeChatModel chatModel, String nodeId) {
+	public LLmNodeAction(ChatModel chatModel, String nodeId) {
 		this.chatModel = chatModel;
 		this.nodeId = nodeId;
 	}
@@ -47,7 +46,11 @@ public class LLmNodeAction implements NodeAction {
 		// Create prompt with user message
 		UserMessage message = new UserMessage((String) state.value(OverAllState.DEFAULT_INPUT_KEY).get());
 		Flux<ChatResponse> stream = chatModel.stream(new Prompt(message));
-		return Map.of("messages", stream);
+		return Map.of("messages", GraphFluxGenerator
+				.builder()
+				.startingNode(nodeId)
+				.outKey("messages")
+				.build(stream));
 	}
 
 }
