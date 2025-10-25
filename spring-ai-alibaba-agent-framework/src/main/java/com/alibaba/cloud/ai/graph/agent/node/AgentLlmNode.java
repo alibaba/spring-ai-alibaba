@@ -242,15 +242,12 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.toolCallbacks(filteredToolCallbacks)
 				.internalToolExecutionEnabled(false)
 				.build();
-
 		ToolCallingChatOptions structuredOptions = StructuredOutputIntegration.prepareStructuredOutputTool(
 			outputSchema, toolCallingChatOptions, toolCallbacks
 		);
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
 				.options(structuredOptions)
-				.messages(messages)
-				.options(toolCallingChatOptions)
 				.messages(modelRequest.getMessages())
 				.advisors(advisors);
 
