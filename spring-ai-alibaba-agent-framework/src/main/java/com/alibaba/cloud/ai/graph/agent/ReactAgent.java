@@ -121,6 +121,8 @@ public class ReactAgent extends BaseAgent {
 		if (this.toolInterceptors != null && !this.toolInterceptors.isEmpty()) {
 			this.toolNode.setToolInterceptors(this.toolInterceptors);
 		}
+
+        this.toolNode.setAgentName(name);
 	}
 
 	public static com.alibaba.cloud.ai.graph.agent.Builder builder() {

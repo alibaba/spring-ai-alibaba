@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.tool.BaseTool;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
@@ -48,6 +49,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private ToolCallbackResolver toolCallbackResolver;
 
+    private String agentName;
+
 	public AgentToolNode(ToolCallbackResolver resolver) {
 		this.toolCallbackResolver = resolver;
 	}
@@ -73,7 +76,15 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return toolCallbacks;
 	}
 
-	@Override
+    public String getAgentName() {
+        return agentName;
+    }
+
+    public void setAgentName(String agentName) {
+        this.agentName = agentName;
+    }
+
+    @Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
 		List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
 		Message lastMessage = messages.get(messages.size() - 1);
@@ -148,7 +159,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 			ToolCallback toolCallback = resolve(req.getToolName());
 			String result = toolCallback.call(
 				req.getArguments(),
-				new ToolContext(Map.of("state", state, "config", config, "extraState", extraStateFromToolCall))
+				new ToolContext(Map.of("state", state, "config", config, "extraState", extraStateFromToolCall,
+                        BaseTool.AGENT_NAME, agentName))
 			);
 			return ToolCallResponse.of(req.getToolCallId(), req.getToolName(), result);
 		};
