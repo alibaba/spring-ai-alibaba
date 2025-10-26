@@ -16,9 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.hook;
 
 public enum HookType {
-	BEFORE_MODEL,
-	AFTER_MODEL,
-	BEFORE_AGENT,
-	AFTER_AGENT
+	AGENT,
+	MODEL
 }
 

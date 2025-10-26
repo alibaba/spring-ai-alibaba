@@ -86,7 +86,8 @@
 
         <!-- Spring version -->
         <spring-ai.version>1.0.1</spring-ai.version>
-        <spring-ai-extensions.version>1.0.0.4</spring-ai-extensions.version>
+        <spring-ai-extensions.version>1.1.0.0-SNAPSHOT</spring-ai-extensions.version>
+        <spring-ai-graph.version>1.1.0.0-SNAPSHOT</spring-ai-graph.version>
         <spring-boot.version>3.4.8</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
@@ -267,6 +268,29 @@
             <id>spring-snapshots</id>
             <name>Spring Snapshots</name>
             <url>https://repo.spring.io/snapshot</url>
+        </repository>
+        <repository>
+            <id>snapshots</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>sonatype-snapshots</id>
+            <name>Sonatype Snapshot Repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
         </repository>
     </repositories>
 

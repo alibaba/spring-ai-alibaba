@@ -20,6 +20,11 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
+import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -46,6 +51,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
+	private List<ModelInterceptor> modelInterceptors = new ArrayList<>();
+
 	private String outputKey;
 
 	private String outputSchema;
@@ -63,6 +70,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		if (builder.toolCallbacks != null) {
 			this.toolCallbacks = builder.toolCallbacks;
 		}
+		if (builder.modelInterceptors != null) {
+			this.modelInterceptors = builder.modelInterceptors;
+		}
 		this.chatClient = builder.chatClient;
 		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
 				.toolCallbacks(toolCallbacks)
@@ -74,22 +84,85 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		return new Builder();
 	}
 
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	public void setModelInterceptors(List<ModelInterceptor> modelInterceptors) {
+		this.modelInterceptors = modelInterceptors;
+	}
+
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
 		// add streaming support
 		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
 		if (stream) {
-			Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(state).stream().chatResponse();
-			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", chatResponseFlux);
+			if (state.value("messages").isEmpty()) {
+				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
+			}
+			@SuppressWarnings("unchecked")
+			List<Message> messages = (List<Message>) state.value("messages").get();
+			augmentUserMessage(messages, outputSchema);
+			renderTemplatedUserMessage(messages, state.data());
+
+			// Create ModelRequest
+			ModelRequest modelRequest = ModelRequest.builder()
+					.messages(messages)
+					.options(toolCallingChatOptions)
+					.build();
+
+			// Create base handler that actually calls the model with streaming
+			ModelCallHandler baseHandler = request -> {
+				try {
+					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request).stream().chatResponse();
+					return ModelResponse.of(chatResponseFlux);
+				} catch (Exception e) {
+					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
+				}
+			};
+
+			// Chain interceptors if any
+			ModelCallHandler chainedHandler = InterceptorChain.chainModelInterceptors(
+					modelInterceptors, baseHandler);
+
+			// Execute the chained handler
+			ModelResponse modelResponse = chainedHandler.call(modelRequest);
+			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", modelResponse.getMessage());
 		} else {
 			AssistantMessage responseOutput;
-			try {
-				ChatResponse response = buildChatClientRequestSpec(state).call().chatResponse();
-				responseOutput = response.getResult().getOutput();
+
+			// Build the base model call handler
+			if (state.value("messages").isEmpty()) {
+				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
 			}
-			catch (Exception e) {
-				responseOutput = new AssistantMessage("Exception: " + e.getMessage());
-			}
+			@SuppressWarnings("unchecked")
+			List<Message> messages = (List<Message>) state.value("messages").get();
+			augmentUserMessage(messages, outputSchema);
+			renderTemplatedUserMessage(messages, state.data());
+
+			// Create ModelRequest
+			ModelRequest modelRequest = ModelRequest.builder()
+					.messages(messages)
+					.options(toolCallingChatOptions)
+					.build();
+
+			// Create base handler that actually calls the model
+			ModelCallHandler baseHandler = request -> {
+				try {
+					ChatResponse response = buildChatClientRequestSpec(request).call().chatResponse();
+					return ModelResponse.of(response.getResult().getOutput());
+				} catch (Exception e) {
+					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
+				}
+			};
+
+			// Chain interceptors if any
+			ModelCallHandler chainedHandler = InterceptorChain.chainModelInterceptors(
+					modelInterceptors, baseHandler);
+
+			// Execute the chained handler
+			ModelResponse modelResponse = chainedHandler.call(modelRequest);
+			responseOutput = (AssistantMessage) modelResponse.getMessage();
 
 			Map<String, Object> updatedState = new HashMap<>();
 			updatedState.put("messages", responseOutput);
@@ -101,8 +174,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 	}
 
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		this.toolCallbacks = toolCallbacks;
+	public void setAdvisors(List<Advisor> advisors) {
+		this.advisors = advisors;
 	}
 
 	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
@@ -143,21 +216,33 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(OverAllState state) {
-		if (state.value("messages").isEmpty()) {
-			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
+	/**
+	 * Filter tool callbacks based on the tools specified in ModelRequest.
+	 * @param modelRequest the model request containing the list of tool names to filter by
+	 * @return filtered list of tool callbacks matching the requested tools
+	 */
+	private List<ToolCallback> filterToolCallbacks(ModelRequest modelRequest) {
+		if (modelRequest == null || modelRequest.getTools() == null || modelRequest.getTools().isEmpty()) {
+			return toolCallbacks;
 		}
 
-		@SuppressWarnings("unchecked")
-		List<Message> messages = (List<Message>) state.value("messages").get();
+		List<String> requestedTools = modelRequest.getTools();
+		return toolCallbacks.stream()
+				.filter(callback -> requestedTools.contains(callback.getToolDefinition().name()))
+				.toList();
+	}
 
-		augmentUserMessage(messages, outputSchema);
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest) {
 
-		renderTemplatedUserMessage(messages, state.data());
+		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
+		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
+				.toolCallbacks(filteredToolCallbacks)
+				.internalToolExecutionEnabled(false)
+				.build();
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
 				.options(toolCallingChatOptions)
-				.messages(messages)
+				.messages(modelRequest.getMessages())
 				.advisors(advisors);
 
 		return chatClientRequestSpec;
@@ -174,6 +259,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		private List<Advisor> advisors;
 
 		private List<ToolCallback> toolCallbacks;
+
+		private List<ModelInterceptor> modelInterceptors;
 
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
@@ -192,6 +279,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.toolCallbacks = toolCallbacks;
+			return this;
+		}
+
+		public Builder modelInterceptors(List<ModelInterceptor> modelInterceptors) {
+			this.modelInterceptors = modelInterceptors;
 			return this;
 		}
 

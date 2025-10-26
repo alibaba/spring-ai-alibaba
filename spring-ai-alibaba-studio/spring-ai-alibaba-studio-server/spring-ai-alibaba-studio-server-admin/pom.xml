@@ -46,6 +46,11 @@
             <artifactId>spring-ai-alibaba-studio-server-openapi</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-graph-nodes</artifactId>
+            <version>${spring-ai-graph.version}</version>
+        </dependency>
 
         <!-- aop -->
         <dependency>
