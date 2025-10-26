@@ -33,10 +33,10 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -242,12 +242,15 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.toolCallbacks(filteredToolCallbacks)
 				.internalToolExecutionEnabled(false)
 				.build();
-		ToolCallingChatOptions structuredOptions = StructuredOutputIntegration.prepareStructuredOutputTool(
-			outputSchema, toolCallingChatOptions, toolCallbacks
+
+		ChatOptions structuredOutputOptions = StructuredOutputIntegration.prepareStructuredOutputOptions(
+			outputSchema,
+			toolCallingChatOptions,
+			filteredToolCallbacks
 		);
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.options(structuredOptions)
+				.options(structuredOutputOptions)
 				.messages(modelRequest.getMessages())
 				.advisors(advisors);
 

@@ -17,8 +17,11 @@ package com.alibaba.cloud.ai.graph.agent.structured;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.ResponseFormat;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,42 +33,63 @@ import java.util.Map;
  */
 public class StructuredOutputIntegration {
 
-    public static ToolCallback prepareStructuredOutput(String outputSchema, String modelName) {
-        return prepareStructuredOutput(outputSchema, modelName, null);
-    }
-
-    public static ToolCallback prepareStructuredOutput(
-            String outputSchema, 
-            String modelName, 
-            StructuredOutputSupport.Mode mode) {
-        
-        if (outputSchema == null || outputSchema.trim().isEmpty()) {
-            return null;
+    public static ChatOptions prepareStructuredOutputOptions(
+            String outputSchema,
+            ToolCallingChatOptions baseToolCallingOptions,
+            List<ToolCallback> toolCallbacks) {
+        if (!isJsonSchema(outputSchema)) {
+            return baseToolCallingOptions;
         }
-
         Map<String, Object> schema;
         try {
             schema = parseJsonSchema(outputSchema);
         } catch (Exception e) {
-            return null;
+            return baseToolCallingOptions;
         }
-
-        if (mode == null) {
-            String provider = inferProvider(modelName);
-            mode = StructuredOutputSupport.detectMode(provider, null);
+        String modelName = baseToolCallingOptions != null ? baseToolCallingOptions.getModel() : null;
+        String provider = inferProvider(modelName);
+        StructuredOutputSupport.Mode mode = StructuredOutputSupport.detectMode(provider, null);
+        // NATIVE
+        if (mode == StructuredOutputSupport.Mode.NATIVE) {
+            return copyToOpenAI(baseToolCallingOptions)
+                    .responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
+                    .build();
+        } else if (mode == StructuredOutputSupport.Mode.TOOLCALL) {
+            ToolCallback formatOutputTool = StructuredOutputToolBinding.fromSchema(
+                schema,
+                StructuredOutputSupport.getName()
+            ).tool();
+            // TOOLCALL
+            List<ToolCallback> all = new ArrayList<>(toolCallbacks);
+            all.add(formatOutputTool);
+            return copyToolCalling(baseToolCallingOptions)
+                    .toolCallbacks(all)
+                    .internalToolExecutionEnabled(false)
+                    .build();
         }
-
-        if (mode == StructuredOutputSupport.Mode.TOOLCALL) {
-            return createFormatOutputTool(schema);
-        }
-
-        return null;
+        return baseToolCallingOptions;
     }
 
-    public static Map<String, Object> extractStructuredOutput(
-            Message responseMessage,
-            String outputSchema) {
-        return extractStructuredOutput(responseMessage, outputSchema, null);
+    private static String inferProvider(String modelName) {
+        if (modelName == null) {
+            return null;
+        }
+        
+        String lower = modelName.toLowerCase();
+        if (lower.startsWith("gpt-") || lower.startsWith("o1-") || lower.startsWith("o3-")) {
+            return "openai";
+        }
+        if (lower.startsWith("qwen-")) {
+            return "tongyi";
+        }
+        if (lower.startsWith("claude-")) {
+            return "anthropic";
+        }
+        if (lower.startsWith("gemini-")) {
+            return "google";
+        }
+        
+        return null;
     }
 
     public static Map<String, Object> extractStructuredOutput(
@@ -82,30 +106,6 @@ public class StructuredOutputIntegration {
         }
 
         return StructuredOutputSupport.extractStructuredOutput(responseMessage, mode);
-    }
-
-    public static ToolCallingChatOptions prepareStructuredOutputTool(
-            String outputSchema,
-            ToolCallingChatOptions originalOptions,
-            List<ToolCallback> existingToolCallbacks) {
-
-        if (!isJsonSchema(outputSchema)) {
-            return originalOptions;
-        }
-
-        ToolCallback formatOutputTool = prepareStructuredOutput(outputSchema, null);
-
-        if (formatOutputTool != null) {
-            List<ToolCallback> allTools = new ArrayList<>(existingToolCallbacks);
-            allTools.add(formatOutputTool);
-
-            return ToolCallingChatOptions.builder()
-                .toolCallbacks(allTools)
-                .internalToolExecutionEnabled(false)
-                .build();
-        }
-
-        return originalOptions;
     }
 
     public static void processStructuredOutput(
@@ -131,40 +131,11 @@ public class StructuredOutputIntegration {
         }
     }
 
-    private static ToolCallback createFormatOutputTool(Map<String, Object> schema) {
-        return StructuredOutputToolBinding.fromSchema(
-            schema,
-            StructuredOutputSupport.getName()
-        ).tool();
-    }
-
     private static Map<String, Object> parseJsonSchema(String schemaString) throws Exception {
         com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
         @SuppressWarnings("unchecked")
         Map<String, Object> map = mapper.readValue(schemaString, Map.class);
         return map;
-    }
-
-    private static String inferProvider(String modelName) {
-        if (modelName == null) {
-            return null;
-        }
-        
-        String lower = modelName.toLowerCase();
-        if (lower.startsWith("gpt-") || lower.startsWith("o1-") || lower.startsWith("o3-")) {
-            return "openai";
-        }
-        if (lower.startsWith("qwen-")) {
-            return "tongyi";
-        }
-        if (lower.startsWith("claude-")) {
-            return "anthropic";
-        }
-        if (lower.startsWith("gemini-")) {
-            return "google";
-        }
-        
-        return null;
     }
 
     private static StructuredOutputSupport.Mode detectModeFromResponse(Message responseMessage) {
@@ -182,6 +153,26 @@ public class StructuredOutputIntegration {
         }
         String trimmed = schema.trim();
         return trimmed.startsWith("{") && trimmed.contains("\"type\"");
+    }
+    private static ToolCallingChatOptions.Builder copyToolCalling(ToolCallingChatOptions base) {
+        return ToolCallingChatOptions.builder()
+                .model(base.getModel())
+                .temperature(base.getTemperature())
+                .maxTokens(base.getMaxTokens())
+                .topP(base.getTopP())
+                .frequencyPenalty(base.getFrequencyPenalty())
+                .presencePenalty(base.getPresencePenalty())
+                .toolCallbacks(base.getToolCallbacks());
+    }
+
+    private static OpenAiChatOptions.Builder copyToOpenAI(ToolCallingChatOptions base) {
+        return OpenAiChatOptions.builder()
+                .model(base.getModel())
+                .temperature(base.getTemperature())
+                .maxTokens(base.getMaxTokens())
+                .topP(base.getTopP())
+                .frequencyPenalty(base.getFrequencyPenalty())
+                .presencePenalty(base.getPresencePenalty());
     }
 }
 
