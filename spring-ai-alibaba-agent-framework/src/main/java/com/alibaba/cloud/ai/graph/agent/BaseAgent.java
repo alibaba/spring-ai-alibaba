@@ -16,92 +16,129 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.agent.memory.AgentMemory;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
-
 import java.lang.reflect.Type;
 
 public abstract class BaseAgent extends Agent {
 
-	protected String inputSchema;
-	protected Type inputType;
+  protected String inputSchema;
+  protected Type inputType;
 
-	protected String outputSchema;
-	protected Class<?> outputType;
+  protected String outputSchema;
+  protected Class<?> outputType;
 
-	/** The output key for the agent's result */
-	protected String outputKey;
+  /** The output key for the agent's result */
+  protected String outputKey;
 
-	protected KeyStrategy outputKeyStrategy;
+  protected KeyStrategy outputKeyStrategy;
 
-	protected boolean includeContents;
+  protected boolean includeContents;
 
-	protected boolean returnReasoningContents;
+  protected boolean returnReasoningContents;
 
-	public BaseAgent(String name, String description, boolean includeContents, boolean returnReasoningContents, String outputKey,
-			KeyStrategy outputKeyStrategy) throws GraphStateException {
-		super(name, description);
-		this.includeContents = includeContents;
-		this.returnReasoningContents = returnReasoningContents;
-		this.outputKey = outputKey;
-		this.outputKeyStrategy = outputKeyStrategy;
-	}
+  /** The agent's memory for storing conversation history, context, facts, etc. */
+  protected AgentMemory memory;
 
-	public abstract Node asNode(boolean includeContents, boolean returnReasoningContents, String outputKeyToParent);
+  public BaseAgent(
+      String name,
+      String description,
+      boolean includeContents,
+      boolean returnReasoningContents,
+      String outputKey,
+      KeyStrategy outputKeyStrategy)
+      throws GraphStateException {
+    super(name, description);
+    this.includeContents = includeContents;
+    this.returnReasoningContents = returnReasoningContents;
+    this.outputKey = outputKey;
+    this.outputKeyStrategy = outputKeyStrategy;
+  }
 
-	public boolean isIncludeContents() {
-		return includeContents;
-	}
+  public abstract Node asNode(
+      boolean includeContents, boolean returnReasoningContents, String outputKeyToParent);
 
-	public String getOutputKey() {
-		return outputKey;
-	}
+  public boolean isIncludeContents() {
+    return includeContents;
+  }
 
-	public void setOutputKey(String outputKey) {
-		this.outputKey = outputKey;
-	}
+  public String getOutputKey() {
+    return outputKey;
+  }
 
-	public KeyStrategy getOutputKeyStrategy() {
-		return outputKeyStrategy;
-	}
+  public void setOutputKey(String outputKey) {
+    this.outputKey = outputKey;
+  }
 
-	public void setOutputKeyStrategy(KeyStrategy outputKeyStrategy) {
-		this.outputKeyStrategy = outputKeyStrategy;
-	}
+  public KeyStrategy getOutputKeyStrategy() {
+    return outputKeyStrategy;
+  }
 
-	String getInputSchema() {
-		return inputSchema;
-	}
+  public void setOutputKeyStrategy(KeyStrategy outputKeyStrategy) {
+    this.outputKeyStrategy = outputKeyStrategy;
+  }
 
-	void setInputSchema(String inputSchema) {
-		this.inputSchema = inputSchema;
-	}
+  String getInputSchema() {
+    return inputSchema;
+  }
 
-	Type getInputType() {
-		return inputType;
-	}
+  void setInputSchema(String inputSchema) {
+    this.inputSchema = inputSchema;
+  }
 
-	void setInputType(Type inputType) {
-		this.inputType = inputType;
-	}
+  Type getInputType() {
+    return inputType;
+  }
 
-	String getOutputSchema() {
-		return outputSchema;
-	}
+  void setInputType(Type inputType) {
+    this.inputType = inputType;
+  }
 
-	void setOutputSchema(String outputSchema) {
-		this.outputSchema = outputSchema;
-	}
+  String getOutputSchema() {
+    return outputSchema;
+  }
 
-	void setIncludeContents(boolean includeContents) {
-		this.includeContents = includeContents;
-	}
+  void setOutputSchema(String outputSchema) {
+    this.outputSchema = outputSchema;
+  }
 
-	public boolean isReturnReasoningContents() {
-		return returnReasoningContents;
-	}
+  void setIncludeContents(boolean includeContents) {
+    this.includeContents = includeContents;
+  }
 
-	public void setReturnReasoningContents(boolean returnReasoningContents) {
-		this.returnReasoningContents = returnReasoningContents;
-	}
+  public boolean isReturnReasoningContents() {
+    return returnReasoningContents;
+  }
+
+  public void setReturnReasoningContents(boolean returnReasoningContents) {
+    this.returnReasoningContents = returnReasoningContents;
+  }
+
+  /**
+   * Get the agent's memory instance.
+   *
+   * @return the AgentMemory instance, or null if not initialized
+   */
+  public AgentMemory getMemory() {
+    return memory;
+  }
+
+  /**
+   * Set the agent's memory instance.
+   *
+   * @param memory the AgentMemory instance to set
+   */
+  public void setMemory(AgentMemory memory) {
+    this.memory = memory;
+  }
+
+  /**
+   * Check if the agent has memory enabled.
+   *
+   * @return true if memory is initialized and available
+   */
+  public boolean isMemoryEnabled() {
+    return memory != null;
+  }
 }
