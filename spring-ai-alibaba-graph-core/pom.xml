@@ -27,6 +27,7 @@
     </parent>
 
     <artifactId>spring-ai-alibaba-graph-core</artifactId>
+    <version>1.0.0.3</version>
     <packaging>jar</packaging>
     <name>Spring AI Alibaba Graph Core</name>
     <description>A library for building stateful, multi-agents applications with LLMs</description>

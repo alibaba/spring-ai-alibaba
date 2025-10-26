@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -28,7 +27,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum UploadType {
 
 	/** aliyun oss */
@@ -40,6 +38,10 @@ public enum UploadType {
 	FILE("file");
 
 	private final String value;
+	UploadType(String value) {
+		this.value = value;
+	}
+
 
 	public static UploadType fromValue(String value) {
 		for (UploadType type : values()) {

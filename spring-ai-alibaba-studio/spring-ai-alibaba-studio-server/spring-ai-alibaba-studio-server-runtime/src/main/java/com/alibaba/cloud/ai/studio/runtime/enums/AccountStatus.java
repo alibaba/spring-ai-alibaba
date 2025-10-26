@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -28,7 +27,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum AccountStatus {
 
 	/** Account has been deleted */
@@ -41,7 +39,7 @@ public enum AccountStatus {
 
 	/** Account is disabled */
 	@JsonProperty("disabled")
-	DISABLED(2, "disabled"),;
+	DISABLED(2, "disabled");
 
 	/** Numeric status code */
 	@EnumValue
@@ -49,6 +47,11 @@ public enum AccountStatus {
 
 	/** String representation of the status */
 	private final String value;
+	AccountStatus(Integer status, String value) {
+		this.status = status;
+		this.value = value;
+	}
+
 
 	/**
 	 * Get AccountStatus by numeric status code

@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -28,7 +27,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum ChunkType {
 
 	/** Chunks text based on character length */
@@ -45,9 +43,13 @@ public enum ChunkType {
 
 	/** Chunks text based on regex patterns */
 	@JsonProperty("regex")
-	REGEX("regex"),;
+	REGEX("regex");
 
 	/** The string value representing the chunk type */
 	private final String value;
+	ChunkType(String value) {
+		this.value = value;
+	}
+
 
 }

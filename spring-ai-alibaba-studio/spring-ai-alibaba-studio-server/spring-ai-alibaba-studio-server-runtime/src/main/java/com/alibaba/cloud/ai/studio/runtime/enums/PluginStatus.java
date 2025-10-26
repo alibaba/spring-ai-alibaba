@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -28,7 +27,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum PluginStatus {
 
 	/**
@@ -41,7 +39,7 @@ public enum PluginStatus {
 	 * Plugin is in normal state
 	 */
 	@JsonProperty("normal")
-	NORMAL(1, "normal"),;
+	NORMAL(1, "normal");
 
 	/**
 	 * Numeric status code
@@ -53,5 +51,10 @@ public enum PluginStatus {
 	 * String representation of the status
 	 */
 	private final String value;
+	PluginStatus(Integer status, String value) {
+		this.status = status;
+		this.value = value;
+	}
+
 
 }

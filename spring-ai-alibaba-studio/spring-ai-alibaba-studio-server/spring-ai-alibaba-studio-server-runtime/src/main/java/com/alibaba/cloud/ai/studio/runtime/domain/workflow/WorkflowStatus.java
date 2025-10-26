@@ -16,11 +16,9 @@
 package com.alibaba.cloud.ai.studio.runtime.domain.workflow;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
-@AllArgsConstructor
 public enum WorkflowStatus {
 
 	@JsonProperty("completed")
@@ -33,8 +31,12 @@ public enum WorkflowStatus {
 	IN_PROGRESS("in_progress"),
 
 	@JsonProperty("pause")
-	PAUSE("pause"),;
+	PAUSE("pause");
 
 	private final String value;
+	WorkflowStatus(String value) {
+		this.value = value;
+	}
+
 
 }
