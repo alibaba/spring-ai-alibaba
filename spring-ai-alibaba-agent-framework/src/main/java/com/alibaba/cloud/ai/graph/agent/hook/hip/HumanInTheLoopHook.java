@@ -17,18 +17,19 @@ package com.alibaba.cloud.ai.graph.agent.hook.hip;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
-import com.alibaba.cloud.ai.graph.agent.hook.AfterModelHook;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
+import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
-
-import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
-import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
-import com.alibaba.cloud.ai.graph.state.RemoveByHash;
-
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 
 import java.util.ArrayList;
@@ -41,7 +42,8 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HumanInTheLoopHook extends AfterModelHook implements InterruptableAction {
+@HookPositions(HookPosition.AFTER_MODEL)
+public class HumanInTheLoopHook implements ModelHook, AsyncNodeActionWithConfig, InterruptableAction {
 	private static final Logger log = LoggerFactory.getLogger(HumanInTheLoopHook.class);
 
 	private Map<String, ToolConfig> approvalOn;
@@ -56,8 +58,13 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 
 	@Override
 	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+		return afterModel(state, config);
+	}
+
+	@Override
+	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
 		Optional<Object> feedback = config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY);
-		InterruptionMetadata interruptionMetadata = (InterruptionMetadata)feedback.orElseThrow(() -> new RuntimeException("Human feedback is required but not provided in RuntimeConfig."));
+		InterruptionMetadata interruptionMetadata = (InterruptionMetadata) feedback.orElseThrow(() -> new RuntimeException("Human feedback is required but not provided in RuntimeConfig."));
 
 		List<Message> messages = new ArrayList<>((List<Message>) state.value("messages").orElse(new ArrayList<>()));
 		Message lastMessage = messages.get(messages.size() - 1);
@@ -81,14 +88,17 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 
 					if (result == FeedbackResult.APPROVED) {
 						newToolCalls.add(toolCall);
-					} else if (result == FeedbackResult.EDITED) {
+					}
+					else if (result == FeedbackResult.EDITED) {
 						AssistantMessage.ToolCall editedToolCall = new AssistantMessage.ToolCall(toolCall.id(), toolCall.type(), toolCall.name(), toolFeedback.getArguments());
 						newToolCalls.add(editedToolCall);
-					} else if (result == FeedbackResult.REJECTED) {
+					}
+					else if (result == FeedbackResult.REJECTED) {
 						ToolResponseMessage.ToolResponse response = new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(), String.format("Tool call request for %s has been rejected by human. The reason for why this tool is rejected and the suggestion for next possible tool choose is listed as below:\n %s.", toolFeedback.getName(), toolFeedback.getDescription()));
 						responses.add(response);
 					}
-				} else {
+				}
+				else {
 					// If no feedback is provided for a tool that requires approval, treat it as approved to continue.
 					newToolCalls.add(toolCall);
 				}
@@ -109,7 +119,8 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 
 			updates.put("messages", newMessages);
 			return CompletableFuture.completedFuture(updates);
-		} else {
+		}
+		else {
 			log.warn("Last message is not an AssistantMessage, cannot process human feedback.");
 		}
 
@@ -120,7 +131,7 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 	public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
 		Optional<Object> feedback = config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY);
 		if (feedback.isPresent()) {
-			if (!validateFeedback((InterruptionMetadata)feedback.get())) {
+			if (!validateFeedback((InterruptionMetadata) feedback.get())) {
 				return feedback.map(f -> {
 					throw new IllegalArgumentException("Invalid human feedback: " + f);
 				});// TODO, throw exception?
@@ -144,7 +155,8 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 							+ "Do you approve?";
 					// TODO, create a designated tool metadata field in InterruptionMetadata?
 					InterruptionMetadata interruptionMetadata = InterruptionMetadata.builder(getName(), state)
-							.addToolFeedback(InterruptionMetadata.ToolFeedback.builder().id(toolCall.id()).name(toolCall.name()).description(content).arguments(toolCall.arguments()).build())
+							.addToolFeedback(InterruptionMetadata.ToolFeedback.builder().id(toolCall.id())
+									.name(toolCall.name()).description(content).arguments(toolCall.arguments()).build())
 							.build();
 					return Optional.of(interruptionMetadata);
 				}
@@ -179,10 +191,6 @@ public class HumanInTheLoopHook extends AfterModelHook implements InterruptableA
 		}
 
 		return true;
-	}
-
-	public void approvalOn(String name, ToolConfig toolConfig) {
-		this.approvalOn.put(name, toolConfig);
 	}
 
 	@Override
