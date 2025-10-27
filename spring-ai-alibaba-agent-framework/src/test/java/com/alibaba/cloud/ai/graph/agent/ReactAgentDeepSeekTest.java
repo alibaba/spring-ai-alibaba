@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,7 +104,7 @@ class ReactAgentDeepSeekTest {
 	@Test
 	public void testReactAgent() throws Exception {
 		CompileConfig compileConfig = getCompileConfig();
-		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).compileConfig(compileConfig).build();
+		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver()).build();
 
 		try {
 			Optional<OverAllState> result = agent.invoke("帮我写一篇100字左右散文。");
@@ -140,7 +139,7 @@ class ReactAgentDeepSeekTest {
 	@Test
 	public void testReactAgentMessage() throws Exception {
 		CompileConfig compileConfig = getCompileConfig();
-		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).compileConfig(compileConfig)
+		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver())
 				.build();
 		AssistantMessage message = agent.call("帮我写一篇100字左右散文。");
 		System.out.println(message.getText());
@@ -163,7 +162,7 @@ class ReactAgentDeepSeekTest {
 		ReactAgent agent = ReactAgent.builder()
 				.name("schema_agent")
 				.model(chatModel)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.outputSchema(customSchema)
 				.build();
 
@@ -185,7 +184,7 @@ class ReactAgentDeepSeekTest {
 		ReactAgent agent = ReactAgent.builder()
 				.name("type_agent")
 				.model(chatModel)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.outputType(PoemOutput.class)
 				.build();
 
@@ -216,7 +215,7 @@ class ReactAgentDeepSeekTest {
 		ReactAgent agent = ReactAgent.builder()
 				.name("analysis_agent")
 				.model(chatModel)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.outputSchema(jsonSchema)
 				.build();
 
@@ -229,7 +228,7 @@ class ReactAgentDeepSeekTest {
 
 	private static CompileConfig getCompileConfig() {
 		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.register(new MemorySaver())
 				.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 		return compileConfig;

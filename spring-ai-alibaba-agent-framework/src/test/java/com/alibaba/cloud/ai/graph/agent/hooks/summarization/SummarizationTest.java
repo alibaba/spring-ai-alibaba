@@ -17,12 +17,9 @@ package com.alibaba.cloud.ai.graph.agent.hooks.summarization;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.summarization.SummarizationHook;
-import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
@@ -99,7 +96,7 @@ public class SummarizationTest {
         ReactAgent agent = ReactAgent.builder()
                 .name("test-no-summarization-agent")
                 .model(chatModel)
-                .compileConfig(getCompileConfig())
+                .saver(new MemorySaver())
                 .build();
 
         System.out.println("\n=== 测试不带总结功能的对话 ===");
@@ -157,14 +154,9 @@ public class SummarizationTest {
                 .name(name)
                 .model(model)
                 .hooks(List.of(hook))
-                .compileConfig(getCompileConfig())
+                .saver(new MemorySaver())
                 .build();
     }
 
-    private static CompileConfig getCompileConfig() {
-        SaverConfig saverConfig = SaverConfig.builder()
-                .register(SaverEnum.MEMORY.getValue(), new MemorySaver())
-                .build();
-        return CompileConfig.builder().saverConfig(saverConfig).build();
-    }
+    
 }
