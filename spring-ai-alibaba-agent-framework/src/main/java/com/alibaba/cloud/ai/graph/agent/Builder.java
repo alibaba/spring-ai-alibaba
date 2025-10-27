@@ -15,11 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -27,9 +22,13 @@ import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
+import com.alibaba.cloud.ai.graph.agent.memory.AgentMemory;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import io.micrometer.observation.ObservationRegistry;
-
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
@@ -39,187 +38,194 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 public abstract class Builder {
 
-	protected String name;
+  protected String name;
 
-	protected String description;
+  protected String description;
 
-	protected String instruction;
+  protected String instruction;
 
-	protected String systemPrompt;
+  protected String systemPrompt;
 
-	protected ChatModel model;
+  protected ChatModel model;
 
-	protected ChatOptions chatOptions;
+  protected ChatOptions chatOptions;
 
-	protected ChatClient chatClient;
+  protected ChatClient chatClient;
 
-	protected List<ToolCallback> tools;
+  protected List<ToolCallback> tools;
 
-	protected ToolCallbackResolver resolver;
+  protected ToolCallbackResolver resolver;
 
-	protected int maxIterations = 10;
+  protected int maxIterations = 10;
 
-	protected CompileConfig compileConfig;
+  protected CompileConfig compileConfig;
 
-	protected Function<OverAllState, Boolean> shouldContinueFunc;
+  protected Function<OverAllState, Boolean> shouldContinueFunc;
 
-	protected List<Hook> hooks;
-	protected List<Interceptor> interceptors;
-	protected List<ModelInterceptor> modelInterceptors;
-	protected List<ToolInterceptor> toolInterceptors;
+  protected List<Hook> hooks;
+  protected List<Interceptor> interceptors;
+  protected List<ModelInterceptor> modelInterceptors;
+  protected List<ToolInterceptor> toolInterceptors;
 
-	protected boolean includeContents = true;
-	protected boolean returnReasoningContents;
+  protected AgentMemory memory;
 
-	protected String outputKey;
+  protected boolean includeContents = true;
+  protected boolean returnReasoningContents;
 
-	protected KeyStrategy outputKeyStrategy;
+  protected String outputKey;
 
-	protected String inputSchema;
-	protected Type inputType;
+  protected KeyStrategy outputKeyStrategy;
 
-	protected String outputSchema;
-	protected Class<?> outputType;
+  protected String inputSchema;
+  protected Type inputType;
 
-	protected ObservationRegistry observationRegistry;
+  protected String outputSchema;
+  protected Class<?> outputType;
 
-	protected ChatClientObservationConvention customObservationConvention;
+  protected ObservationRegistry observationRegistry;
 
-	public Builder name(String name) {
-		this.name = name;
-		return this;
-	}
+  protected ChatClientObservationConvention customObservationConvention;
 
-	public Builder chatClient(ChatClient chatClient) {
-		this.chatClient = chatClient;
-		return this;
-	}
+  public Builder name(String name) {
+    this.name = name;
+    return this;
+  }
 
-	public Builder model(ChatModel model) {
-		this.model = model;
-		return this;
-	}
+  public Builder chatClient(ChatClient chatClient) {
+    this.chatClient = chatClient;
+    return this;
+  }
 
-	public Builder chatOptions(ChatOptions chatOptions) {
-		this.chatOptions = chatOptions;
-		return this;
-	}
+  public Builder model(ChatModel model) {
+    this.model = model;
+    return this;
+  }
 
-	public Builder tools(List<ToolCallback> tools) {
-		this.tools = tools;
-		return this;
-	}
+  public Builder chatOptions(ChatOptions chatOptions) {
+    this.chatOptions = chatOptions;
+    return this;
+  }
 
-	public Builder tools(ToolCallback... tools) {
-		this.tools = Arrays.asList(tools);
-		return this;
-	}
+  public Builder tools(List<ToolCallback> tools) {
+    this.tools = tools;
+    return this;
+  }
 
-	public Builder resolver(ToolCallbackResolver resolver) {
-		this.resolver = resolver;
-		return this;
-	}
+  public Builder tools(ToolCallback... tools) {
+    this.tools = Arrays.asList(tools);
+    return this;
+  }
 
-	public Builder maxIterations(int maxIterations) {
-		this.maxIterations = maxIterations;
-		return this;
-	}
+  public Builder resolver(ToolCallbackResolver resolver) {
+    this.resolver = resolver;
+    return this;
+  }
 
-	public Builder compileConfig(CompileConfig compileConfig) {
-		this.compileConfig = compileConfig;
-		return this;
-	}
+  public Builder maxIterations(int maxIterations) {
+    this.maxIterations = maxIterations;
+    return this;
+  }
 
-	public Builder shouldContinueFunction(Function<OverAllState, Boolean> shouldContinueFunc) {
-		this.shouldContinueFunc = shouldContinueFunc;
-		return this;
-	}
+  public Builder compileConfig(CompileConfig compileConfig) {
+    this.compileConfig = compileConfig;
+    return this;
+  }
 
-	public Builder description(String description) {
-		this.description = description;
-		return this;
-	}
+  public Builder shouldContinueFunction(Function<OverAllState, Boolean> shouldContinueFunc) {
+    this.shouldContinueFunc = shouldContinueFunc;
+    return this;
+  }
 
-	public Builder instruction(String instruction) {
-		this.instruction = instruction;
-		return this;
-	}
+  public Builder description(String description) {
+    this.description = description;
+    return this;
+  }
 
-	public Builder systemPrompt(String systemPrompt) {
-		this.systemPrompt = systemPrompt;
-		return this;
-	}
+  public Builder instruction(String instruction) {
+    this.instruction = instruction;
+    return this;
+  }
 
-	public Builder outputKey(String outputKey) {
-		this.outputKey = outputKey;
-		return this;
-	}
+  public Builder systemPrompt(String systemPrompt) {
+    this.systemPrompt = systemPrompt;
+    return this;
+  }
 
-	public Builder outputKeyStrategy(KeyStrategy outputKeyStrategy) {
-		this.outputKeyStrategy = outputKeyStrategy;
-		return this;
-	}
+  public Builder outputKey(String outputKey) {
+    this.outputKey = outputKey;
+    return this;
+  }
 
-	public Builder inputSchema(String inputSchema) {
-		this.inputSchema = inputSchema;
-		return this;
-	}
+  public Builder outputKeyStrategy(KeyStrategy outputKeyStrategy) {
+    this.outputKeyStrategy = outputKeyStrategy;
+    return this;
+  }
 
-	public Builder inputType(Type inputType) {
-		this.inputType = inputType;
-		return this;
-	}
+  public Builder inputSchema(String inputSchema) {
+    this.inputSchema = inputSchema;
+    return this;
+  }
 
-	public Builder outputSchema(String outputSchema) {
-		this.outputSchema = outputSchema;
-		return this;
-	}
+  public Builder inputType(Type inputType) {
+    this.inputType = inputType;
+    return this;
+  }
 
-	public Builder outputType(Class<?> outputType) {
-		this.outputType = outputType;
-		return this;
-	}
+  public Builder outputSchema(String outputSchema) {
+    this.outputSchema = outputSchema;
+    return this;
+  }
 
-	public Builder includeContents(boolean includeContents) {
-		this.includeContents = includeContents;
-		return this;
-	}
+  public Builder outputType(Class<?> outputType) {
+    this.outputType = outputType;
+    return this;
+  }
 
-	public Builder returnReasoningContents(boolean returnReasoningContents) {
-		this.returnReasoningContents = returnReasoningContents;
-		return this;
-	}
+  public Builder includeContents(boolean includeContents) {
+    this.includeContents = includeContents;
+    return this;
+  }
 
-	public Builder hooks(List<Hook> hooks) {
-		this.hooks = hooks;
-		return this;
-	}
+  public Builder returnReasoningContents(boolean returnReasoningContents) {
+    this.returnReasoningContents = returnReasoningContents;
+    return this;
+  }
 
-	public Builder hooks(Hook... hooks) {
-		this.hooks = Arrays.asList(hooks);
-		return this;
-	}
+  public Builder hooks(List<Hook> hooks) {
+    this.hooks = hooks;
+    return this;
+  }
 
-	public Builder interceptors(List<Interceptor> interceptors) {
-		this.interceptors = interceptors;
-		return this;
-	}
+  public Builder hooks(Hook... hooks) {
+    this.hooks = Arrays.asList(hooks);
+    return this;
+  }
 
-	public Builder interceptors(Interceptor... interceptors) {
-		this.interceptors = Arrays.asList(interceptors);
-		return this;
-	}
+  public Builder interceptors(List<Interceptor> interceptors) {
+    this.interceptors = interceptors;
+    return this;
+  }
 
-	public Builder observationRegistry(ObservationRegistry observationRegistry) {
-		this.observationRegistry = observationRegistry;
-		return this;
-	}
+  public Builder interceptors(Interceptor... interceptors) {
+    this.interceptors = Arrays.asList(interceptors);
+    return this;
+  }
 
-	public Builder customObservationConvention(ChatClientObservationConvention customObservationConvention) {
-		this.customObservationConvention = customObservationConvention;
-		return this;
-	}
+  public Builder observationRegistry(ObservationRegistry observationRegistry) {
+    this.observationRegistry = observationRegistry;
+    return this;
+  }
 
-	public abstract ReactAgent build() throws GraphStateException;
+  public Builder customObservationConvention(
+      ChatClientObservationConvention customObservationConvention) {
+    this.customObservationConvention = customObservationConvention;
+    return this;
+  }
 
+  public Builder memory(AgentMemory memory) {
+    this.memory = memory;
+    return this;
+  }
+
+  public abstract ReactAgent build() throws GraphStateException;
 }

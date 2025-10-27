@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
  * @author Spring AI Alibaba
  * @since 1.0.0.3
  */
-public class MemoryStore extends BaseStore {
+public class InMemoryStore extends BaseStore {
 
 	/**
 	 * Thread-safe storage for store items. Key format: "namespace1/namespace2/key"

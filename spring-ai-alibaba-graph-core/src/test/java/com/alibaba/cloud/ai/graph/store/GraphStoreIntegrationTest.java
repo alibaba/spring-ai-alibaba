@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.store.stores.DatabaseStore;
 import com.alibaba.cloud.ai.graph.store.stores.FileSystemStore;
-import com.alibaba.cloud.ai.graph.store.stores.MemoryStore;
+import com.alibaba.cloud.ai.graph.store.stores.InMemoryStore;
 import com.alibaba.cloud.ai.graph.store.stores.MongoStore;
 import com.alibaba.cloud.ai.graph.store.stores.RedisStore;
 
@@ -61,7 +61,7 @@ public class GraphStoreIntegrationTest {
 	@Test
 	void testUserSessionWorkflowWithMemoryStore() throws Exception {
 		// Test user session workflow with memory store
-		testUserSessionWorkflow(new MemoryStore(), "Memory");
+		testUserSessionWorkflow(new InMemoryStore(), "Memory");
 	}
 
 	@Test
@@ -115,7 +115,7 @@ public class GraphStoreIntegrationTest {
 	@Test
 	void testMultiStepDataProcessingWithStore() throws Exception {
 		// Test multi-step data processing workflow with store persistence
-		MemoryStore store = new MemoryStore();
+		InMemoryStore store = new InMemoryStore();
 		String taskId = "task456";
 
 		Map<String, Object> input = Map.of("taskId", taskId, "data", "raw input data");
@@ -142,7 +142,7 @@ public class GraphStoreIntegrationTest {
 	@Test
 	void testStoreSearchInGraphWorkflow() throws Exception {
 		// Test using store search functionality in graph workflow
-		MemoryStore store = new MemoryStore();
+		InMemoryStore store = new InMemoryStore();
 
 		// Setup some historical data
 		setupHistoricalUserData(store);
@@ -219,7 +219,7 @@ public class GraphStoreIntegrationTest {
 
 				// Determine store type for verification
 				String storeType = "Unknown";
-				if (sessionStore instanceof MemoryStore)
+				if (sessionStore instanceof InMemoryStore)
 					storeType = "Memory";
 				else if (sessionStore instanceof FileSystemStore)
 					storeType = "FileSystem";
