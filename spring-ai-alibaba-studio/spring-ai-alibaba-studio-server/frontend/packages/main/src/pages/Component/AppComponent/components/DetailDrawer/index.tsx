@@ -33,8 +33,11 @@ export default function DetailDrawer(props: IProps) {
       const ret = await getAppComponentDetailByCode(props.data.code!);
       const componentDetailCfg = JSON.parse(ret.config);
       setState({
-        input: componentDetailCfg.input,
-        output: componentDetailCfg.output,
+        input: {
+          system_params: componentDetailCfg.input?.systemParams || [],
+          user_params: componentDetailCfg.input?.userParams || [],
+        },
+        output: componentDetailCfg.output || [],
       });
     } finally {
       setState({

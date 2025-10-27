@@ -237,7 +237,7 @@ public class GraphStoreIntegrationTest {
 			.addEdge("processRequest", "saveSession")
 			.addEdge("saveSession", END);
 
-		return workflow.compile(config).call(input);
+		return workflow.compile(config).invoke(input);
 	}
 
 	private Optional<OverAllState> runUserProfileCreationGraph(Store store, Map<String, Object> input)
@@ -276,7 +276,7 @@ public class GraphStoreIntegrationTest {
 			.addEdge("createProfile", "setPreferences")
 			.addEdge("setPreferences", END);
 
-		return workflow.compile(config).call(input);
+		return workflow.compile(config).invoke(input);
 	}
 
 	private Optional<OverAllState> runUserPreferencesUpdateGraph(Store store, Map<String, Object> input)
@@ -327,7 +327,7 @@ public class GraphStoreIntegrationTest {
 			.addEdge("loadExistingPrefs", "updatePrefs")
 			.addEdge("updatePrefs", END);
 
-		return workflow.compile(config).call(input);
+		return workflow.compile(config).invoke(input);
 	}
 
 	private Optional<OverAllState> runDataProcessingGraph(Store store, Map<String, Object> input) throws Exception {
@@ -382,7 +382,7 @@ public class GraphStoreIntegrationTest {
 			.addEdge("processData", "generateResult")
 			.addEdge("generateResult", END);
 
-		return workflow.compile(config).call(input);
+		return workflow.compile(config).invoke(input);
 	}
 
 	private Optional<OverAllState> runDataSearchGraph(Store store, Map<String, Object> input) throws Exception {
@@ -422,7 +422,7 @@ public class GraphStoreIntegrationTest {
 			.addEdge("searchData", "processResults")
 			.addEdge("processResults", END);
 
-		return workflow.compile(config).call(input);
+		return workflow.compile(config).invoke(input);
 	}
 
 	private void setupHistoricalUserData(Store store) {

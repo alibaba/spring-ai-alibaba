@@ -1,0 +1,341 @@
+{
+  "groups": [
+    {
+      "name": "spring.ai.alibaba.a2a.client.card",
+      "type": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties",
+      "description": "Configuration properties for A2A Agent Card."
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos",
+      "type": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
+      "description": "Configuration properties for Nacos A2A Registry."
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.registry",
+      "type": "com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosA2aRegistryProperties",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosA2aRegistryProperties",
+      "description": "Configuration properties for Nacos A2A Registry."
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server",
+      "type": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "description": "Configuration properties for A2A Server."
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card",
+      "type": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties",
+      "description": "Configuration properties for A2A Agent Card."
+    }
+  ],
+  "properties": [
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.name",
+      "type": "java.lang.String",
+      "description": "The name of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.description",
+      "type": "java.lang.String",
+      "description": "The description of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.url",
+      "type": "java.lang.String",
+      "description": "The url of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.provider",
+      "type": "io.a2a.spec.AgentProvider",
+      "description": "The provider information of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.documentation-url",
+      "type": "java.lang.String",
+      "description": "The documentation url of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.capabilities",
+      "type": "io.a2a.spec.AgentCapabilities",
+      "description": "The capabilities of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.default-input-modes",
+      "type": "java.util.List<java.lang.String>",
+      "description": "The default input modes of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.default-output-modes",
+      "type": "java.util.List<java.lang.String>",
+      "description": "The default output modes of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.skills",
+      "type": "java.util.List<io.a2a.spec.AgentSkill>",
+      "description": "The skills of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.supports-authenticated-extended-card",
+      "type": "java.lang.Boolean",
+      "description": "Whether the agent supports authenticated extended card.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.security-schemes",
+      "type": "java.util.Map<java.lang.String, io.a2a.spec.SecurityScheme>",
+      "description": "The security schemes of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.security",
+      "type": "java.util.List<java.util.Map<java.lang.String, java.util.List<java.lang.String>>>",
+      "description": "The security configuration of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.icon-url",
+      "type": "java.lang.String",
+      "description": "The icon url of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.additional-interfaces",
+      "type": "java.util.List<io.a2a.spec.AgentInterface>",
+      "description": "The additional interfaces of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.version",
+      "type": "java.lang.String",
+      "description": "The version of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.preferred-transport",
+      "type": "java.lang.String",
+      "description": "The preferred transport of the agent. enum of `JSONRPC`, `GRPC`, `HTTP+JSON`.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.protocol-version",
+      "type": "java.lang.String",
+      "description": "The protocol version of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.client.card.well-known-url",
+      "type": "java.lang.String",
+      "description": "The well known url of agent card.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.server-addr",
+      "type": "java.lang.String",
+      "description": "Nacos server address.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
+      "defaultValue": "localhost:8848"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.namespace",
+      "type": "java.lang.String",
+      "description": "Nacos namespace for A2A service.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
+      "defaultValue": "public"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.username",
+      "type": "java.lang.String",
+      "description": "Nacos username to authenticate.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.password",
+      "type": "java.lang.String",
+      "description": "Nacos password to authenticate.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.access-key",
+      "type": "java.lang.String",
+      "description": "Nacos access key to authenticate.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.secret-key",
+      "type": "java.lang.String",
+      "description": "Nacos secret key to authenticate.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.endpoint",
+      "type": "java.lang.String",
+      "description": "Nacos server endpoint.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties",
+      "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.registry.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable nacos auto registry agent card to nacos.",
+      "defaultValue": "true"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.registry.register-as-latest",
+      "type": "java.lang.Boolean",
+      "description": "Register agent card as latest version.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosA2aRegistryProperties",
+      "defaultValue": "true"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.nacos.discovery.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable nacos auto discovery agent card from nacos.",
+      "defaultValue": "true"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.type",
+      "type": "java.lang.String",
+      "description": "Type of A2A Server, enum of `JSONRPC`, `GRPC`, `HTTP+JSON`.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "defaultValue": "JSONRPC"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.agent-card-url",
+      "type": "java.lang.String",
+      "description": "The agent card well known url.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "defaultValue": "/.well-known/agent.json"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.message-url",
+      "type": "java.lang.String",
+      "description": "The basic context path url for request A2A server.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "defaultValue": "/a2a"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.address",
+      "type": "java.lang.String",
+      "description": "The server address for request A2A server.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "defaultValue": "${server.address}"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.port",
+      "type": "java.lang.Integer",
+      "description": "The server port for request A2A server.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "defaultValue": "${server.port}"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.version",
+      "type": "java.lang.String",
+      "description": "The version for A2A server.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
+      "defaultValue": "1.0.0"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.name",
+      "type": "java.lang.String",
+      "description": "The name of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.description",
+      "type": "java.lang.String",
+      "description": "The description of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.url",
+      "type": "java.lang.String",
+      "description": "The url of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.provider",
+      "type": "io.a2a.spec.AgentProvider",
+      "description": "The provider information of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.documentation-url",
+      "type": "java.lang.String",
+      "description": "The documentation url of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.capabilities",
+      "type": "io.a2a.spec.AgentCapabilities",
+      "description": "The capabilities of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.default-input-modes",
+      "type": "java.util.List<java.lang.String>",
+      "description": "The default input modes of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.default-output-modes",
+      "type": "java.util.List<java.lang.String>",
+      "description": "The default output modes of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.skills",
+      "type": "java.util.List<io.a2a.spec.AgentSkill>",
+      "description": "The skills of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.supports-authenticated-extended-card",
+      "type": "java.lang.Boolean",
+      "description": "Whether the agent supports authenticated extended card.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.security-schemes",
+      "type": "java.util.Map<java.lang.String, io.a2a.spec.SecurityScheme>",
+      "description": "The security schemes of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.security",
+      "type": "java.util.List<java.util.Map<java.lang.String, java.util.List<java.lang.String>>>",
+      "description": "The security configuration of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.icon-url",
+      "type": "java.lang.String",
+      "description": "The icon url of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.card.additional-interfaces",
+      "type": "java.util.List<io.a2a.spec.AgentInterface>",
+      "description": "The additional interfaces of the agent.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    }
+  ],
+  "hints": []
+}

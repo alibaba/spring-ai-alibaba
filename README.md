@@ -6,138 +6,174 @@
 [![Maven central](https://maven-badges.herokuapp.com/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba)
 <img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
 
-[中文版本](./README-zh.md)
+<html>
+    <h3 align="center">
+      A code-first framework for building and Agentic, Workflow, and Multi-agent applications.
+    </h3>
+    <h3 align="center">
+      <a href="https://java2ai.com/">Agent Framework Docs(WIP)</a>,
+      <a href="https://java2ai.com/">Graph Docs(WIP)</a>,
+      <a href="https://github.com/spring-ai-alibaba/spring-ai-extensions">Spring AI</a>,
+      <a href="https://github.com/spring-ai-alibaba/examples">Examples</a>.
+    </h3>
+</html>
 
-[Spring AI Alibaba](https://java2ai.com) is an agentic AI framework for building ChatBot, Workflow, and Multi-agent applications.
+## What's Agent Framework
+
+<p align="center">
+    <img src="./docs/imgs/saa-architecture.png" alt="architecture" style="max-width: 740px; height: 508px" />
+</p>
+
+Spring AI Alibaba Agent Framework is an agent development framework centered around the design philosophy of **ReactAgent**, enabling developers to build agents with core capabilities such as automatic **Context Engineering** and **Human In The Loop** interaction.
+
+For scenarios requiring more complex process control, Agent Framework offers built-in workflows like `SequentialAgent`, `ParallelAgent`, `RoutingAgent`, and `LoopAgent` based on its **Graph Runtime**. Developers can also flexibly orchestrate more complex workflows using the Graph API.
 
 ## Core Features
 
-<p align="center">
-    <img src="./docs/imgs/spring-ai-alibaba-architecture.png" alt="architecture" style="max-width: 740px; height: 508px" />
-</p>
+* **ReactAgent**: Build intelligent agents with reasoning and acting capabilities, following the ReAct (Reasoning + Acting) paradigm for iterative problem-solving.
 
+* **Multi-Agent Orchestration**: Compose multiple agents with built-in patterns including `SequentialAgent`, `ParallelAgent`, `LlmRoutingAgent`, and `LoopAgent` for complex task execution.
 
-Spring AI Alibaba provides the following core capabilities to help developers quickly build Chatbot, Workflow, or Multi-agent applications:
+* **Context Engineering**: Built-in best practices for prompt engineering, context management, and conversation flow control to improve agent reliability and performance.
 
-1. **Graph based multi-agent framework**, with Spring AI Alibaba Graph, developers can quickly build workflows and multi-agent applications in ease. Graph code can be generated from Dify DSL and debugged in a visual way.
-2. **Enterprise-ready AI ecosystem integration, bring agents from demo to production.** Spring AI Alibaba supports integration with the Aliyun Bailian platform, providing LLM model service and RAG knowledge  solutions; Support seamless integration of AI observation products such as ARMS and Langfuse; Support enterprise level MCP integration, including Nacos MCP Registry for MCP discovery and routing, etc.
-3. **Plan-Act agent products and platforms.**
-* JManus, Spring AI Alibaba based Manus implementation, supports delicacy plan adjustment, plan reuse.
-* DeepResearch, Spring AI Alibaba based research and report agent with powerful tools like search engines, web crawlers, Python and MCP services.
+* **Human In The Loop**: Seamlessly integrate human feedback and approval steps into agent workflows, enabling supervised execution for critical tools and operations.
 
-## Get Started
+- **Streaming Support**: Real-time streaming of agent responses
 
-To quickly get started with Spring AI Alibaba, add 'spring-ai-alibaba-starter-dashscope' dependency to your java project.
+- **Error Handling**: Robust error recovery and retry mechanisms
+
+* **Graph-based Workflow**: Graph based workflow runtime and api for conditional routing, nested graphs, parallel execution, and state management. Export workflows to PlantUML and Mermaid formats.
+
+* **A2A Support**: Agent-to-Agent communication support with Nacos integration, enabling distributed agent coordination and collaboration across services.
+
+* **Rich Model, Tool and MCP Support**: Leveraging core concepts of Spring AI, supports multiple LLM providers (DashScope, OpenAI, etc.), tool calling, and Model Context Protocol (MCP).
+
+## Getting Started
+
+### Prerequisites
+
+* Requires JDK 17+.
+* Choose your LLM provider and get the API-KEY.
+
+### Add Dependencies
 
 ```xml
-<dependencyManagement>
-  <dependencies>
-    <dependency>
-      <groupId>com.alibaba.cloud.ai</groupId>
-      <artifactId>spring-ai-alibaba-bom</artifactId>
-      <version>1.0.0.3</version>
-      <type>pom</type>
-      <scope>import</scope>
-    </dependency>
-  </dependencies>
-</dependencyManagement>
-
 <dependencies>
   <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
+    <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+    <version>1.1.0.0-SNAPSHOT</version>
+  </dependency>
+  <!-- Assume you are going to use DashScope Model. Refer to docs for how to choose model.-->
+  <dependency>
+    <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+    <version>1.1.0.0-SNAPSHOT</version>
   </dependency>
 </dependencies>
 ```
 
-Please check [Quick Start](https://java2ai.com/docs/1.0.0.3/get-started/chatbot) on our official website to learn more details. More starters include `spring-ai-alibaba-graph-core`, `spring-ai-alibaba-starter-nl2sql`,`spring-ai-alibaba-starter-nacos-mcp-client`, etc, please refer to the official website documentation.
+> Clone this project and build from source using `mvn clean install -DskipTests` before we make an official release.
 
-> NOTE!
-> 1. Requires JDK 17+.
-> 2. If there are any `spring-ai` dependency issue, please lean how to configure the `spring-milestones` Maven repository on [FAQ page](https://java2ai.com/docs/1.0.0.3/faq).
+### Create Your First Agent
 
-### Playground and Example
+**1. A simple ReactAgent**
 
-The community has developed a [Playground](https://github.com/springaialibaba/spring-ai-alibaba-examples/tree/main/spring-ai-alibaba-playground) agent that includes a complete front-end UI and back-end implementation. The Playground back-end is developed using Spring AI Alibaba and gives users a quick overview of all core framework capabilities such as chatbot, multi-round conversations, image generation, multi-modality, tool calling, MCP, and RAG.
+Initialize `ChatModel` instance first.
 
-<p align="center">
-    <img src="./docs/imgs/playground.png" alt="PlayGround" style="max-width: 949px; height: 537px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" />
-</p>
+```java
+// Create DashScopeApi instance using the API key from environment variable
+DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+// Create DashScope ChatModel instance
+this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
+```
 
-You can [deploy the Playground example locally](https://github.com/springaialibaba/spring-ai-alibaba-examples) and access the experience through your browser, or copy the source code and tweak it to your own business needs to build your own set of AI apps more quickly.
-For more examples, please refer to our official example repository: [https://github.com/springaialibaba/spring-ai-alibaba-examples](https://github.com/springaialibaba/spring-ai-alibaba-examples)
+Create a basic `ReactAgent` instance named `writer_agent`.
 
-## Spring AI Alibaba Graph Multi-agent Framework
+```java
+ReactAgent writerAgent = ReactAgent.builder()
+	.name("writer_agent")
+	.model(chatModel)
+	.description("可以写文章。")
+	.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+	.outputKey("article")
+	.build();
+```
 
-Spring AI Alibaba Graph enables developers to implement workflow and multi-agent application orchestration. Its core design is mainly from LangGraph, and we have added a rich set of prebuilt Nodes and simplified the Graph State definition, allowing developers to better integrate with low-code platforms and write popular multi-agent pattern applications.
+**2. A workflow agent that composes two agents**
 
-Core features:
+Let's create another agent called `reviewer_agent` and compose these two agents with `SequentialAgent` workflow agent.
 
-+ Workflow, built-in workflow nodes, aligned with mainstream low-code platforms;
-+ Multi-agent, built-in ReAct Agent, Supervisor and other modes;
-+ Native streaming support;
-+ Human-in-the-loop, waiting for human confirmation, modifying states and resuming execution;
-+ Memory and persistent storage;
-+ Graph state snapshot;
-+ Nested and paralleled graph;
-+ PlantUML and Mermaid format export.
+```java
+ReactAgent reviewerAgent = ReactAgent.builder()
+	.name("reviewer_agent")
+	.model(chatModel)
+	.description("可以对文章进行评论和修改。")
+	.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最终只返回修改后的文章，不要包含任何评论信息。")
+	.outputKey("reviewed_article")
+	.build();
 
-## Enterprise-ready AI Ecosystem Integration
+SequentialAgent blogAgent = SequentialAgent.builder()
+	.name("blog_agent")
+	.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论。")
+	.subAgents(List.of(writerAgent, reviewerAgent)) // writerAgent and reviewerAgent will be executed in sequential order.
+	.build();
+```
 
-To bring agent from demo to production, developers and organizations face lots of challenges, from evaluation, tracing, MCP integration, prompt management, to token rate-limit, etc. Spring AI Alibaba, as am enterprise solution incubated from serving enterprise agent development, provides profound solutions by integrating with Nacos MCP Registry, Higress AI gateway, Alibaba Cloud ARMS, Alibaba Cloud Vector Stores, Alibaba Cloud Bailian platform, etc.
+**3. Call the agent**
 
-<p align="center">   
-    <img src="https://img.alicdn.com/imgextra/i2/O1CN01sON0wZ21yKROGt2SJ_!!6000000007053-2-tps-5440-2928.png" alt="spring-ai-alibaba-architecture" style="max-width: 700px; height: 400px"/> 
-</p>
+```java
+// Call a single agent
+AssistantMessage message = writerAgent.call("帮我写一篇100字左右散文。");
 
-1. **Distributed MCP discovery and proxy:** Support distributed MCP Server discovery and load balancing based on Nacos MCP Registry. Zero code change to transform HTTP and Dubbo services into MCP servers with  Spring AI Alibaba MCP Gateway and Higress;
-2. **Higress LLM model proxy:** Higress as a LLM proxy, `spring-ai-starter-model-openai` adapter can leverage the unified Higress OpenAI model proxy API;
-3. **Better and easy data integration:**
-	- a. Bailian RAG integration. Leverage Bailian platform's excellent performance on data filtering, chunking, and vectoring, while using Spring AI Alibaba to do RAG retrieval;
-	- b. Bailian ChatBI integration. Spring AI Alibaba Nl2SQL, built on Bailian ChatBI, completely open-source, can generate SQL based on natural language query.
-4. **Observation and evaluation platforms:** Thanks to the sdk-native instrumentation of Spring AI, observation and evaluation can be achieved by reporting to OpenTelemetry compatible platforms such as Langfuse and Alibaba Cloud ARMS.
+// Call SequentialAgent
+Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的散文");
+```
 
-## Agent Products and Platforms
+While the documentation is still working in progress, you can also [check Unit Tests for more usage references](https://github.com/alibaba/spring-ai-alibaba/tree/main/spring-ai-alibaba-agent-framework/src/test/java/com/alibaba/cloud/ai/graph/agent).
 
-### JManus
+> NOTE!.
+> If you have encountered any `spring-ai` dependency issue, please lean how to configure the `spring-milestones` Maven repository on [FAQ page](https://java2ai.com/docs/1.0.0.3/faq).
 
-The emergence of Manus has given people unlimited space with the ability of general intelligent agents to automatically plan-act on various tasks. It is expected to be very good at solving open-ended issues and can have a wide range of applications in daily life, work, and other scenarios.
+## 📚 Documentation (Working In Progress...)
+* Overview - High level overview of the framework
+* Quick Start - Get started with a simple agent
+* Tutorials - Step by step tutorials
+* User Guide - In-depth user guide for building agents and workflows
 
-JManus is not just a Spring AI Alibaba version Manus replica, it's also designed as a platform that can help developers to build their own fine-tuned agents targeting specific business scenarios. The typical characteristic of enterprise level agent is determinism, that means we need customized tools and sub agents, as well as stable and deterministic planning and processes. Therefore, we hope that JManus can become an intelligent agent development platform, allowing users to build their own domain specific intelligent agent implementations in the most intuitive and low-cost way.
+## Project Structure
 
-<p align="center">
-    <img src="./docs/imgs/jmanus.png" alt="jmanus" style="max-width: 749px; height: 467px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);" />
-</p>
+This project consists of three core components:
 
-### DeepResearch
+* **Agent Framework**: A ReactAgent-based development framework designed for building intelligent agents with built-in context engineering best practices. For scenarios requiring more complex flow control, the Agent Framework leverages the underlying Graph runtime to provide orchestration capabilities, supporting SequentialAgent, ParallelAgent, LoopAgent, RoutingAgent, and more. Developers can also use the Graph API to flexibly orchestrate their own workflows.
 
-Spring AI Alibaba DeepResearch is a deep research agent developed based on the Spring AI Alibaba Graph, which includes a complete front-end web UI (under development) and back-end implementation. DeepResearch can help users complete various deep research reports with the help of large models and a series of carefully designed tools such as Web Search, Crawling, Python script engine, etc.
+* **Graph**: The underlying runtime for Agent Framework. We recommend developers to use Agent Framework but it's totally fine to use the Graph API directly. Graph is a low-level workflow and multi-agent orchestration framework that enables developers to implement complex application orchestration. Inspired by LangGraph, it features a rich set of prebuilt nodes and simplified Graph State definitions, making it easier to integrate with low-code platforms and implement popular multi-agent patterns.
 
-<p align="center">
-    <img src="./docs/imgs/deepresearch.png" alt="Deep Research" style="max-width: 770px; height: 850px">
-</p>
+* **Spring Boot Starters**: Starters integrating Agent Framework with Nacos to provide A2A and dynamic config features.
 
-## Contribution Guide
-
-Please refer to the [Contribution Guide](./CONTRIBUTING.md) to learn how to participate in the development of Spring AI
-Alibaba.
+## Spring AI Alibaba Ecosystem
+ Repository | Description | ⭐
+  --- | --- | ---
+| [Spring AI Alibaba Graph](https://github.com/alibaba/spring-ai-alibaba/tree/main/spring-ai-alibaba-graph-core) | A low-level orchestration framework and runtime for building, managing, and deploying long-running, stateful agents. | ![GitHub Repo stars](https://img.shields.io/github/stars/alibaba/spring-ai-alibaba?style=for-the-badge&label=)
+| [Spring AI Alibaba Admin](https://github.com/spring-ai-alibaba/spring-ai-alibaba-admin) |  Local visualization toolkit for the development of agent applications, supporting project management, runtime visualization, tracing, and agent evaluation. | ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/spring-ai-alibaba-admin?style=for-the-badge&label=)
+| [Spring AI Extensions](https://github.com/spring-ai-alibaba/spring-ai-extensions) | Extended implementations for Spring AI core concepts, including DashScopeChatModel, MCP registry, etc. |  ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/spring-ai-extensions?style=for-the-badge&label=)
+| [Spring AI Alibaba Examples](https://github.com/spring-ai-alibaba/examples) | Spring AI Alibaba Examples. |  ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/examples?style=for-the-badge&label=)
+| [JManus](https://github.com/spring-ai-alibaba/jmanus) | A Java implementation of Manus built with Spring AI Alibaba, currently used in many applications within Alibaba Group. | ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/jmanus?style=for-the-badge&label=)
+| [DataAgent](https://github.com/spring-ai-alibaba/dataagent) | A natural language to SQL project based on Spring AI Alibaba, enabling you to query databases directly with natural language without writing complex SQL. | ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/dataagent?style=for-the-badge&label=)
+| [DeepResearch](https://github.com/spring-ai-alibaba/deepresearch) |  Deep Research implemented based on spring-ai-alibaba-graph. | ![GitHub Repo stars](https://img.shields.io/github/stars/spring-ai-alibaba/deepresearch?style=for-the-badge&label=)
 
 ## Contact Us
 
-* Dingtalk Group (钉钉群), search `94405033092` and join.
+* Dingtalk Group (钉钉群), search `130240015687` and join.
 * WeChat Group (微信公众号), scan the QR code below and follow us.
 
-<img src="./docs/imgs/wechat-account.png" alt="Deep Research" style="max-width: 200px; height: 200px;">
 
-## Credits
+## Star History
 
-Some of this project's ideas and codes are inspired by or rewrote from the following projects. Great thanks to those who
-have created and open-sourced these projects.
+[![Star History Chart](https://starchart.cc/alibaba/spring-ai-alibaba.svg?variant=adaptive)](https://starchart.cc/alibaba/spring-ai-alibaba)
 
-* [Spring AI](https://github.com/spring-projects/spring-ai), a Spring-friendly API and abstractions for developing AI
-  applications licensed under the Apache License 2.0.
-* [Langgraph](https://github.com/langchain-ai/langgraph), a library for building stateful, multi-actor applications with
-  LLMs, used to create agent and multi-agent workflows licensed under the MIT license.
-* [Langgraph4J](https://github.com/bsorrentino/langgraph4j), a porting of
-  original [LangGraph](https://github.com/langchain-ai/langgraph) from
-  the [LangChain AI project](https://github.com/langchain-ai) in Java fashion.
+---
+
+<p align="center">
+    Made with ❤️ by the Spring AI Alibaba Team
+
