@@ -16,48 +16,34 @@
 package com.alibaba.cloud.ai.graph.checkpoint.config;
 
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
-import jodd.util.StringUtil;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SaverConfig {
 
-	private Map<String, BaseCheckpointSaver> savers = new ConcurrentHashMap<>();
-
-	private String type = SaverEnum.MEMORY.getValue();
-
-	public String getType() {
-		return type;
-	}
-
-	public SaverConfig setType(String type) {
-		this.type = type;
-		return this;
-	}
+	private final List<BaseCheckpointSaver> savers = new ArrayList<>();
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public SaverConfig register(String type, BaseCheckpointSaver saver) {
-		// or computeIfPresent?
-		savers.computeIfAbsent(type, s -> saver);
+	public SaverConfig register(BaseCheckpointSaver saver) {
+		savers.add(saver);
 		return this;
 	}
 
-	public BaseCheckpointSaver get(String type) {
-		if (StringUtil.isEmpty(type))
-			throw new IllegalArgumentException("type isn't allow null");
-		return savers.get(type);
+	public BaseCheckpointSaver get() {
+		if (savers.isEmpty()) {
+			return null;
+		}
+		if (savers.size() == 1) {
+			return savers.get(0);
+		}
+		throw new IllegalStateException("Multiple savers configured, but no specific one requested.");
 	}
 
-	public BaseCheckpointSaver get() {
-		if (savers.size() == 1) {
-			return savers.values().iterator().next();
-		}
-		return savers.get(this.type);
+	public List<BaseCheckpointSaver> getAll() {
+		return savers;
 	}
 
 	public static class Builder {
@@ -68,13 +54,8 @@ public class SaverConfig {
 			this.config = new SaverConfig();
 		}
 
-		public Builder type(String type) {
-			this.config.type = type;
-			return this;
-		}
-
-		public Builder register(String type, BaseCheckpointSaver saver) {
-			this.config.register(type, saver);
+		public Builder register(BaseCheckpointSaver saver) {
+			this.config.register(saver);
 			return this;
 		}
 

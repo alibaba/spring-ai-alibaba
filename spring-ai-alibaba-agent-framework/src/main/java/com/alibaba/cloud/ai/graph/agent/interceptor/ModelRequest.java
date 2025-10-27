@@ -18,7 +18,9 @@ package com.alibaba.cloud.ai.graph.agent.interceptor;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Request object for model calls.
@@ -26,18 +28,28 @@ import java.util.List;
  */
 public class ModelRequest {
 
+	private final Map<String, Object> context;
 	private final List<Message> messages;
 	private final ChatOptions options;
 	private final List<String> tools;
 
-	public ModelRequest(List<Message> messages, ChatOptions options, List<String> tools) {
+	public ModelRequest(List<Message> messages, ChatOptions options, List<String> tools, Map<String, Object> context) {
 		this.messages = messages;
 		this.options = options;
 		this.tools = tools;
+		this.context = context;
 	}
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	public static Builder builder(ModelRequest request) {
+		return new Builder()
+				.messages(request.messages)
+				.options(request.options)
+				.tools(request.tools)
+				.context(request.context);
 	}
 
 	public List<Message> getMessages() {
@@ -52,10 +64,15 @@ public class ModelRequest {
 		return tools;
 	}
 
+	public Map<String, Object> getContext() {
+		return context;
+	}
+
 	public static class Builder {
 		private List<Message> messages;
 		private ChatOptions options;
 		private List<String> tools;
+		private Map<String, Object> context;
 
 		public Builder messages(List<Message> messages) {
 			this.messages = messages;
@@ -72,8 +89,13 @@ public class ModelRequest {
 			return this;
 		}
 
+		public Builder context(Map<String, Object> context) {
+			this.context = new HashMap<>(context);
+			return this;
+		}
+
 		public ModelRequest build() {
-			return new ModelRequest(messages, options, tools);
+			return new ModelRequest(messages, options, tools, context);
 		}
 	}
 }

@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.store.Store;
 import io.micrometer.observation.ObservationRegistry;
@@ -43,22 +42,17 @@ public class CompileConfig {
 	// Configuration Fields
 	// ================================================================================================================
 
-	private SaverConfig saverConfig = new SaverConfig().register(SaverEnum.MEMORY.getValue(), new MemorySaver());
+	private SaverConfig saverConfig = new SaverConfig().register(new MemorySaver());
+	private boolean releaseThread = false;
+	private Store store;
 
+	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 	private Deque<GraphLifecycleListener> lifecycleListeners = new LinkedBlockingDeque<>(25);
 
 	// private BaseCheckpointSaver checkpointSaver; // replaced with SaverConfig
 	private Set<String> interruptsBefore = Set.of();
-
 	private Set<String> interruptsAfter = Set.of();
-
-	private boolean releaseThread = false;
-
 	private boolean interruptBeforeEdge = false;
-
-	private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
-
-	private Store store;
 
 	// ================================================================================================================
 	// Getter Methods
@@ -113,16 +107,6 @@ public class CompileConfig {
 	 */
 	public Set<String> interruptsAfter() {
 		return interruptsAfter;
-	}
-
-	/**
-	 * Retrieves a checkpoint saver based on the specified type from the saver
-	 * configuration.
-	 * @param type The type of the checkpoint saver to retrieve.
-	 * @return An Optional containing the checkpoint saver if available; otherwise, empty.
-	 */
-	public Optional<BaseCheckpointSaver> checkpointSaver(String type) {
-		return ofNullable(saverConfig.get(type));
 	}
 
 	/**

@@ -98,12 +98,12 @@ public class ReactAgent extends BaseAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, Builder builder) throws GraphStateException {
+	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
-		this.compileConfig = builder.compileConfig;
+		this.compileConfig = compileConfig;
 		this.shouldContinueFunc = builder.shouldContinueFunc;
 		this.hooks = builder.hooks;
 		this.modelInterceptors = builder.modelInterceptors;

@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -166,6 +167,13 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 			return Optional.empty();
 		}
 		return ofNullable(interruptedNodes).map(m -> m.get(key));
+	}
+
+
+	// FIXME, allow modification or not?
+	@Override
+	public Optional<Map<String, Object>> metadata() {
+		return Optional.of(Collections.unmodifiableMap(metadata));
 	}
 
 	/**
