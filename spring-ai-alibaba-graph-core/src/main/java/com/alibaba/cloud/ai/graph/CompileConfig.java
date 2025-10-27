@@ -54,9 +54,15 @@ public class CompileConfig {
 	private Set<String> interruptsAfter = Set.of();
 	private boolean interruptBeforeEdge = false;
 
+	private int recursionLimit = 25;
+
 	// ================================================================================================================
 	// Getter Methods
 	// ================================================================================================================
+
+	public int recursionLimit() {
+		return recursionLimit;
+	}
 
 	/**
 	 * Returns the current state of the thread release flag.
@@ -169,6 +175,14 @@ public class CompileConfig {
 		 */
 		protected Builder(CompileConfig config) {
 			this.config = new CompileConfig(config);
+		}
+
+		public Builder recursionLimit(int recursionLimit) {
+			if( recursionLimit <= 0 ) {
+				throw new IllegalArgumentException("recursionLimit must be > 0!");
+			}
+			this.config.recursionLimit = recursionLimit;
+			return this;
 		}
 
 		/**

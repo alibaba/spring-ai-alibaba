@@ -242,7 +242,12 @@ public abstract class Builder {
 		SaverConfig saverConfig = SaverConfig.builder()
 				.register(saver)
 				.build();
-		return CompileConfig.builder().saverConfig(saverConfig).store(store).releaseThread(releaseThread).build();
+		return CompileConfig.builder()
+				.saverConfig(saverConfig).
+				store(store)
+				.recursionLimit(Integer.MAX_VALUE)
+				.releaseThread(releaseThread)
+				.build();
 	}
 
 	public abstract ReactAgent build() throws GraphStateException;

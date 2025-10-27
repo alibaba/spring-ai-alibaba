@@ -90,7 +90,7 @@ public class ReactAgent extends BaseAgent {
 
 	private List<ToolInterceptor> toolInterceptors;
 
-	private int max_iterations = 10;
+	private int maxIterations = 10;
 
 	private int iterations = 0;
 
@@ -113,6 +113,7 @@ public class ReactAgent extends BaseAgent {
 		this.inputType = builder.inputType;
 		this.outputSchema = builder.outputSchema;
 		this.outputType = builder.outputType;
+		this.maxIterations = builder.maxIterations;
 
 		// Set interceptors to nodes
 		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
@@ -542,7 +543,7 @@ public class ReactAgent extends BaseAgent {
 
 	private EdgeAction makeModelToTools(String modelDestination, String endDestination) {
 		return state -> {
-			if (iterations++ > max_iterations) {
+			if (iterations++ > maxIterations) {
 				return endDestination;
 			}
 
