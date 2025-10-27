@@ -246,7 +246,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		ChatOptions structuredOutputOptions = StructuredOutputIntegration.prepareStructuredOutputOptions(
 			outputSchema,
 			toolCallingChatOptions,
-			filteredToolCallbacks
+			filteredToolCallbacks,
+			chatClient
 		);
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()

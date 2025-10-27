@@ -109,19 +109,11 @@
             <version>${spring-ai-extensions.version}</version>
             <scope>test</scope>
         </dependency>
-        
-        <!-- OpenAI dependency for NATIVE mode structured output -->
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-openai</artifactId>
-        </dependency>
-        
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-openai</artifactId>
             <scope>test</scope>
         </dependency>
-        
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-deepseek</artifactId>

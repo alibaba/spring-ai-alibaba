@@ -20,9 +20,8 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.ResponseFormat;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +35,8 @@ public class StructuredOutputIntegration {
     public static ChatOptions prepareStructuredOutputOptions(
             String outputSchema,
             ToolCallingChatOptions baseToolCallingOptions,
-            List<ToolCallback> toolCallbacks) {
+            List<ToolCallback> toolCallbacks,
+            Object chatClient) {
         if (!isJsonSchema(outputSchema)) {
             return baseToolCallingOptions;
         }
@@ -46,15 +46,29 @@ public class StructuredOutputIntegration {
         } catch (Exception e) {
             return baseToolCallingOptions;
         }
-        String modelName = baseToolCallingOptions != null ? baseToolCallingOptions.getModel() : null;
+
+        String modelName = null;
+        if (baseToolCallingOptions != null) {
+            modelName = baseToolCallingOptions.getModel();
+        }
+        if (modelName == null && chatClient != null) {
+            modelName = extractModelNameFromChatClient(chatClient);
+        }
+        
         String provider = inferProvider(modelName);
         StructuredOutputSupport.Mode mode = StructuredOutputSupport.detectMode(provider, null);
+        
         // NATIVE
         if (mode == StructuredOutputSupport.Mode.NATIVE) {
-            return copyToOpenAI(baseToolCallingOptions)
-                    .responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
-                    .build();
-        } else if (mode == StructuredOutputSupport.Mode.TOOLCALL) {
+            ChatOptions nativeOptions = trySetResponseFormatWithReflection(baseToolCallingOptions);
+            if (nativeOptions != null) {
+                return nativeOptions;
+            }
+            return baseToolCallingOptions;
+        }
+        
+        // TOOLCALL
+        if (mode == StructuredOutputSupport.Mode.TOOLCALL) {
             ToolCallback formatOutputTool = StructuredOutputToolBinding.fromSchema(
                 schema,
                 StructuredOutputSupport.getName()
@@ -68,6 +82,25 @@ public class StructuredOutputIntegration {
                     .build();
         }
         return baseToolCallingOptions;
+    }
+
+    private static String extractModelNameFromChatClient(Object chatClient) {
+        if (chatClient == null) {
+            return null;
+        }
+        
+        try {
+            java.lang.reflect.Field defaultOptionsField = chatClient.getClass().getDeclaredField("defaultOptions");
+            defaultOptionsField.setAccessible(true);
+            ChatOptions defaultOptions = (ChatOptions) defaultOptionsField.get(chatClient);
+            
+            if (defaultOptions != null) {
+                return defaultOptions.getModel();
+            }
+        } catch (Exception e) {
+        }
+        
+        return null;
     }
 
     private static String inferProvider(String modelName) {
@@ -165,14 +198,100 @@ public class StructuredOutputIntegration {
                 .toolCallbacks(base.getToolCallbacks());
     }
 
-    private static OpenAiChatOptions.Builder copyToOpenAI(ToolCallingChatOptions base) {
-        return OpenAiChatOptions.builder()
-                .model(base.getModel())
-                .temperature(base.getTemperature())
-                .maxTokens(base.getMaxTokens())
-                .topP(base.getTopP())
-                .frequencyPenalty(base.getFrequencyPenalty())
-                .presencePenalty(base.getPresencePenalty());
+    private static ChatOptions trySetResponseFormatWithReflection(ToolCallingChatOptions base) {
+        if (base == null) {
+            return null;
+        }
+
+        try {
+            Class<?> openAiOptionsClass = Class.forName("org.springframework.ai.openai.OpenAiChatOptions");
+
+            Method builderMethod = openAiOptionsClass.getMethod("builder");
+            Object builder = builderMethod.invoke(null);
+
+            Class<?> builderClass = builder.getClass();
+            setFieldIfExists(builderClass, builder, "model", base.getModel());
+            setFieldIfExists(builderClass, builder, "temperature", base.getTemperature());
+            setFieldIfExists(builderClass, builder, "maxTokens", base.getMaxTokens());
+            setFieldIfExists(builderClass, builder, "topP", base.getTopP());
+            setFieldIfExists(builderClass, builder, "frequencyPenalty", base.getFrequencyPenalty());
+            setFieldIfExists(builderClass, builder, "presencePenalty", base.getPresencePenalty());
+
+            Object responseFormat = createJsonObjectResponseFormat();
+            if (responseFormat != null) {
+                Method responseFormatMethod = null;
+                for (Method m : builderClass.getMethods()) {
+                    if (m.getName().equals("responseFormat") && 
+                        m.getParameterCount() == 1 &&
+                        m.getParameterTypes()[0].isAssignableFrom(responseFormat.getClass())) {
+                        responseFormatMethod = m;
+                        break;
+                    }
+                }
+                
+                if (responseFormatMethod != null) {
+                    responseFormatMethod.invoke(builder, responseFormat);
+                }
+            }
+
+            Method buildMethod = builderClass.getMethod("build");
+            return (ChatOptions) buildMethod.invoke(builder);
+            
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static Object createJsonObjectResponseFormat() {
+        try {
+            Class<?> responseFormatClass = Class.forName("org.springframework.ai.openai.api.ResponseFormat");
+
+            Method builderMethod = responseFormatClass.getMethod("builder");
+            Object builder = builderMethod.invoke(null);
+
+            Class<?> typeClass = Class.forName("org.springframework.ai.openai.api.ResponseFormat$Type");
+
+            Object jsonObjectType = null;
+            Object[] enumConstants = typeClass.getEnumConstants();
+            
+            if (enumConstants != null) {
+                for (Object enumConstant : enumConstants) {
+                    String enumName = enumConstant.toString();
+                    if ("JSON_OBJECT".equals(enumName) || 
+                        "json_object".equals(enumName) ||
+                        "JSON".equals(enumName)) {
+                        jsonObjectType = enumConstant;
+                        break;
+                    }
+                }
+            }
+            
+            if (jsonObjectType == null) {
+                return null;
+            }
+
+            Class<?> builderClass = builder.getClass();
+            Method typeMethod = builderClass.getMethod("type", typeClass);
+            typeMethod.invoke(builder, jsonObjectType);
+
+            Method buildMethod = builderClass.getMethod("build");
+            return buildMethod.invoke(builder);
+            
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static void setFieldIfExists(Class<?> builderClass, Object builder, String fieldName, Object value) {
+        if (value == null) {
+            return;
+        }
+        
+        try {
+            Method method = builderClass.getMethod(fieldName, value.getClass());
+            method.invoke(builder, value);
+        } catch (Exception ignored) {
+        }
     }
 }
 
