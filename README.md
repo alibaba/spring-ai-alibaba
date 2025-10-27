@@ -167,7 +167,7 @@ This project consists of three core components:
 * Dingtalk Group (钉钉群), search `130240015687` and join.
 * WeChat Group (微信公众号), scan the QR code below and follow us.
 
-<img src="./docs/imgs/wechat-account.png" style="width:260px;"/>
+<img src="./docs/imgs/wechat-account.jpg" style="width:260px;"/>
 
 
 ## Star History
