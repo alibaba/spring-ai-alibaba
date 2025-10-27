@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.graph.agent.interceptor;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 
+import java.util.Map;
+
 /**
  * Request object for tool calls.
  */
@@ -25,15 +27,25 @@ public class ToolCallRequest {
 	private final String toolName;
 	private final String arguments;
 	private final String toolCallId;
+	private final Map<String, Object> context;
 
-	public ToolCallRequest(String toolName, String arguments, String toolCallId) {
+	public ToolCallRequest(String toolName, String arguments, String toolCallId, Map<String, Object> context) {
 		this.toolName = toolName;
 		this.arguments = arguments;
 		this.toolCallId = toolCallId;
+		this.context = context;
 	}
 
-	public static ToolCallRequest from(AssistantMessage.ToolCall toolCall) {
-		return new ToolCallRequest(toolCall.name(), toolCall.arguments(), toolCall.id());
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static Builder builder(ToolCallRequest request) {
+		return new Builder()
+				.toolName(request.toolName)
+				.arguments(request.arguments)
+				.toolCallId(request.toolCallId)
+				.context(request.context);
 	}
 
 	public String getToolName() {
@@ -46,6 +58,48 @@ public class ToolCallRequest {
 
 	public String getToolCallId() {
 		return toolCallId;
+	}
+
+	public Map<String, Object> getContext() {
+		return context;
+	}
+
+	public static class Builder {
+		private String toolName;
+		private String arguments;
+		private String toolCallId;
+		private Map<String, Object> context;
+
+		public Builder toolCall(AssistantMessage.ToolCall toolCall) {
+			this.toolName = toolCall.name();
+			this.arguments = toolCall.arguments();
+			this.toolCallId = toolCall.id();
+			return this;
+		}
+
+		public Builder toolName(String toolName) {
+			this.toolName = toolName;
+			return this;
+		}
+
+		public Builder arguments(String arguments) {
+			this.arguments = arguments;
+			return this;
+		}
+
+		public Builder toolCallId(String toolCallId) {
+			this.toolCallId = toolCallId;
+			return this;
+		}
+
+		public Builder context(Map<String, Object> context) {
+			this.context = context;
+			return this;
+		}
+
+		public ToolCallRequest build() {
+			return new ToolCallRequest(toolName, arguments, toolCallId, context);
+		}
 	}
 }
 

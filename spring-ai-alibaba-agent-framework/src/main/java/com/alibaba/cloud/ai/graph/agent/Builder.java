@@ -27,7 +27,11 @@ import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.store.Store;
+
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -59,7 +63,11 @@ public abstract class Builder {
 
 	protected int maxIterations = 10;
 
-	protected CompileConfig compileConfig;
+	protected boolean releaseThread;
+
+	protected BaseCheckpointSaver saver;
+
+	protected Store store;
 
 	protected Function<OverAllState, Boolean> shouldContinueFunc;
 
@@ -125,8 +133,18 @@ public abstract class Builder {
 		return this;
 	}
 
-	public Builder compileConfig(CompileConfig compileConfig) {
-		this.compileConfig = compileConfig;
+	public Builder releaseThread(boolean releaseThread) {
+		this.releaseThread = releaseThread;
+		return this;
+	}
+
+	public Builder saver(BaseCheckpointSaver saver) {
+		this.saver = saver;
+		return this;
+	}
+
+	public Builder store(Store store) {
+		this.store = store;
 		return this;
 	}
 
@@ -218,6 +236,18 @@ public abstract class Builder {
 	public Builder customObservationConvention(ChatClientObservationConvention customObservationConvention) {
 		this.customObservationConvention = customObservationConvention;
 		return this;
+	}
+
+	protected CompileConfig buildConfig() {
+		SaverConfig saverConfig = SaverConfig.builder()
+				.register(saver)
+				.build();
+		return CompileConfig.builder()
+				.saverConfig(saverConfig).
+				store(store)
+				.recursionLimit(Integer.MAX_VALUE)
+				.releaseThread(releaseThread)
+				.build();
 	}
 
 	public abstract ReactAgent build() throws GraphStateException;

@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.graph.agent.tools.HotelTool;
 import com.alibaba.cloud.ai.graph.agent.tools.TicketTool;
 import com.alibaba.cloud.ai.graph.agent.tools.WeatherTool;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.messages.Message;
@@ -51,7 +50,7 @@ class TodolistTest {
 
 	private static CompileConfig getCompileConfig() {
 		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.register(new MemorySaver())
 				.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 		return compileConfig;
@@ -68,7 +67,7 @@ class TodolistTest {
 
 	@Test
 	public void testReactAgent() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 		TodoListInterceptor todoListInterceptor = TodoListInterceptor.builder().build();
 
 		ToolCallback weatherTool = WeatherTool.createWeatherTool("weather_tool", new WeatherTool());
@@ -82,7 +81,7 @@ class TodolistTest {
 						.model(chatModel)
 						.interceptors(todoListInterceptor)
 						.tools(weatherTool, ticketTool, hotelTool)
-						.compileConfig(compileConfig)
+						.saver(new MemorySaver())
 						.build();
 
 		try {

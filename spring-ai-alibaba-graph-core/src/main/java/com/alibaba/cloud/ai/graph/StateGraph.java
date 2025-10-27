@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import com.alibaba.cloud.ai.graph.exception.Errors;
@@ -454,7 +453,7 @@ public class StateGraph {
 	 */
 	public CompiledGraph compile() throws GraphStateException {
 		SaverConfig saverConfig = SaverConfig.builder()
-			.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+			.register(new MemorySaver())
 			.build();
 		return compile(CompileConfig.builder().saverConfig(saverConfig).build());
 	}

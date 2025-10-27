@@ -141,7 +141,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 			Map<String, Object> extraStateFromToolCall) {
 
 		// Create ToolCallRequest
-		ToolCallRequest request = ToolCallRequest.from(toolCall);
+		ToolCallRequest request = ToolCallRequest.builder()
+				.toolCall(toolCall)
+				.context(config.metadata().orElse(new HashMap<>()))
+				.build();
 
 		// Create base handler that actually executes the tool
 		ToolCallHandler baseHandler = req -> {

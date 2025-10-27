@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 
@@ -81,8 +80,7 @@ public class StateGraphFileSystemSaverTest {
 
 		CompileConfig compileConfig = CompileConfig.builder()
 			.saverConfig(SaverConfig.builder()
-				.type(SaverEnum.FILE.getValue())
-				.register(SaverEnum.FILE.getValue(), saver)
+				.register(saver)
 				.build())
 			.build();
 
@@ -178,8 +176,7 @@ public class StateGraphFileSystemSaverTest {
 
 		CompileConfig compileConfig = CompileConfig.builder()
 			.saverConfig(SaverConfig.builder()
-				.type(SaverEnum.FILE.getValue())
-				.register(SaverEnum.FILE.getValue(), saver)
+				.register(saver)
 				.build())
 			.build();
 
@@ -276,8 +273,7 @@ public class StateGraphFileSystemSaverTest {
 
 		CompileConfig compileConfig = CompileConfig.builder()
 			.saverConfig(SaverConfig.builder()
-				.type(SaverEnum.FILE.getValue())
-				.register(SaverEnum.FILE.getValue(), saver)
+				.register(saver)
 				.build())
 			.releaseThread(true)
 			.build();

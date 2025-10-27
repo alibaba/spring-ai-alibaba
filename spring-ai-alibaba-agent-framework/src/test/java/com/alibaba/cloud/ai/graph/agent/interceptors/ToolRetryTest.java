@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolretry.ToolRetryInterceptor;
 import com.alibaba.cloud.ai.graph.agent.tools.PoetTool;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.model.ChatModel;
@@ -51,7 +50,7 @@ class ToolRetryTest {
 
 	private static CompileConfig getCompileConfig() {
 		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.register(new MemorySaver())
 				.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 		return compileConfig;
@@ -67,7 +66,7 @@ class ToolRetryTest {
 
 	@Test
 	public void testToolRetryOnFailure() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// Create a tool that fails first time but succeeds on retry
 		FailingTool failingTool = new FailingTool(1); // Fail once
@@ -88,7 +87,7 @@ class ToolRetryTest {
 				.model(chatModel)
 				.tools(failingToolCallback)
 				.interceptors(toolRetryInterceptor)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.build();
 
 		try {
@@ -114,7 +113,7 @@ class ToolRetryTest {
 
 	@Test
 	public void testToolRetryMaxRetriesExceeded() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// Create a tool that always fails
 		FailingTool alwaysFailingTool = new FailingTool(10); // Fail 10 times
@@ -135,7 +134,7 @@ class ToolRetryTest {
 				.model(chatModel)
 				.tools(failingToolCallback)
 				.interceptors(toolRetryInterceptor)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.build();
 
 		try {
@@ -161,7 +160,7 @@ class ToolRetryTest {
 
 	@Test
 	public void testToolRetryWithSpecificTools() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// Create a failing tool
 		FailingTool failingTool = new FailingTool(1);
@@ -186,7 +185,7 @@ class ToolRetryTest {
 				.model(chatModel)
 				.tools(failingToolCallback, poetToolCallback)
 				.interceptors(toolRetryInterceptor)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.build();
 
 		try {
