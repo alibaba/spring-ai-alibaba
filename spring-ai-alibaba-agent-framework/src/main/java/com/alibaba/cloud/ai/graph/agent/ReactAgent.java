@@ -402,7 +402,9 @@ public class ReactAgent extends BaseAgent {
 		chainHookReverse(graph, afterModelHooks, ".afterModel", "model", loopEntryNode, exitNode);
 
 		// Chain after_agent hook (reverse order)
-		chainHookReverse(graph, afterAgentHooks, ".after", StateGraph.END, loopEntryNode, exitNode);
+		if (!afterAgentHooks.isEmpty()) {
+			chainHookReverse(graph, afterAgentHooks, ".after", exitNode, loopEntryNode, exitNode);
+		}
 
 		// Add tool routing if tools exist
 		if (hasTools) {
