@@ -21,6 +21,7 @@ import reactor.core.publisher.Flux;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -124,6 +125,7 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
                 .build();
 
         Map<String, LocalDateTime> nodeStartTimes = new ConcurrentHashMap<>();
+        Map<String, Map<String, Object>> nodeInputData = new ConcurrentHashMap<>();
         int[] executionOrder = {0}; // Use an array to make it mutable in lambda
         StateGraph stateGraph = getCurrentGraph().stateGraph();
 
@@ -131,22 +133,38 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
                 .map(node -> {
                     String nodeId = node.node();
                     Map<String, Object> nodeData = node.state().data();
+                    
+                    // Record start time for this node if not already recorded
+                    LocalDateTime startTime = nodeStartTimes.computeIfAbsent(nodeId, k -> LocalDateTime.now());
+                    LocalDateTime endTime = LocalDateTime.now();
 
                     List<String> parentNodes = stateGraph.getEdges().edgesByTargetId(nodeId).stream()
                             .map(edge -> edge.sourceId())
                             .collect(Collectors.toList());
+                    
+                    // Get input data from parent nodes' output
+                    Map<String, Object> inputData = nodeInputData.get(nodeId);
+                    
+                    // Store this node's output for child nodes
+                    stateGraph.getEdges().edgeBySourceId(nodeId).ifPresent(edge -> {
+                        edge.targets().stream()
+                                .map(target -> target.id())
+                                .filter(Objects::nonNull)
+                                .forEach(childNodeId -> nodeInputData.put(childNodeId, nodeData));
+                    });
+                    
                     // Build the enhanced node output
                     return EnhancedNodeOutput.builder()
                             .nodeId(nodeId)
                             .executionStatus("SUCCESS")
-                            .startTime(nodeStartTimes.getOrDefault(nodeId, LocalDateTime.now()))
-                            .endTime(LocalDateTime.now())
-                            .durationMs(calculateDuration(nodeStartTimes.get(nodeId)))
-                            .inputData(node.state().data())
+                            .startTime(startTime)
+                            .endTime(endTime)
+                            .durationMs(calculateDuration(startTime, endTime))
+                            .inputData(inputData)
                             .data(nodeData)
                             .parentNodes(parentNodes)
                             .executionOrder(++executionOrder[0])
-                            .isFinal(isLastNode(nodeId))
+                            .isFinal(isLastNode(nodeId, stateGraph))
                             .build();
                 })
                 .onErrorResume(e -> {
@@ -162,40 +180,20 @@ public class CurrentGraphProxyImpl implements CurrentGraphService {
     }
 
     /**
-     * Extracts the node type from the node data.
-     */
-    private String extractNodeType(Map<String, Object> nodeData) {
-        if (nodeData == null) return "UNKNOWN";
-
-        // Determine node type based on data content
-        if (nodeData.containsKey("summary")) {
-            return "SUMMARIZER";
-        } else if (nodeData.containsKey("reworded")) {
-            return "REWRITER";
-        } else if (nodeData.containsKey("title")) {
-            return "TITLE_GENERATOR";
-        } else if (nodeData.containsKey("docs")) {
-            return "DOCUMENT_EXTRACTOR";
-        } else {
-            return "CUSTOM";
-        }
-    }
-
-    /**
      * Calculates the execution duration.
      */
-    private Long calculateDuration(LocalDateTime startTime) {
-        if (startTime == null) return 0L;
-        return java.time.Duration.between(startTime, LocalDateTime.now()).toMillis();
+    private Long calculateDuration(LocalDateTime startTime, LocalDateTime endTime) {
+        if (startTime == null || endTime == null) return 0L;
+        return java.time.Duration.between(startTime, endTime).toMillis();
     }
 
     /**
-     * Checks if it is the last node.
-     * This can be determined based on the actual graph structure.
+     * Checks if it is the last node by checking if it has no outgoing edges.
      */
-    private Boolean isLastNode(String nodeId) {
-        // Simple logic, can be adjusted based on actual needs
-        return "titleGenerator".equals(nodeId) || nodeId.contains("end") || nodeId.contains("final");
+    private Boolean isLastNode(String nodeId, StateGraph stateGraph) {
+        if (stateGraph == null || nodeId == null) return false;
+        // A node is final if it has no outgoing edges
+        return stateGraph.getEdges().edgeBySourceId(nodeId).isEmpty();
     }
 
     private static SAAGraphFlow createEmptyGraph() {
