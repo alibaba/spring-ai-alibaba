@@ -15,20 +15,20 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
+import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
-
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Enhanced parallel result aggregator that supports custom merge strategies and
@@ -73,7 +73,15 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 			if (subAgentOutputKey != null) {
 				Optional<Object> agentResult = state.value(subAgentOutputKey);
 				if (agentResult.isPresent()) {
-					subAgentResults.put(subAgentOutputKey, agentResult.get());
+					if (agentResult.get() instanceof GraphResponse<?> graphResponse){
+						if (graphResponse.resultValue().isPresent() && graphResponse.resultValue().get() instanceof Map  map) {
+							subAgentResults.put(subAgentOutputKey, map.get(subAgentOutputKey));
+						}else {
+							subAgentResults.put(subAgentOutputKey, graphResponse.resultValue().get());
+						}
+					}else {
+						subAgentResults.put(subAgentOutputKey, agentResult.get());
+					}
 					logger.debug("Collected result from {}: {} = {}", subAgent.name(), subAgentOutputKey,
 							agentResult.get());
 				}
