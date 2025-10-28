@@ -109,6 +109,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			ModelRequest modelRequest = ModelRequest.builder()
 					.messages(messages)
 					.options(toolCallingChatOptions)
+					.context(config.metadata().orElse(new HashMap<>()))
 					.build();
 
 			// Create base handler that actually calls the model with streaming
@@ -144,6 +145,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			ModelRequest modelRequest = ModelRequest.builder()
 					.messages(messages)
 					.options(toolCallingChatOptions)
+					.context(config.metadata().orElse(new HashMap<>()))
 					.build();
 
 			// Create base handler that actually calls the model
