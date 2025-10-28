@@ -16,11 +16,10 @@
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
 import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.agent.Agent;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
+import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,17 +40,17 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 
 	private final String outputKey;
 
-	private final List<Agent> subAgents;
+	private final List<BaseAgent> subAgents;
 
 	private final Object mergeStrategy;
 
 	private final Integer maxConcurrency;
 
-	public EnhancedParallelResultAggregator(String outputKey, List<Agent> subAgents, Object mergeStrategy,
-			Integer maxConcurrency) {
+	public EnhancedParallelResultAggregator(String outputKey, List<BaseAgent> subAgents, Object mergeStrategy,
+											Integer maxConcurrency) {
 		this.outputKey = outputKey;
 		this.subAgents = subAgents;
-		this.mergeStrategy = mergeStrategy;
+		this.mergeStrategy = mergeStrategy != null ? mergeStrategy : KeyStrategy.REPLACE;
 		this.maxConcurrency = maxConcurrency;
 	}
 
@@ -63,13 +62,8 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 		Map<String, Object> subAgentResults = new HashMap<>();
 
 		// Collect results from all sub-agents
-		for (Agent subAgent : subAgents) {
-			String subAgentOutputKey = null;
-			if (subAgent instanceof ReactAgent subReactAgent) {
-				subAgentOutputKey = subReactAgent.getOutputKey();
-			} else if (subAgent instanceof A2aRemoteAgent remoteAgent) { // a2a remote agent
-				subAgentOutputKey = remoteAgent.getOutputKey();
-			}
+		for (BaseAgent subAgent : subAgents) {
+			String subAgentOutputKey = subAgent.getOutputKey();
 			if (subAgentOutputKey != null) {
 				Optional<Object> agentResult = state.value(subAgentOutputKey);
 				if (agentResult.isPresent()) {
@@ -103,6 +97,15 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 		}
 
 		result.put(outputKey, finalResult);
+
+		Map<String, KeyStrategy> releaseStrategyResults = subAgentResults.entrySet().stream()
+				.collect(HashMap::new, 
+						(map, entry) -> map.put(entry.getKey(), KeyStrategy.REPLACE),
+						HashMap::putAll);
+
+		state.updateStateWithKeyStrategies(subAgentResults, releaseStrategyResults);
+
+		result.putAll(subAgentResults);
 
 		logger.debug("Enhanced result aggregation completed. Final result stored under key: {}", outputKey);
 

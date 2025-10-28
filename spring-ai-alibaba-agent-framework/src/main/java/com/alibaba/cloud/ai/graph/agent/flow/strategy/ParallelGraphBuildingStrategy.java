@@ -17,14 +17,17 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.EnhancedParallelResultAggregator;
-import com.alibaba.cloud.ai.graph.agent.flow.node.ParallelResultAggregator;
 import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -59,15 +62,14 @@ public class ParallelGraphBuildingStrategy implements FlowGraphBuildingStrategy 
 		Object mergeStrategy = config.getCustomProperty("mergeStrategy");
 		Integer maxConcurrency = (Integer) config.getCustomProperty("maxConcurrency");
 
-		if (mergeStrategy != null || maxConcurrency != null) {
-			// Use enhanced aggregator with custom merge strategy and concurrency control
-			graph.addNode(aggregatorNodeName, node_async(new EnhancedParallelResultAggregator(rootAgent.mergeOutputKey(),
-					config.getSubAgents(), mergeStrategy, maxConcurrency)));
+		List<BaseAgent> baseAgentList = new ArrayList<>(config.getSubAgents().size());;
+		for (Agent subAgent : config.getSubAgents()) {
+			baseAgentList.add((BaseAgent) subAgent);
 		}
-		else {
-			// Use basic aggregator
-			graph.addNode(aggregatorNodeName, node_async(new ParallelResultAggregator(rootAgent.mergeOutputKey())));
-		}
+
+
+		graph.addNode(aggregatorNodeName, node_async(new EnhancedParallelResultAggregator(rootAgent.mergeOutputKey(),
+				baseAgentList, mergeStrategy, maxConcurrency)));
 
 		// Process sub-agents for parallel execution
 		for (Agent subAgent : config.getSubAgents()) {

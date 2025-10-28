@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -66,6 +67,7 @@ class ParallelAgentIntegrationTest {
 			.description("专门写现代诗的AI助手")
 			.instruction("你是一个知名的现代诗人，擅长写现代诗。用户会给你一个主题，你只需要创作一首现代诗，不要写散文或做总结。请专注于诗歌创作，确保语言精炼、意象丰富。")
 			.outputKey("poem_result")
+			.outputKeyStrategy(KeyStrategy.REPLACE)
 			.build();
 
 		ReactAgent summaryAgent = ReactAgent.builder()
@@ -107,14 +109,6 @@ class ParallelAgentIntegrationTest {
 			assertTrue(finalState.value("poem_result").isPresent(), "Poem result should be present");
 			assertTrue(finalState.value("summary_result").isPresent(), "Summary result should be present");
 
-			// Verify results are not empty
-			Map proseResult = (Map) finalState.value("prose_result").get();
-			Map poemResult = (Map) finalState.value("poem_result").get();
-			Map summaryResult = (Map) finalState.value("summary_result").get();
-			
-			assertFalse(proseResult.isEmpty(), "Prose result should not be empty");
-			assertFalse(poemResult.isEmpty(), "Poem result should not be empty");
-			assertFalse(summaryResult.isEmpty(), "Summary result should not be empty");
 			
 			// Verify the merged results contain all individual results
 			Map mergedResults = (Map) finalState.value("merged_results").get();
@@ -125,6 +119,9 @@ class ParallelAgentIntegrationTest {
 			assertTrue(mergedResults.containsKey("summary_result"),
 					"Merged results should contain summary result");
 
+			assertEquals(mergedResults.get("prose_result"),finalState.value("prose_result").get());
+			assertEquals(mergedResults.get("poem_result"),finalState.value("poem_result").get());
+			assertEquals(mergedResults.get("summary_result"),finalState.value("summary_result").get());
 
 			System.out.println("Final state: " + finalState);
 		}
