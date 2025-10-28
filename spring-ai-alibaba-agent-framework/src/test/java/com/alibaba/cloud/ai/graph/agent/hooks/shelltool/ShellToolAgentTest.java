@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.shelltool.ShellToolAgentHook;
 import com.alibaba.cloud.ai.graph.agent.tools.ShellTool;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -86,7 +85,7 @@ public class ShellToolAgentTest {
 					"Prefer using 'ls' or 'dir' command to see the current directory contents.")
 				.tools(tools)
 				.hooks(List.of(shellToolAgentHook))
-				.compileConfig(getCompileConfig())
+				.saver(new MemorySaver())
 				.build();
 
 			List<Message> messages = new ArrayList<>();
@@ -121,7 +120,7 @@ public class ShellToolAgentTest {
 
 	private static CompileConfig getCompileConfig() {
 		SaverConfig saverConfig = SaverConfig.builder()
-			.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+			.register(new MemorySaver())
 			.build();
 		return CompileConfig.builder().saverConfig(saverConfig).build();
 	}

@@ -109,9 +109,7 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 				.collect(Collectors.toList());
 
 		// Create new request with filtered tools
-		ModelRequest filteredRequest = ModelRequest.builder()
-				.messages(request.getMessages())
-				.options(request.getOptions())
+		ModelRequest filteredRequest = ModelRequest.builder(request)
 				.tools(filteredTools)
 				.build();
 

@@ -77,6 +77,7 @@ import static java.lang.String.format;
 
 
 public class ReactAgent extends BaseAgent {
+	private static final int DEFAULT_MAX_ITERATIONS = 10;
 
 	private final AgentLlmNode llmNode;
 
@@ -90,7 +91,7 @@ public class ReactAgent extends BaseAgent {
 
 	private List<ToolInterceptor> toolInterceptors;
 
-	private int max_iterations = 10;
+	private int maxIterations;
 
 	private int iterations = 0;
 
@@ -98,12 +99,12 @@ public class ReactAgent extends BaseAgent {
 
 	private Function<OverAllState, Boolean> shouldContinueFunc;
 
-	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, Builder builder) throws GraphStateException {
+	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) throws GraphStateException {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
-		this.compileConfig = builder.compileConfig;
+		this.compileConfig = compileConfig;
 		this.shouldContinueFunc = builder.shouldContinueFunc;
 		this.hooks = builder.hooks;
 		this.modelInterceptors = builder.modelInterceptors;
@@ -113,6 +114,7 @@ public class ReactAgent extends BaseAgent {
 		this.inputType = builder.inputType;
 		this.outputSchema = builder.outputSchema;
 		this.outputType = builder.outputType;
+		this.maxIterations = builder.maxIterations <= 0 ? DEFAULT_MAX_ITERATIONS : builder.maxIterations;
 
 		// Set interceptors to nodes
 		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
@@ -544,7 +546,7 @@ public class ReactAgent extends BaseAgent {
 
 	private EdgeAction makeModelToTools(String modelDestination, String endDestination) {
 		return state -> {
-			if (iterations++ > max_iterations) {
+			if (iterations++ > maxIterations) {
 				return endDestination;
 			}
 
