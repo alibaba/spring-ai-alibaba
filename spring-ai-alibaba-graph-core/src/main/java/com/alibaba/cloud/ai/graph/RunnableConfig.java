@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.store.Store;
 
 import java.util.Collections;
 import java.util.Map;
@@ -49,7 +50,13 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 	private final Map<String, Object> metadata;
 
+	private Store store;
+
 	private final Map<String, Object> interruptedNodes;
+
+	public Store store() {
+		return this.store;
+	}
 
 	/**
 	 * Returns the stream mode of the compiled graph.
@@ -219,6 +226,8 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 		private String nextNode;
 
+		private Store store;
+
 		private CompiledGraph.StreamMode streamMode = CompiledGraph.StreamMode.VALUES;
 
 		/**
@@ -240,6 +249,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 			this.checkPointId = config.checkPointId;
 			this.nextNode = config.nextNode;
 			this.streamMode = config.streamMode;
+			this.store = config.store;
 		}
 
 		/**
@@ -307,6 +317,10 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 			return addMetadata(ParallelNode.formatNodeId(nodeId), requireNonNull(executor, "executor cannot be null!"));
 		}
 
+		public void store(Store store) {
+			this.store = store;
+		}
+
 		/**
 		 * Constructs and returns the configured {@code RunnableConfig} object.
 		 * @return the configured {@code RunnableConfig} object
@@ -329,6 +343,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		this.streamMode = builder.streamMode;
 		this.metadata = ofNullable(builder.metadata()).map(Map::copyOf).orElse(null);
 		this.interruptedNodes = new ConcurrentHashMap<>();
+		this.store = builder.store;
 	}
 
 	@Override

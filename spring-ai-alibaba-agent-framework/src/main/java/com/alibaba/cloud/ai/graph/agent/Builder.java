@@ -30,7 +30,6 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.store.Store;
 
 import io.micrometer.observation.ObservationRegistry;
 
@@ -66,8 +65,6 @@ public abstract class Builder {
 	protected boolean releaseThread;
 
 	protected BaseCheckpointSaver saver;
-
-	protected Store store;
 
 	protected Function<OverAllState, Boolean> shouldContinueFunc;
 
@@ -140,11 +137,6 @@ public abstract class Builder {
 
 	public Builder saver(BaseCheckpointSaver saver) {
 		this.saver = saver;
-		return this;
-	}
-
-	public Builder store(Store store) {
-		this.store = store;
 		return this;
 	}
 
@@ -243,8 +235,7 @@ public abstract class Builder {
 				.register(saver)
 				.build();
 		return CompileConfig.builder()
-				.saverConfig(saverConfig).
-				store(store)
+				.saverConfig(saverConfig)
 				.recursionLimit(Integer.MAX_VALUE)
 				.releaseThread(releaseThread)
 				.build();

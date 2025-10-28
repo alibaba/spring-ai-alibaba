@@ -77,6 +77,7 @@ import static java.lang.String.format;
 
 
 public class ReactAgent extends BaseAgent {
+	private static final int DEFAULT_MAX_ITERATIONS = 10;
 
 	private final AgentLlmNode llmNode;
 
@@ -90,7 +91,7 @@ public class ReactAgent extends BaseAgent {
 
 	private List<ToolInterceptor> toolInterceptors;
 
-	private int maxIterations = 10;
+	private int maxIterations;
 
 	private int iterations = 0;
 
@@ -113,7 +114,7 @@ public class ReactAgent extends BaseAgent {
 		this.inputType = builder.inputType;
 		this.outputSchema = builder.outputSchema;
 		this.outputType = builder.outputType;
-		this.maxIterations = builder.maxIterations;
+		this.maxIterations = builder.maxIterations <= 0 ? DEFAULT_MAX_ITERATIONS : this.maxIterations;
 
 		// Set interceptors to nodes
 		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
