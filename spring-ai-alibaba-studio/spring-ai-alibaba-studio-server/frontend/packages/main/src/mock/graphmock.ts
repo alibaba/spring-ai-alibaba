@@ -1,3 +1,9 @@
+/**
+ * 图形调试 Mock 数据
+ * 注意：此文件中的数据主要用于开发和测试目的
+ * 实际生产环境应使用真实的 API 接口
+ */
+
 // 客户反馈分析工作流Mock数据
 export const mockFeedbackAnalysisGraph = {
   id: 'demo-graph-1',
@@ -95,7 +101,13 @@ export const mockDocumentPipelineGraph = {
 // 默认工作流数据（指向客户反馈分析）
 export const mockGraphData = mockFeedbackAnalysisGraph;
 
-// 客户反馈分析执行步骤Mock数据
+/**
+ * 模拟执行步骤数据
+ * 注意：这些数据仅用于开发和测试
+ * 实际应用应使用真实的流式 API 接口
+ */
+
+// 客户反馈分析执行步骤Mock数据（已弃用，保留用于兼容性）
 export const mockFeedbackAnalysisSteps = [
   {
     nodeId: 'start',
@@ -147,7 +159,7 @@ export const mockFeedbackAnalysisSteps = [
   },
 ];
 
-// 文档处理流水线执行步骤Mock数据
+// 文档处理流水线执行步骤Mock数据（已弃用，保留用于兼容性）
 export const mockDocumentPipelineSteps = [
   {
     nodeId: 'start',
@@ -199,7 +211,7 @@ export const mockDocumentPipelineSteps = [
   },
 ];
 
-// 默认执行步骤数据（指向客户反馈分析）
+// 默认执行步骤数据（已弃用，保留用于兼容性）
 export const mockExecutionSteps = mockFeedbackAnalysisSteps;
 
 // 工作流列表Mock数据
@@ -221,6 +233,24 @@ export const mockGraphList = [
     status: 'ACTIVE',
   },
 ];
+
+/**
+ * 注意：从版本 1.1.0 开始，推荐使用真实的流式 API 接口：
+ * 
+ * 1. 基础节点输出流 (3.1):
+ *    - GET /observability/v1/node/stream
+ *    - GET /observability/v1/graph/node/stream
+ * 
+ * 2. 节点状态快照流 (3.2):
+ *    - GET /observability/v1/node/stream_snapshots
+ *    - GET /observability/v1/graph/node/stream_snapshots
+ * 
+ * 3. 增强节点输出流 (3.3):
+ *    - GET /observability/v1/node/stream_enhanced
+ *    - GET /observability/v1/graph/node/stream_enhanced
+ * 
+ * 使用 graphDebugService 中提供的方法或 useStreamingExecution Hook
+ */
 
 export default {
   mockGraphData,

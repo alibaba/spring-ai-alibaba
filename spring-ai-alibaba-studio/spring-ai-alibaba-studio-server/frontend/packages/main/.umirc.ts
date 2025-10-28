@@ -14,6 +14,14 @@ export default defineConfig({
     '@src': path.resolve(__dirname, './src'),
     '@': path.resolve(__dirname, './src'),
   },
+  proxy: {
+    '/observability': {
+      target: 'http://localhost:8091',
+      changeOrigin: true,
+      secure: false,
+      ws: true,
+    },
+  },
   routes: [
     {
       path: '/',

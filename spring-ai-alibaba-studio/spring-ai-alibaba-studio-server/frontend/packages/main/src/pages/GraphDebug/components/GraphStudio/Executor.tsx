@@ -17,6 +17,7 @@ import {
   PlayCircleOutlined,
   ReloadOutlined,
   CloseOutlined,
+  StopOutlined,
 } from '@ant-design/icons';
 import { IGraphData } from '@/types/graph';
 import type { GraphStudioEvent } from './index';
@@ -59,51 +60,34 @@ const Executor: React.FC<ExecutorProps> = ({
   const [isInitializing, setIsInitializing] = useState(false);
   const [formFields, setFormFields] = useState<FormField[]>([]);
   const [executionMode, setExecutionMode] = useState<'new' | 'resume'>('new');
+  const [streamType, setStreamType] = useState<'enhanced' | 'basic' | 'snapshots'>('enhanced');
+  const [cleanupFn, setCleanupFn] = useState<(() => void) | null>(null);
+  const [executionStatus, setExecutionStatus] = useState<string>('');
 
-  // 模拟的动态表单字段
-  const mockFormFields: FormField[] = [
+  // 动态表单字段定义
+  const staticFormFields: FormField[] = [
     {
-      name: 'customerFeedback',
-      label: 'Customer Feedback',
+      name: 'inputText',
+      label: 'Input Text',
       type: 'textarea',
       required: true,
-      placeholder: '请输入客户反馈内容...',
+      placeholder: '请输入要处理的文本内容...',
     },
     {
-      name: 'customerId',
-      label: 'Customer Id',
-      type: 'text',
-      placeholder: '客户ID（可选）',
-    },
-    {
-      name: 'sentimentClassification',
-      label: 'Sentiment Classification',
+      name: 'streamType',
+      label: 'Stream Type',
       type: 'select',
+      required: true,
+      defaultValue: 'enhanced',
       options: [
-        { label: '正面', value: 'positive' },
-        { label: '负面', value: 'negative' },
-        { label: '中性', value: 'neutral' },
+        { label: '增强节点输出流 (Enhanced)', value: 'enhanced' },
+        { label: '基础节点输出流 (Basic)', value: 'basic' },
+        { label: '节点状态快照流 (Snapshots)', value: 'snapshots' },
       ],
-    },
-    {
-      name: 'issueClassification',
-      label: 'Issue Classification',
-      type: 'select',
-      options: [
-        { label: '产品问题', value: 'product' },
-        { label: '服务问题', value: 'service' },
-        { label: '其他', value: 'other' },
-      ],
-    },
-    {
-      name: 'processingConfidence',
-      label: 'Processing Confidence',
-      type: 'number',
-      defaultValue: 0.8,
     },
     {
       name: 'debugMode',
-      label: 'Debug Info',
+      label: 'Debug Mode',
       type: 'switch',
       defaultValue: false,
     },
@@ -113,13 +97,11 @@ const Executor: React.FC<ExecutorProps> = ({
   const callInit = async () => {
     setIsInitializing(true);
     try {
-      // 模拟API调用获取参数元数据
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      setFormFields(mockFormFields);
+      // 设置表单字段
+      setFormFields(staticFormFields);
 
       // 设置默认值
-      const defaultValues = mockFormFields.reduce((acc, field) => {
+      const defaultValues = staticFormFields.reduce((acc, field) => {
         if (field.defaultValue !== undefined) {
           acc[field.name] = field.defaultValue;
         }
@@ -130,7 +112,7 @@ const Executor: React.FC<ExecutorProps> = ({
 
       dispatchEvent({
         type: 'init',
-        payload: { formFields: mockFormFields, graphData },
+        payload: { formFields: staticFormFields, graphData },
       });
 
       message.success('表单初始化成功');
@@ -144,68 +126,189 @@ const Executor: React.FC<ExecutorProps> = ({
 
   // 提交表单，启动新流程
   const callSubmit = async (formData: any) => {
+    // 清理之前的执行
+    if (cleanupFn) {
+      console.log('🧹 清理之前的执行连接');
+      cleanupFn();
+      setCleanupFn(null);
+    }
+    
     setIsLoading(true);
+    setExecutionStatus('正在初始化...');
+    
     try {
-      // 构建输入文本（从表单数据中提取主要输入）
-      const inputText = formData.customerFeedback || JSON.stringify(formData);
+      const inputText = formData.inputText;
+      const selectedStreamType = formData.streamType || 'enhanced';
+      
+      console.log('🚀 开始执行图工作流:', {
+        graphId: graphData.id,
+        graphName: graphData.name,
+        streamType: selectedStreamType,
+        inputLength: inputText?.length || 0,
+      });
+      
+      let cleanup: () => void;
 
-      // 使用新的API服务创建流式执行
-      const cleanup = await graphDebugService.executeGraph(
-        graphData.id,
-        inputText,
-        (nodeOutput: any) => {
-          // 实时更新节点输出
-          dispatchEvent({
-            type: 'result',
-            payload: {
-              type: 'node_update',
-              data: nodeOutput,
-              timestamp: new Date().toISOString(),
+      // 根据选择的流式类型调用不同的API
+      switch (selectedStreamType) {
+        case 'basic':
+          setExecutionStatus('连接基础节点输出流...');
+          cleanup = await graphDebugService.executeGraphBasic(
+            graphData.id,
+            inputText,
+            (nodeOutput: any) => {
+              setExecutionStatus(`执行节点: ${nodeOutput.node}`);
+              dispatchEvent({
+                type: 'result',
+                payload: {
+                  type: 'node_update',
+                  streamType: 'basic',
+                  data: nodeOutput,
+                  timestamp: new Date().toISOString(),
+                },
+              });
             },
-          });
-        },
-        (error) => {
-          console.error('流式执行错误:', error);
-          requestShowError('执行过程中出现错误');
-          setIsLoading(false);
-        },
-        () => {
-          // 执行完成
-          dispatchEvent({
-            type: 'result',
-            payload: {
-              type: 'execution_complete',
-              data: { graphId: graphData.id, inputText },
-              timestamp: new Date().toISOString(),
+            (error) => {
+              console.error('❌ 基础流式执行错误:', error);
+              requestShowError('基础流执行过程中出现错误');
+              setExecutionStatus('执行失败');
+              setIsLoading(false);
+              setCleanupFn(null);
             },
-          });
-          
-          message.success('图执行完成');
-          setIsLoading(false);
-        }
-      );
+            () => {
+              dispatchEvent({
+                type: 'result',
+                payload: {
+                  type: 'execution_complete',
+                  streamType: 'basic',
+                  data: { graphId: graphData.id, inputText },
+                  timestamp: new Date().toISOString(),
+                },
+              });
+              message.success('✅ 基础流执行完成');
+              setExecutionStatus('执行完成');
+              setIsLoading(false);
+              setCleanupFn(null);
+            }
+          );
+          break;
+
+        case 'snapshots':
+          setExecutionStatus('连接节点状态快照流...');
+          cleanup = await graphDebugService.executeGraphSnapshots(
+            graphData.id,
+            inputText,
+            (snapshot: any) => {
+              const keys = Object.keys(snapshot).slice(0, 3).join(', ');
+              setExecutionStatus(`接收状态快照: ${keys}...`);
+              dispatchEvent({
+                type: 'result',
+                payload: {
+                  type: 'state_update',
+                  streamType: 'snapshots',
+                  data: snapshot,
+                  timestamp: new Date().toISOString(),
+                },
+              });
+            },
+            (error) => {
+              console.error('❌ 快照流式执行错误:', error);
+              requestShowError('快照流执行过程中出现错误');
+              setExecutionStatus('执行失败');
+              setIsLoading(false);
+              setCleanupFn(null);
+            },
+            () => {
+              dispatchEvent({
+                type: 'result',
+                payload: {
+                  type: 'execution_complete',
+                  streamType: 'snapshots',
+                  data: { graphId: graphData.id, inputText },
+                  timestamp: new Date().toISOString(),
+                },
+              });
+              message.success('✅ 快照流执行完成');
+              setExecutionStatus('执行完成');
+              setIsLoading(false);
+              setCleanupFn(null);
+            }
+          );
+          break;
+
+        case 'enhanced':
+        default:
+          setExecutionStatus('连接增强节点输出流...');
+          cleanup = await graphDebugService.executeGraphEnhanced(
+            graphData.id,
+            inputText,
+            (nodeOutput: any) => {
+              const status = nodeOutput.execution_status || 'EXECUTING';
+              setExecutionStatus(`${nodeOutput.node_id}: ${status}`);
+              dispatchEvent({
+                type: 'result',
+                payload: {
+                  type: 'node_update',
+                  streamType: 'enhanced',
+                  data: nodeOutput,
+                  timestamp: new Date().toISOString(),
+                },
+              });
+            },
+            (error) => {
+              console.error('❌ 增强流式执行错误:', error);
+              requestShowError('增强流执行过程中出现错误');
+              setExecutionStatus('执行失败');
+              setIsLoading(false);
+              setCleanupFn(null);
+            },
+            () => {
+              dispatchEvent({
+                type: 'result',
+                payload: {
+                  type: 'execution_complete',
+                  streamType: 'enhanced',
+                  data: { graphId: graphData.id, inputText },
+                  timestamp: new Date().toISOString(),
+                },
+              });
+              message.success('✅ 增强流执行完成');
+              setExecutionStatus('执行完成');
+              setIsLoading(false);
+              setCleanupFn(null);
+            }
+          );
+          break;
+      }
+
+      // 保存清理函数
+      setCleanupFn(() => cleanup);
 
       // 触发初始事件
       dispatchEvent({
         type: 'result',
         payload: {
           type: 'execution_start',
+          streamType: selectedStreamType,
           data: { 
             graphId: graphData.id, 
+            graphName: graphData.name,
             inputText, 
             formData,
-            cleanup 
           },
           timestamp: new Date().toISOString(),
         },
       });
 
       onSubmit(formData);
-      message.success('开始执行图工作流');
+      setExecutionStatus(`执行中 (${selectedStreamType})...`);
+      message.success(`🚀 开始执行图工作流 (${selectedStreamType})`);
     } catch (error) {
-      console.error('执行失败:', error);
-      requestShowError('执行失败，请重试');
+      console.error('❌ 执行失败:', error);
+      requestShowError(`执行失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      setExecutionStatus('执行失败');
       setIsLoading(false);
+      setCleanupFn(null);
     }
   };
 
@@ -216,7 +319,9 @@ const Executor: React.FC<ExecutorProps> = ({
       const formData = form.getFieldsValue();
 
       // 模拟恢复API调用
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise<void>(resolve => {
+        setTimeout(() => resolve(), 1500);
+      });
 
       dispatchEvent({
         type: 'result',
@@ -248,10 +353,32 @@ const Executor: React.FC<ExecutorProps> = ({
 
   // 初始化时获取表单字段
   useEffect(() => {
-    if (isExpanded && formFields.length === 0) {
+    if (isExpanded) {
       callInit();
     }
   }, [isExpanded]);
+
+  // 组件卸载时清理
+  useEffect(() => {
+    return () => {
+      if (cleanupFn) {
+        console.log('🧹 组件卸载，清理执行连接');
+        cleanupFn();
+      }
+    };
+  }, [cleanupFn]);
+
+  // 停止执行
+  const handleStop = () => {
+    if (cleanupFn) {
+      console.log('⏹️ 用户停止执行');
+      cleanupFn();
+      setCleanupFn(null);
+      setIsLoading(false);
+      setExecutionStatus('已停止');
+      message.warning('执行已停止');
+    }
+  };
 
   // 渲染动态表单字段
   const renderFormField = (field: FormField) => {
@@ -355,23 +482,47 @@ const Executor: React.FC<ExecutorProps> = ({
 
                 <Divider />
 
+                {/* 执行状态显示 */}
+                {executionStatus && (
+                  <div style={{ 
+                    padding: '8px 12px', 
+                    marginBottom: '12px', 
+                    background: isLoading ? '#e6f7ff' : '#f6ffed',
+                    border: `1px solid ${isLoading ? '#91d5ff' : '#b7eb8f'}`,
+                    borderRadius: '4px',
+                  }}>
+                    <Text type={isLoading ? 'secondary' : 'success'} style={{ fontSize: '12px' }}>
+                      {executionStatus}
+                    </Text>
+                  </div>
+                )}
+
                 <Space style={{ width: '100%', justifyContent: 'center' }}>
                   <Button
                     icon={<ReloadOutlined />}
                     onClick={callInit}
-                    disabled={isInitializing}
+                    disabled={isInitializing || isLoading}
                   >
                     重置
                   </Button>
 
-                  <Button
-                    type="primary"
-                    icon={<PlayCircleOutlined />}
-                    loading={isLoading}
-                    onClick={handleSubmit}
-                  >
-                    {executionMode === 'new' ? '执行' : '恢复执行'}
-                  </Button>
+                  {isLoading ? (
+                    <Button
+                      danger
+                      icon={<StopOutlined />}
+                      onClick={handleStop}
+                    >
+                      停止
+                    </Button>
+                  ) : (
+                    <Button
+                      type="primary"
+                      icon={<PlayCircleOutlined />}
+                      onClick={handleSubmit}
+                    >
+                      {executionMode === 'new' ? '执行' : '恢复执行'}
+                    </Button>
+                  )}
                 </Space>
               </Form>
             )}

@@ -107,56 +107,83 @@ const Result: React.FC<ResultProps> = ({
       return;
     }
 
-    // node_update: 实时节点更新（增强节点输出）
+    // node_update: 实时节点更新（支持不同流式类型）
     if (latest.type === 'node_update') {
       const nodeData = latest.data;
+      const streamType = latest.streamType || 'enhanced';
       
-      // 根据执行状态创建不同的消息内容
+      // 根据流式类型和数据结构创建不同的消息内容
       let content = '';
       let summary = '';
+      let nodeId = '';
       
-      if (nodeData.execution_status) {
-        switch (nodeData.execution_status) {
-          case 'EXECUTING':
-            content = `节点 ${nodeData.node_id} 正在执行...`;
-            summary = `🔄 ${nodeData.node_id} - 执行中`;
-            break;
-          case 'SUCCESS':
-            content = JSON.stringify({
-              node_id: nodeData.node_id,
-              duration_ms: nodeData.duration_ms,
-              data: nodeData.data,
-              execution_order: nodeData.execution_order,
-            }, null, 2);
-            summary = `✅ ${nodeData.node_id} - 执行成功 (${nodeData.duration_ms}ms)`;
-            break;
-          case 'FAILED':
-            content = JSON.stringify({
-              node_id: nodeData.node_id,
-              error_message: nodeData.error_message,
-              duration_ms: nodeData.duration_ms,
-            }, null, 2);
-            summary = `❌ ${nodeData.node_id} - 执行失败`;
-            break;
-          case 'SKIPPED':
-            content = `节点 ${nodeData.node_id} 被跳过`;
-            summary = `⏭️ ${nodeData.node_id} - 跳过`;
-            break;
-          default:
+      switch (streamType) {
+        case 'basic':
+          // 基础节点输出流 (3.1)
+          nodeId = nodeData.node || 'Unknown';
+          content = JSON.stringify({
+            node: nodeData.node,
+            state: nodeData.state,
+            subGraph: nodeData.subGraph,
+          }, null, 2);
+          summary = `📝 ${nodeId} - 基础节点输出`;
+          if (nodeData.node === 'END') {
+            summary = `🏁 ${nodeId} - 流程结束`;
+          }
+          break;
+
+        case 'enhanced':
+          // 增强节点输出流 (3.3)
+          nodeId = nodeData.node_id || 'Unknown';
+          if (nodeData.execution_status) {
+            switch (nodeData.execution_status) {
+              case 'EXECUTING':
+                content = `节点 ${nodeData.node_id} 正在执行...`;
+                summary = `🔄 ${nodeData.node_id} - 执行中`;
+                break;
+              case 'SUCCESS':
+                content = JSON.stringify({
+                  node_id: nodeData.node_id,
+                  duration_ms: nodeData.duration_ms,
+                  data: nodeData.data,
+                  execution_order: nodeData.execution_order,
+                }, null, 2);
+                summary = `✅ ${nodeData.node_id} - 执行成功 (${nodeData.duration_ms}ms)`;
+                break;
+              case 'FAILED':
+                content = JSON.stringify({
+                  node_id: nodeData.node_id,
+                  error_message: nodeData.error_message,
+                  duration_ms: nodeData.duration_ms,
+                }, null, 2);
+                summary = `❌ ${nodeData.node_id} - 执行失败`;
+                break;
+              case 'SKIPPED':
+                content = `节点 ${nodeData.node_id} 被跳过`;
+                summary = `⏭️ ${nodeData.node_id} - 跳过`;
+                break;
+              default:
+                content = JSON.stringify(nodeData, null, 2);
+                summary = `${nodeData.node_id} - ${nodeData.execution_status}`;
+            }
+          } else {
             content = JSON.stringify(nodeData, null, 2);
-            summary = `${nodeData.node_id} - ${nodeData.execution_status}`;
-        }
-      } else {
-        content = JSON.stringify(nodeData, null, 2);
-        summary = `节点更新 - ${nodeData.node_id || 'Unknown'}`;
+            summary = `节点更新 - ${nodeData.node_id || 'Unknown'}`;
+          }
+          break;
+
+        default:
+          nodeId = nodeData.node_id || nodeData.node || 'Unknown';
+          content = JSON.stringify(nodeData, null, 2);
+          summary = `节点更新 - ${nodeId}`;
       }
 
       const newMessage: Message = {
-        id: `m_${Date.now()}_${nodeData.node_id || Math.random()}`,
+        id: `m_${Date.now()}_${nodeId || Math.random()}`,
         role: 'assistant',
         content,
         timestamp: latest.timestamp,
-        nodeId: nodeData.node_id,
+        nodeId: nodeId,
         summary,
         details: nodeData,
       };
@@ -164,12 +191,12 @@ const Result: React.FC<ResultProps> = ({
       setTurns(prev => {
         const updated = [...prev];
         if (updated.length > 0) {
-          // 如果是同一个节点的更新，替换最后一条消息
+          // 如果是同一个节点的更新，根据流式类型处理
           const lastMessage = updated[0].messages[updated[0].messages.length - 1];
-          if (lastMessage && lastMessage.nodeId === nodeData.node_id && nodeData.execution_status === 'EXECUTING') {
+          if (streamType === 'enhanced' && lastMessage && lastMessage.nodeId === nodeId && nodeData.execution_status === 'EXECUTING') {
             // 如果是执行中状态，替换之前的执行中消息
             const existingIndex = updated[0].messages.findIndex(m => 
-              m.nodeId === nodeData.node_id && m.summary?.includes('执行中')
+              m.nodeId === nodeId && m.summary?.includes('执行中')
             );
             if (existingIndex >= 0) {
               updated[0].messages[existingIndex] = newMessage;
@@ -184,6 +211,33 @@ const Result: React.FC<ResultProps> = ({
           if (nodeData.execution_order) {
             updated[0].currentStep = nodeData.execution_order;
           }
+        }
+        return updated;
+      });
+      return;
+    }
+
+    // state_update: 状态快照流更新 (3.2)
+    if (latest.type === 'state_update') {
+      const stateData = latest.data;
+      const streamType = latest.streamType || 'snapshots';
+      
+      const content = JSON.stringify(stateData, null, 2);
+      const summary = `📊 状态快照更新 - ${Object.keys(stateData).join(', ')}`;
+      
+      const newMessage: Message = {
+        id: `m_state_${Date.now()}`,
+        role: 'assistant',
+        content,
+        timestamp: latest.timestamp,
+        summary,
+        details: stateData,
+      };
+
+      setTurns(prev => {
+        const updated = [...prev];
+        if (updated.length > 0) {
+          updated[0].messages.push(newMessage);
         }
         return updated;
       });

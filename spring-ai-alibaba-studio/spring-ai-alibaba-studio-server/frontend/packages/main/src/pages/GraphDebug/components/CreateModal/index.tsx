@@ -27,7 +27,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onCancel, onOk }) => {
       const values = await form.validateFields();
       setLoading(true);
       
-      // 模拟API调用
+      // 模拟API调用，待后端新增出创建工作流接口
       await new Promise((resolve) => setTimeout(resolve, 1000));
       
       const graph: IGraphCard = {
@@ -129,8 +129,8 @@ const CreateModal: React.FC<CreateModalProps> = ({ onCancel, onOk }) => {
             })}
             allowClear
           >
-            <Option value="demo-graph-1">客户反馈分析模板</Option>
-            <Option value="demo-graph-2">文档处理流水线模板</Option>
+            <Option value="demo-graph-1">单Agent模板</Option>
+            <Option value="demo-graph-2">多Agent模板</Option>
           </Select>
         </Form.Item>
 

@@ -20,15 +20,35 @@ export default function GraphDebugDetail() {
     const fetchData = async () => {
       try {
         if (params.appId) {
-          // 使用新的API服务加载图数据
           const data = await graphDebugService.getGraphById(params.appId);
+          
+          // 验证数据完整性
+          if (!data || !data.id) {
+            throw new Error('返回的图数据不完整');
+          }
+          
+          console.log('✅ 成功加载图数据:', {
+            id: data.id,
+            name: data.name,
+            nodesCount: data.nodes?.length || 0,
+            edgesCount: data.edges?.length || 0,
+            hasMermaidGraph: !!data.mermaidGraph,
+            hasStateGraph: !!data.stateGraph,
+          });
+          
+          // 设置当前活跃图（确保后端知道要执行哪个图）
+          await graphDebugService.setCurrentGraph(data.id);
+          console.log('✅ 已设置当前活跃图:', data.id);
+          
           setGraphData(data);
         } else {
           message.error('缺少图形ID参数');
+          setGraphData(null);
         }
       } catch (error) {
-        console.error('Failed to fetch graph data:', error);
-        message.error('加载图数据失败');
+        console.error('❌ 加载图数据失败:', error);
+        message.error(`加载图数据失败: ${error instanceof Error ? error.message : '未知错误'}`);
+        setGraphData(null);
       } finally {
         setLoading(false);
       }
