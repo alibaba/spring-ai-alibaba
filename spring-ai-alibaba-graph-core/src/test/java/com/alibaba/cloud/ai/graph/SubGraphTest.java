@@ -24,26 +24,25 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.logging.LogManager;
-
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SubGraphTest {
 
@@ -577,6 +576,62 @@ public class SubGraphTest {
 			.block();
 
 		assertNotNull(result);
+	}
+
+
+	@Test
+	public void testParallelSubgraph() throws Exception {
+
+		SaverConfig saver = SaverConfig.builder().register( new MemorySaver()).build();
+
+		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
+
+        StateGraph childGraph1 = new StateGraph(() -> {
+            HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+            stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+            return stringKeyStrategyHashMap;
+        }).addNode("sub1_node1", _makeNode("node1"))
+                .addNode("sub1_node2", _makeNode("node2"))
+                .addEdge(START, "sub1_node1")
+                .addEdge(START, "sub1_node2")
+                .addEdge("sub1_node1", END)
+                .addEdge("sub1_node2", END);
+
+        StateGraph childGraph2 = new StateGraph(() -> {
+            HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+            stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+            return stringKeyStrategyHashMap;
+        }).addNode("node1", _makeNode("node1"))
+                .addNode("node2", _makeNode("node2"))
+                .addEdge(START, "node1")
+                .addEdge(START, "node2")
+                .addEdge("node1", END)
+                .addEdge("node2", END);
+
+        StateGraph parentGraph = new StateGraph(() -> {
+            HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+            stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+            return stringKeyStrategyHashMap;
+        }).addNode("node1", AsyncNodeActionWithConfig.node_async((state, config) -> {
+                    CompiledGraph compile = childGraph1.compile(compileConfig);
+                    Flux<NodeOutput> nodeOutputFlux = compile.stream(state.data(), config);
+                    return Map.of("messages", GraphFlux.of("node1", "messages", nodeOutputFlux, nodeOutput -> nodeOutput, (Function<NodeOutput, String>) nodeOutput -> nodeOutput.toString()));
+                }))
+                .addNode("node2", AsyncNodeActionWithConfig.node_async((state, config) -> {
+                    CompiledGraph compile = childGraph2.compile(compileConfig);
+                    Flux<NodeOutput> nodeOutputFlux = compile.stream(state.data(), config);
+                    return Map.of("messages", GraphFlux.of("node2", "messages", nodeOutputFlux, nodeOutput -> nodeOutput, (Function<NodeOutput, String>) nodeOutput -> nodeOutput.toString()));
+                }))
+                .addEdge(START, "node1")
+                .addEdge(START, "node2")
+                .addEdge("node1", END)
+                .addEdge("node2", END);
+        CompiledGraph compile = parentGraph.compile(compileConfig);
+        Flux<NodeOutput> stream = compile.stream(Map.of());
+        stream.doOnNext(n -> log.info("{}", n))
+                .reduce((a, b) -> b)
+                .map(NodeOutput::state)
+                .block();
 	}
 
 }
