@@ -114,7 +114,7 @@ public class ReactAgent extends BaseAgent {
 		this.inputType = builder.inputType;
 		this.outputSchema = builder.outputSchema;
 		this.outputType = builder.outputType;
-		this.maxIterations = builder.maxIterations > 0 ? DEFAULT_MAX_ITERATIONS : this.maxIterations;
+		this.maxIterations = builder.maxIterations <= 0 ? DEFAULT_MAX_ITERATIONS : this.maxIterations;
 
 		// Set interceptors to nodes
 		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
