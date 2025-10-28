@@ -133,7 +133,7 @@ public class DefaultBuilder extends Builder {
 			toolNode = AgentToolNode.builder().build();
 		}
 
-		return new ReactAgent(llmNode, toolNode, this);
+		return new ReactAgent(llmNode, toolNode, buildConfig(), this);
 	}
 
 }

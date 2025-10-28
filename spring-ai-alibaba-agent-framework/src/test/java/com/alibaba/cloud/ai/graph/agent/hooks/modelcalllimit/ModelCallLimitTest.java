@@ -24,7 +24,6 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitExceededException;
 import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
@@ -114,7 +113,7 @@ public class ModelCallLimitTest {
                 .name("test-agent-combined")
                 .model(chatModel)
                 .hooks(java.util.Arrays.asList(hook))
-                .compileConfig(getCompileConfig())
+                .saver(new MemorySaver())
                 .build();
 
         // 第一次调用
@@ -144,13 +143,13 @@ public class ModelCallLimitTest {
             .name(name)
             .model(model)
             .hooks(List.of(hook))
-            .compileConfig(getCompileConfig())
+            .saver(new MemorySaver())
             .build();
     }
 
     private static CompileConfig getCompileConfig() {
         SaverConfig saverConfig = SaverConfig.builder()
-            .register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+            .register(new MemorySaver())
             .build();
         return CompileConfig.builder().saverConfig(saverConfig).build();
     }

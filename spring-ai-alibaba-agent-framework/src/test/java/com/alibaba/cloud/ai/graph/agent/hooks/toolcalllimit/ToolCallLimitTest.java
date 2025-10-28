@@ -17,13 +17,10 @@ package com.alibaba.cloud.ai.graph.agent.hooks.toolcalllimit;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit.ToolCallLimitExceededException;
 import com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit.ToolCallLimitHook;
-import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -120,7 +117,7 @@ public class ToolCallLimitTest {
         ReactAgent agent = ReactAgent.builder()
                 .name("test-no-tool-call-limit")
                 .model(chatModel)
-                .compileConfig(getCompileConfig())
+                .saver(new MemorySaver())
                 .build();
 
         System.out.println("\n=== 测试不带工具调用限制的对话 ===");
@@ -149,14 +146,9 @@ public class ToolCallLimitTest {
                 .name(name)
                 .model(model)
                 .hooks(List.of(hook))
-                .compileConfig(getCompileConfig())
+                .saver(new MemorySaver())
                 .build();
     }
 
-    private static CompileConfig getCompileConfig() {
-        SaverConfig saverConfig = SaverConfig.builder()
-                .register(SaverEnum.MEMORY.getValue(), new MemorySaver())
-                .build();
-        return CompileConfig.builder().saverConfig(saverConfig).build();
-    }
+    
 }

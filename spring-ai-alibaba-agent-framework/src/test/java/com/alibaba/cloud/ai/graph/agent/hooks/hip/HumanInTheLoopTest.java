@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.graph.agent.hooks.hip;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -25,8 +24,6 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
@@ -127,7 +124,7 @@ public class HumanInTheLoopTest {
 		return ReactAgent.builder()
 				.name("single_agent")
 				.model(chatModel)
-				.compileConfig(getCompileConfig())
+				.saver(new MemorySaver())
 				.tools(List.of(createPoetToolCallback()))
 				.hooks(List.of(HumanInTheLoopHook.builder().approvalOn("poem", ToolConfig.builder().description("Please confirm tool execution.").build()).build()))
 				.outputKey("article")
@@ -269,10 +266,4 @@ public class HumanInTheLoopTest {
 		}
 	}
 
-	private static CompileConfig getCompileConfig() {
-		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
-				.build();
-		return CompileConfig.builder().saverConfig(saverConfig).build();
-	}
 }

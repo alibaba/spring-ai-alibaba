@@ -161,7 +161,7 @@ public class OverAllStateBuilder {
 
 	/**
 	 * Constructs and returns a fully configured OverAllState instance.
-	 * @return A new OverAllState instance with the configured settings
+	 * @return A new OverAllState instance with the configured settingsken
 	 */
 	public OverAllState build() {
 		OverAllState state = new OverAllState(new HashMap<>(data), new HashMap<>(keyStrategies), store);

@@ -111,7 +111,6 @@ public class ParallelNode extends Node {
 
 			// Collect non-streaming state
 			Map<String, Object> mergedState = new HashMap<>();
-			List<Flux<Object>> fluxList = new ArrayList<>();
 			// First pass: collect GraphFlux and traditional Flux instances
 			for (int i = 0; i < results.size(); i++) {
 				Map<String, Object> result = results.get(i);
@@ -139,11 +138,10 @@ public class ParallelNode extends Node {
 
 						graphFluxList.add(graphFlux);
 						graphFluxNodeIds.add(graphFluxNodeId);
-					} else if (value instanceof Flux) {
+					} else if (value instanceof Flux flux) {
 						// Traditional Flux - wrap it in GraphFlux for unified processing
-						@SuppressWarnings("unchecked")
-						Flux<Object> flux = (Flux<Object>) value;
-						fluxList.add(flux);
+						GraphFlux<Object> graphFlux = GraphFlux.of(effectiveNodeId, entry.getKey(), flux, null, null);
+						graphFluxList.add(graphFlux);
 					} else {
 						// Regular object - add to merged state
 						Map<String, Object> singleEntryMap = Map.of(entry.getKey(), value);
@@ -159,11 +157,7 @@ public class ParallelNode extends Node {
 
 				mergedState.put("__parallel_graph_flux__", parallelGraphFlux);
 				return mergedState;
-			} else if (!fluxList.isEmpty()) {
-				Flux<Object> mergedFlux = Flux.merge(fluxList);
-				mergedState.put("__merged_stream__", mergedFlux);
-				return mergedState;
-			} else {
+			}  else {
 				Map<String, Object> initialState = new HashMap<>();
 				// No streaming output, directly merge all results
 				return results.stream()
