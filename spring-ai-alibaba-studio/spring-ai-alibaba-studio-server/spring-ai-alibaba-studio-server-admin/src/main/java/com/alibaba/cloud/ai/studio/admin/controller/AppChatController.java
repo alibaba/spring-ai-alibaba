@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.studio.core.context.RequestContextHolder;
 import com.alibaba.cloud.ai.studio.core.utils.LogUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -127,9 +128,17 @@ public class AppChatController {
 		try {
 			emitter.send(json, MediaType.TEXT_EVENT_STREAM);
 		}
+		catch (IOException e) {
+			// 客户端断开连接（如超时、刷新页面等）是正常场景，只记录 debug 日志
+			LogUtils.trace(context, "AgentChatController", "clientDisconnected", context.getStartTime(), FAIL,
+					request, "Client disconnected: " + e.getMessage());
+			// 完成 emitter 避免继续发送
+			emitter.completeWithError(e);
+		}
 		catch (Exception e) {
 			LogUtils.monitor(context, "AgentChatController", "endStreamCallError", context.getStartTime(), FAIL,
 					request, e.getMessage(), e);
+			emitter.completeWithError(e);
 		}
 
 		if (completion.getStatus() == AgentStatus.COMPLETED) {

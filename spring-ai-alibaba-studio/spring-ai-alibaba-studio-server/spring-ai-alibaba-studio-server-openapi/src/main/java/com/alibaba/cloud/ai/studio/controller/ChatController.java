@@ -44,6 +44,7 @@ import com.alibaba.cloud.ai.studio.core.utils.LogUtils;
 import com.google.common.collect.Lists;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -216,9 +217,17 @@ public class ChatController {
 		try {
 			emitter.send(json, MediaType.TEXT_EVENT_STREAM);
 		}
+		catch (IOException e) {
+			// 客户端断开连接（如超时、刷新页面等）是正常场景，只记录 debug 日志
+			LogUtils.trace(context, "ChatController", "clientDisconnected", context.getStartTime(), FAIL, request,
+					"Client disconnected: " + e.getMessage());
+			// 完成 emitter 避免继续发送
+			emitter.completeWithError(e);
+		}
 		catch (Exception e) {
 			LogUtils.monitor(context, "ChatController", "endStreamCallError", context.getStartTime(), FAIL, request,
 					e.getMessage(), e);
+			emitter.completeWithError(e);
 		}
 
 		if (completion.getStatus() == AgentStatus.COMPLETED) {
@@ -261,9 +270,17 @@ public class ChatController {
 		try {
 			emitter.send(json, MediaType.TEXT_EVENT_STREAM);
 		}
+		catch (IOException e) {
+			// 客户端断开连接（如超时、刷新页面等）是正常场景，只记录 debug 日志
+			LogUtils.trace(context, "ChatController", "clientDisconnected", context.getStartTime(), FAIL, request,
+					"Client disconnected: " + e.getMessage());
+			// 完成 emitter 避免继续发送
+			emitter.completeWithError(e);
+		}
 		catch (Exception e) {
 			LogUtils.monitor(context, "ChatController", "endStreamCallError", context.getStartTime(), FAIL, request,
 					e.getMessage(), e);
+			emitter.completeWithError(e);
 		}
 
 		if (completion.getStatus() == WorkflowStatus.COMPLETED) {

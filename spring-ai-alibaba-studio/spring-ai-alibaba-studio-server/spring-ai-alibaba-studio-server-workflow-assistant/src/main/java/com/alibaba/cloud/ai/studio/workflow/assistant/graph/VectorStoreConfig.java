@@ -26,9 +26,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Configuration
 class VectorStoreConfig {
+
+	private static final Logger log = LoggerFactory.getLogger(VectorStoreConfig.class);
 
 	/**
 	 * Define a default VectorStore bean so that the KnowledgeRetrievalNode can get it.
@@ -41,12 +45,22 @@ class VectorStoreConfig {
 	@Bean
 	@Primary
 	public VectorStore customVectorStore(EmbeddingModel embeddingModel) {
-
-		var chunks = new TokenTextSplitter().transform(new TextReader(ragSource).read());
-
 		SimpleVectorStore vectorStore = SimpleVectorStore.builder(embeddingModel).build();
-
-		vectorStore.write(chunks);
+		
+		try {
+			if (ragSource.exists()) {
+				var chunks = new TokenTextSplitter().transform(new TextReader(ragSource).read());
+				vectorStore.write(chunks);
+				log.info("Successfully loaded {} document chunks into vector store from {}", chunks.size(), ragSource.getFilename());
+			} else {
+				log.warn("RAG source file does not exist: {}. Creating empty vector store.", ragSource);
+				// Create an empty vector store - it can be populated later
+			}
+		} catch (Exception e) {
+			log.error("Failed to load RAG source file: {}. Creating empty vector store. Error: {}", ragSource, e.getMessage());
+			// Return empty vector store instead of failing
+		}
+		
 		return vectorStore;
 	}
 

@@ -68,8 +68,11 @@ public class ComplexSupportGraphBuilder {
 		});
 
 		// —— 1. Document extraction ——
+		String manualFilePath = getResourceFilePath(manualResource);
+		List<String> fileList = manualFilePath != null ? List.of(manualFilePath) : List.of();
+		
 		DocumentExtractorNode extractNode = DocumentExtractorNode.builder()
-			.fileList(List.of(getResourceFilePath(manualResource)))
+			.fileList(fileList)
 			.paramsKey("attachments")
 			.outputKey("docs")
 			.build();
@@ -181,15 +184,21 @@ public class ComplexSupportGraphBuilder {
 	 *     <li>If the resource is a file on the file system (e.g., during development), it returns its absolute path.</li>
 	 *     <li>If the resource is inside a JAR file, it extracts the resource to a temporary file
 	 *     and returns the path to that temporary file.</li>
+	 *     <li>If the resource does not exist, returns null (graceful degradation).</li>
 	 * </ul>
 	 * A shutdown hook is registered to clean up the temporary file on JVM exit.
 	 * </p>
 	 *
 	 * @param resource the Spring resource to resolve.
-	 * @return the absolute file path of the resource.
-	 * @throws RuntimeException if the resource cannot be resolved to a file path.
+	 * @return the absolute file path of the resource, or null if the resource doesn't exist.
 	 */
 	private String getResourceFilePath(Resource resource) {
+		// Check if resource exists first
+		if (!resource.exists()) {
+			System.err.println("Warning: Resource does not exist: " + resource + ". Graph will run without this file.");
+			return null;
+		}
+		
 		try {
 			// This works only if the resource is directly on the filesystem.
 			// It will fail if the resource is inside a JAR.
@@ -215,7 +224,8 @@ public class ComplexSupportGraphBuilder {
 				return tempFile.toAbsolutePath().toString();
 			}
 			catch (IOException ex) {
-				throw new RuntimeException("Failed to resolve resource to a file path: " + resource, ex);
+				System.err.println("Warning: Failed to resolve resource to a file path: " + resource + ". Error: " + ex.getMessage());
+				return null;
 			}
 		}
 	}
