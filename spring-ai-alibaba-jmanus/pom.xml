@@ -21,7 +21,7 @@
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
         <!-- Spring AI Alibaba is adapting to Spring AI M8, latest code may fail to run -->
-        <spring-ai-alibaba.version>1.0.0.3</spring-ai-alibaba.version>
+        <spring-ai-alibaba.version>1.0.0.3-retriever</spring-ai-alibaba.version>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <moditect-maven-plugin.version>1.2.0.Final</moditect-maven-plugin.version>
         <spring-javaformat-maven-plugin.version>0.0.39</spring-javaformat-maven-plugin.version>
