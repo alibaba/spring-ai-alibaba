@@ -29,6 +29,8 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.ApiKey;
@@ -36,6 +38,7 @@ import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.rag.Query;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.InputStreamResource;
@@ -850,10 +853,15 @@ public class DashScopeApi {
 			@JsonProperty("enable_reranking") boolean enableReranking,
 			@JsonProperty("rerank") List<DocumentRetrieveModelConfig> rerank,
 			@JsonProperty("rerank_min_score") float rerankMinScore, @JsonProperty("rerank_top_n") int rerankTopN,
-			@JsonProperty("search_filters") List<Map<String, Object>> searchFilters) {
+			@JsonProperty("search_filters") List<Map<String, Object>> searchFilters,
+			@JsonProperty("query_history") List<QueryHistory> queryHistory) {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record DocumentRetrieveModelConfig(@JsonProperty("model_name") String modelName,
 				@JsonProperty("class_name") String className) {
+		}
+
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		public record QueryHistory(@JsonProperty("role") String role, @JsonProperty("content") String content) {
 		}
 	}
 
@@ -974,6 +982,7 @@ public class DashScopeApi {
 		return true;
 	}
 
+	@Deprecated
 	public List<Document> retriever(String pipelineId, String query, DashScopeDocumentRetrieverOptions searchOption) {
 		DocumentRetrieveRequest request = new DocumentRetrieveRequest(query, searchOption.getDenseSimilarityTopK(),
 				searchOption.getDenseSimilarityTopK(), searchOption.isEnableRewrite(),
@@ -983,7 +992,71 @@ public class DashScopeApi {
 				searchOption.isEnableReranking(),
 				Arrays.asList(new DocumentRetrieveRequest.DocumentRetrieveModelConfig(searchOption.getRerankModelName(),
 						null)),
-				searchOption.getRerankMinScore(), searchOption.getRerankTopN(), searchOption.getSearchFilters());
+				searchOption.getRerankMinScore(), searchOption.getRerankTopN(), searchOption.getSearchFilters(),
+				searchOption.getQueryHistory());
+		ResponseEntity<DocumentRetrieveResponse> deleDocumentResponse = this.restClient.post()
+			.uri("/api/v1/indices/pipeline/{pipeline_id}/retrieve", pipelineId)
+			.body(request)
+			.retrieve()
+			.toEntity(DocumentRetrieveResponse.class);
+		if (deleDocumentResponse == null || deleDocumentResponse.getBody() == null
+				|| !"SUCCESS".equalsIgnoreCase(deleDocumentResponse.getBody().code)) {
+			throw new DashScopeException(ErrorCodeEnum.RETRIEVER_DOCUMENT_ERROR);
+		}
+		List<DocumentRetrieveResponse.DocumentRetrieveResponseNode> nodeList = deleDocumentResponse.getBody().nodes;
+		if (nodeList == null || nodeList.isEmpty()) {
+			return new ArrayList<>();
+		}
+		List<Document> documents = new ArrayList<>();
+		nodeList.forEach(e -> {
+			DocumentRetrieveResponse.DocumentRetrieveResponseNodeData nodeData = e.node;
+			Document toDocument = new Document(nodeData.id, nodeData.text, nodeData.metadata);
+			documents.add(toDocument);
+		});
+		return documents;
+	}
+
+	/**
+	 * Retrieves documents using a Spring AI Query object. The query history is
+	 * prioritized from Query metadata (key: "history"), falling back to
+	 * searchOption.getQueryHistory() if null.
+	 * @param pipelineId The pipeline ID
+	 * @param query The org.springframework.ai.rag.Query object containing query text and
+	 * optional metadata
+	 * @param searchOption The retrieval options
+	 * @return List of retrieved documents
+	 */
+	public List<Document> retriever(String pipelineId, Query query, DashScopeDocumentRetrieverOptions searchOption) {
+		// Priority: use query.history() if present, otherwise use
+		// searchOption.getQueryHistory()
+		List<DocumentRetrieveRequest.QueryHistory> queryHistory = null;
+
+		// Try to get history from query.history() and convert Message list to
+		// QueryHistory list
+		if (!query.history().isEmpty()) {
+			queryHistory = new ArrayList<>();
+			for (Message message : query.history()) {
+				queryHistory.add(new DocumentRetrieveRequest.QueryHistory(message.getMessageType().getValue(),
+						message.getText()));
+			}
+		}
+
+		// Fallback to searchOption if history is still null or empty
+		if (queryHistory == null) {
+			queryHistory = searchOption.getQueryHistory();
+		}
+
+		DocumentRetrieveRequest request = new DocumentRetrieveRequest(query.text(),
+				searchOption.getDenseSimilarityTopK(), searchOption.getDenseSimilarityTopK(),
+				searchOption.isEnableRewrite(),
+				Arrays
+					.asList(new DocumentRetrieveRequest.DocumentRetrieveModelConfig(
+							searchOption.getRewriteModelName(), "DashScopeTextRewrite")),
+				searchOption.isEnableReranking(),
+				Arrays.asList(new DocumentRetrieveRequest.DocumentRetrieveModelConfig(searchOption.getRerankModelName(),
+						null)),
+				searchOption.getRerankMinScore(), searchOption.getRerankTopN(), searchOption.getSearchFilters(),
+				queryHistory);
 		ResponseEntity<DocumentRetrieveResponse> deleDocumentResponse = this.restClient.post()
 			.uri("/api/v1/indices/pipeline/{pipeline_id}/retrieve", pipelineId)
 			.body(request)

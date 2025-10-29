@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.dashscope.rag;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.common.DashScopeException;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.rag.Query;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -105,7 +106,8 @@ public class DashScopeCloudStore implements VectorStore {
 			searchOption = new DashScopeDocumentRetrieverOptions();
 		}
 		searchOption.setRerankTopN(request.getTopK());
-		return dashScopeApi.retriever(pipelineId, request.getQuery(), searchOption);
+		Query query = Query.builder().text(request.getQuery()).build();
+		return dashScopeApi.retriever(pipelineId, query, searchOption);
 	}
 
 }
