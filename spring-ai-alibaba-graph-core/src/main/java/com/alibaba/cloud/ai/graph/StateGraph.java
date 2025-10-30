@@ -226,6 +226,22 @@ public class StateGraph {
 	}
 
 	/**
+	 * Gets the edges collection.
+	 * @return the edges collection
+	 */
+	public final Edges getEdges() {
+		return edges;
+	}
+
+	/**
+	 * Gets the nodes collection.
+	 * @return the nodes collection
+	 */
+	public final Nodes getNodes() {
+		return nodes;
+	}
+
+	/**
 	 * Adds a node to the graph.
 	 * @param id the identifier of the node
 	 * @param action the asynchronous node action to be performed by the node

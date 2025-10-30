@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -29,7 +28,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum PluginType {
 
 	/**
@@ -42,12 +40,16 @@ public enum PluginType {
 	 * Custom plugin type
 	 */
 	@JsonProperty("custom")
-	CUSTOM("custom"),;
+	CUSTOM("custom");
 
 	/**
 	 * The string value representing the plugin type
 	 */
 	@EnumValue
 	private final String value;
+	PluginType(String value) {
+		this.value = value;
+	}
+
 
 }

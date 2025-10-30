@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.studio.runtime.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -27,7 +26,6 @@ import lombok.Getter;
  * @since 1.0.0.3
  */
 @Getter
-@AllArgsConstructor
 public enum AccountType {
 
 	/**
@@ -40,12 +38,16 @@ public enum AccountType {
 	 * Regular user account type
 	 */
 	@JsonProperty("user")
-	USER("user"),;
+	USER("user");
 
 	/**
 	 * The string value representing the account type
 	 */
 	@EnumValue
 	private final String type;
+	AccountType(String type) {
+		this.type = type;
+	}
+
 
 }

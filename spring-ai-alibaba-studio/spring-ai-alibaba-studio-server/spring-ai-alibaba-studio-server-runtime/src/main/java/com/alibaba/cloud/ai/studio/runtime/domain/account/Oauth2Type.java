@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.studio.runtime.domain.account;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -28,12 +27,15 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum Oauth2Type {
 
 	@JsonProperty("github")
-	GITHUB("github"),;
+	GITHUB("github");
 
 	private final String value;
+	Oauth2Type(String value) {
+		this.value = value;
+	}
+
 
 }

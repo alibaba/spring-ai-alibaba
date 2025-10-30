@@ -17,7 +17,6 @@
 package com.alibaba.cloud.ai.studio.runtime.domain.agent;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -27,7 +26,6 @@ import lombok.Getter;
  */
 
 @Getter
-@AllArgsConstructor
 public enum AgentStatus {
 
 	/** Indicates that the agent has completed its task successfully */
@@ -44,10 +42,14 @@ public enum AgentStatus {
 
 	/** Indicates that the agent's task is incomplete */
 	@JsonProperty("incomplete")
-	INCOMPLETE("incomplete"),;
+	INCOMPLETE("incomplete");
 
 	/** The string value representing the status */
 	private final String value;
+	AgentStatus(String value) {
+		this.value = value;
+	}
+
 
 	/**
 	 * Converts a finish reason string to the corresponding AgentStatus.

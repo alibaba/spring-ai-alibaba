@@ -1,0 +1,183 @@
+package com.alibaba.cloud.ai.studio.core.observability.controller;
+
+
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.studio.core.observability.model.EnhancedNodeOutput;
+import com.alibaba.cloud.ai.studio.core.observability.service.CurrentGraphService;
+import com.alibaba.cloud.ai.studio.core.observability.model.SAAGraphFlow;
+import com.alibaba.cloud.ai.studio.core.observability.config.SAAGraphFlowRegistry;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
+
+import java.io.IOException;
+import java.util.Map;
+
+@Slf4j
+@RestController
+@RequestMapping("/observability/v1/graph")
+@Tag(name = "Observability",
+		description = "APIs for managing graph execution and runtime operations, including real-time node output streaming.")
+public class CurrentGraphController {
+
+	private final CurrentGraphService currentGraphProxy;
+
+	private final SAAGraphFlowRegistry graphFlowRegistry;
+
+	public CurrentGraphController(CurrentGraphService currentGraphProxy, SAAGraphFlowRegistry saaGraphFlowRegistry) {
+		this.currentGraphProxy = currentGraphProxy;
+		this.graphFlowRegistry = saaGraphFlowRegistry;
+	}
+
+	@PostMapping("setCurrentGraph")
+	@Operation(summary = "Set Current Active Graph",
+			description = "Switches the system to use the specified graph for subsequent operations")
+	public ResponseEntity<?> setCurrentGraph(
+			@Parameter(description = "Unique identifier of the graph to activate", required = true,
+					example = "sentiment-analysis-flow") @RequestParam String graphId) {
+		return currentGraphProxy.switchTo(graphId);
+	}
+
+	@GetMapping("getCurrentGraph")
+	@Operation(summary = "Get Current Active Graph",
+			description = "Retrieves information about the currently active graph in the system")
+	public SAAGraphFlow getCurrentGraph() {
+		return currentGraphProxy.getCurrentGraph();
+	}
+
+	@GetMapping(path = "node/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@Operation(summary = "Stream Basic Node Outputs",
+			description = "Streams raw output from each node in the current graph as it executes")
+	public SseEmitter writeStream(
+			HttpServletResponse response,
+			@Parameter(description = "Input text to process through the graph pipeline",
+					example = "I went to the West Lake today, the weather was very good, and I felt very happy") @RequestParam("text") String inputText) {
+		// 禁用缓冲，确保实时流式输出
+		response.addHeader("X-Accel-Buffering", "no");
+		response.addHeader(HttpHeaders.CACHE_CONTROL, "no-cache");
+		
+		SseEmitter emitter = new SseEmitter(0L);
+		Flux<NodeOutput> flux = currentGraphProxy.writeStream(inputText);
+		
+		flux.subscribeOn(Schedulers.boundedElastic())
+			.doOnNext(data -> {
+				try {
+					emitter.send(data);
+				} catch (IOException e) {
+					log.debug("Client disconnected: {}", e.getMessage());
+				}
+			})
+			.doOnError(err -> {
+				log.error("Error in node stream", err);
+				try {
+					emitter.completeWithError(err);
+				} catch (Exception e) {
+					log.debug("Failed to send error to client: {}", e.getMessage());
+				}
+			})
+			.doOnComplete(() -> {
+				try {
+					emitter.complete();
+				} catch (Exception e) {
+					log.debug("Failed to complete emitter: {}", e.getMessage());
+				}
+			})
+			.subscribe();
+		
+		return emitter;
+	}
+
+	@GetMapping(path = "node/stream_snapshots", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@Operation(summary = "Stream Node State Snapshots",
+			description = "Streams state snapshots after each node completes execution")
+	public SseEmitter writeStreamSnapshots(
+			HttpServletResponse response,
+			@Parameter(description = "Input text to process through the graph pipeline",
+					example = "I went to the West Lake today, the weather was very good, and I felt very happy") @RequestParam("text") String inputText) {
+		// 禁用缓冲，确保实时流式输出
+		response.addHeader("X-Accel-Buffering", "no");
+		response.addHeader(HttpHeaders.CACHE_CONTROL, "no-cache");
+		
+		SseEmitter emitter = new SseEmitter(0L);
+		Flux<Map<String, Object>> flux = currentGraphProxy.writeStreamSnapshots(inputText);
+		
+		flux.subscribeOn(Schedulers.boundedElastic())
+			.doOnNext(data -> {
+				try {
+					emitter.send(data);
+				} catch (IOException e) {
+					log.debug("Client disconnected: {}", e.getMessage());
+				}
+			})
+			.doOnError(err -> {
+				log.error("Error in snapshot stream", err);
+				try {
+					emitter.completeWithError(err);
+				} catch (Exception e) {
+					log.debug("Failed to send error to client: {}", e.getMessage());
+				}
+			})
+			.doOnComplete(() -> {
+				try {
+					emitter.complete();
+				} catch (Exception e) {
+					log.debug("Failed to complete emitter: {}", e.getMessage());
+				}
+			})
+			.subscribe();
+		
+		return emitter;
+	}
+
+	@GetMapping(path = "node/stream_enhanced", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@Operation(summary = "Stream Enhanced Node Outputs",
+			description = "Streams comprehensive node information including execution status, timing, and metadata")
+	public SseEmitter writeStreamEnhanced(
+			HttpServletResponse response,
+			@Parameter(description = "Input text to process through the graph pipeline",
+					example = "I went to the West Lake today, the weather was very good, and I felt very happy") @RequestParam("text") String inputText) {
+		// 禁用缓冲，确保实时流式输出
+		response.addHeader("X-Accel-Buffering", "no");
+		response.addHeader(HttpHeaders.CACHE_CONTROL, "no-cache");
+		
+		SseEmitter emitter = new SseEmitter(0L);
+		Flux<EnhancedNodeOutput> flux = currentGraphProxy.writeStreamEnhanced(inputText);
+		
+		flux.subscribeOn(Schedulers.boundedElastic())
+			.doOnNext(data -> {
+				try {
+					emitter.send(data);
+				} catch (IOException e) {
+					log.debug("Client disconnected: {}", e.getMessage());
+				}
+			})
+			.doOnError(err -> {
+				log.error("Error in enhanced stream", err);
+				try {
+					emitter.completeWithError(err);
+				} catch (Exception e) {
+					log.debug("Failed to send error to client: {}", e.getMessage());
+				}
+			})
+			.doOnComplete(() -> {
+				try {
+					emitter.complete();
+				} catch (Exception e) {
+					log.debug("Failed to complete emitter: {}", e.getMessage());
+				}
+			})
+			.subscribe();
+		
+		return emitter;
+	}
+
+}

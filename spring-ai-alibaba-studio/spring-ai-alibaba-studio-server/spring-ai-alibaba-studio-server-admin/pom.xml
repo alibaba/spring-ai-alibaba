@@ -46,11 +46,6 @@
             <artifactId>spring-ai-alibaba-studio-server-openapi</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-graph-nodes</artifactId>
-            <version>${spring-ai-graph.version}</version>
-        </dependency>
 
         <!-- aop -->
         <dependency>
@@ -119,6 +114,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-graph-nodes</artifactId>
+            <version>1.1.0.0-SNAPSHOT</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>

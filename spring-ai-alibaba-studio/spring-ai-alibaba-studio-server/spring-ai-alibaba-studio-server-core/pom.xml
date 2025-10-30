@@ -45,6 +45,12 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-graph-core</artifactId>
+            <version>${spring-ai-graph.version}</version>
+        </dependency>
+
         <!-- db -->
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -230,5 +236,33 @@
             <groupId>io.modelcontextprotocol.sdk</groupId>
             <artifactId>mcp</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.9.0</version>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
