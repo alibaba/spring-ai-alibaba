@@ -1,5 +1,3 @@
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) [![Static Badge](https://img.shields.io/badge/maven--snapshots-0.0.2--SNAPSHOT-blue)][snapshots] [![Maven Central](https://img.shields.io/maven-central/v/org.bsc.langgraph4j/langgraph4j-copilotkit.svg)][releases][![discord](https://img.shields.io/discord/1364514593765986365?logo=discord&style=flat)](https://discord.gg/szVVztSYKh)
-
 # Visualized agent UI based on CopilotKit
 
 Compatible with [AG-UI protocol][AG-UI] with [CopilotKit] integration
@@ -9,11 +7,9 @@ Compatible with [AG-UI protocol][AG-UI] with [CopilotKit] integration
 ```mermaid
 flowchart LR
     User((User))
-    CopilotKit(Copilot Kit)
-    SAA Adaptor (SAA AGUI Adaptor
-    Typescript)
-    SAAServer(SAA AGUI Adaptor
-    Java)
+    CopilotKit(Copilot Kit) 
+    SAAAdaptor(SAA AGUI Adaptor Typescript)
+    SAAServer(SAA AGUI Adaptor Java)
     Agent(Agent)
     subgraph "AG-UI-APP"
         CopilotKit --> SAAAdaptor
