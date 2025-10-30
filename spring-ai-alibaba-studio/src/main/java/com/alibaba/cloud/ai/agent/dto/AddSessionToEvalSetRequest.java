@@ -23,26 +23,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * associate a session with an evaluation set.
  */
 public class AddSessionToEvalSetRequest {
-  @JsonProperty("evalId")
-  public String evalId;
+	@JsonProperty("evalId")
+	public String evalId;
 
-  @JsonProperty("sessionId")
-  public String sessionId;
+	@JsonProperty("sessionId")
+	public String sessionId;
 
-  @JsonProperty("userId")
-  public String userId;
+	@JsonProperty("userId")
+	public String userId;
 
-  public AddSessionToEvalSetRequest() {}
+	public AddSessionToEvalSetRequest() {
+	}
 
-  public String getEvalId() {
-    return evalId;
-  }
+	public String getEvalId() {
+		return evalId;
+	}
 
-  public String getSessionId() {
-    return sessionId;
-  }
+	public String getSessionId() {
+		return sessionId;
+	}
 
-  public String getUserId() {
-    return userId;
-  }
+	public String getUserId() {
+		return userId;
+	}
 }

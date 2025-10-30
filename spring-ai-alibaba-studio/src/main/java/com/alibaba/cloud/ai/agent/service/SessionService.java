@@ -19,57 +19,57 @@ package com.alibaba.cloud.ai.agent.service;
 import com.alibaba.cloud.ai.agent.dto.ListSessionsResponse;
 import com.alibaba.cloud.ai.agent.dto.Session;
 
-import reactor.core.publisher.Mono;
-
 import java.util.Map;
 import java.util.Optional;
+
+import reactor.core.publisher.Mono;
 
 /**
  * Service interface for managing user sessions.
  */
 public interface SessionService {
 
-  /**
-   * Retrieves a session by its identifiers.
-   *
-   * @param appName The application name.
-   * @param userId The user ID.
-   * @param sessionId The session ID.
-   * @param state Optional state filter.
-   * @return A Mono containing an Optional Session.
-   */
-  Mono<Optional<Session>> getSession(
-      String appName, String userId, String sessionId, Optional<Map<String, Object>> state);
+	/**
+	 * Retrieves a session by its identifiers.
+	 *
+	 * @param appName The application name.
+	 * @param userId The user ID.
+	 * @param sessionId The session ID.
+	 * @param state Optional state filter.
+	 * @return A Mono containing an Optional Session.
+	 */
+	Mono<Optional<Session>> getSession(
+			String appName, String userId, String sessionId, Optional<Map<String, Object>> state);
 
-  /**
-   * Lists all sessions for a given app and user.
-   *
-   * @param appName The application name.
-   * @param userId The user ID.
-   * @return A Mono containing the list of sessions response.
-   */
-  Mono<ListSessionsResponse> listSessions(String appName, String userId);
+	/**
+	 * Lists all sessions for a given app and user.
+	 *
+	 * @param appName The application name.
+	 * @param userId The user ID.
+	 * @return A Mono containing the list of sessions response.
+	 */
+	Mono<ListSessionsResponse> listSessions(String appName, String userId);
 
-  /**
-   * Creates a new session.
-   *
-   * @param appName The application name.
-   * @param userId The user ID.
-   * @param initialState The initial state for the session.
-   * @param sessionId The session ID (optional, can be null for auto-generation).
-   * @return A Mono containing the created Session.
-   */
-  Mono<Session> createSession(
-      String appName, String userId, Map<String, Object> initialState, String sessionId);
+	/**
+	 * Creates a new session.
+	 *
+	 * @param appName The application name.
+	 * @param userId The user ID.
+	 * @param initialState The initial state for the session.
+	 * @param sessionId The session ID (optional, can be null for auto-generation).
+	 * @return A Mono containing the created Session.
+	 */
+	Mono<Session> createSession(
+			String appName, String userId, Map<String, Object> initialState, String sessionId);
 
-  /**
-   * Deletes a session.
-   *
-   * @param appName The application name.
-   * @param userId The user ID.
-   * @param sessionId The session ID to delete.
-   * @return A Mono that completes when the deletion is done.
-   */
-  Mono<Void> deleteSession(String appName, String userId, String sessionId);
+	/**
+	 * Deletes a session.
+	 *
+	 * @param appName The application name.
+	 * @param userId The user ID.
+	 * @param sessionId The session ID to delete.
+	 * @return A Mono that completes when the deletion is done.
+	 */
+	Mono<Void> deleteSession(String appName, String userId, String sessionId);
 }
 

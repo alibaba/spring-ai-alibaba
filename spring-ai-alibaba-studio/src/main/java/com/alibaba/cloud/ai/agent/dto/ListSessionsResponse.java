@@ -25,20 +25,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Response object containing a list of sessions.
  */
 public class ListSessionsResponse {
-  private final List<Session> sessions;
+	private final List<Session> sessions;
 
-  @JsonCreator
-  public ListSessionsResponse(@JsonProperty("sessions") List<Session> sessions) {
-    this.sessions = sessions;
-  }
+	@JsonCreator
+	public ListSessionsResponse(@JsonProperty("sessions") List<Session> sessions) {
+		this.sessions = sessions;
+	}
 
-  @JsonProperty("sessions")
-  public List<Session> sessions() {
-    return sessions;
-  }
+	public static ListSessionsResponse of(List<Session> sessions) {
+		return new ListSessionsResponse(sessions);
+	}
 
-  public static ListSessionsResponse of(List<Session> sessions) {
-    return new ListSessionsResponse(sessions);
-  }
+	@JsonProperty("sessions")
+	public List<Session> sessions() {
+		return sessions;
+	}
 }
 

@@ -57,22 +57,22 @@ import jakarta.annotation.Nonnull;
  */
 public interface AgentLoader {
 
-  /**
-   * Returns a list of available agent names.
-   *
-   * @return ImmutableList of agent names. Must not return null - return an empty list if no agents
-   *     are available.
-   */
-  @Nonnull
-  List<String> listAgents();
+	/**
+	 * Returns a list of available agent names.
+	 *
+	 * @return ImmutableList of agent names. Must not return null - return an empty list if no agents
+	 *     are available.
+	 */
+	@Nonnull
+	List<String> listAgents();
 
-  /**
-   * Loads the BaseAgent instance for the specified agent name.
-   *
-   * @param name the name of the agent to load
-   * @return BaseAgent instance for the given name
-   * @throws java.util.NoSuchElementException if the agent doesn't exist
-   * @throws IllegalStateException if the agent exists but fails to load
-   */
-  BaseAgent loadAgent(String name);
+	/**
+	 * Loads the BaseAgent instance for the specified agent name.
+	 *
+	 * @param name the name of the agent to load
+	 * @return BaseAgent instance for the given name
+	 * @throws java.util.NoSuchElementException if the agent doesn't exist
+	 * @throws IllegalStateException if the agent exists but fails to load
+	 */
+	BaseAgent loadAgent(String name);
 }

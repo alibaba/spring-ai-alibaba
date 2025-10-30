@@ -27,17 +27,17 @@ import org.slf4j.LoggerFactory;
 /** Service for creating and caching Runner instances. */
 @Component
 public class RunnerService {
-  private static final Logger log = LoggerFactory.getLogger(RunnerService.class);
+	private static final Logger log = LoggerFactory.getLogger(RunnerService.class);
 
-  private final AgentLoader agentProvider;
+	private final AgentLoader agentProvider;
 
-  public RunnerService(
-      AgentLoader agentProvider) {
-    this.agentProvider = agentProvider;
-  }
+	public RunnerService(
+			AgentLoader agentProvider) {
+		this.agentProvider = agentProvider;
+	}
 
-  /** Called by hot loader when agents are updated */
-  public BaseAgent getAgent(String agentName) {
-    return agentProvider.loadAgent(agentName);
-  }
+	/** Called by hot loader when agents are updated */
+	public BaseAgent getAgent(String agentName) {
+		return agentProvider.loadAgent(agentName);
+	}
 }

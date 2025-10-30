@@ -24,21 +24,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * representation (e.g., DOT source).
  */
 public class GraphResponse {
-  @JsonProperty("dotSrc")
-  public String dotSrc;
+	@JsonProperty("dotSrc")
+	public String dotSrc;
 
-  /**
-   * Constructs a GraphResponse.
-   *
-   * @param dotSrc The graph source string (e.g., in DOT format).
-   */
-  public GraphResponse(String dotSrc) {
-    this.dotSrc = dotSrc;
-  }
+	/**
+	 * Constructs a GraphResponse.
+	 *
+	 * @param dotSrc The graph source string (e.g., in DOT format).
+	 */
+	public GraphResponse(String dotSrc) {
+		this.dotSrc = dotSrc;
+	}
 
-  public GraphResponse() {}
+	public GraphResponse() {
+	}
 
-  public String getDotSrc() {
-    return dotSrc;
-  }
+	public String getDotSrc() {
+		return dotSrc;
+	}
 }

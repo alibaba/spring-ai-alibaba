@@ -43,14 +43,14 @@ public final class OtlpFileSpanExporter implements SpanExporter {
 
 	private final StudioObservabilityService studioObservabilityService;
 
-	/** Returns a new {@link OtlpFileSpanExporter}. */
-	public static SpanExporter create() {
-		return new OtlpFileSpanExporter(new StudioObservabilityProperties());
-	}
-
 	private OtlpFileSpanExporter(StudioObservabilityProperties studioObservabilityProperties) {
 		this.studioObservabilityProperties = studioObservabilityProperties;
 		this.studioObservabilityService = new StudioObservabilityServiceImpl(studioObservabilityProperties);
+	}
+
+	/** Returns a new {@link OtlpFileSpanExporter}. */
+	public static SpanExporter create() {
+		return new OtlpFileSpanExporter(new StudioObservabilityProperties());
 	}
 
 	@Override

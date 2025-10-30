@@ -32,25 +32,25 @@ public class StudioObservabilityProperties {
 
 	private String outputFile;
 
-	public boolean isEnabled() {
-		return this.enabled;
+	public StudioObservabilityProperties() {
+		this.enabled = true;
+		this.outputFile = "spring-ai-alibaba-studio/spans.json";
 	}
 
-	public String getOutputFile() {
-		return this.outputFile;
+	public boolean isEnabled() {
+		return this.enabled;
 	}
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
 	}
 
-	public void setOutputFile(String outputFile) {
-		this.outputFile = outputFile;
+	public String getOutputFile() {
+		return this.outputFile;
 	}
 
-	public StudioObservabilityProperties() {
-		this.enabled = true;
-		this.outputFile = "spring-ai-alibaba-studio/spans.json";
+	public void setOutputFile(String outputFile) {
+		this.outputFile = outputFile;
 	}
 
 }

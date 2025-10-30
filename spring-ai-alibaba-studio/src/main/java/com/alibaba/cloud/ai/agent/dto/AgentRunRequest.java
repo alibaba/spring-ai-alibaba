@@ -27,52 +27,53 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * to execute an agent run.
  */
 public class AgentRunRequest {
-  @JsonProperty("appName")
-  public String appName;
+	@JsonProperty("appName")
+	public String appName;
 
-  @JsonProperty("userId")
-  public String userId;
+	@JsonProperty("userId")
+	public String userId;
 
-  @JsonProperty("sessionId")
-  public String sessionId;
+	@JsonProperty("sessionId")
+	public String sessionId;
 
-  @JsonProperty("newMessage")
-  public UserMessage newMessage;
+	@JsonProperty("newMessage")
+	public UserMessage newMessage;
 
-  @JsonProperty("streaming")
-  public boolean streaming = false;
+	@JsonProperty("streaming")
+	public boolean streaming = false;
 
-  /**
-   * Optional state delta to merge into the session state before running the agent. This allows
-   * updating session state dynamically per request, useful for injecting configuration (e.g.,
-   * replay mode settings) without modifying the stored session.
-   */
-  @JsonProperty("stateDelta")
-  public Map<String, Object> stateDelta;
+	/**
+	 * Optional state delta to merge into the session state before running the agent. This allows
+	 * updating session state dynamically per request, useful for injecting configuration (e.g.,
+	 * replay mode settings) without modifying the stored session.
+	 */
+	@JsonProperty("stateDelta")
+	public Map<String, Object> stateDelta;
 
-  public AgentRunRequest() {}
+	public AgentRunRequest() {
+	}
 
-  public String getAppName() {
-    return appName;
-  }
+	public String getAppName() {
+		return appName;
+	}
 
-  public String getUserId() {
-    return userId;
-  }
+	public String getUserId() {
+		return userId;
+	}
 
-  public String getSessionId() {
-    return sessionId;
-  }
+	public String getSessionId() {
+		return sessionId;
+	}
 
-  public UserMessage getNewMessage() {
-    return newMessage;
-  }
+	public UserMessage getNewMessage() {
+		return newMessage;
+	}
 
-  public boolean getStreaming() {
-    return streaming;
-  }
+	public boolean getStreaming() {
+		return streaming;
+	}
 
-  public Map<String, Object> getStateDelta() {
-    return stateDelta;
-  }
+	public Map<String, Object> getStateDelta() {
+		return stateDelta;
+	}
 }

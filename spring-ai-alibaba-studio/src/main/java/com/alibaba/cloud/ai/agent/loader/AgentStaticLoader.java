@@ -16,16 +16,7 @@
 
 package com.alibaba.cloud.ai.agent.loader;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-
-import org.springframework.ai.chat.model.ChatModel;
-
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
@@ -50,31 +41,32 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
  */
 class AgentStaticLoader implements AgentLoader {
 
-  private Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
+	private Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
 
-  public AgentStaticLoader() { }
+	public AgentStaticLoader() {
+	}
 
-  public AgentStaticLoader(BaseAgent... agents) {
-    this.agents = stream(agents).collect(toUnmodifiableMap(BaseAgent::name, identity()));
-  }
+	public AgentStaticLoader(BaseAgent... agents) {
+		this.agents = stream(agents).collect(toUnmodifiableMap(BaseAgent::name, identity()));
+	}
 
-  @Override
-  @Nonnull
-  public List<String> listAgents() {
-    return agents.keySet().stream().toList();
-  }
+	@Override
+	@Nonnull
+	public List<String> listAgents() {
+		return agents.keySet().stream().toList();
+	}
 
-  @Override
-  public BaseAgent loadAgent(String name) {
-    if (name == null || name.trim().isEmpty()) {
-      throw new IllegalArgumentException("Agent name cannot be null or empty");
-    }
+	@Override
+	public BaseAgent loadAgent(String name) {
+		if (name == null || name.trim().isEmpty()) {
+			throw new IllegalArgumentException("Agent name cannot be null or empty");
+		}
 
-    BaseAgent agent = agents.get(name);
-    if (agent == null) {
-      throw new NoSuchElementException("Agent not found: " + name);
-    }
+		BaseAgent agent = agents.get(name);
+		if (agent == null) {
+			throw new NoSuchElementException("Agent not found: " + name);
+		}
 
-    return agent;
-  }
+		return agent;
+	}
 }

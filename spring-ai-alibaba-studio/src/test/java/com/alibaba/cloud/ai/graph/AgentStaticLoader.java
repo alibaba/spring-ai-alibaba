@@ -52,44 +52,44 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
 @Component
 class AgentStaticLoader implements AgentLoader {
 
-  private Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
+	private Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
 
-  public AgentStaticLoader() throws GraphStateException {
-    // Create DashScopeApi instance using the API key from environment variable
-    DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
-    // Create DashScope ChatModel instance
-    ChatModel chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
+	public AgentStaticLoader() throws GraphStateException {
+		// Create DashScopeApi instance using the API key from environment variable
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+		// Create DashScope ChatModel instance
+		ChatModel chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
 
-    ReactAgent agent = ReactAgent.builder()
-            .name("single_agent")
-            .model(chatModel)
-            .saver(new MemorySaver())
-            .tools(PoetTool.createPoetToolCallback())
-            .build();
-    this.agents.put("single_agent", agent);
-  }
+		ReactAgent agent = ReactAgent.builder()
+				.name("single_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.tools(PoetTool.createPoetToolCallback())
+				.build();
+		this.agents.put("single_agent", agent);
+	}
 
-  public AgentStaticLoader(BaseAgent... agents) {
-    this.agents = stream(agents).collect(toUnmodifiableMap(BaseAgent::name, identity()));
-  }
+	public AgentStaticLoader(BaseAgent... agents) {
+		this.agents = stream(agents).collect(toUnmodifiableMap(BaseAgent::name, identity()));
+	}
 
-  @Override
-  @Nonnull
-  public List<String> listAgents() {
-    return agents.keySet().stream().toList();
-  }
+	@Override
+	@Nonnull
+	public List<String> listAgents() {
+		return agents.keySet().stream().toList();
+	}
 
-  @Override
-  public BaseAgent loadAgent(String name) {
-    if (name == null || name.trim().isEmpty()) {
-      throw new IllegalArgumentException("Agent name cannot be null or empty");
-    }
+	@Override
+	public BaseAgent loadAgent(String name) {
+		if (name == null || name.trim().isEmpty()) {
+			throw new IllegalArgumentException("Agent name cannot be null or empty");
+		}
 
-    BaseAgent agent = agents.get(name);
-    if (agent == null) {
-      throw new NoSuchElementException("Agent not found: " + name);
-    }
+		BaseAgent agent = agents.get(name);
+		if (agent == null) {
+			throw new NoSuchElementException("Agent not found: " + name);
+		}
 
-    return agent;
-  }
+		return agent;
+	}
 }

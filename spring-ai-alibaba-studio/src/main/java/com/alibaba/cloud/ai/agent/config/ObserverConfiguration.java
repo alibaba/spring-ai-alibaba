@@ -15,10 +15,11 @@
  */
 package com.alibaba.cloud.ai.agent.config;
 
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.aop.ObservedAspect;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.aop.ObservedAspect;
 
 @Configuration(proxyBeanMethods = false)
 public class ObserverConfiguration {

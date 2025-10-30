@@ -43,15 +43,10 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 public class StudioObservabilityServiceImpl implements StudioObservabilityService {
 
 	private static final Logger logger = Logger.getLogger(StudioObservabilityServiceImpl.class.getName());
-
-	private final ObjectMapper objectMapper;
-
-	private final StudioObservabilityProperties studioObservabilityProperties;
-
-	private final Path outputPath;
-
 	private static final String LINE_SEPARATOR = System.lineSeparator();
-
+	private final ObjectMapper objectMapper;
+	private final StudioObservabilityProperties studioObservabilityProperties;
+	private final Path outputPath;
 	private final List<String> keyPrefixes = List.of("gen_ai.operation", "spring.ai");
 
 	public StudioObservabilityServiceImpl(StudioObservabilityProperties studioObservabilityProperties) {
@@ -213,12 +208,6 @@ public class StudioObservabilityServiceImpl implements StudioObservabilityServic
 		return spanDataList;
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record ListResponse(@JsonProperty("traceId") String traceId, @JsonProperty("spansSize") Integer spansSize,
-			@JsonProperty("startTimeUnixNano") String startTimeUnixNano,
-			@JsonProperty("endTimeUnixNano") String endTimeUnixNano) {
-	}
-
 	@Override
 	public String clearExportContent() {
 		try {
@@ -230,6 +219,12 @@ public class StudioObservabilityServiceImpl implements StudioObservabilityServic
 			logger.log(Level.SEVERE, "Error clearing the file content", e);
 			return "Error clearing the file content: " + e.getMessage();
 		}
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record ListResponse(@JsonProperty("traceId") String traceId, @JsonProperty("spansSize") Integer spansSize,
+							   @JsonProperty("startTimeUnixNano") String startTimeUnixNano,
+							   @JsonProperty("endTimeUnixNano") String endTimeUnixNano) {
 	}
 
 }

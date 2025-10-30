@@ -33,37 +33,37 @@ import static java.util.stream.Collectors.toList;
 @RestController
 public class AgentController {
 
-  private static final Logger log = LoggerFactory.getLogger(AgentController.class);
+	private static final Logger log = LoggerFactory.getLogger(AgentController.class);
 
-  private final AgentLoader agentProvider;
+	private final AgentLoader agentProvider;
 
-  /**
-   * Constructs the AgentController.
-   *
-   * @param agentProvider The provider for loading agents.
-   */
-  @Autowired
-  public AgentController(AgentLoader agentProvider) {
-    this.agentProvider = agentProvider;
-    List<String> agentNames = this.agentProvider.listAgents();
-    log.info(
-        "AgentController initialized with {} dynamic agents: {}", agentNames.size(), agentNames);
-    if (agentNames.isEmpty()) {
-      log.warn(
-          "Agent registry is empty. Check 'adk.agents.source-dir' property and compilation"
-              + " logs.");
-    }
-  }
+	/**
+	 * Constructs the AgentController.
+	 *
+	 * @param agentProvider The provider for loading agents.
+	 */
+	@Autowired
+	public AgentController(AgentLoader agentProvider) {
+		this.agentProvider = agentProvider;
+		List<String> agentNames = this.agentProvider.listAgents();
+		log.info(
+				"AgentController initialized with {} dynamic agents: {}", agentNames.size(), agentNames);
+		if (agentNames.isEmpty()) {
+			log.warn(
+					"Agent registry is empty. Check 'adk.agents.source-dir' property and compilation"
+							+ " logs.");
+		}
+	}
 
-  /**
-   * Lists available applications. Currently returns only the configured root agent's name.
-   *
-   * @return A list containing the root agent's name.
-   */
-  @GetMapping("/list-apps")
-  public List<String> listApps() {
-    List<String> agentNames = agentProvider.listAgents();
-    log.info("Listing apps from dynamic registry. Found: {}", agentNames);
-    return agentNames.stream().sorted().collect(toList());
-  }
+	/**
+	 * Lists available applications. Currently returns only the configured root agent's name.
+	 *
+	 * @return A list containing the root agent's name.
+	 */
+	@GetMapping("/list-apps")
+	public List<String> listApps() {
+		List<String> agentNames = agentProvider.listAgents();
+		log.info("Listing apps from dynamic registry. Found: {}", agentNames);
+		return agentNames.stream().sorted().collect(toList());
+	}
 }
