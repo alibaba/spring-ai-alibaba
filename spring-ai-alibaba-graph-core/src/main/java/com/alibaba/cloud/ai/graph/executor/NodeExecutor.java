@@ -332,8 +332,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 
-				// save checkpoint after embedded flux completes
 				context.buildCurrentNodeOutput();
+
+				context.doListeners(NODE_AFTER, null);
 			}
 			catch (Exception e) {
 				throw new RuntimeException(e);
@@ -396,11 +397,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 		// Process the GraphFlux stream with preserved node ID
 		Flux<GraphResponse<NodeOutput>> processedFlux = graphFlux.getFlux()
 				.map(element -> {
-					if (graphFlux.hasMapResult()){
-						lastDataRef.set(graphFlux.getMapResult().apply(element));
-					}else {
-						lastDataRef.set(element);
-					}
+					lastDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 
 					// Create StreamingOutput with GraphFlux's nodeId (preserves real node identity)
 					StreamingOutput output = graphFlux.hasChunkResult() ?
@@ -436,8 +433,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 
-				// Save checkpoint after GraphFlux completes
 				context.buildCurrentNodeOutput();
+
+				context.doListeners(NODE_AFTER, null);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -476,7 +474,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 					return graphFlux.getFlux()
 							.map(element -> {
-								nodeDataRef.set(graphFlux.getMapResult().apply(element));
+								nodeDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 								// Create StreamingOutput with specific nodeId (preserves parallel node identity)
 								StreamingOutput output = graphFlux.hasChunkResult() ?
 										new StreamingOutput(graphFlux.getChunkResult().apply(element), element, nodeId, context.getOverallState()):
@@ -520,8 +518,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 
-				// Save checkpoint after ParallelGraphFlux completes
 				context.buildCurrentNodeOutput();
+
+				context.doListeners(NODE_AFTER, null);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}

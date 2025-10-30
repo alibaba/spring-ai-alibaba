@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.SubGraphInterruptionException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
@@ -90,7 +89,7 @@ public class CompiledSubGraphTest {
 	private CompiledGraph subGraph(BaseCheckpointSaver saver) throws Exception {
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
+			.saverConfig(SaverConfig.builder().register(saver).build())
 			.interruptAfter("NODE3.2")
 			.build();
 
@@ -112,7 +111,7 @@ public class CompiledSubGraphTest {
 		var saver = new MemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
+			.saverConfig(SaverConfig.builder().register(saver).build())
 			.build();
 
 		var subGraph = subGraph(saver); // create subgraph
@@ -191,7 +190,7 @@ public class CompiledSubGraphTest {
 		var saver = new MemorySaver();
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
+			.saverConfig(SaverConfig.builder().register(saver).build())
 			.build();
 
 		var subGraph = subGraph(saver); // create subgraph
@@ -254,7 +253,7 @@ public class CompiledSubGraphTest {
 		var subGraph = subGraph(childSaver); // create subgraph
 
 		var compileConfig = CompileConfig.builder()
-			.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), parentSaver).build())
+			.saverConfig(SaverConfig.builder().register(parentSaver).build())
 			.build();
 
 		var parentGraph = new StateGraph(getStrategyFactory()).addEdge(START, "NODE1")

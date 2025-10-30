@@ -22,7 +22,6 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.interceptor.modelfallback.ModelFallbackInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.model.ChatModel;
@@ -40,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class ModelfallbackTest {
 
 	private ChatModelCallCounter chatModel;
@@ -47,7 +47,7 @@ class ModelfallbackTest {
 
 	private static CompileConfig getCompileConfig() {
 		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.register(new MemorySaver())
 				.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 		return compileConfig;
@@ -69,7 +69,7 @@ class ModelfallbackTest {
 
 	@Test
 	public void testReactAgent() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 		ModelFallbackInterceptor modelFallbackInterceptor = ModelFallbackInterceptor
 				.builder()
 				.addFallbackModel(fallbackModel)
@@ -80,7 +80,7 @@ class ModelfallbackTest {
 						.name("single_agent")
 						.model(chatModel)
 						.interceptors(modelFallbackInterceptor)
-						.compileConfig(compileConfig)
+						.saver(new MemorySaver())
 						.build();
 
 		try {
