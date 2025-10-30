@@ -22,9 +22,9 @@ import java.util.List;
 import jakarta.annotation.Nonnull;
 
 /**
- * Interface for loading agents to the ADK Web Server.
+ * Interface for loading agents.
  *
- * <p>Users implement this interface to register their agents with ADK Web Server.
+ * <p>Users implement this interface to register their agents.
  *
  * <p><strong>Thread Safety:</strong> Implementation must be thread-safe as it will be used as
  * Spring singleton beans and accessed concurrently by multiple HTTP requests.
@@ -49,11 +49,6 @@ import jakarta.annotation.Nonnull;
  * }
  * }</pre>
  *
- * <p>Then use with Maven plugin:
- *
- * <pre>{@code
- * mvn google-adk:web -Dagents=com.acme.MyAgentLoader
- * }</pre>
  */
 public interface AgentLoader {
 

@@ -50,7 +50,7 @@ public class AgentController {
 				"AgentController initialized with {} dynamic agents: {}", agentNames.size(), agentNames);
 		if (agentNames.isEmpty()) {
 			log.warn(
-					"Agent registry is empty. Check 'adk.agents.source-dir' property and compilation"
+					"Agent registry is empty. Check 'saa.agents.source-dir' property and compilation"
 							+ " logs.");
 		}
 	}
