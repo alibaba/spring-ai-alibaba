@@ -1,3 +1,4 @@
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -23,7 +24,7 @@
   }
 
   .disabled-icon-btn {
-    color: e('var(--@{ant-prefix}-color-text-disabled)');
+    color: var(--ant-color-text-disabled);
     cursor: not-allowed;
   }
 }
