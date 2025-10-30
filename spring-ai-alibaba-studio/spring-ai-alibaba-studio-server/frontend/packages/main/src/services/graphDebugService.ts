@@ -98,10 +98,8 @@ class GraphDebugService {
         }
       });
       
-      console.log('🔍 Extracted from Mermaid:', { nodes, edges });
       
     } catch (error) {
-      console.warn('Failed to parse mermaid graph:', error);
     }
 
     return { nodes, edges };
@@ -180,13 +178,6 @@ class GraphDebugService {
       method: 'GET',
       params: { ownerID },
     });
-    console.log('🔍 GraphDebug API Response:', {
-      url: `${OBSERVABILITY_BASE_URL}/flows?ownerID=${ownerID}`,
-      response: response,
-      data: response.data,
-      dataType: Array.isArray(response.data) ? 'array' : typeof response.data,
-      dataLength: Array.isArray(response.data) ? response.data.length : 'not array'
-    });
     
     // 根据实际API响应格式，直接处理数组数据
     let apiRecords: any[] = [];
@@ -201,13 +192,11 @@ class GraphDebugService {
       // 兼容包装格式 { flows: [...] }
       apiRecords = response.data.flows;
     } else {
-      console.warn('🚨 Unexpected API response format:', response.data);
       apiRecords = [];
     }
 
     // 映射到前端数据格式
     const records: IGraphCard[] = apiRecords.map((flow: any) => {
-      console.log('🔍 Processing flow:', flow);
       return {
         id: flow.id || '',
         name: flow.title || flow.name || '未命名流程', // API使用title字段
@@ -217,8 +206,6 @@ class GraphDebugService {
         status: this.normalizeStatus(flow.status || 'ACTIVE'), // 默认为ACTIVE状态
       };
     });
-
-    console.log('✅ Mapped Records:', records);
 
     return {
       records,
@@ -237,22 +224,9 @@ class GraphDebugService {
     
     const flow: any = response.data;
 
-    console.log('🔍 GraphById API Response:', {
-      url: `${OBSERVABILITY_BASE_URL}/flows/${graphId}`,
-      flow: flow,
-      stateGraph: flow.stateGraph,
-      mermaidGraph: flow.mermaidGraph ? 'present' : 'missing'
-    });
-
     // 从 stateGraph 和 mermaidGraph 中提取节点和边信息
     const { nodes, edges } = this.extractNodesAndEdges(flow.stateGraph, flow.mermaidGraph);
 
-    console.log('✅ Extracted nodes and edges:', { 
-      nodeCount: nodes.length, 
-      edgeCount: edges.length,
-      nodes: nodes.map(n => n.id),
-      edges: edges.map(e => `${e.source}->${e.target}`)
-    });
 
     return {
       id: flow.id || graphId,
@@ -281,39 +255,53 @@ class GraphDebugService {
       // 设置当前图
       await this.setCurrentGraph(graphId);
 
+
       // 创建增强节点输出流
       const url = new URL(`${OBSERVABILITY_BASE_URL}/graph/node/stream_enhanced`, window.location.origin);
       url.searchParams.append('text', inputText);
+      
+      
       const es = new EventSource(url.toString());
+      let nodeCount = 0;
+      let isCompleted = false;
 
       const handleMessage = (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data);
+          nodeCount++;
+          
+          
           onNodeUpdate(data);
-          if (data?.is_final && data?.execution_status === 'SUCCESS') {
+          
+          // 检查是否为最终节点
+          if (data?.is_final || data?.execution_status === 'COMPLETED') {
+            isCompleted = true;
             if (onComplete) onComplete();
           }
         } catch (err) {
-          console.error('Failed to parse enhanced node output:', err);
           if (onError) onError(err);
         }
       };
 
-      const handleError = (event: Event) => {
-        console.error('Enhanced node stream error:', event);
-        if (onError) onError(event);
+      const handleError = (error: Event) => {
+        if (onError) onError(error);
       };
 
+      const handleOpen = () => {
+      };
+
+      es.addEventListener('open', handleOpen);
       es.addEventListener('message', handleMessage as any);
       es.addEventListener('error', handleError as any);
 
       return () => {
+        isCompleted = true;
+        es.removeEventListener('open', handleOpen);
         es.removeEventListener('message', handleMessage as any);
         es.removeEventListener('error', handleError as any);
         es.close();
       };
     } catch (e) {
-      console.error('Failed to setup enhanced node stream:', e);
       if (onError) onError(e);
       return () => {};
     }
@@ -333,39 +321,47 @@ class GraphDebugService {
       // 设置当前图
       await this.setCurrentGraph(graphId);
 
+
       // 创建基础节点输出流
       const url = new URL(`${OBSERVABILITY_BASE_URL}/graph/node/stream`, window.location.origin);
       url.searchParams.append('text', inputText);
       const es = new EventSource(url.toString());
 
+      let isCompleted = false;
+
       const handleMessage = (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data);
           onNodeUpdate(data);
+          
           if (data?.node === 'END') {
+            isCompleted = true;
             if (onComplete) onComplete();
           }
         } catch (err) {
-          console.error('Failed to parse basic node output:', err);
           if (onError) onError(err);
         }
       };
 
       const handleError = (event: Event) => {
-        console.error('Basic node stream error:', event);
         if (onError) onError(event);
       };
 
+      const handleOpen = () => {
+      };
+
+      es.addEventListener('open', handleOpen);
       es.addEventListener('message', handleMessage as any);
       es.addEventListener('error', handleError as any);
 
       return () => {
+        isCompleted = true;
+        es.removeEventListener('open', handleOpen);
         es.removeEventListener('message', handleMessage as any);
         es.removeEventListener('error', handleError as any);
         es.close();
       };
     } catch (e) {
-      console.error('Failed to setup basic node stream:', e);
       if (onError) onError(e);
       return () => {};
     }
@@ -399,13 +395,11 @@ class GraphDebugService {
             if (onComplete) onComplete();
           }
         } catch (err) {
-          console.error('Failed to parse state snapshot:', err);
           if (onError) onError(err);
         }
       };
 
       const handleError = (event: Event) => {
-        console.error('State snapshot stream error:', event);
         if (onError) onError(event);
       };
 
@@ -418,7 +412,6 @@ class GraphDebugService {
         es.close();
       };
     } catch (e) {
-      console.error('Failed to setup state snapshot stream:', e);
       if (onError) onError(e);
       return () => {};
     }
@@ -446,13 +439,11 @@ class GraphDebugService {
             if (onComplete) onComplete();
           }
         } catch (err) {
-          console.error('Failed to parse enhanced node output:', err);
           if (onError) onError(err);
         }
       };
 
       const handleError = (event: Event) => {
-        console.error('Enhanced node stream error:', event);
         if (onError) onError(event);
       };
 
@@ -465,7 +456,6 @@ class GraphDebugService {
         es.close();
       };
     } catch (e) {
-      console.error('Failed to setup enhanced node stream:', e);
       if (onError) onError(e);
       return () => {};
     }
@@ -493,13 +483,11 @@ class GraphDebugService {
             if (onComplete) onComplete();
           }
         } catch (err) {
-          console.error('Failed to parse basic node output:', err);
           if (onError) onError(err);
         }
       };
 
       const handleError = (event: Event) => {
-        console.error('Basic node stream error:', event);
         if (onError) onError(event);
       };
 
@@ -512,7 +500,6 @@ class GraphDebugService {
         es.close();
       };
     } catch (e) {
-      console.error('Failed to setup basic node stream:', e);
       if (onError) onError(e);
       return () => {};
     }
@@ -541,13 +528,11 @@ class GraphDebugService {
             if (onComplete) onComplete();
           }
         } catch (err) {
-          console.error('Failed to parse state snapshot:', err);
           if (onError) onError(err);
         }
       };
 
       const handleError = (event: Event) => {
-        console.error('State snapshot stream error:', event);
         if (onError) onError(event);
       };
 
@@ -560,7 +545,6 @@ class GraphDebugService {
         es.close();
       };
     } catch (e) {
-      console.error('Failed to setup state snapshot stream:', e);
       if (onError) onError(e);
       return () => {};
     }

@@ -25,7 +25,6 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { IGraphData } from '@/types/graph';
 import { GraphStudioEvent } from './index';
-import { mockExecutionSteps } from '@/mock/graphmock';
 import { nodeTypes } from './CustomNodes';
 import graphDebugService from '@/services/graphDebugService';
 import styles from './index.module.less';
@@ -321,7 +320,6 @@ const GraphInner: React.FC<GraphProps> = ({
   useEffect(() => {
     return () => {
       if (cleanupFn) {
-        console.log('🧹 组件卸载，清理执行连接');
         cleanupFn();
       }
     };
@@ -379,7 +377,6 @@ const GraphInner: React.FC<GraphProps> = ({
     
     // 清理之前的执行
     if (cleanupFn) {
-      console.log('🧹 清理之前的执行连接');
       cleanupFn();
       setCleanupFn(null);
     }
@@ -394,12 +391,6 @@ const GraphInner: React.FC<GraphProps> = ({
       // 使用自定义输入文本或默认文本
       const inputText = customInputText || '测试图执行';
       
-      console.log('🚀 开始执行图工作流:', {
-        graphId: graphData.id,
-        graphName: graphData.name,
-        streamType: streamType,
-        inputLength: inputText?.length || 0,
-      });
       
       let cleanup: () => void;
 
@@ -428,7 +419,6 @@ const GraphInner: React.FC<GraphProps> = ({
               });
             },
             (error) => {
-              console.error('❌ 基础流式执行错误:', error);
               message.error('基础流执行过程中出现错误');
               setExecutionStatus('执行失败');
               setIsRunning(false);
@@ -471,7 +461,6 @@ const GraphInner: React.FC<GraphProps> = ({
               });
             },
             (error) => {
-              console.error('❌ 快照流式执行错误:', error);
               message.error('快照流执行过程中出现错误');
               setExecutionStatus('执行失败');
               setIsRunning(false);
@@ -521,7 +510,6 @@ const GraphInner: React.FC<GraphProps> = ({
               });
             },
             (error) => {
-              console.error('❌ 增强流式执行错误:', error);
               message.error('增强流执行过程中出现错误');
               setExecutionStatus('执行失败');
               setIsRunning(false);
@@ -567,7 +555,6 @@ const GraphInner: React.FC<GraphProps> = ({
       setExecutionStatus(`执行中 (${streamType})...`);
       message.success(`🚀 开始执行图工作流 (${streamType})`);
     } catch (error) {
-      console.error('❌ 执行失败:', error);
       message.error(`执行失败: ${error instanceof Error ? error.message : '未知错误'}`);
       setExecutionStatus('执行失败');
       setIsRunning(false);
@@ -578,7 +565,6 @@ const GraphInner: React.FC<GraphProps> = ({
   // 停止执行
   const handleStopExecution = () => {
     if (cleanupFn) {
-      console.log('⏹️ 用户停止执行');
       cleanupFn();
       setCleanupFn(null);
       setIsRunning(false);
@@ -613,7 +599,6 @@ const GraphInner: React.FC<GraphProps> = ({
       // 执行图
       await handleRunGraph(inputText);
     } catch (error) {
-      console.error('表单验证失败:', error);
     }
   };
 

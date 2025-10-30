@@ -27,11 +27,11 @@ const CreateModal: React.FC<CreateModalProps> = ({ onCancel, onOk }) => {
       const values = await form.validateFields();
       setLoading(true);
       
-      // 模拟API调用，待后端新增出创建工作流接口
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // TODO: 调用真实的创建工作流API
+      // await graphDebugService.createGraph(values);
       
       const graph: IGraphCard = {
-        id: values.template || `graph_${Date.now()}`,
+        id: `graph_${Date.now()}`, // 临时ID，实际应从API返回
         name: values.name,
         description: values.description,
         tags,

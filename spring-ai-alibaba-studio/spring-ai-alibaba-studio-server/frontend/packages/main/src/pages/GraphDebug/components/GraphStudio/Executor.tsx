@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Form,
   Input,
@@ -18,6 +18,7 @@ import {
   ReloadOutlined,
   CloseOutlined,
   StopOutlined,
+  BugOutlined,
 } from '@ant-design/icons';
 import { IGraphData } from '@/types/graph';
 import type { GraphStudioEvent } from './index';
@@ -63,6 +64,9 @@ const Executor: React.FC<ExecutorProps> = ({
   const [streamType, setStreamType] = useState<'enhanced' | 'basic' | 'snapshots'>('enhanced');
   const [cleanupFn, setCleanupFn] = useState<(() => void) | null>(null);
   const [executionStatus, setExecutionStatus] = useState<string>('');
+  
+  // 使用ref来立即标记执行状态，避免状态更新延迟导致的重复执行
+  const isExecutingRef = useRef(false);
 
   // 动态表单字段定义
   const staticFormFields: FormField[] = [
@@ -117,7 +121,6 @@ const Executor: React.FC<ExecutorProps> = ({
 
       message.success('表单初始化成功');
     } catch (error) {
-      console.error('初始化失败:', error);
       requestShowError('初始化失败，请重试');
     } finally {
       setIsInitializing(false);
@@ -126,9 +129,14 @@ const Executor: React.FC<ExecutorProps> = ({
 
   // 提交表单，启动新流程
   const callSubmit = async (formData: any) => {
-    // 清理之前的执行
+    // 防止重复执行：如果已经在执行中，直接返回
+    if (isExecutingRef.current) {
+      message.warning('任务正在执行中，请勿重复点击');
+      return;
+    }
+    isExecutingRef.current = true;
+    
     if (cleanupFn) {
-      console.log('🧹 清理之前的执行连接');
       cleanupFn();
       setCleanupFn(null);
     }
@@ -140,12 +148,6 @@ const Executor: React.FC<ExecutorProps> = ({
       const inputText = formData.inputText;
       const selectedStreamType = formData.streamType || 'enhanced';
       
-      console.log('🚀 开始执行图工作流:', {
-        graphId: graphData.id,
-        graphName: graphData.name,
-        streamType: selectedStreamType,
-        inputLength: inputText?.length || 0,
-      });
       
       let cleanup: () => void;
 
@@ -169,11 +171,11 @@ const Executor: React.FC<ExecutorProps> = ({
               });
             },
             (error) => {
-              console.error('❌ 基础流式执行错误:', error);
               requestShowError('基础流执行过程中出现错误');
               setExecutionStatus('执行失败');
               setIsLoading(false);
               setCleanupFn(null);
+              isExecutingRef.current = false; 
             },
             () => {
               dispatchEvent({
@@ -189,6 +191,7 @@ const Executor: React.FC<ExecutorProps> = ({
               setExecutionStatus('执行完成');
               setIsLoading(false);
               setCleanupFn(null);
+              isExecutingRef.current = false; 
             }
           );
           break;
@@ -212,11 +215,11 @@ const Executor: React.FC<ExecutorProps> = ({
               });
             },
             (error) => {
-              console.error('❌ 快照流式执行错误:', error);
               requestShowError('快照流执行过程中出现错误');
               setExecutionStatus('执行失败');
               setIsLoading(false);
               setCleanupFn(null);
+              isExecutingRef.current = false;
             },
             () => {
               dispatchEvent({
@@ -232,6 +235,7 @@ const Executor: React.FC<ExecutorProps> = ({
               setExecutionStatus('执行完成');
               setIsLoading(false);
               setCleanupFn(null);
+              isExecutingRef.current = false; 
             }
           );
           break;
@@ -244,7 +248,10 @@ const Executor: React.FC<ExecutorProps> = ({
             inputText,
             (nodeOutput: any) => {
               const status = nodeOutput.execution_status || 'EXECUTING';
-              setExecutionStatus(`${nodeOutput.node_id}: ${status}`);
+              const order = nodeOutput.execution_order ? `[${nodeOutput.execution_order}]` : '';
+              setExecutionStatus(`${order} ${nodeOutput.node_id}: ${status}`);
+              
+              // 确保每个节点更新都能被正确处理              
               dispatchEvent({
                 type: 'result',
                 payload: {
@@ -256,11 +263,12 @@ const Executor: React.FC<ExecutorProps> = ({
               });
             },
             (error) => {
-              console.error('❌ 增强流式执行错误:', error);
-              requestShowError('增强流执行过程中出现错误');
-              setExecutionStatus('执行失败');
+              const errorMsg = error instanceof Error ? error.message : '增强流执行过程中出现错误';
+              requestShowError(errorMsg);
+              setExecutionStatus('执行失败: ' + errorMsg);
               setIsLoading(false);
               setCleanupFn(null);
+              isExecutingRef.current = false;
             },
             () => {
               dispatchEvent({
@@ -276,6 +284,7 @@ const Executor: React.FC<ExecutorProps> = ({
               setExecutionStatus('执行完成');
               setIsLoading(false);
               setCleanupFn(null);
+              isExecutingRef.current = false; 
             }
           );
           break;
@@ -304,11 +313,11 @@ const Executor: React.FC<ExecutorProps> = ({
       setExecutionStatus(`执行中 (${selectedStreamType})...`);
       message.success(`🚀 开始执行图工作流 (${selectedStreamType})`);
     } catch (error) {
-      console.error('❌ 执行失败:', error);
       requestShowError(`执行失败: ${error instanceof Error ? error.message : '未知错误'}`);
       setExecutionStatus('执行失败');
       setIsLoading(false);
       setCleanupFn(null);
+      isExecutingRef.current = false; 
     }
   };
 
@@ -335,7 +344,6 @@ const Executor: React.FC<ExecutorProps> = ({
 
       message.success(`从节点 ${nodeId} 恢复执行成功`);
     } catch (error) {
-      console.error('恢复执行失败:', error);
       requestShowError('恢复执行失败，请重试');
     } finally {
       setIsLoading(false);
@@ -362,8 +370,8 @@ const Executor: React.FC<ExecutorProps> = ({
   useEffect(() => {
     return () => {
       if (cleanupFn) {
-        console.log('🧹 组件卸载，清理执行连接');
         cleanupFn();
+        isExecutingRef.current = false; // 组件卸载时重置执行标记
       }
     };
   }, [cleanupFn]);
@@ -371,11 +379,11 @@ const Executor: React.FC<ExecutorProps> = ({
   // 停止执行
   const handleStop = () => {
     if (cleanupFn) {
-      console.log('⏹️ 用户停止执行');
       cleanupFn();
       setCleanupFn(null);
       setIsLoading(false);
       setExecutionStatus('已停止');
+      isExecutingRef.current = false; // 重置执行标记
       message.warning('执行已停止');
     }
   };
@@ -424,6 +432,11 @@ const Executor: React.FC<ExecutorProps> = ({
 
   // 处理表单提交
   const handleSubmit = () => {
+    if (isExecutingRef.current) {
+      message.warning('任务正在执行中，请勿重复点击');
+      return;
+    }
+
     form.validateFields().then(values => {
       if (executionMode === 'new') {
         callSubmit(values);
@@ -431,6 +444,7 @@ const Executor: React.FC<ExecutorProps> = ({
         // 恢复模式需要指定节点
         callResume('feedback_classifier');
       }
+    }).catch(errorInfo => {
     });
   };
 
@@ -505,6 +519,7 @@ const Executor: React.FC<ExecutorProps> = ({
                   >
                     重置
                   </Button>
+
 
                   {isLoading ? (
                     <Button

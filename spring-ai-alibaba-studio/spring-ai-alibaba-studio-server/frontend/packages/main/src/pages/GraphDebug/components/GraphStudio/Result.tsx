@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Select,
   Collapse,
@@ -67,17 +67,25 @@ const Result: React.FC<ResultProps> = ({
   const [turns, setTurns] = useState<Turn[]>([]);
   const [activeTurns, setActiveTurns] = useState<string[]>(['1']);
   const [availableThreads, setAvailableThreads] = useState<string[]>([]);
+  const resultContentRef = useRef<HTMLDivElement>(null);
 
-  // 模拟的线程数据
-  const mockThreads = [
-    'Thread 526b1f3d-6c75-415d-8e6b-e047d8...',
-    'Thread 5231f93-d80e-462d-b7ea-8ebe950ca22',
-    'Thread 789abc12-3def-4567-8901-234567890abc',
-  ];
+  // 线程数据将从实际API获取
 
-  // 初始化数据
+  // 自动滚动到底部
+  const scrollToBottom = useCallback(() => {
+    if (resultContentRef.current) {
+      setTimeout(() => {
+        if (resultContentRef.current) {
+          resultContentRef.current.scrollTop = resultContentRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  }, []);
+
+  // 初始化数据 - 线程数据将通过props或API获取
   useEffect(() => {
-    setAvailableThreads(mockThreads);
+    // TODO: 从实际API获取可用线程列表
+    setAvailableThreads([]);
   }, []);
 
   // 处理执行结果更新（支持新的流式节点输出）
@@ -95,6 +103,7 @@ const Result: React.FC<ResultProps> = ({
         summary: '执行开始',
       };
 
+      const newTurnId = `turn_${Date.now()}`;
       setTurns(prev => [{
         id: `turn_${Date.now()}`,
         turnNumber: prev.length + 1,
@@ -104,6 +113,9 @@ const Result: React.FC<ResultProps> = ({
         currentStep: undefined,
         messages: [newMessage],
       }, ...prev]);
+      
+      setActiveTurns([newTurnId]);
+      scrollToBottom(); // 自动滚动到底部
       return;
     }
 
@@ -119,7 +131,7 @@ const Result: React.FC<ResultProps> = ({
       
       switch (streamType) {
         case 'basic':
-          // 基础节点输出流 (3.1)
+          // 基础节点输出流
           nodeId = nodeData.node || 'Unknown';
           content = JSON.stringify({
             node: nodeData.node,
@@ -133,7 +145,7 @@ const Result: React.FC<ResultProps> = ({
           break;
 
         case 'enhanced':
-          // 增强节点输出流 (3.3)
+          // 增强节点输出流
           nodeId = nodeData.node_id || 'Unknown';
           if (nodeData.execution_status) {
             switch (nodeData.execution_status) {
@@ -211,13 +223,18 @@ const Result: React.FC<ResultProps> = ({
           if (nodeData.execution_order) {
             updated[0].currentStep = nodeData.execution_order;
           }
+          
+          if (updated[0].id) {
+            setActiveTurns([updated[0].id]);
+          }
         }
         return updated;
       });
+      scrollToBottom(); // 自动滚动到底部
       return;
     }
 
-    // state_update: 状态快照流更新 (3.2)
+    // state_update: 状态快照流更新
     if (latest.type === 'state_update') {
       const stateData = latest.data;
       const streamType = latest.streamType || 'snapshots';
@@ -238,9 +255,14 @@ const Result: React.FC<ResultProps> = ({
         const updated = [...prev];
         if (updated.length > 0) {
           updated[0].messages.push(newMessage);
+          
+          if (updated[0].id) {
+            setActiveTurns([updated[0].id]);
+          }
         }
         return updated;
       });
+      scrollToBottom(); 
       return;
     }
 
@@ -262,6 +284,7 @@ const Result: React.FC<ResultProps> = ({
         }
         return updated;
       });
+      scrollToBottom(); 
       return;
     }
 
@@ -295,6 +318,7 @@ const Result: React.FC<ResultProps> = ({
         updated[0].status = 'running';
         return updated;
       });
+      scrollToBottom(); 
       return;
     }
 
@@ -322,7 +346,8 @@ const Result: React.FC<ResultProps> = ({
       }
       return updatedTurns;
     });
-  }, [executionResults]);
+    scrollToBottom(); 
+  }, [executionResults, scrollToBottom]);
 
   // 渲染消息头像
   const renderMessageAvatar = (message: Message) => {
@@ -448,7 +473,7 @@ const Result: React.FC<ResultProps> = ({
       </div>
 
       {/* Turn列表 */}
-      <div className={styles['result-content']}>
+      <div ref={resultContentRef} className={styles['result-content']}>
         <Collapse
           activeKey={activeTurns}
           onChange={handleTurnChange}

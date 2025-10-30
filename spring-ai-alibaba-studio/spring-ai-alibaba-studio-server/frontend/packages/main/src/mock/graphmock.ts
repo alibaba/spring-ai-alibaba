@@ -1,7 +1,5 @@
 /**
  * 图形调试 Mock 数据
- * 注意：此文件中的数据主要用于开发和测试目的
- * 实际生产环境应使用真实的 API 接口
  */
 
 // 客户反馈分析工作流Mock数据
@@ -101,118 +99,11 @@ export const mockDocumentPipelineGraph = {
 // 默认工作流数据（指向客户反馈分析）
 export const mockGraphData = mockFeedbackAnalysisGraph;
 
-/**
- * 模拟执行步骤数据
- * 注意：这些数据仅用于开发和测试
- * 实际应用应使用真实的流式 API 接口
- */
+// Mock execution step data has been removed
+// All execution data now comes from real streaming API endpoints
 
-// 客户反馈分析执行步骤Mock数据（已弃用，保留用于兼容性）
-export const mockFeedbackAnalysisSteps = [
-  {
-    nodeId: 'start',
-    input: '客户反馈原始数据：包含评论、评分、时间戳等信息',
-    response: '成功接收1000条客户反馈数据',
-    summary: '📥 数据输入 - 成功加载客户反馈数据',
-    execution_status: 'SUCCESS',
-    is_final: false,
-  },
-  {
-    nodeId: 'preprocess',
-    input: '原始反馈文本数据',
-    response: '完成数据清洗：去除重复、过滤无效内容、标准化格式',
-    summary: '🧹 数据预处理 - 清洗后剩余876条有效数据',
-    execution_status: 'SUCCESS',
-    is_final: false,
-  },
-  {
-    nodeId: 'sentiment',
-    input: '预处理后的文本数据',
-    response: '情感分析结果：正面52%，中性31%，负面17%',
-    summary: '😊 情感分析 - AI模型分析完成，整体情感偏正面',
-    execution_status: 'SUCCESS',
-    is_final: false,
-  },
-  {
-    nodeId: 'category',
-    input: '预处理后的文本数据',
-    response: '分类结果：产品质量(35%)，服务态度(28%)，价格(20%)，物流(17%)',
-    summary: '🏷️ 分类标记 - 识别出4个主要反馈类别',
-    execution_status: 'SUCCESS',
-    is_final: false,
-  },
-  {
-    nodeId: 'summary',
-    input: '情感分析和分类结果',
-    response: '生成综合分析报告：包含趋势分析、问题识别、改进建议',
-    summary: '📊 生成报告 - 完成客户反馈综合分析报告',
-    execution_status: 'SUCCESS',
-    is_final: false,
-  },
-  {
-    nodeId: 'end',
-    input: '分析报告',
-    response: '输出完整的客户反馈分析报告和可视化图表',
-    summary: '🎯 输出结果 - 客户反馈分析工作流完成',
-    execution_status: 'SUCCESS',
-    is_final: true,
-  },
-];
 
-// 文档处理流水线执行步骤Mock数据（已弃用，保留用于兼容性）
-export const mockDocumentPipelineSteps = [
-  {
-    nodeId: 'start',
-    input: '上传的文档文件：PDF、Word、图片等格式',
-    response: '成功接收25个文档文件，总大小156MB',
-    summary: '📁 文档上传 - 多格式文档批量上传完成',
-    execution_status: 'SUCCESS',
-    is_final: false,
-  },
-  {
-    nodeId: 'extract',
-    input: '各种格式的文档文件',
-    response: '成功提取文本内容，识别文档结构和元数据',
-    summary: '🔍 文本提取 - 从23个文档中提取出可处理文本',
-    execution_status: 'SUCCESS',
-    is_final: false,
-  },
-  {
-    nodeId: 'ocr',
-    input: '图片和扫描文档',
-    response: 'OCR识别结果：准确率95.2%，识别出12,847个字符',
-    summary: '👁️ OCR识别 - 图像文字识别完成，准确率良好',
-    execution_status: 'SUCCESS',
-    is_final: false,
-  },
-  {
-    nodeId: 'nlp',
-    input: '提取的文本内容',
-    response: 'NLP处理结果：实体识别、关键词提取、摘要生成',
-    summary: '🧠 NLP处理 - 智能文本分析完成，提取关键信息',
-    execution_status: 'SUCCESS',
-    is_final: false,
-  },
-  {
-    nodeId: 'structure',
-    input: 'OCR和NLP处理结果',
-    response: '结构化数据存储：创建索引、建立关联、标准化格式',
-    summary: '🗃️ 结构化存储 - 文档数据已结构化并建立索引',
-    execution_status: 'SUCCESS',
-    is_final: false,
-  },
-  {
-    nodeId: 'end',
-    input: '结构化的文档数据',
-    response: '输出处理完成的文档数据库和检索接口',
-    summary: '✅ 完成输出 - 文档处理流水线执行完毕',
-    execution_status: 'SUCCESS',
-    is_final: true,
-  },
-];
 
-// 默认执行步骤数据（已弃用，保留用于兼容性）
-export const mockExecutionSteps = mockFeedbackAnalysisSteps;
 
 // 工作流列表Mock数据
 export const mockGraphList = [
@@ -234,30 +125,11 @@ export const mockGraphList = [
   },
 ];
 
-/**
- * 注意：从版本 1.1.0 开始，推荐使用真实的流式 API 接口：
- * 
- * 1. 基础节点输出流 (3.1):
- *    - GET /observability/v1/node/stream
- *    - GET /observability/v1/graph/node/stream
- * 
- * 2. 节点状态快照流 (3.2):
- *    - GET /observability/v1/node/stream_snapshots
- *    - GET /observability/v1/graph/node/stream_snapshots
- * 
- * 3. 增强节点输出流 (3.3):
- *    - GET /observability/v1/node/stream_enhanced
- *    - GET /observability/v1/graph/node/stream_enhanced
- * 
- * 使用 graphDebugService 中提供的方法或 useStreamingExecution Hook
- */
+
 
 export default {
   mockGraphData,
-  mockExecutionSteps,
   mockGraphList,
   mockFeedbackAnalysisGraph,
-  mockFeedbackAnalysisSteps,
   mockDocumentPipelineGraph,
-  mockDocumentPipelineSteps,
 };

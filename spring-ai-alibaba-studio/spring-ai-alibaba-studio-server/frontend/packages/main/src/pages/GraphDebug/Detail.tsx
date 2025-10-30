@@ -27,18 +27,9 @@ export default function GraphDebugDetail() {
             throw new Error('返回的图数据不完整');
           }
           
-          console.log('✅ 成功加载图数据:', {
-            id: data.id,
-            name: data.name,
-            nodesCount: data.nodes?.length || 0,
-            edgesCount: data.edges?.length || 0,
-            hasMermaidGraph: !!data.mermaidGraph,
-            hasStateGraph: !!data.stateGraph,
-          });
           
           // 设置当前活跃图（确保后端知道要执行哪个图）
           await graphDebugService.setCurrentGraph(data.id);
-          console.log('✅ 已设置当前活跃图:', data.id);
           
           setGraphData(data);
         } else {
@@ -46,7 +37,6 @@ export default function GraphDebugDetail() {
           setGraphData(null);
         }
       } catch (error) {
-        console.error('❌ 加载图数据失败:', error);
         message.error(`加载图数据失败: ${error instanceof Error ? error.message : '未知错误'}`);
         setGraphData(null);
       } finally {

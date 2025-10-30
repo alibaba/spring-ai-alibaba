@@ -33,7 +33,6 @@ export default function () {
         loading: false,
       });
     } catch (error) {
-      console.error('❌ Failed to fetch graph list:', error);
       setState({ 
         loading: false,
         list: [], // 清空列表
