@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolemulator.ToolEmulatorInterceptor;
 import com.alibaba.cloud.ai.graph.agent.tools.WeatherTool;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.messages.Message;
@@ -51,7 +50,7 @@ class ToolEmulatorTest {
 
 	private static CompileConfig getCompileConfig() {
 		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.register(new MemorySaver())
 				.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 		return compileConfig;
@@ -69,7 +68,7 @@ class ToolEmulatorTest {
 
 	@Test
 	public void testToolEmulatorWithWeatherTool() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// Create tool emulator interceptor that emulates the weather tool
 		ToolEmulatorInterceptor toolEmulatorInterceptor = ToolEmulatorInterceptor.builder()
@@ -85,7 +84,7 @@ class ToolEmulatorTest {
 				.model(chatModel)
 				.tools(weatherToolCallback)
 				.interceptors(toolEmulatorInterceptor)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.build();
 
 		try {
@@ -121,7 +120,7 @@ class ToolEmulatorTest {
 
 	@Test
 	public void testToolEmulatorEmulateAllTools() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// Create tool emulator that emulates all tools by default
 		ToolEmulatorInterceptor toolEmulatorInterceptor = ToolEmulatorInterceptor.builder()
@@ -137,7 +136,7 @@ class ToolEmulatorTest {
 				.model(chatModel)
 				.tools(weatherToolCallback)
 				.interceptors(toolEmulatorInterceptor)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.build();
 
 		try {
@@ -159,7 +158,7 @@ class ToolEmulatorTest {
 
 	@Test
 	public void testToolEmulatorSelectiveEmulation() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// Create tool emulator that only emulates specific tools (not weather_tool)
 		ToolEmulatorInterceptor toolEmulatorInterceptor = ToolEmulatorInterceptor.builder()
@@ -175,7 +174,7 @@ class ToolEmulatorTest {
 				.model(chatModel)
 				.tools(weatherToolCallback)
 				.interceptors(toolEmulatorInterceptor)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.build();
 
 		try {

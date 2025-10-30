@@ -17,15 +17,12 @@ package com.alibaba.cloud.ai.graph.agent.hooks.pii;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.pii.PIIDetectionHook;
 import com.alibaba.cloud.ai.graph.agent.hook.pii.PIIType;
 import com.alibaba.cloud.ai.graph.agent.hook.pii.PIIDetectors;
 import com.alibaba.cloud.ai.graph.agent.hook.pii.RedactionStrategy;
-import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -162,7 +159,7 @@ public class PIIDectionHookTest {
         ReactAgent agent = ReactAgent.builder()
                 .name("test-no-pii-agent")
                 .model(chatModel)
-                .compileConfig(getCompileConfig())
+                .saver(new MemorySaver())
                 .build();
 
         System.out.println("\n=== 测试不带PII检测的对话 ===");
@@ -226,14 +223,9 @@ public class PIIDectionHookTest {
                 .name(name)
                 .model(model)
                 .hooks(List.of(hook))
-                .compileConfig(getCompileConfig())
+                .saver(new MemorySaver())
                 .build();
     }
 
-    private static CompileConfig getCompileConfig() {
-        SaverConfig saverConfig = SaverConfig.builder()
-                .register(SaverEnum.MEMORY.getValue(), new MemorySaver())
-                .build();
-        return CompileConfig.builder().saverConfig(saverConfig).build();
-    }
+    
 }

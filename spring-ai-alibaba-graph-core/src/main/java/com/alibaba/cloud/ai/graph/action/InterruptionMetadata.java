@@ -60,6 +60,7 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 		return ofNullable(metadata).map(m -> m.get(key));
 	}
 
+	@Override
 	public Optional<Map<String, Object>> metadata() {
 		return Optional.of(Collections.unmodifiableMap(metadata));
 	}

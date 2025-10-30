@@ -94,7 +94,9 @@ public class GraphFlux<T> {
      * @return GraphFlux instance
      */
     public static <T> GraphFlux<T> of(String nodeId, String key, Flux<T> flux, Function<T, ?> mapResult, Function<T, String> chunkResult) {
-        return new GraphFlux<>(nodeId, flux, key, mapResult, o -> chunkResult.apply((T) o));
+
+        return new GraphFlux<>(nodeId, flux, key, mapResult, 
+            chunkResult != null ? o -> chunkResult.apply((T) o) : null);
     }
 
     public Function<Object,String> getChunkResult() {

@@ -161,10 +161,8 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 					clearedTokens, indicesToClear.size());
 
 			// Create a new request with updated messages
-			ModelRequest updatedRequest = ModelRequest.builder()
+			ModelRequest updatedRequest = ModelRequest.builder(request)
 					.messages(updatedMessages)
-					.options(request.getOptions())
-					.tools(request.getTools())
 					.build();
 
 			return handler.call(updatedRequest);

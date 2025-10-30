@@ -18,19 +18,20 @@ package com.alibaba.cloud.ai.graph.agent.flow.agent;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * ParallelAgent executes multiple sub-agents in parallel and merges their results.
@@ -156,6 +157,17 @@ public class ParallelAgent extends FlowAgent {
 		public ParallelAgentBuilder mergeOutputKey(String mergeOutputKey) {
 			this.mergeOutputKey = mergeOutputKey;
 			return this;
+		}
+
+		@Override
+		public ParallelAgentBuilder subAgents(List<Agent> subAgents) {
+			if (subAgents == null || subAgents.isEmpty()) {
+				throw new IllegalArgumentException("Sub-agents must be provided");
+			}
+			if (subAgents.stream().anyMatch(agent -> !(agent instanceof BaseAgent))) {
+				throw new IllegalArgumentException("Sub-agents must be BaseAgent");
+			}
+			return super.subAgents(subAgents);
 		}
 
 		/**

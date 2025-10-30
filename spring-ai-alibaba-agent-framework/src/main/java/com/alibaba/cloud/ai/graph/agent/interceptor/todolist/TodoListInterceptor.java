@@ -188,10 +188,8 @@ public class TodoListInterceptor extends ModelInterceptor {
 		}
 
 		// Create enhanced request
-		ModelRequest enhancedRequest = ModelRequest.builder()
+		ModelRequest enhancedRequest = ModelRequest.builder(request)
 				.messages(enhancedMessages)
-				.options(request.getOptions())
-				.tools(request.getTools())
 				.build();
 
 		// Call the handler with enhanced request

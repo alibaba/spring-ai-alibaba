@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.graph.agent.tools.HotelTool;
 import com.alibaba.cloud.ai.graph.agent.tools.TicketTool;
 import com.alibaba.cloud.ai.graph.agent.tools.WeatherTool;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -52,7 +51,7 @@ class ToolSelectionTest {
 
 	private static CompileConfig getCompileConfig() {
 		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.register(new MemorySaver())
 				.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 		return compileConfig;
@@ -70,7 +69,7 @@ class ToolSelectionTest {
 
 	@Test
 	public void testToolSelectionWithMaxTools() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// Create tool selection interceptor that limits to 2 tools
 		ToolSelectionInterceptor toolSelectionInterceptor = ToolSelectionInterceptor.builder()
@@ -92,7 +91,7 @@ class ToolSelectionTest {
 				.model(chatModel)
 				.tools(weatherToolCallback, ticketToolCallback, hotelToolCallback)
 				.interceptors(toolSelectionInterceptor)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.build();
 
 		try {
@@ -122,7 +121,7 @@ class ToolSelectionTest {
 
 	@Test
 	public void testToolSelectionWithAlwaysInclude() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// Create tool selection interceptor with always include
 		ToolSelectionInterceptor toolSelectionInterceptor = ToolSelectionInterceptor.builder()
@@ -144,7 +143,7 @@ class ToolSelectionTest {
 				.model(chatModel)
 				.tools(weatherToolCallback, ticketToolCallback, hotelToolCallback)
 				.interceptors(toolSelectionInterceptor)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.build();
 
 		try {
@@ -173,7 +172,7 @@ class ToolSelectionTest {
 
 	@Test
 	public void testToolSelectionRelevanceFiltering() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// Create tool selection interceptor
 		ToolSelectionInterceptor toolSelectionInterceptor = ToolSelectionInterceptor.builder()
@@ -194,7 +193,7 @@ class ToolSelectionTest {
 				.model(chatModel)
 				.tools(weatherToolCallback, ticketToolCallback, hotelToolCallback)
 				.interceptors(toolSelectionInterceptor)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.build();
 
 		try {
@@ -229,7 +228,7 @@ class ToolSelectionTest {
 
 	@Test
 	public void testToolSelectionWithFewTools() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// Create tool selection interceptor with max 5 tools
 		ToolSelectionInterceptor toolSelectionInterceptor = ToolSelectionInterceptor.builder()
@@ -249,7 +248,7 @@ class ToolSelectionTest {
 				.model(chatModel)
 				.tools(weatherToolCallback, ticketToolCallback)
 				.interceptors(toolSelectionInterceptor)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.build();
 
 		try {

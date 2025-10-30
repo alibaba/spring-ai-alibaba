@@ -277,6 +277,34 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
+	 * Updates the state using the provided partial state and key strategies.
+	 * <p>
+	 * This method applies the given key strategies to merge or replace values in the
+	 * current state with those from the partial state. If a key is marked for removal
+	 * using {@link #MARK_FOR_REMOVAL}, it will be removed from the state. Otherwise, the
+	 * associated strategy is used to determine how the new value is combined with the
+	 * existing one.
+	 * @param partialState the partial state containing updates; must not be null
+	 * @param keyStrategyMap the mapping of keys to strategies; can be null, in which case
+	 * default REPLACE strategy is used
+	 */
+	public void updateStateWithKeyStrategies(Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategyMap) {
+		partialState.keySet().forEach(key -> {
+			KeyStrategy strategy = keyStrategyMap != null ? keyStrategyMap.get(key) : null;
+			// If no specific strategy is found, use the default REPLACE strategy
+			if (strategy == null) {
+				strategy = KeyStrategy.REPLACE;
+			}
+			if (partialState.get(key) == MARK_FOR_REMOVAL) {
+				this.data.remove(key);
+			}
+			else {
+				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
+			}
+		});
+	}
+
+	/**
 	 * Updates the internal state based on a schema-defined strategy.
 	 * <p>
 	 * This method first validates the input state, then updates the partial state

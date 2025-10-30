@@ -24,7 +24,6 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.contextediting.ContextEditin
 import com.alibaba.cloud.ai.graph.agent.tools.PoetTool;
 import com.alibaba.cloud.ai.graph.agent.tools.ReviewerTool;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.model.ChatModel;
@@ -46,7 +45,7 @@ class ContextEditingTest {
 
 	private static CompileConfig getCompileConfig() {
 		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.register(new MemorySaver())
 				.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 		return compileConfig;
@@ -63,7 +62,7 @@ class ContextEditingTest {
 
 	@Test
 	public void testContextEditingCompaction() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 		ContextEditingInterceptor contextEditingInterceptor = ContextEditingInterceptor.builder()
 				.trigger(180)
 				.keep(1)
@@ -78,7 +77,7 @@ class ContextEditingTest {
 						.model(chatModel)
 						.tools(PoetTool.createPoetToolCallback("poem", poetTool), ReviewerTool.createReviewerToolCallback("reviewer", reviewerTool))
 						.interceptors(contextEditingInterceptor)
-						.compileConfig(compileConfig)
+						.saver(new MemorySaver())
 						.build();
 
 		try {

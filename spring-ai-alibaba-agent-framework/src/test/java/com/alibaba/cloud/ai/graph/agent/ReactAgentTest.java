@@ -20,7 +20,6 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -96,8 +95,7 @@ class ReactAgentTest {
 
 	@Test
 	public void testReactAgent() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
-		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).compileConfig(compileConfig).build();
+		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver()).build();
 
 		try {
 			Optional<OverAllState> result = agent.invoke("帮我写一篇100字左右散文。");
@@ -131,8 +129,8 @@ class ReactAgentTest {
 
 	@Test
 	public void testReactAgentMessage() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
-		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).compileConfig(compileConfig)
+		
+		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver())
 				.build();
 		AssistantMessage message = agent.call("帮我写一篇100字左右散文。");
 		System.out.println(message.getText());
@@ -140,7 +138,7 @@ class ReactAgentTest {
 
 	@Test
 	public void testReactAgentWithOutputSchema() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// Customized outputSchema
 		String customSchema = """
@@ -155,7 +153,7 @@ class ReactAgentTest {
 		ReactAgent agent = ReactAgent.builder()
 				.name("schema_agent")
 				.model(chatModel)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.outputSchema(customSchema)
 				.build();
 
@@ -171,13 +169,13 @@ class ReactAgentTest {
 
 	@Test
 	public void testReactAgentWithOutputType() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		// outputType will be automatically convert to schema
 		ReactAgent agent = ReactAgent.builder()
 				.name("type_agent")
 				.model(chatModel)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.outputType(PoemOutput.class)
 				.build();
 
@@ -194,7 +192,7 @@ class ReactAgentTest {
 
 	@Test
 	public void testReactAgentWithOutputSchemaAndInvoke() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+		
 
 		String jsonSchema = """
 				请严格按照以下JSON格式返回结果：
@@ -208,7 +206,7 @@ class ReactAgentTest {
 		ReactAgent agent = ReactAgent.builder()
 				.name("analysis_agent")
 				.model(chatModel)
-				.compileConfig(compileConfig)
+				.saver(new MemorySaver())
 				.outputSchema(jsonSchema)
 				.build();
 
@@ -221,7 +219,7 @@ class ReactAgentTest {
 
 	private static CompileConfig getCompileConfig() {
 		SaverConfig saverConfig = SaverConfig.builder()
-				.register(SaverEnum.MEMORY.getValue(), new MemorySaver())
+				.register(new MemorySaver())
 				.build();
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
 		return compileConfig;

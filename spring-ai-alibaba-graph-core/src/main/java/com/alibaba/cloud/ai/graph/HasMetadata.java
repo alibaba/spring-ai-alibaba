@@ -27,6 +27,8 @@ import static java.util.Optional.ofNullable;
 
 public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 
+	Optional<Map<String, Object>> metadata();
+
 	/**
 	 * return metadata value for key
 	 * @param key given metadata key
@@ -82,7 +84,7 @@ public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 		private Map<String, Object> metadata;
 
 		public Map<String, Object> metadata() {
-			return ofNullable(metadata).map(Map::copyOf).orElseGet(Map::of);
+			return ofNullable(metadata).map(Map::copyOf).orElseGet(java.util.Map::of);
 		}
 
 		protected Builder() {

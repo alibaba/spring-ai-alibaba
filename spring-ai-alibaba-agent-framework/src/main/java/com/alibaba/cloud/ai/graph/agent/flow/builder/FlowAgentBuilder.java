@@ -15,12 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.builder;
 
-import java.util.List;
-
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+
+import java.util.List;
 
 /**
  * Abstract base builder for FlowAgent and its subclasses. Provides common builder

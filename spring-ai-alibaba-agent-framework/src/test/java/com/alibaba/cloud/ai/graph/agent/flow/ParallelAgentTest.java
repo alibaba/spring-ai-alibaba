@@ -17,23 +17,17 @@ package com.alibaba.cloud.ai.graph.agent.flow;
 
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import java.util.HashMap;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for ParallelAgent demonstrating the refactored architecture with different
@@ -142,7 +136,7 @@ class ParallelAgentTest {
 				.subAgents(List.of()) // Empty list
 				.build();
 		});
-		assertTrue(exception.getMessage().contains("at least 2 sub-agents"));
+		assertTrue(exception.getMessage().contains("Sub-agents must be provided"));
 
 		// Test validation - maximum 10 sub-agents
 		ReactAgent[] agents = new ReactAgent[11];

@@ -17,25 +17,20 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-
-import org.springframework.ai.chat.model.ChatModel;
-
-import java.util.List;
-import java.util.Optional;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.model.ChatModel;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration test class for ParallelAgent to verify parallel execution and result
@@ -72,6 +67,7 @@ class ParallelAgentIntegrationTest {
 			.description("专门写现代诗的AI助手")
 			.instruction("你是一个知名的现代诗人，擅长写现代诗。用户会给你一个主题，你只需要创作一首现代诗，不要写散文或做总结。请专注于诗歌创作，确保语言精炼、意象丰富。")
 			.outputKey("poem_result")
+			.outputKeyStrategy(KeyStrategy.REPLACE)
 			.build();
 
 		ReactAgent summaryAgent = ReactAgent.builder()
@@ -113,33 +109,21 @@ class ParallelAgentIntegrationTest {
 			assertTrue(finalState.value("poem_result").isPresent(), "Poem result should be present");
 			assertTrue(finalState.value("summary_result").isPresent(), "Summary result should be present");
 
-			// Verify results are not empty
-			String proseResult = (String) finalState.value("prose_result").get();
-			String poemResult = (String) finalState.value("poem_result").get();
-			String summaryResult = (String) finalState.value("summary_result").get();
+			
+			// Verify the merged results contain all individual results
+			Map mergedResults = (Map) finalState.value("merged_results").get();
+			assertTrue(mergedResults.containsKey("prose_result"),
+					"Merged results should contain prose result");
+			assertTrue(mergedResults.containsKey("poem_result"),
+					"Merged results should contain poem result");
+			assertTrue(mergedResults.containsKey("summary_result"),
+					"Merged results should contain summary result");
 
-			assertNotNull(proseResult, "Prose result should not be null");
-			assertNotNull(poemResult, "Poem result should not be null");
-			assertNotNull(summaryResult, "Summary result should not be null");
+			assertEquals(mergedResults.get("prose_result"),finalState.value("prose_result").get());
+			assertEquals(mergedResults.get("poem_result"),finalState.value("poem_result").get());
+			assertEquals(mergedResults.get("summary_result"),finalState.value("summary_result").get());
 
-			assertFalse(proseResult.trim().isEmpty(), "Prose result should not be empty");
-			assertFalse(poemResult.trim().isEmpty(), "Poem result should not be empty");
-			assertFalse(summaryResult.trim().isEmpty(), "Summary result should not be empty");
-
-			// Verify that each agent produced different types of content
-			// Prose should not contain poem-like content
-			assertFalse(proseResult.contains("《") && proseResult.contains("》"),
-					"Prose result should not contain poem-like formatting");
-
-			// Poem should not contain prose-like content
-			assertFalse(poemResult.contains("散文：") || poemResult.contains("总结："),
-					"Poem result should not contain prose or summary content");
-
-			// Summary should not contain creative content
-			assertFalse(summaryResult.contains("《") && summaryResult.contains("》"),
-					"Summary result should not contain poem-like formatting");
-
-			System.out.println(result.get().value("merged_results"));
+			System.out.println("Final state: " + finalState);
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();

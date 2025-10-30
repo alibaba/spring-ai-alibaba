@@ -97,6 +97,8 @@ public class CompiledGraph {
 	 * @throws GraphStateException the graph state exception
 	 */
 	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) throws GraphStateException {
+		maxIterations = compileConfig.recursionLimit();
+
 		this.stateGraph = stateGraph;
 		this.keyStrategyMap = stateGraph.getKeyStrategyFactory()
 			.apply()
@@ -421,9 +423,12 @@ public class CompiledGraph {
 
 	/**
 	 * Sets the maximum number of iterations for the graph execution.
+	 *
 	 * @param maxIterations the maximum number of iterations
 	 * @throws IllegalArgumentException if maxIterations is less than or equal to 0
+	 * @deprecated use CompileConfig.recursionLimit() instead
 	 */
+	@Deprecated(forRemoval = true)
 	public void setMaxIterations(int maxIterations) {
 		if (maxIterations <= 0) {
 			throw new IllegalArgumentException("maxIterations must be > 0!");

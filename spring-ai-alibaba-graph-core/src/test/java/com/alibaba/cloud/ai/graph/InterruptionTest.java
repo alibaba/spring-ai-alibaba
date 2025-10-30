@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.constant.SaverEnum;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
 
@@ -60,7 +59,7 @@ public class InterruptionTest {
 			.addEdge("C", END)
 			.addEdge("D", END)
 			.compile(CompileConfig.builder()
-				.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
+				.saverConfig(SaverConfig.builder().register(saver).build())
 				.interruptAfter("B")
 				.build());
 
@@ -126,7 +125,7 @@ public class InterruptionTest {
 			.addEdge("A", "B")
 			.addEdge("C", END)
 			.compile(CompileConfig.builder()
-				.saverConfig(SaverConfig.builder().register(SaverEnum.MEMORY.getValue(), saver).build())
+				.saverConfig(SaverConfig.builder().register(saver).build())
 				.interruptAfter("B")
 				.interruptBeforeEdge(true)
 				.build());

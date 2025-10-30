@@ -134,7 +134,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 
 		//register mcp tools
 		registryMcpServerListener(llmNode, toolNode, nacosOptions);
-		ReactAgent reactAgent = new ReactAgent(llmNode, toolNode, this);
+		ReactAgent reactAgent = new ReactAgent(llmNode, toolNode, buildConfig(),this);
 		agentVOHolder.setReactAgent(reactAgent);
 		//register agent base and prompt
 		registerAgentWithPrompt(nacosOptions, agentVO, agentVOHolder, reactAgent);
