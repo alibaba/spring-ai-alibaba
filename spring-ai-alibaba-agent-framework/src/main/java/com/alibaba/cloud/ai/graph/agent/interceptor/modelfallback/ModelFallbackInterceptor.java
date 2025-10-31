@@ -66,9 +66,14 @@ public class ModelFallbackInterceptor extends ModelInterceptor {
 		try {
 			ModelResponse modelResponse = handler.call(request);
 			Message message = (Message) modelResponse.getMessage();
+			
+			// Check if response contains error indicator
 			if (message.getText() != null && message.getText().contains("Exception:")) {
 				throw new RuntimeException(message.getText());
 			}
+			
+			// Return successful response
+			return modelResponse;
 		}
 		catch (Exception e) {
 			log.warn("Primary model failed: {}", e.getMessage());
