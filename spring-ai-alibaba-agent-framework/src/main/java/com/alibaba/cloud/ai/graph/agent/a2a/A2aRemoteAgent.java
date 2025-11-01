@@ -46,7 +46,7 @@ public class A2aRemoteAgent extends BaseAgent {
 
 	// Private constructor for Builder pattern
 	private A2aRemoteAgent(Builder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.includeContents, builder.build().isReturnReasoningContents(), builder.outputKey, builder.outputKeyStrategy);
+		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
 		this.agentCard = builder.agentCard;
 		this.keyStrategyFactory = builder.keyStrategyFactory;
 		this.compileConfig = builder.compileConfig;
@@ -121,6 +121,8 @@ public class A2aRemoteAgent extends BaseAgent {
 
 		private KeyStrategy outputKeyStrategy;
 
+		private boolean returnReasoningContents = false;
+
 		// A2aRemoteAgent specific properties
 		private AgentCardWrapper agentCard;
 
@@ -158,6 +160,11 @@ public class A2aRemoteAgent extends BaseAgent {
 
 		public Builder outputKeyStrategy(KeyStrategy outputKeyStrategy) {
 			this.outputKeyStrategy = outputKeyStrategy;
+			return this;
+		}
+
+		public Builder returnReasoningContents(boolean returnReasoningContents) {
+			this.returnReasoningContents = returnReasoningContents;
 			return this;
 		}
 
