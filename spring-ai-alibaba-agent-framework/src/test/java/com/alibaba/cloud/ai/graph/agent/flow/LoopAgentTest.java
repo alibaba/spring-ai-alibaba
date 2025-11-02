@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,8 @@ public class LoopAgentTest {
 	private ChatModel chatModel;
 
 	private SequentialAgent blogAgent;
+
+    private SequentialAgent sqlAgent;
 
 	@BeforeEach
 	void setUp() throws GraphStateException {
@@ -73,10 +76,39 @@ public class LoopAgentTest {
                 .description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论。")
                 .subAgents(List.of(writerAgent, reviewerAgent))
                 .build();
+
+        ReactAgent sqlGenerateAgent = ReactAgent.builder()
+                .name("sqlGenerateAgent")
+                .model(chatModel)
+                .description("可以根据用户的自然语言生成MySQL的SQL代码。")
+                .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户的自然语言，输出对应的SQL。")
+                .outputSchema("""
+                        \\{
+                            "query": 用户的请求,
+                            "output": 生成SQL结果
+                        \\}
+                        """)
+                .outputKey("sql")
+                .build();
+
+        ReactAgent sqlRatingAgent = ReactAgent.builder()
+                .name("sqlRatingAgent")
+                .model(chatModel)
+                .description("可以根据输入的自然语言和SQL语句的匹配度进行评分。")
+                .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户输入的自然语言和对应的SQL语句，输出一个评分。评分为一个浮点数，在0到1之间。越趋近于1说明SQL越匹配自然语言。")
+                .outputSchema("你的输出有且仅有一个浮点数，且在0到1之间，**不要输出任何额外的字符**")
+                .outputKey("score")
+                .build();
+
+        this.sqlAgent = SequentialAgent.builder()
+                .name("sql_agent")
+                .description("可以根据用户的输入，生成SQL语句，并对其评分。")
+                .subAgents(List.of(sqlGenerateAgent, sqlRatingAgent))
+                .build();
 	}
 
     @Test
-    void testLoopAgent() throws Exception {
+    void testCountMode() throws Exception {
         LoopAgent loopAgent = LoopAgent.builder()
                 .name("loop_agent")
                 .description("循环执行一个任务，直到满足条件。")
@@ -85,6 +117,64 @@ public class LoopAgentTest {
                 .build();
         OverAllState state = loopAgent.invoke("写一篇关于杭州西湖的散文文章。").orElseThrow();
         logger.info("Result: {}", state.data());
+        Optional<Object> optional = state.value("messages");
+        assert optional.isPresent();
+        Object object = optional.get();
+        assert object instanceof List;
+        List<?> messages = (List<?>) object;
+        assert !messages.isEmpty();
+    }
+
+    @Test
+    void testConditionMode() throws Exception {
+        LoopAgent loopAgent = LoopAgent.builder()
+                .name("loop_agent")
+                .description("循环执行一个任务，直到满足条件。")
+                .subAgent(this.sqlAgent)
+                .loopStrategy(LoopMode.condition(messages -> {
+                    logger.info("Messages: {}", messages);
+                    if(messages.isEmpty()) {
+                        return false;
+                    }
+                    String text = messages.get(messages.size() - 1).getText();
+                    try {
+                        double score = Double.parseDouble(text);
+                        return score > 0.5;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                }))
+                .build();
+        OverAllState state = loopAgent.invoke("现在有一个用户表，名为user，有列（id, name, password），现在我想要找所有名字以s开头的用户，如何写对应SQL？").orElseThrow();
+        logger.info("Result: {}", state.data());
+        Optional<Object> optional = state.value("messages");
+        assert optional.isPresent();
+        Object object = optional.get();
+        assert object instanceof List;
+        List<?> messages = (List<?>) object;
+        assert !messages.isEmpty();
+    }
+
+    @Test
+    void testArrayMode() throws Exception {
+        LoopAgent loopAgent = LoopAgent.builder()
+                .name("loop_agent")
+                .description("循环执行一个任务，直到满足条件。")
+                .subAgent(this.sqlAgent)
+                .loopStrategy(LoopMode.array())
+                .build();
+        OverAllState state = loopAgent.invoke("""
+                ["现在有一个用户表，名为user，有列（id, name, password），现在我想要找所有名字以s开头的用户，如何写对应SQL？",
+                "现在有一个用户表，名为user，有列（id, name, password），现在我想要找所有名字以t开头的用户，如何写对应SQL？",
+                "现在有一个用户表，名为user，现在我想要找所有用户，如何写对应SQL？"]
+                """).orElseThrow();
+        logger.info("Result: {}", state.data());
+        Optional<Object> optional = state.value("messages");
+        assert optional.isPresent();
+        Object object = optional.get();
+        assert object instanceof List;
+        List<?> messages = (List<?>) object;
+        assert !messages.isEmpty();
     }
 
 }

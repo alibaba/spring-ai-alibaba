@@ -27,37 +27,6 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import java.util.List;
 
 /**
- * Loop Agent that supports multiple loop modes:
- * <ul>
- * <li><b>COUNT</b>: Execute a fixed number of loops</li>
- * <li><b>CONDITION</b>: Continue looping based on a condition, similar to a do-while
- * structure, but when the condition is true, terminate the loop</li>
- * <li><b>ITERABLE</b>: Iterate over each element in an Iterable object</li>
- * <li><b>ARRAY</b>: Iterate over each element in an array</li>
- * <li><b>JSON_ARRAY</b>: Parse a JSON array and iterate over its elements</li>
- * </ul>
- *
- * <p>
- * The output result is a List containing the output of the last sub-agent after each loop
- * iteration. Note: The strategy corresponding to outputKey should be set to
- * AppendStrategy to correctly collect loop results.
- * </p>
- *
- * <p>
- * Usage example:
- * </p>
- * <pre>{@code
- * LoopAgent loopAgent = LoopAgent.builder()
- *     .name("example-loop-agent")
- *     .description("Example loop agent")
- *     .inputKey("input")
- *     .outputKey("results")
- *     .loopMode(LoopAgent.LoopMode.COUNT)
- *     .loopCount(3)
- *     .subAgents(subAgents)
- *     .build();
- * }</pre>
- *
  * @author vlsmb
  * @since 2025/8/25
  */
