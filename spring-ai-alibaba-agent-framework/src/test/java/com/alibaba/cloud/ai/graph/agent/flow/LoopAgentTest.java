@@ -113,9 +113,9 @@ public class LoopAgentTest {
                 .name("loop_agent")
                 .description("循环执行一个任务，直到满足条件。")
                 .subAgent(this.blogAgent)
-                .loopStrategy(LoopMode.count(3))
+                .loopStrategy(LoopMode.count(2))
                 .build();
-        OverAllState state = loopAgent.invoke("写一篇关于杭州西湖的散文文章。").orElseThrow();
+        OverAllState state = loopAgent.invoke("帮我写一个Python Socket编程的demo，并优化代码").orElseThrow();
         logger.info("Result: {}", state.data());
         Optional<Object> optional = state.value("messages");
         assert optional.isPresent();
@@ -159,7 +159,7 @@ public class LoopAgentTest {
     void testArrayMode() throws Exception {
         LoopAgent loopAgent = LoopAgent.builder()
                 .name("loop_agent")
-                .description("循环执行一个任务，直到满足条件。")
+                .description("循环执行任务。")
                 .subAgent(this.sqlAgent)
                 .loopStrategy(LoopMode.array())
                 .build();

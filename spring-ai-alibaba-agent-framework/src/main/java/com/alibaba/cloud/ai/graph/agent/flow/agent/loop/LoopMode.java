@@ -17,10 +17,17 @@
 package com.alibaba.cloud.ai.graph.agent.flow.agent.loop;
 
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.core.convert.converter.Converter;
 
 import java.util.List;
 import java.util.function.Predicate;
 
+/**
+ * Built-in loop strategies for LoopAgent
+ *
+ * @author vlsmb
+ * @since 2025/11/1
+ */
 public final class LoopMode {
     private LoopMode() {
         throw new UnsupportedOperationException();
@@ -32,6 +39,10 @@ public final class LoopMode {
 
     public static ArrayLoopStrategy array() {
         return new ArrayLoopStrategy();
+    }
+
+    public static ArrayLoopStrategy array(Converter<List<Message>, List<?>> converter) {
+        return new ArrayLoopStrategy(converter);
     }
 
     public static ConditionLoopStrategy condition(Predicate<List<Message>> messagePredicate) {

@@ -38,6 +38,15 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
+/**
+ * Converts a LoopAgent into its corresponding StateGraph.
+ * <p>
+ * Structure of the loop graph: START -> LoopInitLoop -> LoopDispatchNode (condition met -> SubAgentNode -> LoopDispatchNode; condition not met -> END)
+ * </p>
+ *
+ * @author vlsmb
+ * @since 2025/8/25
+ */
 public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 
     @Override
@@ -51,7 +60,8 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
         // Add starting edge
         graph.addEdge(START, rootAgent.name());
 
-        // 根据loopStrategy构造循环图
+
+        // Build loop graph based on loopStrategy
         LoopStrategy loopStrategy = (LoopStrategy) config.getCustomProperty(LoopAgent.LOOP_STRATEGY);
         graph.addNode(loopStrategy.loopInitNodeName(), node_async(loopStrategy::loopInit));
         graph.addEdge(rootAgent.name(), loopStrategy.loopInitNodeName());

@@ -22,9 +22,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * LoopAgent的循环策略，用来控制LoopAgent的行为。
- * 这部分相当于定义了LoopAgent对应StateGraph的loopInitNode和loopDispatchNode。
- * 在使用的时候可以直接使用LoopMode提供的内置策略，如果需要自定义循环逻辑，可以实现本接口。
+ * <p>Loop strategy for LoopAgent, used to control the behavior of LoopAgent.</p>
+ * <p>This part is equivalent to defining the loopInitNode and loopDispatchNode for the StateGraph corresponding to LoopAgent.</p>
+ * <p>Built-in strategies provided by LoopMode can be used directly when in use. If custom loop logic is required, this interface can be implemented.</p>
+ *
  * @author vlsmb
  * @since 2025/11/1
  */
