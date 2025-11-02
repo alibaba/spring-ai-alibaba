@@ -23,6 +23,8 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
@@ -45,7 +47,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class SequentialAgentTest {
 
-	private ChatModel chatModel;
+    private static final Logger log = LoggerFactory.getLogger(SequentialAgentTest.class);
+    private ChatModel chatModel;
 
 	@BeforeEach
 	void setUp() {
@@ -336,5 +339,45 @@ class SequentialAgentTest {
 
 		return child_3;
 	}
+
+    @Test
+    public void testOutputSchema() throws Exception {
+        ReactAgent sqlGenerateAgent = ReactAgent.builder()
+                .name("sqlGenerateAgent")
+                .model(chatModel)
+                .description("可以根据用户的自然语言生成MySQL的SQL代码。")
+                .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户的自然语言，输出对应的SQL。")
+                .outputSchema("""
+                        {
+                           "query": 用户的请求,
+                           "output": 生成SQL结果
+                        }
+                        """)
+                .outputKey("sql")
+                .build();
+
+        ReactAgent sqlRatingAgent = ReactAgent.builder()
+                .name("sqlRatingAgent")
+                .model(chatModel)
+                .description("可以根据输入的自然语言和SQL语句的匹配度进行评分。")
+                .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户输入的自然语言和对应的SQL语句，输出一个评分。评分为一个浮点数，在0到1之间。越趋近于1说明SQL越匹配自然语言。")
+                .outputType(Double.class)
+                .outputKey("score")
+                .build();
+
+        // 测试放在一个SequentialAgent中
+        SequentialAgent agent = SequentialAgent.builder()
+                .name("sql_agent")
+                .description("可以根据用户的输入，生成SQL语句，并对其评分。")
+                .subAgents(List.of(sqlGenerateAgent, sqlRatingAgent))
+                .build();
+
+        Optional<OverAllState> state = agent.invoke("现在我有一个user表，我想要查询前10个用户，如何写SQL语句？");
+        assertTrue(state.isPresent());
+        OverAllState overAllState = state.get();
+        assertTrue(overAllState.value("messages").isPresent());
+        assertTrue(overAllState.value("sql").isPresent());
+        assertTrue(overAllState.value("score").isPresent());
+    }
 
 }
