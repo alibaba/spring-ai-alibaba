@@ -131,7 +131,7 @@ public class FlowGraphBuildingStrategyRegistry {
 		registerStrategy(new RoutingGraphBuildingStrategy());
 		registerStrategy(new ParallelGraphBuildingStrategy());
 		registerStrategy(new ConditionalGraphBuildingStrategy());
-//		registerStrategy(new LoopGraphBuildingStrategy());
+		registerStrategy(new LoopGraphBuildingStrategy());
 	}
 
 }

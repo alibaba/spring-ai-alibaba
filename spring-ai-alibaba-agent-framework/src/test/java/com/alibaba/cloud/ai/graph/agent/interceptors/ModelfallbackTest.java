@@ -98,8 +98,9 @@ class ModelfallbackTest {
 			System.out.println("Fallback model (DashScope) call count: " + fallbackModelCalls);
 
 			// Verify the models were called as expected
-			assertEquals(1, chatModel.getCallCount());
-			assertEquals(1, fallbackModel.getCallCount());
+			// Bug fix: Primary model succeeded, so fallback should NOT be called
+			assertEquals(1, chatModel.getCallCount(), "Primary model should be called once");
+			assertEquals(0, fallbackModel.getCallCount(), "Fallback should not be called when primary succeeds");
 
 		}
 		catch (java.util.concurrent.CompletionException e) {
