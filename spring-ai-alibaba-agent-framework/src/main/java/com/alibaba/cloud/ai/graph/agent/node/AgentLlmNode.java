@@ -193,13 +193,19 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
 			if (message instanceof UserMessage userMessage) {
-				messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema).build());
+				// Check if outputSchema is already present to avoid duplication
+				if (!userMessage.getText().contains(outputSchema)) {
+					messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema).build());
+				}
 				break;
 			}
 			if (message instanceof AgentInstructionMessage templatedUserMessage) {
                 // 将outputSchema进行转义，避免PromptTemplate渲染时报错
                 String newOutputSchema = outputSchema.replace("{", "\\{").replace("}", "\\}");
-                messages.set(i, templatedUserMessage.mutate().text(templatedUserMessage.getText() + System.lineSeparator() + newOutputSchema).build());
+                // Check if outputSchema is already present to avoid duplication
+                if (!templatedUserMessage.getText().contains(newOutputSchema)) {
+                	messages.set(i, templatedUserMessage.mutate().text(templatedUserMessage.getText() + System.lineSeparator() + newOutputSchema).build());
+                }
 				break;
 			}
 

@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -48,8 +49,18 @@ public class AgentTool implements BiFunction<String, ToolContext, AssistantMessa
 			// Copy state to avoid affecting the original state.
 			// The agent that calls this tool should only be aware of the ToolCallChoice and ToolResponse.
 			OverAllState newState = agent.getAndCompileGraph().cloneState(state.data());
-			UserMessage userMessage = new UserMessage(input);
-			Map<String, Object> inputs = newState.updateState(Map.of("messages", userMessage));
+			
+			// Build the messages list to add
+			// Add instruction first if present, then the user input
+			// Note: We must add all messages at once because cloneState doesn't copy keyStrategies,
+			// so multiple updateState calls would overwrite instead of append
+			java.util.List<Message> messagesToAdd = new java.util.ArrayList<>();
+			if (StringUtils.hasLength(agent.instruction())) {
+				messagesToAdd.add(new AgentInstructionMessage(agent.instruction()));
+			}
+			messagesToAdd.add(new UserMessage(input));
+			
+			Map<String, Object> inputs = newState.updateState(Map.of("messages", messagesToAdd));
 
 			Optional<OverAllState> resultState = agent.getAndCompileGraph().invoke(inputs);
 
