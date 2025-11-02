@@ -83,10 +83,10 @@ public class LoopAgentTest {
                 .description("可以根据用户的自然语言生成MySQL的SQL代码。")
                 .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户的自然语言，输出对应的SQL。")
                 .outputSchema("""
-                        \\{
-                            "query": 用户的请求,
-                            "output": 生成SQL结果
-                        \\}
+                        {
+                           "query": 用户的请求,
+                           "output": 生成SQL结果
+                        }
                         """)
                 .outputKey("sql")
                 .build();
