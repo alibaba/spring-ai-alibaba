@@ -35,8 +35,11 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -110,20 +113,41 @@ public class StateGraph {
 	 */
 	static class JacksonSerializer extends SpringAIJacksonStateSerializer {
 
-		/**
-		 * Instantiates a new Jackson serializer.
-		 */
-		public JacksonSerializer() {
-			super(OverAllState::new);
-		}
+        /**
+         * Instantiates a new Jackson serializer.
+         */
+        public JacksonSerializer() {
+            super(OverAllState::new);
+            objectMapper.activateDefaultTyping(
+                    LaissezFaireSubTypeValidator.instance,
+                    ObjectMapper.DefaultTyping.NON_FINAL,
+                    JsonTypeInfo.As.PROPERTY
+            );
+        }
 
-		/**
-		 * Gets object mapper.
-		 * @return the object mapper
-		 */
-		ObjectMapper getObjectMapper() {
-			return objectMapper;
-		}
+        /**
+         * Gets object mapper.
+         *
+         * @return the object mapper
+         */
+        ObjectMapper getObjectMapper() {
+            return objectMapper;
+        }
+
+        @Override
+        public OverAllState cloneObject(OverAllState object) throws IOException, ClassNotFoundException {
+            return bytesToObject(objectToBytes(object), object.getClass());
+        }
+
+        @Override
+        public byte[] objectToBytes(OverAllState object) throws IOException {
+            return objectMapper.writeValueAsBytes(object);
+        }
+
+        private OverAllState bytesToObject(byte[] bytes, Class<? extends OverAllState> clz) throws IOException {
+            OverAllState overAllState = objectMapper.readValue(bytes, clz);
+            return overAllState;
+        }
 
 	}
 
