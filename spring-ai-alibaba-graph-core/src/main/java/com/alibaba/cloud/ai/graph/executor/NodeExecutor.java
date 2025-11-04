@@ -43,7 +43,6 @@ import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.GraphRunnerContext.INTERRUPT_AFTER;
 import static com.alibaba.cloud.ai.graph.StateGraph.*;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Node executor that processes node execution and result handling. This class
@@ -210,26 +209,24 @@ public class NodeExecutor extends BaseGraphExecutor {
 						return lastGraphResponse;
 					}
 
-					final var currentMessage = response.getResult().getOutput();
+                    final var currentMessage = response.getResult().getOutput();
+                    final var lastMessage = lastResponse.getResult().getOutput();
 
-					if (currentMessage.hasToolCalls()) {
-						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-							.of(new StreamingOutput<>(currentMessage.getToolCalls().toString(), response, context.getCurrentNodeId(), context.getOverallState()));
-						lastGraphResponseRef.set(lastGraphResponse);
-						return lastGraphResponse;
-					}
+                    // merge message
+                    final var lastMessageText = lastMessage.getText() != null ? lastMessage.getText() : "";
+                    final var currentMessageText = currentMessage.getText();
+                    final var mergedText = currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText;
 
-					final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
-							"lastResponse text cannot be null");
+                    // merge tool calls：if current message have tool calls，use now；otherwise, use the previous one
+                    var mergedToolCalls = currentMessage.hasToolCalls() ? currentMessage.getToolCalls() : lastMessage.getToolCalls();
 
-					final var currentMessageText = currentMessage.getText();
-
-					var newMessage = new org.springframework.ai.chat.messages.AssistantMessage(
-							currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText,
-							currentMessage.getMetadata(), currentMessage.getToolCalls(), currentMessage.getMedia());
-
-					var newGeneration = new org.springframework.ai.chat.model.Generation(newMessage,
-							response.getResult().getMetadata());
+                    var newMessage = new org.springframework.ai.chat.messages.AssistantMessage(
+                            mergedText,
+                            currentMessage.getMetadata(),
+                            mergedToolCalls,
+                            currentMessage.getMedia());
+                    var newGeneration = new org.springframework.ai.chat.model.Generation(newMessage,
+                            response.getResult().getMetadata());
 
 					org.springframework.ai.chat.model.ChatResponse newResponse = new org.springframework.ai.chat.model.ChatResponse(
 							List.of(newGeneration), response.getMetadata());
