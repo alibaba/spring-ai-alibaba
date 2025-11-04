@@ -44,7 +44,6 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.InitializeResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
-import org.apache.poi.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -456,7 +455,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			String exportPath = remoteServerConfig.getExportPath();
 
 			// 构建基础URL，根据协议类型调整
-			String transportProtocol = StringUtil.isNotBlank(serviceRef.getTransportProtocol()) ? serviceRef.getTransportProtocol() : "http";
+			String transportProtocol = StringUtils.hasText(serviceRef.getTransportProtocol()) ? serviceRef.getTransportProtocol() : "http";
 			StringBuilder baseUrl;
 			if ("mcp-sse".equalsIgnoreCase(protocol)) {
 				baseUrl = new StringBuilder(transportProtocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort());
