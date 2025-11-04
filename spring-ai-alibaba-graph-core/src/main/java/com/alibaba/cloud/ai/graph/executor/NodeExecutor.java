@@ -43,7 +43,6 @@ import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.GraphRunnerContext.INTERRUPT_AFTER;
 import static com.alibaba.cloud.ai.graph.StateGraph.*;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Node executor that processes node execution and result handling. This class
@@ -52,138 +51,139 @@ import static java.util.Objects.requireNonNull;
  */
 public class NodeExecutor extends BaseGraphExecutor {
 
-	private final MainGraphExecutor mainGraphExecutor;
+    private final MainGraphExecutor mainGraphExecutor;
 
-	public NodeExecutor(MainGraphExecutor mainGraphExecutor) {
-		this.mainGraphExecutor = mainGraphExecutor;
-	}
+    public NodeExecutor(MainGraphExecutor mainGraphExecutor) {
+        this.mainGraphExecutor = mainGraphExecutor;
+    }
 
-	/**
-	 * Implementation of the execute method. This demonstrates polymorphism as it provides
-	 * a specific implementation for node execution.
-	 * @param context the graph runner context
-	 * @param resultValue the atomic reference to store the result value
-	 * @return Flux of GraphResponse with execution result
-	 */
-	@Override
-	public Flux<GraphResponse<NodeOutput>> execute(GraphRunnerContext context, AtomicReference<Object> resultValue) {
-		return executeNode(context, resultValue);
-	}
+    /**
+     * Implementation of the execute method. This demonstrates polymorphism as it provides
+     * a specific implementation for node execution.
+     *
+     * @param context     the graph runner context
+     * @param resultValue the atomic reference to store the result value
+     * @return Flux of GraphResponse with execution result
+     */
+    @Override
+    public Flux<GraphResponse<NodeOutput>> execute(GraphRunnerContext context, AtomicReference<Object> resultValue) {
+        return executeNode(context, resultValue);
+    }
 
-	/**
-	 * Executes a node and handles its result.
-	 * @param context the graph runner context
-	 * @param resultValue the atomic reference to store the result value
-	 * @return Flux of GraphResponse with node execution result
-	 */
-	private Flux<GraphResponse<NodeOutput>> executeNode(GraphRunnerContext context,
-			AtomicReference<Object> resultValue) {
-		try {
-			context.setCurrentNodeId(context.getNextNodeId());
-			String currentNodeId = context.getCurrentNodeId();
-			AsyncNodeActionWithConfig action = context.getNodeAction(currentNodeId);
+    /**
+     * Executes a node and handles its result.
+     *
+     * @param context     the graph runner context
+     * @param resultValue the atomic reference to store the result value
+     * @return Flux of GraphResponse with node execution result
+     */
+    private Flux<GraphResponse<NodeOutput>> executeNode(GraphRunnerContext context,
+                                                        AtomicReference<Object> resultValue) {
+        try {
+            context.setCurrentNodeId(context.getNextNodeId());
+            String currentNodeId = context.getCurrentNodeId();
+            AsyncNodeActionWithConfig action = context.getNodeAction(currentNodeId);
 
-			if (action == null) {
-				return Flux.just(GraphResponse.error(RunnableErrors.missingNode.exception(currentNodeId)));
-			}
+            if (action == null) {
+                return Flux.just(GraphResponse.error(RunnableErrors.missingNode.exception(currentNodeId)));
+            }
 
-			if (action instanceof InterruptableAction) {
-				context.getConfig().metadata(RunnableConfig.STATE_UPDATE_METADATA_KEY).ifPresent(updateFromFeedback -> {
-					if (updateFromFeedback instanceof Map<?, ?>) {
-						context.mergeIntoCurrentState((Map<String, Object>) updateFromFeedback);
-					} else {
-						throw new RuntimeException();
-					}
-				});
-				Optional<InterruptionMetadata> interruptMetadata = ((InterruptableAction) action)
-					.interrupt(currentNodeId, context.cloneState(context.getCurrentStateData()), context.getConfig());
-				if (interruptMetadata.isPresent()) {
-					resultValue.set(interruptMetadata.get());
-					return Flux.just(GraphResponse.done(interruptMetadata.get()));
-				}
-			}
+            if (action instanceof InterruptableAction) {
+                context.getConfig().metadata(RunnableConfig.STATE_UPDATE_METADATA_KEY).ifPresent(updateFromFeedback -> {
+                    if (updateFromFeedback instanceof Map<?, ?>) {
+                        context.mergeIntoCurrentState((Map<String, Object>) updateFromFeedback);
+                    } else {
+                        throw new RuntimeException();
+                    }
+                });
+                Optional<InterruptionMetadata> interruptMetadata = ((InterruptableAction) action)
+                        .interrupt(currentNodeId, context.cloneState(context.getCurrentStateData()), context.getConfig());
+                if (interruptMetadata.isPresent()) {
+                    resultValue.set(interruptMetadata.get());
+                    return Flux.just(GraphResponse.done(interruptMetadata.get()));
+                }
+            }
 
-			context.doListeners(NODE_BEFORE, null);
+            context.doListeners(NODE_BEFORE, null);
 
-			CompletableFuture<Map<String, Object>> future = action.apply(context.getOverallState(),
-					context.getConfig());
+            CompletableFuture<Map<String, Object>> future = action.apply(context.getOverallState(),
+                    context.getConfig());
 
-			return Mono.fromFuture(future)
-					.flatMapMany(updateState -> handleActionResult(context, updateState, resultValue))
-					.onErrorResume(error -> {
-						context.doListeners(ERROR, new Exception(error));
-						return Flux.just(GraphResponse.error(error));
-					});
+            return Mono.fromFuture(future)
+                    .flatMapMany(updateState -> handleActionResult(context, updateState, resultValue))
+                    .onErrorResume(error -> {
+                        context.doListeners(ERROR, new Exception(error));
+                        return Flux.just(GraphResponse.error(error));
+                    });
 
-		}
-		catch (Exception e) {
-			return Flux.just(GraphResponse.error(e));
-		}
-	}
+        } catch (Exception e) {
+            return Flux.just(GraphResponse.error(e));
+        }
+    }
 
-	/**
-	 * Handles the action result and returns appropriate response.
-	 * @param context the graph runner context
-	 * @param updateState the updated state from the action
-	 * @param resultValue the atomic reference to store the result value
-	 * @return Flux of GraphResponse with action result handling
-	 */
-	private Flux<GraphResponse<NodeOutput>> handleActionResult(GraphRunnerContext context,
-			Map<String, Object> updateState, AtomicReference<Object> resultValue) {
-		try {
-           // Priority 1: Check for GraphFlux (highest priority)
-			Optional<GraphFlux<?>> embedGraphFlux = getEmbedGraphFlux(updateState,context);
-			if (embedGraphFlux.isPresent()) {
-				return handleGraphFlux(context, embedGraphFlux.get(), updateState, resultValue);
-			}
+    /**
+     * Handles the action result and returns appropriate response.
+     *
+     * @param context     the graph runner context
+     * @param updateState the updated state from the action
+     * @param resultValue the atomic reference to store the result value
+     * @return Flux of GraphResponse with action result handling
+     */
+    private Flux<GraphResponse<NodeOutput>> handleActionResult(GraphRunnerContext context,
+                                                               Map<String, Object> updateState, AtomicReference<Object> resultValue) {
+        try {
+            // Priority 1: Check for GraphFlux (highest priority)
+            Optional<GraphFlux<?>> embedGraphFlux = getEmbedGraphFlux(updateState, context);
+            if (embedGraphFlux.isPresent()) {
+                return handleGraphFlux(context, embedGraphFlux.get(), updateState, resultValue);
+            }
 
-			// Priority 2: Check for ParallelGraphFlux
-			Optional<ParallelGraphFlux> embedParallelGraphFlux = getEmbedParallelGraphFlux(updateState);
-			if (embedParallelGraphFlux.isPresent()) {
-				return handleParallelGraphFlux(context, embedParallelGraphFlux.get(), updateState, resultValue);
-			}
+            // Priority 2: Check for ParallelGraphFlux
+            Optional<ParallelGraphFlux> embedParallelGraphFlux = getEmbedParallelGraphFlux(updateState);
+            if (embedParallelGraphFlux.isPresent()) {
+                return handleParallelGraphFlux(context, embedParallelGraphFlux.get(), updateState, resultValue);
+            }
 
-			// Priority 3: Check for traditional Flux (backward compatibility)
-			Optional<Flux<GraphResponse<NodeOutput>>> embedFlux = getEmbedFlux(context, updateState);
-			if (embedFlux.isPresent()) {
-				return handleEmbeddedFlux(context, embedFlux.get(), updateState, resultValue);
-			}
+            // Priority 3: Check for traditional Flux (backward compatibility)
+            Optional<Flux<GraphResponse<NodeOutput>>> embedFlux = getEmbedFlux(context, updateState);
+            if (embedFlux.isPresent()) {
+                return handleEmbeddedFlux(context, embedFlux.get(), updateState, resultValue);
+            }
 
-			context.mergeIntoCurrentState(updateState);
+            context.mergeIntoCurrentState(updateState);
 
-			if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
-					&& context.getCompiledGraph().compileConfig.interruptsAfter()
-						.contains(context.getCurrentNodeId())) {
-				context.setNextNodeId(INTERRUPT_AFTER);
-			}
-			else {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
-			}
-			NodeOutput output = context.buildCurrentNodeOutput();
+            if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
+                    && context.getCompiledGraph().compileConfig.interruptsAfter()
+                    .contains(context.getCurrentNodeId())) {
+                context.setNextNodeId(INTERRUPT_AFTER);
+            } else {
+                Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
+                context.setNextNodeId(nextCommand.gotoNode());
+            }
+            NodeOutput output = context.buildCurrentNodeOutput();
 
-			context.doListeners(NODE_AFTER, null);
-			// Recursively call the main execution handler
-			return Flux.just(GraphResponse.of(output))
-				.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
-		}
-		catch (Exception e) {
-			return Flux.just(GraphResponse.error(e));
-		}
-	}
+            context.doListeners(NODE_AFTER, null);
+            // Recursively call the main execution handler
+            return Flux.just(GraphResponse.of(output))
+                    .concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
+        } catch (Exception e) {
+            return Flux.just(GraphResponse.error(e));
+        }
+    }
 
-	/**
-	 * Gets embed flux from partial state.
-	 * @param context the graph runner context
-	 * @param partialState the partial state containing flux instances
-	 * @return an Optional containing Data with the flux if found, empty otherwise
-	 */
-	private Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(GraphRunnerContext context,
-			Map<String, Object> partialState) {
-		return partialState.entrySet().stream().filter(e -> e.getValue() instanceof Flux<?>).findFirst().map(e -> {
-			var chatFlux = (Flux<?>) e.getValue();
-			var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
-			var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
+    /**
+     * Gets embed flux from partial state.
+     *
+     * @param context      the graph runner context
+     * @param partialState the partial state containing flux instances
+     * @return an Optional containing Data with the flux if found, empty otherwise
+     */
+    private Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(GraphRunnerContext context,
+                                                                   Map<String, Object> partialState) {
+        return partialState.entrySet().stream().filter(e -> e.getValue() instanceof Flux<?>).findFirst().map(e -> {
+            var chatFlux = (Flux<?>) e.getValue();
+            var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
+            var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
 
             return chatFlux.filter(element -> {
                 // skip ChatResponse.getResult() == null
@@ -192,374 +192,372 @@ public class NodeExecutor extends BaseGraphExecutor {
                 }
                 return true;
             }).map(element -> {
-				if (element instanceof ChatResponse response) {
-					ChatResponse lastResponse = lastChatResponseRef.get();
-					if (lastResponse == null) {
-						var message = response.getResult().getOutput();
-						GraphResponse<NodeOutput> lastGraphResponse = null;
-						if (message.hasToolCalls()) {
-							lastGraphResponse = GraphResponse
-								.of(new StreamingOutput<>(message.getToolCalls().toString(), response, context.getCurrentNodeId(), context.getOverallState()));
-						} else {
-							lastGraphResponse =
-									GraphResponse
-											.of(new StreamingOutput(message.getText(), context.getCurrentNodeId(), context.getOverallState()));
-						}
-						lastChatResponseRef.set(response);
-						lastGraphResponseRef.set(lastGraphResponse);
-						return lastGraphResponse;
-					}
+                if (element instanceof ChatResponse response) {
+                    ChatResponse lastResponse = lastChatResponseRef.get();
+                    if (lastResponse == null) {
+                        var message = response.getResult().getOutput();
+                        GraphResponse<NodeOutput> lastGraphResponse = null;
+                        if (message.hasToolCalls()) {
+                            lastGraphResponse = GraphResponse
+                                    .of(new StreamingOutput<>(message.getToolCalls().toString(), response, context.getCurrentNodeId(), context.getOverallState()));
+                        } else {
+                            lastGraphResponse =
+                                    GraphResponse
+                                            .of(new StreamingOutput(message.getText(), context.getCurrentNodeId(), context.getOverallState()));
+                        }
+                        lastChatResponseRef.set(response);
+                        lastGraphResponseRef.set(lastGraphResponse);
+                        return lastGraphResponse;
+                    }
 
-					final var currentMessage = response.getResult().getOutput();
+                    final var currentMessage = response.getResult().getOutput();
+                    final var lastMessage = lastResponse.getResult().getOutput();
 
-					if (currentMessage.hasToolCalls()) {
-						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-							.of(new StreamingOutput<>(currentMessage.getToolCalls().toString(), response, context.getCurrentNodeId(), context.getOverallState()));
-						lastGraphResponseRef.set(lastGraphResponse);
-						return lastGraphResponse;
-					}
+                    // merge message
+                    final var lastMessageText = lastMessage.getText() != null ? lastMessage.getText() : "";
+                    final var currentMessageText = currentMessage.getText();
+                    final var mergedText = currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText;
 
-					final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
-							"lastResponse text cannot be null");
+                    // merge tool calls：if current message have tool calls，use now；otherwise, use the previous one
+                    var mergedToolCalls = currentMessage.hasToolCalls() ? currentMessage.getToolCalls() : lastMessage.getToolCalls();
 
-					final var currentMessageText = currentMessage.getText();
+                    var newMessage = new org.springframework.ai.chat.messages.AssistantMessage(
+                            mergedText,
+                            currentMessage.getMetadata(),
+                            mergedToolCalls,
+                            currentMessage.getMedia());
+                    var newGeneration = new org.springframework.ai.chat.model.Generation(newMessage,
+                            response.getResult().getMetadata());
 
-					var newMessage = new org.springframework.ai.chat.messages.AssistantMessage(
-							currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText,
-							currentMessage.getMetadata(), currentMessage.getToolCalls(), currentMessage.getMedia());
+                    org.springframework.ai.chat.model.ChatResponse newResponse = new org.springframework.ai.chat.model.ChatResponse(
+                            List.of(newGeneration), response.getMetadata());
+                    lastChatResponseRef.set(newResponse);
+                    GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
+                            .of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(),
+                                    context.getOverallState()));
+                    // lastGraphResponseRef.set(lastGraphResponse);
+                    return lastGraphResponse;
+                } else if (element instanceof GraphResponse) {
+                    GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
+                    lastGraphResponseRef.set(graphResponse);
+                    return graphResponse;
+                } else {
+                    String errorMsg = "Unsupported flux element type: "
+                            + (element != null ? element.getClass().getSimpleName() : "null");
+                    return GraphResponse.<NodeOutput>error(new IllegalArgumentException(errorMsg));
+                }
+            }).concatWith(Mono.defer(() -> {
+                if (lastChatResponseRef.get() == null) {
+                    GraphResponse<?> lastGraphResponse = lastGraphResponseRef.get();
+                    if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
+                        Object result = lastGraphResponse.resultValue().get();
+                        if (result instanceof Map resultMap) {
+                            if (!resultMap.containsKey(e.getKey()) && resultMap.containsKey("messages")) {
+                                List<Object> messages = (List<Object>) resultMap.get("messages");
+                                Object lastMessage = messages.get(messages.size() - 1);
+                                if (lastMessage instanceof AssistantMessage lastAssistantMessage) {
+                                    resultMap.put(e.getKey(), lastAssistantMessage.getText());
+                                }
+                            }
+                        }
+                        return Mono.just(lastGraphResponseRef.get());
+                    }
+                    return Mono.empty();
+                } else {
+                    return Mono.fromCallable(() -> {
+                        Map<String, Object> completionResult = new HashMap<>();
+                        completionResult.put(e.getKey(), lastChatResponseRef.get().getResult().getOutput());
+                        if (!e.getKey().equals("messages")) {
+                            completionResult.put("messages", lastChatResponseRef.get().getResult().getOutput());
+                        }
+                        return GraphResponse.done(completionResult);
+                    });
+                }
+            }));
+        });
+    }
 
-					var newGeneration = new org.springframework.ai.chat.model.Generation(newMessage,
-							response.getResult().getMetadata());
+    /**
+     * Handles embedded flux processing.
+     *
+     * @param context      the graph runner context
+     * @param embedFlux    the embedded flux to handle
+     * @param partialState the partial state
+     * @param resultValue  the atomic reference to store the result value
+     * @return Flux of GraphResponse with embedded flux handling result
+     */
+    private Flux<GraphResponse<NodeOutput>> handleEmbeddedFlux(GraphRunnerContext context,
+                                                               Flux<GraphResponse<NodeOutput>> embedFlux, Map<String, Object> partialState,
+                                                               AtomicReference<Object> resultValue) {
 
-					org.springframework.ai.chat.model.ChatResponse newResponse = new org.springframework.ai.chat.model.ChatResponse(
-							List.of(newGeneration), response.getMetadata());
-					lastChatResponseRef.set(newResponse);
-					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-						.of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(),
-								context.getOverallState()));
-					// lastGraphResponseRef.set(lastGraphResponse);
-					return lastGraphResponse;
-				}
-				else if (element instanceof GraphResponse) {
-					GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
-					lastGraphResponseRef.set(graphResponse);
-					return graphResponse;
-				}
-				else {
-					String errorMsg = "Unsupported flux element type: "
-							+ (element != null ? element.getClass().getSimpleName() : "null");
-					return GraphResponse.<NodeOutput>error(new IllegalArgumentException(errorMsg));
-				}
-			}).concatWith(Mono.defer(() -> {
-				if (lastChatResponseRef.get() == null) {
-					GraphResponse<?> lastGraphResponse = lastGraphResponseRef.get();
-					if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
-						Object result = lastGraphResponse.resultValue().get();
-						if (result instanceof Map resultMap) {
-							if (!resultMap.containsKey(e.getKey()) && resultMap.containsKey("messages")) {
-								List<Object> messages = (List<Object>) resultMap.get("messages");
-								Object lastMessage = messages.get(messages.size() - 1);
-								if (lastMessage instanceof AssistantMessage lastAssistantMessage) {
-									resultMap.put(e.getKey(), lastAssistantMessage.getText());
-								}
-							}
-						}
-						return Mono.just(lastGraphResponseRef.get());
-					}
-					return Mono.empty();
-				}
-				else {
-					return Mono.fromCallable(() -> {
-						Map<String, Object> completionResult = new HashMap<>();
-						completionResult.put(e.getKey(), lastChatResponseRef.get().getResult().getOutput());
-						if (!e.getKey().equals("messages")) {
-							completionResult.put("messages", lastChatResponseRef.get().getResult().getOutput());
-						}
-						return GraphResponse.done(completionResult);
-					});
-				}
-			}));
-		});
-	}
+        AtomicReference<GraphResponse<NodeOutput>> lastData = new AtomicReference<>();
 
-	/**
-	 * Handles embedded flux processing.
-	 * @param context the graph runner context
-	 * @param embedFlux the embedded flux to handle
-	 * @param partialState the partial state
-	 * @param resultValue the atomic reference to store the result value
-	 * @return Flux of GraphResponse with embedded flux handling result
-	 */
-	private Flux<GraphResponse<NodeOutput>> handleEmbeddedFlux(GraphRunnerContext context,
-			Flux<GraphResponse<NodeOutput>> embedFlux, Map<String, Object> partialState,
-			AtomicReference<Object> resultValue) {
+        Flux<GraphResponse<NodeOutput>> processedFlux = embedFlux.map(data -> {
+            if (data.getOutput() != null) {
+                var output = data.getOutput().join();
+                output.setSubGraph(true);
+                GraphResponse<NodeOutput> newData = GraphResponse.of(output);
+                lastData.set(newData);
+                return newData;
+            }
+            lastData.set(data);
+            return data;
+        });
 
-		AtomicReference<GraphResponse<NodeOutput>> lastData = new AtomicReference<>();
+        Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
+            var data = lastData.get();
+            if (data == null)
+                return;
+            var nodeResultValue = data.resultValue();
 
-		Flux<GraphResponse<NodeOutput>> processedFlux = embedFlux.map(data -> {
-			if (data.getOutput() != null) {
-				var output = data.getOutput().join();
-				output.setSubGraph(true);
-				GraphResponse<NodeOutput> newData = GraphResponse.of(output);
-				lastData.set(newData);
-				return newData;
-			}
-			lastData.set(data);
-			return data;
-		});
+            if (nodeResultValue.isPresent() && nodeResultValue.get() instanceof InterruptionMetadata) {
+                context.setReturnFromEmbedWithValue(nodeResultValue.get());
+                return;
+            }
 
-		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
-			var data = lastData.get();
-			if (data == null)
-				return;
-			var nodeResultValue = data.resultValue();
+            Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
+                    .stream()
+                    .filter(e -> !(e.getValue() instanceof Flux))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-			if (nodeResultValue.isPresent() && nodeResultValue.get() instanceof InterruptionMetadata) {
-				context.setReturnFromEmbedWithValue(nodeResultValue.get());
-				return;
-			}
+            context.mergeIntoCurrentState(partialStateWithoutFlux);
 
-			Map<String, Object> partialStateWithoutFlux = partialState.entrySet()
-					.stream()
-					.filter(e -> !(e.getValue() instanceof Flux))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            if (nodeResultValue.isPresent()) {
+                Object value = nodeResultValue.get();
+                if (value instanceof Map<?, ?>) {
+                    context.mergeIntoCurrentState((Map<String, Object>) value);
+                } else {
+                    throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
+                }
+            }
 
-			context.mergeIntoCurrentState(partialStateWithoutFlux);
+            try {
+                Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
+                context.setNextNodeId(nextCommand.gotoNode());
 
-			if (nodeResultValue.isPresent()) {
-				Object value = nodeResultValue.get();
-				if (value instanceof Map<?, ?>) {
-					context.mergeIntoCurrentState((Map<String, Object>) value);
-				}
-				else {
-					throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
-				}
-			}
+                context.buildCurrentNodeOutput();
 
-			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
+                context.doListeners(NODE_AFTER, null);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
 
-				context.buildCurrentNodeOutput();
+        return processedFlux
+                .concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+    }
 
-				context.doListeners(NODE_AFTER, null);
-			}
-			catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		});
+    /**
+     * Gets GraphFlux from partial state.
+     *
+     * @param partialState the partial state containing GraphFlux instances
+     * @return an Optional containing GraphFlux if found, empty otherwise
+     */
+    private Optional<GraphFlux<?>> getEmbedGraphFlux(Map<String, Object> partialState, GraphRunnerContext context) {
+        return partialState.entrySet()
+                .stream()
+                .filter(e -> e.getValue() instanceof GraphFlux)
+                .findFirst()
+                .map(e -> {
+                    GraphFlux<Object> graphFlux = (GraphFlux<Object>) e.getValue();
+                    return GraphFlux.of(StringUtils.hasText(graphFlux.getNodeId()) ? graphFlux.getNodeId() : context.getCurrentNodeId(),
+                            StringUtils.hasText(graphFlux.getKey()) ? graphFlux.getKey() : e.getKey(),
+                            graphFlux.getFlux(),
+                            graphFlux.getMapResult(),
+                            graphFlux.getChunkResult());
+                });
+    }
 
-		return processedFlux
-			.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
-	}
+    /**
+     * Gets ParallelGraphFlux from partial state.
+     *
+     * @param partialState the partial state containing ParallelGraphFlux instances
+     * @return an Optional containing ParallelGraphFlux if found, empty otherwise
+     */
+    private Optional<ParallelGraphFlux> getEmbedParallelGraphFlux(Map<String, Object> partialState) {
+        return partialState.entrySet()
+                .stream()
+                .filter(e -> e.getValue() instanceof ParallelGraphFlux)
+                .findFirst()
+                .map(e -> (ParallelGraphFlux) e.getValue());
+    }
 
-	/**
-	 * Gets GraphFlux from partial state.
-	 * @param partialState the partial state containing GraphFlux instances
-	 * @return an Optional containing GraphFlux if found, empty otherwise
-	 */
-	private Optional<GraphFlux<?>> getEmbedGraphFlux(Map<String, Object> partialState, GraphRunnerContext context) {
-		return partialState.entrySet()
-				.stream()
-				.filter(e -> e.getValue() instanceof GraphFlux)
-				.findFirst()
-				.map(e -> {
-					GraphFlux<Object> graphFlux = (GraphFlux<Object>) e.getValue();
-					return GraphFlux.of(StringUtils.hasText(graphFlux.getNodeId()) ? graphFlux.getNodeId() : context.getCurrentNodeId(),
-							StringUtils.hasText(graphFlux.getKey()) ? graphFlux.getKey() : e.getKey(),
-							graphFlux.getFlux(),
-							graphFlux.getMapResult(),
-							graphFlux.getChunkResult());
-				});
-	}
+    /**
+     * Handles GraphFlux processing with node ID preservation.
+     *
+     * @param context      the graph runner context
+     * @param graphFlux    the GraphFlux to handle
+     * @param partialState the partial state
+     * @param resultValue  the atomic reference to store the result value
+     * @return Flux of GraphResponse with GraphFlux handling result
+     */
+    private Flux<GraphResponse<NodeOutput>> handleGraphFlux(GraphRunnerContext context,
+                                                            GraphFlux<?> graphFlux, Map<String, Object> partialState,
+                                                            AtomicReference<Object> resultValue) {
 
-	/**
-	 * Gets ParallelGraphFlux from partial state.
-	 * @param partialState the partial state containing ParallelGraphFlux instances
-	 * @return an Optional containing ParallelGraphFlux if found, empty otherwise
-	 */
-	private Optional<ParallelGraphFlux> getEmbedParallelGraphFlux(Map<String, Object> partialState) {
-		return partialState.entrySet()
-				.stream()
-				.filter(e -> e.getValue() instanceof ParallelGraphFlux)
-				.findFirst()
-				.map(e -> (ParallelGraphFlux) e.getValue());
-	}
+        // Use nodeId from GraphFlux instead of context to preserve real node identity
+        String effectiveNodeId = graphFlux.getNodeId();
+        AtomicReference<Object> lastDataRef = new AtomicReference<>();
 
-	/**
-	 * Handles GraphFlux processing with node ID preservation.
-	 * @param context the graph runner context
-	 * @param graphFlux the GraphFlux to handle
-	 * @param partialState the partial state
-	 * @param resultValue the atomic reference to store the result value
-	 * @return Flux of GraphResponse with GraphFlux handling result
-	 */
-	private Flux<GraphResponse<NodeOutput>> handleGraphFlux(GraphRunnerContext context,
-															GraphFlux<?> graphFlux, Map<String, Object> partialState,
-															AtomicReference<Object> resultValue) {
+        // Process the GraphFlux stream with preserved node ID
+        Flux<GraphResponse<NodeOutput>> processedFlux = graphFlux.getFlux()
+                .map(element -> {
+                    lastDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 
-		// Use nodeId from GraphFlux instead of context to preserve real node identity
-		String effectiveNodeId = graphFlux.getNodeId();
-		AtomicReference<Object> lastDataRef = new AtomicReference<>();
+                    // Create StreamingOutput with GraphFlux's nodeId (preserves real node identity)
+                    StreamingOutput output = graphFlux.hasChunkResult() ?
+                            new StreamingOutput(graphFlux.getChunkResult().apply(element), element, effectiveNodeId, context.getOverallState()) :
+                            new StreamingOutput(element, effectiveNodeId, context.getOverallState());
+                    output.setSubGraph(true);
+                    return GraphResponse.<NodeOutput>of(output);
+                })
+                .onErrorMap(error -> new RuntimeException("GraphFlux processing error in node: " + effectiveNodeId, error));
 
-		// Process the GraphFlux stream with preserved node ID
-		Flux<GraphResponse<NodeOutput>> processedFlux = graphFlux.getFlux()
-				.map(element -> {
-					lastDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
+        // Handle completion and result mapping
+        Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
+            Object lastData = lastDataRef.get();
 
-					// Create StreamingOutput with GraphFlux's nodeId (preserves real node identity)
-					StreamingOutput output = graphFlux.hasChunkResult() ?
-							new StreamingOutput(graphFlux.getChunkResult().apply(element), element, effectiveNodeId, context.getOverallState()):
-							new StreamingOutput(element, effectiveNodeId, context.getOverallState());
-					output.setSubGraph(true);
-					return GraphResponse.<NodeOutput>of(output);
-				})
-				.onErrorMap(error -> new RuntimeException("GraphFlux processing error in node: " + effectiveNodeId, error));
+            // Apply mapResult function if available
+            Map<String, Object> resultMap = new HashMap<>();
+            resultMap.put(graphFlux.getKey(), lastData);
 
-		// Handle completion and result mapping
-		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
-			Object lastData = lastDataRef.get();
+            // Merge non-GraphFlux state
+            Map<String, Object> partialStateWithoutGraphFlux = partialState.entrySet()
+                    .stream()
+                    .filter(e -> !(e.getValue() instanceof GraphFlux))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-			// Apply mapResult function if available
-			Map<String, Object> resultMap = new HashMap<>();
-			resultMap.put(graphFlux.getKey(), lastData);
+            context.mergeIntoCurrentState(partialStateWithoutGraphFlux);
 
-			// Merge non-GraphFlux state
-			Map<String, Object> partialStateWithoutGraphFlux = partialState.entrySet()
-					.stream()
-					.filter(e -> !(e.getValue() instanceof GraphFlux))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            // Merge the result from GraphFlux processing
+            if (!resultMap.isEmpty()) {
+                context.mergeIntoCurrentState(resultMap);
+            }
 
-			context.mergeIntoCurrentState(partialStateWithoutGraphFlux);
+            try {
+                Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
+                context.setNextNodeId(nextCommand.gotoNode());
 
-			// Merge the result from GraphFlux processing
-			if (!resultMap.isEmpty()) {
-				context.mergeIntoCurrentState(resultMap);
-			}
+                context.buildCurrentNodeOutput();
 
-			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
+                context.doListeners(NODE_AFTER, null);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
 
-				context.buildCurrentNodeOutput();
+        return processedFlux
+                .concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+    }
 
-				context.doListeners(NODE_AFTER, null);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		});
+    /**
+     * Handles ParallelGraphFlux processing with node ID preservation for all parallel streams.
+     *
+     * @param context           the graph runner context
+     * @param parallelGraphFlux the ParallelGraphFlux to handle
+     * @param partialState      the partial state
+     * @param resultValue       the atomic reference to store the result value
+     * @return Flux of GraphResponse with ParallelGraphFlux handling result
+     */
+    private Flux<GraphResponse<NodeOutput>> handleParallelGraphFlux(GraphRunnerContext context,
+                                                                    ParallelGraphFlux parallelGraphFlux, Map<String, Object> partialState,
+                                                                    AtomicReference<Object> resultValue) throws Exception {
 
-		return processedFlux
-				.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
-	}
+        if (parallelGraphFlux.isEmpty()) {
+            // Handle empty ParallelGraphFlux
+            return handleNonStreamingResult(context, partialState, resultValue);
+        }
 
-	/**
-	 * Handles ParallelGraphFlux processing with node ID preservation for all parallel streams.
-	 * @param context the graph runner context
-	 * @param parallelGraphFlux the ParallelGraphFlux to handle
-	 * @param partialState the partial state
-	 * @param resultValue the atomic reference to store the result value
-	 * @return Flux of GraphResponse with ParallelGraphFlux handling result
-	 */
-	private Flux<GraphResponse<NodeOutput>> handleParallelGraphFlux(GraphRunnerContext context,
-																	ParallelGraphFlux parallelGraphFlux, Map<String, Object> partialState,
-																	AtomicReference<Object> resultValue) throws Exception {
+        Map<String, AtomicReference<Object>> nodeDataRefs = new HashMap<>();
 
-		if (parallelGraphFlux.isEmpty()) {
-			// Handle empty ParallelGraphFlux
-			return handleNonStreamingResult(context, partialState, resultValue);
-		}
+        // Create merged flux from all GraphFlux instances with preserved node IDs
+        List<Flux<GraphResponse<NodeOutput>>> fluxList = parallelGraphFlux.getGraphFluxes()
+                .stream()
+                .map(graphFlux -> {
+                    String nodeId = graphFlux.getNodeId();
+                    AtomicReference<Object> nodeDataRef = new AtomicReference<>();
+                    nodeDataRefs.put(nodeId, nodeDataRef);
 
-		Map<String, AtomicReference<Object>> nodeDataRefs = new HashMap<>();
+                    return graphFlux.getFlux()
+                            .map(element -> {
+                                nodeDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
+                                // Create StreamingOutput with specific nodeId (preserves parallel node identity)
+                                StreamingOutput output = graphFlux.hasChunkResult() ?
+                                        new StreamingOutput(graphFlux.getChunkResult().apply(element), element, nodeId, context.getOverallState()) :
+                                        new StreamingOutput(element, nodeId, context.getOverallState());
+                                output.setSubGraph(true);
+                                return GraphResponse.<NodeOutput>of(output);
+                            })
+                            .onErrorMap(error -> new RuntimeException("ParallelGraphFlux processing error in node: " + nodeId, error));
+                })
+                .collect(Collectors.toList());
 
-		// Create merged flux from all GraphFlux instances with preserved node IDs
-		List<Flux<GraphResponse<NodeOutput>>> fluxList = parallelGraphFlux.getGraphFluxes()
-				.stream()
-				.map(graphFlux -> {
-					String nodeId = graphFlux.getNodeId();
-					AtomicReference<Object> nodeDataRef = new AtomicReference<>();
-					nodeDataRefs.put(nodeId, nodeDataRef);
+        // Merge all parallel streams while preserving node identities
+        Flux<GraphResponse<NodeOutput>> mergedFlux = Flux.merge(fluxList);
 
-					return graphFlux.getFlux()
-							.map(element -> {
-								nodeDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
-								// Create StreamingOutput with specific nodeId (preserves parallel node identity)
-								StreamingOutput output = graphFlux.hasChunkResult() ?
-										new StreamingOutput(graphFlux.getChunkResult().apply(element), element, nodeId, context.getOverallState()):
-										new StreamingOutput(element, nodeId, context.getOverallState());
-								output.setSubGraph(true);
-								return GraphResponse.<NodeOutput>of(output);
-							})
-							.onErrorMap(error -> new RuntimeException("ParallelGraphFlux processing error in node: " + nodeId, error));
-				})
-				.collect(Collectors.toList());
+        // Handle completion and result mapping for all nodes
+        Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
+            Map<String, Object> combinedResultMap = new HashMap<>();
 
-		// Merge all parallel streams while preserving node identities
-		Flux<GraphResponse<NodeOutput>> mergedFlux = Flux.merge(fluxList);
+            // Process results from each GraphFlux with node-specific prefixes
+            for (GraphFlux<?> graphFlux : parallelGraphFlux.getGraphFluxes()) {
+                String nodeId = graphFlux.getNodeId();
+                Object nodeData = nodeDataRefs.get(nodeId).get();
 
-		// Handle completion and result mapping for all nodes
-		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
-			Map<String, Object> combinedResultMap = new HashMap<>();
+                combinedResultMap.put(graphFlux.getKey(), nodeData);
+            }
 
-			// Process results from each GraphFlux with node-specific prefixes
-			for (GraphFlux<?> graphFlux : parallelGraphFlux.getGraphFluxes()) {
-				String nodeId = graphFlux.getNodeId();
-				Object nodeData = nodeDataRefs.get(nodeId).get();
+            // Merge non-ParallelGraphFlux state
+            Map<String, Object> partialStateWithoutParallelGraphFlux = partialState.entrySet()
+                    .stream()
+                    .filter(e -> !(e.getValue() instanceof ParallelGraphFlux))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-				combinedResultMap.put(graphFlux.getKey(),nodeData);
-			}
+            context.mergeIntoCurrentState(partialStateWithoutParallelGraphFlux);
 
-			// Merge non-ParallelGraphFlux state
-			Map<String, Object> partialStateWithoutParallelGraphFlux = partialState.entrySet()
-					.stream()
-					.filter(e -> !(e.getValue() instanceof ParallelGraphFlux))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            // Merge the combined results from ParallelGraphFlux processing
+            if (!combinedResultMap.isEmpty()) {
+                context.mergeIntoCurrentState(combinedResultMap);
+            }
 
-			context.mergeIntoCurrentState(partialStateWithoutParallelGraphFlux);
+            try {
+                Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
+                context.setNextNodeId(nextCommand.gotoNode());
 
-			// Merge the combined results from ParallelGraphFlux processing
-			if (!combinedResultMap.isEmpty()) {
-				context.mergeIntoCurrentState(combinedResultMap);
-			}
+                context.buildCurrentNodeOutput();
 
-			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
+                context.doListeners(NODE_AFTER, null);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
 
-				context.buildCurrentNodeOutput();
+        return mergedFlux
+                .concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+    }
 
-				context.doListeners(NODE_AFTER, null);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		});
+    /**
+     * Handles non-streaming result processing.
+     *
+     * @param context      the graph runner context
+     * @param partialState the partial state
+     * @param resultValue  the atomic reference to store the result value
+     * @return Flux of GraphResponse with non-streaming result
+     */
+    private Flux<GraphResponse<NodeOutput>> handleNonStreamingResult(GraphRunnerContext context,
+                                                                     Map<String, Object> partialState, AtomicReference<Object> resultValue) throws Exception {
+        if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
+                && context.getCompiledGraph().compileConfig.interruptsAfter()
+                .contains(context.getCurrentNodeId())) {
+            context.setNextNodeId(INTERRUPT_AFTER);
+        } else {
+            Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
+            context.setNextNodeId(nextCommand.gotoNode());
+        }
 
-		return mergedFlux
-				.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
-	}
-
-	/**
-	 * Handles non-streaming result processing.
-	 * @param context the graph runner context
-	 * @param partialState the partial state
-	 * @param resultValue the atomic reference to store the result value
-	 * @return Flux of GraphResponse with non-streaming result
-	 */
-	private Flux<GraphResponse<NodeOutput>> handleNonStreamingResult(GraphRunnerContext context,
-																	 Map<String, Object> partialState, AtomicReference<Object> resultValue) throws Exception {
-		if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
-				&& context.getCompiledGraph().compileConfig.interruptsAfter()
-				.contains(context.getCurrentNodeId())) {
-			context.setNextNodeId(INTERRUPT_AFTER);
-		}
-		else {
-			Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-			context.setNextNodeId(nextCommand.gotoNode());
-		}
-
-		NodeOutput output = context.buildCurrentNodeOutput();
-		// Recursively call the main execution handler
-		return Flux.just(GraphResponse.of(output))
-				.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
-	}
+        NodeOutput output = context.buildCurrentNodeOutput();
+        // Recursively call the main execution handler
+        return Flux.just(GraphResponse.of(output))
+                .concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
+    }
 }
