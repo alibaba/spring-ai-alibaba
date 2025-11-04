@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-	<!--
+    <!--
 	   Copyright 2025-2026 the original author or authors.
 
 	   Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,206 +17,206 @@
 	   limitations under the License.
 	-->
 
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>com.alibaba.cloud.ai</groupId>
-		<artifactId>spring-ai-alibaba</artifactId>
-		<version>${revision}</version>
-		<relativePath>../pom.xml</relativePath>
-	</parent>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.alibaba.cloud.ai</groupId>
+        <artifactId>spring-ai-alibaba</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
 
-	<artifactId>spring-ai-alibaba-studio</artifactId>
-	<packaging>jar</packaging>
-	<name>Spring AI Alibaba Studio</name>
-	<description>The studio library that is designed to be used inside spring ai alibaba project.</description>
-	<url>https://github.com/alibaba/spring-ai-alibaba</url>
-	<scm>
-		<connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
-		<developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
-		<url>https://github.com/alibaba/spring-ai-alibaba</url>
-	</scm>
+    <artifactId>spring-ai-alibaba-studio</artifactId>
+    <packaging>jar</packaging>
+    <name>Spring AI Alibaba Studio</name>
+    <description>The studio library that is designed to be used inside spring ai alibaba project.</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
-	<properties>
+    <properties>
 
-		<!-- Jakarta -->
-		<jakarta.version>5.0.0</jakarta.version>
+        <!-- Jakarta -->
+        <jakarta.version>5.0.0</jakarta.version>
 
-		<!-- Node -->
-		<npm.version>9.5.1</npm.version>
-		<node.version>v18.16.0</node.version>
-		<maven.deploy.skip>false</maven.deploy.skip>
-	</properties>
+        <!-- Node -->
+        <npm.version>9.5.1</npm.version>
+        <node.version>v18.16.0</node.version>
+        <maven.deploy.skip>false</maven.deploy.skip>
+    </properties>
 
-	<dependencies>
-		<dependency>
-			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-			<version>${spring-ai-extensions.version}</version>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+            <version>${spring-ai-extensions.version}</version>
+        </dependency>
 
-		<dependency>
-			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-agent-framework</artifactId>
-			<version>${project.parent.version}</version>
-		</dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
 
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-advisors-vector-store</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-advisors-vector-store</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-graph-core</artifactId>
-			<version>${project.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.jboss.slf4j</groupId>
-					<artifactId>slf4j-jboss-logmanager</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-graph-core</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.slf4j</groupId>
+                    <artifactId>slf4j-jboss-logmanager</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-configuration-processor</artifactId>
-			<optional>true</optional>
-		</dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
 
-		<!-- springdoc ui -->
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>${springdoc-openapi.version}</version>
-		</dependency>
+        <!-- springdoc ui -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc-openapi.version}</version>
+        </dependency>
 
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-tracing</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-tracing-bridge-otel</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-aop</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.opentelemetry</groupId>
-			<artifactId>opentelemetry-sdk-extension-autoconfigure-spi</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.opentelemetry</groupId>
-			<artifactId>opentelemetry-exporter-common</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.opentelemetry</groupId>
-			<artifactId>opentelemetry-exporter-otlp-common</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.opentelemetry</groupId>
-			<artifactId>opentelemetry-exporter-otlp</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.github.ben-manes.caffeine</groupId>
-			<artifactId>caffeine</artifactId>
-		</dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-extension-autoconfigure-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
 
-		<dependency>
-			<groupId>jakarta.servlet</groupId>
-			<artifactId>jakarta.servlet-api</artifactId>
-			<scope>provided</scope>
-		</dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter</artifactId>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>com.alibaba.cloud.ai</groupId>
-			<artifactId>spring-ai-alibaba-autoconfigure-dashscope</artifactId>
-			<version>${spring-ai-extensions.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.modelcontextprotocol.sdk</groupId>
-			<artifactId>mcp</artifactId>
-			<scope>compile</scope>
-		</dependency>
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-autoconfigure-dashscope</artifactId>
+            <version>${spring-ai-extensions.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp</artifactId>
+            <scope>compile</scope>
+        </dependency>
 
-	</dependencies>
+    </dependencies>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springdoc</groupId>
-				<artifactId>springdoc-openapi-maven-plugin</artifactId>
-				<version>${springdoc-openapi-maven-plugin.version}</version>
-				<configuration>
-					<apiDocsUrl>http://localhost:8080/v3/api-docs.yaml</apiDocsUrl>
-					<outputFileName>openapi.yaml</outputFileName>
-					<outputDir>${project.basedir}/src/main/resources</outputDir>
-				</configuration>
-				<executions>
-					<execution>
-						<id>integration-test</id>
-						<goals>
-							<goal>generate</goal>
-						</goals>
-						<phase>compile</phase>
-					</execution>
-				</executions>
-			</plugin>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-maven-plugin</artifactId>
+                <version>${springdoc-openapi-maven-plugin.version}</version>
+                <configuration>
+                    <apiDocsUrl>http://localhost:8080/v3/api-docs.yaml</apiDocsUrl>
+                    <outputFileName>openapi.yaml</outputFileName>
+                    <outputDir>${project.basedir}/src/main/resources</outputDir>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>compile</phase>
+                    </execution>
+                </executions>
+            </plugin>
 
-			<plugin>
-				<artifactId>maven-resources-plugin</artifactId>
-				<version>3.2.0</version>
-				<executions>
-					<execution>
-						<id>copy-react-build</id>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<phase>process-resources</phase>
-						<configuration>
-							<outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
-							<resources>
-								<resource>
-									<directory>ui/build</directory>
-									<filtering>false</filtering>
-								</resource>
-							</resources>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-react-build</id>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>ui/build</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-		</plugins>
-	</build>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
