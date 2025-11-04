@@ -37,6 +37,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
@@ -73,7 +74,8 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	static {
 		objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 		objectMapper.setSerializationInclusion(Include.NON_NULL);
-	}
+        objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+    }
 
 	private final NacosMcpGatewayToolDefinition toolDefinition;
 
@@ -384,7 +386,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	@SuppressWarnings("unchecked")
 	public String call(@NonNull final String input, final ToolContext toolContext) {
 		try {
-			logger.info("[call] input: {} toolContext: {}", input, JacksonUtils.toJson(toolContext));
+			logger.info("[call] input: {} toolContext: {}", input, objectMapper.writeValueAsString(toolContext));
 
 			// 参数验证
 			if (this.toolDefinition == null) {
