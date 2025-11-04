@@ -118,11 +118,6 @@ public class StateGraph {
          */
         public JacksonSerializer() {
             super(OverAllState::new);
-            objectMapper.activateDefaultTyping(
-                    LaissezFaireSubTypeValidator.instance,
-                    ObjectMapper.DefaultTyping.NON_FINAL,
-                    JsonTypeInfo.As.PROPERTY
-            );
         }
 
         /**
@@ -132,21 +127,6 @@ public class StateGraph {
          */
         ObjectMapper getObjectMapper() {
             return objectMapper;
-        }
-
-        @Override
-        public OverAllState cloneObject(OverAllState object) throws IOException, ClassNotFoundException {
-            return bytesToObject(objectToBytes(object), object.getClass());
-        }
-
-        @Override
-        public byte[] objectToBytes(OverAllState object) throws IOException {
-            return objectMapper.writeValueAsBytes(object);
-        }
-
-        private OverAllState bytesToObject(byte[] bytes, Class<? extends OverAllState> clz) throws IOException {
-            OverAllState overAllState = objectMapper.readValue(bytes, clz);
-            return overAllState;
         }
 
 	}
