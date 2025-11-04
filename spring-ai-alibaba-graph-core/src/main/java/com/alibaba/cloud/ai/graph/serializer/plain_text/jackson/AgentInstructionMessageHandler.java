@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
@@ -54,12 +55,16 @@ public interface AgentInstructionMessageHandler {
 		@Override
 		public void serialize(AgentInstructionMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
 			gen.writeStartObject();
-			gen.writeStringField("@type", "TEMPLATED_USER");
+			gen.writeStringField("@class", msg.getClass().getName());
 			gen.writeStringField(Field.TEXT.name, msg.getText());
 			serializeMetadata(gen, msg.getMetadata());
 			gen.writeEndObject();
 		}
 
+		@Override
+		public void serializeWithType(AgentInstructionMessage value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
+			serialize(value, gen, serializers);
+		}
 	}
 
 	class Deserializer extends StdDeserializer<AgentInstructionMessage> {
