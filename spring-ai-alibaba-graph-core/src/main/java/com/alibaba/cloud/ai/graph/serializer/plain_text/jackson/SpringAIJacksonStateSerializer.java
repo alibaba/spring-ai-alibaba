@@ -15,9 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -29,6 +33,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
+import java.io.IOException;
+
 public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 	public SpringAIJacksonStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
@@ -38,6 +44,7 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		ChatMessageSerializer.registerTo(module);
 		ChatMessageDeserializer.registerTo(module);
+        NodeOutputDeserializer.registerTo(module);
 
 		typeMapper.register(new TypeMapper.Reference<ToolResponseMessage>(MessageType.TOOL.name()) {
 		}).register(new TypeMapper.Reference<SystemMessage>(MessageType.SYSTEM.name()) {
@@ -48,6 +55,12 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 		});
 
 		objectMapper.registerModule(module);
+
+        objectMapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
 	}
 
 	interface ChatMessageDeserializer {
@@ -100,5 +113,28 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 		}
 
 	}
+
+    interface NodeOutputDeserializer {
+
+        JacksonNodeOutputDeserializer nodeOutput = new JacksonNodeOutputDeserializer();
+
+        static void registerTo(SimpleModule module) {
+            module.addDeserializer(NodeOutput.class, nodeOutput);
+        }
+    }
+
+    @Override
+    public OverAllState cloneObject(OverAllState object) throws IOException {
+        return bytesToObject(objectToBytes(object), object.getClass());
+    }
+
+    @Override
+    public byte[] objectToBytes(OverAllState object) throws IOException {
+        return objectMapper.writeValueAsBytes(object);
+    }
+
+    private OverAllState bytesToObject(byte[] bytes, Class<? extends OverAllState> clz) throws IOException {
+        return objectMapper.readValue(bytes, clz);
+    }
 
 }

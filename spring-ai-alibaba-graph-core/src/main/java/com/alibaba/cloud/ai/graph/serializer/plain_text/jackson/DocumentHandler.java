@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.document.Document;
 
@@ -55,7 +56,7 @@ public interface DocumentHandler {
 		@Override
 		public void serialize(Document document, JsonGenerator gen, SerializerProvider provider) throws IOException {
 			gen.writeStartObject();
-			gen.writeStringField("@type", "DOCUMENT");
+			gen.writeStringField("@class", document.getClass().getName());
 			gen.writeStringField(Field.ID.name, document.getId());
 			gen.writeStringField(Field.TEXT.name, document.getText());
 
@@ -72,6 +73,10 @@ public interface DocumentHandler {
 			gen.writeEndObject();
 		}
 
+		@Override
+		public void serializeWithType(Document value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
+			serialize(value, gen, serializers);
+		}
 	}
 
 	class Deserializer extends StdDeserializer<Document> {

@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import org.springframework.ai.chat.messages.AssistantMessage;
 
 import java.io.IOException;
@@ -57,7 +58,7 @@ public interface AssistantMessageHandler {
 		@Override
 		public void serialize(AssistantMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
 			gen.writeStartObject();
-			gen.writeStringField("@type", msg.getMessageType().name());
+			gen.writeStringField("@class", msg.getClass().getName());
 			gen.writeStringField(Field.TEXT.name, msg.getText());
 			gen.writeObjectField(Field.TOOL_CALLS.name, msg.getToolCalls());
 
@@ -77,6 +78,10 @@ public interface AssistantMessageHandler {
 			gen.writeEndObject();
 		}
 
+		@Override
+		public void serializeWithType(AssistantMessage value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
+			serialize(value, gen, serializers);
+		}
 	}
 
 	class Deserializer extends StdDeserializer<AssistantMessage> {

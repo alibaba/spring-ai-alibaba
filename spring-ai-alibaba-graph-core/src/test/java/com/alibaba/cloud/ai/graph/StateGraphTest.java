@@ -52,6 +52,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -702,11 +703,14 @@ public class StateGraphTest {
 		};
 		PlainTextStateSerializer plainTextStateSerializer = new StateGraph.JacksonSerializer();
 		StateGraph workflow = new StateGraph(keyStrategyFactory, plainTextStateSerializer).addEdge(START, "agent_1")
-			.addNode("agent_1", node_async(state -> {
-				log.info("agent_1\n{}", state);
-				return Map.of("prop1", "test");
-			}))
-			.addEdge("agent_1", END);
+				.addNode("agent_1", node_async(state -> {
+					log.info("agent_1\n{}", state);
+					return Map.of("prop1", "test"
+							, "user", new User("zhangsan", 16), "userList"
+							, List.of(new User("lisi", 18))
+							, "userAry", new User[]{new User("wangwu", 20)});
+				}))
+				.addEdge("agent_1", END);
 
 		CompiledGraph app = workflow.compile();
 
@@ -714,8 +718,25 @@ public class StateGraphTest {
 		System.out.println("result = " + result);
 		assertTrue(result.isPresent());
 
-		Map<String, String> expected = Map.of("input", "test1", "prop1", "test");
-		assertIterableEquals(sortMap(expected), sortMap(result.get().data()));
+		Map<String, Object> expected = Map.of("input", "test1", "prop1", "test"
+				, "user", new User("zhangsan", 16)
+				, "userList", List.of(new User("lisi", 18))
+				, "userAry", new User[]{new User("wangwu", 20)});
+
+		HashMap<String, Object> expectedMClone = new HashMap<>(expected);
+		HashMap<String, Object> resultClone = new HashMap<>(result.get().data());
+		Object expectedAry = expectedMClone.remove("userAry");
+		Object resultAry = resultClone.remove("userAry");
+		assertIterableEquals(sortMap(expectedMClone), sortMap(resultClone));
+		assertArrayEquals((User[]) expectedAry, (User[]) resultAry);
+	}
+
+	/**
+	 * Used to provide test data for the testWithSubSerialize method
+	 * @param name
+	 * @param age
+	 */
+	record User(String name, int age) {
 	}
 
 	/**
