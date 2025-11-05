@@ -128,7 +128,7 @@ public class NodeExecutorToolCallTest {
             String expectedText = "Let me check the weather for you.";
             assertEquals(expectedText, finalMessage.getText(), "text should be merged");
 
-            assertTrue(finalMessage.hasToolCalls(), "message sould contain toolCalls");
+            assertTrue(finalMessage.hasToolCalls(), "message should contain toolCalls");
             List<ToolCall> finalToolCalls = finalMessage.getToolCalls();
             assertNotNull(finalToolCalls, "toolCalls should not be null");
             assertEquals(1, finalToolCalls.size(), "should have 1  toolCall");
@@ -213,10 +213,10 @@ public class NodeExecutorToolCallTest {
         CompiledGraph app = stateGraph.compile();
 
         Optional<OverAllState> result = app.invoke(Map.of("input", "test"));
-        assertTrue(result.isPresent(), "result should exisit");
+        assertTrue(result.isPresent(), "result should exist");
 
         Optional<Object> messagesOpt = result.get().value("messages");
-        assertTrue(messagesOpt.isPresent(), "messages should exisit");
+        assertTrue(messagesOpt.isPresent(), "messages should exist");
 
         Object messagesObj = messagesOpt.get();
         if (messagesObj instanceof AssistantMessage) {
@@ -255,10 +255,10 @@ public class NodeExecutorToolCallTest {
         CompiledGraph app = stateGraph.compile();
 
         Optional<OverAllState> result = app.invoke(Map.of("input", "test"));
-        assertTrue(result.isPresent(), "should exsist");
+        assertTrue(result.isPresent(), "should exist");
 
         Optional<Object> messagesOpt = result.get().value("messages");
-        assertTrue(messagesOpt.isPresent(), "messages should exsist");
+        assertTrue(messagesOpt.isPresent(), "messages should exist");
 
         Object messagesObj = messagesOpt.get();
         if (messagesObj instanceof AssistantMessage) {
