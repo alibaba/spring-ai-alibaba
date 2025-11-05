@@ -75,7 +75,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.1.0.0-M3</revision>
+        <revision>1.1.0.0-M4</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -85,9 +85,8 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring version -->
-        <spring-ai.version>1.0.1</spring-ai.version>
-        <spring-ai-extensions.version>1.1.0.0-M3</spring-ai-extensions.version>
-        <spring-ai-graph.version>1.1.0.0-M3</spring-ai-graph.version>
+        <spring-ai.version>1.1.0-M4</spring-ai.version>
+        <spring-ai-alibaba-extensions.version>1.1.0.0-M4</spring-ai-alibaba-extensions.version>
         <spring-boot.version>3.4.8</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
@@ -113,8 +112,6 @@
         <commons-codec.version>1.17.0</commons-codec.version>
         <commons-exec.version>1.3</commons-exec.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-
-        <docker-java.version>3.5.3</docker-java.version>
 
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
 
@@ -213,9 +210,9 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>com.github.docker-java</groupId>
-                <artifactId>docker-java-bom</artifactId>
-                <version>${docker-java.version}</version>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-extensions-bom</artifactId>
+                <version>${spring-ai-alibaba-extensions.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

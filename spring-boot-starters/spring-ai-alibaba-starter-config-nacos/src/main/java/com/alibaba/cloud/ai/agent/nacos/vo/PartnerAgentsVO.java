@@ -19,14 +19,18 @@ package com.alibaba.cloud.ai.agent.nacos.vo;
 import java.util.List;
 import java.util.Map;
 
-import lombok.Data;
-
-@Data
 public class PartnerAgentsVO {
 
 	List<PartnerAgentVO> agents;
 
-	@Data
+	public List<PartnerAgentVO> getAgents() {
+		return agents;
+	}
+
+	public void setAgents(List<PartnerAgentVO> agents) {
+		this.agents = agents;
+	}
+
 	public static class PartnerAgentVO {
 
 		String agentName;
@@ -34,6 +38,30 @@ public class PartnerAgentsVO {
 		Map<String, String> headers;
 
 		Map<String, String> queryPrams;
+
+		public String getAgentName() {
+			return agentName;
+		}
+
+		public void setAgentName(String agentName) {
+			this.agentName = agentName;
+		}
+
+		public Map<String, String> getHeaders() {
+			return headers;
+		}
+
+		public void setHeaders(Map<String, String> headers) {
+			this.headers = headers;
+		}
+
+		public Map<String, String> getQueryPrams() {
+			return queryPrams;
+		}
+
+		public void setQueryPrams(Map<String, String> queryPrams) {
+			this.queryPrams = queryPrams;
+		}
 
 	}
 }
