@@ -16,9 +16,6 @@
 
 package com.alibaba.cloud.ai.agent.nacos.vo;
 
-import lombok.Data;
-
-@Data
 public class AgentVO {
 
 	String promptKey;
@@ -26,4 +23,28 @@ public class AgentVO {
 	String description;
 
 	int maxIterations;
+
+	public String getPromptKey() {
+		return promptKey;
+	}
+
+	public void setPromptKey(String promptKey) {
+		this.promptKey = promptKey;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+	public int getMaxIterations() {
+		return maxIterations;
+	}
+
+	public void setMaxIterations(int maxIterations) {
+		this.maxIterations = maxIterations;
+	}
 }

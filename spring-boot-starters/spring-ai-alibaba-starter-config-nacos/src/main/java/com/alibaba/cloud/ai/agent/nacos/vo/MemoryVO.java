@@ -16,9 +16,6 @@
 
 package com.alibaba.cloud.ai.agent.nacos.vo;
 
-import lombok.Data;
-
-@Data
 public class MemoryVO {
 
 	String storageType;
@@ -31,4 +28,43 @@ public class MemoryVO {
 
 	String searchStrategy;
 
+	public String getStorageType() {
+		return storageType;
+	}
+
+	public void setStorageType(String storageType) {
+		this.storageType = storageType;
+	}
+
+	public String getAddress() {
+		return address;
+	}
+
+	public void setAddress(String address) {
+		this.address = address;
+	}
+
+	public String getCredential() {
+		return credential;
+	}
+
+	public void setCredential(String credential) {
+		this.credential = credential;
+	}
+
+	public String getCompressionStrategy() {
+		return compressionStrategy;
+	}
+
+	public void setCompressionStrategy(String compressionStrategy) {
+		this.compressionStrategy = compressionStrategy;
+	}
+
+	public String getSearchStrategy() {
+		return searchStrategy;
+	}
+
+	public void setSearchStrategy(String searchStrategy) {
+		this.searchStrategy = searchStrategy;
+	}
 }

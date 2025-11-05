@@ -17,13 +17,11 @@
 package com.alibaba.cloud.ai.agent.nacos;
 
 import io.micrometer.observation.ObservationRegistry;
-import lombok.Data;
 
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.tool.ToolCallingManager;
 
-@Data
 public class ObservationConfiguration {
 
 	private ObservationRegistry observationRegistry;
@@ -40,6 +38,38 @@ public class ObservationConfiguration {
 		this.observationRegistry = observationRegistry;
 		this.toolCallingManager = toolCallingManager;
 		this.chatModelObservationConvention = chatModelObservationConvention;
+		this.chatClientObservationConvention = chatClientObservationConvention;
+	}
+
+	public ObservationRegistry getObservationRegistry() {
+		return observationRegistry;
+	}
+
+	public void setObservationRegistry(ObservationRegistry observationRegistry) {
+		this.observationRegistry = observationRegistry;
+	}
+
+	public ToolCallingManager getToolCallingManager() {
+		return toolCallingManager;
+	}
+
+	public void setToolCallingManager(ToolCallingManager toolCallingManager) {
+		this.toolCallingManager = toolCallingManager;
+	}
+
+	public ChatModelObservationConvention getChatModelObservationConvention() {
+		return chatModelObservationConvention;
+	}
+
+	public void setChatModelObservationConvention(ChatModelObservationConvention chatModelObservationConvention) {
+		this.chatModelObservationConvention = chatModelObservationConvention;
+	}
+
+	public ChatClientObservationConvention getChatClientObservationConvention() {
+		return chatClientObservationConvention;
+	}
+
+	public void setChatClientObservationConvention(ChatClientObservationConvention chatClientObservationConvention) {
 		this.chatClientObservationConvention = chatClientObservationConvention;
 	}
 }

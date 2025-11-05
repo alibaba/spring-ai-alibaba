@@ -20,14 +20,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import lombok.Data;
-
-@Data
 public class McpServersVO {
 
 	List<McpServerVO> mcpServers;
 
-	@Data
+	public List<McpServerVO> getMcpServers() {
+		return mcpServers;
+	}
+
+	public void setMcpServers(List<McpServerVO> mcpServers) {
+		this.mcpServers = mcpServers;
+	}
+
 	public static class McpServerVO {
 
 		String mcpServerName;
@@ -39,6 +43,46 @@ public class McpServersVO {
 		Map<String, String> headers;
 
 		Map<String, String> queryParams;
+
+		public String getMcpServerName() {
+			return mcpServerName;
+		}
+
+		public void setMcpServerName(String mcpServerName) {
+			this.mcpServerName = mcpServerName;
+		}
+
+		public String getVersion() {
+			return version;
+		}
+
+		public void setVersion(String version) {
+			this.version = version;
+		}
+
+		public Set<String> getWhiteTools() {
+			return whiteTools;
+		}
+
+		public void setWhiteTools(Set<String> whiteTools) {
+			this.whiteTools = whiteTools;
+		}
+
+		public Map<String, String> getHeaders() {
+			return headers;
+		}
+
+		public void setHeaders(Map<String, String> headers) {
+			this.headers = headers;
+		}
+
+		public Map<String, String> getQueryParams() {
+			return queryParams;
+		}
+
+		public void setQueryParams(Map<String, String> queryParams) {
+			this.queryParams = queryParams;
+		}
 
 	}
 

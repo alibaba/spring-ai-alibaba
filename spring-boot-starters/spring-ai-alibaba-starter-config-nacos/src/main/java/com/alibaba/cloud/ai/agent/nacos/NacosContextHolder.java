@@ -25,9 +25,7 @@ import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
-import lombok.Data;
 
-@Data
 public class NacosContextHolder {
 
 	AgentVO agentVO;
@@ -43,5 +41,61 @@ public class NacosContextHolder {
 	ReactAgent reactAgent;
 
 	Map<String, PromptListener> promptListeners = new HashMap<>();
+
+	public AgentVO getAgentVO() {
+		return agentVO;
+	}
+
+	public void setAgentVO(AgentVO agentVO) {
+		this.agentVO = agentVO;
+	}
+
+	public PromptVO getPromptVO() {
+		return promptVO;
+	}
+
+	public void setPromptVO(PromptVO promptVO) {
+		this.promptVO = promptVO;
+	}
+
+	public ModelVO getModelVO() {
+		return modelVO;
+	}
+
+	public void setModelVO(ModelVO modelVO) {
+		this.modelVO = modelVO;
+	}
+
+	public McpServersVO getMcpServersVO() {
+		return mcpServersVO;
+	}
+
+	public void setMcpServersVO(McpServersVO mcpServersVO) {
+		this.mcpServersVO = mcpServersVO;
+	}
+
+	public ObservationMetadataAwareOptions getObservationMetadataAwareOptions() {
+		return observationMetadataAwareOptions;
+	}
+
+	public void setObservationMetadataAwareOptions(ObservationMetadataAwareOptions observationMetadataAwareOptions) {
+		this.observationMetadataAwareOptions = observationMetadataAwareOptions;
+	}
+
+	public ReactAgent getReactAgent() {
+		return reactAgent;
+	}
+
+	public void setReactAgent(ReactAgent reactAgent) {
+		this.reactAgent = reactAgent;
+	}
+
+	public Map<String, PromptListener> getPromptListeners() {
+		return promptListeners;
+	}
+
+	public void setPromptListeners(Map<String, PromptListener> promptListeners) {
+		this.promptListeners = promptListeners;
+	}
 
 }
