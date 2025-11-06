@@ -59,11 +59,14 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private ChatClient chatClient;
 
+	private String instruction;
+
 	private ToolCallingChatOptions toolCallingChatOptions;
 
 	public AgentLlmNode(Builder builder) {
 		this.outputKey = builder.outputKey;
 		this.outputSchema = builder.outputSchema;
+		this.instruction = builder.instruction;
 		if (builder.advisors != null) {
 			this.advisors = builder.advisors;
 		}
@@ -90,6 +93,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	public void setModelInterceptors(List<ModelInterceptor> modelInterceptors) {
 		this.modelInterceptors = modelInterceptors;
+	}
+
+	public void setInstruction(String instruction) {
+		this.instruction = instruction;
 	}
 
 	@Override
@@ -272,6 +279,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private List<ModelInterceptor> modelInterceptors;
 
+		private String instruction;
+
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
 			return this;
@@ -299,6 +308,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder chatClient(ChatClient chatClient) {
 			this.chatClient = chatClient;
+			return this;
+		}
+
+		public Builder instruction(String instruction) {
+			this.instruction = instruction;
 			return this;
 		}
 
