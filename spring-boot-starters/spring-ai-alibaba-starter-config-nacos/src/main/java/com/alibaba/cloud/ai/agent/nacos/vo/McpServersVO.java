@@ -34,6 +34,8 @@ public class McpServersVO {
 
 		String version;
 
+        String host;
+
 		Set<String> whiteTools;
 
 		Map<String, String> headers;

@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.agent.nacos.tools;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -40,6 +41,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.InitializeResult;
@@ -419,15 +421,11 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				return handleMcpStreamProtocol(args, remoteServerConfig, protocol);
 			}
 			else if ("mcp-streamable".equalsIgnoreCase(protocol)) {
-
-				logger.error("[call] Unsupported protocol: {}", protocol);
-				return "Error: Unsupported protocol " + protocol;
-				// McpServerRemoteServiceConfig remoteServerConfig =
-				// this.toolDefinition.getRemoteServerConfig();
-				// if (remoteServerConfig == null) {
-				// throw new IllegalStateException("Remote server config is null");
-				// }
-				// return handleMcpStreamableProtocol(args, remoteServerConfig, protocol);
+                  String host=  mcpServerVO.getHost();
+                  if (com.alibaba.nacos.common.utils.StringUtils.isEmpty(host)){
+                      return "Error: mcpServer host is null" ;
+                  }
+                  return handleMcpStreamableProtocol(args, host);
 			}
 			else {
 				logger.error("[call] Unsupported protocol: {}", protocol);
@@ -580,7 +578,129 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 		}
 	}
 
-	/**
+    private String handleMcpStreamableProtocol(Map<String, Object> args, String mcpHost) {
+        if (mcpHost == null || mcpHost.isEmpty()) {
+            logger.error("[handleMcpStreamableProtocol] mcpHost is null or empty");
+            return "Error: MCP host is null or empty";
+        }
+
+        logger.info("[handleMcpStreamableProtocol] Processing streamable protocol with args: {} and host: {}",
+                args, mcpHost);
+
+        try {
+            URI uri = new URI(mcpHost);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+            int port = uri.getPort();
+            String path = uri.getPath();
+
+            String baseUrl;
+            if (port != -1) {
+                baseUrl = scheme + "://" + host + ":" + port;
+            } else {
+                baseUrl = scheme + "://" + host;
+            }
+
+            logger.info("[handleMcpStreamableProtocol] Base URL: {}, Endpoint: {}", baseUrl, path);
+
+            String toolDefinitionName = this.toolDefinition.name();
+            if (toolDefinitionName == null || toolDefinitionName.isEmpty()) {
+                throw new RuntimeException("Tool definition name is not available");
+            }
+
+            String toolName;
+            if (toolDefinitionName.contains("_tools_")) {
+                toolName = toolDefinitionName.substring(toolDefinitionName.lastIndexOf("_tools_") + 7);
+            }
+            else {
+
+                toolName = toolDefinitionName;
+            }
+
+            if (toolName.isEmpty()) {
+                throw new RuntimeException("Extracted tool name is empty");
+            }
+
+            logger.info("[handleMcpStreamableProtocol] Tool name: {}", toolName);
+
+            StringBuilder endpoint = new StringBuilder(path != null && !path.isEmpty() ? path : "/");
+            if (mcpServerVO != null && mcpServerVO.getQueryParams() != null && !mcpServerVO.getQueryParams().isEmpty()) {
+                if (!endpoint.toString().contains("?")) {
+                    endpoint.append("?");
+                }
+                Iterator<Map.Entry<String, String>> iterator = mcpServerVO.getQueryParams().entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, String> param = iterator.next();
+                    endpoint.append(param.getKey()).append("=").append(param.getValue());
+                    if (iterator.hasNext()) {
+                        endpoint.append("&");
+                    }
+                }
+            }
+
+            logger.info("[handleMcpStreamableProtocol] Final endpoint: {}", endpoint.toString());
+
+            HttpClientStreamableHttpTransport.Builder transportBuilder = HttpClientStreamableHttpTransport.builder(baseUrl)
+                    .endpoint(endpoint.toString());
+
+            if (mcpServerVO != null && mcpServerVO.getHeaders() != null) {
+                transportBuilder.customizeRequest(requestBuilder -> {
+                    for (Map.Entry<String, String> header : mcpServerVO.getHeaders().entrySet()) {
+                        requestBuilder.header(header.getKey(), header.getValue());
+                    }
+                });
+            }
+
+            HttpClientStreamableHttpTransport transport = transportBuilder.build();
+
+            McpSyncClient client = McpClient.sync(transport).build();
+            try {
+                InitializeResult initializeResult = client.initialize();
+                logger.info("[handleMcpStreamableProtocol] MCP Client initialized: {}", initializeResult);
+
+                McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, args);
+                logger.info("[handleMcpStreamableProtocol] CallToolRequest: {}", request);
+
+                CallToolResult result = client.callTool(request);
+                logger.info("[handleMcpStreamableProtocol] tool call result: {}", result);
+
+                Object content = result.content();
+                if (content instanceof List<?> list && !CollectionUtils.isEmpty(list)) {
+                    Object first = list.get(0);
+                    if (first instanceof TextContent textContent) {
+                        return textContent.text();
+                    }
+                    else if (first instanceof Map<?, ?> map && map.containsKey("text")) {
+                        return map.get("text").toString();
+                    }
+                    else {
+                        return first.toString();
+                    }
+                }
+                else {
+                    return content != null ? content.toString() : "No content returned";
+                }
+            }
+            finally {
+                try {
+                    if (client != null) {
+                        client.close();
+                    }
+                }
+                catch (Exception e) {
+                    logger.warn("[handleMcpStreamableProtocol] Failed to close MCP client", e);
+                }
+            }
+        }
+        catch (Exception e) {
+            logger.error("[handleMcpStreamableProtocol] MCP call failed:", e);
+            return "Error: MCP call failed - " + e.getMessage();
+        }
+    }
+
+
+
+    /**
 	 * Close.
 	 */
 	public void close() {
