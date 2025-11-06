@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.utils;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,8 @@ public class SerializationUtils {
 	private static final Logger log = LoggerFactory.getLogger(SerializationUtils.class);
 
 	// Jackson ObjectMapper for serialization
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private static final ObjectMapper objectMapper = new ObjectMapper()
+			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 	private SerializationUtils() {
 		// Utility class - prevent instantiation
