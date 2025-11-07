@@ -36,6 +36,7 @@ import reactor.core.publisher.Mono;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -193,6 +194,11 @@ public class NodeExecutor extends BaseGraphExecutor {
                 return true;
             }).map(element -> {
 				if (element instanceof ChatResponse response) {
+					// Additional null check for response.getResult()
+					if (response.getResult() == null) {
+						return null; // Will be filtered out by filter(Objects::nonNull) later
+					}
+					
 					ChatResponse lastResponse = lastChatResponseRef.get();
 					if (lastResponse == null) {
 						var message = response.getResult().getOutput();
@@ -208,6 +214,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 						lastChatResponseRef.set(response);
 						lastGraphResponseRef.set(lastGraphResponse);
 						return lastGraphResponse;
+					}
+
+					// Additional null check for lastResponse.getResult()
+					if (lastResponse.getResult() == null) {
+						return null; // Will be filtered out by filter(Objects::nonNull) later
 					}
 
 					final var currentMessage = response.getResult().getOutput();
@@ -250,7 +261,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 							+ (element != null ? element.getClass().getSimpleName() : "null");
 					return GraphResponse.<NodeOutput>error(new IllegalArgumentException(errorMsg));
 				}
-			}).concatWith(Mono.defer(() -> {
+			}).filter(Objects::nonNull) // Filter out null responses from defensive null checks
+			.concatWith(Mono.defer(() -> {
 				if (lastChatResponseRef.get() == null) {
 					GraphResponse<?> lastGraphResponse = lastGraphResponseRef.get();
 					if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
