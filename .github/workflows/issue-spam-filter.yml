@@ -21,6 +21,7 @@ permissions:
 on:
   issues:
     types: [opened, edited]
+  workflow_dispatch:
 
 jobs:
   spam-check:
