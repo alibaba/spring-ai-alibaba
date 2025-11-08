@@ -93,7 +93,15 @@ public class ReactAgent extends BaseAgent {
 
 	private int maxIterations;
 
-	private int iterations = 0;
+    /**
+     * Thread-local storage for iterations counter to ensure thread-safety
+     * when the same ReactAgent instance is used by multiple concurrent requests.
+     *
+     * This solves the problem where a singleton ReactAgent Bean in Spring would
+     * share the iterations counter across different user requests, causing
+     * unpredictable behavior.
+     */
+    private ThreadLocal<Integer> iterations = ThreadLocal.withInitial(() -> 0);
 
 	private String instruction;
 
@@ -174,6 +182,55 @@ public class ReactAgent extends BaseAgent {
 				.map(msg -> (AssistantMessage) msg)
 				.reduce((first, second) -> second)
 				.orElseThrow(() -> new IllegalStateException("No AssistantMessage found in 'messages' state") );
+	}
+
+	/**
+	 * Override doInvoke to ensure iterations ThreadLocal is properly managed.
+	 * This is critical when the ReactAgent is reused across multiple requests
+	 * (e.g., stored in a Map as a singleton in Spring context).
+	 */
+	@Override
+	protected Optional<OverAllState> doInvoke(Map<String, Object> input, RunnableConfig runnableConfig) {
+		// Reset iterations counter for each new invocation
+		iterations.set(0);
+		try {
+			return super.doInvoke(input, runnableConfig);
+		} finally {
+			// Clean up ThreadLocal to prevent memory leaks
+			iterations.remove();
+		}
+	}
+
+	/**
+	 * Override doStream to ensure iterations ThreadLocal is properly managed.
+	 * This is critical when the ReactAgent is reused across multiple requests
+	 * (e.g., stored in a Map as a singleton in Spring context).
+	 */
+	@Override
+	protected Flux<NodeOutput> doStream(Map<String, Object> input) {
+		// Reset iterations counter for each new streaming invocation
+		iterations.set(0);
+		return super.doStream(input)
+				.doFinally(signalType -> {
+					// Clean up ThreadLocal to prevent memory leaks
+					// This will be called when the stream completes, errors, or is cancelled
+					iterations.remove();
+				});
+	}
+
+	/**
+	 * Override doStream with RunnableConfig to ensure iterations ThreadLocal is properly managed.
+	 */
+	@Override
+	protected Flux<NodeOutput> doStream(Map<String, Object> input, RunnableConfig runnableConfig) {
+		// Reset iterations counter for each new streaming invocation
+		iterations.set(0);
+		return super.doStream(input, runnableConfig)
+				.doFinally(signalType -> {
+					// Clean up ThreadLocal to prevent memory leaks
+					// This will be called when the stream completes, errors, or is cancelled
+					iterations.remove();
+				});
 	}
 
 	public StateGraph getStateGraph() {
@@ -544,7 +601,11 @@ public class ReactAgent extends BaseAgent {
 
 	private EdgeAction makeModelToTools(String modelDestination, String endDestination) {
 		return state -> {
-			if (iterations++ > maxIterations) {
+            // Thread-safe iteration counter using ThreadLocal
+            int currentIterations = iterations.get();
+            iterations.set(currentIterations + 1);
+
+            if (currentIterations >= maxIterations) {
 				return endDestination;
 			}
 
