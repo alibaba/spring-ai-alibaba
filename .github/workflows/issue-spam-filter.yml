@@ -15,6 +15,9 @@
 #
 
 name: ⚠️ Issue Spam Filter
+permissions:
+  contents: read
+  issues: write
 on:
   issues:
     types: [opened, edited]
