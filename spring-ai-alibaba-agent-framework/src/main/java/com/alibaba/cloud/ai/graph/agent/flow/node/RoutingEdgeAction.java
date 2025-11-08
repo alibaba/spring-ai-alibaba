@@ -25,15 +25,22 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 
 public class RoutingEdgeAction implements AsyncEdgeAction {
 
+	private static final Logger logger = LoggerFactory.getLogger(RoutingEdgeAction.class);
+
 	private final ChatClient chatClient;
 
+	private final List<Agent> subAgents;
+
 	public RoutingEdgeAction(ChatModel chatModel, Agent current, List<Agent> subAgents) {
+		this.subAgents = subAgents;
 		StringBuilder sb = new StringBuilder();
 		sb.append("You are responsible for task routing in a graph-based AI system.\n");
 
@@ -49,19 +56,17 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 
 		sb.append("\n\n");
 		sb.append(
-				"There're a few agents that can handle this task, you can delegate the task to one of the following.");
-		sb.append("The agents ability are listed in a 'name:description' format as below:\n");
+				"There are a few specialized agents that can handle this task. You must delegate the task to ONE of the following agents.\n");
+		sb.append("The available agents and their capabilities are listed below:\n");
 		for (Agent agent : subAgents) {
 			sb.append("- ").append(agent.name()).append(": ").append(agent.description()).append("\n");
 		}
+		sb.append("\n");
+		sb.append("Return ONLY the exact agent name from the list above, without any explanation or additional text.\n");
+		sb.append("Available names: ");
+		sb.append(String.join(", ", subAgents.stream().map(Agent::name).toList()));
 		sb.append("\n\n");
-		sb.append("Return the agent name to delegate the task to.");
-		sb.append("\n\n");
-		sb.append(
-				"It should be emphasized that the returned result only requires the agent name and no other content.");
-		sb.append("\n\n");
-		sb.append(
-				"For example, if you want to delegate the task to the agent named 'agent1', you should return 'agent1'.");
+		sb.append("Example: prose_writer_agent");
 
 		this.chatClient = ChatClient.builder(chatModel).defaultSystem(sb.toString()).build();
 	}
@@ -71,12 +76,71 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 		CompletableFuture<String> result = new CompletableFuture<>();
 		try {
 			List<Message> messages = (List<Message>)state.value("messages").orElseThrow();
-			result.complete(this.chatClient.prompt(getFormatedPrompt(messages)).call().content());
+			String rawResponse = this.chatClient.prompt(getFormatedPrompt(messages)).call().content();
+
+			logger.debug("Raw routing response from ChatModel: '{}'", rawResponse);
+
+			String parsedAgentName = parseAgentName(rawResponse);
+
+			logger.info("Routing decision: '{}' -> parsed as '{}'", rawResponse, parsedAgentName);
+
+			result.complete(parsedAgentName);
 		}
 		catch (Exception e) {
+			logger.error("Error during routing decision", e);
 			result.completeExceptionally(e);
 		}
 		return result;
+	}
+
+	/**
+	 * Parses and validates the agent name from ChatModel response.
+	 * @param rawResponse the raw response from ChatModel
+	 * @return the validated agent name
+	 * @throws IllegalArgumentException if no valid agent can be determined
+	 */
+	private String parseAgentName(String rawResponse) {
+		if (rawResponse == null || rawResponse.isBlank()) {
+			throw new IllegalArgumentException("ChatModel returned empty response for routing decision");
+		}
+
+		String cleaned = rawResponse.trim();
+
+		// Exact match
+		for (Agent agent : subAgents) {
+			if (agent.name().equals(cleaned)) {
+				return agent.name();
+			}
+		}
+
+		// Case-insensitive match
+		for (Agent agent : subAgents) {
+			if (agent.name().equalsIgnoreCase(cleaned)) {
+				logger.warn("Routing response had incorrect case: '{}', expected: '{}'", cleaned, agent.name());
+				return agent.name();
+			}
+		}
+
+		// Substring match - sort by length to avoid partial matches
+		String cleanedLower = cleaned.toLowerCase();
+		Agent matchedAgent = subAgents.stream()
+			.sorted((a1, a2) -> Integer.compare(a2.name().length(), a1.name().length()))
+			.filter(agent -> cleanedLower.contains(agent.name().toLowerCase()))
+			.findFirst()
+			.orElse(null);
+
+		if (matchedAgent != null) {
+			logger.warn("Routing response contained extra text: '{}', extracted agent: '{}'", cleaned,
+					matchedAgent.name());
+			return matchedAgent.name();
+		}
+
+		String availableAgents = subAgents.stream().map(Agent::name).reduce((a, b) -> a + ", " + b).orElse("");
+
+		throw new IllegalArgumentException(String.format(
+				"Cannot determine routing target from ChatModel response: '%s'. " + "Available agents: [%s]. "
+						+ "Please ensure the ChatModel returns exactly one of the available agent names.",
+				rawResponse, availableAgents));
 	}
 
 	private String getFormatedPrompt(List<Message> messages) {
