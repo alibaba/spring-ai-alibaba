@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
+import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -156,17 +158,89 @@ public class CompiledGraph {
 					.collect(Collectors.toSet());
 
 				if (parallelNodeTargets.size() > 1) {
+					// Attempt to support multi-node branches by finding a common join node
+					// among all parallel branches starting from the immediate targets.
+					// If found, wrap each branch (from its start until the join) into a compiled subgraph
+					// and execute them in parallel using a ParallelNode, then continue to the join node.
 
-					// find the first defer node
-
+					// Disallow immediate conditional edges off parallel roots
 					var conditionalEdges = parallelNodeEdges.stream()
 						.filter(ee -> ee.target().value() != null)
 						.toList();
 					if (!conditionalEdges.isEmpty()) {
 						throw Errors.unsupportedConditionalEdgeOnParallelNode.exception(e.sourceId(),
-								conditionalEdges.stream().map(Edge::sourceId).toList());
+							conditionalEdges.stream().map(Edge::sourceId).toList());
 					}
-					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
+
+					// Find first common join node across all branch starts
+					var branchStarts = parallelNodeStream.get().map(EdgeValue::id).toList();
+					Optional<String> joinNodeOpt = findFirstCommonJoin(branchStarts, processedData.edges().elements);
+					if (joinNodeOpt.isEmpty()) {
+						throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
+					}
+					String joinNodeId = joinNodeOpt.get();
+
+					// For each branch start, extract a linear path to the join node (no conditionals, no forks)
+					List<List<String>> branchPaths = new java.util.ArrayList<>();
+					for (String startId : branchStarts) {
+						List<String> path = extractLinearPathToJoin(startId, joinNodeId, processedData.edges().elements);
+						if (path == null || path.isEmpty()) {
+							throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
+						}
+						branchPaths.add(path);
+					}
+
+					// Disallow if any node appears in more than one branch path (avoid duplicating shared nodes)
+					java.util.Map<String, Integer> occurrence = new java.util.HashMap<>();
+					for (List<String> p : branchPaths) {
+						for (String nid : p) {
+							occurrence.merge(nid, 1, Integer::sum);
+						}
+					}
+					boolean hasSharedNodes = occurrence.values().stream().anyMatch(cnt -> cnt > 1);
+					if (hasSharedNodes) {
+						throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
+					}
+
+					List<AsyncNodeActionWithConfig> branchActions = new java.util.ArrayList<>();
+					List<String> actionNodeIds = new java.util.ArrayList<>();
+					for (int bi = 0; bi < branchStarts.size(); bi++) {
+						String startId = branchStarts.get(bi);
+						List<String> path = branchPaths.get(bi);
+
+						// Build a minimal StateGraph for this branch and compile it
+						StateGraph branchGraph = new StateGraph(stateGraph.getKeyStrategyFactory());
+						// Add nodes with their original actions
+						for (String nodeIdOnPath : path) {
+							var factory = nodeFactories.get(nodeIdOnPath);
+							if (factory == null) {
+								throw new GraphStateException("Missing action factory for node: " + nodeIdOnPath);
+							}
+							AsyncNodeActionWithConfig action = factory.apply(compileConfig);
+							branchGraph.addNode(nodeIdOnPath, action);
+						}
+						// Wire edges inside the subgraph
+						branchGraph.addEdge(START, path.get(0));
+						for (int i = 0; i < path.size() - 1; i++) {
+							branchGraph.addEdge(path.get(i), path.get(i + 1));
+						}
+						branchGraph.addEdge(path.get(path.size() - 1), END);
+
+						CompiledGraph compiledSub = branchGraph.compile(compileConfig);
+						String wrapperId = e.sourceId() + ".__branch__." + startId;
+						SubCompiledGraphNode subNode = new SubCompiledGraphNode(wrapperId, compiledSub);
+						branchActions.add(subNode.actionFactory().apply(compileConfig));
+						actionNodeIds.add(wrapperId);
+						// Register the wrapper node factory so it's available in nodeFactories
+						nodeFactories.put(wrapperId, subNode.actionFactory());
+					}
+
+					// Create a ParallelNode that runs all branch subgraphs
+					var parallelNode = new ParallelNode(e.sourceId(), branchActions, actionNodeIds, keyStrategyMap, compileConfig);
+					nodeFactories.put(parallelNode.id(), parallelNode.actionFactory());
+					edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
+					edges.put(parallelNode.id(), new EdgeValue(joinNodeId));
+					continue;
 				}
 
 			var targetList = parallelNodeStream.get().toList();
@@ -194,6 +268,99 @@ public class CompiledGraph {
 			}
 
 		}
+	}
+
+	/**
+	 * Find the first common join node reachable from all given branch start nodes.
+	 * Only traverses through non-conditional single-target edges to keep branches linear.
+	 */
+	private Optional<String> findFirstCommonJoin(List<String> branchStarts, List<Edge> allEdges) {
+		if (branchStarts == null || branchStarts.isEmpty()) {
+			return Optional.empty();
+		}
+
+		Map<String, String> singleNext = buildSingleNextMap(allEdges);
+		// Build reachable sets with order (distance)
+		List<Map<String, Integer>> reachability = new java.util.ArrayList<>();
+		for (String start : branchStarts) {
+			Map<String, Integer> dist = new java.util.LinkedHashMap<>();
+			String cur = start;
+			int d = 0;
+			while (cur != null && !dist.containsKey(cur)) {
+				dist.put(cur, d++);
+				cur = singleNext.get(cur);
+			}
+			reachability.add(dist);
+		}
+		// Compute intersection
+		java.util.Set<String> candidate = new java.util.LinkedHashSet<>(reachability.get(0).keySet());
+		for (int i = 1; i < reachability.size(); i++) {
+			candidate.retainAll(reachability.get(i).keySet());
+			if (candidate.isEmpty()) {
+				return Optional.empty();
+			}
+		}
+		// Remove END (do not consider END as a valid join to preserve previous validation semantics)
+		candidate.remove(END);
+
+		// Choose the one with minimal max distance across branches (closest common)
+		String best = null;
+		int bestScore = Integer.MAX_VALUE;
+		for (String node : candidate) {
+			int maxDist = 0;
+			for (Map<String, Integer> dist : reachability) {
+				maxDist = Math.max(maxDist, dist.get(node));
+			}
+			if (maxDist < bestScore) {
+				bestScore = maxDist;
+				best = node;
+			}
+		}
+		return Optional.ofNullable(best);
+	}
+
+	/**
+	 * Extract a linear path from start (inclusive) to join (exclusive), following only
+	 * non-conditional single-target edges. Returns null if path is not strictly linear
+	 * or does not reach the join.
+	 */
+	private List<String> extractLinearPathToJoin(String start, String join, List<Edge> allEdges) {
+		Map<String, String> singleNext = buildSingleNextMap(allEdges);
+		List<String> path = new java.util.ArrayList<>();
+		String cur = start;
+		java.util.Set<String> visited = new java.util.HashSet<>();
+		while (cur != null && !Objects.equals(cur, join)) {
+			if (!visited.add(cur)) {
+				// cycle
+				return null;
+			}
+			path.add(cur);
+			String next = singleNext.get(cur);
+			if (next == null) {
+				// dead end before join
+				return null;
+			}
+			cur = next;
+		}
+		if (!Objects.equals(cur, join)) {
+			// did not reach join
+			return null;
+		}
+		return path;
+	}
+
+	/**
+	 * Build a mapping of nodeId -> nextId for edges that have exactly one non-conditional target.
+	 */
+	private Map<String, String> buildSingleNextMap(List<Edge> allEdges) {
+		Map<String, String> singleNext = new java.util.HashMap<>();
+		for (Edge edge : allEdges) {
+			var targets = edge.targets();
+			if (targets.size() == 1 && targets.get(0).value() == null) {
+				singleNext.put(edge.sourceId(), targets.get(0).id());
+			}
+		}
+		return singleNext;
 	}
 
 	public Collection<StateSnapshot> getStateHistory(RunnableConfig config) {

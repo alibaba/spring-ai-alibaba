@@ -471,6 +471,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 		}
 
 		Map<String, AtomicReference<Object>> nodeDataRefs = new HashMap<>();
+		// Capture baseline messages at the moment the parallel processing starts,
+		// so each branch merges only its delta beyond this baseline.
+		Object baseline = context.getCurrentStateData().get("messages");
+		List<?> baselineMessages = baseline instanceof List<?> list ? java.util.List.copyOf(list)
+				: java.util.Collections.emptyList();
 
 		// Create merged flux from all GraphFlux instances with preserved node IDs
 		List<Flux<GraphResponse<NodeOutput>>> fluxList = parallelGraphFlux.getGraphFluxes()
@@ -501,14 +506,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
 			Map<String, Object> combinedResultMap = new HashMap<>();
 
-			// Process results from each GraphFlux with node-specific prefixes
-			for (GraphFlux<?> graphFlux : parallelGraphFlux.getGraphFluxes()) {
-				String nodeId = graphFlux.getNodeId();
-				Object nodeData = nodeDataRefs.get(nodeId).get();
-
-				combinedResultMap.put(graphFlux.getKey(),nodeData);
-			}
-
 			// Merge non-ParallelGraphFlux state
 			Map<String, Object> partialStateWithoutParallelGraphFlux = partialState.entrySet()
 					.stream()
@@ -517,7 +514,31 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 			context.mergeIntoCurrentState(partialStateWithoutParallelGraphFlux);
 
-			// Merge the combined results from ParallelGraphFlux processing
+			// Process results from each GraphFlux stream
+			for (GraphFlux<?> graphFlux : parallelGraphFlux.getGraphFluxes()) {
+				String nodeId = graphFlux.getNodeId();
+				Object nodeData = nodeDataRefs.get(nodeId).get();
+
+				if (nodeData instanceof Map<?, ?> mapData) {
+					// If a branch returned a full state map (e.g., subgraph completion),
+					// merge only the delta for list-like keys such as "messages" to avoid duplicating parent entries.
+					context.mergeIntoCurrentState(filterDeltaForMessages(baselineMessages, (Map<String, Object>) mapData));
+				}
+				else if (nodeData instanceof GraphResponse<?> response) {
+					// If the last element is a GraphResponse (e.g., from subgraph GraphResponse stream),
+					// try to merge its result value if it's a Map.
+					var rv = response.resultValue();
+					if (rv.isPresent() && rv.get() instanceof Map<?, ?> valueMap) {
+						context.mergeIntoCurrentState(filterDeltaForMessages(baselineMessages, (Map<String, Object>) valueMap));
+					}
+				}
+				else if (graphFlux.getKey() != null) {
+					// Fallback: store the last data under the provided key
+					combinedResultMap.put(graphFlux.getKey(), nodeData);
+				}
+			}
+
+			// Merge any remaining keyed results
 			if (!combinedResultMap.isEmpty()) {
 				context.mergeIntoCurrentState(combinedResultMap);
 			}
@@ -536,6 +557,48 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 		return mergedFlux
 				.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+	}
+
+	/**
+	 * Filters the merged map to avoid duplicating already-present "messages" when merging subgraph results.
+	 * If the incoming map contains a "messages" List whose prefix equals the current state's "messages",
+	 * only the tail (delta) is kept.
+	 */
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> filterDeltaForMessages(List<?> baselineMessages, Map<String, Object> incoming) {
+		if (incoming == null || incoming.isEmpty()) {
+			return incoming;
+		}
+		if (!incoming.containsKey("messages")) {
+			return incoming;
+		}
+		Object in = incoming.get("messages");
+		if (!(in instanceof List<?> incomingList)) {
+			return incoming;
+		}
+		int curSize = baselineMessages.size();
+		if (incomingList.size() < curSize) {
+			return incoming;
+		}
+		// Check prefix equality
+		boolean isPrefix = true;
+		for (int i = 0; i < curSize; i++) {
+			if (!java.util.Objects.equals(baselineMessages.get(i), incomingList.get(i))) {
+				isPrefix = false;
+				break;
+			}
+		}
+		if (!isPrefix) {
+			return incoming;
+		}
+		// Keep only the tail as delta
+		List<Object> tail = new java.util.ArrayList<>();
+		for (int i = curSize; i < incomingList.size(); i++) {
+			tail.add(incomingList.get(i));
+		}
+		Map<String, Object> filtered = new java.util.HashMap<>(incoming);
+		filtered.put("messages", tail);
+		return filtered;
 	}
 
 	/**
