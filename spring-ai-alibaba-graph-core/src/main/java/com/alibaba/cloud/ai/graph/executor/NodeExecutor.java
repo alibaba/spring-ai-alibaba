@@ -33,7 +33,10 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -134,22 +137,23 @@ public class NodeExecutor extends BaseGraphExecutor {
            // Priority 1: Check for GraphFlux (highest priority)
 			Optional<GraphFlux<?>> embedGraphFlux = getEmbedGraphFlux(updateState,context);
 			if (embedGraphFlux.isPresent()) {
-				return handleGraphFlux(context, embedGraphFlux.get(), updateState, resultValue);
+				return handleGraphFlux(context, embedGraphFlux.get(), sanitizeStateEntries(updateState), resultValue);
 			}
 
 			// Priority 2: Check for ParallelGraphFlux
 			Optional<ParallelGraphFlux> embedParallelGraphFlux = getEmbedParallelGraphFlux(updateState);
 			if (embedParallelGraphFlux.isPresent()) {
-				return handleParallelGraphFlux(context, embedParallelGraphFlux.get(), updateState, resultValue);
+				return handleParallelGraphFlux(context, embedParallelGraphFlux.get(), sanitizeStateEntries(updateState), resultValue);
 			}
 
 			// Priority 3: Check for traditional Flux (backward compatibility)
 			Optional<Flux<GraphResponse<NodeOutput>>> embedFlux = getEmbedFlux(context, updateState);
 			if (embedFlux.isPresent()) {
-				return handleEmbeddedFlux(context, embedFlux.get(), updateState, resultValue);
+				return handleEmbeddedFlux(context, embedFlux.get(), sanitizeStateEntries(updateState), resultValue);
 			}
 
-			context.mergeIntoCurrentState(updateState);
+			Map<String, Object> sanitizedUpdateState = sanitizeStateEntries(updateState);
+			context.mergeIntoCurrentState(sanitizedUpdateState);
 
 			if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
 					&& context.getCompiledGraph().compileConfig.interruptsAfter()
@@ -422,13 +426,13 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 			// Apply mapResult function if available
 			Map<String, Object> resultMap = new HashMap<>();
-			resultMap.put(graphFlux.getKey(), lastData);
+			resultMap.put(graphFlux.getKey(), sanitizeStateValue(lastData));
 
 			// Merge non-GraphFlux state
-			Map<String, Object> partialStateWithoutGraphFlux = partialState.entrySet()
+			Map<String, Object> partialStateWithoutGraphFlux = sanitizeStateEntries(partialState.entrySet()
 					.stream()
 					.filter(e -> !(e.getValue() instanceof GraphFlux))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
 			context.mergeIntoCurrentState(partialStateWithoutGraphFlux);
 
@@ -506,14 +510,14 @@ public class NodeExecutor extends BaseGraphExecutor {
 				String nodeId = graphFlux.getNodeId();
 				Object nodeData = nodeDataRefs.get(nodeId).get();
 
-				combinedResultMap.put(graphFlux.getKey(),nodeData);
+				combinedResultMap.put(graphFlux.getKey(), sanitizeStateValue(nodeData));
 			}
 
 			// Merge non-ParallelGraphFlux state
-			Map<String, Object> partialStateWithoutParallelGraphFlux = partialState.entrySet()
+			Map<String, Object> partialStateWithoutParallelGraphFlux = sanitizeStateEntries(partialState.entrySet()
 					.stream()
 					.filter(e -> !(e.getValue() instanceof ParallelGraphFlux))
-					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
 			context.mergeIntoCurrentState(partialStateWithoutParallelGraphFlux);
 
@@ -561,5 +565,66 @@ public class NodeExecutor extends BaseGraphExecutor {
 		// Recursively call the main execution handler
 		return Flux.just(GraphResponse.of(output))
 				.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
+	}
+
+	private Map<String, Object> sanitizeStateEntries(Map<String, Object> entries) {
+		if (entries == null || entries.isEmpty()) {
+			return Collections.emptyMap();
+		}
+		Map<String, Object> sanitized = new LinkedHashMap<>();
+		entries.forEach((key, value) -> sanitized.put(key, sanitizeStateValue(value)));
+		return sanitized;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Object sanitizeStateValue(Object value) {
+		if (value instanceof GraphResponse<?> graphResponse) {
+			return snapshotGraphResponse(graphResponse);
+		}
+		if (value instanceof Map<?, ?> mapValue) {
+			Map<String, Object> sanitizedMap = new LinkedHashMap<>();
+			mapValue.forEach((k, v) -> {
+				String key = k instanceof String ? (String) k : String.valueOf(k);
+				sanitizedMap.put(key, sanitizeStateValue(v));
+			});
+			return sanitizedMap;
+		}
+		if (value instanceof Collection<?> collection) {
+			return ((Collection<?>) collection).stream().map(this::sanitizeStateValue).collect(Collectors.toList());
+		}
+		if (value instanceof Optional<?> optional) {
+			return optional.map(this::sanitizeStateValue).orElse(null);
+		}
+		return value;
+	}
+
+	private Map<String, Object> snapshotGraphResponse(GraphResponse<?> response) {
+		Map<String, Object> snapshot = new LinkedHashMap<>();
+		snapshot.put("done", response.isDone());
+		snapshot.put("error", response.isError());
+		snapshot.put("status", response.isError() ? "error" : (response.isDone() ? "done" : "running"));
+
+		Map<String, Object> metadata = sanitizeStateEntries(response.getAllMetadata());
+		if (!metadata.isEmpty()) {
+			snapshot.put("metadata", metadata);
+		}
+
+		response.resultValue().ifPresent(result -> snapshot.put("resultValue", sanitizeStateValue(result)));
+
+		CompletableFuture<?> output = response.getOutput();
+		if (output != null && output.isDone() && !output.isCompletedExceptionally()) {
+			Object outputValue = null;
+			try {
+				outputValue = output.getNow(null);
+			}
+			catch (Throwable ignored) {
+				// ignore and fall through
+			}
+			if (outputValue != null) {
+				snapshot.put("output", sanitizeStateValue(outputValue));
+			}
+		}
+
+		return snapshot;
 	}
 }
