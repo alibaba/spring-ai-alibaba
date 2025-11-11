@@ -38,7 +38,7 @@ import java.util.concurrent.CompletableFuture;
  * both thread-level and run-level call counting with configurable exit behaviors.
  */
 @HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
-public class ModelCallLimitHook implements ModelHook {
+public class ModelCallLimitHook extends ModelHook {
 
 	private static final String THREAD_COUNT_KEY = "__model_call_limit_thread_count__";
 	private static final String RUN_COUNT_KEY = "__model_call_limit_run_count__";

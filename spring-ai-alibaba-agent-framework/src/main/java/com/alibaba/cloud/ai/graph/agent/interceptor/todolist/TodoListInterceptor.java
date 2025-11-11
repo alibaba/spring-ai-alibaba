@@ -21,11 +21,9 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.tools.WriteTodosTool;
 
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.tool.ToolCallback;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -164,32 +162,17 @@ public class TodoListInterceptor extends ModelInterceptor {
 
 	@Override
 	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
-		// Enhance the system prompt with todo guidance
-		List<Message> enhancedMessages = new ArrayList<>(request.getMessages());
+		SystemMessage enhancedSystemMessage;
 
-		// Check if there's already a system message
-		boolean hasSystemMessage = enhancedMessages.stream()
-				.anyMatch(msg -> msg instanceof SystemMessage);
-
-		if (hasSystemMessage) {
-			// Append to existing system message
-			for (int i = 0; i < enhancedMessages.size(); i++) {
-				Message msg = enhancedMessages.get(i);
-				if (msg instanceof SystemMessage systemMsg) {
-					String enhancedContent = systemMsg.getText() + "\n\n" + systemPrompt;
-					enhancedMessages.set(i, new SystemMessage(enhancedContent));
-					break;
-				}
-			}
-		}
-		else {
-			// Add new system message at the beginning
-			enhancedMessages.add(0, new SystemMessage(systemPrompt));
+		if (request.getSystemMessage() == null) {
+			enhancedSystemMessage = new SystemMessage(this.systemPrompt);
+		} else {
+			enhancedSystemMessage = new SystemMessage(request.getSystemMessage().getText() + "\n\n" + systemPrompt);
 		}
 
 		// Create enhanced request
 		ModelRequest enhancedRequest = ModelRequest.builder(request)
-				.messages(enhancedMessages)
+				.systemMessage(enhancedSystemMessage)
 				.build();
 
 		// Call the handler with enhanced request

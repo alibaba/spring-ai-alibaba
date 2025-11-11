@@ -40,7 +40,7 @@ import java.util.concurrent.CompletableFuture;
  * This hook initializes the shell session before the agent starts and cleans it up after the agent finishes.
  */
 @HookPositions({HookPosition.BEFORE_AGENT, HookPosition.AFTER_AGENT})
-public class ShellToolAgentHook implements AgentHook, ToolInjection {
+public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 
 	private static final Logger log = LoggerFactory.getLogger(ShellToolAgentHook.class);
 

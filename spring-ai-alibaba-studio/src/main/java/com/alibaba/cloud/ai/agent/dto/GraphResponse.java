@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * DTO for the response of GET
- * /apps/{appName}/users/{userId}/sessions/{sessionId}/events/{eventId}/graph. Contains the graph
+ * /apps/{appName}/users/{userId}/sessions/{threadId}/events/{eventId}/graph. Contains the graph
  * representation (e.g., DOT source).
  */
 public class GraphResponse {

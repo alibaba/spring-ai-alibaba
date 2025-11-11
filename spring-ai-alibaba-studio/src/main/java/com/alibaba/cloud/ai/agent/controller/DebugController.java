@@ -72,20 +72,20 @@ public class DebugController {
 	}
 
 	/**
-	 * Retrieves trace spans for a given session ID.
+	 * Retrieves trace spans for a given thread ID.
 	 *
-	 * @param sessionId The session ID.
-	 * @return A ResponseEntity containing a list of span data maps for the session, or an empty list.
+	 * @param threadId The thread ID.
+	 * @return A ResponseEntity containing a list of span data maps for the thread, or an empty list.
 	 */
-	@GetMapping("/debug/trace/session/{sessionId}")
-	public ResponseEntity<Object> getSessionTrace(@PathVariable String sessionId) {
-		log.info("Request received for GET /debug/trace/session/{}", sessionId);
+	@GetMapping("/debug/trace/thread/{threadId}")
+	public ResponseEntity<Object> getSessionTrace(@PathVariable String threadId) {
+		log.info("Request received for GET /debug/trace/thread/{}", threadId);
 
 		List<String> traceIdsForSession =
-				this.apiServerSpanExporter.getSessionToTraceIdsMap().get(sessionId);
+				this.apiServerSpanExporter.getSessionToTraceIdsMap().get(threadId);
 
 		if (traceIdsForSession == null || traceIdsForSession.isEmpty()) {
-			log.warn("No trace IDs found for session ID: {}", sessionId);
+			log.warn("No trace IDs found for thread ID: {}", threadId);
 			return ResponseEntity.ok(Collections.emptyList());
 		}
 
@@ -126,7 +126,7 @@ public class DebugController {
 			}
 		}
 
-		log.info("Returning {} spans for session ID: {}", resultSpans.size(), sessionId);
+		log.info("Returning {} spans for thread ID: {}", resultSpans.size(), threadId);
 		return ResponseEntity.ok(resultSpans);
 	}
 }

@@ -16,7 +16,8 @@
 
 package com.alibaba.cloud.ai.agent.dto;
 
-import org.springframework.ai.chat.messages.UserMessage;
+import com.alibaba.cloud.ai.agent.dto.messages.UserMessageDTO;
+
 
 import java.util.Map;
 
@@ -33,11 +34,11 @@ public class AgentRunRequest {
 	@JsonProperty("userId")
 	public String userId;
 
-	@JsonProperty("sessionId")
-	public String sessionId;
+	@JsonProperty("threadId")
+	public String threadId;
 
 	@JsonProperty("newMessage")
-	public UserMessage newMessage;
+	public UserMessageDTO newMessage;
 
 	@JsonProperty("streaming")
 	public boolean streaming = false;
@@ -61,11 +62,11 @@ public class AgentRunRequest {
 		return userId;
 	}
 
-	public String getSessionId() {
-		return sessionId;
+	public String getThreadId() {
+		return threadId;
 	}
 
-	public UserMessage getNewMessage() {
+	public UserMessageDTO getNewMessage() {
 		return newMessage;
 	}
 

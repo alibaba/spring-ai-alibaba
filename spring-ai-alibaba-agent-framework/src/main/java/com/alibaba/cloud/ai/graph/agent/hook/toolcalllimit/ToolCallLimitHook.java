@@ -37,7 +37,7 @@ import java.util.concurrent.CompletableFuture;
  * and can terminate the agent when specified limits are reached.
  */
 @HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
-public class ToolCallLimitHook implements ModelHook {
+public class ToolCallLimitHook extends ModelHook {
 
 	private static final String THREAD_COUNT_KEY_PREFIX = "__tool_call_limit_thread_count__";
 	private static final String RUN_COUNT_KEY_PREFIX = "__tool_call_limit_run_count__";

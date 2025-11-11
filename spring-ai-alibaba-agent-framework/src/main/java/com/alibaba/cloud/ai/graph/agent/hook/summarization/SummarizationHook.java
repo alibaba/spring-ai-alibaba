@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  * </pre>
  */
 @HookPositions({HookPosition.BEFORE_MODEL})
-public class SummarizationHook implements ModelHook {
+public class SummarizationHook extends ModelHook {
 
 	private static final Logger log = LoggerFactory.getLogger(SummarizationHook.class);
 

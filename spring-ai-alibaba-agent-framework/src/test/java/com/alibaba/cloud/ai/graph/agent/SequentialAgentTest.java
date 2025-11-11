@@ -67,6 +67,7 @@ class SequentialAgentTest {
 			.description("可以写文章。")
 			.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
 			.outputKey("article")
+			.enableLogging(true)
 			.build();
 
 		ReactAgent reviewerAgent = ReactAgent.builder()

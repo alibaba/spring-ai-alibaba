@@ -25,6 +25,10 @@ public interface Hook {
 
 	List<JumpTo> canJumpTo();
 
+	void setAgentName(String agentName);
+
+	String getAgentName();
+
 	/**
 	 * Get the positions where this hook should be executed.
 	 * By default, this method checks for the @HookPositions annotation on the implementing class.

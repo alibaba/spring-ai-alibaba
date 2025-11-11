@@ -59,6 +59,8 @@ import static java.lang.String.format;
 
 public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
+	private final String agentName;
+
 	private final AgentCardWrapper agentCard;
 
 	private final boolean includeContents;
@@ -76,7 +78,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	private CompileConfig parentCompileConfig;
 
 
-	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, boolean includeContents, String outputKeyToParent, String instruction, boolean streaming) {
+	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, String agentName, boolean includeContents, String outputKeyToParent, String instruction, boolean streaming) {
+		this.agentName = agentName;
 		this.agentCard = agentCard;
 		this.includeContents = includeContents;
 		this.outputKeyToParent = outputKeyToParent;
@@ -85,8 +88,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		this.shareState = false;
 	}
 
-	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, boolean includeContents, String outputKeyToParent, String instruction, boolean streaming, boolean shareState, CompileConfig compileConfig) {
-		this(agentCard, includeContents, outputKeyToParent, instruction, streaming);
+	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, String agentName, boolean includeContents, String outputKeyToParent, String instruction, boolean streaming, boolean shareState, CompileConfig compileConfig) {
+		this(agentCard, agentName, includeContents, outputKeyToParent, instruction, streaming);
 		this.parentCompileConfig = compileConfig;
 		this.shareState = shareState;
 	}
@@ -211,7 +214,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		return AsyncGeneratorQueue.of(queue, q -> {
 			String baseUrl = resolveAgentBaseUrl(this.agentCard);
 			if (baseUrl == null || baseUrl.isBlank()) {
-				StreamingOutput errorOutput = new StreamingOutput("Error: AgentCard.url is empty", "a2aNode", state);
+				StreamingOutput errorOutput = new StreamingOutput("Error: AgentCard.url is empty", "a2aNode", agentName, state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
 				return;
 			}
@@ -226,14 +229,14 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 					int statusCode = response.getStatusLine().getStatusCode();
 					if (statusCode != 200) {
 						StreamingOutput errorOutput = new StreamingOutput("HTTP request failed, status: " + statusCode,
-								"a2aNode", state);
+								"a2aNode", agentName, state);
 						queue.add(AsyncGenerator.Data.of(errorOutput));
 						return;
 					}
 
 					HttpEntity entity = response.getEntity();
 					if (entity == null) {
-						StreamingOutput errorOutput = new StreamingOutput("Empty HTTP entity", "a2aNode", state);
+						StreamingOutput errorOutput = new StreamingOutput("Empty HTTP entity", "a2aNode", agentName, state);
 						queue.add(AsyncGenerator.Data.of(errorOutput));
 						return;
 					}
@@ -264,7 +267,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 										if (text != null && !text.isEmpty()) {
 											accumulated.append(text);
 											queue.add(AsyncGenerator.Data
-												.of(new StreamingOutput(text, "a2aNode", state)));
+												.of(new StreamingOutput(text, "a2aNode", agentName, state)));
 										}
 									}
 								}
@@ -284,18 +287,18 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 							String text = extractResponseText(result);
 							if (text != null && !text.isEmpty()) {
 								accumulated.append(text);
-								queue.add(AsyncGenerator.Data.of(new StreamingOutput(text, "a2aNode", state)));
+								queue.add(AsyncGenerator.Data.of(new StreamingOutput(text, "a2aNode", agentName, state)));
 							}
 						}
 						catch (Exception ex) {
 							queue.add(AsyncGenerator.Data
-								.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", state)));
+								.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", agentName, state)));
 						}
 					}
 				}
 			}
 			catch (Exception e) {
-				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", state);
+				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
 			}
 			finally {
@@ -371,7 +374,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 			}
 			catch (Exception e) {
 				// On error, emit an error message and signal completion
-				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", state);
+				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
 				queue.add(AsyncGenerator.Data.done(Map.of(outputKey, accumulated.toString())));
 			}
@@ -394,13 +397,13 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
 			if (responseText2 != null && !responseText2.isEmpty()) {
 				accumulated.append(responseText2);
-				StreamingOutput streamingOutput = new StreamingOutput(responseText2, "a2aNode", state);
+				StreamingOutput streamingOutput = new StreamingOutput(responseText2, "a2aNode", agentName, state);
 				queue.add(AsyncGenerator.Data.of(streamingOutput));
 			}
 		}
 		catch (Exception e) {
 			// On parse failure, emit an error message
-			StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", state);
+			StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
 			queue.add(AsyncGenerator.Data.of(errorOutput));
 		}
 
@@ -416,7 +419,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	private StreamingOutput createStreamingOutputFromResult(Map<String, Object> result, OverAllState state) {
 		String text = extractResponseText(result);
 		if (text != null && !text.isEmpty()) {
-			return new StreamingOutput(text, "a2aNode", state);
+			return new StreamingOutput(text, "a2aNode", agentName, state);
 		}
 		return null;
 	}

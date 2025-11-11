@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.agent.tracing;
 
-import com.alibaba.cloud.ai.agent.controller.R;
-
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.ServerHttpRequest;

@@ -52,7 +52,7 @@ import java.util.concurrent.CompletableFuture;
  * </pre>
  */
 @HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
-public class PIIDetectionHook implements ModelHook {
+public class PIIDetectionHook extends ModelHook {
 
 	private final PIIType piiType;
 	private final RedactionStrategy strategy;

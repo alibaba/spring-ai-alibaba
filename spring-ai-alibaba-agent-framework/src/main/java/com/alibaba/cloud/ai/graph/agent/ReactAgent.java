@@ -64,10 +64,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -77,7 +78,7 @@ import static java.lang.String.format;
 
 
 public class ReactAgent extends BaseAgent {
-	private static final int DEFAULT_MAX_ITERATIONS = 10;
+	Logger logger = LoggerFactory.getLogger(ReactAgent.class);
 
 	private final AgentLlmNode llmNode;
 
@@ -85,27 +86,20 @@ public class ReactAgent extends BaseAgent {
 
 	private CompiledGraph compiledGraph;
 
-	private List<Hook> hooks;
+	private List<? extends Hook> hooks;
 
 	private List<ModelInterceptor> modelInterceptors;
 
 	private List<ToolInterceptor> toolInterceptors;
 
-	private int maxIterations;
-
-	private int iterations = 0;
-
 	private String instruction;
 
-	private Function<OverAllState, Boolean> shouldContinueFunc;
-
-	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) throws GraphStateException {
+	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
 		this.compileConfig = compileConfig;
-		this.shouldContinueFunc = builder.shouldContinueFunc;
 		this.hooks = builder.hooks;
 		this.modelInterceptors = builder.modelInterceptors;
 		this.toolInterceptors = builder.toolInterceptors;
@@ -114,7 +108,6 @@ public class ReactAgent extends BaseAgent {
 		this.inputType = builder.inputType;
 		this.outputSchema = builder.outputSchema;
 		this.outputType = builder.outputType;
-		this.maxIterations = builder.maxIterations <= 0 ? DEFAULT_MAX_ITERATIONS : builder.maxIterations;
 
 		// Set interceptors to nodes
 		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
@@ -206,6 +199,9 @@ public class ReactAgent extends BaseAgent {
 			if (!hookNames.add(hook.getName())) {
 				throw new IllegalArgumentException("Duplicate hook instances found");
 			}
+
+			// set agent name to every hook node.
+			hook.setAgentName(this.name);
 		}
 
 		// Create graph
@@ -261,7 +257,7 @@ public class ReactAgent extends BaseAgent {
 	 * @param hooks the list of hooks
 	 * @param toolNode the agent tool node containing available tools
 	 */
-	private void setupToolsForHooks(List<Hook> hooks, AgentToolNode toolNode) {
+	private void setupToolsForHooks(List<? extends Hook> hooks, AgentToolNode toolNode) {
 		if (hooks == null || hooks.isEmpty() || toolNode == null) {
 			return;
 		}
@@ -329,7 +325,7 @@ public class ReactAgent extends BaseAgent {
 	 * @param position the position to filter by
 	 * @return list of hooks that should execute at the specified position
 	 */
-	private static List<Hook> filterHooksByPosition(List<Hook> hooks, HookPosition position) {
+	private static List<Hook> filterHooksByPosition(List<? extends Hook> hooks, HookPosition position) {
 		return hooks.stream()
 				.filter(hook -> {
 					HookPosition[] positions = hook.getHookPositions();
@@ -544,19 +540,10 @@ public class ReactAgent extends BaseAgent {
 
 	private EdgeAction makeModelToTools(String modelDestination, String endDestination) {
 		return state -> {
-			if (iterations++ > maxIterations) {
-				return endDestination;
-			}
-
-			if (shouldContinueFunc != null && !shouldContinueFunc.apply(state)) {
-				return endDestination;
-			}
-
 			List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
 			if (messages.isEmpty()) {
 				return endDestination;
 			}
-
 			Message lastMessage = messages.get(messages.size() - 1);
 
 			// 1. Check the last message type
@@ -768,7 +755,11 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
-			RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config).checkPointId(null).nextNode(null).build();
+			RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config)
+					.checkPointId(null)
+					.nextNode(null)
+					.addMetadata("_AGENT_", subGraphId()) // subGraphId is the same as the name of the agent that created it
+					.build();
 			var parentSaver = parentCompileConfig.checkpointSaver();
 			var subGraphSaver = childGraph.compileConfig.checkpointSaver();
 
@@ -785,6 +776,7 @@ public class ReactAgent extends BaseAgent {
 									.orElseGet(this::subGraphId))
 							.nextNode(null)
 							.checkPointId(null)
+							.addMetadata("_AGENT_", subGraphId()) // subGraphId is the same as the name of the agent that created it
 							.build();
 				}
 			}

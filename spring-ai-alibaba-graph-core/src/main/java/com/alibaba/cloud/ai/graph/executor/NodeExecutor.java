@@ -29,6 +29,8 @@ import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -160,7 +162,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 			}
-			NodeOutput output = context.buildCurrentNodeOutput();
+			NodeOutput output = context.buildNodeOutputAndAddCheckpoint(updateState);
 
 			context.doListeners(NODE_AFTER, null);
 			// Recursively call the main execution handler
@@ -198,12 +200,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 						var message = response.getResult().getOutput();
 						GraphResponse<NodeOutput> lastGraphResponse = null;
 						if (message.hasToolCalls()) {
-							lastGraphResponse = GraphResponse
-								.of(new StreamingOutput<>(message.getToolCalls().toString(), response, context.getCurrentNodeId(), context.getOverallState()));
+							lastGraphResponse =
+									GraphResponse.of(context.buildStreamingOutput(message, response, context.getCurrentNodeId()));
 						} else {
 							lastGraphResponse =
-									GraphResponse
-											.of(new StreamingOutput(message.getText(), context.getCurrentNodeId(), context.getOverallState()));
+									GraphResponse.of(context.buildStreamingOutput(message, response, context.getCurrentNodeId()));
 						}
 						lastChatResponseRef.set(response);
 						lastGraphResponseRef.set(lastGraphResponse);
@@ -214,7 +215,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 					if (currentMessage.hasToolCalls()) {
 						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-							.of(new StreamingOutput<>(currentMessage.getToolCalls().toString(), response, context.getCurrentNodeId(), context.getOverallState()));
+							.of(context.buildStreamingOutput(currentMessage, response, context.getCurrentNodeId()));
 						lastGraphResponseRef.set(lastGraphResponse);
 						return lastGraphResponse;
 					}
@@ -224,19 +225,18 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 					final var currentMessageText = currentMessage.getText();
 
-					var newMessage = new org.springframework.ai.chat.messages.AssistantMessage(
+					var newMessage = new AssistantMessage(
 							currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText,
 							currentMessage.getMetadata(), currentMessage.getToolCalls(), currentMessage.getMedia());
 
-					var newGeneration = new org.springframework.ai.chat.model.Generation(newMessage,
+					var newGeneration = new Generation(newMessage,
 							response.getResult().getMetadata());
 
-					org.springframework.ai.chat.model.ChatResponse newResponse = new org.springframework.ai.chat.model.ChatResponse(
+					ChatResponse newResponse = new ChatResponse(
 							List.of(newGeneration), response.getMetadata());
 					lastChatResponseRef.set(newResponse);
 					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-						.of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(),
-								context.getOverallState()));
+						.of(context.buildStreamingOutput(response.getResult().getOutput(), response, context.getCurrentNodeId()));
 					// lastGraphResponseRef.set(lastGraphResponse);
 					return lastGraphResponse;
 				}
@@ -326,10 +326,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 			context.mergeIntoCurrentState(partialStateWithoutFlux);
 
+			Map<String, Object> updateState = new HashMap<>();
 			if (nodeResultValue.isPresent()) {
 				Object value = nodeResultValue.get();
 				if (value instanceof Map<?, ?>) {
-					context.mergeIntoCurrentState((Map<String, Object>) value);
+					updateState = (Map<String, Object>) value;
+					context.mergeIntoCurrentState(updateState);
 				}
 				else {
 					throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
@@ -340,7 +342,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 
-				context.buildCurrentNodeOutput();
+				context.buildNodeOutputAndAddCheckpoint(updateState);
 
 				context.doListeners(NODE_AFTER, null);
 			}
@@ -408,10 +410,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 					lastDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 
 					// Create StreamingOutput with GraphFlux's nodeId (preserves real node identity)
-					StreamingOutput output = graphFlux.hasChunkResult() ?
-							new StreamingOutput(graphFlux.getChunkResult().apply(element), element, effectiveNodeId, context.getOverallState()):
-							new StreamingOutput(element, effectiveNodeId, context.getOverallState());
-					output.setSubGraph(true);
+					StreamingOutput output = context.buildStreamingOutput(graphFlux, element, effectiveNodeId);
 					return GraphResponse.<NodeOutput>of(output);
 				})
 				.onErrorMap(error -> new RuntimeException("GraphFlux processing error in node: " + effectiveNodeId, error));
@@ -441,7 +440,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 
-				context.buildCurrentNodeOutput();
+				context.buildNodeOutputAndAddCheckpoint(partialStateWithoutGraphFlux);
 
 				context.doListeners(NODE_AFTER, null);
 			} catch (Exception e) {
@@ -484,10 +483,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 							.map(element -> {
 								nodeDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 								// Create StreamingOutput with specific nodeId (preserves parallel node identity)
-								StreamingOutput output = graphFlux.hasChunkResult() ?
-										new StreamingOutput(graphFlux.getChunkResult().apply(element), element, nodeId, context.getOverallState()):
-										new StreamingOutput(element, nodeId, context.getOverallState());
-								output.setSubGraph(true);
+								StreamingOutput output = context.buildStreamingOutput(graphFlux, element, nodeId);
 								return GraphResponse.<NodeOutput>of(output);
 							})
 							.onErrorMap(error -> new RuntimeException("ParallelGraphFlux processing error in node: " + nodeId, error));
@@ -526,7 +522,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
 				context.setNextNodeId(nextCommand.gotoNode());
 
-				context.buildCurrentNodeOutput();
+				context.buildNodeOutputAndAddCheckpoint(partialStateWithoutParallelGraphFlux);
 
 				context.doListeners(NODE_AFTER, null);
 			} catch (Exception e) {
@@ -557,7 +553,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			context.setNextNodeId(nextCommand.gotoNode());
 		}
 
-		NodeOutput output = context.buildCurrentNodeOutput();
+		NodeOutput output = context.buildNodeOutputAndAddCheckpoint(partialState);
 		// Recursively call the main execution handler
 		return Flux.just(GraphResponse.of(output))
 				.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));

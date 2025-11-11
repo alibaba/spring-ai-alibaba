@@ -39,6 +39,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 	public static final String HUMAN_FEEDBACK_METADATA_KEY = "HUMAN_FEEDBACK";
 	public static final String STATE_UPDATE_METADATA_KEY = "STATE_UPDATE";
+	public static final String AGENT_NAME = "AGENT_NAME";
 
 	private final String threadId;
 
