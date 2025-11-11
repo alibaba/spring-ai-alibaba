@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.GraphRunnerContext.INTERRUPT_AFTER;
 import static com.alibaba.cloud.ai.graph.StateGraph.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Node executor that processes node execution and result handling. This class
@@ -210,10 +211,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 					}
 
                     final var currentMessage = response.getResult().getOutput();
+
                     final var lastMessage = lastResponse.getResult().getOutput();
 
+                    final var lastMessageText = requireNonNull(lastMessage.getText(),
+                            "lastResponse text cannot be null");
                     // merge message
-                    final var lastMessageText = lastMessage.getText() != null ? lastMessage.getText() : "";
                     final var currentMessageText = currentMessage.getText();
                     final var mergedText = currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText;
 
@@ -228,14 +231,23 @@ public class NodeExecutor extends BaseGraphExecutor {
                     var newGeneration = new org.springframework.ai.chat.model.Generation(newMessage,
                             response.getResult().getMetadata());
 
-					org.springframework.ai.chat.model.ChatResponse newResponse = new org.springframework.ai.chat.model.ChatResponse(
-							List.of(newGeneration), response.getMetadata());
-					lastChatResponseRef.set(newResponse);
-					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-						.of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(),
-								context.getOverallState()));
-					// lastGraphResponseRef.set(lastGraphResponse);
-					return lastGraphResponse;
+                    org.springframework.ai.chat.model.ChatResponse newResponse = new org.springframework.ai.chat.model.ChatResponse(
+                            List.of(newGeneration), response.getMetadata());
+                    lastChatResponseRef.set(newResponse);
+
+                    if (currentMessage.hasToolCalls()) {
+                        GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
+                                .of(new StreamingOutput<>(currentMessage.getToolCalls().toString(), response, context.getCurrentNodeId(), context.getOverallState()));
+                        lastGraphResponseRef.set(lastGraphResponse);
+                        return lastGraphResponse;
+                    }
+
+                    GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
+                            .of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(),
+                                    context.getOverallState()));
+
+                    // lastGraphResponseRef.set(lastGraphResponse);
+                    return lastGraphResponse;
 				}
 				else if (element instanceof GraphResponse) {
 					GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
