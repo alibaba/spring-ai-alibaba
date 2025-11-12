@@ -27,6 +27,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 /**
@@ -105,8 +106,14 @@ public class GlobSearchTool implements BiFunction<GlobSearchTool.Request, ToolCo
 					.map(FileInfo::path)
 					.collect(Collectors.joining("\n"));
 
+		} catch (PatternSyntaxException e) {
+			return "Error: Invalid glob pattern syntax - " + e.getDescription();
+		} catch (InvalidPathException e) {
+			return "Error: Invalid path format - " + e.getReason();
+		} catch (IOException e) {
+			return "Error: I/O error - " + e.getMessage();
 		} catch (Exception e) {
-			return "No files found";
+			return "Error: Unexpected error occurred - " + e.getMessage();
 		}
 	}
 
