@@ -34,6 +34,12 @@ import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.TypeMappe
 @FunctionalInterface
 public interface JacksonDeserializer<T> {
 
+    /**
+     * Default type property used by Jackson's activateDefaultTyping when using
+     * JsonTypeInfo.As.PROPERTY.
+     */
+    static final String CLASS_PROPERTY = "@class";
+
 	/**
 	 * Converts a {@link JsonNode} to a standard Java object based on its node type. This
 	 * utility method handles the conversion of primitive JSON types, arrays, and objects.
@@ -57,13 +63,26 @@ public interface JacksonDeserializer<T> {
 			case NULL, MISSING -> null;
 			case ARRAY -> objectMapper.treeToValue(valueNode, List.class);
 			case OBJECT, POJO -> {
+				// Prefer explicit type mapping via @type if present
 				if (valueNode.has(TYPE_PROPERTY)) {
 					var type = valueNode.get(TYPE_PROPERTY).asText();
-					// Deserialize to a specific class
 					var ref = typeMapper.getReference(type)
 						.orElseThrow(() -> new IllegalStateException("Type not found: " + type));
 					yield objectMapper.treeToValue(valueNode, ref);
 				}
+				// Fall back to Jackson default typing via @class, if available
+				if (valueNode.has(CLASS_PROPERTY)) {
+					var className = valueNode.get(CLASS_PROPERTY).asText();
+					try {
+						Class<?> clazz = Class.forName(className);
+						yield objectMapper.treeToValue(valueNode, clazz);
+					}
+					catch (ClassNotFoundException ex) {
+						// If class cannot be resolved, degrade to generic object mapping
+						yield objectMapper.treeToValue(valueNode, Object.class);
+					}
+				}
+				// Generic object mapping (may produce Map/POJO depending on ObjectMapper config)
 				yield objectMapper.treeToValue(valueNode, Object.class);
 			}
 			case BOOLEAN -> valueNode.asBoolean();

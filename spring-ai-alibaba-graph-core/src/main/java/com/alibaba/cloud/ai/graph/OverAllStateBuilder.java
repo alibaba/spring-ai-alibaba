@@ -112,7 +112,9 @@ public class OverAllStateBuilder {
 
 		// deep copy to avoid side effects
 		Map<String, Object> deepCopiedData = SerializationUtils.deepCopyMap(dataMap);
-		data.putAll(deepCopiedData);
+		// runtime sanitization: ensure only serializable data enters the state
+		Map<String, Object> sanitized = GraphResponse.sanitizeState(deepCopiedData);
+		data.putAll(sanitized);
 		return this;
 	}
 

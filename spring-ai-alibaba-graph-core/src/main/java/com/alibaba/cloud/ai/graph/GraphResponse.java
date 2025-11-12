@@ -231,6 +231,34 @@ public class GraphResponse<E> {
 		if (value instanceof GraphResponse<?> graphResponse) {
 			return graphResponse.toSnapshot();
 		}
+		// Handle raw CompletableFuture without blocking; record status snapshot
+		if (value instanceof java.util.concurrent.CompletableFuture<?> future) {
+			if (!future.isDone()) {
+				Map<String, Object> snapshot = new java.util.LinkedHashMap<>();
+				snapshot.put("status", "pending");
+				snapshot.put("error", Boolean.FALSE);
+				return snapshot;
+			}
+			if (future.isCompletedExceptionally()) {
+				Throwable throwable = future.handle((v, ex) -> ex).join();
+				Map<String, Object> snapshot = new java.util.LinkedHashMap<>();
+				snapshot.put("status", "error");
+				snapshot.put("error", Boolean.TRUE);
+				if (throwable != null) {
+					snapshot.put("exception", throwable.getClass().getName());
+					snapshot.put("message", throwable.getMessage());
+				}
+				return snapshot;
+			}
+			Object result = future.join();
+			Map<String, Object> snapshot = new java.util.LinkedHashMap<>();
+			snapshot.put("status", "completed");
+			snapshot.put("error", Boolean.FALSE);
+			if (result != null) {
+				snapshot.put("result", sanitizeValue(result));
+			}
+			return snapshot;
+		}
 		if (value instanceof Map<?, ?> mapValue) {
 			Map<Object, Object> sanitized = new LinkedHashMap<>();
 			mapValue.forEach((key, val) -> sanitized.put(key, sanitizeValue(val)));
