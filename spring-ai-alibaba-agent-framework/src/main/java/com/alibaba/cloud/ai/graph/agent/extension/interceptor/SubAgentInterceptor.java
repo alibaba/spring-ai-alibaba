@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.extension.interceptor;
 import com.alibaba.cloud.ai.graph.agent.extension.tools.model.TaskTool;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
+import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
@@ -29,6 +30,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -241,7 +243,7 @@ public class SubAgentInterceptor extends ModelInterceptor {
 	private ReactAgent createGeneralPurposeAgent(
 			ChatModel model,
 			List<ToolCallback> tools,
-			List<ModelInterceptor> interceptors) {
+			List<? extends Interceptor> interceptors) {
 
 		com.alibaba.cloud.ai.graph.agent.Builder builder = ReactAgent.builder()
 				.name("general-purpose")
@@ -321,8 +323,8 @@ public class SubAgentInterceptor extends ModelInterceptor {
 		private String systemPrompt;
 		private ChatModel defaultModel;
 		private List<ToolCallback> defaultTools;
-		private List<ModelInterceptor> defaultInterceptors;
-		private List<? extends Hook> defaultHooks;
+		private List<Interceptor> defaultInterceptors;
+		private List<Hook> defaultHooks;
 		private Map<String, ReactAgent> subAgents = new HashMap<>();
 		private boolean includeGeneralPurpose = true;
 
@@ -350,19 +352,17 @@ public class SubAgentInterceptor extends ModelInterceptor {
 			return this;
 		}
 
-		/**
-		 * Set the default interceptors to apply to subagents.
-		 */
-		public Builder defaultInterceptors(List<ModelInterceptor> interceptors) {
-			this.defaultInterceptors = interceptors;
+
+		public Builder defaultInterceptors(Interceptor... interceptors) {
+			this.defaultInterceptors = Arrays.asList(interceptors);
 			return this;
 		}
 
 		/**
 		 * Set the default hooks to apply to subagents.
 		 */
-		public Builder defaultHooks(List<? extends Hook> hooks) {
-			this.defaultHooks = hooks;
+		public Builder defaultHooks(Hook... hooks) {
+			this.defaultHooks = Arrays.asList(hooks);
 			return this;
 		}
 
@@ -409,7 +409,7 @@ public class SubAgentInterceptor extends ModelInterceptor {
 			}
 
 			// Apply default interceptors first, then custom ones
-			List<ModelInterceptor> allInterceptors = new ArrayList<>();
+			List<Interceptor> allInterceptors = new ArrayList<>();
 			if (defaultInterceptors != null) {
 				allInterceptors.addAll(defaultInterceptors);
 			}
@@ -419,6 +419,10 @@ public class SubAgentInterceptor extends ModelInterceptor {
 
 			if (!allInterceptors.isEmpty()) {
 				builder.interceptors(allInterceptors);
+			}
+
+			if (defaultHooks != null) {
+				builder.hooks(defaultHooks);
 			}
 
 			builder.enableLogging(spec.isEnableLoopingLog());

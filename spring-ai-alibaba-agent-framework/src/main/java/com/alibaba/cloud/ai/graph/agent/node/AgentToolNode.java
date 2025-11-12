@@ -148,7 +148,12 @@ public class AgentToolNode implements NodeActionWithConfig {
 			updatedState.put("messages", newMessages);
 
 			if (enableActingLog) {
-				logger.info("[ThreadId {}] Agent {} acting returned: {}", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, toolResponseMessage);
+				logger.info("[ThreadId {}] Agent {} acting successfully returned.", config.threadId()
+						.orElse(THREAD_ID_DEFAULT), agentName);
+				if (logger.isDebugEnabled()) {
+					logger.debug("[ThreadId {}] Agent {} acting returned: {}", config.threadId()
+							.orElse(THREAD_ID_DEFAULT), agentName, toolResponseMessage);
+				}
 			}
 
 		} else {
@@ -197,8 +202,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 				}
 
 				if (enableActingLog) {
-					logger.info("[ThreadId {}] Agent {} acting, tool {} returned: {}", config.threadId()
-							.orElse(THREAD_ID_DEFAULT), agentName, req.getToolName(), result);
+					logger.info("[ThreadId {}] Agent {} acting, tool {} finished", config.threadId()
+									.orElse(THREAD_ID_DEFAULT), agentName, req.getToolName());
+					if (logger.isDebugEnabled()) {
+						logger.debug("Tool {} returned: {}", req.getToolName(), result);
+					}
 				}
 			} catch (Exception e) {
 				logger.error("[ThreadId {}] Agent {} acting, tool {} execution failed. "

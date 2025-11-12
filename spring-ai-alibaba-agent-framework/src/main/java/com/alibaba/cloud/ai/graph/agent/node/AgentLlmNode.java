@@ -116,6 +116,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
+		if (logger.isDebugEnabled()) {
+			logger.debug("[ThreadId {}] Agent {} start reasoning.", config.threadId()
+					.orElse(THREAD_ID_DEFAULT), agentName);
+		}
 		iterations.set(iterations.get() + 1);
 
 		// add streaming support
@@ -144,14 +148,24 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				try {
 					if (enableReasoningLog) {
 						String systemPrompt = request.getSystemMessage() != null ? request.getSystemMessage().getText() : "";
-						logger.info("[ThreadId {}] Agent {} reasoning with system prompt: {}", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, systemPrompt);
+						if (logger.isDebugEnabled()) {
+							logger.debug("[ThreadId {}] Agent {} reasoning with system prompt: {}", config.threadId()
+									.orElse(THREAD_ID_DEFAULT), agentName, systemPrompt);
+						}
 					}
 					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request).stream().chatResponse();
 					if (enableReasoningLog) {
 						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
 							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
-								logger.info("[ThreadId {}] Agent {} reasoning round {} streaming output: {}",
-									config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), chatResponse.getResult().getOutput().getText());
+								if (chatResponse.getResult().getOutput().hasToolCalls()) {
+									logger.info("[ThreadId {}] Agent {} reasoning round {} streaming output: {}",
+											config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), chatResponse.getResult().getOutput().getToolCalls());
+								} else {
+									logger.info("[ThreadId {}] Agent {} reasoning round {} streaming output: {}",
+											config.threadId()
+													.orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), chatResponse.getResult()
+													.getOutput().getText());
+								}
 							}
 						});
 					}

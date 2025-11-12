@@ -46,6 +46,28 @@ public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 
 	private ShellTool shellTool;
 
+	/**
+	 * Private constructor for builder pattern.
+	 */
+	private ShellToolAgentHook() {
+	}
+
+	/**
+	 * Private constructor with ShellTool for builder pattern.
+	 * @param shellTool the ShellTool instance to use
+	 */
+	private ShellToolAgentHook(ShellTool shellTool) {
+		this.shellTool = shellTool;
+	}
+
+	/**
+	 * Create a new builder instance.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	@Override
 	public CompletableFuture<Map<String, Object>> beforeAgent(OverAllState state, RunnableConfig config) {
 		if (shellTool == null) {
@@ -173,4 +195,31 @@ public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 	protected ShellTool getShellTool() {
 		return shellTool;
 	}
+
+	/**
+	 * Builder class for constructing ShellToolAgentHook instances.
+	 */
+	public static class Builder {
+		private ShellTool shellTool;
+
+		/**
+		 * Set the ShellTool instance.
+		 * @param shellTool the ShellTool to use
+		 * @return this builder instance
+		 */
+		public Builder shellTool(ShellTool shellTool) {
+			this.shellTool = shellTool;
+			return this;
+		}
+
+		/**
+		 * Build the ShellToolAgentHook instance.
+		 * @return a new ShellToolAgentHook instance
+		 */
+		public ShellToolAgentHook build() {
+			return new ShellToolAgentHook(this.shellTool);
+		}
+	}
+
+
 }

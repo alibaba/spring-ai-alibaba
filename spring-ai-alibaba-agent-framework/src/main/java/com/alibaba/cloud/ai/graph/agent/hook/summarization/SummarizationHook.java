@@ -99,7 +99,7 @@ public class SummarizationHook extends ModelHook {
 
 	@Override
 	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 
 		if (maxTokensBeforeSummary == null) {
 			return CompletableFuture.completedFuture(Map.of());

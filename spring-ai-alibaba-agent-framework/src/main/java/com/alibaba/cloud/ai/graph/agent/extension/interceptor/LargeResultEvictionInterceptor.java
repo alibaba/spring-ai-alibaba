@@ -55,6 +55,7 @@ public class LargeResultEvictionInterceptor extends ToolInterceptor {
 	private static final int DEFAULT_TOOL_TOKEN_LIMIT = 20000;
 	private static final int SAMPLE_LINES_COUNT = 10;
 	private static final int SAMPLE_LINE_MAX_LENGTH = 1000;
+	private static final String LARGE_RESULTS_DIR = System.getProperty("user.dir") + "/large_tool_results/";
 
 	private static final String TOO_LARGE_TOOL_MSG = """
 			Tool result too large, the result of this tool call %s was saved in the filesystem at this path: %s
@@ -140,7 +141,7 @@ public class LargeResultEvictionInterceptor extends ToolInterceptor {
 
 		// Sanitize tool call ID for safe file path
 		String sanitizedId = sanitizeToolCallId(toolCallId);
-		String filePath = "/large_tool_results/" + sanitizedId;
+		String filePath = LARGE_RESULTS_DIR + sanitizedId;
 
 		// Write content to filesystem via backend
 		if (backend != null) {

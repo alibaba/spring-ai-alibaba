@@ -105,7 +105,7 @@ public class ToolCallLimitHook extends ModelHook {
 	@Override
 	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
 		// Count new tool calls from the latest AI message
-		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 		if (messages.isEmpty()) {
 			return CompletableFuture.completedFuture(Map.of());
 		}

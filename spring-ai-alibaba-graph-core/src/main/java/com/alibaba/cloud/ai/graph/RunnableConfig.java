@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.store.Store;
 
@@ -295,7 +296,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 			return this;
 		}
 
-		public Builder addHumanFeedback(Map<String, Object> humanFeedback) {
+		public Builder addHumanFeedback(InterruptionMetadata humanFeedback) {
 			return addMetadata(HUMAN_FEEDBACK_METADATA_KEY, humanFeedback);
 		}
 

@@ -85,6 +85,8 @@ public class FilesystemInterceptor extends ModelInterceptor {
 			
 			You have access to a filesystem which you can interact with using these tools.
 			All file paths must start with a /.
+			Avoid using the root path because you might not have permission to read/write there.
+			Try to use the user home directory that is running this process or the current working directory as your base path.
 			
 			- ls: list files in a directory (requires absolute path)
 			- read_file: read a file from the filesystem

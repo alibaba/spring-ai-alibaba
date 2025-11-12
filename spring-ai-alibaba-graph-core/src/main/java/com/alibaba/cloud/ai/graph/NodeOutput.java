@@ -111,7 +111,6 @@ public class NodeOutput {
 		this.tokenUsage = tokenUsage;
 	}
 
-	@Deprecated
 	protected NodeOutput(String node, OverAllState state) {
 		this.node = node;
 		this.state = state;

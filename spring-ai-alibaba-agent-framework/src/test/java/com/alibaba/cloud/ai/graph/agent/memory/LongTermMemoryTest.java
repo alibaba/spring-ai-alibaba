@@ -125,7 +125,7 @@ class LongTermMemoryTest {
 					);
 
 					// Add system message with user context
-					List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+					List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 					List<Message> newMessages = new ArrayList<>(messages);
 
 					// Find existing SystemMessage and append userContext to it
@@ -307,7 +307,7 @@ class LongTermMemoryTest {
 						profile.get("name"), profile.get("occupation"));
 
 				// Inject into messages
-				List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 				List<Message> newMessages = new ArrayList<>();
 				newMessages.add(new SystemMessage(contextInfo));
 				newMessages.addAll(messages);
@@ -457,7 +457,7 @@ class LongTermMemoryTest {
 				}
 
 				// Extract user input
-				List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 				if (messages.isEmpty()) {
 					return CompletableFuture.completedFuture(Map.of());
 				}

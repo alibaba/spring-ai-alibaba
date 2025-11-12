@@ -213,29 +213,43 @@ public class ReactAgent extends BaseAgent {
 		// some hooks may need tools so they can do some initialization/cleanup on start/end of agent loop
 		setupToolsForHooks(hooks, toolNode);
 
-		// Add hook nodes
-		for (Hook hook : hooks) {
-			if (hook instanceof AgentHook agentHook) {
-				graph.addNode(hook.getName() + ".before", agentHook::beforeAgent);
-				graph.addNode(hook.getName() + ".after", agentHook::afterAgent);
-			} else if (hook instanceof ModelHook modelHook) {
-				graph.addNode(hook.getName() + ".beforeModel", modelHook::beforeModel);
-				if (modelHook instanceof HumanInTheLoopHook humanInTheLoopHook) {
-					graph.addNode(hook.getName() + ".afterModel", humanInTheLoopHook);
-				} else {
-					graph.addNode(hook.getName() + ".afterModel", modelHook::afterModel);
-				}
-			}
-			else {
-				throw new UnsupportedOperationException("Unsupported hook type: " + hook.getClass().getName());
-			}
-		}
-
 		// Categorize hooks by position
 		List<Hook> beforeAgentHooks = filterHooksByPosition(hooks, HookPosition.BEFORE_AGENT);
 		List<Hook> afterAgentHooks = filterHooksByPosition(hooks, HookPosition.AFTER_AGENT);
 		List<Hook> beforeModelHooks = filterHooksByPosition(hooks, HookPosition.BEFORE_MODEL);
 		List<Hook> afterModelHooks = filterHooksByPosition(hooks, HookPosition.AFTER_MODEL);
+
+		// Add hook nodes for beforeAgent hooks
+		for (Hook hook : beforeAgentHooks) {
+			if (hook instanceof AgentHook agentHook) {
+				graph.addNode(hook.getName() + ".before", agentHook::beforeAgent);
+			}
+		}
+
+		// Add hook nodes for afterAgent hooks
+		for (Hook hook : afterAgentHooks) {
+			if (hook instanceof AgentHook agentHook) {
+				graph.addNode(hook.getName() + ".after", agentHook::afterAgent);
+			}
+		}
+
+		// Add hook nodes for beforeModel hooks
+		for (Hook hook : beforeModelHooks) {
+			if (hook instanceof ModelHook modelHook) {
+				graph.addNode(hook.getName() + ".beforeModel", modelHook::beforeModel);
+			}
+		}
+
+		// Add hook nodes for afterModel hooks
+		for (Hook hook : afterModelHooks) {
+			if (hook instanceof ModelHook modelHook) {
+				if (hook instanceof HumanInTheLoopHook humanInTheLoopHook) {
+					graph.addNode(hook.getName() + ".afterModel", humanInTheLoopHook);
+				} else {
+					graph.addNode(hook.getName() + ".afterModel", modelHook::afterModel);
+				}
+			}
+		}
 
 		// Determine node flow
 		String entryNode = determineEntryNode(beforeAgentHooks, beforeModelHooks);
@@ -361,7 +375,7 @@ public class ReactAgent extends BaseAgent {
 			List<Hook> modelHooks) {
 
 		if (!modelHooks.isEmpty()) {
-			return modelHooks.get(modelHooks.size() - 1).getName() + ".afterModel";
+			return modelHooks.get(0).getName() + ".afterModel";
 		} else {
 			return "model";
 		}
@@ -397,11 +411,13 @@ public class ReactAgent extends BaseAgent {
 		chainHook(graph, beforeModelHooks, ".beforeModel", "model", loopEntryNode, exitNode);
 
 		// Chain after_model hook (reverse order)
-		chainHookReverse(graph, afterModelHooks, ".afterModel", "model", loopEntryNode, exitNode);
+		if (!afterModelHooks.isEmpty()) {
+			chainModelHookReverse(graph, afterModelHooks, ".afterModel", "model", loopEntryNode, exitNode);
+		}
 
 		// Chain after_agent hook (reverse order)
 		if (!afterAgentHooks.isEmpty()) {
-			chainHookReverse(graph, afterAgentHooks, ".after", exitNode, loopEntryNode, exitNode);
+			chainAgentHookReverse(graph, afterAgentHooks, ".after", exitNode, loopEntryNode, exitNode);
 		}
 
 		// Add tool routing if tools exist
@@ -416,7 +432,28 @@ public class ReactAgent extends BaseAgent {
 		}
 	}
 
-	private static void chainHookReverse(
+	private static void chainModelHookReverse(
+			StateGraph graph,
+			List<Hook> hooks,
+			String nameSuffix,
+			String defaultNext,
+			String modelDestination,
+			String endDestination) throws GraphStateException {
+
+		graph.addEdge(defaultNext, hooks.get(hooks.size() - 1).getName() + nameSuffix);
+
+		for (int i = hooks.size() - 1; i > 0; i--) {
+			Hook m1 = hooks.get(i);
+			Hook m2 = hooks.get(i - 1);
+			addHookEdge(graph,
+					m1.getName() + nameSuffix,
+					m2.getName() + nameSuffix,
+					modelDestination, endDestination,
+					m1.canJumpTo());
+		}
+	}
+
+	private static void chainAgentHookReverse(
 			StateGraph graph,
 			List<Hook> hooks,
 			String nameSuffix,
@@ -540,16 +577,16 @@ public class ReactAgent extends BaseAgent {
 
 	private EdgeAction makeModelToTools(String modelDestination, String endDestination) {
 		return state -> {
-			List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+			List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 			if (messages.isEmpty()) {
+				logger.warn("No messages found in state when routing from model to tools");
 				return endDestination;
 			}
 			Message lastMessage = messages.get(messages.size() - 1);
 
 			// 1. Check the last message type
-			if (lastMessage instanceof AssistantMessage) {
+			if (lastMessage instanceof AssistantMessage assistantMessage) {
 				// 2. If last message is AssistantMessage
-				AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
 				if (assistantMessage.hasToolCalls()) {
 					return "tool";
 				} else {
@@ -612,7 +649,7 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	private ToolResponseMessage fetchLastToolResponseMessage(OverAllState state) {
-		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<Message>());
+		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 
 		ToolResponseMessage toolResponseMessage = null;
 

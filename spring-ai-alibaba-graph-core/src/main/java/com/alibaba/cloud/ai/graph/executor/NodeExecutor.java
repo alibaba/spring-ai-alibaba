@@ -31,6 +31,8 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -53,6 +55,8 @@ import static java.util.Objects.requireNonNull;
  * polymorphism through its specific implementation of execute.
  */
 public class NodeExecutor extends BaseGraphExecutor {
+
+	private static final Logger log = LoggerFactory.getLogger(NodeExecutor.class);
 
 	private final MainGraphExecutor mainGraphExecutor;
 
@@ -193,7 +197,13 @@ public class NodeExecutor extends BaseGraphExecutor {
                     return response.getResult() != null;
                 }
                 return true;
-            }).map(element -> {
+            })
+			.doOnError(error -> {
+				// Debug logging for Flux errors
+				log.error("Error occurred in embedded Flux stream for key '{}': {}",
+					e.getKey(), error.getMessage(), error);
+			})
+			.map(element -> {
 				if (element instanceof ChatResponse response) {
 					ChatResponse lastResponse = lastChatResponseRef.get();
 					if (lastResponse == null) {

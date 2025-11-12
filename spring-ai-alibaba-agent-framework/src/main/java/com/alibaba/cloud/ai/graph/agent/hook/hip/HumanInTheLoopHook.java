@@ -156,6 +156,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		if (lastMessage instanceof AssistantMessage assistantMessage) {
 			// 2. If last message is AssistantMessage
 			if (assistantMessage.hasToolCalls()) {
+				boolean needsInterruption = false;
 				InterruptionMetadata.Builder builder = InterruptionMetadata.builder(getName(), state);
 				for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 					if (approvalOn.containsKey(toolCall.name())) {
@@ -169,9 +170,10 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 						builder.addToolFeedback(InterruptionMetadata.ToolFeedback.builder().id(toolCall.id())
 										.name(toolCall.name()).description(content).arguments(toolCall.arguments()).build())
 								.build();
+						needsInterruption = true;
 					}
 				}
-				return Optional.of(builder.build());
+				return needsInterruption ? Optional.of(builder.build()) : Optional.empty();
 			}
 		}
 		return Optional.empty();
