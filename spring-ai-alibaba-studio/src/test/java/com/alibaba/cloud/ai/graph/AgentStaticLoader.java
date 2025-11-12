@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.agent.loader.AgentLoader;
+import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
@@ -72,8 +72,13 @@ class AgentStaticLoader implements AgentLoader {
 
 		System.out.println("Loaded MCP tool callbacks: " + toolCallbacks.size());
 
+		ReactAgent researchAgent = new DeepResearchAgent().getResearchAgent(toolCallbacks);
+		GraphRepresentation representation = researchAgent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+
+		System.out.println(representation.content());
+
 		this.agents.put("single_agent", agent);
-		this.agents.put("research_agent", new DeepResearchAgent().getResearchAgent(toolCallbacks));
+		this.agents.put("research_agent", researchAgent);
 	}
 
 	@Override

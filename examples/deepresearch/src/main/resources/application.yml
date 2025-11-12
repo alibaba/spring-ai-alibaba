@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: DeepResearch
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY}
+    mcp:
+      client:
+        enabled: true
+        toolcallback:
+          enabled: true
+        sse:
+          connections:
+            jina:
+              # 实际的连接地址为：http://localhost:8080/sse
+              url: "https://mcp.jina.ai"
+        request-timeout: 60000
+
+server:
+  port: 8080

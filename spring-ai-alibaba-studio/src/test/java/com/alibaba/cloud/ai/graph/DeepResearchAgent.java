@@ -24,18 +24,19 @@ import com.alibaba.cloud.ai.graph.agent.extension.interceptor.LargeResultEvictio
 import com.alibaba.cloud.ai.graph.agent.extension.interceptor.PatchToolCallsInterceptor;
 import com.alibaba.cloud.ai.graph.agent.extension.interceptor.SubAgentInterceptor;
 import com.alibaba.cloud.ai.graph.agent.extension.interceptor.SubAgentSpec;
-import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
+import com.alibaba.cloud.ai.graph.agent.hook.shelltool.ShellToolAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.summarization.SummarizationHook;
+import com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit.ToolCallLimitHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.contextediting.ContextEditingInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.todolist.TodoListInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.toolretry.ToolRetryInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.alibaba.cloud.ai.graph.Prompts.researchInstructions;
@@ -55,10 +56,16 @@ public class DeepResearchAgent {
 	private FilesystemInterceptor filesystemInterceptor;
 	private TodoListInterceptor todoListInterceptor;
 	private PatchToolCallsInterceptor patchToolCallsInterceptor;
+	private ContextEditingInterceptor contextEditingInterceptor;
+	private ToolRetryInterceptor toolRetryInterceptor;
 
 	// Hooks
 	private SummarizationHook summarizationHook;
 	private HumanInTheLoopHook humanInTheLoopHook;
+	private ToolCallLimitHook toolCallLimitHook;
+	private ShellToolAgentHook shellToolAgent;
+
+//	private ShellTool shellTool = ShellTool.builder().build();
 
 	public DeepResearchAgent() {
 		// Create DashScopeApi instance using the API key from environment variable
@@ -72,7 +79,7 @@ public class DeepResearchAgent {
 		this.largeResultEvictionInterceptor = LargeResultEvictionInterceptor
 				.builder()
 				.excludeFilesystemTools()
-				.toolTokenLimitBeforeEvict(20000)
+				.toolTokenLimitBeforeEvict(5000)
 				.build();
 
 		this.filesystemInterceptor = FilesystemInterceptor.builder()
@@ -84,6 +91,10 @@ public class DeepResearchAgent {
 
 		this.patchToolCallsInterceptor = PatchToolCallsInterceptor.builder().build();
 
+		this.toolRetryInterceptor = ToolRetryInterceptor.builder()
+				.maxRetries(1).onFailure(ToolRetryInterceptor.OnFailureBehavior.RETURN_MESSAGE)
+				.build();
+
 		// Initialize hooks
 		this.summarizationHook = SummarizationHook.builder()
 				.model(chatModel) // should use another model for summarization
@@ -94,6 +105,19 @@ public class DeepResearchAgent {
 		this.humanInTheLoopHook = HumanInTheLoopHook.builder()
 				.approvalOn("write_todos", "Please approve the todos tool.")
 				.build();
+
+		this.toolCallLimitHook = ToolCallLimitHook.builder()
+				.runLimit(25)
+				.build();
+
+		this.shellToolAgent = ShellToolAgentHook.builder().build();
+
+		this.contextEditingInterceptor = ContextEditingInterceptor.builder()
+				.trigger(10000)
+				.clearAtLeast(6000)
+				.keep(4)
+				.build();
+
 	}
 
 	public ReactAgent getResearchAgent(List<ToolCallback> toolsFromMcp) {
@@ -108,11 +132,14 @@ public class DeepResearchAgent {
 						filesystemInterceptor,
 						largeResultEvictionInterceptor,
 						patchToolCallsInterceptor,
+						contextEditingInterceptor,
+//						toolRetryInterceptor,
 						subAgentAsInterceptors(toolsFromMcp))
-//				.hooks(humanInTheLoopHook, summarizationHook)
-				.hooks(summarizationHook)
+				.hooks(humanInTheLoopHook, summarizationHook, toolCallLimitHook)
 				.saver(new MemorySaver())
 				.build();
+
+
 	}
 
 	private Interceptor subAgentAsInterceptors(List<ToolCallback> toolsFromMcp) {
@@ -121,8 +148,14 @@ public class DeepResearchAgent {
 
 		SubAgentInterceptor.Builder subAgentBuilder = SubAgentInterceptor.builder()
 				.defaultModel(chatModel)
-				.defaultInterceptors(Arrays.asList(todoListInterceptor, filesystemInterceptor, patchToolCallsInterceptor))
-				.defaultHooks(Arrays.asList(summarizationHook))
+				.defaultInterceptors(
+						todoListInterceptor,
+						filesystemInterceptor,
+						contextEditingInterceptor,
+						patchToolCallsInterceptor,
+						largeResultEvictionInterceptor
+				)
+				.defaultHooks(summarizationHook, toolCallLimitHook)
 				.addSubAgent(researchAgent)
 				.includeGeneralPurpose(true)
 				.addSubAgent(critiqueAgent);

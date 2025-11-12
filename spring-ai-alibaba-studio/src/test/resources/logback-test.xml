@@ -6,7 +6,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.alibaba.cloud.ai.graph" level="DEBUG" additivity="false">
+    <logger name="com.alibaba.cloud.ai.graph" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 

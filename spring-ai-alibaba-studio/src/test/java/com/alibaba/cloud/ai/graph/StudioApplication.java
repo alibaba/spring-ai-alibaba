@@ -39,6 +39,7 @@ public class StudioApplication {
 			@Override
 			public void customize(HttpRequest.Builder builder, String method, URI endpoint, String body, McpTransportContext context) {
 				builder.header("Authorization", "Bearer " + System.getenv("JINA_API_KEY"));
+				builder.timeout(java.time.Duration.ofSeconds(120));
 			}
 		};
 	}
