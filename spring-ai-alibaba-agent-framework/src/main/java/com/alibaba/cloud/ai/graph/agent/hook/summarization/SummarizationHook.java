@@ -77,6 +77,14 @@ public class SummarizationHook extends ModelHook {
     private static final String SUMMARY_PREFIX = "## Previous conversation summary:";
     private static final int DEFAULT_MESSAGES_TO_KEEP = 20;
 
+
+    private static final HashMap<String, KeyStrategy> keyStrategyHashMap;
+
+    static {
+        keyStrategyHashMap = new HashMap<>();
+        keyStrategyHashMap.put("messages", new ReplaceStrategy());
+    }
+
     private final ChatModel model;
     private final Integer maxTokensBeforeSummary;
     private final int messagesToKeep;
@@ -140,8 +148,6 @@ public class SummarizationHook extends ModelHook {
                 "Summarized {} messages, keeping {} recent messages",
                 toSummarize.size(), toPreserve.size()
         );
-        HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-        keyStrategyHashMap.put("messages", new ReplaceStrategy());
         state.updateStateWithKeyStrategies(updates, keyStrategyHashMap);
         return CompletableFuture.completedFuture(new HashMap<>());
     }
