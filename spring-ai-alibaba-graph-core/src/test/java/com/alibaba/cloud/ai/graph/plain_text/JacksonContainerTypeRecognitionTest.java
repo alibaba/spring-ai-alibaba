@@ -49,6 +49,8 @@ class JacksonContainerTypeRecognitionTest {
         serializer = new SpringAIJacksonStateSerializer(stateFactory);
 }
 
+
+
 // EOF
 
 
