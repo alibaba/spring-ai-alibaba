@@ -23,8 +23,6 @@ Visit `http://localhost:3000`.
 
 <img src="../docs/imgs/agent-chat-ui.jpg" alt="architecture" style="max-width: 740px; height: 508px" />
 
-## 🚀 How to use
-
 ### Embedded mode
 
 The ui can work in a embedded mode with any of your Spring Boot applications.
