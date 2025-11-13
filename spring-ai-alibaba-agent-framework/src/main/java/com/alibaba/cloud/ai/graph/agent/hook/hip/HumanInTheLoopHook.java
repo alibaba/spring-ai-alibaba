@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @HookPositions(HookPosition.AFTER_MODEL)
-public class HumanInTheLoopHook implements ModelHook, AsyncNodeActionWithConfig, InterruptableAction {
+public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWithConfig, InterruptableAction {
 	private static final Logger log = LoggerFactory.getLogger(HumanInTheLoopHook.class);
 
 	private Map<String, ToolConfig> approvalOn;
@@ -64,13 +64,22 @@ public class HumanInTheLoopHook implements ModelHook, AsyncNodeActionWithConfig,
 	@Override
 	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
 		Optional<Object> feedback = config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY);
-		InterruptionMetadata interruptionMetadata = (InterruptionMetadata) feedback.orElseThrow(() -> new RuntimeException("Human feedback is required but not provided in RuntimeConfig."));
+		InterruptionMetadata interruptionMetadata = (InterruptionMetadata) feedback.orElse(null);
 
-		List<Message> messages = new ArrayList<>((List<Message>) state.value("messages").orElse(new ArrayList<>()));
+		if (interruptionMetadata == null) {
+			log.info("No human feedback found in the runnable config metadata, no tool to execute or none needs feedback.");
+			return CompletableFuture.completedFuture(Map.of());
+		}
+
+		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 		Message lastMessage = messages.get(messages.size() - 1);
 
-		if (lastMessage instanceof AssistantMessage) {
-			AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
+		if (lastMessage instanceof AssistantMessage assistantMessage) {
+
+			if (!assistantMessage.hasToolCalls()) {
+				log.info("Found human feedback but last AssistantMessage has no tool calls, nothing to process for human feedback.");
+				return CompletableFuture.completedFuture(Map.of());
+			}
 
 			List<AssistantMessage.ToolCall> newToolCalls = new ArrayList<>();
 
@@ -131,39 +140,43 @@ public class HumanInTheLoopHook implements ModelHook, AsyncNodeActionWithConfig,
 	public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
 		Optional<Object> feedback = config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY);
 		if (feedback.isPresent()) {
+			if (!(feedback.get() instanceof InterruptionMetadata)) {
+				throw new IllegalArgumentException("Human feedback metadata must be of type InterruptionMetadata.");
+			}
+
 			if (!validateFeedback((InterruptionMetadata) feedback.get())) {
-				return feedback.map(f -> {
-					throw new IllegalArgumentException("Invalid human feedback: " + f);
-				});// TODO, throw exception?
+				return Optional.of((InterruptionMetadata)feedback.get());
 			}
 			return Optional.empty();
 		}
 
-		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 		Message lastMessage = messages.get(messages.size() - 1);
 
-		if (lastMessage instanceof AssistantMessage) {
+		if (lastMessage instanceof AssistantMessage assistantMessage) {
 			// 2. If last message is AssistantMessage
-			AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
-			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-				if (approvalOn.containsKey(toolCall.name())) {
-					ToolConfig toolConfig = approvalOn.get(toolCall.name());
-					String description = toolConfig.getDescription();
-					String content = "The AI is requesting to use the tool: " + toolCall.name() + ".\n"
-							+ (description != null ? ("Description: " + description + "\n") : "")
-							+ "With the following arguments: " + toolCall.arguments() + "\n"
-							+ "Do you approve?";
-					// TODO, create a designated tool metadata field in InterruptionMetadata?
-					InterruptionMetadata interruptionMetadata = InterruptionMetadata.builder(getName(), state)
-							.addToolFeedback(InterruptionMetadata.ToolFeedback.builder().id(toolCall.id())
-									.name(toolCall.name()).description(content).arguments(toolCall.arguments()).build())
-							.build();
-					return Optional.of(interruptionMetadata);
+			if (assistantMessage.hasToolCalls()) {
+				boolean needsInterruption = false;
+				InterruptionMetadata.Builder builder = InterruptionMetadata.builder(getName(), state);
+				for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+					if (approvalOn.containsKey(toolCall.name())) {
+						ToolConfig toolConfig = approvalOn.get(toolCall.name());
+						String description = toolConfig.getDescription();
+						String content = "The AI is requesting to use the tool: " + toolCall.name() + ".\n"
+								+ (description != null ? ("Description: " + description + "\n") : "")
+								+ "With the following arguments: " + toolCall.arguments() + "\n"
+								+ "Do you approve?";
+						// TODO, create a designated tool metadata field in InterruptionMetadata?
+						builder.addToolFeedback(InterruptionMetadata.ToolFeedback.builder().id(toolCall.id())
+										.name(toolCall.name()).description(content).arguments(toolCall.arguments()).build())
+								.build();
+						needsInterruption = true;
+					}
 				}
+				return needsInterruption ? Optional.of(builder.build()) : Optional.empty();
 			}
 		}
-
-		throw new RuntimeException();
+		return Optional.empty();
 	}
 
 	private boolean validateFeedback(InterruptionMetadata feedback) {

@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.hooks.shelltool;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.shelltool.ShellToolAgentHook;
@@ -59,7 +60,7 @@ public class ShellToolAgentTest {
 	@Test
 	public void testShellToolWithShellToolAgentHook() throws Exception {
 		Path tempWorkspace = Files.createTempDirectory("shelltool_test");
-		
+
 		try {
 
 			ShellTool.Builder shellToolBuilder = ShellTool.builder(tempWorkspace.toString())
@@ -69,12 +70,12 @@ public class ShellToolAgentTest {
 			if (System.getProperty("os.name").toLowerCase().contains("windows")) {
 				shellToolBuilder = shellToolBuilder.withShellCommand(List.of("powershell.exe"));
 			}
-			
+
 			ToolCallback shellToolCallback = shellToolBuilder.build();
-			
+
 			List<ToolCallback> tools = List.of(shellToolCallback);
 
-			ShellToolAgentHook shellToolAgentHook = new ShellToolAgentHook();
+			ShellToolAgentHook shellToolAgentHook = ShellToolAgentHook.builder().build();
 
 			ReactAgent agent = ReactAgent.builder()
 				.name("shell-tool-agent-example")
@@ -87,6 +88,9 @@ public class ShellToolAgentTest {
 				.hooks(List.of(shellToolAgentHook))
 				.saver(new MemorySaver())
 				.build();
+
+			GraphRepresentation representation = agent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+			System.out.println("Agent Graph Representation:\n" + representation.content());
 
 			List<Message> messages = new ArrayList<>();
 			String testCommand = System.getProperty("os.name").toLowerCase().contains("windows") ?
@@ -106,8 +110,8 @@ public class ShellToolAgentTest {
 			assertTrue(result.isPresent(), "Agent 应该返回结果");
 			Object messagesObj = result.get().value("messages").get();
 			assertNotNull(messagesObj, "返回的消息不应该为 null");
-			
-			System.out.println("Agent 执行成功，返回消息数量: " + 
+
+			System.out.println("Agent 执行成功，返回消息数量: " +
 				(messagesObj instanceof List ? ((List<?>) messagesObj).size() : "未知"));
 			System.out.println("Agent 结果: " + messagesObj);
 			System.out.println("✓ ShellTool 与 ShellToolAgentHook 集成测试执行成功");

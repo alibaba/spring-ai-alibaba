@@ -110,20 +110,21 @@ public class StateGraph {
 	 */
 	static class JacksonSerializer extends SpringAIJacksonStateSerializer {
 
-		/**
-		 * Instantiates a new Jackson serializer.
-		 */
-		public JacksonSerializer() {
-			super(OverAllState::new);
-		}
+        /**
+         * Instantiates a new Jackson serializer.
+         */
+        public JacksonSerializer() {
+            super(OverAllState::new);
+        }
 
-		/**
-		 * Gets object mapper.
-		 * @return the object mapper
-		 */
-		ObjectMapper getObjectMapper() {
-			return objectMapper;
-		}
+        /**
+         * Gets object mapper.
+         *
+         * @return the object mapper
+         */
+        ObjectMapper getObjectMapper() {
+            return objectMapper;
+        }
 
 	}
 

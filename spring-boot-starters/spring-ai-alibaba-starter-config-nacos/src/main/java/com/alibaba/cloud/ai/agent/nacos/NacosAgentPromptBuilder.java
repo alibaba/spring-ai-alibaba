@@ -23,7 +23,6 @@ import com.alibaba.cloud.ai.agent.nacos.utils.ChatOptionsProxy;
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.cloud.ai.graph.agent.DefaultBuilder;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
@@ -75,7 +74,7 @@ public class NacosAgentPromptBuilder extends DefaultBuilder {
 	}
 
 	@Override
-	public ReactAgent build() throws GraphStateException {
+	public ReactAgent build() {
 		PromptVO promptVO = null;
 		ObservationMetadataAwareOptions observationMetadataAwareOptions = null;
 		if (nacosOptions.getPromptKey() != null) {

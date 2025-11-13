@@ -40,7 +40,7 @@ ignore_suffix = [
     ".wav", ".bib", ".cmd", "mvnw", ".bin", ".pcm", ".flac", ".ttf",
     ".mp4", ".PPT", ".jif", ".zip", ".tar", ".gz", ".rar", ".7z",
     ".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".tbz2", ".txz",
-    ".txt"
+    ".txt", ".html", ".codespellignore", ".dockerignore"
 ]
 
 # Check if the incoming file ends with a blank line

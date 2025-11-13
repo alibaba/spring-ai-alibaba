@@ -1,0 +1,59 @@
+<svg width="180" height="90" viewBox="0 0 180 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="mainGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6db33f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5a9f34;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="accentGreen" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#7fc24a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6db33f;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="javaRed" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#e76f00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d55000;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <g opacity="0.15">
+    <path d="M 10 40 Q 15 30, 25 35 Q 20 45, 10 40 Z" fill="url(#mainGreen)"/>
+    <path d="M 15 50 Q 20 42, 28 46 Q 23 54, 15 50 Z" fill="url(#accentGreen)"/>
+
+    <path d="M 155 40 Q 160 30, 170 35 Q 165 45, 155 40 Z" fill="url(#mainGreen)"/>
+    <path d="M 152 50 Q 157 42, 165 46 Q 160 54, 152 50 Z" fill="url(#accentGreen)"/>
+  </g>
+
+  <g id="saa-text">
+    <text x="35" y="55"
+          font-family="'Brush Script MT', 'Lucida Handwriting', cursive"
+          font-size="42"
+          font-weight="normal"
+          fill="url(#mainGreen)"
+          font-style="italic"
+          letter-spacing="2">
+      SAA
+    </text>
+  </g>
+
+  <g transform="translate(155, 12)">
+    <ellipse cx="0" cy="0" rx="3" ry="1.5" fill="url(#mainGreen)" transform="rotate(-30)"/>
+    <ellipse cx="4" cy="2" rx="3" ry="1.5" fill="url(#accentGreen)" transform="rotate(30)"/>
+  </g>
+
+  <g id="bottom-text" opacity="0.5">
+    <text x="35" y="80"
+          font-family="'Brush Script MT', 'Lucida Handwriting', cursive"
+          font-size="12"
+          font-weight="normal"
+          fill="url(#mainGreen)"
+          font-style="italic"
+          letter-spacing="1">
+      Spring AI Alibaba
+    </text>
+  </g>
+
+  <circle cx="30" cy="35" r="2" fill="#7fc24a" opacity="0.5"/>
+  <circle cx="150" cy="38" r="1.8" fill="#6db33f" opacity="0.5"/>
+  <circle cx="90" cy="28" r="2.2" fill="#5a9f34" opacity="0.4"/>
+</svg>

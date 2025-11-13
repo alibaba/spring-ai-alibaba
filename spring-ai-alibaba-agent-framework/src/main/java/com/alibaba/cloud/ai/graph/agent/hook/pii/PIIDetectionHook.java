@@ -52,7 +52,7 @@ import java.util.concurrent.CompletableFuture;
  * </pre>
  */
 @HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
-public class PIIDetectionHook implements ModelHook {
+public class PIIDetectionHook extends ModelHook {
 
 	private final PIIType piiType;
 	private final RedactionStrategy strategy;
@@ -76,7 +76,7 @@ public class PIIDetectionHook implements ModelHook {
 
 	@Override
 	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 		List<Message> processedMessages = new ArrayList<>();
 		boolean hasChanges = false;
 
@@ -104,7 +104,7 @@ public class PIIDetectionHook implements ModelHook {
 			return CompletableFuture.completedFuture(Map.of());
 		}
 
-		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 
 		if (messages.isEmpty()) {
 			return CompletableFuture.completedFuture(Map.of());
