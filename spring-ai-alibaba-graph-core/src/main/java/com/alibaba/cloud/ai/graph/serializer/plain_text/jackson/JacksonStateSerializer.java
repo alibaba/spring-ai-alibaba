@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
+import com.alibaba.cloud.ai.graph.serializer.StateNormalizer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
@@ -84,7 +85,10 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 	@Override
 	public final void writeData(Map<String, Object> data, ObjectOutput out) throws IOException {
-		String json = objectMapper.writeValueAsString(data);
+		// Normalize state before serialization to convert non-serializable objects
+		// (GraphResponse, CompletableFuture) into serializable structures
+		Map<String, Object> normalized = StateNormalizer.normalize(data);
+		String json = objectMapper.writeValueAsString(normalized);
 		Serializer.writeUTF(json, out);
 	}
 
