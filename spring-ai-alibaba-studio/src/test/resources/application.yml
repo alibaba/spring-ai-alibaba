@@ -12,8 +12,7 @@ spring:
         sse:
           connections:
             jina:
-              # 实际的连接地址为：http://localhost:8080/sse
-              url: "https://mcp.jina.ai"
+              url: "https://mcp.jina.ai" # Spring AI will append /sse suffix to the url automatically
         request-timeout: 60000
 
 mybatis-plus:
