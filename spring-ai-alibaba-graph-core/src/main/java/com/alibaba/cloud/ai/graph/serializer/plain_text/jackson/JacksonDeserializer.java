@@ -67,6 +67,15 @@ public interface JacksonDeserializer<T> {
 				}
 				if (valueNode.has(TYPE_PROPERTY)) {
 					var type = valueNode.get(TYPE_PROPERTY).asText();
+					
+					// Special handling for GraphResponse and CompletableFuture
+					if ("GraphResponse".equals(type)) {
+						yield reconstructGraphResponse(valueNode, objectMapper, typeMapper);
+					}
+					if ("CompletableFuture".equals(type)) {
+						yield reconstructCompletableFuture(valueNode, objectMapper, typeMapper);
+					}
+					
 					var ref = typeMapper.getReference(type)
 						.orElseThrow(() -> new IllegalStateException("Type not found: " + type));
 					ObjectNode copy = valueNode.deepCopy();
@@ -245,6 +254,121 @@ public interface JacksonDeserializer<T> {
 			default -> Class.forName("[L" + componentName + ";");
 		};
 	}
+
+	/**
+	 * Reconstruct GraphResponse from snapshot map.
+	 */
+	private static Object reconstructGraphResponse(JsonNode valueNode, ObjectMapper objectMapper, TypeMapper typeMapper)
+			throws IOException {
+		String status = valueNode.has("status") ? valueNode.get("status").asText() : "pending";
+		boolean isError = valueNode.has("error") && valueNode.get("error").asBoolean();
+		
+		Object result = null;
+		if (valueNode.has("result")) {
+			result = valueFromNode(valueNode.get("result"), objectMapper, typeMapper);
+		}
+		
+		Map<String, Object> metadata = new java.util.LinkedHashMap<>();
+		if (valueNode.has("metadata")) {
+			JsonNode metadataNode = valueNode.get("metadata");
+			if (metadataNode.isObject()) {
+				var fields = metadataNode.fields();
+				while (fields.hasNext()) {
+					var entry = fields.next();
+					metadata.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
+				}
+			}
+		}
+		
+	// Reconstruct GraphResponse based on status
+	if (isError) {
+		// Extract error details from errorDetails map
+		String exceptionClass = "java.lang.RuntimeException";
+		String message = "Unknown error";
+		
+		if (valueNode.has("errorDetails")) {
+			JsonNode errorDetails = valueNode.get("errorDetails");
+			if (errorDetails.has("class")) {
+				exceptionClass = errorDetails.get("class").asText();
+			}
+			if (errorDetails.has("message")) {
+				message = errorDetails.get("message").asText();
+			}
+		}
+		
+		// Create exception instance
+		Throwable throwable;
+		try {
+			Class<?> exClass = Class.forName(exceptionClass);
+			if (Throwable.class.isAssignableFrom(exClass)) {
+				throwable = (Throwable) exClass.getConstructor(String.class).newInstance(message);
+			} else {
+				throwable = new RuntimeException(message);
+			}
+		} catch (Exception e) {
+			throwable = new RuntimeException(message);
+		}
+		
+		return com.alibaba.cloud.ai.graph.GraphResponse.error(throwable, metadata);
+	} else if ("done".equals(status) || "completed".equals(status)) {
+		// For both "done" and "completed", reconstruct as a done GraphResponse
+		// This provides equivalent state: isDone()=true, resultValue available
+		return com.alibaba.cloud.ai.graph.GraphResponse.done(result, metadata);
+	} else {
+		// For pending status, return null result
+		return com.alibaba.cloud.ai.graph.GraphResponse.done(null, metadata);
+	}
+}
+	
+	/**
+	 * Reconstruct CompletableFuture from snapshot map.
+	 */
+	private static Object reconstructCompletableFuture(JsonNode valueNode, ObjectMapper objectMapper, TypeMapper typeMapper)
+			throws IOException {
+		String status = valueNode.has("status") ? valueNode.get("status").asText() : "pending";
+		boolean isError = valueNode.has("error") && valueNode.get("error").asBoolean();
+		
+	java.util.concurrent.CompletableFuture<Object> future = new java.util.concurrent.CompletableFuture<>();
+	
+	if (isError || "failed".equals(status)) {
+		// Extract error details from error map
+		String exceptionClass = "java.lang.RuntimeException";
+		String message = "Unknown error";
+		
+		if (valueNode.has("error") && valueNode.get("error").isObject()) {
+			JsonNode errorMap = valueNode.get("error");
+			if (errorMap.has("class")) {
+				exceptionClass = errorMap.get("class").asText();
+			}
+			if (errorMap.has("message")) {
+				message = errorMap.get("message").asText();
+			}
+		}
+		
+		Throwable throwable;
+		try {
+			Class<?> exClass = Class.forName(exceptionClass);
+			if (Throwable.class.isAssignableFrom(exClass)) {
+				throwable = (Throwable) exClass.getConstructor(String.class).newInstance(message);
+			} else {
+				throwable = new RuntimeException(message);
+			}
+		} catch (Exception e) {
+			throwable = new RuntimeException(message);
+		}
+		
+		future.completeExceptionally(throwable);
+	} else if ("completed".equals(status)) {
+		Object result = null;
+		if (valueNode.has("result")) {
+			result = valueFromNode(valueNode.get("result"), objectMapper, typeMapper);
+		}
+		future.complete(result);
+	}
+	// For pending status, leave future incomplete
+	
+	return future;
+}
 
 	/**
 	 * Deserializes the given {@link JsonNode} into an object of type {@code T}.

@@ -35,7 +35,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
@@ -146,20 +145,6 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
         static void registerTo(SimpleModule module) {
             module.addDeserializer(NodeOutput.class, nodeOutput);
         }
-    }
-
-    @Override
-    public OverAllState cloneObject(OverAllState object) throws IOException {
-        return bytesToObject(objectToBytes(object), object.getClass());
-    }
-
-    @Override
-    public byte[] objectToBytes(OverAllState object) throws IOException {
-        return objectMapper.writeValueAsBytes(object);
-    }
-
-    private OverAllState bytesToObject(byte[] bytes, Class<? extends OverAllState> clz) throws IOException {
-        return objectMapper.readValue(bytes, clz);
-    }
+	}
 
 }
