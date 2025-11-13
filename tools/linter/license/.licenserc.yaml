@@ -79,10 +79,5 @@ header:
     - '**/*.properties'
     - 'tools/linter/codespell/.codespell.ignorewords'
     - 'tools/linter/codespell/.codespell.skip'
-    - '**/spring-ai-alibaba-graph/spring-ai-alibaba-graph-example/**'
-    - '**/spring-ai-alibaba-deepresearch/ui-vue3/**'
-    - '**/spring-ai-alibaba-jmanus/ui-vue3/**'
-    - '**/spring-ai-alibaba-studio-server/frontend/**'
-    - '**/spring-ai-alibaba-studio-server/docker/**'
-    - '**/webui/**'
+    - 'spring-ai-alibaba-studio/agent-chat-ui'
   comment: never

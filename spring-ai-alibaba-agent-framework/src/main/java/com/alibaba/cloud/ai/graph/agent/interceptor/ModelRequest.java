@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.interceptor;
 
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 import java.util.HashMap;
@@ -27,13 +28,14 @@ import java.util.Map;
  * Contains all information needed to make a model invocation.
  */
 public class ModelRequest {
-
+	private final SystemMessage systemMessage;
 	private final Map<String, Object> context;
 	private final List<Message> messages;
 	private final ChatOptions options;
 	private final List<String> tools;
 
-	public ModelRequest(List<Message> messages, ChatOptions options, List<String> tools, Map<String, Object> context) {
+	public ModelRequest(SystemMessage systemMessage, List<Message> messages, ChatOptions options, List<String> tools, Map<String, Object> context) {
+		this.systemMessage = systemMessage;
 		this.messages = messages;
 		this.options = options;
 		this.tools = tools;
@@ -56,6 +58,10 @@ public class ModelRequest {
 		return messages;
 	}
 
+	public SystemMessage getSystemMessage() {
+		return systemMessage;
+	}
+
 	public ChatOptions getOptions() {
 		return options;
 	}
@@ -69,10 +75,16 @@ public class ModelRequest {
 	}
 
 	public static class Builder {
+		private SystemMessage systemMessage;
 		private List<Message> messages;
 		private ChatOptions options;
 		private List<String> tools;
 		private Map<String, Object> context;
+
+		public Builder systemMessage(SystemMessage systemMessage) {
+			this.systemMessage = systemMessage;
+			return this;
+		}
 
 		public Builder messages(List<Message> messages) {
 			this.messages = messages;
@@ -95,7 +107,7 @@ public class ModelRequest {
 		}
 
 		public ModelRequest build() {
-			return new ModelRequest(messages, options, tools, context);
+			return new ModelRequest(systemMessage, messages, options, tools, context);
 		}
 	}
 }

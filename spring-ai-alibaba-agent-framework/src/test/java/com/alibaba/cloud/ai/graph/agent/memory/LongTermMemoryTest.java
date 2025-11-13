@@ -101,16 +101,13 @@ class LongTermMemoryTest {
 
 			@Override
 			public HookPosition[] getHookPositions() {
-				return new HookPosition[]{HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL};
+				return new HookPosition[]{HookPosition.BEFORE_MODEL};
 			}
 
 			@Override
 			public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
 				// Get userId from config
 				String userId = (String) config.metadata("user_id").get();
-				if (userId == null) {
-					return CompletableFuture.completedFuture(Map.of());
-				}
 
 				// Load user profile from memory store
 				Optional<StoreItem> itemOpt = memoryStore.getItem(List.of("user_profiles"), userId);
@@ -128,10 +125,25 @@ class LongTermMemoryTest {
 					);
 
 					// Add system message with user context
-					List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
-					List<Message> newMessages = new ArrayList<>();
-					newMessages.add(new SystemMessage(userContext));
-					newMessages.addAll(messages);
+					List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
+					List<Message> newMessages = new ArrayList<>(messages);
+
+					// Find existing SystemMessage and append userContext to it
+					boolean foundSystemMessage = false;
+					for (int i = 0; i < newMessages.size(); i++) {
+						if (newMessages.get(i) instanceof SystemMessage) {
+							SystemMessage existingSystemMessage = (SystemMessage) newMessages.get(i);
+							String updatedText = existingSystemMessage.getText() + "\n\n" + userContext;
+							newMessages.set(i, new SystemMessage(updatedText));
+							foundSystemMessage = true;
+							break;
+						}
+					}
+
+					// If no SystemMessage found, add one at the beginning
+					if (!foundSystemMessage) {
+						newMessages.add(0, new SystemMessage(userContext));
+					}
 
 					return CompletableFuture.completedFuture(Map.of("messages", newMessages));
 				}
@@ -295,7 +307,7 @@ class LongTermMemoryTest {
 						profile.get("name"), profile.get("occupation"));
 
 				// Inject into messages
-				List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 				List<Message> newMessages = new ArrayList<>();
 				newMessages.add(new SystemMessage(contextInfo));
 				newMessages.addAll(messages);
@@ -445,7 +457,7 @@ class LongTermMemoryTest {
 				}
 
 				// Extract user input
-				List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 				if (messages.isEmpty()) {
 					return CompletableFuture.completedFuture(Map.of());
 				}

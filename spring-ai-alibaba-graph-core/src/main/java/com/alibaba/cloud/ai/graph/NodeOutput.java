@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import org.springframework.ai.chat.metadata.Usage;
+
 import java.util.Objects;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -27,21 +29,27 @@ import static java.lang.String.format;
  */
 public class NodeOutput {
 
-	public static NodeOutput of(String node, OverAllState state) {
-		return new NodeOutput(node, state);
+	/**
+	 * Build NodeOutput with chat response for after node processing
+	 */
+	public static NodeOutput of(String node, String agentName, OverAllState state, Usage tokenUsage) {
+		return new NodeOutput(node, agentName, tokenUsage, state);
 	}
 
 	/**
 	 * The identifier of the node.
 	 */
-	private final String node;
+	protected final String node;
 
+	protected String agent;
+
+	protected Usage tokenUsage;
 	/**
 	 * The state associated with the node.
 	 */
-	private final OverAllState state;
+	protected final OverAllState state;
 
-	private boolean subGraph = false;
+	protected boolean subGraph = false;
 
 	/**
 	 * Checks if the current node refers to the start of the graph processing.
@@ -70,12 +78,37 @@ public class NodeOutput {
 		return this;
 	}
 
+	public void setTokenUsage(Usage tokenUsage) {
+		this.tokenUsage = tokenUsage;
+	}
+
 	public String node() {
 		return node;
 	}
 
+	public String agent() {
+		return agent;
+	}
+
+	public Usage tokenUsage() {
+		return tokenUsage;
+	}
+
 	public OverAllState state() {
 		return state;
+	}
+
+	protected NodeOutput(String node, String agentName, OverAllState state) {
+		this.node = node;
+		this.agent = agentName;
+		this.state = state;
+	}
+
+	protected NodeOutput(String node, String agentName, Usage tokenUsage, OverAllState state) {
+		this.node = node;
+		this.agent = agentName;
+		this.state = state;
+		this.tokenUsage = tokenUsage;
 	}
 
 	protected NodeOutput(String node, OverAllState state) {
@@ -85,7 +118,8 @@ public class NodeOutput {
 
 	@Override
 	public String toString() {
-		return format("NodeOutput{node=%s, state=%s}", node(), state());
+		return format("NodeOutput{node=%s, agent=%s, tokenUsage=%s, state=%s, subGraph=%s}",
+				node(), agent(), tokenUsage(), state(), isSubGraph());
 	}
 
 }

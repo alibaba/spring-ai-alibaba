@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  * </pre>
  */
 @HookPositions({HookPosition.BEFORE_MODEL})
-public class SummarizationHook implements ModelHook {
+public class SummarizationHook extends ModelHook {
 
 	private static final Logger log = LoggerFactory.getLogger(SummarizationHook.class);
 
@@ -99,7 +99,7 @@ public class SummarizationHook implements ModelHook {
 
 	@Override
 	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 
 		if (maxTokensBeforeSummary == null) {
 			return CompletableFuture.completedFuture(Map.of());

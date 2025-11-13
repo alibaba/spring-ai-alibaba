@@ -21,14 +21,25 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public interface AgentHook extends Hook {
+public abstract class AgentHook implements Hook {
 
-    default CompletableFuture<Map<String, Object>> beforeAgent(OverAllState state, RunnableConfig config) {
+    private String agentName;
+
+    public CompletableFuture<Map<String, Object>> beforeAgent(OverAllState state, RunnableConfig config) {
         return CompletableFuture.completedFuture(Map.of());
     }
 
-    default CompletableFuture<Map<String, Object>> afterAgent(OverAllState state, RunnableConfig config) {
+    public CompletableFuture<Map<String, Object>> afterAgent(OverAllState state, RunnableConfig config) {
         return CompletableFuture.completedFuture(Map.of());
+    }
+
+
+    public void setAgentName(String agentName) {
+        this.agentName = agentName;
+    }
+
+    public String getAgentName() {
+        return agentName;
     }
 
 }

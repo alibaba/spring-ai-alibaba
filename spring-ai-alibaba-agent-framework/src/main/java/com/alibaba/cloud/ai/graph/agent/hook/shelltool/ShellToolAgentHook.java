@@ -40,11 +40,33 @@ import java.util.concurrent.CompletableFuture;
  * This hook initializes the shell session before the agent starts and cleans it up after the agent finishes.
  */
 @HookPositions({HookPosition.BEFORE_AGENT, HookPosition.AFTER_AGENT})
-public class ShellToolAgentHook implements AgentHook, ToolInjection {
+public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 
 	private static final Logger log = LoggerFactory.getLogger(ShellToolAgentHook.class);
 
 	private ShellTool shellTool;
+
+	/**
+	 * Private constructor for builder pattern.
+	 */
+	private ShellToolAgentHook() {
+	}
+
+	/**
+	 * Private constructor with ShellTool for builder pattern.
+	 * @param shellTool the ShellTool instance to use
+	 */
+	private ShellToolAgentHook(ShellTool shellTool) {
+		this.shellTool = shellTool;
+	}
+
+	/**
+	 * Create a new builder instance.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	@Override
 	public CompletableFuture<Map<String, Object>> beforeAgent(OverAllState state, RunnableConfig config) {
@@ -56,7 +78,7 @@ public class ShellToolAgentHook implements AgentHook, ToolInjection {
 		log.info("ShellToolAgentHook: Initializing shell session before agent execution");
 
 		try {
-			shellTool.getSessionManager().initialize();
+			shellTool.getSessionManager().initialize(config);
 			log.info("Shell session initialized successfully");
 		} catch (Exception e) {
 			log.error("Failed to initialize shell session", e);
@@ -76,7 +98,7 @@ public class ShellToolAgentHook implements AgentHook, ToolInjection {
 		log.info("ShellToolAgentHook: Cleaning up shell session after agent execution");
 
 		try {
-			shellTool.getSessionManager().cleanup();
+			shellTool.getSessionManager().cleanup(config);
 			log.info("Shell session cleaned up successfully");
 		} catch (Exception e) {
 			log.error("Failed to cleanup shell session", e);
@@ -173,4 +195,31 @@ public class ShellToolAgentHook implements AgentHook, ToolInjection {
 	protected ShellTool getShellTool() {
 		return shellTool;
 	}
+
+	/**
+	 * Builder class for constructing ShellToolAgentHook instances.
+	 */
+	public static class Builder {
+		private ShellTool shellTool;
+
+		/**
+		 * Set the ShellTool instance.
+		 * @param shellTool the ShellTool to use
+		 * @return this builder instance
+		 */
+		public Builder shellTool(ShellTool shellTool) {
+			this.shellTool = shellTool;
+			return this;
+		}
+
+		/**
+		 * Build the ShellToolAgentHook instance.
+		 * @return a new ShellToolAgentHook instance
+		 */
+		public ShellToolAgentHook build() {
+			return new ShellToolAgentHook(this.shellTool);
+		}
+	}
+
+
 }

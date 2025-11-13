@@ -45,6 +45,7 @@ import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -64,10 +65,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -77,7 +79,7 @@ import static java.lang.String.format;
 
 
 public class ReactAgent extends BaseAgent {
-	private static final int DEFAULT_MAX_ITERATIONS = 10;
+	Logger logger = LoggerFactory.getLogger(ReactAgent.class);
 
 	private final AgentLlmNode llmNode;
 
@@ -85,27 +87,20 @@ public class ReactAgent extends BaseAgent {
 
 	private CompiledGraph compiledGraph;
 
-	private List<Hook> hooks;
+	private List<? extends Hook> hooks;
 
 	private List<ModelInterceptor> modelInterceptors;
 
 	private List<ToolInterceptor> toolInterceptors;
 
-	private int maxIterations;
-
-	private int iterations = 0;
-
 	private String instruction;
 
-	private Function<OverAllState, Boolean> shouldContinueFunc;
-
-	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) throws GraphStateException {
+	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
 		this.compileConfig = compileConfig;
-		this.shouldContinueFunc = builder.shouldContinueFunc;
 		this.hooks = builder.hooks;
 		this.modelInterceptors = builder.modelInterceptors;
 		this.toolInterceptors = builder.toolInterceptors;
@@ -114,7 +109,6 @@ public class ReactAgent extends BaseAgent {
 		this.inputType = builder.inputType;
 		this.outputSchema = builder.outputSchema;
 		this.outputType = builder.outputType;
-		this.maxIterations = builder.maxIterations <= 0 ? DEFAULT_MAX_ITERATIONS : builder.maxIterations;
 
 		// Set interceptors to nodes
 		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
@@ -125,7 +119,7 @@ public class ReactAgent extends BaseAgent {
 		}
 	}
 
-	public static com.alibaba.cloud.ai.graph.agent.Builder builder() {
+	public static Builder builder() {
 		return new DefaultAgentBuilderFactory().builder();
 	}
 
@@ -194,7 +188,6 @@ public class ReactAgent extends BaseAgent {
 
 	@Override
 	protected StateGraph initGraph() throws GraphStateException {
-		KeyStrategyFactory keyStrategyFactory = buildMessagesKeyStrategyFactory();
 
 		if (hooks == null) {
 			hooks = new ArrayList<>();
@@ -206,10 +199,13 @@ public class ReactAgent extends BaseAgent {
 			if (!hookNames.add(hook.getName())) {
 				throw new IllegalArgumentException("Duplicate hook instances found");
 			}
+
+			// set agent name to every hook node.
+			hook.setAgentName(this.name);
 		}
 
 		// Create graph
-		StateGraph graph = new StateGraph(name, keyStrategyFactory);
+		StateGraph graph = new StateGraph(name, buildMessagesKeyStrategyFactory(hooks));
 
 		graph.addNode("model", node_async(this.llmNode));
 		graph.addNode("tool", node_async(this.toolNode));
@@ -217,29 +213,43 @@ public class ReactAgent extends BaseAgent {
 		// some hooks may need tools so they can do some initialization/cleanup on start/end of agent loop
 		setupToolsForHooks(hooks, toolNode);
 
-		// Add hook nodes
-		for (Hook hook : hooks) {
-			if (hook instanceof AgentHook agentHook) {
-				graph.addNode(hook.getName() + ".before", agentHook::beforeAgent);
-				graph.addNode(hook.getName() + ".after", agentHook::afterAgent);
-			} else if (hook instanceof ModelHook modelHook) {
-				graph.addNode(hook.getName() + ".beforeModel", modelHook::beforeModel);
-				if (modelHook instanceof HumanInTheLoopHook humanInTheLoopHook) {
-					graph.addNode(hook.getName() + ".afterModel", humanInTheLoopHook);
-				} else {
-					graph.addNode(hook.getName() + ".afterModel", modelHook::afterModel);
-				}
-			}
-			else {
-				throw new UnsupportedOperationException("Unsupported hook type: " + hook.getClass().getName());
-			}
-		}
-
 		// Categorize hooks by position
 		List<Hook> beforeAgentHooks = filterHooksByPosition(hooks, HookPosition.BEFORE_AGENT);
 		List<Hook> afterAgentHooks = filterHooksByPosition(hooks, HookPosition.AFTER_AGENT);
 		List<Hook> beforeModelHooks = filterHooksByPosition(hooks, HookPosition.BEFORE_MODEL);
 		List<Hook> afterModelHooks = filterHooksByPosition(hooks, HookPosition.AFTER_MODEL);
+
+		// Add hook nodes for beforeAgent hooks
+		for (Hook hook : beforeAgentHooks) {
+			if (hook instanceof AgentHook agentHook) {
+				graph.addNode(hook.getName() + ".before", agentHook::beforeAgent);
+			}
+		}
+
+		// Add hook nodes for afterAgent hooks
+		for (Hook hook : afterAgentHooks) {
+			if (hook instanceof AgentHook agentHook) {
+				graph.addNode(hook.getName() + ".after", agentHook::afterAgent);
+			}
+		}
+
+		// Add hook nodes for beforeModel hooks
+		for (Hook hook : beforeModelHooks) {
+			if (hook instanceof ModelHook modelHook) {
+				graph.addNode(hook.getName() + ".beforeModel", modelHook::beforeModel);
+			}
+		}
+
+		// Add hook nodes for afterModel hooks
+		for (Hook hook : afterModelHooks) {
+			if (hook instanceof ModelHook modelHook) {
+				if (hook instanceof HumanInTheLoopHook humanInTheLoopHook) {
+					graph.addNode(hook.getName() + ".afterModel", humanInTheLoopHook);
+				} else {
+					graph.addNode(hook.getName() + ".afterModel", modelHook::afterModel);
+				}
+			}
+		}
 
 		// Determine node flow
 		String entryNode = determineEntryNode(beforeAgentHooks, beforeModelHooks);
@@ -261,7 +271,7 @@ public class ReactAgent extends BaseAgent {
 	 * @param hooks the list of hooks
 	 * @param toolNode the agent tool node containing available tools
 	 */
-	private void setupToolsForHooks(List<Hook> hooks, AgentToolNode toolNode) {
+	private void setupToolsForHooks(List<? extends Hook> hooks, AgentToolNode toolNode) {
 		if (hooks == null || hooks.isEmpty() || toolNode == null) {
 			return;
 		}
@@ -329,7 +339,7 @@ public class ReactAgent extends BaseAgent {
 	 * @param position the position to filter by
 	 * @return list of hooks that should execute at the specified position
 	 */
-	private static List<Hook> filterHooksByPosition(List<Hook> hooks, HookPosition position) {
+	private static List<Hook> filterHooksByPosition(List<? extends Hook> hooks, HookPosition position) {
 		return hooks.stream()
 				.filter(hook -> {
 					HookPosition[] positions = hook.getHookPositions();
@@ -365,7 +375,7 @@ public class ReactAgent extends BaseAgent {
 			List<Hook> modelHooks) {
 
 		if (!modelHooks.isEmpty()) {
-			return modelHooks.get(modelHooks.size() - 1).getName() + ".afterModel";
+			return modelHooks.get(0).getName() + ".afterModel";
 		} else {
 			return "model";
 		}
@@ -401,11 +411,13 @@ public class ReactAgent extends BaseAgent {
 		chainHook(graph, beforeModelHooks, ".beforeModel", "model", loopEntryNode, exitNode);
 
 		// Chain after_model hook (reverse order)
-		chainHookReverse(graph, afterModelHooks, ".afterModel", "model", loopEntryNode, exitNode);
+		if (!afterModelHooks.isEmpty()) {
+			chainModelHookReverse(graph, afterModelHooks, ".afterModel", "model", loopEntryNode, exitNode);
+		}
 
 		// Chain after_agent hook (reverse order)
 		if (!afterAgentHooks.isEmpty()) {
-			chainHookReverse(graph, afterAgentHooks, ".after", exitNode, loopEntryNode, exitNode);
+			chainAgentHookReverse(graph, afterAgentHooks, ".after", exitNode, loopEntryNode, exitNode);
 		}
 
 		// Add tool routing if tools exist
@@ -420,7 +432,28 @@ public class ReactAgent extends BaseAgent {
 		}
 	}
 
-	private static void chainHookReverse(
+	private static void chainModelHookReverse(
+			StateGraph graph,
+			List<Hook> hooks,
+			String nameSuffix,
+			String defaultNext,
+			String modelDestination,
+			String endDestination) throws GraphStateException {
+
+		graph.addEdge(defaultNext, hooks.get(hooks.size() - 1).getName() + nameSuffix);
+
+		for (int i = hooks.size() - 1; i > 0; i--) {
+			Hook m1 = hooks.get(i);
+			Hook m2 = hooks.get(i - 1);
+			addHookEdge(graph,
+					m1.getName() + nameSuffix,
+					m2.getName() + nameSuffix,
+					modelDestination, endDestination,
+					m1.canJumpTo());
+		}
+	}
+
+	private static void chainAgentHookReverse(
 			StateGraph graph,
 			List<Hook> hooks,
 			String nameSuffix,
@@ -431,7 +464,7 @@ public class ReactAgent extends BaseAgent {
 			Hook last = hooks.get(hooks.size() - 1);
 			addHookEdge(graph,
 					defaultNext,
-					last.getName() + nameSuffix,
+					StateGraph.END,
 					modelDestination, endDestination,
 					last.canJumpTo());
 		}
@@ -534,35 +567,40 @@ public class ReactAgent extends BaseAgent {
 		};
 	}
 
-	private KeyStrategyFactory buildMessagesKeyStrategyFactory() {
+	private KeyStrategyFactory buildMessagesKeyStrategyFactory(List<? extends Hook> hooks) {
 		return () -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			if (outputKey != null && !outputKey.isEmpty()) {
+				keyStrategyHashMap.put(outputKey, outputKeyStrategy == null ? new ReplaceStrategy() : outputKeyStrategy);
+			}
 			keyStrategyHashMap.put("messages", new AppendStrategy());
+
+			// Iterate through hooks and collect their key strategies
+			if (hooks != null) {
+				for (Hook hook : hooks) {
+					Map<String, KeyStrategy> hookStrategies = hook.getKeyStrategys();
+					if (hookStrategies != null && !hookStrategies.isEmpty()) {
+						keyStrategyHashMap.putAll(hookStrategies);
+					}
+				}
+			}
+
 			return keyStrategyHashMap;
 		};
 	}
 
 	private EdgeAction makeModelToTools(String modelDestination, String endDestination) {
 		return state -> {
-			if (iterations++ > maxIterations) {
-				return endDestination;
-			}
-
-			if (shouldContinueFunc != null && !shouldContinueFunc.apply(state)) {
-				return endDestination;
-			}
-
-			List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+			List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 			if (messages.isEmpty()) {
+				logger.warn("No messages found in state when routing from model to tools");
 				return endDestination;
 			}
-
 			Message lastMessage = messages.get(messages.size() - 1);
 
 			// 1. Check the last message type
-			if (lastMessage instanceof AssistantMessage) {
+			if (lastMessage instanceof AssistantMessage assistantMessage) {
 				// 2. If last message is AssistantMessage
-				AssistantMessage assistantMessage = (AssistantMessage) lastMessage;
 				if (assistantMessage.hasToolCalls()) {
 					return "tool";
 				} else {
@@ -625,7 +663,7 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	private ToolResponseMessage fetchLastToolResponseMessage(OverAllState state) {
-		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<Message>());
+		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 
 		ToolResponseMessage toolResponseMessage = null;
 
@@ -769,7 +807,12 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
-			RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config).checkPointId(null).nextNode(null).build();
+			RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config)
+					.checkPointId(null)
+					.clearContext()
+					.nextNode(null)
+					.addMetadata("_AGENT_", subGraphId()) // subGraphId is the same as the name of the agent that created it
+					.build();
 			var parentSaver = parentCompileConfig.checkpointSaver();
 			var subGraphSaver = childGraph.compileConfig.checkpointSaver();
 
@@ -786,6 +829,8 @@ public class ReactAgent extends BaseAgent {
 									.orElseGet(this::subGraphId))
 							.nextNode(null)
 							.checkPointId(null)
+							.clearContext()
+							.addMetadata("_AGENT_", subGraphId()) // subGraphId is the same as the name of the agent that created it
 							.build();
 				}
 			}
