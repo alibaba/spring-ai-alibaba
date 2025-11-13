@@ -2,6 +2,26 @@
 
 Agent Chat UI provides a visualized way for developers to chat with any Spring AI Alibaba developed Agents.
 
+## Quick Experience
+
+> Go to the [examples](../examples) directory to experience real world usage.
+
+1. Start backend agent
+
+Go to the `src/test/java` directory, start the backend agent by running `StudioApplication`
+
+2. Then, start the chat ui
+
+```shell
+npm install
+npm run dev
+```
+
+3. Chat with agent
+
+Visit `http://localhost:3000`.
+
+
 ## 🚀 How to use
 
 ### Embedded mode
