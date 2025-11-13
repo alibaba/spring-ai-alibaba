@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.JavaType;
@@ -92,13 +93,16 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		AgentInstructionMessageHandler.Deserializer templatedUser = new AgentInstructionMessageHandler.Deserializer();
 
+		StreamingOutputDeserializer streamingOutput = new StreamingOutputDeserializer();
+
 		static void registerTo(SimpleModule module) {
 			module.addDeserializer(ToolResponseMessage.class, tool)
 				.addDeserializer(SystemMessage.class, system)
 				.addDeserializer(UserMessage.class, user)
 				.addDeserializer(AssistantMessage.class, ai)
 				.addDeserializer(Document.class, document)
-				.addDeserializer(AgentInstructionMessage.class, templatedUser);
+				.addDeserializer(AgentInstructionMessage.class, templatedUser)
+				.addDeserializer(StreamingOutput.class, streamingOutput);
 		}
 
 	}
@@ -117,13 +121,19 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		AgentInstructionMessageHandler.Serializer templatedUser = new AgentInstructionMessageHandler.Serializer();
 
+		JacksonNodeOutputSerializer output = new JacksonNodeOutputSerializer();
+
+		StreamingOutputSerializer streamingOutput = new StreamingOutputSerializer();
+
 		static void registerTo(SimpleModule module) {
 			module.addSerializer(ToolResponseMessage.class, tool)
 				.addSerializer(SystemMessage.class, system)
 				.addSerializer(UserMessage.class, user)
 				.addSerializer(AssistantMessage.class, ai)
 				.addSerializer(Document.class, document)
-				.addSerializer(AgentInstructionMessage.class, templatedUser);
+				.addSerializer(AgentInstructionMessage.class, templatedUser)
+				.addSerializer(NodeOutput.class, output)
+				.addSerializer(StreamingOutput.class, streamingOutput);
 
 		}
 

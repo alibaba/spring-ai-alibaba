@@ -18,46 +18,132 @@ package com.alibaba.cloud.ai.graph.streaming;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import static java.lang.String.format;
 
 public class StreamingOutput<T> extends NodeOutput {
 
-	private final String chunk; // null
+	@Deprecated
+	private final String chunk;
 
+	private final Message message;
+
+	@JsonIgnore
 	private final T originData;
 
 	public StreamingOutput(T originData, String node, OverAllState state) {
 		super(node, state);
-		this.originData = originData;
 		this.chunk = null;
-	}
-
-	public StreamingOutput(String chunk, T originData,String node, OverAllState state) {
-		super(node, state);
-		this.chunk = chunk;
+		this.message = null;
 		this.originData = originData;
+		trySetTokenUsage(originData);
 	}
 
-	public StreamingOutput(String chunk, String node, OverAllState state) {
-		super(node, state);
-		this.chunk = chunk;
+	// agentName is for graph and node working on Agent mode
+	public StreamingOutput(T originData, String node, String agentName, OverAllState state) {
+		super(node, agentName, state);
+		this.chunk = null;
+		this.message = null;
+		this.originData = originData;
+		trySetTokenUsage(originData);
+	}
+
+	// new constructor to support Message
+	public StreamingOutput(Message message, T originData, String node, String agentName, OverAllState state) {
+		super(node, agentName, state);
+		this.message = message;
+		this.originData = originData;
+		this.chunk = extractChunkFromMessage(message);
+		trySetTokenUsage(originData);
+	}
+
+	public StreamingOutput(Message message, String node, String agentName, OverAllState state) {
+		super(node, agentName, state);
+		this.message = message;
+		this.chunk = extractChunkFromMessage(message);
 		this.originData = null;
 	}
 
+	// Constructor for Message with OverAllState and Usage (for buildNodeOutput)
+	public StreamingOutput(Message message, String node, String agentName, OverAllState state, Usage usage) {
+		super(node, agentName, state);
+		this.message = message;
+		this.chunk = extractChunkFromMessage(message);
+		this.originData = null;
+		setTokenUsage(usage);
+	}
+
+	// Constructor for node output without Message but with Usage
+	public StreamingOutput(String node, String agentName, OverAllState state, Usage usage) {
+		super(node, agentName, state);
+		this.message = null;
+		this.chunk = null;
+		this.originData = null;
+		setTokenUsage(usage);
+	}
+
+	@Deprecated
+	public StreamingOutput(String chunk, T originData, String node, String agentName, OverAllState state) {
+		super(node, agentName, state);
+		this.chunk = chunk;
+		this.message = null;
+		this.originData = originData;
+		trySetTokenUsage(originData);
+	}
+
+	@Deprecated
+	public StreamingOutput(String chunk, String node, String agentName, OverAllState state) {
+		super(node, agentName, state);
+		this.chunk = chunk;
+		this.message = null;
+		this.originData = null;
+	}
+
+	private static String extractChunkFromMessage(Message message) {
+		if (message instanceof AssistantMessage assistantMessage) {
+			if (!assistantMessage.hasToolCalls()) {
+				return assistantMessage.getText();
+			}
+		}
+		return null;
+	}
+
+
+	private void trySetTokenUsage(T originData) {
+		if (originData instanceof ChatResponse chatResponse) {
+			setTokenUsage(chatResponse.getMetadata().getUsage());
+		} else if (originData instanceof Usage usage) {
+			setTokenUsage(usage);
+		}
+	}
+
+	@Deprecated
 	public String chunk() {
 		return chunk;
 	}
 
-	public T chatResponse() {
+	@JsonIgnore
+	public T getOriginData() {
 		return originData;
+	}
+
+	public Message message() {
+		return message;
 	}
 
 	@Override
 	public String toString() {
 		if (node() == null) {
-			return format("StreamingOutput{chunk=%s}", chunk());
+			return format("StreamingOutput{message=%s, chunk=%s}", message(), chunk());
 		}
-		return format("StreamingOutput{node=%s, state=%s, chunk=%s}", node(), state(), chunk());
+		return format("StreamingOutput{node=%s, agent=%s, message=%s, chunk=%s, tokenUsage=%s, state=%s, subGraph=%s}",
+				node(), agent(), message(), chunk(), tokenUsage(), state(), isSubGraph());
 	}
 
 }

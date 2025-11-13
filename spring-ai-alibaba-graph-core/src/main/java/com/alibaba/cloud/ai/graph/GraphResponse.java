@@ -15,16 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.io.Serializable;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.stream.Collectors;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -33,13 +30,16 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
  *
  * @param <E> the type of the data element
  */
-public class GraphResponse<E> {
+public class GraphResponse<E> implements Serializable {
 
-	final CompletableFuture<E> output;
+	@JsonIgnore
+	CompletableFuture<E> output;
 
-	final Object resultValue;
+	Object resultValue;
 
-	final Map<String, Object> metadata;
+	Map<String, Object> metadata;
+
+	public GraphResponse(){}
 
 	public GraphResponse(CompletableFuture<E> data, Object resultValue) {
 		this(data, resultValue, new HashMap<>());
@@ -99,10 +99,12 @@ public class GraphResponse<E> {
 		return resultValue == null ? Optional.empty() : Optional.of(resultValue);
 	}
 
+	@JsonIgnore
 	public boolean isDone() {
 		return output == null;
 	}
 
+	@JsonIgnore
 	public boolean isError() {
 		return output != null && output.isCompletedExceptionally();
 	}
@@ -146,6 +148,7 @@ public class GraphResponse<E> {
 	 * Get all metadata as an immutable map.
 	 * @return a copy of all metadata
 	 */
+	@JsonIgnore
 	public Map<String, Object> getAllMetadata() {
 		return new HashMap<>(this.metadata);
 	}
@@ -168,118 +171,6 @@ public class GraphResponse<E> {
 		return this.metadata.remove(key);
 	}
 
-	/**
-	 * Create a serializable snapshot of this response (without {@link CompletableFuture}).
-	 * @return a map representation that can be safely serialized
-	 */
-	public Map<String, Object> toSnapshot() {
-		Map<String, Object> snapshot = new LinkedHashMap<>();
 
-		if (isError()) {
-			snapshot.put("status", "error");
-			snapshot.put("error", Boolean.TRUE);
-
-			Throwable throwable = extractThrowable();
-			if (throwable != null) {
-				snapshot.put("exception", throwable.getClass().getName());
-				snapshot.put("message", throwable.getMessage());
-			}
-		}
-		else if (isDone()) {
-			snapshot.put("status", "done");
-			snapshot.put("error", Boolean.FALSE);
-			resultValue().ifPresent(result -> snapshot.put("result", sanitizeValue(result)));
-		}
-		else if (output != null && output.isDone() && !output.isCompletedExceptionally()) {
-			snapshot.put("status", "completed");
-			snapshot.put("error", Boolean.FALSE);
-			Object result = output.join();
-			if (result != null) {
-				snapshot.put("result", sanitizeValue(result));
-			}
-		}
-		else {
-			snapshot.put("status", "pending");
-			snapshot.put("error", Boolean.FALSE);
-		}
-
-		if (!metadata.isEmpty()) {
-			snapshot.put("metadata", sanitizeState(metadata));
-		}
-
-		return snapshot;
-	}
-
-	/**
-	 * Sanitize a state update by converting {@link GraphResponse} instances into
-	 * serializable snapshots.
-	 * @param source the original state map
-	 * @return a sanitized copy of the map
-	 */
-	public static Map<String, Object> sanitizeState(Map<String, Object> source) {
-		if (source == null || source.isEmpty()) {
-			return source;
-		}
-		return source.entrySet()
-			.stream()
-			.collect(Collectors.toMap(Map.Entry::getKey, entry -> sanitizeValue(entry.getValue()),
-					(existing, replacement) -> replacement, LinkedHashMap::new));
-	}
-
-	private static Object sanitizeValue(Object value) {
-		if (value instanceof GraphResponse<?> graphResponse) {
-			return graphResponse.toSnapshot();
-		}
-		if (value instanceof Map<?, ?> mapValue) {
-			Map<Object, Object> sanitized = new LinkedHashMap<>();
-			mapValue.forEach((key, val) -> sanitized.put(key, sanitizeValue(val)));
-			return sanitized;
-		}
-		if (value instanceof List<?> listValue) {
-			return listValue.stream().map(GraphResponse::sanitizeValue)
-				.collect(Collectors.toCollection(ArrayList::new));
-		}
-		if (value != null && value.getClass().isArray()) {
-			return sanitizeArray(value);
-		}
-		return value;
-	}
-
-	private Throwable extractThrowable() {
-		if (output == null || !output.isDone()) {
-			return null;
-		}
-		Throwable throwable = output.handle((value, ex) -> ex).join();
-		if (throwable instanceof CompletionException completionException && completionException.getCause() != null) {
-			return completionException.getCause();
-		}
-		return throwable;
-	}
-
-	private static Object sanitizeArray(Object array) {
-		Class<?> componentType = array.getClass().getComponentType();
-		if (componentType.isPrimitive()) {
-			return array;
-		}
-		int length = Array.getLength(array);
-		Object[] sanitizedElements = new Object[length];
-		boolean preserveComponentType = true;
-		for (int i = 0; i < length; i++) {
-			Object element = Array.get(array, i);
-			Object sanitized = sanitizeValue(element);
-			sanitizedElements[i] = sanitized;
-			if (sanitized != null && !componentType.isInstance(sanitized)) {
-				preserveComponentType = false;
-			}
-		}
-		if (preserveComponentType) {
-			Object typedArray = Array.newInstance(componentType, length);
-			for (int i = 0; i < length; i++) {
-				Array.set(typedArray, i, sanitizedElements[i]);
-			}
-			return typedArray;
-		}
-		return sanitizedElements;
-	}
 
 }

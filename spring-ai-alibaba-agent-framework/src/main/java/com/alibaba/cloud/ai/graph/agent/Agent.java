@@ -67,7 +67,7 @@ public abstract class Agent {
 	 * @param name the unique name of the agent
 	 * @param description the description of the agent's capability
 	 */
-	protected Agent(String name, String description) throws GraphStateException {
+	protected Agent(String name, String description) {
 		this.name = name;
 		this.description = description;
 	}
@@ -221,7 +221,7 @@ public abstract class Agent {
 
 	public Flux<NodeOutput> stream(String message) throws GraphRunnerException {
 		Map<String, Object> inputs = buildMessageInput(message);
-		return doStream(inputs);
+		return doStream(inputs, buildStreamConfig(null));
 	}
 
 	public Flux<NodeOutput> stream(String message, RunnableConfig config) throws GraphRunnerException {
@@ -231,7 +231,7 @@ public abstract class Agent {
 
 	public Flux<NodeOutput> stream(UserMessage message) throws GraphRunnerException {
 		Map<String, Object> inputs = buildMessageInput(message);
-		return doStream(inputs);
+		return doStream(inputs, buildStreamConfig(null));
 	}
 
 	public Flux<NodeOutput> stream(UserMessage message, RunnableConfig config) throws GraphRunnerException {
@@ -241,7 +241,7 @@ public abstract class Agent {
 
 	public Flux<NodeOutput> stream(List<Message> messages) throws GraphRunnerException {
 		Map<String, Object> inputs = buildMessageInput(messages);
-		return doStream(inputs);
+		return doStream(inputs, buildStreamConfig(null));
 	}
 
 	public Flux<NodeOutput> stream(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
@@ -259,21 +259,23 @@ public abstract class Agent {
 		return compiledGraph.invokeAndGetOutput(input, buildNonStreamConfig(runnableConfig));
 	}
 
-	protected RunnableConfig buildNonStreamConfig(RunnableConfig config) {
-		if (config == null) {
-			return RunnableConfig.builder().addMetadata("_stream_", false).build();
-		}
-		return RunnableConfig.builder(config).addMetadata("_stream_", false).build();
-	}
-
-	protected Flux<NodeOutput> doStream(Map<String, Object> input) {
-		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.stream(input);
-	}
-
 	protected Flux<NodeOutput> doStream(Map<String, Object> input, RunnableConfig runnableConfig) {
 		CompiledGraph compiledGraph = getAndCompileGraph();
-		return compiledGraph.stream(input, runnableConfig);
+		return compiledGraph.stream(input, buildStreamConfig(runnableConfig));
+	}
+
+	protected RunnableConfig buildNonStreamConfig(RunnableConfig config) {
+		if (config == null) {
+			return RunnableConfig.builder().addMetadata("_stream_", false).addMetadata("_AGENT_", name).build();
+		}
+		return RunnableConfig.builder(config).addMetadata("_stream_", false).addMetadata("_AGENT_", name).build();
+	}
+
+	protected RunnableConfig buildStreamConfig(RunnableConfig config) {
+		if (config == null) {
+			return RunnableConfig.builder().addMetadata("_AGENT_", name).build();
+		}
+		return RunnableConfig.builder(config).addMetadata("_AGENT_", name).build();
 	}
 
 	protected Map<String, Object> buildMessageInput(Object message) {

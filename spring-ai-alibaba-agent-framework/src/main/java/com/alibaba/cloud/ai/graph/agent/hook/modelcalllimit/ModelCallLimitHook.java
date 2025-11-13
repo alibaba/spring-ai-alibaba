@@ -38,7 +38,7 @@ import java.util.concurrent.CompletableFuture;
  * both thread-level and run-level call counting with configurable exit behaviors.
  */
 @HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
-public class ModelCallLimitHook implements ModelHook {
+public class ModelCallLimitHook extends ModelHook {
 
 	private static final String THREAD_COUNT_KEY = "__model_call_limit_thread_count__";
 	private static final String RUN_COUNT_KEY = "__model_call_limit_run_count__";
@@ -59,9 +59,11 @@ public class ModelCallLimitHook implements ModelHook {
 
 	@Override
 	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-		// Read current counts from state
-		int threadModelCallCount = state.value(THREAD_COUNT_KEY, Integer.class).orElse(0);
-		int runModelCallCount = state.value(RUN_COUNT_KEY, Integer.class).orElse(0);
+		// Read current counts from context
+		int threadModelCallCount = config.context().containsKey(THREAD_COUNT_KEY)
+				? (int) config.context().get(THREAD_COUNT_KEY) : 0;
+		int runModelCallCount = config.context().containsKey(RUN_COUNT_KEY)
+				? (int) config.context().get(RUN_COUNT_KEY) : 0;
 
 		// Check if limits are already exceeded (before making the call)
 		boolean threadLimitExceeded = threadLimit != null && threadModelCallCount >= threadLimit;
@@ -100,15 +102,17 @@ public class ModelCallLimitHook implements ModelHook {
 
 	@Override
 	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-		// Read current counts from state
-		int threadModelCallCount = state.value(THREAD_COUNT_KEY, Integer.class).orElse(0);
-		int runModelCallCount = state.value(RUN_COUNT_KEY, Integer.class).orElse(0);
+		// Read current counts from context
+		int threadModelCallCount = config.context().containsKey(THREAD_COUNT_KEY)
+				? (int) config.context().get(THREAD_COUNT_KEY) : 0;
+		int runModelCallCount = config.context().containsKey(RUN_COUNT_KEY)
+				? (int) config.context().get(RUN_COUNT_KEY) : 0;
 
-		// Increment counters after the model call
-		Map<String, Object> updates = new HashMap<>();
-		updates.put(THREAD_COUNT_KEY, threadModelCallCount + 1);
-		updates.put(RUN_COUNT_KEY, runModelCallCount + 1);
-		return CompletableFuture.completedFuture(updates);
+		// Increment counters after the model call in context
+		config.context().put(THREAD_COUNT_KEY, threadModelCallCount + 1);
+		config.context().put(RUN_COUNT_KEY, runModelCallCount + 1);
+
+		return CompletableFuture.completedFuture(Map.of());
 	}
 
 	private String buildLimitExceededMessage(int threadCount, int runCount, Integer threadLimit, Integer runLimit) {
@@ -120,17 +124,6 @@ public class ModelCallLimitHook implements ModelHook {
 			exceededLimits.add(String.format("run limit (%d/%d)", runCount, runLimit));
 		}
 		return "Model call limits exceeded: " + String.join(", ", exceededLimits);
-	}
-
-	/**
-	 * Reset the run count in the state.
-	 * @param state the state to update
-	 * @return updates map containing the reset run count
-	 */
-	public Map<String, Object> resetRunCount(OverAllState state) {
-		Map<String, Object> updates = new HashMap<>();
-		updates.put(RUN_COUNT_KEY, 0);
-		return updates;
 	}
 
 	@Override

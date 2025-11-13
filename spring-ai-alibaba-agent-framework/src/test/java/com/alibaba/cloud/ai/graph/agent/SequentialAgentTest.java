@@ -67,6 +67,7 @@ class SequentialAgentTest {
 			.description("可以写文章。")
 			.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
 			.outputKey("article")
+			.enableLogging(true)
 			.build();
 
 		ReactAgent reviewerAgent = ReactAgent.builder()
@@ -205,6 +206,7 @@ class SequentialAgentTest {
 				.description("可以写文章。")
 				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
 				.outputKey("article")
+				.enableLogging(true)
 				.build();
 
 		ReactAgent reviewerAgent = ReactAgent.builder()
@@ -213,6 +215,7 @@ class SequentialAgentTest {
 				.description("可以对文章进行评论和修改。")
 				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最后输出修改后的文章，不要包含任何评论信息。")
 				.outputKey("reviewed_article")
+				.enableLogging(true)
 				.build();
 
 		SequentialAgent child_1 = SequentialAgent.builder()
@@ -229,6 +232,7 @@ class SequentialAgentTest {
 				.includeContents(true)
 				.instruction("你负责为生成的文章署名，请将署名附加在文章最后。署名：Spring AI Alibaba。")
 				.outputKey("signed_article")
+				.enableLogging(true)
 				.build();
 
 
@@ -315,6 +319,7 @@ class SequentialAgentTest {
 					{reviewed_article}
 				""")
 				.outputKey("revised_article")
+				.enableLogging(true)
 				.build();
 
 		ReactAgent censorAgent = ReactAgent.builder()
@@ -329,6 +334,7 @@ class SequentialAgentTest {
 					{reviewed_article}
 				""")
 				.outputKey("censored_article")
+				.enableLogging(true)
 				.build();
 
 		SequentialAgent child_3 = SequentialAgent.builder()
@@ -354,6 +360,7 @@ class SequentialAgentTest {
                         }
                         """)
                 .outputKey("sql")
+				.enableLogging(true)
                 .build();
 
         ReactAgent sqlRatingAgent = ReactAgent.builder()
@@ -363,6 +370,7 @@ class SequentialAgentTest {
                 .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户输入的自然语言和对应的SQL语句，输出一个评分。评分为一个浮点数，在0到1之间。越趋近于1说明SQL越匹配自然语言。")
                 .outputType(Double.class)
                 .outputKey("score")
+				.enableLogging(true)
                 .build();
 
         // 测试放在一个SequentialAgent中

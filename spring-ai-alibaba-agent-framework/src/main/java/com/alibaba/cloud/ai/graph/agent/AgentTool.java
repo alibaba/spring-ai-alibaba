@@ -34,6 +34,8 @@ import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 
 import org.springframework.util.StringUtils;
 
+import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
+
 public class AgentTool implements BiFunction<String, ToolContext, AssistantMessage> {
 
 	private final ReactAgent agent;
@@ -44,7 +46,7 @@ public class AgentTool implements BiFunction<String, ToolContext, AssistantMessa
 
 	@Override
 	public AssistantMessage apply(String input, ToolContext toolContext) {
-		OverAllState state = (OverAllState) toolContext.getContext().get("state");
+		OverAllState state = (OverAllState) toolContext.getContext().get(AGENT_STATE_CONTEXT_KEY);
 		try {
 			// Copy state to avoid affecting the original state.
 			// The agent that calls this tool should only be aware of the ToolCallChoice and ToolResponse.
