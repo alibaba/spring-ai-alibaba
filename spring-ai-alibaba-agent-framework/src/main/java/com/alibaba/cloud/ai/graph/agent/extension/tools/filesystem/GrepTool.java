@@ -43,21 +43,18 @@ public class GrepTool implements BiFunction<GrepTool.GrepRequest, ToolContext, S
 			
 			Examples:
 			- Search all files: `grep(pattern="TODO")`
-			- Search Java files only: `grep(pattern="import", glob="*.java")`
+			- The search is case-sensitive by default.
 			""";
 
-	private final String basePath;
-
-	public GrepTool(String basePath) {
-		this.basePath = basePath;
+	public GrepTool() {
 	}
 
 	@Override
 	public String apply(GrepRequest request, ToolContext toolContext) {
 		try {
 			Path searchPath = request.path != null ?
-					Paths.get(basePath, request.path) :
-					Paths.get(basePath);
+					Paths.get(request.path) :
+					Paths.get(System.getProperty("user.dir"));
 
 			List<String> results = new ArrayList<>();
 			PathMatcher globMatcher = request.glob != null ?
@@ -100,8 +97,8 @@ public class GrepTool implements BiFunction<GrepTool.GrepRequest, ToolContext, S
 		}
 	}
 
-	public static ToolCallback createGrepToolCallback(String basePath, String description) {
-		return FunctionToolCallback.builder("grep", new GrepTool(basePath))
+	public static ToolCallback createGrepToolCallback(String description) {
+		return FunctionToolCallback.builder("grep", new GrepTool())
 				.description(description)
 				.inputType(GrepRequest.class)
 				.build();

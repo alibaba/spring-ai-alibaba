@@ -140,9 +140,10 @@ public class StreamingOutput<T> extends NodeOutput {
 	@Override
 	public String toString() {
 		if (node() == null) {
-			return format("StreamingOutput{chunk=%s}", chunk());
+			return format("StreamingOutput{message=%s, chunk=%s}", message(), chunk());
 		}
-		return format("StreamingOutput{node=%s, state=%s, chunk=%s}", node(), state(), chunk());
+		return format("StreamingOutput{node=%s, agent=%s, message=%s, chunk=%s, tokenUsage=%s, state=%s, subGraph=%s}",
+				node(), agent(), message(), chunk(), tokenUsage(), state(), isSubGraph());
 	}
 
 }

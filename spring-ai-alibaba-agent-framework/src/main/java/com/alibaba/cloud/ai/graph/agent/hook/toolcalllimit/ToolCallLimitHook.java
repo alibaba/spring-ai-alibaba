@@ -70,9 +70,11 @@ public class ToolCallLimitHook extends ModelHook {
 
 	@Override
 	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-		// Read current counts from state
-		int threadCount = state.value(getThreadCountKey(), Integer.class).orElse(0);
-		int runCount = state.value(getRunCountKey(), Integer.class).orElse(0);
+		// Read current counts from context
+		int threadCount = config.context().containsKey(getThreadCountKey())
+				? (int) config.context().get(getThreadCountKey()) : 0;
+		int runCount = config.context().containsKey(getRunCountKey())
+				? (int) config.context().get(getRunCountKey()) : 0;
 
 		boolean threadLimitExceeded = threadLimit != null && threadCount >= threadLimit;
 		boolean runLimitExceeded = runLimit != null && runCount >= runLimit;
@@ -133,15 +135,15 @@ public class ToolCallLimitHook extends ModelHook {
 
 		// Increment counters if there are new tool calls
 		if (newCalls > 0) {
-			// Read current counts from state
-			int threadCount = state.value(getThreadCountKey(), Integer.class).orElse(0);
-			int runCount = state.value(getRunCountKey(), Integer.class).orElse(0);
+			// Read current counts from context
+			int threadCount = config.context().containsKey(getThreadCountKey())
+					? (int) config.context().get(getThreadCountKey()) : 0;
+			int runCount = config.context().containsKey(getRunCountKey())
+					? (int) config.context().get(getRunCountKey()) : 0;
 
-			// Update state with incremented counts
-			Map<String, Object> updates = new HashMap<>();
-			updates.put(getThreadCountKey(), threadCount + newCalls);
-			updates.put(getRunCountKey(), runCount + newCalls);
-			return CompletableFuture.completedFuture(updates);
+			// Update context with incremented counts
+			config.context().put(getThreadCountKey(), threadCount + newCalls);
+			config.context().put(getRunCountKey(), runCount + newCalls);
 		}
 
 		return CompletableFuture.completedFuture(Map.of());
@@ -160,17 +162,6 @@ public class ToolCallLimitHook extends ModelHook {
 		}
 
 		return toolDesc + " limits exceeded: " + String.join(", ", exceededLimits);
-	}
-
-	/**
-	 * Reset the run count in the state.
-	 * @param state the state to update
-	 * @return updates map containing the reset run count
-	 */
-	public Map<String, Object> resetRunCount(OverAllState state) {
-		Map<String, Object> updates = new HashMap<>();
-		updates.put(getRunCountKey(), 0);
-		return updates;
 	}
 
 	@Override

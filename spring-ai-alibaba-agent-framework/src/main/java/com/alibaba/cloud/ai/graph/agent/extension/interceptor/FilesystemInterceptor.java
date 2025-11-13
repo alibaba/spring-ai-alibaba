@@ -53,7 +53,6 @@ import java.util.regex.Pattern;
  * Example:
  * <pre>
  * FilesystemInterceptor interceptor = FilesystemInterceptor.builder()
- *     .basePath("/workspace")
  *     .readOnly(false)
  *     .build();
  * </pre>
@@ -61,7 +60,6 @@ import java.util.regex.Pattern;
  * For automatic large result eviction:
  * <pre>
  * FilesystemInterceptor fsInterceptor = FilesystemInterceptor.builder()
- *     .basePath("/workspace")
  *     .build();
  *
  * LargeResultEvictionInterceptor evictionInterceptor =
@@ -86,7 +84,6 @@ public class FilesystemInterceptor extends ModelInterceptor {
 			You have access to a filesystem which you can interact with using these tools.
 			All file paths must start with a /.
 			Avoid using the root path because you might not have permission to read/write there.
-			Try to use the user home directory that is running this process or the current working directory as your base path.
 			
 			- ls: list files in a directory (requires absolute path)
 			- read_file: read a file from the filesystem
@@ -94,27 +91,16 @@ public class FilesystemInterceptor extends ModelInterceptor {
 			- edit_file: edit a file in the filesystem
 			- glob: find files matching a pattern (e.g., "**/*.py")
 			- grep: search for text within files
-			
-			## Important Filesystem Usage Notes
-			- Always use absolute paths (starting with /)
-			- Use `ls` to explore directory structure before reading/editing
-			- For large files, use offset and limit parameters in `read_file` to avoid context overflow
-			- Use `glob` to find files by pattern matching
-			- Use `grep` to search for content across files
-			- Always read a file before attempting to edit it
-			- Prefer editing existing files over creating new ones when possible
 			""";
 
 	private final List<ToolCallback> tools;
 	private final String systemPrompt;
-	private final String basePath;
 	private final boolean readOnly;
 	private final Map<String, String> customToolDescriptions;
 	// Pattern for directory traversal detection
 	private static final Pattern TRAVERSAL_PATTERN = Pattern.compile("\\.\\.|~");
 
 	private FilesystemInterceptor(Builder builder) {
-		this.basePath = builder.basePath;
 		this.readOnly = builder.readOnly;
 		this.systemPrompt = builder.systemPrompt != null ? builder.systemPrompt : DEFAULT_SYSTEM_PROMPT;
 		this.customToolDescriptions = builder.customToolDescriptions != null
@@ -124,31 +110,25 @@ public class FilesystemInterceptor extends ModelInterceptor {
 		// Create filesystem tools using factory methods with custom or default descriptions
 		List<ToolCallback> toolList = new ArrayList<>();
 		toolList.add(ListFilesTool.createListFilesToolCallback(
-			basePath,
 			customToolDescriptions.getOrDefault("ls", ListFilesTool.DESCRIPTION)
 		));
 		toolList.add(ReadFileTool.createReadFileToolCallback(
-			basePath,
 			customToolDescriptions.getOrDefault("read_file", ReadFileTool.DESCRIPTION)
 		));
 
 		if (!readOnly) {
 			toolList.add(WriteFileTool.createWriteFileToolCallback(
-				basePath,
 				customToolDescriptions.getOrDefault("write_file", WriteFileTool.DESCRIPTION)
 			));
 			toolList.add(EditFileTool.createEditFileToolCallback(
-				basePath,
 				customToolDescriptions.getOrDefault("edit_file", EditFileTool.DESCRIPTION)
 			));
 		}
 
 		toolList.add(GlobTool.createGlobToolCallback(
-			basePath,
 			customToolDescriptions.getOrDefault("glob", GlobTool.DESCRIPTION)
 		));
 		toolList.add(GrepTool.createGrepToolCallback(
-			basePath,
 			customToolDescriptions.getOrDefault("grep", GrepTool.DESCRIPTION)
 		));
 
@@ -237,7 +217,6 @@ public class FilesystemInterceptor extends ModelInterceptor {
 	 */
 	public static class Builder {
 		private String systemPrompt;
-		private String basePath = "/";
 		private boolean readOnly = false;
 		private Map<String, String> customToolDescriptions;
 		private FilesystemBackend backend;
@@ -248,16 +227,6 @@ public class FilesystemInterceptor extends ModelInterceptor {
 		 */
 		public Builder systemPrompt(String systemPrompt) {
 			this.systemPrompt = systemPrompt;
-			return this;
-		}
-
-		/**
-		 * Set the base path for filesystem operations.
-		 * All file operations will be relative to this path.
-		 * Default: "/"
-		 */
-		public Builder basePath(String basePath) {
-			this.basePath = basePath;
 			return this;
 		}
 

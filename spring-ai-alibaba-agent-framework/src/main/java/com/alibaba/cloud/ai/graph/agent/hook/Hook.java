@@ -16,7 +16,10 @@
 package com.alibaba.cloud.ai.graph.agent.hook;
 
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+
 import java.util.List;
+import java.util.Map;
 
 public interface Hook {
 	String getName();
@@ -28,6 +31,10 @@ public interface Hook {
 	void setAgentName(String agentName);
 
 	String getAgentName();
+
+	default Map<String, KeyStrategy> getKeyStrategys() {
+		return Map.of();
+	}
 
 	/**
 	 * Get the positions where this hook should be executed.

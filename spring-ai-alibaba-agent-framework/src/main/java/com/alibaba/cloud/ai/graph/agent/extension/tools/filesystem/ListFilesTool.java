@@ -40,10 +40,7 @@ public class ListFilesTool implements BiFunction<String, ToolContext, String> {
 			- You should almost ALWAYS use this tool before using the Read or Edit tools.
 			""";
 
-	private final String basePath;
-
-	public ListFilesTool(String basePath) {
-		this.basePath = basePath;
+	public ListFilesTool() {
 	}
 
 	@Override
@@ -51,7 +48,7 @@ public class ListFilesTool implements BiFunction<String, ToolContext, String> {
 			@ToolParam(description = "The directory path to list files from") String path,
 			ToolContext toolContext) {
 		// Parse path from arguments
-		File dir = new File(basePath, path);
+		File dir = new File(path);
 		if (!dir.exists() || !dir.isDirectory()) {
 			return "Error: Directory not found: " + path;
 		}
@@ -69,8 +66,8 @@ public class ListFilesTool implements BiFunction<String, ToolContext, String> {
 		return String.join("\n", filePaths);
 	}
 
-	public static ToolCallback createListFilesToolCallback(String basePath, String description) {
-		return FunctionToolCallback.builder("ls", new ListFilesTool(basePath))
+	public static ToolCallback createListFilesToolCallback(String description) {
+		return FunctionToolCallback.builder("ls", new ListFilesTool())
 				.description(description)
 				.inputType(String.class)
 				.build();

@@ -45,6 +45,7 @@ import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -118,7 +119,7 @@ public class ReactAgent extends BaseAgent {
 		}
 	}
 
-	public static com.alibaba.cloud.ai.graph.agent.Builder builder() {
+	public static Builder builder() {
 		return new DefaultAgentBuilderFactory().builder();
 	}
 
@@ -187,7 +188,6 @@ public class ReactAgent extends BaseAgent {
 
 	@Override
 	protected StateGraph initGraph() throws GraphStateException {
-		KeyStrategyFactory keyStrategyFactory = buildMessagesKeyStrategyFactory();
 
 		if (hooks == null) {
 			hooks = new ArrayList<>();
@@ -205,7 +205,7 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		// Create graph
-		StateGraph graph = new StateGraph(name, keyStrategyFactory);
+		StateGraph graph = new StateGraph(name, buildMessagesKeyStrategyFactory(hooks));
 
 		graph.addNode("model", node_async(this.llmNode));
 		graph.addNode("tool", node_async(this.toolNode));
@@ -464,7 +464,7 @@ public class ReactAgent extends BaseAgent {
 			Hook last = hooks.get(hooks.size() - 1);
 			addHookEdge(graph,
 					defaultNext,
-					last.getName() + nameSuffix,
+					StateGraph.END,
 					modelDestination, endDestination,
 					last.canJumpTo());
 		}
@@ -567,10 +567,24 @@ public class ReactAgent extends BaseAgent {
 		};
 	}
 
-	private KeyStrategyFactory buildMessagesKeyStrategyFactory() {
+	private KeyStrategyFactory buildMessagesKeyStrategyFactory(List<? extends Hook> hooks) {
 		return () -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			if (outputKey != null && !outputKey.isEmpty()) {
+				keyStrategyHashMap.put(outputKey, outputKeyStrategy == null ? new ReplaceStrategy() : outputKeyStrategy);
+			}
 			keyStrategyHashMap.put("messages", new AppendStrategy());
+
+			// Iterate through hooks and collect their key strategies
+			if (hooks != null) {
+				for (Hook hook : hooks) {
+					Map<String, KeyStrategy> hookStrategies = hook.getKeyStrategys();
+					if (hookStrategies != null && !hookStrategies.isEmpty()) {
+						keyStrategyHashMap.putAll(hookStrategies);
+					}
+				}
+			}
+
 			return keyStrategyHashMap;
 		};
 	}
@@ -794,6 +808,7 @@ public class ReactAgent extends BaseAgent {
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
 			RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config)
 					.checkPointId(null)
+					.clearContext()
 					.nextNode(null)
 					.addMetadata("_AGENT_", subGraphId()) // subGraphId is the same as the name of the agent that created it
 					.build();
@@ -813,6 +828,7 @@ public class ReactAgent extends BaseAgent {
 									.orElseGet(this::subGraphId))
 							.nextNode(null)
 							.checkPointId(null)
+							.clearContext()
 							.addMetadata("_AGENT_", subGraphId()) // subGraphId is the same as the name of the agent that created it
 							.build();
 				}

@@ -118,7 +118,8 @@ public class NodeOutput {
 
 	@Override
 	public String toString() {
-		return format("NodeOutput{node=%s, state=%s}", node(), state());
+		return format("NodeOutput{node=%s, agent=%s, tokenUsage=%s, state=%s, subGraph=%s}",
+				node(), agent(), tokenUsage(), state(), isSubGraph());
 	}
 
 }

@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
 import java.io.IOException;
@@ -34,10 +35,16 @@ public class JacksonNodeOutputSerializer extends StdSerializer<NodeOutput> {
     @Override
     public void serialize(NodeOutput value, JsonGenerator gen, SerializerProvider provider) throws IOException {
         gen.writeStartObject();
+        gen.writeStringField("@class", value.getClass().getName());
         gen.writeStringField("node", value.node());
         gen.writeStringField("agent", value.agent());
         gen.writeObjectField("state", value.state());
         gen.writeBooleanField("subGraph", value.isSubGraph());
         gen.writeEndObject();
+    }
+
+    @Override
+    public void serializeWithType(NodeOutput value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
+        serialize(value, gen, serializers);
     }
 }

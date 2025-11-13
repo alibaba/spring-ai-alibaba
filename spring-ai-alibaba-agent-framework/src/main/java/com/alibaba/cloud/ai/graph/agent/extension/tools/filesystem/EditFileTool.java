@@ -41,19 +41,16 @@ public class EditFileTool implements BiFunction<EditFileTool.EditFileRequest, To
 			- When editing text from read_file output, preserve exact indentation
 			- ALWAYS prefer editing existing files. NEVER write new files unless explicitly required.
 			- The edit will FAIL if `old_string` is not unique in the file.
-			- Use `replace_all` for replacing and renaming strings across the file.
+			- After editing, verify the changes by using the read_file tool.
 			""";
 
-	private final String basePath;
-
-	public EditFileTool(String basePath) {
-		this.basePath = basePath;
+	public EditFileTool() {
 	}
 
 	@Override
 	public String apply(EditFileRequest request, ToolContext toolContext) {
 		try {
-			Path path = Paths.get(basePath, request.filePath);
+			Path path = Paths.get(request.filePath);
 
 			if (!Files.exists(path)) {
 				return "Error: File not found: " + request.filePath;
@@ -85,23 +82,34 @@ public class EditFileTool implements BiFunction<EditFileTool.EditFileRequest, To
 			String newContent;
 			if (request.replaceAll) {
 				newContent = content.replace(request.oldString, request.newString);
-			} else {
-				newContent = content.replaceFirst(request.oldString, request.newString);
+			}
+			else {
+				// Replace only the first occurrence using literal string matching
+				// Note: replaceFirst() treats the first argument as a regex, which can cause issues
+				// with special characters. We use indexOf() + substring() for literal matching.
+				int replaceIndex = content.indexOf(request.oldString);
+				if (replaceIndex != -1) {
+					newContent = content.substring(0, replaceIndex) + request.newString
+							+ content.substring(replaceIndex + request.oldString.length());
+				}
+				else {
+					// Should not reach here as we already checked for existence
+					newContent = content;
+				}
 			}
 
-			// Write back to file
+			// Write the modified content back
 			Files.writeString(path, newContent);
 
-			return "Successfully replaced " + (request.replaceAll ? count : 1) +
-					" instance(s) of the string in '" + request.filePath + "'";
+			return "Successfully replaced " + (request.replaceAll ? count : 1) + " occurrence(s) in " + request.filePath;
 		}
 		catch (IOException e) {
 			return "Error editing file: " + e.getMessage();
 		}
 	}
 
-	public static ToolCallback createEditFileToolCallback(String basePath, String description) {
-		return FunctionToolCallback.builder("edit_file", new EditFileTool(basePath))
+	public static ToolCallback createEditFileToolCallback(String description) {
+		return FunctionToolCallback.builder("edit_file", new EditFileTool())
 				.description(description)
 				.inputType(EditFileRequest.class)
 				.build();

@@ -101,6 +101,7 @@ public class GraphRunnerContext {
 			// RESUME FORM SUBGRAPH DETECTED
 			this.config = RunnableConfig.builder(config)
 				.checkPointId(null) // Reset checkpoint id
+				.clearContext()
 				.addMetadata(action.resumeSubGraphId(), true) // add metadata for
 				// sub graph
 				.build();

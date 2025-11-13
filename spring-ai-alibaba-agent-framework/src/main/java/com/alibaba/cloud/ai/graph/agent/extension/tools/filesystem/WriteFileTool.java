@@ -40,19 +40,16 @@ public class WriteFileTool implements BiFunction<WriteFileTool.WriteFileRequest,
 			- The file_path parameter must be an absolute path, not a relative path
 			- The content parameter must be a string
 			- The write_file tool will create a new file.
-			- Prefer to edit existing files over creating new ones when possible.
+			- When writing to a file, the content will completely replace the existing content.
 			""";
 
-	private final String basePath;
-
-	public WriteFileTool(String basePath) {
-		this.basePath = basePath;
+	public WriteFileTool() {
 	}
 
 	@Override
 	public String apply(WriteFileRequest request, ToolContext toolContext) {
 		try {
-			Path path = Paths.get(basePath, request.filePath);
+			Path path = Paths.get(request.filePath);
 
 			// Check if file already exists
 			if (Files.exists(path)) {
@@ -75,8 +72,8 @@ public class WriteFileTool implements BiFunction<WriteFileTool.WriteFileRequest,
 		}
 	}
 
-	public static ToolCallback createWriteFileToolCallback(String basePath, String description) {
-		return FunctionToolCallback.builder("write_file", new WriteFileTool(basePath))
+	public static ToolCallback createWriteFileToolCallback(String description) {
+		return FunctionToolCallback.builder("write_file", new WriteFileTool())
 				.description(description)
 				.inputType(WriteFileRequest.class)
 				.build();

@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import reactor.core.publisher.Flux;
 
@@ -56,11 +57,9 @@ import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_I
 public class AgentLlmNode implements NodeActionWithConfig {
 	public static final String MODEL_NODE_NAME = "model";
 	private static final Logger logger = LoggerFactory.getLogger(AgentLlmNode.class);
+	public static final String MODEL_ITERATION_KEY = "_MODEL_ITERATION_";
 
 	private String agentName;
-
-	// TODO, we assume every node in ReactAgent executes in a single thread.
-	private ThreadLocal<Integer> iterations = ThreadLocal.withInitial(() -> 0);
 
 	private List<Advisor> advisors = new ArrayList<>();
 
@@ -116,11 +115,20 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
-		if (logger.isDebugEnabled()) {
+		if (enableReasoningLog && logger.isDebugEnabled()) {
 			logger.debug("[ThreadId {}] Agent {} start reasoning.", config.threadId()
 					.orElse(THREAD_ID_DEFAULT), agentName);
 		}
-		iterations.set(iterations.get() + 1);
+
+		// Check and manage iteration counter
+		final AtomicInteger iterations;
+		if (!config.context().containsKey(MODEL_ITERATION_KEY)) {
+			iterations = new AtomicInteger(0);
+			config.context().put(MODEL_ITERATION_KEY, iterations);
+		} else {
+			iterations = (AtomicInteger) config.context().get(MODEL_ITERATION_KEY);
+			iterations.incrementAndGet();
+		}
 
 		// add streaming support
 		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);

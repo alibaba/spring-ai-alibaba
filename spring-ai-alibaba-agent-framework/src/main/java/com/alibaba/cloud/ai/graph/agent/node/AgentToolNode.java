@@ -44,6 +44,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
+import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
+import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_ID_DEFAULT;
 
 public class AgentToolNode implements NodeActionWithConfig {
@@ -194,7 +197,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				if (toolCallback instanceof FunctionToolCallback<?, ?>) {
 					result = toolCallback.call(
 							req.getArguments(),
-							new ToolContext(Map.of("state", state, "config", config, "extraState", extraStateFromToolCall))
+							new ToolContext(Map.of(AGENT_STATE_CONTEXT_KEY, state, AGENT_CONFIG_CONTEXT_KEY, config, AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraStateFromToolCall))
 					);
 				}
 				else { // toolCallbacks not instance of FunctionToolCallback are considered MCP tools.

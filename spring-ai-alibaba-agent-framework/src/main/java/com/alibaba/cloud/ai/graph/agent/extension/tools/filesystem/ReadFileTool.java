@@ -50,19 +50,16 @@ Usage:
 - Results are returned using cat -n format, with line numbers starting at 1
 - You have the capability to call multiple tools in a single response. It is always better to speculatively read multiple files as a batch that are potentially useful.
 - If you read a file that exists but has empty contents you will receive a system reminder warning in place of file contents.
-- You should ALWAYS make sure a file has been read before editing it.
-""";
+			- You should almost ALWAYS use the list_files tool before using this tool to verify the file path.
+			""";
 
-	private final String basePath;
-
-	public ReadFileTool(String basePath) {
-		this.basePath = basePath;
+	public ReadFileTool() {
 	}
 
 	@Override
 	public String apply(ReadFileRequest request, ToolContext toolContext) {
 		try {
-			Path path = Paths.get(basePath, request.filePath);
+			Path path = Paths.get(request.filePath);
 			List<String> allLines = Files.readAllLines(path);
 
 			// Apply pagination
@@ -89,8 +86,8 @@ Usage:
 		}
 	}
 
-	public static ToolCallback createReadFileToolCallback(String basePath, String description) {
-		return FunctionToolCallback.builder("read_file", new ReadFileTool(basePath))
+	public static ToolCallback createReadFileToolCallback(String description) {
+		return FunctionToolCallback.builder("read_file", new ReadFileTool())
 				.description(description)
 				.inputType(ReadFileRequest.class)
 				.build();

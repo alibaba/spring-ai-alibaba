@@ -78,7 +78,7 @@ public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 		log.info("ShellToolAgentHook: Initializing shell session before agent execution");
 
 		try {
-			shellTool.getSessionManager().initialize();
+			shellTool.getSessionManager().initialize(config);
 			log.info("Shell session initialized successfully");
 		} catch (Exception e) {
 			log.error("Failed to initialize shell session", e);
@@ -98,7 +98,7 @@ public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 		log.info("ShellToolAgentHook: Cleaning up shell session after agent execution");
 
 		try {
-			shellTool.getSessionManager().cleanup();
+			shellTool.getSessionManager().cleanup(config);
 			log.info("Shell session cleaned up successfully");
 		} catch (Exception e) {
 			log.error("Failed to cleanup shell session", e);

@@ -44,10 +44,7 @@ public class GlobTool implements BiFunction<String, ToolContext, String> {
 			- `/src/**/*.xml` - Find all XML files under /src
 			""";
 
-	private final String basePath;
-
-	public GlobTool(String basePath) {
-		this.basePath = basePath;
+	public GlobTool() {
 	}
 
 	@Override
@@ -55,7 +52,7 @@ public class GlobTool implements BiFunction<String, ToolContext, String> {
 			@ToolParam(description = "The glob pattern to match files") String pattern,
 			ToolContext toolContext) {
 		try {
-			Path basePathObj = Paths.get(basePath);
+			Path basePathObj = Paths.get(System.getProperty("user.dir"));
 			PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
 
 			List<String> matchedFiles = new ArrayList<>();
@@ -79,8 +76,8 @@ public class GlobTool implements BiFunction<String, ToolContext, String> {
 		}
 	}
 
-	public static ToolCallback createGlobToolCallback(String basePath, String description) {
-		return FunctionToolCallback.builder("glob", new GlobTool(basePath))
+	public static ToolCallback createGlobToolCallback(String description) {
+		return FunctionToolCallback.builder("glob", new GlobTool())
 				.description(description)
 				.inputType(String.class)
 				.build();
