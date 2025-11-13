@@ -83,7 +83,6 @@ public class DeepResearchAgent {
 				.build();
 
 		this.filesystemInterceptor = FilesystemInterceptor.builder()
-				.basePath("/tmp/research_workspace")
 				.readOnly(false)
 				.build();
 
