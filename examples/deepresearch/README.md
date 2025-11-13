@@ -23,7 +23,7 @@ mvn spring-boot:run
 ```
 
 2. **Run in IDE**
-Import as maven project and run `ExamplesApplication.java`.
+Import as maven project and run `Application.java`.
 
 ### Chat With Your Agent
 
