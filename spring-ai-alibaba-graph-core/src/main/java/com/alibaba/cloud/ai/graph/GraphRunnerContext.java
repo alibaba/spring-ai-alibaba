@@ -282,7 +282,10 @@ public class GraphRunnerContext {
 	 * @param updateState the state updates to apply
 	 */
 	public void mergeIntoCurrentState(Map<String , Object> updateState) {
-		this.overallState.updateState(updateState);
+		if (updateState == null || updateState.isEmpty()) {
+			return;
+		}
+		this.overallState.updateState(GraphResponse.sanitizeState(updateState));
 	}
 
 	// ================================================================================================================
