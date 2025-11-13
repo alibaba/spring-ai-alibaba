@@ -62,13 +62,13 @@ For scenarios requiring more complex process control, Agent Framework offers bui
   <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-agent-framework</artifactId>
-    <version>1.1.0.0-SNAPSHOT</version>
+    <version>1.1.0.0-M4</version>
   </dependency>
   <!-- Assume you are going to use DashScope Model. Refer to docs for how to choose model.-->
   <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-    <version>1.1.0.0-SNAPSHOT</version>
+    <version>1.1.0.0-M4</version>
   </dependency>
 </dependencies>
 ```

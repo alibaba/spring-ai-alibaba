@@ -27,7 +27,6 @@ import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
@@ -61,7 +60,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 	}
 
 	@Override
-	public ReactAgent build() throws GraphStateException {
+	public ReactAgent build() {
 		if (this.name == null) {
 			this.name = nacosOptions.getAgentName();
 		}

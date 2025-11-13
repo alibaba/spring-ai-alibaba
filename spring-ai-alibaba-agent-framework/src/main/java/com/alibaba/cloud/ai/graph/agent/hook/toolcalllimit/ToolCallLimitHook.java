@@ -37,7 +37,7 @@ import java.util.concurrent.CompletableFuture;
  * and can terminate the agent when specified limits are reached.
  */
 @HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
-public class ToolCallLimitHook implements ModelHook {
+public class ToolCallLimitHook extends ModelHook {
 
 	private static final String THREAD_COUNT_KEY_PREFIX = "__tool_call_limit_thread_count__";
 	private static final String RUN_COUNT_KEY_PREFIX = "__tool_call_limit_run_count__";
@@ -70,9 +70,11 @@ public class ToolCallLimitHook implements ModelHook {
 
 	@Override
 	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-		// Read current counts from state
-		int threadCount = state.value(getThreadCountKey(), Integer.class).orElse(0);
-		int runCount = state.value(getRunCountKey(), Integer.class).orElse(0);
+		// Read current counts from context
+		int threadCount = config.context().containsKey(getThreadCountKey())
+				? (int) config.context().get(getThreadCountKey()) : 0;
+		int runCount = config.context().containsKey(getRunCountKey())
+				? (int) config.context().get(getRunCountKey()) : 0;
 
 		boolean threadLimitExceeded = threadLimit != null && threadCount >= threadLimit;
 		boolean runLimitExceeded = runLimit != null && runCount >= runLimit;
@@ -105,7 +107,7 @@ public class ToolCallLimitHook implements ModelHook {
 	@Override
 	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
 		// Count new tool calls from the latest AI message
-		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 		if (messages.isEmpty()) {
 			return CompletableFuture.completedFuture(Map.of());
 		}
@@ -133,15 +135,15 @@ public class ToolCallLimitHook implements ModelHook {
 
 		// Increment counters if there are new tool calls
 		if (newCalls > 0) {
-			// Read current counts from state
-			int threadCount = state.value(getThreadCountKey(), Integer.class).orElse(0);
-			int runCount = state.value(getRunCountKey(), Integer.class).orElse(0);
+			// Read current counts from context
+			int threadCount = config.context().containsKey(getThreadCountKey())
+					? (int) config.context().get(getThreadCountKey()) : 0;
+			int runCount = config.context().containsKey(getRunCountKey())
+					? (int) config.context().get(getRunCountKey()) : 0;
 
-			// Update state with incremented counts
-			Map<String, Object> updates = new HashMap<>();
-			updates.put(getThreadCountKey(), threadCount + newCalls);
-			updates.put(getRunCountKey(), runCount + newCalls);
-			return CompletableFuture.completedFuture(updates);
+			// Update context with incremented counts
+			config.context().put(getThreadCountKey(), threadCount + newCalls);
+			config.context().put(getRunCountKey(), runCount + newCalls);
 		}
 
 		return CompletableFuture.completedFuture(Map.of());
@@ -160,17 +162,6 @@ public class ToolCallLimitHook implements ModelHook {
 		}
 
 		return toolDesc + " limits exceeded: " + String.join(", ", exceededLimits);
-	}
-
-	/**
-	 * Reset the run count in the state.
-	 * @param state the state to update
-	 * @return updates map containing the reset run count
-	 */
-	public Map<String, Object> resetRunCount(OverAllState state) {
-		Map<String, Object> updates = new HashMap<>();
-		updates.put(getRunCountKey(), 0);
-		return updates;
 	}
 
 	@Override

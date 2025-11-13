@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 import reactor.core.publisher.Flux;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -66,7 +67,7 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 				if (interruption.isPresent()) {
 					return Flux.just(GraphResponse.done(interruption.get()));
 				}
-				return Flux.just(GraphResponse.done(context.buildCurrentNodeOutput()));
+				return Flux.just(GraphResponse.done(context.buildNodeOutputAndAddCheckpoint(Map.of())));
 			}
 
 			if (context.getCurrentNodeId() != null && context.getConfig().isInterrupted(context.getCurrentNodeId())) {

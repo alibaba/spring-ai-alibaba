@@ -16,18 +16,20 @@
 
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.agent.loader.AgentLoader;
+import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -35,9 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.annotation.Nonnull;
 
-import static java.util.Arrays.stream;
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toUnmodifiableMap;
 
 /**
  * Static Agent Loader for programmatically provided agents.
@@ -54,7 +53,9 @@ class AgentStaticLoader implements AgentLoader {
 
 	private Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
 
-	public AgentStaticLoader() throws GraphStateException {
+//	public AgentStaticLoader(){}
+
+	public AgentStaticLoader(ToolCallbackProvider toolCallbackProvider) {
 		// Create DashScopeApi instance using the API key from environment variable
 		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 		// Create DashScope ChatModel instance
@@ -66,11 +67,18 @@ class AgentStaticLoader implements AgentLoader {
 				.saver(new MemorySaver())
 				.tools(PoetTool.createPoetToolCallback())
 				.build();
-		this.agents.put("single_agent", agent);
-	}
 
-	public AgentStaticLoader(BaseAgent... agents) {
-		this.agents = stream(agents).collect(toUnmodifiableMap(BaseAgent::name, identity()));
+		List<ToolCallback> toolCallbacks = Arrays.asList(toolCallbackProvider.getToolCallbacks());
+
+		System.out.println("Loaded MCP tool callbacks: " + toolCallbacks.size());
+
+		ReactAgent researchAgent = new DeepResearchAgent().getResearchAgent(toolCallbacks);
+		GraphRepresentation representation = researchAgent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+
+		System.out.println(representation.content());
+
+		this.agents.put("single_agent", agent);
+		this.agents.put("research_agent", researchAgent);
 	}
 
 	@Override

@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 
@@ -59,6 +58,9 @@ public interface ToolResponseMessageHandler {
 		@Override
 		public void serialize(ToolResponseMessage msg, JsonGenerator gen, SerializerProvider provider)
 				throws IOException {
+			gen.writeStartObject();
+			gen.writeStringField("@class", msg.getClass().getName());
+			gen.writeStringField(AssistantMessageHandler.Field.TEXT.name, msg.getText());
 
 			gen.writeArrayFieldStart(Field.RESPONSES.name);
 			for(var response : msg.getResponses()) {
@@ -70,25 +72,13 @@ public interface ToolResponseMessageHandler {
 			}
 			gen.writeEndArray();
 
-			// gen.writeArrayFieldStart( Field.RESPONSES.name );
-			// for( var response : msg.getResponses() ) {
-			// gen.writeStartObject();
-			// gen.writeStringField("id", response.id());
-			// gen.writeStringField("name", response.name());
-			// gen.writeStringField("responseData", response.responseData());
-			// gen.writeEndObject();
-			// }
-			// gen.writeEndArray();
-
 			serializeMetadata(gen, msg.getMetadata());
-
+			gen.writeEndObject();
 		}
 
 		@Override
 		public void serializeWithType(ToolResponseMessage value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
-			typeSer.writeTypePrefix(gen, typeSer.typeId(value, JsonToken.START_OBJECT));
 			serialize(value, gen, serializers);
-			typeSer.writeTypeSuffix(gen, typeSer.typeId(value, JsonToken.END_OBJECT));
 		}
 	}
 
