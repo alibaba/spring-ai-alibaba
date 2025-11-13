@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.agent.studio.dto.messages;
 
-import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -106,18 +106,18 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 		if (this.toolFeedback != null && !this.toolFeedback.isEmpty()) {
 			for (ToolFeedback feedback : this.toolFeedback) {
 				InterruptionMetadata.ToolFeedback.FeedbackResult result =
-					feedback.getResult() != null
-						? InterruptionMetadata.ToolFeedback.FeedbackResult.valueOf(feedback.getResult().name())
-						: InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED;
+						feedback.getResult() != null
+								? InterruptionMetadata.ToolFeedback.FeedbackResult.valueOf(feedback.getResult().name())
+								: InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED;
 
 				InterruptionMetadata.ToolFeedback interruptionToolFeedback =
-					new InterruptionMetadata.ToolFeedback(
-						feedback.getId(),
-						feedback.getName(),
-						feedback.getArguments(),
-						result,
-						feedback.getDescription()
-					);
+						new InterruptionMetadata.ToolFeedback(
+								feedback.getId(),
+								feedback.getName(),
+								feedback.getArguments(),
+								result,
+								feedback.getDescription()
+						);
 
 				builder.addToolFeedback(interruptionToolFeedback);
 			}

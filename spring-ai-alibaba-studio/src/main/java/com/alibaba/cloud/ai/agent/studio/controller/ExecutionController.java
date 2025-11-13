@@ -33,6 +33,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -41,7 +42,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
@@ -214,17 +214,18 @@ public class ExecutionController {
 				for (ToolRequestConfirmMessageDTO.ToolFeedback toolFeedback : request.toolFeedbacks) {
 					// Convert FeedbackResult from DTO to InterruptionMetadata enum
 					InterruptionMetadata.ToolFeedback.FeedbackResult result =
-						toolFeedback.getResult() != null
-							? InterruptionMetadata.ToolFeedback.FeedbackResult.valueOf(toolFeedback.getResult().name())
-							: InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED;
+							toolFeedback.getResult() != null
+									? InterruptionMetadata.ToolFeedback.FeedbackResult.valueOf(toolFeedback.getResult()
+									.name())
+									: InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED;
 
 					// Create InterruptionMetadata.ToolFeedback
 					InterruptionMetadata.ToolFeedback feedback = new InterruptionMetadata.ToolFeedback(
-						toolFeedback.getId(),
-						toolFeedback.getName(),
-						toolFeedback.getArguments(),
-						result,
-						toolFeedback.getDescription()
+							toolFeedback.getId(),
+							toolFeedback.getName(),
+							toolFeedback.getArguments(),
+							result,
+							toolFeedback.getDescription()
 					);
 
 					metadataBuilder.addToolFeedback(feedback);
@@ -252,103 +253,104 @@ public class ExecutionController {
 
 		if (userMessage != null) {
 			agentStream = agent.stream(userMessage, runnableConfig);
-		} else {
+		}
+		else {
 			agentStream = agent.stream("", runnableConfig);
 		}
 
 		// Convert Flux<NodeOutput> to Flux<ServerSentEvent<String>>
 		return agentStream.map(nodeOutput -> {
-			String node = nodeOutput.node();
-			String agentName = nodeOutput.agent();
-			Usage tokenUsage = nodeOutput.tokenUsage();
+					String node = nodeOutput.node();
+					String agentName = nodeOutput.agent();
+					Usage tokenUsage = nodeOutput.tokenUsage();
 
 
-			// For streaming, we can use the message content as chunk
-			StringBuilder chunkBuilder = new StringBuilder();
-			AgentRunResponse agentResponse = null;
-			if (nodeOutput instanceof StreamingOutput<?> streamingOutput) {
-				Message message = streamingOutput.message();
-				if (message == null) { // no update, typically output responses from nodes that does not produce messages
+					// For streaming, we can use the message content as chunk
+					StringBuilder chunkBuilder = new StringBuilder();
+					AgentRunResponse agentResponse = null;
+					if (nodeOutput instanceof StreamingOutput<?> streamingOutput) {
+						Message message = streamingOutput.message();
+						if (message == null) { // no update, typically output responses from nodes that does not produce messages
+							return ServerSentEvent.<String>builder()
+									.data("{}")
+									.build();
+						}
+						if (message instanceof AssistantMessage assistantMessage) {
+							if (assistantMessage.hasToolCalls()) {
+								agentResponse = new AgentRunResponse(node, agentName, assistantMessage, tokenUsage, "");
+							}
+							else {
+//						chunkBuilder.append(assistantMessage.getText());
+								agentResponse = new AgentRunResponse(node, agentName, assistantMessage, tokenUsage, assistantMessage.getText());
+							}
+						}
+						else {
+							agentResponse = new AgentRunResponse(node, agentName, message, tokenUsage, "");
+						}
+					}
+					else if (nodeOutput instanceof InterruptionMetadata interruptionMetadata) {
+						// Use the specialized method to convert InterruptionMetadata to ToolRequestMessageDTO
+						ToolRequestConfirmMessageDTO toolRequestMessage = MessageDTO.MessageDTOFactory.fromInterruptionMetadata(interruptionMetadata);
+						agentResponse = new AgentRunResponse(node, agentName, toolRequestMessage, tokenUsage, "");
+					}
+					else {
+						// Handle other NodeOutput types if necessary
+//					agentResponse = new AgentRunResponse(node, agentName, null, tokenUsage, "");
+					}
+
+
+					// Serialize to JSON string
+					try {
+						if (agentResponse != null) {
+							String jsonData = mapper.writeValueAsString(agentResponse);
+							return ServerSentEvent.<String>builder()
+									.data(jsonData)
+									.build();
+						}
+					}
+					catch (Exception e) {
+						log.error("Failed to serialize AgentRunResponse to JSON", e);
+						return ServerSentEvent.<String>builder()
+								.data("{\"error\":\"Failed to serialize response\"}")
+								.build();
+					}
 					return ServerSentEvent.<String>builder()
 							.data("{}")
 							.build();
-				}
-				if (message instanceof AssistantMessage assistantMessage) {
-					if (assistantMessage.hasToolCalls()) {
-						agentResponse = new AgentRunResponse(node, agentName, assistantMessage, tokenUsage, "");
+				})
+				.onErrorResume(error -> {
+					// Handle errors from the agent stream and convert to SSE error event
+					log.error("Error occurred during agent stream execution", error);
+
+					// Create error response
+					String errorMessage = error.getMessage() != null ? error.getMessage() : "Unknown error occurred";
+					String errorType = error.getClass().getSimpleName();
+
+					try {
+						// Create a structured error response
+						String errorJson = String.format(
+								"{\"error\":true,\"errorType\":\"%s\",\"errorMessage\":\"%s\"}",
+								errorType.replace("\"", "\\\""),
+								errorMessage.replace("\"", "\\\"").replace("\n", "\\n")
+						);
+
+						// Return the error as an SSE event and complete the stream
+						return Flux.just(
+								ServerSentEvent.<String>builder()
+										.event("error")
+										.data(errorJson)
+										.build()
+						);
 					}
-					else {
-//						chunkBuilder.append(assistantMessage.getText());
-						agentResponse = new AgentRunResponse(node, agentName, assistantMessage, tokenUsage, assistantMessage.getText());
+					catch (Exception e) {
+						log.error("Failed to create error SSE event", e);
+						return Flux.just(
+								ServerSentEvent.<String>builder()
+										.event("error")
+										.data("{\"error\":true,\"errorMessage\":\"Internal error occurred\"}")
+										.build()
+						);
 					}
-				}
-				else {
-					agentResponse = new AgentRunResponse(node, agentName, message, tokenUsage, "");
-				}
-			}
-			else if (nodeOutput instanceof InterruptionMetadata interruptionMetadata) {
-				// Use the specialized method to convert InterruptionMetadata to ToolRequestMessageDTO
-				ToolRequestConfirmMessageDTO toolRequestMessage = MessageDTO.MessageDTOFactory.fromInterruptionMetadata(interruptionMetadata);
-				agentResponse = new AgentRunResponse(node, agentName, toolRequestMessage, tokenUsage, "");
-			}
-			else {
-				// Handle other NodeOutput types if necessary
-//					agentResponse = new AgentRunResponse(node, agentName, null, tokenUsage, "");
-			}
-
-
-			// Serialize to JSON string
-			try {
-				if (agentResponse != null) {
-					String jsonData = mapper.writeValueAsString(agentResponse);
-					return ServerSentEvent.<String>builder()
-							.data(jsonData)
-							.build();
-				}
-			}
-			catch (Exception e) {
-				log.error("Failed to serialize AgentRunResponse to JSON", e);
-				return ServerSentEvent.<String>builder()
-						.data("{\"error\":\"Failed to serialize response\"}")
-						.build();
-			}
-			return ServerSentEvent.<String>builder()
-					.data("{}")
-					.build();
-		})
-		.onErrorResume(error -> {
-			// Handle errors from the agent stream and convert to SSE error event
-			log.error("Error occurred during agent stream execution", error);
-
-			// Create error response
-			String errorMessage = error.getMessage() != null ? error.getMessage() : "Unknown error occurred";
-			String errorType = error.getClass().getSimpleName();
-
-			try {
-				// Create a structured error response
-				String errorJson = String.format(
-					"{\"error\":true,\"errorType\":\"%s\",\"errorMessage\":\"%s\"}",
-					errorType.replace("\"", "\\\""),
-					errorMessage.replace("\"", "\\\"").replace("\n", "\\n")
-				);
-
-				// Return the error as an SSE event and complete the stream
-				return Flux.just(
-					ServerSentEvent.<String>builder()
-						.event("error")
-						.data(errorJson)
-						.build()
-				);
-			}
-			catch (Exception e) {
-				log.error("Failed to create error SSE event", e);
-				return Flux.just(
-					ServerSentEvent.<String>builder()
-						.event("error")
-						.data("{\"error\":true,\"errorMessage\":\"Internal error occurred\"}")
-						.build()
-				);
-			}
-		});
+				});
 	}
 }

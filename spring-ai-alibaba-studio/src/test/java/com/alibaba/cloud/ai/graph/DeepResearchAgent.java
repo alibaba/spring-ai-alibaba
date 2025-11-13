@@ -119,6 +119,28 @@ public class DeepResearchAgent {
 
 	}
 
+	private static SubAgentSpec createCritiqueAgent(String subCritiquePrompt) {
+		return SubAgentSpec.builder()
+				.name("critique-agent")
+				.description("Used to critique the final report. Provide information about " +
+						"how you want the report to be critiqued.")
+				.systemPrompt(subCritiquePrompt)
+				.enableLoopingLog(true)
+				.build();
+	}
+
+	private static SubAgentSpec createResearchAgent(List<ToolCallback> toolsFromMcp, String subResearchPrompt) {
+		return SubAgentSpec.builder()
+				.name("research-agent")
+				.description("Used to research in-depth questions. Only give one topic at a time. " +
+						"Break down large topics into components and call multiple research agents " +
+						"in parallel for each sub-question.")
+				.systemPrompt(subResearchPrompt)
+				.tools(toolsFromMcp)
+				.enableLoopingLog(true)
+				.build();
+	}
+
 	public ReactAgent getResearchAgent(List<ToolCallback> toolsFromMcp) {
 		// Build the ReactAgent with all interceptors
 		return ReactAgent.builder()
@@ -137,7 +159,6 @@ public class DeepResearchAgent {
 				.hooks(humanInTheLoopHook, summarizationHook, toolCallLimitHook)
 				.saver(new MemorySaver())
 				.build();
-
 
 	}
 
@@ -159,28 +180,6 @@ public class DeepResearchAgent {
 				.includeGeneralPurpose(true)
 				.addSubAgent(critiqueAgent);
 		return subAgentBuilder.build();
-	}
-
-	private static SubAgentSpec createCritiqueAgent(String subCritiquePrompt) {
-		return SubAgentSpec.builder()
-				.name("critique-agent")
-				.description("Used to critique the final report. Provide information about " +
-						"how you want the report to be critiqued.")
-				.systemPrompt(subCritiquePrompt)
-				.enableLoopingLog(true)
-				.build();
-	}
-
-	private static SubAgentSpec createResearchAgent(List<ToolCallback> toolsFromMcp, String subResearchPrompt) {
-		return SubAgentSpec.builder()
-				.name("research-agent")
-				.description("Used to research in-depth questions. Only give one topic at a time. " +
-						"Break down large topics into components and call multiple research agents " +
-						"in parallel for each sub-question.")
-				.systemPrompt(subResearchPrompt)
-				.tools(toolsFromMcp)
-				.enableLoopingLog(true)
-				.build();
 	}
 
 }

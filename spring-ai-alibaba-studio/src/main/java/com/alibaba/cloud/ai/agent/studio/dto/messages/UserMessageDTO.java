@@ -15,13 +15,14 @@
  */
 package com.alibaba.cloud.ai.agent.studio.dto.messages;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Data Transfer Object for UserMessage.

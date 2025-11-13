@@ -15,8 +15,6 @@
  */
 package com.alibaba.cloud.ai.agent.studio.config;
 
-import com.alibaba.cloud.ai.agent.studio.tracing.TraceIdInterceptor;
-
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -25,15 +23,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-	private final TraceIdInterceptor traceIdInterceptor;
+	public WebConfig() {
 
-	public WebConfig(TraceIdInterceptor traceIdInterceptor) {
-		this.traceIdInterceptor = traceIdInterceptor;
 	}
 
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
-		registry.addInterceptor(traceIdInterceptor).addPathPatterns("/**");
+//		registry.addInterceptor(traceIdInterceptor).addPathPatterns("/**");
 	}
 
 	@Override

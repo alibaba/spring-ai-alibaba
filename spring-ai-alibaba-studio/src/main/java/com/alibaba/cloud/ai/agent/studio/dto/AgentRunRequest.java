@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.agent.studio.dto;
 
 import com.alibaba.cloud.ai.agent.studio.dto.messages.UserMessageDTO;
 
-
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;

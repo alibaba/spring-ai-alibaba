@@ -16,28 +16,30 @@
 package com.alibaba.cloud.ai.agent.studio.dto.messages;
 
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
  * Base interface for message DTOs with polymorphic serialization support.
  * Uses Jackson annotations for type discrimination during JSON serialization/deserialization.
  */
 @JsonTypeInfo(
-	use = JsonTypeInfo.Id.NAME,
-	include = JsonTypeInfo.As.PROPERTY,
-	property = "messageType"
+		use = JsonTypeInfo.Id.NAME,
+		include = JsonTypeInfo.As.PROPERTY,
+		property = "messageType"
 )
 @JsonSubTypes({
-	@JsonSubTypes.Type(value = AssistantMessageDTO.class, name = "assistant"),
-	@JsonSubTypes.Type(value = UserMessageDTO.class, name = "user"),
-	@JsonSubTypes.Type(value = ToolResponseMessageDTO.class, name = "tool"),
-	@JsonSubTypes.Type(value = ToolRequestMessageDTO.class, name = "tool-request"),
-	@JsonSubTypes.Type(value = ToolRequestConfirmMessageDTO.class, name = "tool-confirm")
+		@JsonSubTypes.Type(value = AssistantMessageDTO.class, name = "assistant"),
+		@JsonSubTypes.Type(value = UserMessageDTO.class, name = "user"),
+		@JsonSubTypes.Type(value = ToolResponseMessageDTO.class, name = "tool"),
+		@JsonSubTypes.Type(value = ToolRequestMessageDTO.class, name = "tool-request"),
+		@JsonSubTypes.Type(value = ToolRequestConfirmMessageDTO.class, name = "tool-confirm")
 })
 public interface MessageDTO {
 
@@ -67,16 +69,20 @@ public interface MessageDTO {
 			if (message instanceof AssistantMessage assistantMessage) {
 				if (assistantMessage.hasToolCalls()) {
 					return new ToolRequestMessageDTO(assistantMessage);
-				} else {
+				}
+				else {
 					return new AssistantMessageDTO(assistantMessage);
 				}
-			} else if (message instanceof UserMessage) {
+			}
+			else if (message instanceof UserMessage) {
 				return new UserMessageDTO((UserMessage) message);
-			} else if (message instanceof ToolResponseMessage) {
+			}
+			else if (message instanceof ToolResponseMessage) {
 				return new ToolResponseMessageDTO((ToolResponseMessage) message);
-			} else {
+			}
+			else {
 				throw new IllegalArgumentException(
-					"Unsupported message type: " + message.getClass().getName()
+						"Unsupported message type: " + message.getClass().getName()
 				);
 			}
 		}
@@ -102,15 +108,19 @@ public interface MessageDTO {
 
 			if (dto instanceof ToolRequestMessageDTO) {
 				return ((ToolRequestMessageDTO) dto).toAssistantMessage();
-			} else if (dto instanceof AssistantMessageDTO) {
+			}
+			else if (dto instanceof AssistantMessageDTO) {
 				return ((AssistantMessageDTO) dto).toAssistantMessage();
-			} else if (dto instanceof UserMessageDTO) {
+			}
+			else if (dto instanceof UserMessageDTO) {
 				return ((UserMessageDTO) dto).toUserMessage();
-			} else if (dto instanceof ToolResponseMessageDTO) {
+			}
+			else if (dto instanceof ToolResponseMessageDTO) {
 				return ((ToolResponseMessageDTO) dto).toToolResponseMessage();
-			} else {
+			}
+			else {
 				throw new IllegalArgumentException(
-					"Unsupported DTO type: " + dto.getClass().getName()
+						"Unsupported DTO type: " + dto.getClass().getName()
 				);
 			}
 		}
