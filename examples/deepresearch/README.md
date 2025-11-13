@@ -29,6 +29,8 @@ Import as maven project and run `ExamplesApplication.java`.
 
 After the agent starts, open in your browser: **http://localhost:8080/chatui/index.html**
 
+<img src="../../docs/imgs/agent-chat-ui.jpg" alt="architecture" style="max-width: 740px; height: 508px" />
+
 Now you can ask the agent complex research questions like:
 - "Research the core architecture design of Spring AI Alibaba"
 - "Compare the technical implementations of Claude Code and GitHub Copilot"
