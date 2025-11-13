@@ -75,6 +75,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private String systemPrompt;
 
+	private String instruction;
+
 	private ToolCallingChatOptions toolCallingChatOptions;
 
 	private boolean enableReasoningLog;
@@ -84,6 +86,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		this.outputKey = builder.outputKey;
 		this.outputSchema = builder.outputSchema;
 		this.systemPrompt = builder.systemPrompt;
+		this.instruction = builder.instruction;
 		if (builder.advisors != null) {
 			this.advisors = builder.advisors;
 		}
@@ -111,6 +114,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	public void setModelInterceptors(List<ModelInterceptor> modelInterceptors) {
 		this.modelInterceptors = modelInterceptors;
+	}
+
+	public void setInstruction(String instruction) {
+		this.instruction = instruction;
 	}
 
 	@Override
@@ -387,6 +394,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private List<ModelInterceptor> modelInterceptors;
 
+		private String instruction;
+
 		private boolean enableReasoningLog;
 
 		public Builder agentName(String agentName) {
@@ -426,6 +435,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder chatClient(ChatClient chatClient) {
 			this.chatClient = chatClient;
+			return this;
+		}
+
+		public Builder instruction(String instruction) {
+			this.instruction = instruction;
 			return this;
 		}
 
