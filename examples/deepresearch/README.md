@@ -6,9 +6,9 @@ A DeepResearch agent built with Spring AI Alibaba that conducts thorough researc
 
 ### Prerequisites
 
-* **JDK 17+**
-* **AI_DASHSCOPE_API_KEY** - Get from [Alibaba Cloud Bailian](https://bailian.console.aliyun.com/)
-* **JINA_API_KEY** (Optional) - Get from [Jina AI](https://jina.ai/) for MCP tool support
+* JDK 17+
+* AI_DASHSCOPE_API_KEY - Get from [Alibaba Cloud Bailian](https://bailian.console.aliyun.com/)
+* JINA_API_KEY (Optional) - Get from [Jina AI](https://jina.ai/) for MCP tool support
 
 ```bash
 export AI_DASHSCOPE_API_KEY=your_dashscope_api_key
@@ -29,7 +29,11 @@ Import as maven project and run `ExamplesApplication.java`.
 
 After the agent starts, open in your browser: **http://localhost:8080/chatui/index.html**
 
-<img src="../../docs/imgs/agent-chat-ui.jpg" alt="architecture" style="max-width: 740px; height: 508px" />
+
+<div style="border: 2px solid #999; display: inline-block;">
+  <img src="../../docs/imgs/agent-chat-ui.jpg" alt="architecture" style="max-width: 740px; display: block;" />
+</div>
+
 
 Now you can ask the agent complex research questions like:
 - "Research the core architecture design of Spring AI Alibaba"
@@ -37,7 +41,7 @@ Now you can ask the agent complex research questions like:
 
 ## Architecture
 
-DeepResearch implements a agentic architecture that goes beyond simple tool-calling loops. It combines planning, context management, and subagent collaboration to tackle complex research tasks that require multiple steps and deep investigation.
+DeepResearch implements an agentic architecture that goes beyond simple tool-calling loops. It combines planning, context management, and subagent collaboration to tackle complex research tasks that require multiple steps and deep investigation.
 
 ### Core Capabilities
 
