@@ -84,5 +84,5 @@ header:
     - '**/spring-ai-alibaba-jmanus/ui-vue3/**'
     - '**/spring-ai-alibaba-studio-server/frontend/**'
     - '**/spring-ai-alibaba-studio-server/docker/**'
-    - '**/webui/**'
+    - '**/agent-chat-ui/**'
   comment: never
