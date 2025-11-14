@@ -19,7 +19,8 @@
     "visit",
     "Contact",
     "téléphone",
-    "Etihad Airway"
+    "Etihad Airway",
+    "quelqu’un"
   ],
   "bracket_max": 6,
   "special_char_density_threshold": 0.12,
