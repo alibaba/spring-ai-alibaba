@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent;
+package com.alibaba.cloud.ai.graph.agent.model;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,7 +94,7 @@ class ReactAgentDeepSeekTest {
 
 		DeepSeekChatModel deepSeekChatModel = DeepSeekChatModel.builder()
 				.defaultOptions(DeepSeekChatOptions.builder()
-						.model("deepseek-r1")
+						.model("deepseek-chat")
 						.build())
 				.deepSeekApi(deepSeekApi).build();
 
