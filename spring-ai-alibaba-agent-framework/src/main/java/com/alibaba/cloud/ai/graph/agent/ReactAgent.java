@@ -85,8 +85,6 @@ public class ReactAgent extends BaseAgent {
 
 	private final AgentToolNode toolNode;
 
-	private CompiledGraph compiledGraph;
-
 	private List<? extends Hook> hooks;
 
 	private List<ModelInterceptor> modelInterceptors;
