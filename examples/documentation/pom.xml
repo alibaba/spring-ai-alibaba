@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.alibaba.cloud.ai</groupId>
-	<artifactId>deepresearch</artifactId>
+	<artifactId>documentation</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Examples::DeepResearch</name>
-	<description>DeepResearch example for Spring AI Alibaba Agent Framework.</description>
+	<name>Examples::Documentation</name>
+	<description>Examples for Website.</description>
 	<url/>
 	<licenses>
 		<license/>
