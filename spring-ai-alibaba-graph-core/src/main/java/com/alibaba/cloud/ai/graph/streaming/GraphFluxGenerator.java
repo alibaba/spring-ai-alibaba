@@ -70,22 +70,32 @@ public interface GraphFluxGenerator {
 
 			var result = new AtomicReference<ChatResponse>(null);
 
-			Function<ChatResponse,ChatResponse> mergeMessage = (response) -> result.updateAndGet(lastResponse -> {
+		Function<ChatResponse,ChatResponse> mergeMessage = (response) -> result.updateAndGet(lastResponse -> {
 
-				if (lastResponse == null) {
-					return response;
-				}
+			if (lastResponse == null) {
+				return response;
+			}
 
-				final var currentMessage = response.getResult().getOutput();
+			// Defensive null check for response.getResult()
+			if (response.getResult() == null || response.getResult().getOutput() == null) {
+				return lastResponse; // Keep last response if current one is invalid
+			}
 
-				if (currentMessage.hasToolCalls()) {
-					return response;
-				}
+			final var currentMessage = response.getResult().getOutput();
 
-				final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
-						"lastResponse text cannot be null");
+			if (currentMessage.hasToolCalls()) {
+				return response;
+			}
 
-				final var currentMessageText = currentMessage.getText();
+			// Defensive null check for lastResponse.getResult()
+			if (lastResponse.getResult() == null || lastResponse.getResult().getOutput() == null) {
+				return response; // Use current response if last one is invalid
+			}
+
+			final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
+					"lastResponse text cannot be null");
+
+			final var currentMessageText = currentMessage.getText();
 
 				var newMessage = new AssistantMessage(
 						currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText,
@@ -96,7 +106,13 @@ public interface GraphFluxGenerator {
 
 			});
 
-			return GraphFlux.of(startingNode, outKey, flux, mergeMessage, response -> response.getResult().getOutput().getText());
+			return GraphFlux.of(startingNode, outKey, flux, mergeMessage, response -> {
+			// Defensive null check for final text extraction
+			if (response.getResult() == null || response.getResult().getOutput() == null) {
+				return null;
+			}
+			return response.getResult().getOutput().getText();
+		});
 		}
 
 	}
