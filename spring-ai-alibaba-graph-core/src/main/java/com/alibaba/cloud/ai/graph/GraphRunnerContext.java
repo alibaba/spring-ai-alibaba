@@ -333,10 +333,14 @@ public class GraphRunnerContext {
 	 * @param updateState the state updates to apply
 	 */
 	public void mergeIntoCurrentState(Map<String , Object> updateState) {
-		// Create a new map and filter out ChatResponse entries
+		if (updateState == null || updateState.isEmpty()) {
+			return;
+		}
 		Map<String, Object> filteredState = findTokenUsageInDeltaState(updateState);
-
-		this.overallState.updateState(filteredState);
+		if (filteredState.isEmpty()) {
+			return;
+		}
+		this.overallState.updateState(GraphResponse.sanitizeState(filteredState));
 	}
 
 	/**
@@ -349,7 +353,8 @@ public class GraphRunnerContext {
 			if (value instanceof Usage && entry.getKey().equals("_TOKEN_USAGE_")) {
 				// Assign ChatResponse to this.chatResponse
 				this.tokenUsage = (Usage) value;
-			} else {
+			}
+			else {
 				// Add non-ChatResponse entries to the filtered map
 				filteredState.put(entry.getKey(), value);
 			}

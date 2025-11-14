@@ -16,11 +16,15 @@
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.TypeMapper.TYPE_PROPERTY;
 
@@ -55,16 +59,76 @@ public interface JacksonDeserializer<T> {
 		}
 		return switch (valueNode.getNodeType()) {
 			case NULL, MISSING -> null;
-			case ARRAY -> objectMapper.treeToValue(valueNode, List.class);
+			case ARRAY -> deserializeArrayNode(valueNode, objectMapper, typeMapper);
 			case OBJECT, POJO -> {
+				String typeHint = null;
+				if (valueNode.has("@typeHint")) {
+					typeHint = valueNode.get("@typeHint").asText();
+				}
 				if (valueNode.has(TYPE_PROPERTY)) {
 					var type = valueNode.get(TYPE_PROPERTY).asText();
-					// Deserialize to a specific class
 					var ref = typeMapper.getReference(type)
 						.orElseThrow(() -> new IllegalStateException("Type not found: " + type));
-					yield objectMapper.treeToValue(valueNode, ref);
+					ObjectNode copy = valueNode.deepCopy();
+					copy.remove(TYPE_PROPERTY);
+					copy.remove("@typeHint");
+					ObjectMapper mapperNoTyping = objectMapper.copy();
+					mapperNoTyping.setDefaultTyping(null);
+					mapperNoTyping.deactivateDefaultTyping();
+					yield mapperNoTyping.convertValue(copy, ref);
 				}
-				yield objectMapper.treeToValue(valueNode, Object.class);
+				if (valueNode.has("@class")) {
+					String className = valueNode.get("@class").asText();
+					if (!(typeHint != null && className.startsWith("java.util."))) {
+						ObjectNode copy = valueNode.deepCopy();
+						copy.remove("@class");
+						copy.remove("@typeHint");
+						try {
+							Class<?> clazz = Class.forName(className);
+							if (Map.class.isAssignableFrom(clazz)) {
+								Map<String, Object> result = new LinkedHashMap<>();
+								var fields = copy.fields();
+								while (fields.hasNext()) {
+									var entry = fields.next();
+									result.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
+								}
+								yield result;
+							}
+							ObjectMapper mapperNoTyping = objectMapper.copy();
+							mapperNoTyping.setDefaultTyping(null);
+							mapperNoTyping.deactivateDefaultTyping();
+							yield mapperNoTyping.convertValue(copy, clazz);
+						}
+						catch (ClassNotFoundException ex) {
+							throw new IllegalStateException(
+									"Cannot instantiate class " + className + " for @class deserialization", ex);
+						}
+					}
+				}
+				if (typeHint != null) {
+					ObjectNode copy = valueNode.deepCopy();
+					copy.remove("@typeHint");
+					copy.remove(TYPE_PROPERTY);
+					copy.remove("@class");
+					try {
+						Class<?> clazz = Class.forName(typeHint);
+						ObjectMapper mapperNoTyping = objectMapper.copy();
+						mapperNoTyping.setDefaultTyping(null);
+						mapperNoTyping.deactivateDefaultTyping();
+						yield mapperNoTyping.convertValue(copy, clazz);
+					}
+					catch (ClassNotFoundException ex) {
+						throw new IllegalStateException(
+								"Cannot instantiate class " + typeHint + " for @typeHint deserialization", ex);
+					}
+				}
+				Map<String, Object> result = new LinkedHashMap<>();
+				var fields = valueNode.fields();
+				while (fields.hasNext()) {
+					var entry = fields.next();
+					result.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
+				}
+				yield result;
 			}
 			case BOOLEAN -> valueNode.asBoolean();
 			case NUMBER -> {
@@ -96,6 +160,90 @@ public interface JacksonDeserializer<T> {
 			case BINARY -> valueNode.binaryValue();
 		};
 
+	}
+
+	private static Object deserializeArrayNode(JsonNode valueNode, ObjectMapper objectMapper, TypeMapper typeMapper)
+			throws IOException {
+		if (valueNode.size() == 2 && valueNode.get(0).isTextual()) {
+			String className = valueNode.get(0).asText();
+			JsonNode payload = valueNode.get(1);
+			if (payload.isArray()) {
+				if (className.startsWith("[") || className.endsWith("[]")) {
+					return instantiateArray(className, payload, objectMapper, typeMapper);
+				}
+				if (className.startsWith("java.")) {
+					List<Object> list = new java.util.ArrayList<>(payload.size());
+					for (JsonNode element : payload) {
+						list.add(valueFromNode(element, objectMapper, typeMapper));
+					}
+					return list;
+				}
+			}
+		}
+		List<Object> list = new java.util.ArrayList<>(valueNode.size());
+		for (JsonNode element : valueNode) {
+			list.add(valueFromNode(element, objectMapper, typeMapper));
+		}
+		return list;
+	}
+
+	private static Object instantiateArray(String className, JsonNode payload, ObjectMapper objectMapper,
+			TypeMapper typeMapper) throws IOException {
+		try {
+			Class<?> arrayClass = resolveArrayClass(className);
+			Class<?> componentType = arrayClass.componentType();
+			if (componentType.isPrimitive()) {
+				return objectMapper.treeToValue(payload, arrayClass);
+			}
+			int length = payload.size();
+			Object typedArray = Array.newInstance(componentType, length);
+			ObjectMapper mapperNoTyping = objectMapper.copy();
+			mapperNoTyping.setDefaultTyping(null);
+			mapperNoTyping.deactivateDefaultTyping();
+			for (int i = 0; i < length; i++) {
+				JsonNode elementNode = payload.get(i);
+				Object element;
+				try {
+					element = mapperNoTyping.convertValue(elementNode, componentType);
+				}
+				catch (IllegalArgumentException ex) {
+					element = valueFromNode(elementNode, objectMapper, typeMapper);
+				}
+				if (element == null && !componentType.isPrimitive()) {
+					Array.set(typedArray, i, null);
+					continue;
+				}
+				if (element != null && !componentType.isInstance(element)) {
+					return payload.traverse(mapperNoTyping).readValueAs(Object[].class);
+				}
+				Array.set(typedArray, i, element);
+			}
+			return typedArray;
+		}
+		catch (ClassNotFoundException ex) {
+			throw new IllegalStateException("Cannot instantiate array type: " + className, ex);
+		}
+	}
+
+	private static Class<?> resolveArrayClass(String className) throws ClassNotFoundException {
+		if (className.startsWith("[")) {
+			return Class.forName(className);
+		}
+		if (!className.endsWith("[]")) {
+			throw new ClassNotFoundException("Unsupported array type representation: " + className);
+		}
+		String componentName = className.substring(0, className.length() - 2);
+		return switch (componentName) {
+			case "boolean" -> boolean[].class;
+			case "byte" -> byte[].class;
+			case "char" -> char[].class;
+			case "short" -> short[].class;
+			case "int" -> int[].class;
+			case "long" -> long[].class;
+			case "float" -> float[].class;
+			case "double" -> double[].class;
+			default -> Class.forName("[L" + componentName + ";");
+		};
 	}
 
 	/**
