@@ -30,9 +30,13 @@ class SerializationHelper {
 
 	static Map<String, Object> deserializeMetadata(ObjectMapper mapper, JsonNode parentNode)
 			throws JsonProcessingException {
+		if (parentNode == null) {
+			return Map.of();
+		}
+
 		var node = parentNode.findValue(METADATA_FIELD);
 
-		if (node.isNull() || node.isEmpty()) {
+		if (node == null || node.isNull() || node.isEmpty()) {
 			return Map.of();
 		}
 		if (!node.isObject()) {
