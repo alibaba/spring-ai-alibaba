@@ -84,6 +84,8 @@ public abstract class Builder {
 	protected ChatClientObservationConvention customObservationConvention;
 
 	protected boolean enableLogging;
+	
+	private int recursionLimit = 100;
 
 	public Builder name(String name) {
 		this.name = name;
@@ -220,6 +222,11 @@ public abstract class Builder {
 		this.enableLogging = enableLogging;
 		return this;
 	}
+	
+	public Builder recursionLimit(int recursionLimit) {
+		this.recursionLimit = recursionLimit;
+		return this;
+	}
 
 	protected CompileConfig buildConfig() {
 		SaverConfig saverConfig = SaverConfig.builder()
@@ -227,7 +234,7 @@ public abstract class Builder {
 				.build();
 		return CompileConfig.builder()
 				.saverConfig(saverConfig)
-				.recursionLimit(Integer.MAX_VALUE)
+				.recursionLimit(recursionLimit)
 				.releaseThread(releaseThread)
 				.build();
 	}
