@@ -221,34 +221,45 @@ public class NodeExecutor extends BaseGraphExecutor {
 						return lastGraphResponse;
 					}
 
-					final var currentMessage = response.getResult().getOutput();
+                    final var currentMessage = response.getResult().getOutput();
 
-					if (currentMessage.hasToolCalls()) {
-						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-							.of(context.buildStreamingOutput(currentMessage, response, context.getCurrentNodeId()));
-						lastGraphResponseRef.set(lastGraphResponse);
-						return lastGraphResponse;
-					}
+                    final var lastMessage = lastResponse.getResult().getOutput();
 
-					final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
-							"lastResponse text cannot be null");
+                    final var lastMessageText = requireNonNull(lastMessage.getText(),
+                            "lastResponse text cannot be null");
+                    // merge message
+                    final var currentMessageText = currentMessage.getText();
+                    final var mergedText = currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText;
 
-					final var currentMessageText = currentMessage.getText();
+                    // merge tool calls：if current message have tool calls，use now；otherwise, use the previous one
+                    var mergedToolCalls = currentMessage.hasToolCalls() ? currentMessage.getToolCalls() : lastMessage.getToolCalls();
 
-					var newMessage = new AssistantMessage(
-							currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText,
-							currentMessage.getMetadata(), currentMessage.getToolCalls(), currentMessage.getMedia());
+                    var newMessage = new org.springframework.ai.chat.messages.AssistantMessage(
+                            mergedText,
+                            currentMessage.getMetadata(),
+                            mergedToolCalls,
+                            currentMessage.getMedia());
+                    var newGeneration = new org.springframework.ai.chat.model.Generation(newMessage,
+                            response.getResult().getMetadata());
 
-					var newGeneration = new Generation(newMessage,
-							response.getResult().getMetadata());
+                    org.springframework.ai.chat.model.ChatResponse newResponse = new org.springframework.ai.chat.model.ChatResponse(
+                            List.of(newGeneration), response.getMetadata());
+                    lastChatResponseRef.set(newResponse);
 
-					ChatResponse newResponse = new ChatResponse(
-							List.of(newGeneration), response.getMetadata());
-					lastChatResponseRef.set(newResponse);
-					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-						.of(context.buildStreamingOutput(response.getResult().getOutput(), response, context.getCurrentNodeId()));
-					// lastGraphResponseRef.set(lastGraphResponse);
-					return lastGraphResponse;
+                    if (currentMessage.hasToolCalls()) {
+                        GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
+                                .of(new StreamingOutput<>(currentMessage.getToolCalls().toString(), response, context.getCurrentNodeId(), context.getOverallState()));
+                        lastGraphResponseRef.set(lastGraphResponse);
+                        return lastGraphResponse;
+                    }
+
+                    GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
+                            .of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(),
+                                    context.getOverallState()));
+
+                    // lastGraphResponseRef.set(lastGraphResponse);
+                    return lastGraphResponse;
+
 				}
 				else if (element instanceof GraphResponse) {
 					GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
