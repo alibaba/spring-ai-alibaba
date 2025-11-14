@@ -48,14 +48,11 @@ import org.slf4j.LoggerFactory;
  * context continuity.
  *
  * Example:
- * <pre>
  * SummarizationHook summarizer = SummarizationHook.builder()
  *     .model(chatModel)
  *     .maxTokensBeforeSummary(4000)
  *     .messagesToKeep(20)
  *     .build();
-@HookPositions(HookPosition.BEFORE_MODEL)
- * </pre>
  */
 @HookPositions({HookPosition.BEFORE_MODEL})
 public class SummarizationHook extends ModelHook {

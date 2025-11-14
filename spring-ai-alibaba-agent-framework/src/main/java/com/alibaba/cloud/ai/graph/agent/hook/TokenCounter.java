@@ -28,7 +28,6 @@ import java.util.List;
  * estimating token counts in conversation messages.</p>
  *
  * Example:
- * <pre>
  * TokenCounter counter = messages -> {
  *     int total = 0;
  *     for (Message msg : messages) {
@@ -36,7 +35,6 @@ import java.util.List;
  *     }
  *     return total;
  * };
- * </pre>
  */
 @FunctionalInterface
 public interface TokenCounter {
