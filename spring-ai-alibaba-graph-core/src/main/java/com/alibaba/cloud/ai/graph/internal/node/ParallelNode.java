@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -125,13 +126,18 @@ public class ParallelNode extends Node {
 						// Use GraphFlux's own nodeId, or generate one if not set properly
 						String graphFluxNodeId = graphFlux.getNodeId() != null ?
 								graphFlux.getNodeId() : effectiveNodeId;
+						String graphFluxKey = graphFlux.getKey() != null ? graphFlux.getKey() : entry.getKey();
+						if (graphFluxKey == null) {
+							graphFluxKey = graphFluxNodeId;
+						}
 
 						// Create new GraphFlux with correct nodeId if needed
-						if (!graphFluxNodeId.equals(graphFlux.getNodeId())) {
+						if (!Objects.equals(graphFluxNodeId, graphFlux.getNodeId())
+								|| !Objects.equals(graphFluxKey, graphFlux.getKey())) {
 							@SuppressWarnings("unchecked")
 							GraphFlux<Object> castedFlux = (GraphFlux<Object>) graphFlux;
 							@SuppressWarnings("unchecked")
-							GraphFlux<Object> newGraphFlux = GraphFlux.of(graphFluxNodeId, entry.getKey(), 
+							GraphFlux<Object> newGraphFlux = GraphFlux.of(graphFluxNodeId, graphFluxKey,
 									castedFlux.getFlux(), castedFlux.getMapResult(), castedFlux.getChunkResult());
 							graphFlux = newGraphFlux;
 						}
