@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.graph.agent.documentation;
+package com.alibaba.cloud.ai.examples.documentation.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -29,10 +29,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 
 /**
- * Agents Tutorial - 完整代码示例
- * 展示如何使用ReactAgent创建智能代理系统
- *
- * 来源：agents.md
+ * Agents Tutorial - agents.md
  */
 public class AgentsExample {
 
@@ -70,9 +67,9 @@ public class AgentsExample {
 		ChatModel chatModel = DashScopeChatModel.builder()
 			.dashScopeApi(dashScopeApi)
 			.defaultOptions(DashScopeChatOptions.builder()
-				.temperature(0.7)      // 控制随机性
-				.maxTokens(2000)       // 最大输出长度
-				.topP(0.9)            // 核采样参数
+				.withTemperature(0.7)      // 控制随机性
+				.withMaxToken(2000)       // 最大输出长度
+				.withTopP(0.9)            // 核采样参数
 				.build())
 			.build();
 	}
@@ -216,7 +213,7 @@ public class AgentsExample {
 		ReactAgent agent = ReactAgent.builder()
 			.name("adaptive_agent")
 			.model(chatModel)
-			.modelInterceptors(new DynamicPromptInterceptor())
+			.interceptors(new DynamicPromptInterceptor())
 			.build();
 	}
 
@@ -493,7 +490,7 @@ public class AgentsExample {
 		public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 			// 前置：检查输入
 			if (containsSensitiveContent(request.getMessages())) {
-				return ModelResponse.blocked("检测到不适当的内容");
+				return ModelResponse.of("检测到不适当的内容");
 			}
 
 			// 执行调用

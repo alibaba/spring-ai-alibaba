@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.graph.agent.documentation;
+package com.alibaba.cloud.ai.examples.documentation.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -9,6 +9,8 @@ import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.ToolContext;
@@ -22,6 +24,7 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
 /**
@@ -37,7 +40,7 @@ public class MemoryExample {
 	/**
 	 * 示例1：基础记忆配置
 	 */
-	public static void basicMemoryConfiguration() {
+	public static void basicMemoryConfiguration() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -95,7 +98,7 @@ public class MemoryExample {
 	/**
 	 * 示例3：在 Hook 中访问和修改状态
 	 */
-	public static class CustomMemoryHook implements ModelHook {
+	public static class CustomMemoryHook extends ModelHook {
 
 		@Override
 		public String getName() {
@@ -108,7 +111,7 @@ public class MemoryExample {
 		}
 
 		@Override
-		public Map<String, Object> beforeModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
 			// 访问消息历史
 			Optional<Object> messagesOpt = state.value("messages");
 			if (messagesOpt.isPresent()) {
@@ -117,15 +120,15 @@ public class MemoryExample {
 			}
 
 			// 添加自定义状态
-			return Map.of(
+			return  CompletableFuture.completedFuture(Map.of(
 				"user_id", "user_123",
 				"preferences", Map.of("theme", "dark")
-			);
+			));
 		}
 
 		@Override
-		public Map<String, Object> afterModel(OverAllState state, RunnableConfig config) {
-			return Map.of();
+		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+			return  CompletableFuture.completedFuture(Map.of());
 		}
 	}
 
@@ -134,7 +137,7 @@ public class MemoryExample {
 	/**
 	 * 示例4：消息修剪 Hook
 	 */
-	public static class MessageTrimmingHook implements ModelHook {
+	public static class MessageTrimmingHook extends ModelHook {
 
 		private static final int MAX_MESSAGES = 3;
 
@@ -149,16 +152,16 @@ public class MemoryExample {
 		}
 
 		@Override
-		public Map<String, Object> beforeModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
 			Optional<Object> messagesOpt = state.value("messages");
 			if (!messagesOpt.isPresent()) {
-				return Map.of();
+				return  CompletableFuture.completedFuture(Map.of());
 			}
 
 			List<Message> messages = (List<Message>) messagesOpt.get();
 
 			if (messages.size() <= MAX_MESSAGES) {
-				return Map.of(); // 无需更改
+				return  CompletableFuture.completedFuture(Map.of()); // 无需更改
 			}
 
 			// 保留第一条消息和最后几条消息
@@ -173,19 +176,19 @@ public class MemoryExample {
 			newMessages.add(firstMsg);
 			newMessages.addAll(recentMessages);
 
-			return Map.of("messages", newMessages);
+			return  CompletableFuture.completedFuture(Map.of("messages", newMessages));
 		}
 
 		@Override
-		public Map<String, Object> afterModel(OverAllState state, RunnableConfig config) {
-			return Map.of();
+		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+			return  CompletableFuture.completedFuture(Map.of());
 		}
 	}
 
 	/**
 	 * 示例5：使用消息修剪
 	 */
-	public static void useMessageTrimming() {
+	public static void useMessageTrimming() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -223,7 +226,7 @@ public class MemoryExample {
 	/**
 	 * 示例6：消息删除 Hook
 	 */
-	public static class MessageDeletionHook implements ModelHook {
+	public static class MessageDeletionHook extends ModelHook {
 
 		@Override
 		public String getName() {
@@ -236,15 +239,15 @@ public class MemoryExample {
 		}
 
 		@Override
-		public Map<String, Object> beforeModel(OverAllState state, RunnableConfig config) {
-			return Map.of();
+		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+			return  CompletableFuture.completedFuture(Map.of());
 		}
 
 		@Override
-		public Map<String, Object> afterModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
 			Optional<Object> messagesOpt = state.value("messages");
 			if (!messagesOpt.isPresent()) {
-				return Map.of();
+				return  CompletableFuture.completedFuture(Map.of());
 			}
 
 			List<Message> messages = (List<Message>) messagesOpt.get();
@@ -252,17 +255,17 @@ public class MemoryExample {
 			if (messages.size() > 2) {
 				// 移除最早的两条消息
 				List<Message> trimmed = messages.subList(2, messages.size());
-				return Map.of("messages", trimmed);
+				return  CompletableFuture.completedFuture(Map.of("messages", trimmed));
 			}
 
-			return Map.of();
+			return  CompletableFuture.completedFuture(Map.of());
 		}
 	}
 
 	/**
 	 * 示例7：删除所有消息
 	 */
-	public static class ClearAllMessagesHook implements ModelHook {
+	public static class ClearAllMessagesHook extends ModelHook {
 
 		@Override
 		public String getName() {
@@ -275,21 +278,21 @@ public class MemoryExample {
 		}
 
 		@Override
-		public Map<String, Object> beforeModel(OverAllState state, RunnableConfig config) {
-			return Map.of();
+		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+			return  CompletableFuture.completedFuture(Map.of());
 		}
 
 		@Override
-		public Map<String, Object> afterModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
 			// 清除所有消息
-			return Map.of("messages", new ArrayList<Message>());
+			return  CompletableFuture.completedFuture(Map.of("messages", new ArrayList<Message>()));
 		}
 	}
 
 	/**
 	 * 示例8：使用消息删除
 	 */
-	public static void useMessageDeletion() {
+	public static void useMessageDeletion() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -324,7 +327,7 @@ public class MemoryExample {
 	/**
 	 * 示例9：消息总结 Hook
 	 */
-	public static class MessageSummarizationHook implements ModelHook {
+	public static class MessageSummarizationHook extends ModelHook {
 
 		private final ChatModel summaryModel;
 		private final int maxTokensBeforeSummary;
@@ -351,10 +354,10 @@ public class MemoryExample {
 		}
 
 		@Override
-		public Map<String, Object> beforeModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
 			Optional<Object> messagesOpt = state.value("messages");
 			if (!messagesOpt.isPresent()) {
-				return Map.of();
+				return  CompletableFuture.completedFuture(Map.of());
 			}
 
 			List<Message> messages = (List<Message>) messagesOpt.get();
@@ -365,13 +368,13 @@ public class MemoryExample {
 				.sum();
 
 			if (estimatedTokens < maxTokensBeforeSummary) {
-				return Map.of();
+				return  CompletableFuture.completedFuture(Map.of());
 			}
 
 			// 需要总结
 			int messagesToSummarize = messages.size() - messagesToKeep;
 			if (messagesToSummarize <= 0) {
-				return Map.of();
+				return  CompletableFuture.completedFuture(Map.of());
 			}
 
 			List<Message> oldMessages = messages.subList(0, messagesToSummarize);
@@ -392,12 +395,12 @@ public class MemoryExample {
 			newMessages.add(summaryMessage);
 			newMessages.addAll(recentMessages);
 
-			return Map.of("messages", newMessages);
+			return  CompletableFuture.completedFuture(Map.of("messages", newMessages));
 		}
 
 		@Override
-		public Map<String, Object> afterModel(OverAllState state, RunnableConfig config) {
-			return Map.of();
+		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+			return  CompletableFuture.completedFuture(Map.of());
 		}
 
 		private String generateSummary(List<Message> messages) {
@@ -422,7 +425,7 @@ public class MemoryExample {
 	/**
 	 * 示例10：使用消息总结
 	 */
-	public static void useMessageSummarization() {
+	public static void useMessageSummarization() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -484,7 +487,7 @@ public class MemoryExample {
 	/**
 	 * 示例12：使用工具访问记忆
 	 */
-	public static void accessMemoryInTool() {
+	public static void accessMemoryInTool() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();

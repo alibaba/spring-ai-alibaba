@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.graph.agent.documentation;
+package com.alibaba.cloud.ai.examples.documentation.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -7,6 +7,8 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -14,7 +16,6 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -107,7 +108,7 @@ public class ToolsExample {
 			.inputType(String.class)
 			.build();
 
-		System.out.println(searchTool.getName());  // web_search
+		System.out.println(searchTool.getToolDefinition().name());  // web_search
 	}
 
 	/**
@@ -149,7 +150,7 @@ public class ToolsExample {
 	public static class WeatherFunction implements Function<WeatherInput, String> {
 		@Override
 		public String apply(WeatherInput input) {
-			double temp = input.units() == Unit.CELSIUS ? 22 : 72;
+			double temp = input.units() == Unit.F ? 22 : 72;
 			String result = String.format(
 				"Current weather in %s: %.0f degrees %s",
 				input.location(),
@@ -254,7 +255,7 @@ public class ToolsExample {
 		@Override
 		public String apply(String query, ToolContext toolContext) {
 			RunnableConfig config = (RunnableConfig) toolContext.getContext().get("config");
-			String userId = (String) config.metadata("user_id");
+			String userId = (String) config.metadata("user_id").orElse(null);
 
 			if (userId == null) {
 				return "User ID not provided";
@@ -277,7 +278,7 @@ public class ToolsExample {
 	/**
 	 * 示例7：访问上下文
 	 */
-	public static void accessingContext() {
+	public static void accessingContext() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -313,7 +314,7 @@ public class ToolsExample {
 	/**
 	 * 示例8：使用存储访问跨对话的持久数据
 	 */
-	public static void accessingMemoryStore(RedisConnectionFactory redisConnectionFactory) {
+	public static void accessingMemoryStore() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -323,7 +324,7 @@ public class ToolsExample {
 			.build();
 
 		// 配置持久化存储
-		RedisSaver redisSaver = new RedisSaver(redisConnectionFactory);
+		MemorySaver memorySaver = new MemorySaver();
 
 		// 创建工具
 		ToolCallback saveUserInfoTool = createSaveUserInfoTool();
@@ -334,7 +335,7 @@ public class ToolsExample {
 			.name("my_agent")
 			.model(chatModel)
 			.tools(saveUserInfoTool, getUserInfoTool)
-			.saver(redisSaver)
+			.saver(memorySaver)
 			.build();
 
 		// 第一个会话：保存用户信息
@@ -344,7 +345,7 @@ public class ToolsExample {
 
 		agent.call("Save user: userid: abc123, name: Foo, age: 25, email: foo@example.com", config1);
 
-		// 第二个会话：获取用户信息
+		// 第二个会话：获取用户信息，注意这里用的是不同的 threadId
 		RunnableConfig config2 = RunnableConfig.builder()
 			.threadId("session_2")
 			.build();
@@ -357,7 +358,7 @@ public class ToolsExample {
 	/**
 	 * 示例9：在 ReactAgent 中使用工具
 	 */
-	public static void toolsInReactAgent() {
+	public static void toolsInReactAgent() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -398,7 +399,7 @@ public class ToolsExample {
 	/**
 	 * 示例10：完整的工具使用示例
 	 */
-	public static void comprehensiveToolExample() {
+	public static void comprehensiveToolExample() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();

@@ -33,11 +33,6 @@ public abstract class ModelHook implements Hook {
         return CompletableFuture.completedFuture(Map.of());
     }
 
-    @Override
-    public HookType getHookType() {
-        return HookType.MODEL;
-    }
-
     public void setAgentName(String agentName) {
         this.agentName = agentName;
     }

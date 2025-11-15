@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.graph.agent.documentation;
+package com.alibaba.cloud.ai.examples.documentation.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -8,10 +8,17 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.*;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
+import com.alibaba.cloud.ai.graph.agent.hook.pii.PIIDetectionHook;
+import com.alibaba.cloud.ai.graph.agent.hook.pii.PIIType;
+import com.alibaba.cloud.ai.graph.agent.hook.pii.RedactionStrategy;
 import com.alibaba.cloud.ai.graph.agent.hook.summarization.SummarizationHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.*;
+import com.alibaba.cloud.ai.graph.agent.interceptor.contextediting.ContextEditingInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.todolist.TodoListInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolemulator.ToolEmulatorInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolretry.ToolRetryInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.toolselection.ToolSelectionInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
 import org.springframework.ai.chat.model.ChatModel;
@@ -21,16 +28,13 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 /**
- * Hooks 和 Interceptors Tutorial - 完整代码示例
- * 展示如何使用Hooks和Interceptors精细控制Agent执行
- *
- * 来源：hooks.md
+ * Hooks & Interceptors Tutorial - hooks.md
  */
 public class HooksExample {
 
@@ -62,8 +66,8 @@ public class HooksExample {
 			.model(chatModel)
 			.tools(tools)
 			.hooks(loggingHook, messageTrimmingHook)
-			.modelInterceptors(guardrailInterceptor)
-			.toolInterceptors(retryInterceptor)
+			.interceptors(guardrailInterceptor)
+			.interceptors(retryInterceptor)
 			.build();
 	}
 
@@ -94,6 +98,8 @@ public class HooksExample {
 			.model(chatModel)
 			.hooks(summarizationHook)
 			.build();
+
+
 	}
 
 	// ==================== Human-in-the-Loop ====================
@@ -101,7 +107,7 @@ public class HooksExample {
 	/**
 	 * 示例3：Human-in-the-Loop Hook
 	 */
-	public static void humanInTheLoop(RedisConnectionFactory redisConnectionFactory) {
+	public static void humanInTheLoop() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -119,7 +125,9 @@ public class HooksExample {
 			.approvalOn("sendEmailTool", ToolConfig.builder()
 				.description("Please confirm sending the email.")
 				.build())
-			.approvalOn("deleteDataTool")
+			.approvalOn("deleteDataTool", ToolConfig.builder()
+				.description("Please confirm deleting the data.")
+				.build())
 			.build();
 
 		ReactAgent agent = ReactAgent.builder()
@@ -127,7 +135,7 @@ public class HooksExample {
 			.model(chatModel)
 			.tools(sendEmailTool, deleteDataTool)
 			.hooks(humanReviewHook)
-			.saver(new RedisSaver(redisConnectionFactory))
+			.saver(new MemorySaver())
 			.build();
 	}
 
@@ -148,45 +156,11 @@ public class HooksExample {
 		ReactAgent agent = ReactAgent.builder()
 			.name("my_agent")
 			.model(chatModel)
-			.maxIterations(10)  // 最多 10 次迭代（默认为 10）
+			.hooks(ModelCallLimitHook.builder().runLimit(5).build())  // 限制模型调用次数为5次
 			.saver(new MemorySaver())
 			.build();
 	}
 
-	/**
-	 * 示例5：自定义停止条件
-	 */
-	public static void customStopCondition() {
-		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
-
-		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
-
-		Function<OverAllState, Boolean> customStopCondition = state -> {
-			// 如果找到答案或错误过多则停止
-			Optional<Object> foundAnswer = state.value("answer_found");
-			if (foundAnswer.isPresent() && (Boolean) foundAnswer.get()) {
-				return false;  // 停止执行
-			}
-
-			Optional<Object> errorCount = state.value("error_count");
-			if (errorCount.isPresent() && (Integer) errorCount.get() > 3) {
-				return false;  // 停止执行
-			}
-
-			return true;  // 继续执行
-		};
-
-		ReactAgent agent = ReactAgent.builder()
-			.name("controlled_agent")
-			.model(chatModel)
-			.shouldContinueFunction(customStopCondition)
-			.saver(new MemorySaver())
-			.build();
-	}
 
 	// ==================== PII 检测 ====================
 
@@ -202,11 +176,17 @@ public class HooksExample {
 			.dashScopeApi(dashScopeApi)
 			.build();
 
+		PIIDetectionHook pii = PIIDetectionHook.builder()
+				.piiType(PIIType.EMAIL)
+				.strategy(RedactionStrategy.REDACT)
+				.applyToInput(true)
+				.build();
+
 		// 使用
 		ReactAgent agent = ReactAgent.builder()
 			.name("secure_agent")
 			.model(chatModel)
-			.modelInterceptors(new PIIDetectionInterceptor())
+			.hooks(pii)
 			.build();
 	}
 
@@ -233,7 +213,7 @@ public class HooksExample {
 			.name("resilient_agent")
 			.model(chatModel)
 			.tools(searchTool, databaseTool)
-			.toolInterceptors(new ToolRetryInterceptor(3, 1000, 2.0))
+			.interceptors(ToolRetryInterceptor.builder().maxRetries(2).onFailure(ToolRetryInterceptor.OnFailureBehavior.RETURN_MESSAGE).build())
 			.build();
 	}
 
@@ -258,7 +238,7 @@ public class HooksExample {
 			.name("planning_agent")
 			.model(chatModel)
 			.tools(myTool)
-			.hooks(new PlanningHook())
+			.interceptors(TodoListInterceptor.builder().build())
 			.build();
 	}
 
@@ -286,7 +266,7 @@ public class HooksExample {
 			.name("smart_selector_agent")
 			.model(chatModel)
 			.tools(tool1, tool2)
-			.toolInterceptors(new LLMToolSelectorInterceptor(selectorModel))
+			.interceptors(ToolSelectionInterceptor.builder().build())
 			.build();
 	}
 
@@ -311,7 +291,7 @@ public class HooksExample {
 			.name("emulator_agent")
 			.model(chatModel)
 			.tools(simulatedTool)
-			.toolInterceptors(new ToolEmulatorInterceptor(chatModel))
+			.interceptors(ToolEmulatorInterceptor.builder().model(chatModel).build())
 			.build();
 	}
 
@@ -333,7 +313,7 @@ public class HooksExample {
 		ReactAgent agent = ReactAgent.builder()
 			.name("context_aware_agent")
 			.model(chatModel)
-			.hooks(new ContextEditingHook("Remember to be polite and helpful."))
+			.interceptors(ContextEditingInterceptor.builder().trigger(120000).clearAtLeast(60000).build())
 			.build();
 	}
 
@@ -342,7 +322,8 @@ public class HooksExample {
 	/**
 	 * 示例12：自定义 ModelHook
 	 */
-	public static class CustomModelHook implements ModelHook {
+	@HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
+	public static class CustomModelHook extends ModelHook {
 
 		@Override
 		public String getName() {
@@ -350,37 +331,30 @@ public class HooksExample {
 		}
 
 		@Override
-		public HookPosition[] getHookPositions() {
-			return new HookPosition[]{
-				HookPosition.BEFORE_MODEL,
-				HookPosition.AFTER_MODEL
-			};
-		}
-
-		@Override
-		public Map<String, Object> beforeModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
 			// 在模型调用前执行
 			System.out.println("准备调用模型...");
 
 			// 可以修改状态
 			// 例如：添加额外的上下文
-			return Map.of("extra_context", "某些额外信息");
+			return CompletableFuture.completedFuture(Map.of("extra_context", "某些额外信息"));
 		}
 
 		@Override
-		public Map<String, Object> afterModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>>  afterModel(OverAllState state, RunnableConfig config) {
 			// 在模型调用后执行
 			System.out.println("模型调用完成");
 
 			// 可以记录响应信息
-			return Map.of();
+			return CompletableFuture.completedFuture(Map.of());
 		}
 	}
 
 	/**
 	 * 示例13：自定义 AgentHook
 	 */
-	public static class CustomAgentHook implements AgentHook {
+	@HookPositions({HookPosition.BEFORE_AGENT, HookPosition.AFTER_AGENT})
+	public static class CustomAgentHook extends AgentHook {
 
 		@Override
 		public String getName() {
@@ -388,22 +362,14 @@ public class HooksExample {
 		}
 
 		@Override
-		public HookPosition[] getHookPositions() {
-			return new HookPosition[]{
-				HookPosition.BEFORE_AGENT,
-				HookPosition.AFTER_AGENT
-			};
-		}
-
-		@Override
-		public Map<String, Object> beforeAgent(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> beforeAgent(OverAllState state, RunnableConfig config) {
 			System.out.println("Agent 开始执行");
 			// 可以初始化资源、记录开始时间等
-			return Map.of("start_time", System.currentTimeMillis());
+			return CompletableFuture.completedFuture(Map.of("start_time", System.currentTimeMillis()));
 		}
 
 		@Override
-		public Map<String, Object> afterAgent(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> afterAgent(OverAllState state, RunnableConfig config) {
 			System.out.println("Agent 执行完成");
 			// 可以清理资源、计算执行时间等
 			Optional<Object> startTime = state.value("start_time");
@@ -411,7 +377,7 @@ public class HooksExample {
 				long duration = System.currentTimeMillis() - (Long) startTime.get();
 				System.out.println("执行耗时: " + duration + "ms");
 			}
-			return Map.of();
+			return CompletableFuture.completedFuture(Map.of());
 		}
 	}
 
@@ -420,7 +386,7 @@ public class HooksExample {
 	/**
 	 * 示例14：自定义 ModelInterceptor
 	 */
-	public static class LoggingInterceptor implements ModelInterceptor {
+	public static class LoggingInterceptor extends ModelInterceptor {
 
 		@Override
 		public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
@@ -438,12 +404,17 @@ public class HooksExample {
 
 			return response;
 		}
+
+		@Override
+		public String getName() {
+			return "LoggingInterceptor";
+		}
 	}
 
 	/**
 	 * 示例15：自定义 ToolInterceptor
 	 */
-	public static class ToolMonitoringInterceptor implements ToolInterceptor {
+	public static class ToolMonitoringInterceptor extends ToolInterceptor {
 
 		@Override
 		public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
@@ -463,11 +434,17 @@ public class HooksExample {
 				long duration = System.currentTimeMillis() - startTime;
 				System.err.println("工具 " + toolName + " 执行失败 (耗时: " + duration + "ms): " + e.getMessage());
 
-				return ToolCallResponse.error(
-					request.getToolCall(),
+				return ToolCallResponse.of(
+						request.getToolCallId(),
+						request.getToolName(),
 					"工具执行失败: " + e.getMessage()
 				);
 			}
+		}
+
+		@Override
+		public String getName() {
+			return "ToolMonitoringInterceptor";
 		}
 	}
 
@@ -476,7 +453,8 @@ public class HooksExample {
 	/**
 	 * 日志记录 ModelHook
 	 */
-	private static class LoggingModelHook implements ModelHook {
+	@HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
+	private static class LoggingModelHook extends ModelHook {
 		@Override
 		public String getName() {
 			return "logging_model_hook";
@@ -488,22 +466,22 @@ public class HooksExample {
 		}
 
 		@Override
-		public Map<String, Object> beforeModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
 			System.out.println("Before model call");
-			return Map.of();
+			return CompletableFuture.completedFuture(Map.of());
 		}
 
 		@Override
-		public Map<String, Object> afterModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>>  afterModel(OverAllState state, RunnableConfig config) {
 			System.out.println("After model call");
-			return Map.of();
+			return CompletableFuture.completedFuture(Map.of());
 		}
 	}
 
 	/**
 	 * 消息修剪 Hook
 	 */
-	private static class MessageTrimmingHook implements ModelHook {
+	private static class MessageTrimmingHook extends ModelHook {
 		@Override
 		public String getName() {
 			return "message_trimming";
@@ -515,42 +493,52 @@ public class HooksExample {
 		}
 
 		@Override
-		public Map<String, Object> beforeModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
 			Optional<Object> messagesOpt = state.value("messages");
 			if (messagesOpt.isPresent()) {
 				List<Message> messages = (List<Message>) messagesOpt.get();
 				if (messages.size() > 10) {
-					return Map.of("messages", messages.subList(messages.size() - 10, messages.size()));
+					return CompletableFuture.completedFuture(Map.of("messages", messages.subList(messages.size() - 10, messages.size())));
 				}
 			}
-			return Map.of();
+			return CompletableFuture.completedFuture(Map.of());
 		}
 
 		@Override
-		public Map<String, Object> afterModel(OverAllState state, RunnableConfig config) {
-			return Map.of();
+		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+			return CompletableFuture.completedFuture(Map.of());
 		}
 	}
 
 	/**
 	 * 护栏拦截器
 	 */
-	private static class GuardrailInterceptor implements ModelInterceptor {
+	private static class GuardrailInterceptor extends ModelInterceptor {
 		@Override
 		public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 			// 简化的实现
 			return handler.call(request);
+		}
+
+		@Override
+		public String getName() {
+			return "GuardrailInterceptor";
 		}
 	}
 
 	/**
 	 * 重试工具拦截器
 	 */
-	private static class RetryToolInterceptor implements ToolInterceptor {
+	private static class RetryToolInterceptor extends ToolInterceptor {
 		@Override
 		public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
 			// 简化的实现
 			return handler.call(request);
+		}
+
+		@Override
+		public String getName() {
+			return "RetryToolInterceptor";
 		}
 	}
 

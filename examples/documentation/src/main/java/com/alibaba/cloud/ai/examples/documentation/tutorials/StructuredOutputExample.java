@@ -1,9 +1,11 @@
-package com.alibaba.cloud.ai.graph.agent.documentation;
+package com.alibaba.cloud.ai.examples.documentation.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -113,7 +115,7 @@ public class StructuredOutputExample {
 	/**
 	 * 示例1：基本 JSON Schema
 	 */
-	public static void basicJsonSchema() {
+	public static void basicJsonSchema() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -148,7 +150,7 @@ public class StructuredOutputExample {
 	/**
 	 * 示例2：复杂嵌套 Schema
 	 */
-	public static void complexNestedSchema() {
+	public static void complexNestedSchema() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -187,7 +189,7 @@ public class StructuredOutputExample {
 	/**
 	 * 示例3：结构化分析 Schema
 	 */
-	public static void structuredAnalysisSchema() {
+	public static void structuredAnalysisSchema() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -228,7 +230,7 @@ public class StructuredOutputExample {
 	/**
 	 * 示例4：使用 outputType - ContactInfo
 	 */
-	public static void outputTypeContactInfo() {
+	public static void outputTypeContactInfo() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -254,7 +256,7 @@ public class StructuredOutputExample {
 	/**
 	 * 示例5：使用 outputType - ProductReview
 	 */
-	public static void outputTypeProductReview() {
+	public static void outputTypeProductReview() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -280,7 +282,7 @@ public class StructuredOutputExample {
 	/**
 	 * 示例6：使用 outputType - TextAnalysis
 	 */
-	public static void outputTypeTextAnalysis() {
+	public static void outputTypeTextAnalysis() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -329,7 +331,7 @@ public class StructuredOutputExample {
 			ContactInfo data = mapper.readValue(result.getText(), ContactInfo.class);
 			// 处理数据
 			System.out.println("Name: " + data.getName());
-		} catch (JsonProcessingException e) {
+		} catch (JsonProcessingException | GraphRunnerException e) {
 			System.err.println("JSON解析失败: " + e.getMessage());
 			// 回退处理
 		}
@@ -433,7 +435,7 @@ public class StructuredOutputExample {
 	/**
 	 * 示例10：完整的结构化输出示例
 	 */
-	public static void comprehensiveExample() {
+	public static void comprehensiveExample() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();

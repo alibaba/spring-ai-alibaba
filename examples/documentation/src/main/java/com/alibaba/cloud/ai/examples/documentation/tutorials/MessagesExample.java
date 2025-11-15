@@ -1,8 +1,10 @@
-package com.alibaba.cloud.ai.graph.agent.documentation;
+package com.alibaba.cloud.ai.examples.documentation.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+
 import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -183,11 +185,8 @@ public class MessagesExample {
 		// 从 URL 创建图像
 		UserMessage userMsg = UserMessage.builder()
 			.text("描述这张图片的内容。")
-			.media(new Media(
-				MimeTypeUtils.IMAGE_JPEG,
-				new URL("https://example.com/image.jpg")
-			))
-			.build();
+			.media(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(new URL("https://example.com/image.jpg"))
+			.build()).build();
 	}
 
 	// ==================== Assistant Message ====================
@@ -278,7 +277,7 @@ public class MessagesExample {
 		// 访问使用信息
 		if (metadata != null && metadata.getUsage() != null) {
 			System.out.println("Input tokens: " + metadata.getUsage().getPromptTokens());
-			System.out.println("Output tokens: " + metadata.getUsage().getGenerationTokens());
+			System.out.println("Output tokens: " + metadata.getUsage().getCompletionTokens());
 			System.out.println("Total tokens: " + metadata.getUsage().getTotalTokens());
 		}
 	}
@@ -323,7 +322,7 @@ public class MessagesExample {
 
 		// 在模型进行工具调用后
 		AssistantMessage aiMessage = AssistantMessage.builder()
-			.text("")
+			.content("")
 			.toolCalls(List.of(
 				new AssistantMessage.ToolCall(
 					"call_123",
@@ -360,10 +359,8 @@ public class MessagesExample {
 		// 从 URL
 		UserMessage message = UserMessage.builder()
 			.text("描述这张图片的内容。")
-			.media(new Media(
-				MimeTypeUtils.IMAGE_JPEG,
-				new URL("https://example.com/path/to/image.jpg")
-			))
+			.media(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(new URL("https://example.com/image.jpg"))
+					.build())
 			.build();
 	}
 
@@ -400,10 +397,8 @@ public class MessagesExample {
 	public static void videoInput() throws Exception {
 		UserMessage message = UserMessage.builder()
 			.text("描述这段视频的内容。")
-			.media(new Media(
-				MimeTypeUtils.parseMimeType("video/mp4"),
-				new URL("https://example.com/path/to/video.mp4")
-			))
+			.media(Media.builder().mimeType(MimeTypeUtils.parseMimeType("video/mp4")).data(new URL("\"https://example.com/path/to/video.mp4"))
+					.build())
 			.build();
 	}
 
@@ -456,7 +451,7 @@ public class MessagesExample {
 
 		// AssistantMessage with builder
 		AssistantMessage assistantMsg = AssistantMessage.builder()
-			.text("我很乐意帮助你学习 Spring AI Alibaba！")
+			.content("我很乐意帮助你学习 Spring AI Alibaba！")
 			.build();
 	}
 
@@ -480,7 +475,7 @@ public class MessagesExample {
 	/**
 	 * 示例22：在 ReactAgent 中使用消息
 	 */
-	public static void messagesInReactAgent() {
+	public static void messagesInReactAgent() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
