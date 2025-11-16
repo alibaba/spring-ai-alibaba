@@ -111,12 +111,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-openai</artifactId>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <reporting>
