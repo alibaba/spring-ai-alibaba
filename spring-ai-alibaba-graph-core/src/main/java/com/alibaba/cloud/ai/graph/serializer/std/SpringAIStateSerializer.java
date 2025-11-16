@@ -21,7 +21,6 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 
 /**
  * This class is responsible for serializing and deserializing the state of an agent
@@ -44,9 +43,27 @@ public class SpringAIStateSerializer extends ObjectStreamStateSerializer {
 
 		mapper().register(Message.class, new MessageSerializer());
 		mapper().register(AssistantMessage.ToolCall.class, new ToolCallSerializer());
-		mapper().register(DeepSeekAssistantMessage.class, new DeepSeekAssistantMessageSerializer());
 		mapper().register(ToolResponseMessage.ToolResponse.class, new ToolResponseSerializer());
 
+		// Conditionally register DeepSeekAssistantMessage serializer if available
+		registerDeepSeekSupportIfAvailable();
+	}
+
+	/**
+	 * Conditionally registers DeepSeekAssistantMessage support if the class is available on the classpath.
+	 * This avoids forcing a dependency on DeepSeek-related JARs.
+	 */
+	private void registerDeepSeekSupportIfAvailable() {
+		try {
+			Class<?> deepSeekClass = Class.forName("org.springframework.ai.deepseek.DeepSeekAssistantMessage");
+			DeepSeekAssistantMessageSerializer serializer = new DeepSeekAssistantMessageSerializer();
+			mapper().register(deepSeekClass, serializer);
+		}
+		catch (ClassNotFoundException | IllegalStateException e) {
+			// DeepSeekAssistantMessage is not available, skip registration
+			// This is expected for projects that don't include DeepSeek dependencies
+			// IllegalStateException may be thrown if the class is found but constructor fails
+		}
 	}
 
 }
