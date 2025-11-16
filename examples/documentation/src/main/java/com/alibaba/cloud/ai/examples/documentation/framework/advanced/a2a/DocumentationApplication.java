@@ -16,12 +16,12 @@
 
 package com.alibaba.cloud.ai.examples.documentation.framework.advanced.a2a;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Spring AI Alibaba Documentation Examples Application
@@ -34,20 +34,20 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class DocumentationApplication {
 
-    private static final Logger logger = LoggerFactory.getLogger(DocumentationApplication.class);
+	private static final Logger logger = LoggerFactory.getLogger(DocumentationApplication.class);
 
-    public static void main(String[] args) {
-        SpringApplication.run(DocumentationApplication.class, args);
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(DocumentationApplication.class, args);
+	}
 
-    // @Bean
-    public CommandLineRunner demoRunner(A2AExample a2aExample) {
-        return args -> {
-            logger.info("=================================================");
-            logger.info("Spring AI Alibaba Documentation Examples Started");
-            logger.info("=================================================");
-            // a2aExample.runDemo();
-            logger.info("Application is ready. Hit /api/a2a/demo to run the A2A demo.");
-        };
-    }
+	// @Bean
+	public CommandLineRunner demoRunner(A2AExample a2aExample) {
+		return args -> {
+			logger.info("=================================================");
+			logger.info("Spring AI Alibaba Documentation Examples Started");
+			logger.info("=================================================");
+			// a2aExample.runDemo();
+			logger.info("Application is ready. Hit /api/a2a/demo to run the A2A demo.");
+		};
+	}
 }

@@ -5,7 +5,10 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.agent.hook.*;
+import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
+import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
@@ -13,25 +16,30 @@ import com.alibaba.cloud.ai.graph.agent.hook.pii.PIIDetectionHook;
 import com.alibaba.cloud.ai.graph.agent.hook.pii.PIIType;
 import com.alibaba.cloud.ai.graph.agent.hook.pii.RedactionStrategy;
 import com.alibaba.cloud.ai.graph.agent.hook.summarization.SummarizationHook;
-import com.alibaba.cloud.ai.graph.agent.interceptor.*;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.contextediting.ContextEditingInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.todolist.TodoListInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolemulator.ToolEmulatorInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolretry.ToolRetryInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolselection.ToolSelectionInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.messages.AssistantMessage;
+
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 /**
  * Hooks & Interceptors Tutorial - hooks.md
@@ -45,12 +53,12 @@ public class HooksExample {
 	 */
 	public static void basicHooksAndInterceptors() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 创建工具（示例）
 		ToolCallback[] tools = new ToolCallback[0];
@@ -62,13 +70,13 @@ public class HooksExample {
 		ToolInterceptor retryInterceptor = new RetryToolInterceptor();
 
 		ReactAgent agent = ReactAgent.builder()
-			.name("my_agent")
-			.model(chatModel)
-			.tools(tools)
-			.hooks(loggingHook, messageTrimmingHook)
-			.interceptors(guardrailInterceptor)
-			.interceptors(retryInterceptor)
-			.build();
+				.name("my_agent")
+				.model(chatModel)
+				.tools(tools)
+				.hooks(loggingHook, messageTrimmingHook)
+				.interceptors(guardrailInterceptor)
+				.interceptors(retryInterceptor)
+				.build();
 	}
 
 	// ==================== 消息压缩（Summarization） ====================
@@ -78,27 +86,26 @@ public class HooksExample {
 	 */
 	public static void messageSummarization() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 创建消息压缩 Hook
 		SummarizationHook summarizationHook = SummarizationHook.builder()
-			.model(chatModel)
-			.maxTokensBeforeSummary(4000)
-			.messagesToKeep(20)
-			.build();
+				.model(chatModel)
+				.maxTokensBeforeSummary(4000)
+				.messagesToKeep(20)
+				.build();
 
 		// 使用
 		ReactAgent agent = ReactAgent.builder()
-			.name("my_agent")
-			.model(chatModel)
-			.hooks(summarizationHook)
-			.build();
-
+				.name("my_agent")
+				.model(chatModel)
+				.hooks(summarizationHook)
+				.build();
 
 	}
 
@@ -109,12 +116,12 @@ public class HooksExample {
 	 */
 	public static void humanInTheLoop() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 创建工具（示例）
 		ToolCallback sendEmailTool = createSendEmailTool();
@@ -122,21 +129,21 @@ public class HooksExample {
 
 		// 创建 Human-in-the-Loop Hook
 		HumanInTheLoopHook humanReviewHook = HumanInTheLoopHook.builder()
-			.approvalOn("sendEmailTool", ToolConfig.builder()
-				.description("Please confirm sending the email.")
-				.build())
-			.approvalOn("deleteDataTool", ToolConfig.builder()
-				.description("Please confirm deleting the data.")
-				.build())
-			.build();
+				.approvalOn("sendEmailTool", ToolConfig.builder()
+						.description("Please confirm sending the email.")
+						.build())
+				.approvalOn("deleteDataTool", ToolConfig.builder()
+						.description("Please confirm deleting the data.")
+						.build())
+				.build();
 
 		ReactAgent agent = ReactAgent.builder()
-			.name("supervised_agent")
-			.model(chatModel)
-			.tools(sendEmailTool, deleteDataTool)
-			.hooks(humanReviewHook)
-			.saver(new MemorySaver())
-			.build();
+				.name("supervised_agent")
+				.model(chatModel)
+				.tools(sendEmailTool, deleteDataTool)
+				.hooks(humanReviewHook)
+				.saver(new MemorySaver())
+				.build();
 	}
 
 	// ==================== 模型调用限制 ====================
@@ -146,19 +153,19 @@ public class HooksExample {
 	 */
 	public static void modelCallLimit() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		ReactAgent agent = ReactAgent.builder()
-			.name("my_agent")
-			.model(chatModel)
-			.hooks(ModelCallLimitHook.builder().runLimit(5).build())  // 限制模型调用次数为5次
-			.saver(new MemorySaver())
-			.build();
+				.name("my_agent")
+				.model(chatModel)
+				.hooks(ModelCallLimitHook.builder().runLimit(5).build())  // 限制模型调用次数为5次
+				.saver(new MemorySaver())
+				.build();
 	}
 
 
@@ -169,12 +176,12 @@ public class HooksExample {
 	 */
 	public static void piiDetection() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		PIIDetectionHook pii = PIIDetectionHook.builder()
 				.piiType(PIIType.EMAIL)
@@ -184,10 +191,10 @@ public class HooksExample {
 
 		// 使用
 		ReactAgent agent = ReactAgent.builder()
-			.name("secure_agent")
-			.model(chatModel)
-			.hooks(pii)
-			.build();
+				.name("secure_agent")
+				.model(chatModel)
+				.hooks(pii)
+				.build();
 	}
 
 	// ==================== 工具重试 ====================
@@ -197,12 +204,12 @@ public class HooksExample {
 	 */
 	public static void toolRetry() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 创建工具（示例）
 		ToolCallback searchTool = createSearchTool();
@@ -210,11 +217,12 @@ public class HooksExample {
 
 		// 使用
 		ReactAgent agent = ReactAgent.builder()
-			.name("resilient_agent")
-			.model(chatModel)
-			.tools(searchTool, databaseTool)
-			.interceptors(ToolRetryInterceptor.builder().maxRetries(2).onFailure(ToolRetryInterceptor.OnFailureBehavior.RETURN_MESSAGE).build())
-			.build();
+				.name("resilient_agent")
+				.model(chatModel)
+				.tools(searchTool, databaseTool)
+				.interceptors(ToolRetryInterceptor.builder().maxRetries(2)
+						.onFailure(ToolRetryInterceptor.OnFailureBehavior.RETURN_MESSAGE).build())
+				.build();
 	}
 
 	// ==================== Planning ====================
@@ -224,22 +232,22 @@ public class HooksExample {
 	 */
 	public static void planning() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		ToolCallback myTool = createSampleTool();
 
 		// 使用
 		ReactAgent agent = ReactAgent.builder()
-			.name("planning_agent")
-			.model(chatModel)
-			.tools(myTool)
-			.interceptors(TodoListInterceptor.builder().build())
-			.build();
+				.name("planning_agent")
+				.model(chatModel)
+				.tools(myTool)
+				.interceptors(TodoListInterceptor.builder().build())
+				.build();
 	}
 
 	// ==================== LLM Tool Selector ====================
@@ -249,12 +257,12 @@ public class HooksExample {
 	 */
 	public static void llmToolSelector() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		ChatModel selectorModel = chatModel; // 用于选择的另一个ChatModel
 
@@ -263,11 +271,11 @@ public class HooksExample {
 
 		// 使用
 		ReactAgent agent = ReactAgent.builder()
-			.name("smart_selector_agent")
-			.model(chatModel)
-			.tools(tool1, tool2)
-			.interceptors(ToolSelectionInterceptor.builder().build())
-			.build();
+				.name("smart_selector_agent")
+				.model(chatModel)
+				.tools(tool1, tool2)
+				.interceptors(ToolSelectionInterceptor.builder().build())
+				.build();
 	}
 
 	// ==================== LLM Tool Emulator ====================
@@ -277,22 +285,22 @@ public class HooksExample {
 	 */
 	public static void llmToolEmulator() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		ToolCallback simulatedTool = createSampleTool();
 
 		// 使用
 		ReactAgent agent = ReactAgent.builder()
-			.name("emulator_agent")
-			.model(chatModel)
-			.tools(simulatedTool)
-			.interceptors(ToolEmulatorInterceptor.builder().model(chatModel).build())
-			.build();
+				.name("emulator_agent")
+				.model(chatModel)
+				.tools(simulatedTool)
+				.interceptors(ToolEmulatorInterceptor.builder().model(chatModel).build())
+				.build();
 	}
 
 	// ==================== Context Editing ====================
@@ -302,22 +310,105 @@ public class HooksExample {
 	 */
 	public static void contextEditing() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 使用
 		ReactAgent agent = ReactAgent.builder()
-			.name("context_aware_agent")
-			.model(chatModel)
-			.interceptors(ContextEditingInterceptor.builder().trigger(120000).clearAtLeast(60000).build())
-			.build();
+				.name("context_aware_agent")
+				.model(chatModel)
+				.interceptors(ContextEditingInterceptor.builder().trigger(120000).clearAtLeast(60000).build())
+				.build();
 	}
 
 	// ==================== 自定义 Hooks ====================
+
+	// 创建示例工具的辅助方法
+	private static ToolCallback createSendEmailTool() {
+		return FunctionToolCallback.builder("sendEmailTool", (String input) -> "Email sent")
+				.description("Send an email")
+				.inputType(String.class)
+				.build();
+	}
+
+	private static ToolCallback createDeleteDataTool() {
+		return FunctionToolCallback.builder("deleteDataTool", (String input) -> "Data deleted")
+				.description("Delete data")
+				.inputType(String.class)
+				.build();
+	}
+
+	// ==================== 自定义 Interceptors ====================
+
+	private static ToolCallback createSearchTool() {
+		return FunctionToolCallback.builder("searchTool", (String input) -> "Search results")
+				.description("Search the web")
+				.inputType(String.class)
+				.build();
+	}
+
+	private static ToolCallback createDatabaseTool() {
+		return FunctionToolCallback.builder("databaseTool", (String input) -> "Database query results")
+				.description("Query database")
+				.inputType(String.class)
+				.build();
+	}
+
+	// ==================== 辅助类和方法 ====================
+
+	private static ToolCallback createSampleTool() {
+		return FunctionToolCallback.builder("sampleTool", (String input) -> "Sample result")
+				.description("A sample tool")
+				.inputType(String.class)
+				.build();
+	}
+
+	public static void main(String[] args) {
+		System.out.println("=== Hooks and Interceptors Tutorial Examples ===");
+		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
+
+		try {
+			System.out.println("\n--- 示例1：基础 Hooks 和 Interceptors ---");
+			basicHooksAndInterceptors();
+
+			System.out.println("\n--- 示例2：消息压缩 Hook ---");
+			messageSummarization();
+
+			System.out.println("\n--- 示例3：人工介入循环 ---");
+			humanInTheLoop();
+
+			System.out.println("\n--- 示例4：模型调用限制 ---");
+			modelCallLimit();
+
+			System.out.println("\n--- 示例5：PII 检测 ---");
+			piiDetection();
+
+			System.out.println("\n--- 示例6：工具重试 ---");
+			toolRetry();
+
+			System.out.println("\n--- 示例7：规划（Planning） ---");
+			planning();
+
+			System.out.println("\n--- 示例8：LLM 工具选择器 ---");
+			llmToolSelector();
+
+			System.out.println("\n--- 示例9：LLM 工具模拟器 ---");
+			llmToolEmulator();
+
+			System.out.println("\n--- 示例10：上下文编辑 ---");
+			contextEditing();
+
+			System.out.println("\n=== 所有示例执行完成 ===");
+		}
+		catch (Exception e) {
+			System.err.println("执行示例时发生错误: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * 示例12：自定义 ModelHook
@@ -341,7 +432,7 @@ public class HooksExample {
 		}
 
 		@Override
-		public CompletableFuture<Map<String, Object>>  afterModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
 			// 在模型调用后执行
 			System.out.println("模型调用完成");
 
@@ -380,8 +471,6 @@ public class HooksExample {
 			return CompletableFuture.completedFuture(Map.of());
 		}
 	}
-
-	// ==================== 自定义 Interceptors ====================
 
 	/**
 	 * 示例14：自定义 ModelInterceptor
@@ -430,14 +519,15 @@ public class HooksExample {
 				System.out.println("工具 " + toolName + " 执行成功 (耗时: " + duration + "ms)");
 
 				return response;
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				long duration = System.currentTimeMillis() - startTime;
 				System.err.println("工具 " + toolName + " 执行失败 (耗时: " + duration + "ms): " + e.getMessage());
 
 				return ToolCallResponse.of(
 						request.getToolCallId(),
 						request.getToolName(),
-					"工具执行失败: " + e.getMessage()
+						"工具执行失败: " + e.getMessage()
 				);
 			}
 		}
@@ -447,8 +537,6 @@ public class HooksExample {
 			return "ToolMonitoringInterceptor";
 		}
 	}
-
-	// ==================== 辅助类和方法 ====================
 
 	/**
 	 * 日志记录 ModelHook
@@ -462,7 +550,7 @@ public class HooksExample {
 
 		@Override
 		public HookPosition[] getHookPositions() {
-			return new HookPosition[]{HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL};
+			return new HookPosition[] {HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL};
 		}
 
 		@Override
@@ -472,7 +560,7 @@ public class HooksExample {
 		}
 
 		@Override
-		public CompletableFuture<Map<String, Object>>  afterModel(OverAllState state, RunnableConfig config) {
+		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
 			System.out.println("After model call");
 			return CompletableFuture.completedFuture(Map.of());
 		}
@@ -489,7 +577,7 @@ public class HooksExample {
 
 		@Override
 		public HookPosition[] getHookPositions() {
-			return new HookPosition[]{HookPosition.BEFORE_MODEL};
+			return new HookPosition[] {HookPosition.BEFORE_MODEL};
 		}
 
 		@Override
@@ -526,6 +614,8 @@ public class HooksExample {
 		}
 	}
 
+	// ==================== Main 方法 ====================
+
 	/**
 	 * 重试工具拦截器
 	 */
@@ -539,86 +629,6 @@ public class HooksExample {
 		@Override
 		public String getName() {
 			return "RetryToolInterceptor";
-		}
-	}
-
-	// 创建示例工具的辅助方法
-	private static ToolCallback createSendEmailTool() {
-		return FunctionToolCallback.builder("sendEmailTool", (String input) -> "Email sent")
-			.description("Send an email")
-			.inputType(String.class)
-			.build();
-	}
-
-	private static ToolCallback createDeleteDataTool() {
-		return FunctionToolCallback.builder("deleteDataTool", (String input) -> "Data deleted")
-			.description("Delete data")
-			.inputType(String.class)
-			.build();
-	}
-
-	private static ToolCallback createSearchTool() {
-		return FunctionToolCallback.builder("searchTool", (String input) -> "Search results")
-			.description("Search the web")
-			.inputType(String.class)
-			.build();
-	}
-
-	private static ToolCallback createDatabaseTool() {
-		return FunctionToolCallback.builder("databaseTool", (String input) -> "Database query results")
-			.description("Query database")
-			.inputType(String.class)
-			.build();
-	}
-
-	private static ToolCallback createSampleTool() {
-		return FunctionToolCallback.builder("sampleTool", (String input) -> "Sample result")
-			.description("A sample tool")
-			.inputType(String.class)
-			.build();
-	}
-
-	// ==================== Main 方法 ====================
-
-	public static void main(String[] args) {
-		System.out.println("=== Hooks and Interceptors Tutorial Examples ===");
-		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
-
-		try {
-			System.out.println("\n--- 示例1：基础 Hooks 和 Interceptors ---");
-			basicHooksAndInterceptors();
-
-			System.out.println("\n--- 示例2：消息压缩 Hook ---");
-			messageSummarization();
-
-			System.out.println("\n--- 示例3：人工介入循环 ---");
-			humanInTheLoop();
-
-			System.out.println("\n--- 示例4：模型调用限制 ---");
-			modelCallLimit();
-
-			System.out.println("\n--- 示例5：PII 检测 ---");
-			piiDetection();
-
-			System.out.println("\n--- 示例6：工具重试 ---");
-			toolRetry();
-
-			System.out.println("\n--- 示例7：规划（Planning） ---");
-			planning();
-
-			System.out.println("\n--- 示例8：LLM 工具选择器 ---");
-			llmToolSelector();
-
-			System.out.println("\n--- 示例9：LLM 工具模拟器 ---");
-			llmToolEmulator();
-
-			System.out.println("\n--- 示例10：上下文编辑 ---");
-			contextEditing();
-
-			System.out.println("\n=== 所有示例执行完成 ===");
-		} catch (Exception e) {
-			System.err.println("执行示例时发生错误: " + e.getMessage());
-			e.printStackTrace();
 		}
 	}
 }

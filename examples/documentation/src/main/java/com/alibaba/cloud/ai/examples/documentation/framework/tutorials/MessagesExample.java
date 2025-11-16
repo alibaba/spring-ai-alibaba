@@ -5,20 +5,26 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
-import org.springframework.ai.chat.messages.*;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.MimeTypeUtils;
-import reactor.core.publisher.Flux;
 
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import reactor.core.publisher.Flux;
 
 /**
  * Messages Tutorial - 完整代码示例
@@ -35,13 +41,13 @@ public class MessagesExample {
 	 */
 	public static void basicMessageUsage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		// 使用 DashScope ChatModel
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		SystemMessage systemMsg = new SystemMessage("你是一个有帮助的助手。");
 		UserMessage userMsg = new UserMessage("你好，你好吗？");
@@ -59,12 +65,12 @@ public class MessagesExample {
 	 */
 	public static void textPromptUsage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 使用字符串直接调用
 		String response = chatModel.call("写一首关于春天的俳句");
@@ -75,17 +81,17 @@ public class MessagesExample {
 	 */
 	public static void messagePromptUsage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		List<Message> messages = List.of(
-			new SystemMessage("你是一个诗歌专家"),
-			new UserMessage("写一首关于春天的俳句"),
-			new AssistantMessage("樱花盛开时...")
+				new SystemMessage("你是一个诗歌专家"),
+				new UserMessage("写一首关于春天的俳句"),
+				new AssistantMessage("樱花盛开时...")
 		);
 		Prompt prompt = new Prompt(messages);
 		ChatResponse response = chatModel.call(prompt);
@@ -98,19 +104,19 @@ public class MessagesExample {
 	 */
 	public static void basicSystemMessage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 基础指令
 		SystemMessage systemMsg = new SystemMessage("你是一个有帮助的编程助手。");
 
 		List<Message> messages = List.of(
-			systemMsg,
-			new UserMessage("如何创建 REST API？")
+				systemMsg,
+				new UserMessage("如何创建 REST API？")
 		);
 		ChatResponse response = chatModel.call(new Prompt(messages));
 	}
@@ -120,23 +126,23 @@ public class MessagesExample {
 	 */
 	public static void detailedSystemMessage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 详细的角色设定
 		SystemMessage systemMsg = new SystemMessage("""
-			你是一位资深的 Java 开发者，擅长 Web 框架。
-			始终提供代码示例并解释你的推理。
-			在解释中要简洁但透彻。
-			""");
+				你是一位资深的 Java 开发者，擅长 Web 框架。
+				始终提供代码示例并解释你的推理。
+				在解释中要简洁但透彻。
+				""");
 
 		List<Message> messages = List.of(
-			systemMsg,
-			new UserMessage("如何创建 REST API？")
+				systemMsg,
+				new UserMessage("如何创建 REST API？")
 		);
 		ChatResponse response = chatModel.call(new Prompt(messages));
 	}
@@ -148,16 +154,16 @@ public class MessagesExample {
 	 */
 	public static void textUserMessage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 使用消息对象
 		ChatResponse response = chatModel.call(
-			new Prompt(List.of(new UserMessage("什么是机器学习？")))
+				new Prompt(List.of(new UserMessage("什么是机器学习？")))
 		);
 
 		// 使用字符串快捷方式
@@ -170,12 +176,12 @@ public class MessagesExample {
 	 */
 	public static void userMessageMetadata() {
 		UserMessage userMsg = UserMessage.builder()
-			.text("你好！")
-			.metadata(Map.of(
-				"user_id", "alice",  // 可选：识别不同用户
-				"session_id", "sess_123"  // 可选：会话标识符
-			))
-			.build();
+				.text("你好！")
+				.metadata(Map.of(
+						"user_id", "alice",  // 可选：识别不同用户
+						"session_id", "sess_123"  // 可选：会话标识符
+				))
+				.build();
 	}
 
 	/**
@@ -184,9 +190,9 @@ public class MessagesExample {
 	public static void multimodalImageMessage() throws Exception {
 		// 从 URL 创建图像
 		UserMessage userMsg = UserMessage.builder()
-			.text("描述这张图片的内容。")
-			.media(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(new URL("https://example.com/image.jpg"))
-			.build()).build();
+				.text("描述这张图片的内容。")
+				.media(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(new URL("https://example.com/image.jpg"))
+						.build()).build();
 	}
 
 	// ==================== Assistant Message ====================
@@ -196,12 +202,12 @@ public class MessagesExample {
 	 */
 	public static void basicAssistantMessage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		ChatResponse response = chatModel.call(new Prompt("解释 AI"));
 		AssistantMessage aiMessage = response.getResult().getOutput();
@@ -213,22 +219,22 @@ public class MessagesExample {
 	 */
 	public static void manualAssistantMessage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 手动创建 AI 消息（例如，用于对话历史）
 		AssistantMessage aiMsg = new AssistantMessage("我很乐意帮助你回答这个问题！");
 
 		// 添加到对话历史
 		List<Message> messages = List.of(
-			new SystemMessage("你是一个有帮助的助手"),
-			new UserMessage("你能帮我吗？"),
-			aiMsg,  // 插入，就像它来自模型一样
-			new UserMessage("太好了！2+2 等于多少？")
+				new SystemMessage("你是一个有帮助的助手"),
+				new UserMessage("你能帮我吗？"),
+				aiMsg,  // 插入，就像它来自模型一样
+				new UserMessage("太好了！2+2 等于多少？")
 		);
 
 		ChatResponse response = chatModel.call(new Prompt(messages));
@@ -239,12 +245,12 @@ public class MessagesExample {
 	 */
 	public static void toolCallsInAssistantMessage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		Prompt prompt = new Prompt("北京的天气怎么样？");
 		ChatResponse response = chatModel.call(prompt);
@@ -264,12 +270,12 @@ public class MessagesExample {
 	 */
 	public static void tokenUsage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		ChatResponse response = chatModel.call(new Prompt("你好！"));
 		ChatResponseMetadata metadata = response.getMetadata();
@@ -287,22 +293,22 @@ public class MessagesExample {
 	 */
 	public static void streamingMessages() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		Flux<ChatResponse> responseStream = chatModel.stream(new Prompt("你好"));
 
 		StringBuilder fullResponse = new StringBuilder();
 		responseStream.subscribe(
-			chunk -> {
-				String content = chunk.getResult().getOutput().getText();
-				fullResponse.append(content);
-				System.out.print(content);
-			}
+				chunk -> {
+					String content = chunk.getResult().getOutput().getText();
+					fullResponse.append(content);
+					System.out.print(content);
+				}
 		);
 	}
 
@@ -313,39 +319,39 @@ public class MessagesExample {
 	 */
 	public static void toolResponseMessage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 在模型进行工具调用后
 		AssistantMessage aiMessage = AssistantMessage.builder()
-			.content("")
-			.toolCalls(List.of(
-				new AssistantMessage.ToolCall(
-					"call_123",
-					"tool",
-					"get_weather",
-					"{\"location\": \"San Francisco\"}"
-				)
-			))
-			.build();
+				.content("")
+				.toolCalls(List.of(
+						new AssistantMessage.ToolCall(
+								"call_123",
+								"tool",
+								"get_weather",
+								"{\"location\": \"San Francisco\"}"
+						)
+				))
+				.build();
 
 		// 执行工具并创建结果消息
 		String weatherResult = "晴朗，22°C";
 		ToolResponseMessage toolMessage = ToolResponseMessage.builder()
-			.responses(List.of(
-				new ToolResponseMessage.ToolResponse("call_123", "get_weather", weatherResult)
-			))
-			.build();
+				.responses(List.of(
+						new ToolResponseMessage.ToolResponse("call_123", "get_weather", weatherResult)
+				))
+				.build();
 
 		// 继续对话
 		List<Message> messages = List.of(
-			new UserMessage("旧金山的天气怎么样？"),
-			aiMessage,      // 模型的工具调用
-			toolMessage     // 工具执行结果
+				new UserMessage("旧金山的天气怎么样？"),
+				aiMessage,      // 模型的工具调用
+				toolMessage     // 工具执行结果
 		);
 		ChatResponse response = chatModel.call(new Prompt(messages));
 	}
@@ -358,10 +364,10 @@ public class MessagesExample {
 	public static void imageInputFromURL() throws Exception {
 		// 从 URL
 		UserMessage message = UserMessage.builder()
-			.text("描述这张图片的内容。")
-			.media(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(new URL("https://example.com/image.jpg"))
-					.build())
-			.build();
+				.text("描述这张图片的内容。")
+				.media(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(new URL("https://example.com/image.jpg"))
+						.build())
+				.build();
 	}
 
 	/**
@@ -370,12 +376,12 @@ public class MessagesExample {
 	public static void imageInputFromFile() {
 		// 从本地文件
 		UserMessage message = UserMessage.builder()
-			.text("描述这张图片的内容。")
-			.media(new Media(
-				MimeTypeUtils.IMAGE_JPEG,
-				new ClassPathResource("images/photo.jpg")
-			))
-			.build();
+				.text("描述这张图片的内容。")
+				.media(new Media(
+						MimeTypeUtils.IMAGE_JPEG,
+						new ClassPathResource("images/photo.jpg")
+				))
+				.build();
 	}
 
 	/**
@@ -383,12 +389,12 @@ public class MessagesExample {
 	 */
 	public static void audioInput() {
 		UserMessage message = UserMessage.builder()
-			.text("描述这段音频的内容。")
-			.media(new Media(
-				MimeTypeUtils.parseMimeType("audio/wav"),
-				new ClassPathResource("audio/recording.wav")
-			))
-			.build();
+				.text("描述这段音频的内容。")
+				.media(new Media(
+						MimeTypeUtils.parseMimeType("audio/wav"),
+						new ClassPathResource("audio/recording.wav")
+				))
+				.build();
 	}
 
 	/**
@@ -396,10 +402,11 @@ public class MessagesExample {
 	 */
 	public static void videoInput() throws Exception {
 		UserMessage message = UserMessage.builder()
-			.text("描述这段视频的内容。")
-			.media(Media.builder().mimeType(MimeTypeUtils.parseMimeType("video/mp4")).data(new URL("\"https://example.com/path/to/video.mp4"))
-					.build())
-			.build();
+				.text("描述这段视频的内容。")
+				.media(Media.builder().mimeType(MimeTypeUtils.parseMimeType("video/mp4"))
+						.data(new URL("\"https://example.com/path/to/video.mp4"))
+						.build())
+				.build();
 	}
 
 	// ==================== 与 Chat Models 一起使用 ====================
@@ -409,12 +416,12 @@ public class MessagesExample {
 	 */
 	public static void basicConversationExample() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		List<Message> conversationHistory = new ArrayList<>();
 
@@ -439,20 +446,20 @@ public class MessagesExample {
 	public static void builderPattern() {
 		// UserMessage with builder
 		UserMessage userMsg = UserMessage.builder()
-			.text("你好，我想学习 Spring AI Alibaba")
-			.metadata(Map.of("user_id", "user_123"))
-			.build();
+				.text("你好，我想学习 Spring AI Alibaba")
+				.metadata(Map.of("user_id", "user_123"))
+				.build();
 
 		// SystemMessage with builder
 		SystemMessage systemMsg = SystemMessage.builder()
-			.text("你是一个 Spring 框架专家")
-			.metadata(Map.of("version", "1.0"))
-			.build();
+				.text("你是一个 Spring 框架专家")
+				.metadata(Map.of("version", "1.0"))
+				.build();
 
 		// AssistantMessage with builder
 		AssistantMessage assistantMsg = AssistantMessage.builder()
-			.content("我很乐意帮助你学习 Spring AI Alibaba！")
-			.build();
+				.content("我很乐意帮助你学习 Spring AI Alibaba！")
+				.build();
 	}
 
 	/**
@@ -465,9 +472,9 @@ public class MessagesExample {
 
 		// 使用 mutate 创建修改的副本
 		UserMessage modified = original.mutate()
-			.text("修改后的消息")
-			.metadata(Map.of("modified", true))
-			.build();
+				.text("修改后的消息")
+				.metadata(Map.of("modified", true))
+				.build();
 	}
 
 	// ==================== 在 ReactAgent 中使用 ====================
@@ -477,18 +484,18 @@ public class MessagesExample {
 	 */
 	public static void messagesInReactAgent() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		ReactAgent agent = ReactAgent.builder()
-			.name("my_agent")
-			.model(chatModel)
-			.systemPrompt("你是一个有帮助的助手")
-			.build();
+				.name("my_agent")
+				.model(chatModel)
+				.systemPrompt("你是一个有帮助的助手")
+				.build();
 
 		// 使用字符串
 		AssistantMessage response1 = agent.call("你好");
@@ -499,8 +506,8 @@ public class MessagesExample {
 
 		// 使用消息列表
 		List<Message> messages = List.of(
-			new UserMessage("我喜欢春天"),
-			new UserMessage("写一首关于春天的诗")
+				new UserMessage("我喜欢春天"),
+				new UserMessage("写一首关于春天的诗")
 		);
 		AssistantMessage response3 = agent.call(messages);
 	}
@@ -573,7 +580,8 @@ public class MessagesExample {
 			builderPattern();
 
 			System.out.println("\n=== 所有示例执行完成 ===");
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			System.err.println("执行示例时发生错误: " + e.getMessage());
 			e.printStackTrace();
 		}

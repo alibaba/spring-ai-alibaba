@@ -31,30 +31,31 @@ import java.util.Map;
 @RequestMapping("/api/a2a")
 public class A2AExampleController {
 
-    private final A2AExample a2aExample;
+	private final A2AExample a2aExample;
 
-    @Autowired
-    public A2AExampleController(A2AExample a2aExample) {
-        this.a2aExample = a2aExample;
-    }
+	@Autowired
+	public A2AExampleController(A2AExample a2aExample) {
+		this.a2aExample = a2aExample;
+	}
 
-    /**
-     * 运行统一的 A2A 演示
-     *
-     * @return 执行结果
-     */
-    @GetMapping("/demo")
-    public Map<String, Object> runDemo() {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            a2aExample.runDemo();
-            response.put("status", "success");
-            response.put("message", "A2A 一体化演示执行完成");
-        } catch (Exception e) {
-            response.put("status", "error");
-            response.put("message", "执行演示时出错: " + e.getMessage());
-            response.put("error", e.getClass().getSimpleName());
-        }
-        return response;
-    }
+	/**
+	 * 运行统一的 A2A 演示
+	 *
+	 * @return 执行结果
+	 */
+	@GetMapping("/demo")
+	public Map<String, Object> runDemo() {
+		Map<String, Object> response = new HashMap<>();
+		try {
+			a2aExample.runDemo();
+			response.put("status", "success");
+			response.put("message", "A2A 一体化演示执行完成");
+		}
+		catch (Exception e) {
+			response.put("status", "error");
+			response.put("message", "执行演示时出错: " + e.getMessage());
+			response.put("error", e.getClass().getSimpleName());
+		}
+		return response;
+	}
 }

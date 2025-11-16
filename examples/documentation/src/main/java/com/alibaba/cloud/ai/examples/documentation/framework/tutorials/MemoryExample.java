@@ -12,21 +12,25 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.redisson.api.RedissonClient;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
+
+import org.redisson.api.RedissonClient;
 
 /**
  * Memory Tutorial - 完整代码示例
@@ -43,28 +47,28 @@ public class MemoryExample {
 	 */
 	public static void basicMemoryConfiguration() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 创建示例工具
 		ToolCallback getUserInfoTool = createGetUserInfoTool();
 
 		// 配置 checkpointer
 		ReactAgent agent = ReactAgent.builder()
-			.name("my_agent")
-			.model(chatModel)
-			.tools(getUserInfoTool)
-			.saver(new MemorySaver())
-			.build();
+				.name("my_agent")
+				.model(chatModel)
+				.tools(getUserInfoTool)
+				.saver(new MemorySaver())
+				.build();
 
 		// 使用 thread_id 维护对话上下文
 		RunnableConfig config = RunnableConfig.builder()
-			.threadId("1") // threadId 指定会话 ID
-			.build();
+				.threadId("1") // threadId 指定会话 ID
+				.build();
 
 		agent.call("你好！我叫 Bob。", config);
 	}
@@ -74,12 +78,12 @@ public class MemoryExample {
 	 */
 	public static void productionMemoryConfiguration(RedissonClient redissonClient) {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		ToolCallback getUserInfoTool = createGetUserInfoTool();
 
@@ -87,14 +91,219 @@ public class MemoryExample {
 		RedisSaver redisSaver = new RedisSaver(redissonClient);
 
 		ReactAgent agent = ReactAgent.builder()
-			.name("my_agent")
-			.model(chatModel)
-			.tools(getUserInfoTool)
-			.saver(redisSaver)
-			.build();
+				.name("my_agent")
+				.model(chatModel)
+				.tools(getUserInfoTool)
+				.saver(redisSaver)
+				.build();
 	}
 
 	// ==================== 自定义 Agent 记忆 ====================
+
+	/**
+	 * 示例5：使用消息修剪
+	 */
+	public static void useMessageTrimming() throws GraphRunnerException {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		ToolCallback[] tools = new ToolCallback[0];
+
+		// 使用
+		ReactAgent agent = ReactAgent.builder()
+				.name("my_agent")
+				.model(chatModel)
+				.tools(tools)
+				.hooks(new MessageTrimmingHook())
+				.saver(new MemorySaver())
+				.build();
+
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("1")
+				.build();
+
+		agent.call("你好，我叫 bob", config);
+		agent.call("写一首关于猫的短诗", config);
+		agent.call("现在对狗做同样的事情", config);
+		AssistantMessage finalResponse = agent.call("我叫什么名字？", config);
+
+		System.out.println(finalResponse.getText());
+		// 输出：你的名字是 Bob。你之前告诉我的。
+	}
+
+	// ==================== 修剪消息 ====================
+
+	/**
+	 * 示例8：使用消息删除
+	 */
+	public static void useMessageDeletion() throws GraphRunnerException {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("my_agent")
+				.model(chatModel)
+				.systemPrompt("请简洁明了。")
+				.hooks(new MessageDeletionHook())
+				.saver(new MemorySaver())
+				.build();
+
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("1")
+				.build();
+
+		// 第一次调用
+		agent.call("你好！我是 bob", config);
+		// 输出：[('human', "你好！我是 bob"), ('assistant', '你好 Bob！很高兴见到你...')]
+
+		// 第二次调用
+		agent.call("我叫什么名字？", config);
+		// 输出：[('human', "我叫什么名字？"), ('assistant', '你的名字是 Bob...')]
+	}
+
+	/**
+	 * 示例10：使用消息总结
+	 */
+	public static void useMessageSummarization() throws GraphRunnerException {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		// 用于总结的模型（可以是更便宜的模型）
+		ChatModel summaryModel = chatModel;
+
+		MessageSummarizationHook summarizationHook = new MessageSummarizationHook(
+				summaryModel,
+				4000,  // 在 4000 tokens 时触发总结
+				20     // 总结后保留最后 20 条消息
+		);
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("my_agent")
+				.model(chatModel)
+				.hooks(summarizationHook)
+				.saver(new MemorySaver())
+				.build();
+
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("1")
+				.build();
+
+		agent.call("你好，我叫 bob", config);
+		agent.call("写一首关于猫的短诗", config);
+		agent.call("现在对狗做同样的事情", config);
+		AssistantMessage finalResponse = agent.call("我叫什么名字？", config);
+
+		System.out.println(finalResponse.getText());
+		// 输出：你的名字是 Bob！
+	}
+
+	// ==================== 删除消息 ====================
+
+	/**
+	 * 示例12：使用工具访问记忆
+	 */
+	public static void accessMemoryInTool() throws GraphRunnerException {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		// 创建工具
+		ToolCallback getUserInfoTool = FunctionToolCallback
+				.builder("get_user_info", new UserInfoTool())
+				.description("查找用户信息")
+				.inputType(String.class)
+				.build();
+
+		// 使用
+		ReactAgent agent = ReactAgent.builder()
+				.name("my_agent")
+				.model(chatModel)
+				.tools(getUserInfoTool)
+				.saver(new MemorySaver())
+				.build();
+
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("1")
+				.addMetadata("user_id", "user_123")
+				.build();
+
+		AssistantMessage response = agent.call("获取用户信息", config);
+		System.out.println(response.getText());
+	}
+
+	/**
+	 * 创建示例工具
+	 */
+	private static ToolCallback createGetUserInfoTool() {
+		return FunctionToolCallback.builder("get_user_info", (String query) -> {
+					return "User info: " + query;
+				})
+				.description("Get user information")
+				.inputType(String.class)
+				.build();
+	}
+
+	public static void main(String[] args) {
+		System.out.println("=== Memory Tutorial Examples ===");
+		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
+
+		try {
+			// 示例1：基础记忆配置
+			System.out.println("\n--- 示例1：基础记忆配置 ---");
+			basicMemoryConfiguration();
+
+			// 示例2：生产环境使用 Redis Checkpointer (需要 RedissonClient 实例，此处跳过)
+			System.out.println("\n--- 示例2：生产环境使用 Redis Checkpointer (跳过，需要 RedissonClient) ---");
+			// productionMemoryConfiguration(redissonClient);
+
+			// 示例5：使用消息修剪
+			System.out.println("\n--- 示例5：使用消息修剪 ---");
+			useMessageTrimming();
+
+			// 示例8：使用消息删除
+			System.out.println("\n--- 示例8：使用消息删除 ---");
+			useMessageDeletion();
+
+			// 示例10：使用消息总结
+			System.out.println("\n--- 示例10：使用消息总结 ---");
+			useMessageSummarization();
+
+			// 示例12：使用工具访问记忆
+			System.out.println("\n--- 示例12：使用工具访问记忆 ---");
+			accessMemoryInTool();
+
+			System.out.println("\n=== 所有示例执行完成 ===");
+		}
+		catch (GraphRunnerException e) {
+			System.err.println("执行示例时发生错误: " + e.getMessage());
+			e.printStackTrace();
+		}
+		catch (Exception e) {
+			System.err.println("发生未预期的错误: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+
+	// ==================== 总结消息 ====================
 
 	/**
 	 * 示例3：在 Hook 中访问和修改状态
@@ -108,7 +317,7 @@ public class MemoryExample {
 
 		@Override
 		public HookPosition[] getHookPositions() {
-			return new HookPosition[]{HookPosition.BEFORE_MODEL};
+			return new HookPosition[] {HookPosition.BEFORE_MODEL};
 		}
 
 		@Override
@@ -121,19 +330,17 @@ public class MemoryExample {
 			}
 
 			// 添加自定义状态
-			return  CompletableFuture.completedFuture(Map.of(
-				"user_id", "user_123",
-				"preferences", Map.of("theme", "dark")
+			return CompletableFuture.completedFuture(Map.of(
+					"user_id", "user_123",
+					"preferences", Map.of("theme", "dark")
 			));
 		}
 
 		@Override
 		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-			return  CompletableFuture.completedFuture(Map.of());
+			return CompletableFuture.completedFuture(Map.of());
 		}
 	}
-
-	// ==================== 修剪消息 ====================
 
 	/**
 	 * 示例4：消息修剪 Hook
@@ -149,7 +356,7 @@ public class MemoryExample {
 
 		@Override
 		public HookPosition[] getHookPositions() {
-			return new HookPosition[]{HookPosition.BEFORE_MODEL};
+			return new HookPosition[] {HookPosition.BEFORE_MODEL};
 		}
 
 		@Override
@@ -184,43 +391,7 @@ public class MemoryExample {
 		}
 	}
 
-	/**
-	 * 示例5：使用消息修剪
-	 */
-	public static void useMessageTrimming() throws GraphRunnerException {
-		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
-
-		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
-
-		ToolCallback[] tools = new ToolCallback[0];
-
-		// 使用
-		ReactAgent agent = ReactAgent.builder()
-			.name("my_agent")
-			.model(chatModel)
-			.tools(tools)
-			.hooks(new MessageTrimmingHook())
-			.saver(new MemorySaver())
-			.build();
-
-		RunnableConfig config = RunnableConfig.builder()
-			.threadId("1")
-			.build();
-
-		agent.call("你好，我叫 bob", config);
-		agent.call("写一首关于猫的短诗", config);
-		agent.call("现在对狗做同样的事情", config);
-		AssistantMessage finalResponse = agent.call("我叫什么名字？", config);
-
-		System.out.println(finalResponse.getText());
-		// 输出：你的名字是 Bob。你之前告诉我的。
-	}
-
-	// ==================== 删除消息 ====================
+	// ==================== 访问记忆 ====================
 
 	/**
 	 * 示例6：消息删除 Hook
@@ -234,7 +405,7 @@ public class MemoryExample {
 
 		@Override
 		public HookPosition[] getHookPositions() {
-			return new HookPosition[]{HookPosition.AFTER_MODEL};
+			return new HookPosition[] {HookPosition.AFTER_MODEL};
 		}
 
 		@Override
@@ -275,7 +446,7 @@ public class MemoryExample {
 
 		@Override
 		public HookPosition[] getHookPositions() {
-			return new HookPosition[]{HookPosition.AFTER_MODEL};
+			return new HookPosition[] {HookPosition.AFTER_MODEL};
 		}
 
 		@Override
@@ -298,40 +469,7 @@ public class MemoryExample {
 		}
 	}
 
-	/**
-	 * 示例8：使用消息删除
-	 */
-	public static void useMessageDeletion() throws GraphRunnerException {
-		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
-
-		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
-
-		ReactAgent agent = ReactAgent.builder()
-			.name("my_agent")
-			.model(chatModel)
-			.systemPrompt("请简洁明了。")
-			.hooks(new MessageDeletionHook())
-			.saver(new MemorySaver())
-			.build();
-
-		RunnableConfig config = RunnableConfig.builder()
-			.threadId("1")
-			.build();
-
-		// 第一次调用
-		agent.call("你好！我是 bob", config);
-		// 输出：[('human', "你好！我是 bob"), ('assistant', '你好 Bob！很高兴见到你...')]
-
-		// 第二次调用
-		agent.call("我叫什么名字？", config);
-		// 输出：[('human', "我叫什么名字？"), ('assistant', '你的名字是 Bob...')]
-	}
-
-	// ==================== 总结消息 ====================
+	// ==================== 辅助方法 ====================
 
 	/**
 	 * 示例9：消息总结 Hook
@@ -343,9 +481,9 @@ public class MemoryExample {
 		private final int messagesToKeep;
 
 		public MessageSummarizationHook(
-			ChatModel summaryModel,
-			int maxTokensBeforeSummary,
-			int messagesToKeep
+				ChatModel summaryModel,
+				int maxTokensBeforeSummary,
+				int messagesToKeep
 		) {
 			this.summaryModel = summaryModel;
 			this.maxTokensBeforeSummary = maxTokensBeforeSummary;
@@ -359,7 +497,7 @@ public class MemoryExample {
 
 		@Override
 		public HookPosition[] getHookPositions() {
-			return new HookPosition[]{HookPosition.BEFORE_MODEL};
+			return new HookPosition[] {HookPosition.BEFORE_MODEL};
 		}
 
 		@Override
@@ -373,8 +511,8 @@ public class MemoryExample {
 
 			// 估算 token 数量（简化版）
 			int estimatedTokens = messages.stream()
-				.mapToInt(m -> m.getText().length() / 4)
-				.sum();
+					.mapToInt(m -> m.getText().length() / 4)
+					.sum();
 
 			if (estimatedTokens < maxTokensBeforeSummary) {
 				return CompletableFuture.completedFuture(Map.of());
@@ -388,8 +526,8 @@ public class MemoryExample {
 
 			List<Message> oldMessages = messages.subList(0, messagesToSummarize);
 			List<Message> recentMessages = messages.subList(
-				messagesToSummarize,
-				messages.size()
+					messagesToSummarize,
+					messages.size()
 			);
 
 			// 生成摘要
@@ -397,7 +535,7 @@ public class MemoryExample {
 
 			// 创建摘要消息
 			SystemMessage summaryMessage = new SystemMessage(
-				"## 之前对话摘要:\n" + summary
+					"## 之前对话摘要:\n" + summary
 			);
 
 			// 只需要把摘要消息和需要删除的消息保留在状态中，其余未包含的消息将会自动保留
@@ -420,63 +558,22 @@ public class MemoryExample {
 			StringBuilder conversation = new StringBuilder();
 			for (Message msg : messages) {
 				conversation.append(msg.getMessageType())
-					.append(": ")
-					.append(msg.getText())
-					.append("\n");
+						.append(": ")
+						.append(msg.getText())
+						.append("\n");
 			}
 
 			String summaryPrompt = "请简要总结以下对话:\n\n" + conversation;
 
 			ChatResponse response = summaryModel.call(
-				new Prompt(new UserMessage(summaryPrompt))
+					new Prompt(new UserMessage(summaryPrompt))
 			);
 
 			return response.getResult().getOutput().getText();
 		}
 	}
 
-	/**
-	 * 示例10：使用消息总结
-	 */
-	public static void useMessageSummarization() throws GraphRunnerException {
-		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
-
-		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
-
-		// 用于总结的模型（可以是更便宜的模型）
-		ChatModel summaryModel = chatModel;
-
-		MessageSummarizationHook summarizationHook = new MessageSummarizationHook(
-			summaryModel,
-			4000,  // 在 4000 tokens 时触发总结
-			20     // 总结后保留最后 20 条消息
-		);
-
-		ReactAgent agent = ReactAgent.builder()
-			.name("my_agent")
-			.model(chatModel)
-			.hooks(summarizationHook)
-			.saver(new MemorySaver())
-			.build();
-
-		RunnableConfig config = RunnableConfig.builder()
-			.threadId("1")
-			.build();
-
-		agent.call("你好，我叫 bob", config);
-		agent.call("写一首关于猫的短诗", config);
-		agent.call("现在对狗做同样的事情", config);
-		AssistantMessage finalResponse = agent.call("我叫什么名字？", config);
-
-		System.out.println(finalResponse.getText());
-		// 输出：你的名字是 Bob！
-	}
-
-	// ==================== 访问记忆 ====================
+	// ==================== Main 方法 ====================
 
 	/**
 	 * 示例11：在工具中读取短期记忆
@@ -491,100 +588,10 @@ public class MemoryExample {
 
 			if ("user_123".equals(userId)) {
 				return "用户是 John Smith";
-			} else {
+			}
+			else {
 				return "未知用户";
 			}
-		}
-	}
-
-	/**
-	 * 示例12：使用工具访问记忆
-	 */
-	public static void accessMemoryInTool() throws GraphRunnerException {
-		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
-
-		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
-
-		// 创建工具
-		ToolCallback getUserInfoTool = FunctionToolCallback
-			.builder("get_user_info", new UserInfoTool())
-			.description("查找用户信息")
-			.inputType(String.class)
-			.build();
-
-		// 使用
-		ReactAgent agent = ReactAgent.builder()
-			.name("my_agent")
-			.model(chatModel)
-			.tools(getUserInfoTool)
-			.saver(new MemorySaver())
-			.build();
-
-		RunnableConfig config = RunnableConfig.builder()
-			.threadId("1")
-			.addMetadata("user_id", "user_123")
-			.build();
-
-		AssistantMessage response = agent.call("获取用户信息", config);
-		System.out.println(response.getText());
-	}
-
-	// ==================== 辅助方法 ====================
-
-	/**
-	 * 创建示例工具
-	 */
-	private static ToolCallback createGetUserInfoTool() {
-		return FunctionToolCallback.builder("get_user_info", (String query) -> {
-			return "User info: " + query;
-		})
-		.description("Get user information")
-		.inputType(String.class)
-		.build();
-	}
-
-	// ==================== Main 方法 ====================
-
-	public static void main(String[] args) {
-		System.out.println("=== Memory Tutorial Examples ===");
-		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
-
-		try {
-			// 示例1：基础记忆配置
-			System.out.println("\n--- 示例1：基础记忆配置 ---");
-			basicMemoryConfiguration();
-
-			// 示例2：生产环境使用 Redis Checkpointer (需要 RedissonClient 实例，此处跳过)
-			System.out.println("\n--- 示例2：生产环境使用 Redis Checkpointer (跳过，需要 RedissonClient) ---");
-			// productionMemoryConfiguration(redissonClient);
-
-			// 示例5：使用消息修剪
-			System.out.println("\n--- 示例5：使用消息修剪 ---");
-			useMessageTrimming();
-
-			// 示例8：使用消息删除
-			System.out.println("\n--- 示例8：使用消息删除 ---");
-			useMessageDeletion();
-
-			// 示例10：使用消息总结
-			System.out.println("\n--- 示例10：使用消息总结 ---");
-			useMessageSummarization();
-
-			// 示例12：使用工具访问记忆
-			System.out.println("\n--- 示例12：使用工具访问记忆 ---");
-			accessMemoryInTool();
-
-			System.out.println("\n=== 所有示例执行完成 ===");
-		} catch (GraphRunnerException e) {
-			System.err.println("执行示例时发生错误: " + e.getMessage());
-			e.printStackTrace();
-		} catch (Exception e) {
-			System.err.println("发生未预期的错误: " + e.getMessage());
-			e.printStackTrace();
 		}
 	}
 }

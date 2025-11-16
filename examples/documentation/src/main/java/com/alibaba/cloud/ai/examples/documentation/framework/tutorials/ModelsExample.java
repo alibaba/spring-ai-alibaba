@@ -16,9 +16,9 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
-import reactor.core.publisher.Flux;
-
 import java.util.List;
+
+import reactor.core.publisher.Flux;
 
 /**
  * Models Tutorial - 完整代码示例
@@ -36,13 +36,13 @@ public class ModelsExample {
 	public static void createChatModel() {
 		// 创建 DashScope API 实例
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		// 创建 ChatModel
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 	}
 
 	/**
@@ -50,12 +50,12 @@ public class ModelsExample {
 	 */
 	public static void simpleCall() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 使用字符串直接调用
 		String response = chatModel.call("介绍一下Spring框架");
@@ -67,12 +67,12 @@ public class ModelsExample {
 	 */
 	public static void usePrompt() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 创建 Prompt
 		Prompt prompt = new Prompt(new UserMessage("解释什么是微服务架构"));
@@ -90,20 +90,20 @@ public class ModelsExample {
 	 */
 	public static void useChatOptions() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		DashScopeChatOptions options = DashScopeChatOptions.builder()
-			.withModel("qwen-plus")           // 模型名称
-			.withTemperature(0.7)              // 温度参数
-			.withMaxToken(2000)               // 最大令牌数
-			.withTopP(0.9)                     // Top-P 采样
-			.build();
+				.withModel("qwen-plus")           // 模型名称
+				.withTemperature(0.7)              // 温度参数
+				.withMaxToken(2000)               // 最大令牌数
+				.withTopP(0.9)                     // Top-P 采样
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.defaultOptions(options)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.defaultOptions(options)
+				.build();
 	}
 
 	/**
@@ -111,22 +111,22 @@ public class ModelsExample {
 	 */
 	public static void runtimeOptionsOverride() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 创建带有特定选项的 Prompt
 		DashScopeChatOptions runtimeOptions = DashScopeChatOptions.builder()
-			.withTemperature(0.3)  // 更低的温度，更确定的输出
-			.withMaxToken(500)
-			.build();
+				.withTemperature(0.3)  // 更低的温度，更确定的输出
+				.withMaxToken(500)
+				.build();
 
 		Prompt prompt = new Prompt(
-			new UserMessage("用一句话总结Java的特点"),
-			runtimeOptions
+				new UserMessage("用一句话总结Java的特点"),
+				runtimeOptions
 		);
 
 		ChatResponse response = chatModel.call(prompt);
@@ -139,28 +139,28 @@ public class ModelsExample {
 	 */
 	public static void streamingResponse() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 使用流式 API
 		Flux<ChatResponse> responseStream = chatModel.stream(
-			new Prompt("详细解释Spring Boot的自动配置原理")
+				new Prompt("详细解释Spring Boot的自动配置原理")
 		);
 
 		// 订阅并处理流式响应
 		responseStream.subscribe(
-			chatResponse -> {
-				String content = chatResponse.getResult()
-					.getOutput()
-					.getText();
-				System.out.print(content);
-			},
-			error -> System.err.println("错误: " + error.getMessage()),
-			() -> System.out.println("\n流式响应完成")
+				chatResponse -> {
+					String content = chatResponse.getResult()
+							.getOutput()
+							.getText();
+					System.out.print(content);
+				},
+				error -> System.err.println("错误: " + error.getMessage()),
+				() -> System.out.println("\n流式响应完成")
 		);
 	}
 
@@ -171,19 +171,19 @@ public class ModelsExample {
 	 */
 	public static void multiTurnConversation() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 创建对话历史
 		List<Message> messages = List.of(
-			new SystemMessage("你是一个Java专家"),
-			new UserMessage("什么是Spring Boot?"),
-			new AssistantMessage("Spring Boot是..."),
-			new UserMessage("它有什么优势?")
+				new SystemMessage("你是一个Java专家"),
+				new UserMessage("什么是Spring Boot?"),
+				new AssistantMessage("Spring Boot是..."),
+				new UserMessage("它有什么优势?")
 		);
 
 		Prompt prompt = new Prompt(messages);
@@ -197,26 +197,26 @@ public class ModelsExample {
 	 */
 	public static void functionCalling() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		// 定义函数
 		ToolCallback weatherFunction = FunctionToolCallback.builder("getWeather", (city) -> {
 					// 实际的天气查询逻辑
 					return "晴朗，25°C";
 				})
-			.description("获取指定城市的天气")
-			.inputType(String.class)
-			.build();
+				.description("获取指定城市的天气")
+				.inputType(String.class)
+				.build();
 
 		// 使用函数
 		DashScopeChatOptions options = DashScopeChatOptions.builder()
-			.withToolCallbacks(List.of(weatherFunction))
-			.build();
+				.withToolCallbacks(List.of(weatherFunction))
+				.build();
 
 		Prompt prompt = new Prompt("北京的天气怎么样?", options);
 		ChatResponse response = chatModel.call(prompt);
@@ -229,18 +229,18 @@ public class ModelsExample {
 	 */
 	public static void integrationWithReactAgent() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		ReactAgent agent = ReactAgent.builder()
-			.name("my_agent")
-			.model(chatModel)
-			.systemPrompt("你是一个有帮助的AI助手")
-			.build();
+				.name("my_agent")
+				.model(chatModel)
+				.systemPrompt("你是一个有帮助的AI助手")
+				.build();
 
 		// 调用 Agent
 		AssistantMessage response = agent.call("帮我分析这个问题");
@@ -253,26 +253,26 @@ public class ModelsExample {
 	 */
 	public static void comprehensiveConfiguration() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		// 配置各种选项
 		DashScopeChatOptions options = DashScopeChatOptions.builder()
-			.withModel("qwen-max")              // 使用旗舰版模型
-			.withTemperature(0.7)               // 控制随机性
-			.withMaxToken(4000)                // 最大输出长度
-			.withTopP(0.9)                      // 核采样
-			.build();
+				.withModel("qwen-max")              // 使用旗舰版模型
+				.withTemperature(0.7)               // 控制随机性
+				.withMaxToken(4000)                // 最大输出长度
+				.withTopP(0.9)                      // 核采样
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.defaultOptions(options)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.defaultOptions(options)
+				.build();
 
 		// 创建复杂的对话
 		List<Message> messages = List.of(
-			new SystemMessage("你是一位资深的软件架构师，精通微服务和云原生技术。"),
-			new UserMessage("如何设计一个高可用的微服务系统？")
+				new SystemMessage("你是一位资深的软件架构师，精通微服务和云原生技术。"),
+				new UserMessage("如何设计一个高可用的微服务系统？")
 		);
 
 		Prompt prompt = new Prompt(messages);
@@ -286,32 +286,32 @@ public class ModelsExample {
 	 */
 	public static void differentModelsUsage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		// qwen-turbo: 通义千问超大规模语言模型
 		ChatModel turboModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.defaultOptions(DashScopeChatOptions.builder()
-				.withModel("qwen-turbo")
-				.build())
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.defaultOptions(DashScopeChatOptions.builder()
+						.withModel("qwen-turbo")
+						.build())
+				.build();
 
 		// qwen-plus: 通义千问增强版
 		ChatModel plusModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.defaultOptions(DashScopeChatOptions.builder()
-				.withModel("qwen-plus")
-				.build())
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.defaultOptions(DashScopeChatOptions.builder()
+						.withModel("qwen-plus")
+						.build())
+				.build();
 
 		// qwen-max: 通义千问旗舰版
 		ChatModel maxModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.defaultOptions(DashScopeChatOptions.builder()
-				.withModel("qwen-max")
-				.build())
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.defaultOptions(DashScopeChatOptions.builder()
+						.withModel("qwen-max")
+						.build())
+				.build();
 
 		// 使用不同的模型
 		String question = "什么是人工智能？";
@@ -325,17 +325,18 @@ public class ModelsExample {
 	 */
 	public static void errorHandling() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.build();
 
 		try {
 			ChatResponse response = chatModel.call(new Prompt("你好"));
 			System.out.println("Response: " + response.getResult().getOutput().getText());
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			System.err.println("Error calling model: " + e.getMessage());
 			// 处理错误，例如重试、降级等
 		}
@@ -346,34 +347,34 @@ public class ModelsExample {
 	 */
 	public static void temperatureEffect() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-			.build();
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
 
 		String question = "给我讲一个有趣的故事";
 
 		// 低温度 - 更确定、更保守的输出
 		ChatModel conservativeModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.defaultOptions(DashScopeChatOptions.builder()
-				.withTemperature(0.1)
-				.build())
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.defaultOptions(DashScopeChatOptions.builder()
+						.withTemperature(0.1)
+						.build())
+				.build();
 
 		// 中温度 - 平衡的输出
 		ChatModel balancedModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.defaultOptions(DashScopeChatOptions.builder()
-				.withTemperature(0.7)
-				.build())
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.defaultOptions(DashScopeChatOptions.builder()
+						.withTemperature(0.7)
+						.build())
+				.build();
 
 		// 高温度 - 更有创意、更随机的输出
 		ChatModel creativeModel = DashScopeChatModel.builder()
-			.dashScopeApi(dashScopeApi)
-			.defaultOptions(DashScopeChatOptions.builder()
-				.withTemperature(1.5)
-				.build())
-			.build();
+				.dashScopeApi(dashScopeApi)
+				.defaultOptions(DashScopeChatOptions.builder()
+						.withTemperature(1.5)
+						.build())
+				.build();
 
 		String conservativeResponse = conservativeModel.call(question);
 		String balancedResponse = balancedModel.call(question);
@@ -431,7 +432,8 @@ public class ModelsExample {
 			temperatureEffect();
 
 			System.out.println("\n=== 所有示例执行完成 ===");
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			System.err.println("执行示例时发生错误: " + e.getMessage());
 			e.printStackTrace();
 		}
