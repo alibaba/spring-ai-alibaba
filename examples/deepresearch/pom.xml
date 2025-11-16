@@ -11,7 +11,7 @@
 	<groupId>com.alibaba.cloud.ai</groupId>
 	<artifactId>deepresearch</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>examples</name>
+	<name>Examples::DeepResearch</name>
 	<description>DeepResearch example for Spring AI Alibaba Agent Framework.</description>
 	<url/>
 	<licenses>
@@ -30,8 +30,8 @@
 	<properties>
 		<java.version>17</java.version>
 		<spring-ai.version>1.1.0-M4</spring-ai.version>
-		<spring-ai-alibaba.version>1.1.0.0-M4</spring-ai-alibaba.version>
 		<spring-ai-alibaba-extensions.version>1.1.0.0-M4</spring-ai-alibaba-extensions.version>
+		<spring-ai-alibaba.version>1.1.0.0-M4</spring-ai-alibaba.version>
 	</properties>
 
 	<dependencyManagement>

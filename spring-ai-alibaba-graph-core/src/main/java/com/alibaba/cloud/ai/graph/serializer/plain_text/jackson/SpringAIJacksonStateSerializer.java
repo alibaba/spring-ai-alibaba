@@ -55,6 +55,9 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 		}).register(new TypeMapper.Reference<AgentInstructionMessage>("TEMPLATED_USER") {
 		});
 
+		// Conditionally register DeepSeekAssistantMessage if the class is available
+		registerDeepSeekSupportIfAvailable(module);
+
 		objectMapper.registerModule(module);
 
         objectMapper.activateDefaultTyping(
@@ -62,6 +65,24 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
                 ObjectMapper.DefaultTyping.NON_FINAL,
                 JsonTypeInfo.As.PROPERTY
         );
+	}
+
+	/**
+	 * Conditionally registers DeepSeekAssistantMessage support if the class is available on the classpath.
+	 * This avoids forcing a dependency on DeepSeek-related JARs.
+	 */
+	private void registerDeepSeekSupportIfAvailable(SimpleModule module) {
+		try {
+			Class.forName("org.springframework.ai.deepseek.DeepSeekAssistantMessage");
+			// Class is available, register the type mapper
+			// TypeMapper only needs the type name, not the actual class
+			typeMapper.register(new TypeMapper.Reference<Object>("DEEPSEEK_ASSISTANT") {
+			});
+		}
+		catch (ClassNotFoundException e) {
+			// DeepSeekAssistantMessage is not available, skip registration
+			// This is expected for projects that don't include DeepSeek dependencies
+		}
 	}
 
 	interface ChatMessageDeserializer {
@@ -88,6 +109,26 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 				.addDeserializer(Document.class, document)
 				.addDeserializer(AgentInstructionMessage.class, templatedUser)
 				.addDeserializer(StreamingOutput.class, streamingOutput);
+
+			// Conditionally register DeepSeekAssistantMessage deserializer if available
+			registerDeepSeekDeserializerIfAvailable(module);
+		}
+
+		/**
+		 * Conditionally registers DeepSeekAssistantMessage deserializer if the class is available.
+		 */
+		@SuppressWarnings("unchecked")
+		static void registerDeepSeekDeserializerIfAvailable(SimpleModule module) {
+			try {
+				Class<?> deepSeekClass = Class.forName("org.springframework.ai.deepseek.DeepSeekAssistantMessage");
+				DeepSeekAssistantMessageHandler.Deserializer deepSeekAi = new DeepSeekAssistantMessageHandler.Deserializer();
+				// Use raw type to avoid type inference issues
+				module.addDeserializer((Class<Object>) deepSeekClass, (com.fasterxml.jackson.databind.JsonDeserializer<? extends Object>) deepSeekAi);
+			}
+			catch (ClassNotFoundException | IllegalStateException e) {
+				// DeepSeekAssistantMessage is not available, skip registration
+				// IllegalStateException may be thrown if the class is found but constructor fails
+			}
 		}
 
 	}
@@ -120,6 +161,25 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 				.addSerializer(NodeOutput.class, output)
 				.addSerializer(StreamingOutput.class, streamingOutput);
 
+			// Conditionally register DeepSeekAssistantMessage serializer if available
+			registerDeepSeekSerializerIfAvailable(module);
+		}
+
+		/**
+		 * Conditionally registers DeepSeekAssistantMessage serializer if the class is available.
+		 */
+		@SuppressWarnings("unchecked")
+		static void registerDeepSeekSerializerIfAvailable(SimpleModule module) {
+			try {
+				Class<?> deepSeekClass = Class.forName("org.springframework.ai.deepseek.DeepSeekAssistantMessage");
+				DeepSeekAssistantMessageHandler.Serializer deepSeekAi = new DeepSeekAssistantMessageHandler.Serializer();
+				// Use raw type to avoid type inference issues
+				module.addSerializer((Class<Object>) deepSeekClass, (com.fasterxml.jackson.databind.JsonSerializer<Object>) deepSeekAi);
+			}
+			catch (ClassNotFoundException | IllegalStateException e) {
+				// DeepSeekAssistantMessage is not available, skip registration
+				// IllegalStateException may be thrown if the class is found but constructor fails
+			}
 		}
 
 	}

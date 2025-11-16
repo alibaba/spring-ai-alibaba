@@ -24,13 +24,13 @@ import java.util.Map;
 public interface Hook {
 	String getName();
 
-	HookType getHookType();
-
-	List<JumpTo> canJumpTo();
-
 	void setAgentName(String agentName);
 
 	String getAgentName();
+
+	default List<JumpTo> canJumpTo() {
+		return List.of();
+	}
 
 	default Map<String, KeyStrategy> getKeyStrategys() {
 		return Map.of();

@@ -45,7 +45,7 @@ public class A2aRemoteAgent extends BaseAgent {
 	private boolean shareState;
 
 	// Private constructor for Builder pattern
-	private A2aRemoteAgent(Builder builder) throws GraphStateException {
+	private A2aRemoteAgent(Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
 		this.agentCard = builder.agentCard;
 		this.keyStrategyFactory = builder.keyStrategyFactory;
@@ -74,7 +74,7 @@ public class A2aRemoteAgent extends BaseAgent {
 	}
 
 	@Override
-	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) {
 		throw new UnsupportedOperationException("A2aRemoteAgent has not support schedule.");
 	}
 
@@ -203,7 +203,7 @@ public class A2aRemoteAgent extends BaseAgent {
 			return this;
 		}
 
-		public A2aRemoteAgent build() throws GraphStateException {
+		public A2aRemoteAgent build() {
 			// Validation
 			if (name == null || name.trim().isEmpty()) {
 				throw new IllegalArgumentException("Name must be provided");

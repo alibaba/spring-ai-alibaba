@@ -45,6 +45,25 @@ public class SpringAIStateSerializer extends ObjectStreamStateSerializer {
 		mapper().register(AssistantMessage.ToolCall.class, new ToolCallSerializer());
 		mapper().register(ToolResponseMessage.ToolResponse.class, new ToolResponseSerializer());
 
+		// Conditionally register DeepSeekAssistantMessage serializer if available
+		registerDeepSeekSupportIfAvailable();
+	}
+
+	/**
+	 * Conditionally registers DeepSeekAssistantMessage support if the class is available on the classpath.
+	 * This avoids forcing a dependency on DeepSeek-related JARs.
+	 */
+	private void registerDeepSeekSupportIfAvailable() {
+		try {
+			Class<?> deepSeekClass = Class.forName("org.springframework.ai.deepseek.DeepSeekAssistantMessage");
+			DeepSeekAssistantMessageSerializer serializer = new DeepSeekAssistantMessageSerializer();
+			mapper().register(deepSeekClass, serializer);
+		}
+		catch (ClassNotFoundException | IllegalStateException e) {
+			// DeepSeekAssistantMessage is not available, skip registration
+			// This is expected for projects that don't include DeepSeek dependencies
+			// IllegalStateException may be thrown if the class is found but constructor fails
+		}
 	}
 
 }

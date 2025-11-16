@@ -42,14 +42,11 @@ import java.util.concurrent.CompletableFuture;
  * MAC addresses, and URLs in both user input and agent output.
  *
  * Example:
- * <pre>
  * PIIDetectionHook pii = PIIDetectionHook.builder()
  *     .piiType(PIIType.EMAIL)
  *     .strategy(RedactionStrategy.REDACT)
  *     .applyToInput(true)
  *     .build();
-@HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
- * </pre>
  */
 @HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
 public class PIIDetectionHook extends ModelHook {
