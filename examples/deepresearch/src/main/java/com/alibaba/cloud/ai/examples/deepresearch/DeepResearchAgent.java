@@ -114,6 +114,7 @@ public class DeepResearchAgent {
 				.trigger(10000)
 				.clearAtLeast(6000)
 				.keep(4)
+				.excludeTools("write_todos")
 				.build();
 
 	}
