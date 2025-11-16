@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.examples.documentation.tutorials;
+package com.alibaba.cloud.ai.examples.documentation.framework.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -10,6 +10,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -21,7 +22,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.redisson.api.RedissonClient;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -71,7 +72,7 @@ public class MemoryExample {
 	/**
 	 * 示例2：生产环境使用 Redis Checkpointer
 	 */
-	public static void productionMemoryConfiguration(RedisConnectionFactory redisConnectionFactory) {
+	public static void productionMemoryConfiguration(RedissonClient redissonClient) {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
@@ -83,7 +84,7 @@ public class MemoryExample {
 		ToolCallback getUserInfoTool = createGetUserInfoTool();
 
 		// 配置 Redis checkpointer
-		RedisSaver redisSaver = new RedisSaver(redisConnectionFactory);
+		RedisSaver redisSaver = new RedisSaver(redissonClient);
 
 		ReactAgent agent = ReactAgent.builder()
 			.name("my_agent")
@@ -155,16 +156,15 @@ public class MemoryExample {
 		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
 			Optional<Object> messagesOpt = state.value("messages");
 			if (!messagesOpt.isPresent()) {
-				return  CompletableFuture.completedFuture(Map.of());
+				return CompletableFuture.completedFuture(Map.of());
 			}
 
 			List<Message> messages = (List<Message>) messagesOpt.get();
 
 			if (messages.size() <= MAX_MESSAGES) {
-				return  CompletableFuture.completedFuture(Map.of()); // 无需更改
+				return CompletableFuture.completedFuture(Map.of()); // 无需更改
 			}
 
-			// 保留第一条消息和最后几条消息
 			Message firstMsg = messages.get(0);
 			int keepCount = messages.size() % 2 == 0 ? 3 : 4;
 			List<Message> recentMessages = messages.subList(
@@ -172,16 +172,23 @@ public class MemoryExample {
 				messages.size()
 			);
 
-			List<Message> newMessages = new ArrayList<>();
-			newMessages.add(firstMsg);
-			newMessages.addAll(recentMessages);
+			List<Object> newMessages = new ArrayList<>();
+			// 标记中间消息为删除（使用 RemoveByHash）
+			if (messages.size() - keepCount > 1) {
+				for (Message msg : messages.subList(1, messages.size() - keepCount)) {
+					newMessages.add(RemoveByHash.of(msg));
+				}
+			}
+			// 保留第一条和最后几条消息
+//			newMessages.add(firstMsg);
+//			newMessages.addAll(recentMessages);
 
-			return  CompletableFuture.completedFuture(Map.of("messages", newMessages));
+			return CompletableFuture.completedFuture(Map.of("messages", newMessages));
 		}
 
 		@Override
 		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-			return  CompletableFuture.completedFuture(Map.of());
+			return CompletableFuture.completedFuture(Map.of());
 		}
 	}
 
@@ -240,25 +247,27 @@ public class MemoryExample {
 
 		@Override
 		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-			return  CompletableFuture.completedFuture(Map.of());
+			return CompletableFuture.completedFuture(Map.of());
 		}
 
 		@Override
 		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
 			Optional<Object> messagesOpt = state.value("messages");
 			if (!messagesOpt.isPresent()) {
-				return  CompletableFuture.completedFuture(Map.of());
+				return CompletableFuture.completedFuture(Map.of());
 			}
 
 			List<Message> messages = (List<Message>) messagesOpt.get();
 
 			if (messages.size() > 2) {
-				// 移除最早的两条消息
-				List<Message> trimmed = messages.subList(2, messages.size());
-				return  CompletableFuture.completedFuture(Map.of("messages", trimmed));
+				// 将最早的两条消息转为 RemoveByHash 对象以便从状态中删除
+				List<Object> removeOldMessages = new ArrayList<>();
+				removeOldMessages.add(RemoveByHash.of(messages.get(0)));
+				removeOldMessages.add(RemoveByHash.of(messages.get(1)));
+				return CompletableFuture.completedFuture(Map.of("messages", removeOldMessages));
 			}
 
-			return  CompletableFuture.completedFuture(Map.of());
+			return CompletableFuture.completedFuture(Map.of());
 		}
 	}
 
@@ -279,13 +288,21 @@ public class MemoryExample {
 
 		@Override
 		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-			return  CompletableFuture.completedFuture(Map.of());
+			return CompletableFuture.completedFuture(Map.of());
 		}
 
 		@Override
 		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-			// 清除所有消息
-			return  CompletableFuture.completedFuture(Map.of("messages", new ArrayList<Message>()));
+			Optional<Object> messagesOpt = state.value("messages");
+			if (!messagesOpt.isPresent()) {
+				return CompletableFuture.completedFuture(Map.of());
+			}
+			List<Message> messages = (List<Message>) messagesOpt.get();
+			List<Object> removeAllMessages = new ArrayList<>();
+			for (Message msg : messages) {
+				removeAllMessages.add(RemoveByHash.of(msg));
+			}
+			return CompletableFuture.completedFuture(Map.of("messages", removeAllMessages));
 		}
 	}
 
@@ -357,7 +374,7 @@ public class MemoryExample {
 		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
 			Optional<Object> messagesOpt = state.value("messages");
 			if (!messagesOpt.isPresent()) {
-				return  CompletableFuture.completedFuture(Map.of());
+				return CompletableFuture.completedFuture(Map.of());
 			}
 
 			List<Message> messages = (List<Message>) messagesOpt.get();
@@ -368,13 +385,13 @@ public class MemoryExample {
 				.sum();
 
 			if (estimatedTokens < maxTokensBeforeSummary) {
-				return  CompletableFuture.completedFuture(Map.of());
+				return CompletableFuture.completedFuture(Map.of());
 			}
 
 			// 需要总结
 			int messagesToSummarize = messages.size() - messagesToKeep;
 			if (messagesToSummarize <= 0) {
-				return  CompletableFuture.completedFuture(Map.of());
+				return CompletableFuture.completedFuture(Map.of());
 			}
 
 			List<Message> oldMessages = messages.subList(0, messagesToSummarize);
@@ -391,16 +408,20 @@ public class MemoryExample {
 				"## 之前对话摘要:\n" + summary
 			);
 
-			List<Message> newMessages = new ArrayList<>();
+			List<Object> newMessages = new ArrayList<>();
 			newMessages.add(summaryMessage);
 			newMessages.addAll(recentMessages);
+			// IMPORTANT! Convert summarized messages to RemoveByHash objects so we can remove them from state
+			for (Message msg : oldMessages) {
+				newMessages.add(RemoveByHash.of(msg));
+			}
 
-			return  CompletableFuture.completedFuture(Map.of("messages", newMessages));
+			return CompletableFuture.completedFuture(Map.of("messages", newMessages));
 		}
 
 		@Override
 		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-			return  CompletableFuture.completedFuture(Map.of());
+			return CompletableFuture.completedFuture(Map.of());
 		}
 
 		private String generateSummary(List<Message> messages) {
@@ -473,8 +494,8 @@ public class MemoryExample {
 		@Override
 		public String apply(String query, ToolContext toolContext) {
 			// 从上下文中获取用户信息
-			Map<String, Object> context = toolContext.getContext();
-			String userId = (String) context.get("user_id");
+			RunnableConfig config = (RunnableConfig) toolContext.getContext().get("config");
+			String userId = (String) config.metadata("user_id").orElse("");
 
 			if ("user_123".equals(userId)) {
 				return "用户是 John Smith";
@@ -538,13 +559,41 @@ public class MemoryExample {
 
 	public static void main(String[] args) {
 		System.out.println("=== Memory Tutorial Examples ===");
+		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
 
-		// 运行示例（需要设置 AI_DASHSCOPE_API_KEY 环境变量）
-		// basicMemoryConfiguration();
-		// useMessageTrimming();
-		// useMessageDeletion();
-		// useMessageSummarization();
-		// accessMemoryInTool();
+		try {
+			// 示例1：基础记忆配置
+			System.out.println("\n--- 示例1：基础记忆配置 ---");
+			basicMemoryConfiguration();
+
+			// 示例2：生产环境使用 Redis Checkpointer (需要 RedissonClient 实例，此处跳过)
+			System.out.println("\n--- 示例2：生产环境使用 Redis Checkpointer (跳过，需要 RedissonClient) ---");
+			// productionMemoryConfiguration(redissonClient);
+
+			// 示例5：使用消息修剪
+			System.out.println("\n--- 示例5：使用消息修剪 ---");
+			useMessageTrimming();
+
+			// 示例8：使用消息删除
+			System.out.println("\n--- 示例8：使用消息删除 ---");
+			useMessageDeletion();
+
+			// 示例10：使用消息总结
+			System.out.println("\n--- 示例10：使用消息总结 ---");
+			useMessageSummarization();
+
+			// 示例12：使用工具访问记忆
+			System.out.println("\n--- 示例12：使用工具访问记忆 ---");
+			accessMemoryInTool();
+
+			System.out.println("\n=== 所有示例执行完成 ===");
+		} catch (GraphRunnerException e) {
+			System.err.println("执行示例时发生错误: " + e.getMessage());
+			e.printStackTrace();
+		} catch (Exception e) {
+			System.err.println("发生未预期的错误: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 }
 

@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.examples.documentation.tutorials;
+package com.alibaba.cloud.ai.examples.documentation.framework.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -483,18 +483,44 @@ public class StructuredOutputExample {
 
 	public static void main(String[] args) {
 		System.out.println("=== Structured Output Tutorial Examples ===");
+		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
 
-		// 运行示例（需要设置 AI_DASHSCOPE_API_KEY 环境变量）
-		// basicJsonSchema();
-		// complexNestedSchema();
-		// structuredAnalysisSchema();
-		// outputTypeContactInfo();
-		// outputTypeProductReview();
-		// outputTypeTextAnalysis();
-		// tryCatchPattern();
-		// validationPattern();
-		// retryPattern();
-		// comprehensiveExample();
+		try {
+			System.out.println("\n--- 示例1：基础 JSON Schema ---");
+			basicJsonSchema();
+
+			System.out.println("\n--- 示例2：复杂嵌套 Schema ---");
+			complexNestedSchema();
+
+			System.out.println("\n--- 示例3：结构化分析 Schema ---");
+			structuredAnalysisSchema();
+
+			System.out.println("\n--- 示例4：OutputType - 联系信息 ---");
+			outputTypeContactInfo();
+
+			System.out.println("\n--- 示例5：OutputType - 产品评论 ---");
+			outputTypeProductReview();
+
+			System.out.println("\n--- 示例6：OutputType - 文本分析 ---");
+			outputTypeTextAnalysis();
+
+			System.out.println("\n--- 示例7：Try-Catch 模式 ---");
+			tryCatchPattern();
+
+			System.out.println("\n--- 示例8：验证模式 ---");
+			validationPattern();
+
+			System.out.println("\n--- 示例9：重试模式 ---");
+			retryPattern();
+
+			System.out.println("\n--- 示例10：综合示例 ---");
+			comprehensiveExample();
+
+			System.out.println("\n=== 所有示例执行完成 ===");
+		} catch (Exception e) {
+			System.err.println("执行示例时发生错误: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 }
 

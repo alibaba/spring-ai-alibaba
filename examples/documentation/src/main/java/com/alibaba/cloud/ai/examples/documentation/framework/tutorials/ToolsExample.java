@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.examples.documentation.tutorials;
+package com.alibaba.cloud.ai.examples.documentation.framework.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -485,16 +485,44 @@ public class ToolsExample {
 
 	public static void main(String[] args) {
 		System.out.println("=== Tools Tutorial Examples ===");
+		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
 
-		// 运行示例（需要设置 AI_DASHSCOPE_API_KEY 环境变量）
-		// programmaticToolSpecification();
-		// customToolName();
-		// customToolDescription();
-		// advancedSchemaDefinition();
-		// accessingState();
-		// accessingContext();
-		// toolsInReactAgent();
-		// comprehensiveToolExample();
+		try {
+			System.out.println("\n--- 示例1：编程式工具规范 ---");
+			programmaticToolSpecification();
+
+			System.out.println("\n--- 示例2：添加工具到 ChatClient ---");
+			addToolToChatClient();
+
+			System.out.println("\n--- 示例3：自定义工具名称 ---");
+			customToolName();
+
+			System.out.println("\n--- 示例4：自定义工具描述 ---");
+			customToolDescription();
+
+			System.out.println("\n--- 示例5：高级 Schema 定义 ---");
+			advancedSchemaDefinition();
+
+			System.out.println("\n--- 示例6：访问状态 ---");
+			accessingState();
+
+			System.out.println("\n--- 示例7：访问上下文 ---");
+			accessingContext();
+
+			System.out.println("\n--- 示例8：访问内存存储 ---");
+			accessingMemoryStore();
+
+			System.out.println("\n--- 示例9：ReactAgent 中的工具 ---");
+			toolsInReactAgent();
+
+			System.out.println("\n--- 示例10：综合工具示例 ---");
+			comprehensiveToolExample();
+
+			System.out.println("\n=== 所有示例执行完成 ===");
+		} catch (Exception e) {
+			System.err.println("执行示例时发生错误: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 }
 

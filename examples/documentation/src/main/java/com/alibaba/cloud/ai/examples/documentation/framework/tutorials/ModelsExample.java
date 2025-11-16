@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.examples.documentation.tutorials;
+package com.alibaba.cloud.ai.examples.documentation.framework.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -388,17 +388,53 @@ public class ModelsExample {
 
 	public static void main(String[] args) {
 		System.out.println("=== Models Tutorial Examples ===");
+		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
 
-		// 运行示例（需要设置 AI_DASHSCOPE_API_KEY 环境变量）
-		// createChatModel();
-		// simpleCall();
-		// usePrompt();
-		// useChatOptions();
-		// runtimeOptionsOverride();
-		// streamingResponse();
-		// multiTurnConversation();
-		// integrationWithReactAgent();
-		// comprehensiveConfiguration();
+		try {
+			System.out.println("\n--- 示例1：创建 ChatModel ---");
+			createChatModel();
+
+			System.out.println("\n--- 示例2：简单调用 ---");
+			simpleCall();
+
+			System.out.println("\n--- 示例3：使用 Prompt ---");
+			usePrompt();
+
+			System.out.println("\n--- 示例4：使用 ChatOptions ---");
+			useChatOptions();
+
+			System.out.println("\n--- 示例5：运行时选项覆盖 ---");
+			runtimeOptionsOverride();
+
+			System.out.println("\n--- 示例6：流式响应 ---");
+			streamingResponse();
+
+			System.out.println("\n--- 示例7：多轮对话 ---");
+			multiTurnConversation();
+
+			System.out.println("\n--- 示例8：函数调用 ---");
+			functionCalling();
+
+			System.out.println("\n--- 示例9：与 ReactAgent 集成 ---");
+			integrationWithReactAgent();
+
+			System.out.println("\n--- 示例10：综合配置 ---");
+			comprehensiveConfiguration();
+
+			System.out.println("\n--- 示例11：不同模型使用 ---");
+			differentModelsUsage();
+
+			System.out.println("\n--- 示例12：错误处理 ---");
+			errorHandling();
+
+			System.out.println("\n--- 示例13：温度效果 ---");
+			temperatureEffect();
+
+			System.out.println("\n=== 所有示例执行完成 ===");
+		} catch (Exception e) {
+			System.err.println("执行示例时发生错误: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 }

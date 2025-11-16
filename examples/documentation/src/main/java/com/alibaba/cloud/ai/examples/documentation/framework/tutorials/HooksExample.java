@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.examples.documentation.tutorials;
+package com.alibaba.cloud.ai.examples.documentation.framework.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -582,14 +582,44 @@ public class HooksExample {
 
 	public static void main(String[] args) {
 		System.out.println("=== Hooks and Interceptors Tutorial Examples ===");
+		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
 
-		// 运行示例（需要设置 AI_DASHSCOPE_API_KEY 环境变量）
-		// basicHooksAndInterceptors();
-		// messageSummarization();
-		// modelCallLimit();
-		// customStopCondition();
-		// piiDetection();
-		// toolRetry();
+		try {
+			System.out.println("\n--- 示例1：基础 Hooks 和 Interceptors ---");
+			basicHooksAndInterceptors();
+
+			System.out.println("\n--- 示例2：消息压缩 Hook ---");
+			messageSummarization();
+
+			System.out.println("\n--- 示例3：人工介入循环 ---");
+			humanInTheLoop();
+
+			System.out.println("\n--- 示例4：模型调用限制 ---");
+			modelCallLimit();
+
+			System.out.println("\n--- 示例5：PII 检测 ---");
+			piiDetection();
+
+			System.out.println("\n--- 示例6：工具重试 ---");
+			toolRetry();
+
+			System.out.println("\n--- 示例7：规划（Planning） ---");
+			planning();
+
+			System.out.println("\n--- 示例8：LLM 工具选择器 ---");
+			llmToolSelector();
+
+			System.out.println("\n--- 示例9：LLM 工具模拟器 ---");
+			llmToolEmulator();
+
+			System.out.println("\n--- 示例10：上下文编辑 ---");
+			contextEditing();
+
+			System.out.println("\n=== 所有示例执行完成 ===");
+		} catch (Exception e) {
+			System.err.println("执行示例时发生错误: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 }
 

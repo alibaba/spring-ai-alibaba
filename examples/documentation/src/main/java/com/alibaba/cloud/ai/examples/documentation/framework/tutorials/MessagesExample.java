@@ -1,4 +1,4 @@
-package com.alibaba.cloud.ai.examples.documentation.tutorials;
+package com.alibaba.cloud.ai.examples.documentation.framework.tutorials;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -509,15 +509,74 @@ public class MessagesExample {
 
 	public static void main(String[] args) {
 		System.out.println("=== Messages Tutorial Examples ===");
+		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
 
-		// 运行示例（需要设置 AI_DASHSCOPE_API_KEY 环境变量）
-		// basicMessageUsage();
-		// textPromptUsage();
-		// messagePromptUsage();
-		// basicSystemMessage();
-		// textUserMessage();
-		// basicAssistantMessage();
-		// tokenUsage();
+		try {
+			System.out.println("\n--- 示例1：基础消息使用 ---");
+			basicMessageUsage();
+
+			System.out.println("\n--- 示例2：文本提示使用 ---");
+			textPromptUsage();
+
+			System.out.println("\n--- 示例3：消息提示使用 ---");
+			messagePromptUsage();
+
+			System.out.println("\n--- 示例4：基础系统消息 ---");
+			basicSystemMessage();
+
+			System.out.println("\n--- 示例5：详细系统消息 ---");
+			detailedSystemMessage();
+
+			System.out.println("\n--- 示例6：文本用户消息 ---");
+			textUserMessage();
+
+			System.out.println("\n--- 示例7：用户消息元数据 ---");
+			userMessageMetadata();
+
+			System.out.println("\n--- 示例8：多模态图像消息 ---");
+			multimodalImageMessage();
+
+			System.out.println("\n--- 示例9：基础助手消息 ---");
+			basicAssistantMessage();
+
+			System.out.println("\n--- 示例10：手动助手消息 ---");
+			manualAssistantMessage();
+
+			System.out.println("\n--- 示例11：工具调用在助手消息中 ---");
+			toolCallsInAssistantMessage();
+
+			System.out.println("\n--- 示例12：Token 使用 ---");
+			tokenUsage();
+
+			System.out.println("\n--- 示例13：流式消息 ---");
+			streamingMessages();
+
+			System.out.println("\n--- 示例14：工具响应消息 ---");
+			toolResponseMessage();
+
+			System.out.println("\n--- 示例15：从 URL 输入图像 ---");
+			imageInputFromURL();
+
+			System.out.println("\n--- 示例16：从文件输入图像 ---");
+			imageInputFromFile();
+
+			System.out.println("\n--- 示例17：音频输入 ---");
+			audioInput();
+
+			System.out.println("\n--- 示例18：视频输入 ---");
+			videoInput();
+
+			System.out.println("\n--- 示例19：基础对话示例 ---");
+			basicConversationExample();
+
+			System.out.println("\n--- 示例20：构建器模式 ---");
+			builderPattern();
+
+			System.out.println("\n=== 所有示例执行完成 ===");
+		} catch (Exception e) {
+			System.err.println("执行示例时发生错误: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 }
 
