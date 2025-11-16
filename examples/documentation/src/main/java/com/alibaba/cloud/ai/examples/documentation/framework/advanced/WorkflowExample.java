@@ -1,5 +1,7 @@
 package com.alibaba.cloud.ai.examples.documentation.framework.advanced;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -16,7 +18,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.stereotype.Component;
 
 import java.util.*;
 
@@ -558,14 +559,19 @@ public class WorkflowExample {
      * 注意：需要配置ChatModel实例才能运行
      */
     public static void main(String[] args) {
-        // TODO: 请配置您的ChatModel实例
-        // 例如：ChatModel chatModel = new YourChatModelImplementation();
+        // 创建 DashScope API 实例
+        DashScopeApi dashScopeApi = DashScopeApi.builder()
+            .apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+            .build();
 
-        ChatModel chatModel = null; // 请替换为实际的ChatModel实例
+        // 创建 ChatModel
+        ChatModel chatModel = DashScopeChatModel.builder()
+            .dashScopeApi(dashScopeApi)
+            .build();
 
         if (chatModel == null) {
             System.err.println("错误：请先配置ChatModel实例");
-            System.err.println("请修改main方法中的chatModel变量，使用实际的ChatModel实现");
+            System.err.println("请设置 AI_DASHSCOPE_API_KEY 环境变量");
             return;
         }
 

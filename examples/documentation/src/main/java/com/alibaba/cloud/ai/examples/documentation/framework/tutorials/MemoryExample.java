@@ -165,23 +165,15 @@ public class MemoryExample {
 				return CompletableFuture.completedFuture(Map.of()); // 无需更改
 			}
 
-			Message firstMsg = messages.get(0);
 			int keepCount = messages.size() % 2 == 0 ? 3 : 4;
-			List<Message> recentMessages = messages.subList(
-				messages.size() - keepCount,
-				messages.size()
-			);
 
 			List<Object> newMessages = new ArrayList<>();
-			// 标记中间消息为删除（使用 RemoveByHash）
+			// 标记中间消息为删除（使用 RemoveByHash），其余消息会自动保留
 			if (messages.size() - keepCount > 1) {
 				for (Message msg : messages.subList(1, messages.size() - keepCount)) {
 					newMessages.add(RemoveByHash.of(msg));
 				}
 			}
-			// 保留第一条和最后几条消息
-//			newMessages.add(firstMsg);
-//			newMessages.addAll(recentMessages);
 
 			return CompletableFuture.completedFuture(Map.of("messages", newMessages));
 		}
@@ -408,9 +400,9 @@ public class MemoryExample {
 				"## 之前对话摘要:\n" + summary
 			);
 
+			// 只需要把摘要消息和需要删除的消息保留在状态中，其余未包含的消息将会自动保留
 			List<Object> newMessages = new ArrayList<>();
 			newMessages.add(summaryMessage);
-			newMessages.addAll(recentMessages);
 			// IMPORTANT! Convert summarized messages to RemoveByHash objects so we can remove them from state
 			for (Message msg : oldMessages) {
 				newMessages.add(RemoveByHash.of(msg));

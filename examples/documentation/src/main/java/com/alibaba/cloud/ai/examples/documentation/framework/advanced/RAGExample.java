@@ -1,5 +1,7 @@
 package com.alibaba.cloud.ai.examples.documentation.framework.advanced;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -11,7 +13,6 @@ import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.function.Function;
@@ -371,16 +372,23 @@ public class RAGExample {
      * 注意：需要配置ChatModel和VectorStore实例才能运行
      */
     public static void main(String[] args) {
-        // TODO: 请配置您的ChatModel和VectorStore实例
-        // 例如：ChatModel chatModel = new YourChatModelImplementation();
-        //       VectorStore vectorStore = new YourVectorStoreImplementation();
+        // 创建 DashScope API 实例
+        DashScopeApi dashScopeApi = DashScopeApi.builder()
+            .apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+            .build();
 
-        ChatModel chatModel = null; // 请替换为实际的ChatModel实例
+        // 创建 ChatModel
+        ChatModel chatModel = DashScopeChatModel.builder()
+            .dashScopeApi(dashScopeApi)
+            .build();
+
+        // TODO: 请配置您的VectorStore实例
+        // 例如：VectorStore vectorStore = new YourVectorStoreImplementation();
         VectorStore vectorStore = null; // 请替换为实际的VectorStore实例
 
         if (chatModel == null || vectorStore == null) {
             System.err.println("错误：请先配置ChatModel和VectorStore实例");
-            System.err.println("请修改main方法中的chatModel和vectorStore变量，使用实际的实现");
+            System.err.println("请设置 AI_DASHSCOPE_API_KEY 环境变量，并配置VectorStore实例");
             return;
         }
 

@@ -1,5 +1,7 @@
 package com.alibaba.cloud.ai.examples.documentation.framework.advanced;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
@@ -16,7 +18,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -61,25 +62,22 @@ public class ContextEngineeringExample {
                     basePrompt += "\n这是一个长对话 - 请尽量保持精准简捷。";
                 }
 
-                // 更新系统消息
-                List<Message> updatedMessages = updateSystemMessage(messages, basePrompt);
+                // 更新系统消息（参考 TodoListInterceptor 的实现方式）
+                SystemMessage enhancedSystemMessage;
+                if (request.getSystemMessage() == null) {
+                    enhancedSystemMessage = new SystemMessage(basePrompt);
+                } else {
+                    enhancedSystemMessage = new SystemMessage(
+                        request.getSystemMessage().getText() + "\n\n" + basePrompt
+                    );
+                }
 
                 // 创建新的请求并继续
                 ModelRequest updatedRequest = ModelRequest.builder(request)
-                    .messages(updatedMessages)
+                    .systemMessage(enhancedSystemMessage)
                     .build();
 
                 return next.call(updatedRequest);
-            }
-
-            private List<Message> updateSystemMessage(List<Message> messages, String newPrompt) {
-                List<Message> updated = new ArrayList<>();
-                updated.add(new SystemMessage(newPrompt));
-                // 添加非系统消息
-                messages.stream()
-                    .filter(m -> !(m instanceof SystemMessage))
-                    .forEach(updated::add);
-                return updated;
             }
 
             @Override
@@ -158,16 +156,20 @@ public class ContextEngineeringExample {
                 UserPreferences prefs = store.getPreferences(userId);
 
                 // 构建个性化提示
-                String systemPrompt = buildPersonalizedPrompt(prefs);
+                String personalizedPrompt = buildPersonalizedPrompt(prefs);
 
-                // 更新请求
-                List<Message> updatedMessages = updateSystemMessage(
-                    request.getMessages(),
-                    systemPrompt
-                );
+                // 更新系统消息（参考 TodoListInterceptor 的实现方式）
+                SystemMessage enhancedSystemMessage;
+                if (request.getSystemMessage() == null) {
+                    enhancedSystemMessage = new SystemMessage(personalizedPrompt);
+                } else {
+                    enhancedSystemMessage = new SystemMessage(
+                        request.getSystemMessage().getText() + "\n\n" + personalizedPrompt
+                    );
+                }
 
                 ModelRequest updatedRequest = ModelRequest.builder(request)
-                    .messages(updatedMessages)
+                    .systemMessage(enhancedSystemMessage)
                     .build();
 
                 return next.call(updatedRequest);
@@ -194,15 +196,6 @@ public class ContextEngineeringExample {
                 }
 
                 return prompt.toString();
-            }
-
-            private List<Message> updateSystemMessage(List<Message> messages, String newPrompt) {
-                List<Message> updated = new ArrayList<>();
-                updated.add(new SystemMessage(newPrompt));
-                messages.stream()
-                    .filter(m -> !(m instanceof SystemMessage))
-                    .forEach(updated::add);
-                return updated;
             }
 
             @Override
@@ -425,13 +418,47 @@ public class ContextEngineeringExample {
                     // 生成对话摘要
                     String summary = generateSummary(messages);
 
-                    // 用摘要替换旧消息
-                    List<Message> newMessages = new ArrayList<>();
-                    newMessages.add(new SystemMessage("之前对话摘要：" + summary));
+                    // 查找是否已存在 SystemMessage
+                    SystemMessage existingSystemMessage = null;
+                    int systemMessageIndex = -1;
+                    for (int i = 0; i < messages.size(); i++) {
+                        Message msg = messages.get(i);
+                        if (msg instanceof SystemMessage) {
+                            existingSystemMessage = (SystemMessage) msg;
+                            systemMessageIndex = i;
+                            break;
+                        }
+                    }
+
+                    // 创建摘要 SystemMessage
+                    String summaryText = "之前对话摘要：" + summary;
+                    SystemMessage summarySystemMessage;
+                    if (existingSystemMessage != null) {
+                        // 如果存在 SystemMessage，追加摘要信息
+                        summarySystemMessage = new SystemMessage(
+                            existingSystemMessage.getText() + "\n\n" + summaryText
+                        );
+                    } else {
+                        // 如果不存在，创建新的
+                        summarySystemMessage = new SystemMessage(summaryText);
+                    }
 
                     // 保留最近的几条消息
                     int recentCount = Math.min(5, messages.size());
-                    newMessages.addAll(messages.subList(messages.size() - recentCount, messages.size()));
+                    List<Message> recentMessages = messages.subList(
+                        messages.size() - recentCount,
+                        messages.size()
+                    );
+
+                    // 构建新的消息列表
+                    List<Message> newMessages = new ArrayList<>();
+                    newMessages.add(summarySystemMessage);
+                    // 添加最近的消息，排除旧的 SystemMessage（如果存在）
+                    for (Message msg : recentMessages) {
+                        if (msg != existingSystemMessage) {
+                            newMessages.add(msg);
+                        }
+                    }
 
                     return CompletableFuture.completedFuture(Map.of("messages", newMessages));
                 }
@@ -502,14 +529,19 @@ public class ContextEngineeringExample {
      * 注意：需要配置ChatModel实例才能运行
      */
     public static void main(String[] args) {
-        // TODO: 请配置您的ChatModel实例
-        // 例如：ChatModel chatModel = new YourChatModelImplementation();
+        // 创建 DashScope API 实例
+        DashScopeApi dashScopeApi = DashScopeApi.builder()
+            .apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+            .build();
 
-        ChatModel chatModel = null; // 请替换为实际的ChatModel实例
+        // 创建 ChatModel
+        ChatModel chatModel = DashScopeChatModel.builder()
+            .dashScopeApi(dashScopeApi)
+            .build();
 
         if (chatModel == null) {
             System.err.println("错误：请先配置ChatModel实例");
-            System.err.println("请修改main方法中的chatModel变量，使用实际的ChatModel实现");
+            System.err.println("请设置 AI_DASHSCOPE_API_KEY 环境变量");
             return;
         }
 
