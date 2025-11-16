@@ -114,6 +114,7 @@ public class DeepResearchAgent {
 				.trigger(10000)
 				.clearAtLeast(6000)
 				.keep(4)
+				.excludeTools("write_todos")
 				.build();
 
 	}
@@ -152,8 +153,8 @@ public class DeepResearchAgent {
 						filesystemInterceptor,
 						largeResultEvictionInterceptor,
 						patchToolCallsInterceptor,
-						contextEditingInterceptor,
-//						toolRetryInterceptor,
+//						contextEditingInterceptor,
+						toolRetryInterceptor,
 						subAgentAsInterceptors(toolsFromMcp))
 				.hooks(humanInTheLoopHook, summarizationHook, toolCallLimitHook)
 				.saver(new MemorySaver())
@@ -170,7 +171,7 @@ public class DeepResearchAgent {
 				.defaultInterceptors(
 						todoListInterceptor,
 						filesystemInterceptor,
-						contextEditingInterceptor,
+//						contextEditingInterceptor,
 						patchToolCallsInterceptor,
 						largeResultEvictionInterceptor
 				)
