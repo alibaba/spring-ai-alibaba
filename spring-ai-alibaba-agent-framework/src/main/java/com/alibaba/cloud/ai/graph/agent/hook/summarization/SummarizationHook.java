@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
+import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -123,10 +124,14 @@ public class SummarizationHook extends ModelHook {
 
 		String summary = createSummary(toSummarize);
 
-		List<Message> newMessages = new ArrayList<>();
+		List<Object> newMessages = new ArrayList<>();
 		newMessages.add(new UserMessage(
 				"Here is a summary of the conversation to date:\n\n" + summary));
 		newMessages.addAll(toPreserve);
+		// Convert toSummarize messages to RemoveByHash objects so we can remove them from state
+		for (Message msg : toSummarize) {
+			newMessages.add(RemoveByHash.of(msg));
+		}
 
 		Map<String, Object> updates = new HashMap<>();
 		updates.put("messages", newMessages);
