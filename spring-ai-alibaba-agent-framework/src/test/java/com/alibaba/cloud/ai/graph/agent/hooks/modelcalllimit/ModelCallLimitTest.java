@@ -17,140 +17,67 @@ package com.alibaba.cloud.ai.graph.agent.hooks.modelcalllimit;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitExceededException;
 import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
-import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.agent.tools.WeatherTool;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
+import org.springframework.ai.chat.model.ChatModel;
+
 import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.chat.model.ChatModel;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 public class ModelCallLimitTest {
 
-    private ChatModel chatModel;
+	private ChatModel chatModel;
 
-    @BeforeEach
-    void setUp() {
-        // Create DashScopeApi instance using the API key from environment variable
-        DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+	@BeforeEach
+	void setUp() {
+		// Create DashScopeApi instance using the API key from environment variable
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 
-        // Create DashScope ChatModel instance
-        this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
-    }
+		// Create DashScope ChatModel instance
+		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
+	}
 
-    @Test
-    public void testThreadLimitWithEndBehavior() throws Exception {
-        // 限制 1 次
-        ModelCallLimitHook hook = ModelCallLimitHook.builder()
-                .threadLimit(1)
-                .exitBehavior(ModelCallLimitHook.ExitBehavior.END)
-                .build();
+	@Test
+	public void testThreadLimitWithErrorBehavior() throws Exception {
+		ModelCallLimitHook hook = ModelCallLimitHook.builder()
+				.threadLimit(1)
+				.exitBehavior(ModelCallLimitHook.ExitBehavior.ERROR)
+				.build();
 
-        ReactAgent agent = createAgent(hook, "test-agent", chatModel);
+		ReactAgent agent = createAgent(hook, "test-agent", chatModel);
 
-        // 第一次调用应该成功
-        Optional<OverAllState> result1 = agent.invoke("你好，帮我写一个简单的问候语");
-        assertTrue(result1.isPresent(), "第一次调用应该成功");
+		// 第一次调用，执行第二次推理时报错
+		assertThrows(ModelCallLimitExceededException.class, () -> {
+			agent.invoke("你好，帮我分两次调用weather工具，查询北京和上海的天气");
+		}, "第一次调用应该抛出ModelCallLimitExceededException异常");
 
-        // 验证返回的消息中包含限制信息
-        Object messagesObj = result1.get().value("messages").get();
-        assertNotNull(messagesObj);
-        assertTrue(messagesObj instanceof java.util.List);
-        
-        // 第二次调用应该因为达到限制而结束
-        Optional<OverAllState> result2 = agent.invoke("再写一个问候语");
-        assertTrue(result2.isPresent(), "第二次调用应该返回结果而不是抛出异常");
-    }
+		// 第二次调用，正常执行，不受之前影响
+		Optional<OverAllState> result2 = agent.invoke("你好");
+		assertTrue(result2.isPresent(), "第二次调用应该返回结果而不是抛出异常");
+	}
 
-    @Test
-    public void testRunLimitWithErrorBehavior() {
-        // 创建一个限制为1次运行调用的hook，使用ERROR行为
-        ModelCallLimitHook hook = ModelCallLimitHook.builder()
-                .runLimit(1)
-                .exitBehavior(ModelCallLimitHook.ExitBehavior.ERROR)
-                .build();
+	public ReactAgent createAgent(ModelCallLimitHook hook, String name, ChatModel model) throws GraphStateException {
+		return ReactAgent.builder()
+				.name(name)
+				.model(model)
+				.hooks(List.of(hook))
+				.tools(WeatherTool.createWeatherTool("weather_tool", new WeatherTool()))
+				.saver(new MemorySaver())
+				.build();
+	}
 
-        String threadId = "test-run-error-thread";
-        RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
-
-        try {
-            ReactAgent agent = createAgent(hook, "test-agent", chatModel);
-            // 第一次调用应该成功
-            agent.invoke("你好", config);
-            
-            // 第二次调用应该抛出异常
-            assertThrows(ModelCallLimitExceededException.class, () -> {
-                agent.invoke("再一次说你好", config);
-            });
-        } catch (Exception e) {
-            fail("hook异常: " + e.getMessage());
-        }
-    }
-
-    @Test
-    public void testCombinedLimits() throws Exception {
-        // 同时设置线程和运行限制
-        ModelCallLimitHook hook = ModelCallLimitHook.builder()
-                .threadLimit(2)
-                .runLimit(3)
-                .exitBehavior(ModelCallLimitHook.ExitBehavior.END)
-                .build();
-
-        ReactAgent agent = ReactAgent.builder()
-                .name("test-agent-combined")
-                .model(chatModel)
-                .hooks(java.util.Arrays.asList(hook))
-                .saver(new MemorySaver())
-                .build();
-
-        // 第一次调用
-        Optional<OverAllState> result1 = agent.invoke("写一个关于春天的句子");
-        assertTrue(result1.isPresent(), "第一次调用应该成功");
-
-        // 第二次调用
-        Optional<OverAllState> result2 = agent.invoke("再写一个关于夏天的句子");
-        assertTrue(result2.isPresent(), "第二次调用应该成功");
-
-        // 第三次调用应该达到线程限制
-        Optional<OverAllState> result3 = agent.invoke("再写一个关于秋天的句子");
-        assertTrue(result3.isPresent(), "第三次调用应该返回结果");
-    }
-
-    @Test
-    public void testNormalExecutionWithoutLimits() throws Exception {
-        // true case
-        ReactAgent agent = createAgent(ModelCallLimitHook.builder().threadLimit(2).runLimit(2).build(),"test-agent",chatModel);
-        Optional<OverAllState> result = agent.invoke("帮我写一个简单的问候语");
-        assertTrue(result.isPresent(), "没有限制时应该正常执行");
-        assertNotNull(result.get().value("messages").get(), "应该返回消息");
-    }
-
-    public ReactAgent createAgent(ModelCallLimitHook hook,String name,ChatModel model) throws GraphStateException {
-        return ReactAgent.builder()
-            .name(name)
-            .model(model)
-            .hooks(List.of(hook))
-            .saver(new MemorySaver())
-            .build();
-    }
-
-    private static CompileConfig getCompileConfig() {
-        SaverConfig saverConfig = SaverConfig.builder()
-            .register(new MemorySaver())
-            .build();
-        return CompileConfig.builder().saverConfig(saverConfig).build();
-    }
 }

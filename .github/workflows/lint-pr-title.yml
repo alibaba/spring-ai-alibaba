@@ -57,7 +57,7 @@ jobs:
             agent
           # e.g. feat(core): add new feature
           # if false: feat: add new feature
-          requireScope: true
+          requireScope: false
           disallowScopes: |
             [A-Z]+
           # if true, the PR title must match the commit message

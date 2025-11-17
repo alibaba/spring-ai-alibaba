@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import io.micrometer.observation.ObservationRegistry;
@@ -33,17 +32,23 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DefaultBuilder extends Builder {
 
 	@Override
-	public ReactAgent build() throws GraphStateException {
+	public ReactAgent build() {
+
+		// Validate name is not empty
+		if (!StringUtils.hasText(this.name)) {
+			throw new IllegalArgumentException("Agent name must not be empty");
+		}
+
+		// Validate either chatClient or model is provided
+		if (chatClient == null && model == null) {
+			throw new IllegalArgumentException("Either chatClient or model must be provided");
+		}
 
 		if (chatClient == null) {
-			if (model == null) {
-				throw new IllegalArgumentException("Either chatClient or model must be provided");
-			}
 
 			ChatClient.Builder clientBuilder = ChatClient.builder(model, this.observationRegistry == null ? ObservationRegistry.NOOP : this.observationRegistry,
 					this.customObservationConvention);
@@ -51,17 +56,18 @@ public class DefaultBuilder extends Builder {
 			if (chatOptions != null) {
 				clientBuilder.defaultOptions(chatOptions);
 			}
-			if (systemPrompt != null) {
-				clientBuilder.defaultSystem(systemPrompt);
-			}
 
 			chatClient = clientBuilder.build();
 		}
 
-		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder().chatClient(chatClient);
+		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder().agentName(this.name).chatClient(chatClient);
 
 		if (outputKey != null && !outputKey.isEmpty()) {
 			llmNodeBuilder.outputKey(outputKey);
+		}
+
+		if (systemPrompt != null) {
+			llmNodeBuilder.systemPrompt(systemPrompt);
 		}
 
 		String outputSchema = null;
@@ -106,7 +112,7 @@ public class DefaultBuilder extends Builder {
 		if (CollectionUtils.isNotEmpty(modelInterceptors)) {
 			interceptorTools = modelInterceptors.stream()
 				.flatMap(interceptor -> interceptor.getTools().stream())
-				.collect(Collectors.toList());
+				.toList();
 		}
 
 		// Combine all tools: regularTools + regularTools
@@ -119,19 +125,28 @@ public class DefaultBuilder extends Builder {
 			llmNodeBuilder.toolCallbacks(allTools);
 		}
 
+		if (enableLogging) {
+			llmNodeBuilder.enableReasoningLog(true);
+		}
+
 		AgentLlmNode llmNode = llmNodeBuilder.build();
 
 		// Setup tool node with all available tools
-		AgentToolNode toolNode = null;
+		AgentToolNode toolNode;
+		AgentToolNode.Builder toolBuilder = AgentToolNode.builder().agentName(this.name);
+
 		if (resolver != null) {
-			toolNode = AgentToolNode.builder().toolCallbackResolver(resolver).build();
+			toolBuilder.toolCallbackResolver(resolver);
 		}
-		else if (CollectionUtils.isNotEmpty(allTools)) {
-			toolNode = AgentToolNode.builder().toolCallbacks(allTools).build();
+		if (CollectionUtils.isNotEmpty(allTools)) {
+			toolBuilder.toolCallbacks(allTools);
 		}
-		else {
-			toolNode = AgentToolNode.builder().build();
+
+		if (enableLogging) {
+			toolBuilder.enableActingLog(true);
 		}
+
+		toolNode = toolBuilder.build();
 
 		return new ReactAgent(llmNode, toolNode, buildConfig(), this);
 	}

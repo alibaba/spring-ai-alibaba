@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -42,8 +41,7 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 	private List<ToolFeedback> toolFeedbacks;
 
 	private InterruptionMetadata(Builder builder) {
-		super(requireNonNull(builder.nodeId, "nodeId cannot be null!"),
-				requireNonNull(builder.state, "state cannot be null!"));
+		super(builder.nodeId, builder.state);
 		this.metadata = builder.metadata();
 		this.toolFeedbacks = new ArrayList<>(builder.toolFeedbacks);
 	}

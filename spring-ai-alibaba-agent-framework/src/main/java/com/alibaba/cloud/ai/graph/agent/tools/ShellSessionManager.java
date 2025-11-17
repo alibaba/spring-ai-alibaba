@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.tools;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +35,8 @@ public class ShellSessionManager {
 
 	private static final Logger log = LoggerFactory.getLogger(ShellSessionManager.class);
 	private static final String DONE_MARKER_PREFIX = "__LC_SHELL_DONE__";
+	private static final String SESSION_INSTANCE_CONTEXT_KEY = "_SHELL_SESSION_";
+	private static final String SESSION_PATH_CONTEXT_KEY = "_SHELL_PATH_";
 
 	private final Path workspaceRoot;
 	private final boolean useTemporaryWorkspace;
@@ -46,10 +50,6 @@ public class ShellSessionManager {
 	private final List<String> shellCommand;
 	private final Map<String, String> environment;
 	private final List<RedactionRule> redactionRules;
-
-	// Session state (stored per-agent run)
-	private final ThreadLocal<ShellSession> sessionHolder = new ThreadLocal<>();
-	private final ThreadLocal<Path> tempDirHolder = new ThreadLocal<>();
 
 	private ShellSessionManager(Builder builder) {
 		this.workspaceRoot = builder.workspaceRoot;
@@ -73,12 +73,13 @@ public class ShellSessionManager {
 	/**
 	 * Initialize shell session.
 	 */
-	public void initialize() {
+	public void initialize(RunnableConfig config) {
 		try {
 			Path workspace = workspaceRoot;
 			if (useTemporaryWorkspace) {
 				Path tempDir = Files.createTempDirectory("shell_tool_");
-				tempDirHolder.set(tempDir);
+				config.context().put(SESSION_PATH_CONTEXT_KEY, tempDir);
+
 				workspace = tempDir;
 			} else {
 				Files.createDirectories(workspace);
@@ -86,7 +87,7 @@ public class ShellSessionManager {
 
 			ShellSession session = new ShellSession(workspace, shellCommand, environment);
 			session.start();
-			sessionHolder.set(session);
+			config.context().put(SESSION_INSTANCE_CONTEXT_KEY, session);
 
 			log.info("Started shell session in workspace: {}", workspace);
 
@@ -98,7 +99,7 @@ public class ShellSessionManager {
 				}
 			}
 		} catch (Exception e) {
-			cleanup();
+			cleanup(config);
 			throw new RuntimeException("Failed to initialize shell session", e);
 		}
 	}
@@ -106,9 +107,9 @@ public class ShellSessionManager {
 	/**
 	 * Clean up shell session.
 	 */
-	public void cleanup() {
+	public void cleanup(RunnableConfig config) {
 		try {
-			ShellSession session = sessionHolder.get();
+			ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
 			if (session != null) {
 				// Run shutdown commands
 				for (String command : shutdownCommands) {
@@ -120,33 +121,33 @@ public class ShellSessionManager {
 				}
 			}
 		} finally {
-			doCleanup();
+			doCleanup(config);
 		}
 	}
 
-	private void doCleanup() {
-		ShellSession session = sessionHolder.get();
+	private void doCleanup(RunnableConfig config) {
+		ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
 		if (session != null) {
 			session.stop(terminationTimeout);
-			sessionHolder.remove();
+			config.context().remove(SESSION_INSTANCE_CONTEXT_KEY);
 		}
 
-		Path tempDir = tempDirHolder.get();
+		Path tempDir = (Path) config.context().get(SESSION_PATH_CONTEXT_KEY);
 		if (tempDir != null) {
 			try {
 				deleteDirectory(tempDir);
 			} catch (IOException e) {
 				log.warn("Failed to delete temporary directory: {}", tempDir, e);
 			}
-			tempDirHolder.remove();
+			config.context().remove(SESSION_PATH_CONTEXT_KEY);
 		}
 	}
 
 	/**
 	 * Execute a command in the current shell session.
 	 */
-	public CommandResult executeCommand(String command) {
-		ShellSession session = sessionHolder.get();
+	public CommandResult executeCommand(String command, RunnableConfig config) {
+		ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
 		if (session == null) {
 			throw new IllegalStateException("Shell session not initialized. Call initialize() first.");
 		}
@@ -175,8 +176,8 @@ public class ShellSessionManager {
 	/**
 	 * Restart the shell session.
 	 */
-	public void restartSession() {
-		ShellSession session = sessionHolder.get();
+	public void restartSession(RunnableConfig config) {
+		ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
 		if (session == null) {
 			throw new IllegalStateException("Shell session not initialized.");
 		}

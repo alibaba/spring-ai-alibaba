@@ -22,6 +22,8 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSeri
 import com.alibaba.cloud.ai.graph.serializer.std.NullableObjectSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.ObjectStreamStateSerializer;
 
+import org.springframework.ai.chat.metadata.EmptyUsage;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -182,19 +184,19 @@ public class SerializeTest {
 
 		JacksonSerializer serializer = new JacksonSerializer();
 
-		NodeOutput output = NodeOutput.of("node", null);
+		NodeOutput output = NodeOutput.of("node", "agent", null, new EmptyUsage());
 		output.setSubGraph(true);
 		ObjectMapper mapper = serializer.getObjectMapper();
 		mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 
 		String json = mapper.writeValueAsString(output);
 
-		assertEquals("{\"end\":false,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":true}", json);
+		assertEquals("{\"agent\":\"agent\",\"end\":false,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":true,\"tokenUsage\":{\"completionTokens\":0,\"nativeUsage\":{},\"promptTokens\":0,\"totalTokens\":0}}", json);
 
 		output.setSubGraph(false);
 		json = mapper.writeValueAsString(output);
 
-		assertEquals("{\"end\":false,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":false}", json);
+		assertEquals("{\"agent\":\"agent\",\"end\":false,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":false,\"tokenUsage\":{\"completionTokens\":0,\"nativeUsage\":{},\"promptTokens\":0,\"totalTokens\":0}}", json);
 	}
 
 	// Test class containing a nullable field for serialization tests

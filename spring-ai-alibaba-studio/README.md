@@ -1,62 +1,79 @@
-# Visualized agent UI based on CopilotKit
+# Agent Chat UI
 
-Compatible with [AG-UI protocol][AG-UI] with [CopilotKit] integration
+Agent Chat UI provides a visualized way for developers to chat with any Spring AI Alibaba developed Agents.
 
-## Architecture
+## Quick Experience
 
-```mermaid
-flowchart LR
-    User((User))
-    CopilotKit(Copilot Kit) 
-    SAAAdaptor(SAA AGUI Adaptor Typescript)
-    SAAServer(SAA AGUI Adaptor Java)
-    Agent(Agent)
-    subgraph "AG-UI-APP"
-        CopilotKit --> SAAAdaptor
-    end
-    subgraph "SAA Server"
-        SAAServer --> Agent
-    end
-    User --> CopilotKit
-    %%CopilotKit --> SAAAdaptor
-    SAAAdaptor --> SAAServer
-    %%SAAServer --> Agent
-    Agent --> SAAServer
-    SAAServer --> SAAAdaptor
-    SAAAdaptor --> CopilotKit
-    CopilotKit --> User
-    %% Legend
-    %% - The User sends a request to the Copilot Kit.
-    %% - The Copilot Kit processes the request and passes it to the SAA Adaptor.
-    %% - The SAA Adaptor forwards the request to the SAA Server.
-    %% - The SAA Server processes the request using the Agent.
-    %% - The Agent processes the data and sends back a response to the SAA Server.
-    %% - The SAA Server sends the processed response back to the SAA Adaptor.
-    %% - The SAA Adaptor then sends the response back to the Copilot Kit.
-    %% - Finally, the Copilot Kit presents the results back to the User.
+> Go to the [examples](../examples) directory to experience real world usage.
 
-```
-## Getting Started
+1. Start backend agent
 
-### Start Spring AI Alibaba Agent
+Go to the `src/test/java` directory, start the backend agent by running `StudioApplication`
 
-```bash
-mvn package spring-boot:test-run
-```
+2. Then, start the chat ui
 
-### Start CopilotKit App
-
-```bash
-cd webui
+```shell
+npm install
 npm run dev
 ```
 
-### Open web app
+3. Chat with agent
 
-Open browser on [http://localhost:3000](http://localhost:3000) and play with chat
+Visit `http://localhost:3000`.
 
+<img src="../docs/imgs/agent-chat-ui.jpg" alt="architecture" style="max-width: 740px; height: 508px" />
 
-## References
+### Embedded mode
 
-[AG-UI]: https://docs.ag-ui.com/introduction
-[CopilotKit]: https://www.copilotkit.ai
+The ui can work in a embedded mode with any of your Spring Boot applications.
+
+Just add the following dependency to your agent project:
+
+```xml
+<dependency>
+	<groupId>com.alibaba.cloud.ai</groupId>
+	<artifactId>spring-ai-alibaba-studio</artifactId>
+	<version>1.1.0.0-M4</version>
+</dependency>
+```
+
+Run your agent, visit `http:localhost:{your-port}/chatui/index.html`, and now you can chat with you agent.
+
+### Standalone mode
+
+First, clone the repository,
+
+```bash
+git clone https://github.com/alibaba/spring-ai-alibaba.git
+
+cd spring-ai-alibaba/spring-ai-alibaba-studio/agent-chat-ui
+```
+
+Install dependencies:
+
+```bash
+pnpm install
+# or
+# npm install
+```
+
+Run the app:
+
+```bash
+pnpm dev
+# or
+# npm run dev
+```
+
+The app will be available at `http://localhost:3000`.
+
+By default, the UI connects to your backend Agent at `http://localhost:8080`, you can change the address at `.env.development` file.
+
+```properties
+# .env.development
+NEXT_PUBLIC_API_URL=http://localhost:8080
+# The agent to call in the backend application, backend application should register agent as required, check examples for how to configure.
+NEXT_PUBLIC_APP_NAME=research_agent
+NEXT_PUBLIC_USER_ID=user-001
+```
+

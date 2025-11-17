@@ -55,28 +55,33 @@ public interface AssistantMessageHandler {
 			super(AssistantMessage.class);
 		}
 
-		@Override
-		public void serialize(AssistantMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
+	@Override
+	public void serialize(AssistantMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
+		gen.writeStartObject();
+		gen.writeStringField("@class", msg.getClass().getName());
+		gen.writeStringField(Field.TEXT.name, msg.getText());
+
+		gen.writeArrayFieldStart(Field.TOOL_CALLS.name);
+		for (var toolCall : msg.getToolCalls()) {
 			gen.writeStartObject();
-			gen.writeStringField("@class", msg.getClass().getName());
-			gen.writeStringField(Field.TEXT.name, msg.getText());
-			gen.writeObjectField(Field.TOOL_CALLS.name, msg.getToolCalls());
-
-			// gen.writeArrayFieldStart(Field.TOOL_CALLS.name);
-			// for( var toolCall : msg.getToolCalls() )
-			// gen.writeObject( toolCall );
-			// gen.writeEndArray();
-
-			serializeMetadata(gen, msg.getMetadata());
-
-			// gen.writeArrayFieldStart( Property.MEDIA.field);
-			// for (var media : msg.getMedia()) {
-			// gen.writeObject(media);
-			// }
-			// gen.writeEndArray();
-
+			gen.writeStringField("id", toolCall.id());
+			gen.writeStringField("name", toolCall.name());
+			gen.writeStringField("type", toolCall.type());
+			gen.writeStringField("arguments", toolCall.arguments());
 			gen.writeEndObject();
 		}
+		gen.writeEndArray();
+
+		serializeMetadata(gen, msg.getMetadata());
+
+		// gen.writeArrayFieldStart( Property.MEDIA.field);
+		// for (var media : msg.getMedia()) {
+		// gen.writeObject(media);
+		// }
+		// gen.writeEndArray();
+
+		gen.writeEndObject();
+	}
 
 		@Override
 		public void serializeWithType(AssistantMessage value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException {

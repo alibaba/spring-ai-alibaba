@@ -16,14 +16,25 @@
 package com.alibaba.cloud.ai.graph.agent.hook;
 
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+
 import java.util.List;
+import java.util.Map;
 
 public interface Hook {
 	String getName();
 
-	HookType getHookType();
+	void setAgentName(String agentName);
 
-	List<JumpTo> canJumpTo();
+	String getAgentName();
+
+	default List<JumpTo> canJumpTo() {
+		return List.of();
+	}
+
+	default Map<String, KeyStrategy> getKeyStrategys() {
+		return Map.of();
+	}
 
 	/**
 	 * Get the positions where this hook should be executed.

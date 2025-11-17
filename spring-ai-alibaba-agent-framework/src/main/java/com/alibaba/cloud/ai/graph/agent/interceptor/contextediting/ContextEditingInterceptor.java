@@ -42,13 +42,11 @@ import org.slf4j.LoggerFactory;
  * history to stay within token limits.
  *
  * Example:
- * <pre>
  * ContextEditingInterceptor interceptor = ContextEditingInterceptor.builder()
  *     .trigger(100000)
  *     .keep(3)
  *     .clearAtLeast(1000)
  *     .build();
- * </pre>
  */
 public class ContextEditingInterceptor extends ModelInterceptor {
 

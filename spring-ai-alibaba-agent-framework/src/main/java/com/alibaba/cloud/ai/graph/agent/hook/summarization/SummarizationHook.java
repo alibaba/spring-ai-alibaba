@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
+import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -48,17 +49,14 @@ import org.slf4j.LoggerFactory;
  * context continuity.
  *
  * Example:
- * <pre>
  * SummarizationHook summarizer = SummarizationHook.builder()
  *     .model(chatModel)
  *     .maxTokensBeforeSummary(4000)
  *     .messagesToKeep(20)
  *     .build();
-@HookPositions(HookPosition.BEFORE_MODEL)
- * </pre>
  */
 @HookPositions({HookPosition.BEFORE_MODEL})
-public class SummarizationHook implements ModelHook {
+public class SummarizationHook extends ModelHook {
 
 	private static final Logger log = LoggerFactory.getLogger(SummarizationHook.class);
 
@@ -99,7 +97,7 @@ public class SummarizationHook implements ModelHook {
 
 	@Override
 	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-		List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
+		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 
 		if (maxTokensBeforeSummary == null) {
 			return CompletableFuture.completedFuture(Map.of());
@@ -126,10 +124,13 @@ public class SummarizationHook implements ModelHook {
 
 		String summary = createSummary(toSummarize);
 
-		List<Message> newMessages = new ArrayList<>();
+		List<Object> newMessages = new ArrayList<>();
 		newMessages.add(new UserMessage(
 				"Here is a summary of the conversation to date:\n\n" + summary));
-		newMessages.addAll(toPreserve);
+		// Convert toSummarize messages to RemoveByHash objects so we can remove them from state
+		for (Message msg : toSummarize) {
+			newMessages.add(RemoveByHash.of(msg));
+		}
 
 		Map<String, Object> updates = new HashMap<>();
 		updates.put("messages", newMessages);
