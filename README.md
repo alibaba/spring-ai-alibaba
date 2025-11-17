@@ -34,14 +34,7 @@ For scenarios requiring more complex process control, Agent Framework offers bui
 
 * **[Multi-Agent Orchestration](https://java2ai.com/docs/frameworks/agent-framework/advanced/multi-agent)**: Compose multiple agents with built-in patterns including `SequentialAgent`, `ParallelAgent`, `LlmRoutingAgent`, and `LoopAgent` for complex task execution.
 
-* **[Context Engineering](https://java2ai.com/docs/frameworks/agent-framework/tutorials/hooks)**: Built-in best practices for prompt engineering, context management, and conversation flow control to improve agent reliability and performance.
-	* **Human In The Loop: Seamlessly integrate human feedback and approval steps into agent workflows, enabling supervised execution for critical tools and operations.
-	* **Context Compaction: Seamlessly integrate human feedback and approval steps into agent workflows, enabling supervised execution for critical tools and operations.
-	* **Context Editing: Seamlessly integrate human feedback and approval steps into agent workflows, enabling supervised execution for critical tools and operations.
-	* **Model & Tool Call Limit: Seamlessly integrate human feedback and approval steps into agent workflows, enabling supervised execution for critical tools and operations.
-	* **Tool Retry: Seamlessly integrate human feedback and approval steps into agent workflows, enabling supervised execution for critical tools and operations.
-	* **Planning: Seamlessly integrate human feedback and approval steps into agent workflows, enabling supervised execution for critical tools and operations.
-	* **Dynamic Tool Selection: Seamlessly integrate human feedback and approval steps into agent workflows, enabling supervised execution for critical tools and operations.
+* **[Context Engineering](https://java2ai.com/docs/frameworks/agent-framework/tutorials/hooks)**: Built-in best practices for context engineering policies to improve agent reliability and performance, including human-in-the-loop, context compaction, context editing, model & tool call limit, tool retry, planning, dynamic tool selection.
 
 * **[Graph-based Workflow](https://java2ai.com/docs/frameworks/graph-core/quick-start)**: Graph based workflow runtime and api for conditional routing, nested graphs, parallel execution, and state management. Export workflows to PlantUML and Mermaid formats.
 
@@ -74,6 +67,7 @@ mvn spring-boot:run
 ```
 
 3. Chat with ChatBot.
+
 Open the browser and visit [http://localhost:8080/chatui/index.html](http://localhost:8080/chatui/index.html) to chat with the ChatBot.
 
 <p align="center">
