@@ -428,6 +428,13 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 		// Process the GraphFlux stream with preserved node ID
 		Flux<GraphResponse<NodeOutput>> processedFlux = graphFlux.getFlux()
+				.filter(element -> {
+					// Skip elements that would produce null chunks (e.g., usage-only ChatResponse)
+					if (element instanceof ChatResponse response) {
+						return response.getResult() != null;
+					}
+					return true;
+				})
 				.map(element -> {
 					lastDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 
@@ -501,14 +508,21 @@ public class NodeExecutor extends BaseGraphExecutor {
 					AtomicReference<Object> nodeDataRef = new AtomicReference<>();
 					nodeDataRefs.put(nodeId, nodeDataRef);
 
-					return graphFlux.getFlux()
-							.map(element -> {
-								nodeDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
-								// Create StreamingOutput with specific nodeId (preserves parallel node identity)
-								StreamingOutput output = context.buildStreamingOutput(graphFlux, element, nodeId);
-								return GraphResponse.<NodeOutput>of(output);
-							})
-							.onErrorMap(error -> new RuntimeException("ParallelGraphFlux processing error in node: " + nodeId, error));
+				return graphFlux.getFlux()
+						.filter(element -> {
+							// Skip elements that would produce null chunks (e.g., usage-only ChatResponse)
+							if (element instanceof ChatResponse response) {
+								return response.getResult() != null;
+							}
+							return true;
+						})
+						.map(element -> {
+							nodeDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
+							// Create StreamingOutput with specific nodeId (preserves parallel node identity)
+							StreamingOutput output = context.buildStreamingOutput(graphFlux, element, nodeId);
+							return GraphResponse.<NodeOutput>of(output);
+						})
+						.onErrorMap(error -> new RuntimeException("ParallelGraphFlux processing error in node: " + nodeId, error));
 				})
 				.collect(Collectors.toList());
 
