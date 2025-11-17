@@ -137,27 +137,28 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			iterations.incrementAndGet();
 		}
 
+		// Check and manage messages
+		if (state.value("messages").isEmpty()) {
+			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
+		}
+		@SuppressWarnings("unchecked")
+		List<Message> messages = (List<Message>) state.value("messages").get();
+		augmentUserMessage(messages, outputSchema);
+		renderTemplatedUserMessage(messages, state.data());
+
+		// Create ModelRequest
+		ModelRequest.Builder requestBuilder = ModelRequest.builder()
+				.messages(messages)
+				.options(toolCallingChatOptions)
+				.context(config.metadata().orElse(new HashMap<>()));
+		if (StringUtils.hasLength(this.systemPrompt)) {
+			requestBuilder.systemMessage(new SystemMessage(this.systemPrompt));
+		}
+		ModelRequest modelRequest = requestBuilder.build();
+
 		// add streaming support
 		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
 		if (stream) {
-			if (state.value("messages").isEmpty()) {
-				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
-			}
-			@SuppressWarnings("unchecked")
-			List<Message> messages = (List<Message>) state.value("messages").get();
-			augmentUserMessage(messages, outputSchema);
-			renderTemplatedUserMessage(messages, state.data());
-
-			// Create ModelRequest
-			ModelRequest.Builder requestBuilder = ModelRequest.builder()
-					.messages(messages)
-					.options(toolCallingChatOptions)
-					.context(config.metadata().orElse(new HashMap<>()));
-			if (StringUtils.hasLength(this.systemPrompt)) {
-				requestBuilder.systemMessage(new SystemMessage(this.systemPrompt));
-			}
-			ModelRequest modelRequest = requestBuilder.build();
-
 			// Create base handler that actually calls the model with streaming
 			ModelCallHandler baseHandler = request -> {
 				try {
@@ -199,23 +200,6 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			ModelResponse modelResponse = chainedHandler.call(modelRequest);
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", modelResponse.getMessage());
 		} else {
-
-			// Build the base model call handler
-			if (state.value("messages").isEmpty()) {
-				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
-			}
-			@SuppressWarnings("unchecked")
-			List<Message> messages = (List<Message>) state.value("messages").get();
-			augmentUserMessage(messages, outputSchema);
-			renderTemplatedUserMessage(messages, state.data());
-
-			// Create ModelRequest
-			ModelRequest modelRequest = ModelRequest.builder()
-					.messages(messages)
-					.options(toolCallingChatOptions)
-					.context(config.metadata().orElse(new HashMap<>()))
-					.build();
-
 			// Create base handler that actually calls the model
 			ModelCallHandler baseHandler = request -> {
 				try {
