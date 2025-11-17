@@ -329,6 +329,7 @@ class ReactAgentTest {
 
 		Object lastMessage = messages.get(messages.size() - 1);
 		assertTrue(lastMessage instanceof AssistantMessage, "Last message should be AssistantMessage");
+	}
 	@Test
 	public void testAgentSystemPrompt() throws Exception {
 		ReactAgent agent = ReactAgent.builder()
