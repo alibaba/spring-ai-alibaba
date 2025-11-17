@@ -68,9 +68,14 @@ public interface JacksonDeserializer<T> {
 				if (valueNode.has(TYPE_PROPERTY)) {
 					var type = valueNode.get(TYPE_PROPERTY).asText();
 					
-					// Special handling for GraphResponse and CompletableFuture
+					// Special handling for GraphResponse, ChatResponse and CompletableFuture
 					if ("GraphResponse".equals(type)) {
 						yield reconstructGraphResponse(valueNode, objectMapper, typeMapper);
+					}
+					if ("ChatResponse".equals(type)) {
+						// ChatResponse cannot be reconstructed (no default constructor),
+						// return null as it should not be persisted in state
+						yield null;
 					}
 					if ("CompletableFuture".equals(type)) {
 						yield reconstructCompletableFuture(valueNode, objectMapper, typeMapper);
