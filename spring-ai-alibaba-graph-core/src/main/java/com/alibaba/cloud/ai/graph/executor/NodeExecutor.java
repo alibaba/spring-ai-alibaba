@@ -193,9 +193,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 			var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
 
             return chatFlux.filter(element -> {
-                // skip ChatResponse.getResult() == null
+                // skip ChatResponse.getResult() == null or ChatResponse.getResult().getOutput() == null
                 if (element instanceof ChatResponse response) {
-                    return response.getResult() != null;
+                    return response.getResult() != null && response.getResult().getOutput() != null;
                 }
                 return true;
             })
@@ -431,7 +431,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				.filter(element -> {
 					// Skip elements that would produce null chunks (e.g., usage-only ChatResponse)
 					if (element instanceof ChatResponse response) {
-						return response.getResult() != null;
+						return response.getResult() != null && response.getResult().getOutput() != null;
 					}
 					return true;
 				})
@@ -512,7 +512,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 						.filter(element -> {
 							// Skip elements that would produce null chunks (e.g., usage-only ChatResponse)
 							if (element instanceof ChatResponse response) {
-								return response.getResult() != null;
+								return response.getResult() != null && response.getResult().getOutput() != null;
 							}
 							return true;
 						})
