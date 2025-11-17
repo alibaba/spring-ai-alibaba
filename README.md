@@ -8,7 +8,7 @@
 
 <html>
     <h3 align="center">
-      A production-ready agent framework for building Agentic, Workflow, and Multi-agent applications.
+      A production-ready framework for building Agentic, Workflow, and Multi-agent applications.
     </h3>
     <h3 align="center">
       <a href="https://java2ai.com/docs/quick-start/" target="_blank">Agent Framework Docs</a>,
