@@ -1,0 +1,42 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: documentation-examples
+  ai:
+    # DashScope 配置（阿里云百炼）
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:your-api-key}
+      chat:
+        options:
+          model: ${DASHSCOPE_MODEL:qwen-plus}
+    # A2A Nacos 配置
+    alibaba:
+      a2a:
+        nacos:
+          server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+          username: ${NACOS_USERNAME:nacos}
+          password: ${NACOS_PASSWORD:nacos}
+          discovery:
+            enabled: true  # 启用 A2A 服务发现，用于发现远程智能体
+          registry:
+            enabled: true  # 启用 Nacos Registry，将本地 Agent 注册到 Nacos
+        server:
+          version: 1.0.0
+          card:
+            name: data_analysis_agent
+            description: 专门用于数据分析和统计计算的本地智能体
+            provider:
+              name: Spring AI Alibaba Documentation
+              organization: Spring AI Alibaba
+              url: https://sca.aliyun.com/ai/
+              contact:
+                email: dev@alibabacloud.com
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.alibaba.cloud.ai: DEBUG
+    org.springframework.ai: DEBUG

@@ -20,8 +20,6 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
-import com.alibaba.cloud.ai.graph.agent.hook.HookType;
-import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
 import com.alibaba.cloud.ai.graph.agent.tools.ShellTool;
 
@@ -31,7 +29,6 @@ import org.springframework.ai.tool.ToolCallback;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -111,16 +108,6 @@ public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 	@Override
 	public String getName() {
 		return "ShellToolAgentHook";
-	}
-
-	@Override
-	public HookType getHookType() {
-		return HookType.AGENT;
-	}
-
-	@Override
-	public List<JumpTo> canJumpTo() {
-		return List.of();
 	}
 
 	@Override

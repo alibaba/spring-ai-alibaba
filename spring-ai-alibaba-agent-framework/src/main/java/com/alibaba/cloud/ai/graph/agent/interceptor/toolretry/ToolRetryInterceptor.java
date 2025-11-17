@@ -35,13 +35,11 @@ import org.slf4j.LoggerFactory;
  * Supports retrying on specific exceptions and exponential backoff.
  *
  * Example:
- * <pre>
  * ToolRetryInterceptor interceptor = ToolRetryInterceptor.builder()
  *     .maxRetries(3)
  *     .backoffFactor(2.0)
  *     .initialDelay(1000)
  *     .build();
- * </pre>
  */
 public class ToolRetryInterceptor extends ToolInterceptor {
 

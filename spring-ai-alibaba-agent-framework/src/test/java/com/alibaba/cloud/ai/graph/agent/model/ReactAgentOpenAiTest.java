@@ -13,24 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent;
+package com.alibaba.cloud.ai.graph.agent.model;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.deepseek.DeepSeekChatModel;
-import org.springframework.ai.deepseek.DeepSeekChatOptions;
-import org.springframework.ai.deepseek.api.DeepSeekApi;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
 
 import java.util.List;
 import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -38,8 +41,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@EnabledIfEnvironmentVariable(named = "AI_DEEPSEEK_API_KEY", matches = ".+")
-class ReactAgentDeepSeekTest {
+@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+class ReactAgentOpenAiTest {
 
 	private ChatModel chatModel;
 
@@ -85,25 +88,23 @@ class ReactAgentDeepSeekTest {
 
 	@BeforeEach
 	void setUp() {
-		// Create DashScopeApi instance using the API key from environment variable
-		DeepSeekApi deepSeekApi = DeepSeekApi.builder()
-			.apiKey(System.getenv("AI_DEEPSEEK_API_KEY"))
+		// Create OpenAiApi instance using the API key from environment variable
+		OpenAiApi openAiApi = OpenAiApi.builder()
+				.baseUrl("https://dashscope.aliyuncs.com/compatible-mode/")
+			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 //			.baseUrl(System.getenv("AI_DEEPSEEK_API_BASE_URL"))
 			.build();
 
-		DeepSeekChatModel deepSeekChatModel = DeepSeekChatModel.builder()
-				.defaultOptions(DeepSeekChatOptions.builder()
-						.model("deepseek-r1")
-						.build())
-				.deepSeekApi(deepSeekApi).build();
+		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
+				.defaultOptions(OpenAiChatOptions.builder().model("qwen-max").build())
+				.openAiApi(openAiApi).build();
 
-		// Create DashScope ChatModel instance
-		this.chatModel = deepSeekChatModel;
+		// Create OpenAi ChatModel instance
+		this.chatModel = openAiChatModel;
 	}
 
 	@Test
 	public void testReactAgent() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver()).build();
 
 		try {

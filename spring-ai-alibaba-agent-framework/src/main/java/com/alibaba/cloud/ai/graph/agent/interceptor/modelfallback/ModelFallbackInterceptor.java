@@ -37,12 +37,10 @@ import org.slf4j.LoggerFactory;
  * success or all models exhausted.
  *
  * Example:
- * <pre>
  * ModelFallbackInterceptor interceptor = ModelFallbackInterceptor.builder()
  *     .addFallbackModel(gpt4oMiniModel)
  *     .addFallbackModel(claude35SonnetModel)
  *     .build();
- * </pre>
  */
 public class ModelFallbackInterceptor extends ModelInterceptor {
 
