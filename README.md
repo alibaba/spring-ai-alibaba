@@ -71,7 +71,7 @@ mvn spring-boot:run
 Open the browser and visit [http://localhost:8080/chatui/index.html](http://localhost:8080/chatui/index.html) to chat with the ChatBot.
 
 <p align="center">
-    <img src="../../docs/imgs/chatbot-chat-ui.gif" alt="chatbot-ui" style="max-width: 740px; height: 508px" />
+    <img src="./docs/imgs/chatbot-chat-ui.gif" alt="chatbot-ui" style="max-width: 740px; height: 508px" />
 </p>
 
 ### Chatbot Code Explained
