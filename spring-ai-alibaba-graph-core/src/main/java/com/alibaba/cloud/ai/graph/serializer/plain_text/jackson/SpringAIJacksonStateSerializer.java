@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -34,7 +35,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
-import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
 
 public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
@@ -60,11 +62,23 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		objectMapper.registerModule(module);
 
-        objectMapper.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY
-        );
+		ObjectMapper.DefaultTypeResolverBuilder typeResolver = new ObjectMapper.DefaultTypeResolverBuilder(
+				ObjectMapper.DefaultTyping.NON_FINAL, LaissezFaireSubTypeValidator.instance) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public boolean useForType(JavaType t) {
+				if (t.isTypeOrSubTypeOf(Map.class) || t.isMapLikeType() || t.isCollectionLikeType()
+						|| t.isTypeOrSubTypeOf(Collection.class) || t.isArrayType()) {
+					return false;
+				}
+				return super.useForType(t);
+			}
+		};
+		typeResolver = (ObjectMapper.DefaultTypeResolverBuilder) typeResolver.init(JsonTypeInfo.Id.CLASS, null);
+		typeResolver = (ObjectMapper.DefaultTypeResolverBuilder) typeResolver.inclusion(JsonTypeInfo.As.PROPERTY);
+		typeResolver = (ObjectMapper.DefaultTypeResolverBuilder) typeResolver.typeProperty("@class");
+		objectMapper.setDefaultTyping(typeResolver);
 	}
 
 	/**
@@ -191,20 +205,6 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
         static void registerTo(SimpleModule module) {
             module.addDeserializer(NodeOutput.class, nodeOutput);
         }
-    }
-
-    @Override
-    public OverAllState cloneObject(OverAllState object) throws IOException {
-        return bytesToObject(objectToBytes(object), object.getClass());
-    }
-
-    @Override
-    public byte[] objectToBytes(OverAllState object) throws IOException {
-        return objectMapper.writeValueAsBytes(object);
-    }
-
-    private OverAllState bytesToObject(byte[] bytes, Class<? extends OverAllState> clz) throws IOException {
-        return objectMapper.readValue(bytes, clz);
-    }
+	}
 
 }
