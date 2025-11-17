@@ -38,8 +38,6 @@ import org.slf4j.LoggerFactory;
  */
 public class PythonTool implements BiFunction<PythonTool.PythonRequest, ToolContext, String> {
 
-	private static final Logger log = LoggerFactory.getLogger(PythonTool.class);
-
 	public static final String DESCRIPTION = """
 			Executes Python code and returns the result.
 			
@@ -55,13 +53,23 @@ public class PythonTool implements BiFunction<PythonTool.PythonRequest, ToolCont
 			- String operations: code = "'Hello, ' + 'World'" returns "Hello, World"
 			- List operations: code = "[1, 2, 3][0]" returns "1"
 			""";
-
+	private static final Logger log = LoggerFactory.getLogger(PythonTool.class);
 	private final Engine engine;
 
 	public PythonTool() {
 		// Create a shared engine for better performance
 		this.engine = Engine.newBuilder()
 				.option("engine.WarnInterpreterOnly", "false")
+				.build();
+	}
+
+	/**
+	 * Create a ToolCallback for the Python tool.
+	 */
+	public static ToolCallback createPythonToolCallback(String description) {
+		return FunctionToolCallback.builder("python", new PythonTool())
+				.description(description)
+				.inputType(PythonRequest.class)
 				.build();
 	}
 
@@ -127,16 +135,6 @@ public class PythonTool implements BiFunction<PythonTool.PythonRequest, ToolCont
 			log.error("Unexpected error executing Python code", e);
 			return "Unexpected error: " + e.getMessage();
 		}
-	}
-
-	/**
-	 * Create a ToolCallback for the Python tool.
-	 */
-	public static ToolCallback createPythonToolCallback(String description) {
-		return FunctionToolCallback.builder("python", new PythonTool())
-				.description(description)
-				.inputType(PythonRequest.class)
-				.build();
 	}
 
 	/**
