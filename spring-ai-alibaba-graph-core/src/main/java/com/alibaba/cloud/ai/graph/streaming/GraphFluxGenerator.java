@@ -87,9 +87,12 @@ public interface GraphFluxGenerator {
 
 				final var currentMessageText = currentMessage.getText();
 
-				var newMessage = new AssistantMessage(
-						currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText,
-						currentMessage.getMetadata(), currentMessage.getToolCalls(), currentMessage.getMedia());
+				var newMessage = AssistantMessage.builder()
+					.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
+					.properties(currentMessage.getMetadata())
+					.toolCalls(currentMessage.getToolCalls())
+					.media(currentMessage.getMedia())
+					.build();
 
 				var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
 				return new ChatResponse(List.of(newGeneration), response.getMetadata());
