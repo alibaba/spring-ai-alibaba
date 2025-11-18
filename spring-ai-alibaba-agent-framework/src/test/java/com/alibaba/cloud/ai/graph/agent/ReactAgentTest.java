@@ -268,4 +268,18 @@ class ReactAgentTest {
 		}).blockLast();
 	}
 
+	@Test
+	public void testAgentSystemPrompt() throws Exception {
+		ReactAgent agent = ReactAgent.builder()
+				.name("test_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.systemPrompt("你是一个诗歌写作助理，你能帮我写一首关于春天的现代诗。")
+				.enableLogging(true)
+				.build();
+
+		AssistantMessage assistantMessage = agent.call("帮我写一首关于春天的现代诗。");
+		System.out.println(assistantMessage.getText());
+	}
+
 }
