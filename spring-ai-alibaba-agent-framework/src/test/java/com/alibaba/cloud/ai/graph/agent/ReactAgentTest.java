@@ -293,7 +293,7 @@ class ReactAgentTest {
 		StateGraph parentGraph = new StateGraph(() -> keyStrategyMap);
 
 		parentGraph.addNode("pre_node", node_async(state -> {
-			return Map.of("messages", new UserMessage("帮我写一首赞美春天的诗。"));
+			return Map.of("messages", new UserMessage("帮我写一首简短的诗"));
 		}));
 
 		parentGraph.addNode("agent_node", childAgent.asNode(true, false, null));
