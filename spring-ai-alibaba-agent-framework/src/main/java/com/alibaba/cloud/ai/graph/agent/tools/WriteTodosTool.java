@@ -109,7 +109,7 @@ public class WriteTodosTool implements BiFunction<WriteTodosTool.Request, ToolCo
 				return new Response("Error: Tool context is not available");
 			}
 
-			Object extraStateObj = contextData.get("extraState");
+			Object extraStateObj = contextData.get(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY);
 			if (extraStateObj == null) {
 				return new Response("Error: Extra state is not initialized");
 			}
@@ -119,7 +119,7 @@ public class WriteTodosTool implements BiFunction<WriteTodosTool.Request, ToolCo
 			}
 
 			@SuppressWarnings("unchecked")
-			Map<String, Object> extraState = (Map<String, Object>) extraStateObj;
+		Map<String, Object> extraState = (Map<String, Object>) extraStateObj;
 
 			// Update the state with todos
 			extraState.put("todos", request.todos);

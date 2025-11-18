@@ -23,6 +23,7 @@ import org.springframework.ai.chat.model.ToolContext;
 
 import java.util.*;
 
+import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY;
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -39,7 +40,7 @@ class WriteTodosToolTest {
 	void testNormalTodoUpdate() {
 		Map<String, Object> contextData = new HashMap<>();
 		Map<String, Object> extraState = new HashMap<>();
-		contextData.put("extraState", extraState);
+		contextData.put(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraState);
 
 		ToolContext toolContext = new ToolContext(contextData);
 
@@ -73,7 +74,7 @@ class WriteTodosToolTest {
 	@Test
 	void testInvalidExtraStateType() {
 		Map<String, Object> contextData = new HashMap<>();
-		contextData.put("extraState", "invalid type");
+		contextData.put(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, "invalid type");
 
 		ToolContext toolContext = new ToolContext(contextData);
 
@@ -89,7 +90,7 @@ class WriteTodosToolTest {
 	void testEmptyTodoList() {
 		Map<String, Object> contextData = new HashMap<>();
 		Map<String, Object> extraState = new HashMap<>();
-		contextData.put("extraState", extraState);
+		contextData.put(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraState);
 
 		ToolContext toolContext = new ToolContext(contextData);
 
@@ -106,7 +107,7 @@ class WriteTodosToolTest {
 	void testMultipleTodoUpdates() {
 		Map<String, Object> contextData = new HashMap<>();
 		Map<String, Object> extraState = new HashMap<>();
-		contextData.put("extraState", extraState);
+		contextData.put(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraState);
 
 		ToolContext toolContext = new ToolContext(contextData);
 
@@ -129,7 +130,7 @@ class WriteTodosToolTest {
 	void testTodoStatusTransitions() {
 		Map<String, Object> contextData = new HashMap<>();
 		Map<String, Object> extraState = new HashMap<>();
-		contextData.put("extraState", extraState);
+		contextData.put(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraState);
 
 		ToolContext toolContext = new ToolContext(contextData);
 
