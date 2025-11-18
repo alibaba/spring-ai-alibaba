@@ -93,6 +93,16 @@ public class MemoryExample {
 		example.runAllExamples();
 	}
 
+	private static void mockInsertToStore(MemoryStore store) {
+		// 向存储中写入示例数据
+		Map<String, Object> userData = new HashMap<>();
+		userData.put("name", "张三");
+		userData.put("language", "中文");
+
+		StoreItem userItem = StoreItem.of(List.of("users"), "user_123", userData);
+		store.putItem(userItem);
+	}
+
 	/**
 	 * 示例1：在工具中读取长期记忆
 	 *
@@ -144,16 +154,6 @@ public class MemoryExample {
 		agent.invoke("查询用户信息，namespace=['users'], key='user_123'", config);
 
 		System.out.println("工具读取长期记忆示例执行完成");
-	}
-
-	private static void mockInsertToStore(MemoryStore store) {
-		// 向存储中写入示例数据
-		Map<String, Object> userData = new HashMap<>();
-		userData.put("name", "张三");
-		userData.put("language", "中文");
-
-		StoreItem userItem = StoreItem.of(List.of("users"), "user_123", userData);
-		store.putItem(userItem);
 	}
 
 	/**
