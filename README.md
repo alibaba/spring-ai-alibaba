@@ -8,13 +8,13 @@
 
 <html>
     <h3 align="center">
-      A code-first framework for building and Agentic, Workflow, and Multi-agent applications.
+      A production-ready framework for building Agentic, Workflow, and Multi-agent applications.
     </h3>
     <h3 align="center">
-      <a href="https://java2ai.com/">Agent Framework Docs(WIP)</a>,
-      <a href="https://java2ai.com/">Graph Docs(WIP)</a>,
-      <a href="https://github.com/spring-ai-alibaba/spring-ai-extensions">Spring AI</a>,
-      <a href="https://github.com/spring-ai-alibaba/examples">Examples</a>.
+      <a href="https://java2ai.com/docs/quick-start/" target="_blank">Agent Framework Docs</a>,
+      <a href="https://java2ai.com/docs/frameworks/graph-core/quick-start/" target="_blank">Graph Docs</a>,
+      <a href="https://java2ai.com/ecosystem/spring-ai/reference/concepts/" target="_blank">Spring AI</a>,
+      <a href="https://github.com/alibaba/spring-ai-alibaba/tree/main/examples" target="_blank">Examples</a>.
     </h3>
 </html>
 
@@ -30,23 +30,17 @@ For scenarios requiring more complex process control, Agent Framework offers bui
 
 ## Core Features
 
-* **ReactAgent**: Build intelligent agents with reasoning and acting capabilities, following the ReAct (Reasoning + Acting) paradigm for iterative problem-solving.
+* **[ReactAgent](https://java2ai.com/docs/frameworks/agent-framework/tutorials/agents)**: Build intelligent agents with reasoning and acting capabilities, following the ReAct (Reasoning + Acting) paradigm for iterative problem-solving.
 
-* **Multi-Agent Orchestration**: Compose multiple agents with built-in patterns including `SequentialAgent`, `ParallelAgent`, `LlmRoutingAgent`, and `LoopAgent` for complex task execution.
+* **[Multi-Agent Orchestration](https://java2ai.com/docs/frameworks/agent-framework/advanced/multi-agent)**: Compose multiple agents with built-in patterns including `SequentialAgent`, `ParallelAgent`, `LlmRoutingAgent`, and `LoopAgent` for complex task execution.
 
-* **Context Engineering**: Built-in best practices for prompt engineering, context management, and conversation flow control to improve agent reliability and performance.
+* **[Context Engineering](https://java2ai.com/docs/frameworks/agent-framework/tutorials/hooks)**: Built-in best practices for context engineering policies to improve agent reliability and performance, including human-in-the-loop, context compaction, context editing, model & tool call limit, tool retry, planning, dynamic tool selection.
 
-* **Human In The Loop**: Seamlessly integrate human feedback and approval steps into agent workflows, enabling supervised execution for critical tools and operations.
+* **[Graph-based Workflow](https://java2ai.com/docs/frameworks/graph-core/quick-start)**: Graph based workflow runtime and api for conditional routing, nested graphs, parallel execution, and state management. Export workflows to PlantUML and Mermaid formats.
 
-- **Streaming Support**: Real-time streaming of agent responses
+* **[A2A Support](https://java2ai.com/docs/frameworks/agent-framework/advanced/a2a)**: Agent-to-Agent communication support with Nacos integration, enabling distributed agent coordination and collaboration across services.
 
-- **Error Handling**: Robust error recovery and retry mechanisms
-
-* **Graph-based Workflow**: Graph based workflow runtime and api for conditional routing, nested graphs, parallel execution, and state management. Export workflows to PlantUML and Mermaid formats.
-
-* **A2A Support**: Agent-to-Agent communication support with Nacos integration, enabling distributed agent coordination and collaboration across services.
-
-* **Rich Model, Tool and MCP Support**: Leveraging core concepts of Spring AI, supports multiple LLM providers (DashScope, OpenAI, etc.), tool calling, and Model Context Protocol (MCP).
+* **[Rich Model, Tool and MCP Support](https://java2ai.com/ecosystem/spring-ai/models/dashScope)**: Leveraging core concepts of Spring AI, supports multiple LLM providers (DashScope, OpenAI, etc.), tool calling, and Model Context Protocol (MCP).
 
 ## Getting Started
 
@@ -55,91 +49,76 @@ For scenarios requiring more complex process control, Agent Framework offers bui
 * Requires JDK 17+.
 * Choose your LLM provider and get the API-KEY.
 
-### Add Dependencies
+### Quickly Run a ChatBot
+
+There's a ChatBot example provided by the community at [examples/chatbot](https://github.com/alibaba/spring-ai-alibaba/tree/main/examples/chatbot).
+
+1. Download the code.
+
+```shell
+git clone https://github.com/alibaba/spring-ai-alibaba.git
+cd examples/chatbot
+```
+
+2. Start the ChatBot.
+
+```shell
+mvn spring-boot:run
+```
+
+3. Chat with ChatBot.
+
+Open the browser and visit [http://localhost:8080/chatui/index.html](http://localhost:8080/chatui/index.html) to chat with the ChatBot.
+
+<p align="center">
+    <img src="./docs/imgs/chatbot-chat-ui.gif" alt="chatbot-ui" style="max-width: 740px; height: 508px" />
+</p>
+
+### Chatbot Code Explained
+
+1. Add dependencies.
 
 ```xml
 <dependencies>
   <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-agent-framework</artifactId>
-    <version>1.1.0.0-SNAPSHOT</version>
+    <version>1.1.0.0-M5</version>
   </dependency>
   <!-- Assume you are going to use DashScope Model. Refer to docs for how to choose model.-->
   <dependency>
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-    <version>1.1.0.0-SNAPSHOT</version>
+    <version>1.1.0.0-M5</version>
   </dependency>
 </dependencies>
 ```
 
-> Clone this project and build from source using `mvn clean install -DskipTests` before we make an official release.
-
-### Create Your First Agent
-
-**1. A simple ReactAgent**
-
-Initialize `ChatModel` instance first.
+2. Create ChatBot agent
 
 ```java
-// Create DashScopeApi instance using the API key from environment variable
-DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
-// Create DashScope ChatModel instance
-this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
+ReactAgent chatBotAgent =
+	 ReactAgent.builder()
+		.name("SAA")
+		.model(chatModel)
+		.instruction(INSTRUCTION)
+		.enableLogging(true)
+		.tools(
+			executeShellCommand,
+			executePythonCode,
+			viewTextFile
+		)
+		.build();
+
+AssistantMessage message = writerAgent.call("斐波那契数列的第6个数是？");
 ```
 
-Create a basic `ReactAgent` instance named `writer_agent`.
-
-```java
-ReactAgent writerAgent = ReactAgent.builder()
-	.name("writer_agent")
-	.model(chatModel)
-	.description("可以写文章。")
-	.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
-	.outputKey("article")
-	.build();
-```
-
-**2. A workflow agent that composes two agents**
-
-Let's create another agent called `reviewer_agent` and compose these two agents with `SequentialAgent` workflow agent.
-
-```java
-ReactAgent reviewerAgent = ReactAgent.builder()
-	.name("reviewer_agent")
-	.model(chatModel)
-	.description("可以对文章进行评论和修改。")
-	.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最终只返回修改后的文章，不要包含任何评论信息。")
-	.outputKey("reviewed_article")
-	.build();
-
-SequentialAgent blogAgent = SequentialAgent.builder()
-	.name("blog_agent")
-	.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论。")
-	.subAgents(List.of(writerAgent, reviewerAgent)) // writerAgent and reviewerAgent will be executed in sequential order.
-	.build();
-```
-
-**3. Call the agent**
-
-```java
-// Call a single agent
-AssistantMessage message = writerAgent.call("帮我写一篇100字左右散文。");
-
-// Call SequentialAgent
-Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的散文");
-```
-
-While the documentation is still working in progress, you can also [check Unit Tests for more usage references](https://github.com/alibaba/spring-ai-alibaba/tree/main/spring-ai-alibaba-agent-framework/src/test/java/com/alibaba/cloud/ai/graph/agent).
-
-> NOTE!.
-> If you have encountered any `spring-ai` dependency issue, please lean how to configure the `spring-milestones` Maven repository on [FAQ page](https://java2ai.com/docs/1.0.0.3/faq).
-
-## 📚 Documentation (Working In Progress...)
-* Overview - High level overview of the framework
-* Quick Start - Get started with a simple agent
-* Tutorials - Step by step tutorials
-* User Guide - In-depth user guide for building agents and workflows
+## 📚 Documentation
+* [Overview](https://java2ai.com/docs/overview) - High level overview of the framework
+* [Quick Start](https://java2ai.com/docs/quick-start) - Get started with a simple agent
+* [Agent Framework Tutorials](https://java2ai.com/docs/frameworks/agent-framework/tutorials/agents) - Step by step tutorials
+* [Use Graph API to Build Complex Workflows](https://java2ai.com/docs/frameworks/agent-framework/advanced/context-engineering) - In-depth user guide for building multi-agent and workflows
+* [Spring AI Basics](https://java2ai.com/ecosystem/spring-ai/reference/concepts) - Ai Application basic concepts, including ChatModel, MCP, Tool, Messages, etc.
 
 ## Project Structure
 
@@ -168,7 +147,6 @@ This project consists of three core components:
 * WeChat Group (微信公众号), scan the QR code below and follow us.
 
 <img src="./docs/imgs/wechat-account.jpg" style="width:260px;"/>
-
 
 ## Star History
 

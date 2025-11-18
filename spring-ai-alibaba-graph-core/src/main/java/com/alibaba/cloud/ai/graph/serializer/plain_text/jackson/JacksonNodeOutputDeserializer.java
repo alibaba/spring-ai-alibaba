@@ -40,9 +40,10 @@ public class JacksonNodeOutputDeserializer extends StdDeserializer<NodeOutput> {
         ObjectMapper objectMapper = (ObjectMapper) deserializationContext.getParser().getCodec();
         TreeNode treeNode = jsonParser.getCodec().readTree(jsonParser);
         String node = treeNode.get("node").toString();
+        String agent = treeNode.get("agent").toString();
         OverAllState overAllState = objectMapper.convertValue(treeNode.get("state"), OverAllState.class);
         boolean subGraph = objectMapper.convertValue(treeNode.get("subGraph"), boolean.class);
-        NodeOutput nodeOutput = NodeOutput.of(node, overAllState);
+        NodeOutput nodeOutput = NodeOutput.of(node, agent, overAllState, null);
         nodeOutput.setSubGraph(subGraph);
         return nodeOutput;
     }

@@ -75,7 +75,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.1.0.0-M4</revision>
+        <revision>1.1.0.0-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -86,7 +86,7 @@
 
         <!-- Spring version -->
         <spring-ai.version>1.1.0-M4</spring-ai.version>
-        <spring-ai-alibaba-extensions.version>1.1.0.0-M4</spring-ai-alibaba-extensions.version>
+        <spring-ai-alibaba-extensions.version>1.1.0.0-M5</spring-ai-alibaba-extensions.version>
         <spring-boot.version>3.4.8</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 
@@ -137,7 +137,7 @@
 
         <poi.version>5.4.0</poi.version>
 
-        <mcp.version>0.11.2</mcp.version>
+        <mcp.version>0.14.0</mcp.version>
         <opentelemetry.version>1.38.0</opentelemetry.version>
         <a2a-sdk.version>0.2.5.Beta2</a2a-sdk.version>
 

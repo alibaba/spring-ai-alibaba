@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -27,13 +30,16 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
  *
  * @param <E> the type of the data element
  */
-public class GraphResponse<E> {
+public class GraphResponse<E> implements Serializable {
 
-	final CompletableFuture<E> output;
+	@JsonIgnore
+	CompletableFuture<E> output;
 
-	final Object resultValue;
+	Object resultValue;
 
-	final Map<String, Object> metadata;
+	Map<String, Object> metadata;
+
+	public GraphResponse(){}
 
 	public GraphResponse(CompletableFuture<E> data, Object resultValue) {
 		this(data, resultValue, new HashMap<>());
@@ -93,10 +99,12 @@ public class GraphResponse<E> {
 		return resultValue == null ? Optional.empty() : Optional.of(resultValue);
 	}
 
+	@JsonIgnore
 	public boolean isDone() {
 		return output == null;
 	}
 
+	@JsonIgnore
 	public boolean isError() {
 		return output != null && output.isCompletedExceptionally();
 	}
@@ -140,6 +148,7 @@ public class GraphResponse<E> {
 	 * Get all metadata as an immutable map.
 	 * @return a copy of all metadata
 	 */
+	@JsonIgnore
 	public Map<String, Object> getAllMetadata() {
 		return new HashMap<>(this.metadata);
 	}
@@ -161,5 +170,7 @@ public class GraphResponse<E> {
 	public Object removeMetadata(String key) {
 		return this.metadata.remove(key);
 	}
+
+
 
 }

@@ -45,11 +45,15 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-graph-core</artifactId>
-            <version>${revision}</version>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>
@@ -86,12 +90,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-jdk14</artifactId>
             <scope>test</scope>
         </dependency>
 

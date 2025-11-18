@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.tools;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.slf4j.Logger;
@@ -27,6 +29,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+
+import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 
 /**
  * A tool for executing shell commands.
@@ -86,10 +90,11 @@ public class ShellTool implements BiFunction<ShellTool.Request, ToolContext, Str
 	@Override
 	public String apply(Request request, ToolContext toolContext) {
 		try {
+			RunnableConfig config = (RunnableConfig) toolContext.getContext().get(AGENT_CONFIG_CONTEXT_KEY);
 			// Handle restart request
 			if (Boolean.TRUE.equals(request.restart())) {
 				log.info("Restarting shell session as requested.");
-				sessionManager.restartSession();
+				sessionManager.restartSession(config);
 				if (request.command() == null || request.command().trim().isEmpty()) {
 					return "Shell session restarted successfully.";
 				}
@@ -102,7 +107,7 @@ public class ShellTool implements BiFunction<ShellTool.Request, ToolContext, Str
 			}
 
 			log.info("Executing shell command: {}", command);
-			ShellSessionManager.CommandResult result = sessionManager.executeCommand(command);
+			ShellSessionManager.CommandResult result = sessionManager.executeCommand(command, config);
 
 			// Format the output
 			return formatResult(result);

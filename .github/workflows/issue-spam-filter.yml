@@ -15,9 +15,11 @@
 #
 
 name: ⚠️ Issue Spam Filter
+
 permissions:
   contents: read
   issues: write
+
 on:
   issues:
     types: [opened, edited]
@@ -46,7 +48,7 @@ jobs:
                 "call now","zadzwoń","zadzwoń teraz","kontakt","telefon","telefone","contato",
                 "suporte","infolinii","click here","buy now","subscribe","visit"
               ],
-              bracket_max: 6,
+              bracket_max: 15,
               special_char_density_threshold: 0.12,
               phone_regex: "\\+?\\d[\\d\\-\\s\\(\\)\\.]{6,}\\d",
               labels_for_spam: ["spam"],
@@ -91,7 +93,8 @@ jobs:
             const urlCount = countMatches(combined, urlRegex);
             const bodyLenNoSpace = combined.replace(/\s+/g, '').length;
             const spamWordsHit = config.spam_words.some(w => combined.includes(w));
-            const bracketCount = countMatches(title, /[\{\}\[\]\<\>\|\~\^\_]/g) + countMatches(body, /[\{\}\[\]\<\>\|\~\^\_]/g);
+            // Only count truly abnormal brackets, exclude common technical symbols like - and _
+            const bracketCount = countMatches(title, /[\{\}\<\>\|\~\^]/g) + countMatches(body, /[\{\}\<\>\|\~\^]/g);
             const specialChars = combined.match(/[^a-z0-9\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\s]/gi) || [];
             const specialCharDensity = specialChars.length / Math.max(1, combined.length);
             const phoneRe = new RegExp(config.phone_regex, "g");

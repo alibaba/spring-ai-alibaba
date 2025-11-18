@@ -19,6 +19,9 @@ import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+
+import org.springframework.ai.chat.metadata.EmptyUsage;
+
 import io.a2a.spec.AgentCard;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -38,7 +41,7 @@ class A2aNodeActionWithConfigTests {
 
 	private static final Method TO_FLUX = initToFluxMethod();
 
-	private final A2aNodeActionWithConfig action = new A2aNodeActionWithConfig(createAgentCardWrapper(), false,
+	private final A2aNodeActionWithConfig action = new A2aNodeActionWithConfig(createAgentCardWrapper(), "", false,
 			"messages", "instruction", true);
 
 	@Test
@@ -51,7 +54,7 @@ class A2aNodeActionWithConfigTests {
 				int step = index.getAndIncrement();
 				if (step == 0) {
 					return Data.of(
-							CompletableFuture.supplyAsync(() -> NodeOutput.of("node-1", new OverAllState())));
+							CompletableFuture.supplyAsync(() -> NodeOutput.of("node-1", "", new OverAllState(), new EmptyUsage())));
 				}
 				if (step == 1) {
 					return Data.done(Map.of("result", "ok"));

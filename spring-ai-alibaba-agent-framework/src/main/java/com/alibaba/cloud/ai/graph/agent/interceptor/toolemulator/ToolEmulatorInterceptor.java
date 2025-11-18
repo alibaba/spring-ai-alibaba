@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
  * tools to emulate by passing a list of tool names.
  *
  * Example:
- * <pre>
  * // Emulate all tools (default behavior)
  * ToolEmulatorInterceptor emulator = ToolEmulatorInterceptor.builder()
  *     .model(chatModel)
@@ -59,7 +58,6 @@ import org.slf4j.LoggerFactory;
  *     .emulateAllTools(false)  // Only emulate specified tools
  *     .addTool("expensive_api")
  *     .build();
- * </pre>
  */
 public class ToolEmulatorInterceptor extends ToolInterceptor {
 

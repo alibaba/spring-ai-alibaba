@@ -27,7 +27,7 @@ import static java.util.Optional.ofNullable;
 
 public interface BaseCheckpointSaver {
 
-	String THREAD_ID_DEFAULT = "$default";
+	public String THREAD_ID_DEFAULT = "$default";
 
 	record Tag(String threadId, Collection<Checkpoint> checkpoints) {
 		public Tag(String threadId, Collection<Checkpoint> checkpoints) {

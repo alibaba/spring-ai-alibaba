@@ -54,7 +54,7 @@ public class CompileConfig {
 	private Set<String> interruptsAfter = Set.of();
 	private boolean interruptBeforeEdge = false;
 
-	private int recursionLimit = 25;
+	private int recursionLimit = 100;
 
 	// ================================================================================================================
 	// Getter Methods

@@ -30,7 +30,10 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -38,14 +41,25 @@ import org.springframework.ai.tool.ToolCallback;
 
 import org.springframework.util.StringUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import reactor.core.publisher.Flux;
 
+import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_ID_DEFAULT;
+
 public class AgentLlmNode implements NodeActionWithConfig {
+	public static final String MODEL_NODE_NAME = "model";
+	private static final Logger logger = LoggerFactory.getLogger(AgentLlmNode.class);
+	public static final String MODEL_ITERATION_KEY = "_MODEL_ITERATION_";
+
+	private String agentName;
 
 	private List<Advisor> advisors = new ArrayList<>();
 
@@ -59,13 +73,19 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private ChatClient chatClient;
 
+	private String systemPrompt;
+
 	private String instruction;
 
 	private ToolCallingChatOptions toolCallingChatOptions;
 
+	private boolean enableReasoningLog;
+
 	public AgentLlmNode(Builder builder) {
+		this.agentName = builder.agentName;
 		this.outputKey = builder.outputKey;
 		this.outputSchema = builder.outputSchema;
+		this.systemPrompt = builder.systemPrompt;
 		this.instruction = builder.instruction;
 		if (builder.advisors != null) {
 			this.advisors = builder.advisors;
@@ -81,6 +101,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.toolCallbacks(toolCallbacks)
 				.internalToolExecutionEnabled(false)
 				.build();
+		this.enableReasoningLog = builder.enableReasoningLog;;
 	}
 
 	public static Builder builder() {
@@ -101,30 +122,72 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
+		if (enableReasoningLog && logger.isDebugEnabled()) {
+			logger.debug("[ThreadId {}] Agent {} start reasoning.", config.threadId()
+					.orElse(THREAD_ID_DEFAULT), agentName);
+		}
+
+		// Check and manage iteration counter
+		final AtomicInteger iterations;
+		if (!config.context().containsKey(MODEL_ITERATION_KEY)) {
+			iterations = new AtomicInteger(0);
+			config.context().put(MODEL_ITERATION_KEY, iterations);
+		} else {
+			iterations = (AtomicInteger) config.context().get(MODEL_ITERATION_KEY);
+			iterations.incrementAndGet();
+		}
+
+		// Check and manage messages
+		if (state.value("messages").isEmpty()) {
+			throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
+		}
+		@SuppressWarnings("unchecked")
+		List<Message> messages = (List<Message>) state.value("messages").get();
+		augmentUserMessage(messages, outputSchema);
+		renderTemplatedUserMessage(messages, state.data());
+
+		// Create ModelRequest
+		ModelRequest.Builder requestBuilder = ModelRequest.builder()
+				.messages(messages)
+				.options(toolCallingChatOptions)
+				.context(config.metadata().orElse(new HashMap<>()));
+		if (StringUtils.hasLength(this.systemPrompt)) {
+			requestBuilder.systemMessage(new SystemMessage(this.systemPrompt));
+		}
+		ModelRequest modelRequest = requestBuilder.build();
+
 		// add streaming support
 		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
 		if (stream) {
-			if (state.value("messages").isEmpty()) {
-				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
-			}
-			@SuppressWarnings("unchecked")
-			List<Message> messages = (List<Message>) state.value("messages").get();
-			augmentUserMessage(messages, outputSchema);
-			renderTemplatedUserMessage(messages, state.data());
-
-			// Create ModelRequest
-			ModelRequest modelRequest = ModelRequest.builder()
-					.messages(messages)
-					.options(toolCallingChatOptions)
-					.context(config.metadata().orElse(new HashMap<>()))
-					.build();
-
 			// Create base handler that actually calls the model with streaming
 			ModelCallHandler baseHandler = request -> {
 				try {
+					if (enableReasoningLog) {
+						String systemPrompt = request.getSystemMessage() != null ? request.getSystemMessage().getText() : "";
+						if (logger.isDebugEnabled()) {
+							logger.debug("[ThreadId {}] Agent {} reasoning with system prompt: {}", config.threadId()
+									.orElse(THREAD_ID_DEFAULT), agentName, systemPrompt);
+						}
+					}
 					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request).stream().chatResponse();
+					if (enableReasoningLog) {
+						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
+							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
+								if (chatResponse.getResult().getOutput().hasToolCalls()) {
+									logger.info("[ThreadId {}] Agent {} reasoning round {} streaming output: {}",
+											config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), chatResponse.getResult().getOutput().getToolCalls());
+								} else {
+									logger.info("[ThreadId {}] Agent {} reasoning round {} streaming output: {}",
+											config.threadId()
+													.orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), chatResponse.getResult()
+													.getOutput().getText());
+								}
+							}
+						});
+					}
 					return ModelResponse.of(chatResponseFlux);
 				} catch (Exception e) {
+					logger.error("Exception during streaming model call: ", e);
 					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
 				}
 			};
@@ -137,30 +200,28 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			ModelResponse modelResponse = chainedHandler.call(modelRequest);
 			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", modelResponse.getMessage());
 		} else {
-			AssistantMessage responseOutput;
-
-			// Build the base model call handler
-			if (state.value("messages").isEmpty()) {
-				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
-			}
-			@SuppressWarnings("unchecked")
-			List<Message> messages = (List<Message>) state.value("messages").get();
-			augmentUserMessage(messages, outputSchema);
-			renderTemplatedUserMessage(messages, state.data());
-
-			// Create ModelRequest
-			ModelRequest modelRequest = ModelRequest.builder()
-					.messages(messages)
-					.options(toolCallingChatOptions)
-					.context(config.metadata().orElse(new HashMap<>()))
-					.build();
-
 			// Create base handler that actually calls the model
 			ModelCallHandler baseHandler = request -> {
 				try {
+					if (enableReasoningLog) {
+						String systemPrompt = request.getSystemMessage() != null ? request.getSystemMessage().getText() : "";
+						logger.info("[ThreadId {}] Agent {} reasoning round {} with system prompt: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), systemPrompt);
+					}
+
 					ChatResponse response = buildChatClientRequestSpec(request).call().chatResponse();
-					return ModelResponse.of(response.getResult().getOutput());
+
+					AssistantMessage responseMessage = new AssistantMessage("Empty response from model for unknown reason");
+					if (response != null && response.getResult() != null) {
+						responseMessage = response.getResult().getOutput();
+					}
+
+					if (enableReasoningLog) {
+						logger.info("[ThreadId {}] Agent {} reasoning round {} returned: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), responseMessage);
+					}
+
+					return ModelResponse.of(responseMessage, response);
 				} catch (Exception e) {
+					logger.error("Exception during streaming model call: ", e);
 					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
 				}
 			};
@@ -169,14 +230,20 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			ModelCallHandler chainedHandler = InterceptorChain.chainModelInterceptors(
 					modelInterceptors, baseHandler);
 
+			if (enableReasoningLog) {
+				logger.info("[ThreadId {}] Agent {} reasoning round {} model chain has started.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get());
+			}
+
 			// Execute the chained handler
 			ModelResponse modelResponse = chainedHandler.call(modelRequest);
-			responseOutput = (AssistantMessage) modelResponse.getMessage();
+			Usage tokenUsage = modelResponse.getChatResponse() != null ? modelResponse.getChatResponse().getMetadata()
+					.getUsage() : new EmptyUsage();
 
 			Map<String, Object> updatedState = new HashMap<>();
-			updatedState.put("messages", responseOutput);
+			updatedState.put("_TOKEN_USAGE_", tokenUsage);
+			updatedState.put("messages", modelResponse.getMessage());
 			if (StringUtils.hasLength(this.outputKey)) {
-				updatedState.put(this.outputKey, responseOutput);
+				updatedState.put(this.outputKey, modelResponse.getMessage());
 			}
 
 			return updatedState;
@@ -185,6 +252,31 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	public void setAdvisors(List<Advisor> advisors) {
 		this.advisors = advisors;
+	}
+
+	private List<Message> appendSystemPromptIfNeeded(ModelRequest modelRequest) {
+		// Create a new list and copy messages from modelRequest
+		List<Message> messages = new ArrayList<>(modelRequest.getMessages());
+
+		// FIXME, there should have only one SystemMessage.
+		//  Users may have added SystemMessages in hooks or somewhere else, simply remove will cause unexpected agent behaviour.
+//		messages.removeIf(message -> message instanceof SystemMessage);
+
+		// Add the SystemMessage from modelRequest at the beginning if present
+		if (modelRequest.getSystemMessage() != null) {
+			messages.add(0, modelRequest.getSystemMessage());
+		}
+
+		long systemMessageCount = messages.stream()
+				.filter(message -> message instanceof SystemMessage)
+				.count();
+
+		if (systemMessageCount > 2) {
+			logger.warn("Detected {} SystemMessages in the message list. There should typically be only one SystemMessage. " +
+					"Multiple SystemMessages may cause unexpected behavior or model confusion.", systemMessageCount);
+		}
+
+		return messages;
 	}
 
 	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
@@ -207,7 +299,6 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				break;
 			}
 			if (message instanceof AgentInstructionMessage templatedUserMessage) {
-                // 将outputSchema进行转义，避免PromptTemplate渲染时报错
                 String newOutputSchema = outputSchema.replace("{", "\\{").replace("}", "\\}");
                 // Check if outputSchema is already present to avoid duplication
                 if (!templatedUserMessage.getText().contains(newOutputSchema)) {
@@ -250,6 +341,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	}
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest) {
+		List<Message> messages = appendSystemPromptIfNeeded(modelRequest);
 
 		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
 		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
@@ -259,17 +351,24 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
 				.options(toolCallingChatOptions)
-				.messages(modelRequest.getMessages())
+				.messages(messages)
 				.advisors(advisors);
 
 		return chatClientRequestSpec;
 	}
 
+	public String getName() {
+		return MODEL_NODE_NAME;
+	}
+
 	public static class Builder {
+		private String agentName;
 
 		private String outputKey;
 
 		private String outputSchema;
+
+		private String systemPrompt;
 
 		private ChatClient chatClient;
 
@@ -281,6 +380,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private String instruction;
 
+		private boolean enableReasoningLog;
+
+		public Builder agentName(String agentName) {
+			this.agentName = agentName;
+			return this;
+		}
+
 		public Builder outputKey(String outputKey) {
 			this.outputKey = outputKey;
 			return this;
@@ -288,6 +394,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder outputSchema(String outputSchema) {
 			this.outputSchema = outputSchema;
+			return this;
+		}
+
+		public Builder systemPrompt(String systemPrompt) {
+			this.systemPrompt = systemPrompt;
 			return this;
 		}
 
@@ -313,6 +424,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder instruction(String instruction) {
 			this.instruction = instruction;
+			return this;
+		}
+
+		public Builder enableReasoningLog(boolean enableReasoningLog) {
+			this.enableReasoningLog = enableReasoningLog;
 			return this;
 		}
 

@@ -46,12 +46,10 @@ import org.slf4j.LoggerFactory;
  * and helps the main model focus on the right tools.
  *
  * Example:
- * <pre>
  * ToolSelectionInterceptor interceptor = ToolSelectionInterceptor.builder()
  *     .selectionModel(gpt4oMini)
  *     .maxTools(3)
  *     .build();
- * </pre>
  */
 public class ToolSelectionInterceptor extends ModelInterceptor {
 

@@ -39,8 +39,14 @@ class GenericListDeserializer extends StdDeserializer<List<Object>> {
 	@Override
 	public List<Object> deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
 		final ObjectMapper mapper = (ObjectMapper) p.getCodec();
-		final ArrayNode node = mapper.readTree(p);
+		final JsonNode jsonNode = mapper.readTree(p);
 
+		// Handle null or non-array nodes
+		if (jsonNode == null || jsonNode.isNull() || !jsonNode.isArray()) {
+			return new LinkedList<>();
+		}
+
+		final ArrayNode node = (ArrayNode) jsonNode;
 		final List<Object> result = new LinkedList<>();
 
 		for (JsonNode valueNode : node) {

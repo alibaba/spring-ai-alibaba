@@ -21,11 +21,18 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.metadata.Usage;
+
 import org.springframework.util.CollectionUtils;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -63,6 +70,8 @@ public class GraphRunnerContext {
 
 	String nextNodeId;
 
+	Usage tokenUsage;
+
 	String resumeFrom;
 
 	ReturnFromEmbed returnFromEmbed;
@@ -92,6 +101,7 @@ public class GraphRunnerContext {
 			// RESUME FORM SUBGRAPH DETECTED
 			this.config = RunnableConfig.builder(config)
 				.checkPointId(null) // Reset checkpoint id
+				.clearContext()
 				.addMetadata(action.resumeSubGraphId(), true) // add metadata for
 				// sub graph
 				.build();
@@ -232,13 +242,54 @@ public class GraphRunnerContext {
 		return buildNodeOutput(nodeId);
 	}
 
-	public NodeOutput buildCurrentNodeOutput() throws Exception {
+	/**
+	 * Comparing to buildNodeOutput, this method also adds a checkpoint if checkpoint saver is configured.
+	 */
+	public NodeOutput buildNodeOutputAndAddCheckpoint() throws Exception {
 		Optional<Checkpoint> cp = addCheckpoint(currentNodeId, nextNodeId);
 		return buildOutput(currentNodeId, cp);
 	}
 
+
+	// StreamingOutput builders for nodes with Flux streaming output. 'originData' can be ChatResponse, just like ChatResponse in normal NodeOutput.
+
+	public StreamingOutput<?> buildStreamingOutput(GraphFlux<?> graphFlux, Object originData, String nodeId) {
+		// Create StreamingOutput with GraphFlux's nodeId (preserves real node identity)
+		StreamingOutput<?> output;
+		if (graphFlux.hasChunkResult()) {
+			Object chunkResult = graphFlux.getChunkResult().apply(originData);
+			String chunk = chunkResult != null ? chunkResult.toString() : null;
+			output = new StreamingOutput<>(chunk, originData, nodeId, (String)config.metadata("_AGENT_").orElse(""), this.overallState);
+		} else {
+			output = new StreamingOutput<>(originData, nodeId, (String)config.metadata("_AGENT_").orElse(""), this.overallState);
+		}
+		output.setSubGraph(true);
+		return output;
+	}
+
+	public StreamingOutput<?> buildStreamingOutput(Message message, Object originData, String nodeId) {
+		// Create StreamingOutput with chunk and originData
+		StreamingOutput<?> output = new StreamingOutput<>(message, originData, nodeId, (String)config.metadata("_AGENT_").orElse(""), this.overallState);
+		output.setSubGraph(true);
+		return output;
+	}
+
+	public StreamingOutput<?> buildStreamingOutput(Message message, String nodeId) {
+		// Create StreamingOutput with chunk only
+		StreamingOutput<?> output = new StreamingOutput<>(message, nodeId, (String)config.metadata("_AGENT_").orElse(""), this.overallState);
+		output.setSubGraph(true);
+		return output;
+	}
+
+	// Normal NodeOutput builders for nodes with normal message output.
+
 	public NodeOutput buildNodeOutput(String nodeId) throws Exception {
-		return NodeOutput.of(nodeId, cloneState(this.overallState.data()));
+		return NodeOutput.of(
+				nodeId,
+				(String)config.metadata("_AGENT_").orElse(""),
+				cloneState(this.overallState.data()),
+				this.tokenUsage
+		);
 	}
 
 	public OverAllState cloneState(Map<String, Object> data) throws Exception {
@@ -282,7 +333,28 @@ public class GraphRunnerContext {
 	 * @param updateState the state updates to apply
 	 */
 	public void mergeIntoCurrentState(Map<String , Object> updateState) {
-		this.overallState.updateState(updateState);
+		// Create a new map and filter out ChatResponse entries
+		Map<String, Object> filteredState = findTokenUsageInDeltaState(updateState);
+
+		this.overallState.updateState(filteredState);
+	}
+
+	/**
+	 * FIXME, this method is a temporary fix to separate Usage from state updates. works together with AgentLlmNode non-stream node.
+	 */
+	private Map<String, Object> findTokenUsageInDeltaState(Map<String, Object> updateState) {
+		Map<String, Object> filteredState = new HashMap<>();
+		for (Map.Entry<String, Object> entry : updateState.entrySet()) {
+			Object value = entry.getValue();
+			if (value instanceof Usage && entry.getKey().equals("_TOKEN_USAGE_")) {
+				// Assign ChatResponse to this.chatResponse
+				this.tokenUsage = (Usage) value;
+			} else {
+				// Add non-ChatResponse entries to the filtered map
+				filteredState.put(entry.getKey(), value);
+			}
+		}
+		return filteredState;
 	}
 
 	// ================================================================================================================
@@ -360,6 +432,51 @@ public class GraphRunnerContext {
 	public record ReturnFromEmbed(Object value) {
 		public <T> Optional<T> value(TypeRef<T> ref) {
 			return ofNullable(value).flatMap(ref::cast);
+		}
+	}
+
+
+	/**
+	 * 	FIXME
+	 * 	Below are duplicated methods. Need to have a unified way of streaming output to end user.
+	 */
+	public NodeOutput buildNodeOutputAndAddCheckpoint(Map<String, Object> updateStates) throws Exception {
+		Optional<Checkpoint> cp = addCheckpoint(currentNodeId, nextNodeId);
+		return buildOutput(currentNodeId, updateStates, cp);
+	}
+
+	public NodeOutput buildOutput(String nodeId, Map<String, Object> updateStates, Optional<Checkpoint> checkpoint) throws Exception {
+		if (checkpoint.isPresent() && config.streamMode() == CompiledGraph.StreamMode.SNAPSHOTS) {
+			return StateSnapshot.of(getKeyStrategyMap(), checkpoint.get(), config,
+					compiledGraph.stateGraph.getStateSerializer().stateFactory());
+		}
+		return buildNodeOutput(nodeId, updateStates);
+	}
+
+	public NodeOutput buildNodeOutput(String nodeId, Map<String, Object> updateStates) throws Exception {
+		Message message = null;
+
+		// Check if updateStates is not empty
+		if (updateStates != null && !updateStates.isEmpty()) {
+			// Check if "messages" key exists and is a List
+			Object messagesObj = updateStates.get("messages");
+			if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
+				// Get the last element
+				Object lastElement = messagesList.get(messagesList.size() - 1);
+				// Check if it's a Message type
+				if (lastElement instanceof Message) {
+					message = (Message) lastElement;
+				}
+			} else if (messagesObj instanceof Message singleMessage) {
+				// If it's a single Message instance
+				message = singleMessage;
+			}
+		}
+
+		if (message != null) {
+			return new StreamingOutput<>(message, nodeId, (String)config.metadata("_AGENT_").orElse(""), cloneState(this.overallState.data()), tokenUsage);
+		} else {
+			return new StreamingOutput<>(nodeId, (String)config.metadata("_AGENT_").orElse(""), cloneState(this.overallState.data()), tokenUsage);
 		}
 	}
 

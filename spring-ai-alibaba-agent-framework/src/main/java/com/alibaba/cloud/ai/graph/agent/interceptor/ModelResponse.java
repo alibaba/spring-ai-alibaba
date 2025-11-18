@@ -26,14 +26,25 @@ import reactor.core.publisher.Flux;
  */
 public class ModelResponse {
 
+	private ChatResponse chatResponse;
+
 	private final Object message;
 
 	public ModelResponse(Object message) {
 		this.message = message;
 	}
 
+	public ModelResponse(Object message, ChatResponse chatResponse) {
+		this.message = message;
+		this.chatResponse = chatResponse;
+	}
+
 	public static ModelResponse of(AssistantMessage message) {
 		return new ModelResponse(message);
+	}
+
+	public static ModelResponse of(AssistantMessage message, ChatResponse chatResponse) {
+		return new ModelResponse(message, chatResponse);
 	}
 
 	public static ModelResponse of(Flux<ChatResponse> flux) {
@@ -42,6 +53,10 @@ public class ModelResponse {
 
 	public Object getMessage() {
 		return message;
+	}
+
+	public ChatResponse getChatResponse() {
+		return chatResponse;
 	}
 }
 

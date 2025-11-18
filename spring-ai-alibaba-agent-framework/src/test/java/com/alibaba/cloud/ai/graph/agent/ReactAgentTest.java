@@ -17,10 +17,10 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -32,6 +32,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -208,6 +209,7 @@ class ReactAgentTest {
 				.model(chatModel)
 				.saver(new MemorySaver())
 				.outputSchema(jsonSchema)
+				.enableLogging(true)
 				.build();
 
 		Optional<OverAllState> result = agent.invoke("分析这句话：春天来了，万物复苏，生机勃勃。");
@@ -217,12 +219,67 @@ class ReactAgentTest {
 		System.out.println(result.get());
 	}
 
-	private static CompileConfig getCompileConfig() {
-		SaverConfig saverConfig = SaverConfig.builder()
-				.register(new MemorySaver())
+	@Test
+	public void testAgentNameAndTokenUsage() throws Exception {
+		ReactAgent agent = ReactAgent.builder()
+				.name("test_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.enableLogging(true)
 				.build();
-		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saverConfig).build();
-		return compileConfig;
+
+		Optional<NodeOutput> nodeOutputOptional = agent.invokeAndGetOutput("帮我写一篇100字左右散文。");
+
+		assertTrue(nodeOutputOptional.isPresent(), "Result should be present");
+
+		NodeOutput nodeOutput = nodeOutputOptional.get();
+		assertNotNull(nodeOutput, "NodeOutput should not be null");
+		assertNotNull(nodeOutput.tokenUsage(), "TokenUsage should not be null");
+		assertNotNull(nodeOutput.agent(), "Agent should not be null");
+		assertEquals("test_agent", nodeOutput.agent(), "Agent name should match");
+
+		System.out.println("=== NodeOutput ===");
+		System.out.println("Agent: " + nodeOutput.agent());
+		System.out.println("TokenUsage: " + nodeOutput.tokenUsage());
+	}
+
+	@Test
+	public void testAgentNameAndTokenUsage2() throws Exception {
+		ReactAgent agent = ReactAgent.builder()
+				.name("test_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.enableLogging(true)
+				.build();
+
+		Flux<NodeOutput> flux = agent.stream(new UserMessage("帮我写一篇100字左右散文。"));
+
+		flux.doOnNext(output -> {
+			if (output instanceof StreamingOutput<?> streamingOutput){
+				assertNotNull(streamingOutput, "NodeOutput should not be null");
+				assertNotNull(streamingOutput.tokenUsage(), "TokenUsage should not be null");
+				assertNotNull(streamingOutput.agent(), "Agent should not be null");
+				assertEquals("test_agent", streamingOutput.agent(), "Agent name should match");
+
+				System.out.println("=== NodeOutput ===");
+				System.out.println("Agent: " + streamingOutput.agent());
+				System.out.println("TokenUsage: " + streamingOutput.tokenUsage());
+			}
+		}).blockLast();
+	}
+
+	@Test
+	public void testAgentSystemPrompt() throws Exception {
+		ReactAgent agent = ReactAgent.builder()
+				.name("test_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.systemPrompt("你是一个诗歌写作助理，你能帮我写一首关于春天的现代诗。")
+				.enableLogging(true)
+				.build();
+
+		AssistantMessage assistantMessage = agent.call("帮我写一首关于春天的现代诗。");
+		System.out.println(assistantMessage.getText());
 	}
 
 }

@@ -39,8 +39,14 @@ class GenericMapDeserializer extends StdDeserializer<Map<String, Object>> {
 	@Override
 	public Map<String, Object> deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
 		var mapper = (ObjectMapper) p.getCodec();
-		final ObjectNode node = mapper.readTree(p);
+		final JsonNode jsonNode = mapper.readTree(p);
 
+		// Handle null or non-object nodes
+		if (jsonNode == null || jsonNode.isNull() || !jsonNode.isObject()) {
+			return new HashMap<>();
+		}
+
+		final ObjectNode node = (ObjectNode) jsonNode;
 		final Map<String, Object> result = new HashMap<>();
 
 		final Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
