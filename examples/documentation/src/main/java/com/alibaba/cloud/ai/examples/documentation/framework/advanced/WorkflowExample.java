@@ -564,41 +564,41 @@ public class WorkflowExample {
 		System.out.println("=== 工作流（Workflow）示例 ===\n");
 
 		try {
-			System.out.println("示例1: 基础Node定义");
-			example1_basicNode();
-			System.out.println();
-
-			System.out.println("示例2: 带配置的AI Node");
-			example2_aiNode();
-			System.out.println();
-
-			System.out.println("示例3: 条件评估Node");
-			example3_conditionNode();
-			System.out.println();
-
-			System.out.println("示例4: 并行结果聚合Node");
-			example4_aggregatorNode();
-			System.out.println();
-
-			System.out.println("示例5: 集成自定义Node到StateGraph");
-			example5_buildWorkflowWithCustomNodes();
-			System.out.println();
+//			System.out.println("示例1: 基础Node定义");
+//			example1_basicNode();
+//			System.out.println();
+//
+//			System.out.println("示例2: 带配置的AI Node");
+//			example2_aiNode();
+//			System.out.println();
+//
+//			System.out.println("示例3: 条件评估Node");
+//			example3_conditionNode();
+//			System.out.println();
+//
+//			System.out.println("示例4: 并行结果聚合Node");
+//			example4_aggregatorNode();
+//			System.out.println();
+//
+//			System.out.println("示例5: 集成自定义Node到StateGraph");
+//			example5_buildWorkflowWithCustomNodes();
+//			System.out.println();
 
 			System.out.println("示例6: Agent作为SubGraph Node");
 			example6_agentAsNode();
 			System.out.println();
-
-			System.out.println("示例7: 混合使用Agent Node和普通Node");
-			example7_hybridWorkflow();
-			System.out.println();
-
-			System.out.println("示例8: 执行工作流");
-			example8_executeWorkflow();
-			System.out.println();
-
-			System.out.println("示例9: 多Agent协作工作流");
-			example9_multiAgentResearchWorkflow();
-			System.out.println();
+//
+//			System.out.println("示例7: 混合使用Agent Node和普通Node");
+//			example7_hybridWorkflow();
+//			System.out.println();
+//
+//			System.out.println("示例8: 执行工作流");
+//			example8_executeWorkflow();
+//			System.out.println();
+//
+//			System.out.println("示例9: 多Agent协作工作流");
+//			example9_multiAgentResearchWorkflow();
+//			System.out.println();
 
 		}
 		catch (Exception e) {

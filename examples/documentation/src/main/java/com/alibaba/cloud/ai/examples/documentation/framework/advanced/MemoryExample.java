@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.store.Store;
 import com.alibaba.cloud.ai.graph.store.StoreItem;
 import com.alibaba.cloud.ai.graph.store.stores.MemoryStore;
 
@@ -92,6 +93,16 @@ public class MemoryExample {
 		example.runAllExamples();
 	}
 
+	private static void mockInsertToStore(MemoryStore store) {
+		// 向存储中写入示例数据
+		Map<String, Object> userData = new HashMap<>();
+		userData.put("name", "张三");
+		userData.put("language", "中文");
+
+		StoreItem userItem = StoreItem.of(List.of("users"), "user_123", userData);
+		store.putItem(userItem);
+	}
+
 	/**
 	 * 示例1：在工具中读取长期记忆
 	 *
@@ -102,20 +113,11 @@ public class MemoryExample {
 		record GetMemoryRequest(List<String> namespace, String key) { }
 		record MemoryResponse(String message, Map<String, Object> value) { }
 
-		// 创建内存存储
-		MemoryStore store = new MemoryStore();
-
-		// 向存储中写入示例数据
-		Map<String, Object> userData = new HashMap<>();
-		userData.put("name", "张三");
-		userData.put("language", "中文");
-
-		StoreItem userItem = StoreItem.of(List.of("users"), "user_123", userData);
-		store.putItem(userItem);
-
 		// 创建获取用户信息的工具
 		BiFunction<GetMemoryRequest, ToolContext, MemoryResponse> getUserInfoFunction =
 				(request, context) -> {
+					RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get("config");
+					Store store = runnableConfig.store();
 					Optional<StoreItem> itemOpt = store.getItem(request.namespace(), request.key());
 					if (itemOpt.isPresent()) {
 						Map<String, Object> value = itemOpt.get().getValue();
@@ -137,10 +139,16 @@ public class MemoryExample {
 				.saver(new MemorySaver())
 				.build();
 
+
+		// 创建内存存储
+		MemoryStore store = new MemoryStore();
+		// 在Store中放入模拟数据，实际应用中，存储可能是其他流程中生成
+		mockInsertToStore(store);
 		// 运行Agent
 		RunnableConfig config = RunnableConfig.builder()
 				.threadId("session_001")
 				.addMetadata("user_id", "user_123")
+				.store(store)
 				.build();
 
 		agent.invoke("查询用户信息，namespace=['users'], key='user_123'", config);
@@ -158,12 +166,11 @@ public class MemoryExample {
 		record SaveMemoryRequest(List<String> namespace, String key, Map<String, Object> value) { }
 		record MemoryResponse(String message, Map<String, Object> value) { }
 
-		// 创建内存存储
-		MemoryStore store = new MemoryStore();
-
 		// 创建保存用户信息的工具
 		BiFunction<SaveMemoryRequest, ToolContext, MemoryResponse> saveUserInfoFunction =
 				(request, context) -> {
+					RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get("config");
+					Store store = runnableConfig.store();
 					StoreItem item = StoreItem.of(request.namespace(), request.key(), request.value());
 					store.putItem(item);
 					return new MemoryResponse("成功保存用户信息", request.value());
@@ -182,12 +189,14 @@ public class MemoryExample {
 				.saver(new MemorySaver())
 				.build();
 
-		// 运行Agent
+		// 创建内存存储
+		MemoryStore store = new MemoryStore();
 		RunnableConfig config = RunnableConfig.builder()
 				.threadId("session_001")
 				.addMetadata("user_id", "user_123")
+				.store(store)
 				.build();
-
+		// 运行Agent
 		agent.invoke(
 				"我叫张三，请保存我的信息。使用 saveUserInfo 工具，namespace=['users'], key='user_123', value={'name': '张三'}",
 				config
@@ -209,19 +218,6 @@ public class MemoryExample {
 	 * 在模型调用前后自动加载和保存长期记忆
 	 */
 	public void example3_memoryWithModelHook() throws GraphRunnerException {
-		// 创建内存存储
-		MemoryStore memoryStore = new MemoryStore();
-
-		// 预先填充用户画像
-		Map<String, Object> profileData = new HashMap<>();
-		profileData.put("name", "王小明");
-		profileData.put("age", 28);
-		profileData.put("email", "wang@example.com");
-		profileData.put("preferences", List.of("喜欢咖啡", "喜欢阅读"));
-
-		StoreItem profileItem = StoreItem.of(List.of("user_profiles"), "user_001", profileData);
-		memoryStore.putItem(profileItem);
-
 		// 创建记忆拦截器
 		ModelHook memoryInterceptor = new ModelHook() {
 			@Override
@@ -242,8 +238,9 @@ public class MemoryExample {
 					return CompletableFuture.completedFuture(Map.of());
 				}
 
+				Store store = config.store();
 				// 从记忆存储中加载用户画像
-				Optional<StoreItem> itemOpt = memoryStore.getItem(List.of("user_profiles"), userId);
+				Optional<StoreItem> itemOpt = store.getItem(List.of("user_profiles"), userId);
 				if (itemOpt.isPresent()) {
 					Map<String, Object> profile = itemOpt.get().getValue();
 
@@ -324,9 +321,23 @@ public class MemoryExample {
 				.saver(new MemorySaver())
 				.build();
 
+
+		// 创建内存存储
+		MemoryStore memoryStore = new MemoryStore();
+
+		// 模拟数据，预先填充用户画像
+		Map<String, Object> profileData = new HashMap<>();
+		profileData.put("name", "王小明");
+		profileData.put("age", 28);
+		profileData.put("email", "wang@example.com");
+		profileData.put("preferences", List.of("喜欢咖啡", "喜欢阅读"));
+
+		StoreItem profileItem = StoreItem.of(List.of("user_profiles"), "user_001", profileData);
+		memoryStore.putItem(profileItem);
 		RunnableConfig config = RunnableConfig.builder()
 				.threadId("session_001")
 				.addMetadata("user_id", "user_001")
+				.store(memoryStore)
 				.build();
 
 		// Agent会自动加载用户画像信息
@@ -341,17 +352,6 @@ public class MemoryExample {
 	 * 短期记忆用于存储对话上下文，长期记忆用于存储持久化数据
 	 */
 	public void example4_combinedMemory() throws GraphRunnerException {
-		// 创建记忆存储
-		MemoryStore memoryStore = new MemoryStore();
-
-		// 设置长期记忆
-		Map<String, Object> userProfile = new HashMap<>();
-		userProfile.put("name", "李工程师");
-		userProfile.put("occupation", "软件工程师");
-
-		StoreItem profileItem = StoreItem.of(List.of("profiles"), "user_002", userProfile);
-		memoryStore.putItem(profileItem);
-
 		// 创建组合记忆Hook
 		ModelHook combinedMemoryHook = new ModelHook() {
 			@Override
@@ -372,6 +372,7 @@ public class MemoryExample {
 				}
 				String userId = (String) userIdOpt.get();
 
+				Store memoryStore = config.store();
 				// 从长期记忆加载
 				Optional<StoreItem> profileOpt = memoryStore.getItem(List.of("profiles"), userId);
 				if (profileOpt.isEmpty()) {
@@ -441,9 +442,19 @@ public class MemoryExample {
 				.saver(new MemorySaver()) // 短期记忆
 				.build();
 
+		// 创建记忆存储
+		MemoryStore memoryStore = new MemoryStore();
+		// 设置长期记忆
+		Map<String, Object> userProfile = new HashMap<>();
+		userProfile.put("name", "李工程师");
+		userProfile.put("occupation", "软件工程师");
+		StoreItem profileItem = StoreItem.of(List.of("profiles"), "user_002", userProfile);
+		memoryStore.putItem(profileItem);
+
 		RunnableConfig config = RunnableConfig.builder()
 				.threadId("combined_thread")
 				.addMetadata("user_id", "user_002")
+				.store(memoryStore)
 				.build();
 
 		// 短期记忆：在对话中记住
@@ -466,12 +477,12 @@ public class MemoryExample {
 		record GetMemoryRequest(List<String> namespace, String key) { }
 		record MemoryResponse(String message, Map<String, Object> value) { }
 
-		// 创建记忆存储和工具
-		MemoryStore memoryStore = new MemoryStore();
 
 		ToolCallback saveMemoryTool = FunctionToolCallback.builder("saveMemory",
 						(BiFunction<SaveMemoryRequest, ToolContext, MemoryResponse>) (request, context) -> {
 							StoreItem item = StoreItem.of(request.namespace(), request.key(), request.value());
+							RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get("config");
+							Store memoryStore = runnableConfig.store();
 							memoryStore.putItem(item);
 							return new MemoryResponse("已保存", request.value());
 						})
@@ -481,6 +492,8 @@ public class MemoryExample {
 
 		ToolCallback getMemoryTool = FunctionToolCallback.builder("getMemory",
 						(BiFunction<GetMemoryRequest, ToolContext, MemoryResponse>) (request, context) -> {
+							RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get("config");
+							Store memoryStore = runnableConfig.store();
 							Optional<StoreItem> itemOpt = memoryStore.getItem(request.namespace(), request.key());
 							return new MemoryResponse(
 									itemOpt.isPresent() ? "找到" : "未找到",
@@ -498,10 +511,13 @@ public class MemoryExample {
 				.saver(new MemorySaver())
 				.build();
 
+		// 创建记忆存储和工具
+		MemoryStore memoryStore = new MemoryStore();
 		// 会话1：保存信息
 		RunnableConfig session1 = RunnableConfig.builder()
 				.threadId("session_morning")
 				.addMetadata("user_id", "user_003")
+				.store(memoryStore)
 				.build();
 
 		agent.invoke(
@@ -513,6 +529,7 @@ public class MemoryExample {
 		RunnableConfig session2 = RunnableConfig.builder()
 				.threadId("session_afternoon")
 				.addMetadata("user_id", "user_003")
+				.store(memoryStore)
 				.build();
 
 		agent.invoke(

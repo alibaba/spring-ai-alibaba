@@ -235,10 +235,11 @@ public class AgentToolExample {
 
 			public int getCharacterCount() {
 				return characterCount;
-			}			public void setTitle(String title) {
-				this.title = title;
 			}
 
+			public void setTitle(String title) {
+				this.title = title;
+			}
 
 
 			public void setContent(String content) {
@@ -297,10 +298,11 @@ public class AgentToolExample {
 
 			public int getCharacterCount() {
 				return characterCount;
-			}			public void setTitle(String title) {
-				this.title = title;
 			}
 
+			public void setTitle(String title) {
+				this.title = title;
+			}
 
 
 			public void setContent(String content) {
