@@ -45,7 +45,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * Redis 检查点持久化示例
  * 演示如何使用 Redis 数据库持久化工作流状态
  */
-public class CheckpointPostgresExample {
+public class CheckpointRedisExample {
 
 	/**
 	 * 初始化 RedisSaver
