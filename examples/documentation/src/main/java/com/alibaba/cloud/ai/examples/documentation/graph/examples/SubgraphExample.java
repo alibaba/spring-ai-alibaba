@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.examples.documentation.graph.core;
+package com.alibaba.cloud.ai.examples.documentation.graph.examples;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
