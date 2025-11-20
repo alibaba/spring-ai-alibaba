@@ -549,10 +549,23 @@ public class ReactAgent extends BaseAgent {
 			ReactAgent agentInstance) throws GraphStateException {
 
 		// Model to tools routing
-		graph.addConditionalEdges(loopExitNode, edge_async(agentInstance.makeModelToTools(loopEntryNode, exitNode)), Map.of("tool", "tool", exitNode, exitNode, loopEntryNode, loopEntryNode));
+		Map<String, String> modelToToolsDestinations = new HashMap<>();
+		modelToToolsDestinations.put("tool", "tool");
+		modelToToolsDestinations.put(loopEntryNode, loopEntryNode);
+		if (!Objects.equals(exitNode, StateGraph.END)) {
+			modelToToolsDestinations.put(exitNode, exitNode);
+		}
+
+		graph.addConditionalEdges(loopExitNode, edge_async(agentInstance.makeModelToTools(loopEntryNode, exitNode)), modelToToolsDestinations);
 
 		// Tools to model routing
-		graph.addConditionalEdges("tool", edge_async(agentInstance.makeToolsToModelEdge(loopEntryNode, exitNode)), Map.of(loopEntryNode, loopEntryNode, exitNode, exitNode));
+		Map<String, String> toolsToModelDestinations = new HashMap<>();
+		toolsToModelDestinations.put(loopEntryNode, loopEntryNode);
+		if (!Objects.equals(exitNode, StateGraph.END)) {
+			toolsToModelDestinations.put(exitNode, exitNode);
+		}
+
+		graph.addConditionalEdges("tool", edge_async(agentInstance.makeToolsToModelEdge(loopEntryNode, exitNode)), toolsToModelDestinations);
 	}
 
 	private static String resolveJump(JumpTo jumpTo, String modelDestination, String endDestination, String defaultDestination) {
