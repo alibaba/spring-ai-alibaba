@@ -44,6 +44,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
+import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
@@ -94,6 +95,8 @@ public class ReactAgent extends BaseAgent {
 	private List<ToolInterceptor> toolInterceptors;
 
 	private String instruction;
+	
+	private SpringAIStateSerializer serializer = new SpringAIStateSerializer();
 
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);

@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 
+import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -84,6 +85,8 @@ public abstract class Builder {
 	protected ChatClientObservationConvention customObservationConvention;
 
 	protected boolean enableLogging;
+	
+	protected SpringAIStateSerializer stateSerializer;
 
 	public Builder name(String name) {
 		this.name = name;
@@ -218,6 +221,11 @@ public abstract class Builder {
 
 	public Builder enableLogging(boolean enableLogging) {
 		this.enableLogging = enableLogging;
+		return this;
+	}
+	
+	public Builder stateSerializer(SpringAIStateSerializer stateSerializer) {
+		this.stateSerializer = stateSerializer;
 		return this;
 	}
 
