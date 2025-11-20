@@ -61,6 +61,7 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Constructs an AbstractJdbcSaver with default table name.
+	 * 
 	 * @param dataSource the JDBC DataSource to use for database connections
 	 */
 	protected AbstractJdbcSaver(DataSource dataSource) {
@@ -69,7 +70,8 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Constructs an AbstractJdbcSaver with custom ObjectMapper.
-	 * @param dataSource the JDBC DataSource to use for database connections
+	 * 
+	 * @param dataSource   the JDBC DataSource to use for database connections
 	 * @param objectMapper the ObjectMapper for JSON serialization
 	 */
 	protected AbstractJdbcSaver(DataSource dataSource, ObjectMapper objectMapper) {
@@ -78,9 +80,10 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Constructs an AbstractJdbcSaver with custom table name.
-	 * @param dataSource the JDBC DataSource to use for database connections
+	 * 
+	 * @param dataSource   the JDBC DataSource to use for database connections
 	 * @param objectMapper the ObjectMapper for JSON serialization
-	 * @param tableName the name of the database table to store checkpoints
+	 * @param tableName    the name of the database table to store checkpoints
 	 */
 	protected AbstractJdbcSaver(DataSource dataSource, ObjectMapper objectMapper, String tableName) {
 		this.dataSource = Objects.requireNonNull(dataSource, "dataSource cannot be null");
@@ -98,12 +101,14 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 	/**
 	 * Returns the SQL statement to create the checkpoint table.
 	 * Subclasses should provide database-specific DDL.
+	 * 
 	 * @return the CREATE TABLE SQL statement
 	 */
 	protected abstract String getCreateTableSql();
 
 	/**
 	 * Returns the SQL statement to select checkpoint data by thread ID.
+	 * 
 	 * @return the SELECT SQL statement
 	 */
 	protected String getSelectSql() {
@@ -112,12 +117,14 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Returns the SQL statement to insert a new checkpoint record.
+	 * 
 	 * @return the INSERT SQL statement
 	 */
 	protected abstract String getInsertSql();
 
 	/**
 	 * Returns the SQL statement to update an existing checkpoint record.
+	 * 
 	 * @return the UPDATE SQL statement
 	 */
 	protected String getUpdateSql() {
@@ -130,6 +137,7 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Returns the SQL statement to delete checkpoint data by thread ID.
+	 * 
 	 * @return the DELETE SQL statement
 	 */
 	protected String getDeleteSql() {
@@ -143,8 +151,7 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 		try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
 			stmt.execute(getCreateTableSql());
 			logger.debug("Checkpoint table '{}' initialized successfully", tableName);
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			throw new RuntimeException("Failed to initialize checkpoint table: " + tableName, e);
 		}
 	}
@@ -171,11 +178,9 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 				}
 				return Collections.emptyList();
 			}
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			throw new RuntimeException("Failed to list checkpoints for threadId: " + threadId, e);
-		}
-		catch (JsonProcessingException e) {
+		} catch (JsonProcessingException e) {
 			throw new RuntimeException("Failed to deserialize checkpoint data", e);
 		}
 	}
@@ -202,9 +207,9 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 					// If specific checkpoint ID is requested
 					if (config.checkPointId().isPresent()) {
 						return config.checkPointId()
-							.flatMap(id -> checkpoints.stream()
-								.filter(checkpoint -> checkpoint.getId().equals(id))
-								.findFirst());
+								.flatMap(id -> checkpoints.stream()
+										.filter(checkpoint -> checkpoint.getId().equals(id))
+										.findFirst());
 					}
 
 					// Return the latest (first in list)
@@ -212,11 +217,9 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 				}
 				return Optional.empty();
 			}
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			throw new RuntimeException("Failed to get checkpoint for threadId: " + threadId, e);
-		}
-		catch (JsonProcessingException e) {
+		} catch (JsonProcessingException e) {
 			throw new RuntimeException("Failed to deserialize checkpoint data", e);
 		}
 	}
@@ -246,8 +249,7 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 									new TypeReference<>() {
 									});
 							checkpoints = getLinkedList(existingList);
-						}
-						else {
+						} else {
 							checkpoints = new LinkedList<>();
 						}
 					}
@@ -258,13 +260,12 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 					// Replace existing checkpoint
 					String checkPointId = config.checkPointId().get();
 					int index = IntStream.range(0, checkpoints.size())
-						.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
-						.findFirst()
-						.orElseThrow(() -> new NoSuchElementException(
-								format("Checkpoint with id %s not found!", checkPointId)));
+							.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
+							.findFirst()
+							.orElseThrow(() -> new NoSuchElementException(
+									format("Checkpoint with id %s not found!", checkPointId)));
 					checkpoints.set(index, checkpoint);
-				}
-				else {
+				} else {
 					// Add new checkpoint to the front
 					checkpoints.push(checkpoint);
 				}
@@ -278,8 +279,7 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 						pstmt.setString(2, threadId);
 						pstmt.executeUpdate();
 					}
-				}
-				else {
+				} else {
 					// Insert new record
 					try (PreparedStatement pstmt = conn.prepareStatement(getInsertSql())) {
 						setInsertParameters(pstmt, threadId, checkpointJson);
@@ -290,19 +290,16 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 				conn.commit();
 
 				if (config.checkPointId().isPresent()) {
-					return config;
+					return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 				}
 				return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				conn.rollback();
 				throw e;
-			}
-			finally {
+			} finally {
 				conn.setAutoCommit(true);
 			}
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			throw new RuntimeException("Failed to put checkpoint for threadId: " + threadId, e);
 		}
 	}
@@ -310,8 +307,9 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 	/**
 	 * Sets the parameters for the INSERT statement.
 	 * Subclasses can override this if they need different parameter ordering.
-	 * @param pstmt the PreparedStatement
-	 * @param threadId the thread ID
+	 * 
+	 * @param pstmt          the PreparedStatement
+	 * @param threadId       the thread ID
 	 * @param checkpointJson the serialized checkpoint data
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -336,8 +334,7 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 			pstmt.setString(1, threadId);
 			int rowsAffected = pstmt.executeUpdate();
 			return rowsAffected > 0;
-		}
-		catch (SQLException e) {
+		} catch (SQLException e) {
 			throw new RuntimeException("Failed to clear checkpoints for threadId: " + threadId, e);
 		}
 	}

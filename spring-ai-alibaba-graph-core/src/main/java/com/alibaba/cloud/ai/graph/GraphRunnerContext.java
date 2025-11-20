@@ -92,21 +92,20 @@ public class GraphRunnerContext {
 		log.trace("RESUME REQUEST");
 
 		var saver = compiledGraph.compileConfig.checkpointSaver()
-			.orElseThrow(() -> new IllegalStateException("Resume request without a configured checkpoint saver!"));
+				.orElseThrow(() -> new IllegalStateException("Resume request without a configured checkpoint saver!"));
 		var checkpoint = saver.get(config)
-			.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
+				.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
 
 		var startCheckpointNextNodeAction = compiledGraph.getNodeAction(checkpoint.getNextNodeId());
 		if (startCheckpointNextNodeAction instanceof SubCompiledGraphNodeAction action) {
 			// RESUME FORM SUBGRAPH DETECTED
 			this.config = RunnableConfig.builder(config)
-				.checkPointId(null) // Reset checkpoint id
-				.clearContext()
-				.addMetadata(action.resumeSubGraphId(), true) // add metadata for
-				// sub graph
-				.build();
-		}
-		else {
+					.checkPointId(null) // Reset checkpoint id
+					.clearContext()
+					.addMetadata(action.resumeSubGraphId(), true) // add metadata for
+					// sub graph
+					.build();
+		} else {
 			// Reset checkpoint id
 			this.config = config.withCheckPointId(null);
 		}
@@ -134,10 +133,13 @@ public class GraphRunnerContext {
 		this.nextNodeId = null;
 	}
 
-	// FIXME, duplicated method with CompiledGraph.stateCreate, need to have a unified way of when and how to do OverallState creation.
-	// This temporary fix is to make sure the message provided by user is always the last element in the messages list.
+	// FIXME, duplicated method with CompiledGraph.stateCreate, need to have a
+	// unified way of when and how to do OverallState creation.
+	// This temporary fix is to make sure the message provided by user is always the
+	// last element in the messages list.
 	private OverAllState stateCreate(Map<String, Object> inputs, OverAllState initialState) {
-		// Creates a new OverAllState instance using key strategies from the graph and provided input data.
+		// Creates a new OverAllState instance using key strategies from the graph and
+		// provided input data.
 		return OverAllStateBuilder.builder()
 				.withKeyStrategies(initialState.keyStrategies())
 				.withData(inputs)
@@ -223,8 +225,12 @@ public class GraphRunnerContext {
 
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
-			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(overallState.data())).nextNodeId(nextNodeId).build();
-			compiledGraph.compileConfig.checkpointSaver().get().put(config, cp);
+			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(overallState.data())).nextNodeId(nextNodeId)
+					.build();
+			// Force checkPointId to null to ensure we append a new checkpoint instead of
+			// replacing the current one
+			RunnableConfig appendConfig = RunnableConfig.builder(config).checkPointId(null).build();
+			this.config = compiledGraph.compileConfig.checkpointSaver().get().put(appendConfig, cp);
 			return Optional.of(cp);
 		}
 		return Optional.empty();
@@ -243,15 +249,16 @@ public class GraphRunnerContext {
 	}
 
 	/**
-	 * Comparing to buildNodeOutput, this method also adds a checkpoint if checkpoint saver is configured.
+	 * Comparing to buildNodeOutput, this method also adds a checkpoint if
+	 * checkpoint saver is configured.
 	 */
 	public NodeOutput buildNodeOutputAndAddCheckpoint() throws Exception {
 		Optional<Checkpoint> cp = addCheckpoint(currentNodeId, nextNodeId);
 		return buildOutput(currentNodeId, cp);
 	}
 
-
-	// StreamingOutput builders for nodes with Flux streaming output. 'originData' can be ChatResponse, just like ChatResponse in normal NodeOutput.
+	// StreamingOutput builders for nodes with Flux streaming output. 'originData'
+	// can be ChatResponse, just like ChatResponse in normal NodeOutput.
 
 	public StreamingOutput<?> buildStreamingOutput(GraphFlux<?> graphFlux, Object originData, String nodeId) {
 		// Create StreamingOutput with GraphFlux's nodeId (preserves real node identity)
@@ -259,9 +266,11 @@ public class GraphRunnerContext {
 		if (graphFlux.hasChunkResult()) {
 			Object chunkResult = graphFlux.getChunkResult().apply(originData);
 			String chunk = chunkResult != null ? chunkResult.toString() : null;
-			output = new StreamingOutput<>(chunk, originData, nodeId, (String)config.metadata("_AGENT_").orElse(""), this.overallState);
+			output = new StreamingOutput<>(chunk, originData, nodeId, (String) config.metadata("_AGENT_").orElse(""),
+					this.overallState);
 		} else {
-			output = new StreamingOutput<>(originData, nodeId, (String)config.metadata("_AGENT_").orElse(""), this.overallState);
+			output = new StreamingOutput<>(originData, nodeId, (String) config.metadata("_AGENT_").orElse(""),
+					this.overallState);
 		}
 		output.setSubGraph(true);
 		return output;
@@ -269,14 +278,16 @@ public class GraphRunnerContext {
 
 	public StreamingOutput<?> buildStreamingOutput(Message message, Object originData, String nodeId) {
 		// Create StreamingOutput with chunk and originData
-		StreamingOutput<?> output = new StreamingOutput<>(message, originData, nodeId, (String)config.metadata("_AGENT_").orElse(""), this.overallState);
+		StreamingOutput<?> output = new StreamingOutput<>(message, originData, nodeId,
+				(String) config.metadata("_AGENT_").orElse(""), this.overallState);
 		output.setSubGraph(true);
 		return output;
 	}
 
 	public StreamingOutput<?> buildStreamingOutput(Message message, String nodeId) {
 		// Create StreamingOutput with chunk only
-		StreamingOutput<?> output = new StreamingOutput<>(message, nodeId, (String)config.metadata("_AGENT_").orElse(""), this.overallState);
+		StreamingOutput<?> output = new StreamingOutput<>(message, nodeId, (String) config.metadata("_AGENT_").orElse(""),
+				this.overallState);
 		output.setSubGraph(true);
 		return output;
 	}
@@ -286,10 +297,9 @@ public class GraphRunnerContext {
 	public NodeOutput buildNodeOutput(String nodeId) throws Exception {
 		return NodeOutput.of(
 				nodeId,
-				(String)config.metadata("_AGENT_").orElse(""),
+				(String) config.metadata("_AGENT_").orElse(""),
 				cloneState(this.overallState.data()),
-				this.tokenUsage
-		);
+				this.tokenUsage);
 	}
 
 	public OverAllState cloneState(Map<String, Object> data) throws Exception {
@@ -320,8 +330,7 @@ public class GraphRunnerContext {
 						listener.onError(getCurrentNodeId(), getCurrentStateData(), e, config);
 						break;
 				}
-			}
-			catch (Exception ex) {
+			} catch (Exception ex) {
 				log.error("Error in listener", ex);
 			}
 		}
@@ -332,7 +341,7 @@ public class GraphRunnerContext {
 	 *
 	 * @param updateState the state updates to apply
 	 */
-	public void mergeIntoCurrentState(Map<String , Object> updateState) {
+	public void mergeIntoCurrentState(Map<String, Object> updateState) {
 		// Create a new map and filter out ChatResponse entries
 		Map<String, Object> filteredState = findTokenUsageInDeltaState(updateState);
 
@@ -340,7 +349,8 @@ public class GraphRunnerContext {
 	}
 
 	/**
-	 * FIXME, this method is a temporary fix to separate Usage from state updates. works together with AgentLlmNode non-stream node.
+	 * FIXME, this method is a temporary fix to separate Usage from state updates.
+	 * works together with AgentLlmNode non-stream node.
 	 */
 	private Map<String, Object> findTokenUsageInDeltaState(Map<String, Object> updateState) {
 		Map<String, Object> filteredState = new HashMap<>();
@@ -435,17 +445,18 @@ public class GraphRunnerContext {
 		}
 	}
 
-
 	/**
-	 * 	FIXME
-	 * 	Below are duplicated methods. Need to have a unified way of streaming output to end user.
+	 * FIXME
+	 * Below are duplicated methods. Need to have a unified way of streaming output
+	 * to end user.
 	 */
 	public NodeOutput buildNodeOutputAndAddCheckpoint(Map<String, Object> updateStates) throws Exception {
 		Optional<Checkpoint> cp = addCheckpoint(currentNodeId, nextNodeId);
 		return buildOutput(currentNodeId, updateStates, cp);
 	}
 
-	public NodeOutput buildOutput(String nodeId, Map<String, Object> updateStates, Optional<Checkpoint> checkpoint) throws Exception {
+	public NodeOutput buildOutput(String nodeId, Map<String, Object> updateStates, Optional<Checkpoint> checkpoint)
+			throws Exception {
 		if (checkpoint.isPresent() && config.streamMode() == CompiledGraph.StreamMode.SNAPSHOTS) {
 			return StateSnapshot.of(getKeyStrategyMap(), checkpoint.get(), config,
 					compiledGraph.stateGraph.getStateSerializer().stateFactory());
@@ -474,9 +485,11 @@ public class GraphRunnerContext {
 		}
 
 		if (message != null) {
-			return new StreamingOutput<>(message, nodeId, (String)config.metadata("_AGENT_").orElse(""), cloneState(this.overallState.data()), tokenUsage);
+			return new StreamingOutput<>(message, nodeId, (String) config.metadata("_AGENT_").orElse(""),
+					cloneState(this.overallState.data()), tokenUsage);
 		} else {
-			return new StreamingOutput<>(nodeId, (String)config.metadata("_AGENT_").orElse(""), cloneState(this.overallState.data()), tokenUsage);
+			return new StreamingOutput<>(nodeId, (String) config.metadata("_AGENT_").orElse(""),
+					cloneState(this.overallState.data()), tokenUsage);
 		}
 	}
 
