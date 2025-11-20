@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,13 +35,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.document.Document;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
@@ -54,8 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledIfDockerAvailable
-// @EnabledIf(value = "isCI", disabledReason = "this test is designed to run
-// only in the GitHub CI environment.")
+@EnabledIf(value = "isCI", disabledReason = "this test is designed to run only in the GitHub CI environment.")
 @Testcontainers
 class RedisSaverTest {
 
@@ -311,4 +314,125 @@ class RedisSaverTest {
 		assertEquals("Agent instruction template: {param}", instructionMsg.getText());
 	}
 
+	@Test
+	void testToolResponseMessageSerialization() throws Exception {
+		String threadId = "test-tool-response-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("tool_execution_id", "exec_123");
+		metadata.put("execution_time", 150);
+
+		List<ToolResponseMessage.ToolResponse> responses = List.of(
+				new ToolResponseMessage.ToolResponse("tool_call_1", "calculator", "{\"result\": 42}"),
+				new ToolResponseMessage.ToolResponse("tool_call_2", "weather", "{\"temperature\": 25}"));
+
+		ToolResponseMessage original = new ToolResponseMessage(responses, metadata);
+
+		Checkpoint checkpoint = Checkpoint.builder()
+				.id("cp-tool")
+				.state(Map.of("message", original))
+				.nodeId("node1")
+				.nextNodeId("node2")
+				.build();
+
+		redisSaver.put(config, checkpoint);
+
+		Optional<Checkpoint> retrievedOpt = redisSaver.get(config);
+		assertTrue(retrievedOpt.isPresent());
+
+		Object msgObj = retrievedOpt.get().getState().get("message");
+		assertInstanceOf(ToolResponseMessage.class, msgObj);
+
+		ToolResponseMessage deserialized = (ToolResponseMessage) msgObj;
+		assertEquals(original.getResponses().size(), deserialized.getResponses().size());
+		assertEquals(original.getMetadata(), deserialized.getMetadata());
+	}
+
+	@Test
+	void testDocumentSerialization() throws Exception {
+		String threadId = "test-document-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("source", "file.pdf");
+		metadata.put("page", 1);
+
+		Document original = Document.builder()
+				.id("doc_123")
+				.text("This is a test document content.")
+				.metadata(metadata)
+				.score(0.95)
+				.build();
+
+		Checkpoint checkpoint = Checkpoint.builder()
+				.id("cp-doc")
+				.state(Map.of("document", original))
+				.nodeId("node1")
+				.nextNodeId("node2")
+				.build();
+
+		redisSaver.put(config, checkpoint);
+
+		Optional<Checkpoint> retrievedOpt = redisSaver.get(config);
+		assertTrue(retrievedOpt.isPresent());
+
+		Object docObj = retrievedOpt.get().getState().get("document");
+		assertInstanceOf(Document.class, docObj);
+
+		Document deserialized = (Document) docObj;
+		assertEquals(original.getId(), deserialized.getId());
+		assertEquals(original.getText(), deserialized.getText());
+		assertEquals(original.getScore(), deserialized.getScore());
+		assertEquals(original.getMetadata(), deserialized.getMetadata());
+	}
+
+	@Test
+	void testComplexMetadataSerialization() throws Exception {
+		String threadId = "test-complex-metadata-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("string_field", "test_value");
+		metadata.put("number_field", 42);
+		metadata.put("boolean_field", true);
+		metadata.put("list_field", List.of("item1", "item2", "item3"));
+
+		Map<String, Object> nestedMap = new HashMap<>();
+		nestedMap.put("nested_key", "nested_value");
+		metadata.put("nested_object", nestedMap);
+
+		UserMessage original = UserMessage.builder().text("Message with complex metadata").metadata(metadata).build();
+
+		Checkpoint checkpoint = Checkpoint.builder()
+				.id("cp-complex")
+				.state(Map.of("message", original))
+				.nodeId("node1")
+				.nextNodeId("node2")
+				.build();
+
+		redisSaver.put(config, checkpoint);
+
+		Optional<Checkpoint> retrievedOpt = redisSaver.get(config);
+		assertTrue(retrievedOpt.isPresent());
+
+		Object msgObj = retrievedOpt.get().getState().get("message");
+		assertInstanceOf(UserMessage.class, msgObj);
+
+		UserMessage deserialized = (UserMessage) msgObj;
+		Map<String, Object> deserializedMetadata = deserialized.getMetadata();
+
+		assertEquals("test_value", deserializedMetadata.get("string_field"));
+		assertEquals(42, deserializedMetadata.get("number_field"));
+		assertEquals(true, deserializedMetadata.get("boolean_field"));
+
+		// Jackson might deserialize List as ArrayList
+		assertInstanceOf(List.class, deserializedMetadata.get("list_field"));
+		List<?> list = (List<?>) deserializedMetadata.get("list_field");
+		assertEquals(3, list.size());
+
+		assertInstanceOf(Map.class, deserializedMetadata.get("nested_object"));
+		Map<?, ?> map = (Map<?, ?>) deserializedMetadata.get("nested_object");
+		assertEquals("nested_value", map.get("nested_key"));
+	}
 }
