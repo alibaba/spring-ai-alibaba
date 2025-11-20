@@ -178,7 +178,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 										format("Checkpoint with id %s not found!", checkPointId))));
 						linkedList.set(index, checkpoint);
 						bucket.set(objectMapper.writeValueAsString(linkedList));
-						return config;
+						return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 					}
 					linkedList.push(checkpoint); // Add Checkpoint
 					bucket.set(objectMapper.writeValueAsString(linkedList));

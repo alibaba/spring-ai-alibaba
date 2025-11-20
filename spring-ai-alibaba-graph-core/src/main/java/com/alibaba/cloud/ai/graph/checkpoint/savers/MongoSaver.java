@@ -188,7 +188,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 						collection.replaceOne(Filters.eq("_id", DOCUMENT_PREFIX + configOption.get()), tempDocument);
 						clientSession.commitTransaction();
 						clientSession.close();
-						return config;
+						return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 					}
 				}
 				if (checkpointLinkedList == null) {

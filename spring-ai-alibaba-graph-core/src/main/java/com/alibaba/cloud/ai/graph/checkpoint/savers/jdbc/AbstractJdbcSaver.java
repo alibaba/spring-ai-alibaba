@@ -289,7 +289,7 @@ public abstract class AbstractJdbcSaver implements BaseCheckpointSaver {
 				conn.commit();
 
 				if (config.checkPointId().isPresent()) {
-					return config;
+					return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 				}
 				return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 			} catch (Exception e) {
