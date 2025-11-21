@@ -129,6 +129,9 @@ public class DefaultBuilder extends Builder {
 					continue;
 				}
 
+				if (this.resolver == null) {
+					throw new IllegalStateException("ToolCallbackResolver is null; cannot resolve tool name: " + toolName);
+				}
 				ToolCallback toolCallback = this.resolver.resolve(toolName);
 				if (toolCallback == null) {
 					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
