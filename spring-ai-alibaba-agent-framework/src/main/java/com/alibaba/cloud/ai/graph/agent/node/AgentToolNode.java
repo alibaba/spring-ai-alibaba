@@ -256,8 +256,6 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		private Map<String, Object> toolContext = new HashMap<>();
 
-		private List<String> toolNames = new ArrayList<>();
-
 		private ToolCallbackResolver toolCallbackResolver;
 
 		private Builder() {
@@ -278,18 +276,13 @@ public class AgentToolNode implements NodeActionWithConfig {
 			return this;
 		}
 
-		public Builder toolNames(List<String> toolNames) {
-			this.toolNames = toolNames;
-			return this;
-		}
-
 		public Builder toolCallbackResolver(ToolCallbackResolver toolCallbackResolver) {
 			this.toolCallbackResolver = toolCallbackResolver;
 			return this;
 		}
 
 		public Builder toolContext(Map<String, Object> toolContext) {
-			this.toolContext = toolContext;
+			this.toolContext = new HashMap<>(toolContext);
 			return this;
 		}
 

@@ -177,6 +177,10 @@ public class DefaultBuilder extends Builder {
 			toolBuilder.enableActingLog(true);
 		}
 
+		if (toolContext != null && !toolContext.isEmpty()) {
+			toolBuilder.toolContext(toolContext);
+		}
+
 		toolNode = toolBuilder.build();
 
 		return new ReactAgent(llmNode, toolNode, buildConfig(), this);
