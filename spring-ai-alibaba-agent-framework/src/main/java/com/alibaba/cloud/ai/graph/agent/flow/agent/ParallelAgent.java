@@ -295,7 +295,7 @@ public class ParallelAgent extends FlowAgent {
 		 * @throws GraphStateException if agent creation fails
 		 */
 		@Override
-		public ParallelAgent build() throws GraphStateException {
+		public ParallelAgent doBuild() throws GraphStateException {
 			validate();
 			return new ParallelAgent(this);
 		}

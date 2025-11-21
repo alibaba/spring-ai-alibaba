@@ -37,8 +37,7 @@ public abstract class FlowAgent extends Agent {
 
 	protected List<Agent> subAgents;
 
-	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents)
-			throws GraphStateException {
+	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents){
 		super(name, description);
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
@@ -57,7 +56,7 @@ public abstract class FlowAgent extends Agent {
 	}
 
 	@Override
-	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) {
 		CompiledGraph compiledGraph = getAndCompileGraph();
 		return compiledGraph.schedule(scheduleConfig);
 	}
@@ -77,19 +76,8 @@ public abstract class FlowAgent extends Agent {
 	protected abstract StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config)
 			throws GraphStateException;
 
-	public CompileConfig compileConfig() {
-		return compileConfig;
-	}
-
 	public List<Agent> subAgents() {
 		return this.subAgents;
-	}
-
-	/**
-	 * Creates a map with messages and input for String message
-	 */
-	private Map<String, Object> createInputMap(String message) {
-		return Map.of("messages", convertToMessages(message), "input", message);
 	}
 
 }

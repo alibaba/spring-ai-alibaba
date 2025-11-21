@@ -109,7 +109,7 @@ public class LoopAgent extends FlowAgent {
         }
 
         @Override
-        public LoopAgent build() throws GraphStateException {
+        public LoopAgent doBuild() throws GraphStateException {
             validate();
             return new LoopAgent(this);
         }

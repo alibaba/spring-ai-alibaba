@@ -54,7 +54,7 @@ public class SequentialAgent extends FlowAgent {
 		}
 
 		@Override
-		public SequentialAgent build() throws GraphStateException {
+		public SequentialAgent doBuild() throws GraphStateException {
 			validate();
 			return new SequentialAgent(this);
 		}

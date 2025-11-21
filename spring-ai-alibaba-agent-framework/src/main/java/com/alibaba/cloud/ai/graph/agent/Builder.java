@@ -61,6 +61,8 @@ public abstract class Builder {
 
 	protected BaseCheckpointSaver saver;
 
+	protected CompileConfig compileConfig;
+
 	protected List<? extends Hook> hooks;
 	protected List<? extends Interceptor> interceptors;
 	protected List<ModelInterceptor> modelInterceptors;
@@ -127,7 +129,14 @@ public abstract class Builder {
 	}
 
 	public Builder saver(BaseCheckpointSaver saver) {
+		Assert.notNull(saver, "saver cannot be null");
 		this.saver = saver;
+		return this;
+	}
+
+	public Builder compileConfig(CompileConfig compileConfig) {
+		Assert.notNull(compileConfig, "compileConfig cannot be null");
+		this.compileConfig = compileConfig;
 		return this;
 	}
 
@@ -222,6 +231,10 @@ public abstract class Builder {
 	}
 
 	protected CompileConfig buildConfig() {
+		if (compileConfig != null) {
+			return compileConfig;
+		}
+
 		SaverConfig saverConfig = SaverConfig.builder()
 				.register(saver)
 				.build();
