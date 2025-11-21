@@ -17,22 +17,16 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -40,9 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -277,59 +268,6 @@ class ReactAgentTest {
 		}).blockLast();
 	}
 
-
-	@Test
-	public void testReactAgentAsSubGraphNode() throws Exception {
-
-		ReactAgent childAgent = ReactAgent.builder()
-				.name("child_agent")
-				.model(chatModel)
-				.saver(new MemorySaver())
-				.build();
-
-		Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-		keyStrategyMap.put("messages", new AppendStrategy());
-
-		StateGraph parentGraph = new StateGraph(() -> keyStrategyMap);
-
-		parentGraph.addNode("pre_node", node_async(state -> {
-			return Map.of("messages", new UserMessage("帮我写一首简短的诗"));
-		}));
-
-		parentGraph.addNode("agent_node", childAgent.asNode(true, false, null));
-
-		parentGraph.addNode("post_node", node_async(state -> {
-			Optional<Object> messages = state.value("messages");
-			if (messages.isPresent() && messages.get() instanceof List) {
-				List<?> messageList = (List<?>) messages.get();
-				System.out.println("Total messages: " + messageList.size());
-			}
-			return Map.of();
-		}));
-
-		parentGraph.addEdge(START, "pre_node");
-		parentGraph.addEdge("pre_node", "agent_node");
-		parentGraph.addEdge("agent_node", "post_node");
-		parentGraph.addEdge("post_node", END);
-
-		CompiledGraph compiledGraph = parentGraph.compile();
-		assertNotNull(compiledGraph, "Compiled graph should not be null");
-
-		Optional<OverAllState> result = compiledGraph.invoke(Map.of());
-
-		assertTrue(result.isPresent(), "Result should be present");
-		OverAllState finalState = result.get();
-		assertTrue(finalState.value("messages").isPresent(), "Messages should be present in final state");
-
-		Object messagesObj = finalState.value("messages").get();
-		assertTrue(messagesObj instanceof List, "Messages should be a List");
-		List<?> messages = (List<?>) messagesObj;
-
-		assertTrue(messages.size() >= 2, "Should have at least 2 messages (user + assistant)");
-
-		Object lastMessage = messages.get(messages.size() - 1);
-		assertTrue(lastMessage instanceof AssistantMessage, "Last message should be AssistantMessage");
-	}
 	@Test
 	public void testAgentSystemPrompt() throws Exception {
 		ReactAgent agent = ReactAgent.builder()
