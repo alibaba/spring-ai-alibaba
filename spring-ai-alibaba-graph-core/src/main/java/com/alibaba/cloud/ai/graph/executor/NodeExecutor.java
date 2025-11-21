@@ -234,11 +234,10 @@ public class NodeExecutor extends BaseGraphExecutor {
                     // merge tool calls：if current message have tool calls，use now；otherwise, use the previous one
                     var mergedToolCalls = currentMessage.hasToolCalls() ? currentMessage.getToolCalls() : lastMessage.getToolCalls();
 
-                    var newMessage = new org.springframework.ai.chat.messages.AssistantMessage(
-                            mergedText,
-                            currentMessage.getMetadata(),
-                            mergedToolCalls,
-                            currentMessage.getMedia());
+                    var newMessage = AssistantMessage.builder()
+                            .content(mergedText).properties(currentMessage.getMetadata())
+                            .toolCalls(mergedToolCalls).media(currentMessage.getMedia()).build();
+
                     var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
 
                     org.springframework.ai.chat.model.ChatResponse newResponse = new org.springframework.ai.chat.model.ChatResponse(
