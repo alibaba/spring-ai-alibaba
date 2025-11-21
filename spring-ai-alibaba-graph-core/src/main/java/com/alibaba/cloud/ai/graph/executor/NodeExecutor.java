@@ -239,8 +239,7 @@ public class NodeExecutor extends BaseGraphExecutor {
                             currentMessage.getMetadata(),
                             mergedToolCalls,
                             currentMessage.getMedia());
-                    var newGeneration = new org.springframework.ai.chat.model.Generation(newMessage,
-                            response.getResult().getMetadata());
+                    var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
 
                     org.springframework.ai.chat.model.ChatResponse newResponse = new org.springframework.ai.chat.model.ChatResponse(
                             List.of(newGeneration), response.getMetadata());
