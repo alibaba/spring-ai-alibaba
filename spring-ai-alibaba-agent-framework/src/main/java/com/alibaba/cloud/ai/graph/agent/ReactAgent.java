@@ -180,7 +180,7 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	public StateGraph getStateGraph() {
-		return graph;
+		return getGraph();
 	}
 
 	public CompiledGraph getCompiledGraph() {

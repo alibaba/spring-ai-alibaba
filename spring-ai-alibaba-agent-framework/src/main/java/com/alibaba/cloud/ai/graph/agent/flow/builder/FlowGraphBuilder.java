@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.HashMap;
@@ -64,6 +65,8 @@ public class FlowGraphBuilder {
 
 		private ChatModel chatModel;
 
+		private StateSerializer stateSerializer;
+
 		private Map<String, Object> customProperties = new HashMap<>();
 
 		// Getters and setters
@@ -77,6 +80,14 @@ public class FlowGraphBuilder {
 
 		public KeyStrategyFactory getKeyStrategyFactory() {
 			return keyStrategyFactory;
+		}
+
+		public StateSerializer getStateSerializer() {
+			return stateSerializer;
+		}
+
+		public void setStateSerializer(StateSerializer stateSerializer) {
+			this.stateSerializer = stateSerializer;
 		}
 
 		public Agent getRootAgent() {
@@ -143,6 +154,16 @@ public class FlowGraphBuilder {
 
 		public FlowGraphConfig chatModel(ChatModel model) {
 			this.chatModel = model;
+			return this;
+		}
+
+		/**
+		 * Sets the state serializer for the graph.
+		 * @param stateSerializer the state serializer to use
+		 * @return this config instance for method chaining
+		 */
+		public FlowGraphConfig stateSerializer(StateSerializer stateSerializer) {
+			this.stateSerializer = stateSerializer;
 			return this;
 		}
 

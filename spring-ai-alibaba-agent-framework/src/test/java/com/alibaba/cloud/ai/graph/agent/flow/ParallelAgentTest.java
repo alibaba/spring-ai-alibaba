@@ -15,8 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -200,6 +205,75 @@ class ParallelAgentTest {
 		assertTrue(concatString.contains("value1"));
 		assertTrue(concatString.contains("value2"));
 		assertTrue(concatString.contains(" | "));
+	}
+
+	@Test
+	void testParallelAgentWithJacksonSerializer() throws Exception {
+		StateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
+
+		ReactAgent agent1 = createMockAgent("agent1", "output1");
+		ReactAgent agent2 = createMockAgent("agent2", "output2");
+
+		ParallelAgent parallelAgent = ParallelAgent.builder()
+				.name("parallel_agent")
+				.description("Parallel agent with Jackson serializer")
+				.stateSerializer(serializer)
+				.subAgents(List.of(agent1, agent2))
+				.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
+				.build();
+
+		// Verify serializer is set correctly in StateGraph
+		StateGraph stateGraph = parallelAgent.asStateGraph();
+		assertNotNull(stateGraph, "StateGraph should not be null");
+		StateSerializer graphSerializer = stateGraph.getStateSerializer();
+		assertNotNull(graphSerializer, "Serializer should not be null");
+		assertInstanceOf(SpringAIJacksonStateSerializer.class, graphSerializer,
+				"Serializer should be SpringAIJacksonStateSerializer");
+	}
+
+	@Test
+	void testParallelAgentWithSpringAIStateSerializer() throws Exception {
+		StateSerializer serializer = new SpringAIStateSerializer();
+
+		ReactAgent agent1 = createMockAgent("agent1", "output1");
+		ReactAgent agent2 = createMockAgent("agent2", "output2");
+
+		ParallelAgent parallelAgent = ParallelAgent.builder()
+				.name("parallel_agent")
+				.description("Parallel agent with SpringAI serializer")
+				.stateSerializer(serializer)
+				.subAgents(List.of(agent1, agent2))
+				.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
+				.build();
+
+		// Verify serializer is set correctly in StateGraph
+		StateGraph stateGraph = parallelAgent.asStateGraph();
+		assertNotNull(stateGraph, "StateGraph should not be null");
+		StateSerializer graphSerializer = stateGraph.getStateSerializer();
+		assertNotNull(graphSerializer, "Serializer should not be null");
+		assertInstanceOf(SpringAIStateSerializer.class, graphSerializer,
+				"Serializer should be SpringAIStateSerializer");
+	}
+
+	@Test
+	void testParallelAgentWithDefaultSerializer() throws Exception {
+		ReactAgent agent1 = createMockAgent("agent1", "output1");
+		ReactAgent agent2 = createMockAgent("agent2", "output2");
+
+		ParallelAgent parallelAgent = ParallelAgent.builder()
+				.name("parallel_agent")
+				.description("Parallel agent with default serializer")
+				.subAgents(List.of(agent1, agent2))
+				.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
+				.build();
+
+		// Verify default serializer is used
+		StateGraph stateGraph = parallelAgent.asStateGraph();
+		assertNotNull(stateGraph, "StateGraph should not be null");
+		StateSerializer graphSerializer = stateGraph.getStateSerializer();
+		assertNotNull(graphSerializer, "Serializer should not be null");
+		assertInstanceOf(SpringAIJacksonStateSerializer.class, graphSerializer,
+				"Default serializer should be SpringAIJacksonStateSerializer");
 	}
 
 	private ReactAgent createMockAgent(String name, String outputKey) throws Exception {
