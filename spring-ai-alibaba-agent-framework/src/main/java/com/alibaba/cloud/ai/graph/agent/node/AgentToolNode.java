@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.alibaba.cloud.ai.graph.agent.DefaultBuilder.POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY;
@@ -191,6 +192,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 		ToolCallHandler baseHandler = req -> {
 			ToolCallback toolCallback = resolve(req.getToolName());
 
+			if (toolCallback == null) {
+				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, req.getToolName());
+				throw new IllegalStateException("No ToolCallback found for tool name: " + req.getToolName());
+			}
+
 			if (enableActingLog) {
 				logger.info("[ThreadId {}] Agent {} acting, executing tool {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, req.getToolName());
 			}
@@ -236,7 +242,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return toolCallbacks.stream()
 			.filter(callback -> callback.getToolDefinition().name().equals(toolName))
 			.findFirst()
-			.orElseGet(() -> toolCallbackResolver.resolve(toolName));
+			.orElseGet(() -> toolCallbackResolver == null ? null : toolCallbackResolver.resolve(toolName));
 	}
 
 	public String getName() {

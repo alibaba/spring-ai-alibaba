@@ -39,7 +39,7 @@ public class DefaultBuilder extends Builder {
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultBuilder.class);
 
-	private static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING
+	public static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING
 				= "LLM may have adapted the tool name '{}', especially if the name was truncated due to length limits. If this is the case, you can customize the prefixing and processing logic using McpToolNamePrefixGenerator";
 
 	@Override
