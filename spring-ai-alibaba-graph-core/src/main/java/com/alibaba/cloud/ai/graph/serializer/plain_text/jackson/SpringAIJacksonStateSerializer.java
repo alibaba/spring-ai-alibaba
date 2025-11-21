@@ -45,9 +45,7 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		var module = new SimpleModule();
 
-		ChatMessageSerializer.registerTo(module);
-		ChatMessageDeserializer.registerTo(module);
-        NodeOutputDeserializer.registerTo(module);
+		registerMessageHandlers(module);
 
 		typeMapper.register(new TypeMapper.Reference<ToolResponseMessage>(MessageType.TOOL.name()) {
 		}).register(new TypeMapper.Reference<SystemMessage>(MessageType.SYSTEM.name()) {
@@ -82,7 +80,8 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 	}
 
 	/**
-	 * Conditionally registers DeepSeekAssistantMessage support if the class is available on the classpath.
+	 * Conditionally registers DeepSeekAssistantMessage support if the class is
+	 * available on the classpath.
 	 * This avoids forcing a dependency on DeepSeek-related JARs.
 	 */
 	private void registerDeepSeekSupportIfAvailable(SimpleModule module) {
@@ -92,8 +91,7 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 			// TypeMapper only needs the type name, not the actual class
 			typeMapper.register(new TypeMapper.Reference<Object>("DEEPSEEK_ASSISTANT") {
 			});
-		}
-		catch (ClassNotFoundException e) {
+		} catch (ClassNotFoundException e) {
 			// DeepSeekAssistantMessage is not available, skip registration
 			// This is expected for projects that don't include DeepSeek dependencies
 		}
@@ -117,19 +115,20 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		static void registerTo(SimpleModule module) {
 			module.addDeserializer(ToolResponseMessage.class, tool)
-				.addDeserializer(SystemMessage.class, system)
-				.addDeserializer(UserMessage.class, user)
-				.addDeserializer(AssistantMessage.class, ai)
-				.addDeserializer(Document.class, document)
-				.addDeserializer(AgentInstructionMessage.class, templatedUser)
-				.addDeserializer(StreamingOutput.class, streamingOutput);
+					.addDeserializer(SystemMessage.class, system)
+					.addDeserializer(UserMessage.class, user)
+					.addDeserializer(AssistantMessage.class, ai)
+					.addDeserializer(Document.class, document)
+					.addDeserializer(AgentInstructionMessage.class, templatedUser)
+					.addDeserializer(StreamingOutput.class, streamingOutput);
 
 			// Conditionally register DeepSeekAssistantMessage deserializer if available
 			registerDeepSeekDeserializerIfAvailable(module);
 		}
 
 		/**
-		 * Conditionally registers DeepSeekAssistantMessage deserializer if the class is available.
+		 * Conditionally registers DeepSeekAssistantMessage deserializer if the class is
+		 * available.
 		 */
 		@SuppressWarnings("unchecked")
 		static void registerDeepSeekDeserializerIfAvailable(SimpleModule module) {
@@ -137,14 +136,29 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 				Class<?> deepSeekClass = Class.forName("org.springframework.ai.deepseek.DeepSeekAssistantMessage");
 				DeepSeekAssistantMessageHandler.Deserializer deepSeekAi = new DeepSeekAssistantMessageHandler.Deserializer();
 				// Use raw type to avoid type inference issues
-				module.addDeserializer((Class<Object>) deepSeekClass, (com.fasterxml.jackson.databind.JsonDeserializer<? extends Object>) deepSeekAi);
-			}
-			catch (ClassNotFoundException | IllegalStateException e) {
+				module.addDeserializer((Class<Object>) deepSeekClass,
+						(com.fasterxml.jackson.databind.JsonDeserializer<? extends Object>) deepSeekAi);
+			} catch (ClassNotFoundException | IllegalStateException e) {
 				// DeepSeekAssistantMessage is not available, skip registration
-				// IllegalStateException may be thrown if the class is found but constructor fails
+				// IllegalStateException may be thrown if the class is found but constructor
+				// fails
 			}
 		}
 
+	}
+
+	/**
+	 * Registers all Spring AI Message handlers (serializers and deserializers) to
+	 * the provided Jackson module.
+	 * This allows other components (like CheckpointSavers) to reuse the same
+	 * serialization logic.
+	 *
+	 * @param module the Jackson SimpleModule to register handlers to
+	 */
+	public static void registerMessageHandlers(SimpleModule module) {
+		ChatMessageSerializer.registerTo(module);
+		ChatMessageDeserializer.registerTo(module);
+		NodeOutputDeserializer.registerTo(module);
 	}
 
 	interface ChatMessageSerializer {
@@ -167,20 +181,21 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		static void registerTo(SimpleModule module) {
 			module.addSerializer(ToolResponseMessage.class, tool)
-				.addSerializer(SystemMessage.class, system)
-				.addSerializer(UserMessage.class, user)
-				.addSerializer(AssistantMessage.class, ai)
-				.addSerializer(Document.class, document)
-				.addSerializer(AgentInstructionMessage.class, templatedUser)
-				.addSerializer(NodeOutput.class, output)
-				.addSerializer(StreamingOutput.class, streamingOutput);
+					.addSerializer(SystemMessage.class, system)
+					.addSerializer(UserMessage.class, user)
+					.addSerializer(AssistantMessage.class, ai)
+					.addSerializer(Document.class, document)
+					.addSerializer(AgentInstructionMessage.class, templatedUser)
+					.addSerializer(NodeOutput.class, output)
+					.addSerializer(StreamingOutput.class, streamingOutput);
 
 			// Conditionally register DeepSeekAssistantMessage serializer if available
 			registerDeepSeekSerializerIfAvailable(module);
 		}
 
 		/**
-		 * Conditionally registers DeepSeekAssistantMessage serializer if the class is available.
+		 * Conditionally registers DeepSeekAssistantMessage serializer if the class is
+		 * available.
 		 */
 		@SuppressWarnings("unchecked")
 		static void registerDeepSeekSerializerIfAvailable(SimpleModule module) {
@@ -188,23 +203,24 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 				Class<?> deepSeekClass = Class.forName("org.springframework.ai.deepseek.DeepSeekAssistantMessage");
 				DeepSeekAssistantMessageHandler.Serializer deepSeekAi = new DeepSeekAssistantMessageHandler.Serializer();
 				// Use raw type to avoid type inference issues
-				module.addSerializer((Class<Object>) deepSeekClass, (com.fasterxml.jackson.databind.JsonSerializer<Object>) deepSeekAi);
-			}
-			catch (ClassNotFoundException | IllegalStateException e) {
+				module.addSerializer((Class<Object>) deepSeekClass,
+						(com.fasterxml.jackson.databind.JsonSerializer<Object>) deepSeekAi);
+			} catch (ClassNotFoundException | IllegalStateException e) {
 				// DeepSeekAssistantMessage is not available, skip registration
-				// IllegalStateException may be thrown if the class is found but constructor fails
+				// IllegalStateException may be thrown if the class is found but constructor
+				// fails
 			}
 		}
 
 	}
 
-    interface NodeOutputDeserializer {
+	interface NodeOutputDeserializer {
 
-        JacksonNodeOutputDeserializer nodeOutput = new JacksonNodeOutputDeserializer();
+		JacksonNodeOutputDeserializer nodeOutput = new JacksonNodeOutputDeserializer();
 
-        static void registerTo(SimpleModule module) {
-            module.addDeserializer(NodeOutput.class, nodeOutput);
-        }
+		static void registerTo(SimpleModule module) {
+			module.addDeserializer(NodeOutput.class, nodeOutput);
+		}
 	}
 
 }
