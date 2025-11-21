@@ -386,7 +386,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			try {
 				logger.info("[call] input: {} toolContext: {}", input, JacksonUtils.toJson(toolContext));
 			} catch (Exception e) {
-				// 忽略日志记录错误
+				// Ignore logging errors
 			}
 
 			// 参数验证

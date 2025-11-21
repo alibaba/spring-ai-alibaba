@@ -197,7 +197,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 			String result;
 			try {
-				if (toolCallback instanceof FunctionToolCallback<?, ?> || toolCallback instanceof MethodToolCallback) { // toolCallbacks not instance of FunctionToolCallback are considered MCP tools.
+				// Handle FunctionToolCallback and MethodToolCallback, which support passing state and config in ToolContext.
+				if (toolCallback instanceof FunctionToolCallback<?, ?> || toolCallback instanceof MethodToolCallback) {
 					Map<String, Object> toolContextMap = new HashMap<>(toolContext);
 					toolContextMap.putAll(Map.of(AGENT_STATE_CONTEXT_KEY, state, AGENT_CONFIG_CONTEXT_KEY, config, AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraStateFromToolCall));
 					result = toolCallback.call(req.getArguments(), new ToolContext(toolContextMap));
