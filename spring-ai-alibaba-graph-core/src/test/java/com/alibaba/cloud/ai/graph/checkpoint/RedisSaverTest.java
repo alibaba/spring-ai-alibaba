@@ -15,9 +15,19 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint;
 
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,6 +61,9 @@ import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -434,5 +447,247 @@ class RedisSaverTest {
 		assertInstanceOf(Map.class, deserializedMetadata.get("nested_object"));
 		Map<?, ?> map = (Map<?, ?>) deserializedMetadata.get("nested_object");
 		assertEquals("nested_value", map.get("nested_key"));
+	}
+
+	/**
+	 * Test that RedisSaver can be created with ObjectMapper from StateGraph's Jackson serializer.
+	 * This ensures consistency between StateGraph serialization and RedisSaver serialization.
+	 */
+	@Test
+	void testRedisSaverWithStateGraphJacksonSerializer() throws Exception {
+		// Create StateGraph with SpringAIJacksonStateSerializer
+		StateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
+		KeyStrategyFactory keyStrategyFactory = () -> Map.of("value", new ReplaceStrategy());
+		
+		StateGraph graph = new StateGraph("testGraph", keyStrategyFactory, serializer);
+		
+		// Get ObjectMapper from the serializer (if it's a Jackson serializer)
+		StateSerializer graphSerializer = graph.getStateSerializer();
+		assertInstanceOf(SpringAIJacksonStateSerializer.class, graphSerializer);
+		
+		SpringAIJacksonStateSerializer jacksonSerializer = (SpringAIJacksonStateSerializer) graphSerializer;
+		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
+		
+		// Create RedisSaver with the ObjectMapper from StateGraph's serializer
+		RedisSaver saverWithSerializer = new RedisSaver(redisson, objectMapper);
+		
+		// Test that it works correctly
+		String threadId = "test-serializer-thread-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+		
+		Checkpoint checkpoint = Checkpoint.builder()
+				.id("cp-serializer")
+				.state(Map.of("data", "test_value", "number", 42))
+				.nodeId("node1")
+				.nextNodeId("node2")
+				.build();
+		
+		saverWithSerializer.put(config, checkpoint);
+		
+		Optional<Checkpoint> retrieved = saverWithSerializer.get(config);
+		assertTrue(retrieved.isPresent());
+		assertEquals("test_value", retrieved.get().getState().get("data"));
+		assertEquals(42, retrieved.get().getState().get("number"));
+	}
+
+	/**
+	 * Test that StateGraph with different serializers works correctly with RedisSaver.
+	 * Note: RedisSaver uses JSON serialization, so it works best with Jackson-based serializers.
+	 */
+	@Test
+	void testStateGraphWithSerializerAndRedisSaver() throws Exception {
+		// Create StateGraph with SpringAIJacksonStateSerializer
+		StateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
+		KeyStrategyFactory keyStrategyFactory = () -> Map.of("steps", new ReplaceStrategy());
+		
+		StateGraph graph = new StateGraph("testGraph", keyStrategyFactory, serializer)
+			.addEdge(START, "node1")
+			.addNode("node1", node_async(state -> {
+				int steps = (int) state.value("steps").orElse(0);
+				return Map.of("steps", steps + 1);
+			}))
+			.addEdge("node1", END);
+		
+		// Get ObjectMapper from StateGraph's serializer
+		StateSerializer graphSerializer = graph.getStateSerializer();
+		assertInstanceOf(SpringAIJacksonStateSerializer.class, graphSerializer);
+		SpringAIJacksonStateSerializer jacksonSerializer = (SpringAIJacksonStateSerializer) graphSerializer;
+		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
+		
+		// Create RedisSaver using the same ObjectMapper
+		RedisSaver saver = new RedisSaver(redisson, objectMapper);
+		
+		// Compile graph with saver
+		CompileConfig compileConfig = CompileConfig.builder()
+			.saverConfig(SaverConfig.builder()
+				.register(saver)
+				.build())
+			.build();
+		
+		CompiledGraph compiledGraph = graph.compile(compileConfig);
+		
+		// Execute and verify
+		String threadId = "test-execution-thread-" + UUID.randomUUID();
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(threadId).build();
+		java.util.Optional<OverAllState> result = compiledGraph.invoke(Map.of(), runnableConfig);
+		
+		assertTrue(result.isPresent());
+		assertEquals(1, result.get().value("steps").orElse(0));
+		
+		// Verify checkpoint was saved
+		Optional<Checkpoint> checkpoint = saver.get(runnableConfig);
+		assertTrue(checkpoint.isPresent());
+		assertEquals(1, checkpoint.get().getState().get("steps"));
+	}
+
+	/**
+	 * Test that RedisSaver works correctly with StateGraph's default serializer.
+	 */
+	@Test
+	void testRedisSaverWithStateGraphDefaultSerializer() throws Exception {
+		// Create StateGraph with default serializer (should be JacksonSerializer)
+		KeyStrategyFactory keyStrategyFactory = () -> Map.of("value", new ReplaceStrategy());
+		StateGraph graph = new StateGraph("testGraph", keyStrategyFactory);
+		
+		// Verify default serializer is Jackson-based
+		StateSerializer graphSerializer = graph.getStateSerializer();
+		assertInstanceOf(SpringAIJacksonStateSerializer.class, graphSerializer);
+		
+		// Get ObjectMapper from default serializer
+		SpringAIJacksonStateSerializer jacksonSerializer = (SpringAIJacksonStateSerializer) graphSerializer;
+		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
+		
+		// Create RedisSaver with the ObjectMapper
+		RedisSaver saver = new RedisSaver(redisson, objectMapper);
+		
+		// Test serialization/deserialization
+		String threadId = "test-default-serializer-thread-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+		
+		// Create checkpoint with Message objects
+		List<Message> messages = List.of(
+			SystemMessage.builder().text("System message").build(),
+			UserMessage.builder().text("User message").build()
+		);
+		
+		Checkpoint checkpoint = Checkpoint.builder()
+			.id("cp-default")
+			.state(Map.of("messages", messages, "data", "test"))
+			.nodeId("node1")
+			.nextNodeId("node2")
+			.build();
+		
+		saver.put(config, checkpoint);
+		
+		Optional<Checkpoint> retrieved = saver.get(config);
+		assertTrue(retrieved.isPresent());
+		
+		// Verify messages are correctly deserialized
+		Object messagesObj = retrieved.get().getState().get("messages");
+		assertInstanceOf(List.class, messagesObj);
+		@SuppressWarnings("unchecked")
+		List<Object> retrievedMessages = (List<Object>) messagesObj;
+		assertEquals(2, retrievedMessages.size());
+		assertInstanceOf(SystemMessage.class, retrievedMessages.get(0));
+		assertInstanceOf(UserMessage.class, retrievedMessages.get(1));
+	}
+
+	/**
+	 * Test that using different ObjectMapper configurations affects serialization behavior.
+	 */
+	@Test
+	void testRedisSaverWithCustomObjectMapper() throws Exception {
+		// Create a custom ObjectMapper with StateGraph serializer configuration
+		ObjectMapper customObjectMapper = new ObjectMapper();
+		customObjectMapper = BaseCheckpointSaver.configureObjectMapper(customObjectMapper);
+		
+		// Create RedisSaver with custom ObjectMapper
+		RedisSaver saver = new RedisSaver(redisson, customObjectMapper);
+		
+		// Test that it works with Message objects
+		String threadId = "test-custom-mapper-thread-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+		
+		AssistantMessage assistantMsg = AssistantMessage.builder()
+			.content("Test response")
+			.build();
+		
+		Checkpoint checkpoint = Checkpoint.builder()
+			.id("cp-custom")
+			.state(Map.of("message", assistantMsg))
+			.nodeId("node1")
+			.nextNodeId("node2")
+			.build();
+		
+		saver.put(config, checkpoint);
+		
+		Optional<Checkpoint> retrieved = saver.get(config);
+		assertTrue(retrieved.isPresent());
+		
+		Object msgObj = retrieved.get().getState().get("message");
+		assertInstanceOf(AssistantMessage.class, msgObj);
+		
+		AssistantMessage deserialized = (AssistantMessage) msgObj;
+		assertEquals("Test response", deserialized.getText());
+	}
+
+	/**
+	 * Test consistency: StateGraph and RedisSaver should use compatible serialization.
+	 */
+	@Test
+	void testSerializerConsistencyBetweenStateGraphAndRedisSaver() throws Exception {
+		// Create StateGraph with specific serializer
+		StateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
+		KeyStrategyFactory keyStrategyFactory = () -> Map.of("test", new ReplaceStrategy());
+		
+		StateGraph graph = new StateGraph("testGraph", keyStrategyFactory, serializer);
+		
+		// Get ObjectMapper from StateGraph's serializer
+		StateSerializer graphSerializer = graph.getStateSerializer();
+		assertInstanceOf(SpringAIJacksonStateSerializer.class, graphSerializer);
+		SpringAIJacksonStateSerializer jacksonSerializer = (SpringAIJacksonStateSerializer) graphSerializer;
+		ObjectMapper graphObjectMapper = jacksonSerializer.objectMapper();
+		
+		// Create RedisSaver with the same ObjectMapper
+		RedisSaver saver = new RedisSaver(redisson, graphObjectMapper);
+		
+		// Verify they use compatible serialization
+		String threadId = "test-consistency-thread-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+		
+		// Create complex state with various types
+		Map<String, Object> complexState = new HashMap<>();
+		complexState.put("string", "value");
+		complexState.put("number", 123);
+		complexState.put("messages", List.of(
+			SystemMessage.builder().text("System").build(),
+			UserMessage.builder().text("User").build()
+		));
+		
+		Checkpoint checkpoint = Checkpoint.builder()
+			.id("cp-consistency")
+			.state(complexState)
+			.nodeId("node1")
+			.nextNodeId("node2")
+			.build();
+		
+		// Save and retrieve
+		saver.put(config, checkpoint);
+		Optional<Checkpoint> retrieved = saver.get(config);
+		
+		assertTrue(retrieved.isPresent());
+		Map<String, Object> retrievedState = retrieved.get().getState();
+		
+		// Verify all types are correctly preserved
+		assertEquals("value", retrievedState.get("string"));
+		assertEquals(123, retrievedState.get("number"));
+		
+		Object messagesObj = retrievedState.get("messages");
+		assertInstanceOf(List.class, messagesObj);
+		@SuppressWarnings("unchecked")
+		List<Object> messages = (List<Object>) messagesObj;
+		assertEquals(2, messages.size());
+		assertInstanceOf(SystemMessage.class, messages.get(0));
+		assertInstanceOf(UserMessage.class, messages.get(1));
 	}
 }

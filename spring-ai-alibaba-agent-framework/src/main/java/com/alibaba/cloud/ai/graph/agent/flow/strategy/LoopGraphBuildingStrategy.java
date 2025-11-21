@@ -52,7 +52,9 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
     @Override
     public StateGraph buildGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
         validateConfig(config);
-        StateGraph graph = new StateGraph(config.getName(), config.getKeyStrategyFactory());
+        StateGraph graph = config.getStateSerializer() != null
+                ? new StateGraph(config.getName(), config.getKeyStrategyFactory(), config.getStateSerializer())
+                : new StateGraph(config.getName(), config.getKeyStrategyFactory());
         Agent rootAgent = config.getRootAgent();
 
         // Add root transparent node
