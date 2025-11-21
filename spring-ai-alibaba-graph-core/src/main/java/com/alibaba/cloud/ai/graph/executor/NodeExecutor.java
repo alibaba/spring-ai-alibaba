@@ -240,20 +240,18 @@ public class NodeExecutor extends BaseGraphExecutor {
 
                     var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
 
-                    org.springframework.ai.chat.model.ChatResponse newResponse = new org.springframework.ai.chat.model.ChatResponse(
-                            List.of(newGeneration), response.getMetadata());
+                    ChatResponse newResponse = new ChatResponse(List.of(newGeneration), response.getMetadata());
                     lastChatResponseRef.set(newResponse);
 
                     if (currentMessage.hasToolCalls()) {
                         GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-                                .of(new StreamingOutput<>(currentMessage.getToolCalls().toString(), response, context.getCurrentNodeId(), context.getOverallState()));
+                                .of(context.buildStreamingOutput(currentMessage, response, context.getCurrentNodeId()));
                         lastGraphResponseRef.set(lastGraphResponse);
                         return lastGraphResponse;
                     }
 
                     GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-                            .of(new StreamingOutput(response.getResult().getOutput().getText(), context.getCurrentNodeId(),
-                                    context.getOverallState()));
+                            .of(context.buildStreamingOutput(response.getResult().getOutput(), response, context.getCurrentNodeId()));
 
                     // lastGraphResponseRef.set(lastGraphResponse);
                     return lastGraphResponse;
