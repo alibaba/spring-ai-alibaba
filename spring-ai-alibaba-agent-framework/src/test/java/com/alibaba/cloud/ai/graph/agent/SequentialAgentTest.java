@@ -355,8 +355,17 @@ class SequentialAgentTest {
                 .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户的自然语言，输出对应的SQL。")
                 .outputSchema("""
                         {
-                           "query": 用户的请求,
-                           "output": 生成SQL结果
+                            "$schema": "https://json-schema.org/draft/2020-12/schema",
+                            "type": "object",
+                            "properties": {
+                                "query": {
+                                    "type": "string"
+                                },
+                                "output": {
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": false
                         }
                         """)
                 .outputKey("sql")

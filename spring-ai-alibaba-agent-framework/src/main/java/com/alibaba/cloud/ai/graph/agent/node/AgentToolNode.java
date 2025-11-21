@@ -31,6 +31,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 
@@ -59,6 +60,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private List<ToolCallback> toolCallbacks;
 
+	private Map<String, Object> toolContext;
+
 	private List<ToolInterceptor> toolInterceptors = new ArrayList<>();
 
 	private ToolCallbackResolver toolCallbackResolver;
@@ -68,6 +71,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		this.enableActingLog = builder.enableActingLog;
 		this.toolCallbackResolver = builder.toolCallbackResolver;
 		this.toolCallbacks = builder.toolCallbacks;
+		this.toolContext = builder.toolContext;
 	}
 
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
@@ -193,15 +197,13 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 			String result;
 			try {
-				// FIXME, currently only FunctionToolCallback supports ToolContext.
-				if (toolCallback instanceof FunctionToolCallback<?, ?>) {
-					result = toolCallback.call(
-							req.getArguments(),
-							new ToolContext(Map.of(AGENT_STATE_CONTEXT_KEY, state, AGENT_CONFIG_CONTEXT_KEY, config, AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraStateFromToolCall))
-					);
-				}
-				else { // toolCallbacks not instance of FunctionToolCallback are considered MCP tools.
-					result = toolCallback.call(req.getArguments());
+				if (toolCallback instanceof FunctionToolCallback<?, ?> || toolCallback instanceof MethodToolCallback) { // toolCallbacks not instance of FunctionToolCallback are considered MCP tools.
+					Map<String, Object> toolContextMap = new HashMap<>(toolContext);
+					toolContextMap.putAll(Map.of(AGENT_STATE_CONTEXT_KEY, state, AGENT_CONFIG_CONTEXT_KEY, config, AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraStateFromToolCall));
+					result = toolCallback.call(req.getArguments(), new ToolContext(toolContextMap));
+				} else {
+					// FIXME, currently MCP Tool does not support State and RunnableConfig transmission in ToolContext.
+					result = toolCallback.call(req.getArguments(), new ToolContext(toolContext));
 				}
 
 				if (enableActingLog) {
@@ -252,6 +254,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
+		private Map<String, Object> toolContext = new HashMap<>();
+
 		private List<String> toolNames = new ArrayList<>();
 
 		private ToolCallbackResolver toolCallbackResolver;
@@ -281,6 +285,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		public Builder toolCallbackResolver(ToolCallbackResolver toolCallbackResolver) {
 			this.toolCallbackResolver = toolCallbackResolver;
+			return this;
+		}
+
+		public Builder toolContext(Map<String, Object> toolContext) {
+			this.toolContext = toolContext;
 			return this;
 		}
 

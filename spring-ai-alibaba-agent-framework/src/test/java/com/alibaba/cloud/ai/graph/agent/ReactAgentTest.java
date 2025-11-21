@@ -25,6 +25,11 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.convert.support.DefaultConversionService;
 
 import java.util.List;
 import java.util.Optional;
@@ -82,6 +87,28 @@ class ReactAgentTest {
 					", content='" + content + '\'' +
 					", style='" + style + '\'' +
 					'}';
+		}
+	}
+
+	// Inner class for BeanOutputConverter example
+	public static class ActorsFilms {
+		private String actor;
+		private List<String> films;
+
+		public String getActor() {
+			return actor;
+		}
+
+		public void setActor(String actor) {
+			this.actor = actor;
+		}
+
+		public List<String> getFilms() {
+			return films;
+		}
+
+		public void setFilms(List<String> films) {
+			this.films = films;
 		}
 	}
 
@@ -143,11 +170,21 @@ class ReactAgentTest {
 
 		// Customized outputSchema
 		String customSchema = """
-				请按照以下JSON格式输出：
 				{
-					"title": "诗歌标题",
-					"content": "诗歌正文内容",
-					"style": "诗歌风格（如：现代诗、古体诗等）"
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+					"type": "object",
+					"properties": {
+						"title": {
+							"type": "string"
+						},
+						"content": {
+							"type": "string"
+						},
+						"style": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false
 				}
 				""";
 
@@ -196,11 +233,24 @@ class ReactAgentTest {
 		
 
 		String jsonSchema = """
-				请严格按照以下JSON格式返回结果：
 				{
-					"summary": "内容摘要",
-					"keywords": ["关键词1", "关键词2", "关键词3"],
-					"sentiment": "情感倾向（正面/负面/中性）"
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+					"type": "object",
+					"properties": {
+						"summary": {
+							"type": "string"
+						},
+						"keywords": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						},
+						"sentiment": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false
 				}
 				""";
 
@@ -280,6 +330,78 @@ class ReactAgentTest {
 
 		AssistantMessage assistantMessage = agent.call("帮我写一首关于春天的现代诗。");
 		System.out.println(assistantMessage.getText());
+	}
+
+	@Test
+	public void testReactAgentWithBeanOutputConverter() throws Exception {
+		// Use BeanOutputConverter to generate outputSchema
+		BeanOutputConverter<List<ActorsFilms>> outputConverter = new BeanOutputConverter<>(
+				new ParameterizedTypeReference<List<ActorsFilms>>() { });
+
+		String format = outputConverter.getFormat();
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("actors_films_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.outputSchema(format)
+				.enableLogging(true)
+				.build();
+
+		AssistantMessage message = agent.call("列出3位知名演员及其代表作品，每位演员列出2-3部电影。");
+		assertNotNull(message, "Message should not be null");
+		assertNotNull(message.getText(), "Message text should not be null");
+		System.out.println("=== Output with BeanOutputConverter generated schema ===");
+		System.out.println(message.getText());
+
+		assertTrue(message.getText().contains("actor") || message.getText().contains("films"),
+				"Output should contain actor or films field");
+	}
+
+	@Test
+	public void testReactAgentWithMapOutputConverter() throws Exception {
+		// Use MapOutputConverter to generate outputSchema
+		MapOutputConverter mapOutputConverter = new MapOutputConverter();
+		String format = mapOutputConverter.getFormat();
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("map_output_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.outputSchema(format)
+				.enableLogging(true)
+				.build();
+
+		AssistantMessage message = agent.call("请提供一个包含姓名、年龄和职业的JSON对象。");
+		assertNotNull(message, "Message should not be null");
+		assertNotNull(message.getText(), "Message text should not be null");
+		System.out.println("=== Output with MapOutputConverter generated schema ===");
+		System.out.println(message.getText());
+
+		assertTrue(message.getText().length() > 0, "Output should not be empty");
+	}
+
+	@Test
+	public void testReactAgentWithListOutputConverter() throws Exception {
+		// Use ListOutputConverter to generate outputSchema
+		ListOutputConverter listOutputConverter = new ListOutputConverter(new DefaultConversionService());
+		String format = listOutputConverter.getFormat();
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("list_output_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.outputSchema(format)
+				.enableLogging(true)
+				.build();
+
+		AssistantMessage message = agent.call("请列出5个你最喜欢的编程语言。");
+		assertNotNull(message, "Message should not be null");
+		assertNotNull(message.getText(), "Message text should not be null");
+		System.out.println("=== Output with ListOutputConverter generated schema ===");
+		System.out.println(message.getText());
+
+		assertTrue(message.getText().length() > 0, "Output should not be empty");
 	}
 
 }

@@ -18,6 +18,8 @@ package org.springframework.ai.util.json;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
@@ -138,6 +140,24 @@ public final class JsonParser {
 		catch (JsonProcessingException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getType().getTypeName()),
 					ex);
+		}
+	}
+
+	/**
+	 * Converts a JSON string to a HashMap.
+	 * @param json the JSON string to convert
+	 * @return a HashMap containing the parsed JSON data
+	 * @throws IllegalStateException if the JSON string cannot be parsed
+	 */
+	public static Map<String, Object> toMap(String json) {
+		Assert.notNull(json, "json cannot be null");
+
+		try {
+			return OBJECT_MAPPER.readValue(json, new TypeReference<HashMap<String, Object>>() {
+			});
+		}
+		catch (JsonProcessingException ex) {
+			throw new IllegalStateException("Conversion from JSON to Map failed", ex);
 		}
 	}
 
