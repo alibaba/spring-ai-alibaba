@@ -227,7 +227,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
 							.of(context.buildStreamingOutput(currentMessage, response, context.getCurrentNodeId()));
 						lastGraphResponseRef.set(lastGraphResponse);
-						return lastGraphResponse;
+                        // Also update lastChatResponseRef to ensure consistency
+                        lastChatResponseRef.set(response);
+                        return lastGraphResponse;
 					}
 
 					final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),

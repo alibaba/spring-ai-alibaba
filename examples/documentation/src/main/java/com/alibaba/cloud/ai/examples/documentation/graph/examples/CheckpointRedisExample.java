@@ -45,7 +45,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * Redis 检查点持久化示例
  * 演示如何使用 Redis 数据库持久化工作流状态
  */
-public class CheckpointPostgresExample {
+public class CheckpointRedisExample {
 
 	/**
 	 * 初始化 RedisSaver
@@ -74,68 +74,57 @@ public class CheckpointPostgresExample {
 
 	/**
 	 * 完整示例: 使用 Redis 检查点持久化
+	 *
+	 * @return
 	 */
-	public static void testCheckpointWithRedis() throws Exception {
+	public static void testCheckpointWithRedis(StateGraph stateGraph) throws Exception {
 		// 初始化 Redis Saver
 		Config config = new Config();
 		config.useSingleServer()
 				.setAddress("redis://localhost:6379");
 
 		RedissonClient redisson = Redisson.create(config);
-		RedisSaver saver = new RedisSaver(redisson);
+		try {
+			RedisSaver saver = new RedisSaver(redisson);
 
-		SaverConfig saverConfig = SaverConfig.builder()
-				.register(saver)
-				.build();
+			SaverConfig saverConfig = SaverConfig.builder()
+					.register(saver)
+					.build();
 
-		// 定义状态策略
-		KeyStrategyFactory keyStrategyFactory = () -> {
-			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
-			keyStrategyMap.put("input", new ReplaceStrategy());
-			keyStrategyMap.put("agent_1:prop1", new ReplaceStrategy());
-			return keyStrategyMap;
-		};
+			// 使用检查点编译图
+			CompiledGraph workflow = stateGraph.compile(
+					CompileConfig.builder()
+							.saverConfig(saverConfig)
+							.build()
+			);
 
-		// 定义节点
-		var agent1 = node_async(state -> {
-			System.out.println("agent_1 执行中");
-			return Map.of("agent_1:prop1", "agent_1:test");
-		});
+			// 执行工作流
+			RunnableConfig runnableConfig = RunnableConfig.builder()
+					.threadId("test-thread-1")
+					.build();
 
-		// 构建图
-		StateGraph stateGraph = new StateGraph(keyStrategyFactory)
-				.addNode("agent_1", agent1)
-				.addEdge(START, "agent_1")
-				.addEdge("agent_1", END);
+			Map<String, Object> inputs = Map.of("input", "test1");
+			OverAllState result = workflow.invoke(inputs, runnableConfig).orElseThrow();
 
-		// 使用检查点编译图
-		CompiledGraph workflow = stateGraph.compile(
-				CompileConfig.builder()
-						.saverConfig(saverConfig)
-						.build()
-		);
+			// 获取检查点历史
+			List<StateSnapshot> history = (List<StateSnapshot>) workflow.getStateHistory(runnableConfig);
 
-		// 执行工作流
-		RunnableConfig runnableConfig = RunnableConfig.builder()
-				.threadId("test-thread-1")
-				.build();
+			System.out.println("检查点历史数量: " + history.size());
 
-		Map<String, Object> inputs = Map.of("input", "test1");
-		OverAllState result = workflow.invoke(inputs, runnableConfig).orElseThrow();
+			// 获取最后保存的检查点
+			StateSnapshot lastSnapshot = workflow.getState(runnableConfig);
 
-		// 获取检查点历史
-		List<StateSnapshot> history = (List<StateSnapshot>) workflow.getStateHistory(runnableConfig);
-
-		System.out.println("检查点历史数量: " + history.size());
-
-		// 获取最后保存的检查点
-		StateSnapshot lastSnapshot = workflow.getState(runnableConfig);
-
-		System.out.println("最后检查点节点: " + lastSnapshot.node());
+			System.out.println("最后检查点节点: " + lastSnapshot.node());
+			
+		} finally {
+			redisson.shutdown();
+		}
 	}
 
 	/**
 	 * 从 Redis 重新加载检查点
+	 *
+	 * @return
 	 */
 	public static void reloadCheckpointFromRedis(StateGraph stateGraph) throws GraphStateException {
 		// 创建新的 saver（重置缓存）
@@ -144,64 +133,113 @@ public class CheckpointPostgresExample {
 				.setAddress("redis://localhost:6379");
 
 		RedissonClient redisson = Redisson.create(config);
-		RedisSaver newSaver = new RedisSaver(redisson);
-
-		SaverConfig newSaverConfig = SaverConfig.builder()
-				.register(newSaver)
-				.build();
-
-		// 重新编译图
-		CompiledGraph reloadedWorkflow = stateGraph.compile(
-				CompileConfig.builder()
-						.saverConfig(newSaverConfig)
-						.build()
-		);
-
-		// 使用相同的 threadId 获取历史
-		RunnableConfig reloadConfig = RunnableConfig.builder()
-				.threadId("test-thread-1")
-				.build();
-
-		Collection<StateSnapshot> reloadedHistory = reloadedWorkflow.getStateHistory(reloadConfig);
-
-		System.out.println("重新加载的检查点历史数量: " + reloadedHistory.size());
+		try {
+			RedisSaver newSaver = new RedisSaver(redisson);
+			
+			SaverConfig newSaverConfig = SaverConfig.builder()
+					.register(newSaver)
+					.build();
+			
+			// 重新编译图
+			CompiledGraph reloadedWorkflow = stateGraph.compile(
+					CompileConfig.builder()
+							.saverConfig(newSaverConfig)
+							.build()
+			);
+			
+			// 使用相同的 threadId 获取历史
+			RunnableConfig reloadConfig = RunnableConfig.builder()
+					.threadId("test-thread-1")
+					.build();
+			
+			Collection<StateSnapshot> reloadedHistory = reloadedWorkflow.getStateHistory(reloadConfig);
+			
+			System.out.println("重新加载的检查点历史数量: " + reloadedHistory.size());
+		} finally {
+			redisson.shutdown();
+		}
+		
 	}
 
 	/**
 	 * 从特定检查点恢复
 	 */
-	public static void restoreFromCheckpoint(CompiledGraph graph) {
-		// 获取特定检查点
-		RunnableConfig checkpointConfig = RunnableConfig.builder()
-				.threadId("thread-id")
-				.checkPointId("specific-checkpoint-id")
-				.build();
-
-		// 从该检查点继续
-		graph.invoke(Map.of(), checkpointConfig);
-		System.out.println("从检查点恢复执行完成");
+	public static void restoreFromCheckpoint(StateGraph stateGraph) throws GraphStateException{
+		Config config = new Config();
+		config.useSingleServer()
+				.setAddress("redis://localhost:6379");
+		
+		RedissonClient redisson = Redisson.create(config);
+		try {
+			RedisSaver newSaver = new RedisSaver(redisson);
+			
+			SaverConfig newSaverConfig = SaverConfig.builder()
+					.register(newSaver)
+					.build();
+			
+			// 重新编译图
+			CompiledGraph reloadedWorkflow = stateGraph.compile(
+					CompileConfig.builder()
+							.saverConfig(newSaverConfig)
+							.build()
+			);
+			// 获取特定检查点
+			RunnableConfig checkpointConfig = RunnableConfig.builder()
+					.threadId("thread-id")
+					.checkPointId("specific-checkpoint-id")
+					.build();
+			
+			// 从该检查点继续
+			reloadedWorkflow.invoke(Map.of(), checkpointConfig);
+			System.out.println("从检查点恢复执行完成");
+		}
+		finally {
+			redisson.shutdown();
+		}
+		
 	}
 
 	public static void main(String[] args) {
 		System.out.println("=== Redis 检查点持久化示例 ===\n");
 
 		try {
+			
+			// 定义状态策略
+			KeyStrategyFactory keyStrategyFactory = () -> {
+				Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+				keyStrategyMap.put("input", new ReplaceStrategy());
+				keyStrategyMap.put("agent_1:prop1", new ReplaceStrategy());
+				return keyStrategyMap;
+			};
+			
+			// 定义节点
+			var agent1 = node_async(state -> {
+				System.out.println("agent_1 执行中");
+				return Map.of("agent_1:prop1", "agent_1:test");
+			});
+			
+			// 构建图
+			StateGraph stateGraph = new StateGraph(keyStrategyFactory)
+					.addNode("agent_1", agent1)
+					.addEdge(START, "agent_1")
+					.addEdge("agent_1", END);
+			
 			// 示例 1: 完整示例 - 使用 Redis 检查点持久化
 			System.out.println("示例 1: 使用 Redis 检查点持久化");
-			System.out.println("注意: 此示例需要 Redis 连接，跳过执行");
-			// testCheckpointWithRedis();
+			System.out.println("注意: 此示例需要 Redis 连接");
+			testCheckpointWithRedis(stateGraph);
 			System.out.println();
 
 			// 示例 2: 从 Redis 重新加载检查点
 			System.out.println("示例 2: 从 Redis 重新加载检查点");
-			System.out.println("注意: 此示例需要 Redis 连接，跳过执行");
-			// reloadCheckpointFromRedis(stateGraph);
+			System.out.println("注意: 此示例需要 Redis 连接");
+			reloadCheckpointFromRedis(stateGraph);
 			System.out.println();
 
 			// 示例 3: 从特定检查点恢复
 			System.out.println("示例 3: 从特定检查点恢复");
-			System.out.println("注意: 此示例需要有效的 CompiledGraph 和 checkpointId，跳过执行");
-			// restoreFromCheckpoint(graph);
+			System.out.println("注意: 此示例需要有效的 CompiledGraph 和 checkpointId");
+			restoreFromCheckpoint(stateGraph);
 			System.out.println();
 
 			System.out.println("所有示例执行完成");

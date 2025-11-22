@@ -151,6 +151,15 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.messages(messages)
 				.options(toolCallingChatOptions)
 				.context(config.metadata().orElse(new HashMap<>()));
+
+        // Extract tool names from toolCallbacks and pass them to ModelRequest
+        if (toolCallbacks != null && !toolCallbacks.isEmpty()) {
+            List<String> toolNames = toolCallbacks.stream()
+                    .map(callback -> callback.getToolDefinition().name())
+                    .toList();
+            requestBuilder.tools(toolNames);
+        }
+
 		if (StringUtils.hasLength(this.systemPrompt)) {
 			requestBuilder.systemMessage(new SystemMessage(this.systemPrompt));
 		}

@@ -133,17 +133,46 @@ public class StateGraph {
 	 * serializer.
 	 * @param name the name of the graph
 	 * @param keyStrategyFactory the factory for providing key strategies
-	 * @param stateSerializer the plain text state serializer to use
+	 * @param stateSerializer the state serializer to use
 	 */
-	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory, PlainTextStateSerializer stateSerializer) {
+	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory, StateSerializer stateSerializer) {
 		this.name = name;
 		this.keyStrategyFactory = keyStrategyFactory;
-		this.stateSerializer = stateSerializer;
+		this.stateSerializer = Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
 	}
 
-	public StateGraph(KeyStrategyFactory keyStrategyFactory, PlainTextStateSerializer stateSerializer) {
+	/**
+	 * Constructs a StateGraph with the specified key strategy factory and state serializer.
+	 * @param keyStrategyFactory the factory for providing key strategies
+	 * @param stateSerializer the state serializer to use
+	 */
+	public StateGraph(KeyStrategyFactory keyStrategyFactory, StateSerializer stateSerializer) {
 		this.keyStrategyFactory = keyStrategyFactory;
-		this.stateSerializer = stateSerializer;
+		this.stateSerializer = Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
+	}
+
+	/**
+	 * Constructs a StateGraph with the specified name, key strategy factory, and state
+	 * serializer.
+	 * @param name the name of the graph
+	 * @param keyStrategyFactory the factory for providing key strategies
+	 * @param stateSerializer the plain text state serializer to use
+	 * @deprecated Use {@link #StateGraph(String, KeyStrategyFactory, StateSerializer)} instead
+	 */
+	@Deprecated
+	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory, PlainTextStateSerializer stateSerializer) {
+		this(name, keyStrategyFactory, (StateSerializer) stateSerializer);
+	}
+
+	/**
+	 * Constructs a StateGraph with the specified key strategy factory and plain text state serializer.
+	 * @param keyStrategyFactory the factory for providing key strategies
+	 * @param stateSerializer the plain text state serializer to use
+	 * @deprecated Use {@link #StateGraph(KeyStrategyFactory, StateSerializer)} instead
+	 */
+	@Deprecated
+	public StateGraph(KeyStrategyFactory keyStrategyFactory, PlainTextStateSerializer stateSerializer) {
+		this(keyStrategyFactory, (StateSerializer) stateSerializer);
 	}
 
 	/**
@@ -152,11 +181,11 @@ public class StateGraph {
 	 * @param name the name of the graph
 	 * @param keyStrategyFactory the factory for providing key strategies
 	 * @param stateSerializer the SpringAI state serializer to use
+	 * @deprecated Use {@link #StateGraph(String, KeyStrategyFactory, StateSerializer)} instead
 	 */
+	@Deprecated
 	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory, SpringAIStateSerializer stateSerializer) {
-		this.name = name;
-		this.keyStrategyFactory = keyStrategyFactory;
-		this.stateSerializer = stateSerializer;
+		this(name, keyStrategyFactory, (StateSerializer) stateSerializer);
 	}
 
 	/**
@@ -164,10 +193,11 @@ public class StateGraph {
 	 * serializer.
 	 * @param keyStrategyFactory the factory for providing key strategies
 	 * @param stateSerializer the SpringAI state serializer to use
+	 * @deprecated Use {@link #StateGraph(KeyStrategyFactory, StateSerializer)} instead
 	 */
+	@Deprecated
 	public StateGraph(KeyStrategyFactory keyStrategyFactory, SpringAIStateSerializer stateSerializer) {
-		this.keyStrategyFactory = keyStrategyFactory;
-		this.stateSerializer = stateSerializer;
+		this(keyStrategyFactory, (StateSerializer) stateSerializer);
 	}
 
 	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory) {
@@ -186,7 +216,7 @@ public class StateGraph {
 	}
 
 	/**
-	 * Default constructor that initializes a StateGraph with a Gson-based state
+	 * Default constructor that initializes a StateGraph with a Jackson-based state
 	 * serializer.
 	 */
 	public StateGraph() {
