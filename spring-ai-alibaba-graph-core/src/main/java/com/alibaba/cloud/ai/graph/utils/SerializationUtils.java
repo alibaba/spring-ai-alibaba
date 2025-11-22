@@ -54,7 +54,11 @@ public class SerializationUtils {
 			// Try to create an instance of the same class
 			var constructor = original.getClass().getDeclaredConstructor();
 			constructor.setAccessible(true);  // Handle non-public constructors
-			copy = constructor.newInstance();
+			Object instance = constructor.newInstance();
+			if (!(instance instanceof Map)) {
+				throw new IllegalStateException("Constructor did not produce a Map instance: " + original.getClass().getName());
+			}
+			copy = (Map<String, Object>) instance;
 			log.debug("Successfully preserved Map type: {}", original.getClass().getName());
 		} catch (Exception e) {
 			// If instantiation fails, fall back to HashMap
