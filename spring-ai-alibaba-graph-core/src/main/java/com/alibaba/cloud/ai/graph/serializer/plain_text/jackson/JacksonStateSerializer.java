@@ -280,7 +280,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 	}
 
 	/**
-	 * Deep normalize a value (for use inside GraphResponse/CompletableFuture).
+	 * Deep normalize a value (for use inside GraphResponse/ChatResponse/CompletableFuture).
 	 * Recursively normalizes all containers.
 	 */
 	private Object deepNormalizeValue(Object value) {
