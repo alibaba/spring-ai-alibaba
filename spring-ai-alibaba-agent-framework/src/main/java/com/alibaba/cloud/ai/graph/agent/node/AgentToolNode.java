@@ -107,7 +107,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 				toolResponses.add(response.toToolResponse());
 			}
 
-			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(toolResponses, Map.of());
+			ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+				.responses(toolResponses)
+				.metadata(Map.of())
+				.build();
 
 			if (enableActingLog) {
 				logger.info("[ThreadId {}] Agent {} acting returned: {}", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, toolResponseMessage);
@@ -145,7 +148,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 			}
 
 			List<Object> newMessages = new ArrayList<>();
-			ToolResponseMessage newToolResponseMessage = new ToolResponseMessage(allResponses, Map.of());
+			ToolResponseMessage newToolResponseMessage = ToolResponseMessage.builder()
+				.responses(allResponses)
+				.metadata(Map.of())
+				.build();
 			newMessages.add(newToolResponseMessage);
 			newMessages.add(new RemoveByHash<>(assistantMessage));
 			updatedState.put("messages", newMessages);

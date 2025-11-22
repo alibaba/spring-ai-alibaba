@@ -38,7 +38,10 @@ class ToolResponseMessageSerializer implements Serializer<ToolResponseMessage> {
 	public ToolResponseMessage read(ObjectInput in) throws IOException, ClassNotFoundException {
 		var response = (List<ToolResponseMessage.ToolResponse>) in.readObject();
 		var metadata = (Map<String, Object>) in.readObject();
-		return new ToolResponseMessage(response, metadata);
+		return ToolResponseMessage.builder()
+			.responses(response)
+			.metadata(metadata)
+			.build();
 	}
 
 }
