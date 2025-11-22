@@ -44,7 +44,9 @@ public class ParallelGraphBuildingStrategy implements FlowGraphBuildingStrategy 
 		validateConfig(config);
 		validateParallelConfig(config);
 
-		StateGraph graph = new StateGraph(config.getName(), config.getKeyStrategyFactory());
+		StateGraph graph = config.getStateSerializer() != null
+				? new StateGraph(config.getName(), config.getKeyStrategyFactory(), config.getStateSerializer())
+				: new StateGraph(config.getName(), config.getKeyStrategyFactory());
 		ParallelAgent rootAgent = (ParallelAgent) config.getRootAgent();
 
 		// Add root transparent node

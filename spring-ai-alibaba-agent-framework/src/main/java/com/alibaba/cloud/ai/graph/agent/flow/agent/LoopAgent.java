@@ -62,7 +62,7 @@ public class LoopAgent extends FlowAgent {
     public static final String LOOP_STRATEGY = "loopStrategy";
 
     private LoopAgent(LoopAgentBuilder builder) throws GraphStateException {
-        super(builder.name, builder.description, builder.compileConfig, builder.subAgents);
+        super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer);
         this.loopStrategy = builder.loopStrategy;
     }
 

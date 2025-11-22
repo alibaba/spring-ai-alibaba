@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 
 import java.util.List;
 
@@ -43,6 +44,8 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	public BaseCheckpointSaver saver;
 
 	public List<Agent> subAgents;
+
+	public StateSerializer stateSerializer;
 
 	/**
 	 * Sets the agent name.
@@ -86,6 +89,16 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	 */
 	public B subAgents(List<Agent> subAgents) {
 		this.subAgents = subAgents;
+		return self();
+	}
+
+	/**
+	 * Sets the state serializer for the agent.
+	 * @param stateSerializer the state serializer to use
+	 * @return this builder instance for method chaining
+	 */
+	public B stateSerializer(StateSerializer stateSerializer) {
+		this.stateSerializer = stateSerializer;
 		return self();
 	}
 

@@ -43,7 +43,9 @@ public class RoutingGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 		validateConfig(config);
 		validateRoutingConfig(config);
 
-		StateGraph graph = new StateGraph(config.getName(), config.getKeyStrategyFactory());
+		StateGraph graph = config.getStateSerializer() != null
+				? new StateGraph(config.getName(), config.getKeyStrategyFactory(), config.getStateSerializer())
+				: new StateGraph(config.getName(), config.getKeyStrategyFactory());
 		Agent rootAgent = config.getRootAgent();
 
 		// Add root transparent node

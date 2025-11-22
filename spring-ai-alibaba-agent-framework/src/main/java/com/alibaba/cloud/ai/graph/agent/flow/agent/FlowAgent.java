@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 
 
 
@@ -37,10 +38,20 @@ public abstract class FlowAgent extends Agent {
 
 	protected List<Agent> subAgents;
 
-	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents){
+	protected StateSerializer stateSerializer;
+
+	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents) {
 		super(name, description);
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
+	}
+
+	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
+			StateSerializer stateSerializer) throws GraphStateException {
+		super(name, description);
+		this.compileConfig = compileConfig;
+		this.subAgents = subAgents;
+		this.stateSerializer = stateSerializer;
 	}
 
 	@Override
@@ -50,6 +61,11 @@ public abstract class FlowAgent extends Agent {
 			.name(this.name())
 			.rootAgent(this)
 			.subAgents(this.subAgents());
+
+		// Set state serializer if available
+		if (this.stateSerializer != null) {
+			config.stateSerializer(this.stateSerializer);
+		}
 
 		// Delegate to specific graph builder based on agent type
 		return buildSpecificGraph(config);
