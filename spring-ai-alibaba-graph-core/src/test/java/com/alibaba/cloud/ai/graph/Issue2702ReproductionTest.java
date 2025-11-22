@@ -54,12 +54,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>Root Cause:
  * - DashScope API returns usage-only chunks when streamUsage=true
  * - These chunks have null Generation.getOutput() or null ChatResponse.getResult()
- * - NodeExecutor.java line 198 and GraphFluxGenerator.java line 81 did not handle null checks
+ * - NodeExecutor.java lines 419-425 and 500-506 did not handle null checks
  * 
  * <p>Solution:
  * - Added defensive null checks in NodeExecutor for response.getResult() and lastResponse.getResult()
  * - Added filter(Objects::nonNull) to remove null responses from the stream
- * - Added similar null checks in GraphFluxGenerator's mergeMessage function
  * 
  * @see <a href="https://github.com/alibaba/spring-ai-alibaba/issues/2702">Issue #2702</a>
  */
