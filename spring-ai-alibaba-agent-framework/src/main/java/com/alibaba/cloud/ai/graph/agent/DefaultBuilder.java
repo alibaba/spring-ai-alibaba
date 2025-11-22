@@ -51,7 +51,7 @@ public class DefaultBuilder extends Builder {
 		if (chatClient == null) {
 
 			ChatClient.Builder clientBuilder = ChatClient.builder(model, this.observationRegistry == null ? ObservationRegistry.NOOP : this.observationRegistry,
-					this.customObservationConvention);
+					this.customObservationConvention, null);
 
 			if (chatOptions != null) {
 				clientBuilder.defaultOptions(chatOptions);
