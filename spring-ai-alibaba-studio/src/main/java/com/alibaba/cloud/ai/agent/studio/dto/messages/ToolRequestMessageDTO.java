@@ -87,7 +87,11 @@ public class ToolRequestMessageDTO implements MessageDTO {
 			}
 		}
 
-		return new AssistantMessage(this.content, this.metadata, springToolCalls);
+		return AssistantMessage.builder()
+			.content(this.content)
+			.properties(this.metadata)
+			.toolCalls(springToolCalls)
+			.build();
 	}
 
 	// Getters and Setters

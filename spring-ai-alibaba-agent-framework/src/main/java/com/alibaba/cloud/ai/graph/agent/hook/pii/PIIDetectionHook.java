@@ -145,12 +145,12 @@ public class PIIDetectionHook extends ModelHook {
 		}
 
 		// Create updated message
-		AssistantMessage updatedMessage = new AssistantMessage(
-			result.redactedText,
-			aiMessage.getMetadata(),
-			aiMessage.getToolCalls(),
-			aiMessage.getMedia()
-		);
+		AssistantMessage updatedMessage = AssistantMessage.builder()
+			.content(result.redactedText)
+			.properties(aiMessage.getMetadata())
+			.toolCalls(aiMessage.getToolCalls())
+			.media(aiMessage.getMedia())
+			.build();
 
 		List<Message> updatedMessages = new ArrayList<>(messages);
 		updatedMessages.set(lastIndex, updatedMessage);
@@ -200,8 +200,12 @@ public class PIIDetectionHook extends ModelHook {
 			return message;
 		}
 
-		return new AssistantMessage(result.redactedText, message.getMetadata(),
-				message.getToolCalls(), message.getMedia());
+		return AssistantMessage.builder()
+			.content(result.redactedText)
+			.properties(message.getMetadata())
+			.toolCalls(message.getToolCalls())
+			.media(message.getMedia())
+			.build();
 	}
 
 	private ToolResponseMessage processToolResponse(ToolResponseMessage message) {
@@ -227,7 +231,12 @@ public class PIIDetectionHook extends ModelHook {
 			}
 		}
 
-		return hasChanges ? new ToolResponseMessage(responses, message.getMetadata()) : message;
+		return hasChanges
+			? ToolResponseMessage.builder()
+				.responses(responses)
+				.metadata(message.getMetadata())
+				.build()
+			: message;
 	}
 
 	private ProcessResult processText(String text) {

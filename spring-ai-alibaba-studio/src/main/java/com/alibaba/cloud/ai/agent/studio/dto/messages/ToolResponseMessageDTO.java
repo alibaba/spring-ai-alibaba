@@ -86,7 +86,10 @@ public class ToolResponseMessageDTO implements MessageDTO {
 			}
 		}
 
-		return new ToolResponseMessage(springResponses, this.metadata);
+		return ToolResponseMessage.builder()
+			.responses(springResponses)
+			.metadata(this.metadata)
+			.build();
 	}
 
 	// Getters and Setters
