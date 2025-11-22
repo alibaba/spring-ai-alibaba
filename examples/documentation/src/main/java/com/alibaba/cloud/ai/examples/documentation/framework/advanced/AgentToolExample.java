@@ -115,9 +115,19 @@ public class AgentToolExample {
 		// 定义子Agent的输入Schema
 		String writerInputSchema = """
 				{
-				    "topic": "文章主题",
-				    "wordCount": "字数要求（整数）",
-				    "style": "文章风格（如：散文、诗歌等）"
+					"type": "object",
+					"properties": {
+						"topic": {
+							"type": "string"
+						},
+						"wordCount": {
+							"type": "integer"
+						},
+						"style": {
+							"type": "string"
+						}
+					},
+					"required": ["topic", "wordCount", "style"]
 				}
 				""";
 
@@ -182,11 +192,21 @@ public class AgentToolExample {
 	public void example4_agentToolWithOutputSchema() throws GraphRunnerException {
 		// 定义输出Schema
 		String writerOutputSchema = """
-				请按照以下JSON格式返回：
 				{
-				    "title": "文章标题",
-				    "content": "文章正文内容",
-				    "characterCount": "文章字符数（整数）"
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+					"type": "object",
+					"properties": {
+						"title": {
+							"type": "string"
+						},
+						"content": {
+							"type": "string"
+						},
+						"characterCount": {
+							"type": "integer"
+						}
+					},
+					"additionalProperties": false
 				}
 				""";
 
