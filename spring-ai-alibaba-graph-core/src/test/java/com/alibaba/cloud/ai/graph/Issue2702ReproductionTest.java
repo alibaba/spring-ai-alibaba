@@ -113,8 +113,7 @@ public class Issue2702ReproductionTest {
 	 * 
 	 * <p>This test verifies that:
 	 * 1. NodeExecutor properly handles ChatResponse objects with null results
-	 * 2. GraphFluxGenerator properly handles null checks in mergeMessage
-	 * 3. The streaming completes without throwing NullPointerException
+	 * 2. The streaming completes without throwing NullPointerException
 	 */
 	@Test
 	public void testStreamingWithNullResultShouldNotThrowNPE() throws Exception {
