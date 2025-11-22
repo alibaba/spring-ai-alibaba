@@ -102,15 +102,38 @@ public class WriteTodosTool implements BiFunction<WriteTodosTool.Request, ToolCo
 
 	@Override
 	public Response apply(Request request, ToolContext toolContext) {
-		// Extract state from ToolContext
-		Map<String, Object> contextData = toolContext.getContext();
-		Map<String, Object> extraState = (Map<String, Object>)contextData.get(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY);
+		try {
+			// Extract state from ToolContext
+			Map<String, Object> contextData = toolContext.getContext();
+			if (contextData == null) {
+				return new Response("Error: Tool context is not available");
+			}
 
-		// Update the state with todos
-		extraState.put("todos", request.todos);
+			Object extraStateObj = contextData.get(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY);
+			if (extraStateObj == null) {
+				return new Response("Error: Extra state is not initialized");
+			}
 
-		// Return the tool response message
-		return new Response("Updated todo list to " + request.todos);
+			if (!(extraStateObj instanceof Map)) {
+				return new Response("Error: Extra state has invalid type");
+			}
+
+			@SuppressWarnings("unchecked")
+		Map<String, Object> extraState = (Map<String, Object>) extraStateObj;
+
+			// Update the state with todos
+			extraState.put("todos", request.todos);
+
+			// Return the tool response message
+			return new Response("Updated todo list to " + request.todos);
+
+		}
+		catch (ClassCastException e) {
+			return new Response("Error: Invalid state type - " + e.getMessage());
+		}
+		catch (Exception e) {
+			return new Response("Error: Failed to update todos - " + e.getMessage());
+		}
 	}
 
 
