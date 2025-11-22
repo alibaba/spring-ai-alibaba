@@ -383,7 +383,11 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	@SuppressWarnings("unchecked")
 	public String call(@NonNull final String input, final ToolContext toolContext) {
 		try {
-			logger.info("[call] input: {} toolContext: {}", input, JacksonUtils.toJson(toolContext));
+			try {
+				logger.info("[call] input: {} toolContext: {}", input, JacksonUtils.toJson(toolContext));
+			} catch (Exception e) {
+				// Ignore logging errors
+			}
 
 			// 参数验证
 			if (this.toolDefinition == null) {

@@ -434,12 +434,27 @@ public class AgentsExample {
 				.build();
 
 		String customSchema = """
-				请严格按照以下JSON格式返回结果：
 				{
-					"summary": "内容摘要",
-					"keywords": ["关键词1", "关键词2", "关键词3"],
-					"sentiment": "情感倾向（正面/负面/中性）",
-					"confidence": 0.95
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+					"type": "object",
+					"properties": {
+						"summary": {
+							"type": "string"
+						},
+						"keywords": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						},
+						"sentiment": {
+							"type": "string"
+						},
+						"confidence": {
+							"type": "number"
+						}
+					},
+					"additionalProperties": false
 				}
 				""";
 

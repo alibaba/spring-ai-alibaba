@@ -90,13 +90,13 @@ class ReactAgentOpenAiTest {
 	void setUp() {
 		// Create OpenAiApi instance using the API key from environment variable
 		OpenAiApi openAiApi = OpenAiApi.builder()
-				.baseUrl("https://dashscope.aliyuncs.com/compatible-mode/")
-			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-//			.baseUrl(System.getenv("AI_DEEPSEEK_API_BASE_URL"))
+//				.baseUrl("https://dashscope.aliyuncs.com/compatible-mode/")
+			.apiKey(System.getenv("AI_OPENAI_API_KEY"))
+			.baseUrl(System.getenv("AI_OPENAI_API_BASE_URL"))
 			.build();
 
 		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
-				.defaultOptions(OpenAiChatOptions.builder().model("qwen-max").build())
+				.defaultOptions(OpenAiChatOptions.builder().model("o1-mini-0912").build())
 				.openAiApi(openAiApi).build();
 
 		// Create OpenAi ChatModel instance
@@ -139,7 +139,6 @@ class ReactAgentOpenAiTest {
 
 	@Test
 	public void testReactAgentMessage() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver())
 				.build();
 		AssistantMessage message = agent.call("帮我写一篇100字左右散文。");
@@ -148,15 +147,24 @@ class ReactAgentOpenAiTest {
 
 	@Test
 	public void testReactAgentWithOutputSchema() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
 
 		// Customized outputSchema
 		String customSchema = """
-				请按照以下JSON格式输出：
 				{
-					"title": "诗歌标题",
-					"content": "诗歌正文内容",
-					"style": "诗歌风格（如：现代诗、古体诗等）"
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+					"type": "object",
+					"properties": {
+						"title": {
+							"type": "string"
+						},
+						"content": {
+							"type": "string"
+						},
+						"style": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false
 				}
 				""";
 
@@ -179,7 +187,7 @@ class ReactAgentOpenAiTest {
 
 	@Test
 	public void testReactAgentWithOutputType() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+
 
 		// outputType will be automatically convert to schema
 		ReactAgent agent = ReactAgent.builder()
@@ -202,14 +210,27 @@ class ReactAgentOpenAiTest {
 
 	@Test
 	public void testReactAgentWithOutputSchemaAndInvoke() throws Exception {
-		CompileConfig compileConfig = getCompileConfig();
+
 
 		String jsonSchema = """
-				请严格按照以下JSON格式返回结果：
 				{
-					"summary": "内容摘要",
-					"keywords": ["关键词1", "关键词2", "关键词3"],
-					"sentiment": "情感倾向（正面/负面/中性）"
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+					"type": "object",
+					"properties": {
+						"summary": {
+							"type": "string"
+						},
+						"keywords": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						},
+						"sentiment": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false
 				}
 				""";
 
