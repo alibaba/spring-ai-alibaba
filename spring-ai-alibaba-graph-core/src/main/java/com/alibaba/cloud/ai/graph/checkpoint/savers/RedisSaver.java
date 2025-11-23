@@ -209,9 +209,6 @@ public class RedisSaver implements BaseCheckpointSaver {
 					linkedList.push(checkpoint); // Add Checkpoint
 					redisClient.set(PREFIX + threadId, objectMapper.writeValueAsString(linkedList));
 					return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
-				} else {
-					// If we can't get the lock, throw an exception to indicate the operation failed
-					throw new RuntimeException("Unable to acquire lock for thread: " + threadId);
 				}
 			} catch (InterruptedException e) {
 				throw new RuntimeException(e);
