@@ -436,7 +436,10 @@ class RedisSaverTest {
 				new ToolResponseMessage.ToolResponse("tool_call_1", "calculator", "{\"result\": 42}"),
 				new ToolResponseMessage.ToolResponse("tool_call_2", "weather", "{\"temperature\": 25}"));
 
-		ToolResponseMessage original = new ToolResponseMessage(responses, metadata);
+		ToolResponseMessage original = ToolResponseMessage.builder()
+			.responses(responses)
+			.metadata(metadata)
+			.build();
 
 		Checkpoint checkpoint = Checkpoint.builder()
 				.id("cp-tool")
