@@ -95,7 +95,7 @@ public class ReactAgent extends BaseAgent {
 	
 	private StateSerializer stateSerializer;
 
-    private static Boolean hasTools;
+    private static Boolean hasTools = false;
 
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
@@ -120,11 +120,13 @@ public class ReactAgent extends BaseAgent {
 		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
 			this.llmNode.setModelInterceptors(this.modelInterceptors);
 		}
-		if (this.toolInterceptors != null && !this.toolInterceptors.isEmpty()) {
-            // Set tools flag if tool interceptors are present.
-            hasTools = true;
+        boolean toolInterceptorsPresent = this.toolInterceptors != null && !this.toolInterceptors.isEmpty();
+		if (toolInterceptorsPresent) {
 			this.toolNode.setToolInterceptors(this.toolInterceptors);
 		}
+
+        // Set tools flag if tool interceptors are present.
+        hasTools = toolInterceptorsPresent && (toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty());
 	}
 
 	public static Builder builder() {
