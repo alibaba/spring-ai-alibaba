@@ -159,6 +159,14 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Jedis for Redis connectivity -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>${jedis.version}</version>
+            <optional>true</optional>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.mongodb/mongodb-driver-sync -->
         <dependency>
             <groupId>org.mongodb</groupId>
