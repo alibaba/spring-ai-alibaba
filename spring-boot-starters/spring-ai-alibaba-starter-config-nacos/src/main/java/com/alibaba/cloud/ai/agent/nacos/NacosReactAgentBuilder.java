@@ -91,7 +91,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		}
 		else {
 			clientBuilder = ChatClient.builder(model, observationConfiguration.getObservationRegistry() == null ? ObservationRegistry.NOOP : observationConfiguration.getObservationRegistry(), nacosOptions.getObservationConfiguration()
-					.getChatClientObservationConvention());
+					.getChatClientObservationConvention(), null);
 		}
 
 		clientBuilder.defaultOptions(chatOptions);
