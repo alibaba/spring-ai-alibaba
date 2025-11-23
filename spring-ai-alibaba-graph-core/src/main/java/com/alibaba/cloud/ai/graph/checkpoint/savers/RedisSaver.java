@@ -208,8 +208,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 					}
 					linkedList.push(checkpoint); // Add Checkpoint
 					redisClient.set(PREFIX + threadId, objectMapper.writeValueAsString(linkedList));
-					return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 				}
+                return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 			} catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			} finally {
