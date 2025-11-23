@@ -78,6 +78,7 @@ class RedisSaverTest {
 		if (REDIS_MODE_CONTAINER.equals(redisMode)) {
 			setupContainerRedis();
 		} else if (REDIS_MODE_LOCAL.equals(redisMode)) {
+            // Setup local Redis
 			setupLocalRedis();
 		} else {
 			throw new IllegalArgumentException("Invalid redis.mode: " + redisMode + ". Use 'container' or 'local'");
