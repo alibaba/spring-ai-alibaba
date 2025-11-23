@@ -121,7 +121,7 @@ public class ReactAgent extends BaseAgent {
 			this.llmNode.setModelInterceptors(this.modelInterceptors);
 		}
 		if (this.toolInterceptors != null && !this.toolInterceptors.isEmpty()) {
-            // Set tools flag, for init graph.
+            // Set tools flag if tool interceptors are present.
             hasTools = true;
 			this.toolNode.setToolInterceptors(this.toolInterceptors);
 		}
