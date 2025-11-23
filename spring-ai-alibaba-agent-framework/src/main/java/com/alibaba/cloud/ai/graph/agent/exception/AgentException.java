@@ -23,15 +23,15 @@ package com.alibaba.cloud.ai.graph.agent.exception;
 
 public class AgentException extends RuntimeException{
 
-    public  AgentException(String s) {
+    public AgentException(String s) {
         super(s);
     }
 
-    public  AgentException(String s, Throwable cause) {
+    public AgentException(String s, Throwable cause) {
         super(s, cause);
     }
 
-    public  AgentException(Throwable cause) {
+    public AgentException(Throwable cause) {
         super(cause);
     }
 
