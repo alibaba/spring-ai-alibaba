@@ -174,10 +174,8 @@ public class ReactAgent extends BaseAgent {
         return state.flatMap(s -> s.value("messages"))
                 .stream()
                 .flatMap(messageList -> ((List<?>) messageList).stream()
-                        .filter(msg -> msg instanceof Message)
-                        .map(msg -> (Message) msg))
-                .filter(msg -> msg instanceof AssistantMessage)
-                .map(msg -> (AssistantMessage) msg)
+                        .filter(msg -> msg instanceof AssistantMessage)
+                        .map(msg -> (AssistantMessage) msg))
                 .reduce((first, second) -> second)
                 .orElseThrow(() -> new AgentException("No AssistantMessage found in 'messages' state"));
 	}
