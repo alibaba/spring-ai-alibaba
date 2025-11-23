@@ -55,63 +55,69 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 
 1. Download the code.
 
-```shell
-git clone https://github.com/alibaba/spring-ai-alibaba.git
-cd examples/chatbot
-```
+	```shell
+	git clone https://github.com/alibaba/spring-ai-alibaba.git
+	cd examples/chatbot
+	```
 
 2. Start the ChatBot.
 
-```shell
-mvn spring-boot:run
-```
+	Before start, set API-KEY firat (visit <a href="https://bailian.console.aliyun.com/?apiKey=1&tab=api#/api" target="_blank">Aliyun Bailian</a> to get API-KEY):
+	```shell
+	# this example uses 'spring-ai-alibaba-starter-dashscope', visit https://java2ai.com to learn how to use OpenAI/DeepSeek.
+	export AI_DASHSCOPE_API_KEY=your-api-key
+	```
+	
+	```shell
+	mvn spring-boot:run
+	```
 
 3. Chat with ChatBot.
 
-Open the browser and visit [http://localhost:8080/chatui/index.html](http://localhost:8080/chatui/index.html) to chat with the ChatBot.
-
+	Open the browser and visit [http://localhost:8080/chatui/index.html](http://localhost:8080/chatui/index.html) to chat with the ChatBot.
+	
 <p align="center">
-    <img src="./docs/imgs/chatbot-chat-ui.gif" alt="chatbot-ui" style="max-width: 740px; height: 508px" />
+	<img src="./docs/imgs/chatbot-chat-ui.gif" alt="chatbot-ui" style="max-width: 740px; height: 508px" />
 </p>
 
 ### Chatbot Code Explained
 
 1. Add dependencies.
 
-```xml
-<dependencies>
-  <dependency>
-    <groupId>com.alibaba.cloud.ai</groupId>
-    <artifactId>spring-ai-alibaba-agent-framework</artifactId>
-    <version>1.1.0.0-M5</version>
-  </dependency>
-  <!-- Assume you are going to use DashScope Model. Refer to docs for how to choose model.-->
-  <dependency>
-    <groupId>com.alibaba.cloud.ai</groupId>
-    <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-    <version>1.1.0.0-M5</version>
-  </dependency>
-</dependencies>
-```
+	```xml
+	<dependencies>
+	  <dependency>
+	    <groupId>com.alibaba.cloud.ai</groupId>
+	    <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+	    <version>1.1.0.0-M5</version>
+	  </dependency>
+	  <!-- Assume you are going to use DashScope Model. Refer to docs for how to choose model.-->
+	  <dependency>
+	    <groupId>com.alibaba.cloud.ai</groupId>
+	    <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+	    <version>1.1.0.0-M5</version>
+	  </dependency>
+	</dependencies>
+	```
 
 2. Create ChatBot agent
 
-```java
-ReactAgent chatBotAgent =
-	 ReactAgent.builder()
-		.name("SAA")
-		.model(chatModel)
-		.instruction(INSTRUCTION)
-		.enableLogging(true)
-		.tools(
-			executeShellCommand,
-			executePythonCode,
-			viewTextFile
-		)
-		.build();
-
-AssistantMessage message = writerAgent.call("斐波那契数列的第6个数是？");
-```
+	```java
+	ReactAgent chatBotAgent =
+		 ReactAgent.builder()
+			.name("SAA")
+			.model(chatModel)
+			.instruction(INSTRUCTION)
+			.enableLogging(true)
+			.tools(
+				executeShellCommand,
+				executePythonCode,
+				viewTextFile
+			)
+			.build();
+	
+	AssistantMessage message = writerAgent.call("斐波那契数列的第6个数是？");
+	```
 
 ## 📚 Documentation
 * [Overview](https://java2ai.com/docs/overview) - High level overview of the framework
