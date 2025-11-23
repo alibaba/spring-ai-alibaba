@@ -21,7 +21,7 @@ package com.alibaba.cloud.ai.graph.agent.exception;
  * @author <a href="mailto:yuluo08290126@gmail.com">yuluo</a>
  */
 
-public class AgentException extends RuntimeException{
+public class AgentException extends RuntimeException {
 
     public AgentException(String s) {
         super(s);
