@@ -41,12 +41,32 @@ public class SerializationUtils {
 	 * @param original the original Map object
 	 * @return the deep copied Map object, returns null if the original object is null
 	 */
+	@SuppressWarnings("unchecked")
 	public static Map<String, Object> deepCopyMap(Map<String, Object> original) {
 		if (original == null) {
 			return null;
 		}
 
-		Map<String, Object> copy = new HashMap<>();
+		// Preserve the original Map type if it's not a standard Map implementation
+		// This handles cases like fastjson2's JSONObject (which extends LinkedHashMap)
+		Map<String, Object> copy;
+		try {
+			// Try to create an instance of the same class
+			var constructor = original.getClass().getDeclaredConstructor();
+			constructor.setAccessible(true);  // Handle non-public constructors
+			Object instance = constructor.newInstance();
+			if (!(instance instanceof Map)) {
+				throw new IllegalStateException("Constructor did not produce a Map instance: " + original.getClass().getName());
+			}
+			copy = (Map<String, Object>) instance;
+			log.debug("Successfully preserved Map type: {}", original.getClass().getName());
+		} catch (Exception e) {
+			// If instantiation fails, fall back to HashMap
+			log.debug("Could not preserve Map type {}, falling back to HashMap: {}", 
+				original.getClass().getName(), e.getMessage());
+			copy = new HashMap<>();
+		}
+		
 		for (Map.Entry<String, Object> entry : original.entrySet()) {
 			copy.put(entry.getKey(), deepCopyValue(entry.getValue()));
 		}

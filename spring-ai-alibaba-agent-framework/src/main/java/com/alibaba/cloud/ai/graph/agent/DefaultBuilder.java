@@ -22,6 +22,8 @@ import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -35,6 +37,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DefaultBuilder extends Builder {
+
+	private static final Logger logger = LoggerFactory.getLogger(DefaultBuilder.class);
+
+	public static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING
+				= "LLM may have adapted the tool name '{}', especially if the name was truncated due to length limits. If this is the case, you can customize the prefixing and processing logic using McpToolNamePrefixGenerator";
 
 	@Override
 	public ReactAgent build() {
@@ -108,6 +115,33 @@ public class DefaultBuilder extends Builder {
 			regularTools.addAll(tools);
 		}
 
+		if (CollectionUtils.isNotEmpty(toolCallbackProviders)) {
+			for (var provider : toolCallbackProviders) {
+				regularTools.addAll(List.of(provider.getToolCallbacks()));
+			}
+		}
+
+		if (CollectionUtils.isNotEmpty(toolNames)) {
+			for (String toolName : toolNames) {
+				// Skip the tool if it is already present in the request toolCallbacks.
+				// That might happen if a tool is defined in the options
+				// both as a ToolCallback and as a tool name.
+				if (regularTools.stream().anyMatch(tool -> tool.getToolDefinition().name().equals(toolName))) {
+					continue;
+				}
+
+				if (this.resolver == null) {
+					throw new IllegalStateException("ToolCallbackResolver is null; cannot resolve tool name: " + toolName);
+				}
+				ToolCallback toolCallback = this.resolver.resolve(toolName);
+				if (toolCallback == null) {
+					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
+					throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
+				}
+				regularTools.add(toolCallback);
+			}
+		}
+
 		// Extract interceptor tools
 		List<ToolCallback> interceptorTools = new ArrayList<>();
 		if (CollectionUtils.isNotEmpty(modelInterceptors)) {
@@ -154,6 +188,10 @@ public class DefaultBuilder extends Builder {
 					.build());
 		} else {
 			toolBuilder.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor);
+		}
+
+		if (toolContext != null && !toolContext.isEmpty()) {
+			toolBuilder.toolContext(toolContext);
 		}
 
 		toolNode = toolBuilder.build();

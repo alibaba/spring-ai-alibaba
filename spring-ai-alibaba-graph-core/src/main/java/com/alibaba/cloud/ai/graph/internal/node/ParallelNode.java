@@ -54,56 +54,61 @@ public class ParallelNode extends Node {
 					new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()), state.data(), config, NODE_BEFORE,
 					null);
 			return action.apply(state, config)
-				.whenComplete((stringObjectMap, throwable) -> LifeListenerUtil.processListenersLIFO(actualNodeId,
-						new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()), state.data(), config, NODE_AFTER,
-						throwable));
+					.whenComplete((stringObjectMap, throwable) -> LifeListenerUtil.processListenersLIFO(actualNodeId,
+							new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()), state.data(), config,
+							NODE_AFTER,
+							throwable));
 		}
 
-	private CompletableFuture<Map<String, Object>> evalNodeActionAsync(AsyncNodeActionWithConfig action,
-			String actualNodeId, OverAllState state, RunnableConfig config, Executor executor) {
-		return CompletableFuture.supplyAsync(() -> {
-			try {
-				return evalNodeActionSync(action, actualNodeId, state, config).join();
-			}
-			catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-	}, executor);
-	}
-
-	@Override
-	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-		List<CompletableFuture<Map<String, Object>>> futures = new ArrayList<>();
-		for (int i = 0; i < actions.size(); i++) {
-			AsyncNodeActionWithConfig action = actions.get(i);
-			String actualNodeId = actionNodeIds.get(i);
-
-			CompletableFuture<Map<String, Object>> future = config.metadata(nodeId)
-				.filter(value -> value instanceof Executor)
-				.map(Executor.class::cast)
-				.map(executor -> evalNodeActionAsync(action, actualNodeId, state, config, executor))
-				.orElseGet(() -> evalNodeActionSync(action, actualNodeId, state, config));
-
-			futures.add(future);
+		private CompletableFuture<Map<String, Object>> evalNodeActionAsync(AsyncNodeActionWithConfig action,
+				String actualNodeId, OverAllState state, RunnableConfig config, Executor executor) {
+			return CompletableFuture.supplyAsync(() -> {
+				try {
+					return evalNodeActionSync(action, actualNodeId, state, config).join();
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}, executor);
 		}
 
-		// Wait for all tasks to complete
-		return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
-			// Collect all results
-			List<Map<String, Object>> results = futures.stream()
-				.map(CompletableFuture::join)
-				.collect(Collectors.toList());
+		@Override
+		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+			List<CompletableFuture<Map<String, Object>>> futures = new ArrayList<>();
+			for (int i = 0; i < actions.size(); i++) {
+				AsyncNodeActionWithConfig action = actions.get(i);
+				String actualNodeId = actionNodeIds.get(i);
 
-			return processParallelResults(results, state, actions);
-		});
-	}
+				// Create a defensive copy of the state for each parallel action
+				// This prevents race conditions if actions modify the state in-place
+				OverAllState stateSnapshot = state.snapShot().orElse(new OverAllState());
+
+				CompletableFuture<Map<String, Object>> future = config.metadata(nodeId)
+						.filter(value -> value instanceof Executor)
+						.map(Executor.class::cast)
+						.map(executor -> evalNodeActionAsync(action, actualNodeId, stateSnapshot, config, executor))
+						.orElseGet(() -> evalNodeActionSync(action, actualNodeId, stateSnapshot, config));
+
+				futures.add(future);
+			}
+
+			// Wait for all tasks to complete
+			return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
+				// Collect all results
+				List<Map<String, Object>> results = futures.stream()
+						.map(CompletableFuture::join)
+						.collect(Collectors.toList());
+
+				return processParallelResults(results, state, actions);
+			});
+		}
 
 		/**
-		 * Process parallel execution results, handling GraphFlux, traditional Flux, and regular objects.
+		 * Process parallel execution results, handling GraphFlux, traditional Flux, and
+		 * regular objects.
 		 * Priority: GraphFlux > traditional Flux > regular objects
 		 */
 		private Map<String, Object> processParallelResults(List<Map<String, Object>> results,
-														   OverAllState state, List<AsyncNodeActionWithConfig> actionList) {
+				OverAllState state, List<AsyncNodeActionWithConfig> actionList) {
 
 			// Check if any result contains GraphFlux or traditional Flux
 			List<GraphFlux<?>> graphFluxList = new ArrayList<>();
@@ -123,15 +128,15 @@ public class ParallelNode extends Node {
 					if (value instanceof GraphFlux) {
 						GraphFlux<?> graphFlux = (GraphFlux<?>) value;
 						// Use GraphFlux's own nodeId, or generate one if not set properly
-						String graphFluxNodeId = graphFlux.getNodeId() != null ?
-								graphFlux.getNodeId() : effectiveNodeId;
+						String graphFluxNodeId = graphFlux.getNodeId() != null ? graphFlux.getNodeId()
+								: effectiveNodeId;
 
 						// Create new GraphFlux with correct nodeId if needed
 						if (!graphFluxNodeId.equals(graphFlux.getNodeId())) {
 							@SuppressWarnings("unchecked")
 							GraphFlux<Object> castedFlux = (GraphFlux<Object>) graphFlux;
 							@SuppressWarnings("unchecked")
-							GraphFlux<Object> newGraphFlux = GraphFlux.of(graphFluxNodeId, entry.getKey(), 
+							GraphFlux<Object> newGraphFlux = GraphFlux.of(graphFluxNodeId, entry.getKey(),
 									castedFlux.getFlux(), castedFlux.getMapResult(), castedFlux.getChunkResult());
 							graphFlux = newGraphFlux;
 						}
@@ -152,12 +157,13 @@ public class ParallelNode extends Node {
 
 			// Handle the results based on what we found
 			if (!graphFluxList.isEmpty()) {
-				// We have GraphFlux instances - create ParallelGraphFlux with node identity preservation
+				// We have GraphFlux instances - create ParallelGraphFlux with node identity
+				// preservation
 				ParallelGraphFlux parallelGraphFlux = ParallelGraphFlux.of(graphFluxList);
 
 				mergedState.put("__parallel_graph_flux__", parallelGraphFlux);
 				return mergedState;
-			}  else {
+			} else {
 				Map<String, Object> initialState = new HashMap<>();
 				// No streaming output, directly merge all results
 				return results.stream()
@@ -180,7 +186,8 @@ public class ParallelNode extends Node {
 	public ParallelNode(String id, List<AsyncNodeActionWithConfig> actions, List<String> actionNodeIds,
 			Map<String, KeyStrategy> channels, CompileConfig compileConfig) {
 		super(formatNodeId(id),
-				(config) -> new AsyncParallelNodeAction(formatNodeId(id), actions, actionNodeIds, channels, compileConfig));
+				(config) -> new AsyncParallelNodeAction(formatNodeId(id), actions, actionNodeIds, channels,
+						compileConfig));
 	}
 
 	@Override

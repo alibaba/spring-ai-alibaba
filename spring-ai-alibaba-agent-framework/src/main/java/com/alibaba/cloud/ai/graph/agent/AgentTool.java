@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,12 +32,20 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
+import org.springframework.ai.util.json.JsonParser;
 
 import org.springframework.util.StringUtils;
 
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
 
 public class AgentTool implements BiFunction<String, ToolContext, AssistantMessage> {
+
+	/**
+	 * Framework reserved input field name for DeepSeek API compatibility.
+	 * This field name is used in the default schema when no inputSchema is provided,
+	 * to meet DeepSeek API's requirement that function schemas must be object type.
+	 */
+	private static final String FRAMEWORK_DEEPSEEK_RESERVED_INPUT_FIELD = "saaDefaultDeepseekInput";
 
 	private final ReactAgent agent;
 
@@ -52,15 +61,20 @@ public class AgentTool implements BiFunction<String, ToolContext, AssistantMessa
 			// The agent that calls this tool should only be aware of the ToolCallChoice and ToolResponse.
 			OverAllState newState = agent.getAndCompileGraph().cloneState(state.data());
 			
+			// Extract the actual input text from the input parameter
+			// If input is a JSON object like {"input": "text"}, extract the "input" field
+			// Otherwise, use the input as-is
+			String actualInput = extractInputText(input);
+			
 			// Build the messages list to add
 			// Add instruction first if present, then the user input
 			// Note: We must add all messages at once because cloneState doesn't copy keyStrategies,
 			// so multiple updateState calls would overwrite instead of append
-			java.util.List<Message> messagesToAdd = new java.util.ArrayList<>();
+			List<Message> messagesToAdd = new ArrayList<>();
 			if (StringUtils.hasLength(agent.instruction())) {
 				messagesToAdd.add(new AgentInstructionMessage(agent.instruction()));
 			}
-			messagesToAdd.add(new UserMessage(input));
+			messagesToAdd.add(new UserMessage(actualInput));
 			
 			Map<String, Object> inputs = newState.updateState(Map.of("messages", messagesToAdd));
 
@@ -81,6 +95,31 @@ public class AgentTool implements BiFunction<String, ToolContext, AssistantMessa
 		throw new RuntimeException("Failed to execute agent tool or failed to get agent tool result");
 	}
 
+	/**
+	 * Extract the actual input text from the input parameter.
+	 * If input is a JSON object with the framework reserved field, extract it.
+	 * Otherwise, use the input as-is.
+	 */
+	private String extractInputText(String input) {
+		if (!StringUtils.hasText(input)) {
+			return input;
+		}
+		
+		// Try to parse as JSON object
+		try {
+			Map<String, Object> jsonMap = JsonParser.toMap(input);
+			// If it's a JSON object and contains the framework reserved field, extract it
+			if (jsonMap != null && jsonMap.containsKey(FRAMEWORK_DEEPSEEK_RESERVED_INPUT_FIELD)) {
+				Object inputValue = jsonMap.get(FRAMEWORK_DEEPSEEK_RESERVED_INPUT_FIELD);
+				return inputValue != null ? inputValue.toString() : input;
+			}
+		} catch (Exception e) {
+			// Not a JSON object, use input as-is
+		}
+		
+		return input;
+	}
+
 	private static final ToolCallResultConverter CONVERTER = new MessageToolCallResultConverter();
 
 	public static AgentTool create(ReactAgent agent) {
@@ -94,6 +133,24 @@ public class AgentTool implements BiFunction<String, ToolContext, AssistantMessa
 				: (agent.getInputType() != null )
 					? JsonSchemaGenerator.generateForType(agent.getInputType())
 					: null;
+
+		// If inputSchema is null, provide a default object schema with a string input property
+		// This is required by some APIs (like DeepSeek) that require function schemas to be object type
+		// Use a unique field name to avoid conflicts with user-defined schemas
+		if (inputSchema == null) {
+			inputSchema = String.format("""
+				{
+					"type": "object",
+					"properties": {
+						"%s": {
+							"type": "string",
+							"description": "The input text for the agent"
+						}
+					},
+					"required": ["%s"]
+				}
+				""", FRAMEWORK_DEEPSEEK_RESERVED_INPUT_FIELD, FRAMEWORK_DEEPSEEK_RESERVED_INPUT_FIELD);
+		}
 
 		return FunctionToolCallback.builder(agent.name(), AgentTool.create(agent))
 			.description(agent.description())

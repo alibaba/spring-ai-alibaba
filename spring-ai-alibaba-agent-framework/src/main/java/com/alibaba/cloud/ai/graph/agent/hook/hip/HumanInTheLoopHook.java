@@ -84,7 +84,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 			List<AssistantMessage.ToolCall> newToolCalls = new ArrayList<>();
 
 			List<ToolResponseMessage.ToolResponse> responses = new ArrayList<>();
-			ToolResponseMessage rejectedMessage = new ToolResponseMessage(responses);
+			ToolResponseMessage rejectedMessage = ToolResponseMessage.builder().responses(responses).build();
 
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				Optional<ToolFeedback> toolFeedbackOpt = interruptionMetadata.toolFeedbacks().stream()
@@ -122,7 +122,12 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 
 			if (!newToolCalls.isEmpty()) {
 				// Replace the last message with the new assistant message containing updated tool calls
-				newMessages.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(), newToolCalls, assistantMessage.getMedia()));
+				newMessages.add(AssistantMessage.builder()
+					.content(assistantMessage.getText())
+					.properties(assistantMessage.getMetadata())
+					.toolCalls(newToolCalls)
+					.media(assistantMessage.getMedia())
+					.build());
 				newMessages.add(new RemoveByHash<>(assistantMessage));
 			}
 
