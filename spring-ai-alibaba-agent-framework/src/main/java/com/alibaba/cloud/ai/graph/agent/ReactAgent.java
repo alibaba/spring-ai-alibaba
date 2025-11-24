@@ -95,7 +95,7 @@ public class ReactAgent extends BaseAgent {
 	
 	private StateSerializer stateSerializer;
 
-    private static Boolean hasTools = false;
+    private final Boolean hasTools;
 
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
@@ -430,7 +430,7 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		// Add tool routing if tools exist
-		if (hasTools) {
+		if (agentInstance.hasTools) {
 			setupToolRouting(graph, loopExitNode, loopEntryNode, exitNode, agentInstance);
 		} else if (!loopExitNode.equals("model")) {
 			// No tools but have after_model - connect to exit
