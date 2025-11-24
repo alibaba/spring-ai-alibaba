@@ -237,7 +237,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 					return ModelResponse.of(responseMessage, response);
 				} catch (Exception e) {
-					logger.error("Exception during streaming model call: ", e);
+					logger.error("Exception during invoking model call: ", e);
 					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
 				}
 			};
