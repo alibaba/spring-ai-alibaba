@@ -227,7 +227,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
 							.of(context.buildStreamingOutput(currentMessage, response, context.getCurrentNodeId()));
 						lastGraphResponseRef.set(lastGraphResponse);
-						return lastGraphResponse;
+                        // Also update lastChatResponseRef to ensure consistency
+                        lastChatResponseRef.set(response);
+                        return lastGraphResponse;
 					}
 
 					final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
@@ -235,9 +237,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 					final var currentMessageText = currentMessage.getText();
 
-					var newMessage = new AssistantMessage(
-							currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText,
-							currentMessage.getMetadata(), currentMessage.getToolCalls(), currentMessage.getMedia());
+					var newMessage = AssistantMessage.builder()
+						.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
+						.properties(currentMessage.getMetadata())
+						.toolCalls(currentMessage.getToolCalls())
+						.media(currentMessage.getMedia())
+						.build();
 
 					var newGeneration = new Generation(newMessage,
 							response.getResult().getMetadata());
@@ -416,6 +421,13 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 		// Process the GraphFlux stream with preserved node ID
 		Flux<GraphResponse<NodeOutput>> processedFlux = graphFlux.getFlux()
+				.filter(element -> {
+					// Skip elements that would produce null chunks (e.g., usage-only ChatResponse)
+					if (element instanceof ChatResponse response) {
+						return response.getResult() != null && response.getResult().getOutput() != null;
+					}
+					return true;
+				})
 				.map(element -> {
 					lastDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 
@@ -489,14 +501,21 @@ public class NodeExecutor extends BaseGraphExecutor {
 					AtomicReference<Object> nodeDataRef = new AtomicReference<>();
 					nodeDataRefs.put(nodeId, nodeDataRef);
 
-					return graphFlux.getFlux()
-							.map(element -> {
-								nodeDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
-								// Create StreamingOutput with specific nodeId (preserves parallel node identity)
-								StreamingOutput output = context.buildStreamingOutput(graphFlux, element, nodeId);
-								return GraphResponse.<NodeOutput>of(output);
-							})
-							.onErrorMap(error -> new RuntimeException("ParallelGraphFlux processing error in node: " + nodeId, error));
+				return graphFlux.getFlux()
+						.filter(element -> {
+							// Skip elements that would produce null chunks (e.g., usage-only ChatResponse)
+							if (element instanceof ChatResponse response) {
+								return response.getResult() != null && response.getResult().getOutput() != null;
+							}
+							return true;
+						})
+						.map(element -> {
+							nodeDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
+							// Create StreamingOutput with specific nodeId (preserves parallel node identity)
+							StreamingOutput output = context.buildStreamingOutput(graphFlux, element, nodeId);
+							return GraphResponse.<NodeOutput>of(output);
+						})
+						.onErrorMap(error -> new RuntimeException("ParallelGraphFlux processing error in node: " + nodeId, error));
 				})
 				.collect(Collectors.toList());
 

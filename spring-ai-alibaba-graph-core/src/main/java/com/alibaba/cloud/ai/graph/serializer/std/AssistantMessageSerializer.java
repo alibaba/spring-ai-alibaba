@@ -39,7 +39,11 @@ class AssistantMessageSerializer implements NullableObjectSerializer<AssistantMe
 		var text = readNullableUTF(in).orElse(null);
 		var metadata = (Map<String, Object>) in.readObject();
 		var toolCalls = (List<AssistantMessage.ToolCall>) readNullableObject(in).orElseGet(List::of);
-		return new AssistantMessage(text, metadata, toolCalls);
+		return AssistantMessage.builder()
+			.content(text)
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.build();
 	}
 
 }

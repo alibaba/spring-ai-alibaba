@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.exception.AgentException;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
@@ -38,22 +39,26 @@ import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
-import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
+import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
+import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
-import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
-import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
+import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
-
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,11 +71,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
@@ -85,8 +85,6 @@ public class ReactAgent extends BaseAgent {
 
 	private final AgentToolNode toolNode;
 
-	private CompiledGraph compiledGraph;
-
 	private List<? extends Hook> hooks;
 
 	private List<ModelInterceptor> modelInterceptors;
@@ -94,6 +92,10 @@ public class ReactAgent extends BaseAgent {
 	private List<ToolInterceptor> toolInterceptors;
 
 	private String instruction;
+	
+	private StateSerializer stateSerializer;
+
+    private static Boolean hasTools = false;
 
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
@@ -109,6 +111,10 @@ public class ReactAgent extends BaseAgent {
 		this.inputType = builder.inputType;
 		this.outputSchema = builder.outputSchema;
 		this.outputType = builder.outputType;
+		
+		// Set state serializer from builder, or use default
+        // Default to Jackson serializer for better compatibility and features
+        this.stateSerializer = Objects.requireNonNullElseGet(builder.stateSerializer, () -> new SpringAIJacksonStateSerializer(OverAllState::new));
 
 		// Set interceptors to nodes
 		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
@@ -117,6 +123,9 @@ public class ReactAgent extends BaseAgent {
 		if (this.toolInterceptors != null && !this.toolInterceptors.isEmpty()) {
 			this.toolNode.setToolInterceptors(this.toolInterceptors);
 		}
+
+        // Set tools flag if tool interceptors are present.
+        hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
 	}
 
 	public static Builder builder() {
@@ -160,18 +169,20 @@ public class ReactAgent extends BaseAgent {
 					.map(msg -> (AssistantMessage) msg)
 					.orElseThrow(() -> new IllegalStateException("Output key " + outputKey + " not found in agent state") );
 		}
-		return state.flatMap(s -> s.value("messages"))
-				.map(messageList -> (List<Message>) messageList)
-				.stream()
-				.flatMap(messageList -> messageList.stream())
-				.filter(msg -> msg instanceof AssistantMessage)
-				.map(msg -> (AssistantMessage) msg)
-				.reduce((first, second) -> second)
-				.orElseThrow(() -> new IllegalStateException("No AssistantMessage found in 'messages' state") );
+
+        // Add a validation instance when performing message conversion to
+        // avoid potential type conversion exceptions.
+        return state.flatMap(s -> s.value("messages"))
+                .stream()
+                .flatMap(messageList -> ((List<?>) messageList).stream()
+                        .filter(msg -> msg instanceof AssistantMessage)
+                        .map(msg -> (AssistantMessage) msg))
+                .reduce((first, second) -> second)
+                .orElseThrow(() -> new AgentException("No AssistantMessage found in 'messages' state"));
 	}
 
 	public StateGraph getStateGraph() {
-		return graph;
+		return getGraph();
 	}
 
 	public CompiledGraph getCompiledGraph() {
@@ -204,8 +215,8 @@ public class ReactAgent extends BaseAgent {
 			hook.setAgentName(this.name);
 		}
 
-		// Create graph
-		StateGraph graph = new StateGraph(name, buildMessagesKeyStrategyFactory(hooks));
+		// Create graph with state serializer
+		StateGraph graph = new StateGraph(name, buildMessagesKeyStrategyFactory(hooks), stateSerializer);
 
 		graph.addNode("model", node_async(this.llmNode));
 		graph.addNode("tool", node_async(this.toolNode));
@@ -260,7 +271,7 @@ public class ReactAgent extends BaseAgent {
 		// Set up edges
 		graph.addEdge(START, entryNode);
 		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
-				entryNode, loopEntryNode, loopExitNode, exitNode, true, this);
+				entryNode, loopEntryNode, loopExitNode, exitNode, this);
 		return graph;
 	}
 
@@ -282,9 +293,8 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		for (Hook hook : hooks) {
-			if (hook instanceof ToolInjection) {
-				ToolInjection toolInjection = (ToolInjection) hook;
-				ToolCallback toolToInject = findToolForHook(toolInjection, availableTools);
+			if (hook instanceof ToolInjection toolInjection) {
+                ToolCallback toolToInject = findToolForHook(toolInjection, availableTools);
 				if (toolToInject != null) {
 					toolInjection.injectTool(toolToInject);
 				}
@@ -401,7 +411,6 @@ public class ReactAgent extends BaseAgent {
 			String loopEntryNode,
 			String loopExitNode,
 			String exitNode,
-			boolean hasTools,
 			ReactAgent agentInstance) throws GraphStateException {
 
 		// Chain before_agent hook

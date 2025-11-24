@@ -46,11 +46,9 @@ import static com.alibaba.cloud.ai.graph.agent.tools.WriteTodosTool.DEFAULT_TOOL
  * and how to use the todo functionality effectively.
  *
  * Example:
- * <pre>
  * TodoListInterceptor interceptor = TodoListInterceptor.builder()
  *     .systemPrompt("Custom guidance for using todos...")
  *     .build();
- * </pre>
  */
 public class TodoListInterceptor extends ModelInterceptor {
 

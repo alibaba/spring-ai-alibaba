@@ -21,8 +21,7 @@ npm run dev
 
 Visit `http://localhost:3000`.
 
-
-## 🚀 How to use
+<img src="../docs/imgs/agent-chat-ui.jpg" alt="architecture" style="max-width: 740px; height: 508px" />
 
 ### Embedded mode
 

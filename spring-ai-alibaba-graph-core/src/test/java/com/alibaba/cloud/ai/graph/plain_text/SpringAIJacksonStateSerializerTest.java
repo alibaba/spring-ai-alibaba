@@ -114,7 +114,10 @@ class SpringAIJacksonStateSerializerTest {
 		metadata.put("model", "gpt-3.5-turbo");
 		metadata.put("temperature", 0.7);
 
-		AssistantMessage original = new AssistantMessage("I'm here to help you!", metadata);
+		AssistantMessage original = AssistantMessage.builder()
+			.content("I'm here to help you!")
+			.properties(metadata)
+			.build();
 
 		// 直接序列化和反序列化AssistantMessage对象
 		AssistantMessage deserialized = serializeAndDeserialize(original);
@@ -138,7 +141,10 @@ class SpringAIJacksonStateSerializerTest {
 				new ToolResponseMessage.ToolResponse("tool_call_1", "calculator", "{\"result\": 42}"),
 				new ToolResponseMessage.ToolResponse("tool_call_2", "weather", "{\"temperature\": 25}"));
 
-		ToolResponseMessage original = new ToolResponseMessage(responses, metadata);
+		ToolResponseMessage original = ToolResponseMessage.builder()
+			.responses(responses)
+			.metadata(metadata)
+			.build();
 
 		// 直接序列化和反序列化ToolResponseMessage对象
 		ToolResponseMessage deserialized = serializeAndDeserialize(original);

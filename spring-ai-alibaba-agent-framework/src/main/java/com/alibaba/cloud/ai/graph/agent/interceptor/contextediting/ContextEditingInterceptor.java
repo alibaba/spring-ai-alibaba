@@ -42,13 +42,11 @@ import org.slf4j.LoggerFactory;
  * history to stay within token limits.
  *
  * Example:
- * <pre>
  * ContextEditingInterceptor interceptor = ContextEditingInterceptor.builder()
  *     .trigger(100000)
  *     .keep(3)
  *     .clearAtLeast(1000)
  *     .build();
- * </pre>
  */
 public class ContextEditingInterceptor extends ModelInterceptor {
 
@@ -128,7 +126,10 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 								resp.id(), resp.name(), placeholder));
 					}
 
-					updatedMessages.add(new ToolResponseMessage(clearedResponses, toolMsg.getMetadata()));
+					updatedMessages.add(ToolResponseMessage.builder()
+						.responses(clearedResponses)
+						.metadata(toolMsg.getMetadata())
+						.build());
 				}
 				else if (msg instanceof AssistantMessage) {
 					AssistantMessage assistantMsg = (AssistantMessage) msg;
@@ -143,11 +144,11 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 					}
 
 					// Create new AssistantMessage with cleared tool calls
-					AssistantMessage clearedAssistantMsg = new AssistantMessage(
-							assistantMsg.getText(),
-							assistantMsg.getMetadata(),
-							clearedToolCalls
-					);
+					AssistantMessage clearedAssistantMsg = AssistantMessage.builder()
+						.content(assistantMsg.getText())
+						.properties(assistantMsg.getMetadata())
+						.toolCalls(clearedToolCalls)
+						.build();
 					updatedMessages.add(clearedAssistantMsg);
 				}
 			}

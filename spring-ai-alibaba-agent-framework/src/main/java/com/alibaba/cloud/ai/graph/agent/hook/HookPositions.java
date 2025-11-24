@@ -24,8 +24,7 @@ import java.lang.annotation.Target;
  * Annotation to specify the position(s) where a hook should be executed.
  * A hook can be executed at multiple positions by specifying multiple values.
  *
- * <p>Example usage:</p>
- * <pre>
+ * Example usage:
  * {@code
  * @HookPosition(HookPosition.BEFORE_AGENT)
  * public class MyBeforeAgentHook implements AgentHook { ... }
@@ -33,7 +32,6 @@ import java.lang.annotation.Target;
  * @HookPosition({HookPosition.BEFORE_AGENT, HookPosition.AFTER_AGENT})
  * public class MyAgentHook implements AgentHook { ... }
  * }
- * </pre>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

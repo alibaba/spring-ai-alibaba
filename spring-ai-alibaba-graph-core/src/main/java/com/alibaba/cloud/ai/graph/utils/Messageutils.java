@@ -34,7 +34,7 @@ public class Messageutils {
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
-	 * Generic method to convert various types of messages to List<Message>
+	 * Generic method to convert various types of messages to Message list
 	 * Supported types:
 	 * 1. String - converted to UserMessage
 	 * 2. Map (e.g. {"role": "user", "text": "test"}) - create corresponding Message based on role
