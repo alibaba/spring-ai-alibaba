@@ -404,7 +404,7 @@ public class CompiledGraph {
 	 * @return the over all state
 	 */
 	public OverAllState cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
-		return new OverAllState(stateGraph.getStateSerializer().cloneObject(data).data());
+		return new OverAllState(stateGraph.getStateSerializer().cloneObject(data).data(), getKeyStrategyMap());
 	}
 
 	/**
@@ -602,7 +602,7 @@ public class CompiledGraph {
 		// Creates a new OverAllState instance using key strategies from the graph
 		// and provided input data.
 		return OverAllStateBuilder.builder()
-			.withKeyStrategies(stateGraph.getKeyStrategyFactory().apply())
+			.withKeyStrategies(getKeyStrategyMap())
 			.withData(inputs)
 			.withStore(compileConfig.getStore())
 			.build();

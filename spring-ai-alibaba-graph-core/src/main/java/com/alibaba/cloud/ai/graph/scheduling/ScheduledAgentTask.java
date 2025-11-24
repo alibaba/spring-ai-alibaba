@@ -170,7 +170,7 @@ public class ScheduledAgentTask {
 
 	private OverAllState createInitialState(Map<String, Object> inputs) {
 		return OverAllStateBuilder.builder()
-			.withKeyStrategies(graph.stateGraph.getKeyStrategyFactory().apply())
+			.withKeyStrategies(graph.getKeyStrategyMap())
 			.withData(inputs)
 			.build();
 	}
