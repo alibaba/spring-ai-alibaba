@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
 import com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit.ToolCallLimitExceededException;
 import com.alibaba.cloud.ai.graph.agent.hook.toolcalllimit.ToolCallLimitHook;
 import com.alibaba.cloud.ai.graph.agent.tools.WeatherTool;
@@ -64,6 +65,30 @@ public class ToolCallLimitTest {
         // 第二次调用，正常执行，不受之前影响
         Optional<OverAllState> result2 = agent.invoke("帮我查询成都天气");
         assertTrue(result2.isPresent(), "第二次调用应该返回结果而不是抛出异常");
+    }
+
+    @Test
+    public void testRunLimitWithEndBehavior() throws Exception {
+        ToolCallLimitHook hook = ToolCallLimitHook.builder()
+                .runLimit(1)
+                .exitBehavior(ToolCallLimitHook.ExitBehavior.END)
+                .build();
+
+        ReactAgent agent = createAgent(hook, "test-agent", chatModel);
+
+        // 第一次调用，正常执行，不受之前影响
+        Optional<OverAllState> result1 = agent.invoke("你好");
+        assertTrue(result1.isPresent(), "第一次调用应该返回结果而不是抛出异常");
+
+        // 第二次调用，正常执行，不会导致异常
+        assertDoesNotThrow(() -> {
+            agent.invoke("你好，调用weather工具，查询北京的天气");
+        });
+
+        // 第三次调用，正常执行，不会导致异常
+        assertDoesNotThrow(() -> {
+            agent.invoke("你好，调用weather工具，查询上海的天气");
+        });
     }
 
     public ReactAgent createAgent(ToolCallLimitHook hook, String name, ChatModel model) throws GraphStateException {
