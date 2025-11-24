@@ -55,12 +55,8 @@ public class AgentTool implements BiFunction<String, ToolContext, AssistantMessa
 
 	@Override
 	public AssistantMessage apply(String input, ToolContext toolContext) {
-		OverAllState state = (OverAllState) toolContext.getContext().get(AGENT_STATE_CONTEXT_KEY);
+//		OverAllState state = (OverAllState) toolContext.getContext().get(AGENT_STATE_CONTEXT_KEY);
 		try {
-			// Copy state to avoid affecting the original state.
-			// The agent that calls this tool should only be aware of the ToolCallChoice and ToolResponse.
-			OverAllState newState = agent.getAndCompileGraph().cloneState(state.data());
-			
 			// Extract the actual input text from the input parameter
 			// If input is a JSON object like {"input": "text"}, extract the "input" field
 			// Otherwise, use the input as-is
@@ -75,10 +71,8 @@ public class AgentTool implements BiFunction<String, ToolContext, AssistantMessa
 				messagesToAdd.add(new AgentInstructionMessage(agent.instruction()));
 			}
 			messagesToAdd.add(new UserMessage(actualInput));
-			
-			Map<String, Object> inputs = newState.updateState(Map.of("messages", messagesToAdd));
 
-			Optional<OverAllState> resultState = agent.getAndCompileGraph().invoke(inputs);
+			Optional<OverAllState> resultState = agent.getAndCompileGraph().invoke(Map.of("messages", messagesToAdd));
 
 			Optional<List> messages = resultState.flatMap(overAllState -> overAllState.value("messages", List.class));
 			if (messages.isPresent()) {
