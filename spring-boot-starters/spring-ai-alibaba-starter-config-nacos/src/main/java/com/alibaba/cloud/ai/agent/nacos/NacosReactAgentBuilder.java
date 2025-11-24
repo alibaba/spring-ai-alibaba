@@ -91,7 +91,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		}
 		else {
 			clientBuilder = ChatClient.builder(model, observationConfiguration.getObservationRegistry() == null ? ObservationRegistry.NOOP : observationConfiguration.getObservationRegistry(), nacosOptions.getObservationConfiguration()
-					.getChatClientObservationConvention());
+					.getChatClientObservationConvention(), this.advisorObservationConvention);
 		}
 
 		clientBuilder.defaultOptions(chatOptions);
@@ -114,15 +114,16 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		}
 		AgentLlmNode llmNode = llmNodeBuilder.build();
 
-		AgentToolNode toolNode = null;
+		AgentToolNode.Builder builder = AgentToolNode.builder().toolExecutionExceptionProcessor(toolExecutionExceptionProcessor);
+		AgentToolNode toolNode;
 		if (resolver != null) {
-			toolNode = AgentToolNode.builder().toolCallbackResolver(resolver).build();
+			toolNode = builder.toolCallbackResolver(resolver).build();
 		}
 		else if (tools != null) {
-			toolNode = AgentToolNode.builder().toolCallbacks(tools).build();
+			toolNode = builder.toolCallbacks(tools).build();
 		}
 		else {
-			toolNode = AgentToolNode.builder().build();
+			toolNode = builder.build();
 		}
 
 		// register listeners.

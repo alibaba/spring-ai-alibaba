@@ -31,10 +31,12 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 public abstract class Builder {
@@ -56,6 +58,8 @@ public abstract class Builder {
 	protected List<ToolCallback> tools;
 
 	protected ToolCallbackResolver resolver;
+
+	protected ToolExecutionExceptionProcessor toolExecutionExceptionProcessor;
 
 	protected boolean releaseThread;
 
@@ -82,6 +86,8 @@ public abstract class Builder {
 	protected ObservationRegistry observationRegistry;
 
 	protected ChatClientObservationConvention customObservationConvention;
+
+	protected AdvisorObservationConvention advisorObservationConvention;
 
 	protected boolean enableLogging;
 
@@ -118,6 +124,11 @@ public abstract class Builder {
 
 	public Builder resolver(ToolCallbackResolver resolver) {
 		this.resolver = resolver;
+		return this;
+	}
+
+	public Builder toolExecutionExceptionProcessor(ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
+		this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
 		return this;
 	}
 
@@ -213,6 +224,11 @@ public abstract class Builder {
 
 	public Builder customObservationConvention(ChatClientObservationConvention customObservationConvention) {
 		this.customObservationConvention = customObservationConvention;
+		return this;
+	}
+
+	public Builder advisorObservationConvention(AdvisorObservationConvention advisorObservationConvention) {
+		this.advisorObservationConvention = advisorObservationConvention;
 		return this;
 	}
 

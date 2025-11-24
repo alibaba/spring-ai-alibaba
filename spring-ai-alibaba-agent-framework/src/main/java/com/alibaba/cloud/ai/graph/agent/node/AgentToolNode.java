@@ -30,6 +30,8 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
@@ -63,11 +65,14 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private ToolCallbackResolver toolCallbackResolver;
 
+	private ToolExecutionExceptionProcessor toolExecutionExceptionProcessor;
+
 	public AgentToolNode(Builder builder) {
 		this.agentName = builder.agentName;
 		this.enableActingLog = builder.enableActingLog;
 		this.toolCallbackResolver = builder.toolCallbackResolver;
 		this.toolCallbacks = builder.toolCallbacks;
+		this.toolExecutionExceptionProcessor = builder.toolExecutionExceptionProcessor;
 	}
 
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
@@ -107,8 +112,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 				toolResponses.add(response.toToolResponse());
 			}
 
-			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(toolResponses, Map.of());
-
+			ToolResponseMessage toolResponseMessage =
+					ToolResponseMessage.builder()
+							.responses(toolResponses)
+							.build();
 			if (enableActingLog) {
 				logger.info("[ThreadId {}] Agent {} acting returned: {}", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, toolResponseMessage);
 			}
@@ -145,7 +152,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 			}
 
 			List<Object> newMessages = new ArrayList<>();
-			ToolResponseMessage newToolResponseMessage = new ToolResponseMessage(allResponses, Map.of());
+			ToolResponseMessage newToolResponseMessage =
+					ToolResponseMessage.builder().responses(allResponses).build();
 			newMessages.add(newToolResponseMessage);
 			newMessages.add(new RemoveByHash<>(assistantMessage));
 			updatedState.put("messages", newMessages);
@@ -211,11 +219,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 						logger.debug("Tool {} returned: {}", req.getToolName(), result);
 					}
 				}
-			} catch (Exception e) {
+			} catch (ToolExecutionException e) {
 				logger.error("[ThreadId {}] Agent {} acting, tool {} execution failed. "
 						+ "The agent loop has ended, please use ToolRetryInterceptor to customize the retry and policy on tool failure. \n"
 						, config.threadId().orElse(THREAD_ID_DEFAULT), agentName, req.getToolName(), e);
-				throw e;
+				result = toolExecutionExceptionProcessor.process(e);
 			}
 
 			return ToolCallResponse.of(req.getToolCallId(), req.getToolName(), result);
@@ -256,6 +264,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		private ToolCallbackResolver toolCallbackResolver;
 
+		private ToolExecutionExceptionProcessor toolExecutionExceptionProcessor;
+
 		private Builder() {
 		}
 
@@ -281,6 +291,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		public Builder toolCallbackResolver(ToolCallbackResolver toolCallbackResolver) {
 			this.toolCallbackResolver = toolCallbackResolver;
+			return this;
+		}
+
+		public Builder toolExecutionExceptionProcessor(ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
+			this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
 			return this;
 		}
 
