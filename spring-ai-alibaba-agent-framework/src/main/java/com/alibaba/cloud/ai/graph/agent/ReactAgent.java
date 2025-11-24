@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.exception.AgentException;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
@@ -94,6 +95,8 @@ public class ReactAgent extends BaseAgent {
 	
 	private StateSerializer stateSerializer;
 
+    private final Boolean hasTools;
+
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
 		this.instruction = builder.instruction;
@@ -110,12 +113,8 @@ public class ReactAgent extends BaseAgent {
 		this.outputType = builder.outputType;
 		
 		// Set state serializer from builder, or use default
-		if (builder.stateSerializer != null) {
-			this.stateSerializer = builder.stateSerializer;
-		} else {
-			// Default to Jackson serializer for better compatibility and features
-			this.stateSerializer = new SpringAIJacksonStateSerializer(OverAllState::new);
-		}
+        // Default to Jackson serializer for better compatibility and features
+        this.stateSerializer = Objects.requireNonNullElseGet(builder.stateSerializer, () -> new SpringAIJacksonStateSerializer(OverAllState::new));
 
 		// Set interceptors to nodes
 		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
@@ -124,6 +123,9 @@ public class ReactAgent extends BaseAgent {
 		if (this.toolInterceptors != null && !this.toolInterceptors.isEmpty()) {
 			this.toolNode.setToolInterceptors(this.toolInterceptors);
 		}
+
+        // Set tools flag if tool interceptors are present.
+        hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
 	}
 
 	public static Builder builder() {
@@ -167,14 +169,16 @@ public class ReactAgent extends BaseAgent {
 					.map(msg -> (AssistantMessage) msg)
 					.orElseThrow(() -> new IllegalStateException("Output key " + outputKey + " not found in agent state") );
 		}
-		return state.flatMap(s -> s.value("messages"))
-				.map(messageList -> (List<Message>) messageList)
-				.stream()
-				.flatMap(messageList -> messageList.stream())
-				.filter(msg -> msg instanceof AssistantMessage)
-				.map(msg -> (AssistantMessage) msg)
-				.reduce((first, second) -> second)
-				.orElseThrow(() -> new IllegalStateException("No AssistantMessage found in 'messages' state") );
+
+        // Add a validation instance when performing message conversion to
+        // avoid potential type conversion exceptions.
+        return state.flatMap(s -> s.value("messages"))
+                .stream()
+                .flatMap(messageList -> ((List<?>) messageList).stream()
+                        .filter(msg -> msg instanceof AssistantMessage)
+                        .map(msg -> (AssistantMessage) msg))
+                .reduce((first, second) -> second)
+                .orElseThrow(() -> new AgentException("No AssistantMessage found in 'messages' state"));
 	}
 
 	public StateGraph getStateGraph() {
@@ -267,7 +271,7 @@ public class ReactAgent extends BaseAgent {
 		// Set up edges
 		graph.addEdge(START, entryNode);
 		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
-				entryNode, loopEntryNode, loopExitNode, exitNode, true, this);
+				entryNode, loopEntryNode, loopExitNode, exitNode, this);
 		return graph;
 	}
 
@@ -289,9 +293,8 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		for (Hook hook : hooks) {
-			if (hook instanceof ToolInjection) {
-				ToolInjection toolInjection = (ToolInjection) hook;
-				ToolCallback toolToInject = findToolForHook(toolInjection, availableTools);
+			if (hook instanceof ToolInjection toolInjection) {
+                ToolCallback toolToInject = findToolForHook(toolInjection, availableTools);
 				if (toolToInject != null) {
 					toolInjection.injectTool(toolToInject);
 				}
@@ -408,7 +411,6 @@ public class ReactAgent extends BaseAgent {
 			String loopEntryNode,
 			String loopExitNode,
 			String exitNode,
-			boolean hasTools,
 			ReactAgent agentInstance) throws GraphStateException {
 
 		// Chain before_agent hook
@@ -428,7 +430,7 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		// Add tool routing if tools exist
-		if (hasTools) {
+		if (agentInstance.hasTools) {
 			setupToolRouting(graph, loopExitNode, loopEntryNode, exitNode, agentInstance);
 		} else if (!loopExitNode.equals("model")) {
 			// No tools but have after_model - connect to exit
