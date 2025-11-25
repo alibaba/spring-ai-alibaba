@@ -29,6 +29,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.FormatProvider;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 
 import org.springframework.util.StringUtils;
 
@@ -141,6 +142,45 @@ public class DefaultBuilder extends Builder {
 			}
 		}
 
+		// If regularTools is empty and resolver is provided, try to extract tools from resolver
+		if (regularTools.isEmpty() && this.resolver != null) {
+			// Check if resolver also implements ToolCallbackProvider
+			if (this.resolver instanceof ToolCallbackProvider provider) {
+				ToolCallback[] resolverTools = provider.getToolCallbacks();
+				if (resolverTools != null && resolverTools.length > 0) {
+					regularTools.addAll(List.of(resolverTools));
+					if (logger.isDebugEnabled()) {
+						logger.debug("Extracted {} tools from ToolCallbackResolver (ToolCallbackProvider)", resolverTools.length);
+					}
+				}
+			}
+			else {
+				// This is a fallback for resolvers that don't implement ToolCallbackProvider
+				try {
+					java.lang.reflect.Field toolsField = this.resolver.getClass().getDeclaredField("tools");
+					toolsField.setAccessible(true);
+					Object toolsObj = toolsField.get(this.resolver);
+					if (toolsObj instanceof java.util.Map) {
+						@SuppressWarnings("unchecked")
+						java.util.Map<String, ToolCallback> toolsMap = (java.util.Map<String, ToolCallback>) toolsObj;
+						if (!toolsMap.isEmpty()) {
+							regularTools.addAll(toolsMap.values());
+							if (logger.isDebugEnabled()) {
+								logger.debug("Extracted {} tools from ToolCallbackResolver via reflection", toolsMap.size());
+							}
+						}
+					}
+				}
+				catch (NoSuchFieldException | IllegalAccessException | ClassCastException e) {
+					// Reflection failed, resolver doesn't have accessible tools field
+					// This is expected for some resolver implementations
+					if (logger.isTraceEnabled()) {
+						logger.trace("Could not extract tools from resolver via reflection: {}", e.getMessage());
+					}
+				}
+			}
+		}
+
 		// Extract interceptor tools
 		List<ToolCallback> interceptorTools = new ArrayList<>();
 		if (CollectionUtils.isNotEmpty(modelInterceptors)) {
@@ -149,7 +189,7 @@ public class DefaultBuilder extends Builder {
 				.toList();
 		}
 
-		// Combine all tools: regularTools + regularTools
+		// Combine all tools: interceptorTools + regularTools
 		List<ToolCallback> allTools = new ArrayList<>();
 		allTools.addAll(interceptorTools);
 		allTools.addAll(regularTools);
