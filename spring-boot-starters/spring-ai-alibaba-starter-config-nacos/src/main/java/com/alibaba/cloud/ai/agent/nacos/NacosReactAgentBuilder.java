@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.agent.nacos;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +44,7 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 
 import static com.alibaba.cloud.ai.agent.nacos.NacosAgentPromptBuilder.getMetadata;
 import static com.alibaba.cloud.ai.agent.nacos.NacosMcpToolsInjector.convert;
@@ -114,7 +116,14 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		}
 		AgentLlmNode llmNode = llmNodeBuilder.build();
 
-		AgentToolNode.Builder builder = AgentToolNode.builder().toolExecutionExceptionProcessor(toolExecutionExceptionProcessor);
+		AgentToolNode.Builder builder = AgentToolNode.builder();
+		if (toolExecutionExceptionProcessor != null) {
+			builder.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor);
+		} else {
+			builder.toolExecutionExceptionProcessor(DefaultToolExecutionExceptionProcessor.builder()
+					.alwaysThrow(false)
+					.build());
+		}
 		AgentToolNode toolNode;
 		if (resolver != null) {
 			toolNode = builder.toolCallbackResolver(resolver).build();

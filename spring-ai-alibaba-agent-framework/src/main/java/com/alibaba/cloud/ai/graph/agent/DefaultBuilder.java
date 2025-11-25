@@ -181,10 +181,8 @@ public class DefaultBuilder extends Builder {
 			toolBuilder.enableActingLog(true);
 		}
 		if (toolExecutionExceptionProcessor == null) {
-			ArrayList<Class<? extends RuntimeException>> rethrownExceptions = new ArrayList<>();
 			toolBuilder.toolExecutionExceptionProcessor(DefaultToolExecutionExceptionProcessor.builder()
 					.alwaysThrow(false)
-					.rethrowExceptions(rethrownExceptions)
 					.build());
 		} else {
 			toolBuilder.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor);
