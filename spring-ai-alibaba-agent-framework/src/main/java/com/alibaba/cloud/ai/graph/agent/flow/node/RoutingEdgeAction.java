@@ -33,6 +33,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 public class RoutingEdgeAction implements AsyncEdgeAction {
 
 	private final ChatClient chatClient;
+    private final BeanOutputConverter<RoutingDecision> outputConverter;
 
 	public RoutingEdgeAction(ChatModel chatModel, Agent current, List<Agent> subAgents) {
 		StringBuilder sb = new StringBuilder();
@@ -65,8 +66,9 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 				"For example, if you want to delegate the task to the agent named 'agent1', you should return 'agent1'.");
 
         // Create BeanOutputConverter for structured output
-        BeanOutputConverter<RoutingDecision> outputConverter = new BeanOutputConverter<>(RoutingDecision.class);
-        sb.append(outputConverter.getFormat());
+        this.outputConverter = new BeanOutputConverter<>(RoutingDecision.class);
+        sb.append("\n\n");
+        sb.append(this.outputConverter.getFormat());
 
         this.chatClient = ChatClient.builder(chatModel).defaultSystem(sb.toString()).build();
 	}
@@ -76,7 +78,7 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 		CompletableFuture<String> result = new CompletableFuture<>();
 		try {
 			List<Message> messages = (List<Message>)state.value("messages").orElseThrow();
-            RoutingDecision routingDecision = this.chatClient.prompt(getFormatedPrompt(messages)).call().entity(RoutingDecision.class);
+            RoutingDecision routingDecision = this.chatClient.prompt(getFormatedPrompt(messages)).call().entity(this.outputConverter);
 			result.complete(routingDecision.agent());
 		}
 		catch (Exception e) {
