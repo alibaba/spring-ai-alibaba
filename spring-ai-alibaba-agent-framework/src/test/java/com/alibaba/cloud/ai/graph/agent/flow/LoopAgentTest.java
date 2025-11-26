@@ -33,6 +33,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -188,8 +189,8 @@ public class LoopAgentTest {
 
     @Test
     void testLoopAgentWithExecutor() throws Exception {
-        try (java.util.concurrent.ExecutorService customExecutor = java.util.concurrent.Executors.newFixedThreadPool(4)) {
-
+        ExecutorService customExecutor = Executors.newFixedThreadPool(4);
+        try {
             LoopAgent loopAgent = LoopAgent.builder()
                     .name("loop_agent_with_executor")
                     .description("Loop agent with executor")
@@ -209,6 +210,8 @@ public class LoopAgentTest {
             assertEquals(customExecutor, 
                 config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
                 "Executor in metadata should match configured executor");
+        } finally {
+            customExecutor.shutdown();
         }
     }
 
