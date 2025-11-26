@@ -92,7 +92,7 @@ public class ReactAgent extends BaseAgent {
 	private List<ToolInterceptor> toolInterceptors;
 
 	private String instruction;
-	
+
 	private StateSerializer stateSerializer;
 
     private final Boolean hasTools;
@@ -111,7 +111,7 @@ public class ReactAgent extends BaseAgent {
 		this.inputType = builder.inputType;
 		this.outputSchema = builder.outputSchema;
 		this.outputType = builder.outputType;
-		
+
 		// Set state serializer from builder, or use default
         // Default to Jackson serializer for better compatibility and features
         this.stateSerializer = Objects.requireNonNullElseGet(builder.stateSerializer, () -> new SpringAIJacksonStateSerializer(OverAllState::new));
@@ -470,12 +470,12 @@ public class ReactAgent extends BaseAgent {
 			String modelDestination,
 			String endDestination) throws GraphStateException {
 		if (!hooks.isEmpty()) {
-			Hook last = hooks.get(hooks.size() - 1);
+			Hook first = hooks.get(0);
 			addHookEdge(graph,
-					defaultNext,
+					first.getName() + nameSuffix,
 					StateGraph.END,
 					modelDestination, endDestination,
-					last.canJumpTo());
+					first.canJumpTo());
 		}
 
 		for (int i = hooks.size() - 1; i > 0; i--) {
