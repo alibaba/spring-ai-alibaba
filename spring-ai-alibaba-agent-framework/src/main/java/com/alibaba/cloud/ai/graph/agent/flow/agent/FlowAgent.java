@@ -51,7 +51,7 @@ public abstract class FlowAgent extends Agent {
 	}
 
 	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
-			StateSerializer stateSerializer, Executor executor) throws GraphStateException {
+			StateSerializer stateSerializer, Executor executor) {
 		super(name, description);
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
