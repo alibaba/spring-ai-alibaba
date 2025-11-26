@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.LoopMode;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -32,6 +33,7 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -63,6 +65,13 @@ class ExecutorConfigTest {
 	void setUp() {
 		MockitoAnnotations.openMocks(this);
 		customExecutor = Executors.newFixedThreadPool(4);
+	}
+	
+	@AfterEach
+	void tearDown() {
+		if (customExecutor instanceof ExecutorService) {
+			((ExecutorService) customExecutor).shutdown();
+		}
 	}
 
 	@Test
