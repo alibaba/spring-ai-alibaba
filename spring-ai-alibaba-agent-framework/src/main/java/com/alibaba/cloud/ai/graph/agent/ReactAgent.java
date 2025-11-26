@@ -116,6 +116,9 @@ public class ReactAgent extends BaseAgent {
         // Default to Jackson serializer for better compatibility and features
         this.stateSerializer = Objects.requireNonNullElseGet(builder.stateSerializer, () -> new SpringAIJacksonStateSerializer(OverAllState::new));
 
+		// Set executor configuration from builder
+		this.executor = builder.executor;
+
 		// Set interceptors to nodes
 		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
 			this.llmNode.setModelInterceptors(this.modelInterceptors);

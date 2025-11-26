@@ -55,6 +55,15 @@ public abstract class FlowAgent extends Agent {
 		this.stateSerializer = stateSerializer;
 	}
 
+	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
+			StateSerializer stateSerializer, Executor executor) throws GraphStateException {
+		super(name, description);
+		this.compileConfig = compileConfig;
+		this.subAgents = subAgents;
+		this.stateSerializer = stateSerializer;
+		this.executor = executor;
+	}
+
 	@Override
 	protected StateGraph initGraph() throws GraphStateException {
 		// Use FlowGraphBuilder to construct the graph

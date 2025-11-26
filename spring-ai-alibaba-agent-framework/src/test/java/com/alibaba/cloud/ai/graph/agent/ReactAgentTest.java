@@ -46,10 +46,13 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -787,5 +790,62 @@ class ReactAgentTest {
 
         return (Boolean) hasToolsField.get(reactAgent);
     }
+
+	/**
+	 * Test that ReactAgent can be configured with executor.
+	 */
+	@Test
+	public void testReactAgentWithExecutor() throws Exception {
+		Executor customExecutor = Executors.newFixedThreadPool(4);
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("executor_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.executor(customExecutor)
+				.build();
+
+		assertNotNull(agent, "Agent should not be null");
+
+		// Verify executor is set and passed to RunnableConfig using reflection
+		RunnableConfig config = buildNonStreamConfig(agent, null);
+		assertNotNull(config, "RunnableConfig should not be null");
+		
+		assertTrue(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
+			"Default parallel executor should be present in metadata");
+		assertEquals(customExecutor, 
+			config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
+			"Executor in metadata should match configured executor");
+	}
+
+	/**
+	 * Test that ReactAgent without executor doesn't have executor in metadata.
+	 */
+	@Test
+	public void testReactAgentWithoutExecutor() throws Exception {
+		ReactAgent agent = ReactAgent.builder()
+				.name("no_executor_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.build();
+
+		assertNotNull(agent, "Agent should not be null");
+
+		// Verify no executor in metadata when not configured
+		RunnableConfig config = buildNonStreamConfig(agent, null);
+		assertNotNull(config, "RunnableConfig should not be null");
+		
+		assertFalse(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
+			"Default parallel executor should not be present when not configured");
+	}
+
+	/**
+	 * Helper method to call protected buildNonStreamConfig using reflection.
+	 */
+	private RunnableConfig buildNonStreamConfig(Agent agent, RunnableConfig config) throws Exception {
+		Method method = Agent.class.getDeclaredMethod("buildNonStreamConfig", RunnableConfig.class);
+		method.setAccessible(true);
+		return (RunnableConfig) method.invoke(agent, config);
+	}
 
 }

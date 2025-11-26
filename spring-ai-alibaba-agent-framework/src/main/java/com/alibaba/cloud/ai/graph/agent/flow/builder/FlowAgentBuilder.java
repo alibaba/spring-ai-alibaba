@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * Abstract base builder for FlowAgent and its subclasses. Provides common builder
@@ -42,6 +43,8 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	public List<Agent> subAgents;
 
 	public StateSerializer stateSerializer;
+
+	public Executor executor;
 
 	/**
 	 * Sets the agent name.
@@ -90,6 +93,20 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	 */
 	public B stateSerializer(StateSerializer stateSerializer) {
 		this.stateSerializer = stateSerializer;
+		return self();
+	}
+
+	/**
+	 * Sets the executor for parallel nodes.
+	 * <p>
+	 * This executor will be used for all parallel nodes in the agent's execution graph.
+	 * When a parallel node is executed, it will use this executor to run the parallel
+	 * branches concurrently.
+	 * @param executor the {@link Executor} to use for parallel nodes
+	 * @return this builder instance for method chaining
+	 */
+	public B executor(Executor executor) {
+		this.executor = executor;
 		return self();
 	}
 
