@@ -797,25 +797,28 @@ class ReactAgentTest {
 	@Test
 	public void testReactAgentWithExecutor() throws Exception {
 		Executor customExecutor = Executors.newFixedThreadPool(4);
+		try {
+			ReactAgent agent = ReactAgent.builder()
+					.name("executor_agent")
+					.model(chatModel)
+					.saver(new MemorySaver())
+					.executor(customExecutor)
+					.build();
 
-		ReactAgent agent = ReactAgent.builder()
-				.name("executor_agent")
-				.model(chatModel)
-				.saver(new MemorySaver())
-				.executor(customExecutor)
-				.build();
+			assertNotNull(agent, "Agent should not be null");
 
-		assertNotNull(agent, "Agent should not be null");
-
-		// Verify executor is set and passed to RunnableConfig using reflection
-		RunnableConfig config = buildNonStreamConfig(agent, null);
-		assertNotNull(config, "RunnableConfig should not be null");
-		
-		assertTrue(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
-			"Default parallel executor should be present in metadata");
-		assertEquals(customExecutor, 
-			config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
-			"Executor in metadata should match configured executor");
+			// Verify executor is set and passed to RunnableConfig using reflection
+			RunnableConfig config = buildNonStreamConfig(agent, null);
+			assertNotNull(config, "RunnableConfig should not be null");
+			
+			assertTrue(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
+				"Default parallel executor should be present in metadata");
+			assertEquals(customExecutor, 
+				config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
+				"Executor in metadata should match configured executor");
+		} finally {
+			((java.util.concurrent.ExecutorService) customExecutor).shutdown();
+		}
 	}
 
 	/**
