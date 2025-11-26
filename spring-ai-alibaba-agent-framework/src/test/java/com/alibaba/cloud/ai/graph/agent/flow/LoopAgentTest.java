@@ -19,6 +19,8 @@ package com.alibaba.cloud.ai.graph.agent.flow;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
@@ -27,14 +29,22 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.model.ChatModel;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 public class LoopAgentTest {
@@ -175,6 +185,73 @@ public class LoopAgentTest {
         assert object instanceof List;
         List<?> messages = (List<?>) object;
         assert !messages.isEmpty();
+    }
+
+    @Test
+    void testLoopAgentWithExecutor() throws Exception {
+        ExecutorService customExecutor = Executors.newFixedThreadPool(4);
+        try {
+            LoopAgent loopAgent = LoopAgent.builder()
+                    .name("loop_agent_with_executor")
+                    .description("Loop agent with executor")
+                    .subAgent(this.blogAgent)
+                    .loopStrategy(LoopMode.count(2))
+                    .executor(customExecutor)
+                    .build();
+
+            assertNotNull(loopAgent, "LoopAgent should not be null");
+
+            // Verify executor is set and passed to RunnableConfig
+            RunnableConfig config = buildNonStreamConfig(loopAgent, null);
+            assertNotNull(config, "RunnableConfig should not be null");
+            
+            assertTrue(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
+                "Default parallel executor should be present in metadata");
+            assertEquals(customExecutor, 
+                config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
+                "Executor in metadata should match configured executor");
+        } finally {
+            customExecutor.shutdown();
+        }
+    }
+
+    @Test
+    void testLoopAgentExecutorWithExistingConfig() throws Exception {
+        Executor customExecutor = Executors.newFixedThreadPool(4);
+
+        LoopAgent loopAgent = LoopAgent.builder()
+                .name("loop_agent_executor_config")
+                .description("Loop agent with executor and existing config")
+                .subAgent(this.sqlAgent)
+                .loopStrategy(LoopMode.count(1))
+                .executor(customExecutor)
+                .build();
+
+        // Create an existing RunnableConfig
+        RunnableConfig existingConfig = RunnableConfig.builder()
+                .threadId("test-thread")
+                .build();
+
+        // Build config with existing config
+        RunnableConfig newConfig = buildNonStreamConfig(loopAgent, existingConfig);
+        
+        // Verify existing config properties are preserved
+        assertTrue(newConfig.threadId().isPresent());
+        assertEquals("test-thread", newConfig.threadId().get());
+        
+        // Verify executor is added
+        assertTrue(newConfig.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent());
+        assertEquals(customExecutor, 
+            newConfig.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get());
+    }
+
+    /**
+     * Helper method to call protected buildNonStreamConfig using reflection.
+     */
+    private RunnableConfig buildNonStreamConfig(Agent agent, RunnableConfig config) throws Exception {
+        Method method = Agent.class.getDeclaredMethod("buildNonStreamConfig", RunnableConfig.class);
+        method.setAccessible(true);
+        return (RunnableConfig) method.invoke(agent, config);
     }
 
 }

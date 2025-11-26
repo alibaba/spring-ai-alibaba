@@ -246,11 +246,16 @@ public class ParallelNode extends Node {
 				// This prevents race conditions if actions modify the state in-place
 				OverAllState stateSnapshot = state.snapShot().orElse(new OverAllState());
 
-				CompletableFuture<Map<String, Object>> future = config.metadata(nodeId)
+				// First try to get node-specific executor, then default executor, finally use DEFAULT_EXECUTOR
+				Executor executor = config.metadata(nodeId)
 						.filter(value -> value instanceof Executor)
 						.map(Executor.class::cast)
-						.map(executor -> evalNodeActionAsync(action, actualNodeId, stateSnapshot, config, executor))
-						.orElseGet(() -> evalNodeActionAsync(action, actualNodeId, stateSnapshot, config, DEFAULT_EXECUTOR));
+						.orElseGet(() -> config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY)
+								.filter(value -> value instanceof Executor)
+								.map(Executor.class::cast)
+								.orElse(DEFAULT_EXECUTOR));
+				
+				CompletableFuture<Map<String, Object>> future = evalNodeActionAsync(action, actualNodeId, stateSnapshot, config, executor);
 
 				futures.add(future);
 			}

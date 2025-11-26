@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -107,6 +108,8 @@ public abstract class Builder {
 	protected boolean enableLogging;
 
 	protected StateSerializer stateSerializer;
+	
+	protected Executor executor;
 
 	public Builder name(String name) {
 		this.name = name;
@@ -315,6 +318,21 @@ public abstract class Builder {
 	@Deprecated
 	public Builder stateSerializer(SpringAIStateSerializer stateSerializer) {
 		this.stateSerializer = stateSerializer;
+		return this;
+	}
+
+	/**
+	 * Sets the executor for parallel nodes.
+	 * <p>
+	 * This executor will be used for all parallel nodes in the agent's execution graph.
+	 * When a parallel node is executed, it will use this executor to run the parallel
+	 * branches concurrently.
+	 * @param executor the {@link Executor} to use for parallel nodes
+	 * @return this builder instance
+	 */
+	public Builder executor(Executor executor) {
+		Assert.notNull(executor, "executor cannot be null");
+		this.executor = executor;
 		return this;
 	}
 

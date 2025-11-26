@@ -16,7 +16,9 @@
 package com.alibaba.cloud.ai.graph.agent.flow;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
@@ -29,8 +31,11 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -274,6 +279,108 @@ class ParallelAgentTest {
 		assertNotNull(graphSerializer, "Serializer should not be null");
 		assertInstanceOf(SpringAIJacksonStateSerializer.class, graphSerializer,
 				"Default serializer should be SpringAIJacksonStateSerializer");
+	}
+
+	@Test
+	void testParallelAgentWithExecutor() throws Exception {
+		java.util.concurrent.ExecutorService customExecutor = Executors.newFixedThreadPool(4);
+		try {
+			ReactAgent agent1 = createMockAgent("agent1", "output1");
+			ReactAgent agent2 = createMockAgent("agent2", "output2");
+
+			ParallelAgent parallelAgent = ParallelAgent.builder()
+					.name("parallel_agent_with_executor")
+					.description("Parallel agent with executor")
+					.subAgents(List.of(agent1, agent2))
+					.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
+					.executor(customExecutor)
+					.build();
+
+			assertNotNull(parallelAgent, "ParallelAgent should not be null");
+
+			// Verify executor is set and passed to RunnableConfig
+			RunnableConfig config = buildNonStreamConfig(parallelAgent, null);
+			assertNotNull(config, "RunnableConfig should not be null");
+			
+			assertTrue(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
+				"Default parallel executor should be present in metadata");
+			assertEquals(customExecutor, 
+				config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
+				"Executor in metadata should match configured executor");
+		} finally {
+			customExecutor.shutdown();
+		}
+	}
+
+	@Test
+	void testParallelAgentExecutorWithStreamConfig() throws Exception {
+		Executor customExecutor = Executors.newFixedThreadPool(4);
+
+		ReactAgent agent1 = createMockAgent("agent1", "output1");
+		ReactAgent agent2 = createMockAgent("agent2", "output2");
+
+		ParallelAgent parallelAgent = ParallelAgent.builder()
+				.name("parallel_agent_stream")
+				.description("Parallel agent with executor for streaming")
+				.subAgents(List.of(agent1, agent2))
+				.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
+				.executor(customExecutor)
+				.build();
+
+		// Test with stream config
+		RunnableConfig streamConfig = buildStreamConfig(parallelAgent, null);
+		assertNotNull(streamConfig, "Stream config should not be null");
+		
+		assertTrue(streamConfig.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
+			"Default parallel executor should be present in stream config metadata");
+		assertEquals(customExecutor, 
+			streamConfig.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
+			"Executor in stream config metadata should match configured executor");
+	}
+
+	@Test
+	void testParallelAgentExecutorConfigurationChaining() throws Exception {
+		Executor customExecutor = Executors.newFixedThreadPool(4);
+
+		ReactAgent agent1 = createMockAgent("agent1", "output1");
+		ReactAgent agent2 = createMockAgent("agent2", "output2");
+
+		// Test fluent interface chaining
+		ParallelAgent parallelAgent = ParallelAgent.builder()
+			.name("parallel_agent_chaining")
+			.description("Test executor chaining")
+			.executor(customExecutor)
+			.subAgents(List.of(agent1, agent2))
+			.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
+			.maxConcurrency(3)
+			.build();
+
+		assertNotNull(parallelAgent);
+		assertEquals("parallel_agent_chaining", parallelAgent.name());
+		assertEquals(3, parallelAgent.maxConcurrency());
+		
+		RunnableConfig config = buildNonStreamConfig(parallelAgent, null);
+		assertEquals(customExecutor, 
+			config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
+			"Executor should be correctly configured through chaining");
+	}
+
+	/**
+	 * Helper method to call protected buildNonStreamConfig using reflection.
+	 */
+	private RunnableConfig buildNonStreamConfig(Agent agent, RunnableConfig config) throws Exception {
+		Method method = Agent.class.getDeclaredMethod("buildNonStreamConfig", RunnableConfig.class);
+		method.setAccessible(true);
+		return (RunnableConfig) method.invoke(agent, config);
+	}
+
+	/**
+	 * Helper method to call protected buildStreamConfig using reflection.
+	 */
+	private RunnableConfig buildStreamConfig(Agent agent, RunnableConfig config) throws Exception {
+		Method method = Agent.class.getDeclaredMethod("buildStreamConfig", RunnableConfig.class);
+		method.setAccessible(true);
+		return (RunnableConfig) method.invoke(agent, config);
 	}
 
 	private ReactAgent createMockAgent(String name, String outputKey) throws Exception {
