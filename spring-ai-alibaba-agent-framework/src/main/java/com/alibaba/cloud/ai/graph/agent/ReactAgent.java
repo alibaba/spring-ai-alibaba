@@ -759,14 +759,21 @@ public class ReactAgent extends BaseAgent {
 
 			Map<String, Object> result = new HashMap<>();
 
-			result.put(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages", getGraphResponseFlux(parentState, subGraphResult));
-			if (parentMessages != null) {
+			String outputKey = StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages";
+			result.put(outputKey, getGraphResponseFlux(parentState, subGraphResult, includeContents));
+
+			// When includeContents is false, we isolate the child graph by removing parent messages.
+			// However, we need to preserve parent messages in the result if:
+			// 1. The child graph output is not placed in the "messages" key (to avoid overwriting)
+			// 2. The parent messages exist (were removed from child state)
+			// This ensures parent state is preserved through the framework's state merge mechanism.
+			if (!includeContents && parentMessages != null && !"messages".equals(outputKey)) {
 				result.put("messages", parentMessages);
 			}
 			return result;
 		}
 
-		private @NotNull Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(OverAllState parentState, Flux<GraphResponse<NodeOutput>> subGraphResult) {
+		private @NotNull Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(OverAllState parentState, Flux<GraphResponse<NodeOutput>> subGraphResult, boolean includeContents) {
 			return Flux.create(sink -> {
 				AtomicReference<GraphResponse<NodeOutput>> lastRef = new AtomicReference<>();
 				subGraphResult.subscribe(item -> {
@@ -786,11 +793,16 @@ public class ReactAgent extends BaseAgent {
 									@SuppressWarnings("unchecked")
 									List<Object> messages = new ArrayList<>((List<Object>) resultMap.get("messages"));
 									if (!messages.isEmpty()) {
-										parentState.value("messages").ifPresent(parentMsgs -> {
-											if (parentMsgs instanceof List) {
-												messages.removeAll((List<?>) parentMsgs);
-											}
-										});
+										// Only remove parent messages if includeContents is true.
+										// When includeContents is false, parent messages were already removed
+										// from child state, so we should not attempt to remove them again.
+										if (includeContents) {
+											parentState.value("messages").ifPresent(parentMsgs -> {
+												if (parentMsgs instanceof List) {
+													messages.removeAll((List<?>) parentMsgs);
+												}
+											});
+										}
 
 										List<Object> finalMessages;
 										if (returnReasoningContents) {
