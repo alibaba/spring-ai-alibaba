@@ -31,6 +31,7 @@ import org.springframework.ai.converter.FormatProvider;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 
+import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -59,7 +60,7 @@ public class DefaultBuilder extends Builder {
 		if (chatClient == null) {
 
 			ChatClient.Builder clientBuilder = ChatClient.builder(model, this.observationRegistry == null ? ObservationRegistry.NOOP : this.observationRegistry,
-					this.customObservationConvention, null);
+					this.customObservationConvention, this.advisorObservationConvention);
 
 			if (chatOptions != null) {
 				clientBuilder.defaultOptions(chatOptions);
@@ -218,6 +219,13 @@ public class DefaultBuilder extends Builder {
 
 		if (enableLogging) {
 			toolBuilder.enableActingLog(true);
+		}
+		if (toolExecutionExceptionProcessor == null) {
+			toolBuilder.toolExecutionExceptionProcessor(DefaultToolExecutionExceptionProcessor.builder()
+					.alwaysThrow(false)
+					.build());
+		} else {
+			toolBuilder.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor);
 		}
 
 		if (toolContext != null && !toolContext.isEmpty()) {

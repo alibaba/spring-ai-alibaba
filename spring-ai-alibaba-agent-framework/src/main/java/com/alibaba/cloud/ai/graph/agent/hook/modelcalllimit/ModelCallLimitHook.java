@@ -87,8 +87,7 @@ public class ModelCallLimitHook extends ModelHook {
 						runLimit
 				);
 
-				List<Message> messages = new ArrayList<>((List<Message>) state.value("messages")
-						.orElse(new ArrayList<>()));
+				List<Message> messages = new ArrayList<>();
 				messages.add(new AssistantMessage(message));
 
 				Map<String, Object> updates = new HashMap<>();

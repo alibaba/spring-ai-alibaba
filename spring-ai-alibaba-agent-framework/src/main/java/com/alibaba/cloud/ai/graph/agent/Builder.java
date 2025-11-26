@@ -36,12 +36,14 @@ import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import org.springframework.util.Assert;
@@ -69,6 +71,8 @@ public abstract class Builder {
 	protected List<String> toolNames = new ArrayList<>();
 
 	protected ToolCallbackResolver resolver;
+
+	protected ToolExecutionExceptionProcessor toolExecutionExceptionProcessor;
 
 	protected Map<String, Object> toolContext = new HashMap<>();
 
@@ -98,8 +102,10 @@ public abstract class Builder {
 
 	protected ChatClientObservationConvention customObservationConvention;
 
+	protected AdvisorObservationConvention advisorObservationConvention;
+
 	protected boolean enableLogging;
-	
+
 	protected StateSerializer stateSerializer;
 
 	public Builder name(String name) {
@@ -160,6 +166,11 @@ public abstract class Builder {
 
 	public Builder resolver(ToolCallbackResolver resolver) {
 		this.resolver = resolver;
+		return this;
+	}
+
+	public Builder toolExecutionExceptionProcessor(ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
+		this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
 		return this;
 	}
 
@@ -275,11 +286,16 @@ public abstract class Builder {
 		return this;
 	}
 
+	public Builder advisorObservationConvention(AdvisorObservationConvention advisorObservationConvention) {
+		this.advisorObservationConvention = advisorObservationConvention;
+		return this;
+	}
+
 	public Builder enableLogging(boolean enableLogging) {
 		this.enableLogging = enableLogging;
 		return this;
 	}
-	
+
 	/**
 	 * Sets the state serializer for the agent.
 	 * @param stateSerializer the state serializer to use
