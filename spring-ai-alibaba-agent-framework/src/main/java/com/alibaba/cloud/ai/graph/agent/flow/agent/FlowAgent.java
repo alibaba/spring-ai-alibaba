@@ -15,10 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.StateGraph;
@@ -28,6 +24,9 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+
+import java.util.List;
+import java.util.concurrent.Executor;
 
 public abstract class FlowAgent extends Agent {
 
@@ -64,9 +63,9 @@ public abstract class FlowAgent extends Agent {
 	protected StateGraph initGraph() throws GraphStateException {
 		// Use FlowGraphBuilder to construct the graph
 		FlowGraphBuilder.FlowGraphConfig config = FlowGraphBuilder.FlowGraphConfig.builder()
-			.name(this.name())
-			.rootAgent(this)
-			.subAgents(this.subAgents());
+				.name(this.name())
+				.rootAgent(this)
+				.subAgents(this.subAgents());
 
 		// Set state serializer if available
 		if (this.stateSerializer != null) {
@@ -83,7 +82,7 @@ public abstract class FlowAgent extends Agent {
 		return compiledGraph.schedule(scheduleConfig);
 	}
 
-	public StateGraph asStateGraph(){
+	public StateGraph asStateGraph() {
 		return getGraph();
 	}
 
