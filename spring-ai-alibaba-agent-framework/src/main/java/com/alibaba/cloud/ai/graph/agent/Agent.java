@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
@@ -61,6 +62,8 @@ public abstract class Agent {
 	protected volatile CompiledGraph compiledGraph;
 
 	protected volatile StateGraph graph;
+
+	protected Executor executor;
 
 	/**
 	 * Protected constructor for initializing all base agent properties.
@@ -265,17 +268,36 @@ public abstract class Agent {
 	}
 
 	protected RunnableConfig buildNonStreamConfig(RunnableConfig config) {
-		if (config == null) {
-			return RunnableConfig.builder().addMetadata("_stream_", false).addMetadata("_AGENT_", name).build();
-		}
-		return RunnableConfig.builder(config).addMetadata("_stream_", false).addMetadata("_AGENT_", name).build();
+		RunnableConfig.Builder builder = config == null 
+			? RunnableConfig.builder() 
+			: RunnableConfig.builder(config);
+		
+		builder.addMetadata("_stream_", false).addMetadata("_AGENT_", name);
+		applyExecutorConfig(builder);
+		
+		return builder.build();
 	}
 
 	protected RunnableConfig buildStreamConfig(RunnableConfig config) {
-		if (config == null) {
-			return RunnableConfig.builder().addMetadata("_AGENT_", name).build();
+		RunnableConfig.Builder builder = config == null 
+			? RunnableConfig.builder() 
+			: RunnableConfig.builder(config);
+		
+		builder.addMetadata("_AGENT_", name);
+		applyExecutorConfig(builder);
+		
+		return builder.build();
+	}
+
+	/**
+	 * Applies executor configuration to the RunnableConfig builder.
+	 * This method sets the default executor for parallel nodes from the agent's configuration.
+	 * @param builder the RunnableConfig builder to apply executor configuration to
+	 */
+	protected void applyExecutorConfig(RunnableConfig.Builder builder) {
+		if (executor != null) {
+			builder.defaultParallelExecutor(executor);
 		}
-		return RunnableConfig.builder(config).addMetadata("_AGENT_", name).build();
 	}
 
 	protected Map<String, Object> buildMessageInput(Object message) {

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -36,12 +37,14 @@ import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import org.springframework.util.Assert;
@@ -69,6 +72,8 @@ public abstract class Builder {
 	protected List<String> toolNames = new ArrayList<>();
 
 	protected ToolCallbackResolver resolver;
+
+	protected ToolExecutionExceptionProcessor toolExecutionExceptionProcessor;
 
 	protected Map<String, Object> toolContext = new HashMap<>();
 
@@ -100,9 +105,13 @@ public abstract class Builder {
 
 	protected ChatClientObservationConvention customObservationConvention;
 
+	protected AdvisorObservationConvention advisorObservationConvention;
+
 	protected boolean enableLogging;
-	
+
 	protected StateSerializer stateSerializer;
+	
+	protected Executor executor;
 
 	public Builder name(String name) {
 		this.name = name;
@@ -162,6 +171,11 @@ public abstract class Builder {
 
 	public Builder resolver(ToolCallbackResolver resolver) {
 		this.resolver = resolver;
+		return this;
+	}
+
+	public Builder toolExecutionExceptionProcessor(ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
+		this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
 		return this;
 	}
 
@@ -284,11 +298,16 @@ public abstract class Builder {
 		return this;
 	}
 
+	public Builder advisorObservationConvention(AdvisorObservationConvention advisorObservationConvention) {
+		this.advisorObservationConvention = advisorObservationConvention;
+		return this;
+	}
+
 	public Builder enableLogging(boolean enableLogging) {
 		this.enableLogging = enableLogging;
 		return this;
 	}
-	
+
 	/**
 	 * Sets the state serializer for the agent.
 	 * @param stateSerializer the state serializer to use
@@ -308,6 +327,21 @@ public abstract class Builder {
 	@Deprecated
 	public Builder stateSerializer(SpringAIStateSerializer stateSerializer) {
 		this.stateSerializer = stateSerializer;
+		return this;
+	}
+
+	/**
+	 * Sets the executor for parallel nodes.
+	 * <p>
+	 * This executor will be used for all parallel nodes in the agent's execution graph.
+	 * When a parallel node is executed, it will use this executor to run the parallel
+	 * branches concurrently.
+	 * @param executor the {@link Executor} to use for parallel nodes
+	 * @return this builder instance
+	 */
+	public Builder executor(Executor executor) {
+		Assert.notNull(executor, "executor cannot be null");
+		this.executor = executor;
 		return this;
 	}
 

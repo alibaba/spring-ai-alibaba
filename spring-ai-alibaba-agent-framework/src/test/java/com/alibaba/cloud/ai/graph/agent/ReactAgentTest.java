@@ -19,8 +19,12 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
@@ -33,11 +37,22 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 
+import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +60,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -113,7 +129,6 @@ class ReactAgentTest {
 	@Test
 	public void testReactAgentWithOutputSchema() throws Exception {
 
-
 		// Customized outputSchema
 		String customSchema = """
 				{
@@ -154,7 +169,6 @@ class ReactAgentTest {
 	@Test
 	public void testReactAgentWithOutputType() throws Exception {
 
-
 		// outputType will be automatically convert to schema
 		ReactAgent agent = ReactAgent.builder()
 				.name("type_agent")
@@ -176,7 +190,6 @@ class ReactAgentTest {
 
 	@Test
 	public void testReactAgentWithOutputSchemaAndInvoke() throws Exception {
-
 
 		String jsonSchema = """
 				{
@@ -564,8 +577,149 @@ class ReactAgentTest {
 		System.out.println("=== Output with ListOutputConverter generated schema ===");
 		System.out.println(message.getText());
 
-		assertTrue(message.getText().length() > 0, "Output should not be empty");
+        assertFalse(message.getText().isEmpty(), "Output should not be empty");
 	}
+
+    @Test
+    public void testReactAgentWithTools() throws GraphRunnerException, NoSuchFieldException, IllegalAccessException {
+
+        var react = ReactAgent.builder()
+                .name("demoReactAgent")
+                .model(chatModel)
+                .instruction("地点为: {target_topic}")
+                .tools(ToolCallbacks.from(new TestTools()))
+                .systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
+                .build();
+
+        String output = react.call("上海,北京").getText();
+        System.out.println("ReactAgent Output: " + output);
+
+        assertNotNull(output);
+        assertFalse(output.isEmpty(), "Output should not be empty");
+
+        // 校验 hasTools 以检查是否包含工具定义
+        assertTrue(testHasTools(react ), "Tools should have been set");
+    }
+
+    @Test
+    public void testReactAgentWithMultiple() throws GraphRunnerException, NoSuchFieldException, IllegalAccessException {
+
+        var reactAgent1 = ReactAgent.builder()
+                .name("demoReactAgent")
+                .model(chatModel)
+                .instruction("地点为: {target_topic}")
+                .tools(ToolCallbacks.from(new TestTools()))
+                .systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
+                .build();
+
+        var reactAgent2 = ReactAgent.builder()
+                .name("demoReactAgent")
+                .model(chatModel)
+                .hooks(List.of(new TestModelHook(), new TestAgentHook()))
+                .instruction("主题为: {target_topic}")
+                .systemPrompt("你是一个诗歌写作专家，请按照给定的主题写作200字左右的诗歌")
+                .build();
+
+        var reactAgent3 = ReactAgent.builder()
+                .name("demoReactAgent")
+                .model(chatModel)
+                .instruction("地点为: {target_topic}")
+                .tools(ToolCallbacks.from(new TestTools()))
+                .systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
+                .build();
+
+        // 普通调用
+        String output1 = reactAgent1.call("上海,北京").getText();
+        String output2 = reactAgent2.call("春天").getText();
+        String output3 = reactAgent3.call("杭州,北京").getText();
+
+        System.out.println(output1);
+        System.out.println(output2);
+        System.out.println(output3);
+
+        assertNotNull(output1);
+        assertFalse(output1.isEmpty(), "Output should not be empty");
+        assertNotNull(output2);
+        assertFalse(output2.isEmpty(), "Output should not be empty");
+        assertNotNull(output3);
+        assertFalse(output3.isEmpty(), "Output should not be empty");
+
+        // 校验工具包含
+        assertTrue(testHasTools(reactAgent1), "Tools should have been set");
+        assertFalse(testHasTools(reactAgent2), "Tools should not have been set");
+        assertTrue(testHasTools(reactAgent3), "Tools should have been set");
+    }
+
+    @Test
+    public void testReactAgentWithHooks() throws GraphRunnerException {
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+        System.setOut(new PrintStream(outputStream));
+
+        String agentOutput = ReactAgent.builder()
+                .name("demoReactAgent")
+                .model(chatModel)
+                .hooks(List.of(new TestModelHook(), new TestAgentHook()))
+                .instruction("主题为: {target_topic}")
+                .systemPrompt("你是一个诗歌写作专家，请按照给定的主题写作200字左右的诗歌")
+                .build()
+                .call("春天")
+                .getText();
+
+        System.setOut(originalOut);
+
+        System.out.println("ReactAgent Output: " + agentOutput);
+
+        assertNotNull(agentOutput);
+        assertFalse(agentOutput.isEmpty(), "Output should not be empty");
+
+        // 校验控制台输出是否包含 hooks 内容
+        String consoleOutput = outputStream.toString();
+        assertTrue(consoleOutput.contains("准备调用模型..."), "Console output should contain '准备调用模型...'");
+        assertTrue(consoleOutput.contains("Agent 开始执行"), "Console output should contain 'Agent 开始执行'");
+    }
+
+    static class TestTools {
+
+        @Tool(name = "getWeatherByCity", description = "Get weather information by city  name", returnDirect = false)
+        public String getWeatherByCity(@ToolParam(description = "城市地址列表") List<String> cityNameList) {
+            StringBuilder builder = new StringBuilder();
+            for (String cityName : cityNameList) {
+                builder.append(cityName + "天气不错");
+            }
+
+            return builder.toString();
+        }
+    }
+
+    static class TestModelHook extends ModelHook {
+
+        @Override
+        public String getName() {
+            return "test_model_hook";
+        }
+
+        @Override
+        public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+            System.out.println("准备调用模型...");
+            return CompletableFuture.completedFuture(Map.of("extra_context", "某些额外信息"));
+        }
+    }
+
+    static class TestAgentHook extends AgentHook {
+
+        @Override
+        public String getName() {
+            return "test_agent_hook";
+        }
+
+        @Override
+        public CompletableFuture<Map<String, Object>> beforeAgent(OverAllState state, RunnableConfig config) {
+            System.out.println("Agent 开始执行");
+            return CompletableFuture.completedFuture(Map.of("start_time", System.currentTimeMillis()));
+        }
+    }
 
 	// Inner class for outputType example
 	public static class PoemOutput {
@@ -627,6 +781,74 @@ class ReactAgentTest {
 		public void setFilms(List<String> films) {
 			this.films = films;
 		}
+	}
+
+    private static Boolean testHasTools(ReactAgent reactAgent) throws NoSuchFieldException, IllegalAccessException {
+
+        Field hasToolsField = reactAgent.getClass().getDeclaredField("hasTools");
+        hasToolsField.setAccessible(true);
+
+        return (Boolean) hasToolsField.get(reactAgent);
+    }
+
+	/**
+	 * Test that ReactAgent can be configured with executor.
+	 */
+	@Test
+	public void testReactAgentWithExecutor() throws Exception {
+		Executor customExecutor = Executors.newFixedThreadPool(4);
+		try {
+			ReactAgent agent = ReactAgent.builder()
+					.name("executor_agent")
+					.model(chatModel)
+					.saver(new MemorySaver())
+					.executor(customExecutor)
+					.build();
+
+			assertNotNull(agent, "Agent should not be null");
+
+			// Verify executor is set and passed to RunnableConfig using reflection
+			RunnableConfig config = buildNonStreamConfig(agent, null);
+			assertNotNull(config, "RunnableConfig should not be null");
+			
+			assertTrue(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
+				"Default parallel executor should be present in metadata");
+			assertEquals(customExecutor, 
+				config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
+				"Executor in metadata should match configured executor");
+		} finally {
+			((java.util.concurrent.ExecutorService) customExecutor).shutdown();
+		}
+	}
+
+	/**
+	 * Test that ReactAgent without executor doesn't have executor in metadata.
+	 */
+	@Test
+	public void testReactAgentWithoutExecutor() throws Exception {
+		ReactAgent agent = ReactAgent.builder()
+				.name("no_executor_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.build();
+
+		assertNotNull(agent, "Agent should not be null");
+
+		// Verify no executor in metadata when not configured
+		RunnableConfig config = buildNonStreamConfig(agent, null);
+		assertNotNull(config, "RunnableConfig should not be null");
+		
+		assertFalse(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
+			"Default parallel executor should not be present when not configured");
+	}
+
+	/**
+	 * Helper method to call protected buildNonStreamConfig using reflection.
+	 */
+	private RunnableConfig buildNonStreamConfig(Agent agent, RunnableConfig config) throws Exception {
+		Method method = Agent.class.getDeclaredMethod("buildNonStreamConfig", RunnableConfig.class);
+		method.setAccessible(true);
+		return (RunnableConfig) method.invoke(agent, config);
 	}
 
 }

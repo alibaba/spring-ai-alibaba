@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
@@ -47,6 +49,15 @@ public abstract class FlowAgent extends Agent {
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
 		this.stateSerializer = stateSerializer;
+	}
+
+	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
+			StateSerializer stateSerializer, Executor executor) throws GraphStateException {
+		super(name, description);
+		this.compileConfig = compileConfig;
+		this.subAgents = subAgents;
+		this.stateSerializer = stateSerializer;
+		this.executor = executor;
 	}
 
 	@Override

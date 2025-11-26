@@ -39,6 +39,31 @@ import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.TypeMappe
 public interface JacksonDeserializer<T> {
 
 	/**
+	 * Check if a class cannot be instantiated by Jackson.
+	 * Non-static inner classes, local classes, and anonymous classes require
+	 * an outer class instance and cannot be deserialized.
+	 */
+	static boolean isNonInstantiableClass(Class<?> clazz) {
+		return (clazz.isMemberClass() && !java.lang.reflect.Modifier.isStatic(clazz.getModifiers()))
+				|| clazz.isLocalClass()
+				|| clazz.isAnonymousClass();
+	}
+
+	/**
+	 * Degrade an ObjectNode to a Map when the target class cannot be instantiated.
+	 */
+	static Map<String, Object> degradeToMap(ObjectNode node, ObjectMapper objectMapper, TypeMapper typeMapper)
+			throws IOException {
+		Map<String, Object> result = new LinkedHashMap<>();
+		var fields = node.fields();
+		while (fields.hasNext()) {
+			var entry = fields.next();
+			result.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
+		}
+		return result;
+	}
+
+	/**
 	 * Converts a {@link JsonNode} to a standard Java object based on its node type. This
 	 * utility method handles the conversion of primitive JSON types, arrays, and objects.
 	 * For objects, it can perform polymorphic deserialization if a special {@code _type}
@@ -68,9 +93,14 @@ public interface JacksonDeserializer<T> {
 				if (valueNode.has(TYPE_PROPERTY)) {
 					var type = valueNode.get(TYPE_PROPERTY).asText();
 					
-					// Special handling for GraphResponse and CompletableFuture
+					// Special handling for GraphResponse, ChatResponse and CompletableFuture
 					if ("GraphResponse".equals(type)) {
 						yield reconstructGraphResponse(valueNode, objectMapper, typeMapper);
+					}
+					if ("ChatResponse".equals(type)) {
+						// ChatResponse cannot be reconstructed (no default constructor),
+						// return null as it should not be persisted in state
+						yield null;
 					}
 					if ("CompletableFuture".equals(type)) {
 						yield reconstructCompletableFuture(valueNode, objectMapper, typeMapper);
@@ -84,35 +114,51 @@ public interface JacksonDeserializer<T> {
 					ObjectMapper mapperNoTyping = objectMapper.copy();
 					mapperNoTyping.setDefaultTyping(null);
 					mapperNoTyping.deactivateDefaultTyping();
-					yield mapperNoTyping.convertValue(copy, ref);
+					Object result;
+					try {
+						result = mapperNoTyping.convertValue(copy, ref);
+					}
+					catch (RuntimeException ex) {
+						// Jackson convertValue failed or other runtime exception - degrade to Map
+						result = degradeToMap(copy, objectMapper, typeMapper);
+					}
+					yield result;
 				}
 				if (valueNode.has("@class")) {
 					String className = valueNode.get("@class").asText();
 					if (!(typeHint != null && className.startsWith("java.util."))) {
-						ObjectNode copy = valueNode.deepCopy();
-						copy.remove("@class");
-						copy.remove("@typeHint");
-						try {
-							Class<?> clazz = Class.forName(className);
-							if (Map.class.isAssignableFrom(clazz)) {
-								Map<String, Object> result = new LinkedHashMap<>();
-								var fields = copy.fields();
-								while (fields.hasNext()) {
-									var entry = fields.next();
-									result.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
-								}
-								yield result;
-							}
-							ObjectMapper mapperNoTyping = objectMapper.copy();
-							mapperNoTyping.setDefaultTyping(null);
-							mapperNoTyping.deactivateDefaultTyping();
-							yield mapperNoTyping.convertValue(copy, clazz);
+					ObjectNode copy = valueNode.deepCopy();
+					copy.remove("@class");
+					copy.remove("@typeHint");
+					try {
+						Class<?> clazz = Class.forName(className);
+
+						// Check if it's a non-static inner class, local class, or anonymous class
+						if (isNonInstantiableClass(clazz) || Map.class.isAssignableFrom(clazz)) {
+							yield degradeToMap(copy, objectMapper, typeMapper);
 						}
-						catch (ClassNotFoundException ex) {
-							throw new IllegalStateException(
-									"Cannot instantiate class " + className + " for @class deserialization", ex);
-						}
+
+						ObjectMapper mapperNoTyping = objectMapper.copy();
+						mapperNoTyping.setDefaultTyping(null);
+						mapperNoTyping.deactivateDefaultTyping();
+						yield mapperNoTyping.convertValue(copy, clazz);
 					}
+					catch (ClassNotFoundException ex) {
+						throw new IllegalStateException(
+								"Cannot instantiate class " + className + " for @class deserialization", ex);
+					}
+					catch (com.fasterxml.jackson.databind.exc.InvalidDefinitionException ex) {
+						// Jackson cannot instantiate the class (e.g., inner class, abstract class)
+						yield degradeToMap(copy, objectMapper, typeMapper);
+					}
+					catch (IllegalArgumentException ex) {
+						// Jackson convertValue failed - if it's likely an inner class, degrade to Map
+						if (className.contains("$")) {
+							yield degradeToMap(copy, objectMapper, typeMapper);
+						}
+						throw ex;
+					}
+				}
 				}
 				if (typeHint != null) {
 					ObjectNode copy = valueNode.deepCopy();
@@ -121,6 +167,12 @@ public interface JacksonDeserializer<T> {
 					copy.remove("@class");
 					try {
 						Class<?> clazz = Class.forName(typeHint);
+
+						// Check if it's a non-static inner class, local class, or anonymous class
+						if (isNonInstantiableClass(clazz) || Map.class.isAssignableFrom(clazz)) {
+							yield degradeToMap(copy, objectMapper, typeMapper);
+						}
+
 						ObjectMapper mapperNoTyping = objectMapper.copy();
 						mapperNoTyping.setDefaultTyping(null);
 						mapperNoTyping.deactivateDefaultTyping();
@@ -129,6 +181,17 @@ public interface JacksonDeserializer<T> {
 					catch (ClassNotFoundException ex) {
 						throw new IllegalStateException(
 								"Cannot instantiate class " + typeHint + " for @typeHint deserialization", ex);
+					}
+					catch (com.fasterxml.jackson.databind.exc.InvalidDefinitionException ex) {
+						// Jackson cannot instantiate the class (e.g., inner class, abstract class)
+						yield degradeToMap(copy, objectMapper, typeMapper);
+					}
+					catch (IllegalArgumentException ex) {
+						// Jackson convertValue failed - if it's likely an inner class, degrade to Map
+						if (typeHint.contains("$")) {
+							yield degradeToMap(copy, objectMapper, typeMapper);
+						}
+						throw ex;
 					}
 				}
 				Map<String, Object> result = new LinkedHashMap<>();
@@ -280,95 +343,96 @@ public interface JacksonDeserializer<T> {
 			}
 		}
 		
-	// Reconstruct GraphResponse based on status
-	if (isError) {
-		// Extract error details from errorDetails map
-		String exceptionClass = "java.lang.RuntimeException";
-		String message = "Unknown error";
-		
-		if (valueNode.has("errorDetails")) {
-			JsonNode errorDetails = valueNode.get("errorDetails");
-			if (errorDetails.has("class")) {
-				exceptionClass = errorDetails.get("class").asText();
+		// Reconstruct GraphResponse based on status
+		if (isError) {
+			// Extract error details from errorDetails map
+			String exceptionClass = "java.lang.RuntimeException";
+			String message = "Unknown error";
+
+			if (valueNode.has("errorDetails")) {
+				JsonNode errorDetails = valueNode.get("errorDetails");
+				if (errorDetails.has("class")) {
+					exceptionClass = errorDetails.get("class").asText();
+				}
+				if (errorDetails.has("message")) {
+					message = errorDetails.get("message").asText();
+				}
 			}
-			if (errorDetails.has("message")) {
-				message = errorDetails.get("message").asText();
-			}
+
+			// Create exception instance
+			Throwable throwable = createThrowable(exceptionClass, message);
+			return com.alibaba.cloud.ai.graph.GraphResponse.error(throwable, metadata);
 		}
-		
-		// Create exception instance
-		Throwable throwable;
-		try {
-			Class<?> exClass = Class.forName(exceptionClass);
-			if (Throwable.class.isAssignableFrom(exClass)) {
-				throwable = (Throwable) exClass.getConstructor(String.class).newInstance(message);
-			} else {
-				throwable = new RuntimeException(message);
-			}
-		} catch (Exception e) {
-			throwable = new RuntimeException(message);
+		else if ("done".equals(status) || "completed".equals(status)) {
+			// For both "done" and "completed", reconstruct as a done GraphResponse
+			// This provides equivalent state: isDone()=true, resultValue available
+			return com.alibaba.cloud.ai.graph.GraphResponse.done(result, metadata);
 		}
-		
-		return com.alibaba.cloud.ai.graph.GraphResponse.error(throwable, metadata);
-	} else if ("done".equals(status) || "completed".equals(status)) {
-		// For both "done" and "completed", reconstruct as a done GraphResponse
-		// This provides equivalent state: isDone()=true, resultValue available
-		return com.alibaba.cloud.ai.graph.GraphResponse.done(result, metadata);
-	} else {
-		// For pending status, return null result
-		return com.alibaba.cloud.ai.graph.GraphResponse.done(null, metadata);
+		else {
+			// For pending status, create a pending GraphResponse with incomplete CompletableFuture
+			java.util.concurrent.CompletableFuture<Object> pendingFuture = new java.util.concurrent.CompletableFuture<>();
+			return com.alibaba.cloud.ai.graph.GraphResponse.of(pendingFuture, metadata);
+		}
 	}
-}
 	
 	/**
 	 * Reconstruct CompletableFuture from snapshot map.
 	 */
-	private static Object reconstructCompletableFuture(JsonNode valueNode, ObjectMapper objectMapper, TypeMapper typeMapper)
-			throws IOException {
+	private static Object reconstructCompletableFuture(JsonNode valueNode, ObjectMapper objectMapper,
+			TypeMapper typeMapper) throws IOException {
 		String status = valueNode.has("status") ? valueNode.get("status").asText() : "pending";
-		boolean isError = valueNode.has("error") && valueNode.get("error").asBoolean();
-		
-	java.util.concurrent.CompletableFuture<Object> future = new java.util.concurrent.CompletableFuture<>();
-	
-	if (isError || "failed".equals(status)) {
-		// Extract error details from error map
-		String exceptionClass = "java.lang.RuntimeException";
-		String message = "Unknown error";
-		
-		if (valueNode.has("error") && valueNode.get("error").isObject()) {
-			JsonNode errorMap = valueNode.get("error");
-			if (errorMap.has("class")) {
-				exceptionClass = errorMap.get("class").asText();
+		// Check if error field exists and is an object (error map) - this indicates a failed future
+		boolean hasErrorMap = valueNode.has("error") && valueNode.get("error").isObject();
+
+		java.util.concurrent.CompletableFuture<Object> future = new java.util.concurrent.CompletableFuture<>();
+
+		if (hasErrorMap || "failed".equals(status)) {
+			// Extract error details from error map
+			String exceptionClass = "java.lang.RuntimeException";
+			String message = "Unknown error";
+
+			if (hasErrorMap) {
+				JsonNode errorMap = valueNode.get("error");
+				if (errorMap.has("class")) {
+					exceptionClass = errorMap.get("class").asText();
+				}
+				if (errorMap.has("message")) {
+					message = errorMap.get("message").asText();
+				}
 			}
-			if (errorMap.has("message")) {
-				message = errorMap.get("message").asText();
-			}
+
+			Throwable throwable = createThrowable(exceptionClass, message);
+			future.completeExceptionally(throwable);
 		}
-		
-		Throwable throwable;
+		else if ("completed".equals(status)) {
+			Object result = null;
+			if (valueNode.has("result")) {
+				result = valueFromNode(valueNode.get("result"), objectMapper, typeMapper);
+			}
+			future.complete(result);
+		}
+		// For pending status, leave future incomplete
+
+		return future;
+	}
+
+	/**
+	 * Create a Throwable instance from class name and message.
+	 * Falls back to RuntimeException if the class cannot be instantiated.
+	 */
+	private static Throwable createThrowable(String exceptionClass, String message) {
 		try {
 			Class<?> exClass = Class.forName(exceptionClass);
 			if (Throwable.class.isAssignableFrom(exClass)) {
-				throwable = (Throwable) exClass.getConstructor(String.class).newInstance(message);
-			} else {
-				throwable = new RuntimeException(message);
+				// Try to create exception with String constructor
+				return (Throwable) exClass.getConstructor(String.class).newInstance(message);
 			}
-		} catch (Exception e) {
-			throwable = new RuntimeException(message);
 		}
-		
-		future.completeExceptionally(throwable);
-	} else if ("completed".equals(status)) {
-		Object result = null;
-		if (valueNode.has("result")) {
-			result = valueFromNode(valueNode.get("result"), objectMapper, typeMapper);
+		catch (Exception e) {
+			// Ignore and fall through to default
 		}
-		future.complete(result);
+		return new RuntimeException(message + " (original: " + exceptionClass + ")");
 	}
-	// For pending status, leave future incomplete
-	
-	return future;
-}
 
 	/**
 	 * Deserializes the given {@link JsonNode} into an object of type {@code T}.
