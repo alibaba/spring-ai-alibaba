@@ -196,6 +196,7 @@ public class NodeExecutor extends BaseGraphExecutor {
                 if (element instanceof ChatResponse response) {
                     return response.getResult() != null;
                 }
+                // Don't filter out Exception/Throwable - we need to handle them
                 return true;
             })
 			.doOnError(error -> {
@@ -204,6 +205,14 @@ public class NodeExecutor extends BaseGraphExecutor {
 					e.getKey(), error.getMessage(), error);
 			})
 			.map(element -> {
+				// Handle Exception/Throwable as data elements (not error signals)
+				if (element instanceof Throwable throwable) {
+					log.error("Exception emitted as data element in embedded Flux stream for key '{}': {}",
+						e.getKey(), throwable.getMessage(), throwable);
+					GraphResponse<NodeOutput> errorResponse = GraphResponse.error(throwable);
+					lastGraphResponseRef.set(errorResponse);
+					return errorResponse;
+				}
 				if (element instanceof ChatResponse response) {
 					ChatResponse lastResponse = lastChatResponseRef.get();
 					if (lastResponse == null) {
@@ -268,7 +277,16 @@ public class NodeExecutor extends BaseGraphExecutor {
 					String errorMsg = String.format("Unsupported flux element type %s, customized flux stream should emit GraphResponse<NodeOutput> or NodeOutput.", element != null ? element.getClass().getSimpleName() : "null");
 					return GraphResponse.<NodeOutput>error(new IllegalArgumentException(errorMsg));
 				}
-			}).concatWith(Mono.defer(() -> {
+			})
+			.onErrorResume(error -> {
+				// Handle actual error signals from the Flux
+				log.error("Error signal occurred in embedded Flux stream for key '{}': {}",
+					e.getKey(), error.getMessage(), error);
+				GraphResponse<NodeOutput> errorResponse = GraphResponse.error(error);
+				lastGraphResponseRef.set(errorResponse);
+				return Flux.just(errorResponse);
+			})
+			.concatWith(Mono.defer(() -> {
 				if (lastChatResponseRef.get() == null) {
 					GraphResponse<?> lastGraphResponse = lastGraphResponseRef.get();
 					if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
@@ -324,12 +342,34 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 			lastData.set(data);
 			return data;
+		})
+		.onErrorResume(error -> {
+			// Capture error and set it to lastData for proper handling
+			log.error("Error occurred in embedded Flux stream: {}", error.getMessage(), error);
+			context.doListeners(ERROR, new Exception(error));
+			GraphResponse<NodeOutput> errorResponse = GraphResponse.error(error);
+			lastData.set(errorResponse);
+			return Flux.just(errorResponse);
 		});
 
 		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
 			var data = lastData.get();
-			if (data == null)
+			if (data == null) {
+				log.error("No data returned from last streaming node execution '{}', will goto END node directly.", context.getCurrentNodeId());
+				try {
+					context.setNextNodeId(END);
+					context.doListeners(NODE_AFTER, null);
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
 				return;
+			}
+
+			// Handle error case
+			if (data.isError()) {
+				log.warn("Handling error from embedded Flux stream in node '{}'", context.getCurrentNodeId());
+			}
+
 			var nodeResultValue = data.resultValue();
 
 			if (nodeResultValue.isPresent() && nodeResultValue.get() instanceof InterruptionMetadata) {
