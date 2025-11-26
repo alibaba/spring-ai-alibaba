@@ -16,8 +16,11 @@
 
 package com.alibaba.cloud.ai.graph.internal.node;
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
+
+import java.util.Map;
 
 public class SubStateGraphNode extends Node implements SubGraphNode {
 
@@ -36,4 +39,8 @@ public class SubStateGraphNode extends Node implements SubGraphNode {
 		return SubGraphNode.formatId(id(), nodeId);
 	}
 
+	@Override
+	public Map<String, KeyStrategy> keyStrategies() {
+		return subGraph.getKeyStrategyFactory().apply();
+	}
 }

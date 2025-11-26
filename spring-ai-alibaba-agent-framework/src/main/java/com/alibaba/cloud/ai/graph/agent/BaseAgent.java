@@ -46,7 +46,7 @@ public abstract class BaseAgent extends Agent {
 		this.outputKeyStrategy = outputKeyStrategy;
 	}
 
-	public abstract Node asNode(boolean includeContents, boolean returnReasoningContents, String outputKeyToParent);
+	public abstract Node asNode(boolean includeContents, boolean returnReasoningContents);
 
 	public boolean isIncludeContents() {
 		return includeContents;

@@ -162,7 +162,7 @@ public final class OverAllState implements Serializable {
 	 * @param keyStrategies the key strategies
 	 */
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies) {
-		this.data = data != null ? data : new HashMap<>();
+		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
 		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 	}
@@ -175,7 +175,7 @@ public final class OverAllState implements Serializable {
 	 */
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies,
 			Store store) {
-		this.data = data != null ? data : new HashMap<>();
+		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
 		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.store = store;
