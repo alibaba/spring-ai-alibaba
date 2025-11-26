@@ -188,27 +188,28 @@ public class LoopAgentTest {
 
     @Test
     void testLoopAgentWithExecutor() throws Exception {
-        Executor customExecutor = Executors.newFixedThreadPool(4);
+        try (java.util.concurrent.ExecutorService customExecutor = java.util.concurrent.Executors.newFixedThreadPool(4)) {
 
-        LoopAgent loopAgent = LoopAgent.builder()
-                .name("loop_agent_with_executor")
-                .description("Loop agent with executor")
-                .subAgent(this.blogAgent)
-                .loopStrategy(LoopMode.count(2))
-                .executor(customExecutor)
-                .build();
+            LoopAgent loopAgent = LoopAgent.builder()
+                    .name("loop_agent_with_executor")
+                    .description("Loop agent with executor")
+                    .subAgent(this.blogAgent)
+                    .loopStrategy(LoopMode.count(2))
+                    .executor(customExecutor)
+                    .build();
 
-        assertNotNull(loopAgent, "LoopAgent should not be null");
+            assertNotNull(loopAgent, "LoopAgent should not be null");
 
-        // Verify executor is set and passed to RunnableConfig
-        RunnableConfig config = buildNonStreamConfig(loopAgent, null);
-        assertNotNull(config, "RunnableConfig should not be null");
-        
-        assertTrue(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
-            "Default parallel executor should be present in metadata");
-        assertEquals(customExecutor, 
-            config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
-            "Executor in metadata should match configured executor");
+            // Verify executor is set and passed to RunnableConfig
+            RunnableConfig config = buildNonStreamConfig(loopAgent, null);
+            assertNotNull(config, "RunnableConfig should not be null");
+            
+            assertTrue(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
+                "Default parallel executor should be present in metadata");
+            assertEquals(customExecutor, 
+                config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
+                "Executor in metadata should match configured executor");
+        }
     }
 
     @Test
