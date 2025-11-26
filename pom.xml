@@ -56,6 +56,7 @@
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-boot-starters/spring-ai-alibaba-starter-a2a-nacos</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-config-nacos</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
     </modules>
 
     <scm>
