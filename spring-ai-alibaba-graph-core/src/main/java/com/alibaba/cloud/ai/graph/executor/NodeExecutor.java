@@ -199,11 +199,6 @@ public class NodeExecutor extends BaseGraphExecutor {
                 // Don't filter out Exception/Throwable - we need to handle them
                 return true;
             })
-			.doOnError(error -> {
-				// Debug logging for Flux errors
-				log.error("Error occurred in embedded Flux stream for key '{}': {}",
-					e.getKey(), error.getMessage(), error);
-			})
 			.map(element -> {
 				// Handle Exception/Throwable as data elements (not error signals)
 				if (element instanceof Throwable throwable) {
@@ -274,14 +269,23 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return graphResponse;
 				}
 				else {
-					String errorMsg = String.format("Unsupported flux element type %s, customized flux stream should emit GraphResponse<NodeOutput> or NodeOutput.", element != null ? element.getClass().getSimpleName() : "null");
-					return GraphResponse.<NodeOutput>error(new IllegalArgumentException(errorMsg));
+					try {
+						log.info("Received element of type '{}' in embedded Flux for key '{}', wrapping in StreamingOutput.",
+							element.getClass().getName(), e.getKey());
+						StreamingOutput<?> streamingOutput = context.buildStreamingOutput(element, context.getCurrentNodeId());
+						GraphResponse<NodeOutput> graphResponse = GraphResponse.of(streamingOutput);
+						lastGraphResponseRef.set(graphResponse);
+						return graphResponse;
+					}
+					catch (Exception ex) {
+						throw new RuntimeException(ex);
+					}
 				}
 			})
 			.onErrorResume(error -> {
 				// Handle actual error signals from the Flux
 				log.error("Error signal occurred in embedded Flux stream for key '{}': {}",
-					e.getKey(), error.getMessage(), error);
+					e.getKey(), error.getMessage());
 				GraphResponse<NodeOutput> errorResponse = GraphResponse.error(error);
 				lastGraphResponseRef.set(errorResponse);
 				return Flux.just(errorResponse);
@@ -303,8 +307,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 						return Mono.just(lastGraphResponseRef.get());
 					}
 					return Mono.empty();
-				}
-				else {
+				} else {
 					return Mono.fromCallable(() -> {
 						Map<String, Object> completionResult = new HashMap<>();
 						completionResult.put(e.getKey(), lastChatResponseRef.get().getResult().getOutput());
@@ -333,7 +336,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 		AtomicReference<GraphResponse<NodeOutput>> lastData = new AtomicReference<>();
 
 		Flux<GraphResponse<NodeOutput>> processedFlux = embedFlux.map(data -> {
-			if (data.getOutput() != null) {
+			if (data.getOutput() != null && !data.getOutput().isCompletedExceptionally()) {
 				var output = data.getOutput().join();
 				output.setSubGraph(true);
 				GraphResponse<NodeOutput> newData = GraphResponse.of(output);
@@ -342,14 +345,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 			lastData.set(data);
 			return data;
-		})
-		.onErrorResume(error -> {
-			// Capture error and set it to lastData for proper handling
-			log.error("Error occurred in embedded Flux stream: {}", error.getMessage(), error);
-			context.doListeners(ERROR, new Exception(error));
-			GraphResponse<NodeOutput> errorResponse = GraphResponse.error(error);
-			lastData.set(errorResponse);
-			return Flux.just(errorResponse);
 		});
 
 		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
@@ -363,11 +358,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 					throw new RuntimeException(e);
 				}
 				return;
-			}
-
-			// Handle error case
-			if (data.isError()) {
-				log.warn("Handling error from embedded Flux stream in node '{}'", context.getCurrentNodeId());
 			}
 
 			var nodeResultValue = data.resultValue();

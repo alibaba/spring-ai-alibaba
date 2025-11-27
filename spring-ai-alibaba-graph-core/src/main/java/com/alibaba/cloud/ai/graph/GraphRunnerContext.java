@@ -292,6 +292,14 @@ public class GraphRunnerContext {
 		return output;
 	}
 
+	public StreamingOutput<?> buildStreamingOutput(Object originData, String nodeId) {
+		// Create StreamingOutput with chunk only
+		StreamingOutput<?> output = new StreamingOutput<>(originData, nodeId, (String) config.metadata("_AGENT_").orElse(""),
+				this.overallState);
+		output.setSubGraph(true);
+		return output;
+	}
+
 	// Normal NodeOutput builders for nodes with normal message output.
 
 	public NodeOutput buildNodeOutput(String nodeId) throws Exception {
