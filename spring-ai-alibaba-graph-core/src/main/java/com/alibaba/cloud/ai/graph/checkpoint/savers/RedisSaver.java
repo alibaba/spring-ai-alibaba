@@ -54,7 +54,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Instantiates a new Redis saver.
-	 * 
+	 *
 	 * @param redisson the redisson
 	 */
 	public RedisSaver(RedissonClient redisson) {
@@ -63,12 +63,53 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Instantiates a new Redis saver.
-	 * 
+	 *
 	 * @param redisson the redisson
 	 */
 	public RedisSaver(RedissonClient redisson, ObjectMapper objectMapper) {
 		this.redisson = redisson;
 		this.objectMapper = BaseCheckpointSaver.configureObjectMapper(objectMapper);
+	}
+
+	/**
+	 * Creates a new builder for RedisSaver.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder class for RedisSaver.
+	 */
+	public static class Builder {
+		private RedissonClient redisson;
+		private ObjectMapper objectMapper;
+
+		public Builder redisson(RedissonClient redisson) {
+			this.redisson = redisson;
+			return this;
+		}
+
+		public Builder objectMapper(ObjectMapper objectMapper) {
+			this.objectMapper = objectMapper;
+			return this;
+		}
+
+		/**
+		 * Builds a new RedisSaver instance.
+		 * @return a new RedisSaver instance
+		 * @throws IllegalArgumentException if redisson is null
+		 */
+		public RedisSaver build() {
+			if (redisson == null) {
+				throw new IllegalArgumentException("redisson cannot be null");
+			}
+			if (objectMapper == null) {
+				return new RedisSaver(redisson);
+			}
+			return new RedisSaver(redisson, objectMapper);
+		}
 	}
 
 	@Override

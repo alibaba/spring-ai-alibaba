@@ -68,7 +68,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Instantiates a new Mongo saver.
-	 * 
+	 *
 	 * @param client the client
 	 */
 	public MongoSaver(MongoClient client) {
@@ -77,7 +77,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Instantiates a new Mongo saver.
-	 * 
+	 *
 	 * @param client the client
 	 */
 	public MongoSaver(MongoClient client, ObjectMapper objectMapper) {
@@ -86,6 +86,47 @@ public class MongoSaver implements BaseCheckpointSaver {
 		this.txnOptions = TransactionOptions.builder().writeConcern(WriteConcern.MAJORITY).build();
 		this.objectMapper = BaseCheckpointSaver.configureObjectMapper(objectMapper);
 		Runtime.getRuntime().addShutdownHook(new Thread(client::close));
+	}
+
+	/**
+	 * Creates a new builder for MongoSaver.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder class for MongoSaver.
+	 */
+	public static class Builder {
+		private MongoClient client;
+		private ObjectMapper objectMapper;
+
+		public Builder client(MongoClient client) {
+			this.client = client;
+			return this;
+		}
+
+		public Builder objectMapper(ObjectMapper objectMapper) {
+			this.objectMapper = objectMapper;
+			return this;
+		}
+
+		/**
+		 * Builds a new MongoSaver instance.
+		 * @return a new MongoSaver instance
+		 * @throws IllegalArgumentException if client is null
+		 */
+		public MongoSaver build() {
+			if (client == null) {
+				throw new IllegalArgumentException("client cannot be null");
+			}
+			if (objectMapper == null) {
+				return new MongoSaver(client);
+			}
+			return new MongoSaver(client, objectMapper);
+		}
 	}
 
 	@Override
