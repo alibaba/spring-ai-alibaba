@@ -49,11 +49,11 @@ import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
@@ -168,13 +168,14 @@ public class ReactAgent extends BaseAgent {
 		Optional<OverAllState> state = doInvoke(inputs, config);
 
 		if (StringUtils.hasLength(outputKey)) {
+			// Note: outputKey="messages" is prohibited by validation in DefaultBuilder
+			// This branch only handles custom output keys
 			return state.flatMap(s -> s.value(outputKey))
 					.map(msg -> (AssistantMessage) msg)
 					.orElseThrow(() -> new IllegalStateException("Output key " + outputKey + " not found in agent state") );
 		}
 
-        // Add a validation instance when performing message conversion to
-        // avoid potential type conversion exceptions.
+        // Default behavior: use "messages" key and extract the last AssistantMessage
         return state.flatMap(s -> s.value("messages"))
                 .stream()
                 .flatMap(messageList -> ((List<?>) messageList).stream()
@@ -583,8 +584,11 @@ public class ReactAgent extends BaseAgent {
 		return () -> {
 			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
 			if (outputKey != null && !outputKey.isEmpty()) {
+				// Note: outputKey="messages" is prohibited by validation in DefaultBuilder
+				// This branch only handles custom output keys
 				keyStrategyHashMap.put(outputKey, outputKeyStrategy == null ? new ReplaceStrategy() : outputKeyStrategy);
 			}
+			// Always ensure "messages" uses AppendStrategy for conversation history
 			keyStrategyHashMap.put("messages", new AppendStrategy());
 
 			// Iterate through hooks and collect their key strategies
@@ -726,87 +730,297 @@ public class ReactAgent extends BaseAgent {
 		@Override
 		public Map<String, Object> apply(OverAllState parentState, RunnableConfig config) throws Exception {
 			RunnableConfig subGraphRunnableConfig = getSubGraphRunnableConfig(config);
-			Flux<GraphResponse<NodeOutput>> subGraphResult;
-			Object parentMessages = null;
 
-			if (includeContents) {
-				// by default, includeContents is true, we pass down the messages from the parent state
-				if (StringUtils.hasLength(instruction)) {
-					// instruction will be added as a special UserMessage to the child graph.
-					parentState.updateState(Map.of("messages", new AgentInstructionMessage(instruction)));
-				}
-				subGraphResult = childGraph.graphResponseStream(parentState, subGraphRunnableConfig);
-			} else {
-				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
-				parentMessages = stateForChild.remove("messages");
-				if (StringUtils.hasLength(instruction)) {
-					// instruction will be added as a special UserMessage to the child graph.
-					stateForChild.put("messages", new AgentInstructionMessage(instruction));
-				}
-				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
-			}
+			// Extract parent messages from parent state
+			List<Message> parentMessages = extractMessagesFromState(parentState);
 
+			// Prepare messages for child graph based on includeContents flag
+			List<Object> messagesForChild = prepareChildMessages(parentMessages);
+
+			// Create child state with prepared messages
+			// IMPORTANT: Use ReplaceStrategy to avoid appending messagesForChild to existing messages in snapshot
+			// snapShot() creates a shallow copy that includes existing messages from parentState
+			// Without ReplaceStrategy, updateState() would use AppendStrategy and cause message duplication
+			OverAllState childState = parentState.snapShot()
+					.orElseThrow(() -> new IllegalStateException("Failed to create state snapshot"));
+			childState.updateStateWithKeyStrategies(
+					Map.of("messages", messagesForChild),
+					Map.of("messages", new ReplaceStrategy()));
+
+			// Execute child graph
+			Flux<GraphResponse<NodeOutput>> subGraphResult =
+					childGraph.graphResponseStream(childState, subGraphRunnableConfig);
+
+			// Determine output key (default is "messages")
+			String outputKeyToParent = StringUtils.hasLength(ReactAgent.this.outputKey)
+					? ReactAgent.this.outputKey : "messages";
+
+			// Build result map
 			Map<String, Object> result = new HashMap<>();
+			result.put(outputKeyToParent,
+					processGraphResult(subGraphResult, parentMessages, outputKeyToParent));
 
-			String outputKeyToParent = StringUtils.hasLength(ReactAgent.this.outputKey) ? ReactAgent.this.outputKey : "messages";
-			result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult));
-			if (parentMessages != null) {
+			// When includeContents=false and outputKey is custom (not "messages"),
+			// we need to preserve parent messages in "messages" key
+			if (!includeContents && !"messages".equals(outputKeyToParent) && !parentMessages.isEmpty()) {
 				result.put("messages", parentMessages);
 			}
+
 			return result;
 		}
 
-		private @NotNull Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(OverAllState parentState, Flux<GraphResponse<NodeOutput>> subGraphResult) {
-			return Flux.create(sink -> {
-				AtomicReference<GraphResponse<NodeOutput>> lastRef = new AtomicReference<>();
-				subGraphResult.subscribe(item -> {
+		/**
+		 * Extract messages from state, ensuring type safety.
+		 * Returns an empty list if no messages found or if messages are not of correct type.
+		 *
+		 * @param state the state to extract messages from
+		 * @return list of Message objects
+		 */
+		private List<Message> extractMessagesFromState(OverAllState state) {
+			Object messagesObj = state.value("messages").orElse(null);
+			if (messagesObj == null) {
+				return new ArrayList<>();
+			}
+
+			if (messagesObj instanceof List) {
+				@SuppressWarnings("unchecked")
+				List<Object> messagesList = (List<Object>) messagesObj;
+				List<Message> result = new ArrayList<>();
+				for (Object obj : messagesList) {
+					if (obj instanceof Message) {
+						result.add((Message) obj);
+					} else {
+						logger.warn("Found non-Message object in messages list: {}. " +
+								"This object will be excluded from processing. Type: {}",
+								obj, obj != null ? obj.getClass().getName() : "null");
+					}
+				}
+				return result;
+			} else if (messagesObj instanceof Message) {
+				return List.of((Message) messagesObj);
+			} else {
+				logger.warn("Unexpected type for messages: {}. Expected List<Message> or Message. " +
+						"Treating as empty messages list.", messagesObj.getClass().getName());
+				return new ArrayList<>();
+			}
+		}
+
+	/**
+	 * Prepare messages for child graph based on includeContents flag.
+	 *
+	 * @param parentMessages the parent messages
+	 * @return list of messages for child graph
+	 */
+	private List<Object> prepareChildMessages(List<Message> parentMessages) {
+		List<Object> messagesForChild = new ArrayList<>();
+
+		if (includeContents) {
+			// Include parent messages, but mark them so they can be identified later
+			for (Message msg : parentMessages) {
+				messagesForChild.add(MessageMarker.mark(msg));
+			}
+		}
+		// If not includeContents, start with empty list (child is isolated)
+
+		// Add instruction if present
+		// IMPORTANT: Mark instruction to prevent it from accumulating in parent state
+		// Instruction is a temporary directive for child graph, not part of conversation history
+		if (StringUtils.hasLength(instruction)) {
+			messagesForChild.add(MessageMarker.mark(new AgentInstructionMessage(instruction)));
+		}
+
+		return messagesForChild;
+	}
+
+		/**
+		 * Process the graph result stream, handling message filtering and merging.
+		 *
+		 * @param subGraphResult the result stream from child graph
+		 * @param parentMessages the parent messages (for merging when needed)
+		 * @param outputKey the output key for results
+		 * @return processed graph response flux
+		 */
+		private Flux<GraphResponse<NodeOutput>> processGraphResult(
+				Flux<GraphResponse<NodeOutput>> subGraphResult,
+				List<Message> parentMessages,
+				String outputKey) {
+
+		return Flux.create(sink -> {
+			AtomicReference<GraphResponse<NodeOutput>> lastRef = new AtomicReference<>();
+
+			// Note: This code assumes subGraphResult emits elements sequentially on a single thread,
+			// which is the default behavior of CompiledGraph.graphResponseStream().
+			// If the upstream Flux uses multi-threaded scheduling (e.g., publishOn with parallel scheduler),
+			// additional synchronization would be needed to ensure thread safety.
+			subGraphResult.subscribe(
+				// onNext: buffer all intermediate results
+				// Note: Intermediate responses are streaming chunks (e.g., LLM tokens)
+				// and don't contain complete message state, so we pass them through as-is
+				item -> {
 					GraphResponse<NodeOutput> previous = lastRef.getAndSet(item);
 					if (previous != null) {
 						sink.next(previous);
 					}
-				}, sink::error, () -> {
+				},
+				// onError: propagate error
+				sink::error,
+				// onComplete: process final result
+				// Only the final response contains complete message state and needs processing
+				() -> {
 					GraphResponse<NodeOutput> lastResponse = lastRef.get();
 					if (lastResponse != null) {
-						if (lastResponse.resultValue().isPresent()) {
-							Object resultValue = lastResponse.resultValue().get();
-							if (resultValue instanceof Map) {
-								@SuppressWarnings("unchecked")
-								Map<String, Object> resultMap = (Map<String, Object>) resultValue;
-								if (resultMap.get("messages") instanceof List) {
-									@SuppressWarnings("unchecked")
-									List<Object> messages = new ArrayList<>((List<Object>) resultMap.get("messages"));
-									if (!messages.isEmpty()) {
-										parentState.value("messages").ifPresent(parentMsgs -> {
-											if (parentMsgs instanceof List) {
-												messages.removeAll((List<?>) parentMsgs);
-											}
-										});
-
-										List<Object> finalMessages;
-										if (returnReasoningContents) {
-											finalMessages = messages;
-										}
-										else {
-											if (!messages.isEmpty()) {
-												finalMessages = List.of(messages.get(messages.size() - 1));
-											} else {
-												finalMessages = List.of();
-											}
-										}
-
-										Map<String, Object> newResultMap = new HashMap<>(resultMap);
-										newResultMap.put("messages", finalMessages);
-										lastResponse = GraphResponse.done(newResultMap);
-									}
-								}
-							}
-						}
+						// Process the final response
+						lastResponse = processFinalResponse(lastResponse, parentMessages, outputKey);
+						sink.next(lastResponse);
+					} else {
+						// Handle empty Flux case: child graph produced no output
+						// Create an empty response to avoid NPE downstream
+						logger.warn("SubGraph '{}' produced no output, creating empty response with empty messages",
+								ReactAgent.this.name);
+						sink.next(GraphResponse.done(Map.of("messages", List.of())));
 					}
-					sink.next(lastResponse);
 					sink.complete();
-				});
-			});
+				}
+			);
+		});
 		}
+
+		/**
+		 * Process the final graph response, handling message filtering and merging.
+		 *
+		 * @param response the final graph response
+		 * @param parentMessages the parent messages
+		 * @param outputKey the output key
+		 * @return processed graph response
+		 */
+		private GraphResponse<NodeOutput> processFinalResponse(
+				GraphResponse<NodeOutput> response,
+				List<Message> parentMessages,
+				String outputKey) {
+
+			// Extract result map from response
+			Optional<Object> resultValueOpt = response.resultValue();
+			if (resultValueOpt.isEmpty() || !(resultValueOpt.get() instanceof Map)) {
+				return response;
+			}
+
+			@SuppressWarnings("unchecked")
+			Map<String, Object> resultMap = (Map<String, Object>) resultValueOpt.get();
+
+		// Extract messages from result
+		List<Message> childMessages = extractMessagesFromMap(resultMap);
+
+		// Process messages based on outputKey
+		if (!"messages".equals(outputKey)) {
+			// Output goes to custom key, need to handle "messages" properly
+			if (includeContents) {
+				// Remove marked parent messages from "messages" to avoid duplication
+				List<Message> cleanedMessages = removeMarkedParentMessages(childMessages);
+				Map<String, Object> newResultMap = new HashMap<>(resultMap);
+				newResultMap.put("messages", cleanedMessages);
+				return GraphResponse.done(newResultMap);
+			} else {
+				// For includeContents=false, child is isolated from parent
+				// Remove "messages" key to prevent child's internal messages from leaking to parent state
+				// Parent messages are preserved via the "messages" key in apply()'s return map
+				Map<String, Object> newResultMap = new HashMap<>(resultMap);
+				newResultMap.remove("messages");
+				return GraphResponse.done(newResultMap);
+			}
+		}
+
+		// Output goes to "messages" key - apply full processing
+		List<Message> processedMessages = processMessagesForOutput(
+				childMessages, parentMessages);
+
+		// Apply returnReasoningContents logic
+		List<Message> finalMessages;
+		if (returnReasoningContents) {
+			finalMessages = processedMessages;
+		} else {
+			// Only return last message when returnReasoningContents=false
+			finalMessages = processedMessages.isEmpty()
+					? List.of()
+					: List.of(processedMessages.get(processedMessages.size() - 1));
+		}
+
+		// Update result map
+		Map<String, Object> newResultMap = new HashMap<>(resultMap);
+		newResultMap.put("messages", finalMessages);
+		return GraphResponse.done(newResultMap);
+	}
+
+		/**
+		 * Extract messages from result map with type safety.
+		 *
+		 * @param resultMap the result map
+		 * @return list of Message objects
+		 */
+		private List<Message> extractMessagesFromMap(Map<String, Object> resultMap) {
+			Object messagesObj = resultMap.get("messages");
+			if (messagesObj == null) {
+				return new ArrayList<>();
+			}
+
+			if (messagesObj instanceof List) {
+				@SuppressWarnings("unchecked")
+				List<Object> messagesList = (List<Object>) messagesObj;
+				List<Message> result = new ArrayList<>();
+				for (Object obj : messagesList) {
+					if (obj instanceof Message) {
+						result.add((Message) obj);
+					} else {
+						logger.warn("Found non-Message object in result map messages: {}. " +
+								"This object will be excluded from processing. Type: {}",
+								obj, obj != null ? obj.getClass().getName() : "null");
+					}
+				}
+				return result;
+			}
+
+			return new ArrayList<>();
+		}
+
+		/**
+		 * Remove messages that are marked as parent messages.
+		 *
+		 * @param messages the messages to filter
+		 * @return filtered list with marked parent messages removed
+		 */
+		private List<Message> removeMarkedParentMessages(List<Message> messages) {
+			return messages.stream()
+					.filter(msg -> !MessageMarker.isMarked(msg))
+					.collect(Collectors.toList());
+		}
+
+	/**
+	 * Process messages for output by removing all marked messages.
+	 * Returns only new messages produced by child graph.
+	 *
+	 * @param childMessages messages from child graph
+	 * @param parentMessages parent messages (not used, kept for compatibility)
+	 * @return processed messages with all marked messages removed
+	 */
+	private List<Message> processMessagesForOutput(
+			List<Message> childMessages,
+			List<Message> parentMessages) {
+
+		// Always remove marked messages (parent messages and instruction)
+		// This applies to both includeContents=true and includeContents=false scenarios
+		//
+		// When includeContents=true:
+		//   - childMessages contains: [marked(parent1), marked(parent2), marked(instruction), new_msg]
+		//   - After removal: [new_msg]
+		//
+		// When includeContents=false:
+		//   - childMessages contains: [marked(instruction), new_msg]
+		//   - After removal: [new_msg]
+		//
+		// In both cases, only new messages are returned.
+		// The framework will automatically merge with parent messages using AppendStrategy.
+		return removeMarkedParentMessages(childMessages);
+	}
+
 
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
 			RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config)
@@ -842,6 +1056,114 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	/**
+	 * Utility class for marking and unmarking parent messages using metadata.
+	 * This class provides a centralized and type-safe way to handle message markers,
+	 * eliminating code duplication and improving maintainability.
+	 */
+	private static class MessageMarker {
+		private static final Logger logger = LoggerFactory.getLogger(MessageMarker.class);
+		private static final String PARENT_MESSAGE_MARKER = "_parent_message_marker_";
+
+		/**
+		 * Mark a message as a parent message by adding metadata marker.
+		 * Creates a new message instance with the marker to avoid modifying the original.
+		 *
+		 * @param message the message to mark (must not be null)
+		 * @return a new message instance with parent marker in metadata
+		 */
+		static Message mark(Message message) {
+			// Create new metadata map with parent marker
+			Map<String, Object> metadata = new HashMap<>(
+				message.getMetadata() != null ? message.getMetadata() : Map.of()
+			);
+			metadata.put(PARENT_MESSAGE_MARKER, true);
+
+			// Rebuild message with updated metadata using type-specific builders
+			return rebuildMessageWithMetadata(message, metadata);
+		}
+
+		/**
+		 * Check if a message is marked as a parent message.
+		 *
+		 * @param message the message to check
+		 * @return true if the message has the parent marker in metadata
+		 */
+		static boolean isMarked(Message message) {
+			Map<String, Object> metadata = message.getMetadata();
+			return metadata != null && Boolean.TRUE.equals(metadata.get(PARENT_MESSAGE_MARKER));
+		}
+
+		/**
+		 * Remove parent message marker from a message.
+		 * Creates a new message instance without the marker.
+		 *
+		 * @param message the message to unmark (must not be null)
+		 * @return a new message instance without the parent marker
+		 */
+		static Message unmark(Message message) {
+			// Create new metadata map without the parent marker
+			Map<String, Object> metadata = new HashMap<>(
+				message.getMetadata() != null ? message.getMetadata() : Map.of()
+			);
+			metadata.remove(PARENT_MESSAGE_MARKER);
+
+			// Rebuild message with updated metadata
+			return rebuildMessageWithMetadata(message, metadata);
+		}
+
+		/**
+		 * Rebuild a message with new metadata, preserving all other properties.
+		 * Handles all known message types with appropriate builders.
+		 *
+		 * @param message the original message
+		 * @param metadata the new metadata to use
+		 * @return a new message instance with updated metadata
+		 */
+		private static Message rebuildMessageWithMetadata(Message message, Map<String, Object> metadata) {
+			if (message instanceof AssistantMessage) {
+				AssistantMessage am = (AssistantMessage) message;
+				return AssistantMessage.builder()
+						.content(am.getText())
+						.properties(metadata)
+						.toolCalls(am.getToolCalls())
+						.media(am.getMedia())
+						.build();
+			} else if (message instanceof UserMessage) {
+				UserMessage um = (UserMessage) message;
+				return UserMessage.builder()
+						.text(um.getText())
+						.metadata(metadata)
+						.media(um.getMedia())
+						.build();
+			} else if (message instanceof SystemMessage) {
+				SystemMessage sm = (SystemMessage) message;
+				return SystemMessage.builder()
+						.text(sm.getText())
+						.metadata(metadata)
+						.build();
+			} else if (message instanceof ToolResponseMessage) {
+				ToolResponseMessage trm = (ToolResponseMessage) message;
+				return ToolResponseMessage.builder()
+						.responses(trm.getResponses())
+						.metadata(metadata)
+						.build();
+			} else if (message instanceof AgentInstructionMessage) {
+				AgentInstructionMessage aim = (AgentInstructionMessage) message;
+				return AgentInstructionMessage.builder()
+						.text(aim.getText())
+						.metadata(metadata)
+						.build();
+			} else {
+				// For unknown message types, return the original message with a warning
+				logger.warn("Unable to rebuild message of type {} with updated metadata. " +
+						"Marker mechanism may not work correctly for this message type.",
+						message.getClass().getName());
+				return message;
+			}
+		}
+	}
+
+	/**
 	 * Internal class that adapts a ReactAgent to be used as a SubGraph Node.
 	 */
 	private class AgentSubGraphNode extends Node implements SubGraphNode {
@@ -854,14 +1176,14 @@ public class ReactAgent extends BaseAgent {
 			this.subGraph = subGraph;
 		}
 
-		@Override
-		public StateGraph subGraph() {
-			return subGraph.stateGraph;
-		}
+	@Override
+	public StateGraph subGraph() {
+		return subGraph.stateGraph;
+	}
 
-		@Override
-		public Map<String, KeyStrategy> keyStrategies() {
-			return subGraph.getKeyStrategyMap();
-		}
+	@Override
+	public Map<String, KeyStrategy> keyStrategies() {
+		return subGraph.getKeyStrategyMap();
+	}
 	}
 }
