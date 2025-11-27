@@ -35,6 +35,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -97,10 +98,16 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			this.modelInterceptors = builder.modelInterceptors;
 		}
 		this.chatClient = builder.chatClient;
-		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
+		if (builder.chatOptions != null && builder.chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			this.toolCallingChatOptions = toolCallingChatOptions;
+			this.toolCallingChatOptions.setToolCallbacks(toolCallbacks);
+			this.toolCallingChatOptions.setInternalToolExecutionEnabled(false);
+		} else {
+			this.toolCallingChatOptions = ToolCallingChatOptions.builder()
 				.toolCallbacks(toolCallbacks)
 				.internalToolExecutionEnabled(false)
 				.build();
+		}
 		this.enableReasoningLog = builder.enableReasoningLog;;
 	}
 
@@ -360,10 +367,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<Message> messages = appendSystemPromptIfNeeded(modelRequest);
 
 		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
-		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
-				.toolCallbacks(filteredToolCallbacks)
-				.internalToolExecutionEnabled(false)
-				.build();
+		this.toolCallingChatOptions.setToolCallbacks(filteredToolCallbacks);
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
 				.options(toolCallingChatOptions)
@@ -385,6 +389,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		private String outputSchema;
 
 		private String systemPrompt;
+
+		private ChatOptions chatOptions;
 
 		private ChatClient chatClient;
 
@@ -430,6 +436,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder modelInterceptors(List<ModelInterceptor> modelInterceptors) {
 			this.modelInterceptors = modelInterceptors;
+			return this;
+		}
+
+		public Builder chatOptions(ChatOptions chatOptions) {
+			this.chatOptions = chatOptions;
 			return this;
 		}
 
