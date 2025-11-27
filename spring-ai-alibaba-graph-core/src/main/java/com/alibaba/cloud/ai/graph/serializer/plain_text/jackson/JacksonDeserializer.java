@@ -68,12 +68,15 @@ public interface JacksonDeserializer<T> {
 				if (valueNode.has(TYPE_PROPERTY)) {
 					var type = valueNode.get(TYPE_PROPERTY).asText();
 					
-					// Special handling for GraphResponse and CompletableFuture
+					// Special handling for GraphResponse, CompletableFuture, and ChatResponse
 					if ("GraphResponse".equals(type)) {
 						yield reconstructGraphResponse(valueNode, objectMapper, typeMapper);
 					}
 					if ("CompletableFuture".equals(type)) {
 						yield reconstructCompletableFuture(valueNode, objectMapper, typeMapper);
+					}
+					if ("ChatResponse".equals(type)) {
+						yield reconstructChatResponse(valueNode, objectMapper, typeMapper);
 					}
 					
 					var ref = typeMapper.getReference(type)
@@ -320,6 +323,55 @@ public interface JacksonDeserializer<T> {
 	}
 }
 	
+	/**
+	 * Reconstruct ChatResponse from snapshot map.
+	 */
+	private static Object reconstructChatResponse(JsonNode valueNode, ObjectMapper objectMapper, TypeMapper typeMapper)
+			throws IOException {
+		try {
+			// Handle result (generations list)
+			java.util.List<org.springframework.ai.chat.model.Generation> generations = new java.util.ArrayList<>();
+			if (valueNode.has("result") && valueNode.get("result").isArray()) {
+				JsonNode resultArray = valueNode.get("result");
+				for (JsonNode genNode : resultArray) {
+					org.springframework.ai.chat.model.Generation generation = reconstructGeneration(genNode, objectMapper, typeMapper);
+					generations.add(generation);
+				}
+			}
+
+			// Create ChatResponse with reconstructed generations
+			return new org.springframework.ai.chat.model.ChatResponse(generations);
+		} catch (Exception e) {
+			// If reconstruction fails, create an empty ChatResponse as fallback
+			return new org.springframework.ai.chat.model.ChatResponse(new java.util.ArrayList<>());
+		}
+	}
+
+	/**
+	 * Reconstruct a Generation object from JSON node.
+	 */
+	private static org.springframework.ai.chat.model.Generation reconstructGeneration(JsonNode genNode, ObjectMapper objectMapper, TypeMapper typeMapper)
+			throws IOException {
+		try {
+			// Extract output (may be null)
+			Object output = null;
+			if (genNode.has("output") && !genNode.get("output").isNull()) {
+				output = valueFromNode(genNode.get("output"), objectMapper, typeMapper);
+			}
+
+			// Create Generation with potentially null output
+			if (output != null && output instanceof org.springframework.ai.chat.messages.AssistantMessage) {
+				return new org.springframework.ai.chat.model.Generation((org.springframework.ai.chat.messages.AssistantMessage) output);
+			} else {
+				// Handle null or non-AssistantMessage output
+				return new org.springframework.ai.chat.model.Generation(null, null);
+			}
+		} catch (Exception e) {
+			// If reconstruction fails, return a minimal Generation
+			return new org.springframework.ai.chat.model.Generation(null, null);
+		}
+	}
+
 	/**
 	 * Reconstruct CompletableFuture from snapshot map.
 	 */

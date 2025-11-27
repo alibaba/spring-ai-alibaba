@@ -32,8 +32,10 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
  * Base Implementation of {@link PlainTextStateSerializer} using Jackson library. Need to
@@ -56,11 +58,14 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper cannot be null");
 
 		this.objectMapper.registerModule(new Jdk8Module());
+		this.objectMapper.registerModule(new JavaTimeModule());
 		this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_INTEGER_FOR_INTS,
 				false);
 		this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS,
 				false);
 		this.objectMapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION, true);
+
+		objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
 		var module = new SimpleModule();
 		module.addDeserializer(Map.class, new GenericMapDeserializer(typeMapper));
@@ -114,11 +119,16 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 	/**
 	 * Normalize a single value for serialization.
-	 * Only transforms GraphResponse and CompletableFuture, recursively checks containers.
+	 * Only transforms GraphResponse, CompletableFuture, and ChatResponse, recursively checks containers.
 	 */
 	private Object normalizeValue(Object value) {
 		if (value == null) {
 			return null;
+		}
+
+		// Handle ChatResponse objects that might cause serialization issues
+		if (value instanceof org.springframework.ai.chat.model.ChatResponse) {
+			return normalizeChatResponse((org.springframework.ai.chat.model.ChatResponse) value);
 		}
 
 		// 1. GraphResponse → snapshot map (fully normalize internally)
@@ -256,6 +266,11 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			return null;
 		}
 
+		// Handle ChatResponse objects
+		if (value instanceof org.springframework.ai.chat.model.ChatResponse) {
+			return normalizeChatResponse((org.springframework.ai.chat.model.ChatResponse) value);
+		}
+
 		// 1. GraphResponse → snapshot map
 		if (value instanceof GraphResponse) {
 			return normalizeGraphResponse((GraphResponse<?>) value);
@@ -267,17 +282,15 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		}
 
 		// 3. Map → recursive normalization
-		if (value instanceof Map) {
-			Map<?, ?> map = (Map<?, ?>) value;
-			Map<Object, Object> normalized = new LinkedHashMap<>(map.size());
+		if (value instanceof Map<?, ?> map) {
+            Map<Object, Object> normalized = new LinkedHashMap<>(map.size());
 			map.forEach((k, v) -> normalized.put(k, deepNormalizeValue(v)));
 			return normalized;
 		}
 
 		// 4. Collection → recursive normalization
-		if (value instanceof Collection) {
-			Collection<?> collection = (Collection<?>) value;
-			return collection.stream().map(this::deepNormalizeValue).collect(Collectors.toList());
+		if (value instanceof Collection<?> collection) {
+            return collection.stream().map(this::deepNormalizeValue).collect(Collectors.toList());
 		}
 
 	// 5. Array → recursive normalization
@@ -300,6 +313,46 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 		// 7. Other types → return as-is (assumed serializable)
 		return value;
+	}
+
+	/**
+	 * Convert ChatResponse into serializable snapshot map with type marker.
+	 * Handles ChatResponse objects with null results or complex structures.
+	 */
+	private Map<String, Object> normalizeChatResponse(org.springframework.ai.chat.model.ChatResponse response) {
+		Map<String, Object> snapshot = new LinkedHashMap<>();
+		snapshot.put("@type", "ChatResponse");
+
+		try {
+			// Handle result (generations list)
+            response.getResult();
+            List<org.springframework.ai.chat.model.Generation> generations = response.getResults();
+            List<Object> normalizedGenerations = new ArrayList<>();
+            for (org.springframework.ai.chat.model.Generation generation : generations) {
+                Map<String, Object> genSnapshot = new LinkedHashMap<>();
+                genSnapshot.put("@type", "Generation");
+
+                // Handle output (may be null)
+                genSnapshot.put("output", generation.getOutput());
+
+                // Handle metadata if present
+                generation.getMetadata();
+                genSnapshot.put("metadata", generation.getMetadata());
+
+                normalizedGenerations.add(genSnapshot);
+            }
+            snapshot.put("result", normalizedGenerations);
+
+            // Handle chat response metadata if present
+            snapshot.put("metadata", response.getMetadata());
+
+        } catch (Exception e) {
+			// If anything goes wrong, create a safe fallback
+			snapshot.put("result", null);
+			snapshot.put("error", "Failed to serialize ChatResponse: " + e.getMessage());
+		}
+
+		return snapshot;
 	}
 
 	/**

@@ -163,6 +163,7 @@ public class Issue2702ReproductionTest {
 			.subscribe(
 				output -> {
 					// Process each output
+					log.info("✅ 接收到流式输出: {}", output);
 				},
 				error -> {
 					// Error already handled in doOnError

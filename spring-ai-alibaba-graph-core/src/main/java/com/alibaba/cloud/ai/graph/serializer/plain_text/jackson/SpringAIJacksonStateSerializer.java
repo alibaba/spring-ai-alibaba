@@ -32,6 +32,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.document.Document;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import org.springframework.ai.chat.model.ChatResponse;
 
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
@@ -47,12 +48,17 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
 		registerMessageHandlers(module);
 
+		// Register ChatResponse serializer and deserializer
+		module.addSerializer(ChatResponse.class, new ChatResponseSerializer.Serializer());
+		module.addDeserializer(ChatResponse.class, new ChatResponseSerializer.Deserializer());
+
 		typeMapper.register(new TypeMapper.Reference<ToolResponseMessage>(MessageType.TOOL.name()) {
 		}).register(new TypeMapper.Reference<SystemMessage>(MessageType.SYSTEM.name()) {
 		}).register(new TypeMapper.Reference<UserMessage>(MessageType.USER.name()) {
 		}).register(new TypeMapper.Reference<AssistantMessage>(MessageType.ASSISTANT.name()) {
 		}).register(new TypeMapper.Reference<Document>("DOCUMENT") {
 		}).register(new TypeMapper.Reference<AgentInstructionMessage>("TEMPLATED_USER") {
+		}).register(new TypeMapper.Reference<ChatResponse>("CHAT_RESPONSE") {
 		});
 
 		// Conditionally register DeepSeekAssistantMessage if the class is available
