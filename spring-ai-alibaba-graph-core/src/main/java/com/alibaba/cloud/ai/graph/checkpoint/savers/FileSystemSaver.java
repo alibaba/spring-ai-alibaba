@@ -77,7 +77,7 @@ public class FileSystemSaver extends MemorySaver {
 	 * Creates a new builder for FileSystemSaver.
 	 * @return a new Builder instance
 	 */
-	public static Builder builder() {
+	public static Builder fileSystemBuilder() {
 		return new Builder();
 	}
 
