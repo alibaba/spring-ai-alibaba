@@ -94,10 +94,14 @@
                 <artifactId>spring-ai-alibaba-starter-a2a-nacos</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-config-nacos</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-graph-observation</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

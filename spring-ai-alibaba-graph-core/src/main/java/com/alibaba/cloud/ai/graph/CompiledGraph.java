@@ -97,9 +97,10 @@ public class CompiledGraph {
 	 * @throws GraphStateException the graph state exception
 	 */
 	protected CompiledGraph(StateGraph stateGraph, CompileConfig compileConfig) throws GraphStateException {
-		maxIterations = compileConfig.recursionLimit();
-
+		this.maxIterations = compileConfig.recursionLimit();
 		this.stateGraph = stateGraph;
+
+
 		this.keyStrategyMap = stateGraph.getKeyStrategyFactory()
 			.apply()
 			.entrySet()
@@ -108,6 +109,24 @@ public class CompiledGraph {
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
+
+		// set extra Key and KeyStrategy defined from sub Graphs (StateGraph)
+		for (var entry : processedData.keyStrategyMap().entrySet()) {
+			if (!this.keyStrategyMap.containsKey(entry.getKey())) {
+				this.keyStrategyMap.put(entry.getKey(), entry.getValue());
+			}
+		}
+		// set extra Key and KeyStrategy defined from sub Graphs (Other SubGraphs)
+		for (var n : processedData.nodes().elements) {
+			if (n instanceof SubGraphNode sgNode) {
+				var subGraphKeyStrategies = sgNode.keyStrategies();
+				for (var ksEntry : subGraphKeyStrategies.entrySet()) {
+					if (!this.keyStrategyMap.containsKey(ksEntry.getKey())) {
+						this.keyStrategyMap.put(ksEntry.getKey(), ksEntry.getValue());
+					}
+				}
+			}
+		}
 
 		// CHECK INTERRUPTIONS
 		for (String interruption : processedData.interruptsBefore()) {
@@ -385,7 +404,7 @@ public class CompiledGraph {
 	 * @return the over all state
 	 */
 	public OverAllState cloneState(Map<String, Object> data) throws IOException, ClassNotFoundException {
-		return new OverAllState(stateGraph.getStateSerializer().cloneObject(data).data());
+		return new OverAllState(stateGraph.getStateSerializer().cloneObject(data).data(), getKeyStrategyMap());
 	}
 
 	/**
@@ -583,7 +602,7 @@ public class CompiledGraph {
 		// Creates a new OverAllState instance using key strategies from the graph
 		// and provided input data.
 		return OverAllStateBuilder.builder()
-			.withKeyStrategies(stateGraph.getKeyStrategyFactory().apply())
+			.withKeyStrategies(getKeyStrategyMap())
 			.withData(inputs)
 			.withStore(compileConfig.getStore())
 			.build();
@@ -652,12 +671,11 @@ public class CompiledGraph {
 	}
 
 }
-
 /**
  * The type Processed nodes edges and config.
  */
 record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interruptsBefore,
-		Set<String> interruptsAfter) {
+		Set<String> interruptsAfter, Map<String, KeyStrategy> keyStrategyMap) {
 
 	/**
 	 * Instantiates a new Processed nodes edges and config.
@@ -665,7 +683,7 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 	 * @param config the config
 	 */
 	ProcessedNodesEdgesAndConfig(StateGraph stateGraph, CompileConfig config) {
-		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter());
+		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter(), Map.of());
 	}
 
 	/**
@@ -689,9 +707,12 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 		var nodes = new Nodes(stateGraph.nodes.exceptSubStateGraphNodes());
 		var edges = new Edges(stateGraph.edges.elements);
 
+		Map<String, KeyStrategy> keyStrategyMap = Map.of();
+
 		for (var subgraphNode : subgraphNodes) {
 
 			var sgWorkflow = subgraphNode.subGraph();
+			keyStrategyMap = subgraphNode.keyStrategies();
 
 			ProcessedNodesEdgesAndConfig processedSubGraph = process(sgWorkflow, config);
 			Nodes processedSubGraphNodes = processedSubGraph.nodes;
@@ -780,6 +801,6 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 			}).forEach(nodes.elements::add);
 		}
 
-		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter);
+		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter, keyStrategyMap);
 	}
 }

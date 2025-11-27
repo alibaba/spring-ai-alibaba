@@ -41,8 +41,10 @@ public class JacksonNodeOutputDeserializer extends StdDeserializer<NodeOutput> {
         TreeNode treeNode = jsonParser.getCodec().readTree(jsonParser);
         String node = treeNode.get("node").toString();
         String agent = treeNode.get("agent").toString();
-        OverAllState overAllState = objectMapper.convertValue(treeNode.get("state"), OverAllState.class);
-        boolean subGraph = objectMapper.convertValue(treeNode.get("subGraph"), boolean.class);
+        // Use readValue instead of convertValue to ensure custom deserializers are triggered
+        // This is critical for types like DeepSeekAssistantMessage that may be nested in OverAllState
+        OverAllState overAllState = objectMapper.readValue(objectMapper.treeAsTokens(treeNode.get("state")), OverAllState.class);
+        boolean subGraph = objectMapper.readValue(objectMapper.treeAsTokens(treeNode.get("subGraph")), boolean.class);
         NodeOutput nodeOutput = NodeOutput.of(node, agent, overAllState, null);
         nodeOutput.setSubGraph(subGraph);
         return nodeOutput;

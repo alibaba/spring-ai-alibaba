@@ -143,7 +143,7 @@ public interface FlowGraphBuildingStrategy {
 		if (subAgent instanceof FlowAgent flowAgent) {
 			newGraph.addNode(flowAgent.name(), flowAgent.asStateGraph());
 		} else if (subAgent instanceof BaseAgent baseAgent) {
-			newGraph.addNode(baseAgent.name(), baseAgent.asNode(baseAgent.isIncludeContents(), baseAgent.isReturnReasoningContents(), baseAgent.getOutputKey()));
+			newGraph.addNode(baseAgent.name(), baseAgent.asNode(baseAgent.isIncludeContents(), baseAgent.isReturnReasoningContents()));
 		} else {
 			throw new IllegalArgumentException(subAgent.getClass().getName() + " only supports FlowAgent and BaseAgent types");
 		}

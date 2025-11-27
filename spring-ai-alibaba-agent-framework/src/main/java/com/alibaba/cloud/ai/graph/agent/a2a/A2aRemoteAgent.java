@@ -83,8 +83,8 @@ public class A2aRemoteAgent extends BaseAgent {
 	}
 
 	@Override
-	public Node asNode(boolean includeContents, boolean returnReasoningContents, String outputKeyToParent) {
-		return new A2aRemoteAgentNode(this.name, includeContents, returnReasoningContents, outputKeyToParent, this.instruction, this.agentCard, this.streaming, this.shareState, this.getAndCompileGraph());
+	public Node asNode(boolean includeContents, boolean returnReasoningContents) {
+		return new A2aRemoteAgentNode(this.name, includeContents, returnReasoningContents, this.instruction, this.agentCard, this.streaming, this.shareState, this.getAndCompileGraph());
 	}
 
 	/**
@@ -92,13 +92,13 @@ public class A2aRemoteAgent extends BaseAgent {
 	 * Similar to AgentSubGraphNode but uses A2aNodeActionWithConfig internally.
 	 * Implements SubGraphNode interface to provide subgraph functionality.
 	 */
-	private static class A2aRemoteAgentNode extends Node implements SubGraphNode {
+	private class A2aRemoteAgentNode extends Node implements SubGraphNode {
 
 		private final CompiledGraph subGraph;
 
-		public A2aRemoteAgentNode(String id, boolean includeContents, boolean returnReasoningContents, String outputKeyToParent, String instruction, AgentCardWrapper agentCard, boolean streaming, boolean shareState, CompiledGraph subGraph) {
+		public A2aRemoteAgentNode(String id, boolean includeContents, boolean returnReasoningContents, String instruction, AgentCardWrapper agentCard, boolean streaming, boolean shareState, CompiledGraph subGraph) {
 			super(Objects.requireNonNull(id, "id cannot be null"),
-					(config) -> AsyncNodeActionWithConfig.node_async(new A2aNodeActionWithConfig(agentCard, subGraph.stateGraph.getName(), includeContents, outputKeyToParent, instruction, streaming, shareState, config)));
+					(config) -> AsyncNodeActionWithConfig.node_async(new A2aNodeActionWithConfig(agentCard, subGraph.stateGraph.getName(), includeContents, instruction, A2aRemoteAgent.this.outputKey, streaming, shareState, config)));
 			this.subGraph = subGraph;
 		}
 

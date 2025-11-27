@@ -15,10 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
-
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.StateGraph;
@@ -29,9 +25,8 @@ import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 
-
-
-import static com.alibaba.cloud.ai.graph.utils.Messageutils.convertToMessages;
+import java.util.List;
+import java.util.concurrent.Executor;
 
 public abstract class FlowAgent extends Agent {
 
@@ -41,15 +36,14 @@ public abstract class FlowAgent extends Agent {
 
 	protected StateSerializer stateSerializer;
 
-	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents)
-			throws GraphStateException {
+	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents) {
 		super(name, description);
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
 	}
 
 	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
-			StateSerializer stateSerializer) throws GraphStateException {
+			StateSerializer stateSerializer) {
 		super(name, description);
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
@@ -57,7 +51,7 @@ public abstract class FlowAgent extends Agent {
 	}
 
 	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
-			StateSerializer stateSerializer, Executor executor) throws GraphStateException {
+			StateSerializer stateSerializer, Executor executor) {
 		super(name, description);
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
@@ -69,10 +63,10 @@ public abstract class FlowAgent extends Agent {
 	protected StateGraph initGraph() throws GraphStateException {
 		// Use FlowGraphBuilder to construct the graph
 		FlowGraphBuilder.FlowGraphConfig config = FlowGraphBuilder.FlowGraphConfig.builder()
-			.name(this.name())
-			.rootAgent(this)
-			.subAgents(this.subAgents());
-		
+				.name(this.name())
+				.rootAgent(this)
+				.subAgents(this.subAgents());
+
 		// Set state serializer if available
 		if (this.stateSerializer != null) {
 			config.stateSerializer(this.stateSerializer);
@@ -83,12 +77,12 @@ public abstract class FlowAgent extends Agent {
 	}
 
 	@Override
-	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) throws GraphStateException {
+	public ScheduledAgentTask schedule(ScheduleConfig scheduleConfig) {
 		CompiledGraph compiledGraph = getAndCompileGraph();
 		return compiledGraph.schedule(scheduleConfig);
 	}
 
-	public StateGraph asStateGraph(){
+	public StateGraph asStateGraph() {
 		return getGraph();
 	}
 
@@ -103,19 +97,8 @@ public abstract class FlowAgent extends Agent {
 	protected abstract StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config)
 			throws GraphStateException;
 
-	public CompileConfig compileConfig() {
-		return compileConfig;
-	}
-
 	public List<Agent> subAgents() {
 		return this.subAgents;
-	}
-
-	/**
-	 * Creates a map with messages and input for String message
-	 */
-	private Map<String, Object> createInputMap(String message) {
-		return Map.of("messages", convertToMessages(message), "input", message);
 	}
 
 }

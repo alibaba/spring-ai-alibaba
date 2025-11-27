@@ -41,7 +41,10 @@ public class StreamingOutputDeserializer extends StdDeserializer<StreamingOutput
 
         String nodeName = node.has("node") ? node.get("node").asText() : null;
         String agentName = node.has("agent") ? node.get("agent").asText() : null;
-        OverAllState state = node.has("state") ? objectMapper.convertValue(node.get("state"), OverAllState.class) : null;
+        // Use readValue instead of convertValue to ensure custom deserializers are triggered
+        // This is critical for types like DeepSeekAssistantMessage that may be nested in OverAllState
+        OverAllState state = node.has("state") ? 
+            objectMapper.readValue(objectMapper.treeAsTokens(node.get("state")), OverAllState.class) : null;
         String chunk = node.has("chunk") ? node.get("chunk").asText() : null;
 
         // Create StreamingOutput without originData (it was not serialized)

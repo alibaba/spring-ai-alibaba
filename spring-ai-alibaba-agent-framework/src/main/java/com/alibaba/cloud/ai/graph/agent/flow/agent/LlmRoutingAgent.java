@@ -27,7 +27,7 @@ public class LlmRoutingAgent extends FlowAgent {
 
 	private final ChatModel chatModel;
 
-	protected LlmRoutingAgent(LlmRoutingAgentBuilder builder) throws GraphStateException {
+	protected LlmRoutingAgent(LlmRoutingAgentBuilder builder) {
 		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor);
 		this.chatModel = builder.chatModel;
 	}
@@ -74,7 +74,7 @@ public class LlmRoutingAgent extends FlowAgent {
 		}
 
 		@Override
-		public LlmRoutingAgent build() throws GraphStateException {
+		public LlmRoutingAgent doBuild() {
 			validate();
 			return new LlmRoutingAgent(this);
 		}
