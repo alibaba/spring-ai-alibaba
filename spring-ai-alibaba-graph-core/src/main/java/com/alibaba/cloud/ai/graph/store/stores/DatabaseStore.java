@@ -276,19 +276,19 @@ public class DatabaseStore extends BaseStore {
 	/**
 	 * Initialize database table.
 	 */
-	private void initializeTable() {
-		// Create table with database-agnostic SQL
-		String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + "id VARCHAR(1000) PRIMARY KEY, "
-				+ "namespace TEXT, " + "key_name VARCHAR(500), " + "value_json TEXT, " + "created_at TIMESTAMP, "
-				+ "updated_at TIMESTAMP" + ")";
+    private void initializeTable() {
+        // Create table with database-agnostic SQL
+        String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + "id TEXT PRIMARY KEY, "
+                + "namespace TEXT, " + "key_name VARCHAR(500), " + "value_json TEXT, " + "created_at TIMESTAMP, "
+                + "updated_at TIMESTAMP" + ")";
 
-		try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
-			stmt.executeUpdate(sql);
-		}
-		catch (SQLException e) {
-			throw new RuntimeException("Failed to initialize table", e);
-		}
-	}
+        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sql);
+        }
+        catch (SQLException e) {
+            throw new RuntimeException("Failed to initialize table", e);
+        }
+    }
 
 	/**
 	 * Create item ID from namespace and key.
