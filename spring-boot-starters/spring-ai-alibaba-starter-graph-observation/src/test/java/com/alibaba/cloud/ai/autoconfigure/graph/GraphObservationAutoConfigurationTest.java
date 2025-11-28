@@ -298,8 +298,6 @@ class GraphObservationAutoConfigurationTest {
 		chatClientObservation.stop();
 
 		assertTrue(allContextsAvailable.get(), "All nested observation contexts should be accessible");
-
-		log.info("Nested observation context propagation test passed");
 	}
 
 	@Test
