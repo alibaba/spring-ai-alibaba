@@ -21,8 +21,12 @@ import com.alibaba.cloud.ai.graph.observation.GraphObservationLifecycleListener;
 import com.alibaba.cloud.ai.graph.observation.edge.GraphEdgeObservationHandler;
 import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationHandler;
 import com.alibaba.cloud.ai.graph.observation.node.GraphNodeObservationHandler;
+import io.micrometer.context.ContextRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -32,6 +36,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import reactor.core.publisher.Hooks;
 
 /**
  * Auto-configuration for Graph observation functionality.
@@ -49,6 +54,34 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(prefix = GraphObservationProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class GraphObservationAutoConfiguration {
+
+	private static final Logger log = LoggerFactory.getLogger(GraphObservationAutoConfiguration.class);
+
+	@Bean
+	@ConditionalOnClass(name = "io.micrometer.context.ContextRegistry")
+	@ConditionalOnMissingBean(name = "observationThreadLocalAccessorRegistrar")
+	public ObservationThreadLocalAccessorRegistrar observationThreadLocalAccessorRegistrar(
+			ObjectProvider<ObservationRegistry> observationRegistry) {
+		ObservationRegistry registry = observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP);
+
+		if (registry != ObservationRegistry.NOOP) {
+			try {
+				ContextRegistry.getInstance()
+					.registerThreadLocalAccessor(new ObservationThreadLocalAccessor(registry));
+
+				log.info("Successfully registered ObservationThreadLocalAccessor for Reactor context propagation");
+
+				Hooks.enableAutomaticContextPropagation();
+
+				log.info("Successfully enabled Reactor automatic context propagation for observations");
+			} catch (Exception e) {
+				log.warn("Failed to configure context propagation. " +
+						"Observation context may not propagate in async tool calls: {}", e.getMessage());
+			}
+		}
+
+		return new ObservationThreadLocalAccessorRegistrar();
+	}
 
 	/**
 	 * Creates a GraphObservationLifecycleListener that monitors graph lifecycle events.
@@ -123,6 +156,11 @@ public class GraphObservationAutoConfiguration {
 			return new GraphEdgeObservationHandler(meterRegistry);
 		}
 
+	}
+
+
+	public static class ObservationThreadLocalAccessorRegistrar {
+		// Marker class
 	}
 
 }
