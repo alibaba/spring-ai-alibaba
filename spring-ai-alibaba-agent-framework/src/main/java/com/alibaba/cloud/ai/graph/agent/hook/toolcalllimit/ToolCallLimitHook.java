@@ -91,8 +91,8 @@ public class ToolCallLimitHook extends ModelHook {
 			}
 			else if (exitBehavior == ExitBehavior.END) {
 				String message = buildLimitExceededMessage(threadCount, runCount, threadLimit, runLimit, toolName);
-				List<Message> messages = new ArrayList<>((List<Message>) state.value("messages")
-						.orElse(new ArrayList<>()));
+
+				List<Message> messages = new ArrayList<>();
 				messages.add(new AssistantMessage(message));
 
 				Map<String, Object> updates = new HashMap<>();

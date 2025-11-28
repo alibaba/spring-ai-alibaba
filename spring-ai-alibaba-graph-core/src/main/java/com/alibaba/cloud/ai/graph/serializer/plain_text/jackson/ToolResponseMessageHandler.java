@@ -20,7 +20,6 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -99,9 +98,8 @@ public interface ToolResponseMessageHandler {
 
 			if (responsesNode.isNull() || responsesNode.isEmpty()) {
 				return ToolResponseMessage.builder()
-					.responses(List.of())
-					.metadata(metadata)
-					.build();
+						.metadata(metadata)
+						.build();
 			}
 
 			var responses = new ArrayList<ToolResponseMessage.ToolResponse>(responsesNode.size());
@@ -110,9 +108,9 @@ public interface ToolResponseMessageHandler {
 			}
 
 			return ToolResponseMessage.builder()
-				.responses(responses)
-				.metadata(metadata)
-				.build();
+					.responses(responses)
+					.metadata(metadata)
+					.build();
 		}
 
 	}

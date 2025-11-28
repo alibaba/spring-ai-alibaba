@@ -259,10 +259,13 @@ public class NodeExecutor extends BaseGraphExecutor {
 					GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
 					lastGraphResponseRef.set(graphResponse);
 					return graphResponse;
+				} else if (element instanceof NodeOutput nodeOutput) {
+					GraphResponse<NodeOutput> graphResponse = GraphResponse.of(nodeOutput);
+					lastGraphResponseRef.set(graphResponse);
+					return graphResponse;
 				}
 				else {
-					String errorMsg = "Unsupported flux element type: "
-							+ (element != null ? element.getClass().getSimpleName() : "null");
+					String errorMsg = String.format("Unsupported flux element type %s, customized flux stream should emit GraphResponse<NodeOutput> or NodeOutput.", element != null ? element.getClass().getSimpleName() : "null");
 					return GraphResponse.<NodeOutput>error(new IllegalArgumentException(errorMsg));
 				}
 			}).concatWith(Mono.defer(() -> {

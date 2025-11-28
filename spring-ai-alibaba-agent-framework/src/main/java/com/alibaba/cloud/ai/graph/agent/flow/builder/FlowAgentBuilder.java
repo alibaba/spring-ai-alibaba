@@ -18,10 +18,13 @@ package com.alibaba.cloud.ai.graph.agent.flow.builder;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * Abstract base builder for FlowAgent and its subclasses. Provides common builder
@@ -39,9 +42,13 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 
 	public CompileConfig compileConfig;
 
+	public BaseCheckpointSaver saver;
+
 	public List<Agent> subAgents;
 
 	public StateSerializer stateSerializer;
+
+	public Executor executor;
 
 	/**
 	 * Sets the agent name.
@@ -73,6 +80,11 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 		return self();
 	}
 
+	public B saver(BaseCheckpointSaver saver) {
+		this.saver = saver;
+		return self();
+	}
+
 	/**
 	 * Sets the list of sub-agents.
 	 * @param subAgents the list of sub-agents
@@ -90,6 +102,20 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	 */
 	public B stateSerializer(StateSerializer stateSerializer) {
 		this.stateSerializer = stateSerializer;
+		return self();
+	}
+
+	/**
+	 * Sets the executor for parallel nodes.
+	 * <p>
+	 * This executor will be used for all parallel nodes in the agent's execution graph.
+	 * When a parallel node is executed, it will use this executor to run the parallel
+	 * branches concurrently.
+	 * @param executor the {@link Executor} to use for parallel nodes
+	 * @return this builder instance for method chaining
+	 */
+	public B executor(Executor executor) {
+		this.executor = executor;
 		return self();
 	}
 
@@ -120,6 +146,16 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	 * @return the built FlowAgent instance
 	 * @throws GraphStateException if agent creation fails
 	 */
-	public abstract T build() throws GraphStateException;
+	public T build() throws GraphStateException {
+		if (this.saver != null) {
+			if (this.compileConfig == null) {
+				this.compileConfig = CompileConfig.builder().saverConfig(SaverConfig.builder().register(saver).build()).build();
+			}
+			this.compileConfig = CompileConfig.builder(compileConfig).saverConfig(SaverConfig.builder().register(saver).build()).build();
+		}
+		return doBuild();
+	};
+
+	public abstract T doBuild() throws GraphStateException;
 
 }

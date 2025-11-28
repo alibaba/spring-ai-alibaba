@@ -73,6 +73,41 @@ public class FileSystemSaver extends MemorySaver {
 
 	}
 
+	/**
+	 * Creates a new builder for FileSystemSaver.
+	 * @return a new Builder instance
+	 */
+	public static Builder fileSystemBuilder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder class for FileSystemSaver.
+	 */
+	public static class Builder {
+		private Path targetFolder;
+		private StateSerializer stateSerializer;
+
+		public Builder targetFolder(Path targetFolder) {
+			this.targetFolder = targetFolder;
+			return this;
+		}
+
+		public Builder stateSerializer(StateSerializer stateSerializer) {
+			this.stateSerializer = stateSerializer;
+			return this;
+		}
+
+		/**
+		 * Builds a new FileSystemSaver instance.
+		 * @return a new FileSystemSaver instance
+		 * @throws IllegalArgumentException if targetFolder or stateSerializer is null
+		 */
+		public FileSystemSaver build() {
+			return new FileSystemSaver(targetFolder, stateSerializer);
+		}
+	}
+
 	private String getBaseName(RunnableConfig config) {
 		var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
 		return format("thread-%s", threadId);

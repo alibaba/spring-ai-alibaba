@@ -62,7 +62,7 @@ public class ParallelAgent extends FlowAgent {
 	private final Integer maxConcurrency;
 
 	protected ParallelAgent(ParallelAgentBuilder builder) throws GraphStateException {
-		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer);
+		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor);
 		this.mergeStrategy = builder.mergeStrategy != null ? builder.mergeStrategy : new DefaultMergeStrategy();
 		this.maxConcurrency = builder.maxConcurrency;
 		this.mergeOutputKey = builder.mergeOutputKey;
@@ -295,7 +295,7 @@ public class ParallelAgent extends FlowAgent {
 		 * @throws GraphStateException if agent creation fails
 		 */
 		@Override
-		public ParallelAgent build() throws GraphStateException {
+		public ParallelAgent doBuild() throws GraphStateException {
 			validate();
 			return new ParallelAgent(this);
 		}

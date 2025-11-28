@@ -106,9 +106,9 @@ public interface AssistantMessageHandler {
 
 			if (requestsNode.isNull() || requestsNode.isEmpty()) {
 				return AssistantMessage.builder()
-					.content(text)
-					.properties(metadata)
-					.build();
+						.content(text)
+						.properties(metadata)
+						.build();
 			}
 
 			var requests = new LinkedList<AssistantMessage.ToolCall>();
@@ -121,10 +121,10 @@ public interface AssistantMessageHandler {
 			}
 
 			return AssistantMessage.builder()
-				.content(text)
-				.properties(metadata)
-				.toolCalls(requests)
-				.build();
+					.content(text)
+					.properties(metadata)
+					.toolCalls(requests)
+					.build();
 		}
 
 	}

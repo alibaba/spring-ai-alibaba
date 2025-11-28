@@ -58,7 +58,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Instantiates a new Redis saver with Redisson client.
-	 * 
+	 *
 	 * @param redisson the redisson client
 	 */
 	public RedisSaver(RedissonClient redisson) {
@@ -67,7 +67,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Instantiates a new Redis saver with Jedis pool.
-	 * 
+	 *
 	 * @param jedisPool the jedis pool
 	 */
 	public RedisSaver(JedisPool jedisPool) {
@@ -76,7 +76,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Instantiates a new Redis saver with Redisson client and custom object mapper.
-	 * 
+	 *
 	 * @param redisson the redisson client
 	 * @param objectMapper the object mapper
 	 */
@@ -86,7 +86,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Instantiates a new Redis saver with Jedis pool and custom object mapper.
-	 * 
+	 *
 	 * @param jedisPool the jedis pool
 	 * @param objectMapper the object mapper
 	 */
@@ -96,13 +96,54 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 	/**
 	 * Instantiates a new Redis saver with a Redis client adapter.
-	 * 
+	 *
 	 * @param redisClient the redis client adapter
 	 * @param objectMapper the object mapper
 	 */
 	private RedisSaver(RedisClientAdapter redisClient, ObjectMapper objectMapper) {
 		this.redisClient = redisClient;
 		this.objectMapper = BaseCheckpointSaver.configureObjectMapper(objectMapper);
+	}
+
+	/**
+	 * Creates a new builder for RedisSaver.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder class for RedisSaver.
+	 */
+	public static class Builder {
+		private RedissonClient redisson;
+		private ObjectMapper objectMapper;
+
+		public Builder redisson(RedissonClient redisson) {
+			this.redisson = redisson;
+			return this;
+		}
+
+		public Builder objectMapper(ObjectMapper objectMapper) {
+			this.objectMapper = objectMapper;
+			return this;
+		}
+
+		/**
+		 * Builds a new RedisSaver instance.
+		 * @return a new RedisSaver instance
+		 * @throws IllegalArgumentException if redisson is null
+		 */
+		public RedisSaver build() {
+			if (redisson == null) {
+				throw new IllegalArgumentException("redisson cannot be null");
+			}
+			if (objectMapper == null) {
+				return new RedisSaver(redisson);
+			}
+			return new RedisSaver(redisson, objectMapper);
+		}
 	}
 
 	@Override
@@ -315,7 +356,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 			// This is a simplified locking mechanism for demonstration purposes
 			long timeoutMillis = unit.toMillis(time);
 			long startTime = System.currentTimeMillis();
-			
+
 			try (Jedis jedis = jedisPool.getResource()) {
 				while (System.currentTimeMillis() - startTime < timeoutMillis) {
 					// Try to set the lock key with NX (only set if not exists) and PX (expire time in milliseconds)

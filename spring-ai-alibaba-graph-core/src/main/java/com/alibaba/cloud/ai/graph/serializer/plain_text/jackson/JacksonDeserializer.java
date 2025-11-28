@@ -20,11 +20,14 @@ import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.TypeMapper.TYPE_PROPERTY;
 
@@ -37,6 +40,190 @@ import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.TypeMappe
  */
 @FunctionalInterface
 public interface JacksonDeserializer<T> {
+
+	Logger logger = LoggerFactory.getLogger(JacksonDeserializer.class);
+
+	/**
+	 * Cache for deserialization strategies to avoid repeated trial-and-error.
+	 * Key: target class, Value: the most efficient deserialization strategy for that class
+	 * 
+	 * Note: This cache is bounded to prevent unbounded memory growth.
+	 * In typical applications, the number of unique classes being deserialized is limited.
+	 * If the cache fills up, older entries will be evicted (not implemented yet, but recommended for production).
+	 */
+	Map<Class<?>, DeserializationStrategy> STRATEGY_CACHE = new ConcurrentHashMap<>();
+	
+	/**
+	 * Maximum cache size to prevent unbounded growth.
+	 * This limit is reasonable for most applications.
+	 */
+	int MAX_CACHE_SIZE = 1000;
+
+	/**
+	 * Deserialization strategies in order of preference and capability
+	 */
+	enum DeserializationStrategy {
+		/**
+		 * Use readValue - full deserialization with custom deserializers support
+		 */
+		READ_VALUE,
+		/**
+		 * Use convertValue - simple POJO conversion, faster but limited
+		 */
+		CONVERT_VALUE,
+		/**
+		 * Cannot instantiate, degrade to Map
+		 */
+		DEGRADE_TO_MAP
+	}
+
+	/**
+	 * Check if a class cannot be instantiated by Jackson.
+	 * Non-static inner classes, local classes, and anonymous classes require
+	 * an outer class instance and cannot be deserialized.
+	 */
+	static boolean isNonInstantiableClass(Class<?> clazz) {
+		return (clazz.isMemberClass() && !java.lang.reflect.Modifier.isStatic(clazz.getModifiers()))
+				|| clazz.isLocalClass()
+				|| clazz.isAnonymousClass();
+	}
+
+	/**
+	 * Degrade an ObjectNode to a Map when the target class cannot be instantiated.
+	 */
+	static Map<String, Object> degradeToMap(ObjectNode node, ObjectMapper objectMapper, TypeMapper typeMapper)
+			throws IOException {
+		Map<String, Object> result = new LinkedHashMap<>();
+		var fields = node.fields();
+		while (fields.hasNext()) {
+			var entry = fields.next();
+			result.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
+		}
+		return result;
+	}
+
+	/**
+	 * Unified deserialization strategy with progressive fallback and caching.
+	 * This is the framework-level solution that handles all types automatically:
+	 * 
+	 * 1. Try readValue first (supports custom deserializers, @JsonCreator, etc.)
+	 * 2. Fall back to convertValue if readValue fails (faster for simple POJOs)
+	 * 3. Degrade to Map if both fail (for non-instantiable classes)
+	 * 4. Cache the successful strategy to avoid repeated trial-and-error
+	 * 
+	 * @param node the JSON node to deserialize
+	 * @param targetClass the target class to deserialize to
+	 * @param objectMapper the ObjectMapper instance
+	 * @param typeMapper the TypeMapper for type resolution
+	 * @return the deserialized object
+	 * @throws IOException if deserialization fails completely
+	 */
+	static Object deserializeWithStrategy(
+			ObjectNode node,
+			Class<?> targetClass,
+			ObjectMapper objectMapper,
+			TypeMapper typeMapper) throws IOException {
+
+		// Quick check for known non-instantiable classes
+		if (isNonInstantiableClass(targetClass) || Map.class.isAssignableFrom(targetClass)) {
+			return degradeToMap(node, objectMapper, typeMapper);
+		}
+
+		// Prepare ObjectMapper without default typing
+		ObjectMapper mapperNoTyping = objectMapper.copy();
+		mapperNoTyping.setDefaultTyping(null);
+		mapperNoTyping.deactivateDefaultTyping();
+
+		// Check cached strategy
+		DeserializationStrategy cachedStrategy = STRATEGY_CACHE.get(targetClass);
+
+		if (cachedStrategy == DeserializationStrategy.READ_VALUE) {
+			try {
+				return mapperNoTyping.readValue(mapperNoTyping.treeAsTokens(node), targetClass);
+			}
+			catch (IOException e) {
+				// Strategy might be outdated, clear cache and retry
+				STRATEGY_CACHE.remove(targetClass);
+			}
+		}
+		else if (cachedStrategy == DeserializationStrategy.CONVERT_VALUE) {
+			try {
+				return mapperNoTyping.convertValue(node, targetClass);
+			}
+			catch (RuntimeException e) {
+				// Strategy might be outdated, clear cache and retry
+				STRATEGY_CACHE.remove(targetClass);
+			}
+		}
+		else if (cachedStrategy == DeserializationStrategy.DEGRADE_TO_MAP) {
+			return degradeToMap(node, objectMapper, typeMapper);
+		}
+
+		// First time encountering this type, perform strategy detection
+		try {
+			// Try readValue first - most comprehensive deserialization
+			Object result = mapperNoTyping.readValue(mapperNoTyping.treeAsTokens(node), targetClass);
+			cacheStrategy(targetClass, DeserializationStrategy.READ_VALUE);
+			return result;
+		}
+		catch (IOException readValueEx) {
+			// Log at TRACE level for debugging
+			if (logger.isTraceEnabled()) {
+				logger.trace("readValue failed for {}, trying convertValue", targetClass.getName(), readValueEx);
+			}
+			// readValue failed, try convertValue
+			try {
+				Object result = mapperNoTyping.convertValue(node, targetClass);
+				cacheStrategy(targetClass, DeserializationStrategy.CONVERT_VALUE);
+				logStrategyFallback(targetClass, "readValue", "convertValue");
+				return result;
+			}
+			catch (RuntimeException convertEx) {
+				// Both methods failed, degrade to Map
+				if (logger.isDebugEnabled()) {
+					logger.debug("Both readValue and convertValue failed for {}, degrading to Map", 
+						targetClass.getName(), convertEx);
+				}
+				cacheStrategy(targetClass, DeserializationStrategy.DEGRADE_TO_MAP);
+				logStrategyFallback(targetClass, "convertValue", "Map");
+				return degradeToMap(node, objectMapper, typeMapper);
+			}
+		}
+	}
+
+	/**
+	 * Cache a deserialization strategy with size limit protection.
+	 * If cache size exceeds MAX_CACHE_SIZE, clear 10% of entries to prevent unbounded growth.
+	 */
+	static void cacheStrategy(Class<?> targetClass, DeserializationStrategy strategy) {
+		// Simple cache size management: if full, clear some space
+		if (STRATEGY_CACHE.size() >= MAX_CACHE_SIZE) {
+			// Clear approximately 10% of cache entries
+			int entriesToRemove = MAX_CACHE_SIZE / 10;
+			STRATEGY_CACHE.keySet().stream()
+				.limit(entriesToRemove)
+				.forEach(STRATEGY_CACHE::remove);
+			
+			if (logger.isDebugEnabled()) {
+				logger.debug("Strategy cache reached limit ({}), cleared {} entries", 
+					MAX_CACHE_SIZE, entriesToRemove);
+			}
+		}
+		STRATEGY_CACHE.put(targetClass, strategy);
+	}
+
+	/**
+	 * Log deserialization strategy fallback for debugging and monitoring.
+	 * Uses DEBUG level to avoid excessive logging in production.
+	 */
+	static void logStrategyFallback(Class<?> targetClass, String from, String to) {
+		if (logger.isDebugEnabled()) {
+			logger.debug(
+					"Deserialization fallback for {}: {} failed, using {} instead. "
+							+ "Consider registering a custom deserializer if this occurs frequently.",
+					targetClass.getName(), from, to);
+		}
+	}
 
 	/**
 	 * Converts a {@link JsonNode} to a standard Java object based on its node type. This
@@ -68,51 +255,46 @@ public interface JacksonDeserializer<T> {
 				if (valueNode.has(TYPE_PROPERTY)) {
 					var type = valueNode.get(TYPE_PROPERTY).asText();
 					
-					// Special handling for GraphResponse and CompletableFuture
+					// Special handling for GraphResponse, ChatResponse and CompletableFuture
 					if ("GraphResponse".equals(type)) {
 						yield reconstructGraphResponse(valueNode, objectMapper, typeMapper);
+					}
+					if ("ChatResponse".equals(type)) {
+						// ChatResponse cannot be reconstructed (no default constructor),
+						// return null as it should not be persisted in state
+						yield null;
 					}
 					if ("CompletableFuture".equals(type)) {
 						yield reconstructCompletableFuture(valueNode, objectMapper, typeMapper);
 					}
 					
+					// Use unified deserialization strategy for all registered types
 					var ref = typeMapper.getReference(type)
 						.orElseThrow(() -> new IllegalStateException("Type not found: " + type));
 					ObjectNode copy = valueNode.deepCopy();
 					copy.remove(TYPE_PROPERTY);
 					copy.remove("@typeHint");
-					ObjectMapper mapperNoTyping = objectMapper.copy();
-					mapperNoTyping.setDefaultTyping(null);
-					mapperNoTyping.deactivateDefaultTyping();
-					yield mapperNoTyping.convertValue(copy, ref);
+					
+					// Get Class from TypeReference using ObjectMapper's TypeFactory
+					Class<?> targetClass = objectMapper.getTypeFactory().constructType(ref).getRawClass();
+					yield deserializeWithStrategy(copy, targetClass, objectMapper, typeMapper);
 				}
 				if (valueNode.has("@class")) {
 					String className = valueNode.get("@class").asText();
 					if (!(typeHint != null && className.startsWith("java.util."))) {
-						ObjectNode copy = valueNode.deepCopy();
-						copy.remove("@class");
-						copy.remove("@typeHint");
-						try {
-							Class<?> clazz = Class.forName(className);
-							if (Map.class.isAssignableFrom(clazz)) {
-								Map<String, Object> result = new LinkedHashMap<>();
-								var fields = copy.fields();
-								while (fields.hasNext()) {
-									var entry = fields.next();
-									result.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
-								}
-								yield result;
-							}
-							ObjectMapper mapperNoTyping = objectMapper.copy();
-							mapperNoTyping.setDefaultTyping(null);
-							mapperNoTyping.deactivateDefaultTyping();
-							yield mapperNoTyping.convertValue(copy, clazz);
-						}
-						catch (ClassNotFoundException ex) {
-							throw new IllegalStateException(
-									"Cannot instantiate class " + className + " for @class deserialization", ex);
-						}
+					ObjectNode copy = valueNode.deepCopy();
+					copy.remove("@class");
+					copy.remove("@typeHint");
+					try {
+						Class<?> clazz = Class.forName(className);
+						// Use unified deserialization strategy
+						yield deserializeWithStrategy(copy, clazz, objectMapper, typeMapper);
 					}
+					catch (ClassNotFoundException ex) {
+						throw new IllegalStateException(
+								"Cannot instantiate class " + className + " for @class deserialization", ex);
+					}
+				}
 				}
 				if (typeHint != null) {
 					ObjectNode copy = valueNode.deepCopy();
@@ -121,10 +303,8 @@ public interface JacksonDeserializer<T> {
 					copy.remove("@class");
 					try {
 						Class<?> clazz = Class.forName(typeHint);
-						ObjectMapper mapperNoTyping = objectMapper.copy();
-						mapperNoTyping.setDefaultTyping(null);
-						mapperNoTyping.deactivateDefaultTyping();
-						yield mapperNoTyping.convertValue(copy, clazz);
+						// Use unified deserialization strategy
+						yield deserializeWithStrategy(copy, clazz, objectMapper, typeMapper);
 					}
 					catch (ClassNotFoundException ex) {
 						throw new IllegalStateException(
@@ -206,23 +386,28 @@ public interface JacksonDeserializer<T> {
 			}
 			int length = payload.size();
 			Object typedArray = Array.newInstance(componentType, length);
-			ObjectMapper mapperNoTyping = objectMapper.copy();
-			mapperNoTyping.setDefaultTyping(null);
-			mapperNoTyping.deactivateDefaultTyping();
 			for (int i = 0; i < length; i++) {
 				JsonNode elementNode = payload.get(i);
 				Object element;
-				try {
-					element = mapperNoTyping.convertValue(elementNode, componentType);
+				
+				// For object nodes, use unified deserialization strategy
+				if (elementNode.isObject()) {
+					element = deserializeWithStrategy((ObjectNode) elementNode, componentType, objectMapper, typeMapper);
 				}
-				catch (IllegalArgumentException ex) {
+				else {
+					// For non-object nodes, use valueFromNode
 					element = valueFromNode(elementNode, objectMapper, typeMapper);
 				}
+				
 				if (element == null && !componentType.isPrimitive()) {
 					Array.set(typedArray, i, null);
 					continue;
 				}
 				if (element != null && !componentType.isInstance(element)) {
+					// Type mismatch, fall back to generic Object array
+					ObjectMapper mapperNoTyping = objectMapper.copy();
+					mapperNoTyping.setDefaultTyping(null);
+					mapperNoTyping.deactivateDefaultTyping();
 					return payload.traverse(mapperNoTyping).readValueAs(Object[].class);
 				}
 				Array.set(typedArray, i, element);
@@ -280,95 +465,96 @@ public interface JacksonDeserializer<T> {
 			}
 		}
 		
-	// Reconstruct GraphResponse based on status
-	if (isError) {
-		// Extract error details from errorDetails map
-		String exceptionClass = "java.lang.RuntimeException";
-		String message = "Unknown error";
-		
-		if (valueNode.has("errorDetails")) {
-			JsonNode errorDetails = valueNode.get("errorDetails");
-			if (errorDetails.has("class")) {
-				exceptionClass = errorDetails.get("class").asText();
+		// Reconstruct GraphResponse based on status
+		if (isError) {
+			// Extract error details from errorDetails map
+			String exceptionClass = "java.lang.RuntimeException";
+			String message = "Unknown error";
+
+			if (valueNode.has("errorDetails")) {
+				JsonNode errorDetails = valueNode.get("errorDetails");
+				if (errorDetails.has("class")) {
+					exceptionClass = errorDetails.get("class").asText();
+				}
+				if (errorDetails.has("message")) {
+					message = errorDetails.get("message").asText();
+				}
 			}
-			if (errorDetails.has("message")) {
-				message = errorDetails.get("message").asText();
-			}
+
+			// Create exception instance
+			Throwable throwable = createThrowable(exceptionClass, message);
+			return com.alibaba.cloud.ai.graph.GraphResponse.error(throwable, metadata);
 		}
-		
-		// Create exception instance
-		Throwable throwable;
-		try {
-			Class<?> exClass = Class.forName(exceptionClass);
-			if (Throwable.class.isAssignableFrom(exClass)) {
-				throwable = (Throwable) exClass.getConstructor(String.class).newInstance(message);
-			} else {
-				throwable = new RuntimeException(message);
-			}
-		} catch (Exception e) {
-			throwable = new RuntimeException(message);
+		else if ("done".equals(status) || "completed".equals(status)) {
+			// For both "done" and "completed", reconstruct as a done GraphResponse
+			// This provides equivalent state: isDone()=true, resultValue available
+			return com.alibaba.cloud.ai.graph.GraphResponse.done(result, metadata);
 		}
-		
-		return com.alibaba.cloud.ai.graph.GraphResponse.error(throwable, metadata);
-	} else if ("done".equals(status) || "completed".equals(status)) {
-		// For both "done" and "completed", reconstruct as a done GraphResponse
-		// This provides equivalent state: isDone()=true, resultValue available
-		return com.alibaba.cloud.ai.graph.GraphResponse.done(result, metadata);
-	} else {
-		// For pending status, return null result
-		return com.alibaba.cloud.ai.graph.GraphResponse.done(null, metadata);
+		else {
+			// For pending status, create a pending GraphResponse with incomplete CompletableFuture
+			java.util.concurrent.CompletableFuture<Object> pendingFuture = new java.util.concurrent.CompletableFuture<>();
+			return com.alibaba.cloud.ai.graph.GraphResponse.of(pendingFuture, metadata);
+		}
 	}
-}
 	
 	/**
 	 * Reconstruct CompletableFuture from snapshot map.
 	 */
-	private static Object reconstructCompletableFuture(JsonNode valueNode, ObjectMapper objectMapper, TypeMapper typeMapper)
-			throws IOException {
+	private static Object reconstructCompletableFuture(JsonNode valueNode, ObjectMapper objectMapper,
+			TypeMapper typeMapper) throws IOException {
 		String status = valueNode.has("status") ? valueNode.get("status").asText() : "pending";
-		boolean isError = valueNode.has("error") && valueNode.get("error").asBoolean();
-		
-	java.util.concurrent.CompletableFuture<Object> future = new java.util.concurrent.CompletableFuture<>();
-	
-	if (isError || "failed".equals(status)) {
-		// Extract error details from error map
-		String exceptionClass = "java.lang.RuntimeException";
-		String message = "Unknown error";
-		
-		if (valueNode.has("error") && valueNode.get("error").isObject()) {
-			JsonNode errorMap = valueNode.get("error");
-			if (errorMap.has("class")) {
-				exceptionClass = errorMap.get("class").asText();
+		// Check if error field exists and is an object (error map) - this indicates a failed future
+		boolean hasErrorMap = valueNode.has("error") && valueNode.get("error").isObject();
+
+		java.util.concurrent.CompletableFuture<Object> future = new java.util.concurrent.CompletableFuture<>();
+
+		if (hasErrorMap || "failed".equals(status)) {
+			// Extract error details from error map
+			String exceptionClass = "java.lang.RuntimeException";
+			String message = "Unknown error";
+
+			if (hasErrorMap) {
+				JsonNode errorMap = valueNode.get("error");
+				if (errorMap.has("class")) {
+					exceptionClass = errorMap.get("class").asText();
+				}
+				if (errorMap.has("message")) {
+					message = errorMap.get("message").asText();
+				}
 			}
-			if (errorMap.has("message")) {
-				message = errorMap.get("message").asText();
-			}
+
+			Throwable throwable = createThrowable(exceptionClass, message);
+			future.completeExceptionally(throwable);
 		}
-		
-		Throwable throwable;
+		else if ("completed".equals(status)) {
+			Object result = null;
+			if (valueNode.has("result")) {
+				result = valueFromNode(valueNode.get("result"), objectMapper, typeMapper);
+			}
+			future.complete(result);
+		}
+		// For pending status, leave future incomplete
+
+		return future;
+	}
+
+	/**
+	 * Create a Throwable instance from class name and message.
+	 * Falls back to RuntimeException if the class cannot be instantiated.
+	 */
+	private static Throwable createThrowable(String exceptionClass, String message) {
 		try {
 			Class<?> exClass = Class.forName(exceptionClass);
 			if (Throwable.class.isAssignableFrom(exClass)) {
-				throwable = (Throwable) exClass.getConstructor(String.class).newInstance(message);
-			} else {
-				throwable = new RuntimeException(message);
+				// Try to create exception with String constructor
+				return (Throwable) exClass.getConstructor(String.class).newInstance(message);
 			}
-		} catch (Exception e) {
-			throwable = new RuntimeException(message);
 		}
-		
-		future.completeExceptionally(throwable);
-	} else if ("completed".equals(status)) {
-		Object result = null;
-		if (valueNode.has("result")) {
-			result = valueFromNode(valueNode.get("result"), objectMapper, typeMapper);
+		catch (Exception e) {
+			// Ignore and fall through to default
 		}
-		future.complete(result);
+		return new RuntimeException(message + " (original: " + exceptionClass + ")");
 	}
-	// For pending status, leave future incomplete
-	
-	return future;
-}
 
 	/**
 	 * Deserializes the given {@link JsonNode} into an object of type {@code T}.
