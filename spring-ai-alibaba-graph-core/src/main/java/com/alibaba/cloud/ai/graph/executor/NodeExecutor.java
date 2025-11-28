@@ -208,14 +208,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 					ChatResponse lastResponse = lastChatResponseRef.get();
 					if (lastResponse == null) {
 						var message = response.getResult().getOutput();
-						GraphResponse<NodeOutput> lastGraphResponse = null;
-						if (message.hasToolCalls()) {
-							lastGraphResponse =
-									GraphResponse.of(context.buildStreamingOutput(message, response, context.getCurrentNodeId()));
-						} else {
-							lastGraphResponse =
-									GraphResponse.of(context.buildStreamingOutput(message, response, context.getCurrentNodeId()));
-						}
+						GraphResponse<NodeOutput> lastGraphResponse =
+								GraphResponse.of(context.buildStreamingOutput(message, response, context.getCurrentNodeId()));
 						lastChatResponseRef.set(response);
 						lastGraphResponseRef.set(lastGraphResponse);
 						return lastGraphResponse;
