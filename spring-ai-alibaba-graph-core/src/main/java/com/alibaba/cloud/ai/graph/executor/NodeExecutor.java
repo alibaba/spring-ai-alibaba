@@ -184,121 +184,202 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @param partialState the partial state containing flux instances
 	 * @return an Optional containing Data with the flux if found, empty otherwise
 	 */
-	private Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(GraphRunnerContext context,
-			Map<String, Object> partialState) {
-		return partialState.entrySet().stream().filter(e -> e.getValue() instanceof Flux<?>).findFirst().map(e -> {
-			var chatFlux = (Flux<?>) e.getValue();
-			var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
-			var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
+		private Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(GraphRunnerContext context,
+				Map<String, Object> partialState) {
+			return partialState.entrySet().stream().filter(e -> e.getValue() instanceof Flux<?>).findFirst().map(e -> {
+				var chatFlux = (Flux<?>) e.getValue();
+				var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
+				var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
 
-            return chatFlux.filter(element -> {
-                // skip ChatResponse.getResult() == null
-                if (element instanceof ChatResponse response) {
-                    return response.getResult() != null;
-                }
-                return true;
-            })
-			.doOnError(error -> {
-				// Debug logging for Flux errors
-				log.error("Error occurred in embedded Flux stream for key '{}': {}",
-					e.getKey(), error.getMessage(), error);
-			})
-			.map(element -> {
-				if (element instanceof ChatResponse response) {
-					ChatResponse lastResponse = lastChatResponseRef.get();
-					if (lastResponse == null) {
-						var message = response.getResult().getOutput();
-						GraphResponse<NodeOutput> lastGraphResponse = null;
-						if (message.hasToolCalls()) {
-							lastGraphResponse =
-									GraphResponse.of(context.buildStreamingOutput(message, response, context.getCurrentNodeId()));
-						} else {
-							lastGraphResponse =
-									GraphResponse.of(context.buildStreamingOutput(message, response, context.getCurrentNodeId()));
-						}
-						lastChatResponseRef.set(response);
-						lastGraphResponseRef.set(lastGraphResponse);
-						return lastGraphResponse;
-					}
-
-					final var currentMessage = response.getResult().getOutput();
-
-					if (currentMessage.hasToolCalls()) {
-						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-							.of(context.buildStreamingOutput(currentMessage, response, context.getCurrentNodeId()));
-						lastGraphResponseRef.set(lastGraphResponse);
-                        // Also update lastChatResponseRef to ensure consistency
-                        lastChatResponseRef.set(response);
-                        return lastGraphResponse;
-					}
-
-					final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
-							"lastResponse text cannot be null");
-
-					final var currentMessageText = currentMessage.getText();
-
-					var newMessage = AssistantMessage.builder()
-						.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
-						.properties(currentMessage.getMetadata())
-						.toolCalls(currentMessage.getToolCalls())
-						.media(currentMessage.getMedia())
-						.build();
-
-					var newGeneration = new Generation(newMessage,
-							response.getResult().getMetadata());
-
-					ChatResponse newResponse = new ChatResponse(
-							List.of(newGeneration), response.getMetadata());
-					lastChatResponseRef.set(newResponse);
-					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-						.of(context.buildStreamingOutput(response.getResult().getOutput(), response, context.getCurrentNodeId()));
-					// lastGraphResponseRef.set(lastGraphResponse);
-					return lastGraphResponse;
-				}
-				else if (element instanceof GraphResponse) {
-					GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
-					lastGraphResponseRef.set(graphResponse);
-					return graphResponse;
-				} else if (element instanceof NodeOutput nodeOutput) {
-					GraphResponse<NodeOutput> graphResponse = GraphResponse.of(nodeOutput);
-					lastGraphResponseRef.set(graphResponse);
-					return graphResponse;
-				}
-				else {
-					String errorMsg = String.format("Unsupported flux element type %s, customized flux stream should emit GraphResponse<NodeOutput> or NodeOutput.", element != null ? element.getClass().getSimpleName() : "null");
-					return GraphResponse.<NodeOutput>error(new IllegalArgumentException(errorMsg));
-				}
-			}).concatWith(Mono.defer(() -> {
-				if (lastChatResponseRef.get() == null) {
-					GraphResponse<?> lastGraphResponse = lastGraphResponseRef.get();
-					if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
-						Object result = lastGraphResponse.resultValue().get();
-						if (result instanceof Map resultMap) {
-							if (!resultMap.containsKey(e.getKey()) && resultMap.containsKey("messages")) {
-								List<Object> messages = (List<Object>) resultMap.get("messages");
-								Object lastMessage = messages.get(messages.size() - 1);
-								if (lastMessage instanceof AssistantMessage lastAssistantMessage) {
-									resultMap.put(e.getKey(), lastAssistantMessage.getText());
-								}
+				return chatFlux
+						.filter(element -> {
+							// Skip usage-only chunks or responses without any AssistantMessage
+							if (element instanceof ChatResponse response) {
+								return extractAssistantMessage(response) != null;
 							}
+							return true;
+						})
+						.doOnError(error -> {
+							// Debug logging for Flux errors
+							log.error("Error occurred in embedded Flux stream for key '{}': {}",
+									e.getKey(), error.getMessage(), error);
+						})
+						.map(element -> {
+							if (element instanceof ChatResponse response) {
+								ChatResponse lastResponse = lastChatResponseRef.get();
+								AssistantMessage currentMessage = extractAssistantMessage(response);
+
+								if (currentMessage == null) {
+									// Should be filtered out already, but be defensive
+									GraphResponse<NodeOutput> lastGraphResponse = lastGraphResponseRef.get();
+									return lastGraphResponse != null
+											? lastGraphResponse
+											: GraphResponse.<NodeOutput>error(
+													new IllegalStateException("ChatResponse without AssistantMessage encountered in streaming flow"));
+								}
+
+								if (lastResponse == null) {
+									GraphResponse<NodeOutput> lastGraphResponse = GraphResponse.of(
+											context.buildStreamingOutput(currentMessage, response,
+													context.getCurrentNodeId()));
+									// Normalize lastResponse so that getResult().getOutput() reflects the selected message
+									var generation = new Generation(currentMessage,
+											response.getResult() != null ? response.getResult().getMetadata() : null);
+									ChatResponse normalized = new ChatResponse(List.of(generation), response.getMetadata());
+									lastChatResponseRef.set(normalized);
+									lastGraphResponseRef.set(lastGraphResponse);
+									return lastGraphResponse;
+								}
+
+								AssistantMessage lastMessage = extractAssistantMessage(lastResponse);
+
+								if (currentMessage.hasToolCalls()) {
+									GraphResponse<NodeOutput> lastGraphResponse = GraphResponse.of(
+											context.buildStreamingOutput(currentMessage, response,
+													context.getCurrentNodeId()));
+									lastGraphResponseRef.set(lastGraphResponse);
+									// Keep lastChatResponseRef in sync with the selected message
+									var generation = new Generation(currentMessage,
+											response.getResult() != null ? response.getResult().getMetadata() : null);
+									ChatResponse normalized = new ChatResponse(List.of(generation), response.getMetadata());
+									lastChatResponseRef.set(normalized);
+									return lastGraphResponse;
+								}
+
+								final var lastMessageText = requireNonNull(
+										lastMessage != null ? lastMessage.getText() : null,
+										"lastResponse text cannot be null");
+
+								final var currentMessageText = currentMessage.getText();
+
+								var newMessage = AssistantMessage.builder()
+										.content(currentMessageText != null
+												? lastMessageText.concat(currentMessageText)
+												: lastMessageText)
+										.properties(currentMessage.getMetadata())
+										.toolCalls(currentMessage.getToolCalls())
+										.media(currentMessage.getMedia())
+										.build();
+
+								var newGeneration = new Generation(newMessage,
+										response.getResult() != null ? response.getResult().getMetadata() : null);
+
+								ChatResponse newResponse = new ChatResponse(List.of(newGeneration),
+										response.getMetadata());
+								lastChatResponseRef.set(newResponse);
+
+								// For each chunk, still stream only the current delta message
+								GraphResponse<NodeOutput> lastGraphResponse = GraphResponse.of(
+										context.buildStreamingOutput(currentMessage, response,
+												context.getCurrentNodeId()));
+								return lastGraphResponse;
+							}
+							else if (element instanceof GraphResponse) {
+								GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
+								lastGraphResponseRef.set(graphResponse);
+								return graphResponse;
+							}
+							else if (element instanceof NodeOutput nodeOutput) {
+								GraphResponse<NodeOutput> graphResponse = GraphResponse.of(nodeOutput);
+								lastGraphResponseRef.set(graphResponse);
+								return graphResponse;
+							}
+							else {
+								String errorMsg = String.format(
+										"Unsupported flux element type %s, customized flux stream should emit GraphResponse<NodeOutput> or NodeOutput.",
+										element != null ? element.getClass().getSimpleName() : "null");
+								return GraphResponse.<NodeOutput>error(new IllegalArgumentException(errorMsg));
+							}
+						})
+						.concatWith(Mono.defer(() -> {
+							if (lastChatResponseRef.get() == null) {
+								GraphResponse<?> lastGraphResponse = lastGraphResponseRef.get();
+								if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
+									Object result = lastGraphResponse.resultValue().get();
+									if (result instanceof Map resultMap) {
+										if (!resultMap.containsKey(e.getKey())
+												&& resultMap.containsKey("messages")) {
+											List<Object> messages = (List<Object>) resultMap.get("messages");
+											Object lastMessage = messages.get(messages.size() - 1);
+											if (lastMessage instanceof AssistantMessage lastAssistantMessage) {
+												resultMap.put(e.getKey(), lastAssistantMessage.getText());
+											}
+										}
+									}
+									return Mono.just(lastGraphResponseRef.get());
+								}
+								return Mono.empty();
+							}
+							else {
+								return Mono.fromCallable(() -> {
+									Map<String, Object> completionResult = new HashMap<>();
+									AssistantMessage finalMessage = extractAssistantMessage(
+											lastChatResponseRef.get());
+									if (finalMessage != null) {
+										completionResult.put(e.getKey(), finalMessage);
+										if (!e.getKey().equals("messages")) {
+											completionResult.put("messages", finalMessage);
+										}
+									}
+									return GraphResponse.done(completionResult);
+								});
+							}
+						}));
+			});
+		}
+
+		/**
+		 * Extracts the most appropriate AssistantMessage from a ChatResponse for streaming.
+		 * <p>
+		 * Prefers AssistantMessage generations that contain tool calls, then falls back to
+		 * the last non-null AssistantMessage. Returns {@code null} when no suitable
+		 * AssistantMessage exists (e.g. usage-only chunks).
+		 */
+		private AssistantMessage extractAssistantMessage(ChatResponse response) {
+			if (response == null) {
+				return null;
+			}
+
+			try {
+				List<Generation> generations = response.getResults();
+				if (generations != null && !generations.isEmpty()) {
+					AssistantMessage fallback = null;
+					for (Generation generation : generations) {
+						if (generation == null) {
+							continue;
 						}
-						return Mono.just(lastGraphResponseRef.get());
+						var output = generation.getOutput();
+						if (output instanceof AssistantMessage assistantMessage) {
+							if (assistantMessage.hasToolCalls()) {
+								// Prefer the first message that contains tool calls
+								return assistantMessage;
+							}
+							// Remember the last non-null assistant message as a fallback
+							fallback = assistantMessage;
+						}
 					}
-					return Mono.empty();
+					if (fallback != null) {
+						return fallback;
+					}
 				}
-				else {
-					return Mono.fromCallable(() -> {
-						Map<String, Object> completionResult = new HashMap<>();
-						completionResult.put(e.getKey(), lastChatResponseRef.get().getResult().getOutput());
-						if (!e.getKey().equals("messages")) {
-							completionResult.put("messages", lastChatResponseRef.get().getResult().getOutput());
-						}
-						return GraphResponse.done(completionResult);
-					});
+			}
+			catch (Exception ex) {
+				// Defensive: if the underlying implementation changes and getResults() fails,
+				// fall back to getResult().
+				if (log.isDebugEnabled()) {
+					log.debug(
+							"Failed to extract AssistantMessage from all generations, falling back to getResult()",
+							ex);
 				}
-			}));
-		});
-	}
+			}
+
+			if (response.getResult() != null
+					&& response.getResult().getOutput() instanceof AssistantMessage assistant) {
+				return assistant;
+			}
+
+			return null;
+		}
 
 	/**
 	 * Handles embedded flux processing.

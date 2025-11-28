@@ -35,6 +35,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -188,15 +189,17 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request).stream().chatResponse();
 					if (enableReasoningLog) {
 						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
-							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
-								if (chatResponse.getResult().getOutput().hasToolCalls()) {
+							if (chatResponse != null) {
+								AssistantMessage assistantMessage = extractAssistantMessage(chatResponse);
+								if (assistantMessage.hasToolCalls()) {
 									logger.info("[ThreadId {}] Agent {} reasoning round {} streaming output: {}",
-											config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), chatResponse.getResult().getOutput().getToolCalls());
+											config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(),
+											assistantMessage.getToolCalls());
 								} else {
 									logger.info("[ThreadId {}] Agent {} reasoning round {} streaming output: {}",
 											config.threadId()
-													.orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), chatResponse.getResult()
-													.getOutput().getText());
+													.orElse(THREAD_ID_DEFAULT), agentName, iterations.get(),
+											assistantMessage.getText());
 								}
 							}
 						});
@@ -226,10 +229,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 					ChatResponse response = buildChatClientRequestSpec(request).call().chatResponse();
 
-					AssistantMessage responseMessage = new AssistantMessage("Empty response from model for unknown reason");
-					if (response != null && response.getResult() != null) {
-						responseMessage = response.getResult().getOutput();
-					}
+					AssistantMessage responseMessage = extractAssistantMessage(response);
 
 					if (enableReasoningLog) {
 						logger.info("[ThreadId {}] Agent {} reasoning round {} returned: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), responseMessage);
@@ -268,6 +268,61 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	public void setAdvisors(List<Advisor> advisors) {
 		this.advisors = advisors;
+	}
+
+	/**
+	 * Extract the most appropriate AssistantMessage from a ChatResponse.
+	 * <p>
+	 * Spring AI's {@link ChatResponse#getResult()} returns only the first generation,
+	 * which is not always the one containing tool calls. This method scans all
+	 * generations and prefers the first AssistantMessage that has tool calls.
+	 * If none have tool calls, it falls back to the last non-null AssistantMessage.
+	 * If still nothing is found, a default "empty response" message is returned.
+	 */
+	private AssistantMessage extractAssistantMessage(ChatResponse response) {
+		AssistantMessage defaultMessage = new AssistantMessage("Empty response from model for unknown reason");
+
+		if (response == null) {
+			return defaultMessage;
+		}
+
+		try {
+			List<Generation> generations = response.getResults();
+			if (generations != null && !generations.isEmpty()) {
+				AssistantMessage fallback = null;
+				for (Generation generation : generations) {
+					if (generation == null) {
+						continue;
+					}
+					Message output = generation.getOutput();
+					if (output instanceof AssistantMessage assistantMessage) {
+						if (assistantMessage.hasToolCalls()) {
+							// Prefer the first message that contains tool calls
+							return assistantMessage;
+						}
+						// Remember the last non-null assistant message as a fallback
+						fallback = assistantMessage;
+					}
+				}
+				if (fallback != null) {
+					return fallback;
+				}
+			}
+		}
+		catch (Exception ex) {
+			// Defensive: if the underlying implementation changes and getResults() fails,
+			// log at debug level and fall back to getResult().
+			if (logger.isDebugEnabled()) {
+				logger.debug("Failed to extract AssistantMessage from all generations, falling back to getResult()", ex);
+			}
+		}
+
+		// Fallback: use the first result if available and of the correct type
+		if (response.getResult() != null && response.getResult().getOutput() instanceof AssistantMessage assistant) {
+			return assistant;
+		}
+
+		return defaultMessage;
 	}
 
 	private List<Message> appendSystemPromptIfNeeded(ModelRequest modelRequest) {
