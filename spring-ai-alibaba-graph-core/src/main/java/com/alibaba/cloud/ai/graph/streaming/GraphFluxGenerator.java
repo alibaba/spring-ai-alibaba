@@ -65,44 +65,111 @@ public interface GraphFluxGenerator {
 		}
 
 
-		private GraphFlux<ChatResponse> buildInternal(Flux<ChatResponse> flux) {
-			Objects.requireNonNull(flux, "flux cannot be null");
+			private GraphFlux<ChatResponse> buildInternal(Flux<ChatResponse> flux) {
+				Objects.requireNonNull(flux, "flux cannot be null");
 
-			var result = new AtomicReference<ChatResponse>(null);
+				var result = new AtomicReference<ChatResponse>(null);
 
-			Function<ChatResponse,ChatResponse> mergeMessage = (response) -> result.updateAndGet(lastResponse -> {
+				Function<ChatResponse, ChatResponse> mergeMessage = (response) -> result.updateAndGet(lastResponse -> {
 
-				if (lastResponse == null) {
-					return response;
+					AssistantMessage currentMessage = extractAssistantMessage(response);
+					if (currentMessage == null) {
+						// Usage-only chunk or no AssistantMessage – keep previous aggregated response
+						return lastResponse;
+					}
+
+					if (lastResponse == null) {
+						// Normalize so that getResult().getOutput() reflects the selected message
+						var generation = new Generation(currentMessage,
+								response.getResult() != null ? response.getResult().getMetadata() : null);
+						return new ChatResponse(List.of(generation), response.getMetadata());
+					}
+
+					AssistantMessage lastMessage = extractAssistantMessage(lastResponse);
+
+					if (currentMessage.hasToolCalls()) {
+						// New tool-call message overrides previous aggregated content
+						var generation = new Generation(currentMessage,
+								response.getResult() != null ? response.getResult().getMetadata() : null);
+						return new ChatResponse(List.of(generation), response.getMetadata());
+					}
+
+					final var lastMessageText = requireNonNull(
+							lastMessage != null ? lastMessage.getText() : null,
+							"lastResponse text cannot be null");
+
+					final var currentMessageText = currentMessage.getText();
+
+					var newMessage = AssistantMessage.builder()
+							.content(currentMessageText != null
+									? lastMessageText.concat(currentMessageText)
+									: lastMessageText)
+							.properties(currentMessage.getMetadata())
+							.toolCalls(currentMessage.getToolCalls())
+							.media(currentMessage.getMedia())
+							.build();
+
+					var newGeneration = new Generation(newMessage,
+							response.getResult() != null ? response.getResult().getMetadata() : null);
+					return new ChatResponse(List.of(newGeneration), response.getMetadata());
+
+				});
+
+				return GraphFlux.of(startingNode, outKey, flux, mergeMessage, response -> {
+					AssistantMessage message = extractAssistantMessage(response);
+					return message != null ? message.getText() : null;
+				});
+			}
+
+			/**
+			 * Extracts the most appropriate AssistantMessage from a ChatResponse for streaming.
+			 * <p>
+			 * Prefers AssistantMessage generations that contain tool calls, then falls back to
+			 * the last non-null AssistantMessage. Returns {@code null} when no suitable
+			 * AssistantMessage exists (e.g. usage-only chunks).
+			 */
+			private AssistantMessage extractAssistantMessage(ChatResponse response) {
+				if (response == null) {
+					return null;
 				}
 
-				final var currentMessage = response.getResult().getOutput();
-
-				if (currentMessage.hasToolCalls()) {
-					return response;
+				try {
+					List<Generation> generations = response.getResults();
+					if (generations != null && !generations.isEmpty()) {
+						AssistantMessage fallback = null;
+						for (Generation generation : generations) {
+							if (generation == null) {
+								continue;
+							}
+							var output = generation.getOutput();
+							if (output instanceof AssistantMessage assistantMessage) {
+								if (assistantMessage.hasToolCalls()) {
+									// Prefer the first message that contains tool calls
+									return assistantMessage;
+								}
+								// Remember the last non-null assistant message as a fallback
+								fallback = assistantMessage;
+							}
+						}
+						if (fallback != null) {
+							return fallback;
+						}
+					}
+				}
+				catch (Exception ex) {
+					// Defensive: if the underlying implementation changes and getResults() fails,
+					// fall back to getResult().
 				}
 
-				final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
-						"lastResponse text cannot be null");
+				if (response.getResult() != null
+						&& response.getResult().getOutput() instanceof AssistantMessage assistant) {
+					return assistant;
+				}
 
-				final var currentMessageText = currentMessage.getText();
+				return null;
+			}
 
-				var newMessage = AssistantMessage.builder()
-					.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
-					.properties(currentMessage.getMetadata())
-					.toolCalls(currentMessage.getToolCalls())
-					.media(currentMessage.getMedia())
-					.build();
-
-				var newGeneration = new Generation(newMessage, response.getResult().getMetadata());
-				return new ChatResponse(List.of(newGeneration), response.getMetadata());
-
-			});
-
-			return GraphFlux.of(startingNode, outKey, flux, mergeMessage, response -> response.getResult().getOutput().getText());
 		}
-
-	}
 
 	static Builder builder() {
 		return new Builder();
