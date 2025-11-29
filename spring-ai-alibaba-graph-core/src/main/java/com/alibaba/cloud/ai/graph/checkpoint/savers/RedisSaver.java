@@ -18,23 +18,31 @@ package com.alibaba.cloud.ai.graph.checkpoint.savers;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
+import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.check_point.CheckPointSerializer;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLock;
+import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The type Redis saver.
@@ -46,181 +54,342 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 	private RedissonClient redisson;
 
-	private final ObjectMapper objectMapper;
+	private final Serializer<Checkpoint> checkpointSerializer;
 
-	private static final String PREFIX = "graph:checkpoint:content:";
-
+	// Redis key prefixes
+	private static final String CHECKPOINT_PREFIX = "graph:checkpoint:content:";
+	private static final String THREAD_META_PREFIX = "graph:thread:meta:";
+	private static final String THREAD_REVERSE_PREFIX = "graph:thread:reverse:";
 	private static final String LOCK_PREFIX = "graph:checkpoint:lock:";
+
+	// Thread meta hash field names
+	private static final String FIELD_THREAD_ID = "thread_id";
+	private static final String FIELD_IS_RELEASED = "is_released";
+	private static final String FIELD_THREAD_NAME = "thread_name";
 
 	/**
 	 * Instantiates a new Redis saver.
 	 * 
 	 * @param redisson the redisson
+	 * @param stateSerializer the state serializer
 	 */
-	public RedisSaver(RedissonClient redisson) {
-		this(redisson, new ObjectMapper());
+	public RedisSaver(RedissonClient redisson, StateSerializer stateSerializer) {
+		requireNonNull(redisson, "redisson cannot be null");
+		requireNonNull(stateSerializer, "stateSerializer cannot be null");
+		this.redisson = redisson;
+		this.checkpointSerializer = new CheckPointSerializer(stateSerializer);
+	}
+
+	private String serializeCheckpoints(List<Checkpoint> checkpoints) throws IOException {
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+			oos.writeInt(checkpoints.size());
+			for (Checkpoint checkpoint : checkpoints) {
+				checkpointSerializer.write(checkpoint, oos);
+			}
+			oos.flush();
+			byte[] bytes = baos.toByteArray();
+			return Base64.getEncoder().encodeToString(bytes);
+		}
+	}
+
+	private List<Checkpoint> deserializeCheckpoints(String content) throws IOException, ClassNotFoundException {
+		if (content == null || content.isEmpty()) {
+			return new LinkedList<>();
+		}
+		byte[] bytes = Base64.getDecoder().decode(content);
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+				ObjectInputStream ois = new ObjectInputStream(bais)) {
+			int size = ois.readInt();
+			List<Checkpoint> checkpoints = new LinkedList<>();
+			for (int i = 0; i < size; i++) {
+				checkpoints.add(checkpointSerializer.read(ois));
+			}
+			return checkpoints;
+		}
 	}
 
 	/**
-	 * Instantiates a new Redis saver.
+	 * Gets or creates a thread_id for the given thread_name.
+	 * If an active thread exists, returns its thread_id.
+	 * If no active thread exists or the thread is released, creates a new thread_id.
 	 * 
-	 * @param redisson the redisson
+	 * @param threadName the thread name
+	 * @return the thread_id (UUID string)
 	 */
-	public RedisSaver(RedissonClient redisson, ObjectMapper objectMapper) {
-		this.redisson = redisson;
-		this.objectMapper = BaseCheckpointSaver.configureObjectMapper(objectMapper);
+	private String getOrCreateThreadId(String threadName) {
+		String metaKey = THREAD_META_PREFIX + threadName;
+		RMap<String, String> meta = redisson.getMap(metaKey);
+
+		// Check if an active thread exists
+		String threadId = meta.get(FIELD_THREAD_ID);
+		String isReleased = meta.get(FIELD_IS_RELEASED);
+
+		if (threadId != null && !"true".equals(isReleased)) {
+			// Active thread exists, return its thread_id
+			return threadId;
+		}
+
+		// No active thread exists or thread is released, create a new thread_id
+		String newThreadId = UUID.randomUUID().toString();
+		meta.put(FIELD_THREAD_ID, newThreadId);
+		meta.put(FIELD_IS_RELEASED, "false");
+
+		// Set reverse mapping
+		String reverseKey = THREAD_REVERSE_PREFIX + newThreadId;
+		RMap<String, String> reverse = redisson.getMap(reverseKey);
+		reverse.put(FIELD_THREAD_NAME, threadName);
+		reverse.put(FIELD_IS_RELEASED, "false");
+
+		return newThreadId;
+	}
+
+	/**
+	 * Gets the active thread_id for the given thread_name.
+	 * Returns null if no active thread exists.
+	 * 
+	 * @param threadName the thread name
+	 * @return the active thread_id, or null if not found
+	 */
+	private String getActiveThreadId(String threadName) {
+		String metaKey = THREAD_META_PREFIX + threadName;
+		RMap<String, String> meta = redisson.getMap(metaKey);
+
+		String threadId = meta.get(FIELD_THREAD_ID);
+		String isReleased = meta.get(FIELD_IS_RELEASED);
+
+		if (threadId != null && !"true".equals(isReleased)) {
+			return threadId;
+		}
+
+		return null; // No active thread exists
 	}
 
 	@Override
 	public Collection<Checkpoint> list(RunnableConfig config) {
-		Optional<String> configOption = config.threadId();
-		if (configOption.isPresent()) {
-			RLock lock = redisson.getLock(LOCK_PREFIX + configOption.get());
-			boolean tryLock = false;
-			try {
-				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
-				if (tryLock) {
-					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					String content = bucket.get();
-					if (content == null) {
-						return new LinkedList<>();
-					}
-					return objectMapper.readValue(content, new TypeReference<>() {
-					});
-				} else {
-					return List.of();
-				}
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			} catch (JsonMappingException e) {
-				throw new RuntimeException("Failed to parse JSON", e);
-			} catch (JsonProcessingException e) {
-				throw new RuntimeException("Failed to parse JSON", e);
-			} finally {
-				if (tryLock) {
-					lock.unlock();
-				}
-			}
-		} else {
+		Optional<String> threadNameOpt = config.threadId();
+		if (!threadNameOpt.isPresent()) {
 			throw new IllegalArgumentException("threadId is not allow null");
+		}
+
+		String threadName = threadNameOpt.get();
+		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
+		boolean tryLock = false;
+		try {
+			tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+			if (!tryLock) {
+				return List.of();
+			}
+
+			// Get active thread_id for the thread_name
+			String threadId = getActiveThreadId(threadName);
+			if (threadId == null) {
+				return List.of();
+			}
+
+			// Use thread_id to query checkpoints
+			RBucket<String> bucket = redisson.getBucket(CHECKPOINT_PREFIX + threadId);
+			String content = bucket.get();
+			return deserializeCheckpoints(content);
+
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (IOException | ClassNotFoundException e) {
+			throw new RuntimeException("Failed to deserialize checkpoints", e);
+		} finally {
+			if (tryLock) {
+				lock.unlock();
+			}
 		}
 	}
 
 	@Override
 	public Optional<Checkpoint> get(RunnableConfig config) {
-		Optional<String> configOption = config.threadId();
-		if (configOption.isPresent()) {
-			RLock lock = redisson.getLock(LOCK_PREFIX + configOption.get());
-			boolean tryLock = false;
-			try {
-				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
-				if (tryLock) {
-					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					String content = bucket.get();
-					List<Checkpoint> checkpoints;
-					if (content == null) {
-						checkpoints = new LinkedList<>();
-					} else {
-						checkpoints = objectMapper.readValue(content, new TypeReference<>() {
-						});
-					}
-					if (config.checkPointId().isPresent()) {
-						return config.checkPointId()
-								.flatMap(id -> checkpoints.stream()
-										.filter(checkpoint -> checkpoint.getId().equals(id))
-										.findFirst());
-					}
-					return getLast(getLinkedList(checkpoints), config);
-				} else {
-					return Optional.empty();
-				}
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			} catch (JsonMappingException e) {
-				throw new RuntimeException("Failed to parse JSON", e);
-			} catch (JsonProcessingException e) {
-				throw new RuntimeException("Failed to parse JSON", e);
-			} finally {
-				if (tryLock) {
-					lock.unlock();
-				}
-			}
-		} else {
+		Optional<String> threadNameOpt = config.threadId();
+		if (!threadNameOpt.isPresent()) {
 			throw new IllegalArgumentException("threadId isn't allow null");
+		}
+
+		String threadName = threadNameOpt.get();
+		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
+		boolean tryLock = false;
+		try {
+			tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+			if (!tryLock) {
+				return Optional.empty();
+			}
+
+			// Get active thread_id for the thread_name
+			String threadId = getActiveThreadId(threadName);
+			if (threadId == null) {
+				return Optional.empty();
+			}
+
+			// Use thread_id to query checkpoints
+			RBucket<String> bucket = redisson.getBucket(CHECKPOINT_PREFIX + threadId);
+			String content = bucket.get();
+			List<Checkpoint> checkpoints = deserializeCheckpoints(content);
+
+			if (config.checkPointId().isPresent()) {
+				return config.checkPointId()
+						.flatMap(id -> checkpoints.stream()
+								.filter(checkpoint -> checkpoint.getId().equals(id))
+								.findFirst());
+			}
+			return getLast(getLinkedList(checkpoints), config);
+
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (IOException | ClassNotFoundException e) {
+			throw new RuntimeException("Failed to deserialize checkpoints", e);
+		} finally {
+			if (tryLock) {
+				lock.unlock();
+			}
 		}
 	}
 
 	@Override
 	public RunnableConfig put(RunnableConfig config, Checkpoint checkpoint) throws Exception {
-		Optional<String> configOption = config.threadId();
-		if (configOption.isPresent()) {
-			RLock lock = redisson.getLock(LOCK_PREFIX + configOption.get());
-			boolean tryLock = false;
-			try {
-				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
-				if (tryLock) {
-					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					String content = bucket.get();
-					List<Checkpoint> checkpoints;
-					if (content == null) {
-						checkpoints = new LinkedList<>();
-					} else {
-						checkpoints = objectMapper.readValue(content, new TypeReference<>() {
-						});
-					}
-					LinkedList<Checkpoint> linkedList = getLinkedList(checkpoints);
-					if (config.checkPointId().isPresent()) { // Replace Checkpoint
-						String checkPointId = config.checkPointId().get();
-						int index = IntStream.range(0, checkpoints.size())
-								.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
-								.findFirst()
-								.orElseThrow(() -> (new NoSuchElementException(
-										format("Checkpoint with id %s not found!", checkPointId))));
-						linkedList.set(index, checkpoint);
-						bucket.set(objectMapper.writeValueAsString(linkedList));
-						return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
-					}
-					linkedList.push(checkpoint); // Add Checkpoint
-					bucket.set(objectMapper.writeValueAsString(linkedList));
-				}
-				return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			} finally {
-				if (tryLock) {
-					lock.unlock();
-				}
-			}
-		} else {
+		Optional<String> threadNameOpt = config.threadId();
+		if (!threadNameOpt.isPresent()) {
 			throw new IllegalArgumentException("threadId isn't allow null");
+		}
+
+		String threadName = threadNameOpt.get();
+		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
+		boolean tryLock = false;
+		try {
+			tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+			if (!tryLock) {
+				throw new RuntimeException("Failed to acquire lock for thread: " + threadName);
+			}
+
+			// Get or create thread_id
+			String threadId = getOrCreateThreadId(threadName);
+
+			// Use thread_id as key for checkpoint storage
+			RBucket<String> bucket = redisson.getBucket(CHECKPOINT_PREFIX + threadId);
+			String content = bucket.get();
+			List<Checkpoint> checkpoints = deserializeCheckpoints(content);
+			LinkedList<Checkpoint> linkedList = getLinkedList(checkpoints);
+
+			if (config.checkPointId().isPresent()) {
+				// Replace Checkpoint
+				String checkPointId = config.checkPointId().get();
+				int index = IntStream.range(0, checkpoints.size())
+						.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
+						.findFirst()
+						.orElseThrow(() -> new NoSuchElementException(
+								format("Checkpoint with id %s not found!", checkPointId)));
+				linkedList.set(index, checkpoint);
+			} else {
+				// Add Checkpoint
+				linkedList.push(checkpoint);
+			}
+
+			bucket.set(serializeCheckpoints(linkedList));
+			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
+
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (IOException | ClassNotFoundException e) {
+			throw new RuntimeException("Failed to serialize/deserialize checkpoints", e);
+		} finally {
+			if (tryLock) {
+				lock.unlock();
+			}
 		}
 	}
 
 	@Override
 	public boolean clear(RunnableConfig config) {
-		Optional<String> configOption = config.threadId();
-		if (configOption.isPresent()) {
-			RLock lock = redisson.getLock(LOCK_PREFIX + configOption.get());
-			boolean tryLock = false;
-			try {
-				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
-				if (tryLock) {
-					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					bucket.getAndSet(objectMapper.writeValueAsString(List.of()));
-					return tryLock;
-				}
-				return false;
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			} catch (JsonProcessingException e) {
-				throw new RuntimeException("Failed to serialize JSON", e);
-			} finally {
-				if (tryLock) {
-					lock.unlock();
-				}
-			}
-		} else {
+		Optional<String> threadNameOpt = config.threadId();
+		if (!threadNameOpt.isPresent()) {
 			throw new IllegalArgumentException("threadId isn't allow null");
+		}
+
+		String threadName = threadNameOpt.get();
+		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
+		boolean tryLock = false;
+		try {
+			tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+			if (!tryLock) {
+				return false;
+			}
+
+			// Get active thread_id for the thread_name
+			String threadId = getActiveThreadId(threadName);
+			if (threadId == null) {
+				return false;
+			}
+
+			// Clear checkpoints using thread_id
+			RBucket<String> bucket = redisson.getBucket(CHECKPOINT_PREFIX + threadId);
+			bucket.set(serializeCheckpoints(List.of()));
+			return true;
+
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to serialize checkpoints", e);
+		} finally {
+			if (tryLock) {
+				lock.unlock();
+			}
+		}
+	}
+
+	@Override
+	public Tag release(RunnableConfig config) throws Exception {
+		Optional<String> threadNameOpt = config.threadId();
+		if (!threadNameOpt.isPresent()) {
+			throw new IllegalArgumentException("threadId is not allow null");
+		}
+
+		String threadName = threadNameOpt.get();
+		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
+		boolean tryLock = false;
+		try {
+			tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+			if (!tryLock) {
+				throw new RuntimeException("Failed to acquire lock for thread: " + threadName);
+			}
+
+			String metaKey = THREAD_META_PREFIX + threadName;
+			RMap<String, String> meta = redisson.getMap(metaKey);
+
+			String threadId = meta.get(FIELD_THREAD_ID);
+			if (threadId == null) {
+				throw new IllegalStateException("Thread not found: " + threadName);
+			}
+
+			// Mark thread as released
+			meta.put(FIELD_IS_RELEASED, "true");
+
+			// Update reverse mapping
+			String reverseKey = THREAD_REVERSE_PREFIX + threadId;
+			RMap<String, String> reverse = redisson.getMap(reverseKey);
+			if (reverse != null) {
+				reverse.put(FIELD_IS_RELEASED, "true");
+			}
+
+			// Get checkpoints for Tag (using thread_id)
+			String contentKey = CHECKPOINT_PREFIX + threadId;
+			RBucket<String> bucket = redisson.getBucket(contentKey);
+			String content = bucket.get();
+			Collection<Checkpoint> checkpoints = deserializeCheckpoints(content);
+
+			return new Tag(threadName, checkpoints);
+
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (IOException | ClassNotFoundException e) {
+			throw new RuntimeException("Failed to deserialize checkpoints", e);
+		} finally {
+			if (tryLock) {
+				lock.unlock();
+			}
 		}
 	}
 

@@ -115,7 +115,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 			}
 			return checkpoints;
 		} else {
-			throw new IllegalArgumentException("threadId is not allow null");
+			throw new IllegalArgumentException("threadId is not allowed to be null");
 		}
 	}
 

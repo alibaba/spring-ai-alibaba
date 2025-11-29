@@ -40,8 +40,8 @@ import java.util.Map;
 
 public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 
-	public SpringAIJacksonStateSerializer(AgentStateFactory<OverAllState> stateFactory) {
-		super(stateFactory);
+	public SpringAIJacksonStateSerializer(AgentStateFactory<OverAllState> stateFactory, ObjectMapper objectMapper) {
+		super(stateFactory, objectMapper);
 
 		var module = new SimpleModule();
 

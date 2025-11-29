@@ -613,7 +613,7 @@ public class CompiledGraph {
 	 * @param config - the RunnableConfig
 	 * @return the last StateSnapshot of the given RunnableConfig if any
 	 */
-	Optional<StateSnapshot> lastStateOf(RunnableConfig config) {
+	public Optional<StateSnapshot> lastStateOf(RunnableConfig config) {
 		return getStateHistory(config).stream().findFirst();
 	}
 
