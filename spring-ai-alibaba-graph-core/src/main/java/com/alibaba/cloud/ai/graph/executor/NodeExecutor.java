@@ -198,6 +198,8 @@ public class NodeExecutor extends BaseGraphExecutor {
                 }
                 return true;
             })
+			.switchIfEmpty(Flux.error(new IllegalStateException(
+				"Empty flux detected for key '" + e.getKey() + "'. This may indicate an LLM API error with null result.")))
 			.doOnError(error -> {
 				// Debug logging for Flux errors
 				log.error("Error occurred in embedded Flux stream for key '{}': {}",
@@ -431,6 +433,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 					}
 					return true;
 				})
+				.switchIfEmpty(Flux.error(new IllegalStateException(
+					"Empty GraphFlux detected for node '" + effectiveNodeId + "'. This may indicate an LLM API error.")))
 				.map(element -> {
 					lastDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 
@@ -512,6 +516,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 							}
 							return true;
 						})
+						.switchIfEmpty(Flux.error(new IllegalStateException(
+							"Empty ParallelGraphFlux detected for node '" + nodeId + "'. This may indicate an LLM API error.")))
 						.map(element -> {
 							nodeDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 							// Create StreamingOutput with specific nodeId (preserves parallel node identity)
