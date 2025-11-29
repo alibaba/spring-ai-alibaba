@@ -13,18 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.checkpoint.savers;
+package com.alibaba.cloud.ai.graph.checkpoint.savers.redis;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.check_point.CheckPointSerializer;
-import org.redisson.api.RBucket;
-import org.redisson.api.RLock;
-import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -41,6 +38,11 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import org.redisson.api.RBucket;
+import org.redisson.api.RLock;
+import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
+
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -52,37 +54,43 @@ import static java.util.Objects.requireNonNull;
  */
 public class RedisSaver implements BaseCheckpointSaver {
 
-	private RedissonClient redisson;
-
-	private final Serializer<Checkpoint> checkpointSerializer;
-
 	// Redis key prefixes
 	private static final String CHECKPOINT_PREFIX = "graph:checkpoint:content:";
 	private static final String THREAD_META_PREFIX = "graph:thread:meta:";
 	private static final String THREAD_REVERSE_PREFIX = "graph:thread:reverse:";
 	private static final String LOCK_PREFIX = "graph:checkpoint:lock:";
-
 	// Thread meta hash field names
 	private static final String FIELD_THREAD_ID = "thread_id";
 	private static final String FIELD_IS_RELEASED = "is_released";
 	private static final String FIELD_THREAD_NAME = "thread_name";
+	private final Serializer<Checkpoint> checkpointSerializer;
+	private RedissonClient redisson;
 
 	/**
-	 * Instantiates a new Redis saver.
-	 * 
+	 * Protected constructor for RedisSaver.
+	 * Use {@link #builder()} to create instances.
+	 *
 	 * @param redisson the redisson
 	 * @param stateSerializer the state serializer
 	 */
-	public RedisSaver(RedissonClient redisson, StateSerializer stateSerializer) {
+	protected RedisSaver(RedissonClient redisson, StateSerializer stateSerializer) {
 		requireNonNull(redisson, "redisson cannot be null");
 		requireNonNull(stateSerializer, "stateSerializer cannot be null");
 		this.redisson = redisson;
 		this.checkpointSerializer = new CheckPointSerializer(stateSerializer);
 	}
 
+	/**
+	 * Creates a new builder for RedisSaver.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	private String serializeCheckpoints(List<Checkpoint> checkpoints) throws IOException {
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+			 ObjectOutputStream oos = new ObjectOutputStream(baos)) {
 			oos.writeInt(checkpoints.size());
 			for (Checkpoint checkpoint : checkpoints) {
 				checkpointSerializer.write(checkpoint, oos);
@@ -93,15 +101,15 @@ public class RedisSaver implements BaseCheckpointSaver {
 		}
 	}
 
-	private List<Checkpoint> deserializeCheckpoints(String content) throws IOException, ClassNotFoundException {
+	private LinkedList<Checkpoint> deserializeCheckpoints(String content) throws IOException, ClassNotFoundException {
 		if (content == null || content.isEmpty()) {
 			return new LinkedList<>();
 		}
 		byte[] bytes = Base64.getDecoder().decode(content);
 		try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-				ObjectInputStream ois = new ObjectInputStream(bais)) {
+			 ObjectInputStream ois = new ObjectInputStream(bais)) {
 			int size = ois.readInt();
-			List<Checkpoint> checkpoints = new LinkedList<>();
+			LinkedList<Checkpoint> checkpoints = new LinkedList<>();
 			for (int i = 0; i < size; i++) {
 				checkpoints.add(checkpointSerializer.read(ois));
 			}
@@ -113,7 +121,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 	 * Gets or creates a thread_id for the given thread_name.
 	 * If an active thread exists, returns its thread_id.
 	 * If no active thread exists or the thread is released, creates a new thread_id.
-	 * 
+	 *
 	 * @param threadName the thread name
 	 * @return the thread_id (UUID string)
 	 */
@@ -147,7 +155,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 	/**
 	 * Gets the active thread_id for the given thread_name.
 	 * Returns null if no active thread exists.
-	 * 
+	 *
 	 * @param threadName the thread name
 	 * @return the active thread_id, or null if not found
 	 */
@@ -192,11 +200,14 @@ public class RedisSaver implements BaseCheckpointSaver {
 			String content = bucket.get();
 			return deserializeCheckpoints(content);
 
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e) {
 			throw new RuntimeException(e);
-		} catch (IOException | ClassNotFoundException e) {
+		}
+		catch (IOException | ClassNotFoundException e) {
 			throw new RuntimeException("Failed to deserialize checkpoints", e);
-		} finally {
+		}
+		finally {
 			if (tryLock) {
 				lock.unlock();
 			}
@@ -228,7 +239,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 			// Use thread_id to query checkpoints
 			RBucket<String> bucket = redisson.getBucket(CHECKPOINT_PREFIX + threadId);
 			String content = bucket.get();
-			List<Checkpoint> checkpoints = deserializeCheckpoints(content);
+			LinkedList<Checkpoint> checkpoints = deserializeCheckpoints(content);
 
 			if (config.checkPointId().isPresent()) {
 				return config.checkPointId()
@@ -236,13 +247,16 @@ public class RedisSaver implements BaseCheckpointSaver {
 								.filter(checkpoint -> checkpoint.getId().equals(id))
 								.findFirst());
 			}
-			return getLast(getLinkedList(checkpoints), config);
+			return getLast(checkpoints, config);
 
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e) {
 			throw new RuntimeException(e);
-		} catch (IOException | ClassNotFoundException e) {
+		}
+		catch (IOException | ClassNotFoundException e) {
 			throw new RuntimeException("Failed to deserialize checkpoints", e);
-		} finally {
+		}
+		finally {
 			if (tryLock) {
 				lock.unlock();
 			}
@@ -271,8 +285,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 			// Use thread_id as key for checkpoint storage
 			RBucket<String> bucket = redisson.getBucket(CHECKPOINT_PREFIX + threadId);
 			String content = bucket.get();
-			List<Checkpoint> checkpoints = deserializeCheckpoints(content);
-			LinkedList<Checkpoint> linkedList = getLinkedList(checkpoints);
+			LinkedList<Checkpoint> checkpoints = deserializeCheckpoints(content);
 
 			if (config.checkPointId().isPresent()) {
 				// Replace Checkpoint
@@ -282,58 +295,24 @@ public class RedisSaver implements BaseCheckpointSaver {
 						.findFirst()
 						.orElseThrow(() -> new NoSuchElementException(
 								format("Checkpoint with id %s not found!", checkPointId)));
-				linkedList.set(index, checkpoint);
-			} else {
+				checkpoints.set(index, checkpoint);
+			}
+			else {
 				// Add Checkpoint
-				linkedList.push(checkpoint);
+				checkpoints.push(checkpoint);
 			}
 
-			bucket.set(serializeCheckpoints(linkedList));
+			bucket.set(serializeCheckpoints(checkpoints));
 			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e) {
 			throw new RuntimeException(e);
-		} catch (IOException | ClassNotFoundException e) {
+		}
+		catch (IOException | ClassNotFoundException e) {
 			throw new RuntimeException("Failed to serialize/deserialize checkpoints", e);
-		} finally {
-			if (tryLock) {
-				lock.unlock();
-			}
 		}
-	}
-
-	@Override
-	public boolean clear(RunnableConfig config) {
-		Optional<String> threadNameOpt = config.threadId();
-		if (!threadNameOpt.isPresent()) {
-			throw new IllegalArgumentException("threadId isn't allow null");
-		}
-
-		String threadName = threadNameOpt.get();
-		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
-		boolean tryLock = false;
-		try {
-			tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
-			if (!tryLock) {
-				return false;
-			}
-
-			// Get active thread_id for the thread_name
-			String threadId = getActiveThreadId(threadName);
-			if (threadId == null) {
-				return false;
-			}
-
-			// Clear checkpoints using thread_id
-			RBucket<String> bucket = redisson.getBucket(CHECKPOINT_PREFIX + threadId);
-			bucket.set(serializeCheckpoints(List.of()));
-			return true;
-
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to serialize checkpoints", e);
-		} finally {
+		finally {
 			if (tryLock) {
 				lock.unlock();
 			}
@@ -382,14 +361,62 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 			return new Tag(threadName, checkpoints);
 
-		} catch (InterruptedException e) {
+		}
+		catch (InterruptedException e) {
 			throw new RuntimeException(e);
-		} catch (IOException | ClassNotFoundException e) {
+		}
+		catch (IOException | ClassNotFoundException e) {
 			throw new RuntimeException("Failed to deserialize checkpoints", e);
-		} finally {
+		}
+		finally {
 			if (tryLock) {
 				lock.unlock();
 			}
+		}
+	}
+
+	/**
+	 * Builder class for RedisSaver.
+	 */
+	public static class Builder {
+		private RedissonClient redisson;
+		private StateSerializer stateSerializer;
+
+		/**
+		 * Sets the Redisson client.
+		 *
+		 * @param redisson the Redisson client
+		 * @return this builder
+		 */
+		public Builder redisson(RedissonClient redisson) {
+			this.redisson = redisson;
+			return this;
+		}
+
+		/**
+		 * Sets the state serializer.
+		 *
+		 * @param stateSerializer the state serializer
+		 * @return this builder
+		 */
+		public Builder stateSerializer(StateSerializer stateSerializer) {
+			this.stateSerializer = stateSerializer;
+			return this;
+		}
+
+		/**
+		 * Builds a new RedisSaver instance.
+		 * @return a new RedisSaver instance
+		 * @throws IllegalArgumentException if redisson or stateSerializer is null
+		 */
+		public RedisSaver build() {
+			if (redisson == null) {
+				throw new IllegalArgumentException("redisson cannot be null");
+			}
+			if (stateSerializer == null) {
+				this.stateSerializer = StateGraph.DEFAULT_JACKSON_SERIALIZER;
+			}
+			return new RedisSaver(redisson, stateSerializer);
 		}
 	}
 

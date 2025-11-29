@@ -38,7 +38,7 @@ public class CheckpointTest {
 	// private.
 	@Test
 	public void concurrentExceptionTest() throws Exception {
-		var memorySaver = new MemorySaver();
+		var memorySaver = MemorySaver.builder().build();
 		ExecutorService executorService = Executors.newCachedThreadPool();
 		int count = 50;
 		CountDownLatch latch = new CountDownLatch(count);

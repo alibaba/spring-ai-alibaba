@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.redis.RedisSaver;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
@@ -101,7 +102,10 @@ class RedisSaverTest {
 		config.useSingleServer()
 				.setAddress("redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379));
 		redisson = Redisson.create(config);
-		redisSaver = new RedisSaver(redisson, serializer);
+		redisSaver = RedisSaver.builder()
+				.redisson(redisson)
+				.stateSerializer(serializer)
+				.build();
 	}
 
 	@AfterAll
@@ -489,7 +493,10 @@ class RedisSaverTest {
 		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver with the ObjectMapper from StateGraph's serializer
-		RedisSaver saverWithSerializer = new RedisSaver(redisson, graphSerializer);
+		RedisSaver saverWithSerializer = RedisSaver.builder()
+				.redisson(redisson)
+				.stateSerializer(graphSerializer)
+				.build();
 		
 		// Test that it works correctly
 		String threadId = "test-serializer-thread-" + UUID.randomUUID();
@@ -535,7 +542,10 @@ class RedisSaverTest {
 		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver using the same ObjectMapper
-		RedisSaver saver = new RedisSaver(redisson, graphSerializer);
+		RedisSaver saver = RedisSaver.builder()
+				.redisson(redisson)
+				.stateSerializer(graphSerializer)
+				.build();
 		
 		// Compile graph with saver
 		CompileConfig compileConfig = CompileConfig.builder()
@@ -578,7 +588,10 @@ class RedisSaverTest {
 		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver with the ObjectMapper
-		RedisSaver saver = new RedisSaver(redisson, graphSerializer);
+		RedisSaver saver = RedisSaver.builder()
+				.redisson(redisson)
+				.stateSerializer(graphSerializer)
+				.build();
 		
 		// Test serialization/deserialization
 		String threadId = "test-default-serializer-thread-" + UUID.randomUUID();
@@ -630,7 +643,10 @@ class RedisSaverTest {
 		ObjectMapper graphObjectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver with the same ObjectMapper
-		RedisSaver saver = new RedisSaver(redisson, graphSerializer);
+		RedisSaver saver = RedisSaver.builder()
+				.redisson(redisson)
+				.stateSerializer(graphSerializer)
+				.build();
 		
 		// Verify they use compatible serialization
 		String threadId = "test-consistency-thread-" + UUID.randomUUID();
