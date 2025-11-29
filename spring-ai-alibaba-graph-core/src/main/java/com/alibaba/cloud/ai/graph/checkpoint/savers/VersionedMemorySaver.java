@@ -194,11 +194,6 @@ public class VersionedMemorySaver implements BaseCheckpointSaver, HasVersions {
 		}
 	}
 
-	@Override
-	public boolean clear(RunnableConfig config) {
-		return false;
-	}
-
 	/**
 	 * Releases a {@link Tag} based on the provided {@link RunnableConfig}.
 	 * @param config The configuration for the release operation.

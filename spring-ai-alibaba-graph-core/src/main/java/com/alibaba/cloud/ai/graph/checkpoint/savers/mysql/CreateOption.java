@@ -30,4 +30,3 @@ public enum CreateOption {
 	/** An existing schema object is dropped and replaced with a new one. */
 	CREATE_OR_REPLACE
 }
-

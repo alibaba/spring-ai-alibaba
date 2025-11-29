@@ -43,6 +43,9 @@ import oracle.jdbc.OracleTypes;
 import oracle.jdbc.provider.oson.OsonFactory;
 import oracle.sql.json.OracleJsonDatum;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static java.lang.String.format;
 
 
@@ -101,6 +104,8 @@ import static java.lang.String.format;
  * </p>
  */
 public class OracleSaver extends MemorySaver {
+
+	private static final Logger log = LoggerFactory.getLogger(OracleSaver.class);
 
 	// DDL statements
 	private static final String CREATE_THREAD_TABLE = """
@@ -204,12 +209,58 @@ public class OracleSaver extends MemorySaver {
 
 	/**
 	 * Creates an instance of a builder that allows to configure and create a new
-	 * instace of OracleSaver.
+	 * instance of OracleSaver.
 	 *
-	 * @return a new instace of the builder.
+	 * @return a new instance of the builder.
 	 */
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	/**
+	 * Rolls back a transaction and logs the error.
+	 *
+	 * @param conn      the database connection
+	 * @param checkpoint the checkpoint being processed
+	 * @param threadId  the thread ID
+	 */
+	private void rollback(Connection conn, Checkpoint checkpoint, String threadId) {
+		if (conn == null) {
+			return;
+		}
+
+		Objects.requireNonNull(checkpoint, "checkpoint cannot be null");
+
+		try {
+			conn.rollback();
+			log.warn("Transaction rolled back for checkpoint {}", checkpoint.getId());
+		}
+		catch (SQLException exRollback) {
+			log.error("Failed to rollback transaction for checkpoint id {} in thread {}",
+					checkpoint.getId(),
+					threadId,
+					exRollback);
+		}
+	}
+
+	/**
+	 * Rolls back a transaction and logs the error (for operations without checkpoint).
+	 *
+	 * @param conn     the database connection
+	 * @param threadId the thread ID
+	 */
+	private void rollback(Connection conn, String threadId) {
+		if (conn == null) {
+			return;
+		}
+
+		try {
+			conn.rollback();
+			log.warn("Transaction rolled back for thread {}", threadId);
+		}
+		catch (SQLException exRollback) {
+			log.error("Failed to rollback transaction for thread {}", threadId, exRollback);
+		}
 	}
 
 	/**
@@ -334,30 +385,36 @@ public class OracleSaver extends MemorySaver {
 			throws Exception {
 
 		final String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
+		Connection conn = null;
 
-		try (Connection connection = dataSource.getConnection();
-			 PreparedStatement upsertStatement = connection.prepareStatement(UPSERT_THREAD);
-			 PreparedStatement insertCheckpointStatement = connection.prepareStatement(INSERT_CHECKPOINT)) {
+		try (Connection ignored = conn = dataSource.getConnection()) {
+			conn.setAutoCommit(false); // Start transaction
 
-			upsertStatement.setString(1, UUID.randomUUID().toString());
-			upsertStatement.setString(2, threadName);
-			upsertStatement.execute();
+			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);
+				 PreparedStatement insertCheckpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
 
-			String encodedState = encodeState(checkpoint.getState());
-			insertCheckpointStatement.setString(1, checkpoint.getId());
-			insertCheckpointStatement.setString(2, checkpoint.getNodeId());
-			insertCheckpointStatement.setString(3, checkpoint.getNextNodeId());
-			insertCheckpointStatement.setObject(4, encodedState, OracleType.JSON);
-			insertCheckpointStatement.setString(5, stateSerializer.contentType());
-			insertCheckpointStatement.setString(6, threadName);
+				upsertStatement.setString(1, UUID.randomUUID().toString());
+				upsertStatement.setString(2, threadName);
+				upsertStatement.execute();
 
-			insertCheckpointStatement.execute();
+				String encodedState = encodeState(checkpoint.getState());
+				insertCheckpointStatement.setString(1, checkpoint.getId());
+				insertCheckpointStatement.setString(2, checkpoint.getNodeId());
+				insertCheckpointStatement.setString(3, checkpoint.getNextNodeId());
+				insertCheckpointStatement.setObject(4, encodedState, OracleType.JSON);
+				insertCheckpointStatement.setString(5, stateSerializer.contentType());
+				insertCheckpointStatement.setString(6, threadName);
+
+				insertCheckpointStatement.execute();
+			}
+
+			conn.commit();
+			log.debug("Checkpoint {} for thread {} inserted successfully.", checkpoint.getId(), threadName);
 		}
-		catch (SQLException sqlException) {
-			throw new RuntimeException("Unable to insert checkpoint", sqlException);
-		}
-		catch (IOException e) {
-			throw new RuntimeException("Unable to serialize checkpoint state", e);
+		catch (SQLException | IOException e) {
+			log.error("Error inserting checkpoint with id {} in thread {}", checkpoint.getId(), threadName, e);
+			rollback(conn, checkpoint, threadName);
+			throw new Exception("Unable to insert checkpoint", e);
 		}
 
 	}
@@ -365,7 +422,7 @@ public class OracleSaver extends MemorySaver {
 	/**
 	 * Marks the checkpoints as released
 	 *
-	 * @param config      the configuraiton
+	 * @param config      the configuration
 	 * @param checkpoints the checkpoints
 	 * @param releaseTag  the release tab
 	 * @throws Exception if an error occurs while marking the checkpoints as
@@ -375,14 +432,29 @@ public class OracleSaver extends MemorySaver {
 	protected void releasedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Tag releaseTag)
 			throws Exception {
 		final String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
+		Connection conn = null;
 
-		try (Connection connection = dataSource.getConnection();
-			 PreparedStatement preparedStatement = connection.prepareStatement(RELEASE_THREAD)) {
-			preparedStatement.setString(1, threadName);
-			preparedStatement.execute();
+		try (Connection ignored = conn = dataSource.getConnection()) {
+			conn.setAutoCommit(false); // Start transaction
+
+			try (PreparedStatement preparedStatement = conn.prepareStatement(RELEASE_THREAD)) {
+				preparedStatement.setString(1, threadName);
+				int rowsAffected = preparedStatement.executeUpdate();
+
+				if (rowsAffected == 0) {
+					conn.rollback();
+					throw new IllegalStateException(
+							format("Thread '%s' not found or already released", threadName));
+				}
+			}
+
+			conn.commit();
+			log.debug("Thread {} released successfully.", threadName);
 		}
-		catch (SQLException sqlException) {
-			throw new Exception("Unable to release checkpoint", sqlException);
+		catch (SQLException e) {
+			log.error("Error releasing thread {}", threadName, e);
+			rollback(conn, threadName);
+			throw new Exception("Unable to release checkpoint", e);
 		}
 	}
 
@@ -399,28 +471,52 @@ public class OracleSaver extends MemorySaver {
 	protected void updatedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
 			throws Exception {
 		final String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
+		Connection conn = null;
 
-		if (config.checkPointId().isPresent()) {
-			try (Connection connection = dataSource.getConnection();
-				 PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_CHECKPOINT)) {
-				String encodedState = encodeState(checkpoint.getState());
-				preparedStatement.setString(1, checkpoint.getId());
-				preparedStatement.setString(2, checkpoint.getNodeId());
-				preparedStatement.setString(3, checkpoint.getNextNodeId());
-				preparedStatement.setObject(4, encodedState, OracleType.JSON);
-				preparedStatement.setString(5, stateSerializer.contentType());
-				preparedStatement.setString(6, config.checkPointId().get());
-				preparedStatement.execute();
+		try (Connection ignored = conn = dataSource.getConnection()) {
+			conn.setAutoCommit(false); // Start transaction
+
+			if (config.checkPointId().isPresent()) {
+				// Update existing checkpoint
+				try (PreparedStatement preparedStatement = conn.prepareStatement(UPDATE_CHECKPOINT)) {
+					String encodedState = encodeState(checkpoint.getState());
+					preparedStatement.setString(1, checkpoint.getId());
+					preparedStatement.setString(2, checkpoint.getNodeId());
+					preparedStatement.setString(3, checkpoint.getNextNodeId());
+					preparedStatement.setObject(4, encodedState, OracleType.JSON);
+					preparedStatement.setString(5, stateSerializer.contentType());
+					preparedStatement.setString(6, config.checkPointId().get());
+					preparedStatement.execute();
+				}
 			}
-			catch (SQLException sqlException) {
-				throw new Exception("Unable to update checkpoint", sqlException);
+			else {
+				// Insert new checkpoint (within same transaction)
+				try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);
+					 PreparedStatement insertCheckpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
+
+					upsertStatement.setString(1, UUID.randomUUID().toString());
+					upsertStatement.setString(2, threadName);
+					upsertStatement.execute();
+
+					String encodedState = encodeState(checkpoint.getState());
+					insertCheckpointStatement.setString(1, checkpoint.getId());
+					insertCheckpointStatement.setString(2, checkpoint.getNodeId());
+					insertCheckpointStatement.setString(3, checkpoint.getNextNodeId());
+					insertCheckpointStatement.setObject(4, encodedState, OracleType.JSON);
+					insertCheckpointStatement.setString(5, stateSerializer.contentType());
+					insertCheckpointStatement.setString(6, threadName);
+
+					insertCheckpointStatement.execute();
+				}
 			}
-			catch (IOException e) {
-				throw new Exception("Unable to serialize checkpoint state", e);
-			}
+
+			conn.commit();
+			log.debug("Checkpoint with id {} for thread {} updated successfully.", checkpoint.getId(), threadName);
 		}
-		else {
-			insertedCheckpoint(config, checkpoints, checkpoint);
+		catch (SQLException | IOException e) {
+			log.error("Error updating checkpoint with id {} in thread {}", checkpoint.getId(), threadName, e);
+			rollback(conn, checkpoint, threadName);
+			throw new Exception("Unable to update checkpoint", e);
 		}
 	}
 
