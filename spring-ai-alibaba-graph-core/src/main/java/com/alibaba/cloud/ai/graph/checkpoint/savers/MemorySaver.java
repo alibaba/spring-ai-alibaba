@@ -42,7 +42,7 @@ public class MemorySaver implements BaseCheckpointSaver {
 	 * Protected constructor for MemorySaver.
 	 * Use {@link #builder()} to create instances.
 	 */
-	protected MemorySaver() {
+	public MemorySaver() {
 	}
 
 	/**
