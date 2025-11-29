@@ -52,6 +52,28 @@ public class VersionedMemorySaver implements BaseCheckpointSaver, HasVersions {
 	}
 
 	/**
+	 * Creates a new builder for VersionedMemorySaver.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder class for VersionedMemorySaver.
+	 */
+	public static class Builder {
+
+		/**
+		 * Builds a new VersionedMemorySaver instance.
+		 * @return a new VersionedMemorySaver instance
+		 */
+		public VersionedMemorySaver build() {
+			return new VersionedMemorySaver();
+		}
+	}
+
+	/**
 	 * Retrieves the checkpoint history for a specific thread.
 	 * @param threadId The ID of the thread whose checkpoint history is to be retrieved.
 	 * @return An {@link Optional} containing the {@link TreeMap<Integer, Tag>}
