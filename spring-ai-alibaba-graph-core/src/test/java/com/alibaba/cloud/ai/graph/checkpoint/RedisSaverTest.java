@@ -902,13 +902,14 @@ class RedisSaverTest {
 	static boolean isLocalRedisAvailable() {
 		String localRedisHost = System.getProperty("local.redis.host", "127.0.0.1");
 		int localRedisPort = Integer.parseInt(System.getProperty("local.redis.port", "6379"));
-		
-		try (JedisPool pool = new JedisPool(localRedisHost, localRedisPort);
-			 redis.clients.jedis.Jedis jedis = pool.getResource()) {
-			jedis.ping();
-			return true;
-		} catch (Exception e) {
-			return false;
+
+        try (JedisPool pool = new JedisPool(localRedisHost, localRedisPort)) {
+            try (redis.clients.jedis.Jedis jedis = pool.getResource()) {
+                jedis.ping();
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
 		}
 	}
 	
