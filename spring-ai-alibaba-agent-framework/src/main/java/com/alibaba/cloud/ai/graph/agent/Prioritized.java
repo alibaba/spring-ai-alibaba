@@ -16,6 +16,35 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+/**
+ * Interface for objects that can be prioritized and sorted by their order value.
+ * <p>
+ * Classes implementing this interface can be sorted based on their order value.
+ * Objects with smaller order values will be placed before objects with larger order values
+ * (ascending order). This is commonly used for hooks and other components that need
+ * to execute in a specific sequence.
+ * </p>
+ *
+ * @author Spring AI Alibaba
+ * @since 1.0.0
+ */
 public interface Prioritized {
+	/**
+	 * Returns the order value for this object.
+	 * <p>
+	 * The order value determines the priority of this object when sorted with other
+	 * {@link Prioritized} objects. Objects with smaller order values will be sorted
+	 * before objects with larger order values (ascending order).
+	 * </p>
+	 * <p>
+	 * For example:
+	 * <ul>
+	 *   <li>An object with order 1 will be placed before an object with order 5</li>
+	 *   <li>An object with order 10 will be placed before an object with order 20</li>
+	 * </ul>
+	 * </p>
+	 *
+	 * @return the order value (smaller values indicate higher priority)
+	 */
 	int getOrder();
 }
