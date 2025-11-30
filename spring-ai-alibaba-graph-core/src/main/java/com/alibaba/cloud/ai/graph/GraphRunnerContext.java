@@ -129,8 +129,26 @@ public class GraphRunnerContext {
 
 		// Use CompiledGraph's getInitialState method
 		this.overallState = stateCreate(compiledGraph.getInitialState(inputs, config), initialState);
-		this.currentNodeId = START;
-		this.nextNodeId = null;
+
+		// If the config contains a checkPointId, execution continues from the next node after the checkpoint.
+		if (config.checkPointId().isPresent()) {
+			var saver = compiledGraph.compileConfig.checkpointSaver()
+					.orElseThrow(() -> new IllegalStateException("Checkpoint ID provided but no CheckpointSaver configured!"));
+			var checkpoint = saver.get(config)
+					.orElseThrow(() -> new IllegalStateException("Checkpoint with id " + config.checkPointId().get() + " not found!"));
+
+			// Restore state from checkpoint
+			this.overallState = initialState.input(checkpoint.getState());
+			this.currentNodeId = null;
+			this.nextNodeId = checkpoint.getNextNodeId();
+
+			this.config = config.withCheckPointId(null);
+
+			log.trace("RESUME FROM CHECKPOINT {}, NEXT NODE: {}", checkpoint.getId(), checkpoint.getNextNodeId());
+		} else {
+			this.currentNodeId = START;
+			this.nextNodeId = null;
+		}
 	}
 
 	// FIXME, duplicated method with CompiledGraph.stateCreate, need to have a
