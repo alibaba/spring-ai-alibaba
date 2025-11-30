@@ -28,20 +28,6 @@ import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -60,6 +46,20 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
+import redis.clients.jedis.JedisPool;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -75,52 +75,115 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Testcontainers
 class RedisSaverTest {
 
-	private static boolean isCI() {
-		return "true".equalsIgnoreCase(System.getProperty("CI", System.getenv("CI")));
-	}
-
-	// 使用较为稳定的版本
+	private static final String REDIS_MODE_CONTAINER = "container";
+	private static final String REDIS_MODE_LOCAL = "local";
+	
+	private static String redisMode;
+	private static String redisHost;
+	private static int redisPort;
 
 	@Container
 	private static final GenericContainer<?> redisContainer = new GenericContainer<>(
 			DockerImageName.parse("valkey/valkey:8.1.2"))
 			.withExposedPorts(6379); // #gitleaks:allow
 	static RedissonClient redisson;
-	static RedisSaver redisSaver;
+	static JedisPool jedisPool;
+	static RedisSaver redisSaverRedisson;
+	static RedisSaver redisSaverJedis;
 
 	@BeforeAll
 	static void setup() {
+		// Determine Redis mode from system property
+		redisMode = System.getProperty("redis.mode", REDIS_MODE_CONTAINER);
+		
+		if (REDIS_MODE_CONTAINER.equals(redisMode)) {
+			setupContainerRedis();
+		} else if (REDIS_MODE_LOCAL.equals(redisMode)) {
+            // Setup local Redis
+			setupLocalRedis();
+		} else {
+			throw new IllegalArgumentException("Invalid redis.mode: " + redisMode + ". Use 'container' or 'local'");
+		}
+	}
+
+	private static void setupContainerRedis() {
 		redisContainer.start();
-		// 本地单机 Redis，测试环境需保证 6379 端口可用
+		String redisAddress = "redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379);
+		
+		// Setup Redisson client with Testcontainers
 		Config config = new Config();
-		config.useSingleServer()
-				.setAddress("redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379));
+		config.useSingleServer().setAddress(redisAddress);
 		redisson = Redisson.create(config);
-		redisSaver = new RedisSaver(redisson);
+		redisSaverRedisson = new RedisSaver(redisson);
+		
+		// Setup Jedis client with Testcontainers
+		jedisPool = new JedisPool(redisContainer.getHost(), redisContainer.getMappedPort(6379));
+		redisSaverJedis = new RedisSaver(jedisPool);
+		
+		redisHost = redisContainer.getHost();
+		redisPort = redisContainer.getMappedPort(6379);
+	}
+
+	private static void setupLocalRedis() {
+		redisHost = System.getProperty("local.redis.host", "127.0.0.1");
+		redisPort = Integer.parseInt(System.getProperty("local.redis.port", "6379"));
+		
+		// Check if local Redis is available
+		if (!isLocalRedisAvailable()) {
+			throw new RuntimeException("Local Redis is not available at " + redisHost + ":" + redisPort);
+		}
+		
+		// Setup Redisson client for local Redis
+		Config config = new Config();
+		config.useSingleServer().setAddress("redis://" + redisHost + ":" + redisPort);
+		redisson = Redisson.create(config);
+		redisSaverRedisson = new RedisSaver(redisson);
+		
+		// Setup Jedis client for local Redis
+		jedisPool = new JedisPool(redisHost, redisPort);
+		redisSaverJedis = new RedisSaver(jedisPool);
 	}
 
 	@AfterAll
 	static void tearDown() {
+		// Close clients
 		if (redisson != null) {
 			redisson.shutdown();
+		}
+		if (jedisPool != null) {
+			jedisPool.close();
+		}
+		
+		// Stop container if we were using it
+		if (REDIS_MODE_CONTAINER.equals(redisMode) && redisContainer != null) {
+			redisContainer.stop();
 		}
 	}
 
 	@Test
-	void testPutAndGetAndList() throws Exception {
+	void testPutAndGetAndListWithRedisson() throws Exception {
+		testPutAndGetAndList(redisSaverRedisson);
+	}
+
+	@Test
+	void testPutAndGetAndListWithJedis() throws Exception {
+		testPutAndGetAndList(redisSaverJedis);
+	}
+
+	void testPutAndGetAndList(RedisSaver redisSaver) throws Exception {
 		String threadId = "test-thread-" + UUID.randomUUID();
 		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
 
 		// 构造 checkpoint
 		Checkpoint cp1 = Checkpoint.builder()
 				.id("cp1")
-				.state(java.util.Map.of("data", "data1"))
+				.state(Map.of("data", "data1"))
 				.nodeId("node1")
 				.nextNodeId("node2")
 				.build();
 		Checkpoint cp2 = Checkpoint.builder()
 				.id("cp2")
-				.state(java.util.Map.of("data", "data2"))
+				.state(Map.of("data", "data2"))
 				.nodeId("node1")
 				.nextNodeId("node2")
 				.build();
@@ -148,13 +211,22 @@ class RedisSaverTest {
 	}
 
 	@Test
-	void testReplaceCheckpoint() throws Exception {
+	void testReplaceCheckpointWithRedisson() throws Exception {
+		testReplaceCheckpoint(redisSaverRedisson);
+	}
+
+	@Test
+	void testReplaceCheckpointWithJedis() throws Exception {
+		testReplaceCheckpoint(redisSaverJedis);
+	}
+
+	void testReplaceCheckpoint(RedisSaver redisSaver) throws Exception {
 		String threadId = "test-thread-" + UUID.randomUUID();
 		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
 
 		Checkpoint cp1 = Checkpoint.builder()
 				.id("cp1")
-				.state(java.util.Map.of("data", "data1"))
+				.state(Map.of("data", "data1"))
 				.nodeId("node1")
 				.nextNodeId("node2")
 				.build();
@@ -163,7 +235,7 @@ class RedisSaverTest {
 		// 替换 cp1
 		Checkpoint cp1New = Checkpoint.builder()
 				.id("cp1")
-				.state(java.util.Map.of("data", "data1-new"))
+				.state(Map.of("data", "data1-new"))
 				.nodeId("node1")
 				.nextNodeId("node2")
 				.build();
@@ -176,21 +248,30 @@ class RedisSaverTest {
 	}
 
 	@Test
-	void testClear() throws Exception {
+	void testClearWithRedisson() throws Exception {
+		testClear(redisSaverRedisson);
+	}
+
+	@Test
+	void testClearWithJedis() throws Exception {
+		testClear(redisSaverJedis);
+	}
+
+	void testClear(RedisSaver redisSaver) throws Exception {
 		String threadId = "test-thread-" + UUID.randomUUID();
 		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
 
 		redisSaver.put(config,
 				Checkpoint.builder()
 						.id("cp1")
-						.state(java.util.Map.of("data", "data1"))
+						.state(Map.of("data", "data1"))
 						.nodeId("node1")
 						.nextNodeId("node2")
 						.build());
 		redisSaver.put(config,
 				Checkpoint.builder()
 						.id("cp2")
-						.state(java.util.Map.of("data", "data2"))
+						.state(Map.of("data", "data2"))
 						.nodeId("node1")
 						.nextNodeId("node2")
 						.build());
@@ -203,7 +284,16 @@ class RedisSaverTest {
 	}
 
 	@Test
-	void testGetWithNoData() {
+	void testGetWithNoDataWithRedisson() {
+		testGetWithNoData(redisSaverRedisson);
+	}
+
+	@Test
+	void testGetWithNoDataWithJedis() {
+		testGetWithNoData(redisSaverJedis);
+	}
+
+	void testGetWithNoData(RedisSaver redisSaver) {
 		String threadId = "test-thread-" + UUID.randomUUID();
 		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
 
@@ -212,7 +302,16 @@ class RedisSaverTest {
 	}
 
 	@Test
-	public void concurrentExceptionTest() throws Exception {
+	public void concurrentExceptionTestWithRedisson() throws Exception {
+		concurrentExceptionTest(redisSaverRedisson);
+	}
+
+	@Test
+	public void concurrentExceptionTestWithJedis() throws Exception {
+		concurrentExceptionTest(redisSaverJedis);
+	}
+
+	public void concurrentExceptionTest(RedisSaver redisSaver) throws Exception {
 		ExecutorService executorService = Executors.newCachedThreadPool();
 		int count = 100;
 		CountDownLatch latch = new CountDownLatch(count);
@@ -274,7 +373,16 @@ class RedisSaverTest {
 	 * instead of their original types, causing ClassCastException in AgentLlmNode.
 	 */
 	@Test
-	void testMessageSerializationAndDeserialization() throws Exception {
+	void testMessageSerializationAndDeserializationWithRedisson() throws Exception {
+		testMessageSerializationAndDeserialization(redisSaverRedisson);
+	}
+
+	@Test
+	void testMessageSerializationAndDeserializationWithJedis() throws Exception {
+		testMessageSerializationAndDeserialization(redisSaverJedis);
+	}
+
+	void testMessageSerializationAndDeserialization(RedisSaver redisSaver) throws Exception {
 		String threadId = "test-message-thread-" + UUID.randomUUID();
 		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
 
@@ -340,7 +448,16 @@ class RedisSaverTest {
 	}
 
 	@Test
-	void testToolResponseMessageSerialization() throws Exception {
+	void testToolResponseMessageSerializationWithRedisson() throws Exception {
+		testToolResponseMessageSerialization(redisSaverRedisson);
+	}
+
+	@Test
+	void testToolResponseMessageSerializationWithJedis() throws Exception {
+		testToolResponseMessageSerialization(redisSaverJedis);
+	}
+
+	void testToolResponseMessageSerialization(RedisSaver redisSaver) throws Exception {
 		String threadId = "test-tool-response-" + UUID.randomUUID();
 		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
 
@@ -378,7 +495,16 @@ class RedisSaverTest {
 	}
 
 	@Test
-	void testDocumentSerialization() throws Exception {
+	void testDocumentSerializationWithRedisson() throws Exception {
+		testDocumentSerialization(redisSaverRedisson);
+	}
+
+	@Test
+	void testDocumentSerializationWithJedis() throws Exception {
+		testDocumentSerialization(redisSaverJedis);
+	}
+
+	void testDocumentSerialization(RedisSaver redisSaver) throws Exception {
 		String threadId = "test-document-" + UUID.randomUUID();
 		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
 
@@ -416,7 +542,16 @@ class RedisSaverTest {
 	}
 
 	@Test
-	void testComplexMetadataSerialization() throws Exception {
+	void testComplexMetadataSerializationWithRedisson() throws Exception {
+		testComplexMetadataSerialization(redisSaverRedisson);
+	}
+
+	@Test
+	void testComplexMetadataSerializationWithJedis() throws Exception {
+		testComplexMetadataSerialization(redisSaverJedis);
+	}
+
+	void testComplexMetadataSerialization(RedisSaver redisSaver) throws Exception {
 		String threadId = "test-complex-metadata-" + UUID.randomUUID();
 		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
 
@@ -469,7 +604,16 @@ class RedisSaverTest {
 	 * This ensures consistency between StateGraph serialization and RedisSaver serialization.
 	 */
 	@Test
-	void testRedisSaverWithStateGraphJacksonSerializer() throws Exception {
+	void testRedisSaverWithStateGraphJacksonSerializerWithRedisson() throws Exception {
+		testRedisSaverWithStateGraphJacksonSerializer(redisSaverRedisson, redisson);
+	}
+
+	@Test
+	void testRedisSaverWithStateGraphJacksonSerializerWithJedis() throws Exception {
+		testRedisSaverWithStateGraphJacksonSerializer(redisSaverJedis, jedisPool);
+	}
+
+	void testRedisSaverWithStateGraphJacksonSerializer(RedisSaver redisSaver, Object redisClient) throws Exception {
 		// Create StateGraph with SpringAIJacksonStateSerializer
 		StateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
 		KeyStrategyFactory keyStrategyFactory = () -> Map.of("value", new ReplaceStrategy());
@@ -484,7 +628,9 @@ class RedisSaverTest {
 		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver with the ObjectMapper from StateGraph's serializer
-		RedisSaver saverWithSerializer = new RedisSaver(redisson, objectMapper);
+		RedisSaver saverWithSerializer = redisClient instanceof RedissonClient ?
+				new RedisSaver((RedissonClient) redisClient, objectMapper) :
+				new RedisSaver((JedisPool) redisClient, objectMapper);
 		
 		// Test that it works correctly
 		String threadId = "test-serializer-thread-" + UUID.randomUUID();
@@ -510,7 +656,16 @@ class RedisSaverTest {
 	 * Note: RedisSaver uses JSON serialization, so it works best with Jackson-based serializers.
 	 */
 	@Test
-	void testStateGraphWithSerializerAndRedisSaver() throws Exception {
+	void testStateGraphWithSerializerAndRedisSaverWithRedisson() throws Exception {
+		testStateGraphWithSerializerAndRedisSaver(redisSaverRedisson, redisson);
+	}
+
+	@Test
+	void testStateGraphWithSerializerAndRedisSaverWithJedis() throws Exception {
+		testStateGraphWithSerializerAndRedisSaver(redisSaverJedis, jedisPool);
+	}
+
+	void testStateGraphWithSerializerAndRedisSaver(RedisSaver redisSaver, Object redisClient) throws Exception {
 		// Create StateGraph with SpringAIJacksonStateSerializer
 		StateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
 		KeyStrategyFactory keyStrategyFactory = () -> Map.of("steps", new ReplaceStrategy());
@@ -530,7 +685,9 @@ class RedisSaverTest {
 		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver using the same ObjectMapper
-		RedisSaver saver = new RedisSaver(redisson, objectMapper);
+		RedisSaver saver = redisClient instanceof RedissonClient ?
+				new RedisSaver((RedissonClient) redisClient, objectMapper) :
+				new RedisSaver((JedisPool) redisClient, objectMapper);
 		
 		// Compile graph with saver
 		CompileConfig compileConfig = CompileConfig.builder()
@@ -544,7 +701,7 @@ class RedisSaverTest {
 		// Execute and verify
 		String threadId = "test-execution-thread-" + UUID.randomUUID();
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(threadId).build();
-		java.util.Optional<OverAllState> result = compiledGraph.invoke(Map.of(), runnableConfig);
+		Optional<OverAllState> result = compiledGraph.invoke(Map.of(), runnableConfig);
 		
 		assertTrue(result.isPresent());
 		assertEquals(1, result.get().value("steps").orElse(0));
@@ -559,7 +716,16 @@ class RedisSaverTest {
 	 * Test that RedisSaver works correctly with StateGraph's default serializer.
 	 */
 	@Test
-	void testRedisSaverWithStateGraphDefaultSerializer() throws Exception {
+	void testRedisSaverWithStateGraphDefaultSerializerWithRedisson() throws Exception {
+		testRedisSaverWithStateGraphDefaultSerializer(redisSaverRedisson, redisson);
+	}
+
+	@Test
+	void testRedisSaverWithStateGraphDefaultSerializerWithJedis() throws Exception {
+		testRedisSaverWithStateGraphDefaultSerializer(redisSaverJedis, jedisPool);
+	}
+
+	void testRedisSaverWithStateGraphDefaultSerializer(RedisSaver redisSaver, Object redisClient) throws Exception {
 		// Create StateGraph with default serializer (should be JacksonSerializer)
 		KeyStrategyFactory keyStrategyFactory = () -> Map.of("value", new ReplaceStrategy());
 		StateGraph graph = new StateGraph("testGraph", keyStrategyFactory);
@@ -573,7 +739,9 @@ class RedisSaverTest {
 		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver with the ObjectMapper
-		RedisSaver saver = new RedisSaver(redisson, objectMapper);
+		RedisSaver saver = redisClient instanceof RedissonClient ?
+				new RedisSaver((RedissonClient) redisClient, objectMapper) :
+				new RedisSaver((JedisPool) redisClient, objectMapper);
 		
 		// Test serialization/deserialization
 		String threadId = "test-default-serializer-thread-" + UUID.randomUUID();
@@ -611,13 +779,24 @@ class RedisSaverTest {
 	 * Test that using different ObjectMapper configurations affects serialization behavior.
 	 */
 	@Test
-	void testRedisSaverWithCustomObjectMapper() throws Exception {
+	void testRedisSaverWithCustomObjectMapperWithRedisson() throws Exception {
+		testRedisSaverWithCustomObjectMapper(redisSaverRedisson, redisson);
+	}
+
+	@Test
+	void testRedisSaverWithCustomObjectMapperWithJedis() throws Exception {
+		testRedisSaverWithCustomObjectMapper(redisSaverJedis, jedisPool);
+	}
+
+	void testRedisSaverWithCustomObjectMapper(RedisSaver redisSaver, Object redisClient) throws Exception {
 		// Create a custom ObjectMapper with StateGraph serializer configuration
 		ObjectMapper customObjectMapper = new ObjectMapper();
 		customObjectMapper = BaseCheckpointSaver.configureObjectMapper(customObjectMapper);
 		
 		// Create RedisSaver with custom ObjectMapper
-		RedisSaver saver = new RedisSaver(redisson, customObjectMapper);
+		RedisSaver saver = redisClient instanceof RedissonClient ?
+				new RedisSaver((RedissonClient) redisClient, customObjectMapper) :
+				new RedisSaver((JedisPool) redisClient, customObjectMapper);
 		
 		// Test that it works with Message objects
 		String threadId = "test-custom-mapper-thread-" + UUID.randomUUID();
@@ -650,7 +829,16 @@ class RedisSaverTest {
 	 * Test consistency: StateGraph and RedisSaver should use compatible serialization.
 	 */
 	@Test
-	void testSerializerConsistencyBetweenStateGraphAndRedisSaver() throws Exception {
+	void testSerializerConsistencyBetweenStateGraphAndRedisSaverWithRedisson() throws Exception {
+		testSerializerConsistencyBetweenStateGraphAndRedisSaver(redisSaverRedisson, redisson);
+	}
+
+	@Test
+	void testSerializerConsistencyBetweenStateGraphAndRedisSaverWithJedis() throws Exception {
+		testSerializerConsistencyBetweenStateGraphAndRedisSaver(redisSaverJedis, jedisPool);
+	}
+
+	void testSerializerConsistencyBetweenStateGraphAndRedisSaver(RedisSaver redisSaver, Object redisClient) throws Exception {
 		// Create StateGraph with specific serializer
 		StateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
 		KeyStrategyFactory keyStrategyFactory = () -> Map.of("test", new ReplaceStrategy());
@@ -664,7 +852,9 @@ class RedisSaverTest {
 		ObjectMapper graphObjectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver with the same ObjectMapper
-		RedisSaver saver = new RedisSaver(redisson, graphObjectMapper);
+		RedisSaver saver = redisClient instanceof RedissonClient ?
+				new RedisSaver((RedissonClient) redisClient, graphObjectMapper) :
+				new RedisSaver((JedisPool) redisClient, graphObjectMapper);
 		
 		// Verify they use compatible serialization
 		String threadId = "test-consistency-thread-" + UUID.randomUUID();
@@ -704,5 +894,29 @@ class RedisSaverTest {
 		assertEquals(2, messages.size());
 		assertInstanceOf(SystemMessage.class, messages.get(0));
 		assertInstanceOf(UserMessage.class, messages.get(1));
+	}
+	
+	/**
+	 * Check if local Redis is available
+	 */
+	static boolean isLocalRedisAvailable() {
+		String localRedisHost = System.getProperty("local.redis.host", "127.0.0.1");
+		int localRedisPort = Integer.parseInt(System.getProperty("local.redis.port", "6379"));
+
+        try (JedisPool pool = new JedisPool(localRedisHost, localRedisPort)) {
+            try (redis.clients.jedis.Jedis jedis = pool.getResource()) {
+                jedis.ping();
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+		}
+	}
+	
+	/**
+	 * Check if we are running in CI environment
+	 */
+	static boolean isCI() {
+		return "true".equalsIgnoreCase(System.getProperty("CI", System.getenv("CI")));
 	}
 }

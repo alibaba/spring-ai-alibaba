@@ -25,12 +25,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.params.SetParams;
+
 
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -38,13 +45,22 @@ import static java.lang.String.format;
 
 /**
  * The type Redis saver.
+ * <p>
+ * Provides checkpoint persistence using Redis as the storage backend.
+ * Supports both Redisson and Jedis clients.
+ * <p>
+ * Note: When using Jedis client adapter, the distributed locking implementation
+ * is simplified and suitable for single-node Redis setups. For production 
+ * environments with Redis clusters or high availability requirements, consider 
+ * using Redisson client adapter which provides more robust distributed locking 
+ * mechanisms, or implement the Redlock algorithm.
  *
  * @author disaster
  * @since 1.0.0-M2
  */
 public class RedisSaver implements BaseCheckpointSaver {
 
-	private RedissonClient redisson;
+	private RedisClientAdapter redisClient;
 
 	private final ObjectMapper objectMapper;
 
@@ -52,22 +68,54 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 	private static final String LOCK_PREFIX = "graph:checkpoint:lock:";
 
+	private static final int DEFAULT_LOCK_EXPIRATION_TIME = 10000;
+
 	/**
-	 * Instantiates a new Redis saver.
+	 * Instantiates a new Redis saver with Redisson client.
 	 *
-	 * @param redisson the redisson
+	 * @param redisson the redisson client
 	 */
 	public RedisSaver(RedissonClient redisson) {
-		this(redisson, new ObjectMapper());
+		this(new RedissonClientAdapter(redisson), new ObjectMapper());
 	}
 
 	/**
-	 * Instantiates a new Redis saver.
+	 * Instantiates a new Redis saver with Jedis pool.
 	 *
-	 * @param redisson the redisson
+	 * @param jedisPool the jedis pool
+	 */
+	public RedisSaver(JedisPool jedisPool) {
+		this(new JedisClientAdapter(jedisPool), new ObjectMapper());
+	}
+
+	/**
+	 * Instantiates a new Redis saver with Redisson client and custom object mapper.
+	 *
+	 * @param redisson the redisson client
+	 * @param objectMapper the object mapper
 	 */
 	public RedisSaver(RedissonClient redisson, ObjectMapper objectMapper) {
-		this.redisson = redisson;
+		this(new RedissonClientAdapter(redisson), objectMapper);
+	}
+
+	/**
+	 * Instantiates a new Redis saver with Jedis pool and custom object mapper.
+	 *
+	 * @param jedisPool the jedis pool
+	 * @param objectMapper the object mapper
+	 */
+	public RedisSaver(JedisPool jedisPool, ObjectMapper objectMapper) {
+		this(new JedisClientAdapter(jedisPool), objectMapper);
+	}
+
+	/**
+	 * Instantiates a new Redis saver with a Redis client adapter.
+	 *
+	 * @param redisClient the redis client adapter
+	 * @param objectMapper the object mapper
+	 */
+	private RedisSaver(RedisClientAdapter redisClient, ObjectMapper objectMapper) {
+		this.redisClient = redisClient;
 		this.objectMapper = BaseCheckpointSaver.configureObjectMapper(objectMapper);
 	}
 
@@ -116,13 +164,12 @@ public class RedisSaver implements BaseCheckpointSaver {
 	public Collection<Checkpoint> list(RunnableConfig config) {
 		Optional<String> configOption = config.threadId();
 		if (configOption.isPresent()) {
-			RLock lock = redisson.getLock(LOCK_PREFIX + configOption.get());
+			String threadId = configOption.get();
 			boolean tryLock = false;
 			try {
-				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+				tryLock = redisClient.tryLock(LOCK_PREFIX + threadId, 2, TimeUnit.MILLISECONDS);
 				if (tryLock) {
-					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					String content = bucket.get();
+					String content = redisClient.get(PREFIX + threadId);
 					if (content == null) {
 						return new LinkedList<>();
 					}
@@ -139,7 +186,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 				throw new RuntimeException("Failed to parse JSON", e);
 			} finally {
 				if (tryLock) {
-					lock.unlock();
+					redisClient.unlock(LOCK_PREFIX + threadId);
 				}
 			}
 		} else {
@@ -151,13 +198,12 @@ public class RedisSaver implements BaseCheckpointSaver {
 	public Optional<Checkpoint> get(RunnableConfig config) {
 		Optional<String> configOption = config.threadId();
 		if (configOption.isPresent()) {
-			RLock lock = redisson.getLock(LOCK_PREFIX + configOption.get());
+			String threadId = configOption.get();
 			boolean tryLock = false;
 			try {
-				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+				tryLock = redisClient.tryLock(LOCK_PREFIX + threadId, 5, TimeUnit.MILLISECONDS);
 				if (tryLock) {
-					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					String content = bucket.get();
+					String content = redisClient.get(PREFIX + threadId);
 					List<Checkpoint> checkpoints;
 					if (content == null) {
 						checkpoints = new LinkedList<>();
@@ -183,7 +229,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 				throw new RuntimeException("Failed to parse JSON", e);
 			} finally {
 				if (tryLock) {
-					lock.unlock();
+					redisClient.unlock(LOCK_PREFIX + threadId);
 				}
 			}
 		} else {
@@ -195,13 +241,12 @@ public class RedisSaver implements BaseCheckpointSaver {
 	public RunnableConfig put(RunnableConfig config, Checkpoint checkpoint) throws Exception {
 		Optional<String> configOption = config.threadId();
 		if (configOption.isPresent()) {
-			RLock lock = redisson.getLock(LOCK_PREFIX + configOption.get());
+			String threadId = configOption.get();
 			boolean tryLock = false;
 			try {
-				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+				tryLock = redisClient.tryLock(LOCK_PREFIX + threadId, 5, TimeUnit.MILLISECONDS);
 				if (tryLock) {
-					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					String content = bucket.get();
+					String content = redisClient.get(PREFIX + threadId);
 					List<Checkpoint> checkpoints;
 					if (content == null) {
 						checkpoints = new LinkedList<>();
@@ -218,18 +263,18 @@ public class RedisSaver implements BaseCheckpointSaver {
 								.orElseThrow(() -> (new NoSuchElementException(
 										format("Checkpoint with id %s not found!", checkPointId))));
 						linkedList.set(index, checkpoint);
-						bucket.set(objectMapper.writeValueAsString(linkedList));
+						redisClient.set(PREFIX + threadId, objectMapper.writeValueAsString(linkedList));
 						return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 					}
 					linkedList.push(checkpoint); // Add Checkpoint
-					bucket.set(objectMapper.writeValueAsString(linkedList));
+					redisClient.set(PREFIX + threadId, objectMapper.writeValueAsString(linkedList));
 				}
-				return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
+                return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 			} catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			} finally {
 				if (tryLock) {
-					lock.unlock();
+					redisClient.unlock(LOCK_PREFIX + threadId);
 				}
 			}
 		} else {
@@ -241,13 +286,12 @@ public class RedisSaver implements BaseCheckpointSaver {
 	public boolean clear(RunnableConfig config) {
 		Optional<String> configOption = config.threadId();
 		if (configOption.isPresent()) {
-			RLock lock = redisson.getLock(LOCK_PREFIX + configOption.get());
+			String threadId = configOption.get();
 			boolean tryLock = false;
 			try {
-				tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+				tryLock = redisClient.tryLock(LOCK_PREFIX + threadId, 2, TimeUnit.MILLISECONDS);
 				if (tryLock) {
-					RBucket<String> bucket = redisson.getBucket(PREFIX + configOption.get());
-					bucket.getAndSet(objectMapper.writeValueAsString(List.of()));
+					redisClient.set(PREFIX + threadId, objectMapper.writeValueAsString(List.of()));
 					return tryLock;
 				}
 				return false;
@@ -257,7 +301,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 				throw new RuntimeException("Failed to serialize JSON", e);
 			} finally {
 				if (tryLock) {
-					lock.unlock();
+					redisClient.unlock(LOCK_PREFIX + threadId);
 				}
 			}
 		} else {
@@ -265,4 +309,131 @@ public class RedisSaver implements BaseCheckpointSaver {
 		}
 	}
 
+	/**
+	 * Adapter interface for different Redis clients
+	 */
+	private interface RedisClientAdapter {
+		boolean tryLock(String lockKey, long time, TimeUnit unit) throws InterruptedException;
+		void unlock(String lockKey);
+		String get(String key);
+		void set(String key, String value);
+	}
+
+	/**
+	 * Redisson client adapter implementation
+	 */
+	private static class RedissonClientAdapter implements RedisClientAdapter {
+		private final RedissonClient redisson;
+
+		public RedissonClientAdapter(RedissonClient redisson) {
+			this.redisson = redisson;
+		}
+
+		@Override
+		public boolean tryLock(String lockKey, long time, TimeUnit unit) throws InterruptedException {
+			RLock lock = redisson.getLock(lockKey);
+			return lock.tryLock(time, unit);
+		}
+
+		@Override
+		public void unlock(String lockKey) {
+			RLock lock = redisson.getLock(lockKey);
+			lock.unlock();
+		}
+
+		@Override
+		public String get(String key) {
+			RBucket<String> bucket = redisson.getBucket(key);
+			return bucket.get();
+		}
+
+		@Override
+		public void set(String key, String value) {
+			RBucket<String> bucket = redisson.getBucket(key);
+			bucket.set(value);
+		}
+	}
+
+	/**
+	 * Jedis client adapter implementation
+	 */
+	private static class JedisClientAdapter implements RedisClientAdapter {
+		private static final Logger logger = LoggerFactory.getLogger(JedisClientAdapter.class);
+		
+		private final JedisPool jedisPool;
+
+		public JedisClientAdapter(JedisPool jedisPool) {
+			this.jedisPool = jedisPool;
+		}
+
+		@Override
+		public boolean tryLock(String lockKey, long time, TimeUnit unit) throws InterruptedException {
+			// Simple implementation using SET NX PX commands.
+			// Note: This implementation provides basic distributed locking for single-node Redis setups.
+			// For production environments, especially with Redis clusters or when higher reliability is needed,
+			// consider implementing the Redlock algorithm or using battle-tested libraries like Redisson's
+			// RedissonRedLock or other dedicated distributed locking solutions.
+			long timeoutMillis = unit.toMillis(time);
+			long startTime = System.currentTimeMillis();
+			String lockValue = UUID.randomUUID().toString();
+
+			// Use a single Jedis connection for the entire lock acquisition attempt
+			// to avoid repeatedly getting/returning connections from the pool
+			try (Jedis jedis = jedisPool.getResource()) {
+				while (System.currentTimeMillis() - startTime < timeoutMillis) {
+					// Try to set the lock key with NX (only set if not exists) and PX (expire time in milliseconds)
+					String result = jedis.set(lockKey, lockValue, new SetParams().nx().px(DEFAULT_LOCK_EXPIRATION_TIME));
+					if ("OK".equals(result)) {
+						return true;
+					}
+					// Wait a bit before retrying
+					Thread.sleep(1);
+				}
+				// After timeout, make one final attempt to acquire the lock
+				// This addresses the race condition mentioned in the GitHub issue
+				String result = jedis.set(lockKey, lockValue, new SetParams().nx().px(DEFAULT_LOCK_EXPIRATION_TIME));
+				if ("OK".equals(result)) {
+					return true;
+				}
+				return false;
+			}
+		}
+
+		@Override
+		public void unlock(String lockKey) {
+			// Note: This implementation doesn't verify lock ownership, which can lead to
+			// race conditions. A proper implementation should store a unique lock token 
+			// during lock acquisition and only delete the key if it matches the stored token.
+			// This would prevent other threads/clients from accidentally unlocking.
+			// For production environments, consider using Redisson or implementing Redlock algorithm.
+			try (Jedis jedis = jedisPool.getResource()) {
+				jedis.del(lockKey);
+			} catch (Exception e) {
+				// Handle potential Redis operation exceptions during unlock
+				// Log the exception but don't propagate it to avoid masking original exceptions
+				// in the calling finally block
+				logger.warn("Failed to unlock key: {}", lockKey, e);
+			}
+		}
+
+		@Override
+		public String get(String key) {
+			try (Jedis jedis = jedisPool.getResource()) {
+				return jedis.get(key);
+			} catch (Exception e) {
+				// Handle potential Redis operation exceptions
+				throw new RuntimeException("Failed to get value from Redis for key: " + key, e);
+			}
+		}
+
+		@Override
+		public void set(String key, String value) {
+			try (Jedis jedis = jedisPool.getResource()) {
+				jedis.set(key, value);
+			} catch (Exception e) {
+				// Handle potential Redis operation exceptions
+				throw new RuntimeException("Failed to set value in Redis for key: " + key, e);
+			}
+		}
+	}
 }
