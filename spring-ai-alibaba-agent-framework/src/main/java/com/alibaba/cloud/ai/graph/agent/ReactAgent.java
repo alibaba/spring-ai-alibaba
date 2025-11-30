@@ -34,6 +34,8 @@ import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
@@ -237,6 +239,8 @@ public class ReactAgent extends BaseAgent {
 		for (Hook hook : beforeAgentHooks) {
 			if (hook instanceof AgentHook agentHook) {
 				graph.addNode(hook.getName() + ".before", agentHook::beforeAgent);
+			} else if (hook instanceof MessagesAgentHook messagesAgentHook) {
+				graph.addNode(hook.getName() + ".before", MessagesAgentHook.beforeAgentAction(messagesAgentHook));
 			}
 		}
 
@@ -244,6 +248,8 @@ public class ReactAgent extends BaseAgent {
 		for (Hook hook : afterAgentHooks) {
 			if (hook instanceof AgentHook agentHook) {
 				graph.addNode(hook.getName() + ".after", agentHook::afterAgent);
+			} else if (hook instanceof MessagesAgentHook messagesAgentHook) {
+				graph.addNode(hook.getName() + ".after", MessagesAgentHook.afterAgentAction(messagesAgentHook));
 			}
 		}
 
@@ -251,6 +257,8 @@ public class ReactAgent extends BaseAgent {
 		for (Hook hook : beforeModelHooks) {
 			if (hook instanceof ModelHook modelHook) {
 				graph.addNode(hook.getName() + ".beforeModel", modelHook::beforeModel);
+			} else if (hook instanceof MessagesModelHook messagesModelHook) {
+				graph.addNode(hook.getName() + ".beforeModel", MessagesModelHook.beforeModelAction(messagesModelHook));
 			}
 		}
 
@@ -262,6 +270,8 @@ public class ReactAgent extends BaseAgent {
 				} else {
 					graph.addNode(hook.getName() + ".afterModel", modelHook::afterModel);
 				}
+			} else if (hook instanceof MessagesModelHook messagesModelHook) {
+				graph.addNode(hook.getName() + ".afterModel", MessagesModelHook.afterModelAction(messagesModelHook));
 			}
 		}
 
@@ -347,18 +357,43 @@ public class ReactAgent extends BaseAgent {
 	/**
 	 * Filter hooks by their position based on @HookPositions annotation.
 	 * A hook will be included if its getHookPositions() contains the specified position.
+	 * If a hook implements Prioritized interface, it will be sorted by its order.
+	 * Hooks that don't implement Prioritized will maintain their original order.
 	 *
 	 * @param hooks the list of hooks to filter
 	 * @param position the position to filter by
 	 * @return list of hooks that should execute at the specified position
 	 */
 	private static List<Hook> filterHooksByPosition(List<? extends Hook> hooks, HookPosition position) {
-		return hooks.stream()
+		List<Hook> filtered = hooks.stream()
 				.filter(hook -> {
 					HookPosition[] positions = hook.getHookPositions();
 					return Arrays.asList(positions).contains(position);
 				})
 				.collect(Collectors.toList());
+		
+		// Separate hooks that implement Prioritized from those that don't
+		List<Hook> prioritizedHooks = new ArrayList<>();
+		List<Hook> nonPrioritizedHooks = new ArrayList<>();
+		
+		for (Hook hook : filtered) {
+			if (hook instanceof Prioritized) {
+				prioritizedHooks.add(hook);
+			} else {
+				nonPrioritizedHooks.add(hook);
+			}
+		}
+		
+		// Sort prioritized hooks by their order
+		prioritizedHooks.sort((h1, h2) -> Integer.compare(
+				((Prioritized) h1).getOrder(),
+				((Prioritized) h2).getOrder()));
+		
+		// Combine: prioritized hooks first (sorted), then non-prioritized hooks (original order)
+		List<Hook> result = new ArrayList<>(prioritizedHooks);
+		result.addAll(nonPrioritizedHooks);
+		
+		return result;
 	}
 
 	private static String determineEntryNode(
@@ -530,7 +565,15 @@ public class ReactAgent extends BaseAgent {
 
 		if (canJumpTo != null && !canJumpTo.isEmpty()) {
 			EdgeAction router = state -> {
-				JumpTo jumpTo = (JumpTo)state.value("jump_to").orElse(null);
+				Object jumpToValue = state.value("jump_to").orElse(null);
+				JumpTo jumpTo = null;
+				if (jumpToValue != null) {
+					if (jumpToValue instanceof JumpTo) {
+						jumpTo = (JumpTo) jumpToValue;
+					} else if (jumpToValue instanceof String) {
+						jumpTo = JumpTo.fromStringOrNull((String) jumpToValue);
+					}
+				}
 				return resolveJump(jumpTo, modelDestination, endDestination, defaultDestination);
 			};
 
