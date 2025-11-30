@@ -289,6 +289,36 @@ class TimeTravelRedisTest {
 	}
 
 	@Test
+	void testCrossThreadBranch() {
+		var mainConfig = RunnableConfig.builder()
+				.threadId("test-main-thread")
+				.build();
+
+		graph.invoke(Map.of("query", "Main execution"), mainConfig);
+
+		List<StateSnapshot> mainHistory = (List<StateSnapshot>) graph.getStateHistory(mainConfig);
+		assertTrue(mainHistory.size() >= 2);
+
+		StateSnapshot step1Snapshot = mainHistory.stream()
+				.filter(s -> "step1".equals(s.node()))
+				.findFirst()
+				.orElseThrow(() -> new AssertionError("Cannot find step1 snapshot"));
+
+		var branchConfig = RunnableConfig.builder()
+				.threadId("test-branch-thread")
+				.checkPointId(step1Snapshot.config().checkPointId().get())
+				.addMetadata("SOURCE_THREAD_ID", "test-main-thread")
+				.build();
+
+		assertDoesNotThrow(() -> graph.invoke(Map.of("query", "Branch execution"), branchConfig));
+
+		List<StateSnapshot> branchHistory = (List<StateSnapshot>) graph.getStateHistory(
+				RunnableConfig.builder().threadId("test-branch-thread").build());
+		assertNotNull(branchHistory);
+		assertFalse(branchHistory.isEmpty());
+	}
+
+	@Test
 	void testStateCorrectness() {
 		var config = RunnableConfig.builder()
 				.threadId("test-time-travel")

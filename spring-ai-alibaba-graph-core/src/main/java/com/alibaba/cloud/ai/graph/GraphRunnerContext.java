@@ -81,7 +81,7 @@ public class GraphRunnerContext {
 		this.compiledGraph = compiledGraph;
 		this.config = config;
 
-		if (config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY).isPresent()) {
+		if (config.checkPointId().isPresent()) {
 			initializeFromResume(initialState, config);
 		} else {
 			initializeFromStart(initialState, config);
@@ -93,20 +93,24 @@ public class GraphRunnerContext {
 
 		var saver = compiledGraph.compileConfig.checkpointSaver()
 				.orElseThrow(() -> new IllegalStateException("Resume request without a configured checkpoint saver!"));
-		var checkpoint = saver.get(config)
+        
+		var lookupConfig = config.metadata("SOURCE_THREAD_ID")
+				.map(sourceThreadId -> RunnableConfig.builder(config)
+						.threadId((String) sourceThreadId)
+						.build())
+				.orElse(config);
+
+		var checkpoint = saver.get(lookupConfig)
 				.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
 
 		var startCheckpointNextNodeAction = compiledGraph.getNodeAction(checkpoint.getNextNodeId());
 		if (startCheckpointNextNodeAction instanceof SubCompiledGraphNodeAction action) {
-			// RESUME FORM SUBGRAPH DETECTED
 			this.config = RunnableConfig.builder(config)
-					.checkPointId(null) // Reset checkpoint id
+					.checkPointId(null)
 					.clearContext()
-					.addMetadata(action.getResumeSubGraphId(), true) // add metadata for
-					// sub graph
+					.addMetadata(action.getResumeSubGraphId(), true)
 					.build();
 		} else {
-			// Reset checkpoint id
 			this.config = config.withCheckPointId(null);
 		}
 
@@ -123,32 +127,12 @@ public class GraphRunnerContext {
 
 		Map<String, Object> inputs = initialState.data();
 		if (!CollectionUtils.isEmpty(inputs)) {
-			// Simple validation without accessing protected method
 			log.debug("Initializing with inputs: {}", inputs.keySet());
 		}
 
-		// Use CompiledGraph's getInitialState method
 		this.overallState = stateCreate(compiledGraph.getInitialState(inputs, config), initialState);
-
-		// If the config contains a checkPointId, execution continues from the next node after the checkpoint.
-		if (config.checkPointId().isPresent()) {
-			var saver = compiledGraph.compileConfig.checkpointSaver()
-					.orElseThrow(() -> new IllegalStateException("Checkpoint ID provided but no CheckpointSaver configured!"));
-			var checkpoint = saver.get(config)
-					.orElseThrow(() -> new IllegalStateException("Checkpoint with id " + config.checkPointId().get() + " not found!"));
-
-			// Restore state from checkpoint
-			this.overallState = initialState.input(checkpoint.getState());
-			this.currentNodeId = null;
-			this.nextNodeId = checkpoint.getNextNodeId();
-
-			this.config = config.withCheckPointId(null);
-
-			log.trace("RESUME FROM CHECKPOINT {}, NEXT NODE: {}", checkpoint.getId(), checkpoint.getNextNodeId());
-		} else {
-			this.currentNodeId = START;
-			this.nextNodeId = null;
-		}
+		this.currentNodeId = START;
+		this.nextNodeId = null;
 	}
 
 	// FIXME, duplicated method with CompiledGraph.stateCreate, need to have a
