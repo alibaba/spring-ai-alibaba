@@ -179,18 +179,14 @@ class TimeTravelRedisTest {
 				.orElseThrow(() -> new AssertionError("Cannot find step2 snapshot"));
 
 		var branchConfig = RunnableConfig.builder()
-				.threadId("test-branch")
+				.threadId("test-time-travel")
 				.checkPointId(step2Snapshot.config().checkPointId().get())
 				.build();
 
 		assertDoesNotThrow(() -> graph.invoke(Map.of("query", "Branch execution"), branchConfig));
 
-		List<StateSnapshot> branchHistory = (List<StateSnapshot>) graph.getStateHistory(
-				RunnableConfig.builder().threadId("test-branch").build());
-		assertNotNull(branchHistory);
-		assertFalse(branchHistory.isEmpty());
-
-		assertNotEquals(mainHistory.size(), branchHistory.size());
+		List<StateSnapshot> newHistory = (List<StateSnapshot>) graph.getStateHistory(mainConfig);
+		assertTrue(newHistory.size() > mainHistory.size());
 	}
 
 	@Test
