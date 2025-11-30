@@ -297,6 +297,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 					GraphResponse<?> lastGraphResponse = lastGraphResponseRef.get();
 					if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
 						Object result = lastGraphResponse.resultValue().get();
+
+                        // don't re-emit InterruptionMetadata, it will be handled by MainGraphExecutor
+                        if (result instanceof InterruptionMetadata) {
+                            return Mono.empty();
+                        }
+
 						if (result instanceof Map resultMap) {
 							if (!resultMap.containsKey(e.getKey()) && resultMap.containsKey("messages")) {
 								List<Object> messages = (List<Object>) resultMap.get("messages");
@@ -347,7 +353,13 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 			lastData.set(data);
 			return data;
-		});
+		})
+        // filter out InterruptionMetadata emitted directly by upstream to avoid duplicate sending
+        // retain regular procedural events
+        .filter(data -> {
+            var value = data.resultValue();
+            return value.isEmpty() || !(value.get() instanceof InterruptionMetadata);
+        });
 
 		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
 			var data = lastData.get();
