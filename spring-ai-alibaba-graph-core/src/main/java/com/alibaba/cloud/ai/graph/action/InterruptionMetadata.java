@@ -21,7 +21,6 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,7 +59,7 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 
 	@Override
 	public Optional<Map<String, Object>> metadata() {
-		return Optional.of(Collections.unmodifiableMap(metadata));
+		return Optional.of(metadata);
 	}
 
 	public List<ToolFeedback> toolFeedbacks() {
