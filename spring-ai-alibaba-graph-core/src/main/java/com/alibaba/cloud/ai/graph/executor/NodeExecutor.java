@@ -478,6 +478,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
 			Object lastData = lastDataRef.get();
 
+			if (lastData == null) {
+				log.error("No data returned from last streaming node execution '{}', will goto END node directly.", context.getCurrentNodeId());
+				context.setNextNodeId(END);
+				return;
+			}
+
 			// Apply mapResult function if available
 			Map<String, Object> resultMap = new HashMap<>();
 			resultMap.put(graphFlux.getKey(), lastData);
