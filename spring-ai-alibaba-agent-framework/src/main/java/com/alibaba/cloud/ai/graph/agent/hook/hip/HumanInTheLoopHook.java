@@ -40,8 +40,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,7 +165,6 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		return buildInterruptionMetadata(state, lastMessage);
 	}
 
-	@Nullable
 	private static AssistantMessage getLastAssistantMessage(OverAllState state) {
 		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 
@@ -187,7 +184,6 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		return lastMessage;
 	}
 
-	@NotNull
 	private Optional<InterruptionMetadata> buildInterruptionMetadata(OverAllState state, AssistantMessage lastMessage) {
 		boolean needsInterruption = false;
 		InterruptionMetadata.Builder builder = InterruptionMetadata.builder(getName(), state);
