@@ -27,6 +27,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.Map;
@@ -350,7 +351,8 @@ public class OracleSaver extends MemorySaver {
 					// Parse JSON to extract binaryPayload
 					Map<String, Object> jsonMap = objectMapper.readValue(osonBytes, Map.class);
 					String base64Data = (String) jsonMap.get("binaryPayload");
-					byte[] binaryPayload = Base64.getDecoder().decode(base64Data);
+					// Convert base64 string to bytes (don't decode yet, decodeState will do that)
+					byte[] binaryPayload = base64Data.getBytes(StandardCharsets.UTF_8);
 
 					Checkpoint checkpoint = Checkpoint.builder()
 							.id(resultSet.getString(1))
