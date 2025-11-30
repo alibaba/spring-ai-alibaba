@@ -108,7 +108,7 @@ public class CompiledSubGraphTest {
 	@Test
 	public void testCompileSubGraphWithInterruptionUsingException() throws Exception {
 
-		var saver = new MemorySaver();
+		var saver = MemorySaver.builder().build();
 
 		var compileConfig = CompileConfig.builder()
 			.saverConfig(SaverConfig.builder().register(saver).build())
@@ -187,7 +187,7 @@ public class CompiledSubGraphTest {
 	@Test
 	public void testCompileSubGraphWithInterruptionSharingSaver() throws Exception {
 
-		var saver = new MemorySaver();
+		var saver = MemorySaver.builder().build();
 
 		var compileConfig = CompileConfig.builder()
 			.saverConfig(SaverConfig.builder().register(saver).build())
@@ -247,9 +247,9 @@ public class CompiledSubGraphTest {
 	@Test
 	public void testCompileSubGraphWithInterruptionWithDifferentSaver() throws Exception {
 
-		var parentSaver = new MemorySaver();
+		var parentSaver = MemorySaver.builder().build();
 
-		BaseCheckpointSaver childSaver = new MemorySaver();
+		BaseCheckpointSaver childSaver = MemorySaver.builder().build();
 		var subGraph = subGraph(childSaver); // create subgraph
 
 		var compileConfig = CompileConfig.builder()

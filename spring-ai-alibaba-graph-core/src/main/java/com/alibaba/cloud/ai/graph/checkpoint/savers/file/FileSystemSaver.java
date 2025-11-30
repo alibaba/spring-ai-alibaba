@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.checkpoint.savers;
+package com.alibaba.cloud.ai.graph.checkpoint.savers.file;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.check_point.CheckPointSerializer;
@@ -46,20 +48,20 @@ import static java.lang.String.format;
  */
 public class FileSystemSaver extends MemorySaver {
 
-	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FileSystemSaver.class);
-
 	public static final String EXTENSION = ".saver";
-
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FileSystemSaver.class);
 	private final Path targetFolder;
 
 	private final Serializer<Checkpoint> serializer;
 
 	@SuppressWarnings("unchecked")
-	public FileSystemSaver(Path targetFolder, StateSerializer stateSerializer) {
-
-		Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
+	protected FileSystemSaver(Path targetFolder, StateSerializer stateSerializer) {
+		if(stateSerializer == null) {
+			this.serializer = new CheckPointSerializer(StateGraph.DEFAULT_JACKSON_SERIALIZER);
+		} else {
+			this.serializer = new CheckPointSerializer(stateSerializer);
+		}
 		this.targetFolder = Objects.requireNonNull(targetFolder, "targetFolder cannot be null");
-		this.serializer = new CheckPointSerializer(stateSerializer);
 
 		try {
 			if (Files.exists(targetFolder) && !Files.isDirectory(targetFolder)) {
@@ -77,35 +79,8 @@ public class FileSystemSaver extends MemorySaver {
 	 * Creates a new builder for FileSystemSaver.
 	 * @return a new Builder instance
 	 */
-	public static Builder fileSystemBuilder() {
+	public static Builder builder() {
 		return new Builder();
-	}
-
-	/**
-	 * Builder class for FileSystemSaver.
-	 */
-	public static class Builder {
-		private Path targetFolder;
-		private StateSerializer stateSerializer;
-
-		public Builder targetFolder(Path targetFolder) {
-			this.targetFolder = targetFolder;
-			return this;
-		}
-
-		public Builder stateSerializer(StateSerializer stateSerializer) {
-			this.stateSerializer = stateSerializer;
-			return this;
-		}
-
-		/**
-		 * Builds a new FileSystemSaver instance.
-		 * @return a new FileSystemSaver instance
-		 * @throws IllegalArgumentException if targetFolder or stateSerializer is null
-		 */
-		public FileSystemSaver build() {
-			return new FileSystemSaver(targetFolder, stateSerializer);
-		}
 	}
 
 	private String getBaseName(RunnableConfig config) {
@@ -197,11 +172,11 @@ public class FileSystemSaver extends MemorySaver {
 		int maxVersion = 0;
 		try (var stream = Files.list(targetFolder)) {
 			maxVersion = stream.map(path -> path.getFileName().toString())
-				.map(versionPattern::matcher)
-				.filter(Matcher::matches)
-				.mapToInt(matcher -> Integer.parseInt(matcher.group(1)))
-				.max()
-				.orElse(0); // Default to 0 if no versioned files found
+					.map(versionPattern::matcher)
+					.filter(Matcher::matches)
+					.mapToInt(matcher -> Integer.parseInt(matcher.group(1)))
+					.max()
+					.orElse(0); // Default to 0 if no versioned files found
 		}
 		catch (IOException e) {
 			log.error(
@@ -233,6 +208,33 @@ public class FileSystemSaver extends MemorySaver {
 		catch (IOException e) {
 			log.warn("Failed to delete checkpoint file {}", path, e);
 			return false;
+		}
+	}
+
+	/**
+	 * Builder class for FileSystemSaver.
+	 */
+	public static class Builder extends MemorySaver.Builder {
+		private Path targetFolder;
+		private StateSerializer stateSerializer;
+
+		public Builder targetFolder(Path targetFolder) {
+			this.targetFolder = targetFolder;
+			return this;
+		}
+
+		public Builder stateSerializer(StateSerializer stateSerializer) {
+			this.stateSerializer = stateSerializer;
+			return this;
+		}
+
+		/**
+		 * Builds a new FileSystemSaver instance.
+		 * @return a new FileSystemSaver instance
+		 * @throws IllegalArgumentException if targetFolder or stateSerializer is null
+		 */
+		public FileSystemSaver build() {
+			return new FileSystemSaver(targetFolder, stateSerializer);
 		}
 	}
 

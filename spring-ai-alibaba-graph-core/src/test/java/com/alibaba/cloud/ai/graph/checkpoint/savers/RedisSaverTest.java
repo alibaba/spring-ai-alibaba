@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.checkpoint;
+package com.alibaba.cloud.ai.graph.checkpoint.savers;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
@@ -21,8 +21,10 @@ import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.redis.RedisSaver;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
@@ -66,8 +68,11 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledIfDockerAvailable
@@ -87,6 +92,7 @@ class RedisSaverTest {
 			.withExposedPorts(6379); // #gitleaks:allow
 	static RedissonClient redisson;
 	static RedisSaver redisSaver;
+	static StateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
 
 	@BeforeAll
 	static void setup() {
@@ -96,7 +102,10 @@ class RedisSaverTest {
 		config.useSingleServer()
 				.setAddress("redis://" + redisContainer.getHost() + ":" + redisContainer.getMappedPort(6379));
 		redisson = Redisson.create(config);
-		redisSaver = new RedisSaver(redisson);
+		redisSaver = RedisSaver.builder()
+				.redisson(redisson)
+				.stateSerializer(serializer)
+				.build();
 	}
 
 	@AfterAll
@@ -173,33 +182,6 @@ class RedisSaverTest {
 		Optional<Checkpoint> byId = redisSaver.get(configWithId);
 		assertTrue(byId.isPresent());
 		assertEquals("data1-new", byId.get().getState().get("data"));
-	}
-
-	@Test
-	void testClear() throws Exception {
-		String threadId = "test-thread-" + UUID.randomUUID();
-		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
-
-		redisSaver.put(config,
-				Checkpoint.builder()
-						.id("cp1")
-						.state(java.util.Map.of("data", "data1"))
-						.nodeId("node1")
-						.nextNodeId("node2")
-						.build());
-		redisSaver.put(config,
-				Checkpoint.builder()
-						.id("cp2")
-						.state(java.util.Map.of("data", "data2"))
-						.nodeId("node1")
-						.nextNodeId("node2")
-						.build());
-
-		boolean cleared = redisSaver.clear(config);
-		assertTrue(cleared);
-
-		List<Checkpoint> list = (List<Checkpoint>) redisSaver.list(config);
-		assertEquals(0, list.size());
 	}
 
 	@Test
@@ -484,7 +466,10 @@ class RedisSaverTest {
 		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver with the ObjectMapper from StateGraph's serializer
-		RedisSaver saverWithSerializer = new RedisSaver(redisson, objectMapper);
+		RedisSaver saverWithSerializer = RedisSaver.builder()
+				.redisson(redisson)
+				.stateSerializer(graphSerializer)
+				.build();
 		
 		// Test that it works correctly
 		String threadId = "test-serializer-thread-" + UUID.randomUUID();
@@ -530,7 +515,10 @@ class RedisSaverTest {
 		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver using the same ObjectMapper
-		RedisSaver saver = new RedisSaver(redisson, objectMapper);
+		RedisSaver saver = RedisSaver.builder()
+				.redisson(redisson)
+				.stateSerializer(graphSerializer)
+				.build();
 		
 		// Compile graph with saver
 		CompileConfig compileConfig = CompileConfig.builder()
@@ -573,7 +561,10 @@ class RedisSaverTest {
 		ObjectMapper objectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver with the ObjectMapper
-		RedisSaver saver = new RedisSaver(redisson, objectMapper);
+		RedisSaver saver = RedisSaver.builder()
+				.redisson(redisson)
+				.stateSerializer(graphSerializer)
+				.build();
 		
 		// Test serialization/deserialization
 		String threadId = "test-default-serializer-thread-" + UUID.randomUUID();
@@ -608,45 +599,6 @@ class RedisSaverTest {
 	}
 
 	/**
-	 * Test that using different ObjectMapper configurations affects serialization behavior.
-	 */
-	@Test
-	void testRedisSaverWithCustomObjectMapper() throws Exception {
-		// Create a custom ObjectMapper with StateGraph serializer configuration
-		ObjectMapper customObjectMapper = new ObjectMapper();
-		customObjectMapper = BaseCheckpointSaver.configureObjectMapper(customObjectMapper);
-		
-		// Create RedisSaver with custom ObjectMapper
-		RedisSaver saver = new RedisSaver(redisson, customObjectMapper);
-		
-		// Test that it works with Message objects
-		String threadId = "test-custom-mapper-thread-" + UUID.randomUUID();
-		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
-		
-		AssistantMessage assistantMsg = AssistantMessage.builder()
-			.content("Test response")
-			.build();
-		
-		Checkpoint checkpoint = Checkpoint.builder()
-			.id("cp-custom")
-			.state(Map.of("message", assistantMsg))
-			.nodeId("node1")
-			.nextNodeId("node2")
-			.build();
-		
-		saver.put(config, checkpoint);
-		
-		Optional<Checkpoint> retrieved = saver.get(config);
-		assertTrue(retrieved.isPresent());
-		
-		Object msgObj = retrieved.get().getState().get("message");
-		assertInstanceOf(AssistantMessage.class, msgObj);
-		
-		AssistantMessage deserialized = (AssistantMessage) msgObj;
-		assertEquals("Test response", deserialized.getText());
-	}
-
-	/**
 	 * Test consistency: StateGraph and RedisSaver should use compatible serialization.
 	 */
 	@Test
@@ -664,7 +616,10 @@ class RedisSaverTest {
 		ObjectMapper graphObjectMapper = jacksonSerializer.objectMapper();
 		
 		// Create RedisSaver with the same ObjectMapper
-		RedisSaver saver = new RedisSaver(redisson, graphObjectMapper);
+		RedisSaver saver = RedisSaver.builder()
+				.redisson(redisson)
+				.stateSerializer(graphSerializer)
+				.build();
 		
 		// Verify they use compatible serialization
 		String threadId = "test-consistency-thread-" + UUID.randomUUID();
@@ -704,5 +659,213 @@ class RedisSaverTest {
 		assertEquals(2, messages.size());
 		assertInstanceOf(SystemMessage.class, messages.get(0));
 		assertInstanceOf(UserMessage.class, messages.get(1));
+	}
+
+	/**
+	 * Test the release() method to verify thread can be marked as released.
+	 */
+	@Test
+	void testRelease() throws Exception {
+		String threadName = "test-release-thread-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadName).build();
+
+		// Add some checkpoints
+		Checkpoint cp1 = Checkpoint.builder()
+				.id("cp1")
+				.state(Map.of("data", "data1"))
+				.nodeId("node1")
+				.nextNodeId("node2")
+				.build();
+		Checkpoint cp2 = Checkpoint.builder()
+				.id("cp2")
+				.state(Map.of("data", "data2"))
+				.nodeId("node2")
+				.nextNodeId("node3")
+				.build();
+
+		redisSaver.put(config, cp1);
+		redisSaver.put(config, cp2);
+
+		// Verify checkpoints exist before release
+		List<Checkpoint> beforeRelease = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(2, beforeRelease.size());
+
+		// Release the thread
+		BaseCheckpointSaver.Tag tag = redisSaver.release(config);
+		assertNotNull(tag);
+		assertEquals(threadName, tag.threadId());
+		assertEquals(2, tag.checkpoints().size());
+
+		// After release, list should return empty (no active thread)
+		List<Checkpoint> afterRelease = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(0, afterRelease.size(), "After release, no active thread should exist");
+
+		// get should also return empty
+		Optional<Checkpoint> getAfterRelease = redisSaver.get(config);
+		assertTrue(getAfterRelease.isEmpty(), "After release, get should return empty");
+	}
+
+	/**
+	 * Test thread versioning: releasing a thread and reusing the same thread_name
+	 * should create a new thread_id and not overwrite old checkpoints.
+	 */
+	@Test
+	void testThreadVersioning() throws Exception {
+		String threadName = "test-versioning-thread-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadName).build();
+
+		// First version: add checkpoints
+		Checkpoint cp1v1 = Checkpoint.builder()
+				.id("cp1-v1")
+				.state(Map.of("version", "v1", "data", "data1"))
+				.nodeId("node1")
+				.nextNodeId("node2")
+				.build();
+		Checkpoint cp2v1 = Checkpoint.builder()
+				.id("cp2-v1")
+				.state(Map.of("version", "v1", "data", "data2"))
+				.nodeId("node2")
+				.nextNodeId("node3")
+				.build();
+
+		redisSaver.put(config, cp1v1);
+		redisSaver.put(config, cp2v1);
+
+		// Verify first version checkpoints
+		List<Checkpoint> v1Checkpoints = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(2, v1Checkpoints.size());
+		assertEquals("v1", v1Checkpoints.get(0).getState().get("version"));
+
+		// Release the thread
+		BaseCheckpointSaver.Tag releaseTag = redisSaver.release(config);
+		assertNotNull(releaseTag);
+		assertEquals(2, releaseTag.checkpoints().size());
+
+		// After release, list should return empty
+		List<Checkpoint> afterRelease = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(0, afterRelease.size(), "After release, no active thread should exist");
+
+		// Reuse the same thread_name - should create a new thread_id
+		Checkpoint cp1v2 = Checkpoint.builder()
+				.id("cp1-v2")
+				.state(Map.of("version", "v2", "data", "data1-new"))
+				.nodeId("node1")
+				.nextNodeId("node2")
+				.build();
+		Checkpoint cp2v2 = Checkpoint.builder()
+				.id("cp2-v2")
+				.state(Map.of("version", "v2", "data", "data2-new"))
+				.nodeId("node2")
+				.nextNodeId("node3")
+				.build();
+
+		redisSaver.put(config, cp1v2);
+		redisSaver.put(config, cp2v2);
+
+		// Verify second version checkpoints (should only see v2, not v1)
+		List<Checkpoint> v2Checkpoints = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(2, v2Checkpoints.size());
+		assertEquals("v2", v2Checkpoints.get(0).getState().get("version"));
+		assertEquals("v2", v2Checkpoints.get(1).getState().get("version"));
+
+		// Verify old checkpoints are not accessible (data isolation)
+		boolean foundV1 = v2Checkpoints.stream()
+				.anyMatch(cp -> "v1".equals(cp.getState().get("version")));
+		assertFalse(foundV1, "Old version checkpoints should not be accessible");
+	}
+
+	/**
+	 * Test that releasing a non-existent thread throws an exception.
+	 */
+	@Test
+	void testReleaseNonExistentThread() {
+		String threadName = "test-nonexistent-thread-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadName).build();
+
+		// Try to release a thread that doesn't exist
+		assertThrows(IllegalStateException.class, () -> {
+			redisSaver.release(config);
+		}, "Releasing a non-existent thread should throw IllegalStateException");
+	}
+
+	/**
+	 * Test that multiple operations on the same thread_name use the same thread_id
+	 * until the thread is released.
+	 */
+	@Test
+	void testThreadIdConsistency() throws Exception {
+		String threadName = "test-consistency-thread-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadName).build();
+
+		// First put - creates thread_id
+		Checkpoint cp1 = Checkpoint.builder()
+				.id("cp1")
+				.state(Map.of("data", "data1"))
+				.nodeId("node1")
+				.nextNodeId("node2")
+				.build();
+		redisSaver.put(config, cp1);
+
+		// Second put - should use the same thread_id
+		Checkpoint cp2 = Checkpoint.builder()
+				.id("cp2")
+				.state(Map.of("data", "data2"))
+				.nodeId("node2")
+				.nextNodeId("node3")
+				.build();
+		redisSaver.put(config, cp2);
+
+		// Verify both checkpoints are in the same list
+		List<Checkpoint> allCheckpoints = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(2, allCheckpoints.size());
+		assertTrue(allCheckpoints.stream().anyMatch(cp -> "cp1".equals(cp.getId())));
+		assertTrue(allCheckpoints.stream().anyMatch(cp -> "cp2".equals(cp.getId())));
+	}
+
+	/**
+	 * Test concurrent access to the same thread_name with locks.
+	 */
+	@Test
+	void testConcurrentAccessWithLocks() throws Exception {
+		String threadName = "test-concurrent-thread-" + UUID.randomUUID();
+		ExecutorService executorService = Executors.newFixedThreadPool(10);
+		CountDownLatch latch = new CountDownLatch(10);
+		List<Future<Boolean>> futures = new ArrayList<>();
+
+		// Multiple threads trying to put checkpoints to the same thread_name
+		for (int i = 0; i < 10; i++) {
+			final int index = i;
+			Future<Boolean> future = executorService.submit(() -> {
+				try {
+					RunnableConfig config = RunnableConfig.builder().threadId(threadName).build();
+					Checkpoint cp = Checkpoint.builder()
+							.id("cp-" + index)
+							.state(Map.of("index", index))
+							.nodeId("node1")
+							.nextNodeId("node2")
+							.build();
+					redisSaver.put(config, cp);
+					return true;
+				} catch (Exception e) {
+					e.printStackTrace();
+					return false;
+				} finally {
+					latch.countDown();
+				}
+			});
+			futures.add(future);
+		}
+
+		// Wait for all tasks to complete
+		boolean allCompleted = latch.await(10, TimeUnit.SECONDS);
+		assertTrue(allCompleted, "All tasks should complete within timeout");
+
+		// Verify all checkpoints were saved (locks should ensure atomicity)
+		RunnableConfig config = RunnableConfig.builder().threadId(threadName).build();
+		List<Checkpoint> allCheckpoints = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(10, allCheckpoints.size(), "All 10 checkpoints should be saved");
+
+		executorService.shutdown();
+		executorService.awaitTermination(5, TimeUnit.SECONDS);
 	}
 }

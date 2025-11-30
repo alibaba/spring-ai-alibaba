@@ -55,6 +55,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 	protected JacksonStateSerializer(AgentStateFactory<OverAllState> stateFactory, ObjectMapper objectMapper) {
 		super(stateFactory);
 		this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper cannot be null");
+		this.objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
 
 		this.objectMapper.registerModule(new Jdk8Module());
 		this.objectMapper.registerModule(new JavaTimeModule());
