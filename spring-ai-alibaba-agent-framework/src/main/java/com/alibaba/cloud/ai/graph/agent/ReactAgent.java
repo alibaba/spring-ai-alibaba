@@ -34,6 +34,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
@@ -251,6 +252,8 @@ public class ReactAgent extends BaseAgent {
 		for (Hook hook : beforeModelHooks) {
 			if (hook instanceof ModelHook modelHook) {
 				graph.addNode(hook.getName() + ".beforeModel", modelHook::beforeModel);
+			} else if (hook instanceof MessagesModelHook messagesModelHook) {
+				graph.addNode(hook.getName() + ".beforeModel", MessagesModelHook.beforeModelAction(messagesModelHook));
 			}
 		}
 
@@ -262,6 +265,8 @@ public class ReactAgent extends BaseAgent {
 				} else {
 					graph.addNode(hook.getName() + ".afterModel", modelHook::afterModel);
 				}
+			} else if (hook instanceof MessagesModelHook messagesModelHook) {
+				graph.addNode(hook.getName() + ".afterModel", MessagesModelHook.afterModelAction(messagesModelHook));
 			}
 		}
 

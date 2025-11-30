@@ -131,16 +131,13 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 						.metadata(toolMsg.getMetadata())
 						.build());
 				}
-				else if (msg instanceof AssistantMessage) {
-					AssistantMessage assistantMsg = (AssistantMessage) msg;
+				else if (msg instanceof AssistantMessage assistantMsg) {
 					List<AssistantMessage.ToolCall> clearedToolCalls = new ArrayList<>();
 
 					// Clear tool call arguments by replacing with placeholder
-					if (assistantMsg.getToolCalls() != null) {
-						for (AssistantMessage.ToolCall toolCall : assistantMsg.getToolCalls()) {
-							clearedToolCalls.add(new AssistantMessage.ToolCall(
-									toolCall.id(), toolCall.type(), toolCall.name(), placeholder));
-						}
+					for (AssistantMessage.ToolCall toolCall : assistantMsg.getToolCalls()) {
+						clearedToolCalls.add(new AssistantMessage.ToolCall(
+								toolCall.id(), toolCall.type(), toolCall.name(), placeholder));
 					}
 
 					// Create new AssistantMessage with cleared tool calls

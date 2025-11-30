@@ -92,11 +92,14 @@ public class ToolCallLimitHook extends ModelHook {
 			else if (exitBehavior == ExitBehavior.END) {
 				String message = buildLimitExceededMessage(threadCount, runCount, threadLimit, runLimit, toolName);
 
+				// Do not copy old messages
 				List<Message> messages = new ArrayList<>();
+				// This new message will be appended to the messages list
 				messages.add(new AssistantMessage(message));
 
 				Map<String, Object> updates = new HashMap<>();
 				updates.put("messages", messages);
+				updates.put("jump_to", JumpTo.end);
 				return CompletableFuture.completedFuture(updates);
 			}
 		}

@@ -15,14 +15,14 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook.summarization;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.AppendPolicy;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
-import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
-import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -33,10 +33,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +53,7 @@ import org.slf4j.LoggerFactory;
  *     .build();
  */
 @HookPositions({HookPosition.BEFORE_MODEL})
-public class SummarizationHook extends ModelHook {
+public class SummarizationHook extends MessagesModelHook {
 
 	private static final Logger log = LoggerFactory.getLogger(SummarizationHook.class);
 
@@ -96,49 +93,42 @@ public class SummarizationHook extends ModelHook {
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-
+	public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
 		if (maxTokensBeforeSummary == null) {
-			return CompletableFuture.completedFuture(Map.of());
+			return new AgentCommand(previousMessages);
 		}
 
-		int totalTokens = tokenCounter.countTokens(messages);
+		int totalTokens = tokenCounter.countTokens(previousMessages);
 
 		if (totalTokens < maxTokensBeforeSummary) {
-			return CompletableFuture.completedFuture(Map.of());
+			return new AgentCommand(previousMessages);
 		}
 
 		log.info("Token count {} exceeds threshold {}, triggering summarization",
 				totalTokens, maxTokensBeforeSummary);
 
-		int cutoffIndex = findSafeCutoff(messages);
+		int cutoffIndex = findSafeCutoff(previousMessages);
 
 		if (cutoffIndex <= 0) {
 			log.warn("Cannot find safe cutoff point for summarization");
-			return CompletableFuture.completedFuture(Map.of());
+			return new AgentCommand(previousMessages);
 		}
 
-		List<Message> toSummarize = messages.subList(0, cutoffIndex);
-		List<Message> toPreserve = messages.subList(cutoffIndex, messages.size());
+		List<Message> toSummarize = previousMessages.subList(0, cutoffIndex);
+		List<Message> toPreserve = previousMessages.subList(cutoffIndex, previousMessages.size());
 
 		String summary = createSummary(toSummarize);
 
-		List<Object> newMessages = new ArrayList<>();
+		List<Message> newMessages = new ArrayList<>();
 		newMessages.add(new UserMessage(
 				"Here is a summary of the conversation to date:\n\n" + summary));
-		// Convert toSummarize messages to RemoveByHash objects so we can remove them from state
-		for (Message msg : toSummarize) {
-			newMessages.add(RemoveByHash.of(msg));
-		}
-
-		Map<String, Object> updates = new HashMap<>();
-		updates.put("messages", newMessages);
+		// Add preserved messages
+		newMessages.addAll(toPreserve);
 
 		log.info("Summarized {} messages, keeping {} recent messages",
 				toSummarize.size(), toPreserve.size());
 
-		return CompletableFuture.completedFuture(updates);
+		return new AgentCommand(newMessages, AppendPolicy.REPLACE);
 	}
 
 	private int findSafeCutoff(List<Message> messages) {

@@ -213,7 +213,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 
 	@Override
 	public String getName() {
-		return "HIP";
+		return "HITL";
 	}
 
 	@Override

@@ -92,6 +92,7 @@ public class ModelCallLimitHook extends ModelHook {
 
 				Map<String, Object> updates = new HashMap<>();
 				updates.put("messages", messages);
+				updates.put("jump_to", JumpTo.end);
 				return CompletableFuture.completedFuture(updates);
 			}
 		}
