@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -224,15 +225,47 @@ public class ParallelNode extends Node {
 			}
 			
 			logger.debug("Submitting task for node {} to executor", actualNodeId);
+			// Use supplyAsync to execute the task in the executor
+			// The critical fix here is NOT calling join() inside supplyAsync, 
+			// but returning the future chain properly.
 			return CompletableFuture.supplyAsync(() -> {
 				try {
 					logger.debug("Executing task for node {} in thread {}", actualNodeId, Thread.currentThread().getName());
-					return evalNodeActionSync(action, actualNodeId, state, config).join();
+					// Execute the action which returns a CompletableFuture
+					return evalNodeActionSync(action, actualNodeId, state, config);
 				} catch (Exception e) {
 					logger.error("Error executing task for node {}", actualNodeId, e);
 					throw new RuntimeException(e);
 				}
-			}, executor);
+			}, executor)
+			.thenCompose(future -> future)
+			.thenApply(resultMap -> {
+				// Ensure GraphFlux runs on the executor thread
+				Map<String, Object> newResultMap = new HashMap<>(resultMap);
+				for (Map.Entry<String, Object> entry : resultMap.entrySet()) {
+					if (entry.getValue() instanceof GraphFlux) {
+						GraphFlux<?> original = (GraphFlux<?>) entry.getValue();
+						// Force the Flux to subscribe on the executor, ensuring parallel execution
+						Flux<?> newFlux = original.getFlux().subscribeOn(Schedulers.fromExecutor(executor));
+						
+						// Re-wrap into GraphFlux with preserved properties
+						@SuppressWarnings("unchecked")
+						GraphFlux<?> newGraphFlux = GraphFlux.of(
+								original.getNodeId(), 
+								original.getKey(), 
+								(Flux<Object>) newFlux, 
+								original.getMapResult(), 
+								original.getChunkResult());
+						newResultMap.put(entry.getKey(), newGraphFlux);
+					} else if (entry.getValue() instanceof Flux) {
+						// Also handle raw Flux (e.g. from ReactAgent/SubGraphNodeAdapter)
+						Flux<?> originalFlux = (Flux<?>) entry.getValue();
+						Flux<?> newFlux = originalFlux.subscribeOn(Schedulers.fromExecutor(executor));
+						newResultMap.put(entry.getKey(), newFlux);
+					}
+				}
+				return newResultMap;
+			});
 		}
 
 		@Override
