@@ -24,12 +24,14 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
+import com.alibaba.cloud.ai.graph.agent.tools.WeatherTool;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
@@ -120,13 +122,89 @@ public class HumanInTheLoopTest {
 
 	}
 
-	private ReactAgent createAgent() throws GraphStateException {
+	/**
+	 * Test Model requests for two tools in a single assistant message response.
+	 */
+	@Test
+	public void testMultipleToolcallsInAssistantMessage() throws Exception {
+		ReactAgent agent = createAgentWithMultipleTools();
+
+		printGraphRepresentation(agent);
+
+		String threadId = "test-thread-approved";
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(threadId).build();
+
+		// Assert RunnableConfig is properly configured
+		Assertions.assertNotNull(runnableConfig, "RunnableConfig should not be null");
+		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
+		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
+
+		InterruptionMetadata interruptionMetadata = performFirstInvocationAndCheckMultipleToolsRequested(agent, runnableConfig);
+
+		InterruptionMetadata feedbackMetadata = buildFeedbackWithOnlyOneApproval(interruptionMetadata);
+
+		InterruptionMetadata interruptionMetadata2 = performSecondInvocationAndCheckApprovalRequiredAgain(agent, threadId, feedbackMetadata);
+
+		// Add more feedback to approve the second tool
+		// invoke again and check completion
+
+	}
+
+	/**
+	 * Test Model requests for two tools in the whole agent loop, one tool each time.
+	 */
+	@Test
+	public void testMultipleRoundAssistantMessages() throws Exception {
+		ReactAgent agent = createAgentWithMultipleTools();
+
+		printGraphRepresentation(agent);
+
+		String threadId = "test-thread-approved";
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(threadId).build();
+
+		// Assert RunnableConfig is properly configured
+		Assertions.assertNotNull(runnableConfig, "RunnableConfig should not be null");
+		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
+		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
+
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig);
+
+		InterruptionMetadata feedbackMetadata = buildApprovalFeedback(interruptionMetadata);
+
+		performSecondInvocationAndInterruptAgain(agent, threadId, feedbackMetadata);
+
+		InterruptionMetadata feedbackMetadata2 = buildApprovalFeedback(interruptionMetadata);
+
+		performThirdInvocation(agent, threadId, feedbackMetadata2);
+	}
+
+	private ReactAgent createAgent() {
+		Map approvalOn = Map.of(
+				"poem", ToolConfig.builder().description("请确认诗歌工具执行").build()
+		);
+
 		return ReactAgent.builder()
 				.name("single_agent")
 				.model(chatModel)
 				.saver(new MemorySaver())
 				.tools(List.of(createPoetToolCallback()))
-				.hooks(List.of(HumanInTheLoopHook.builder().approvalOn("poem", ToolConfig.builder().description("Please confirm tool execution.").build()).build()))
+				.hooks(HumanInTheLoopHook.builder().approvalOn(approvalOn).build())
+				.outputKey("article")
+				.build();
+	}
+
+	private ReactAgent createAgentWithMultipleTools() {
+		Map approvalOn = Map.of(
+				"poem", ToolConfig.builder().description("请确认诗歌工具执行").build(),
+				"weather", ToolConfig.builder().description("请确认天气工具执行").build()
+		);
+
+		return ReactAgent.builder()
+				.name("single_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.tools(List.of(createPoetToolCallback(), WeatherTool.createWeatherTool("weather_tool", new WeatherTool())))
+				.hooks(HumanInTheLoopHook.builder().approvalOn(approvalOn).build())
 				.outputKey("article")
 				.build();
 	}
@@ -136,10 +214,32 @@ public class HumanInTheLoopTest {
 		System.out.println(representation.content());
 	}
 
+	private InterruptionMetadata performFirstInvocationAndCheckMultipleToolsRequested(ReactAgent agent, RunnableConfig runnableConfig) throws Exception {
+		// First invocation - should trigger interruption for human approval
+		System.out.println("\n=== First Invocation: Expecting Interruption ===");
+		Optional<NodeOutput> result = agent.invokeAndGetOutput("帮我写一篇100字左右散文，同时在文章最后包含写作当天北京天气情况。", runnableConfig);
+
+		// Assert first invocation results in interruption
+		Assertions.assertTrue(result.isPresent(), "First invocation should return a result");
+		Assertions.assertInstanceOf(InterruptionMetadata.class, result.get(),
+				"First invocation should return InterruptionMetadata for human approval");
+
+		InterruptionMetadata interruptionMetadata = (InterruptionMetadata) result.get();
+
+		// Assert tool feedbacks are present
+		List<InterruptionMetadata.ToolFeedback> toolFeedbacks = interruptionMetadata.toolFeedbacks();
+		Assertions.assertNotNull(toolFeedbacks, "Tool feedbacks should not be null");
+		Assertions.assertFalse(toolFeedbacks.isEmpty(), "Tool feedbacks should not be empty");
+		Assertions.assertEquals(2, toolFeedbacks.size(),
+				"Should have exactly one tool feedback for the 'poem' tool");
+		return interruptionMetadata;
+	}
+
+
 	private InterruptionMetadata performFirstInvocation(ReactAgent agent, RunnableConfig runnableConfig) throws Exception {
 		// First invocation - should trigger interruption for human approval
 		System.out.println("\n=== First Invocation: Expecting Interruption ===");
-		Optional<NodeOutput> result = agent.invokeAndGetOutput("帮我写一篇100字左右散文。", runnableConfig);
+		Optional<NodeOutput> result = agent.invokeAndGetOutput("帮我写一篇100字左右散文", runnableConfig);
 
 		// Assert first invocation results in interruption
 		Assertions.assertTrue(result.isPresent(), "First invocation should return a result");
@@ -231,7 +331,7 @@ public class HumanInTheLoopTest {
 
 	private void performSecondInvocation(ReactAgent agent, String threadId, InterruptionMetadata feedbackMetadata) throws Exception {
 		// Resume execution with human feedback
-		System.out.println("\n=== Second Invocation: Resuming with REJECTED Feedback ===");
+		System.out.println("\n=== Second Invocation: Resuming with Feedback ===");
 		RunnableConfig resumeRunnableConfig = RunnableConfig.builder().threadId(threadId)
 				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, feedbackMetadata)
 				.build();
@@ -265,5 +365,80 @@ public class HumanInTheLoopTest {
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
 	}
+
+	private void performSecondInvocationAndInterruptAgain(ReactAgent agent, String threadId, InterruptionMetadata feedbackMetadata) throws Exception {
+		// Resume execution with human feedback
+		System.out.println("\n=== Second Invocation: Resuming with Feedback ===");
+		RunnableConfig resumeRunnableConfig = RunnableConfig.builder().threadId(threadId)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, feedbackMetadata)
+				.build();
+
+		try {
+			// Second invocation - should resume and complete
+			Optional<NodeOutput> result = agent.invokeAndGetOutput("", resumeRunnableConfig);
+
+			// Assert second invocation completes successfully
+			Assertions.assertTrue(result.isPresent(), "Second invocation should return a result");
+			NodeOutput finalOutput = result.get();
+			Assertions.assertNotNull(finalOutput, "Final result should not be null");
+
+			// Assert the result is NOT another interruption (execution should complete)
+			Assertions.assertEquals(InterruptionMetadata.class, finalOutput.getClass(),
+					"Final result should not be an InterruptionMetadata - execution should complete");
+
+			System.out.println("Final result type: " + finalOutput.getClass().getSimpleName());
+			System.out.println("Final result node: " + finalOutput.node());
+			System.out.println("Final result state data keys: " + finalOutput.state().data().keySet());
+
+			// Assert final state contains expected data
+			Assertions.assertNotNull(finalOutput.state(), "Final output should have state");
+			Assertions.assertNotNull(finalOutput.state().data(), "Final output state should have data");
+			Assertions.assertFalse(finalOutput.state().data().isEmpty(),
+					"Final output state data should not be empty");
+
+		} catch (java.util.concurrent.CompletionException e) {
+			System.err.println("ReactAgent execution failed: " + e.getMessage());
+			e.printStackTrace();
+			fail("ReactAgent execution failed: " + e.getMessage());
+		}
+	}
+
+	private void performThirdInvocation(ReactAgent agent, String threadId, InterruptionMetadata feedbackMetadata) throws Exception {
+		// Resume execution with human feedback
+		System.out.println("\n=== Third Invocation: Resuming with Feedback ===");
+		RunnableConfig resumeRunnableConfig = RunnableConfig.builder().threadId(threadId)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, feedbackMetadata)
+				.build();
+
+		try {
+			// Second invocation - should resume and complete
+			Optional<NodeOutput> result = agent.invokeAndGetOutput("", resumeRunnableConfig);
+
+			// Assert second invocation completes successfully
+			Assertions.assertTrue(result.isPresent(), "Second invocation should return a result");
+			NodeOutput finalOutput = result.get();
+			Assertions.assertNotNull(finalOutput, "Final result should not be null");
+
+			// Assert the result is NOT another interruption (execution should complete)
+			Assertions.assertNotEquals(InterruptionMetadata.class, finalOutput.getClass(),
+					"Final result should not be an InterruptionMetadata - execution should complete");
+
+			System.out.println("Final result type: " + finalOutput.getClass().getSimpleName());
+			System.out.println("Final result node: " + finalOutput.node());
+			System.out.println("Final result state data keys: " + finalOutput.state().data().keySet());
+
+			// Assert final state contains expected data
+			Assertions.assertNotNull(finalOutput.state(), "Final output should have state");
+			Assertions.assertNotNull(finalOutput.state().data(), "Final output state should have data");
+			Assertions.assertFalse(finalOutput.state().data().isEmpty(),
+					"Final output state data should not be empty");
+
+		} catch (java.util.concurrent.CompletionException e) {
+			System.err.println("ReactAgent execution failed: " + e.getMessage());
+			e.printStackTrace();
+			fail("ReactAgent execution failed: " + e.getMessage());
+		}
+	}
+
 
 }
