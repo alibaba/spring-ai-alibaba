@@ -33,9 +33,11 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
@@ -74,6 +76,7 @@ public class SummarizationHook extends ModelHook {
 
 	private static final String SUMMARY_PREFIX = "## Previous conversation summary:";
 	private static final int DEFAULT_MESSAGES_TO_KEEP = 20;
+	private static final int SEARCH_RANGE_FOR_TOOL_PAIRS = 5;
 
 	private final ChatModel model;
 	private final Integer maxTokensBeforeSummary;
@@ -141,19 +144,98 @@ public class SummarizationHook extends ModelHook {
 		return CompletableFuture.completedFuture(updates);
 	}
 
+	/**
+	 * Find safe cutoff point that preserves AI/Tool message pairs.
+	 *
+	 * Returns the index where messages can be safely cut without separating
+	 * related AI and Tool messages. Returns 0 if no safe cutoff is found.
+	 */
 	private int findSafeCutoff(List<Message> messages) {
-		// Find a safe cutoff point, preserving recent messages
-		int targetCutoff = Math.max(0, messages.size() - messagesToKeep);
+		if (messages.size() <= messagesToKeep) {
+			return 0;
+		}
 
-		// Ensure we don't split AI/Tool message pairs
-		for (int i = targetCutoff; i < messages.size(); i++) {
-			Message msg = messages.get(i);
-			if (msg instanceof UserMessage) {
+		int targetCutoff = messages.size() - messagesToKeep;
+
+		// Search backwards from targetCutoff to find a safe cutoff point
+		for (int i = targetCutoff; i >= 0; i--) {
+			if (isSafeCutoffPoint(messages, i)) {
 				return i;
 			}
 		}
 
-		return targetCutoff;
+		return 0;
+	}
+
+	/**
+	 * Check if cutting at index would separate AI/Tool message pairs.
+	 */
+	private boolean isSafeCutoffPoint(List<Message> messages, int cutoffIndex) {
+		if (cutoffIndex >= messages.size()) {
+			return true;
+		}
+
+		int searchStart = Math.max(0, cutoffIndex - SEARCH_RANGE_FOR_TOOL_PAIRS);
+		int searchEnd = Math.min(messages.size(), cutoffIndex + SEARCH_RANGE_FOR_TOOL_PAIRS);
+
+		for (int i = searchStart; i < searchEnd; i++) {
+			if (!hasToolCalls(messages.get(i))) {
+				continue;
+			}
+
+			AssistantMessage aiMessage = (AssistantMessage) messages.get(i);
+			Set<String> toolCallIds = extractToolCallIds(aiMessage);
+			if (cutoffSeparatesToolPair(messages, i, cutoffIndex, toolCallIds)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Check if message is an AI message with tool calls.
+	 */
+	private boolean hasToolCalls(Message message) {
+		return message instanceof AssistantMessage assistantMessage && !assistantMessage.getToolCalls().isEmpty();
+	}
+
+	/**
+	 * Extract tool call IDs from an AI message.
+	 */
+	private Set<String> extractToolCallIds(AssistantMessage aiMessage) {
+		Set<String> toolCallIds = new HashSet<>();
+		for (AssistantMessage.ToolCall toolCall : aiMessage.getToolCalls()) {
+			String callId = toolCall.id();
+			toolCallIds.add(callId);
+		}
+		return toolCallIds;
+	}
+
+	/**
+	 * Check if cutoff separates an AI message from its corresponding tool messages.
+	 */
+	private boolean cutoffSeparatesToolPair(
+			List<Message> messages,
+			int aiMessageIndex,
+			int cutoffIndex,
+			Set<String> toolCallIds) {
+		for (int j = aiMessageIndex + 1; j < messages.size(); j++) {
+			Message message = messages.get(j);
+			if (message instanceof ToolResponseMessage toolResponseMessage) {
+				// Check if any response in this ToolResponseMessage matches our tool call IDs
+				for (ToolResponseMessage.ToolResponse response : toolResponseMessage.getResponses()) {
+					if (toolCallIds.contains(response.id())) {
+						boolean aiBeforeCutoff = aiMessageIndex < cutoffIndex;
+						boolean toolBeforeCutoff = j < cutoffIndex;
+						if (aiBeforeCutoff != toolBeforeCutoff) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 	private String createSummary(List<Message> messages) {
