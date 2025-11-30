@@ -942,7 +942,7 @@ public class StateGraphTest {
 			}
 		}).build());
 
-		app.stream(Map.of(), RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
+		app.stream(Map.of(), RunnableConfig.builder().build())
 			.blockLast();
 
 		log.info("Before nodeIds: {}", beforeNodeIds);
