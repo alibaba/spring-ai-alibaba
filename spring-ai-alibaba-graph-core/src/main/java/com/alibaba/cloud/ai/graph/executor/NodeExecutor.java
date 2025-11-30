@@ -353,12 +353,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 			var data = lastData.get();
 			if (data == null) {
 				log.error("No data returned from last streaming node execution '{}', will goto END node directly.", context.getCurrentNodeId());
-				try {
-					context.setNextNodeId(END);
-					context.doListeners(NODE_AFTER, null);
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
+				context.setNextNodeId(END);
+				context.doListeners(NODE_AFTER, null);
 				return;
 			}
 
