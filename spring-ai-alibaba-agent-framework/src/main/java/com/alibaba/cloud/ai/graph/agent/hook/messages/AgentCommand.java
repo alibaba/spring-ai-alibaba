@@ -24,24 +24,24 @@ import java.util.List;
 public class AgentCommand {
 	private JumpTo jumpTo;
 	private List<Message> messages;
-	private AppendPolicy appendPolicy;
+	private UpdatePolicy updatePolicy;
 
-	public AgentCommand(JumpTo jumpTo, List<Message> messages, AppendPolicy appendPolicy) {
+	public AgentCommand(JumpTo jumpTo, List<Message> messages, UpdatePolicy updatePolicy) {
 		this.jumpTo = jumpTo;
 		this.messages = messages;
-		this.appendPolicy = appendPolicy;
+		this.updatePolicy = updatePolicy;
 	}
 
 	public AgentCommand(JumpTo jumpTo, List<Message> messages) {
-		this(jumpTo, messages, AppendPolicy.REPLACE);
+		this(jumpTo, messages, UpdatePolicy.REPLACE);
 	}
 
-	public AgentCommand(List<Message> messages, AppendPolicy appendPolicy) {
-		this(null, messages, appendPolicy);
+	public AgentCommand(List<Message> messages, UpdatePolicy updatePolicy) {
+		this(null, messages, updatePolicy);
 	}
 
 	public AgentCommand(List<Message> messages) {
-		this(null, messages, AppendPolicy.REPLACE);
+		this(null, messages, UpdatePolicy.REPLACE);
 	}
 
 	JumpTo getJumpTo() {
@@ -60,11 +60,11 @@ public class AgentCommand {
 		this.messages = messages;
 	}
 
-	AppendPolicy getAppendPolicy() {
-		return appendPolicy;
+	UpdatePolicy getUpdatePolicy() {
+		return updatePolicy;
 	}
 
-	void setAppendPolicy(AppendPolicy appendPolicy) {
-		this.appendPolicy = appendPolicy;
+	void setUpdatePolicy(UpdatePolicy updatePolicy) {
+		this.updatePolicy = updatePolicy;
 	}
 }

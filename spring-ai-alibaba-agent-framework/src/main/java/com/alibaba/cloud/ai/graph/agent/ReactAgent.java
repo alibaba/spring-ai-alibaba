@@ -34,6 +34,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
@@ -238,6 +239,8 @@ public class ReactAgent extends BaseAgent {
 		for (Hook hook : beforeAgentHooks) {
 			if (hook instanceof AgentHook agentHook) {
 				graph.addNode(hook.getName() + ".before", agentHook::beforeAgent);
+			} else if (hook instanceof MessagesAgentHook messagesAgentHook) {
+				graph.addNode(hook.getName() + ".before", MessagesAgentHook.beforeAgentAction(messagesAgentHook));
 			}
 		}
 
@@ -245,6 +248,8 @@ public class ReactAgent extends BaseAgent {
 		for (Hook hook : afterAgentHooks) {
 			if (hook instanceof AgentHook agentHook) {
 				graph.addNode(hook.getName() + ".after", agentHook::afterAgent);
+			} else if (hook instanceof MessagesAgentHook messagesAgentHook) {
+				graph.addNode(hook.getName() + ".after", MessagesAgentHook.afterAgentAction(messagesAgentHook));
 			}
 		}
 
@@ -560,7 +565,15 @@ public class ReactAgent extends BaseAgent {
 
 		if (canJumpTo != null && !canJumpTo.isEmpty()) {
 			EdgeAction router = state -> {
-				JumpTo jumpTo = (JumpTo)state.value("jump_to").orElse(null);
+				Object jumpToValue = state.value("jump_to").orElse(null);
+				JumpTo jumpTo = null;
+				if (jumpToValue != null) {
+					if (jumpToValue instanceof JumpTo) {
+						jumpTo = (JumpTo) jumpToValue;
+					} else if (jumpToValue instanceof String) {
+						jumpTo = JumpTo.fromStringOrNull((String) jumpToValue);
+					}
+				}
 				return resolveJump(jumpTo, modelDestination, endDestination, defaultDestination);
 			};
 

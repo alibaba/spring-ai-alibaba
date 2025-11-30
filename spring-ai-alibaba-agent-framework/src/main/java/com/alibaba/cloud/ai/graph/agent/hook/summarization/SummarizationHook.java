@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.TokenCounter;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
-import com.alibaba.cloud.ai.graph.agent.hook.messages.AppendPolicy;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -131,7 +131,7 @@ public class SummarizationHook extends MessagesModelHook {
 		log.info("Summarized {} messages, keeping {} recent messages",
 				toSummarize.size(), toPreserve.size());
 
-		return new AgentCommand(newMessages, AppendPolicy.REPLACE);
+		return new AgentCommand(newMessages, UpdatePolicy.REPLACE);
 	}
 
 	/**

@@ -22,9 +22,10 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
+import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
-import com.alibaba.cloud.ai.graph.agent.hook.messages.AppendPolicy;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -188,7 +189,120 @@ public class MessagesModelHookTest {
 	}
 
 	/**
-	 * Test 4: Verify MessagesModelHook and ModelHook can work together
+	 * Test 4: Verify JumpTo End functionality - skip subsequent hooks
+	 */
+	@Test
+	public void testJumpToEnd() throws Exception {
+		AtomicInteger firstHookBeforeCount = new AtomicInteger(0);
+		AtomicInteger firstHookAfterCount = new AtomicInteger(0);
+		AtomicInteger secondHookBeforeCount = new AtomicInteger(0);
+		AtomicInteger secondHookAfterCount = new AtomicInteger(0);
+		AtomicInteger thirdHookBeforeCount = new AtomicInteger(0);
+		AtomicInteger thirdHookAfterCount = new AtomicInteger(0);
+
+		// First hook will jump to end, skipping subsequent hooks
+		JumpToEndMessagesHook firstHook = new JumpToEndMessagesHook("jump_to_end_hook",
+				firstHookBeforeCount, firstHookAfterCount);
+		// Second hook should be skipped
+		TestMessagesModelHook secondHook = new TestMessagesModelHook("second_hook",
+				secondHookBeforeCount, secondHookAfterCount);
+		// Third hook should also be skipped
+		TestMessagesModelHook thirdHook = new TestMessagesModelHook("third_hook",
+				thirdHookBeforeCount, thirdHookAfterCount);
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("test-agent-jump-to-end")
+				.model(chatModel)
+				.hooks(List.of(firstHook, secondHook, thirdHook))
+				.saver(new MemorySaver())
+				.build();
+
+		System.out.println("\n=== 测试 JumpTo End 功能 ===");
+
+		List<Message> messages = new ArrayList<>();
+		messages.add(new UserMessage("你好，请简单介绍一下自己。"));
+
+		Optional<OverAllState> result = agent.invoke(messages);
+
+		assertTrue(result.isPresent(), "结果应该存在");
+		
+		// First hook should be called
+		assertTrue(firstHookBeforeCount.get() > 0, "第一个 hook 的 beforeModel 应该被调用");
+		assertTrue(firstHookAfterCount.get() == 0, "第一个 hook 的 afterModel 不应该被调用（因为跳转到 end）");
+		
+		// Second and third hooks should be skipped
+		assertEquals(0, secondHookBeforeCount.get(), "第二个 hook 的 beforeModel 不应该被调用（被跳过）");
+		assertEquals(0, secondHookAfterCount.get(), "第二个 hook 的 afterModel 不应该被调用（被跳过）");
+		assertEquals(0, thirdHookBeforeCount.get(), "第三个 hook 的 beforeModel 不应该被调用（被跳过）");
+		assertEquals(0, thirdHookAfterCount.get(), "第三个 hook 的 afterModel 不应该被调用（被跳过）");
+
+		System.out.println("✓ 第一个 hook beforeModel 调用次数: " + firstHookBeforeCount.get());
+		System.out.println("✓ 第一个 hook afterModel 调用次数: " + firstHookAfterCount.get());
+		System.out.println("✓ 第二个 hook beforeModel 调用次数: " + secondHookBeforeCount.get());
+		System.out.println("✓ 第二个 hook afterModel 调用次数: " + secondHookAfterCount.get());
+		System.out.println("✓ 第三个 hook beforeModel 调用次数: " + thirdHookBeforeCount.get());
+		System.out.println("✓ 第三个 hook afterModel 调用次数: " + thirdHookAfterCount.get());
+		System.out.println("✓ 成功验证 JumpTo End：后续 hooks 被正确跳过");
+	}
+
+	/**
+	 * Test 5: Verify JumpTo End with mixed MessagesModelHook and ModelHook
+	 */
+	@Test
+	public void testJumpToEndWithMixedHooks() throws Exception {
+		AtomicInteger messagesHookBeforeCount = new AtomicInteger(0);
+		AtomicInteger messagesHookAfterCount = new AtomicInteger(0);
+		AtomicInteger modelHookBeforeCount = new AtomicInteger(0);
+		AtomicInteger modelHookAfterCount = new AtomicInteger(0);
+		AtomicInteger secondMessagesHookBeforeCount = new AtomicInteger(0);
+		AtomicInteger secondMessagesHookAfterCount = new AtomicInteger(0);
+
+		// First MessagesModelHook will jump to end
+		JumpToEndMessagesHook firstMessagesHook = new JumpToEndMessagesHook("first_messages_hook",
+				messagesHookBeforeCount, messagesHookAfterCount);
+		// ModelHook should be skipped
+		TestModelHook modelHook = new TestModelHook("test_model_hook",
+				modelHookBeforeCount, modelHookAfterCount);
+		// Second MessagesModelHook should also be skipped
+		TestMessagesModelHook secondMessagesHook = new TestMessagesModelHook("second_messages_hook",
+				secondMessagesHookBeforeCount, secondMessagesHookAfterCount);
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("test-agent-jump-to-end-mixed")
+				.model(chatModel)
+				.hooks(List.of(firstMessagesHook, modelHook, secondMessagesHook))
+				.saver(new MemorySaver())
+				.build();
+
+		System.out.println("\n=== 测试 JumpTo End 功能（混合 MessagesModelHook 和 ModelHook）===");
+
+		List<Message> messages = new ArrayList<>();
+		messages.add(new UserMessage("你好，请简单介绍一下自己。"));
+
+		Optional<OverAllState> result = agent.invoke(messages);
+
+		assertTrue(result.isPresent(), "结果应该存在");
+		
+		// First MessagesModelHook should be called
+		assertTrue(messagesHookBeforeCount.get() > 0, "第一个 MessagesModelHook 的 beforeModel 应该被调用");
+		assertEquals(0, messagesHookAfterCount.get(), "第一个 MessagesModelHook 的 afterModel 不应该被调用");
+		
+		// ModelHook should be skipped
+		assertEquals(0, modelHookBeforeCount.get(), "ModelHook 的 beforeModel 不应该被调用（被跳过）");
+		assertEquals(0, modelHookAfterCount.get(), "ModelHook 的 afterModel 不应该被调用（被跳过）");
+		
+		// Second MessagesModelHook should be skipped
+		assertEquals(0, secondMessagesHookBeforeCount.get(), "第二个 MessagesModelHook 的 beforeModel 不应该被调用（被跳过）");
+		assertEquals(0, secondMessagesHookAfterCount.get(), "第二个 MessagesModelHook 的 afterModel 不应该被调用（被跳过）");
+
+		System.out.println("✓ 第一个 MessagesModelHook beforeModel 调用次数: " + messagesHookBeforeCount.get());
+		System.out.println("✓ ModelHook beforeModel 调用次数: " + modelHookBeforeCount.get());
+		System.out.println("✓ 第二个 MessagesModelHook beforeModel 调用次数: " + secondMessagesHookBeforeCount.get());
+		System.out.println("✓ 成功验证 JumpTo End（混合 hooks）：后续 hooks 被正确跳过");
+	}
+
+	/**
+	 * Test 6: Verify MessagesModelHook and ModelHook can work together
 	 */
 	@Test
 	public void testMessagesModelHookWithModelHook() throws Exception {
@@ -297,7 +411,7 @@ public class MessagesModelHookTest {
 					newMessages.add(lastMessage);
 				}
 			}
-			return new AgentCommand(newMessages, AppendPolicy.REPLACE);
+			return new AgentCommand(newMessages, UpdatePolicy.REPLACE);
 		}
 	}
 
@@ -316,7 +430,49 @@ public class MessagesModelHookTest {
 			// Append a new message to existing messages
 			List<Message> newMessages = new ArrayList<>();
 			newMessages.add(new UserMessage("这是追加的消息"));
-			return new AgentCommand(newMessages, AppendPolicy.APPEND);
+			return new AgentCommand(newMessages, UpdatePolicy.APPEND);
+		}
+	}
+
+	/**
+	 * MessagesModelHook implementation that jumps to end
+	 */
+	@HookPositions({HookPosition.BEFORE_MODEL})
+	private static class JumpToEndMessagesHook extends MessagesModelHook {
+		private final String name;
+		private final AtomicInteger beforeModelCallCount;
+		private final AtomicInteger afterModelCallCount;
+
+		public JumpToEndMessagesHook(String name, AtomicInteger beforeModelCallCount,
+				AtomicInteger afterModelCallCount) {
+			this.name = name;
+			this.beforeModelCallCount = beforeModelCallCount;
+			this.afterModelCallCount = afterModelCallCount;
+		}
+
+		@Override
+		public String getName() {
+			return name;
+		}
+
+		@Override
+		public List<JumpTo> canJumpTo() {
+			return List.of(JumpTo.end);
+		}
+
+		@Override
+		public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
+			beforeModelCallCount.incrementAndGet();
+			System.out.println("JumpToEndMessagesHook.beforeModel called - jumping to end");
+			// Return jumpTo end to skip subsequent hooks and model call
+			return new AgentCommand(JumpTo.end, previousMessages);
+		}
+
+		@Override
+		public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
+			afterModelCallCount.incrementAndGet();
+			System.out.println("JumpToEndMessagesHook.afterModel called");
+			return new AgentCommand(previousMessages);
 		}
 	}
 

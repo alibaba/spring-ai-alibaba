@@ -85,7 +85,7 @@ public abstract class MessagesModelHook implements Hook {
 
 			Map<String, Object> result = new HashMap<>();
 			if (command.getMessages() != null) {
-				if (AppendPolicy.REPLACE == command.getAppendPolicy()) {
+				if (UpdatePolicy.REPLACE == command.getUpdatePolicy()) {
 					result.put("messages", ReplaceAllWith.of(command.getMessages()));
 				} else {
 					result.put("messages", command.getMessages());
@@ -119,7 +119,7 @@ public abstract class MessagesModelHook implements Hook {
 
 			Map<String, Object> result = new HashMap<>();
 			if (command.getMessages() != null) {
-				if (AppendPolicy.REPLACE == command.getAppendPolicy()) {
+				if (UpdatePolicy.REPLACE == command.getUpdatePolicy()) {
 					result.put("messages", ReplaceAllWith.of(command.getMessages()));
 				} else {
 					result.put("messages", command.getMessages());

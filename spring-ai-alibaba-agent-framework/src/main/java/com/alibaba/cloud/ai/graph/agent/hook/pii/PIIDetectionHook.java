@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.hook.pii;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
-import com.alibaba.cloud.ai.graph.agent.hook.messages.AppendPolicy;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
@@ -83,7 +83,7 @@ public class PIIDetectionHook extends MessagesModelHook {
 		}
 
 		if (hasChanges) {
-			return new AgentCommand(processedMessages, AppendPolicy.REPLACE);
+			return new AgentCommand(processedMessages, UpdatePolicy.REPLACE);
 		}
 
 		return new AgentCommand(previousMessages);
@@ -148,7 +148,7 @@ public class PIIDetectionHook extends MessagesModelHook {
 		List<Message> updatedMessages = new ArrayList<>(previousMessages);
 		updatedMessages.set(lastIndex, updatedMessage);
 
-		return new AgentCommand(updatedMessages, AppendPolicy.REPLACE);
+		return new AgentCommand(updatedMessages, UpdatePolicy.REPLACE);
 	}
 
 	private Message processMessage(Message message) {

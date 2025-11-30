@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.hook.messages;
 /**
  * Enumeration for message append policy.
  */
-public enum AppendPolicy {
+public enum UpdatePolicy {
 	/**
 	 * Replace all existing messages with the new messages.
 	 */
