@@ -173,7 +173,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			}
 
 		} else {
-			throw new IllegalStateException("Last message is not an AssistantMessage or ToolResponseMessage");
+			throw new IllegalStateException("Last message is neither an AssistantMessage nor an ToolResponseMessage");
 		}
 
 		// Merge extra state from tool calls
