@@ -105,8 +105,10 @@ class TimeTravelRedisTest {
 	void cleanupRedis() {
 		var config1 = RunnableConfig.builder().threadId("test-time-travel").build();
 		redisSaver.clear(config1);
-		var config2 = RunnableConfig.builder().threadId("test-branch").build();
+		var config2 = RunnableConfig.builder().threadId("test-main-thread").build();
 		redisSaver.clear(config2);
+		var config3 = RunnableConfig.builder().threadId("test-branch-thread").build();
+		redisSaver.clear(config3);
 	}
 
 	@Test

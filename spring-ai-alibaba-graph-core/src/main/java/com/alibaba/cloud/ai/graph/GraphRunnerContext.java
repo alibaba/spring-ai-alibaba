@@ -81,7 +81,7 @@ public class GraphRunnerContext {
 		this.compiledGraph = compiledGraph;
 		this.config = config;
 
-		if (config.checkPointId().isPresent()) {
+		if (config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY).isPresent() || config.checkPointId().isPresent()) {
 			initializeFromResume(initialState, config);
 		} else {
 			initializeFromStart(initialState, config);
