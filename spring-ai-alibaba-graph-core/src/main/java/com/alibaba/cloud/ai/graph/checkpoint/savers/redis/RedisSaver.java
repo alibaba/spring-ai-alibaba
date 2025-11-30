@@ -184,7 +184,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
 		boolean tryLock = false;
 		try {
-			tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+			// 500ms timeout for read operations (list)
+			tryLock = lock.tryLock(500, TimeUnit.MILLISECONDS);
 			if (!tryLock) {
 				return List.of();
 			}
@@ -225,7 +226,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
 		boolean tryLock = false;
 		try {
-			tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+			// 500ms timeout for read operations (get)
+			tryLock = lock.tryLock(500, TimeUnit.MILLISECONDS);
 			if (!tryLock) {
 				return Optional.empty();
 			}
@@ -274,7 +276,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
 		boolean tryLock = false;
 		try {
-			tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+			// 3 seconds timeout for write operations (put) - longer timeout for concurrent scenarios
+			tryLock = lock.tryLock(3, TimeUnit.SECONDS);
 			if (!tryLock) {
 				throw new RuntimeException("Failed to acquire lock for thread: " + threadName);
 			}
@@ -330,7 +333,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
 		boolean tryLock = false;
 		try {
-			tryLock = lock.tryLock(2, TimeUnit.MILLISECONDS);
+			// 3 seconds timeout for write operations (release) - longer timeout for concurrent scenarios
+			tryLock = lock.tryLock(3, TimeUnit.SECONDS);
 			if (!tryLock) {
 				throw new RuntimeException("Failed to acquire lock for thread: " + threadName);
 			}
