@@ -352,18 +352,43 @@ public class ReactAgent extends BaseAgent {
 	/**
 	 * Filter hooks by their position based on @HookPositions annotation.
 	 * A hook will be included if its getHookPositions() contains the specified position.
+	 * If a hook implements Prioritized interface, it will be sorted by its order.
+	 * Hooks that don't implement Prioritized will maintain their original order.
 	 *
 	 * @param hooks the list of hooks to filter
 	 * @param position the position to filter by
 	 * @return list of hooks that should execute at the specified position
 	 */
 	private static List<Hook> filterHooksByPosition(List<? extends Hook> hooks, HookPosition position) {
-		return hooks.stream()
+		List<Hook> filtered = hooks.stream()
 				.filter(hook -> {
 					HookPosition[] positions = hook.getHookPositions();
 					return Arrays.asList(positions).contains(position);
 				})
 				.collect(Collectors.toList());
+		
+		// Separate hooks that implement Prioritized from those that don't
+		List<Hook> prioritizedHooks = new ArrayList<>();
+		List<Hook> nonPrioritizedHooks = new ArrayList<>();
+		
+		for (Hook hook : filtered) {
+			if (hook instanceof Prioritized) {
+				prioritizedHooks.add(hook);
+			} else {
+				nonPrioritizedHooks.add(hook);
+			}
+		}
+		
+		// Sort prioritized hooks by their order
+		prioritizedHooks.sort((h1, h2) -> Integer.compare(
+				((Prioritized) h1).getOrder(),
+				((Prioritized) h2).getOrder()));
+		
+		// Combine: prioritized hooks first (sorted), then non-prioritized hooks (original order)
+		List<Hook> result = new ArrayList<>(prioritizedHooks);
+		result.addAll(nonPrioritizedHooks);
+		
+		return result;
 	}
 
 	private static String determineEntryNode(
