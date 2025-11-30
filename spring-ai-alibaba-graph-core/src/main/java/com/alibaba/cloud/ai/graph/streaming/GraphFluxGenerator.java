@@ -15,15 +15,17 @@
  */
 package com.alibaba.cloud.ai.graph.streaming;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import reactor.core.publisher.Flux;
+	import org.springframework.ai.chat.messages.AssistantMessage;
+	import org.springframework.ai.chat.model.ChatResponse;
+	import org.springframework.ai.chat.model.Generation;
+	import reactor.core.publisher.Flux;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
+	import java.util.List;
+	import java.util.Objects;
+	import java.util.concurrent.atomic.AtomicReference;
+	import java.util.function.Function;
+
+	import com.alibaba.cloud.ai.graph.util.AssistantMessageUtils;
 
 import static java.util.Objects.requireNonNull;
 
@@ -72,7 +74,7 @@ public interface GraphFluxGenerator {
 
 				Function<ChatResponse, ChatResponse> mergeMessage = (response) -> result.updateAndGet(lastResponse -> {
 
-					AssistantMessage currentMessage = extractAssistantMessage(response);
+					AssistantMessage currentMessage = AssistantMessageUtils.extractAssistantMessage(response);
 					if (currentMessage == null) {
 						// Usage-only chunk or no AssistantMessage – keep previous aggregated response
 						return lastResponse;
@@ -85,7 +87,7 @@ public interface GraphFluxGenerator {
 						return new ChatResponse(List.of(generation), response.getMetadata());
 					}
 
-					AssistantMessage lastMessage = extractAssistantMessage(lastResponse);
+					AssistantMessage lastMessage = AssistantMessageUtils.extractAssistantMessage(lastResponse);
 
 					if (currentMessage.hasToolCalls()) {
 						// New tool-call message overrides previous aggregated content
@@ -116,57 +118,9 @@ public interface GraphFluxGenerator {
 				});
 
 				return GraphFlux.of(startingNode, outKey, flux, mergeMessage, response -> {
-					AssistantMessage message = extractAssistantMessage(response);
+					AssistantMessage message = AssistantMessageUtils.extractAssistantMessage(response);
 					return message != null ? message.getText() : null;
 				});
-			}
-
-			/**
-			 * Extracts the most appropriate AssistantMessage from a ChatResponse for streaming.
-			 * <p>
-			 * Prefers AssistantMessage generations that contain tool calls, then falls back to
-			 * the last non-null AssistantMessage. Returns {@code null} when no suitable
-			 * AssistantMessage exists (e.g. usage-only chunks).
-			 */
-			private AssistantMessage extractAssistantMessage(ChatResponse response) {
-				if (response == null) {
-					return null;
-				}
-
-				try {
-					List<Generation> generations = response.getResults();
-					if (generations != null && !generations.isEmpty()) {
-						AssistantMessage fallback = null;
-						for (Generation generation : generations) {
-							if (generation == null) {
-								continue;
-							}
-							var output = generation.getOutput();
-							if (output instanceof AssistantMessage assistantMessage) {
-								if (assistantMessage.hasToolCalls()) {
-									// Prefer the first message that contains tool calls
-									return assistantMessage;
-								}
-								// Remember the last non-null assistant message as a fallback
-								fallback = assistantMessage;
-							}
-						}
-						if (fallback != null) {
-							return fallback;
-						}
-					}
-				}
-				catch (Exception ex) {
-					// Defensive: if the underlying implementation changes and getResults() fails,
-					// fall back to getResult().
-				}
-
-				if (response.getResult() != null
-						&& response.getResult().getOutput() instanceof AssistantMessage assistant) {
-					return assistant;
-				}
-
-				return null;
 			}
 
 		}

@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.alibaba.cloud.ai.graph.util.AssistantMessageUtils;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -184,232 +185,178 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @param partialState the partial state containing flux instances
 	 * @return an Optional containing Data with the flux if found, empty otherwise
 	 */
-		private Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(GraphRunnerContext context,
-				Map<String, Object> partialState) {
-			return partialState.entrySet()
-					.stream()
-					.filter(e -> e.getValue() instanceof Flux<?>)
-					.findFirst()
-					.map(e -> {
-						var chatFlux = (Flux<?>) e.getValue();
-						var lastChatResponseRef = new AtomicReference<ChatResponse>();
-						var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>();
+	private Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(GraphRunnerContext context,
+			Map<String, Object> partialState) {
 
-						return chatFlux
-								// 1) Filter out ChatResponse elements that do not contain any AssistantMessage,
-								// but keep exceptions and other element types.
-								.filter(element -> {
-									if (element instanceof ChatResponse response) {
-										return AssistantMessageUtils.extractAssistantMessage(response, log) != null;
+		return partialState.entrySet()
+				.stream()
+				.filter(e -> e.getValue() instanceof Flux<?>)
+				.findFirst()
+				.map(e -> {
+					var chatFlux = (Flux<?>) e.getValue();
+					var lastChatResponseRef = new AtomicReference<ChatResponse>();
+					var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>();
+
+					return chatFlux
+							// 1) Filter out responses that do not contain any AssistantMessage,
+							// but keep exceptions and other element types.
+							.filter(element -> {
+								if (element instanceof ChatResponse response) {
+									return AssistantMessageUtils.extractAssistantMessage(response, log) != null;
+								}
+								return true;
+							})
+							// 2) Treat an empty stream as an error (typically indicates an LLM
+							// API returning null/empty results).
+							.switchIfEmpty(Flux.error(new IllegalStateException(
+									"Empty flux detected for key '" + e.getKey()
+											+ "'. This may indicate an LLM API error with null result.")))
+							.map(element -> {
+								// 3) Treat Throwable as a data element (not a signal) so that it
+								// can be wrapped as GraphResponse.
+								if (element instanceof Throwable throwable) {
+									log.error(
+											"Exception emitted as data element in embedded Flux stream for key '{}': {}",
+											e.getKey(), throwable.getMessage(), throwable);
+									GraphResponse<NodeOutput> errorResponse = GraphResponse.error(throwable);
+									lastGraphResponseRef.set(errorResponse);
+									return errorResponse;
+								}
+
+								if (element instanceof ChatResponse response) {
+									ChatResponse lastResponse = lastChatResponseRef.get();
+									AssistantMessage currentMessage = AssistantMessageUtils
+											.extractAssistantMessage(response, log);
+
+									if (currentMessage == null) {
+										// Should already have been filtered out, but be defensive.
+										GraphResponse<NodeOutput> lastGraphResponse = lastGraphResponseRef.get();
+										return lastGraphResponse != null
+												? lastGraphResponse
+												: GraphResponse.<NodeOutput>error(new IllegalStateException(
+														"ChatResponse without AssistantMessage encountered in streaming flow"));
 									}
-									return true;
-								})
-								// 2) Treat an empty stream as an error (typically indicates an LLM
-								// API returning null/empty results).
-								.switchIfEmpty(Flux.error(new IllegalStateException(
-										"Empty flux detected for key '" + e.getKey()
-												+ "'. This may indicate an LLM API error with null result.")))
-								.map(element -> {
-									// 3) Treat Throwable as a data element (not a signal) so that it
-									// can be wrapped as GraphResponse.
-									if (element instanceof Throwable throwable) {
-										log.error(
-												"Exception emitted as data element in embedded Flux stream for key '{}': {}",
-												e.getKey(), throwable.getMessage(), throwable);
-										GraphResponse<NodeOutput> errorResponse = GraphResponse.error(throwable);
+
+									AssistantMessage mergedMessage;
+									if (lastResponse == null) {
+										// First valid AssistantMessage – start aggregation from here.
+										mergedMessage = currentMessage;
+									}
+									else {
+										AssistantMessage lastMessage = AssistantMessageUtils
+												.extractAssistantMessage(lastResponse, log);
+
+										// Append current text after previous text (tolerate null text).
+										String lastText = lastMessage != null ? lastMessage.getText() : null;
+										String currentText = currentMessage.getText();
+										String mergedText = (lastText != null ? lastText : "")
+												+ (currentText != null ? currentText : "");
+
+										var mergedToolCalls = AssistantMessageUtils.mergeToolCalls(
+												lastMessage != null ? lastMessage.getToolCalls() : List.of(),
+												currentMessage.getToolCalls());
+
+										mergedMessage = AssistantMessage.builder()
+												.content(mergedText.isEmpty() ? null : mergedText)
+												.properties(currentMessage.getMetadata())
+												.toolCalls(mergedToolCalls)
+												.media(currentMessage.getMedia())
+												.build();
+									}
+
+									// Normalize lastResponse so that getResult().getOutput()
+									// always reflects the aggregated AssistantMessage.
+									var generation = new Generation(mergedMessage,
+											response.getResult() != null
+													? response.getResult().getMetadata()
+													: null);
+									ChatResponse normalized = new ChatResponse(List.of(generation),
+											response.getMetadata());
+									lastChatResponseRef.set(normalized);
+
+									// For each chunk, only stream the current delta as StreamingOutput.
+									GraphResponse<NodeOutput> lastGraphResponse = GraphResponse.of(
+											context.buildStreamingOutput(currentMessage, response,
+													context.getCurrentNodeId()));
+									lastGraphResponseRef.set(lastGraphResponse);
+									return lastGraphResponse;
+								}
+								else if (element instanceof GraphResponse) {
+									GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
+									lastGraphResponseRef.set(graphResponse);
+									return graphResponse;
+								}
+								else if (element instanceof NodeOutput nodeOutput) {
+									GraphResponse<NodeOutput> graphResponse = GraphResponse.of(nodeOutput);
+									lastGraphResponseRef.set(graphResponse);
+									return graphResponse;
+								}
+									else {
+										// Unsupported element type – instruct users to emit supported types only
+										// (ChatResponse, GraphResponse or NodeOutput). This is safer than trying
+										// to guess how to wrap arbitrary objects into StreamingOutput here.
+										String errorMsg = String.format(
+												"Unsupported flux element type %s, customized flux stream should emit ChatResponse, GraphResponse<NodeOutput> or NodeOutput.",
+												element != null ? element.getClass().getName() : "null");
+										GraphResponse<NodeOutput> errorResponse = GraphResponse
+												.error(new IllegalArgumentException(errorMsg));
 										lastGraphResponseRef.set(errorResponse);
 										return errorResponse;
 									}
+							})
+							// 4) Convert error signals from the Flux into GraphResponse.error.
+							.onErrorResume(error -> {
+								log.error("Error signal occurred in embedded Flux stream for key '{}': {}",
+										e.getKey(), error.getMessage());
+								GraphResponse<NodeOutput> errorResponse = GraphResponse.error(error);
+								lastGraphResponseRef.set(errorResponse);
+								return Flux.just(errorResponse);
+							})
+							// 5) On completion, emit a final "done" GraphResponse if needed,
+							// based on the last observed result.
+							.concatWith(Mono.defer(() -> {
+								ChatResponse lastChatResponse = lastChatResponseRef.get();
+								if (lastChatResponse == null) {
+									GraphResponse<?> lastGraphResponse = lastGraphResponseRef.get();
+									if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
+										Object result = lastGraphResponse.resultValue().get();
 
-									if (element instanceof ChatResponse response) {
-										ChatResponse lastResponse = lastChatResponseRef.get();
-										AssistantMessage currentMessage = AssistantMessageUtils
-												.extractAssistantMessage(response, log);
-
-										if (currentMessage == null) {
-											// Should already have been filtered out, but be defensive.
-											GraphResponse<NodeOutput> lastGraphResponse = lastGraphResponseRef.get();
-											return lastGraphResponse != null
-													? lastGraphResponse
-													: GraphResponse.<NodeOutput>error(new IllegalStateException(
-															"ChatResponse without AssistantMessage encountered in streaming flow"));
+										// Do not re-emit interruption events; they are handled by MainGraphExecutor.
+										if (result instanceof InterruptionMetadata) {
+											return Mono.empty();
 										}
 
-										AssistantMessage mergedMessage;
-										if (lastResponse == null) {
-											// First valid AssistantMessage – start aggregation from here.
-											mergedMessage = currentMessage;
-										}
-										else {
-											AssistantMessage lastMessage = AssistantMessageUtils
-													.extractAssistantMessage(lastResponse, log);
-
-											// Append current text after previous text (tolerate null text).
-											String lastText = lastMessage != null ? lastMessage.getText() : null;
-											String currentText = currentMessage.getText();
-											String mergedText = (lastText != null ? lastText : "")
-													+ (currentText != null ? currentText : "");
-
-											var mergedToolCalls = AssistantMessageUtils.mergeToolCalls(
-													lastMessage != null ? lastMessage.getToolCalls() : List.of(),
-													currentMessage.getToolCalls());
-
-											mergedMessage = AssistantMessage.builder()
-													.content(mergedText.isEmpty() ? null : mergedText)
-													.properties(currentMessage.getMetadata())
-													.toolCalls(mergedToolCalls)
-													.media(currentMessage.getMedia())
-													.build();
-										}
-
-										// Normalize lastResponse so that getResult().getOutput()
-										// always reflects the aggregated AssistantMessage.
-										var generation = new Generation(mergedMessage,
-												response.getResult() != null
-														? response.getResult().getMetadata()
-														: null);
-										ChatResponse normalized = new ChatResponse(List.of(generation),
-												response.getMetadata());
-										lastChatResponseRef.set(normalized);
-
-										// For each chunk, only stream the current delta as StreamingOutput.
-										GraphResponse<NodeOutput> lastGraphResponse = GraphResponse.of(
-												context.buildStreamingOutput(currentMessage, response,
-														context.getCurrentNodeId()));
-										lastGraphResponseRef.set(lastGraphResponse);
-										return lastGraphResponse;
-									}
-									else if (element instanceof GraphResponse) {
-										GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
-										lastGraphResponseRef.set(graphResponse);
-										return graphResponse;
-									}
-									else if (element instanceof NodeOutput nodeOutput) {
-										GraphResponse<NodeOutput> graphResponse = GraphResponse.of(nodeOutput);
-										lastGraphResponseRef.set(graphResponse);
-										return graphResponse;
-									}
-									else {
-										try {
-											log.info("Received element of type '{}' in embedded Flux for key '{}', wrapping in StreamingOutput.",
-													element.getClass().getName(), e.getKey());
-											StreamingOutput<?> streamingOutput = context.buildStreamingOutput(element, context.getCurrentNodeId());
-											GraphResponse<NodeOutput> graphResponse = GraphResponse.of(streamingOutput);
-											lastGraphResponseRef.set(graphResponse);
-											return graphResponse;
-										}
-										catch (Exception ex) {
-											throw new RuntimeException(ex);
-										}
-									}
-								})
-								// 4) Convert error signals from the Flux into GraphResponse.error.
-								.onErrorResume(error -> {
-									log.error("Error signal occurred in embedded Flux stream for key '{}': {}",
-											e.getKey(), error.getMessage());
-									GraphResponse<NodeOutput> errorResponse = GraphResponse.error(error);
-									lastGraphResponseRef.set(errorResponse);
-									return Flux.just(errorResponse);
-								})
-								// 5) On completion, emit a final "done" GraphResponse if needed,
-								// based on the last observed result.
-								.concatWith(Mono.defer(() -> {
-									ChatResponse lastChatResponse = lastChatResponseRef.get();
-									if (lastChatResponse == null) {
-										GraphResponse<?> lastGraphResponse = lastGraphResponseRef.get();
-										if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
-											Object result = lastGraphResponse.resultValue().get();
-
-											// Do not re-emit interruption events; they are handled by MainGraphExecutor.
-											if (result instanceof InterruptionMetadata) {
-												return Mono.empty();
-											}
-
-											if (result instanceof Map resultMap) {
-												if (!resultMap.containsKey(e.getKey())
-														&& resultMap.containsKey("messages")) {
-													List<Object> messages = (List<Object>) resultMap.get("messages");
-													Object lastMessage = messages.get(messages.size() - 1);
-													if (lastMessage instanceof AssistantMessage lastAssistantMessage) {
-														resultMap.put(e.getKey(), lastAssistantMessage.getText());
-													}
+										if (result instanceof Map resultMap) {
+											if (!resultMap.containsKey(e.getKey())
+													&& resultMap.containsKey("messages")) {
+												List<Object> messages = (List<Object>) resultMap.get("messages");
+												Object lastMessage = messages.get(messages.size() - 1);
+												if (lastMessage instanceof AssistantMessage lastAssistantMessage) {
+													resultMap.put(e.getKey(), lastAssistantMessage.getText());
 												}
 											}
-											return Mono.just(lastGraphResponseRef.get());
 										}
-										return Mono.empty();
+										return Mono.just(lastGraphResponseRef.get());
 									}
-									else {
-										return Mono.fromCallable(() -> {
-											Map<String, Object> completionResult = new HashMap<>();
-											AssistantMessage finalMessage = AssistantMessageUtils.extractAssistantMessage(
-													lastChatResponse, log);
-											if (finalMessage != null) {
-												completionResult.put(e.getKey(), finalMessage);
-												if (!e.getKey().equals("messages")) {
-													completionResult.put("messages", finalMessage);
-												}
+									return Mono.empty();
+								}
+								else {
+									return Mono.fromCallable(() -> {
+										Map<String, Object> completionResult = new HashMap<>();
+										AssistantMessage finalMessage = AssistantMessageUtils.extractAssistantMessage(
+												lastChatResponse, log);
+										if (finalMessage != null) {
+											completionResult.put(e.getKey(), finalMessage);
+											if (!e.getKey().equals("messages")) {
+												completionResult.put("messages", finalMessage);
 											}
-											return GraphResponse.done(completionResult);
-										});
-									}
-								}));
+										}
+										return GraphResponse.done(completionResult);
+									});
+								}
+							}));
 				});
-		}
-
-		/**
-		 * Extracts the most appropriate AssistantMessage from a ChatResponse for streaming.
-		 * <p>
-		 * Prefers AssistantMessage generations that contain tool calls, then falls back to
-		 * the last non-null AssistantMessage. Returns {@code null} when no suitable
-		 * AssistantMessage exists (e.g. usage-only chunks).
-		 */
-		private AssistantMessage extractAssistantMessage(ChatResponse response) {
-			if (response == null) {
-				return null;
-			}
-
-			try {
-				List<Generation> generations = response.getResults();
-				if (generations != null && !generations.isEmpty()) {
-					AssistantMessage fallback = null;
-					for (Generation generation : generations) {
-						if (generation == null) {
-							continue;
-						}
-						var output = generation.getOutput();
-						if (output instanceof AssistantMessage assistantMessage) {
-							if (assistantMessage.hasToolCalls()) {
-								// Prefer the first message that contains tool calls
-								return assistantMessage;
-							}
-							// Remember the last non-null assistant message as a fallback
-							fallback = assistantMessage;
-						}
-					}
-					if (fallback != null) {
-						return fallback;
-					}
-				}
-			}
-			catch (Exception ex) {
-				// Defensive: if the underlying implementation changes and getResults() fails,
-				// fall back to getResult().
-				if (log.isDebugEnabled()) {
-					log.debug(
-							"Failed to extract AssistantMessage from all generations, falling back to getResult()",
-							ex);
-				}
-			}
-
-			if (response.getResult() != null
-					&& response.getResult().getOutput() instanceof AssistantMessage assistant) {
-				return assistant;
-			}
-
-			return null;
->>>>>>> d430ffc07 (fix(agent,graph-core): handle streaming multi-generation assistant messages)
-		}
+	}
 
 	/**
 	 * Handles embedded flux processing.
@@ -426,7 +373,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 		AtomicReference<GraphResponse<NodeOutput>> lastData = new AtomicReference<>();
 
 		Flux<GraphResponse<NodeOutput>> processedFlux = embedFlux.map(data -> {
-			if (data.getOutput() != null && !data.getOutput().isCompletedExceptionally()) {
+			if (data.getOutput() != null) {
 				var output = data.getOutput().join();
 				output.setSubGraph(true);
 				GraphResponse<NodeOutput> newData = GraphResponse.of(output);
@@ -435,23 +382,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 			lastData.set(data);
 			return data;
-		})
-        // filter out InterruptionMetadata emitted directly by upstream to avoid duplicate sending
-        // retain regular procedural events
-        .filter(data -> {
-            var value = data.resultValue();
-            return value.isEmpty() || !(value.get() instanceof InterruptionMetadata);
-        });
+		});
 
 		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
 			var data = lastData.get();
-			if (data == null) {
-				log.error("No data returned from last streaming node execution '{}', will goto END node directly.", context.getCurrentNodeId());
-				context.setNextNodeId(END);
-				context.doListeners(NODE_AFTER, null);
+			if (data == null)
 				return;
-			}
-
 			var nodeResultValue = data.resultValue();
 
 			if (nodeResultValue.isPresent() && nodeResultValue.get() instanceof InterruptionMetadata) {
@@ -553,8 +489,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 					}
 					return true;
 				})
-				.switchIfEmpty(Flux.error(new IllegalStateException(
-					"Empty GraphFlux detected for node '" + effectiveNodeId + "'. This may indicate an LLM API error.")))
 				.map(element -> {
 					lastDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 
@@ -567,12 +501,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 		// Handle completion and result mapping
 		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
 			Object lastData = lastDataRef.get();
-
-			if (lastData == null) {
-				log.error("No data returned from last streaming node execution '{}', will goto END node directly.", context.getCurrentNodeId());
-				context.setNextNodeId(END);
-				return;
-			}
 
 			// Apply mapResult function if available
 			Map<String, Object> resultMap = new HashMap<>();
@@ -642,8 +570,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 							}
 							return true;
 						})
-						.switchIfEmpty(Flux.error(new IllegalStateException(
-							"Empty ParallelGraphFlux detected for node '" + nodeId + "'. This may indicate an LLM API error.")))
 						.map(element -> {
 							nodeDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 							// Create StreamingOutput with specific nodeId (preserves parallel node identity)
