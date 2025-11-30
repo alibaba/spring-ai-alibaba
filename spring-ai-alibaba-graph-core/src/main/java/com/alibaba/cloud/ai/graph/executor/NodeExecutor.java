@@ -199,6 +199,8 @@ public class NodeExecutor extends BaseGraphExecutor {
                 // Don't filter out Exception/Throwable - we need to handle them
                 return true;
             })
+			.switchIfEmpty(Flux.error(new IllegalStateException(
+				"Empty flux detected for key '" + e.getKey() + "'. This may indicate an LLM API error with null result.")))
 			.map(element -> {
 				// Handle Exception/Throwable as data elements (not error signals)
 				if (element instanceof Throwable throwable) {
@@ -461,6 +463,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 					}
 					return true;
 				})
+				.switchIfEmpty(Flux.error(new IllegalStateException(
+					"Empty GraphFlux detected for node '" + effectiveNodeId + "'. This may indicate an LLM API error.")))
 				.map(element -> {
 					lastDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 
@@ -542,6 +546,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 							}
 							return true;
 						})
+						.switchIfEmpty(Flux.error(new IllegalStateException(
+							"Empty ParallelGraphFlux detected for node '" + nodeId + "'. This may indicate an LLM API error.")))
 						.map(element -> {
 							nodeDataRef.set(graphFlux.hasMapResult() ? graphFlux.getMapResult().apply(element) : element);
 							// Create StreamingOutput with specific nodeId (preserves parallel node identity)

@@ -54,6 +54,56 @@ public class PostgresqlSaver extends AbstractJdbcSaver {
 		super(dataSource, objectMapper, tableName);
 	}
 
+	/**
+	 * Creates a new builder for PostgresqlSaver.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder class for PostgresqlSaver.
+	 */
+	public static class Builder {
+		private DataSource dataSource;
+		private ObjectMapper objectMapper;
+		private String tableName;
+
+		public Builder dataSource(DataSource dataSource) {
+			this.dataSource = dataSource;
+			return this;
+		}
+
+		public Builder objectMapper(ObjectMapper objectMapper) {
+			this.objectMapper = objectMapper;
+			return this;
+		}
+
+		public Builder tableName(String tableName) {
+			this.tableName = tableName;
+			return this;
+		}
+
+		/**
+		 * Builds a new PostgresqlSaver instance.
+		 * @return a new PostgresqlSaver instance
+		 * @throws IllegalArgumentException if dataSource is null
+		 */
+		public PostgresqlSaver build() {
+			if (dataSource == null) {
+				throw new IllegalArgumentException("dataSource cannot be null");
+			}
+			if (objectMapper != null && tableName != null) {
+				return new PostgresqlSaver(dataSource, objectMapper, tableName);
+			} else if (objectMapper != null) {
+				return new PostgresqlSaver(dataSource, objectMapper);
+			} else {
+				return new PostgresqlSaver(dataSource);
+			}
+		}
+	}
+
 	@Override
 	protected String getCreateTableSql() {
 		return """

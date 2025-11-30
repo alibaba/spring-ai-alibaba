@@ -20,11 +20,14 @@ import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.TypeMapper.TYPE_PROPERTY;
 
@@ -37,6 +40,42 @@ import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.TypeMappe
  */
 @FunctionalInterface
 public interface JacksonDeserializer<T> {
+
+	Logger logger = LoggerFactory.getLogger(JacksonDeserializer.class);
+
+	/**
+	 * Cache for deserialization strategies to avoid repeated trial-and-error.
+	 * Key: target class, Value: the most efficient deserialization strategy for that class
+	 * 
+	 * Note: This cache is bounded to prevent unbounded memory growth.
+	 * In typical applications, the number of unique classes being deserialized is limited.
+	 * If the cache fills up, older entries will be evicted (not implemented yet, but recommended for production).
+	 */
+	Map<Class<?>, DeserializationStrategy> STRATEGY_CACHE = new ConcurrentHashMap<>();
+	
+	/**
+	 * Maximum cache size to prevent unbounded growth.
+	 * This limit is reasonable for most applications.
+	 */
+	int MAX_CACHE_SIZE = 1000;
+
+	/**
+	 * Deserialization strategies in order of preference and capability
+	 */
+	enum DeserializationStrategy {
+		/**
+		 * Use readValue - full deserialization with custom deserializers support
+		 */
+		READ_VALUE,
+		/**
+		 * Use convertValue - simple POJO conversion, faster but limited
+		 */
+		CONVERT_VALUE,
+		/**
+		 * Cannot instantiate, degrade to Map
+		 */
+		DEGRADE_TO_MAP
+	}
 
 	/**
 	 * Check if a class cannot be instantiated by Jackson.
@@ -61,6 +100,129 @@ public interface JacksonDeserializer<T> {
 			result.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
 		}
 		return result;
+	}
+
+	/**
+	 * Unified deserialization strategy with progressive fallback and caching.
+	 * This is the framework-level solution that handles all types automatically:
+	 * 
+	 * 1. Try readValue first (supports custom deserializers, @JsonCreator, etc.)
+	 * 2. Fall back to convertValue if readValue fails (faster for simple POJOs)
+	 * 3. Degrade to Map if both fail (for non-instantiable classes)
+	 * 4. Cache the successful strategy to avoid repeated trial-and-error
+	 * 
+	 * @param node the JSON node to deserialize
+	 * @param targetClass the target class to deserialize to
+	 * @param objectMapper the ObjectMapper instance
+	 * @param typeMapper the TypeMapper for type resolution
+	 * @return the deserialized object
+	 * @throws IOException if deserialization fails completely
+	 */
+	static Object deserializeWithStrategy(
+			ObjectNode node,
+			Class<?> targetClass,
+			ObjectMapper objectMapper,
+			TypeMapper typeMapper) throws IOException {
+
+		// Quick check for known non-instantiable classes
+		if (isNonInstantiableClass(targetClass) || Map.class.isAssignableFrom(targetClass)) {
+			return degradeToMap(node, objectMapper, typeMapper);
+		}
+
+		// Prepare ObjectMapper without default typing
+		ObjectMapper mapperNoTyping = objectMapper.copy();
+		mapperNoTyping.setDefaultTyping(null);
+		mapperNoTyping.deactivateDefaultTyping();
+
+		// Check cached strategy
+		DeserializationStrategy cachedStrategy = STRATEGY_CACHE.get(targetClass);
+
+		if (cachedStrategy == DeserializationStrategy.READ_VALUE) {
+			try {
+				return mapperNoTyping.readValue(mapperNoTyping.treeAsTokens(node), targetClass);
+			}
+			catch (IOException e) {
+				// Strategy might be outdated, clear cache and retry
+				STRATEGY_CACHE.remove(targetClass);
+			}
+		}
+		else if (cachedStrategy == DeserializationStrategy.CONVERT_VALUE) {
+			try {
+				return mapperNoTyping.convertValue(node, targetClass);
+			}
+			catch (RuntimeException e) {
+				// Strategy might be outdated, clear cache and retry
+				STRATEGY_CACHE.remove(targetClass);
+			}
+		}
+		else if (cachedStrategy == DeserializationStrategy.DEGRADE_TO_MAP) {
+			return degradeToMap(node, objectMapper, typeMapper);
+		}
+
+		// First time encountering this type, perform strategy detection
+		try {
+			// Try readValue first - most comprehensive deserialization
+			Object result = mapperNoTyping.readValue(mapperNoTyping.treeAsTokens(node), targetClass);
+			cacheStrategy(targetClass, DeserializationStrategy.READ_VALUE);
+			return result;
+		}
+		catch (IOException readValueEx) {
+			// Log at TRACE level for debugging
+			if (logger.isTraceEnabled()) {
+				logger.trace("readValue failed for {}, trying convertValue", targetClass.getName(), readValueEx);
+			}
+			// readValue failed, try convertValue
+			try {
+				Object result = mapperNoTyping.convertValue(node, targetClass);
+				cacheStrategy(targetClass, DeserializationStrategy.CONVERT_VALUE);
+				logStrategyFallback(targetClass, "readValue", "convertValue");
+				return result;
+			}
+			catch (RuntimeException convertEx) {
+				// Both methods failed, degrade to Map
+				if (logger.isDebugEnabled()) {
+					logger.debug("Both readValue and convertValue failed for {}, degrading to Map", 
+						targetClass.getName(), convertEx);
+				}
+				cacheStrategy(targetClass, DeserializationStrategy.DEGRADE_TO_MAP);
+				logStrategyFallback(targetClass, "convertValue", "Map");
+				return degradeToMap(node, objectMapper, typeMapper);
+			}
+		}
+	}
+
+	/**
+	 * Cache a deserialization strategy with size limit protection.
+	 * If cache size exceeds MAX_CACHE_SIZE, clear 10% of entries to prevent unbounded growth.
+	 */
+	static void cacheStrategy(Class<?> targetClass, DeserializationStrategy strategy) {
+		// Simple cache size management: if full, clear some space
+		if (STRATEGY_CACHE.size() >= MAX_CACHE_SIZE) {
+			// Clear approximately 10% of cache entries
+			int entriesToRemove = MAX_CACHE_SIZE / 10;
+			STRATEGY_CACHE.keySet().stream()
+				.limit(entriesToRemove)
+				.forEach(STRATEGY_CACHE::remove);
+			
+			if (logger.isDebugEnabled()) {
+				logger.debug("Strategy cache reached limit ({}), cleared {} entries", 
+					MAX_CACHE_SIZE, entriesToRemove);
+			}
+		}
+		STRATEGY_CACHE.put(targetClass, strategy);
+	}
+
+	/**
+	 * Log deserialization strategy fallback for debugging and monitoring.
+	 * Uses DEBUG level to avoid excessive logging in production.
+	 */
+	static void logStrategyFallback(Class<?> targetClass, String from, String to) {
+		if (logger.isDebugEnabled()) {
+			logger.debug(
+					"Deserialization fallback for {}: {} failed, using {} instead. "
+							+ "Consider registering a custom deserializer if this occurs frequently.",
+					targetClass.getName(), from, to);
+		}
 	}
 
 	/**
@@ -106,23 +268,16 @@ public interface JacksonDeserializer<T> {
 						yield reconstructCompletableFuture(valueNode, objectMapper, typeMapper);
 					}
 					
+					// Use unified deserialization strategy for all registered types
 					var ref = typeMapper.getReference(type)
 						.orElseThrow(() -> new IllegalStateException("Type not found: " + type));
 					ObjectNode copy = valueNode.deepCopy();
 					copy.remove(TYPE_PROPERTY);
 					copy.remove("@typeHint");
-					ObjectMapper mapperNoTyping = objectMapper.copy();
-					mapperNoTyping.setDefaultTyping(null);
-					mapperNoTyping.deactivateDefaultTyping();
-					Object result;
-					try {
-						result = mapperNoTyping.convertValue(copy, ref);
-					}
-					catch (RuntimeException ex) {
-						// Jackson convertValue failed or other runtime exception - degrade to Map
-						result = degradeToMap(copy, objectMapper, typeMapper);
-					}
-					yield result;
+					
+					// Get Class from TypeReference using ObjectMapper's TypeFactory
+					Class<?> targetClass = objectMapper.getTypeFactory().constructType(ref).getRawClass();
+					yield deserializeWithStrategy(copy, targetClass, objectMapper, typeMapper);
 				}
 				if (valueNode.has("@class")) {
 					String className = valueNode.get("@class").asText();
@@ -132,31 +287,12 @@ public interface JacksonDeserializer<T> {
 					copy.remove("@typeHint");
 					try {
 						Class<?> clazz = Class.forName(className);
-
-						// Check if it's a non-static inner class, local class, or anonymous class
-						if (isNonInstantiableClass(clazz) || Map.class.isAssignableFrom(clazz)) {
-							yield degradeToMap(copy, objectMapper, typeMapper);
-						}
-
-						ObjectMapper mapperNoTyping = objectMapper.copy();
-						mapperNoTyping.setDefaultTyping(null);
-						mapperNoTyping.deactivateDefaultTyping();
-						yield mapperNoTyping.convertValue(copy, clazz);
+						// Use unified deserialization strategy
+						yield deserializeWithStrategy(copy, clazz, objectMapper, typeMapper);
 					}
 					catch (ClassNotFoundException ex) {
 						throw new IllegalStateException(
 								"Cannot instantiate class " + className + " for @class deserialization", ex);
-					}
-					catch (com.fasterxml.jackson.databind.exc.InvalidDefinitionException ex) {
-						// Jackson cannot instantiate the class (e.g., inner class, abstract class)
-						yield degradeToMap(copy, objectMapper, typeMapper);
-					}
-					catch (IllegalArgumentException ex) {
-						// Jackson convertValue failed - if it's likely an inner class, degrade to Map
-						if (className.contains("$")) {
-							yield degradeToMap(copy, objectMapper, typeMapper);
-						}
-						throw ex;
 					}
 				}
 				}
@@ -167,31 +303,12 @@ public interface JacksonDeserializer<T> {
 					copy.remove("@class");
 					try {
 						Class<?> clazz = Class.forName(typeHint);
-
-						// Check if it's a non-static inner class, local class, or anonymous class
-						if (isNonInstantiableClass(clazz) || Map.class.isAssignableFrom(clazz)) {
-							yield degradeToMap(copy, objectMapper, typeMapper);
-						}
-
-						ObjectMapper mapperNoTyping = objectMapper.copy();
-						mapperNoTyping.setDefaultTyping(null);
-						mapperNoTyping.deactivateDefaultTyping();
-						yield mapperNoTyping.convertValue(copy, clazz);
+						// Use unified deserialization strategy
+						yield deserializeWithStrategy(copy, clazz, objectMapper, typeMapper);
 					}
 					catch (ClassNotFoundException ex) {
 						throw new IllegalStateException(
 								"Cannot instantiate class " + typeHint + " for @typeHint deserialization", ex);
-					}
-					catch (com.fasterxml.jackson.databind.exc.InvalidDefinitionException ex) {
-						// Jackson cannot instantiate the class (e.g., inner class, abstract class)
-						yield degradeToMap(copy, objectMapper, typeMapper);
-					}
-					catch (IllegalArgumentException ex) {
-						// Jackson convertValue failed - if it's likely an inner class, degrade to Map
-						if (typeHint.contains("$")) {
-							yield degradeToMap(copy, objectMapper, typeMapper);
-						}
-						throw ex;
 					}
 				}
 				Map<String, Object> result = new LinkedHashMap<>();
@@ -269,23 +386,28 @@ public interface JacksonDeserializer<T> {
 			}
 			int length = payload.size();
 			Object typedArray = Array.newInstance(componentType, length);
-			ObjectMapper mapperNoTyping = objectMapper.copy();
-			mapperNoTyping.setDefaultTyping(null);
-			mapperNoTyping.deactivateDefaultTyping();
 			for (int i = 0; i < length; i++) {
 				JsonNode elementNode = payload.get(i);
 				Object element;
-				try {
-					element = mapperNoTyping.convertValue(elementNode, componentType);
+				
+				// For object nodes, use unified deserialization strategy
+				if (elementNode.isObject()) {
+					element = deserializeWithStrategy((ObjectNode) elementNode, componentType, objectMapper, typeMapper);
 				}
-				catch (IllegalArgumentException ex) {
+				else {
+					// For non-object nodes, use valueFromNode
 					element = valueFromNode(elementNode, objectMapper, typeMapper);
 				}
+				
 				if (element == null && !componentType.isPrimitive()) {
 					Array.set(typedArray, i, null);
 					continue;
 				}
 				if (element != null && !componentType.isInstance(element)) {
+					// Type mismatch, fall back to generic Object array
+					ObjectMapper mapperNoTyping = objectMapper.copy();
+					mapperNoTyping.setDefaultTyping(null);
+					mapperNoTyping.deactivateDefaultTyping();
 					return payload.traverse(mapperNoTyping).readValueAs(Object[].class);
 				}
 				Array.set(typedArray, i, element);

@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import java.util.Map;
+
 import static java.lang.String.format;
 
 /**
@@ -36,6 +38,10 @@ public interface SubGraphNode {
 	 * @return {@code StateGraph<State>} representation of the subgraph.
 	 */
 	StateGraph subGraph();
+
+	default Map<String, KeyStrategy> keyStrategies() {
+		return Map.of();
+	}
 
 	default String formatId(String nodeId) {
 		return format(PREFIX_FORMAT, id(), nodeId);

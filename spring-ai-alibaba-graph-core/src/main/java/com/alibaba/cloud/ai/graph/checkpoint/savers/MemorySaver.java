@@ -35,6 +35,28 @@ public class MemorySaver implements BaseCheckpointSaver {
 	public MemorySaver() {
 	}
 
+	/**
+	 * Creates a new builder for MemorySaver.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder class for MemorySaver.
+	 */
+	public static class Builder {
+
+		/**
+		 * Builds a new MemorySaver instance.
+		 * @return a new MemorySaver instance
+		 */
+		public MemorySaver build() {
+			return new MemorySaver();
+		}
+	}
+
 	protected LinkedList<Checkpoint> loadedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints)
 			throws Exception {
 		return checkpoints;
