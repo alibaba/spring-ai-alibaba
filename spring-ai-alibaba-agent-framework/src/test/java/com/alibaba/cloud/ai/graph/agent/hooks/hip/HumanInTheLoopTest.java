@@ -26,7 +26,6 @@ import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
 import com.alibaba.cloud.ai.graph.agent.tools.WeatherTool;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.model.ChatModel;
 
@@ -70,7 +69,7 @@ public class HumanInTheLoopTest {
 		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig);
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右散文");
 
 		InterruptionMetadata feedbackMetadata = buildRejectionFeedback(interruptionMetadata);
 
@@ -92,7 +91,7 @@ public class HumanInTheLoopTest {
 		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig);
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右散文");
 
 		InterruptionMetadata feedbackMetadata = buildApprovalFeedback(interruptionMetadata);
 
@@ -114,7 +113,7 @@ public class HumanInTheLoopTest {
 		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig);
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右散文");
 
 		InterruptionMetadata feedbackMetadata = buildEditedFeedback(interruptionMetadata);
 
@@ -131,7 +130,7 @@ public class HumanInTheLoopTest {
 
 		printGraphRepresentation(agent);
 
-		String threadId = "test-thread-approved";
+		String threadId = "test-thread-multiple-toolcalls";
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(threadId).build();
 
 		// Assert RunnableConfig is properly configured
@@ -141,13 +140,17 @@ public class HumanInTheLoopTest {
 
 		InterruptionMetadata interruptionMetadata = performFirstInvocationAndCheckMultipleToolsRequested(agent, runnableConfig);
 
+		// Only approve the first tool
 		InterruptionMetadata feedbackMetadata = buildFeedbackWithOnlyOneApproval(interruptionMetadata);
 
+		// Second invocation should still require approval for the second tool
 		InterruptionMetadata interruptionMetadata2 = performSecondInvocationAndCheckApprovalRequiredAgain(agent, threadId, feedbackMetadata);
 
-		// Add more feedback to approve the second tool
-		// invoke again and check completion
+		// Approve the second tool
+		InterruptionMetadata feedbackMetadata2 = buildApprovalFeedback(interruptionMetadata2);
 
+		// Third invocation should complete successfully
+		performThirdInvocation(agent, threadId, feedbackMetadata2);
 	}
 
 	/**
@@ -159,7 +162,7 @@ public class HumanInTheLoopTest {
 
 		printGraphRepresentation(agent);
 
-		String threadId = "test-thread-approved";
+		String threadId = "test-thread-multiple-rounds";
 		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(threadId).build();
 
 		// Assert RunnableConfig is properly configured
@@ -167,14 +170,19 @@ public class HumanInTheLoopTest {
 		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig);
+		// First invocation - should interrupt for first tool (poem)
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "第一次先调用工具帮我写一篇100字左右散文，然后第二次再调用工具查询写作当天北京天气情况。");
 
+		// Approve first tool
 		InterruptionMetadata feedbackMetadata = buildApprovalFeedback(interruptionMetadata);
 
-		performSecondInvocationAndInterruptAgain(agent, threadId, feedbackMetadata);
+		// Second invocation - should interrupt again for second tool (weather)
+		InterruptionMetadata interruptionMetadata2 = performSecondInvocationAndInterruptAgain(agent, threadId, feedbackMetadata);
 
-		InterruptionMetadata feedbackMetadata2 = buildApprovalFeedback(interruptionMetadata);
+		// Approve second tool
+		InterruptionMetadata feedbackMetadata2 = buildApprovalFeedback(interruptionMetadata2);
 
+		// Third invocation - should complete successfully
 		performThirdInvocation(agent, threadId, feedbackMetadata2);
 	}
 
@@ -196,7 +204,7 @@ public class HumanInTheLoopTest {
 	private ReactAgent createAgentWithMultipleTools() {
 		Map approvalOn = Map.of(
 				"poem", ToolConfig.builder().description("请确认诗歌工具执行").build(),
-				"weather", ToolConfig.builder().description("请确认天气工具执行").build()
+				"weather_tool", ToolConfig.builder().description("请确认天气工具执行").build()
 		);
 
 		return ReactAgent.builder()
@@ -216,7 +224,7 @@ public class HumanInTheLoopTest {
 
 	private InterruptionMetadata performFirstInvocationAndCheckMultipleToolsRequested(ReactAgent agent, RunnableConfig runnableConfig) throws Exception {
 		// First invocation - should trigger interruption for human approval
-		System.out.println("\n=== First Invocation: Expecting Interruption ===");
+		System.out.println("\n=== First Invocation: Expecting Interruption with Multiple Tools ===");
 		Optional<NodeOutput> result = agent.invokeAndGetOutput("帮我写一篇100字左右散文，同时在文章最后包含写作当天北京天气情况。", runnableConfig);
 
 		// Assert first invocation results in interruption
@@ -226,20 +234,33 @@ public class HumanInTheLoopTest {
 
 		InterruptionMetadata interruptionMetadata = (InterruptionMetadata) result.get();
 
-		// Assert tool feedbacks are present
+		// Assert interruption metadata contains expected information
+		Assertions.assertNotNull(interruptionMetadata.node(), "Interruption should have node id");
+		Assertions.assertNotNull(interruptionMetadata.state(), "Interruption should have state");
+
+		// Assert tool feedbacks are present and there are exactly 2 tools
 		List<InterruptionMetadata.ToolFeedback> toolFeedbacks = interruptionMetadata.toolFeedbacks();
 		Assertions.assertNotNull(toolFeedbacks, "Tool feedbacks should not be null");
 		Assertions.assertFalse(toolFeedbacks.isEmpty(), "Tool feedbacks should not be empty");
 		Assertions.assertEquals(2, toolFeedbacks.size(),
-				"Should have exactly one tool feedback for the 'poem' tool");
+				"Should have exactly two tool feedbacks for both 'poem' and 'weather' tools");
+
+		// Verify both tools are present
+		List<String> toolNames = toolFeedbacks.stream()
+				.map(InterruptionMetadata.ToolFeedback::getName)
+				.toList();
+		Assertions.assertTrue(toolNames.contains("poem"), "Should contain 'poem' tool");
+		Assertions.assertTrue(toolNames.contains("weather") || toolNames.contains("weather_tool"),
+				"Should contain 'weather' or 'weather_tool' tool");
+
 		return interruptionMetadata;
 	}
 
 
-	private InterruptionMetadata performFirstInvocation(ReactAgent agent, RunnableConfig runnableConfig) throws Exception {
+	private InterruptionMetadata performFirstInvocation(ReactAgent agent, RunnableConfig runnableConfig, String query) throws Exception {
 		// First invocation - should trigger interruption for human approval
 		System.out.println("\n=== First Invocation: Expecting Interruption ===");
-		Optional<NodeOutput> result = agent.invokeAndGetOutput("帮我写一篇100字左右散文", runnableConfig);
+		Optional<NodeOutput> result = agent.invokeAndGetOutput(query, runnableConfig);
 
 		// Assert first invocation results in interruption
 		Assertions.assertTrue(result.isPresent(), "First invocation should return a result");
@@ -366,56 +387,67 @@ public class HumanInTheLoopTest {
 		}
 	}
 
-	private void performSecondInvocationAndInterruptAgain(ReactAgent agent, String threadId, InterruptionMetadata feedbackMetadata) throws Exception {
+	private InterruptionMetadata performSecondInvocationAndInterruptAgain(ReactAgent agent, String threadId, InterruptionMetadata feedbackMetadata) throws Exception {
 		// Resume execution with human feedback
-		System.out.println("\n=== Second Invocation: Resuming with Feedback ===");
+		System.out.println("\n=== Second Invocation: Resuming with Feedback, Expecting Another Interruption ===");
 		RunnableConfig resumeRunnableConfig = RunnableConfig.builder().threadId(threadId)
 				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, feedbackMetadata)
 				.build();
 
 		try {
-			// Second invocation - should resume and complete
+			// Second invocation - should resume and interrupt again for the second tool
 			Optional<NodeOutput> result = agent.invokeAndGetOutput("", resumeRunnableConfig);
 
-			// Assert second invocation completes successfully
+			// Assert second invocation results in another interruption
 			Assertions.assertTrue(result.isPresent(), "Second invocation should return a result");
-			NodeOutput finalOutput = result.get();
-			Assertions.assertNotNull(finalOutput, "Final result should not be null");
+			Assertions.assertInstanceOf(InterruptionMetadata.class, result.get(),
+					"Second invocation should return InterruptionMetadata for the second tool approval");
 
-			// Assert the result is NOT another interruption (execution should complete)
-			Assertions.assertEquals(InterruptionMetadata.class, finalOutput.getClass(),
-					"Final result should not be an InterruptionMetadata - execution should complete");
+			InterruptionMetadata interruptionMetadata = (InterruptionMetadata) result.get();
+			Assertions.assertNotNull(interruptionMetadata, "Interruption metadata should not be null");
+			Assertions.assertNotNull(interruptionMetadata.node(), "Interruption should have node id");
+			Assertions.assertNotNull(interruptionMetadata.state(), "Interruption should have state");
 
-			System.out.println("Final result type: " + finalOutput.getClass().getSimpleName());
-			System.out.println("Final result node: " + finalOutput.node());
-			System.out.println("Final result state data keys: " + finalOutput.state().data().keySet());
+			// Assert tool feedbacks are present (should be for the second tool)
+			List<InterruptionMetadata.ToolFeedback> toolFeedbacks = interruptionMetadata.toolFeedbacks();
+			Assertions.assertNotNull(toolFeedbacks, "Tool feedbacks should not be null");
+			Assertions.assertFalse(toolFeedbacks.isEmpty(), "Tool feedbacks should not be empty");
+			Assertions.assertEquals(1, toolFeedbacks.size(),
+					"Should have exactly one tool feedback for the second tool");
 
-			// Assert final state contains expected data
-			Assertions.assertNotNull(finalOutput.state(), "Final output should have state");
-			Assertions.assertNotNull(finalOutput.state().data(), "Final output state should have data");
-			Assertions.assertFalse(finalOutput.state().data().isEmpty(),
-					"Final output state data should not be empty");
+			// Verify it's the second tool (weather)
+			InterruptionMetadata.ToolFeedback secondFeedback = toolFeedbacks.get(0);
+			String toolName = secondFeedback.getName();
+			Assertions.assertTrue(toolName.equals("weather") || toolName.equals("weather_tool"),
+					"Second tool should be 'weather' or 'weather_tool', but was: " + toolName);
+
+			System.out.println("Second interruption tool: " + toolName);
+			System.out.println("Second interruption node: " + interruptionMetadata.node());
+			System.out.println("Second interruption state data keys: " + interruptionMetadata.state().data().keySet());
+
+			return interruptionMetadata;
 
 		} catch (java.util.concurrent.CompletionException e) {
 			System.err.println("ReactAgent execution failed: " + e.getMessage());
 			e.printStackTrace();
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
+		return null;
 	}
 
 	private void performThirdInvocation(ReactAgent agent, String threadId, InterruptionMetadata feedbackMetadata) throws Exception {
 		// Resume execution with human feedback
-		System.out.println("\n=== Third Invocation: Resuming with Feedback ===");
+		System.out.println("\n=== Third Invocation: Resuming with Feedback, Expecting Completion ===");
 		RunnableConfig resumeRunnableConfig = RunnableConfig.builder().threadId(threadId)
 				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, feedbackMetadata)
 				.build();
 
 		try {
-			// Second invocation - should resume and complete
+			// Third invocation - should resume and complete
 			Optional<NodeOutput> result = agent.invokeAndGetOutput("", resumeRunnableConfig);
 
-			// Assert second invocation completes successfully
-			Assertions.assertTrue(result.isPresent(), "Second invocation should return a result");
+			// Assert third invocation completes successfully
+			Assertions.assertTrue(result.isPresent(), "Third invocation should return a result");
 			NodeOutput finalOutput = result.get();
 			Assertions.assertNotNull(finalOutput, "Final result should not be null");
 
@@ -440,5 +472,69 @@ public class HumanInTheLoopTest {
 		}
 	}
 
+	private InterruptionMetadata buildFeedbackWithOnlyOneApproval(InterruptionMetadata interruptionMetadata) {
+		// Build new metadata with APPROVED feedback for only the first tool
+		// Other tools are not included in feedback, which will cause validation to fail
+		// and system will continue to interrupt for the remaining tools
+		InterruptionMetadata.Builder newBuilder = InterruptionMetadata.builder()
+				.nodeId(interruptionMetadata.node())
+				.state(interruptionMetadata.state());
+
+		List<InterruptionMetadata.ToolFeedback> toolFeedbacks = interruptionMetadata.toolFeedbacks();
+		Assertions.assertNotNull(toolFeedbacks, "Tool feedbacks should not be null");
+		Assertions.assertTrue(toolFeedbacks.size() >= 1, "Should have at least one tool feedback");
+
+		// Approve only the first tool
+		InterruptionMetadata.ToolFeedback firstTool = toolFeedbacks.get(0);
+		InterruptionMetadata.ToolFeedback approvedFeedback = InterruptionMetadata.ToolFeedback
+				.builder(firstTool)
+				.result(InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED)
+				.build();
+		newBuilder.addToolFeedback(approvedFeedback);
+
+		// Note: We intentionally don't add feedback for remaining tools.
+		// This will cause validateFeedback to fail (toolFeedbacks.size() != toolCalls.size()),
+		// which will make the system continue to interrupt for the remaining tools.
+
+		return newBuilder.build();
+	}
+
+	private InterruptionMetadata performSecondInvocationAndCheckApprovalRequiredAgain(ReactAgent agent, String threadId, InterruptionMetadata feedbackMetadata) throws Exception {
+		// Resume execution with partial feedback (only one tool approved)
+		System.out.println("\n=== Second Invocation: Resuming with Partial Feedback, Expecting Another Interruption ===");
+		RunnableConfig resumeRunnableConfig = RunnableConfig.builder().threadId(threadId)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, feedbackMetadata)
+				.build();
+
+		try {
+			// Second invocation - should resume and interrupt again for the remaining tool
+			Optional<NodeOutput> result = agent.invokeAndGetOutput("", resumeRunnableConfig);
+
+			// Assert second invocation results in another interruption
+			Assertions.assertTrue(result.isPresent(), "Second invocation should return a result");
+			Assertions.assertInstanceOf(InterruptionMetadata.class, result.get(),
+					"Second invocation should return InterruptionMetadata for the remaining tool approval");
+
+			InterruptionMetadata interruptionMetadata = (InterruptionMetadata) result.get();
+			Assertions.assertNotNull(interruptionMetadata, "Interruption metadata should not be null");
+			Assertions.assertNotNull(interruptionMetadata.node(), "Interruption should have node id");
+			Assertions.assertNotNull(interruptionMetadata.state(), "Interruption should have state");
+
+			// Assert tool feedbacks are present (should be for the remaining tool)
+			List<InterruptionMetadata.ToolFeedback> toolFeedbacks = interruptionMetadata.toolFeedbacks();
+			Assertions.assertNotNull(toolFeedbacks, "Tool feedbacks should not be null");
+			Assertions.assertFalse(toolFeedbacks.isEmpty(), "Tool feedbacks should not be empty");
+			Assertions.assertEquals(2, toolFeedbacks.size(),
+					"Should have exactly one tool feedback for the remaining tool");
+
+			return interruptionMetadata;
+
+		} catch (java.util.concurrent.CompletionException e) {
+			System.err.println("ReactAgent execution failed: " + e.getMessage());
+			e.printStackTrace();
+			fail("ReactAgent execution failed: " + e.getMessage());
+		}
+		return null;
+	}
 
 }

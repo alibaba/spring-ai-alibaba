@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.store.Store;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -74,7 +74,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		this.checkPointId = builder.checkPointId;
 		this.nextNode = builder.nextNode;
 		this.streamMode = builder.streamMode;
-		this.metadata = ofNullable(builder.metadata()).map(Map::copyOf).orElse(null);
+		this.metadata = ofNullable(builder.metadata()).map(HashMap::new).orElse(null);
 		this.interruptedNodes = new ConcurrentHashMap<>();
 		this.store = builder.store;
 		this.context = builder.context;
@@ -206,7 +206,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	// FIXME, allow modification or not?
 	@Override
 	public Optional<Map<String, Object>> metadata() {
-		return Optional.of(Collections.unmodifiableMap(metadata));
+		return Optional.of(metadata);
 	}
 
 	public Map<String, Object> context() {
@@ -225,6 +225,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		}
 		return ofNullable(metadata).map(m -> m.get(key));
 	}
+
 
 	@Override
 	public String toString() {
