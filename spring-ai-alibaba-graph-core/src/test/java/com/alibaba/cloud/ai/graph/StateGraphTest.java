@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
@@ -42,6 +43,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.NamedExecutable;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -701,7 +703,7 @@ public class StateGraphTest {
 			keyStrategyMap.put("prop1", (o, o2) -> o2);
 			return keyStrategyMap;
 		};
-		PlainTextStateSerializer plainTextStateSerializer = new StateGraph.JacksonSerializer();
+		PlainTextStateSerializer plainTextStateSerializer = new SpringAIJacksonStateSerializer(OverAllState::new, new ObjectMapper());
 		StateGraph workflow = new StateGraph(keyStrategyFactory, plainTextStateSerializer).addEdge(START, "agent_1")
 				.addNode("agent_1", node_async(state -> {
 					log.info("agent_1\n{}", state);

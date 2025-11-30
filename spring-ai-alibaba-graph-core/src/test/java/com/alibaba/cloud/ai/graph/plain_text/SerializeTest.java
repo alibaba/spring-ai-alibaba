@@ -234,7 +234,7 @@ public class SerializeTest {
 	static class JacksonSerializer extends JacksonStateSerializer {
 
 		public JacksonSerializer() {
-			super(OverAllState::new);
+			super(OverAllState::new, new ObjectMapper());
 		}
 
 		ObjectMapper getObjectMapper() {

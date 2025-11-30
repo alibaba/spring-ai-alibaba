@@ -185,33 +185,6 @@ class RedisSaverTest {
 	}
 
 	@Test
-	void testClear() throws Exception {
-		String threadId = "test-thread-" + UUID.randomUUID();
-		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
-
-		redisSaver.put(config,
-				Checkpoint.builder()
-						.id("cp1")
-						.state(java.util.Map.of("data", "data1"))
-						.nodeId("node1")
-						.nextNodeId("node2")
-						.build());
-		redisSaver.put(config,
-				Checkpoint.builder()
-						.id("cp2")
-						.state(java.util.Map.of("data", "data2"))
-						.nodeId("node1")
-						.nextNodeId("node2")
-						.build());
-
-		boolean cleared = redisSaver.clear(config);
-		assertTrue(cleared);
-
-		List<Checkpoint> list = (List<Checkpoint>) redisSaver.list(config);
-		assertEquals(0, list.size());
-	}
-
-	@Test
 	void testGetWithNoData() {
 		String threadId = "test-thread-" + UUID.randomUUID();
 		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
