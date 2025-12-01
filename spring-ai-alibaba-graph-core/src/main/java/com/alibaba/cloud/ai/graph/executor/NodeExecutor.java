@@ -374,7 +374,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 		AtomicReference<GraphResponse<NodeOutput>> lastData = new AtomicReference<>();
 
 		Flux<GraphResponse<NodeOutput>> processedFlux = embedFlux.map(data -> {
-			if (data.getOutput() != null) {
+			if (data.getOutput() != null && !data.getOutput().isCompletedExceptionally()) {
 				var output = data.getOutput().join();
 				output.setSubGraph(true);
 				GraphResponse<NodeOutput> newData = GraphResponse.of(output);
@@ -383,12 +383,23 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 			lastData.set(data);
 			return data;
-		});
+		})
+        // filter out InterruptionMetadata emitted directly by upstream to avoid duplicate sending
+        // retain regular procedural events
+        .filter(data -> {
+            var value = data.resultValue();
+            return value.isEmpty() || !(value.get() instanceof InterruptionMetadata);
+        });
 
 		Mono<Void> updateContextMono = Mono.fromRunnable(() -> {
 			var data = lastData.get();
-			if (data == null)
+			if (data == null) {
+				log.error("No data returned from last streaming node execution '{}', will goto END node directly.", context.getCurrentNodeId());
+				context.setNextNodeId(END);
+				context.doListeners(NODE_AFTER, null);
 				return;
+			}
+
 			var nodeResultValue = data.resultValue();
 
 			if (nodeResultValue.isPresent() && nodeResultValue.get() instanceof InterruptionMetadata) {
@@ -428,9 +439,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 		});
 
-			return processedFlux
-				.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
-		}
+		return processedFlux
+			.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+	}
 
 	/**
 	 * Gets GraphFlux from partial state.
