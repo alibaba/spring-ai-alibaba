@@ -291,18 +291,19 @@ public class NodeExecutor extends BaseGraphExecutor {
 									lastGraphResponseRef.set(graphResponse);
 									return graphResponse;
 								}
-									else {
-										// Unsupported element type – instruct users to emit supported types only
-										// (ChatResponse, GraphResponse or NodeOutput). This is safer than trying
-										// to guess how to wrap arbitrary objects into StreamingOutput here.
-										String errorMsg = String.format(
-												"Unsupported flux element type %s, customized flux stream should emit ChatResponse, GraphResponse<NodeOutput> or NodeOutput.",
-												element != null ? element.getClass().getName() : "null");
-										GraphResponse<NodeOutput> errorResponse = GraphResponse
-												.error(new IllegalArgumentException(errorMsg));
-										lastGraphResponseRef.set(errorResponse);
-										return errorResponse;
+								else {
+									try {
+										log.info("Received element of type '{}' in embedded Flux for key '{}', wrapping in StreamingOutput.",
+												element.getClass().getName(), e.getKey());
+										StreamingOutput<?> streamingOutput = context.buildStreamingOutput(element, context.getCurrentNodeId());
+										GraphResponse<NodeOutput> graphResponse = GraphResponse.of(streamingOutput);
+										lastGraphResponseRef.set(graphResponse);
+										return graphResponse;
 									}
+									catch (Exception ex) {
+										throw new RuntimeException(ex);
+									}
+								}
 							})
 							// 4) Convert error signals from the Flux into GraphResponse.error.
 							.onErrorResume(error -> {
