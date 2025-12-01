@@ -295,7 +295,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 						continue;
 					}
 					Message output = generation.getOutput();
-					if (output instanceof AssistantMessage assistantMessage) {
+					if (output instanceof AssistantMessage) {
+						AssistantMessage assistantMessage = (AssistantMessage) output;
 						if (assistantMessage.hasToolCalls()) {
 							// Prefer the first message that contains tool calls
 							return assistantMessage;
@@ -318,8 +319,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 
 		// Fallback: use the first result if available and of the correct type
-		if (response.getResult() != null && response.getResult().getOutput() instanceof AssistantMessage assistant) {
-			return assistant;
+		if (response.getResult() != null) {
+			Message output = response.getResult().getOutput();
+			if (output instanceof AssistantMessage) {
+				return (AssistantMessage) output;
+			}
 		}
 
 		return defaultMessage;
@@ -362,19 +366,21 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
-			if (message instanceof UserMessage userMessage) {
+			if (message instanceof UserMessage) {
+				UserMessage userMessage = (UserMessage) message;
 				// Check if outputSchema is already present to avoid duplication
 				if (!userMessage.getText().contains(outputSchema)) {
 					messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema).build());
 				}
 				break;
 			}
-			if (message instanceof AgentInstructionMessage templatedUserMessage) {
-                String newOutputSchema = outputSchema.replace("{", "\\{").replace("}", "\\}");
-                // Check if outputSchema is already present to avoid duplication
-                if (!templatedUserMessage.getText().contains(newOutputSchema)) {
-                	messages.set(i, templatedUserMessage.mutate().text(templatedUserMessage.getText() + System.lineSeparator() + newOutputSchema).build());
-                }
+			if (message instanceof AgentInstructionMessage) {
+				AgentInstructionMessage templatedUserMessage = (AgentInstructionMessage) message;
+				String newOutputSchema = outputSchema.replace("{", "\\{").replace("}", "\\}");
+				// Check if outputSchema is already present to avoid duplication
+				if (!templatedUserMessage.getText().contains(newOutputSchema)) {
+					messages.set(i, templatedUserMessage.mutate().text(templatedUserMessage.getText() + System.lineSeparator() + newOutputSchema).build());
+				}
 				break;
 			}
 
@@ -387,8 +393,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params) {
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
-			if (message instanceof AgentInstructionMessage instructionMessage) {
-				AgentInstructionMessage newMessage = instructionMessage.mutate().text(renderPromptTemplate(instructionMessage.getText(), params)).build();
+			if (message instanceof AgentInstructionMessage) {
+				AgentInstructionMessage instructionMessage = (AgentInstructionMessage) message;
+				AgentInstructionMessage newMessage = instructionMessage.mutate()
+						.text(renderPromptTemplate(instructionMessage.getText(), params))
+						.build();
 				messages.set(i, newMessage);
 				break;
 			}
