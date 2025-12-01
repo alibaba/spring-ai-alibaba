@@ -428,9 +428,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 		});
 
-		return processedFlux
-			.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
-	}
+			return processedFlux
+				.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+		}
 
 	/**
 	 * Gets GraphFlux from partial state.

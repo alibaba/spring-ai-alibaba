@@ -15,7 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.util;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 
@@ -107,5 +109,38 @@ public final class AssistantMessageUtils {
 		return null;
 	}
 
-}
+	/**
+	 * Merge tool calls from a previously aggregated AssistantMessage and the current
+	 * streaming chunk. Tool calls are de-duplicated by id while preserving insertion
+	 * order. Existing entries are not overwritten by newer chunks with the same id.
+	 * @param lastToolCalls tool calls from the last aggregated message (may be null or
+	 * empty)
+	 * @param currentToolCalls tool calls from the current chunk (may be null or empty)
+	 * @return merged, de-duplicated list of tool calls (never null)
+	 */
+	public static List<AssistantMessage.ToolCall> mergeToolCalls(List<AssistantMessage.ToolCall> lastToolCalls,
+			List<AssistantMessage.ToolCall> currentToolCalls) {
+		boolean lastEmpty = lastToolCalls == null || lastToolCalls.isEmpty();
+		boolean currentEmpty = currentToolCalls == null || currentToolCalls.isEmpty();
 
+		if (lastEmpty && currentEmpty) {
+			return List.of();
+		}
+		if (lastEmpty) {
+			return currentToolCalls;
+		}
+		if (currentEmpty) {
+			return lastToolCalls;
+		}
+
+		Map<String, AssistantMessage.ToolCall> toolCallMap = new LinkedHashMap<>();
+		for (AssistantMessage.ToolCall call : lastToolCalls) {
+			toolCallMap.put(call.id(), call);
+		}
+		for (AssistantMessage.ToolCall call : currentToolCalls) {
+			toolCallMap.putIfAbsent(call.id(), call);
+		}
+		return List.copyOf(toolCallMap.values());
+	}
+
+}

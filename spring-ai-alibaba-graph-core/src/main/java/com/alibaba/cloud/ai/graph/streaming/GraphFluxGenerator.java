@@ -15,35 +15,38 @@
  */
 package com.alibaba.cloud.ai.graph.streaming;
 
-	import org.springframework.ai.chat.messages.AssistantMessage;
-	import org.springframework.ai.chat.model.ChatResponse;
-	import org.springframework.ai.chat.model.Generation;
-	import reactor.core.publisher.Flux;
+import com.alibaba.cloud.ai.graph.util.AssistantMessageUtils;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import reactor.core.publisher.Flux;
 
-	import java.util.List;
-	import java.util.Objects;
-	import java.util.concurrent.atomic.AtomicReference;
-	import java.util.function.Function;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
-	import com.alibaba.cloud.ai.graph.util.AssistantMessageUtils;
-
-import static java.util.Objects.requireNonNull;
-
+/**
+ * Factory for building {@link GraphFlux} instances from streaming {@link ChatResponse}
+ * objects. Handles aggregation of streaming chunks, including:
+ * <ul>
+ *     <li>Merging assistant text across chunks</li>
+ *     <li>Preserving and merging tool calls across chunks</li>
+ *     <li>Normalizing aggregated responses so {@link ChatResponse#getResult()} always
+ *     reflects the merged {@link AssistantMessage}</li>
+ * </ul>
+ */
 public interface GraphFluxGenerator {
 
 	/**
-	 * Builder class for creating instances of {@link Flux} that process chat responses.
-	 * This builder allows setting mapping logic, starting node, and initial state before
-	 * building.
+	 * Builder class for creating instances of {@link GraphFlux} that process chat
+	 * responses.
 	 */
 	class Builder {
-
 
 		private String startingNode;
 
 		private String outKey;
-
-
 
 		/**
 		 * Sets the starting node for the streaming process.
@@ -55,78 +58,88 @@ public interface GraphFluxGenerator {
 			return this;
 		}
 
-
+		/**
+		 * Sets the storage key under which the final aggregated result will be stored.
+		 * @param outKey the storage key
+		 * @return the builder instance for method chaining
+		 */
 		public Builder outKey(String outKey) {
 			this.outKey = outKey;
 			return this;
 		}
 
-
+		/**
+		 * Build a {@link GraphFlux} from a streaming {@link Flux} of {@link ChatResponse}
+		 * objects.
+		 * @param flux the streaming flux
+		 * @return GraphFlux wrapping the streaming responses
+		 */
 		public GraphFlux<ChatResponse> build(Flux<ChatResponse> flux) {
 			return buildInternal(flux);
 		}
 
+		private GraphFlux<ChatResponse> buildInternal(Flux<ChatResponse> flux) {
+			Objects.requireNonNull(flux, "flux cannot be null");
 
-			private GraphFlux<ChatResponse> buildInternal(Flux<ChatResponse> flux) {
-				Objects.requireNonNull(flux, "flux cannot be null");
+			// Holds the aggregated ChatResponse across streaming chunks
+			AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>(null);
 
-				var result = new AtomicReference<ChatResponse>(null);
+			Function<ChatResponse, ChatResponse> mergeMessage = response -> aggregatedRef.updateAndGet(lastResponse -> {
 
-				Function<ChatResponse, ChatResponse> mergeMessage = (response) -> result.updateAndGet(lastResponse -> {
+				AssistantMessage currentMessage = AssistantMessageUtils.extractAssistantMessage(response);
+				if (currentMessage == null) {
+					// Usage-only chunk or no AssistantMessage – keep previous aggregated response
+					return lastResponse;
+				}
 
-					AssistantMessage currentMessage = AssistantMessageUtils.extractAssistantMessage(response);
-					if (currentMessage == null) {
-						// Usage-only chunk or no AssistantMessage – keep previous aggregated response
-						return lastResponse;
-					}
-
-					if (lastResponse == null) {
-						// Normalize so that getResult().getOutput() reflects the selected message
-						var generation = new Generation(currentMessage,
-								response.getResult() != null ? response.getResult().getMetadata() : null);
-						return new ChatResponse(List.of(generation), response.getMetadata());
-					}
-
+				AssistantMessage mergedMessage;
+				if (lastResponse == null) {
+					// First valid AssistantMessage – start aggregation from here.
+					mergedMessage = currentMessage;
+				}
+				else {
 					AssistantMessage lastMessage = AssistantMessageUtils.extractAssistantMessage(lastResponse);
 
-					if (currentMessage.hasToolCalls()) {
-						// New tool-call message overrides previous aggregated content
-						var generation = new Generation(currentMessage,
-								response.getResult() != null ? response.getResult().getMetadata() : null);
-						return new ChatResponse(List.of(generation), response.getMetadata());
-					}
+					// Append current text to previous text, tolerating null text.
+					String lastText = lastMessage != null ? lastMessage.getText() : null;
+					String currentText = currentMessage.getText();
+					String mergedText = (lastText != null ? lastText : "")
+							+ (currentText != null ? currentText : "");
 
-					final var lastMessageText = requireNonNull(
-							lastMessage != null ? lastMessage.getText() : null,
-							"lastResponse text cannot be null");
+					List<AssistantMessage.ToolCall> mergedToolCalls = AssistantMessageUtils.mergeToolCalls(
+							lastMessage != null ? lastMessage.getToolCalls() : List.of(),
+							currentMessage.getToolCalls());
 
-					final var currentMessageText = currentMessage.getText();
-
-					var newMessage = AssistantMessage.builder()
-							.content(currentMessageText != null
-									? lastMessageText.concat(currentMessageText)
-									: lastMessageText)
+					mergedMessage = AssistantMessage.builder()
+							.content(mergedText.isEmpty() ? null : mergedText)
 							.properties(currentMessage.getMetadata())
-							.toolCalls(currentMessage.getToolCalls())
+							.toolCalls(mergedToolCalls)
 							.media(currentMessage.getMedia())
 							.build();
+				}
 
-					var newGeneration = new Generation(newMessage,
-							response.getResult() != null ? response.getResult().getMetadata() : null);
-					return new ChatResponse(List.of(newGeneration), response.getMetadata());
+				// Normalize so that getResult().getOutput() reflects the aggregated message
+				Generation generation = new Generation(mergedMessage,
+						response.getResult() != null ? response.getResult().getMetadata() : null);
+				return new ChatResponse(List.of(generation), response.getMetadata());
+			});
 
-				});
-
-				return GraphFlux.of(startingNode, outKey, flux, mergeMessage, response -> {
-					AssistantMessage message = AssistantMessageUtils.extractAssistantMessage(response);
-					return message != null ? message.getText() : null;
-				});
-			}
-
+			return GraphFlux.of(
+					startingNode,
+					outKey,
+					flux,
+					mergeMessage,
+					// Chunk result: per-chunk text view (for streaming output)
+					response -> {
+						AssistantMessage message = AssistantMessageUtils.extractAssistantMessage(response);
+						return message != null ? message.getText() : null;
+					});
 		}
+	}
 
 	static Builder builder() {
 		return new Builder();
 	}
 
 }
+
