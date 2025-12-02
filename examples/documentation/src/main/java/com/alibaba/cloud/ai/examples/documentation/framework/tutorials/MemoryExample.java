@@ -27,9 +27,8 @@ import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.redis.RedisSaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
-import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -107,7 +106,7 @@ public class MemoryExample {
 		ToolCallback getUserInfoTool = createGetUserInfoTool();
 
 		// 配置 Redis checkpointer
-		RedisSaver redisSaver = new RedisSaver(redissonClient);
+		RedisSaver redisSaver = RedisSaver.builder().redisson(redissonClient).build();
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("my_agent")

@@ -332,15 +332,11 @@ public class WorkflowExample {
 		// 将 Agent 作为 SubGraph Node 添加
 		workflow.addNode("analysis", analysisAgent.asNode(
 				true,                     // includeContents: 是否传递父图的消息历史
-				false,                    // returnReasoningContents: 是否返回推理过程
-				"analysis_result"         // outputKeyToParent: 输出键名
-		));
+				false));
 
 		workflow.addNode("reporting", reportAgent.asNode(
 				true,
-				false,
-				"final_report"
-		));
+				false));
 
 		// 定义流程
 		workflow.addEdge(StateGraph.START, "analysis");
@@ -401,9 +397,7 @@ public class WorkflowExample {
 		// 添加 Agent Node
 		workflow.addNode("qa", qaAgent.asNode(
 				true,
-				false,
-				"qa_result"
-		));
+				false));
 
 		// 定义流程：预处理 -> Agent处理 -> 验证
 		workflow.addEdge(StateGraph.START, "preprocess");
@@ -532,20 +526,16 @@ public class WorkflowExample {
 		// 添加 Agent 节点
 		workflow.addNode("research", researchAgent.asNode(
 				true,    // 包含历史消息
-				false,   // 不返回推理过程
-				"research_data"
+				false   // 不返回推理过程
 		));
 
 		workflow.addNode("analysis", analysisAgent.asNode(
 				true,
-				false,
-				"analysis_result"
-		));
+				false));
 
 		workflow.addNode("summary", summaryAgent.asNode(
 				true,
-				true,    // 返回完整推理过程
-				"final_summary"
+				true    // 返回完整推理过程
 		));
 
 		// 定义顺序执行流程

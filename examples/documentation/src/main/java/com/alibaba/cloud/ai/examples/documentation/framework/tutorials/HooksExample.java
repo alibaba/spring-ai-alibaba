@@ -83,7 +83,7 @@ public class HooksExample {
 
 		// 创建 Hooks 和 Interceptors
 		ModelHook loggingHook = new LoggingModelHook();
-		ModelHook messageTrimmingHook = new MessageTrimmingHook();
+		MessagesModelHook messageTrimmingHook = new MessageTrimmingHook();
 		ModelInterceptor guardrailInterceptor = new GuardrailInterceptor();
 		ToolInterceptor retryInterceptor = new RetryToolInterceptor();
 
