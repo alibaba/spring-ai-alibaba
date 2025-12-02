@@ -120,13 +120,20 @@ public class MemorySaver implements BaseCheckpointSaver {
 
 			if (config.checkPointId().isPresent()) { // Replace Checkpoint
 				String checkPointId = config.checkPointId().get();
-				int index = IntStream.range(0, checkpoints.size())
-						.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
-						.findFirst()
-						.orElseThrow(() -> (new NoSuchElementException(format("Checkpoint with id %s not found!", checkPointId))));
-				checkpoints.set(index, checkpoint);
-				updatedCheckpoint(config, checkpoints, checkpoint);
-				return config;
+				if (checkpoint.getId().equals(checkPointId)) {
+					int index = IntStream.range(0, checkpoints.size())
+							.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
+							.findFirst()
+							.orElseThrow(() -> (new NoSuchElementException(format("Checkpoint with id %s not found!", checkPointId))));
+					checkpoints.set(index, checkpoint);
+					updatedCheckpoint(config, checkpoints, checkpoint);
+					return config;
+				}
+				checkpoints.push(checkpoint);
+				insertedCheckpoint(config, checkpoints, checkpoint);
+				return RunnableConfig.builder(config)
+						.checkPointId(checkpoint.getId())
+						.build();
 			}
 
 			checkpoints.push(checkpoint); // Add Checkpoint

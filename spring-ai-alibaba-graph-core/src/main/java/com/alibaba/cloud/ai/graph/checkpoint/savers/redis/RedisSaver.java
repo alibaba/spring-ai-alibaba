@@ -293,12 +293,17 @@ public class RedisSaver implements BaseCheckpointSaver {
 			if (config.checkPointId().isPresent()) {
 				// Replace Checkpoint
 				String checkPointId = config.checkPointId().get();
-				int index = IntStream.range(0, checkpoints.size())
-						.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
-						.findFirst()
-						.orElseThrow(() -> new NoSuchElementException(
-								format("Checkpoint with id %s not found!", checkPointId)));
-				checkpoints.set(index, checkpoint);
+				if (checkpoint.getId().equals(checkPointId)) {
+					int index = IntStream.range(0, checkpoints.size())
+							.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
+							.findFirst()
+							.orElseThrow(() -> new NoSuchElementException(
+									format("Checkpoint with id %s not found!", checkPointId)));
+					checkpoints.set(index, checkpoint);
+				}
+				else {
+					checkpoints.push(checkpoint);
+				}
 			}
 			else {
 				// Add Checkpoint

@@ -392,17 +392,27 @@ public class MongoSaver implements BaseCheckpointSaver {
 				LinkedList<Checkpoint> finalCheckpointLinkedList = checkpointLinkedList;
 				if (config.checkPointId().isPresent()) { // Replace Checkpoint
 					String checkPointId = config.checkPointId().get();
-					int index = IntStream.range(0, checkpointLinkedList.size())
-							.filter(i -> finalCheckpointLinkedList.get(i).getId().equals(checkPointId))
-							.findFirst()
-							.orElseThrow(() -> (new NoSuchElementException(
-									format("Checkpoint with id %s not found!", checkPointId))));
-					finalCheckpointLinkedList.set(index, checkpoint);
-					Document tempDocument = new Document().append("_id", checkpointDocId)
-							.append(DOCUMENT_CONTENT_KEY, serializeCheckpoints(finalCheckpointLinkedList));
-					collection.replaceOne(clientSession, Filters.eq("_id", checkpointDocId), tempDocument);
-					clientSession.commitTransaction();
-					return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
+					if (checkpoint.getId().equals(checkPointId)) {
+						int index = IntStream.range(0, checkpointLinkedList.size())
+								.filter(i -> finalCheckpointLinkedList.get(i).getId().equals(checkPointId))
+								.findFirst()
+								.orElseThrow(() -> (new NoSuchElementException(
+										format("Checkpoint with id %s not found!", checkPointId))));
+						finalCheckpointLinkedList.set(index, checkpoint);
+						Document tempDocument = new Document().append("_id", checkpointDocId)
+								.append(DOCUMENT_CONTENT_KEY, serializeCheckpoints(finalCheckpointLinkedList));
+						collection.replaceOne(clientSession, Filters.eq("_id", checkpointDocId), tempDocument);
+						clientSession.commitTransaction();
+						return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
+					}
+					else {
+						finalCheckpointLinkedList.push(checkpoint);
+						Document tempDocument = new Document().append("_id", checkpointDocId)
+								.append(DOCUMENT_CONTENT_KEY, serializeCheckpoints(finalCheckpointLinkedList));
+						collection.replaceOne(clientSession, Filters.eq("_id", checkpointDocId), tempDocument);
+						clientSession.commitTransaction();
+						return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
+					}
 				}
 			}
 

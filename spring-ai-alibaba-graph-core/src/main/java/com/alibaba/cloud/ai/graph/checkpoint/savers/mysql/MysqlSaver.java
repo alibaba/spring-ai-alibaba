@@ -401,14 +401,34 @@ public class MysqlSaver extends MemorySaver {
 			conn.setAutoCommit(false); // Start transaction
 
 			if (config.checkPointId().isPresent()) {
-				// Update existing checkpoint
-				try (PreparedStatement preparedStatement = conn.prepareStatement(UPDATE_CHECKPOINT)) {
-					preparedStatement.setString(1, checkpoint.getId());
-					preparedStatement.setString(2, checkpoint.getNodeId());
-					preparedStatement.setString(3, checkpoint.getNextNodeId());
-					preparedStatement.setString(4, encodeState(checkpoint.getState()));
-					preparedStatement.setString(5, config.checkPointId().get());
-					preparedStatement.execute();
+				String checkPointId = config.checkPointId().get();
+				if (checkpoint.getId().equals(checkPointId)) {
+					// Update existing checkpoint
+					try (PreparedStatement preparedStatement = conn.prepareStatement(UPDATE_CHECKPOINT)) {
+						preparedStatement.setString(1, checkpoint.getId());
+						preparedStatement.setString(2, checkpoint.getNodeId());
+						preparedStatement.setString(3, checkpoint.getNextNodeId());
+						preparedStatement.setString(4, encodeState(checkpoint.getState()));
+						preparedStatement.setString(5, config.checkPointId().get());
+						preparedStatement.execute();
+					}
+				}
+				else {
+					try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);
+						 PreparedStatement insertCheckpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
+
+						upsertStatement.setString(1, UUID.randomUUID().toString());
+						upsertStatement.setString(2, threadName);
+						upsertStatement.execute();
+
+						insertCheckpointStatement.setString(1, checkpoint.getId());
+						insertCheckpointStatement.setString(2, checkpoint.getNodeId());
+						insertCheckpointStatement.setString(3, checkpoint.getNextNodeId());
+						insertCheckpointStatement.setString(4, encodeState(checkpoint.getState()));
+						insertCheckpointStatement.setString(5, threadName);
+
+						insertCheckpointStatement.execute();
+					}
 				}
 			}
 			else {
