@@ -196,7 +196,7 @@ public class OracleSaverTest {
         var history = workflow.getStateHistory(runnableConfig);
 
         assertFalse(history.isEmpty());
-        assertEquals(2, history.size());
+        assertEquals(3, history.size());
 
         var lastSnapshot = workflow.lastStateOf(runnableConfig);
 
@@ -230,7 +230,8 @@ public class OracleSaverTest {
         history = workflow.getStateHistory(runnableConfig);
 
         assertFalse(history.isEmpty());
-        assertEquals(2, history.size());
+        // 重新加载后仍然应保留 3 条历史快照
+        assertEquals(3, history.size());
 
         lastSnapshot = workflow.stateOf(updatedConfig);
 
