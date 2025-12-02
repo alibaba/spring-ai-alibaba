@@ -338,7 +338,8 @@ public class PostgresSaver extends MemorySaver {
 		try (Connection ignored = conn = getConnection()) {
 			conn.setAutoCommit(false); // Start transaction
 
-			if (config.checkPointId().isPresent()) {
+			if (config.checkPointId().isPresent()
+					&& checkpoint.getId().equals(config.checkPointId().get())) {
 
 				try (PreparedStatement ps = conn.prepareStatement(deletePreviousCheckpointSql)) {
 					var field = 0;
