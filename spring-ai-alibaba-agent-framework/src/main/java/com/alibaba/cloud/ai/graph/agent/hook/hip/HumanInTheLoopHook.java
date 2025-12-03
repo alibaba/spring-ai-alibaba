@@ -188,19 +188,22 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		boolean needsInterruption = false;
 		InterruptionMetadata.Builder builder = InterruptionMetadata.builder(getName(), state);
 		for (AssistantMessage.ToolCall toolCall : lastMessage.getToolCalls()) {
-			if (approvalOn.containsKey(toolCall.name())) {
-				ToolConfig toolConfig = approvalOn.get(toolCall.name());
-				String description = toolConfig.getDescription();
-				String content = "The AI is requesting to use the tool: " + toolCall.name() + ".\n"
-						+ (description != null ? ("Description: " + description + "\n") : "")
-						+ "With the following arguments: " + toolCall.arguments() + "\n"
-						+ "Do you approve?";
-				// TODO, create a designated tool metadata field in InterruptionMetadata?
-				builder.addToolFeedback(ToolFeedback.builder().id(toolCall.id())
-								.name(toolCall.name()).description(content).arguments(toolCall.arguments()).build())
-						.build();
-				needsInterruption = true;
-			}
+		if (approvalOn.containsKey(toolCall.name())) {
+			ToolConfig toolConfig = approvalOn.get(toolCall.name());
+			String description = toolConfig.getDescription();
+			// Handle null arguments for parameterless tools (Spring AI framework doesn't guarantee @NotNull)
+			@SuppressWarnings("ConstantConditions")
+			String arguments = toolCall.arguments() != null ? toolCall.arguments() : "{}";
+			String content = "The AI is requesting to use the tool: " + toolCall.name() + ".\n"
+					+ (description != null ? ("Description: " + description + "\n") : "")
+					+ "With the following arguments: " + arguments + "\n"
+					+ "Do you approve?";
+			// TODO, create a designated tool metadata field in InterruptionMetadata?
+			builder.addToolFeedback(ToolFeedback.builder().id(toolCall.id())
+							.name(toolCall.name()).description(content).arguments(arguments).build())
+					.build();
+			needsInterruption = true;
+		}
 		}
 		return needsInterruption ? Optional.of(builder.build()) : Optional.empty();
 	}

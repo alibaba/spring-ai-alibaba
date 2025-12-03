@@ -67,7 +67,10 @@ public interface AssistantMessageHandler {
 			gen.writeStringField("id", toolCall.id());
 			gen.writeStringField("name", toolCall.name());
 			gen.writeStringField("type", toolCall.type());
-			gen.writeStringField("arguments", toolCall.arguments());
+			// Handle null arguments for parameterless tools (Spring AI framework doesn't guarantee @NotNull)
+			@SuppressWarnings("ConstantConditions")
+			String arguments = toolCall.arguments() != null ? toolCall.arguments() : "{}";
+			gen.writeStringField("arguments", arguments);
 			gen.writeEndObject();
 		}
 		gen.writeEndArray();

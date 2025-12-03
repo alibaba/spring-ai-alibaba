@@ -68,11 +68,17 @@ public interface TokenCounter {
 					if (msg.getText() != null) {
 						total += msg.getText().length() / charsPerToken;
 					}
-					// Count tokens in tool calls
-					for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-						// Count tokens in tool arguments (JSON string)
-						total += toolCall.arguments().length() / charsPerToken;
+				// Count tokens in tool calls
+				for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+					// Count tokens in tool arguments (JSON string)
+					// Note: Despite @NotNull annotation in Spring AI, some LLM providers (e.g., DashScope)
+					// return null for arguments field in parameterless tools. See: #3312
+					@SuppressWarnings("ConstantConditions")
+					String arguments = toolCall.arguments();
+					if (arguments != null) {
+						total += arguments.length() / charsPerToken;
 					}
+				}
 				}
 				// Handle other message types
 				else if (msg.getText() != null) {
