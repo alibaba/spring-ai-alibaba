@@ -224,7 +224,9 @@ public class ReactAgent extends BaseAgent {
 		StateGraph graph = new StateGraph(name, buildMessagesKeyStrategyFactory(hooks), stateSerializer);
 
 		graph.addNode("model", node_async(this.llmNode));
-		graph.addNode("tool", node_async(this.toolNode));
+		if (hasTools) {
+			graph.addNode("tool", node_async(this.toolNode));
+		}
 
 		// some hooks may need tools so they can do some initialization/cleanup on start/end of agent loop
 		setupToolsForHooks(hooks, toolNode);
@@ -776,7 +778,7 @@ public class ReactAgent extends BaseAgent {
 				// by default, includeContents is true, we pass down the messages from the parent state
 				if (StringUtils.hasLength(instruction)) {
 					// instruction will be added as a special UserMessage to the child graph.
-					parentState.updateState(Map.of("messages", new AgentInstructionMessage(instruction)));
+					parentState.updateState(Map.of("messages", AgentInstructionMessage.builder().text(instruction).build()));
 				}
 				subGraphResult = childGraph.graphResponseStream(parentState, subGraphRunnableConfig);
 			} else {
@@ -784,7 +786,7 @@ public class ReactAgent extends BaseAgent {
 				parentMessages = stateForChild.remove("messages");
 				if (StringUtils.hasLength(instruction)) {
 					// instruction will be added as a special UserMessage to the child graph.
-					stateForChild.put("messages", new AgentInstructionMessage(instruction));
+					stateForChild.put("messages", AgentInstructionMessage.builder().text(instruction).build());
 				}
 				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			}

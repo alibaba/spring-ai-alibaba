@@ -104,7 +104,7 @@ public class AgentTool implements BiFunction<String, ToolContext, AssistantMessa
 			// so multiple updateState calls would overwrite instead of append
 			List<Message> messagesToAdd = new ArrayList<>();
 			if (StringUtils.hasLength(agent.instruction())) {
-				messagesToAdd.add(new AgentInstructionMessage(agent.instruction()));
+				messagesToAdd.add(AgentInstructionMessage.builder().text(agent.instruction()).build());
 			}
 			messagesToAdd.add(new UserMessage(actualInput));
 

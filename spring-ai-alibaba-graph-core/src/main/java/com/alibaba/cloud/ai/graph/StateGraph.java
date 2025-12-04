@@ -270,7 +270,7 @@ public class StateGraph {
 			throw Errors.invalidNodeIdentifier.exception(END);
 		}
 		if (!Objects.equals(node.id(), id)) {
-			throw Errors.invalidNodeIdentifier.exception(node.id(), id);
+			throw Errors.nodeIdNotMatchError.exception(node.id(), id);
 		}
 
 		if (nodes.elements.contains(node)) {

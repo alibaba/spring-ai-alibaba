@@ -46,6 +46,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -437,35 +438,14 @@ public class AgentsExample {
 				.dashScopeApi(dashScopeApi)
 				.build();
 
-		String customSchema = """
-				{
-					"$schema": "https://json-schema.org/draft/2020-12/schema",
-					"type": "object",
-					"properties": {
-						"summary": {
-							"type": "string"
-						},
-						"keywords": {
-							"type": "array",
-							"items": {
-								"type": "string"
-							}
-						},
-						"sentiment": {
-							"type": "string"
-						},
-						"confidence": {
-							"type": "number"
-						}
-					},
-					"additionalProperties": false
-				}
-				""";
+		// Use BeanOutputConverter to generate outputSchema
+		BeanOutputConverter<TextAnalysisResult> outputConverter = new BeanOutputConverter<>(TextAnalysisResult.class);
+		String format = outputConverter.getFormat();
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("analysis_agent")
 				.model(chatModel)
-				.outputSchema(customSchema)
+				.outputSchema(format)
 				.saver(new MemorySaver())
 				.build();
 
@@ -694,6 +674,49 @@ public class AgentsExample {
 
 		public void setStyle(String style) {
 			this.style = style;
+		}
+	}
+
+	/**
+	 * 示例12：文本分析结果输出类
+	 */
+	public static class TextAnalysisResult {
+		private String summary;
+		private List<String> keywords;
+		private String sentiment;
+		private Double confidence;
+
+		// Getters and Setters
+		public String getSummary() {
+			return summary;
+		}
+
+		public void setSummary(String summary) {
+			this.summary = summary;
+		}
+
+		public List<String> getKeywords() {
+			return keywords;
+		}
+
+		public void setKeywords(List<String> keywords) {
+			this.keywords = keywords;
+		}
+
+		public String getSentiment() {
+			return sentiment;
+		}
+
+		public void setSentiment(String sentiment) {
+			this.sentiment = sentiment;
+		}
+
+		public Double getConfidence() {
+			return confidence;
+		}
+
+		public void setConfidence(Double confidence) {
+			this.confidence = confidence;
 		}
 	}
 

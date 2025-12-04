@@ -165,14 +165,17 @@ public class HumanInTheLoopExample {
 		// 创建工具回调（示例）
 		ToolCallback writeFileTool = FunctionToolCallback.builder("write_file", (args) -> "文件已写入")
 				.description("写入文件")
+				.inputType(String.class)
 				.build();
 
 		ToolCallback executeSqlTool = FunctionToolCallback.builder("execute_sql", (args) -> "SQL已执行")
 				.description("执行SQL语句")
+				.inputType(String.class)
 				.build();
 
 		ToolCallback readDataTool = FunctionToolCallback.builder("read_data", (args) -> "数据已读取")
 				.description("读取数据")
+				.inputType(String.class)
 				.build();
 
 		// 创建人工介入Hook
@@ -207,6 +210,7 @@ public class HumanInTheLoopExample {
 
 		ToolCallback poetTool = FunctionToolCallback.builder("poem", (args) -> "春江潮水连海平，海上明月共潮生...")
 				.description("写诗工具")
+				.inputType(String.class)
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
@@ -293,6 +297,7 @@ public class HumanInTheLoopExample {
 
 		ToolCallback executeSqlTool = FunctionToolCallback.builder("execute_sql", (args) -> "SQL执行结果")
 				.description("执行SQL语句")
+				.inputType(String.class)
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
@@ -365,6 +370,7 @@ public class HumanInTheLoopExample {
 
 		ToolCallback deleteTool = FunctionToolCallback.builder("delete_data", (args) -> "数据已删除")
 				.description("删除数据")
+				.inputType(String.class)
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
@@ -433,14 +439,17 @@ public class HumanInTheLoopExample {
 
 		ToolCallback tool1 = FunctionToolCallback.builder("tool1", (args) -> "工具1结果")
 				.description("工具1")
+				.inputType(String.class)
 				.build();
 
 		ToolCallback tool2 = FunctionToolCallback.builder("tool2", (args) -> "工具2结果")
 				.description("工具2")
+				.inputType(String.class)
 				.build();
 
 		ToolCallback tool3 = FunctionToolCallback.builder("tool3", (args) -> "工具3结果")
 				.description("工具3")
+				.inputType(String.class)
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
@@ -509,9 +518,9 @@ public class HumanInTheLoopExample {
 					.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, decisionsMetadata)
 					.build();
 
-			agent.invokeAndGetOutput("", resumeConfig);
+			Optional<NodeOutput> outputOptional = agent.invokeAndGetOutput("", resumeConfig);
 
-			System.out.println("多个决策示例执行完成");
+			System.out.println("多个决策示例执行完成，最终状态：\n\n" + outputOptional.get().state());
 		}
 	}
 
@@ -522,21 +531,21 @@ public class HumanInTheLoopExample {
 		System.out.println("=== 人工介入（Human-in-the-Loop）示例 ===\n");
 
 		try {
-			System.out.println("示例1: 配置中断和基本使用");
-			example1_basicConfiguration();
-			System.out.println();
-
-			System.out.println("示例2: 批准（approve）决策");
-			example2_approveDecision();
-			System.out.println();
-
-			System.out.println("示例3: 编辑（edit）决策");
-			example3_editDecision();
-			System.out.println();
-
-			System.out.println("示例4: 拒绝（reject）决策");
-			example4_rejectDecision();
-			System.out.println();
+//			System.out.println("示例1: 配置中断和基本使用");
+//			example1_basicConfiguration();
+//			System.out.println();
+//
+//			System.out.println("示例2: 批准（approve）决策");
+//			example2_approveDecision();
+//			System.out.println();
+//
+//			System.out.println("示例3: 编辑（edit）决策");
+//			example3_editDecision();
+//			System.out.println();
+//
+//			System.out.println("示例4: 拒绝（reject）决策");
+//			example4_rejectDecision();
+//			System.out.println();
 
 			System.out.println("示例5: 处理多个工具调用决策");
 			example5_multipleTools();

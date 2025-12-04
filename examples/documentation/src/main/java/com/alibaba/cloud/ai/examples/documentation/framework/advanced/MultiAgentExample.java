@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.examples.documentation.framework.advanced;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
@@ -445,6 +446,11 @@ public class MultiAgentExample {
 				.outputKey("html_report")
 				.build();
 
+		// 打印htmlReportAgent的图表
+		System.out.println("\n=== htmlReportAgent 图表 ===");
+		printReactAgentGraph(htmlReportAgent);
+		System.out.println("============================\n");
+
 		LlmRoutingAgent reportAgent = LlmRoutingAgent.builder()
 				.name("report_router")
 				.description("根据需求选择报告格式")
@@ -459,11 +465,37 @@ public class MultiAgentExample {
 				.subAgents(List.of(researchAgent, analysisAgent, reportAgent))
 				.build();
 
+
+		// 打印工作流图表
+		System.out.println("\n=== 混合模式工作流图表 ===");
+		printGraphRepresentation(hybridWorkflow);
+		System.out.println("=========================\n");
+
 		Optional<OverAllState> result = hybridWorkflow.invoke("研究AI技术趋势并生成HTML报告");
 
 		if (result.isPresent()) {
 			System.out.println("混合模式示例执行成功");
 		}
+	}
+
+	/**
+	 * 打印工作流图表
+	 *
+	 * 使用PlantUML格式展示Agent工作流的结构
+	 */
+	private void printGraphRepresentation(SequentialAgent agent) {
+		GraphRepresentation representation = agent.getGraph().getGraph(GraphRepresentation.Type.PLANTUML);
+		System.out.println(representation.content());
+	}
+
+	/**
+	 * 打印ReactAgent的图表
+	 *
+	 * 使用getAndCompileGraph方法获取并打印ReactAgent的内部状态图
+	 */
+	private void printReactAgentGraph(ReactAgent agent) {
+		GraphRepresentation representation = agent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+		System.out.println(representation.content());
 	}
 
 	/**
@@ -473,29 +505,29 @@ public class MultiAgentExample {
 		System.out.println("=== 多智能体（Multi-agent）示例 ===\n");
 
 		try {
-			System.out.println("示例1: 顺序执行（Sequential Agent）");
-			example1_sequentialAgent();
-			System.out.println();
-
-			System.out.println("示例2: 控制推理内容");
-			example2_controlReasoningContents();
-			System.out.println();
-
-			System.out.println("示例3: 并行执行（Parallel Agent）");
-			example3_parallelAgent();
-			System.out.println();
-
-			System.out.println("示例4: 自定义合并策略");
-			example4_customMergeStrategy();
-			System.out.println();
-
-			System.out.println("示例5: LLM路由（LlmRoutingAgent）");
-			example5_llmRoutingAgent();
-			System.out.println();
-
-			System.out.println("示例6: 优化路由准确性");
-			example6_optimizedRouting();
-			System.out.println();
+//			System.out.println("示例1: 顺序执行（Sequential Agent）");
+//			example1_sequentialAgent();
+//			System.out.println();
+//
+//			System.out.println("示例2: 控制推理内容");
+//			example2_controlReasoningContents();
+//			System.out.println();
+//
+//			System.out.println("示例3: 并行执行（Parallel Agent）");
+//			example3_parallelAgent();
+//			System.out.println();
+//
+//			System.out.println("示例4: 自定义合并策略");
+//			example4_customMergeStrategy();
+//			System.out.println();
+//
+//			System.out.println("示例5: LLM路由（LlmRoutingAgent）");
+//			example5_llmRoutingAgent();
+//			System.out.println();
+//
+//			System.out.println("示例6: 优化路由准确性");
+//			example6_optimizedRouting();
+//			System.out.println();
 
 			System.out.println("示例7: 混合模式");
 			example7_hybridPattern();

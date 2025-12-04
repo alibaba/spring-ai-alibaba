@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.converter.BeanOutputConverter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,29 +50,14 @@ public class StructuredOutputExample {
 				.dashScopeApi(dashScopeApi)
 				.build();
 
-		String contactInfoSchema = """
-				{
-					"$schema": "https://json-schema.org/draft/2020-12/schema",
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string"
-						},
-						"email": {
-							"type": "string"
-						},
-						"phone": {
-							"type": "string"
-						}
-					},
-					"additionalProperties": false
-				}
-				""";
+		// Use BeanOutputConverter to generate outputSchema
+		BeanOutputConverter<ContactInfo> outputConverter = new BeanOutputConverter<>(ContactInfo.class);
+		String format = outputConverter.getFormat();
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("contact_extractor")
 				.model(chatModel)
-				.outputSchema(contactInfoSchema)
+				.outputSchema(format)
 				.build();
 
 		AssistantMessage result = agent.call(
@@ -94,50 +80,14 @@ public class StructuredOutputExample {
 				.dashScopeApi(dashScopeApi)
 				.build();
 
-		String productReviewSchema = """
-				{
-					"$schema": "https://json-schema.org/draft/2020-12/schema",
-					"type": "object",
-					"properties": {
-						"rating": {
-							"type": "integer"
-						},
-						"sentiment": {
-							"type": "string"
-						},
-						"keyPoints": {
-							"type": "array",
-							"items": {
-								"type": "string"
-							}
-						},
-						"details": {
-							"type": "object",
-							"properties": {
-								"pros": {
-									"type": "array",
-									"items": {
-										"type": "string"
-									}
-								},
-								"cons": {
-									"type": "array",
-									"items": {
-										"type": "string"
-									}
-								}
-							},
-							"additionalProperties": false
-						}
-					},
-					"additionalProperties": false
-				}
-				""";
+		// Use BeanOutputConverter to generate outputSchema
+		BeanOutputConverter<ProductReview> outputConverter = new BeanOutputConverter<>(ProductReview.class);
+		String format = outputConverter.getFormat();
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("review_analyzer")
 				.model(chatModel)
-				.outputSchema(productReviewSchema)
+				.outputSchema(format)
 				.build();
 
 		AssistantMessage result = agent.call(
@@ -160,56 +110,14 @@ public class StructuredOutputExample {
 				.dashScopeApi(dashScopeApi)
 				.build();
 
-		String analysisSchema = """
-				{
-					"$schema": "https://json-schema.org/draft/2020-12/schema",
-					"type": "object",
-					"properties": {
-						"summary": {
-							"type": "string"
-						},
-						"keywords": {
-							"type": "array",
-							"items": {
-								"type": "string"
-							}
-						},
-						"sentiment": {
-							"type": "string"
-						},
-						"entities": {
-							"type": "object",
-							"properties": {
-								"persons": {
-									"type": "array",
-									"items": {
-										"type": "string"
-									}
-								},
-								"locations": {
-									"type": "array",
-									"items": {
-										"type": "string"
-									}
-								},
-								"organizations": {
-									"type": "array",
-									"items": {
-										"type": "string"
-									}
-								}
-							},
-							"additionalProperties": false
-						}
-					},
-					"additionalProperties": false
-				}
-				""";
+		// Use BeanOutputConverter to generate outputSchema
+		BeanOutputConverter<TextAnalysis> outputConverter = new BeanOutputConverter<>(TextAnalysis.class);
+		String format = outputConverter.getFormat();
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("text_analyzer")
 				.model(chatModel)
-				.outputSchema(analysisSchema)
+				.outputSchema(format)
 				.build();
 
 		AssistantMessage result = agent.call(
@@ -425,30 +333,14 @@ public class StructuredOutputExample {
 				.saver(new MemorySaver())
 				.build();
 
-		// 使用 outputSchema
-		String schema = """
-				{
-					"$schema": "https://json-schema.org/draft/2020-12/schema",
-					"type": "object",
-					"properties": {
-						"name": {
-							"type": "string"
-						},
-						"email": {
-							"type": "string"
-						},
-						"phone": {
-							"type": "string"
-						}
-					},
-					"additionalProperties": false
-				}
-				""";
+		// 使用 outputSchema (通过 BeanOutputConverter 生成)
+		BeanOutputConverter<ContactInfo> outputConverter = new BeanOutputConverter<>(ContactInfo.class);
+		String format = outputConverter.getFormat();
 
 		ReactAgent schemaAgent = ReactAgent.builder()
 				.name("schema_agent")
 				.model(chatModel)
-				.outputSchema(schema)
+				.outputSchema(format)
 				.saver(new MemorySaver())
 				.build();
 
