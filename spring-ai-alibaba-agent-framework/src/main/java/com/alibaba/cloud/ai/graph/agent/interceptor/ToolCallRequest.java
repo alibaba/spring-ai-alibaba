@@ -72,7 +72,10 @@ public class ToolCallRequest {
 
 		public Builder toolCall(AssistantMessage.ToolCall toolCall) {
 			this.toolName = toolCall.name();
-			this.arguments = toolCall.arguments();
+			// Handle null arguments for parameterless tools (Spring AI framework doesn't guarantee @NotNull)
+			@SuppressWarnings("ConstantConditions")
+			String arguments = toolCall.arguments() != null ? toolCall.arguments() : "{}";
+			this.arguments = arguments;
 			this.toolCallId = toolCall.id();
 			return this;
 		}

@@ -214,16 +214,17 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 					continue;
 				}
 
-				// Check if already cleared (tool calls have placeholder as arguments)
-				boolean alreadyCleared = false;
-				for (AssistantMessage.ToolCall toolCall : assistantMsg.getToolCalls()) {
-					if (placeholder.equals(toolCall.arguments())) {
-						alreadyCleared = true;
-						break;
-					}
+			// Check if already cleared (tool calls have placeholder as arguments)
+			boolean alreadyCleared = false;
+			for (AssistantMessage.ToolCall toolCall : assistantMsg.getToolCalls()) {
+				// Handle null arguments for parameterless tools (Spring AI framework doesn't guarantee @NotNull)
+				@SuppressWarnings("ConstantConditions")
+				String arguments = toolCall.arguments();
+				if (arguments != null && placeholder.equals(arguments)) {
+					alreadyCleared = true;
+					break;
 				}
-
-				if (alreadyCleared) {
+			}				if (alreadyCleared) {
 					continue;
 				}
 

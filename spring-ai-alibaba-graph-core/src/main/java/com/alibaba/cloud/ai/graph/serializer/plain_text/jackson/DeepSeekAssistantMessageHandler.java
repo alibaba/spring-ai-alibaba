@@ -85,18 +85,19 @@ public interface DeepSeekAssistantMessageHandler {
 				@SuppressWarnings("unchecked")
 				java.util.List<AssistantMessage.ToolCall> toolCalls = (java.util.List<AssistantMessage.ToolCall>) getToolCallsMethod.invoke(msg);
 
-				gen.writeArrayFieldStart(Field.TOOL_CALLS.name);
-				for (var toolCall : toolCalls) {
-					gen.writeStartObject();
-					gen.writeStringField("id", toolCall.id());
-					gen.writeStringField("name", toolCall.name());
-					gen.writeStringField("type", toolCall.type());
-					gen.writeStringField("arguments", toolCall.arguments());
-					gen.writeEndObject();
-				}
-				gen.writeEndArray();
-
-				// Use reflection to call getReasoningContent()
+			gen.writeArrayFieldStart(Field.TOOL_CALLS.name);
+			for (var toolCall : toolCalls) {
+				gen.writeStartObject();
+				gen.writeStringField("id", toolCall.id());
+				gen.writeStringField("name", toolCall.name());
+				gen.writeStringField("type", toolCall.type());
+				// Handle null arguments for parameterless tools (Spring AI framework doesn't guarantee @NotNull)
+				@SuppressWarnings("ConstantConditions")
+				String arguments = toolCall.arguments() != null ? toolCall.arguments() : "{}";
+				gen.writeStringField("arguments", arguments);
+				gen.writeEndObject();
+			}
+			gen.writeEndArray();				// Use reflection to call getReasoningContent()
 				Method getReasoningContentMethod = deepSeekClass.getMethod("getReasoningContent");
 				String reasoningContent = (String) getReasoningContentMethod.invoke(msg);
 
