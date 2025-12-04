@@ -446,11 +446,6 @@ public class MultiAgentExample {
 				.outputKey("html_report")
 				.build();
 
-		// 打印htmlReportAgent的图表
-		System.out.println("\n=== htmlReportAgent 图表 ===");
-		printReactAgentGraph(htmlReportAgent);
-		System.out.println("============================\n");
-
 		LlmRoutingAgent reportAgent = LlmRoutingAgent.builder()
 				.name("report_router")
 				.description("根据需求选择报告格式")
@@ -484,17 +479,7 @@ public class MultiAgentExample {
 	 * 使用PlantUML格式展示Agent工作流的结构
 	 */
 	private void printGraphRepresentation(SequentialAgent agent) {
-		GraphRepresentation representation = agent.getGraph().getGraph(GraphRepresentation.Type.PLANTUML);
-		System.out.println(representation.content());
-	}
-
-	/**
-	 * 打印ReactAgent的图表
-	 *
-	 * 使用getAndCompileGraph方法获取并打印ReactAgent的内部状态图
-	 */
-	private void printReactAgentGraph(ReactAgent agent) {
-		GraphRepresentation representation = agent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+		GraphRepresentation representation = agent.getAndCompileGraph().getGraph(GraphRepresentation.Type.PLANTUML);
 		System.out.println(representation.content());
 	}
 
