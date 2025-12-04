@@ -151,7 +151,8 @@ public class ToolRequestMessageDTO implements MessageDTO {
 			this.id = toolCall.id();
 			this.type = toolCall.type();
 			this.name = toolCall.name();
-			this.arguments = toolCall.arguments();
+			// Handle null arguments for parameterless tools (Spring AI framework doesn't guarantee @NotNull)
+			this.arguments = toolCall.arguments() != null ? toolCall.arguments() : "{}";
 		}
 
 		public AssistantMessage.ToolCall toToolCall() {

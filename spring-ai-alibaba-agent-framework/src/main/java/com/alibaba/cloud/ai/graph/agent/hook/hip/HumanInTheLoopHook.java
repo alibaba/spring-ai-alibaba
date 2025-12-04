@@ -99,7 +99,9 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 						newToolCalls.add(toolCall);
 					}
 					else if (result == FeedbackResult.EDITED) {
-						AssistantMessage.ToolCall editedToolCall = new AssistantMessage.ToolCall(toolCall.id(), toolCall.type(), toolCall.name(), toolFeedback.getArguments());
+						// Handle null arguments for parameterless tools
+						String arguments = toolFeedback.getArguments() != null ? toolFeedback.getArguments() : "{}";
+						AssistantMessage.ToolCall editedToolCall = new AssistantMessage.ToolCall(toolCall.id(), toolCall.type(), toolCall.name(), arguments);
 						newToolCalls.add(editedToolCall);
 					}
 					else if (result == FeedbackResult.REJECTED) {
