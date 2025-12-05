@@ -17,7 +17,7 @@
 .PHONY: test
 test: ## Run tests
 	@$(LOG_TARGET)
-	mvnd test
+	mvnd -Dmvnd.connectTimeout=30000 test
 
 # Separate build and test to speed up execution
 .PHONY: build
