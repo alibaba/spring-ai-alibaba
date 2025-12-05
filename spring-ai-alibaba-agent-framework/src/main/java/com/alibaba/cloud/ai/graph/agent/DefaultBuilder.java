@@ -69,7 +69,10 @@ public class DefaultBuilder extends Builder {
 			chatClient = clientBuilder.build();
 		}
 
-		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder().agentName(this.name).chatClient(chatClient);
+		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
+			.agentName(this.name)
+			.chatOptions(this.chatOptions)
+			.chatClient(chatClient);
 
 		if (outputKey != null && !outputKey.isEmpty()) {
 			llmNodeBuilder.outputKey(outputKey);
