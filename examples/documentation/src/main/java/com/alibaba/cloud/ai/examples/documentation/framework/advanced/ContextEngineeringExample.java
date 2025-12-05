@@ -102,7 +102,7 @@ public class ContextEngineeringExample {
 		// 创建一个模型拦截器，根据对话长度调整系统提示
 		class StateAwarePromptInterceptor extends ModelInterceptor {
 			@Override
-			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler next) {
+			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 				List<Message> messages = request.getMessages();
 				int messageCount = messages.size();
 
@@ -125,17 +125,18 @@ public class ContextEngineeringExample {
 					);
 				}
 
-				// 创建新的请求并继续
-				ModelRequest updatedRequest = ModelRequest.builder(request)
+				// 创建增强的请求
+				ModelRequest enhancedRequest = ModelRequest.builder(request)
 						.systemMessage(enhancedSystemMessage)
 						.build();
 
-				return next.call(updatedRequest);
+				// 调用处理器
+				return handler.call(enhancedRequest);
 			}
 
 			@Override
 			public String getName() {
-				return "";
+				return "StateAwarePromptInterceptor";
 			}
 		}
 
@@ -209,7 +210,7 @@ public class ContextEngineeringExample {
 			}
 
 			@Override
-			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler next) {
+			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 				// 从运行时上下文获取用户ID
 				String userId = getUserIdFromContext(request);
 
@@ -230,11 +231,13 @@ public class ContextEngineeringExample {
 					);
 				}
 
-				ModelRequest updatedRequest = ModelRequest.builder(request)
+				// 创建增强的请求
+				ModelRequest enhancedRequest = ModelRequest.builder(request)
 						.systemMessage(enhancedSystemMessage)
 						.build();
 
-				return next.call(updatedRequest);
+				// 调用处理器
+				return handler.call(enhancedRequest);
 			}
 
 			private String getUserIdFromContext(ModelRequest request) {

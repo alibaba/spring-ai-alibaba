@@ -46,11 +46,14 @@ import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
+import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.graph.utils.TypeRef;
+
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +80,8 @@ import java.util.stream.Collectors;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_async;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.resumeSubGraphId;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.subGraphId;
 import static java.lang.String.format;
 
 
@@ -743,7 +748,9 @@ public class ReactAgent extends BaseAgent {
 		llmNode.setInstruction(instruction);
 	}
 
-	public class SubGraphNodeAdapter implements NodeActionWithConfig {
+	public class AgentToSubCompiledGraphNodeAdapter implements NodeActionWithConfig, ResumableSubGraphAction {
+
+		private String nodeId;
 
 		private boolean includeContents;
 
@@ -755,8 +762,9 @@ public class ReactAgent extends BaseAgent {
 
 		private CompileConfig parentCompileConfig;
 
-		public SubGraphNodeAdapter(boolean includeContents, boolean returnReasoningContents,
+		public AgentToSubCompiledGraphNodeAdapter(String nodeId, boolean includeContents, boolean returnReasoningContents,
 				CompiledGraph childGraph, String instruction, CompileConfig parentCompileConfig) {
+			this.nodeId = nodeId;
 			this.includeContents = includeContents;
 			this.returnReasoningContents = returnReasoningContents;
 			this.instruction = instruction;
@@ -764,12 +772,15 @@ public class ReactAgent extends BaseAgent {
 			this.parentCompileConfig = parentCompileConfig;
 		}
 
-		public String subGraphId() {
-			return format("subgraph_%s", childGraph.stateGraph.getName());
+		@Override
+		public String getResumeSubGraphId() {
+			return resumeSubGraphId(nodeId);
 		}
 
 		@Override
 		public Map<String, Object> apply(OverAllState parentState, RunnableConfig config) throws Exception {
+			final boolean resumeSubgraph = config.metadata(resumeSubGraphId(nodeId), new TypeRef<Boolean>() {}).orElse(false);
+
 			RunnableConfig subGraphRunnableConfig = getSubGraphRunnableConfig(config);
 			Flux<GraphResponse<NodeOutput>> subGraphResult;
 			Object parentMessages = null;
@@ -858,7 +869,7 @@ public class ReactAgent extends BaseAgent {
 					.checkPointId(null)
 					.clearContext()
 					.nextNode(null)
-					.addMetadata("_AGENT_", subGraphId()) // subGraphId is the same as the name of the agent that created it
+					.addMetadata("_AGENT_", subGraphId(nodeId)) // subGraphId is the same as the name of the agent that created it
 					.build();
 			var parentSaver = parentCompileConfig.checkpointSaver();
 			var subGraphSaver = childGraph.compileConfig.checkpointSaver();
@@ -872,12 +883,12 @@ public class ReactAgent extends BaseAgent {
 				if (parentSaver.get() == subGraphSaver.get()) {
 					subGraphRunnableConfig = RunnableConfig.builder(config)
 							.threadId(config.threadId()
-									.map(threadId -> format("%s_%s", threadId, subGraphId()))
-									.orElseGet(this::subGraphId))
+									.map(threadId -> format("%s_%s", threadId, subGraphId(nodeId)))
+									.orElseGet(() -> subGraphId(nodeId)))
 							.nextNode(null)
 							.checkPointId(null)
 							.clearContext()
-							.addMetadata("_AGENT_", subGraphId()) // subGraphId is the same as the name of the agent that created it
+							.addMetadata("_AGENT_", subGraphId(nodeId)) // subGraphId is the same as the name of the agent that created it
 							.build();
 				}
 			}
@@ -895,7 +906,7 @@ public class ReactAgent extends BaseAgent {
 
 		public AgentSubGraphNode(String id, boolean includeContents, boolean returnReasoningContents, CompiledGraph subGraph, String instruction) {
 			super(Objects.requireNonNull(id, "id cannot be null"),
-					(config) -> node_async(new SubGraphNodeAdapter(includeContents, returnReasoningContents, subGraph, instruction, config)));
+					(config) -> node_async(new AgentToSubCompiledGraphNodeAdapter(id, includeContents, returnReasoningContents, subGraph, instruction, config)));
 			this.subGraph = subGraph;
 		}
 

@@ -98,9 +98,10 @@ public class AgentsExample {
 		ChatModel chatModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
-						.withTemperature(0.7)      // 控制随机性
-						.withMaxToken(2000)       // 最大输出长度
-						.withTopP(0.9)            // 核采样参数
+						.temperature(0.7)      // 控制随机性
+						.maxToken(2000)       // 最大输出长度
+						.topP(0.9)            // 核采样参数
+						.enableThinking(true)
 						.build())
 				.build();
 	}
