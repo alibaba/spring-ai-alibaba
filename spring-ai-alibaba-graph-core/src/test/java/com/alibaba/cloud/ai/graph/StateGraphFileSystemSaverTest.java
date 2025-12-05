@@ -40,7 +40,6 @@ import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -202,7 +201,7 @@ public class StateGraphFileSystemSaverTest {
 		var tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
 		assertTrue(tagState.isPresent());
 
-		assertIterableEquals(state.get().data().entrySet(), tagState.get().entrySet());
+		assertEquals(state.get().data(), tagState.get());
 
 		var messages = (List<String>) state.get().data().get("messages");
 
@@ -230,7 +229,7 @@ public class StateGraphFileSystemSaverTest {
 		tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
 		assertTrue(tagState.isPresent());
 
-		assertIterableEquals(state.get().data().entrySet(), tagState.get().entrySet());
+		assertEquals(state.get().data(), tagState.get());
 
 		assertEquals(expectedSteps, messages.size());
 
@@ -247,7 +246,7 @@ public class StateGraphFileSystemSaverTest {
 		tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
 		assertTrue(tagState.isPresent());
 
-		assertIterableEquals(state.get().data().entrySet(), tagState.get().entrySet());
+		assertEquals(state.get().data(), tagState.get());
 
 	}
 
@@ -357,7 +356,7 @@ public class StateGraphFileSystemSaverTest {
 		tagState = tag.checkpoints().stream().map(Checkpoint::getState).findFirst();
 
 		assertTrue(tagState.isPresent());
-		assertIterableEquals(state_1.get().data().entrySet(), tagState.get().entrySet());
+		assertEquals(state_1.get().data(), tagState.get());
 
 	}
 
