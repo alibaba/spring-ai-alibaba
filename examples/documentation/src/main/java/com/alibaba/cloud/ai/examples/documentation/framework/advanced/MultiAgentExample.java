@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
+import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -492,6 +493,37 @@ public class MultiAgentExample {
 		}
 	}
 
+	private void testRoutingSequentialEmbedding() throws GraphRunnerException {
+		ReactAgent reactAgent = ReactAgent.builder()
+				.name("weather_agent")
+				.description("根据用户的问题和提炼的位置信息查询天气。\n\n 用户问题：{input} \n\n 位置信息：{location}")
+				.model(chatModel)
+				.outputKey("weather")
+				.systemPrompt("你是一个天气查询专家").build();
+
+		ReactAgent locationAgent = ReactAgent.builder()
+				.name("location_agent")
+				.description("根据用户的问题，进行位置查询。\n 用户问题：{input}")
+				.model(chatModel)
+				.outputKey("location")
+				.systemPrompt("你是一个位置查询专家").build();
+
+		SequentialAgent sequentialAgent = SequentialAgent.builder()
+				.name("天气小助手")
+				.description("天气小助手")
+				.subAgents(List.of(locationAgent, reactAgent))
+				.build();
+
+		LlmRoutingAgent routingAgent = LlmRoutingAgent.builder()
+				.name("用户小助手")
+				.description("帮助用户完成各种需求")
+				.model(chatModel)
+				.subAgents(List.of(reactAgent, locationAgent)).build();
+
+		Optional<OverAllState> invoke = routingAgent.invoke("天气怎么样");
+		System.out.println(invoke);
+	}
+
 	/**
 	 * 打印工作流图表
 	 *
@@ -536,6 +568,8 @@ public class MultiAgentExample {
 			System.out.println("示例7: 混合模式");
 			example7_hybridPattern();
 			System.out.println();
+
+			testRoutingSequentialEmbedding();
 
 		}
 		catch (Exception e) {

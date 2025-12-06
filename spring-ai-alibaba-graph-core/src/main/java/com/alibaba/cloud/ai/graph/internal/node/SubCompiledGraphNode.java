@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
-import static java.lang.String.format;
 
 public class SubCompiledGraphNode extends Node implements SubGraphNode {
 	private final CompiledGraph subGraph;
