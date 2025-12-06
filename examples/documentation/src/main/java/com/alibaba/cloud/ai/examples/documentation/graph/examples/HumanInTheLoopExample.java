@@ -150,7 +150,7 @@ public class HumanInTheLoopExample {
 	/**
 	 * 等待用户输入并更新状态（InterruptionMetadata 模式）
 	 */
-	public static RunnableConfig waitUserInputAndUpdateStateWithMetadata(CompiledGraph graph, InterruptionMetadata interruption) throws Exception {
+	public static RunnableConfig waitUserInputAndUpdateStateWithMetadata(CompiledGraph graph, InterruptionMetadata interruption, String userInput) throws Exception {
 		var invokeConfig = RunnableConfig.builder()
 				.threadId("Thread1")
 				.build();
@@ -159,7 +159,6 @@ public class HumanInTheLoopExample {
 		System.out.printf("\n--State before update--\n%s\n", graph.getState(invokeConfig));
 
 		// 模拟用户输入
-		var userInput = "back"; // "back" 表示返回上一个节点
 		System.out.printf("\n--User Input--\n用户选择: '%s'\n\n", userInput);
 
 		// 更新状态：添加 human_feedback
@@ -273,7 +272,7 @@ public class HumanInTheLoopExample {
 	/**
 	 * 等待用户输入并更新状态（interruptBefore 模式）
 	 */
-	public static RunnableConfig waitUserInputAndUpdateStateWithInterruptBefore(CompiledGraph graph) throws Exception {
+	public static RunnableConfig waitUserInputAndUpdateStateWithInterruptBefore(CompiledGraph graph, String userInput) throws Exception {
 		var invokeConfig = RunnableConfig.builder()
 				.threadId("Thread1")
 				.build();
@@ -282,7 +281,6 @@ public class HumanInTheLoopExample {
 		System.out.printf("--State before update--\n%s\n", graph.getState(invokeConfig));
 
 		// 模拟用户输入
-		var userInput = "back"; // "back" 表示返回上一个节点
 		System.out.printf("\n--User Input--\n用户选择: '%s'\n\n", userInput);
 
 		// 更新状态（模拟 human_feedback 节点的输出）
@@ -299,40 +297,16 @@ public class HumanInTheLoopExample {
 	 * 继续执行 Graph（interruptBefore 模式）
 	 */
 	public static void continueExecutionWithInterruptBefore(CompiledGraph graph, RunnableConfig updateConfig) {
-		// 继续执行 Graph（input 为 null，使用之前的状态）
-		graph.stream(null, updateConfig)
-				.doOnNext(event -> System.out.println(event))
-				.doOnError(error -> System.err.println("流错误: " + error.getMessage()))
-				.doOnComplete(() -> System.out.println("流完成"))
-				.blockLast();
-	}
+		RunnableConfig resumeConfig = RunnableConfig.builder(updateConfig)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
 
-	/**
-	 * 第二次等待用户输入（interruptBefore 模式）
-	 */
-	public static RunnableConfig waitUserInputSecondTime(CompiledGraph graph, RunnableConfig invokeConfig) throws Exception {
-		var userInput = "next"; // "next" 表示继续下一个节点
-		System.out.printf("\n--User Input--\n用户选择: '%s'\n", userInput);
 
-		// 更新状态
-		var updateConfig = graph.updateState(invokeConfig, Map.of("human_feedback", userInput), null);
-
-		System.out.printf("\ngetNext()\n\twith invokeConfig:[%s]\n\twith updateConfig:[%s]\n",
-				graph.getState(invokeConfig).next(),
-				graph.getState(updateConfig).next());
-
-		return updateConfig;
-	}
-
-	/**
-	 * 继续执行直到完成（interruptBefore 模式）
-	 */
-	public static void continueExecutionUntilComplete(CompiledGraph graph, RunnableConfig updateConfig) {
 		// 继续执行 Graph
-		graph.stream(null, updateConfig)
+		graph.stream(null, resumeConfig)
 				.doOnNext(event -> System.out.println(event))
 				.doOnError(error -> System.err.println("流错误: " + error.getMessage()))
-				.doOnComplete(() -> System.out.println("流完成"))
+				.doOnComplete(() -> System.out.println("流完成\n"))
 				.blockLast();
 	}
 
@@ -362,8 +336,10 @@ public class HumanInTheLoopExample {
 			// 检查是否需要中断
 			// 如果状态中没有 human_feedback，则中断等待用户输入
 			Optional<Object> humanFeedback = state.value("human_feedback");
+			
+			boolean hasHumanFeedbackKey = config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY).isPresent();
 
-			if (humanFeedback.isEmpty()) {
+			if (humanFeedback.isEmpty() && !hasHumanFeedbackKey) {
 				// 返回 InterruptionMetadata 来中断执行
 				InterruptionMetadata interruption = InterruptionMetadata.builder(nodeId, state)
 						.addMetadata("message", "等待用户输入...")
@@ -394,14 +370,14 @@ public class HumanInTheLoopExample {
 		CompiledGraph graph1 = createGraphWithInterruptableAction();
 
 		// 执行直到中断
-		InterruptionMetadata interruption = executeUntilInterruptWithMetadata(graph1);
+		InterruptionMetadata interruption1 = executeUntilInterruptWithMetadata(graph1);
 
-		if (interruption != null) {
+		if (interruption1 != null) {
 			// 等待用户输入并更新状态
-			RunnableConfig updatedConfig = waitUserInputAndUpdateStateWithMetadata(graph1, interruption);
+			RunnableConfig updatedConfig1 = waitUserInputAndUpdateStateWithMetadata(graph1, interruption1, "next");
 
 			// 继续执行
-			continueExecutionWithMetadata(graph1, updatedConfig);
+			continueExecutionWithMetadata(graph1, updatedConfig1);
 		}
 
 		System.out.println("\n模式一示例执行完成\n");
@@ -416,19 +392,10 @@ public class HumanInTheLoopExample {
 		executeUntilInterruptWithInterruptBefore(graph2);
 
 		// 等待用户输入并更新状态
-		RunnableConfig updateConfig1 = waitUserInputAndUpdateStateWithInterruptBefore(graph2);
+		RunnableConfig updateConfig = waitUserInputAndUpdateStateWithInterruptBefore(graph2, "next");
 
 		// 继续执行
-		continueExecutionWithInterruptBefore(graph2, updateConfig1);
-
-		// 第二次等待用户输入
-		var invokeConfig = RunnableConfig.builder()
-				.threadId("Thread1")
-				.build();
-		RunnableConfig updateConfig2 = waitUserInputSecondTime(graph2, invokeConfig);
-
-		// 继续执行直到完成
-		continueExecutionUntilComplete(graph2, updateConfig2);
+		continueExecutionWithInterruptBefore(graph2, updateConfig);
 
 		System.out.println("\n模式二示例执行完成");
 		System.out.println("\n========================================");
