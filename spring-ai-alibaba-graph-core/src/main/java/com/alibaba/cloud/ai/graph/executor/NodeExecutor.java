@@ -213,49 +213,40 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return errorResponse;
 				}
 				if (element instanceof ChatResponse response) {
-					ChatResponse lastResponse = lastChatResponseRef.get();
-					if (lastResponse == null) {
-						var message = response.getResult().getOutput();
-						GraphResponse<NodeOutput> lastGraphResponse =
-								GraphResponse.of(context.buildStreamingOutput(message, response, context.getCurrentNodeId()));
-						lastChatResponseRef.set(response);
-						lastGraphResponseRef.set(lastGraphResponse);
-						return lastGraphResponse;
-					}
+					
 
+					ChatResponse lastResponse = lastChatResponseRef.get();
 					final var currentMessage = response.getResult().getOutput();
 
-					if (currentMessage.hasToolCalls()) {
-						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-							.of(context.buildStreamingOutput(currentMessage, response, context.getCurrentNodeId()));
-						lastGraphResponseRef.set(lastGraphResponse);
-                        // Also update lastChatResponseRef to ensure consistency
-                        lastChatResponseRef.set(response);
-                        return lastGraphResponse;
+					if(lastResponse==null){
+						lastChatResponseRef.set(response);
+
+					}else {
+
+						final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
+								"lastResponse text cannot be null");
+
+						final var currentMessageText = currentMessage.getText();
+
+
+						var newMessage = AssistantMessage.builder()
+								.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
+								.properties(currentMessage.getMetadata())
+								.toolCalls(mergeToolCalls(lastResponse.getResult().getOutput().getToolCalls(),
+										currentMessage.getToolCalls()))
+								.media(currentMessage.getMedia())
+								.build();
+
+						var newGeneration = new Generation(newMessage,
+								response.getResult().getMetadata());
+
+						ChatResponse newResponse = new ChatResponse(
+								List.of(newGeneration), response.getMetadata());
+						lastChatResponseRef.set(newResponse);
 					}
-
-					final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
-							"lastResponse text cannot be null");
-
-					final var currentMessageText = currentMessage.getText();
-
-					var newMessage = AssistantMessage.builder()
-						.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
-						.properties(currentMessage.getMetadata())
-						.toolCalls(mergeToolCalls(lastResponse.getResult().getOutput().getToolCalls(),
-                currentMessage.getToolCalls()))
-						.media(currentMessage.getMedia())
-						.build();
-
-					var newGeneration = new Generation(newMessage,
-							response.getResult().getMetadata());
-
-					ChatResponse newResponse = new ChatResponse(
-							List.of(newGeneration), response.getMetadata());
-					lastChatResponseRef.set(newResponse);
 					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-						.of(context.buildStreamingOutput(response.getResult().getOutput(), response, context.getCurrentNodeId()));
-					// lastGraphResponseRef.set(lastGraphResponse);
+							.of(context.buildStreamingOutput(response.getResult().getOutput(), response, context.getCurrentNodeId()));
+					lastGraphResponseRef.set(lastGraphResponse);
 					return lastGraphResponse;
 				}
 				else if (element instanceof GraphResponse) {
@@ -332,28 +323,33 @@ public class NodeExecutor extends BaseGraphExecutor {
    *
    * @return the merged list of tool calls
    */
-  private List<ToolCall> mergeToolCalls(List<ToolCall> lastToolCalls, List<ToolCall> currentToolCalls) {
+	private List<ToolCall> mergeToolCalls(List<ToolCall> lastToolCalls, List<ToolCall> currentToolCalls) {
 
-    if (lastToolCalls == null || lastToolCalls.isEmpty()) {
-      return currentToolCalls != null ? currentToolCalls : List.of();
-    }
-    if (currentToolCalls == null || currentToolCalls.isEmpty()) {
-      return lastToolCalls;
-    }
+		if (lastToolCalls == null || lastToolCalls.isEmpty()) {
+			return currentToolCalls != null ? currentToolCalls : List.of();
+		}
+		if (currentToolCalls == null || currentToolCalls.isEmpty()) {
+			return lastToolCalls;
+		}
 
-    Map<String, AssistantMessage.ToolCall> toolCallMap = new LinkedHashMap<>();
 
-    lastToolCalls.forEach(tc -> toolCallMap.put(tc.id(), tc));
+		Map<String, ToolCall> toolCallMap = new LinkedHashMap<>();
 
-    // Merge tool calls with the same id
-    currentToolCalls.forEach(tc -> {
-      if( !toolCallMap.containsKey(tc.id()) ) {
-        toolCallMap.put(tc.id(), tc);
-      }
-    });
 
-    return toolCallMap.values().stream().toList();
-  }
+		List<AssistantMessage.ToolCall> resultCalls = new ArrayList<>();
+		currentToolCalls.forEach(tc -> toolCallMap.put(tc.id(), tc));
+
+		//去除旧的重复的，保持顺序
+		lastToolCalls.forEach(tc->{
+			if( !toolCallMap.containsKey(tc.id()) ) {
+				resultCalls.add(tc);
+			}
+		});
+
+        resultCalls.addAll(currentToolCalls);
+
+		return resultCalls;
+	}
 
 	/**
 	 * Handles embedded flux processing.
