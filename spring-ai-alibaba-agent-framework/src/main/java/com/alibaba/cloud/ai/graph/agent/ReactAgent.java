@@ -766,51 +766,52 @@ public class ReactAgent extends BaseAgent {
 			return format("subgraph_%s", childGraph.stateGraph.getName());
 		}
 
-		@Override
-		public Map<String, Object> apply(OverAllState parentState, RunnableConfig config) throws Exception {
-			RunnableConfig subGraphRunnableConfig = getSubGraphRunnableConfig(config);
-			Flux<GraphResponse<NodeOutput>> subGraphResult;
-			Object parentMessages = null;
+        @Override
+        public Map<String, Object> apply(OverAllState parentState, RunnableConfig config) throws Exception {
+            RunnableConfig subGraphRunnableConfig = getSubGraphRunnableConfig(config);
 
-			if (includeContents) {
+            Map<String, Object> stateForChild = new HashMap<>(parentState.data());
+
+            List<Message> newMessages = new ArrayList<>();
+            Object parentMessages = null;
+
+            if (includeContents) {
                 // by default, includeContents is true, we pass down the messages from the parent state
-                Map<String, Object> stateForChild = new HashMap<>(parentState.data());
-
-                var originalMessages = stateForChild.get("messages");
-                List<Message> newMessages = new ArrayList<>();
-
+                Object originalMessages = stateForChild.get("messages");
                 if (originalMessages instanceof List<?>) {
-                    newMessages.addAll((List<Message>) originalMessages);
+                    @SuppressWarnings("unchecked")
+                    List<Message> castedMessages = (List<Message>) originalMessages;
+                    newMessages.addAll(castedMessages);
                 }
-
-                if (StringUtils.hasLength(instruction)) {
-                    // instruction will be added as a special UserMessage to the child graph.
-                    newMessages.add(new AgentInstructionMessage(instruction));
-                }
-
-                stateForChild.put("messages", newMessages);
-                subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
             } else {
-                Map<String, Object> stateForChild = new HashMap<>(parentState.data());
                 parentMessages = stateForChild.remove("messages");
-
-                if (StringUtils.hasLength(instruction)) {
-                    // instruction will be added as a special UserMessage to the child graph.
-                    stateForChild.put("messages", new AgentInstructionMessage(instruction));
-                }
-
-                subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
             }
 
-			Map<String, Object> result = new HashMap<>();
+            if (StringUtils.hasLength(instruction)) {
+                // instruction will be added as a special UserMessage to the child graph.
+                newMessages.add(new AgentInstructionMessage(instruction));
+            }
 
-			String outputKeyToParent = StringUtils.hasLength(ReactAgent.this.outputKey) ? ReactAgent.this.outputKey : "messages";
-			result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult));
-			if (parentMessages != null) {
-				result.put("messages", parentMessages);
-			}
-			return result;
-		}
+            if (!newMessages.isEmpty()) {
+                stateForChild.put("messages", newMessages);
+            }
+
+            Flux<GraphResponse<NodeOutput>> subGraphResult =
+                    childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
+
+            Map<String, Object> result = new HashMap<>();
+
+            String outputKeyToParent =
+                    StringUtils.hasLength(ReactAgent.this.outputKey) ? ReactAgent.this.outputKey : "messages";
+
+            result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult));
+
+            if (parentMessages != null) {
+                result.put("messages", parentMessages);
+            }
+
+            return result;
+        }
 
 		private @NotNull Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(OverAllState parentState, Flux<GraphResponse<NodeOutput>> subGraphResult) {
 			return Flux.create(sink -> {
