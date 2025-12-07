@@ -160,7 +160,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			ToolResponseMessage newToolResponseMessage =
 					ToolResponseMessage.builder().responses(allResponses).build();
 			newMessages.add(newToolResponseMessage);
-			newMessages.add(new RemoveByHash<>(assistantMessage));
+			newMessages.add(new RemoveByHash<>(toolResponseMessage));
 			updatedState.put("messages", newMessages);
 
 			if (enableActingLog) {
