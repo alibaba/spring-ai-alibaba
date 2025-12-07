@@ -773,21 +773,34 @@ public class ReactAgent extends BaseAgent {
 			Object parentMessages = null;
 
 			if (includeContents) {
-				// by default, includeContents is true, we pass down the messages from the parent state
-				if (StringUtils.hasLength(instruction)) {
-					// instruction will be added as a special UserMessage to the child graph.
-					parentState.updateState(Map.of("messages", new AgentInstructionMessage(instruction)));
-				}
-				subGraphResult = childGraph.graphResponseStream(parentState, subGraphRunnableConfig);
-			} else {
-				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
-				parentMessages = stateForChild.remove("messages");
-				if (StringUtils.hasLength(instruction)) {
-					// instruction will be added as a special UserMessage to the child graph.
-					stateForChild.put("messages", new AgentInstructionMessage(instruction));
-				}
-				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
-			}
+                // by default, includeContents is true, we pass down the messages from the parent state
+                Map<String, Object> stateForChild = new HashMap<>(parentState.data());
+
+                var originalMessages = stateForChild.get("messages");
+                List<Message> newMessages = new ArrayList<>();
+
+                if (originalMessages instanceof List<?>) {
+                    newMessages.addAll((List<Message>) originalMessages);
+                }
+
+                if (StringUtils.hasLength(instruction)) {
+                    // instruction will be added as a special UserMessage to the child graph.
+                    newMessages.add(new AgentInstructionMessage(instruction));
+                }
+
+                stateForChild.put("messages", newMessages);
+                subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
+            } else {
+                Map<String, Object> stateForChild = new HashMap<>(parentState.data());
+                parentMessages = stateForChild.remove("messages");
+
+                if (StringUtils.hasLength(instruction)) {
+                    // instruction will be added as a special UserMessage to the child graph.
+                    stateForChild.put("messages", new AgentInstructionMessage(instruction));
+                }
+
+                subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
+            }
 
 			Map<String, Object> result = new HashMap<>();
 

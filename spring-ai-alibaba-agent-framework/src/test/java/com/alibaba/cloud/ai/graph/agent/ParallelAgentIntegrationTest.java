@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.List;
@@ -339,5 +340,75 @@ class ParallelAgentIntegrationTest {
 		System.out.println("Concurrency test completed with maxConcurrency=3");
 		System.out.println("Results: " + state.value("concurrency_results").get());
 	}
+
+    @Test
+    public void testParallelAgentEnsureSubAgentOnlyHasOwnMessages() throws Exception {
+        // Test that ParallelAgent ensures sub-agents only have owner messages
+
+        // Only return 101
+        ReactAgent agent101 = ReactAgent.builder()
+                .name("return_101")
+                .model(chatModel)
+                .instruction("返回数字101")
+                .outputKey("return_101")
+                .build();
+
+        // Only return 202
+        ReactAgent agent202 = ReactAgent.builder()
+                .name("return_202")
+                .model(chatModel)
+                .instruction("返回数字202")
+                .outputKey("return_202")
+                .build();
+
+        // Only return 303
+        ReactAgent agent303 = ReactAgent.builder()
+                .name("return_303")
+                .model(chatModel)
+                .instruction("返回数字303")
+                .outputKey("return_303")
+                .build();
+
+        ParallelAgent parallelAgent = ParallelAgent.builder()
+                .name("return_number")
+                .description("返回相应的数字")
+                .mergeOutputKey("merged_results")
+                .subAgents(List.of(agent101, agent202, agent303))
+                .mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
+                .build();
+
+        Optional<OverAllState> result = parallelAgent.invoke("返回相应的数字");
+
+        if (result.isPresent()) {
+            OverAllState state = result.get();
+
+            AssistantMessage result101 = (AssistantMessage) state.value("return_101").get();
+            AssistantMessage result202 = (AssistantMessage) state.value("return_202").get();
+            AssistantMessage result303 = (AssistantMessage) state.value("return_303").get();
+
+            String text101 = result101.getText() == null ? "" : result101.getText();
+            String text202 = result202.getText() == null ? "" : result202.getText();
+            String text303 = result303.getText() == null ? "" : result303.getText();
+
+            // Verify result101 should only have 101
+            assertTrue(
+                    text101.contains("101") && !text101.contains("202") && !text101.contains("303"),
+                    "Result number should has and only has 101."
+            );
+
+            // Verify result202 should only have 202
+            assertTrue(
+                    text202.contains("202") && !text202.contains("101") && !text202.contains("303"),
+                    "Result number should has and only has 202."
+            );
+
+            // Verify result303 should only have 303
+            assertTrue(
+                    text303.contains("303") && !text303.contains("101") && !text303.contains("202"),
+                    "Result number should has and only has 303."
+            );
+
+        }
+    }
 
 }
