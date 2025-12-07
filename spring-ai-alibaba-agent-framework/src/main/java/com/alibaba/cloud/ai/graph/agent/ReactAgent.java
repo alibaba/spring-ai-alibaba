@@ -800,55 +800,59 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		private @NotNull Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(OverAllState parentState, Flux<GraphResponse<NodeOutput>> subGraphResult) {
-			return Flux.create(sink -> {
-				AtomicReference<GraphResponse<NodeOutput>> lastRef = new AtomicReference<>();
-				subGraphResult.subscribe(item -> {
-					GraphResponse<NodeOutput> previous = lastRef.getAndSet(item);
-					if (previous != null) {
-						sink.next(previous);
-					}
-				}, sink::error, () -> {
-					GraphResponse<NodeOutput> lastResponse = lastRef.get();
-					if (lastResponse != null) {
-						if (lastResponse.resultValue().isPresent()) {
-							Object resultValue = lastResponse.resultValue().get();
-							if (resultValue instanceof Map) {
-								@SuppressWarnings("unchecked")
-								Map<String, Object> resultMap = (Map<String, Object>) resultValue;
-								if (resultMap.get("messages") instanceof List) {
-									@SuppressWarnings("unchecked")
-									List<Object> messages = new ArrayList<>((List<Object>) resultMap.get("messages"));
-									if (!messages.isEmpty()) {
-										parentState.value("messages").ifPresent(parentMsgs -> {
-											if (parentMsgs instanceof List) {
-												messages.removeAll((List<?>) parentMsgs);
-											}
-										});
-
-										List<Object> finalMessages;
-										if (returnReasoningContents) {
-											finalMessages = messages;
-										}
-										else {
+			return Flux.deferContextual(ctx ->
+				Flux.create(sink -> {
+					AtomicReference<GraphResponse<NodeOutput>> lastRef = new AtomicReference<>();
+					subGraphResult
+						.contextWrite(ctx)
+						.subscribe(item -> {
+							GraphResponse<NodeOutput> previous = lastRef.getAndSet(item);
+							if (previous != null) {
+								sink.next(previous);
+							}
+						}, sink::error, () -> {
+							GraphResponse<NodeOutput> lastResponse = lastRef.get();
+							if (lastResponse != null) {
+								if (lastResponse.resultValue().isPresent()) {
+									Object resultValue = lastResponse.resultValue().get();
+									if (resultValue instanceof Map) {
+										@SuppressWarnings("unchecked")
+										Map<String, Object> resultMap = (Map<String, Object>) resultValue;
+										if (resultMap.get("messages") instanceof List) {
+											@SuppressWarnings("unchecked")
+											List<Object> messages = new ArrayList<>((List<Object>) resultMap.get("messages"));
 											if (!messages.isEmpty()) {
-												finalMessages = List.of(messages.get(messages.size() - 1));
-											} else {
-												finalMessages = List.of();
+												parentState.value("messages").ifPresent(parentMsgs -> {
+													if (parentMsgs instanceof List) {
+														messages.removeAll((List<?>) parentMsgs);
+													}
+												});
+
+												List<Object> finalMessages;
+												if (returnReasoningContents) {
+													finalMessages = messages;
+												}
+												else {
+													if (!messages.isEmpty()) {
+														finalMessages = List.of(messages.get(messages.size() - 1));
+													} else {
+														finalMessages = List.of();
+													}
+												}
+
+												Map<String, Object> newResultMap = new HashMap<>(resultMap);
+												newResultMap.put("messages", finalMessages);
+												lastResponse = GraphResponse.done(newResultMap);
 											}
 										}
-
-										Map<String, Object> newResultMap = new HashMap<>(resultMap);
-										newResultMap.put("messages", finalMessages);
-										lastResponse = GraphResponse.done(newResultMap);
 									}
 								}
 							}
-						}
-					}
-					sink.next(lastResponse);
-					sink.complete();
-				});
-			});
+							sink.next(lastResponse);
+							sink.complete();
+						});
+				})
+			);
 		}
 
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
