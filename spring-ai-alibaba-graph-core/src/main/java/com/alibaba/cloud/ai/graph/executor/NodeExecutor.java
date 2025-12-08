@@ -205,7 +205,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 		return rawFlux.filter(element -> {
 				// skip ChatResponse.getResult() == null
 				if (element instanceof ChatResponse response) {
-					return response.getResult() != null;
+					return response.getResult() != null &&  response.getResult().getOutput() != null;
 				}
 				// Don't filter out Exception/Throwable - we need to handle them
 				return true;
