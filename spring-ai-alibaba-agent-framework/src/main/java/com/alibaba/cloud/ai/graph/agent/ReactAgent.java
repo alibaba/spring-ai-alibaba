@@ -46,11 +46,14 @@ import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
+import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.graph.utils.TypeRef;
+
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,12 +74,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_async;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.resumeSubGraphId;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.subGraphId;
 import static java.lang.String.format;
 
 
@@ -224,7 +228,9 @@ public class ReactAgent extends BaseAgent {
 		StateGraph graph = new StateGraph(name, buildMessagesKeyStrategyFactory(hooks), stateSerializer);
 
 		graph.addNode("model", node_async(this.llmNode));
-		graph.addNode("tool", node_async(this.toolNode));
+		if (hasTools) {
+			graph.addNode("tool", node_async(this.toolNode));
+		}
 
 		// some hooks may need tools so they can do some initialization/cleanup on start/end of agent loop
 		setupToolsForHooks(hooks, toolNode);
@@ -741,7 +747,9 @@ public class ReactAgent extends BaseAgent {
 		llmNode.setInstruction(instruction);
 	}
 
-	public class SubGraphNodeAdapter implements NodeActionWithConfig {
+	public class AgentToSubCompiledGraphNodeAdapter implements NodeActionWithConfig, ResumableSubGraphAction {
+
+		private String nodeId;
 
 		private boolean includeContents;
 
@@ -753,8 +761,9 @@ public class ReactAgent extends BaseAgent {
 
 		private CompileConfig parentCompileConfig;
 
-		public SubGraphNodeAdapter(boolean includeContents, boolean returnReasoningContents,
+		public AgentToSubCompiledGraphNodeAdapter(String nodeId, boolean includeContents, boolean returnReasoningContents,
 				CompiledGraph childGraph, String instruction, CompileConfig parentCompileConfig) {
+			this.nodeId = nodeId;
 			this.includeContents = includeContents;
 			this.returnReasoningContents = returnReasoningContents;
 			this.instruction = instruction;
@@ -762,29 +771,39 @@ public class ReactAgent extends BaseAgent {
 			this.parentCompileConfig = parentCompileConfig;
 		}
 
-		public String subGraphId() {
-			return format("subgraph_%s", childGraph.stateGraph.getName());
+		@Override
+		public String getResumeSubGraphId() {
+			return resumeSubGraphId(nodeId);
 		}
 
 		@Override
 		public Map<String, Object> apply(OverAllState parentState, RunnableConfig config) throws Exception {
+			final boolean resumeSubgraph = config.metadata(resumeSubGraphId(nodeId), new TypeRef<Boolean>() {}).orElse(false);
+
 			RunnableConfig subGraphRunnableConfig = getSubGraphRunnableConfig(config);
 			Flux<GraphResponse<NodeOutput>> subGraphResult;
 			Object parentMessages = null;
 
+			AgentInstructionMessage instructionMessage = null;
+			if (StringUtils.hasLength(instruction)) {
+				instructionMessage = AgentInstructionMessage.builder().text(instruction).build();
+			}
 			if (includeContents) {
+				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
+				List<Object> newMessages = new ArrayList<>((List<Object>)stateForChild.remove("messages"));
 				// by default, includeContents is true, we pass down the messages from the parent state
 				if (StringUtils.hasLength(instruction)) {
 					// instruction will be added as a special UserMessage to the child graph.
-					parentState.updateState(Map.of("messages", new AgentInstructionMessage(instruction)));
+					newMessages.add(instructionMessage);
 				}
-				subGraphResult = childGraph.graphResponseStream(parentState, subGraphRunnableConfig);
+				stateForChild.put("messages", newMessages);
+				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			} else {
 				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
 				parentMessages = stateForChild.remove("messages");
 				if (StringUtils.hasLength(instruction)) {
 					// instruction will be added as a special UserMessage to the child graph.
-					stateForChild.put("messages", new AgentInstructionMessage(instruction));
+					stateForChild.put("messages", instructionMessage);
 				}
 				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			}
@@ -792,63 +811,82 @@ public class ReactAgent extends BaseAgent {
 			Map<String, Object> result = new HashMap<>();
 
 			String outputKeyToParent = StringUtils.hasLength(ReactAgent.this.outputKey) ? ReactAgent.this.outputKey : "messages";
-			result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult));
+			result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult, instructionMessage));
 			if (parentMessages != null) {
 				result.put("messages", parentMessages);
 			}
 			return result;
 		}
 
-		private @NotNull Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(OverAllState parentState, Flux<GraphResponse<NodeOutput>> subGraphResult) {
-			return Flux.create(sink -> {
-				AtomicReference<GraphResponse<NodeOutput>> lastRef = new AtomicReference<>();
-				subGraphResult.subscribe(item -> {
-					GraphResponse<NodeOutput> previous = lastRef.getAndSet(item);
-					if (previous != null) {
-						sink.next(previous);
-					}
-				}, sink::error, () -> {
-					GraphResponse<NodeOutput> lastResponse = lastRef.get();
-					if (lastResponse != null) {
-						if (lastResponse.resultValue().isPresent()) {
-							Object resultValue = lastResponse.resultValue().get();
-							if (resultValue instanceof Map) {
-								@SuppressWarnings("unchecked")
-								Map<String, Object> resultMap = (Map<String, Object>) resultValue;
-								if (resultMap.get("messages") instanceof List) {
-									@SuppressWarnings("unchecked")
-									List<Object> messages = new ArrayList<>((List<Object>) resultMap.get("messages"));
-									if (!messages.isEmpty()) {
-										parentState.value("messages").ifPresent(parentMsgs -> {
-											if (parentMsgs instanceof List) {
-												messages.removeAll((List<?>) parentMsgs);
-											}
-										});
+		private @NotNull Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(OverAllState parentState, Flux<GraphResponse<NodeOutput>> subGraphResult, AgentInstructionMessage instructionMessage) {
+			// Use buffer(2, 1) to create sliding windows: [elem0, elem1], [elem1, elem2], ..., [elemN-1, elemN], [elemN]
+			// For windows with 2 elements, emit the first (previous element)
+			// For the last window with 1 element, process it specially
+			return subGraphResult
+					.buffer(2, 1)
+					.flatMap(window -> {
+						if (window.size() == 1) {
+							// Last window: process the last element with message filtering
+							return Flux.just(processLastResponse(window.get(0), parentState, instructionMessage));
+						} else {
+							// Regular window: emit the first element (previous, delayed by one)
+							return Flux.just(window.get(0));
+						}
+					}, 1); // Concurrency of 1 to maintain order
+		}
 
-										List<Object> finalMessages;
-										if (returnReasoningContents) {
-											finalMessages = messages;
-										}
-										else {
-											if (!messages.isEmpty()) {
-												finalMessages = List.of(messages.get(messages.size() - 1));
-											} else {
-												finalMessages = List.of();
-											}
-										}
+		/**
+		 * Process the last response by filtering messages based on parent state and returnReasoningContents flag.
+		 *
+		 * @param lastResponse the last response from sub-graph
+		 * @param parentState the parent state containing messages to filter out
+		 * @return processed GraphResponse with filtered messages
+		 */
+		private GraphResponse<NodeOutput> processLastResponse(GraphResponse<NodeOutput> lastResponse, OverAllState parentState, AgentInstructionMessage instructionMessage) {
+			if (lastResponse == null) {
+				return lastResponse;
+			}
+			
+			if (lastResponse.resultValue().isPresent()) {
+				Object resultValue = lastResponse.resultValue().get();
+				if (resultValue instanceof Map) {
+					@SuppressWarnings("unchecked")
+					Map<String, Object> resultMap = (Map<String, Object>) resultValue;
+					if (resultMap.get("messages") instanceof List) {
+						@SuppressWarnings("unchecked")
+						List<Object> messages = new ArrayList<>((List<Object>) resultMap.get("messages"));
+						if (!messages.isEmpty()) {
+							parentState.value("messages").ifPresent(parentMsgs -> {
+								if (parentMsgs instanceof List) {
+									messages.removeAll((List<?>) parentMsgs);
+								}
+							});
 
-										Map<String, Object> newResultMap = new HashMap<>(resultMap);
-										newResultMap.put("messages", finalMessages);
-										lastResponse = GraphResponse.done(newResultMap);
+							List<Object> finalMessages;
+							if (returnReasoningContents) {
+								finalMessages = messages;
+							} else {
+								if (!messages.isEmpty()) {
+									if (instructionMessage != null) {
+										finalMessages = new ArrayList<>();
+										finalMessages.add(instructionMessage);
+										finalMessages.add(messages.get(messages.size() - 1));
+									} else {
+										finalMessages = List.of(messages.get(messages.size() - 1));
 									}
+								} else {
+									finalMessages = List.of();
 								}
 							}
+
+							Map<String, Object> newResultMap = new HashMap<>(resultMap);
+							newResultMap.put("messages", finalMessages);
+							return GraphResponse.done(newResultMap);
 						}
 					}
-					sink.next(lastResponse);
-					sink.complete();
-				});
-			});
+				}
+			}
+			return lastResponse;
 		}
 
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
@@ -856,7 +894,7 @@ public class ReactAgent extends BaseAgent {
 					.checkPointId(null)
 					.clearContext()
 					.nextNode(null)
-					.addMetadata("_AGENT_", subGraphId()) // subGraphId is the same as the name of the agent that created it
+					.addMetadata("_AGENT_", subGraphId(nodeId)) // subGraphId is the same as the name of the agent that created it
 					.build();
 			var parentSaver = parentCompileConfig.checkpointSaver();
 			var subGraphSaver = childGraph.compileConfig.checkpointSaver();
@@ -870,12 +908,12 @@ public class ReactAgent extends BaseAgent {
 				if (parentSaver.get() == subGraphSaver.get()) {
 					subGraphRunnableConfig = RunnableConfig.builder(config)
 							.threadId(config.threadId()
-									.map(threadId -> format("%s_%s", threadId, subGraphId()))
-									.orElseGet(this::subGraphId))
+									.map(threadId -> format("%s_%s", threadId, subGraphId(nodeId)))
+									.orElseGet(() -> subGraphId(nodeId)))
 							.nextNode(null)
 							.checkPointId(null)
 							.clearContext()
-							.addMetadata("_AGENT_", subGraphId()) // subGraphId is the same as the name of the agent that created it
+							.addMetadata("_AGENT_", subGraphId(nodeId)) // subGraphId is the same as the name of the agent that created it
 							.build();
 				}
 			}
@@ -893,7 +931,7 @@ public class ReactAgent extends BaseAgent {
 
 		public AgentSubGraphNode(String id, boolean includeContents, boolean returnReasoningContents, CompiledGraph subGraph, String instruction) {
 			super(Objects.requireNonNull(id, "id cannot be null"),
-					(config) -> node_async(new SubGraphNodeAdapter(includeContents, returnReasoningContents, subGraph, instruction, config)));
+					(config) -> node_async(new AgentToSubCompiledGraphNodeAdapter(id, includeContents, returnReasoningContents, subGraph, instruction, config)));
 			this.subGraph = subGraph;
 		}
 

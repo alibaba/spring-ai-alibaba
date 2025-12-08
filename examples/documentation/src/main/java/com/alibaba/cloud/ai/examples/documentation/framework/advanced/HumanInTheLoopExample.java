@@ -17,20 +17,36 @@ package com.alibaba.cloud.ai.examples.documentation.framework.advanced;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+
+import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * 人工介入（Human-in-the-Loop）示例
@@ -40,8 +56,9 @@ import java.util.Optional;
  * 2. 批准（approve）决策
  * 3. 编辑（edit）决策
  * 4. 拒绝（reject）决策
- * 5. 完整示例
- * 6. 实用工具方法
+ * 5. 处理多个工具调用
+ * 6. Workflow中嵌套ReactAgent的人工中断
+ * 7. 实用工具方法
  *
  * 参考文档: advanced_doc/human-in-the-loop.md
  */
@@ -165,14 +182,17 @@ public class HumanInTheLoopExample {
 		// 创建工具回调（示例）
 		ToolCallback writeFileTool = FunctionToolCallback.builder("write_file", (args) -> "文件已写入")
 				.description("写入文件")
+				.inputType(String.class)
 				.build();
 
 		ToolCallback executeSqlTool = FunctionToolCallback.builder("execute_sql", (args) -> "SQL已执行")
 				.description("执行SQL语句")
+				.inputType(String.class)
 				.build();
 
 		ToolCallback readDataTool = FunctionToolCallback.builder("read_data", (args) -> "数据已读取")
 				.description("读取数据")
+				.inputType(String.class)
 				.build();
 
 		// 创建人工介入Hook
@@ -207,6 +227,7 @@ public class HumanInTheLoopExample {
 
 		ToolCallback poetTool = FunctionToolCallback.builder("poem", (args) -> "春江潮水连海平，海上明月共潮生...")
 				.description("写诗工具")
+				.inputType(String.class)
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
@@ -293,6 +314,7 @@ public class HumanInTheLoopExample {
 
 		ToolCallback executeSqlTool = FunctionToolCallback.builder("execute_sql", (args) -> "SQL执行结果")
 				.description("执行SQL语句")
+				.inputType(String.class)
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
@@ -365,6 +387,7 @@ public class HumanInTheLoopExample {
 
 		ToolCallback deleteTool = FunctionToolCallback.builder("delete_data", (args) -> "数据已删除")
 				.description("删除数据")
+				.inputType(String.class)
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
@@ -433,14 +456,17 @@ public class HumanInTheLoopExample {
 
 		ToolCallback tool1 = FunctionToolCallback.builder("tool1", (args) -> "工具1结果")
 				.description("工具1")
+				.inputType(String.class)
 				.build();
 
 		ToolCallback tool2 = FunctionToolCallback.builder("tool2", (args) -> "工具2结果")
 				.description("工具2")
+				.inputType(String.class)
 				.build();
 
 		ToolCallback tool3 = FunctionToolCallback.builder("tool3", (args) -> "工具3结果")
 				.description("工具3")
+				.inputType(String.class)
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
@@ -509,10 +535,172 @@ public class HumanInTheLoopExample {
 					.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, decisionsMetadata)
 					.build();
 
-			agent.invokeAndGetOutput("", resumeConfig);
+			Optional<NodeOutput> outputOptional = agent.invokeAndGetOutput("", resumeConfig);
 
-			System.out.println("多个决策示例执行完成");
+			System.out.println("多个决策示例执行完成，最终状态：\n\n" + outputOptional.get().state());
 		}
+	}
+
+	/**
+	 * 示例6：Workflow中嵌套ReactAgent的人工中断
+	 *
+	 * 演示如何在StateGraph工作流中嵌套带有HumanInTheLoopHook的ReactAgent，
+	 * 并处理工作流执行过程中的中断和恢复
+	 */
+	public void example6_workflowWithHumanInTheLoop() throws Exception {
+		// 创建工具回调
+		ToolCallback searchTool = FunctionToolCallback
+				.builder("search", (args) -> "搜索结果：AI Agent是能够感知环境、自主决策并采取行动的智能系统。")
+				.description("搜索工具，用于查找相关信息")
+				.inputType(String.class)
+				.build();
+
+		// 配置检查点保存器（人工介入需要检查点来处理中断）
+		MemorySaver saver = new MemorySaver();
+
+		// 创建带有人工介入Hook的ReactAgent
+		ReactAgent qaAgent = ReactAgent.builder()
+				.name("qa_agent")
+				.model(chatModel)
+				.instruction("你是一个问答专家，负责回答用户的问题。如果需要搜索信息，请使用search工具。\n用户问题：{cleaned_input}")
+				.outputKey("qa_result")
+				.saver(saver)
+				.hooks(HumanInTheLoopHook.builder()
+						.approvalOn("search", ToolConfig.builder()
+								.description("搜索操作需要人工审批，请确认是否执行搜索")
+								.build())
+						.build())
+				.tools(searchTool)
+				.enableLogging(true)
+				.build();
+
+		// 创建预处理Node：清理输入
+		class PreprocessorNode implements NodeAction {
+			@Override
+			public Map<String, Object> apply(OverAllState state) throws Exception {
+				String input = state.value("input", "").toString();
+				String cleaned = input.trim();
+				System.out.println("预处理节点：清理输入 -> " + cleaned);
+				return Map.of("cleaned_input", cleaned);
+			}
+		}
+
+		// 创建验证Node：验证结果质量
+		class ValidatorNode implements NodeAction {
+			@Override
+			public Map<String, Object> apply(OverAllState state) throws Exception {
+				Optional<Object> qaResultOpt = state.value("qa_result");
+				if (qaResultOpt.isPresent() && qaResultOpt.get() instanceof Message message) {
+					boolean isValid = message.getText().length() > 30; // 简单验证：答案长度需大于30
+					System.out.println("验证节点：结果验证 -> " + (isValid ? "通过" : "不通过"));
+					return Map.of("is_valid", isValid);
+				}
+				return Map.of("is_valid", false);
+			}
+		}
+
+		// 定义状态管理策略
+		KeyStrategyFactory keyStrategyFactory = () -> {
+			HashMap<String, KeyStrategy> strategies = new HashMap<>();
+			strategies.put("input", new ReplaceStrategy());
+			strategies.put("cleaned_input", new ReplaceStrategy());
+			strategies.put("qa_result", new ReplaceStrategy());
+			strategies.put("is_valid", new ReplaceStrategy());
+			return strategies;
+		};
+
+		// 构建工作流
+		StateGraph workflow = new StateGraph(keyStrategyFactory);
+
+		// 添加普通Node
+		workflow.addNode("preprocess", node_async(new PreprocessorNode()));
+		workflow.addNode("validate", node_async(new ValidatorNode()));
+
+		// 添加Agent Node（嵌套的ReactAgent）
+		workflow.addNode(qaAgent.name(), qaAgent.asNode(
+				true,   // includeContents: 传递父图的消息历史
+				false   // includeReasoning: 不返回推理过程
+		));
+
+		// 定义流程：预处理 -> Agent处理 -> 验证
+		workflow.addEdge(StateGraph.START, "preprocess");
+		workflow.addEdge("preprocess", qaAgent.name());
+		workflow.addEdge(qaAgent.name(), "validate");
+
+		// 条件边：验证通过则结束，否则重新处理
+		workflow.addConditionalEdges(
+				"validate",
+				edge_async(state -> {
+					Boolean isValid = (Boolean) state.value("is_valid", false);
+					return isValid ? "end" : qaAgent.name();
+				}),
+				Map.of(
+						"end", StateGraph.END,
+						qaAgent.name(), qaAgent.name()
+				)
+		);
+
+		// 编译工作流
+		CompiledGraph compiledGraph = workflow.compile(
+				CompileConfig.builder()
+						.saverConfig(SaverConfig.builder().register(saver).build())
+						.build()
+		);
+
+		String threadId = "workflow-hilt-001";
+		Map<String, Object> input = Map.of("input", "请解释量子计算的基本原理");
+
+		// 第一次调用 - 可能触发中断
+		System.out.println("=== 第一次调用工作流：可能触发中断 ===");
+		Optional<NodeOutput> nodeOutputOptional = compiledGraph.invokeAndGetOutput(
+				input,
+				RunnableConfig.builder().threadId(threadId).build()
+		);
+
+		// 检查是否发生中断
+		if (nodeOutputOptional.isPresent() && nodeOutputOptional.get() instanceof InterruptionMetadata interruptionMetadata) {
+			System.out.println("\n工作流被中断，等待人工审核。");
+			System.out.println("中断节点: " + interruptionMetadata.node());
+			System.out.println("中断状态: " + interruptionMetadata.state());
+
+			List<InterruptionMetadata.ToolFeedback> feedbacks = interruptionMetadata.toolFeedbacks();
+			System.out.println("需要审批的工具调用数量: " + feedbacks.size());
+
+			// 显示所有需要审批的工具调用
+			for (InterruptionMetadata.ToolFeedback feedback : feedbacks) {
+				System.out.println("\n工具名称: " + feedback.getName());
+				System.out.println("工具参数: " + feedback.getArguments());
+				System.out.println("工具描述: " + feedback.getDescription());
+			}
+
+			// 构建人工反馈（批准所有工具调用）
+			InterruptionMetadata.Builder feedbackBuilder = InterruptionMetadata.builder()
+					.nodeId(interruptionMetadata.node())
+					.state(interruptionMetadata.state());
+
+			// 对每个工具调用设置批准决策
+			feedbacks.forEach(toolFeedback -> {
+				feedbackBuilder.addToolFeedback(
+						InterruptionMetadata.ToolFeedback.builder(toolFeedback)
+								.result(InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED)
+								.build()
+				);
+			});
+
+			InterruptionMetadata approvalMetadata = feedbackBuilder.build();
+
+			// 使用批准决策恢复执行
+			System.out.println("\n=== 第二次调用：使用批准决策恢复工作流 ===");
+			RunnableConfig resumableConfig = RunnableConfig.builder()
+					.threadId(threadId)
+					.addHumanFeedback(approvalMetadata)
+					.build();
+
+			nodeOutputOptional = compiledGraph.invokeAndGetOutput(Map.of(), resumableConfig);
+			System.out.println("\n工作流中嵌套ReactAgent的人工中断示例执行完成");
+
+		}
+
 	}
 
 	/**
@@ -522,24 +710,28 @@ public class HumanInTheLoopExample {
 		System.out.println("=== 人工介入（Human-in-the-Loop）示例 ===\n");
 
 		try {
-			System.out.println("示例1: 配置中断和基本使用");
-			example1_basicConfiguration();
-			System.out.println();
+//			System.out.println("示例1: 配置中断和基本使用");
+//			example1_basicConfiguration();
+//			System.out.println();
+//
+//			System.out.println("示例2: 批准（approve）决策");
+//			example2_approveDecision();
+//			System.out.println();
+//
+//			System.out.println("示例3: 编辑（edit）决策");
+//			example3_editDecision();
+//			System.out.println();
+//
+//			System.out.println("示例4: 拒绝（reject）决策");
+//			example4_rejectDecision();
+//			System.out.println();
+//
+//			System.out.println("示例5: 处理多个工具调用决策");
+//			example5_multipleTools();
+//			System.out.println();
 
-			System.out.println("示例2: 批准（approve）决策");
-			example2_approveDecision();
-			System.out.println();
-
-			System.out.println("示例3: 编辑（edit）决策");
-			example3_editDecision();
-			System.out.println();
-
-			System.out.println("示例4: 拒绝（reject）决策");
-			example4_rejectDecision();
-			System.out.println();
-
-			System.out.println("示例5: 处理多个工具调用决策");
-			example5_multipleTools();
+			System.out.println("示例6: Workflow中嵌套ReactAgent的人工中断");
+			example6_workflowWithHumanInTheLoop();
 			System.out.println();
 
 		}

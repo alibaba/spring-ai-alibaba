@@ -17,8 +17,10 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
@@ -26,8 +28,12 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
+import org.springframework.ai.tool.support.ToolDefinitions;
+import org.springframework.util.ReflectionUtils;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -35,10 +41,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -79,6 +87,28 @@ class ToolCallbackTest {
 			return String.valueOf(a * b);
 		}
 
+	}
+
+	/**
+	 * Tool class with no-parameter method using @Tool annotation
+	 */
+	public static class SystemInfoTools {
+		public static int callCount = 0;
+
+		@Tool(description = "Get current system time in milliseconds")
+		public String getCurrentTime() {
+			callCount++;
+			return "Current time: " + System.currentTimeMillis() + " ms";
+		}
+
+		@Tool(description = "Get system information")
+		public String getSystemInfo() {
+			callCount++;
+			return String.format("System: %s, Java Version: %s, Available Processors: %d",
+					System.getProperty("os.name"),
+					System.getProperty("java.version"),
+					Runtime.getRuntime().availableProcessors());
+		}
 	}
 
 	/**
@@ -303,13 +333,13 @@ class ToolCallbackTest {
 	/**
 	 * Test 4: Using ToolCallbackResolver directly
 	 * Demonstrates how to use a custom ToolCallbackResolver for tool resolution
+	 * Uses MethodToolCallback instead of FunctionToolCallback to support JSON format input
 	 */
 	@Test
 	public void testToolCallbackResolver() throws Exception {
-		// Create a calculator tool using FunctionToolCallback
-		class CalculatorFunction implements BiFunction<String, ToolContext, String> {
-			@Override
-			public String apply(String expression, ToolContext toolContext) {
+		// Create a calculator tool class with a method for calculations
+		class CalculatorTool {
+			public String calculate(String expression, ToolContext toolContext) {
 				// Simple calculation parsing (for demo purposes)
 				if (expression.contains("/")) {
 					String[] parts = expression.split("/");
@@ -320,9 +350,26 @@ class ToolCallbackTest {
 			}
 		}
 
-		ToolCallback calculatorTool = FunctionToolCallback.builder("calculator", new CalculatorFunction())
+		// Create MethodToolCallback using reflection
+		CalculatorTool calculatorToolInstance = new CalculatorTool();
+		java.lang.reflect.Method method = ReflectionUtils.findMethod(CalculatorTool.class, 
+				"calculate", String.class, ToolContext.class);
+		
+		if (method == null) {
+			fail("Could not find calculate method in CalculatorTool class");
+		}
+
+		// Create ToolDefinition using ToolDefinitions.builder() with the method
+		ToolDefinition toolDefinition = ToolDefinitions.builder(method)
+				.name("calculator")
 				.description("Perform arithmetic calculations")
-				.inputType(String.class)
+				.build();
+
+		// Build MethodToolCallback
+		ToolCallback calculatorTool = MethodToolCallback.builder()
+				.toolDefinition(toolDefinition)
+				.toolMethod(method)
+				.toolObject(calculatorToolInstance)
 				.build();
 
 		// Create a custom resolver
@@ -443,6 +490,122 @@ class ToolCallbackTest {
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
 			fail("Multiple methodTools execution failed: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Test 7: Using methodTools with no-parameter methods
+	 * Demonstrates how to use @Tool annotation on methods without parameters
+	 */
+	@Test
+	public void testMethodToolsWithNoParameters() throws Exception {
+		SystemInfoTools systemInfoTools = new SystemInfoTools();
+		SystemInfoTools.callCount = 0; // Reset call count
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("system_info_agent")
+				.model(chatModel)
+				.description("An agent that can get system information")
+				.instruction("You are a helpful assistant that can provide system information. Use the available tools to get system details.")
+				.methodTools(systemInfoTools)  // Pass the object with @Tool annotated methods (no parameters)
+				.saver(new MemorySaver())
+				.enableLogging(true)
+				.build();
+
+		try {
+			Optional<OverAllState> result = agent.invoke("What is the current system time? Please use the tool to get it.");
+
+			assertTrue(result.isPresent(), "Result should be present");
+			OverAllState state = result.get();
+			assertTrue(state.value("messages").isPresent(), "Messages should be present in state");
+
+			// Verify that the tool was called
+			assertTrue(SystemInfoTools.callCount > 0, 
+					"SystemInfoTools should have been called at least once. Call count: " + SystemInfoTools.callCount);
+
+			System.out.println("=== MethodTools with No Parameters Test ===");
+			System.out.println("Tool call count: " + SystemInfoTools.callCount);
+			System.out.println(result.get());
+		}
+		catch (java.util.concurrent.CompletionException e) {
+			e.printStackTrace();
+			fail("MethodTools with no parameters execution failed: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Test 8: Using agent.stream() with tool calls
+	 * Demonstrates streaming agent execution with tool invocation
+	 */
+	@Test
+	public void testStreamWithToolCalls() throws Exception {
+		CalculatorTools calculatorTools = new CalculatorTools();
+		CalculatorTools.callCount = 0; // Reset call count
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("streaming_calculator_agent")
+				.model(chatModel)
+				.description("An agent that can perform calculations using streaming")
+				.instruction("You are a helpful calculator assistant. Use the available tools to perform calculations.")
+				.methodTools(calculatorTools)  // Pass the object with @Tool annotated methods
+				.saver(new MemorySaver())
+				.enableLogging(true)
+				.build();
+
+		try {
+			// Use stream() instead of invoke()
+			Flux<NodeOutput> stream = agent.stream("What is 23 + 45? Please calculate it step by step.");
+
+			// Track if we received any outputs and if tool was called
+			AtomicBoolean receivedOutput = new AtomicBoolean(false);
+			AtomicBoolean toolCalled = new AtomicBoolean(false);
+
+			// Process stream outputs
+			stream.doOnNext(output -> {
+				receivedOutput.set(true);
+				
+				System.out.println("=== Stream Output ===");
+				System.out.println("Node: " + output.node());
+				System.out.println("Agent: " + output.agent());
+				
+				if (output.tokenUsage() != null) {
+					System.out.println("Token Usage: " + output.tokenUsage());
+				}
+
+				// Check if this is a streaming output with messages
+				if (output instanceof StreamingOutput<?> streamingOutput) {
+					System.out.println("Streaming Output received");
+					
+					// Check if tool was called by examining the call count
+					if (CalculatorTools.callCount > 0) {
+						toolCalled.set(true);
+						System.out.println("Tool was called! Call count: " + CalculatorTools.callCount);
+					}
+				}
+			})
+			.doOnError(error -> {
+				System.err.println("Stream error: " + error.getMessage());
+				error.printStackTrace();
+				fail("Stream execution failed: " + error.getMessage());
+			})
+			.doOnComplete(() -> {
+				System.out.println("=== Stream completed ===");
+				assertTrue(receivedOutput.get(), "Should have received at least one output");
+				assertTrue(toolCalled.get() || CalculatorTools.callCount > 0, 
+						"Tool should have been called during stream execution");
+			})
+			.blockLast(); // Block until stream completes
+
+			// Verify tool was actually called
+			assertTrue(CalculatorTools.callCount > 0, 
+					"Calculator tool should have been called at least once");
+			
+			System.out.println("=== Stream with Tool Calls Test Completed ===");
+			System.out.println("Total tool calls: " + CalculatorTools.callCount);
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			fail("Stream with tool calls execution failed: " + e.getMessage());
 		}
 	}
 

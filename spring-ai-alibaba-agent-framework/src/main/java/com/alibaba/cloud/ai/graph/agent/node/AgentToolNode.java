@@ -160,7 +160,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			ToolResponseMessage newToolResponseMessage =
 					ToolResponseMessage.builder().responses(allResponses).build();
 			newMessages.add(newToolResponseMessage);
-			newMessages.add(new RemoveByHash<>(assistantMessage));
+			newMessages.add(new RemoveByHash<>(toolResponseMessage));
 			updatedState.put("messages", newMessages);
 
 			if (enableActingLog) {
@@ -229,9 +229,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 					}
 				}
 			} catch (ToolExecutionException e) {
-				logger.error("[ThreadId {}] Agent {} acting, tool {} execution failed. "
-						+ "The agent loop has ended, please use ToolRetryInterceptor to customize the retry and policy on tool failure. \n"
-						, config.threadId().orElse(THREAD_ID_DEFAULT), agentName, req.getToolName(), e);
+				logger.error("[ThreadId {}] Agent {} acting, tool {} execution failed, handle to {} processor to decide the next move (terminate or continue). "
+						, config.threadId().orElse(THREAD_ID_DEFAULT), agentName, req.getToolName(), toolExecutionExceptionProcessor.getClass().getName(), e);
 				result = toolExecutionExceptionProcessor.process(e);
 			}
 

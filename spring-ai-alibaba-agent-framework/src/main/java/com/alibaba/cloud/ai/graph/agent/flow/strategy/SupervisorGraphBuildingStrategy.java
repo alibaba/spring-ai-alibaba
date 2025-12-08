@@ -15,33 +15,34 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingEdgeAction;
+import com.alibaba.cloud.ai.graph.agent.flow.node.SupervisorEdgeAction;
 import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * Strategy for building LLM-based routing graphs. In a routing graph, an LLM decides
- * which sub-agent should handle the task based on the input content and agent
- * capabilities.
+ * Strategy for building supervisor-based routing graphs. In a supervisor graph, an LLM
+ * decides which sub-agent should handle the task, and sub-agents always return to the
+ * supervisor after completion. The supervisor can then either route to another sub-agent
+ * or mark the task as complete (END).
  */
-public class RoutingGraphBuildingStrategy implements FlowGraphBuildingStrategy {
+public class SupervisorGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 
 	@Override
 	public StateGraph buildGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		validateConfig(config);
-		validateRoutingConfig(config);
+		validateSupervisorConfig(config);
 
 		StateGraph graph = config.getStateSerializer() != null
 				? new StateGraph(config.getName(), config.getKeyStrategyFactory(), config.getStateSerializer())
@@ -60,46 +61,50 @@ public class RoutingGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 			// Add the current sub-agent as a node
 			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, graph);
 			edgeRoutingMap.put(subAgent.name(), subAgent.name());
-			// Connect sub-agents to END
-			graph.addEdge(subAgent.name(), END);
+			// Connect sub-agents back to supervisor (not to END)
+			graph.addEdge(subAgent.name(), rootAgent.name());
 		}
 
-		// Connect parent to sub-agents via conditional routing
+		// Add END as a possible routing destination
+		edgeRoutingMap.put(END, END);
+
+		// Connect parent to sub-agents or END via conditional routing
 		graph.addConditionalEdges(rootAgent.name(),
-				new RoutingEdgeAction(config.getChatModel(), rootAgent, config.getSubAgents()), edgeRoutingMap);
+				new SupervisorEdgeAction(config.getChatModel(), rootAgent, config.getSubAgents()), edgeRoutingMap);
 
 		return graph;
 	}
 
 	@Override
 	public String getStrategyType() {
-		return FlowAgentEnum.ROUTING.getType();
+		return FlowAgentEnum.SUPERVISOR.getType();
 	}
 
 	@Override
 	public void validateConfig(FlowGraphBuilder.FlowGraphConfig config) {
 		FlowGraphBuildingStrategy.super.validateConfig(config);
-		validateRoutingConfig(config);
+		validateSupervisorConfig(config);
 	}
 
 	/**
-	 * Validates routing-specific configuration requirements.
+	 * Validates supervisor-specific configuration requirements.
 	 * @param config the configuration to validate
 	 * @throws IllegalArgumentException if validation fails
 	 */
-	private void validateRoutingConfig(FlowGraphBuilder.FlowGraphConfig config) {
+	private void validateSupervisorConfig(FlowGraphBuilder.FlowGraphConfig config) {
 		if (config.getSubAgents() == null || config.getSubAgents().isEmpty()) {
-			throw new IllegalArgumentException("Routing flow requires at least one sub-agent");
+			throw new IllegalArgumentException("Supervisor flow requires at least one sub-agent");
 		}
 
 		if (config.getChatModel() == null) {
-			throw new IllegalArgumentException("Routing flow requires a ChatModel for decision making");
+			throw new IllegalArgumentException("Supervisor flow requires a ChatModel for decision making");
 		}
 
 		// Ensure root agent is a FlowAgent for input key access
 		if (!(config.getRootAgent() instanceof FlowAgent)) {
-			throw new IllegalArgumentException("Routing flow requires root agent to be a FlowAgent");
+			throw new IllegalArgumentException("Supervisor flow requires root agent to be a FlowAgent");
 		}
 	}
 
 }
+

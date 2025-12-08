@@ -23,7 +23,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.redis.RedisSaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -57,7 +57,7 @@ public class CheckpointRedisExample {
 				.setAddress("redis://localhost:6379");  // Redis 地址
 
 		RedissonClient redisson = Redisson.create(config);
-		return new RedisSaver(redisson);
+		return RedisSaver.builder().redisson(redisson).build();
 	}
 
 	/**
@@ -69,7 +69,7 @@ public class CheckpointRedisExample {
 				.setAddress("redis://" + host + ":" + port);
 
 		RedissonClient redisson = Redisson.create(config);
-		return new RedisSaver(redisson);
+		return RedisSaver.builder().redisson(redisson).build();
 	}
 
 	/**
@@ -85,7 +85,7 @@ public class CheckpointRedisExample {
 
 		RedissonClient redisson = Redisson.create(config);
 		try {
-			RedisSaver saver = new RedisSaver(redisson);
+			RedisSaver saver = RedisSaver.builder().redisson(redisson).build();
 
 			SaverConfig saverConfig = SaverConfig.builder()
 					.register(saver)
@@ -134,7 +134,7 @@ public class CheckpointRedisExample {
 
 		RedissonClient redisson = Redisson.create(config);
 		try {
-			RedisSaver newSaver = new RedisSaver(redisson);
+			RedisSaver newSaver = RedisSaver.builder().redisson(redisson).build();
 			
 			SaverConfig newSaverConfig = SaverConfig.builder()
 					.register(newSaver)
@@ -171,7 +171,7 @@ public class CheckpointRedisExample {
 		
 		RedissonClient redisson = Redisson.create(config);
 		try {
-			RedisSaver newSaver = new RedisSaver(redisson);
+			RedisSaver newSaver = RedisSaver.builder().redisson(redisson).build();
 			
 			SaverConfig newSaverConfig = SaverConfig.builder()
 					.register(newSaver)

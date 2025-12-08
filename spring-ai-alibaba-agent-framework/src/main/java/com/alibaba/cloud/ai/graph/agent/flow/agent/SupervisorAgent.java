@@ -23,27 +23,27 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.model.ChatModel;
 
-public class LlmRoutingAgent extends FlowAgent {
+public class SupervisorAgent extends FlowAgent {
 
 	private final ChatModel chatModel;
-	private final String fallbackAgent;
 	private final String systemPrompt;
 	private final String instruction;
 
-	protected LlmRoutingAgent(LlmRoutingAgentBuilder builder) {
+	protected SupervisorAgent(SupervisorAgentBuilder builder) {
 		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor);
 		this.chatModel = builder.chatModel;
-		this.fallbackAgent = builder.fallbackAgent;
 		this.systemPrompt = builder.systemPrompt;
 		this.instruction = builder.instruction;
 	}
 
-	public static LlmRoutingAgentBuilder builder() {
-		return new LlmRoutingAgentBuilder();
+	public static SupervisorAgentBuilder builder() {
+		return new SupervisorAgentBuilder();
 	}
 
-	public String getFallbackAgent() {
-		return fallbackAgent;
+	@Override
+	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
+		config.setChatModel(this.chatModel);
+		return FlowGraphBuilder.buildGraph(FlowAgentEnum.SUPERVISOR.getType(), config);
 	}
 
 	public String getSystemPrompt() {
@@ -54,50 +54,38 @@ public class LlmRoutingAgent extends FlowAgent {
 		return instruction;
 	}
 
-	@Override
-	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
-		config.setChatModel(this.chatModel);
-		return FlowGraphBuilder.buildGraph(FlowAgentEnum.ROUTING.getType(), config);
-	}
-
 	/**
-	 * Builder for creating LlmRoutingAgent instances. Extends the common FlowAgentBuilder
+	 * Builder for creating SupervisorAgent instances. Extends the common FlowAgentBuilder
 	 * and adds LLM-specific configuration.
 	 */
-	public static class LlmRoutingAgentBuilder extends FlowAgentBuilder<LlmRoutingAgent, LlmRoutingAgentBuilder> {
+	public static class SupervisorAgentBuilder extends FlowAgentBuilder<SupervisorAgent, SupervisorAgentBuilder> {
 
 		private ChatModel chatModel;
-		private String fallbackAgent;
 		private String systemPrompt;
 		private String instruction;
 
 		/**
-		 * Sets the ChatModel for LLM-based routing decisions.
+		 * Sets the ChatModel for LLM-based supervisor routing decisions.
 		 * @param chatModel the chat model to use for routing
 		 * @return this builder instance for method chaining
 		 */
-		public LlmRoutingAgentBuilder model(ChatModel chatModel) {
+		public SupervisorAgentBuilder model(ChatModel chatModel) {
 			this.chatModel = chatModel;
 			return this;
 		}
 
-		public LlmRoutingAgentBuilder fallbackAgent(String fallbackAgent) {
-			this.fallbackAgent = fallbackAgent;
-			return this;
-		}
-
-		public LlmRoutingAgentBuilder systemPrompt(String systemPrompt) {
+		public SupervisorAgentBuilder systemPrompt(String systemPrompt) {
 			this.systemPrompt = systemPrompt;
 			return this;
 		}
 
-		public LlmRoutingAgentBuilder instruction(String instruction) {
+		public SupervisorAgentBuilder instruction(String instruction) {
 			this.instruction = instruction;
 			return this;
 		}
 
 		@Override
-		protected LlmRoutingAgentBuilder self() {
+		protected SupervisorAgentBuilder self() {
 			return this;
 		}
 
@@ -105,16 +93,17 @@ public class LlmRoutingAgent extends FlowAgent {
 		protected void validate() {
 			super.validate();
 			if (chatModel == null) {
-				throw new IllegalArgumentException("ChatModel must be provided for LLM routing agent");
+				throw new IllegalArgumentException("ChatModel must be provided for supervisor agent");
 			}
 		}
 
 		@Override
-		public LlmRoutingAgent doBuild() {
+		public SupervisorAgent doBuild() {
 			validate();
-			return new LlmRoutingAgent(this);
+			return new SupervisorAgent(this);
 		}
 
 	}
 
 }
+
