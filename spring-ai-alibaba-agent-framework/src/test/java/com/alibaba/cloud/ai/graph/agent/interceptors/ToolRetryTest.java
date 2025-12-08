@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.Optional;
@@ -88,6 +89,7 @@ class ToolRetryTest {
 				.tools(failingToolCallback)
 				.interceptors(toolRetryInterceptor)
 				.saver(new MemorySaver())
+				.toolExecutionExceptionProcessor(DefaultToolExecutionExceptionProcessor.builder().alwaysThrow(true).build())
 				.build();
 
 		try {

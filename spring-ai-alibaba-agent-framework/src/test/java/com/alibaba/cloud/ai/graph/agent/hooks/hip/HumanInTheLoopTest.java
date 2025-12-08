@@ -537,4 +537,141 @@ public class HumanInTheLoopTest {
 		return null;
 	}
 
+	/**
+	 * Test based on example5_multipleTools: handling multiple tools with different decisions
+	 * (approve, edit, reject) in a single assistant message.
+	 */
+	@Test
+	public void testMultipleToolsWithMixedDecisions() throws Exception {
+		ReactAgent agent = createAgentWithThreeTools();
+
+		printGraphRepresentation(agent);
+
+		String threadId = "test-thread-mixed-decisions";
+		RunnableConfig runnableConfig = RunnableConfig.builder().threadId(threadId).build();
+
+		// Assert RunnableConfig is properly configured
+		Assertions.assertNotNull(runnableConfig, "RunnableConfig should not be null");
+		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
+		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
+
+		// First invocation - should interrupt for all three tools
+		InterruptionMetadata interruptionMetadata = performFirstInvocationAndCheckThreeToolsRequested(agent, runnableConfig);
+
+		// Apply mixed decisions: approve first tool, edit second tool, reject third tool
+		InterruptionMetadata feedbackMetadata = buildMixedDecisionFeedback(interruptionMetadata);
+
+		// Second invocation - should complete with the mixed decisions applied
+		performSecondInvocation(agent, threadId, feedbackMetadata);
+	}
+
+	private ReactAgent createAgentWithThreeTools() {
+		// Create three simple tools similar to example5_multipleTools
+		org.springframework.ai.tool.ToolCallback tool1 = org.springframework.ai.tool.function.FunctionToolCallback.builder("tool1", (args) -> "工具1结果")
+				.description("工具1")
+				.inputType(String.class)
+				.build();
+
+		org.springframework.ai.tool.ToolCallback tool2 = org.springframework.ai.tool.function.FunctionToolCallback.builder("tool2", (args) -> "工具2结果")
+				.description("工具2")
+				.inputType(String.class)
+				.build();
+
+		org.springframework.ai.tool.ToolCallback tool3 = org.springframework.ai.tool.function.FunctionToolCallback.builder("tool3", (args) -> "工具3结果")
+				.description("工具3")
+				.inputType(String.class)
+				.build();
+
+		Map approvalOn = Map.of(
+				"tool1", ToolConfig.builder().description("工具1需要审批").build(),
+				"tool2", ToolConfig.builder().description("工具2需要审批").build(),
+				"tool3", ToolConfig.builder().description("工具3需要审批").build()
+		);
+
+		return ReactAgent.builder()
+				.name("multi_tool_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.tools(List.of(tool1, tool2, tool3))
+				.hooks(HumanInTheLoopHook.builder().approvalOn(approvalOn).build())
+				.build();
+	}
+
+	private InterruptionMetadata performFirstInvocationAndCheckThreeToolsRequested(ReactAgent agent, RunnableConfig runnableConfig) throws Exception {
+		// First invocation - should trigger interruption for human approval
+		System.out.println("\n=== First Invocation: Expecting Interruption with Three Tools ===");
+		Optional<NodeOutput> result = agent.invokeAndGetOutput("执行所有工具", runnableConfig);
+
+		// Assert first invocation results in interruption
+		Assertions.assertTrue(result.isPresent(), "First invocation should return a result");
+		Assertions.assertInstanceOf(InterruptionMetadata.class, result.get(),
+				"First invocation should return InterruptionMetadata for human approval");
+
+		InterruptionMetadata interruptionMetadata = (InterruptionMetadata) result.get();
+
+		// Assert interruption metadata contains expected information
+		Assertions.assertNotNull(interruptionMetadata.node(), "Interruption should have node id");
+		Assertions.assertNotNull(interruptionMetadata.state(), "Interruption should have state");
+
+		// Assert tool feedbacks are present and there are exactly 3 tools
+		List<InterruptionMetadata.ToolFeedback> toolFeedbacks = interruptionMetadata.toolFeedbacks();
+		Assertions.assertNotNull(toolFeedbacks, "Tool feedbacks should not be null");
+		Assertions.assertFalse(toolFeedbacks.isEmpty(), "Tool feedbacks should not be empty");
+
+		// Note: The model might not call all three tools in a single message, so we check for at least one
+		Assertions.assertTrue(toolFeedbacks.size() >= 1,
+				"Should have at least one tool feedback");
+
+		System.out.println("Number of tools requested: " + toolFeedbacks.size());
+		toolFeedbacks.forEach(feedback -> {
+			System.out.println("Tool: " + feedback.getName() + ", Arguments: " + feedback.getArguments());
+		});
+
+		return interruptionMetadata;
+	}
+
+	private InterruptionMetadata buildMixedDecisionFeedback(InterruptionMetadata interruptionMetadata) {
+		// Build new metadata with mixed decisions: approve, edit, reject
+		InterruptionMetadata.Builder newBuilder = InterruptionMetadata.builder()
+				.nodeId(interruptionMetadata.node())
+				.state(interruptionMetadata.state());
+
+		List<InterruptionMetadata.ToolFeedback> feedbacks = interruptionMetadata.toolFeedbacks();
+
+		for (int i = 0; i < feedbacks.size(); i++) {
+			InterruptionMetadata.ToolFeedback feedback = feedbacks.get(i);
+
+			if (i == 0) {
+				// First tool: approve
+				InterruptionMetadata.ToolFeedback approvedFeedback = InterruptionMetadata.ToolFeedback
+						.builder(feedback)
+						.result(InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED)
+						.build();
+				newBuilder.addToolFeedback(approvedFeedback);
+				System.out.println("Tool " + (i + 1) + " (" + feedback.getName() + "): APPROVED");
+			} else if (i == 1) {
+				// Second tool: edit
+				String editedArguments = "\"newValue\"";
+				InterruptionMetadata.ToolFeedback editedFeedback = InterruptionMetadata.ToolFeedback
+						.builder(feedback)
+						.arguments(editedArguments)
+						.result(InterruptionMetadata.ToolFeedback.FeedbackResult.EDITED)
+						.build();
+				newBuilder.addToolFeedback(editedFeedback);
+				System.out.println("Tool " + (i + 1) + " (" + feedback.getName() + "): EDITED to " + editedArguments);
+			} else {
+				// Third and subsequent tools: reject
+				InterruptionMetadata.ToolFeedback rejectedFeedback = InterruptionMetadata.ToolFeedback
+						.builder(feedback)
+						.result(InterruptionMetadata.ToolFeedback.FeedbackResult.REJECTED)
+						.description("不允许此操作")
+						.build();
+				newBuilder.addToolFeedback(rejectedFeedback);
+				System.out.println("Tool " + (i + 1) + " (" + feedback.getName() + "): REJECTED");
+			}
+		}
+
+		return newBuilder.build();
+	}
+
 }

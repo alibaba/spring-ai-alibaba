@@ -15,139 +15,228 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 
-
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.converter.BeanOutputConverter;
 
+import org.springframework.util.StringUtils;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RoutingEdgeAction implements AsyncEdgeAction {
+	private static final Logger logger = LoggerFactory.getLogger(RoutingEdgeAction.class);
+
+	private static final int DEFAULT_MAX_RETRIES = 2;
 
 	private final ChatClient chatClient;
-    private final BeanOutputConverter<RoutingDecision> outputConverter;
+	private final BeanOutputConverter<RoutingDecision> outputConverter;
+	private final Agent rootAgent;
+	private final List<Agent> subAgents;
 
 	public RoutingEdgeAction(ChatModel chatModel, Agent current, List<Agent> subAgents) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("You are responsible for task routing in a graph-based AI system.\n");
+		this.rootAgent = current;
+		this.subAgents = subAgents;
 
-		if (current instanceof ReactAgent reactAgent) {
-			sb.append("The instruction that you should follow to finish this task is: ");
-			sb.append(StringUtils.isEmpty(reactAgent.instruction()) ? reactAgent.description()
-					: reactAgent.instruction());
+		StringBuilder sb = new StringBuilder();
+		if (rootAgent instanceof LlmRoutingAgent llmRoutingAgent && StringUtils.hasLength(llmRoutingAgent.getSystemPrompt())) {
+			sb.append("You are responsible for task routing in a graph-based AI system.\n");
+			sb.append("The instruction that you should follow to finish this task is:\n\n ");
+			sb.append(llmRoutingAgent.getSystemPrompt());
 		}
 		else {
-			sb.append("Your role seen by the user is: ");
-			sb.append(current.description());
+			sb.append("You are responsible for task routing in a graph-based AI system.\n");
+			sb.append("\n\n");
+			sb.append(
+					"You have access to some specialized agents that can handle this task. You must delegate the task to ONE of the following agents.\n");
+			sb.append("The available agents and their capabilities are listed below:\n");
+			for (Agent agent : subAgents) {
+				sb.append("- ").append(agent.name()).append(": ").append(agent.description()).append("\n");
+			}
+			sb.append("\n");
+			sb.append("Return ONLY the exact agent name from the list above, without any explanation or additional text.\n");
+			sb.append("Available names: ");
+			sb.append(String.join(", ", subAgents.stream().map(Agent::name).toList()));
+			sb.append("\n\n");
+			sb.append("Example: prose_writer_agent");
 		}
 
+		// Create BeanOutputConverter for structured output
+		this.outputConverter = new BeanOutputConverter<>(RoutingDecision.class);
 		sb.append("\n\n");
-		sb.append(
-				"There're a few agents that can handle this task, you can delegate the task to one of the following.");
-		sb.append("The agents ability are listed in a 'name:description' format as below:\n");
-		for (Agent agent : subAgents) {
-			sb.append("- ").append(agent.name()).append(": ").append(agent.description()).append("\n");
-		}
-		sb.append("\n\n");
-		sb.append("Return the agent name to delegate the task to.");
-		sb.append("\n\n");
-		sb.append(
-				"It should be emphasized that the returned result only requires the agent name and no other content.");
-		sb.append("\n\n");
-		sb.append(
-				"For example, if you want to delegate the task to the agent named 'agent1', you should return 'agent1'.");
+		sb.append(this.outputConverter.getFormat());
 
-        // Create BeanOutputConverter for structured output
-        this.outputConverter = new BeanOutputConverter<>(RoutingDecision.class);
-        sb.append("\n\n");
-        sb.append(this.outputConverter.getFormat());
-
-        this.chatClient = ChatClient.builder(chatModel).defaultSystem(sb.toString()).build();
+		this.chatClient = ChatClient.builder(chatModel).defaultSystem(sb.toString()).build();
 	}
 
 	@Override
 	public CompletableFuture<String> apply(OverAllState state) {
 		CompletableFuture<String> result = new CompletableFuture<>();
 		try {
-			List<Message> messages = (List<Message>)state.value("messages").orElseThrow();
-            RoutingDecision routingDecision = this.chatClient.prompt(getFormatedPrompt(messages)).call().entity(this.outputConverter);
-			result.complete(routingDecision.agent());
+			List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
+			
+			// Prepare messages with instruction if available
+			List<Message> messagesWithInstruction = prepareMessagesWithInstruction(messages);
+			
+			String decisionValue = getDecisionWithRetry(messagesWithInstruction, DEFAULT_MAX_RETRIES);
+
+			// Check if it's a valid sub-agent name
+			boolean isValidAgent = subAgents.stream()
+					.anyMatch(agent -> agent.name().equals(decisionValue));
+			if (isValidAgent) {
+				logger.info("RoutingAgent {} routed to sub-agent {}.", rootAgent.name(), decisionValue);
+				result.complete(decisionValue);
+			}
+			else {
+				logger.error("RoutingAgent {} failed to get valid decision after {} retries. Last invalid decision: {}.",
+						rootAgent.name(), DEFAULT_MAX_RETRIES, decisionValue);
+				result.completeExceptionally(new IllegalStateException(
+						"RoutingAgent " + rootAgent.name() + " failed to get valid decision after retries. Last invalid decision: " + decisionValue + "."));
+			}
 		}
 		catch (Exception e) {
+			logger.error("Error during routing decision: ", e);
 			result.completeExceptionally(e);
 		}
 		return result;
 	}
 
-	private String getFormatedPrompt(List<Message> messages) {
-		if (messages == null || messages.isEmpty()) {
-			return "Query from user:\n \n, Conversation History: \n <history></history> \n";
-		}
-
-		StringBuilder sb = new StringBuilder();
-		sb.append("Query from user:\n ");
-
-		// Find the first UserMessage
-		String firstMessageContent = "";
-		for (Message message : messages) {
-			if (message instanceof org.springframework.ai.chat.messages.UserMessage) {
-				firstMessageContent = getMessageContent(message);
-				break;
+	/**
+	 * Prepares messages with instruction. If rootAgent has instruction, adds it as UserMessage.
+	 * Otherwise, adds a default instruction message.
+	 * @param messages the original conversation messages
+	 * @return messages list with instruction added
+	 */
+	private List<Message> prepareMessagesWithInstruction(List<Message> messages) {
+		java.util.ArrayList<Message> messagesWithInstruction = new java.util.ArrayList<>(messages);
+		
+		// Check if rootAgent is LlmRoutingAgent and has instruction
+		if (rootAgent instanceof LlmRoutingAgent llmRoutingAgent) {
+			String instruction = llmRoutingAgent.getInstruction();
+			if (StringUtils.hasLength(instruction)) {
+				// If instruction is set, add it as UserMessage
+				messagesWithInstruction.add(new UserMessage(instruction));
+			}
+			else {
+				// If no instruction, add default message
+				messagesWithInstruction.add(new UserMessage(
+						"Based on the chat history and current task progress, please decide the next agent to delegate the task to."));
 			}
 		}
-
-		sb.append(firstMessageContent != null ? firstMessageContent : "");
-		sb.append(" \n, Conversation History: \n");
-		sb.append("content below between <history></history> tag are conversation histories. \n <history>");
-
-		// Convert remaining messages as history
-		if (messages.size() > 1) {
-			for (int i = 1; i < messages.size(); i++) {
-				String messageContent = getMessageContent(messages.get(i));
-				if (messageContent != null) {
-					sb.append(messageContent);
-				}
-				// Add newline between messages (except for the last one)
-				if (i < messages.size() - 1) {
-					sb.append("\n");
-				}
-			}
+		else {
+			// If rootAgent is not LlmRoutingAgent, add default message
+			messagesWithInstruction.add(new UserMessage(
+					"Based on the chat history and current task progress, please decide the next agent to delegate the task to."));
 		}
-
-		sb.append("</history> \n");
-		return sb.toString();
+		
+		return messagesWithInstruction;
 	}
 
-	private String getMessageContent(Message message) {
-		if (message instanceof org.springframework.ai.chat.messages.ToolResponseMessage toolMessage) {
-			// Special handling for ToolResponseMessage
-			StringBuilder toolContent = new StringBuilder();
+	/**
+	 * Gets a valid routing decision with retry logic. If the model returns an invalid agent name,
+	 * it will retry up to maxRetries times before giving up.
+	 * @param messages the conversation messages
+	 * @param maxRetries maximum number of retries (default: 2)
+	 * @return a valid decision (agent name)
+	 * @throws Exception if all retries fail or other errors occur
+	 */
+	private String getDecisionWithRetry(List<Message> messages, int maxRetries) throws Exception {
+		String lastInvalidDecision = null;
 
-			for (org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse response : toolMessage.getResponses()) {
-				if (!toolContent.isEmpty()) {
-					toolContent.append("\n");
+		for (int attempt = 0; attempt <= maxRetries; attempt++) {
+			try {
+				RoutingDecision decision;
+
+				if (attempt == 0) {
+					// First attempt: use original messages
+					decision = this.chatClient.prompt().messages(messages).call().entity(this.outputConverter);
 				}
-				toolContent.append("Tool Response [").append(response.id()).append("]: ");
-				toolContent.append(response.responseData());
-			}
+				else {
+					// Retry attempts: add error feedback to help the model correct its decision
+					String errorFeedback = String.format(
+							"Previous attempt returned an invalid agent name '%s'. " +
+									"Please choose from the available agents: %s.",
+							lastInvalidDecision,
+							String.join(", ", subAgents.stream().map(Agent::name).toList()));
 
-			return toolContent.toString();
+					logger.warn("RoutingAgent {} retry attempt {}/{}. Previous invalid decision: {}",
+							rootAgent.name(), attempt, maxRetries, lastInvalidDecision);
+
+					// Create a new message list with error feedback
+					// Try to append to existing SystemMessage, otherwise use UserMessage
+					java.util.ArrayList<Message> messagesWithFeedback = new java.util.ArrayList<>();
+					boolean systemMessageFound = false;
+
+					for (Message msg : messages) {
+						if (msg instanceof SystemMessage && !systemMessageFound) {
+							// Append error feedback to the first SystemMessage found
+							String enhancedContent = msg.getText() + "\n\n" + errorFeedback;
+							messagesWithFeedback.add(new SystemMessage(enhancedContent));
+							systemMessageFound = true;
+						}
+						else {
+							messagesWithFeedback.add(msg);
+						}
+					}
+
+					// If no SystemMessage was found, add error feedback as UserMessage
+					if (!systemMessageFound) {
+						messagesWithFeedback.add(new UserMessage(errorFeedback));
+					}
+
+					decision = this.chatClient.prompt().messages(messagesWithFeedback).call()
+							.entity(this.outputConverter);
+				}
+
+				String decisionValue = decision.agent();
+
+				// Check if it's a valid sub-agent name
+				boolean isValidAgent = subAgents.stream()
+						.anyMatch(agent -> agent.name().equals(decisionValue));
+
+				if (isValidAgent) {
+					if (attempt > 0) {
+						logger.info("RoutingAgent {} succeeded on retry attempt {}. Routed to sub-agent: {}",
+								rootAgent.name(), attempt, decisionValue);
+					}
+					return decisionValue;
+				}
+				else {
+					// Invalid agent name, store for next retry
+					lastInvalidDecision = decisionValue;
+					logger.warn("RoutingAgent {} attempt {}/{} returned invalid agent name: {}",
+							rootAgent.name(), attempt, maxRetries, decisionValue);
+				}
+			}
+			catch (Exception e) {
+				if (attempt == maxRetries) {
+					// Last attempt failed, rethrow the exception
+					logger.error("RoutingAgent {} failed on final attempt {}/{}", rootAgent.name(), attempt, maxRetries, e);
+					throw e;
+				}
+				logger.warn("RoutingAgent {} attempt {}/{} encountered an error, will retry", rootAgent.name(), attempt, maxRetries, e);
+			}
 		}
 
-		// For other message types, use getText() method
-		return message.getText();
+		// All retries exhausted
+		throw new IllegalStateException(
+				String.format("Failed to get valid decision after %d retries. Last invalid decision: %s",
+						maxRetries, lastInvalidDecision));
 	}
 
-    /**
-     * Response record for structured routing decision output
-     */
-    public record RoutingDecision(String agent) {}
+	/**
+	 * Response record for structured routing decision output
+	 */
+	public record RoutingDecision(String agent) { }
 }

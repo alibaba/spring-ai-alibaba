@@ -23,6 +23,7 @@ import static java.lang.String.format;
 public enum Errors {
 
 	invalidNodeIdentifier("END is not a valid node id!"), invalidEdgeIdentifier("END is not a valid edge sourceId!"),
+	nodeIdNotMatchError("node id (%s) specified in addNode method doesn't match the id (%s) of the node to be added!"),
 	duplicateNodeError("node with id: %s already exist!"), duplicateEdgeError("edge with id: %s already exist!"),
 	duplicateConditionalEdgeError("conditional edge from '%s' already exist!"),
 	edgeMappingIsEmpty("edge mapping is empty!"), missingEntryPoint("missing Entry Point"),

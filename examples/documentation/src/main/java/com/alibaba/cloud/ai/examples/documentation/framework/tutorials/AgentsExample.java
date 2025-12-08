@@ -24,7 +24,11 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
@@ -42,6 +46,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -93,9 +98,10 @@ public class AgentsExample {
 		ChatModel chatModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
-						.withTemperature(0.7)      // 控制随机性
-						.withMaxToken(2000)       // 最大输出长度
-						.withTopP(0.9)            // 核采样参数
+						.temperature(0.7)      // 控制随机性
+						.maxToken(2000)       // 最大输出长度
+						.topP(0.9)            // 核采样参数
+						.enableThinking(true)
 						.build())
 				.build();
 	}
@@ -433,35 +439,14 @@ public class AgentsExample {
 				.dashScopeApi(dashScopeApi)
 				.build();
 
-		String customSchema = """
-				{
-					"$schema": "https://json-schema.org/draft/2020-12/schema",
-					"type": "object",
-					"properties": {
-						"summary": {
-							"type": "string"
-						},
-						"keywords": {
-							"type": "array",
-							"items": {
-								"type": "string"
-							}
-						},
-						"sentiment": {
-							"type": "string"
-						},
-						"confidence": {
-							"type": "number"
-						}
-					},
-					"additionalProperties": false
-				}
-				""";
+		// Use BeanOutputConverter to generate outputSchema
+		BeanOutputConverter<TextAnalysisResult> outputConverter = new BeanOutputConverter<>(TextAnalysisResult.class);
+		String format = outputConverter.getFormat();
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("analysis_agent")
 				.model(chatModel)
-				.outputSchema(customSchema)
+				.outputSchema(format)
 				.saver(new MemorySaver())
 				.build();
 
@@ -694,6 +679,49 @@ public class AgentsExample {
 	}
 
 	/**
+	 * 示例12：文本分析结果输出类
+	 */
+	public static class TextAnalysisResult {
+		private String summary;
+		private List<String> keywords;
+		private String sentiment;
+		private Double confidence;
+
+		// Getters and Setters
+		public String getSummary() {
+			return summary;
+		}
+
+		public void setSummary(String summary) {
+			this.summary = summary;
+		}
+
+		public List<String> getKeywords() {
+			return keywords;
+		}
+
+		public void setKeywords(List<String> keywords) {
+			this.keywords = keywords;
+		}
+
+		public String getSentiment() {
+			return sentiment;
+		}
+
+		public void setSentiment(String sentiment) {
+			this.sentiment = sentiment;
+		}
+
+		public Double getConfidence() {
+			return confidence;
+		}
+
+		public void setConfidence(Double confidence) {
+			this.confidence = confidence;
+		}
+	}
+
+	/**
 	 * 示例14：AgentHook - 在 Agent 开始/结束时执行
 	 */
 	public static class LoggingHook extends AgentHook {
@@ -726,9 +754,11 @@ public class AgentsExample {
 	// ==================== Interceptors ====================
 
 	/**
-	 * 示例15：ModelHook - 在模型调用前后执行
+	 * 示例15：MessagesModelHook - 在模型调用前修剪消息
+	 * 使用 MessagesModelHook 实现，在模型调用前修剪消息列表，只保留最后 MAX_MESSAGES 条消息
 	 */
-	public static class MessageTrimmingHook extends ModelHook {
+	@HookPositions({HookPosition.BEFORE_MODEL})
+	public static class MessageTrimmingHook extends MessagesModelHook {
 		private static final int MAX_MESSAGES = 10;
 
 		@Override
@@ -737,26 +767,18 @@ public class AgentsExample {
 		}
 
 		@Override
-		public HookPosition[] getHookPositions() {
-			return new HookPosition[] {HookPosition.BEFORE_MODEL};
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-			Optional<Object> messagesOpt = state.value("messages");
-			if (messagesOpt.isPresent()) {
-				List<Message> messages = (List<Message>) messagesOpt.get();
-				if (messages.size() > MAX_MESSAGES) {
-					return CompletableFuture.completedFuture(Map.of("messages",
-							messages.subList(messages.size() - MAX_MESSAGES, messages.size())));
-				}
+		public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
+			// 如果消息数量超过限制，只保留最后 MAX_MESSAGES 条消息
+			if (previousMessages.size() > MAX_MESSAGES) {
+				List<Message> trimmedMessages = previousMessages.subList(
+						previousMessages.size() - MAX_MESSAGES,
+						previousMessages.size()
+				);
+				// 使用 REPLACE 策略替换所有消息
+				return new AgentCommand(trimmedMessages, UpdatePolicy.REPLACE);
 			}
-			return CompletableFuture.completedFuture(Map.of());
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-			return CompletableFuture.completedFuture(Map.of());
+			// 如果消息数量未超过限制，返回原始消息（不进行修改）
+			return new AgentCommand(previousMessages);
 		}
 	}
 

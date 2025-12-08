@@ -24,6 +24,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AgentInstructionMessage extends AbstractMessage {
+	private transient boolean rendered;
+
+	public AgentInstructionMessage(String textContent, Map<String, Object> metadata, boolean rendered) {
+		super(MessageType.USER, textContent, metadata);
+		this.rendered = rendered;
+	}
 
 	public AgentInstructionMessage(String textContent, Map<String, Object> metadata) {
 		super(MessageType.USER, textContent, metadata);
@@ -33,12 +39,16 @@ public class AgentInstructionMessage extends AbstractMessage {
 		this(textContent, Map.of());
 	}
 
+	public boolean isRendered() {
+		return rendered;
+	}
+
 	public AgentInstructionMessage copy() {
-		return new Builder().text(getText()).metadata(Map.copyOf(getMetadata())).build();
+		return new Builder().text(getText()).metadata(Map.copyOf(getMetadata())).rendered(isRendered()).build();
 	}
 
 	public AgentInstructionMessage.Builder mutate() {
-		return new Builder().text(getText()).metadata(Map.copyOf(getMetadata()));
+		return new Builder().text(getText()).metadata(Map.copyOf(getMetadata())).rendered(isRendered());
 	}
 
 	@Override
@@ -56,10 +66,17 @@ public class AgentInstructionMessage extends AbstractMessage {
 		@Nullable
 		private String textContent;
 
+		private boolean rendered;
+
 		private Map<String, Object> metadata = new HashMap<>();
 
 		public Builder text(String textContent) {
 			this.textContent = textContent;
+			return this;
+		}
+
+		public Builder rendered(boolean rendered) {
+			this.rendered = rendered;
 			return this;
 		}
 
@@ -69,7 +86,7 @@ public class AgentInstructionMessage extends AbstractMessage {
 		}
 
 		public AgentInstructionMessage build() {
-			return new AgentInstructionMessage(this.textContent, this.metadata);
+			return new AgentInstructionMessage(this.textContent, this.metadata, this.rendered);
 		}
 
 	}

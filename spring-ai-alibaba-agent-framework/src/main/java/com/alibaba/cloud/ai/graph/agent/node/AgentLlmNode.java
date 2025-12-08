@@ -330,10 +330,37 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	}
 
 	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params) {
+		// Process params to create a new Map
+		Map<String, Object> processedParams = new HashMap<>();
+		if (params != null) {
+			for (Map.Entry<String, Object> entry : params.entrySet()) {
+				String key = entry.getKey();
+				Object value = entry.getValue();
+				
+				// Exclude key "messages"
+				if ("messages".equals(key)) {
+					continue;
+				}
+				
+				// Exclude List type values
+				if (value instanceof List) {
+					continue;
+				}
+				
+				// Convert Message type to String using getText()
+				if (value instanceof Message message) {
+					processedParams.put(key, message.getText());
+				} else {
+					// Keep other types as is
+					processedParams.put(key, value);
+				}
+			}
+		}
+
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
-			if (message instanceof AgentInstructionMessage instructionMessage) {
-				AgentInstructionMessage newMessage = instructionMessage.mutate().text(renderPromptTemplate(instructionMessage.getText(), params)).build();
+			if (message instanceof AgentInstructionMessage instructionMessage && !instructionMessage.isRendered()) {
+				AgentInstructionMessage newMessage = instructionMessage.mutate().text(renderPromptTemplate(instructionMessage.getText(), processedParams)).rendered(true).build();
 				messages.set(i, newMessage);
 				break;
 			}

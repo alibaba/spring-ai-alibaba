@@ -146,7 +146,7 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	 * @return the built FlowAgent instance
 	 * @throws GraphStateException if agent creation fails
 	 */
-	public T build() throws GraphStateException {
+	public T build() {
 		if (this.saver != null) {
 			if (this.compileConfig == null) {
 				this.compileConfig = CompileConfig.builder().saverConfig(SaverConfig.builder().register(saver).build()).build();
@@ -156,6 +156,6 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 		return doBuild();
 	};
 
-	public abstract T doBuild() throws GraphStateException;
+	public abstract T doBuild();
 
 }

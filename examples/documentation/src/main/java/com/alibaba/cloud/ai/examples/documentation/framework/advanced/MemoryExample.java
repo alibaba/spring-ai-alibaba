@@ -21,7 +21,11 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.store.Store;
@@ -213,29 +217,25 @@ public class MemoryExample {
 	}
 
 	/**
-	 * 示例3：使用ModelHook管理长期记忆
+	 * 示例3：使用MessagesModelHook管理长期记忆
 	 *
 	 * 在模型调用前后自动加载和保存长期记忆
 	 */
 	public void example3_memoryWithModelHook() throws GraphRunnerException {
 		// 创建记忆拦截器
-		ModelHook memoryInterceptor = new ModelHook() {
+		@HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
+		class MemoryInterceptor extends MessagesModelHook {
 			@Override
 			public String getName() {
 				return "memory_interceptor";
 			}
 
 			@Override
-			public HookPosition[] getHookPositions() {
-				return new HookPosition[] {HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL};
-			}
-
-			@Override
-			public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+			public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
 				// 从配置中获取用户ID
 				String userId = (String) config.metadata("user_id").orElse(null);
 				if (userId == null) {
-					return CompletableFuture.completedFuture(Map.of());
+					return new AgentCommand(previousMessages);
 				}
 
 				Store store = config.store();
@@ -253,15 +253,11 @@ public class MemoryExample {
 							profile.get("preferences")
 					);
 
-					// 获取消息列表
-					List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
-					List<Message> newMessages = new ArrayList<>();
-
 					// 查找是否已存在 SystemMessage
 					SystemMessage existingSystemMessage = null;
 					int systemMessageIndex = -1;
-					for (int i = 0; i < messages.size(); i++) {
-						Message msg = messages.get(i);
+					for (int i = 0; i < previousMessages.size(); i++) {
+						Message msg = previousMessages.get(i);
 						if (msg instanceof SystemMessage) {
 							existingSystemMessage = (SystemMessage) msg;
 							systemMessageIndex = i;
@@ -283,35 +279,40 @@ public class MemoryExample {
 					}
 
 					// 构建新的消息列表
+					List<Message> newMessages = new ArrayList<>();
 					if (systemMessageIndex >= 0) {
 						// 如果找到了 SystemMessage，替换它
-						for (int i = 0; i < messages.size(); i++) {
+						for (int i = 0; i < previousMessages.size(); i++) {
 							if (i == systemMessageIndex) {
 								newMessages.add(enhancedSystemMessage);
 							}
 							else {
-								newMessages.add(messages.get(i));
+								newMessages.add(previousMessages.get(i));
 							}
 						}
 					}
 					else {
 						// 如果没有找到 SystemMessage，在开头添加新的
 						newMessages.add(enhancedSystemMessage);
-						newMessages.addAll(messages);
+						newMessages.addAll(previousMessages);
 					}
 
-					return CompletableFuture.completedFuture(Map.of("messages", newMessages));
+					// 使用 REPLACE 策略替换所有消息
+					return new AgentCommand(newMessages, UpdatePolicy.REPLACE);
 				}
 
-				return CompletableFuture.completedFuture(Map.of());
+				return new AgentCommand(previousMessages);
 			}
 
 			@Override
-			public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+			public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
 				// 可以在这里实现对话后的记忆保存逻辑
-				return CompletableFuture.completedFuture(Map.of());
+				// 不修改消息，返回原始消息
+				return new AgentCommand(previousMessages);
 			}
-		};
+		}
+
+		MessagesModelHook memoryInterceptor = new MemoryInterceptor();
 
 		// 创建带有记忆拦截器的Agent
 		ReactAgent agent = ReactAgent.builder()
@@ -350,25 +351,22 @@ public class MemoryExample {
 	 * 示例4：结合短期和长期记忆
 	 *
 	 * 短期记忆用于存储对话上下文，长期记忆用于存储持久化数据
+	 * 使用MessagesModelHook实现
 	 */
 	public void example4_combinedMemory() throws GraphRunnerException {
 		// 创建组合记忆Hook
-		ModelHook combinedMemoryHook = new ModelHook() {
+		@HookPositions({HookPosition.BEFORE_MODEL})
+		class CombinedMemoryHook extends MessagesModelHook {
 			@Override
 			public String getName() {
 				return "combined_memory";
 			}
 
 			@Override
-			public HookPosition[] getHookPositions() {
-				return new HookPosition[] {HookPosition.BEFORE_MODEL};
-			}
-
-			@Override
-			public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+			public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
 				Optional<Object> userIdOpt = config.metadata("user_id");
 				if (userIdOpt.isEmpty()) {
-					return CompletableFuture.completedFuture(Map.of());
+					return new AgentCommand(previousMessages);
 				}
 				String userId = (String) userIdOpt.get();
 
@@ -376,22 +374,18 @@ public class MemoryExample {
 				// 从长期记忆加载
 				Optional<StoreItem> profileOpt = memoryStore.getItem(List.of("profiles"), userId);
 				if (profileOpt.isEmpty()) {
-					return CompletableFuture.completedFuture(Map.of());
+					return new AgentCommand(previousMessages);
 				}
 
 				Map<String, Object> profile = profileOpt.get().getValue();
 				String contextInfo = String.format("长期记忆：用户 %s, 职业: %s",
 						profile.get("name"), profile.get("occupation"));
 
-				// 获取消息列表
-				List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
-				List<Message> newMessages = new ArrayList<>();
-
 				// 查找是否已存在 SystemMessage
 				SystemMessage existingSystemMessage = null;
 				int systemMessageIndex = -1;
-				for (int i = 0; i < messages.size(); i++) {
-					Message msg = messages.get(i);
+				for (int i = 0; i < previousMessages.size(); i++) {
+					Message msg = previousMessages.get(i);
 					if (msg instanceof SystemMessage) {
 						existingSystemMessage = (SystemMessage) msg;
 						systemMessageIndex = i;
@@ -413,26 +407,30 @@ public class MemoryExample {
 				}
 
 				// 构建新的消息列表
+				List<Message> newMessages = new ArrayList<>();
 				if (systemMessageIndex >= 0) {
 					// 如果找到了 SystemMessage，替换它
-					for (int i = 0; i < messages.size(); i++) {
+					for (int i = 0; i < previousMessages.size(); i++) {
 						if (i == systemMessageIndex) {
 							newMessages.add(enhancedSystemMessage);
 						}
 						else {
-							newMessages.add(messages.get(i));
+							newMessages.add(previousMessages.get(i));
 						}
 					}
 				}
 				else {
 					// 如果没有找到 SystemMessage，在开头添加新的
 					newMessages.add(enhancedSystemMessage);
-					newMessages.addAll(messages);
+					newMessages.addAll(previousMessages);
 				}
 
-				return CompletableFuture.completedFuture(Map.of("messages", newMessages));
+				// 使用 REPLACE 策略替换所有消息
+				return new AgentCommand(newMessages, UpdatePolicy.REPLACE);
 			}
-		};
+		}
+
+		MessagesModelHook combinedMemoryHook = new CombinedMemoryHook();
 
 		// 创建Agent
 		ReactAgent agent = ReactAgent.builder()
@@ -545,36 +543,38 @@ public class MemoryExample {
 	 * 示例6：用户偏好学习
 	 *
 	 * Agent可以随着时间的推移学习并存储用户偏好
+	 * 使用MessagesModelHook实现
 	 */
 	public void example6_preferLearning() throws GraphRunnerException {
 		MemoryStore memoryStore = new MemoryStore();
 
-		ModelHook preferenceLearningHook = new ModelHook() {
+		@HookPositions({HookPosition.AFTER_MODEL})
+		class PreferenceLearningHook extends MessagesModelHook {
+			private final MemoryStore store;
+
+			public PreferenceLearningHook(MemoryStore store) {
+				this.store = store;
+			}
+
 			@Override
 			public String getName() {
 				return "preference_learning";
 			}
 
 			@Override
-			public HookPosition[] getHookPositions() {
-				return new HookPosition[] {HookPosition.AFTER_MODEL};
-			}
-
-			@Override
-			public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+			public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
 				String userId = (String) config.metadata("user_id").orElse(null);
 				if (userId == null) {
-					return CompletableFuture.completedFuture(Map.of());
+					return new AgentCommand(previousMessages);
 				}
 
 				// 提取用户输入
-				List<Message> messages = (List<Message>) state.value("messages").orElse(new ArrayList<>());
-				if (messages.isEmpty()) {
-					return CompletableFuture.completedFuture(Map.of());
+				if (previousMessages.isEmpty()) {
+					return new AgentCommand(previousMessages);
 				}
 
 				// 加载现有偏好
-				Optional<StoreItem> prefsOpt = memoryStore.getItem(List.of("user_data"), userId + "_preferences");
+				Optional<StoreItem> prefsOpt = store.getItem(List.of("user_data"), userId + "_preferences");
 				List<String> prefs = new ArrayList<>();
 				if (prefsOpt.isPresent()) {
 					Map<String, Object> prefsData = prefsOpt.get().getValue();
@@ -582,7 +582,7 @@ public class MemoryExample {
 				}
 
 				// 简单的偏好提取（实际应用中使用NLP）
-				for (Message msg : messages) {
+				for (Message msg : previousMessages) {
 					String content = msg.getText().toLowerCase();
 					if (content.contains("喜欢") || content.contains("偏好")) {
 						prefs.add(msg.getText());
@@ -590,15 +590,18 @@ public class MemoryExample {
 						Map<String, Object> prefsData = new HashMap<>();
 						prefsData.put("items", prefs);
 						StoreItem item = StoreItem.of(List.of("user_data"), userId + "_preferences", prefsData);
-						memoryStore.putItem(item);
+						store.putItem(item);
 
 						System.out.println("学习到用户偏好 " + userId + ": " + msg.getText());
 					}
 				}
 
-				return CompletableFuture.completedFuture(Map.of());
+				// 不修改消息，返回原始消息
+				return new AgentCommand(previousMessages);
 			}
-		};
+		}
+
+		MessagesModelHook preferenceLearningHook = new PreferenceLearningHook(memoryStore);
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("learning_agent")

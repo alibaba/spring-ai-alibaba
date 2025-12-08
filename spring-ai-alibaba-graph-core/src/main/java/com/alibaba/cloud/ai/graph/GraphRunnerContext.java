@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
-import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
+import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -97,12 +97,12 @@ public class GraphRunnerContext {
 				.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
 
 		var startCheckpointNextNodeAction = compiledGraph.getNodeAction(checkpoint.getNextNodeId());
-		if (startCheckpointNextNodeAction instanceof SubCompiledGraphNodeAction action) {
+		if (startCheckpointNextNodeAction instanceof ResumableSubGraphAction resumableAction) {
 			// RESUME FORM SUBGRAPH DETECTED
 			this.config = RunnableConfig.builder(config)
 					.checkPointId(null) // Reset checkpoint id
 					.clearContext()
-					.addMetadata(action.getResumeSubGraphId(), true) // add metadata for
+					.addMetadata(resumableAction.getResumeSubGraphId(), true) // add metadata for
 					// sub graph
 					.build();
 		} else {

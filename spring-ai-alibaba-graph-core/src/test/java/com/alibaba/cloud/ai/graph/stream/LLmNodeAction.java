@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.graph.stream;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
-import com.alibaba.cloud.ai.graph.streaming.GraphFluxGenerator;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -46,11 +45,7 @@ public class LLmNodeAction implements NodeAction {
 		// Create prompt with user message
 		UserMessage message = new UserMessage((String) state.value(OverAllState.DEFAULT_INPUT_KEY).get());
 		Flux<ChatResponse> stream = chatModel.stream(new Prompt(message));
-		return Map.of("messages", GraphFluxGenerator
-				.builder()
-				.startingNode(nodeId)
-				.outKey("messages")
-				.build(stream));
+		return Map.of("messages", stream);
 	}
 
 }

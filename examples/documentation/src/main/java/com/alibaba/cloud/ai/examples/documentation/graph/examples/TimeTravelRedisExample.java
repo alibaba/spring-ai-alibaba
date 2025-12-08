@@ -22,7 +22,7 @@ import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.redis.RedisSaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
@@ -50,7 +50,7 @@ public class TimeTravelRedisExample {
 	 */
 	public static CompiledGraph configureCheckpoint(StateGraph stateGraph, RedissonClient redisson) throws GraphStateException {
 		// 创建 Checkpointer
-		var checkpointer = new RedisSaver(redisson);
+		var checkpointer = RedisSaver.builder().redisson(redisson).build();
 
 		// 配置持久化
 		var compileConfig = CompileConfig.builder()
@@ -166,7 +166,7 @@ public class TimeTravelRedisExample {
 	/**
 	 * 完整示例
 	 */
-	public static void completeExample(RedissonClient redisson) throws GraphStateException {
+	public static void completeExample(RedissonClient redisson) throws Exception {
 		// 构建 Graph
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			HashMap<String, KeyStrategy> strategies = new HashMap<>();
@@ -188,7 +188,7 @@ public class TimeTravelRedisExample {
 				.addEdge("step3", END);
 
 		// 配置持久化
-		var checkpointer = new RedisSaver(redisson);
+		var checkpointer = RedisSaver.builder().redisson(redisson).build();
 		var compileConfig = CompileConfig.builder()
 				.saverConfig(SaverConfig.builder()
 						.register(checkpointer)
@@ -203,7 +203,7 @@ public class TimeTravelRedisExample {
 				.build();
 
 		// 清理之前的状态（如果存在）
-		checkpointer.clear(config);
+		checkpointer.release(config);
 
 		graph.invoke(Map.of(), config);
 
@@ -262,9 +262,9 @@ public class TimeTravelRedisExample {
 			
 			// 清理旧数据
 			RunnableConfig cleanConfig = RunnableConfig.builder().threadId("conversation-redis-1").build();
-			new RedisSaver(redisson).clear(cleanConfig);
+			RedisSaver.builder().redisson(redisson).build().release(cleanConfig);
 			RunnableConfig cleanBranchConfig = RunnableConfig.builder().threadId("conversation-redis-1-branch").build();
-			new RedisSaver(redisson).clear(cleanBranchConfig);
+			RedisSaver.builder().redisson(redisson).build().release(cleanBranchConfig);
 
 			System.out.println("Checkpoint 配置完成");
 			System.out.println();

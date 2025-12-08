@@ -21,11 +21,14 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.RedisSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.redis.RedisSaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
-import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -103,7 +106,7 @@ public class MemoryExample {
 		ToolCallback getUserInfoTool = createGetUserInfoTool();
 
 		// 配置 Redis checkpointer
-		RedisSaver redisSaver = new RedisSaver(redissonClient);
+		RedisSaver redisSaver = RedisSaver.builder().redisson(redissonClient).build();
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("my_agent")
@@ -322,8 +325,11 @@ public class MemoryExample {
 
 	/**
 	 * 示例3：在 Hook 中访问和修改状态
+	 * 注意：这个 Hook 主要用于访问消息历史，不修改消息，所以可以继续使用 ModelHook
+	 * 但如果需要修改消息，应该使用 MessagesModelHook
 	 */
-	public static class CustomMemoryHook extends ModelHook {
+	@HookPositions({HookPosition.BEFORE_MODEL})
+	public static class CustomMemoryHook extends MessagesModelHook {
 
 		@Override
 		public String getName() {
@@ -331,36 +337,22 @@ public class MemoryExample {
 		}
 
 		@Override
-		public HookPosition[] getHookPositions() {
-			return new HookPosition[] {HookPosition.BEFORE_MODEL};
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-			// 访问消息历史
-			Optional<Object> messagesOpt = state.value("messages");
-			if (messagesOpt.isPresent()) {
-				List<Message> messages = (List<Message>) messagesOpt.get();
-				// 处理消息...
-			}
-
-			// 添加自定义状态
-			return CompletableFuture.completedFuture(Map.of(
-					"user_id", "user_123",
-					"preferences", Map.of("theme", "dark")
-			));
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-			return CompletableFuture.completedFuture(Map.of());
+		public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
+			// 访问消息历史（previousMessages 已经提供了消息列表）
+			// 处理消息...
+			// 如果需要修改消息，可以返回新的 AgentCommand
+			// 这里只是访问，不修改消息，所以返回原始消息
+			return new AgentCommand(previousMessages);
 		}
 	}
 
 	/**
 	 * 示例4：消息修剪 Hook
+	 * 使用 MessagesModelHook 实现，在模型调用前修剪消息列表
+	 * 保留第一条消息和最后 keepCount 条消息，删除中间的消息
 	 */
-	public static class MessageTrimmingHook extends ModelHook {
+	@HookPositions({HookPosition.BEFORE_MODEL})
+	public static class MessageTrimmingHook extends MessagesModelHook {
 
 		private static final int MAX_MESSAGES = 3;
 
@@ -370,39 +362,30 @@ public class MemoryExample {
 		}
 
 		@Override
-		public HookPosition[] getHookPositions() {
-			return new HookPosition[] {HookPosition.BEFORE_MODEL};
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-			Optional<Object> messagesOpt = state.value("messages");
-			if (!messagesOpt.isPresent()) {
-				return CompletableFuture.completedFuture(Map.of());
+		public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
+			if (previousMessages.size() <= MAX_MESSAGES) {
+				// 如果消息数量未超过限制，无需更改
+				return new AgentCommand(previousMessages);
 			}
 
-			List<Message> messages = (List<Message>) messagesOpt.get();
+			int keepCount = previousMessages.size() % 2 == 0 ? 3 : 4;
 
-			if (messages.size() <= MAX_MESSAGES) {
-				return CompletableFuture.completedFuture(Map.of()); // 无需更改
+			// 构建要保留的消息列表：第一条消息 + 最后 keepCount 条消息
+			List<Message> trimmedMessages = new ArrayList<>();
+			// 保留第一条消息
+			if (!previousMessages.isEmpty()) {
+				trimmedMessages.add(previousMessages.get(0));
+			}
+			// 保留最后 keepCount 条消息
+			if (previousMessages.size() - keepCount > 0) {
+				trimmedMessages.addAll(previousMessages.subList(
+						previousMessages.size() - keepCount,
+						previousMessages.size()
+				));
 			}
 
-			int keepCount = messages.size() % 2 == 0 ? 3 : 4;
-
-			List<Object> newMessages = new ArrayList<>();
-			// 标记中间消息为删除（使用 RemoveByHash），其余消息会自动保留
-			if (messages.size() - keepCount > 1) {
-				for (Message msg : messages.subList(1, messages.size() - keepCount)) {
-					newMessages.add(RemoveByHash.of(msg));
-				}
-			}
-
-			return CompletableFuture.completedFuture(Map.of("messages", newMessages));
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-			return CompletableFuture.completedFuture(Map.of());
+			// 使用 REPLACE 策略替换所有消息
+			return new AgentCommand(trimmedMessages, UpdatePolicy.REPLACE);
 		}
 	}
 
@@ -410,8 +393,10 @@ public class MemoryExample {
 
 	/**
 	 * 示例6：消息删除 Hook
+	 * 使用 MessagesModelHook 实现，在模型调用后删除最早的两条消息
 	 */
-	public static class MessageDeletionHook extends ModelHook {
+	@HookPositions({HookPosition.AFTER_MODEL})
+	public static class MessageDeletionHook extends MessagesModelHook {
 
 		@Override
 		public String getName() {
@@ -419,40 +404,26 @@ public class MemoryExample {
 		}
 
 		@Override
-		public HookPosition[] getHookPositions() {
-			return new HookPosition[] {HookPosition.AFTER_MODEL};
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-			return CompletableFuture.completedFuture(Map.of());
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-			Optional<Object> messagesOpt = state.value("messages");
-			if (!messagesOpt.isPresent()) {
-				return CompletableFuture.completedFuture(Map.of());
+		public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
+			if (previousMessages.size() <= 2) {
+				// 如果消息数量不超过2条，无需删除
+				return new AgentCommand(previousMessages);
 			}
 
-			List<Message> messages = (List<Message>) messagesOpt.get();
+			// 删除最早的两条消息，保留其余消息
+			List<Message> remainingMessages = previousMessages.subList(2, previousMessages.size());
 
-			if (messages.size() > 2) {
-				// 将最早的两条消息转为 RemoveByHash 对象以便从状态中删除
-				List<Object> removeOldMessages = new ArrayList<>();
-				removeOldMessages.add(RemoveByHash.of(messages.get(0)));
-				removeOldMessages.add(RemoveByHash.of(messages.get(1)));
-				return CompletableFuture.completedFuture(Map.of("messages", removeOldMessages));
-			}
-
-			return CompletableFuture.completedFuture(Map.of());
+			// 使用 REPLACE 策略替换所有消息
+			return new AgentCommand(remainingMessages, UpdatePolicy.REPLACE);
 		}
 	}
 
 	/**
 	 * 示例7：删除所有消息
+	 * 使用 MessagesModelHook 实现，在模型调用后删除所有消息
 	 */
-	public static class ClearAllMessagesHook extends ModelHook {
+	@HookPositions({HookPosition.AFTER_MODEL})
+	public static class ClearAllMessagesHook extends MessagesModelHook {
 
 		@Override
 		public String getName() {
@@ -460,27 +431,11 @@ public class MemoryExample {
 		}
 
 		@Override
-		public HookPosition[] getHookPositions() {
-			return new HookPosition[] {HookPosition.AFTER_MODEL};
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-			return CompletableFuture.completedFuture(Map.of());
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-			Optional<Object> messagesOpt = state.value("messages");
-			if (!messagesOpt.isPresent()) {
-				return CompletableFuture.completedFuture(Map.of());
-			}
-			List<Message> messages = (List<Message>) messagesOpt.get();
-			List<Object> removeAllMessages = new ArrayList<>();
-			for (Message msg : messages) {
-				removeAllMessages.add(RemoveByHash.of(msg));
-			}
-			return CompletableFuture.completedFuture(Map.of("messages", removeAllMessages));
+		public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
+			// 删除所有消息，返回空列表
+			List<Message> emptyMessages = new ArrayList<>();
+			// 使用 REPLACE 策略替换所有消息为空列表
+			return new AgentCommand(emptyMessages, UpdatePolicy.REPLACE);
 		}
 	}
 
@@ -488,8 +443,11 @@ public class MemoryExample {
 
 	/**
 	 * 示例9：消息总结 Hook
+	 * 使用 MessagesModelHook 实现，在模型调用前检查消息数量，如果超过阈值则生成摘要
+	 * 删除旧消息，保留摘要消息和最近的消息
 	 */
-	public static class MessageSummarizationHook extends ModelHook {
+	@HookPositions({HookPosition.BEFORE_MODEL})
+	public static class MessageSummarizationHook extends MessagesModelHook {
 
 		private final ChatModel summaryModel;
 		private final int maxTokensBeforeSummary;
@@ -511,38 +469,28 @@ public class MemoryExample {
 		}
 
 		@Override
-		public HookPosition[] getHookPositions() {
-			return new HookPosition[] {HookPosition.BEFORE_MODEL};
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-			Optional<Object> messagesOpt = state.value("messages");
-			if (!messagesOpt.isPresent()) {
-				return CompletableFuture.completedFuture(Map.of());
-			}
-
-			List<Message> messages = (List<Message>) messagesOpt.get();
-
+		public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
 			// 估算 token 数量（简化版）
-			int estimatedTokens = messages.stream()
+			int estimatedTokens = previousMessages.stream()
 					.mapToInt(m -> m.getText().length() / 4)
 					.sum();
 
 			if (estimatedTokens < maxTokensBeforeSummary) {
-				return CompletableFuture.completedFuture(Map.of());
+				// 如果 token 数量未超过阈值，无需总结
+				return new AgentCommand(previousMessages);
 			}
 
 			// 需要总结
-			int messagesToSummarize = messages.size() - messagesToKeep;
+			int messagesToSummarize = previousMessages.size() - messagesToKeep;
 			if (messagesToSummarize <= 0) {
-				return CompletableFuture.completedFuture(Map.of());
+				// 如果消息数量不足以总结，无需更改
+				return new AgentCommand(previousMessages);
 			}
 
-			List<Message> oldMessages = messages.subList(0, messagesToSummarize);
-			List<Message> recentMessages = messages.subList(
+			List<Message> oldMessages = previousMessages.subList(0, messagesToSummarize);
+			List<Message> recentMessages = previousMessages.subList(
 					messagesToSummarize,
-					messages.size()
+					previousMessages.size()
 			);
 
 			// 生成摘要
@@ -553,20 +501,13 @@ public class MemoryExample {
 					"## 之前对话摘要:\n" + summary
 			);
 
-			// 只需要把摘要消息和需要删除的消息保留在状态中，其余未包含的消息将会自动保留
-			List<Object> newMessages = new ArrayList<>();
+			// 构建新的消息列表：摘要消息 + 最近的消息
+			List<Message> newMessages = new ArrayList<>();
 			newMessages.add(summaryMessage);
-			// IMPORTANT! Convert summarized messages to RemoveByHash objects so we can remove them from state
-			for (Message msg : oldMessages) {
-				newMessages.add(RemoveByHash.of(msg));
-			}
+			newMessages.addAll(recentMessages);
 
-			return CompletableFuture.completedFuture(Map.of("messages", newMessages));
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-			return CompletableFuture.completedFuture(Map.of());
+			// 使用 REPLACE 策略替换所有消息
+			return new AgentCommand(newMessages, UpdatePolicy.REPLACE);
 		}
 
 		private String generateSummary(List<Message> messages) {

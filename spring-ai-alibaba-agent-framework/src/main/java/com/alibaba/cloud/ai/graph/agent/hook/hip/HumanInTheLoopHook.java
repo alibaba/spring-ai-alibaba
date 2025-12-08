@@ -103,6 +103,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 						newToolCalls.add(editedToolCall);
 					}
 					else if (result == FeedbackResult.REJECTED) {
+						newToolCalls.add(toolCall);
 						ToolResponseMessage.ToolResponse response = new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(), String.format("Tool call request for %s has been rejected by human. The reason for why this tool is rejected and the suggestion for next possible tool choose is listed as below:\n %s.", toolFeedback.getName(), toolFeedback.getDescription()));
 						responses.add(response);
 					}
@@ -116,10 +117,6 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 			Map<String, Object> updates = new HashMap<>();
 			List<Object> newMessages = new ArrayList<>();
 
-			if (!rejectedMessage.getResponses().isEmpty()) {
-				newMessages.add(rejectedMessage);
-			}
-
 			if (!newToolCalls.isEmpty()) {
 				// Replace the last message with the new assistant message containing updated tool calls
 				newMessages.add(AssistantMessage.builder()
@@ -129,6 +126,11 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 					.media(assistantMessage.getMedia())
 					.build());
 				newMessages.add(new RemoveByHash<>(assistantMessage));
+			}
+
+			// ToolResponseMessages must be added after AssistantMessage
+			if (!rejectedMessage.getResponses().isEmpty()) {
+				newMessages.add(rejectedMessage);
 			}
 
 			updates.put("messages", newMessages);
