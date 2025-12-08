@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.utils.LifeListenerUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -68,6 +69,16 @@ public class ParallelNode extends Node {
 			return thread;
 		}
 	};
+
+	public static Executor getExecutor(RunnableConfig config, String nodeId) {
+		return config.metadata(nodeId)
+				.filter(value -> value instanceof Executor)
+				.map(Executor.class::cast)
+				.orElseGet(() -> config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY)
+						.filter(value -> value instanceof Executor)
+						.map(Executor.class::cast)
+						.orElse(DEFAULT_EXECUTOR));
+	}
 
 	/**
 	 * Optimized default thread pool executor based on industry best practices.
@@ -247,14 +258,8 @@ public class ParallelNode extends Node {
 				OverAllState stateSnapshot = state.snapShot().orElse(new OverAllState());
 
 				// First try to get node-specific executor, then default executor, finally use DEFAULT_EXECUTOR
-				Executor executor = config.metadata(nodeId)
-						.filter(value -> value instanceof Executor)
-						.map(Executor.class::cast)
-						.orElseGet(() -> config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY)
-								.filter(value -> value instanceof Executor)
-								.map(Executor.class::cast)
-								.orElse(DEFAULT_EXECUTOR));
-				
+				Executor executor = getExecutor(config, nodeId);
+
 				CompletableFuture<Map<String, Object>> future = evalNodeActionAsync(action, actualNodeId, stateSnapshot, config, executor);
 
 				futures.add(future);

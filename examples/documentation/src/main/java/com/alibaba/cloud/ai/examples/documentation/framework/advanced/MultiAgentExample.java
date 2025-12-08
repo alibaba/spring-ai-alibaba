@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
@@ -33,6 +34,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 多智能体（Multi-agent）示例
@@ -189,6 +192,7 @@ public class MultiAgentExample {
 				.instruction("你是一个知名的散文作家，擅长写优美的散文。" +
 						"用户会给你一个主题：{input}，你只需要创作一篇100字左右的散文。")
 				.outputKey("prose_result")
+				.enableLogging(true)
 				.build();
 
 		ReactAgent poemWriterAgent = ReactAgent.builder()
@@ -198,6 +202,7 @@ public class MultiAgentExample {
 				.instruction("你是一个知名的现代诗人，擅长写现代诗。" +
 						"用户会给你的主题是：{input}，你只需要创作一首现代诗。")
 				.outputKey("poem_result")
+				.enableLogging(true)
 				.build();
 
 		ReactAgent summaryAgent = ReactAgent.builder()
@@ -207,6 +212,7 @@ public class MultiAgentExample {
 				.instruction("你是一个专业的内容分析师，擅长对主题进行总结和提炼。" +
 						"用户会给你一个主题：{input}，你只需要对这个主题进行简要总结。")
 				.outputKey("summary_result")
+				.enableLogging(true)
 				.build();
 
 		// 创建并行Agent
@@ -218,8 +224,9 @@ public class MultiAgentExample {
 				.mergeStrategy(new ParallelAgent.DefaultMergeStrategy())
 				.build();
 
+		ExecutorService executorService = Executors.newFixedThreadPool(3);
 		// 使用
-		Optional<OverAllState> result = parallelAgent.invoke("以'西湖'为主题");
+		Optional<OverAllState> result = parallelAgent.invoke("以'西湖'为主题", RunnableConfig.builder().addParallelNodeExecutor("parallel_creative_agent", executorService).build());
 
 		if (result.isPresent()) {
 			OverAllState state = result.get();

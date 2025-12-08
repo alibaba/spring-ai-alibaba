@@ -74,7 +74,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -785,19 +784,26 @@ public class ReactAgent extends BaseAgent {
 			Flux<GraphResponse<NodeOutput>> subGraphResult;
 			Object parentMessages = null;
 
+			AgentInstructionMessage instructionMessage = null;
+			if (StringUtils.hasLength(instruction)) {
+				instructionMessage = AgentInstructionMessage.builder().text(instruction).build();
+			}
 			if (includeContents) {
+				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
+				List<Object> newMessages = new ArrayList<>((List<Object>)stateForChild.remove("messages"));
 				// by default, includeContents is true, we pass down the messages from the parent state
 				if (StringUtils.hasLength(instruction)) {
 					// instruction will be added as a special UserMessage to the child graph.
-					parentState.updateState(Map.of("messages", AgentInstructionMessage.builder().text(instruction).build()));
+					newMessages.add(instructionMessage);
 				}
-				subGraphResult = childGraph.graphResponseStream(parentState, subGraphRunnableConfig);
+				stateForChild.put("messages", newMessages);
+				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			} else {
 				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
 				parentMessages = stateForChild.remove("messages");
 				if (StringUtils.hasLength(instruction)) {
 					// instruction will be added as a special UserMessage to the child graph.
-					stateForChild.put("messages", AgentInstructionMessage.builder().text(instruction).build());
+					stateForChild.put("messages", instructionMessage);
 				}
 				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			}
@@ -805,63 +811,82 @@ public class ReactAgent extends BaseAgent {
 			Map<String, Object> result = new HashMap<>();
 
 			String outputKeyToParent = StringUtils.hasLength(ReactAgent.this.outputKey) ? ReactAgent.this.outputKey : "messages";
-			result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult));
+			result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult, instructionMessage));
 			if (parentMessages != null) {
 				result.put("messages", parentMessages);
 			}
 			return result;
 		}
 
-		private @NotNull Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(OverAllState parentState, Flux<GraphResponse<NodeOutput>> subGraphResult) {
-			return Flux.create(sink -> {
-				AtomicReference<GraphResponse<NodeOutput>> lastRef = new AtomicReference<>();
-				subGraphResult.subscribe(item -> {
-					GraphResponse<NodeOutput> previous = lastRef.getAndSet(item);
-					if (previous != null) {
-						sink.next(previous);
-					}
-				}, sink::error, () -> {
-					GraphResponse<NodeOutput> lastResponse = lastRef.get();
-					if (lastResponse != null) {
-						if (lastResponse.resultValue().isPresent()) {
-							Object resultValue = lastResponse.resultValue().get();
-							if (resultValue instanceof Map) {
-								@SuppressWarnings("unchecked")
-								Map<String, Object> resultMap = (Map<String, Object>) resultValue;
-								if (resultMap.get("messages") instanceof List) {
-									@SuppressWarnings("unchecked")
-									List<Object> messages = new ArrayList<>((List<Object>) resultMap.get("messages"));
-									if (!messages.isEmpty()) {
-										parentState.value("messages").ifPresent(parentMsgs -> {
-											if (parentMsgs instanceof List) {
-												messages.removeAll((List<?>) parentMsgs);
-											}
-										});
+		private @NotNull Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(OverAllState parentState, Flux<GraphResponse<NodeOutput>> subGraphResult, AgentInstructionMessage instructionMessage) {
+			// Use buffer(2, 1) to create sliding windows: [elem0, elem1], [elem1, elem2], ..., [elemN-1, elemN], [elemN]
+			// For windows with 2 elements, emit the first (previous element)
+			// For the last window with 1 element, process it specially
+			return subGraphResult
+					.buffer(2, 1)
+					.flatMap(window -> {
+						if (window.size() == 1) {
+							// Last window: process the last element with message filtering
+							return Flux.just(processLastResponse(window.get(0), parentState, instructionMessage));
+						} else {
+							// Regular window: emit the first element (previous, delayed by one)
+							return Flux.just(window.get(0));
+						}
+					}, 1); // Concurrency of 1 to maintain order
+		}
 
-										List<Object> finalMessages;
-										if (returnReasoningContents) {
-											finalMessages = messages;
-										}
-										else {
-											if (!messages.isEmpty()) {
-												finalMessages = List.of(messages.get(messages.size() - 1));
-											} else {
-												finalMessages = List.of();
-											}
-										}
+		/**
+		 * Process the last response by filtering messages based on parent state and returnReasoningContents flag.
+		 *
+		 * @param lastResponse the last response from sub-graph
+		 * @param parentState the parent state containing messages to filter out
+		 * @return processed GraphResponse with filtered messages
+		 */
+		private GraphResponse<NodeOutput> processLastResponse(GraphResponse<NodeOutput> lastResponse, OverAllState parentState, AgentInstructionMessage instructionMessage) {
+			if (lastResponse == null) {
+				return lastResponse;
+			}
+			
+			if (lastResponse.resultValue().isPresent()) {
+				Object resultValue = lastResponse.resultValue().get();
+				if (resultValue instanceof Map) {
+					@SuppressWarnings("unchecked")
+					Map<String, Object> resultMap = (Map<String, Object>) resultValue;
+					if (resultMap.get("messages") instanceof List) {
+						@SuppressWarnings("unchecked")
+						List<Object> messages = new ArrayList<>((List<Object>) resultMap.get("messages"));
+						if (!messages.isEmpty()) {
+							parentState.value("messages").ifPresent(parentMsgs -> {
+								if (parentMsgs instanceof List) {
+									messages.removeAll((List<?>) parentMsgs);
+								}
+							});
 
-										Map<String, Object> newResultMap = new HashMap<>(resultMap);
-										newResultMap.put("messages", finalMessages);
-										lastResponse = GraphResponse.done(newResultMap);
+							List<Object> finalMessages;
+							if (returnReasoningContents) {
+								finalMessages = messages;
+							} else {
+								if (!messages.isEmpty()) {
+									if (instructionMessage != null) {
+										finalMessages = new ArrayList<>();
+										finalMessages.add(instructionMessage);
+										finalMessages.add(messages.get(messages.size() - 1));
+									} else {
+										finalMessages = List.of(messages.get(messages.size() - 1));
 									}
+								} else {
+									finalMessages = List.of();
 								}
 							}
+
+							Map<String, Object> newResultMap = new HashMap<>(resultMap);
+							newResultMap.put("messages", finalMessages);
+							return GraphResponse.done(newResultMap);
 						}
 					}
-					sink.next(lastResponse);
-					sink.complete();
-				});
-			});
+				}
+			}
+			return lastResponse;
 		}
 
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
