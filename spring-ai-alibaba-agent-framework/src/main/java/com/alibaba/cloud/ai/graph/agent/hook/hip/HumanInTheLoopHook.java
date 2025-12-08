@@ -214,7 +214,6 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 
         List<InterruptionMetadata.ToolFeedback> toolFeedbacks = feedback.toolFeedbacks();
 
-
         // 1. Tool calls in this step that actually require human approval (names defined in approvalOn)
         List<AssistantMessage.ToolCall> toolCallsNeedingApproval = toolCalls.stream()
                 .filter(tc -> approvalOn.containsKey(tc.name()))
