@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.examples.documentation.framework.advanced;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -257,14 +258,22 @@ public class MultiAgentExample {
 			public Map<String, Object> merge(Map<String, Object> mergedState, OverAllState state) {
 				// 从每个Agent的状态中提取输出
 				state.data().forEach((key, value) -> {
-					if (key.endsWith("_result")) {
-						Message message = (Message) value;
+					// 检查key不为null且以"_result"结尾
+					if (key != null && key.endsWith("_result")) {
+						String resultText = "";
+						if (value instanceof GraphResponse graphResponse) {
+                            if (graphResponse.resultValue().isPresent()) {
+                                resultText = graphResponse.resultValue().get().toString();
+                            }
+						} else if (value != null) {
+							resultText = value.toString();
+						}
 						Object existing = mergedState.get("all_results");
 						if (existing == null) {
-							mergedState.put("all_results", message.getText());
+							mergedState.put("all_results", resultText);
 						}
 						else {
-							mergedState.put("all_results", existing + "\n\n---\n\n" + message.getText());
+							mergedState.put("all_results", existing + "\n\n---\n\n" + resultText);
 						}
 					}
 				});
@@ -276,19 +285,19 @@ public class MultiAgentExample {
 		ReactAgent agent1 = ReactAgent.builder()
 				.name("agent1")
 				.model(chatModel)
-				.outputKey("result1")
+				.outputKey("agent1_result")
 				.build();
 
 		ReactAgent agent2 = ReactAgent.builder()
 				.name("agent2")
 				.model(chatModel)
-				.outputKey("result2")
+				.outputKey("agent2_result")
 				.build();
 
 		ReactAgent agent3 = ReactAgent.builder()
 				.name("agent3")
 				.model(chatModel)
-				.outputKey("result3")
+				.outputKey("agent3_result")
 				.build();
 
 		// 使用自定义合并策略
@@ -296,14 +305,17 @@ public class MultiAgentExample {
 				.name("parallel_agent")
 				.subAgents(List.of(agent1, agent2, agent3))
 				.mergeStrategy(new CustomMergeStrategy())
-				.mergeOutputKey("final_merged_result")
+				.mergeOutputKey("all_results")
 				.build();
 
 		Optional<OverAllState> result = parallelAgent.invoke("分析这个主题");
 
 		if (result.isPresent()) {
+			OverAllState state = result.get();
+			state.value("all_results").ifPresent(mergeResult -> {
+				System.out.println("合并结果: " + mergeResult);
+			});
 			System.out.println("自定义合并策略示例执行成功");
-			System.out.println(result.get().value("final_merged_result").orElse("无结果"));
 		}
 	}
 

@@ -27,7 +27,9 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import java.util.LinkedHashMap;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 
@@ -247,7 +249,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 					var newMessage = AssistantMessage.builder()
 						.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
 						.properties(currentMessage.getMetadata())
-						.toolCalls(currentMessage.getToolCalls())
+						.toolCalls(mergeToolCalls(lastResponse.getResult().getOutput().getToolCalls(),
+                currentMessage.getToolCalls()))
 						.media(currentMessage.getMedia())
 						.build();
 
@@ -328,6 +331,35 @@ public class NodeExecutor extends BaseGraphExecutor {
 				}
 			}));
 	}
+
+  /**
+   * Merges tool calls from two messages.
+   * Tool calls with the same id will be merged.
+   *
+   * @return the merged list of tool calls
+   */
+  private List<ToolCall> mergeToolCalls(List<ToolCall> lastToolCalls, List<ToolCall> currentToolCalls) {
+
+    if (lastToolCalls == null || lastToolCalls.isEmpty()) {
+      return currentToolCalls != null ? currentToolCalls : List.of();
+    }
+    if (currentToolCalls == null || currentToolCalls.isEmpty()) {
+      return lastToolCalls;
+    }
+
+    Map<String, AssistantMessage.ToolCall> toolCallMap = new LinkedHashMap<>();
+
+    lastToolCalls.forEach(tc -> toolCallMap.put(tc.id(), tc));
+
+    // Merge tool calls with the same id
+    currentToolCalls.forEach(tc -> {
+      if( !toolCallMap.containsKey(tc.id()) ) {
+        toolCallMap.put(tc.id(), tc);
+      }
+    });
+
+    return toolCallMap.values().stream().toList();
+  }
 
 	/**
 	 * Processes a Flux<GraphResponse<NodeOutput>> with embedded flux handling logic.
