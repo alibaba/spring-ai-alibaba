@@ -256,12 +256,11 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
             }
         }
 
-        for (InterruptionMetadata.ToolFeedback toolFeedback : toolFeedbacks) {
-            if (!approvalOn.containsKey(toolFeedback.getName())) {
-                log.warn("Tool feedback for tool {} is not expected(not in the tool executing list), continue to wait for human input.", toolFeedback.getName());
-                return false;
-            }
-        }
+
+
+
+
+
 
         return true;
     }
