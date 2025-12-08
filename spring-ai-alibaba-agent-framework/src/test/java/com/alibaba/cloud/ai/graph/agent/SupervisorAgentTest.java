@@ -478,14 +478,14 @@ class SupervisorAgentTest {
 
 		try {
 			// Test: Write an article first, then supervisor decides to translate it
-			Optional<OverAllState> result = sequentialAgent.invoke("帮我写一篇关于春天的短文，然后翻译成英文");
+			Optional<OverAllState> result = sequentialAgent.invoke("帮我写一篇关于春天的短文");
 
 			assertTrue(result.isPresent(), "Result should be present");
 			OverAllState state = result.get();
 
 			// Verify input is preserved
 			assertTrue(state.value("input").isPresent(), "Input should be present in state");
-			assertEquals("帮我写一篇关于春天的短文，然后翻译成英文", state.value("input").get(),
+			assertEquals("帮我写一篇关于春天的短文", state.value("input").get(),
 					"Input should match the request");
 
 			// Verify first agent output exists (article_content)

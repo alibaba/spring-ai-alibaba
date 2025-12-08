@@ -27,6 +27,8 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
@@ -195,7 +197,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @param nodeId the node ID to use for building streaming output
 	 * @return Flux of GraphResponse with transformed elements
 	 */
-	private static Flux<GraphResponse<NodeOutput>> transformFluxToGraphResponse(
+	private Flux<GraphResponse<NodeOutput>> transformFluxToGraphResponse(
 			GraphRunnerContext context, Flux<?> rawFlux, String key, String nodeId) {
 		var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
 		var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
@@ -221,48 +223,34 @@ public class NodeExecutor extends BaseGraphExecutor {
 				}
 				if (element instanceof ChatResponse response) {
 					ChatResponse lastResponse = lastChatResponseRef.get();
-					if (lastResponse == null) {
-						var message = response.getResult().getOutput();
-						GraphResponse<NodeOutput> lastGraphResponse =
-								GraphResponse.of(context.buildStreamingOutput(message, response, nodeId));
-						lastChatResponseRef.set(response);
-						lastGraphResponseRef.set(lastGraphResponse);
-						return lastGraphResponse;
-					}
-
 					final var currentMessage = response.getResult().getOutput();
 
-					if (currentMessage.hasToolCalls()) {
-						GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-							.of(context.buildStreamingOutput(currentMessage, response, nodeId));
-						lastGraphResponseRef.set(lastGraphResponse);
-						// Also update lastChatResponseRef to ensure consistency
+					if (lastResponse == null) {
 						lastChatResponseRef.set(response);
-						return lastGraphResponse;
+					} else {
+						final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
+								"lastResponse text cannot be null");
+
+						final var currentMessageText = currentMessage.getText();
+
+						var newMessage = AssistantMessage.builder()
+								.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
+								.properties(currentMessage.getMetadata())
+								.toolCalls(mergeToolCalls(lastResponse.getResult().getOutput().getToolCalls(),
+										currentMessage.getToolCalls()))
+								.media(currentMessage.getMedia())
+								.build();
+
+						var newGeneration = new Generation(newMessage,
+								response.getResult().getMetadata());
+
+						ChatResponse newResponse = new ChatResponse(
+								List.of(newGeneration), response.getMetadata());
+						lastChatResponseRef.set(newResponse);
 					}
-
-					final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
-							"lastResponse text cannot be null");
-
-					final var currentMessageText = currentMessage.getText();
-
-					var newMessage = AssistantMessage.builder()
-						.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
-						.properties(currentMessage.getMetadata())
-						.toolCalls(mergeToolCalls(lastResponse.getResult().getOutput().getToolCalls(),
-                currentMessage.getToolCalls()))
-						.media(currentMessage.getMedia())
-						.build();
-
-					var newGeneration = new Generation(newMessage,
-							response.getResult().getMetadata());
-
-					ChatResponse newResponse = new ChatResponse(
-							List.of(newGeneration), response.getMetadata());
-					lastChatResponseRef.set(newResponse);
 					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
 						.of(context.buildStreamingOutput(response.getResult().getOutput(), response, nodeId));
-					// lastGraphResponseRef.set(lastGraphResponse);
+					 lastGraphResponseRef.set(lastGraphResponse);
 					return lastGraphResponse;
 				}
 				else if (element instanceof GraphResponse) {
@@ -340,25 +328,29 @@ public class NodeExecutor extends BaseGraphExecutor {
    */
   private List<ToolCall> mergeToolCalls(List<ToolCall> lastToolCalls, List<ToolCall> currentToolCalls) {
 
-    if (lastToolCalls == null || lastToolCalls.isEmpty()) {
-      return currentToolCalls != null ? currentToolCalls : List.of();
-    }
-    if (currentToolCalls == null || currentToolCalls.isEmpty()) {
-      return lastToolCalls;
-    }
+	  if (lastToolCalls == null || lastToolCalls.isEmpty()) {
+		  return currentToolCalls != null ? currentToolCalls : List.of();
+	  }
+	  if (currentToolCalls == null || currentToolCalls.isEmpty()) {
+		  return lastToolCalls;
+	  }
 
-    Map<String, AssistantMessage.ToolCall> toolCallMap = new LinkedHashMap<>();
 
-    lastToolCalls.forEach(tc -> toolCallMap.put(tc.id(), tc));
+	  Map<String, ToolCall> toolCallMap = new LinkedHashMap<>();
 
-    // Merge tool calls with the same id
-    currentToolCalls.forEach(tc -> {
-      if( !toolCallMap.containsKey(tc.id()) ) {
-        toolCallMap.put(tc.id(), tc);
-      }
-    });
+	  List<AssistantMessage.ToolCall> resultCalls = new ArrayList<>();
+	  currentToolCalls.forEach(tc -> toolCallMap.put(tc.id(), tc));
 
-    return toolCallMap.values().stream().toList();
+	  // remove duplicate while keep order
+	  lastToolCalls.forEach(tc->{
+		  if( !toolCallMap.containsKey(tc.id()) ) {
+			  resultCalls.add(tc);
+		  }
+	  });
+
+	  resultCalls.addAll(currentToolCalls);
+
+	  return resultCalls;
   }
 
 	/**
@@ -371,7 +363,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @param resultValue the atomic reference to store the result value
 	 * @return Flux of GraphResponse with processed result
 	 */
-	private static Flux<GraphResponse<NodeOutput>> processGraphResponseFlux(
+	private Flux<GraphResponse<NodeOutput>> processGraphResponseFlux(
 			MainGraphExecutor mainGraphExecutor, GraphRunnerContext context,
 			Flux<GraphResponse<NodeOutput>> embedFlux, Map<String, Object> partialState,
 			AtomicReference<Object> resultValue) {
@@ -455,7 +447,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @param partialState the partial state containing flux instances
 	 * @return an Optional containing Data with the flux if found, empty otherwise
 	 */
-	public static Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(GraphRunnerContext context,
+	public Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(GraphRunnerContext context,
 			Map<String, Object> partialState) {
 		return partialState.entrySet().stream().filter(e -> e.getValue() instanceof Flux<?>).findFirst().map(e -> {
 			var chatFlux = (Flux<?>) e.getValue();
@@ -471,7 +463,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @param resultValue the atomic reference to store the result value
 	 * @return Flux of GraphResponse with embedded flux handling result
 	 */
-	public static Flux<GraphResponse<NodeOutput>> handleEmbeddedFlux(MainGraphExecutor mainGraphExecutor, GraphRunnerContext context,
+	public Flux<GraphResponse<NodeOutput>> handleEmbeddedFlux(MainGraphExecutor mainGraphExecutor, GraphRunnerContext context,
 			Flux<GraphResponse<NodeOutput>> embedFlux, Map<String, Object> partialState,
 			AtomicReference<Object> resultValue) {
 		return processGraphResponseFlux(mainGraphExecutor, context, embedFlux, partialState, resultValue);

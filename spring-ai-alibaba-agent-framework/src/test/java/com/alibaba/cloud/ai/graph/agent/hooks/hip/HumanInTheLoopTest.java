@@ -651,7 +651,7 @@ public class HumanInTheLoopTest {
 				System.out.println("Tool " + (i + 1) + " (" + feedback.getName() + "): APPROVED");
 			} else if (i == 1) {
 				// Second tool: edit
-				String editedArguments = "{\"param\": \"new_value\"}";
+				String editedArguments = "\"newValue\"";
 				InterruptionMetadata.ToolFeedback editedFeedback = InterruptionMetadata.ToolFeedback
 						.builder(feedback)
 						.arguments(editedArguments)
