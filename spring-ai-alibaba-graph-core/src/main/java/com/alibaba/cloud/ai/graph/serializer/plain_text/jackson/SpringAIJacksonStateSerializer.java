@@ -29,11 +29,16 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.document.Document;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
+import org.springframework.ai.openai.metadata.OpenAiRateLimit;
 
 import java.util.Collection;
 import java.util.Map;
@@ -178,6 +183,11 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 		ChatMessageSerializer.registerTo(module);
 		ChatMessageDeserializer.registerTo(module);
 		NodeOutputDeserializer.registerTo(module);
+        ChatResponseDeserializer.registerTo(module);
+        GenerationDeserializer.registerTo(module);
+        ChatResponseMetadataDeserializer.registerTo(module);
+        UsageMetadataDeserializer.registerTo(module);
+        RateLimitDeserializer.registerTo(module);
 	}
 
 	interface ChatMessageSerializer {
@@ -241,5 +251,54 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 			module.addDeserializer(NodeOutput.class, nodeOutput);
 		}
 	}
+
+    interface ChatResponseDeserializer {
+
+        JacksonChatResponseDeserializer chatResponse = new JacksonChatResponseDeserializer();
+
+        static void registerTo(SimpleModule module) {
+            module.addDeserializer(ChatResponse.class, chatResponse);
+        }
+    }
+
+    interface GenerationDeserializer {
+
+        JacksonGenerationDeserializer generation = new JacksonGenerationDeserializer();
+
+        static void registerTo(SimpleModule module) {
+            module.addDeserializer(Generation.class, generation);
+        }
+    }
+
+    interface ChatResponseMetadataDeserializer {
+
+        JacksonChatResponseMetadataDeserializer chatResponseMetadata = new JacksonChatResponseMetadataDeserializer();
+
+        static void registerTo(SimpleModule module) {
+            module.addDeserializer(ChatResponseMetadata.class, chatResponseMetadata);
+        }
+    }
+
+    interface UsageMetadataDeserializer {
+
+        JacksonDefaultUsageDeserializer usage = new JacksonDefaultUsageDeserializer();
+
+        static void registerTo(SimpleModule module) {
+            module.addDeserializer(DefaultUsage.class, usage);
+        }
+    }
+
+    /**
+     * openai implements
+     */
+
+    interface RateLimitDeserializer {
+
+        JacksonOpenAiRateLimitDeserializer openAiRateLimit = new JacksonOpenAiRateLimitDeserializer();
+
+        static void registerTo(SimpleModule module) {
+            module.addDeserializer(OpenAiRateLimit.class, openAiRateLimit);
+        }
+    }
 
 }
