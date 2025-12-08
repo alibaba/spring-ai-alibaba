@@ -336,7 +336,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 		Map<String, ToolCall> toolCallMap = new LinkedHashMap<>();
 
 
-		List<AssistantMessage.ToolCall> resultCalls = new ArrayList<>();
+		List<ToolCall> resultCalls = List.of();
+
 		currentToolCalls.forEach(tc -> toolCallMap.put(tc.id(), tc));
 
 		//去除旧的重复的，保持顺序
