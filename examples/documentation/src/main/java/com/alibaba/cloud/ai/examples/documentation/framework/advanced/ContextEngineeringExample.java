@@ -21,8 +21,12 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
@@ -98,7 +102,7 @@ public class ContextEngineeringExample {
 		// 创建一个模型拦截器，根据对话长度调整系统提示
 		class StateAwarePromptInterceptor extends ModelInterceptor {
 			@Override
-			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler next) {
+			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 				List<Message> messages = request.getMessages();
 				int messageCount = messages.size();
 
@@ -121,17 +125,18 @@ public class ContextEngineeringExample {
 					);
 				}
 
-				// 创建新的请求并继续
-				ModelRequest updatedRequest = ModelRequest.builder(request)
+				// 创建增强的请求
+				ModelRequest enhancedRequest = ModelRequest.builder(request)
 						.systemMessage(enhancedSystemMessage)
 						.build();
 
-				return next.call(updatedRequest);
+				// 调用处理器
+				return handler.call(enhancedRequest);
 			}
 
 			@Override
 			public String getName() {
-				return "";
+				return "StateAwarePromptInterceptor";
 			}
 		}
 
@@ -205,7 +210,7 @@ public class ContextEngineeringExample {
 			}
 
 			@Override
-			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler next) {
+			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 				// 从运行时上下文获取用户ID
 				String userId = getUserIdFromContext(request);
 
@@ -226,11 +231,13 @@ public class ContextEngineeringExample {
 					);
 				}
 
-				ModelRequest updatedRequest = ModelRequest.builder(request)
+				// 创建增强的请求
+				ModelRequest enhancedRequest = ModelRequest.builder(request)
 						.systemMessage(enhancedSystemMessage)
 						.build();
 
-				return next.call(updatedRequest);
+				// 调用处理器
+				return handler.call(enhancedRequest);
 			}
 
 			private String getUserIdFromContext(ModelRequest request) {
@@ -389,41 +396,30 @@ public class ContextEngineeringExample {
 	/**
 	 * 示例5：日志记录 Hook
 	 *
-	 * 使用Hook在模型调用前后记录日志
+	 * 使用MessagesModelHook在模型调用前后记录日志
 	 */
 	public void example5_loggingHook() throws GraphRunnerException {
-		class LoggingHook extends ModelHook {
+		@HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
+		class LoggingHook extends MessagesModelHook {
 			@Override
 			public String getName() {
 				return "logging_hook";
 			}
 
 			@Override
-			public HookPosition[] getHookPositions() {
-				return new HookPosition[] {
-						HookPosition.BEFORE_MODEL,
-						HookPosition.AFTER_MODEL
-				};
-			}
-
-			@Override
-			public List<JumpTo> canJumpTo() {
-				return List.of();
-			}
-
-			@Override
-			public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+			public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
 				// 在模型调用前记录
-				List<?> messages = (List<?>) state.value("messages").orElse(List.of());
-				System.out.println("模型调用前 - 消息数: " + messages.size());
-				return CompletableFuture.completedFuture(Map.of());
+				System.out.println("模型调用前 - 消息数: " + previousMessages.size());
+				// 不修改消息，返回原始消息
+				return new AgentCommand(previousMessages);
 			}
 
 			@Override
-			public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+			public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
 				// 在模型调用后记录
 				System.out.println("模型调用后 - 响应已生成");
-				return CompletableFuture.completedFuture(Map.of());
+				// 不修改消息，返回原始消息
+				return new AgentCommand(previousMessages);
 			}
 		}
 
@@ -442,9 +438,11 @@ public class ContextEngineeringExample {
 	 * 示例6：消息摘要 Hook
 	 *
 	 * 当对话过长时自动生成摘要
+	 * 使用MessagesModelHook实现
 	 */
 	public void example6_summarizationHook() {
-		class SummarizationHook extends ModelHook {
+		@HookPositions({HookPosition.BEFORE_MODEL})
+		class SummarizationHook extends MessagesModelHook {
 			private final ChatModel summarizationModel;
 			private final int triggerLength;
 
@@ -459,70 +457,57 @@ public class ContextEngineeringExample {
 			}
 
 			@Override
-			public HookPosition[] getHookPositions() {
-				return new HookPosition[] {HookPosition.BEFORE_MODEL};
-			}
-
-			@Override
-			public List<JumpTo> canJumpTo() {
-				return List.of();
-			}
-
-			@Override
-			public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-				List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-
-				if (messages.size() > triggerLength) {
-					// 生成对话摘要
-					String summary = generateSummary(messages);
-
-					// 查找是否已存在 SystemMessage
-					SystemMessage existingSystemMessage = null;
-					int systemMessageIndex = -1;
-					for (int i = 0; i < messages.size(); i++) {
-						Message msg = messages.get(i);
-						if (msg instanceof SystemMessage) {
-							existingSystemMessage = (SystemMessage) msg;
-							systemMessageIndex = i;
-							break;
-						}
-					}
-
-					// 创建摘要 SystemMessage
-					String summaryText = "之前对话摘要：" + summary;
-					SystemMessage summarySystemMessage;
-					if (existingSystemMessage != null) {
-						// 如果存在 SystemMessage，追加摘要信息
-						summarySystemMessage = new SystemMessage(
-								existingSystemMessage.getText() + "\n\n" + summaryText
-						);
-					}
-					else {
-						// 如果不存在，创建新的
-						summarySystemMessage = new SystemMessage(summaryText);
-					}
-
-					// 保留最近的几条消息
-					int recentCount = Math.min(5, messages.size());
-					List<Message> recentMessages = messages.subList(
-							messages.size() - recentCount,
-							messages.size()
-					);
-
-					// 构建新的消息列表
-					List<Message> newMessages = new ArrayList<>();
-					newMessages.add(summarySystemMessage);
-					// 添加最近的消息，排除旧的 SystemMessage（如果存在）
-					for (Message msg : recentMessages) {
-						if (msg != existingSystemMessage) {
-							newMessages.add(msg);
-						}
-					}
-
-					return CompletableFuture.completedFuture(Map.of("messages", newMessages));
+			public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
+				if (previousMessages.size() <= triggerLength) {
+					// 如果消息数量未超过阈值，无需总结
+					return new AgentCommand(previousMessages);
 				}
 
-				return CompletableFuture.completedFuture(Map.of());
+				// 生成对话摘要
+				String summary = generateSummary(previousMessages);
+
+				// 查找是否已存在 SystemMessage
+				SystemMessage existingSystemMessage = null;
+				for (Message msg : previousMessages) {
+					if (msg instanceof SystemMessage) {
+						existingSystemMessage = (SystemMessage) msg;
+						break;
+					}
+				}
+
+				// 创建摘要 SystemMessage
+				String summaryText = "之前对话摘要：" + summary;
+				SystemMessage summarySystemMessage;
+				if (existingSystemMessage != null) {
+					// 如果存在 SystemMessage，追加摘要信息
+					summarySystemMessage = new SystemMessage(
+							existingSystemMessage.getText() + "\n\n" + summaryText
+					);
+				}
+				else {
+					// 如果不存在，创建新的
+					summarySystemMessage = new SystemMessage(summaryText);
+				}
+
+				// 保留最近的几条消息
+				int recentCount = Math.min(5, previousMessages.size());
+				List<Message> recentMessages = previousMessages.subList(
+						previousMessages.size() - recentCount,
+						previousMessages.size()
+				);
+
+				// 构建新的消息列表
+				List<Message> newMessages = new ArrayList<>();
+				newMessages.add(summarySystemMessage);
+				// 添加最近的消息，排除旧的 SystemMessage（如果存在）
+				for (Message msg : recentMessages) {
+					if (msg != existingSystemMessage) {
+						newMessages.add(msg);
+					}
+				}
+
+				// 使用 REPLACE 策略替换所有消息
+				return new AgentCommand(newMessages, UpdatePolicy.REPLACE);
 			}
 
 			private String generateSummary(List<Message> messages) {

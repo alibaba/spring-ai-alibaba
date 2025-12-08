@@ -325,13 +325,14 @@ class ReactAgentDeepSeekTest {
 				}
 				""";
 
+		MemorySaver saver = new MemorySaver();
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("structured_writer_agent")
 				.model(chatModel)
 				.description("根据结构化输入写文章")
 				.instruction("你是一个专业作家。请严格按照输入的主题、字数和风格要求创作文章。")
 				.inputSchema(writerInputSchema)
-				.saver(new MemorySaver())
+				.saver(saver)
 				.build();
 
 		ReactAgent coordinatorAgent = ReactAgent.builder()
@@ -339,12 +340,12 @@ class ReactAgentDeepSeekTest {
 				.model(chatModel)
 				.instruction("你需要调用写作工具来完成用户的写作请求。请根据用户需求，使用结构化的参数调用写作工具。")
 				.tools(List.of(AgentTool.getFunctionToolCallback(writerAgent)))
-				.saver(new MemorySaver())
+				.saver(saver)
 				.build();
 
 		try {
 			Optional<OverAllState> result = coordinatorAgent
-					.invoke("请写一篇关于春天的散文，大约150字");
+					.invoke("请写一篇关于春天的抒情散文，大约150字，直接写作不要再询问我了");
 
 			assertTrue(result.isPresent(), "Result should be present");
 			System.out.println("=== Agent Tool with InputSchema Test ===");

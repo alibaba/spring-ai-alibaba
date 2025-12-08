@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -250,6 +251,16 @@ class ReactAgentTest {
 		System.out.println("=== NodeOutput ===");
 		System.out.println("Agent: " + nodeOutput.agent());
 		System.out.println("TokenUsage: " + nodeOutput.tokenUsage());
+	}
+
+	/**
+	 * 打印ReactAgent的图表
+	 *
+	 * 使用getAndCompileGraph方法获取并打印ReactAgent的内部状态图
+	 */
+	private void printReactAgentGraph(ReactAgent agent) {
+		GraphRepresentation representation = agent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+		System.out.println(representation.content());
 	}
 
 	@Test
@@ -547,6 +558,8 @@ class ReactAgentTest {
 				.outputSchema(format)
 				.enableLogging(true)
 				.build();
+
+
 
 		AssistantMessage message = agent.call("请提供一个包含姓名、年龄和职业的JSON对象。");
 		assertNotNull(message, "Message should not be null");

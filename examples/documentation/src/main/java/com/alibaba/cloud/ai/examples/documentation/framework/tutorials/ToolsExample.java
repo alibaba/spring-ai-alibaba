@@ -28,8 +28,14 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -246,7 +252,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例10：完整的工具使用示例
+	 * 示例10：完整的工具使用示例（使用 tools 方法）
 	 */
 	public static void comprehensiveToolExample() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -300,6 +306,238 @@ public class ToolsExample {
 		agent.call("What's the weather in New York?", config);
 		agent.call("Calculate 25 * 4 + 10", config);
 		agent.call("Search for latest AI news", config);
+	}
+
+	/**
+	 * 示例11：使用 methodTools - 基于 @Tool 注解的方法工具
+	 */
+	public static void methodToolsExample() throws GraphRunnerException {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		// 创建带有 @Tool 注解方法的工具对象
+		CalculatorTools calculatorTools = new CalculatorTools();
+
+		// 使用 methodTools 方法，传入带有 @Tool 注解方法的对象
+		ReactAgent agent = ReactAgent.builder()
+				.name("calculator_agent")
+				.model(chatModel)
+				.description("An agent that can perform calculations")
+				.instruction("You are a helpful calculator assistant. Use the available tools to perform calculations.")
+				.methodTools(calculatorTools)  // 传入带有 @Tool 注解方法的对象
+				.saver(new MemorySaver())
+				.build();
+
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("method_tools_session")
+				.build();
+
+		agent.call("What is 15 + 27?", config);
+		agent.call("What is 8 * 9?", config);
+	}
+
+	/**
+	 * 示例12：使用多个 methodTools 对象
+	 */
+	public static void multipleMethodToolsExample() throws GraphRunnerException {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		// 创建多个工具对象
+		CalculatorTools calculatorTools = new CalculatorTools();
+		WeatherTools weatherTools = new WeatherTools();
+
+		// 可以传入多个 methodTools 对象
+		ReactAgent agent = ReactAgent.builder()
+				.name("multi_method_tool_agent")
+				.model(chatModel)
+				.description("An agent with multiple method-based tools")
+				.instruction("You are a helpful assistant with calculator and weather tools.")
+				.methodTools(calculatorTools, weatherTools)  // 传入多个工具对象
+				.saver(new MemorySaver())
+				.build();
+
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("multi_method_tools_session")
+				.build();
+
+		agent.call("What is 10 * 8 and what's the weather in Beijing?", config);
+	}
+
+	/**
+	 * 示例13：使用 ToolCallbackProvider
+	 */
+	public static void toolCallbackProviderExample() throws GraphRunnerException {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		// 创建工具
+		ToolCallback searchTool = FunctionToolCallback.builder("search", new SearchToolWithContext())
+				.description("Search for information")
+				.inputType(String.class)
+				.build();
+
+		// 创建 ToolCallbackProvider
+		ToolCallbackProvider toolProvider = new CustomToolCallbackProvider(List.of(searchTool));
+
+		// 使用 toolCallbackProviders 方法
+		ReactAgent agent = ReactAgent.builder()
+				.name("search_agent")
+				.model(chatModel)
+				.description("An agent that can search for information")
+				.instruction("You are a helpful assistant with search capabilities.")
+				.toolCallbackProviders(toolProvider)  // 使用 ToolCallbackProvider
+				.saver(new MemorySaver())
+				.build();
+
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("tool_provider_session")
+				.build();
+
+		agent.call("Search for information about Spring AI", config);
+	}
+
+	/**
+	 * 示例14：使用 toolNames 和 resolver（必须配合使用）
+	 */
+	public static void toolNamesWithResolverExample() throws GraphRunnerException {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		// 创建工具（使用复合类型）
+		ToolCallback searchTool = FunctionToolCallback.builder("search", new SearchFunctionWithRequest())
+				.description("Search for information")
+				.inputType(SearchRequest.class)
+				.build();
+
+		ToolCallback calculatorTool = FunctionToolCallback.builder("calculator", new CalculatorFunctionWithRequest())
+				.description("Perform arithmetic calculations")
+				.inputType(CalculatorRequest.class)
+				.build();
+
+		// 创建 StaticToolCallbackResolver，包含所有工具
+		StaticToolCallbackResolver resolver = new StaticToolCallbackResolver(
+				List.of(calculatorTool, searchTool));
+
+		// 使用 toolNames 指定要使用的工具名称，必须配合 resolver 使用
+		ReactAgent agent = ReactAgent.builder()
+				.name("multi_tool_agent")
+				.model(chatModel)
+				.description("An agent with multiple tools")
+				.instruction("You are a helpful assistant with access to calculator and search tools.")
+				.toolNames("calculator", "search")  // 使用工具名称而不是 ToolCallback 实例
+				.resolver(resolver)  // 必须提供 resolver 来解析工具名称
+				.saver(new MemorySaver())
+				.build();
+
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("tool_names_session")
+				.build();
+
+		agent.call("Calculate 25 + 4 and then search for information about the result", config);
+	}
+
+	/**
+	 * 示例15：使用 resolver 直接解析工具
+	 */
+	public static void resolverExample() throws GraphRunnerException {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		// 创建工具
+		ToolCallback calculatorTool = FunctionToolCallback.builder("calculator", new CalculatorFunctionWithContext())
+				.description("Perform arithmetic calculations")
+				.inputType(String.class)
+				.build();
+
+		// 创建 resolver
+		StaticToolCallbackResolver resolver = new StaticToolCallbackResolver(
+				List.of(calculatorTool));
+
+		// 使用 resolver，可以直接在 tools 中使用，也可以仅通过 resolver 提供
+		ReactAgent agent = ReactAgent.builder()
+				.name("resolver_agent")
+				.model(chatModel)
+				.description("An agent using ToolCallbackResolver")
+				.instruction("You are a helpful calculator assistant.")
+				.tools(calculatorTool)  // 直接指定工具
+				.resolver(resolver)  // 同时设置 resolver 供工具节点使用
+				.saver(new MemorySaver())
+				.build();
+
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("resolver_session")
+				.build();
+
+		agent.call("What is 100 divided by 4?", config);
+	}
+
+	/**
+	 * 示例16：组合使用多种工具提供方式
+	 */
+	public static void combinedToolProvisionExample() throws GraphRunnerException {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		// Method tools
+		CalculatorTools calculatorTools = new CalculatorTools();
+
+		// Direct tool
+		ToolCallback searchTool = FunctionToolCallback.builder("search", new SearchToolWithContext())
+				.description("Search for information")
+				.inputType(String.class)
+				.build();
+
+		// ToolCallbackProvider
+		ToolCallbackProvider toolProvider = new CustomToolCallbackProvider(List.of(searchTool));
+
+		// 组合使用多种方式
+		ReactAgent agent = ReactAgent.builder()
+				.name("combined_tool_agent")
+				.model(chatModel)
+				.description("An agent with multiple tool provision methods")
+				.instruction("You are a helpful assistant with calculator and search capabilities.")
+				.methodTools(calculatorTools)  // Method-based tools
+				.toolCallbackProviders(toolProvider)  // Provider-based tools
+				.tools(searchTool)  // Direct tools
+				.saver(new MemorySaver())
+				.build();
+
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("combined_session")
+				.build();
+
+		agent.call("Calculate 50 + 75 and search for information about mathematics", config);
 	}
 
 	// ==================== 高级模式定义 ====================
@@ -362,8 +600,26 @@ public class ToolsExample {
 			System.out.println("\n--- 示例9：ReactAgent 中的工具 ---");
 			toolsInReactAgent();
 
-			System.out.println("\n--- 示例10：综合工具示例 ---");
+			System.out.println("\n--- 示例10：综合工具示例（tools 方法） ---");
 			comprehensiveToolExample();
+
+			System.out.println("\n--- 示例11：使用 methodTools（@Tool 注解） ---");
+			methodToolsExample();
+
+			System.out.println("\n--- 示例12：多个 methodTools 对象 ---");
+			multipleMethodToolsExample();
+
+			System.out.println("\n--- 示例13：使用 ToolCallbackProvider ---");
+			toolCallbackProviderExample();
+
+			System.out.println("\n--- 示例14：使用 toolNames 和 resolver ---");
+			toolNamesWithResolverExample();
+
+			System.out.println("\n--- 示例15：使用 resolver ---");
+			resolverExample();
+
+			System.out.println("\n--- 示例16：组合使用多种工具提供方式 ---");
+			combinedToolProvisionExample();
 
 			System.out.println("\n=== 所有示例执行完成 ===");
 		}
@@ -537,6 +793,164 @@ public class ToolsExample {
 			}
 
 			return "User not found";
+		}
+	}
+
+	// ==================== MethodTools 相关类 ====================
+
+	/**
+	 * 计算器工具类 - 使用 @Tool 注解
+	 */
+	public static class CalculatorTools {
+		public static int callCount = 0;
+
+		@Tool(description = "Add two numbers together")
+		public String add(
+				@ToolParam(description = "First number") int a,
+				@ToolParam(description = "Second number") int b) {
+			callCount++;
+			return String.valueOf(a + b);
+		}
+
+		@Tool(description = "Multiply two numbers together")
+		public String multiply(
+				@ToolParam(description = "First number") int a,
+				@ToolParam(description = "Second number") int b) {
+			callCount++;
+			return String.valueOf(a * b);
+		}
+
+		@Tool(description = "Subtract second number from first number")
+		public String subtract(
+				@ToolParam(description = "First number") int a,
+				@ToolParam(description = "Second number") int b) {
+			callCount++;
+			return String.valueOf(a - b);
+		}
+	}
+
+	/**
+	 * 天气工具类 - 使用 @Tool 注解
+	 */
+	public static class WeatherTools {
+		@Tool(description = "Get current weather for a location")
+		public String getWeather(@ToolParam(description = "City name") String city) {
+			return "Sunny, 25°C in " + city;
+		}
+
+		@Tool(description = "Get weather forecast for a location")
+		public String getForecast(
+				@ToolParam(description = "City name") String city,
+				@ToolParam(description = "Number of days") int days) {
+			return String.format("Weather forecast for %s for next %d days: Mostly sunny", city, days);
+		}
+	}
+
+	// ==================== ToolCallbackProvider 相关类 ====================
+
+	/**
+	 * 自定义 ToolCallbackProvider 实现
+	 */
+	public static class CustomToolCallbackProvider implements ToolCallbackProvider {
+		private final List<ToolCallback> toolCallbacks;
+
+		public CustomToolCallbackProvider(List<ToolCallback> toolCallbacks) {
+			this.toolCallbacks = toolCallbacks;
+		}
+
+		@Override
+		public ToolCallback[] getToolCallbacks() {
+			return toolCallbacks.toArray(new ToolCallback[0]);
+		}
+	}
+
+	/**
+	 * 带上下文的搜索工具
+	 */
+	public static class SearchToolWithContext implements BiFunction<String, ToolContext, String> {
+		@Override
+		public String apply(String query, ToolContext toolContext) {
+			return "Search results for: " + query;
+		}
+	}
+
+	// ==================== Resolver 相关类 ====================
+
+	/**
+	 * 搜索请求类（用于复合类型）
+	 */
+	public static class SearchRequest {
+		@JsonProperty(required = true)
+		@JsonPropertyDescription("The search query string")
+		public String query;
+
+		public SearchRequest() {
+		}
+
+		public SearchRequest(String query) {
+			this.query = query;
+		}
+	}
+
+	/**
+	 * 使用复合类型的搜索函数
+	 */
+	public static class SearchFunctionWithRequest implements BiFunction<SearchRequest, ToolContext, String> {
+		@Override
+		public String apply(SearchRequest request, ToolContext toolContext) {
+			return "Search results for: " + request.query;
+		}
+	}
+
+	/**
+	 * 计算器请求类（用于复合类型）
+	 */
+	public static class CalculatorRequest {
+		@JsonProperty(required = true)
+		@JsonPropertyDescription("First number for the calculation")
+		public int a;
+
+		@JsonProperty(required = true)
+		@JsonPropertyDescription("Second number for the calculation")
+		public int b;
+
+		public CalculatorRequest() {
+		}
+
+		public CalculatorRequest(int a, int b) {
+			this.a = a;
+			this.b = b;
+		}
+	}
+
+	/**
+	 * 使用复合类型的计算器函数
+	 */
+	public static class CalculatorFunctionWithRequest implements BiFunction<CalculatorRequest, ToolContext, String> {
+		@Override
+		public String apply(CalculatorRequest request, ToolContext toolContext) {
+			return String.valueOf(request.a + request.b);
+		}
+	}
+
+	/**
+	 * 带上下文的计算器函数
+	 */
+	public static class CalculatorFunctionWithContext implements BiFunction<String, ToolContext, String> {
+		@Override
+		public String apply(String expression, ToolContext toolContext) {
+			// 简单的计算解析（用于演示）
+			if (expression.contains("/")) {
+				String[] parts = expression.split("/");
+				double result = Double.parseDouble(parts[0].trim()) / Double.parseDouble(parts[1].trim());
+				return String.valueOf(result);
+			}
+			if (expression.contains("*")) {
+				String[] parts = expression.split("\\*");
+				double result = Double.parseDouble(parts[0].trim()) * Double.parseDouble(parts[1].trim());
+				return String.valueOf(result);
+			}
+			return "Calculation result for: " + expression;
 		}
 	}
 }

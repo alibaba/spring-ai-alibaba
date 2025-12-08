@@ -24,6 +24,9 @@ import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.modelcalllimit.ModelCallLimitHook;
@@ -80,7 +83,7 @@ public class HooksExample {
 
 		// 创建 Hooks 和 Interceptors
 		ModelHook loggingHook = new LoggingModelHook();
-		ModelHook messageTrimmingHook = new MessageTrimmingHook();
+		MessagesModelHook messageTrimmingHook = new MessageTrimmingHook();
 		ModelInterceptor guardrailInterceptor = new GuardrailInterceptor();
 		ToolInterceptor retryInterceptor = new RetryToolInterceptor();
 
@@ -583,33 +586,30 @@ public class HooksExample {
 
 	/**
 	 * 消息修剪 Hook
+	 * 使用 MessagesModelHook 实现，在模型调用前修剪消息列表，只保留最后 10 条消息
 	 */
-	private static class MessageTrimmingHook extends ModelHook {
+	@HookPositions({HookPosition.BEFORE_MODEL})
+	private static class MessageTrimmingHook extends MessagesModelHook {
+		private static final int MAX_MESSAGES = 10;
+
 		@Override
 		public String getName() {
 			return "message_trimming";
 		}
 
 		@Override
-		public HookPosition[] getHookPositions() {
-			return new HookPosition[] {HookPosition.BEFORE_MODEL};
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-			Optional<Object> messagesOpt = state.value("messages");
-			if (messagesOpt.isPresent()) {
-				List<Message> messages = (List<Message>) messagesOpt.get();
-				if (messages.size() > 10) {
-					return CompletableFuture.completedFuture(Map.of("messages", messages.subList(messages.size() - 10, messages.size())));
-				}
+		public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
+			// 如果消息数量超过限制，只保留最后 MAX_MESSAGES 条消息
+			if (previousMessages.size() > MAX_MESSAGES) {
+				List<Message> trimmedMessages = previousMessages.subList(
+						previousMessages.size() - MAX_MESSAGES,
+						previousMessages.size()
+				);
+				// 使用 REPLACE 策略替换所有消息
+				return new AgentCommand(trimmedMessages, UpdatePolicy.REPLACE);
 			}
-			return CompletableFuture.completedFuture(Map.of());
-		}
-
-		@Override
-		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-			return CompletableFuture.completedFuture(Map.of());
+			// 如果消息数量未超过限制，返回原始消息（不进行修改）
+			return new AgentCommand(previousMessages);
 		}
 	}
 

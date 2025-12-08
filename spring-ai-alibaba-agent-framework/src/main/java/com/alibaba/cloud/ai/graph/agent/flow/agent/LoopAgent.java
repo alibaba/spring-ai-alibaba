@@ -61,7 +61,7 @@ public class LoopAgent extends FlowAgent {
 
     public static final String LOOP_STRATEGY = "loopStrategy";
 
-    private LoopAgent(LoopAgentBuilder builder) throws GraphStateException {
+    private LoopAgent(LoopAgentBuilder builder) {
         super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor);
         this.loopStrategy = builder.loopStrategy;
     }
@@ -109,7 +109,7 @@ public class LoopAgent extends FlowAgent {
         }
 
         @Override
-        public LoopAgent doBuild() throws GraphStateException {
+        public LoopAgent doBuild() {
             validate();
             return new LoopAgent(this);
         }

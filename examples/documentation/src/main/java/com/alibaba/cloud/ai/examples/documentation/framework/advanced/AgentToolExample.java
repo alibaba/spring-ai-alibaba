@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.converter.BeanOutputConverter;
 
 import java.util.List;
 import java.util.Optional;
@@ -190,32 +191,16 @@ public class AgentToolExample {
 	 * 定义输出Schema，使子Agent返回结构化的输出格式
 	 */
 	public void example4_agentToolWithOutputSchema() throws GraphRunnerException {
-		// 定义输出Schema
-		String writerOutputSchema = """
-				{
-					"$schema": "https://json-schema.org/draft/2020-12/schema",
-					"type": "object",
-					"properties": {
-						"title": {
-							"type": "string"
-						},
-						"content": {
-							"type": "string"
-						},
-						"characterCount": {
-							"type": "integer"
-						}
-					},
-					"additionalProperties": false
-				}
-				""";
+		// Use BeanOutputConverter to generate outputSchema
+		BeanOutputConverter<ArticleOutput> outputConverter = new BeanOutputConverter<>(ArticleOutput.class);
+		String format = outputConverter.getFormat();
 
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_with_output_schema")
 				.model(chatModel)
 				.description("写文章并返回结构化输出")
 				.instruction("你是一个专业作家。请创作文章并严格按照指定的JSON格式返回结果。")
-				.outputSchema(writerOutputSchema)
+				.outputSchema(format)
 				.build();
 
 		ReactAgent coordinatorAgent = ReactAgent.builder()
@@ -447,6 +432,40 @@ public class AgentToolExample {
 		multiToolAgent.invoke("请写一篇关于AI的文章，然后翻译成英文，最后给出摘要");
 
 		System.out.println("多工具Agent示例执行成功");
+	}
+
+	/**
+	 * 文章输出类 - 用于示例4和示例5
+	 */
+	public static class ArticleOutput {
+		private String title;
+		private String content;
+		private int characterCount;
+
+		// Getters and Setters
+		public String getTitle() {
+			return title;
+		}
+
+		public void setTitle(String title) {
+			this.title = title;
+		}
+
+		public String getContent() {
+			return content;
+		}
+
+		public void setContent(String content) {
+			this.content = content;
+		}
+
+		public int getCharacterCount() {
+			return characterCount;
+		}
+
+		public void setCharacterCount(int characterCount) {
+			this.characterCount = characterCount;
+		}
 	}
 
 	/**
