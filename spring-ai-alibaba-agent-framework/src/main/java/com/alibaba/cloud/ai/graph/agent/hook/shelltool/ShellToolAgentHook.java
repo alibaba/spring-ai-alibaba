@@ -42,6 +42,7 @@ public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 	private static final Logger log = LoggerFactory.getLogger(ShellToolAgentHook.class);
 
 	private ShellTool shellTool;
+	private String shellToolName;
 
 	/**
 	 * Private constructor for builder pattern.
@@ -53,8 +54,9 @@ public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 	 * Private constructor with ShellTool for builder pattern.
 	 * @param shellTool the ShellTool instance to use
 	 */
-	private ShellToolAgentHook(ShellTool shellTool) {
+	private ShellToolAgentHook(ShellTool shellTool, String shellToolName) {
 		this.shellTool = shellTool;
+		this.shellToolName = shellToolName;
 	}
 
 	/**
@@ -165,7 +167,7 @@ public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 	@Override
 	public String getRequiredToolName() {
 		// Match by tool name "shell"
-		return "shell";
+		return shellToolName;
 	}
 
 	@Override
@@ -188,6 +190,7 @@ public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 	 */
 	public static class Builder {
 		private ShellTool shellTool;
+		private String shellToolName;
 
 		/**
 		 * Set the ShellTool instance.
@@ -199,12 +202,17 @@ public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 			return this;
 		}
 
+		public Builder shellToolName(String shellToolName) {
+			this.shellToolName = shellToolName;
+			return this;
+		}
+
 		/**
 		 * Build the ShellToolAgentHook instance.
 		 * @return a new ShellToolAgentHook instance
 		 */
 		public ShellToolAgentHook build() {
-			return new ShellToolAgentHook(this.shellTool);
+			return new ShellToolAgentHook(this.shellTool, this.shellToolName);
 		}
 	}
 

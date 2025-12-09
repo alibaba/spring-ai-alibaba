@@ -175,7 +175,7 @@ public class DeepResearchAgent {
 						patchToolCallsInterceptor,
 						largeResultEvictionInterceptor
 				)
-				.defaultHooks(summarizationHook, toolCallLimitHook)
+				.defaultHooks(humanInTheLoopHook, summarizationHook, toolCallLimitHook)
 				.addSubAgent(researchAgent)
 				.includeGeneralPurpose(true)
 				.addSubAgent(critiqueAgent);

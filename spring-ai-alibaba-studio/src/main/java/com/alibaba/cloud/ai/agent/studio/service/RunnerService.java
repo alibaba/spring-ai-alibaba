@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.agent.studio.service;
 
 import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 
 import org.springframework.stereotype.Component;
 
@@ -37,7 +37,7 @@ public class RunnerService {
 	}
 
 	/** Called by hot loader when agents are updated */
-	public BaseAgent getAgent(String agentName) {
+	public Agent getAgent(String agentName) {
 		return agentProvider.loadAgent(agentName);
 	}
 }

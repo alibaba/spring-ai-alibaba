@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.agent.studio.dto.messages;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,12 +45,16 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 	@JsonProperty("toolFeedback")
 	private List<ToolFeedback> toolFeedback;
 
+	@JsonProperty("toolsAutomaticallyApproved")
+	private List<ToolCallDTO> toolsAutomaticallyApproved;
+
 	/**
 	 * Default constructor for deserialization.
 	 */
 	public ToolRequestConfirmMessageDTO() {
 		this.metadata = new HashMap<>();
 		this.toolFeedback = new ArrayList<>();
+		this.toolsAutomaticallyApproved = new ArrayList<>();
 	}
 
 	/**
@@ -83,6 +89,15 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 				}
 
 				this.toolFeedback.add(toolFeedback);
+			}
+		}
+
+		// Convert toolsAutomaticallyApproved
+		if (interruptionMetadata.getToolsAutomaticallyApproved() != null
+				&& !interruptionMetadata.getToolsAutomaticallyApproved().isEmpty()) {
+			this.toolsAutomaticallyApproved = new ArrayList<>();
+			for (AssistantMessage.ToolCall toolCall : interruptionMetadata.getToolsAutomaticallyApproved()) {
+				this.toolsAutomaticallyApproved.add(new ToolCallDTO(toolCall));
 			}
 		}
 	}
@@ -123,6 +138,15 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 			}
 		}
 
+		// Convert toolsAutomaticallyApproved
+		if (this.toolsAutomaticallyApproved != null && !this.toolsAutomaticallyApproved.isEmpty()) {
+			List<AssistantMessage.ToolCall> springToolCalls = new ArrayList<>();
+			for (ToolCallDTO toolCallDTO : this.toolsAutomaticallyApproved) {
+				springToolCalls.add(toolCallDTO.toToolCall());
+			}
+			builder.toolsAutomaticallyApproved(springToolCalls);
+		}
+
 		return builder.build();
 	}
 
@@ -158,6 +182,14 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 
 	public void setToolFeedback(List<ToolFeedback> toolFeedback) {
 		this.toolFeedback = toolFeedback;
+	}
+
+	public List<ToolCallDTO> getToolsAutomaticallyApproved() {
+		return toolsAutomaticallyApproved;
+	}
+
+	public void setToolsAutomaticallyApproved(List<ToolCallDTO> toolsAutomaticallyApproved) {
+		this.toolsAutomaticallyApproved = toolsAutomaticallyApproved;
 	}
 
 	/**
@@ -231,6 +263,71 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 			APPROVED,
 			REJECTED,
 			EDITED;
+		}
+	}
+
+	/**
+	 * DTO for ToolCall within AssistantMessage.
+	 */
+	public static class ToolCallDTO {
+		@JsonProperty("id")
+		private String id;
+
+		@JsonProperty("type")
+		private String type;
+
+		@JsonProperty("name")
+		private String name;
+
+		@JsonProperty("arguments")
+		private String arguments;
+
+		public ToolCallDTO() {
+		}
+
+		public ToolCallDTO(AssistantMessage.ToolCall toolCall) {
+			this.id = toolCall.id();
+			this.type = toolCall.type();
+			this.name = toolCall.name();
+			this.arguments = toolCall.arguments();
+		}
+
+		public AssistantMessage.ToolCall toToolCall() {
+			return new AssistantMessage.ToolCall(this.id, this.type, this.name, this.arguments);
+		}
+
+		// Getters and Setters
+
+		public String getId() {
+			return id;
+		}
+
+		public void setId(String id) {
+			this.id = id;
+		}
+
+		public String getType() {
+			return type;
+		}
+
+		public void setType(String type) {
+			this.type = type;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getArguments() {
+			return arguments;
+		}
+
+		public void setArguments(String arguments) {
+			this.arguments = arguments;
 		}
 	}
 }
