@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 @HookPositions(HookPosition.AFTER_MODEL)
 public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWithConfig, InterruptableAction {
 	private static final Logger log = LoggerFactory.getLogger(HumanInTheLoopHook.class);
-
+    public static final String HITL_NODE_NAME = "HITL";
 	private Map<String, ToolConfig> approvalOn;
 
 	private HumanInTheLoopHook(Builder builder) {
@@ -209,39 +209,67 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		return needsInterruption ? Optional.of(builder.build()) : Optional.empty();
 	}
 
-	private boolean validateFeedback(InterruptionMetadata feedback, List<AssistantMessage.ToolCall> toolCalls) {
-		if (feedback == null || feedback.toolFeedbacks() == null || feedback.toolFeedbacks().isEmpty()) {
-			return false;
-		}
+    private boolean validateFeedback(InterruptionMetadata feedback, List<AssistantMessage.ToolCall> toolCalls) {
+        if (feedback == null || feedback.toolFeedbacks() == null || feedback.toolFeedbacks().isEmpty()) {
+            return false;
+        }
 
-		List<InterruptionMetadata.ToolFeedback> toolFeedbacks = feedback.toolFeedbacks();
+        List<InterruptionMetadata.ToolFeedback> toolFeedbacks = feedback.toolFeedbacks();
 
-		// 1. Ensure each ToolFeedback's result is not empty
-		for (InterruptionMetadata.ToolFeedback toolFeedback : toolFeedbacks) {
-			if (toolFeedback.getResult() == null) {
-				log.warn("No tool feedback provided, continue to wait for human input.");
-				return false;
-			}
-		}
+        // 1. Tool calls in this step that actually require human approval (names defined in approvalOn)
+        List<AssistantMessage.ToolCall> toolCallsNeedingApproval = toolCalls.stream()
+                .filter(tc -> approvalOn.containsKey(tc.name()))
+                .toList();
 
-		// 2. Ensure ToolFeedback count matches approvalOn count and all names are in approvalOn
-		if (toolFeedbacks.size() != toolCalls.size()) {
-			log.warn("Only {} tool feedbacks provided, but {} tool calls need approval, continue to wait for human input.", toolFeedbacks.size(), toolCalls.size());
-			return false;
-		}
-		for (InterruptionMetadata.ToolFeedback toolFeedback : toolFeedbacks) {
-			if (!approvalOn.containsKey(toolFeedback.getName())) {
-				log.warn("Tool feedback for tool {} is not expected(not in the tool executing list), continue to wait for human input.", toolFeedback.getName());
-				return false;
-			}
-		}
+        // If no tool calls in this step require human approval, validation is trivially satisfied
+        if (toolCallsNeedingApproval.isEmpty()) {
+            return true;
+        }
 
-		return true;
-	}
+        // 2. For each tool call requiring approval, ensure corresponding feedback exists and its result is non-null
+        for (AssistantMessage.ToolCall call : toolCallsNeedingApproval) {
+            InterruptionMetadata.ToolFeedback matchedFeedback = toolFeedbacks.stream()
+                    .filter(tf -> tf.getName().equals(call.name())
+                            // Also validate id if ToolFeedback contains id field
+                            && call.id().equals(tf.getId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (matchedFeedback == null) {
+                log.warn("Missing feedback for tool {} (id={}); waiting for human input.",
+                        call.name(), call.id());
+                return false;
+            }
+
+            // Ensure the feedback result is provided
+            if (matchedFeedback.getResult() == null) {
+                log.warn("Feedback result for tool {} (id={}) is null; waiting for human input.",
+                        call.name(), call.id());
+                return false;
+            }
+        }
+
+        // 3. Optional: log unexpected or extra feedback entries that do not match any pending approval tool
+        for (InterruptionMetadata.ToolFeedback tf : toolFeedbacks) {
+            boolean matched = toolCallsNeedingApproval.stream()
+                    .anyMatch(call -> call.name().equals(tf.getName()) && call.id().equals(tf.getId()));
+            if (!matched) {
+                log.warn("Ignoring unexpected tool feedback: name={}, id={}", tf.getName(), tf.getId());
+            }
+        }
+
+
+
+
+
+
+
+        return true;
+    }
 
 	@Override
 	public String getName() {
-		return "HITL";
+		return HITL_NODE_NAME;
 	}
 
 	@Override
