@@ -249,8 +249,8 @@ public class HigressOpenAiChatModel implements ChatModel {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
-			if (request.outputModalities() != null && request.outputModalities()
-				.contains(HigressOpenAiApi.OutputModality.AUDIO)) {
+			if (request.outputModalities() != null
+					&& request.outputModalities().contains(HigressOpenAiApi.OutputModality.AUDIO)) {
 				logger.warn("Audio output is not supported for streaming requests. Removing audio output.");
 				throw new IllegalArgumentException("Audio output is not supported for streaming requests.");
 			}
