@@ -106,7 +106,7 @@ public class HigressOpenAiChatModel implements ChatModel {
 	/**
 	 * Low-level access to the OpenAI API.
 	 */
-	private final HigressOpenAiApi HigressOpenAiApi;
+	private final HigressOpenAiApi higressOpenAiApi;
 
 	/**
 	 * Observation registry used for instrumentation.
@@ -126,23 +126,23 @@ public class HigressOpenAiChatModel implements ChatModel {
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public HigressOpenAiChatModel(HigressOpenAiApi HigressOpenAiApi, HigressOpenAiChatOptions defaultOptions,
+	public HigressOpenAiChatModel(HigressOpenAiApi higressOpenAiApi, HigressOpenAiChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
-		this(HigressOpenAiApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
+		this(higressOpenAiApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
 				new DefaultToolExecutionEligibilityPredicate());
 	}
 
-	public HigressOpenAiChatModel(HigressOpenAiApi HigressOpenAiApi, HigressOpenAiChatOptions defaultOptions,
+	public HigressOpenAiChatModel(HigressOpenAiApi higressOpenAiApi, HigressOpenAiChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
 			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-		Assert.notNull(HigressOpenAiApi, "HigressOpenAiApi cannot be null");
+		Assert.notNull(higressOpenAiApi, "higressOpenAiApi cannot be null");
 		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
 		Assert.notNull(retryTemplate, "retryTemplate cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate cannot be null");
-		this.HigressOpenAiApi = HigressOpenAiApi;
+		this.higressOpenAiApi = higressOpenAiApi;
 		this.defaultOptions = defaultOptions;
 		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
@@ -173,7 +173,7 @@ public class HigressOpenAiChatModel implements ChatModel {
 			.observe(() -> {
 
 				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate.execute(
-						ctx -> this.HigressOpenAiApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
+						ctx -> this.higressOpenAiApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
 
 				var chatCompletion = completionEntity.getBody();
 
@@ -250,7 +250,7 @@ public class HigressOpenAiChatModel implements ChatModel {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
 			if (request.outputModalities() != null && request.outputModalities()
-				.contains(com.alibaba.cloud.ai.higress.api.openai.HigressOpenAiApi.OutputModality.AUDIO)) {
+				.contains(HigressOpenAiApi.OutputModality.AUDIO)) {
 				logger.warn("Audio output is not supported for streaming requests. Removing audio output.");
 				throw new IllegalArgumentException("Audio output is not supported for streaming requests.");
 			}
@@ -260,7 +260,7 @@ public class HigressOpenAiChatModel implements ChatModel {
 				throw new IllegalArgumentException("Audio parameters are not supported for streaming requests.");
 			}
 
-			Flux<HigressOpenAiApi.ChatCompletionChunk> completionChunks = this.HigressOpenAiApi
+			Flux<HigressOpenAiApi.ChatCompletionChunk> completionChunks = this.higressOpenAiApi
 				.chatCompletionStream(request, getAdditionalHttpHeaders(prompt));
 
 			// For chunked responses, only the first chunk contains the choice role.
@@ -698,7 +698,7 @@ public class HigressOpenAiChatModel implements ChatModel {
 
 		// Copy constructor for mutate()
 		public Builder(HigressOpenAiChatModel model) {
-			this.HigressOpenAiApi = model.HigressOpenAiApi;
+			this.higressOpenAiApi = model.higressOpenAiApi;
 			this.defaultOptions = model.defaultOptions;
 			this.toolCallingManager = model.toolCallingManager;
 			this.toolExecutionEligibilityPredicate = model.toolExecutionEligibilityPredicate;
@@ -706,10 +706,10 @@ public class HigressOpenAiChatModel implements ChatModel {
 			this.observationRegistry = model.observationRegistry;
 		}
 
-		private HigressOpenAiApi HigressOpenAiApi;
+		private HigressOpenAiApi higressOpenAiApi;
 
 		private HigressOpenAiChatOptions defaultOptions = HigressOpenAiChatOptions.builder()
-			.model(com.alibaba.cloud.ai.higress.api.openai.HigressOpenAiApi.DEFAULT_CHAT_MODEL)
+			.model(HigressOpenAiApi.DEFAULT_CHAT_MODEL)
 			.temperature(0.7)
 			.build();
 
@@ -724,8 +724,8 @@ public class HigressOpenAiChatModel implements ChatModel {
 		private Builder() {
 		}
 
-		public Builder HigressOpenAiApi(HigressOpenAiApi HigressOpenAiApi) {
-			this.HigressOpenAiApi = HigressOpenAiApi;
+		public Builder higressOpenAiApi(HigressOpenAiApi higressOpenAiApi) {
+			this.higressOpenAiApi = higressOpenAiApi;
 			return this;
 		}
 
@@ -757,10 +757,10 @@ public class HigressOpenAiChatModel implements ChatModel {
 
 		public HigressOpenAiChatModel build() {
 			if (this.toolCallingManager != null) {
-				return new HigressOpenAiChatModel(this.HigressOpenAiApi, this.defaultOptions, this.toolCallingManager,
+				return new HigressOpenAiChatModel(this.higressOpenAiApi, this.defaultOptions, this.toolCallingManager,
 						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 			}
-			return new HigressOpenAiChatModel(this.HigressOpenAiApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
+			return new HigressOpenAiChatModel(this.higressOpenAiApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
 					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 		}
 

@@ -178,6 +178,13 @@
                 <artifactId>spring-ai-alibaba-studio</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!-- Spring AI Alibaba Higress -->
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-higress-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Spring AI Alibaba Community -->
 
