@@ -149,7 +149,7 @@ public class ShellSessionManager {
 	public CommandResult executeCommand(String command, RunnableConfig config) {
 		ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
 		if (session == null) {
-			throw new IllegalStateException("Shell session not initialized. Call initialize() first.");
+			throw new IllegalStateException("Shell session not initialized. Call initialize() first, you might need to enable ShellToolAgentHook to enable shell session management.");
 		}
 
 		log.info("Executing shell command: {}", command);

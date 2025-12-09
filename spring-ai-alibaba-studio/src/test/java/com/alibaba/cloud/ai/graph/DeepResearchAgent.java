@@ -101,7 +101,7 @@ public class DeepResearchAgent {
 				.build();
 
 		this.humanInTheLoopHook = HumanInTheLoopHook.builder()
-				.approvalOn("write_todos", "Please approve the todos tool.")
+				.approvalOn("search_web", "Please approve the todos tool.")
 				.build();
 
 		this.toolCallLimitHook = ToolCallLimitHook.builder()

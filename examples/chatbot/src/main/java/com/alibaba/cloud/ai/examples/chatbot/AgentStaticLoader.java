@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.examples.chatbot;
 
 import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 
@@ -48,9 +49,9 @@ import jakarta.annotation.Nonnull;
 @Component
 class AgentStaticLoader implements AgentLoader {
 
-	private final Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
+	private final Map<String, Agent> agents = new ConcurrentHashMap<>();
 
-	public AgentStaticLoader(BaseAgent agent) {
+	public AgentStaticLoader(Agent agent) {
 
 		GraphRepresentation representation = agent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
 		System.out.println(representation.content());
@@ -65,12 +66,12 @@ class AgentStaticLoader implements AgentLoader {
 	}
 
 	@Override
-	public BaseAgent loadAgent(String name) {
+	public Agent loadAgent(String name) {
 		if (name == null || name.trim().isEmpty()) {
 			throw new IllegalArgumentException("Agent name cannot be null or empty");
 		}
 
-		BaseAgent agent = agents.get(name);
+		Agent agent = agents.get(name);
 		if (agent == null) {
 			throw new NoSuchElementException("Agent not found: " + name);
 		}

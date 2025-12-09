@@ -202,6 +202,8 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 								.name(toolCall.name()).description(content).arguments(toolCall.arguments()).build())
 						.build();
 				needsInterruption = true;
+			} else {
+				builder.addToolsAutomaticallyApproved(toolCall);
 			}
 		}
 		return needsInterruption ? Optional.of(builder.build()) : Optional.empty();

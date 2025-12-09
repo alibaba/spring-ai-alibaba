@@ -16,8 +16,10 @@
 package com.alibaba.cloud.ai.examples.chatbot;
 
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.hook.shelltool.ShellToolAgentHook;
 import com.alibaba.cloud.ai.graph.agent.tools.ShellTool;
 import com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.ReadFileTool;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
@@ -50,18 +52,27 @@ public class ChatbotAgent {
 	public ReactAgent chatbotReactAgent(ChatModel chatModel,
 			ToolCallback executeShellCommand,
 			ToolCallback executePythonCode,
-			ToolCallback viewTextFile) {
+			ToolCallback viewTextFile,
+			MemorySaver memorySaver) {
 		return ReactAgent.builder()
 				.name("SAA")
 				.model(chatModel)
 				.instruction(INSTRUCTION)
 				.enableLogging(true)
+				.saver(memorySaver)
+				// Must set ShellToolAgentHook to manage shell session lifecycle for executeShellCommand
+				.hooks(ShellToolAgentHook.builder().shellToolName(executeShellCommand.getToolDefinition().name()).build())
 				.tools(
 						executeShellCommand,
 						executePythonCode,
 						viewTextFile
 				)
 				.build();
+	}
+
+	@Bean
+	public MemorySaver memorySaver() {
+		return new MemorySaver();
 	}
 
 	// Tool: execute_shell_command

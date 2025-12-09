@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.agent.studio.loader;
 
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 
 import java.util.List;
 
@@ -69,5 +69,5 @@ public interface AgentLoader {
 	 * @throws java.util.NoSuchElementException if the agent doesn't exist
 	 * @throws IllegalStateException if the agent exists but fails to load
 	 */
-	BaseAgent loadAgent(String name);
+	Agent loadAgent(String name);
 }
