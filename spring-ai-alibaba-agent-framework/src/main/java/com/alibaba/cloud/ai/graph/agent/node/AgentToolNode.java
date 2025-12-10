@@ -212,14 +212,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 			String result;
 			try {
 				// Handle FunctionToolCallback and MethodToolCallback, which support passing state and config in ToolContext.
-				if (toolCallback instanceof FunctionToolCallback<?, ?> || toolCallback instanceof MethodToolCallback) {
-					Map<String, Object> toolContextMap = new HashMap<>(toolContext);
-					toolContextMap.putAll(Map.of(AGENT_STATE_CONTEXT_KEY, state, AGENT_CONFIG_CONTEXT_KEY, config, AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraStateFromToolCall));
-					result = toolCallback.call(req.getArguments(), new ToolContext(toolContextMap));
-				} else {
-					// FIXME, currently MCP Tool does not support State and RunnableConfig transmission in ToolContext.
-					result = toolCallback.call(req.getArguments(), new ToolContext(toolContext));
-				}
+                Map<String, Object> toolContextMap = new HashMap<>(toolContext);
+                toolContextMap.putAll(Map.of(AGENT_STATE_CONTEXT_KEY, state, AGENT_CONFIG_CONTEXT_KEY, config, AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraStateFromToolCall));
+                result = toolCallback.call(req.getArguments(), new ToolContext(toolContextMap));
+
 
 				if (enableActingLog) {
 					logger.info("[ThreadId {}] Agent {} acting, tool {} finished", config.threadId()
