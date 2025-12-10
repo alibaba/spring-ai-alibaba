@@ -35,6 +35,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -77,7 +78,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private String instruction;
 
-	private ToolCallingChatOptions toolCallingChatOptions;
+	private ChatOptions chatOptions;
 
 	private boolean enableReasoningLog;
 
@@ -97,10 +98,14 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			this.modelInterceptors = builder.modelInterceptors;
 		}
 		this.chatClient = builder.chatClient;
-		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
-				.toolCallbacks(toolCallbacks)
-				.internalToolExecutionEnabled(false)
-				.build();
+        if (builder.chatOptions == null) {
+            this.chatOptions = ToolCallingChatOptions.builder()
+                .toolCallbacks(toolCallbacks)
+                .internalToolExecutionEnabled(false)
+                .build();
+        } else {
+            this.chatOptions = builder.chatOptions;
+        }
 		this.enableReasoningLog = builder.enableReasoningLog;;
 	}
 
@@ -156,7 +161,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		// Create ModelRequest
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
 				.messages(messages)
-				.options(toolCallingChatOptions)
+				.options(chatOptions)
 				.context(config.metadata().orElse(new HashMap<>()));
 
         // Extract tool names from toolCallbacks and pass them to ModelRequest
@@ -387,13 +392,17 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<Message> messages = appendSystemPromptIfNeeded(modelRequest);
 
 		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
-		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
-				.toolCallbacks(filteredToolCallbacks)
-				.internalToolExecutionEnabled(false)
-				.build();
+        if (modelRequest.getOptions() == null) {
+            this.chatOptions = ToolCallingChatOptions.builder()
+                .toolCallbacks(filteredToolCallbacks)
+                .internalToolExecutionEnabled(false)
+                .build();
+        } else {
+            this.chatOptions = modelRequest.getOptions();
+        }
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.options(toolCallingChatOptions)
+				.options(chatOptions)
 				.messages(messages)
 				.advisors(advisors);
 
@@ -424,6 +433,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		private String instruction;
 
 		private boolean enableReasoningLog;
+
+        private ChatOptions chatOptions;
 
 		public Builder agentName(String agentName) {
 			this.agentName = agentName;
@@ -472,6 +483,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder enableReasoningLog(boolean enableReasoningLog) {
 			this.enableReasoningLog = enableReasoningLog;
+			return this;
+		}
+
+        public Builder chatOptions(ChatOptions chatOptions) {
+			this.chatOptions = chatOptions;
 			return this;
 		}
 
