@@ -64,7 +64,9 @@ import java.util.stream.Collectors;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
- * backed by {@link HigressOpenAiApi}.
+ * backed by {@link HigressOpenAiApi}.</br>
+ * </br>
+ * 2025-12-10 add：adapt to the qwen model
  *
  * @author Mark Pollack
  * @author Christian Tzolov
@@ -81,6 +83,7 @@ import java.util.stream.Collectors;
  * @author Alexandros Pappas
  * @author Soby Chacko
  * @author Jonghoon Park
+ * @author shiyu
  * @see ChatModel
  * @see StreamingChatModel
  * @see HigressOpenAiApi
@@ -666,7 +669,7 @@ public class HigressOpenAiChatModel implements ChatModel {
 
 	@Override
 	public String toString() {
-		return "OpenAiChatModel [defaultOptions=" + this.defaultOptions + "]";
+		return "HigressOpenAiChatModel [defaultOptions=" + this.defaultOptions + "]";
 	}
 
 	/**

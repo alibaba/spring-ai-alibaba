@@ -47,7 +47,10 @@ import java.util.stream.Collectors;
  * Single class implementation of the
  * <a href="https://platform.openai.com/docs/api-reference/chat">OpenAI Chat Completion
  * API</a> and <a href="https://platform.openai.com/docs/api-reference/embeddings">OpenAI
- * Embedding API</a>.
+ * Embedding API</a>.</br>
+ * </br>
+ * 2025-12-10 add: Adapt to the Qwen model. The Qwen model can use it and pass some
+ * parameters of the characteristic
  *
  * @author Christian Tzolov
  * @author Michael Lavelle
@@ -56,7 +59,9 @@ import java.util.stream.Collectors;
  * @author David Frizelle
  * @author Alexandros Pappas
  * @author Filip Hrisafov
+ * @author shiyu
  */
+
 public class HigressOpenAiApi {
 
 	/**
@@ -1034,6 +1039,18 @@ public class HigressOpenAiApi {
 	 * Currently supported values are low, medium, and high. Reducing reasoning effort can
 	 * result in faster responses and fewer tokens used on reasoning in a response.
 	 * @param webSearchOptions Options for web search.
+	 * @param enableThinking Adapt to the qwen model: Open the model thinking mode，When
+	 * this mode is turned on, the model's responses will have an additional
+	 * reasoning_content field
+	 * @param enableSearch Adapt to the qwen model: Turn on the model's network search
+	 * function
+	 * @param searchOptions Adapt to the qwen model: Configuration parameters for
+	 * networked search of models
+	 * @param incrementalOutput Adapt to the qwen model: Whether to turn on incremental
+	 * mode false（default）：Outputs the entire sequence that has currently been generated
+	 * one at a time, with the final output being the complete result. true：Incremental
+	 * output, i.e., the subsequent output content does not contain what has already been
+	 * output. read these segments one by one in real time to get the complete result.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
@@ -1319,6 +1336,9 @@ public class HigressOpenAiApi {
 	 * @param audioOutput Audio response from the model.
 	 * @param annotations Annotations for the message, when applicable, as when using the
 	 * web search tool.
+	 * @param reasoningContent This property has a value when enableThinking is true, and
+	 * the output is the model's thinking
+	 *
 	 */
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -1987,6 +2007,26 @@ public class HigressOpenAiApi {
 
 	}
 
+	/**
+	 * @param forcedSearch By default, the model determines whether networking is required
+	 * or not. if the business scenario strongly relies on real-time information, you can
+	 * set the forced_search parameter to true to force networking search. -- true: Force
+	 * network search -- false (default): The model determines if networking is required.
+	 * @param enableSearchExtension When users query information such as weather, stock
+	 * prices, etc., generic web search results may not be accurate enough. you can turn
+	 * on the vertical search feature to enable the model to refer to the retrieved
+	 * vertical data for more accurate results. set @param enable_search_extension to true
+	 * to turn on this feature. -- true: Enabled. -- false (default): Not enabled.
+	 * @param searchStrategy The search volume level strategy can be set through
+	 * `search_strategy` based on requirements for cost, effect, and response speed. The
+	 * available values for `search_strategy` are: -- "turbo" (default): Balances response
+	 * speed and search effect, suitable for most scenarios. -- "max": Employs a more
+	 * comprehensive search strategy, invoking multiple source search engines to obtain
+	 * more detailed search results, but the response time may be longer. -- "agent": Can
+	 * invoke online search tools and large models multiple times to achieve multi-round
+	 * information retrieval and content integration.
+	 * @author shiyu
+	 */
 	@JsonInclude(Include.NON_NULL)
 	public record QwenOpenAiCompatibleSearchOptions(@JsonProperty("forced_search") Boolean forcedSearch,
 			@JsonProperty("enable_search_extension") Boolean enableSearchExtension,

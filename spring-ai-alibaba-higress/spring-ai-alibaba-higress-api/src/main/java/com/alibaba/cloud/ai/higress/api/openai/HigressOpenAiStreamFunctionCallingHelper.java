@@ -32,10 +32,14 @@ import java.util.List;
  * Helper class to support Streaming function calling.
  * <p>
  * It can merge the streamed ChatCompletionChunk in case of function calling message.
+ * <p>
+ * 2025-12-10 add: Adapt to the Qwen Model, change the merge logic when incremental_output
+ * is false
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Alexandros Pappas
+ * @author shiyu
  * @since 0.8.1
  */
 public class HigressOpenAiStreamFunctionCallingHelper {

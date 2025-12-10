@@ -35,12 +35,15 @@ import java.util.*;
 
 /**
  * Options for the OpenAI Chat API.
+ * <p>
+ * 2025-12-10 add: Adapt to the Qwen model
  *
  * @author Christian Tzolov
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author lambochen
+ * @author shiyu
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -669,7 +672,7 @@ public class HigressOpenAiChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public String toString() {
-		return "OpenAiChatOptions: " + ModelOptionsUtils.toJsonString(this);
+		return "HigressOpenAiChatOptions: " + ModelOptionsUtils.toJsonString(this);
 	}
 
 	public static class Builder {
