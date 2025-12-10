@@ -138,8 +138,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 			List<ToolResponseMessage.ToolResponse> existingResponses = toolResponseMessage.getResponses();
 			List<ToolResponseMessage.ToolResponse> allResponses = new ArrayList<>(existingResponses);
 
-			Set<String> executedToolNames = existingResponses.stream()
-					.map(ToolResponseMessage.ToolResponse::name)
+			Set<String> executedToolIds = existingResponses.stream()
+					.map(ToolResponseMessage.ToolResponse::id)
 					.collect(Collectors.toSet());
 
 			if (enableActingLog) {
@@ -147,7 +147,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			}
 
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-				if (executedToolNames.contains(toolCall.name())) {
+				if (executedToolIds.contains(toolCall.id())) {
 					continue;
 				}
 
