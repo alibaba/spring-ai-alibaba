@@ -105,7 +105,13 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 			// Convert AsyncGenerator to Flux using the new toFlux() method
 			Flux<GraphResponse<NodeOutput>> flux = toFlux(generator);
 			// Wrap the Flux with GraphFlux to preserve node ID for A2A node
-			GraphFlux<GraphResponse<NodeOutput>> graphFlux = GraphFlux.of("A2aNode", flux);
+			GraphFlux<GraphResponse<NodeOutput>> graphFlux = GraphFlux.of(
+				"A2aNode",
+				flux,
+				null,
+				null,
+				StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages"
+			);
 			return Map.of(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages",
 					graphFlux);
 		} else {
