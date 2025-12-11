@@ -103,7 +103,6 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.internalToolExecutionEnabled(false)
 				.build();
 		this.enableReasoningLog = builder.enableReasoningLog;
-		;
 	}
 
 	public static Builder builder() {
