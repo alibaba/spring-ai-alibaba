@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
+import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -101,7 +102,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.toolCallbacks(toolCallbacks)
 				.internalToolExecutionEnabled(false)
 				.build();
-		this.enableReasoningLog = builder.enableReasoningLog;;
+		this.enableReasoningLog = builder.enableReasoningLog;
 	}
 
 	public static Builder builder() {
@@ -140,7 +141,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		// Check and manage messages
 		List<Message> messages = new ArrayList<>();
 		if (state.value("messages").isEmpty()) {
-			// try with "input" key, which is more commonly used in graph input when agent is used as a node.
+			// try with "input" key, which is more commonly used in graph input when agent
+			// is used as a node.
 			if (state.value("input").isPresent()) {
 				messages.add(new UserMessage(state.value("input").get().toString()));
 			} else {
@@ -159,13 +161,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.options(toolCallingChatOptions)
 				.context(config.metadata().orElse(new HashMap<>()));
 
-        // Extract tool names from toolCallbacks and pass them to ModelRequest
-        if (toolCallbacks != null && !toolCallbacks.isEmpty()) {
-            List<String> toolNames = toolCallbacks.stream()
-                    .map(callback -> callback.getToolDefinition().name())
-                    .toList();
-            requestBuilder.tools(toolNames);
-        }
+		// Extract tool names from toolCallbacks and pass them to ModelRequest
+		if (toolCallbacks != null && !toolCallbacks.isEmpty()) {
+			List<String> toolNames = toolCallbacks.stream()
+					.map(callback -> callback.getToolDefinition().name())
+					.toList();
+			requestBuilder.tools(toolNames);
+		}
 
 		if (StringUtils.hasLength(this.systemPrompt)) {
 			requestBuilder.systemMessage(new SystemMessage(this.systemPrompt));
@@ -173,13 +175,15 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		ModelRequest modelRequest = requestBuilder.build();
 
 		// add streaming support
-		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
+		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>() {
+		}).orElse(true);
 		if (stream) {
 			// Create base handler that actually calls the model with streaming
 			ModelCallHandler baseHandler = request -> {
 				try {
 					if (enableReasoningLog) {
-						String systemPrompt = request.getSystemMessage() != null ? request.getSystemMessage().getText() : "";
+						String systemPrompt = request.getSystemMessage() != null ? request.getSystemMessage().getText()
+								: "";
 						if (logger.isDebugEnabled()) {
 							logger.debug("[ThreadId {}] Agent {} reasoning with system prompt: {}", config.threadId()
 									.orElse(THREAD_ID_DEFAULT), agentName, systemPrompt);
@@ -188,20 +192,28 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request).stream().chatResponse();
 					if (enableReasoningLog) {
 						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
-							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
+							if (chatResponse != null && chatResponse.getResult() != null
+									&& chatResponse.getResult().getOutput() != null) {
 								if (chatResponse.getResult().getOutput().hasToolCalls()) {
 									logger.info("[ThreadId {}] Agent {} reasoning round {} streaming output: {}",
-											config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), chatResponse.getResult().getOutput().getToolCalls());
+											config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(),
+											chatResponse.getResult().getOutput().getToolCalls());
 								} else {
 									logger.info("[ThreadId {}] Agent {} reasoning round {} streaming output: {}",
 											config.threadId()
-													.orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), chatResponse.getResult()
+													.orElse(THREAD_ID_DEFAULT),
+											agentName, iterations.get(), chatResponse.getResult()
 													.getOutput().getText());
 								}
 							}
 						});
 					}
-					return ModelResponse.of(chatResponseFlux);
+					// Wrap the Flux with GraphFlux to preserve node ID for LLM node
+					String outputKey = StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages";
+					// The last two parameters of GraphFlux.of are for optional metadata and context.
+					// Passing null here as we do not need to provide additional metadata or context for this node.
+					GraphFlux<ChatResponse> graphFlux = GraphFlux.of(MODEL_NODE_NAME, outputKey, chatResponseFlux, null, null);
+					return ModelResponse.of(graphFlux);
 				} catch (Exception e) {
 					logger.error("Exception during streaming model call: ", e);
 					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
@@ -214,25 +226,31 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			// Execute the chained handler
 			ModelResponse modelResponse = chainedHandler.call(modelRequest);
-			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", modelResponse.getMessage());
+			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages",
+					modelResponse.getMessage());
 		} else {
 			// Create base handler that actually calls the model
 			ModelCallHandler baseHandler = request -> {
 				try {
 					if (enableReasoningLog) {
-						String systemPrompt = request.getSystemMessage() != null ? request.getSystemMessage().getText() : "";
-						logger.info("[ThreadId {}] Agent {} reasoning round {} with system prompt: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), systemPrompt);
+						String systemPrompt = request.getSystemMessage() != null ? request.getSystemMessage().getText()
+								: "";
+						logger.info("[ThreadId {}] Agent {} reasoning round {} with system prompt: {}.",
+								config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), systemPrompt);
 					}
 
 					ChatResponse response = buildChatClientRequestSpec(request).call().chatResponse();
 
-					AssistantMessage responseMessage = new AssistantMessage("Empty response from model for unknown reason");
+					AssistantMessage responseMessage = new AssistantMessage(
+							"Empty response from model for unknown reason");
 					if (response != null && response.getResult() != null) {
 						responseMessage = response.getResult().getOutput();
 					}
 
 					if (enableReasoningLog) {
-						logger.info("[ThreadId {}] Agent {} reasoning round {} returned: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), responseMessage);
+						logger.info("[ThreadId {}] Agent {} reasoning round {} returned: {}.",
+								config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(),
+								responseMessage);
 					}
 
 					return ModelResponse.of(responseMessage, response);
@@ -247,7 +265,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					modelInterceptors, baseHandler);
 
 			if (enableReasoningLog) {
-				logger.info("[ThreadId {}] Agent {} reasoning round {} model chain has started.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get());
+				logger.info("[ThreadId {}] Agent {} reasoning round {} model chain has started.",
+						config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get());
 			}
 
 			// Execute the chained handler
@@ -275,8 +294,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<Message> messages = new ArrayList<>(modelRequest.getMessages());
 
 		// FIXME, there should have only one SystemMessage.
-		//  Users may have added SystemMessages in hooks or somewhere else, simply remove will cause unexpected agent behaviour.
-//		messages.removeIf(message -> message instanceof SystemMessage);
+		// Users may have added SystemMessages in hooks or somewhere else, simply remove
+		// will cause unexpected agent behaviour.
+		// messages.removeIf(message -> message instanceof SystemMessage);
 
 		// Add the SystemMessage from modelRequest at the beginning if present
 		if (modelRequest.getSystemMessage() != null) {
@@ -288,8 +308,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.count();
 
 		if (systemMessageCount > 2) {
-			logger.warn("Detected {} SystemMessages in the message list. There should typically be only one SystemMessage. " +
-					"Multiple SystemMessages may cause unexpected behavior or model confusion.", systemMessageCount);
+			logger.warn(
+					"Detected {} SystemMessages in the message list. There should typically be only one SystemMessage. "
+							+
+							"Multiple SystemMessages may cause unexpected behavior or model confusion.",
+					systemMessageCount);
 		}
 
 		return messages;
@@ -310,16 +333,18 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			if (message instanceof UserMessage userMessage) {
 				// Check if outputSchema is already present to avoid duplication
 				if (!userMessage.getText().contains(outputSchema)) {
-					messages.set(i, userMessage.mutate().text(userMessage.getText() + System.lineSeparator() + outputSchema).build());
+					messages.set(i, userMessage.mutate()
+							.text(userMessage.getText() + System.lineSeparator() + outputSchema).build());
 				}
 				break;
 			}
 			if (message instanceof AgentInstructionMessage templatedUserMessage) {
-                String newOutputSchema = outputSchema.replace("{", "\\{").replace("}", "\\}");
-                // Check if outputSchema is already present to avoid duplication
-                if (!templatedUserMessage.getText().contains(newOutputSchema)) {
-                	messages.set(i, templatedUserMessage.mutate().text(templatedUserMessage.getText() + System.lineSeparator() + newOutputSchema).build());
-                }
+				String newOutputSchema = outputSchema.replace("{", "\\{").replace("}", "\\}");
+				// Check if outputSchema is already present to avoid duplication
+				if (!templatedUserMessage.getText().contains(newOutputSchema)) {
+					messages.set(i, templatedUserMessage.mutate()
+							.text(templatedUserMessage.getText() + System.lineSeparator() + newOutputSchema).build());
+				}
 				break;
 			}
 
@@ -336,17 +361,17 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			for (Map.Entry<String, Object> entry : params.entrySet()) {
 				String key = entry.getKey();
 				Object value = entry.getValue();
-				
+
 				// Exclude key "messages"
 				if ("messages".equals(key)) {
 					continue;
 				}
-				
+
 				// Exclude List type values
 				if (value instanceof List) {
 					continue;
 				}
-				
+
 				// Convert Message type to String using getText()
 				if (value instanceof Message message) {
 					processedParams.put(key, message.getText());
@@ -360,7 +385,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
 			if (message instanceof AgentInstructionMessage instructionMessage && !instructionMessage.isRendered()) {
-				AgentInstructionMessage newMessage = instructionMessage.mutate().text(renderPromptTemplate(instructionMessage.getText(), processedParams)).rendered(true).build();
+				AgentInstructionMessage newMessage = instructionMessage.mutate()
+						.text(renderPromptTemplate(instructionMessage.getText(), processedParams)).rendered(true)
+						.build();
 				messages.set(i, newMessage);
 				break;
 			}
@@ -369,7 +396,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	/**
 	 * Filter tool callbacks based on the tools specified in ModelRequest.
-	 * @param modelRequest the model request containing the list of tool names to filter by
+	 * 
+	 * @param modelRequest the model request containing the list of tool names to
+	 *                     filter by
 	 * @return filtered list of tool callbacks matching the requested tools
 	 */
 	private List<ToolCallback> filterToolCallbacks(ModelRequest modelRequest) {
