@@ -63,4 +63,75 @@ public class ModelResponse {
 	public ChatResponse getChatResponse() {
 		return chatResponse;
 	}
+
+	/**
+	 * Check if the message is a GraphFlux instance.
+	 * 
+	 * @return true if message is GraphFlux, false otherwise
+	 */
+	public boolean isGraphFlux() {
+		return message instanceof GraphFlux;
+	}
+
+	/**
+	 * Check if the message is a plain Flux instance (not GraphFlux).
+	 * 
+	 * @return true if message is Flux but not GraphFlux, false otherwise
+	 */
+	public boolean isFlux() {
+		return message instanceof Flux && !(message instanceof GraphFlux);
+	}
+
+	/**
+	 * Check if the message is an AssistantMessage instance.
+	 * 
+	 * @return true if message is AssistantMessage, false otherwise
+	 */
+	public boolean isAssistantMessage() {
+		return message instanceof AssistantMessage;
+	}
+
+	/**
+	 * Get the message as GraphFlux if it is one.
+	 * 
+	 * @return GraphFlux instance
+	 * @throws ClassCastException if message is not a GraphFlux
+	 */
+	@SuppressWarnings("unchecked")
+	public GraphFlux<ChatResponse> getAsGraphFlux() {
+		if (!isGraphFlux()) {
+			throw new IllegalStateException("Message is not a GraphFlux, it is: " +
+					(message != null ? message.getClass().getName() : "null"));
+		}
+		return (GraphFlux<ChatResponse>) message;
+	}
+
+	/**
+	 * Get the message as Flux if it is one.
+	 * 
+	 * @return Flux instance
+	 * @throws ClassCastException if message is not a Flux
+	 */
+	@SuppressWarnings("unchecked")
+	public Flux<ChatResponse> getAsFlux() {
+		if (!(message instanceof Flux)) {
+			throw new IllegalStateException("Message is not a Flux, it is: " +
+					(message != null ? message.getClass().getName() : "null"));
+		}
+		return (Flux<ChatResponse>) message;
+	}
+
+	/**
+	 * Get the message as AssistantMessage if it is one.
+	 * 
+	 * @return AssistantMessage instance
+	 * @throws ClassCastException if message is not an AssistantMessage
+	 */
+	public AssistantMessage getAsAssistantMessage() {
+		if (!isAssistantMessage()) {
+			throw new IllegalStateException("Message is not an AssistantMessage, it is: " +
+					(message != null ? message.getClass().getName() : "null"));
+		}
+		return (AssistantMessage) message;
+	}
 }

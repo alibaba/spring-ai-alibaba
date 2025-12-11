@@ -51,6 +51,10 @@ class GraphFluxBasicTest {
         Flux<String> flux = Flux.just("data");
 
         // When: Creating GraphFlux with key
+        // The last two null parameters are:
+        // - mapResult: optional function to transform final result (not needed here)
+        // - chunkResult: optional function to process individual chunks (not needed
+        // here)
         GraphFlux<String> graphFlux = GraphFlux.of("node1", "outputKey", flux, null, null);
 
         // Then: Should preserve both node ID and key
@@ -137,6 +141,8 @@ class GraphFluxBasicTest {
     void testGraphFluxImmutability() {
         // Given: A GraphFlux
         Flux<String> flux = Flux.just("data");
+        // Creating with explicit null values for optional mapResult and chunkResult
+        // functions
         GraphFlux<String> graphFlux = GraphFlux.of("node", "key", flux, null, null);
 
         // When: Getting properties
