@@ -859,7 +859,7 @@ public class ReactAgent extends BaseAgent {
 			// Wrap the processed Flux with GraphFlux to preserve subgraph node ID
 			String outputKey = StringUtils.hasLength(ReactAgent.this.outputKey) ? ReactAgent.this.outputKey
 					: "messages";
-			return GraphFlux.of(subGraphId(nodeId), outputKey, processedFlux, null, null);
+			return GraphFlux.of(subGraphId(nodeId), outputKey, processedFlux);
 		}
 
 		/**
