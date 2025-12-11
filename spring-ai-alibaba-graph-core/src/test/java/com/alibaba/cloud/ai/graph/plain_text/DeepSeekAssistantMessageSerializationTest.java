@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * This test reproduces issue #3186 where DeepSeekAssistantMessage fails to deserialize
  * when it appears in arrays or nested structures.
  */
+@EnabledIfEnvironmentVariable(named = "AI_DEEPSEEK_API_KEY", matches = ".+")
 class DeepSeekAssistantMessageSerializationTest {
 
 	private SpringAIJacksonStateSerializer serializer;
