@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
@@ -77,8 +78,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
 	private CompileConfig parentCompileConfig;
 
-
-	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, String agentName, boolean includeContents, String outputKeyToParent, String instruction, boolean streaming) {
+	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, String agentName, boolean includeContents,
+			String outputKeyToParent, String instruction, boolean streaming) {
 		this.agentName = agentName;
 		this.agentCard = agentCard;
 		this.includeContents = includeContents;
@@ -88,7 +89,9 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		this.shareState = false;
 	}
 
-	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, String agentName, boolean includeContents, String outputKeyToParent, String instruction, boolean streaming, boolean shareState, CompileConfig compileConfig) {
+	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, String agentName, boolean includeContents,
+			String outputKeyToParent, String instruction, boolean streaming, boolean shareState,
+			CompileConfig compileConfig) {
 		this(agentCard, agentName, includeContents, outputKeyToParent, instruction, streaming);
 		this.parentCompileConfig = compileConfig;
 		this.shareState = shareState;
@@ -101,9 +104,11 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 			AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state, subGraphRunnableConfig);
 			// Convert AsyncGenerator to Flux using the new toFlux() method
 			Flux<GraphResponse<NodeOutput>> flux = toFlux(generator);
-			return Map.of(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages", flux);
-		}
-		else {
+			// Wrap the Flux with GraphFlux to preserve node ID for A2A node
+			GraphFlux<GraphResponse<NodeOutput>> graphFlux = GraphFlux.of("A2aNode", flux);
+			return Map.of(StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages",
+					graphFlux);
+		} else {
 			String requestPayload = buildSendMessageRequest(state, subGraphRunnableConfig);
 			String resultText = sendMessageToServer(this.agentCard, requestPayload);
 			Map<String, Object> resultMap = autoDetectAndParseResponse(resultText);
@@ -133,6 +138,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	/**
 	 * Converts this AsyncGenerator to a Project Reactor Flux. This method provides
 	 * forward compatibility for converting AsyncGenerator to reactive streams.
+	 * 
 	 * @return a Flux that emits the elements from this AsyncGenerator
 	 */
 	private <E> Flux<GraphResponse<E>> toFlux(AsyncGenerator<E> generator) {
@@ -151,8 +157,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		final AsyncGenerator.Data<E> data;
 		try {
 			data = generator.next();
-		}
-		catch (Exception ex) {
+		} catch (Exception ex) {
 			sink.error(ex);
 			return;
 		}
@@ -205,7 +210,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	/**
 	 * Create a streaming generator.
 	 */
-	private AsyncGenerator<NodeOutput> createStreamingGenerator(OverAllState state, RunnableConfig config) throws Exception {
+	private AsyncGenerator<NodeOutput> createStreamingGenerator(OverAllState state, RunnableConfig config)
+			throws Exception {
 		final String requestPayload = buildSendStreamingMessageRequest(state, config);
 		final BlockingQueue<AsyncGenerator.Data<NodeOutput>> queue = new LinkedBlockingQueue<>(1000);
 		final String outputKey = StringUtils.hasLength(this.outputKeyToParent) ? this.outputKeyToParent : "messages";
@@ -214,7 +220,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		return AsyncGeneratorQueue.of(queue, q -> {
 			String baseUrl = resolveAgentBaseUrl(this.agentCard);
 			if (baseUrl == null || baseUrl.isBlank()) {
-				StreamingOutput errorOutput = new StreamingOutput("Error: AgentCard.url is empty", "a2aNode", agentName, state);
+				StreamingOutput errorOutput = new StreamingOutput("Error: AgentCard.url is empty", "a2aNode", agentName,
+						state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
 				return;
 			}
@@ -236,7 +243,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
 					HttpEntity entity = response.getEntity();
 					if (entity == null) {
-						StreamingOutput errorOutput = new StreamingOutput("Empty HTTP entity", "a2aNode", agentName, state);
+						StreamingOutput errorOutput = new StreamingOutput("Empty HTTP entity", "a2aNode", agentName,
+								state);
 						queue.add(AsyncGenerator.Data.of(errorOutput));
 						return;
 					}
@@ -267,16 +275,14 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 										if (text != null && !text.isEmpty()) {
 											accumulated.append(text);
 											queue.add(AsyncGenerator.Data
-												.of(new StreamingOutput(text, "a2aNode", agentName, state)));
+													.of(new StreamingOutput(text, "a2aNode", agentName, state)));
 										}
 									}
-								}
-								catch (Exception ignore) {
+								} catch (Exception ignore) {
 								}
 							}
 						}
-					}
-					else {
+					} else {
 						// Non-SSE: read the full body and emit a single output
 						String body = EntityUtils.toString(entity, "UTF-8");
 						try {
@@ -287,21 +293,20 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 							String text = extractResponseText(result);
 							if (text != null && !text.isEmpty()) {
 								accumulated.append(text);
-								queue.add(AsyncGenerator.Data.of(new StreamingOutput(text, "a2aNode", agentName, state)));
+								queue.add(
+										AsyncGenerator.Data.of(new StreamingOutput(text, "a2aNode", agentName, state)));
 							}
-						}
-						catch (Exception ex) {
+						} catch (Exception ex) {
 							queue.add(AsyncGenerator.Data
-								.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", agentName, state)));
+									.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", agentName, state)));
 						}
 					}
 				}
-			}
-			catch (Exception e) {
-				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
+			} catch (Exception e) {
+				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName,
+						state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
-			}
-			finally {
+			} finally {
 				queue.add(AsyncGenerator.Data.done(Map.of(outputKey, accumulated.toString())));
 			}
 		});
@@ -360,8 +365,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 									queue.add(AsyncGenerator.Data.of(streamingOutput));
 								}
 							}
-						}
-						catch (Exception e) {
+						} catch (Exception e) {
 							// Ignore parse errors and continue
 							continue;
 						}
@@ -371,10 +375,10 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 				// Signal completion with final result value
 				queue.add(AsyncGenerator.Data.done(Map.of(outputKey, accumulated.toString())));
 
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				// On error, emit an error message and signal completion
-				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
+				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName,
+						state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
 				queue.add(AsyncGenerator.Data.done(Map.of(outputKey, accumulated.toString())));
 			}
@@ -400,8 +404,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 				StreamingOutput streamingOutput = new StreamingOutput(responseText2, "a2aNode", agentName, state);
 				queue.add(AsyncGenerator.Data.of(streamingOutput));
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			// On parse failure, emit an error message
 			StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
 			queue.add(AsyncGenerator.Data.of(errorOutput));
@@ -424,49 +427,51 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		return null;
 	}
 
-//	/**
-//	 * Get the streaming generator (similar to LlmNode.stream).
-//	 */
-//	public Flux<NodeOutput> stream(OverAllState state) throws Exception {
-//		if (!this.streaming) {
-//			throw new IllegalStateException("Streaming is not enabled for this A2aNode");
-//		}
-//		AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state);
-//		Flux<GraphResponse<NodeOutput>> graphResponseFlux = toFlux(generator);
-//
-//		// Convert Flux<GraphResponse<NodeOutput>> to Flux<NodeOutput>
-//		return graphResponseFlux.filter(graphResponse -> !graphResponse.isDone()) // Filter out completion signals
-//			.map(graphResponse -> {
-//				try {
-//					return graphResponse.getOutput().join();
-//				}
-//				catch (Exception e) {
-//					throw new RuntimeException("Error extracting output from GraphResponse", e);
-//				}
-//			});
-//	}
+	// /**
+	// * Get the streaming generator (similar to LlmNode.stream).
+	// */
+	// public Flux<NodeOutput> stream(OverAllState state) throws Exception {
+	// if (!this.streaming) {
+	// throw new IllegalStateException("Streaming is not enabled for this A2aNode");
+	// }
+	// AsyncGenerator<NodeOutput> generator = createStreamingGenerator(state);
+	// Flux<GraphResponse<NodeOutput>> graphResponseFlux = toFlux(generator);
+	//
+	// // Convert Flux<GraphResponse<NodeOutput>> to Flux<NodeOutput>
+	// return graphResponseFlux.filter(graphResponse -> !graphResponse.isDone()) //
+	// Filter out completion signals
+	// .map(graphResponse -> {
+	// try {
+	// return graphResponse.getOutput().join();
+	// }
+	// catch (Exception e) {
+	// throw new RuntimeException("Error extracting output from GraphResponse", e);
+	// }
+	// });
+	// }
 
-//	/**
-//	 * Get the non-streaming result (similar to LlmNode.call).
-//	 */
-//	public String call(OverAllState state) throws Exception {
-//		String requestPayload = buildSendMessageRequest(state, this.inputKeyFromParent);
-//		String resultText = sendMessageToServer(this.agentCard, requestPayload);
-//		Map<String, Object> resultMap = autoDetectAndParseResponse(resultText);
-//		Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
-//		return extractResponseText(result);
-//	}
+	// /**
+	// * Get the non-streaming result (similar to LlmNode.call).
+	// */
+	// public String call(OverAllState state) throws Exception {
+	// String requestPayload = buildSendMessageRequest(state,
+	// this.inputKeyFromParent);
+	// String resultText = sendMessageToServer(this.agentCard, requestPayload);
+	// Map<String, Object> resultMap = autoDetectAndParseResponse(resultText);
+	// Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
+	// return extractResponseText(result);
+	// }
 
 	/**
 	 * Auto-detect response format and parse accordingly.
+	 * 
 	 * @param responseText The raw response text
 	 * @return Parsed result map
 	 */
 	private Map<String, Object> autoDetectAndParseResponse(String responseText) {
 		if (responseText.contains("data: ")) {
 			return parseStreamingResponse(responseText);
-		}
-		else {
+		} else {
 			// Standard JSON response
 			return JSON.parseObject(responseText, new TypeReference<Map<String, Object>>() {
 			});
@@ -475,6 +480,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
 	/**
 	 * Parse streaming response in Server-Sent Events (SSE) format.
+	 * 
 	 * @param responseText The raw SSE response text
 	 * @return Parsed result map
 	 */
@@ -495,8 +501,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 							lastResult = result;
 						}
 					}
-				}
-				catch (Exception e) {
+				} catch (Exception e) {
 					continue;
 				}
 			}
@@ -521,14 +526,11 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 				String state = (String) status.get("state");
 				if ("completed".equals(state)) {
 					return "";
-				}
-				else if ("processing".equals(state)) {
+				} else if ("processing".equals(state)) {
 					return "";
-				}
-				else if ("failed".equals(state)) {
+				} else if ("failed".equals(state)) {
 					return "";
-				}
-				else if ("working".equals(state)) {
+				} else if ("working".equals(state)) {
 					Map<String, Object> message = (Map<String, Object>) status.get("message");
 					if (message != null && message.containsKey("parts")) {
 						List<Object> parts = (List<Object>) message.get("parts");
@@ -543,8 +545,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 						}
 					}
 					return "";
-				}
-				else {
+				} else {
 					return "Agent State: " + state;
 				}
 			}
@@ -630,6 +631,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
 	/**
 	 * Build the JSON-RPC request payload to send to the A2A server.
+	 * 
 	 * @param state Parent state
 	 * @return JSON string payload (e.g., JSON-RPC params)
 	 */
@@ -665,14 +667,14 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
 		try {
 			return objectMapper.writeValueAsString(root);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new IllegalStateException("Failed to build JSON-RPC payload", e);
 		}
 	}
 
 	/**
 	 * Build the JSON-RPC streaming request payload (method: message/stream).
+	 * 
 	 * @param state Parent state
 	 * @return JSON string payload for streaming
 	 */
@@ -708,8 +710,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
 		try {
 			return objectMapper.writeValueAsString(root);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new IllegalStateException("Failed to build JSON-RPC streaming payload", e);
 		}
 	}
@@ -725,8 +726,10 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	}
 
 	/**
-	 * Send the request to the remote A2A server and return the non-streaming response.
-	 * @param agentCard Agent card (source for server URL/metadata)
+	 * Send the request to the remote A2A server and return the non-streaming
+	 * response.
+	 * 
+	 * @param agentCard      Agent card (source for server URL/metadata)
 	 * @param requestPayload JSON string payload built by buildSendMessageRequest
 	 * @return Response body as string
 	 */

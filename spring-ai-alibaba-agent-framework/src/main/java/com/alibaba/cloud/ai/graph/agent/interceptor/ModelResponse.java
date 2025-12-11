@@ -19,6 +19,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 
 import reactor.core.publisher.Flux;
+import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 
 /**
  * Response object for model calls.
@@ -51,6 +52,10 @@ public class ModelResponse {
 		return new ModelResponse(flux);
 	}
 
+	public static ModelResponse of(GraphFlux<ChatResponse> graphFlux) {
+		return new ModelResponse(graphFlux);
+	}
+
 	public Object getMessage() {
 		return message;
 	}
@@ -59,4 +64,3 @@ public class ModelResponse {
 		return chatResponse;
 	}
 }
-
