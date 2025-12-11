@@ -211,8 +211,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					}
 					// Wrap the Flux with GraphFlux to preserve node ID for LLM node
 					String outputKey = StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages";
-					GraphFlux<ChatResponse> graphFlux = GraphFlux.of(MODEL_NODE_NAME, outputKey, chatResponseFlux, null,
-							null);
+					// The last two parameters of GraphFlux.of are for optional metadata and context.
+					// Passing null here as we do not need to provide additional metadata or context for this node.
+					GraphFlux<ChatResponse> graphFlux = GraphFlux.of(MODEL_NODE_NAME, outputKey, chatResponseFlux, null, null);
 					return ModelResponse.of(graphFlux);
 				} catch (Exception e) {
 					logger.error("Exception during streaming model call: ", e);
