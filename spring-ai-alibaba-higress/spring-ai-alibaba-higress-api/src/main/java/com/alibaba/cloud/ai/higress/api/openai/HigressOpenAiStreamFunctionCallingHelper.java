@@ -74,22 +74,13 @@ public class HigressOpenAiStreamFunctionCallingHelper {
 		ChunkChoice previousChoice0 = (CollectionUtils.isEmpty(previous.choices()) ? null : previous.choices().get(0));
 		ChunkChoice currentChoice0 = (CollectionUtils.isEmpty(current.choices()) ? null : current.choices().get(0));
 
-		// compatibility of incremental_output false for streaming function call
-		if (!incrementalOutput && isStreamingToolFunctionCall(current)) {
-			if (!isStreamingToolFunctionCallFinish(current)) {
-				List<ChunkChoice> chunkChoices = CollectionUtils.isEmpty(current.choices())
-						? List.of(merge(previousChoice0, currentChoice0)) : List.of(currentChoice0);
-				return new ChatCompletionChunk(id, chunkChoices, created, model, serviceTier, systemFingerprint, object,
-						usage);
-			}
-			else {
-				// 关键修复：合并 previous 和 current，保留完整的 tool_call 数据
-				// 因为最后一个 chunk 只包含 finish_reason，完整的 tool_call 数据在 previous 中
-				ChunkChoice mergedChoice = merge(previousChoice0, currentChoice0);
-				return new ChatCompletionChunk(id, List.of(mergedChoice), created, model, serviceTier,
-						systemFingerprint, object, usage);
-			}
-		}
+        // compatibility of incremental_output false for streaming function call
+        if (!incrementalOutput && isStreamingToolFunctionCall(current)) {
+            //All of them use the operation of merging the previous choice, starting from the second element of the stream, there is no information such as tool name,
+            //and the last finishReason = "TOOL_CALSS" tool filed = null。so all should be merge
+            ChunkChoice mergedChoice = merge(previousChoice0, currentChoice0);
+            return new ChatCompletionChunk(id, List.of(mergedChoice), created, model, serviceTier, systemFingerprint, object, usage);
+        }
 
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
 		List<ChunkChoice> chunkChoices = choice == null ? List.of() : List.of(choice);
