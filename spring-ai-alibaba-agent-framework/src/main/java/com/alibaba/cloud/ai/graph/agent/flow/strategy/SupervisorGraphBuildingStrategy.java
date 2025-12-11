@@ -50,7 +50,7 @@ public class SupervisorGraphBuildingStrategy implements FlowGraphBuildingStrateg
 		Agent rootAgent = config.getRootAgent();
 
 		// Add root transparent node
-		graph.addNode(rootAgent.name(), node_async(new TransparentNode()));
+		graph.addNode(rootAgent.name(), node_async(new TransparentNode())) ;
 
 		// Add starting edge
 		graph.addEdge(START, rootAgent.name());
