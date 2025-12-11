@@ -14,7 +14,7 @@ Just add the following dependency to your agent project:
 <dependency>
 	<groupId>com.alibaba.cloud.ai</groupId>
 	<artifactId>spring-ai-alibaba-studio</artifactId>
-	<version>1.1.0.0-M4</version>
+	<version>1.1.0.0-RC1</version>
 </dependency>
 ```
 
@@ -58,3 +58,8 @@ NEXT_PUBLIC_APP_NAME=research_agent
 NEXT_PUBLIC_USER_ID=user-001
 ```
 
+## Build and deploy
+
+```shell
+pnpm run deploy # This will build and copy static files to src/main/resources
+```
