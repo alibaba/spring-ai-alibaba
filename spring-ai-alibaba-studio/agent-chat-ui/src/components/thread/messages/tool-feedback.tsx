@@ -1,13 +1,90 @@
-import { UIMessage, isToolRequestConfirmMessage, ToolFeedback } from "@/types/messages";
+import { UIMessage, isToolRequestConfirmMessage, ToolFeedback, ToolCall } from "@/types/messages";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp, CheckCircle, XCircle, Edit, Send } from "lucide-react";
+import { ChevronDown, ChevronUp, CheckCircle, XCircle, Edit, Send, Zap } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
 import { toast } from "sonner";
+
+/**
+ * Single automatically approved tool item (read-only display)
+ */
+function AutomaticallyApprovedToolItem({
+  toolCall,
+  index,
+}: {
+  toolCall: ToolCall;
+  index: number;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  let parsedArgs;
+  try {
+    parsedArgs = JSON.parse(toolCall.arguments);
+  } catch {
+    parsedArgs = { raw: toolCall.arguments };
+  }
+
+  return (
+    <div className={cn(
+      "rounded-md border overflow-hidden transition-all",
+      "border-green-300 bg-green-50"
+    )}>
+      {/* Header with tool name and status */}
+      <div className="p-3 border-b border-green-200 bg-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="size-4 text-green-600" />
+            <span className="font-mono text-sm font-semibold text-gray-900">
+              {toolCall.name}
+            </span>
+            {toolCall.id && (
+              <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+                {toolCall.id}
+              </code>
+            )}
+          </div>
+          <span className="text-xs font-medium px-2 py-1 rounded bg-green-100 text-green-700">
+            Auto-Approved
+          </span>
+        </div>
+      </div>
+
+      {/* Expandable arguments section */}
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="p-3 bg-white">
+              <pre className="text-xs bg-gray-50 p-2 rounded overflow-x-auto">
+                {JSON.stringify(parsedArgs, null, 2)}
+              </pre>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Expand/collapse button */}
+      <motion.button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-green-200 py-1.5 text-gray-500 transition-all duration-200 ease-in-out hover:bg-gray-50 hover:text-gray-600"
+        initial={{ scale: 1 }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+      </motion.button>
+    </div>
+  );
+}
 
 /**
  * Single tool feedback item with Approve/Reject/Edit actions
@@ -18,7 +95,7 @@ function ToolFeedbackItem({
   disabled,
 }: {
   feedback: ToolFeedback;
-  onUpdate: (id: string, result: 'APPROVED' | 'REJECTED' | 'EDITED', editedArgs?: string) => void;
+  onUpdate: (id: string, result: 'APPROVED' | 'REJECTED' | 'EDITED' | null, editedArgs?: string) => void;
   disabled: boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -113,35 +190,58 @@ function ToolFeedbackItem({
       </div>
 
       {/* Action buttons */}
-      {!disabled && !localResult && (
+      {!disabled && (
         <div className="p-2 bg-white border-b border-gray-200 flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1 text-green-600 border-green-300 hover:bg-green-50"
-            onClick={handleApprove}
-          >
-            <CheckCircle className="size-4 mr-1" />
-            Approve
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1 text-red-600 border-red-300 hover:bg-red-50"
-            onClick={handleReject}
-          >
-            <XCircle className="size-4 mr-1" />
-            Reject
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-50"
-            onClick={handleEdit}
-          >
-            <Edit className="size-4 mr-1" />
-            Edit
-          </Button>
+          {!localResult ? (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 text-green-600 border-green-300 hover:bg-green-50"
+                onClick={handleApprove}
+              >
+                <CheckCircle className="size-4 mr-1" />
+                Approve
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 text-red-600 border-red-300 hover:bg-red-50"
+                onClick={handleReject}
+              >
+                <XCircle className="size-4 mr-1" />
+                Reject
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 text-blue-600 border-blue-300 hover:bg-blue-50"
+                onClick={handleEdit}
+              >
+                <Edit className="size-4 mr-1" />
+                Edit
+              </Button>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center gap-2">
+              <span className="text-xs text-gray-600">
+                Feedback: <span className="font-medium">{localResult}</span>
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs text-gray-500 hover:text-gray-700"
+                onClick={() => {
+                  setLocalResult(undefined);
+                  onUpdate(feedback.id, null, undefined); // Reset by clearing the state
+                  setEditedArguments(feedback.arguments);
+                  setIsEditing(false);
+                }}
+              >
+                Change
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -237,13 +337,26 @@ export function ToolFeedbackConfirm({
   }
 
   const toolFeedback = message.message.toolFeedback || [];
+  const toolsAutomaticallyApproved = message.message.toolsAutomaticallyApproved || [];
 
-  if (toolFeedback.length === 0) {
-    console.warn('[ToolFeedbackConfirm] No tool feedback found');
+  // If there are no tools to confirm and no auto-approved tools, don't render
+  if (toolFeedback.length === 0 && toolsAutomaticallyApproved.length === 0) {
+    console.warn('[ToolFeedbackConfirm] No tool feedback or auto-approved tools found');
     return null;
   }
 
-  const handleUpdateFeedback = (id: string, result: 'APPROVED' | 'REJECTED' | 'EDITED', editedArgs?: string) => {
+  const totalToolCount = toolFeedback.length + toolsAutomaticallyApproved.length;
+
+  const handleUpdateFeedback = (id: string, result: 'APPROVED' | 'REJECTED' | 'EDITED' | null, editedArgs?: string) => {
+    // If result is null, it means we're clearing the feedback (allowing user to change their choice)
+    if (result === null) {
+      setFeedbackState(prev => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+      });
+      return;
+    }
     setFeedbackState(prev => ({
       ...prev,
       [id]: { result, editedArgs }
@@ -299,6 +412,8 @@ export function ToolFeedbackConfirm({
 
   const allFeedbackProvided = toolFeedback.every(tf => feedbackState[tf.id]);
   const hasAnyFeedback = Object.keys(feedbackState).length > 0;
+  const pendingCount = toolFeedback.filter(tf => !feedbackState[tf.id]).length;
+  const completedCount = toolFeedback.length - pendingCount;
 
   return (
     <div className="group flex flex-col gap-3">
@@ -308,13 +423,20 @@ export function ToolFeedbackConfirm({
       )}>
         {/* Header */}
         <div className={cn(
-          "flex items-center gap-2 mb-3",
+          "flex items-center justify-between mb-3",
           isSubmitted ? "text-gray-600" : "text-yellow-700"
         )}>
-          <CheckCircle className="size-5" />
-          <span className="font-medium">
-            {isSubmitted ? "Feedback Submitted - Processing..." : "Tool Execution Confirmation Required"}
-          </span>
+          <div className="flex items-center gap-2">
+            <CheckCircle className="size-5" />
+            <span className="font-medium">
+              {isSubmitted ? "Feedback Submitted - Processing..." : "Tool Execution Confirmation Required"}
+            </span>
+          </div>
+          {!isSubmitted && !isSubmitting && toolFeedback.length > 1 && (
+            <div className="text-xs font-medium px-2 py-1 rounded bg-yellow-100 text-yellow-700">
+              {completedCount} / {toolFeedback.length} completed
+            </div>
+          )}
         </div>
 
         {/* Description */}
@@ -322,8 +444,57 @@ export function ToolFeedbackConfirm({
           <p className="mb-3 text-sm text-gray-700">{message.message.content}</p>
         )}
 
-        {/* Tool feedback items */}
+        {/* Summary: Show total tool count if there are auto-approved tools */}
+        {toolsAutomaticallyApproved.length > 0 && (
+          <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
+            <div className="flex items-center gap-2 text-xs text-blue-800">
+              <Zap className="size-3.5" />
+              <span>
+                {toolsAutomaticallyApproved.length} tool{toolsAutomaticallyApproved.length > 1 ? 's' : ''} automatically approved
+                {toolFeedback.length > 0 && `, ${toolFeedback.length} tool${toolFeedback.length > 1 ? 's' : ''} require${toolFeedback.length > 1 ? '' : 's'} confirmation`}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Progress indicator for multiple tool calls */}
+        {!isSubmitted && !isSubmitting && toolFeedback.length > 1 && (
+          <div className="mb-3 p-2 bg-yellow-100 rounded border border-yellow-200">
+            <p className="text-xs text-yellow-800 mb-1">
+              Please provide feedback for each tool call below. All feedback will be submitted together when complete.
+            </p>
+            {pendingCount > 0 && (
+              <p className="text-xs text-yellow-700 italic">
+                {pendingCount} tool call{pendingCount > 1 ? 's' : ''} remaining
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* All tool items - showing both auto-approved and feedback tools together */}
         <div className="space-y-2 mb-3">
+          {/* Automatically approved tools (read-only) */}
+          {toolsAutomaticallyApproved.length > 0 && (
+            <>
+              {toolsAutomaticallyApproved.map((toolCall, index) => (
+                <AutomaticallyApprovedToolItem
+                  key={toolCall.id || `auto-${index}`}
+                  toolCall={toolCall}
+                  index={index}
+                />
+              ))}
+              {/* Separator if there are both types */}
+              {toolFeedback.length > 0 && (
+                <div className="flex items-center gap-2 my-2">
+                  <div className="flex-1 border-t border-gray-300"></div>
+                  <span className="text-xs text-gray-500 px-2">Requires Confirmation</span>
+                  <div className="flex-1 border-t border-gray-300"></div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Tool feedback items (require user confirmation) */}
           {toolFeedback.map((feedback) => (
             <ToolFeedbackItem
               key={feedback.id}
@@ -334,9 +505,18 @@ export function ToolFeedbackConfirm({
           ))}
         </div>
 
-        {/* Submit button */}
-        {hasAnyFeedback && (
-          <div className="flex justify-end pt-2 border-t border-yellow-200">
+        {/* Submit button - only show if there are tools requiring confirmation */}
+        {toolFeedback.length > 0 && (
+          <div className="flex justify-between items-center pt-2 border-t border-yellow-200">
+            {!isSubmitted && !isSubmitting && (
+              <div className="text-xs text-gray-600">
+                {allFeedbackProvided ? (
+                  <span className="text-green-600 font-medium">✓ All tool calls have feedback</span>
+                ) : (
+                  <span>Please provide feedback for all {toolFeedback.length} tool call{toolFeedback.length > 1 ? 's' : ''} before submitting</span>
+                )}
+              </div>
+            )}
             <Button
               onClick={handleSubmitFeedback}
               disabled={!allFeedbackProvided || isSubmitting || isSubmitted}
@@ -344,7 +524,9 @@ export function ToolFeedbackConfirm({
                 "text-white",
                 isSubmitted
                   ? "bg-green-600 hover:bg-green-600 cursor-not-allowed"
-                  : "bg-yellow-600 hover:bg-yellow-700"
+                  : allFeedbackProvided
+                  ? "bg-yellow-600 hover:bg-yellow-700"
+                  : "bg-gray-400 cursor-not-allowed"
               )}
             >
               {isSubmitting ? (
@@ -366,7 +548,7 @@ export function ToolFeedbackConfirm({
               ) : (
                 <>
                   <Send className="size-4 mr-2" />
-                  Submit Feedback & Continue
+                  Submit All Feedback
                 </>
               )}
             </Button>

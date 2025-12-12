@@ -112,10 +112,10 @@
             <version>${jetbrains-annotations.version}</version>
         </dependency>
 
+        <!-- FIXME, transitive deepseek dependency -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-deepseek</artifactId>
-            <optional>true</optional>
+            <artifactId>spring-ai-deepseek</artifactId>
         </dependency>
 
         <dependency>

@@ -19,9 +19,11 @@ export function ToolRequestConfirmMessage({
   }
 
   const toolFeedback = message.message.toolFeedback || [];
+  const toolsAutomaticallyApproved = message.message.toolsAutomaticallyApproved || [];
 
-  if (toolFeedback.length === 0) {
-    console.warn('[ToolRequestConfirmMessage] No tool feedback found');
+  // If there are no tools at all, don't render
+  if (toolFeedback.length === 0 && toolsAutomaticallyApproved.length === 0) {
+    console.warn('[ToolRequestConfirmMessage] No tool feedback or auto-approved tools found');
     return null;
   }
 
