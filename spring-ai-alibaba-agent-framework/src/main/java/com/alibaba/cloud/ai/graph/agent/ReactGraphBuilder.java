@@ -170,9 +170,8 @@ public class ReactGraphBuilder {
     }
 
     /**
-     * Find the matching tool based on hook's requirements. Matching priority: 1) by
-     * name,
-     * 2) by type, 3) first available tool
+     * Find the matching tool based on hook's requirements.
+     * Matching priority: 1) by name, 2) by type, 3) first available tool.
      * 
      * @param toolInjection  the hook that needs a tool
      * @param availableTools all available tool callbacks
