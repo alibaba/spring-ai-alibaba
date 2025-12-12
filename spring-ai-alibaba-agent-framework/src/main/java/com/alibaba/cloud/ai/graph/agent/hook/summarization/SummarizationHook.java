@@ -44,8 +44,8 @@ import org.slf4j.LoggerFactory;
  * Hook that summarizes conversation history when token limits are approached.
  *
  * This hook monitors message token counts and automatically summarizes older
- * messages when a threshold is reached, preserving recent messages and maintaining
- * context continuity.
+ * messages when a threshold is reached, preserving the first user message and 
+ * recent messages to maintain context continuity.
  *
  * Example:
  * SummarizationHook summarizer = SummarizationHook.builder()
@@ -117,19 +117,40 @@ public class SummarizationHook extends MessagesModelHook {
 			return new AgentCommand(previousMessages);
 		}
 
-		List<Message> toSummarize = previousMessages.subList(0, cutoffIndex);
-		List<Message> toPreserve = previousMessages.subList(cutoffIndex, previousMessages.size());
+		UserMessage firstUserMessage = null;
+		for (Message msg : previousMessages) {
+			if (msg instanceof UserMessage) {
+				firstUserMessage = (UserMessage) msg;
+				break;
+			}
+		}
+
+		List<Message> toSummarize = new ArrayList<>();
+		for (int i = 0; i < cutoffIndex; i++) {
+			Message msg = previousMessages.get(i);
+			if (msg != firstUserMessage) {
+				toSummarize.add(msg);
+			}
+		}
 
 		String summary = createSummary(toSummarize);
 
-		List<Message> newMessages = new ArrayList<>();
-		newMessages.add(new UserMessage(
-				"Here is a summary of the conversation to date:\n\n" + summary));
-		// Add preserved messages
-		newMessages.addAll(toPreserve);
+		SystemMessage summaryMessage = new SystemMessage(summaryPrefix + "\n" + summary);
 
-		log.info("Summarized {} messages, keeping {} recent messages",
-				toSummarize.size(), toPreserve.size());
+		List<Message> recentMessages = new ArrayList<>();
+		for (int i = cutoffIndex; i < previousMessages.size(); i++) {
+			recentMessages.add(previousMessages.get(i));
+		}
+
+		List<Message> newMessages = new ArrayList<>();
+		if (firstUserMessage != null) {
+			newMessages.add(firstUserMessage);
+		}
+		newMessages.add(summaryMessage);
+		newMessages.addAll(recentMessages);
+
+		log.info("Summarized {} messages, keeping {} recent messages (First UserMessage preserved)",
+				toSummarize.size(), recentMessages.size());
 
 		return new AgentCommand(newMessages, UpdatePolicy.REPLACE);
 	}
