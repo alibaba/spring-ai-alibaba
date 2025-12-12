@@ -47,7 +47,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_a
  * A builder class responsible for constructing the StateGraph for a ReactAgent.
  * This class isolates the graph construction logic from the main agent logic.
  */
-public class ReactGraphBuilder {
+class ReactGraphBuilder {
 
     private final ReactAgent agent;
 
@@ -57,7 +57,7 @@ public class ReactGraphBuilder {
 
     public StateGraph build() throws GraphStateException {
         if (agent.hooks == null) {
-            agent.hooks = new ArrayList<>();
+            agent.hooks = new ArrayList<Hook>();
         }
 
         // Validate hook uniqueness
@@ -144,7 +144,8 @@ public class ReactGraphBuilder {
     }
 
     /**
-     * Setup and inject tools for hooks that implement ToolInjection interface. Only the tool matching the hook's required tool name or type will be injected.
+     * Setup and inject tools for hooks that implement ToolInjection interface. Only
+     * the tool matching the hook's required tool name or type will be injected.
      * 
      * @param hooks    the list of hooks
      * @param toolNode the agent tool node containing available tools
@@ -210,8 +211,10 @@ public class ReactGraphBuilder {
 
     /**
      * Filter hooks by their position based on @HookPositions annotation.
-     * A hook will be included if its getHookPositions() contains the specified position.
-     * If a hook implements the Prioritized interface, it will be sorted by its order.
+     * A hook will be included if its getHookPositions() contains the specified
+     * position.
+     * If a hook implements the Prioritized interface, it will be sorted by its
+     * order.
      * Hooks that don't implement Prioritized will maintain their original order.
      *
      * @param hooks    the list of hooks to filter
