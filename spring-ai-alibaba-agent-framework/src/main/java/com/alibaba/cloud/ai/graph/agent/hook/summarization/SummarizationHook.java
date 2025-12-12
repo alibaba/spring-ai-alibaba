@@ -44,8 +44,8 @@ import org.slf4j.LoggerFactory;
  * Hook that summarizes conversation history when token limits are approached.
  *
  * This hook monitors message token counts and automatically summarizes older
- * messages when a threshold is reached, preserving recent messages and maintaining
- * context continuity.
+ * messages when a threshold is reached, preserving the first user message and 
+ * recent messages to maintain context continuity.
  *
  * Example:
  * SummarizationHook summarizer = SummarizationHook.builder()
@@ -117,10 +117,10 @@ public class SummarizationHook extends MessagesModelHook {
 			return new AgentCommand(previousMessages);
 		}
 
-		SystemMessage existingSystemMessage = null;
+		UserMessage firstUserMessage = null;
 		for (Message msg : previousMessages) {
-			if (msg instanceof SystemMessage) {
-				existingSystemMessage = (SystemMessage) msg;
+			if (msg instanceof UserMessage) {
+				firstUserMessage = (UserMessage) msg;
 				break;
 			}
 		}
@@ -128,35 +128,28 @@ public class SummarizationHook extends MessagesModelHook {
 		List<Message> toSummarize = new ArrayList<>();
 		for (int i = 0; i < cutoffIndex; i++) {
 			Message msg = previousMessages.get(i);
-			if (!(msg instanceof SystemMessage)) {
+			if (msg != firstUserMessage) {
 				toSummarize.add(msg);
 			}
 		}
 
 		String summary = createSummary(toSummarize);
 
-		SystemMessage newSystemMessage;
-		if (existingSystemMessage != null) {
-			newSystemMessage = new SystemMessage(
-					existingSystemMessage.getText() + "\n\n" + summaryPrefix + "\n" + summary
-			);
-		} else {
-			newSystemMessage = new SystemMessage(summaryPrefix + "\n" + summary);
-		}
+		SystemMessage summaryMessage = new SystemMessage(summaryPrefix + "\n" + summary);
 
 		List<Message> recentMessages = new ArrayList<>();
 		for (int i = cutoffIndex; i < previousMessages.size(); i++) {
-			Message msg = previousMessages.get(i);
-			if (msg != existingSystemMessage) {
-				recentMessages.add(msg);
-			}
+			recentMessages.add(previousMessages.get(i));
 		}
 
 		List<Message> newMessages = new ArrayList<>();
-		newMessages.add(newSystemMessage);
+		if (firstUserMessage != null) {
+			newMessages.add(firstUserMessage);
+		}
+		newMessages.add(summaryMessage);
 		newMessages.addAll(recentMessages);
 
-		log.info("Summarized {} messages, keeping {} recent messages (SystemMessage preserved)",
+		log.info("Summarized {} messages, keeping {} recent messages (First UserMessage preserved)",
 				toSummarize.size(), recentMessages.size());
 
 		return new AgentCommand(newMessages, UpdatePolicy.REPLACE);

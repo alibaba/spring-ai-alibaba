@@ -163,14 +163,14 @@ public class SummarizationTest {
     public void testSystemMessagePreservation() throws Exception {
         List<Message> conversation = new ArrayList<>();
         
-        String systemPrompt = "你是一个友好的助手，请用中文回答问题。";
-        conversation.add(new SystemMessage(systemPrompt));
-        
+        String firstUserPrompt = "我需要你帮我分析一个复杂的技术问题。";
+        conversation.add(new UserMessage(firstUserPrompt));
+        conversation.add(new AssistantMessage("好的，我很乐意帮助你。请详细描述你的问题。"));
         for (int i = 0; i < 50; i++) {
             conversation.add(new UserMessage("用户消息 " + i + "：这是一条测试消息，内容足够长以便触发摘要功能。"));
             conversation.add(new AssistantMessage("助手消息 " + i + "：这是一条回复消息，同样包含足够的内容。"));
         }
-        conversation.add(new UserMessage("最后一条消息：请告诉我第一条系统提示词的内容。"));
+        conversation.add(new UserMessage("最后一条消息：请告诉我第一条用户消息的内容。"));
 
         SummarizationHook hook = SummarizationHook.builder()
                 .model(chatModel)
@@ -178,12 +178,9 @@ public class SummarizationTest {
                 .messagesToKeep(10)
                 .build();
 
-        ReactAgent agent = createAgent(hook, "test-system-message-preservation", chatModel);
-
-        System.out.println("原始系统提示词: " + systemPrompt);
-        System.out.println("初始消息数量: " + conversation.size());
-
+        ReactAgent agent = createAgent(hook, "test-first-user-message-preservation", chatModel);
         Optional<OverAllState> result = agent.invoke(conversation);
+
 
         assertTrue(result.isPresent(), "结果应该存在");
         Object messagesObj = result.get().value("messages").get();
@@ -195,14 +192,21 @@ public class SummarizationTest {
 
         assertFalse(resultMessages.isEmpty(), "结果消息不应为空");
         Message firstMessage = resultMessages.get(0);
-        assertTrue(firstMessage instanceof SystemMessage, "第一条消息应该是 SystemMessage");
+        assertTrue(firstMessage instanceof UserMessage, "第一条消息应该是 UserMessage");
 
-        SystemMessage systemMessage = (SystemMessage) firstMessage;
-        assertTrue(systemMessage.getText().contains(systemPrompt), 
-            "系统消息应该包含原始的系统提示词");
-        assertTrue(systemMessage.getText().contains("Previous conversation summary") || 
-                   systemMessage.getText().contains("summary"), 
-            "系统消息应该包含摘要内容");
+        UserMessage firstUserMessage = (UserMessage) firstMessage;
+        
+        assertTrue(resultMessages.size() >= 2, "至少应该有两条消息");
+        Message secondMessage = resultMessages.get(1);
+        assertTrue(secondMessage instanceof SystemMessage, "第二条消息应该是 SystemMessage（摘要消息）");
+        
+        SystemMessage summaryMessage = (SystemMessage) secondMessage;
+
+        assertEquals(firstUserPrompt, firstUserMessage.getText(), 
+            "第一条用户消息应该完全保留");
+        assertTrue(summaryMessage.getText().contains("Previous conversation summary") || 
+                   summaryMessage.getText().contains("summary"), 
+            "第二条消息应该是包含摘要的系统消息");
     }
 
     
