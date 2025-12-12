@@ -212,13 +212,11 @@ public class ReactGraphBuilder {
     }
 
     /**
-     * Filter hooks by their position based on @HookPositions annotation. A hook
-     * will be
-     * included if its getHookPositions() contains the specified position. If a hook
-     * implements Prioritized interface, it will be sorted by its order. Hooks that
-     * don't
-     * implement Prioritized will maintain their original order.
-     * 
+     * Filter hooks by their position based on @HookPositions annotation.
+     * A hook will be included if its getHookPositions() contains the specified position.
+     * If a hook implements the Prioritized interface, it will be sorted by its order.
+     * Hooks that don't implement Prioritized will maintain their original order.
+     *
      * @param hooks    the list of hooks to filter
      * @param position the position to filter by
      * @return list of hooks that should execute at the specified position
