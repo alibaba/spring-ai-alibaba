@@ -226,13 +226,13 @@ public class HigressOpenAiChatOptions implements ToolCallingChatOptions {
      * Parameters for adapting the Qwen model call with Bai_Lian platform
      * Whether to enable the thinking process of the model.
      */
-    private @JsonProperty("enable_thinking") Boolean enableThinking = false;
+    private @JsonProperty("enable_thinking") Boolean enableThinking;
 
     /**
      * Parameters for adapting the Qwen model call with Bai_Lian platform
      * Whether to enable the webSearch process of the model.
      */
-    private @JsonProperty("enable_search") Boolean enableSearch = false;
+    private @JsonProperty("enable_search") Boolean enableSearch;
 
     /**
      * Parameters for adapting the Qwen model call with Bai_Lian platform
