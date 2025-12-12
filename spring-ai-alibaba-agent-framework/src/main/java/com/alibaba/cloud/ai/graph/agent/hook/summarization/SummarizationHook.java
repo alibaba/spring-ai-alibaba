@@ -117,19 +117,47 @@ public class SummarizationHook extends MessagesModelHook {
 			return new AgentCommand(previousMessages);
 		}
 
-		List<Message> toSummarize = previousMessages.subList(0, cutoffIndex);
-		List<Message> toPreserve = previousMessages.subList(cutoffIndex, previousMessages.size());
+		SystemMessage existingSystemMessage = null;
+		for (Message msg : previousMessages) {
+			if (msg instanceof SystemMessage) {
+				existingSystemMessage = (SystemMessage) msg;
+				break;
+			}
+		}
+
+		List<Message> toSummarize = new ArrayList<>();
+		for (int i = 0; i < cutoffIndex; i++) {
+			Message msg = previousMessages.get(i);
+			if (!(msg instanceof SystemMessage)) {
+				toSummarize.add(msg);
+			}
+		}
 
 		String summary = createSummary(toSummarize);
 
-		List<Message> newMessages = new ArrayList<>();
-		newMessages.add(new UserMessage(
-				"Here is a summary of the conversation to date:\n\n" + summary));
-		// Add preserved messages
-		newMessages.addAll(toPreserve);
+		SystemMessage newSystemMessage;
+		if (existingSystemMessage != null) {
+			newSystemMessage = new SystemMessage(
+					existingSystemMessage.getText() + "\n\n" + summaryPrefix + "\n" + summary
+			);
+		} else {
+			newSystemMessage = new SystemMessage(summaryPrefix + "\n" + summary);
+		}
 
-		log.info("Summarized {} messages, keeping {} recent messages",
-				toSummarize.size(), toPreserve.size());
+		List<Message> recentMessages = new ArrayList<>();
+		for (int i = cutoffIndex; i < previousMessages.size(); i++) {
+			Message msg = previousMessages.get(i);
+			if (msg != existingSystemMessage) {
+				recentMessages.add(msg);
+			}
+		}
+
+		List<Message> newMessages = new ArrayList<>();
+		newMessages.add(newSystemMessage);
+		newMessages.addAll(recentMessages);
+
+		log.info("Summarized {} messages, keeping {} recent messages (SystemMessage preserved)",
+				toSummarize.size(), recentMessages.size());
 
 		return new AgentCommand(newMessages, UpdatePolicy.REPLACE);
 	}

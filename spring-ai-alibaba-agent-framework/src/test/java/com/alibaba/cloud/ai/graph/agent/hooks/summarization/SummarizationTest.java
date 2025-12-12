@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
@@ -156,6 +157,52 @@ public class SummarizationTest {
                 .hooks(List.of(hook))
                 .saver(new MemorySaver())
                 .build();
+    }
+
+    @Test
+    public void testSystemMessagePreservation() throws Exception {
+        List<Message> conversation = new ArrayList<>();
+        
+        String systemPrompt = "你是一个友好的助手，请用中文回答问题。";
+        conversation.add(new SystemMessage(systemPrompt));
+        
+        for (int i = 0; i < 50; i++) {
+            conversation.add(new UserMessage("用户消息 " + i + "：这是一条测试消息，内容足够长以便触发摘要功能。"));
+            conversation.add(new AssistantMessage("助手消息 " + i + "：这是一条回复消息，同样包含足够的内容。"));
+        }
+        conversation.add(new UserMessage("最后一条消息：请告诉我第一条系统提示词的内容。"));
+
+        SummarizationHook hook = SummarizationHook.builder()
+                .model(chatModel)
+                .maxTokensBeforeSummary(200)
+                .messagesToKeep(10)
+                .build();
+
+        ReactAgent agent = createAgent(hook, "test-system-message-preservation", chatModel);
+
+        System.out.println("原始系统提示词: " + systemPrompt);
+        System.out.println("初始消息数量: " + conversation.size());
+
+        Optional<OverAllState> result = agent.invoke(conversation);
+
+        assertTrue(result.isPresent(), "结果应该存在");
+        Object messagesObj = result.get().value("messages").get();
+        assertNotNull(messagesObj, "消息应该存在于结果中");
+
+        @SuppressWarnings("unchecked")
+        List<Message> resultMessages = (List<Message>) messagesObj;
+        System.out.println("摘要后消息数量: " + resultMessages.size());
+
+        assertFalse(resultMessages.isEmpty(), "结果消息不应为空");
+        Message firstMessage = resultMessages.get(0);
+        assertTrue(firstMessage instanceof SystemMessage, "第一条消息应该是 SystemMessage");
+
+        SystemMessage systemMessage = (SystemMessage) firstMessage;
+        assertTrue(systemMessage.getText().contains(systemPrompt), 
+            "系统消息应该包含原始的系统提示词");
+        assertTrue(systemMessage.getText().contains("Previous conversation summary") || 
+                   systemMessage.getText().contains("summary"), 
+            "系统消息应该包含摘要内容");
     }
 
     
