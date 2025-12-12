@@ -64,7 +64,7 @@ public class ReactGraphBuilder {
         Set<String> hookNames = new HashSet<>();
         for (Hook hook : agent.hooks) {
             if (!hookNames.add(hook.getName())) {
-                throw new IllegalArgumentException("Duplicate hook instances found");
+                throw new IllegalArgumentException("Duplicate hook found with name: " + hook.getName());
             }
 
             // set agent name to every hook node.
