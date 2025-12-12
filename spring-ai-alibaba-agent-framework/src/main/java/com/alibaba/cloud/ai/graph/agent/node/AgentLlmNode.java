@@ -40,6 +40,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -49,7 +50,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import reactor.core.publisher.Flux;
 
@@ -391,14 +394,31 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest) {
 		List<Message> messages = appendSystemPromptIfNeeded(modelRequest);
 
-		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
+        List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
         if (modelRequest.getOptions() == null) {
             this.chatOptions = ToolCallingChatOptions.builder()
                 .toolCallbacks(filteredToolCallbacks)
                 .internalToolExecutionEnabled(false)
                 .build();
         } else {
-            this.chatOptions = modelRequest.getOptions();
+            ChatOptions options = modelRequest.getOptions();
+            if (options instanceof ToolCallingChatOptions toolCallingChatOptions) {
+                // add tools to toolCallingChatOptions
+                List<ToolCallback> chatOptionsToolCallbacks = toolCallingChatOptions.getToolCallbacks();
+                if (chatOptionsToolCallbacks != null && !chatOptionsToolCallbacks.isEmpty()) {
+                    Set<String> chatOptionsToolNames = chatOptionsToolCallbacks.stream()
+                        .map(ToolCallback::getToolDefinition)
+                        .map(ToolDefinition::name)
+                        .collect(Collectors.toSet());
+                    for (ToolCallback toolCallback : filteredToolCallbacks) {
+                        if (!chatOptionsToolNames.contains(toolCallback.getToolDefinition().name())) {
+                            chatOptionsToolCallbacks.add(toolCallback);
+                        }
+                    }
+                }
+                toolCallingChatOptions.setInternalToolExecutionEnabled(false);
+            }
+            this.chatOptions = options;
         }
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
