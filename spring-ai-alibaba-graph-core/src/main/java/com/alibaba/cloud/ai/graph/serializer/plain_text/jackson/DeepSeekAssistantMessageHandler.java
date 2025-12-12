@@ -27,10 +27,9 @@ import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.util.LinkedList;
 
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.deserializeMetadata;
@@ -50,107 +49,65 @@ public interface DeepSeekAssistantMessageHandler {
 
 	}
 
-	class Serializer extends StdSerializer<Object> {
-
-		private final Class<?> deepSeekClass;
+	class Serializer extends StdSerializer<DeepSeekAssistantMessage> {
 
 		public Serializer() {
-			super(Object.class);
-			try {
-				this.deepSeekClass = Class.forName("org.springframework.ai.deepseek.DeepSeekAssistantMessage");
-			}
-			catch (ClassNotFoundException e) {
-				throw new IllegalStateException("DeepSeekAssistantMessage class not found", e);
-			}
+			super(DeepSeekAssistantMessage.class);
 		}
 
 		@Override
-		public void serialize(Object msg, JsonGenerator gen, SerializerProvider provider)
+		public void serialize(DeepSeekAssistantMessage msg, JsonGenerator gen, SerializerProvider provider)
 				throws IOException {
-			if (!deepSeekClass.isInstance(msg)) {
-				throw new IllegalArgumentException("Expected DeepSeekAssistantMessage instance");
-			}
+			gen.writeStartObject();
+			gen.writeStringField("@class", msg.getClass().getName());
 
-			try {
+			String text = msg.getText();
+			gen.writeStringField(Field.TEXT.name, text);
+
+			java.util.List<AssistantMessage.ToolCall> toolCalls = msg.getToolCalls();
+
+			gen.writeArrayFieldStart(Field.TOOL_CALLS.name);
+			for (var toolCall : toolCalls) {
 				gen.writeStartObject();
-				gen.writeStringField("@class", msg.getClass().getName());
-
-				// Use reflection to call getText()
-				Method getTextMethod = deepSeekClass.getMethod("getText");
-				String text = (String) getTextMethod.invoke(msg);
-				gen.writeStringField(Field.TEXT.name, text);
-
-				// Use reflection to call getToolCalls()
-				Method getToolCallsMethod = deepSeekClass.getMethod("getToolCalls");
-				@SuppressWarnings("unchecked")
-				java.util.List<AssistantMessage.ToolCall> toolCalls = (java.util.List<AssistantMessage.ToolCall>) getToolCallsMethod.invoke(msg);
-
-				gen.writeArrayFieldStart(Field.TOOL_CALLS.name);
-				for (var toolCall : toolCalls) {
-					gen.writeStartObject();
-					gen.writeStringField("id", toolCall.id());
-					gen.writeStringField("name", toolCall.name());
-					gen.writeStringField("type", toolCall.type());
-					gen.writeStringField("arguments", toolCall.arguments());
-					gen.writeEndObject();
-				}
-				gen.writeEndArray();
-
-				// Use reflection to call getReasoningContent()
-				Method getReasoningContentMethod = deepSeekClass.getMethod("getReasoningContent");
-				String reasoningContent = (String) getReasoningContentMethod.invoke(msg);
-
-				if (reasoningContent != null) {
-					gen.writeStringField(Field.REASONING_CONTENT.name, reasoningContent);
-				}
-				else {
-					gen.writeNullField(Field.REASONING_CONTENT.name);
-				}
-
-				// Use reflection to call getMetadata()
-				Method getMetadataMethod = deepSeekClass.getMethod("getMetadata");
-				@SuppressWarnings("unchecked")
-				java.util.Map<String, Object> metadata = (java.util.Map<String, Object>) getMetadataMethod.invoke(msg);
-				serializeMetadata(gen, metadata);
-
+				gen.writeStringField("id", toolCall.id());
+				gen.writeStringField("name", toolCall.name());
+				gen.writeStringField("type", toolCall.type());
+				gen.writeStringField("arguments", toolCall.arguments());
 				gen.writeEndObject();
 			}
-			catch (Exception e) {
-				if (e instanceof IOException) {
-					throw (IOException) e;
-				}
-				throw new IOException("Failed to serialize DeepSeekAssistantMessage", e);
+			gen.writeEndArray();
+
+			String reasoningContent = msg.getReasoningContent();
+
+			if (reasoningContent != null) {
+				gen.writeStringField(Field.REASONING_CONTENT.name, reasoningContent);
 			}
+			else {
+				gen.writeNullField(Field.REASONING_CONTENT.name);
+			}
+
+			java.util.Map<String, Object> metadata = msg.getMetadata();
+			serializeMetadata(gen, metadata);
+
+			gen.writeEndObject();
 		}
 
 		@Override
-		public void serializeWithType(Object value, JsonGenerator gen,
+		public void serializeWithType(DeepSeekAssistantMessage value, JsonGenerator gen,
 				SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
 			serialize(value, gen, serializers);
 		}
 
 	}
 
-	class Deserializer extends StdDeserializer<Object> {
-
-		private final Class<?> deepSeekClass;
-		private final Constructor<?> constructor;
+	class Deserializer extends StdDeserializer<DeepSeekAssistantMessage> {
 
 		protected Deserializer() {
-			super(Object.class);
-			try {
-				this.deepSeekClass = Class.forName("org.springframework.ai.deepseek.DeepSeekAssistantMessage");
-				// Find constructor: DeepSeekAssistantMessage(String text, String reasoningContent, Map<String, Object> metadata, List<ToolCall> toolCalls)
-				this.constructor = deepSeekClass.getConstructor(String.class, String.class, 
-					java.util.Map.class, java.util.List.class);
-			}
-			catch (ClassNotFoundException | NoSuchMethodException e) {
-				throw new IllegalStateException("DeepSeekAssistantMessage class or constructor not found", e);
-			}
+			super(DeepSeekAssistantMessage.class);
 		}
 
 		@Override
-		public Object deserialize(JsonParser jsonParser, DeserializationContext ctx)
+		public DeepSeekAssistantMessage deserialize(JsonParser jsonParser, DeserializationContext ctx)
 				throws IOException {
 			var mapper = (ObjectMapper) jsonParser.getCodec();
 			ObjectNode node = mapper.readTree(jsonParser);
@@ -173,12 +130,12 @@ public interface DeepSeekAssistantMessageHandler {
 				}
 			}
 
-			try {
-				return constructor.newInstance(text, reasoningContent, metadata, requests);
-			}
-			catch (Exception e) {
-				throw new IOException("Failed to deserialize DeepSeekAssistantMessage", e);
-			}
+			return new DeepSeekAssistantMessage.Builder()
+					.content(text)
+					.reasoningContent(reasoningContent)
+					.properties(metadata)
+					.toolCalls(requests)
+					.build();
 		}
 
 	}
