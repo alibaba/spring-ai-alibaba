@@ -144,9 +144,7 @@ public class ReactGraphBuilder {
     }
 
     /**
-     * Setup and inject tools for hooks that implement ToolInjection interface. Only
-     * the
-     * tool matching the hook's required tool name or type will be injected.
+     * Setup and inject tools for hooks that implement ToolInjection interface. Only the tool matching the hook's required tool name or type will be injected.
      * 
      * @param hooks    the list of hooks
      * @param toolNode the agent tool node containing available tools
