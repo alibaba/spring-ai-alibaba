@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
@@ -37,6 +38,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
+
+import reactor.core.publisher.Flux;
 
 /**
  * 多智能体（Multi-agent）示例
@@ -227,10 +231,18 @@ public class MultiAgentExample {
 
 		ExecutorService executorService = Executors.newFixedThreadPool(3);
 		// 使用
-		Optional<OverAllState> result = parallelAgent.invoke("以'西湖'为主题", RunnableConfig.builder().addParallelNodeExecutor("parallel_creative_agent", executorService).build());
+		Flux<NodeOutput> flux = parallelAgent.stream("以'西湖'为主题", RunnableConfig.builder().addParallelNodeExecutor("parallel_creative_agent", executorService).build());
 
-		if (result.isPresent()) {
-			OverAllState state = result.get();
+		AtomicReference<NodeOutput> lastOutput = new AtomicReference<>();
+		flux.doOnNext(nodeOutput -> {
+			System.out.println("节点输出: " + nodeOutput);
+			lastOutput.set(nodeOutput);
+		}).doOnError(error -> {
+			System.err.println("执行出错: " + error.getMessage());
+		}).doOnComplete(() -> {
+			System.out.println("并行Agent流式执行完成\n\n");
+
+			OverAllState state = lastOutput.get().state();
 
 			// 访问各个Agent的输出
 			state.value("prose_result").ifPresent(r ->
@@ -243,7 +255,8 @@ public class MultiAgentExample {
 			// 访问合并后的结果
 			state.value("merged_results").ifPresent(r ->
 					System.out.println("合并结果: " + r));
-		}
+		}).blockLast();
+
 	}
 
 	/**
