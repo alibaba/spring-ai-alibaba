@@ -13,6 +13,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:static": "STATIC_EXPORT=true next build",
+    "deploy": "./build-and-deploy.sh",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",

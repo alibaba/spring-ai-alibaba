@@ -39,7 +39,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 
 /**
  * 并行流式输出示例
- * 演示如何在并行分支中使用 GraphFlux 实现流式输出
+ * 演示如何在并行分支中使用 Flux 实现流式输出
  * 每个并行节点可以独立产生流式输出，并保持各自的节点 ID
  */
 public class ParallelStreamingExample {
@@ -47,7 +47,7 @@ public class ParallelStreamingExample {
 	/**
 	 * 示例 1: 并行节点流式输出 - 每个节点保持独立的节点 ID
 	 *
-	 * 演示如何创建多个并行节点，每个节点返回 GraphFlux 流式输出
+	 * 演示如何创建多个并行节点，每个节点返回 Flux 流式输出
 	 * 流式输出会保持各自的节点 ID，便于区分不同节点的输出
 	 */
 	public static void parallelStreamingWithNodeIdPreservation() throws GraphStateException {
@@ -59,7 +59,7 @@ public class ParallelStreamingExample {
 			return keyStrategyMap;
 		};
 
-		// 并行节点 1 - 返回 GraphFlux 流式输出
+		// 并行节点 1 - 返回 Flux 流式输出
 		AsyncNodeAction node1 = state -> {
 			System.out.println("Node1 executing on thread: " + Thread.currentThread().getName());
 
@@ -73,7 +73,7 @@ public class ParallelStreamingExample {
 			return CompletableFuture.completedFuture(Map.of("stream1", stream1));
 		};
 
-		// 并行节点 2 - 返回 GraphFlux 流式输出
+		// 并行节点 2 - 返回 Flux 流式输出
 		AsyncNodeAction node2 = state -> {
 			System.out.println("Node2 executing on thread: " + Thread.currentThread().getName());
 
@@ -162,7 +162,7 @@ public class ParallelStreamingExample {
 	/**
 	 * 示例 2: 单个节点的流式输出
 	 *
-	 * 演示单个节点使用 GraphFlux 产生流式输出
+	 * 演示单个节点使用 Flux 产生流式输出
 	 */
 	public static void singleNodeStreaming() throws GraphStateException {
 		// 定义状态策略

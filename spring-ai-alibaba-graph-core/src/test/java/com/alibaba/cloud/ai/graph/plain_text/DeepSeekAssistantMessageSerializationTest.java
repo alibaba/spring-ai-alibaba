@@ -19,13 +19,12 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +32,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,29 +44,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * This test reproduces issue #3186 where DeepSeekAssistantMessage fails to deserialize
  * when it appears in arrays or nested structures.
  */
+@EnabledIfEnvironmentVariable(named = "AI_DEEPSEEK_API_KEY", matches = ".+")
 class DeepSeekAssistantMessageSerializationTest {
 
 	private SpringAIJacksonStateSerializer serializer;
-	private Class<?> deepSeekClass;
-	private Constructor<?> deepSeekConstructor;
 
 	@BeforeEach
 	void setUp() {
 		AgentStateFactory<OverAllState> stateFactory = OverAllState::new;
 		serializer = new SpringAIJacksonStateSerializer(stateFactory);
-		
-		// Try to load DeepSeekAssistantMessage class
-		try {
-			deepSeekClass = Class.forName("org.springframework.ai.deepseek.DeepSeekAssistantMessage");
-			// Constructor: DeepSeekAssistantMessage(String text, String reasoningContent, Map<String, Object> metadata, List<ToolCall> toolCalls)
-			deepSeekConstructor = deepSeekClass.getConstructor(String.class, String.class, 
-				Map.class, List.class);
-		}
-		catch (ClassNotFoundException | NoSuchMethodException e) {
-			// DeepSeekAssistantMessage not available, tests will be skipped
-			deepSeekClass = null;
-			deepSeekConstructor = null;
-		}
 	}
 
 	/**
@@ -83,48 +69,16 @@ class DeepSeekAssistantMessageSerializationTest {
 	}
 
 	/**
-	 * Create a DeepSeekAssistantMessage instance using reflection.
+	 * Create a DeepSeekAssistantMessage instance.
 	 */
-	private Object createDeepSeekMessage(String text, String reasoningContent, 
-			Map<String, Object> metadata, List<AssistantMessage.ToolCall> toolCalls) throws Exception {
-		if (deepSeekConstructor == null) {
-			throw new IllegalStateException("DeepSeekAssistantMessage not available");
-		}
-		return deepSeekConstructor.newInstance(text, reasoningContent, metadata, toolCalls);
-	}
-
-	/**
-	 * Get text from DeepSeekAssistantMessage using reflection.
-	 */
-	private String getText(Object message) throws Exception {
-		Method getTextMethod = deepSeekClass.getMethod("getText");
-		return (String) getTextMethod.invoke(message);
-	}
-
-	/**
-	 * Get reasoning content from DeepSeekAssistantMessage using reflection.
-	 */
-	private String getReasoningContent(Object message) throws Exception {
-		Method getReasoningContentMethod = deepSeekClass.getMethod("getReasoningContent");
-		return (String) getReasoningContentMethod.invoke(message);
-	}
-
-	/**
-	 * Get metadata from DeepSeekAssistantMessage using reflection.
-	 */
-	@SuppressWarnings("unchecked")
-	private Map<String, Object> getMetadata(Object message) throws Exception {
-		Method getMetadataMethod = deepSeekClass.getMethod("getMetadata");
-		return (Map<String, Object>) getMetadataMethod.invoke(message);
-	}
-
-	/**
-	 * Get tool calls from DeepSeekAssistantMessage using reflection.
-	 */
-	@SuppressWarnings("unchecked")
-	private List<AssistantMessage.ToolCall> getToolCalls(Object message) throws Exception {
-		Method getToolCallsMethod = deepSeekClass.getMethod("getToolCalls");
-		return (List<AssistantMessage.ToolCall>) getToolCallsMethod.invoke(message);
+	private DeepSeekAssistantMessage createDeepSeekMessage(String text, String reasoningContent, 
+			Map<String, Object> metadata, List<AssistantMessage.ToolCall> toolCalls) {
+		return new DeepSeekAssistantMessage.Builder()
+				.content(text)
+				.reasoningContent(reasoningContent)
+				.properties(metadata)
+				.toolCalls(toolCalls)
+				.build();
 	}
 
 	@Test
@@ -143,14 +97,14 @@ class DeepSeekAssistantMessageSerializationTest {
 			new AssistantMessage.ToolCall("call_2", "function", "weather", "{\"city\": \"Beijing\"}")
 		);
 		
-		Object originalMessage1 = createDeepSeekMessage(
+		DeepSeekAssistantMessage originalMessage1 = createDeepSeekMessage(
 			"Let me calculate that for you.",
 			"I need to use the calculator tool to add 1 and 2.",
 			metadata,
 			toolCalls
 		);
 		
-		Object originalMessage2 = createDeepSeekMessage(
+		DeepSeekAssistantMessage originalMessage2 = createDeepSeekMessage(
 			"The weather in Beijing is sunny.",
 			"I used the weather tool to get the current weather.",
 			new HashMap<>(),
@@ -188,35 +142,37 @@ class DeepSeekAssistantMessageSerializationTest {
 		// Verify first message
 		Object deserializedMessage1 = deserializedMessages.get(0);
 		assertNotNull(deserializedMessage1);
-		assertTrue(deepSeekClass.isInstance(deserializedMessage1));
-		assertEquals("Let me calculate that for you.", getText(deserializedMessage1));
-		assertEquals("I need to use the calculator tool to add 1 and 2.", getReasoningContent(deserializedMessage1));
+		assertTrue(deserializedMessage1 instanceof DeepSeekAssistantMessage);
+		DeepSeekAssistantMessage msg1 = (DeepSeekAssistantMessage) deserializedMessage1;
+		assertEquals("Let me calculate that for you.", msg1.getText());
+		assertEquals("I need to use the calculator tool to add 1 and 2.", msg1.getReasoningContent());
 		
 		// Verify metadata - messageType may be automatically added during deserialization
-		Map<String, Object> deserializedMetadata1 = getMetadata(deserializedMessage1);
+		Map<String, Object> deserializedMetadata1 = msg1.getMetadata();
 		assertNotNull(deserializedMetadata1);
 		assertEquals("deepseek-chat", deserializedMetadata1.get("model"));
 		assertEquals(0.7, deserializedMetadata1.get("temperature"));
 		// messageType may be present in deserialized metadata
 		
-		assertEquals(2, getToolCalls(deserializedMessage1).size());
+		assertEquals(2, msg1.getToolCalls().size());
 		
 		// Verify second message
 		Object deserializedMessage2 = deserializedMessages.get(1);
 		assertNotNull(deserializedMessage2);
-		assertTrue(deepSeekClass.isInstance(deserializedMessage2));
-		assertEquals("The weather in Beijing is sunny.", getText(deserializedMessage2));
-		assertEquals("I used the weather tool to get the current weather.", getReasoningContent(deserializedMessage2));
+		assertTrue(deserializedMessage2 instanceof DeepSeekAssistantMessage);
+		DeepSeekAssistantMessage msg2 = (DeepSeekAssistantMessage) deserializedMessage2;
+		assertEquals("The weather in Beijing is sunny.", msg2.getText());
+		assertEquals("I used the weather tool to get the current weather.", msg2.getReasoningContent());
 		
 		// Verify metadata - messageType may be automatically added during deserialization
-		Map<String, Object> deserializedMetadata2 = getMetadata(deserializedMessage2);
+		Map<String, Object> deserializedMetadata2 = msg2.getMetadata();
 		assertNotNull(deserializedMetadata2);
 		// Original metadata was empty, but messageType may be added during deserialization
 		// So we only check that our original fields are not present
 		assertNull(deserializedMetadata2.get("model"));
 		assertNull(deserializedMetadata2.get("temperature"));
 		
-		assertTrue(getToolCalls(deserializedMessage2).isEmpty());
+		assertTrue(msg2.getToolCalls().isEmpty());
 	}
 
 	@Test
@@ -224,7 +180,7 @@ class DeepSeekAssistantMessageSerializationTest {
 	void testDeepSeekAssistantMessageInNestedStructure() throws Exception {
 		// Test DeepSeekAssistantMessage in nested structures (Map containing List)
 		
-		Object originalMessage = createDeepSeekMessage(
+		DeepSeekAssistantMessage originalMessage = createDeepSeekMessage(
 			"Nested structure test",
 			"Testing nested serialization",
 			Map.of("test", "nested"),
@@ -260,14 +216,15 @@ class DeepSeekAssistantMessageSerializationTest {
 		
 		Object deserializedMessage = deserializedInner.get("deepSeekMessage");
 		assertNotNull(deserializedMessage);
-		assertTrue(deepSeekClass.isInstance(deserializedMessage));
-		assertEquals("Nested structure test", getText(deserializedMessage));
+		assertTrue(deserializedMessage instanceof DeepSeekAssistantMessage);
+		DeepSeekAssistantMessage msg = (DeepSeekAssistantMessage) deserializedMessage;
+		assertEquals("Nested structure test", msg.getText());
 		
 		@SuppressWarnings("unchecked")
 		List<Object> deserializedMessages = (List<Object>) deserializedData.get("messages");
 		assertNotNull(deserializedMessages);
 		assertEquals(1, deserializedMessages.size());
-		assertTrue(deepSeekClass.isInstance(deserializedMessages.get(0)));
+		assertTrue(deserializedMessages.get(0) instanceof DeepSeekAssistantMessage);
 	}
 
 	@Test
@@ -275,7 +232,7 @@ class DeepSeekAssistantMessageSerializationTest {
 	void testDeepSeekAssistantMessageAsTopLevelObject() throws Exception {
 		// Test DeepSeekAssistantMessage as a top-level object (should work even before fix)
 		
-		Object originalMessage = createDeepSeekMessage(
+		DeepSeekAssistantMessage originalMessage = createDeepSeekMessage(
 			"Top level message",
 			"Reasoning content",
 			Map.of("key", "value"),
@@ -299,10 +256,11 @@ class DeepSeekAssistantMessageSerializationTest {
 		assertNotNull(deserializedData);
 		Object deserializedMessage = deserializedData.get("message");
 		assertNotNull(deserializedMessage);
-		assertTrue(deepSeekClass.isInstance(deserializedMessage));
-		assertEquals("Top level message", getText(deserializedMessage));
-		assertEquals("Reasoning content", getReasoningContent(deserializedMessage));
-		assertEquals(1, getToolCalls(deserializedMessage).size());
+		assertTrue(deserializedMessage instanceof DeepSeekAssistantMessage);
+		DeepSeekAssistantMessage msg = (DeepSeekAssistantMessage) deserializedMessage;
+		assertEquals("Top level message", msg.getText());
+		assertEquals("Reasoning content", msg.getReasoningContent());
+		assertEquals(1, msg.getToolCalls().size());
 	}
 
 	@Test
@@ -310,7 +268,7 @@ class DeepSeekAssistantMessageSerializationTest {
 	void testDeepSeekAssistantMessageWithNullReasoningContent() throws Exception {
 		// Test DeepSeekAssistantMessage with null reasoning content
 		
-		Object originalMessage = createDeepSeekMessage(
+		DeepSeekAssistantMessage originalMessage = createDeepSeekMessage(
 			"Message without reasoning",
 			null, // null reasoning content
 			new HashMap<>(),
@@ -339,9 +297,10 @@ class DeepSeekAssistantMessageSerializationTest {
 		
 		Object deserializedMessage = deserializedMessages.get(0);
 		assertNotNull(deserializedMessage);
-		assertTrue(deepSeekClass.isInstance(deserializedMessage));
-		assertEquals("Message without reasoning", getText(deserializedMessage));
-		assertEquals(null, getReasoningContent(deserializedMessage));
+		assertTrue(deserializedMessage instanceof DeepSeekAssistantMessage);
+		DeepSeekAssistantMessage msg = (DeepSeekAssistantMessage) deserializedMessage;
+		assertEquals("Message without reasoning", msg.getText());
+		assertEquals(null, msg.getReasoningContent());
 	}
 }
 
