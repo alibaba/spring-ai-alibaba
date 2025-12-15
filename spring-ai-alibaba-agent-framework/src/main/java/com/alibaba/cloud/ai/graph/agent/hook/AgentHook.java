@@ -45,6 +45,7 @@ public abstract class AgentHook implements Hook {
         return agentName;
     }
 
+    @Override
     public ReactAgent getAgent() {
         return reactAgent;
     }
