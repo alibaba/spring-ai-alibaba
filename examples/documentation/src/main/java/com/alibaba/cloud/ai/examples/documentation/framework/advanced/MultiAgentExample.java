@@ -242,8 +242,13 @@ public class MultiAgentExample {
 		}).doOnComplete(() -> {
 			System.out.println("并行Agent流式执行完成\n\n");
 
-			OverAllState state = lastOutput.get().state();
+			NodeOutput output = lastOutput.get();
+			if (output == null) {
+				System.out.println("未收到任何输出，无法展示结果。");
+				return;
+			}
 
+			OverAllState state = output.state();
 			// 访问各个Agent的输出
 			state.value("prose_result").ifPresent(r ->
 					System.out.println("散文: " + r));
