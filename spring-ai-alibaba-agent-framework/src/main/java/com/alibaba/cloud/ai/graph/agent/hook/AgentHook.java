@@ -50,6 +50,7 @@ public abstract class AgentHook implements Hook {
         return reactAgent;
     }
 
+    @Override
     public void setAgent(ReactAgent agent) {
         this.reactAgent = agent;
     }
