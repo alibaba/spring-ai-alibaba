@@ -30,6 +30,9 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,26 +52,58 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_HOOK_NAME_PREFIX;
+import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_ID_DEFAULT;
 
 public class InterruptionHookTest {
 
 	private InterruptionHook hook;
 	private OverAllState state;
+	private ReactAgent mockAgent;
+
+	/**
+	 * Mock ChatModel for unit tests that don't require actual API calls.
+	 */
+	private static class MockChatModel implements ChatModel {
+		@Override
+		public ChatResponse call(Prompt prompt) {
+			return new ChatResponse(List.of(new Generation(new org.springframework.ai.chat.messages.AssistantMessage("Mock response"))));
+		}
+
+		@Override
+		public Flux<ChatResponse> stream(Prompt prompt) {
+			return Flux.just(new ChatResponse(List.of(new Generation(new org.springframework.ai.chat.messages.AssistantMessage("Mock stream response")))));
+		}
+	}
 
 	@BeforeEach
 	void setUp() {
 		hook = InterruptionHook.builder().build();
 		state = new OverAllState(Map.of("messages", List.of(new UserMessage("Initial message"))));
+		
+		// Create a mock ReactAgent for testing
+		mockAgent = ReactAgent.builder()
+				.name("test-agent")
+				.model(new MockChatModel())
+				.saver(new MemorySaver())
+				.build();
+		
+		// Set the agent to the hook
+		hook.setAgent(mockAgent);
 	}
 
 	@Test
 	public void testInterrupt_EmptyList_ShouldReturnInterruptionMetadata() {
-		// Given: INTERRUPTION_FEEDBACK_KEY is set as empty list in state
+		// Given: INTERRUPTION_FEEDBACK_KEY is set as empty list in agent thread state
 		OverAllState testState = new OverAllState(Map.of(
-				"messages", List.of(new UserMessage("Initial message")),
-				InterruptionHook.INTERRUPTION_FEEDBACK_KEY, List.of()
+				"messages", List.of(new UserMessage("Initial message"))
 		));
-		RunnableConfig config = RunnableConfig.builder().build();
+		String threadId = "test-thread-empty-list";
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId(threadId)
+				.build();
+		
+		// Set empty list in agent thread state
+		mockAgent.updateAgentState(List.of(), config);
 
 		// When: interrupt is called
 		Optional<InterruptionMetadata> result = hook.interrupt("test-node", testState, config);
@@ -86,12 +121,17 @@ public class InterruptionHookTest {
 
 	@Test
 	public void testInterrupt_NonEmptyList_ShouldReturnEmpty() {
-		// Given: INTERRUPTION_FEEDBACK_KEY is set as non-empty list in state
+		// Given: INTERRUPTION_FEEDBACK_KEY is set as non-empty list in agent thread state
 		OverAllState testState = new OverAllState(Map.of(
-				"messages", List.of(new UserMessage("Initial message")),
-				InterruptionHook.INTERRUPTION_FEEDBACK_KEY, List.of(new UserMessage("feedback"))
+				"messages", List.of(new UserMessage("Initial message"))
 		));
-		RunnableConfig config = RunnableConfig.builder().build();
+		String threadId = "test-thread-non-empty-list";
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId(threadId)
+				.build();
+		
+		// Set non-empty list in agent thread state
+		mockAgent.updateAgentState(List.of(new UserMessage("feedback")), config);
 
 		// When: interrupt is called
 		Optional<InterruptionMetadata> result = hook.interrupt("test-node", testState, config);
@@ -103,8 +143,11 @@ public class InterruptionHookTest {
 
 	@Test
 	public void testInterrupt_NoInterruptionFeedbackKey_ShouldReturnEmpty() {
-		// Given: No INTERRUPTION_FEEDBACK_KEY in state
-		RunnableConfig config = RunnableConfig.builder().build();
+		// Given: No INTERRUPTION_FEEDBACK_KEY in agent thread state
+		String threadId = "test-thread-no-feedback";
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId(threadId)
+				.build();
 
 		// When: interrupt is called
 		Optional<InterruptionMetadata> result = hook.interrupt("test-node", state, config);
@@ -116,12 +159,17 @@ public class InterruptionHookTest {
 
 	@Test
 	public void testInterrupt_NonListValue_ShouldReturnEmpty() {
-		// Given: INTERRUPTION_FEEDBACK_KEY is set as non-list value in state
+		// Given: INTERRUPTION_FEEDBACK_KEY is set as non-list value in agent thread state
 		OverAllState testState = new OverAllState(Map.of(
-				"messages", List.of(new UserMessage("Initial message")),
-				InterruptionHook.INTERRUPTION_FEEDBACK_KEY, "not a list"
+				"messages", List.of(new UserMessage("Initial message"))
 		));
-		RunnableConfig config = RunnableConfig.builder().build();
+		String threadId = "test-thread-non-list";
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId(threadId)
+				.build();
+		
+		// Set non-list value in agent thread state
+		mockAgent.updateAgentState("not a list", config);
 
 		// When: interrupt is called
 		Optional<InterruptionMetadata> result = hook.interrupt("test-node", testState, config);
@@ -133,13 +181,18 @@ public class InterruptionHookTest {
 
 	@Test
 	public void testApply_WithStringFeedback_ShouldAddUserMessage() throws Exception {
-		// Given: INTERRUPTION_FEEDBACK_KEY is set with String value in state
+		// Given: INTERRUPTION_FEEDBACK_KEY is set with String value in agent thread state
 		String feedbackText = "This is feedback";
 		OverAllState testState = new OverAllState(Map.of(
-				"messages", List.of(new UserMessage("Initial message")),
-				InterruptionHook.INTERRUPTION_FEEDBACK_KEY, feedbackText
+				"messages", List.of(new UserMessage("Initial message"))
 		));
-		RunnableConfig config = RunnableConfig.builder().build();
+		String threadId = "test-thread-string-feedback";
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId(threadId)
+				.build();
+		
+		// Set feedback in agent thread state
+		mockAgent.updateAgentState(feedbackText, config);
 
 		// When: apply is called
 		CompletableFuture<Map<String, Object>> future = hook.apply(testState, config);
@@ -157,21 +210,27 @@ public class InterruptionHookTest {
 		Message lastMessage = messages.get(messages.size() - 1);
 		Assertions.assertInstanceOf(UserMessage.class, lastMessage, "Last message should be UserMessage");
 		Assertions.assertEquals(feedbackText, lastMessage.getText(), "Message text should match feedback");
-
-		// Verify INTERRUPTION_FEEDBACK_KEY is marked for removal
-		Assertions.assertTrue(result.containsKey(InterruptionHook.INTERRUPTION_FEEDBACK_KEY), 
-				"Result should contain INTERRUPTION_FEEDBACK_KEY for removal");
+		
+		// Verify INTERRUPTION_FEEDBACK_KEY has been removed from agent thread state
+		Map<String, Object> threadState = mockAgent.getThreadState(threadId);
+		Assertions.assertNull(threadState.get(InterruptionHook.INTERRUPTION_FEEDBACK_KEY), 
+				"INTERRUPTION_FEEDBACK_KEY should be removed from agent thread state");
 	}
 
 	@Test
 	public void testApply_WithUserMessageFeedback_ShouldAddUserMessage() throws Exception {
-		// Given: INTERRUPTION_FEEDBACK_KEY is set with UserMessage value in state
+		// Given: INTERRUPTION_FEEDBACK_KEY is set with UserMessage value in agent thread state
 		UserMessage feedbackMessage = new UserMessage("This is UserMessage feedback");
 		OverAllState testState = new OverAllState(Map.of(
-				"messages", List.of(new UserMessage("Initial message")),
-				InterruptionHook.INTERRUPTION_FEEDBACK_KEY, feedbackMessage
+				"messages", List.of(new UserMessage("Initial message"))
 		));
-		RunnableConfig config = RunnableConfig.builder().build();
+		String threadId = "test-thread-user-message-feedback";
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId(threadId)
+				.build();
+		
+		// Set feedback in agent thread state
+		mockAgent.updateAgentState(feedbackMessage, config);
 
 		// When: apply is called
 		CompletableFuture<Map<String, Object>> future = hook.apply(testState, config);
@@ -190,23 +249,29 @@ public class InterruptionHookTest {
 		Assertions.assertInstanceOf(UserMessage.class, lastMessage, "Last message should be UserMessage");
 		Assertions.assertEquals(feedbackMessage.getText(), lastMessage.getText(), 
 				"Message text should match feedback");
-
-		// Verify INTERRUPTION_FEEDBACK_KEY is marked for removal
-		Assertions.assertTrue(result.containsKey(InterruptionHook.INTERRUPTION_FEEDBACK_KEY), 
-				"Result should contain INTERRUPTION_FEEDBACK_KEY for removal");
+		
+		// Verify INTERRUPTION_FEEDBACK_KEY has been removed from agent thread state
+		Map<String, Object> threadState = mockAgent.getThreadState(threadId);
+		Assertions.assertNull(threadState.get(InterruptionHook.INTERRUPTION_FEEDBACK_KEY), 
+				"INTERRUPTION_FEEDBACK_KEY should be removed from agent thread state");
 	}
 
 	@Test
 	public void testApply_WithListMessageFeedback_ShouldAddAllMessages() throws Exception {
-		// Given: INTERRUPTION_FEEDBACK_KEY is set with List<Message> value in state
+		// Given: INTERRUPTION_FEEDBACK_KEY is set with List<Message> value in agent thread state
 		UserMessage feedbackMessage1 = new UserMessage("First feedback message");
 		UserMessage feedbackMessage2 = new UserMessage("Second feedback message");
 		List<Message> feedbackMessages = List.of(feedbackMessage1, feedbackMessage2);
 		OverAllState testState = new OverAllState(Map.of(
-				"messages", List.of(new UserMessage("Initial message")),
-				InterruptionHook.INTERRUPTION_FEEDBACK_KEY, feedbackMessages
+				"messages", List.of(new UserMessage("Initial message"))
 		));
-		RunnableConfig config = RunnableConfig.builder().build();
+		String threadId = "test-thread-list-message-feedback";
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId(threadId)
+				.build();
+		
+		// Set feedback in agent thread state
+		mockAgent.updateAgentState(feedbackMessages, config);
 
 		// When: apply is called
 		CompletableFuture<Map<String, Object>> future = hook.apply(testState, config);
@@ -225,16 +290,20 @@ public class InterruptionHookTest {
 				"First message should match first feedback");
 		Assertions.assertEquals(feedbackMessage2.getText(), messages.get(1).getText(), 
 				"Second message should match second feedback");
-
-		// Verify INTERRUPTION_FEEDBACK_KEY is marked for removal
-		Assertions.assertTrue(result.containsKey(InterruptionHook.INTERRUPTION_FEEDBACK_KEY), 
-				"Result should contain INTERRUPTION_FEEDBACK_KEY for removal");
+		
+		// Verify INTERRUPTION_FEEDBACK_KEY has been removed from agent thread state
+		Map<String, Object> threadState = mockAgent.getThreadState(threadId);
+		Assertions.assertNull(threadState.get(InterruptionHook.INTERRUPTION_FEEDBACK_KEY), 
+				"INTERRUPTION_FEEDBACK_KEY should be removed from agent thread state");
 	}
 
 	@Test
 	public void testApply_NoFeedback_ShouldReturnEmpty() throws Exception {
-		// Given: No INTERRUPTION_FEEDBACK_KEY is set in state
-		RunnableConfig config = RunnableConfig.builder().build();
+		// Given: No INTERRUPTION_FEEDBACK_KEY is set in agent thread state
+		String threadId = "test-thread-no-feedback-apply";
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId(threadId)
+				.build();
 
 		// When: apply is called
 		CompletableFuture<Map<String, Object>> future = hook.apply(state, config);
@@ -247,31 +316,46 @@ public class InterruptionHookTest {
 
 	@Test
 	public void testApply_InvalidFeedbackType_ShouldReturnEmpty() throws Exception {
-		// Given: INTERRUPTION_FEEDBACK_KEY is set with invalid type (Integer) in state
+		// Given: INTERRUPTION_FEEDBACK_KEY is set with invalid type (Integer) in agent thread state
 		OverAllState testState = new OverAllState(Map.of(
-				"messages", List.of(new UserMessage("Initial message")),
-				InterruptionHook.INTERRUPTION_FEEDBACK_KEY, 123
+				"messages", List.of(new UserMessage("Initial message"))
 		));
-		RunnableConfig config = RunnableConfig.builder().build();
+		String threadId = "test-thread-invalid-feedback-type";
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId(threadId)
+				.build();
+		
+		// Set invalid feedback type in agent thread state
+		mockAgent.updateAgentState(123, config);
 
 		// When: apply is called
 		CompletableFuture<Map<String, Object>> future = hook.apply(testState, config);
 		Map<String, Object> result = future.get();
 
-		// Then: should return empty map (invalid type is ignored)
+		// Then: should return empty map (invalid type is ignored and removed)
 		Assertions.assertNotNull(result, "Result should not be null");
 		Assertions.assertTrue(result.isEmpty(), "Result should be empty when feedback type is invalid");
+		
+		// Verify INTERRUPTION_FEEDBACK_KEY has been removed from agent thread state
+		Map<String, Object> threadState = mockAgent.getThreadState(threadId);
+		Assertions.assertNull(threadState.get(InterruptionHook.INTERRUPTION_FEEDBACK_KEY), 
+				"INTERRUPTION_FEEDBACK_KEY should be removed from agent thread state even for invalid type");
 	}
 
 	@Test
 	public void testApply_EmptyMessagesList_ShouldAddMessage() throws Exception {
-		// Given: State with empty messages list and INTERRUPTION_FEEDBACK_KEY
+		// Given: State with empty messages list and INTERRUPTION_FEEDBACK_KEY in agent thread state
 		String feedbackText = "Feedback for empty list";
 		OverAllState emptyState = new OverAllState(Map.of(
-				"messages", List.of(),
-				InterruptionHook.INTERRUPTION_FEEDBACK_KEY, feedbackText
+				"messages", List.of()
 		));
-		RunnableConfig config = RunnableConfig.builder().build();
+		String threadId = "test-thread-empty-messages-list";
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId(threadId)
+				.build();
+		
+		// Set feedback in agent thread state
+		mockAgent.updateAgentState(feedbackText, config);
 
 		// When: apply is called
 		CompletableFuture<Map<String, Object>> future = hook.apply(emptyState, config);
@@ -289,6 +373,11 @@ public class InterruptionHookTest {
 		Message lastMessage = messages.get(0);
 		Assertions.assertInstanceOf(UserMessage.class, lastMessage, "Message should be UserMessage");
 		Assertions.assertEquals(feedbackText, lastMessage.getText(), "Message text should match feedback");
+		
+		// Verify INTERRUPTION_FEEDBACK_KEY has been removed from agent thread state
+		Map<String, Object> threadState = mockAgent.getThreadState(threadId);
+		Assertions.assertNull(threadState.get(InterruptionHook.INTERRUPTION_FEEDBACK_KEY), 
+				"INTERRUPTION_FEEDBACK_KEY should be removed from agent thread state");
 	}
 
 	@Test
@@ -338,7 +427,7 @@ public class InterruptionHookTest {
 				.build();
 
 		String threadId = "test-thread-long-running-no-params";
-		String userQuery = "请帮我写一篇100字左右的散文，然后总结一下主要内容";
+		String userQuery = "请帮我写一篇100字左右的现代诗，然后总结一下主要内容";
 
 		RunnableConfig config = RunnableConfig.builder()
 				.threadId(threadId)

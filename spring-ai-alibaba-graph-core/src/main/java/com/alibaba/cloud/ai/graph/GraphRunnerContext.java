@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
-import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
@@ -225,39 +224,16 @@ public class GraphRunnerContext {
 	// ================================================================================================================
 
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
-		Optional<BaseCheckpointSaver> saverOpt = compiledGraph.compileConfig.checkpointSaver();
-		if (saverOpt.isPresent()) {
-			BaseCheckpointSaver saver = saverOpt.get();
-
+		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
+			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(overallState.data())).nextNodeId(nextNodeId)
+					.build();
 			// Force checkPointId to null to ensure we append a new checkpoint instead of
 			// replacing the current one
 			RunnableConfig appendConfig = RunnableConfig.builder(config).checkPointId(null).build();
-
-			// FIXME, special handling for AGENT_HOOK_INTERRUPTION (check the last), definitely need a better way to handle
-			checkLastCheckpointAndUpdateState(nextNodeId, saver, overallState);
-
-			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(overallState.data())).nextNodeId(nextNodeId)
-					.build();
-
-			this.config = saver.put(appendConfig, cp);
+			this.config = compiledGraph.compileConfig.checkpointSaver().get().put(appendConfig, cp);
 			return Optional.of(cp);
 		}
 		return Optional.empty();
-	}
-
-	private void checkLastCheckpointAndUpdateState(String nextNodeId, BaseCheckpointSaver saver, OverAllState state) {
-		if (nextNodeId.contains("AGENT_HOOK_INTERRUPTION")) {
-			Optional<Checkpoint> cpOptional = saver.get(config);
-			if (cpOptional.isPresent()) {
-				Checkpoint lastCp = cpOptional.get();
-				Map<String, Object> lastCpState = lastCp.getState();
-				if (lastCpState.get("INTERRUPTION_FEEDBACK") != null) {
-					Map<String, Object> currentStateData = new HashMap<>();
-					currentStateData.put("INTERRUPTION_FEEDBACK", lastCpState.get("INTERRUPTION_FEEDBACK"));
-					state.updateState(currentStateData);
-				}
-			}
-		}
 	}
 
 	// ================================================================================================================

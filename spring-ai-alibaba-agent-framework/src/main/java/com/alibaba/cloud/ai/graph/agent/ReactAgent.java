@@ -75,6 +75,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_MODEL_NAME;
@@ -90,6 +92,8 @@ import static java.lang.String.format;
 
 public class ReactAgent extends BaseAgent {
 	Logger logger = LoggerFactory.getLogger(ReactAgent.class);
+
+	private final ConcurrentMap<String, Map<String, Object>> threadIdStateMap;
 
 	private final AgentLlmNode llmNode;
 
@@ -109,6 +113,8 @@ public class ReactAgent extends BaseAgent {
 
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
+		this.threadIdStateMap = new ConcurrentHashMap<>();
+
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
@@ -173,22 +179,38 @@ public class ReactAgent extends BaseAgent {
 		return doMessageInvoke(messages, config);
 	}
 
-	public void interrupt(RunnableConfig config) throws Exception {
-		doInterrupt(Map.of(INTERRUPTION_FEEDBACK_KEY, List.of()), config);
+	public void interrupt(RunnableConfig config) {
+		updateAgentState(List.of(), config);
 	}
 
-	public void interrupt(List<Message> messages, RunnableConfig config) throws Exception {
-		doInterrupt(Map.of(INTERRUPTION_FEEDBACK_KEY, messages), config);
+	public void interrupt(List<Message> messages, RunnableConfig config) {
+		updateAgentState(messages, config);
 	}
 
-	public void interrupt(String userMessage, RunnableConfig config) throws Exception {
-		doInterrupt(Map.of(INTERRUPTION_FEEDBACK_KEY, List.of(UserMessage.builder().text(userMessage).build())), config);
+	public void interrupt(String userMessage, RunnableConfig config) {
+		updateAgentState(List.of(UserMessage.builder().text(userMessage).build()), config);
 	}
 
-	protected void doInterrupt(Map<String, Object> messages, RunnableConfig config) throws Exception {
-		CompiledGraph graph = this.getAndCompileGraph();
-		RunnableConfig runnableConfig = graph.updateState(config, messages);
-		logger.info("Successfully set interruption at checkpoint {}, agent loop will stop at InterruptionHook of the next iteration.", runnableConfig.checkPointId());
+	/**
+	 * Updates the agent thread state with interruption feedback.
+	 * This method is thread-safe and can be called concurrently with apply() in InterruptionHook.
+	 * 
+	 * Thread-safety guarantees:
+	 * - threadIdStateMap is a ConcurrentHashMap, ensuring thread-safe access
+	 * - computeIfAbsent ensures atomic creation of the inner map if it doesn't exist
+	 * - The inner map is always a ConcurrentHashMap, ensuring thread-safe put() operations
+	 * 
+	 * Concurrency behavior:
+	 * - If called before apply() processes feedback: the new value will be processed
+	 * - If called after apply() removes feedback: the new value will be set for next iteration
+	 * - If called concurrently with apply(): the atomic operations ensure no data loss
+	 */
+	public void updateAgentState(Object state, RunnableConfig config) {
+		String threadId = config.threadId().orElseThrow(() -> new IllegalArgumentException("threadId must be provided in RunnableConfig for interruption."));
+		// computeIfAbsent is atomic - ensures thread-safe creation of inner map
+		// The inner map is always ConcurrentHashMap, ensuring thread-safe put() operations
+		Map<String, Object> stateStatus = threadIdStateMap.computeIfAbsent(threadId, k -> new ConcurrentHashMap<>());
+		stateStatus.put(INTERRUPTION_FEEDBACK_KEY, state);
 	}
 
 	private AssistantMessage doMessageInvoke(Object message, RunnableConfig config) throws GraphRunnerException {
@@ -244,6 +266,7 @@ public class ReactAgent extends BaseAgent {
 
 			// set agent name to every hook node.
 			hook.setAgentName(this.name);
+			hook.setAgent(this);
 		}
 
 		// Create graph with state serializer
@@ -771,6 +794,10 @@ public class ReactAgent extends BaseAgent {
 	public void setInstruction(String instruction) {
 		this.instruction = instruction;
 		llmNode.setInstruction(instruction);
+	}
+
+	public Map<String, Object> getThreadState(String threadId) {
+		return threadIdStateMap.get(threadId);
 	}
 
 	public class AgentToSubCompiledGraphNodeAdapter implements NodeActionWithConfig, ResumableSubGraphAction {

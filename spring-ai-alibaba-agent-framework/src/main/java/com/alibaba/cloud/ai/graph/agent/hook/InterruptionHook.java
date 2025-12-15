@@ -21,7 +21,6 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
-import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 
@@ -39,6 +38,8 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_ID_DEFAULT;
+
 /**
  * Hook that supports interruption and feedback mechanism.
  * 
@@ -49,14 +50,11 @@ import org.slf4j.LoggerFactory;
  */
 @HookPositions({HookPosition.BEFORE_MODEL})
 public class InterruptionHook extends ModelHook implements AsyncNodeActionWithConfig, InterruptableAction {
-	
 	private static final Logger log = LoggerFactory.getLogger(InterruptionHook.class);
 	
-	public static final String INTERRUPTION_KEY = "INTERRUPTION";
 	public static final String INTERRUPTION_FEEDBACK_KEY = "INTERRUPTION_FEEDBACK";
-	
 	public static final String INTERRUPTION_NODE_NAME = "INTERRUPTION";
-	
+
 	private InterruptionHook(Builder builder) {
 		// No additional configuration needed for now
 	}
@@ -67,21 +65,30 @@ public class InterruptionHook extends ModelHook implements AsyncNodeActionWithCo
 	
 	@Override
 	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-		// Check INTERRUPTION_FEEDBACK_KEY from state
-		Optional<Object> feedbackOpt = state.value(INTERRUPTION_FEEDBACK_KEY);
+		String threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
+		Map<String, Object> agentThreadState = this.getAgent().getThreadState(threadId);
+
+		if (agentThreadState == null) {
+			log.debug("No agent thread state found for threadId {}, continuing normal execution.", threadId);
+			return CompletableFuture.completedFuture(Map.of());
+		}
+
+		// Atomically get and remove the feedback key using remove()
+		// ConcurrentHashMap.remove() is thread-safe and returns the removed value
+		// This ensures thread-safety: if updateAgentState() is called concurrently,
+		// it will either see the old value (before removal) or set a new value (after removal)
+		// The remove() operation is atomic, preventing race conditions
+		Object feedback = agentThreadState.remove(INTERRUPTION_FEEDBACK_KEY);
 		
-		if (feedbackOpt.isEmpty()) {
+		if (feedback == null) {
 			log.debug("No interruption feedback found in state, continue reasoning with no updates.");
 			return CompletableFuture.completedFuture(Map.of());
 		}
-		
-		Object feedback = feedbackOpt.get();
+
 		List<Message> feedbackMessages = new ArrayList<>();
 		
 		// Check if feedback is List<Message>, UserMessage, or String
-		if (feedback instanceof List) {
-			@SuppressWarnings("unchecked")
-			List<?> feedbackList = (List<?>) feedback;
+		if (feedback instanceof List<?> feedbackList) {
 			// Check if all elements in the list are Message instances
 			for (Object item : feedbackList) {
 				if (item instanceof Message) {
@@ -92,7 +99,7 @@ public class InterruptionHook extends ModelHook implements AsyncNodeActionWithCo
 				}
 			}
 			if (feedbackMessages.isEmpty()) {
-				log.warn("Feedback list is empty or contains no valid Message instances, ignoring.");
+				log.warn("Feedback list is empty or contains no valid Message instances, stop and wait for more input.");
 				return CompletableFuture.completedFuture(Map.of());
 			}
 		} else if (feedback instanceof UserMessage) {
@@ -100,7 +107,7 @@ public class InterruptionHook extends ModelHook implements AsyncNodeActionWithCo
 		} else if (feedback instanceof String) {
 			feedbackMessages.add(new UserMessage((String) feedback));
 		} else {
-			log.warn("Interruption feedback is neither List<Message>, UserMessage nor String, ignoring. Type: {}", 
+			log.warn("Interruption feedback is neither List<Message>, UserMessage nor String, stop and wait for more input. Type: {}",
 					feedback.getClass().getName());
 			return CompletableFuture.completedFuture(Map.of());
 		}
@@ -121,8 +128,7 @@ public class InterruptionHook extends ModelHook implements AsyncNodeActionWithCo
 		
 		Map<String, Object> updates = new HashMap<>();
 		updates.put("messages", newMessages);
-		// Remove INTERRUPTION_FEEDBACK_KEY from state using RemoveByHash
-		updates.put(INTERRUPTION_FEEDBACK_KEY, new RemoveByHash<>(feedback));
+
 		
 		log.debug("Added {} interruption feedback message(s) to messages list and removed INTERRUPTION_FEEDBACK_KEY from state.", 
 				feedbackMessages.size());
@@ -133,21 +139,26 @@ public class InterruptionHook extends ModelHook implements AsyncNodeActionWithCo
 	@Override
 	public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
 		// Check INTERRUPTION_FEEDBACK_KEY from state
-		Optional<Object> feedbackOpt = state.value(INTERRUPTION_FEEDBACK_KEY);
+		String threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
+		Map<String, Object> agentThreadState = this.getAgent().getThreadState(threadId);
+		if (agentThreadState == null) {
+			log.debug("No agent thread state found for threadId {}, continuing normal execution.", threadId);
+			return Optional.empty();
+		}
+
+		// Use get() with synchronization awareness - ConcurrentHashMap.get() is thread-safe
+		// but we need to be careful about the value being modified between get() and check
+		Object feedbackValue = agentThreadState.get(INTERRUPTION_FEEDBACK_KEY);
 		
-		if (feedbackOpt.isEmpty()) {
+		if (feedbackValue == null) {
 			// No INTERRUPTION_FEEDBACK_KEY in state, continue normal execution
 			log.debug("No INTERRUPTION_FEEDBACK_KEY in state, continuing normal execution.");
 			return Optional.empty();
 		}
-		
-		Object feedbackValue = feedbackOpt.get();
-		
+
 		// Check if feedback is a list
-		if (feedbackValue instanceof List) {
-			@SuppressWarnings("unchecked")
-			List<?> feedbackList = (List<?>) feedbackValue;
-			
+		if (feedbackValue instanceof List<?> feedbackList) {
+
 			if (feedbackList.isEmpty()) {
 				// Empty list - return InterruptionMetadata to interrupt
 				InterruptionMetadata interruptionMetadata = InterruptionMetadata.builder(nodeId, state)

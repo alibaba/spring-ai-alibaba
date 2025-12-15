@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.hook;
 
 
 import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,10 @@ public interface Hook {
 	void setAgentName(String agentName);
 
 	String getAgentName();
+
+	ReactAgent getAgent();
+
+	void setAgent(ReactAgent agent);
 
 	default List<JumpTo> canJumpTo() {
 		return List.of();
