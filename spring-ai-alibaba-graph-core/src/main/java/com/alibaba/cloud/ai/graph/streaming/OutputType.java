@@ -28,7 +28,7 @@ public enum OutputType {
 	AGENT_HOOK_STREAMING,
 	AGENT_HOOK_FINISHED,
 	GRAPH_NODE_STREAMING,
-	GRAPH_NIDE_FINISHED;
+	GRAPH_NODE_FINISHED;
 
 	/**
 	 * Converts to a specific OutputType instance based on streaming and nodeId parameters
@@ -45,7 +45,7 @@ public enum OutputType {
 		} else if (nodeId.startsWith(AGENT_HOOK_NAME_PREFIX)) {
 			return streaming ? AGENT_HOOK_STREAMING : AGENT_HOOK_FINISHED;
 		} else {
-			return streaming ? GRAPH_NODE_STREAMING : GRAPH_NIDE_FINISHED;
+			return streaming ? GRAPH_NODE_STREAMING : GRAPH_NODE_FINISHED;
 		}
 	}
 
