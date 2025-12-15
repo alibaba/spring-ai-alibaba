@@ -64,7 +64,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private List<Advisor> advisors = new ArrayList<>();
 
-	// FIXME, toolCallbacks should be managed in chatOptions only. Currently it's guaranteed immutable with unmodifiableList.
+	// FIXME: toolCallbacks should be managed in chatOptions only. Currently it's guaranteed immutable with unmodifiableList.
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	private List<ModelInterceptor> modelInterceptors = new ArrayList<>();

@@ -44,10 +44,12 @@ public abstract class ModelHook implements Hook {
         return agentName;
     }
 
+    @Override
     public ReactAgent getAgent() {
         return reactAgent;
     }
 
+    @Override
     public void setAgent(ReactAgent agent) {
         this.reactAgent = agent;
     }
