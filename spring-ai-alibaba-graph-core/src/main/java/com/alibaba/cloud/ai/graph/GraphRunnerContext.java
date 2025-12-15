@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
-import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
