@@ -790,7 +790,12 @@ public class ReactAgent extends BaseAgent {
 			}
 			if (includeContents) {
 				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
-				List<Object> newMessages = new ArrayList<>((List<Object>)stateForChild.remove("messages"));
+				List<Object> newMessages;
+				if (stateForChild.get("messages") != null) {
+					newMessages = new ArrayList<>((List<Object>)stateForChild.remove("messages"));
+				} else {
+					newMessages = new ArrayList<>();
+				}
 				// by default, includeContents is true, we pass down the messages from the parent state
 				if (StringUtils.hasLength(instruction)) {
 					// instruction will be added as a special UserMessage to the child graph.
