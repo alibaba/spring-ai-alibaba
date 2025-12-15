@@ -21,7 +21,7 @@
 ## What's Agent Framework
 
 <p align="center">
-    <img src="./docs/imgs/saa-architecture.png" alt="architecture" style="max-width: 740px; height: 508px" />
+    <img src="./docs/imgs/architecture-new.png" alt="architecture" style="max-width: 740px; height: 508px" />
 </p>
 
 Spring AI Alibaba Agent Framework is an agent development framework centered around the design philosophy of **ReactAgent**, enabling developers to build agents with core capabilities such as automatic **Context Engineering** and **Human In The Loop** interaction.
@@ -80,9 +80,9 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 	<img src="./docs/imgs/chatbot-chat-ui.gif" alt="chatbot-ui" style="max-width: 740px; height: 508px" />
 </p>
 
-### Chatbot Code Explained
+## Chatbot Code Explained
 
-1. Add dependencies.
+1. Add dependencies
 
 	```xml
 	<dependencies>
@@ -100,24 +100,8 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 	</dependencies>
 	```
 
-2. Create ChatBot agent
-
-	```java
-	ReactAgent chatBotAgent =
-		 ReactAgent.builder()
-			.name("SAA")
-			.model(chatModel)
-			.instruction(INSTRUCTION)
-			.enableLogging(true)
-			.tools(
-				executeShellCommand,
-				executePythonCode,
-				viewTextFile
-			)
-			.build();
-	
-	AssistantMessage message = writerAgent.call("斐波那契数列的第6个数是？");
-	```
+2. Define Chatbot
+	For more details of how to write a Chatbot, please check the [Quick Start](https://java2ai.com/docs/quick-start) on our official website.
 
 ## 📚 Documentation
 * [Overview](https://java2ai.com/docs/overview) - High level overview of the framework
