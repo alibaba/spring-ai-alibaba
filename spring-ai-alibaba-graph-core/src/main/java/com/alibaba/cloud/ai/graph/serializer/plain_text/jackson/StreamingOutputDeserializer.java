@@ -16,17 +16,20 @@
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import org.springframework.ai.chat.messages.Message;
 
 import java.io.IOException;
 
 /**
  * Custom deserializer for StreamingOutput.
+ * Supports deserialization of outputType and message fields.
  */
 public class StreamingOutputDeserializer extends StdDeserializer<StreamingOutput> {
 
@@ -39,16 +42,43 @@ public class StreamingOutputDeserializer extends StdDeserializer<StreamingOutput
         ObjectMapper objectMapper = (ObjectMapper) jsonParser.getCodec();
         JsonNode node = jsonParser.getCodec().readTree(jsonParser);
 
-        String nodeName = node.has("node") ? node.get("node").asText() : null;
-        String agentName = node.has("agent") ? node.get("agent").asText() : null;
+        String nodeName = node.has("node") && !node.get("node").isNull() ? node.get("node").asText() : null;
+        String agentName = node.has("agent") && !node.get("agent").isNull() ? node.get("agent").asText() : null;
         // Use readValue instead of convertValue to ensure custom deserializers are triggered
         // This is critical for types like DeepSeekAssistantMessage that may be nested in OverAllState
-        OverAllState state = node.has("state") ? 
-            objectMapper.readValue(objectMapper.treeAsTokens(node.get("state")), OverAllState.class) : null;
-        String chunk = node.has("chunk") ? node.get("chunk").asText() : null;
+        OverAllState state = null;
+        if (node.has("state") && !node.get("state").isNull()) {
+            state = objectMapper.readValue(objectMapper.treeAsTokens(node.get("state")), OverAllState.class);
+        }
+        String chunk = node.has("chunk") && !node.get("chunk").isNull() ? node.get("chunk").asText() : null;
 
-        // Create StreamingOutput without originData (it was not serialized)
-        return new StreamingOutput<>(chunk, nodeName, agentName, state);
+        // Deserialize message if present
+        Message message = null;
+        if (node.has("message") && !node.get("message").isNull()) {
+            message = objectMapper.readValue(objectMapper.treeAsTokens(node.get("message")), Message.class);
+        }
+
+        // Deserialize outputType if present
+        OutputType outputType = null;
+        if (node.has("outputType") && !node.get("outputType").isNull()) {
+            String outputTypeStr = node.get("outputType").asText();
+            try {
+                outputType = OutputType.valueOf(outputTypeStr);
+            } catch (IllegalArgumentException e) {
+                // If enum value is not found, outputType remains null
+            }
+        }
+
+        // Create StreamingOutput with all available fields
+        // Prefer constructor with message if message is present
+        if (message != null) {
+            // Use constructor with message
+            StreamingOutput<?> output = new StreamingOutput<>(message, nodeName, agentName, state, outputType);
+            return output;
+        } else {
+            // Fallback to deprecated constructor with chunk (for backward compatibility)
+            return new StreamingOutput<>(chunk, nodeName, agentName, state);
+        }
     }
 }
 

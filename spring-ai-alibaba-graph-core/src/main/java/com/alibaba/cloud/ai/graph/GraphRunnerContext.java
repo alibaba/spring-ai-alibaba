@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
@@ -250,8 +251,9 @@ public class GraphRunnerContext {
 
 	public StreamingOutput<?> buildStreamingOutput(Message message, Object originData, String nodeId, boolean streaming) {
 		// Create StreamingOutput with chunk and originData
+		OutputType outputType = OutputType.from(streaming, nodeId);
 		StreamingOutput<?> output = new StreamingOutput<>(message, originData, nodeId,
-				(String) config.metadata("_AGENT_").orElse(""), this.overallState);
+				(String) config.metadata("_AGENT_").orElse(""), this.overallState, outputType);
 		output.setSubGraph(true);
 		return output;
 	}
