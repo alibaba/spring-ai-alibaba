@@ -56,7 +56,7 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 1. Download the code.
 
 	```shell
-	git clone https://github.com/alibaba/spring-ai-alibaba.git
+	git clone --depth=1 https://github.com/alibaba/spring-ai-alibaba.git
 	cd examples/chatbot
 	```
 
@@ -101,6 +101,7 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 	```
 
 2. Define Chatbot
+   
 	For more details of how to write a Chatbot, please check the [Quick Start](https://java2ai.com/docs/quick-start) on our official website.
 
 ## 📚 Documentation
