@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.hook;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +25,8 @@ import java.util.concurrent.CompletableFuture;
 public abstract class ModelHook implements Hook {
 
     private String agentName;
+
+    private ReactAgent reactAgent;
 
     public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
         return CompletableFuture.completedFuture(Map.of());
@@ -40,5 +43,16 @@ public abstract class ModelHook implements Hook {
     public String getAgentName() {
         return agentName;
     }
+
+    @Override
+    public ReactAgent getAgent() {
+        return reactAgent;
+    }
+
+    @Override
+    public void setAgent(ReactAgent agent) {
+        this.reactAgent = agent;
+    }
+
 }
 

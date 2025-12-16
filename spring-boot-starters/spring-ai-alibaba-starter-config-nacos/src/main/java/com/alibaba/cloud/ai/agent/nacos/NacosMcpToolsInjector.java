@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.agent.nacos;
 
+import java.util.Collections;
 import java.util.List;
 
 import com.alibaba.cloud.ai.agent.nacos.tools.NacosMcpGatewayToolsInitializer;
@@ -47,7 +48,7 @@ public class NacosMcpToolsInjector {
 
 		NacosMcpGatewayToolsInitializer nacosMcpGatewayToolsInitializer = new NacosMcpGatewayToolsInitializer(
 				nacosOptions.mcpOperationService, mcpServersVO.getMcpServers());
-		return nacosMcpGatewayToolsInitializer.initializeTools();
+		return Collections.unmodifiableList(nacosMcpGatewayToolsInitializer.initializeTools());
 	}
 
 }

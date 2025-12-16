@@ -15,16 +15,19 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import org.springframework.ai.chat.messages.Message;
 
 import java.io.IOException;
 
 /**
  * Custom serializer for StreamingOutput that skips the originData field.
+ * Supports serialization of outputType and message fields.
  */
 public class StreamingOutputSerializer extends StdSerializer<StreamingOutput> {
 
@@ -40,6 +43,18 @@ public class StreamingOutputSerializer extends StdSerializer<StreamingOutput> {
         gen.writeStringField("agent", value.agent());
         gen.writeObjectField("state", value.state());
         gen.writeBooleanField("subGraph", value.isSubGraph());
+
+        // Serialize message if present
+        Message message = value.message();
+        if (message != null) {
+            gen.writeObjectField("message", message);
+        }
+
+        // Serialize outputType if present
+        OutputType outputType = value.getOutputType();
+        if (outputType != null) {
+            gen.writeStringField("outputType", outputType.name());
+        }
 
         // Only serialize chunk field, skip originData
         if (value.chunk() != null) {

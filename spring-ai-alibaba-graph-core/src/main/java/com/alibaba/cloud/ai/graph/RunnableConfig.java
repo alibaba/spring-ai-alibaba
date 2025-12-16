@@ -38,9 +38,15 @@ import static java.util.Optional.ofNullable;
  */
 public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder> {
 
+	public static final String AGENT_MODEL_NAME = "_AGENT_MODEL_";
+	public static final String AGENT_TOOL_NAME = "_AGENT_TOOL_";
+	public static final String AGENT_HOOK_NAME_PREFIX = "_AGENT_HOOK_";
+
+	public static final String AGENT_NAME_KEY = "_AGENT_";
+
 	public static final String HUMAN_FEEDBACK_METADATA_KEY = "HUMAN_FEEDBACK";
+
 	public static final String STATE_UPDATE_METADATA_KEY = "STATE_UPDATE";
-	public static final String AGENT_NAME = "AGENT_NAME";
 	public static final String DEFAULT_PARALLEL_EXECUTOR_KEY = "_DEFAULT_PARALLEL_EXECUTOR_";
 
 	private final String threadId;

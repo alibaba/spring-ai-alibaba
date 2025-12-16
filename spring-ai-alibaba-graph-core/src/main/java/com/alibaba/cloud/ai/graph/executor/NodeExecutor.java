@@ -249,7 +249,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 						lastChatResponseRef.set(newResponse);
 					}
 					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-						.of(context.buildStreamingOutput(response.getResult().getOutput(), response, nodeId));
+						.of(context.buildStreamingOutput(response.getResult().getOutput(), response, nodeId, true));
 					 lastGraphResponseRef.set(lastGraphResponse);
 					return lastGraphResponse;
 				}
@@ -266,7 +266,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 					try {
 						log.info("Received element of type '{}' in embedded Flux for key '{}', wrapping in StreamingOutput.",
 							element.getClass().getName(), key);
-						StreamingOutput<?> streamingOutput = context.buildStreamingOutput(element, nodeId);
+						StreamingOutput<?> streamingOutput = context.buildStreamingOutput(element, nodeId, true);
 						GraphResponse<NodeOutput> graphResponse = GraphResponse.of(streamingOutput);
 						lastGraphResponseRef.set(graphResponse);
 						return graphResponse;
