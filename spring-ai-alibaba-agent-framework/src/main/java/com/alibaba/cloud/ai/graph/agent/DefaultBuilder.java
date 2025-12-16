@@ -34,7 +34,9 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.util.StringUtils;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class DefaultBuilder extends Builder {
@@ -69,7 +71,10 @@ public class DefaultBuilder extends Builder {
 			chatClient = clientBuilder.build();
 		}
 
-		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder().agentName(this.name).chatClient(chatClient);
+		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
+				.agentName(this.name)
+				.chatOptions(chatOptions)
+				.chatClient(chatClient);
 
 		if (outputKey != null && !outputKey.isEmpty()) {
 			llmNodeBuilder.outputKey(outputKey);
@@ -158,7 +163,7 @@ public class DefaultBuilder extends Builder {
 			else {
 				// This is a fallback for resolvers that don't implement ToolCallbackProvider
 				try {
-					java.lang.reflect.Field toolsField = this.resolver.getClass().getDeclaredField("tools");
+					Field toolsField = this.resolver.getClass().getDeclaredField("tools");
 					toolsField.setAccessible(true);
 					Object toolsObj = toolsField.get(this.resolver);
 					if (toolsObj instanceof java.util.Map) {
@@ -197,7 +202,7 @@ public class DefaultBuilder extends Builder {
 
 		// Set combined tools to LLM node
 		if (CollectionUtils.isNotEmpty(allTools)) {
-			llmNodeBuilder.toolCallbacks(allTools);
+			llmNodeBuilder.toolCallbacks(Collections.unmodifiableList(allTools));
 		}
 
 		if (enableLogging) {

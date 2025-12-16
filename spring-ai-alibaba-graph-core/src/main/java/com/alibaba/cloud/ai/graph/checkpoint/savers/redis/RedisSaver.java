@@ -209,7 +209,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 			throw new RuntimeException("Failed to deserialize checkpoints", e);
 		}
 		finally {
-			if (tryLock) {
+			if (lock.isHeldByCurrentThread()) {
 				lock.unlock();
 			}
 		}
@@ -259,7 +259,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 			throw new RuntimeException("Failed to deserialize checkpoints", e);
 		}
 		finally {
-			if (tryLock) {
+			if (lock.isHeldByCurrentThread()) {
 				lock.unlock();
 			}
 		}
@@ -316,7 +316,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 			throw new RuntimeException("Failed to serialize/deserialize checkpoints", e);
 		}
 		finally {
-			if (tryLock) {
+			if (lock.isHeldByCurrentThread()) {
 				lock.unlock();
 			}
 		}
@@ -373,7 +373,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 			throw new RuntimeException("Failed to deserialize checkpoints", e);
 		}
 		finally {
-			if (tryLock) {
+			if (lock.isHeldByCurrentThread()) {
 				lock.unlock();
 			}
 		}

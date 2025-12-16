@@ -137,6 +137,7 @@ class ToolRetryTest {
 				.tools(failingToolCallback)
 				.interceptors(toolRetryInterceptor)
 				.saver(new MemorySaver())
+				.toolExecutionExceptionProcessor(DefaultToolExecutionExceptionProcessor.builder().alwaysThrow(true).build())
 				.build();
 
 		try {

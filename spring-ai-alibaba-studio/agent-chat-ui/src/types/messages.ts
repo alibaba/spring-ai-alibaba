@@ -44,6 +44,7 @@ export interface ToolRequestMessage extends BaseMessage {
 export interface ToolRequestConfirmMessage extends BaseMessage {
   messageType: 'tool-confirm';
   toolFeedback?: ToolFeedback[];
+  toolsAutomaticallyApproved?: ToolCall[];
 }
 
 export interface ToolFeedback {
@@ -134,7 +135,8 @@ export function fromMessageDTO(dto: any): Message {
         messageType: 'tool-confirm',
         content: dto.content || '',
         metadata: dto.metadata || {},
-        toolFeedback: dto.toolFeedback || []
+        toolFeedback: dto.toolFeedback || [],
+        toolsAutomaticallyApproved: dto.toolsAutomaticallyApproved || []
       } as ToolRequestConfirmMessage;
 
     case 'tool':
