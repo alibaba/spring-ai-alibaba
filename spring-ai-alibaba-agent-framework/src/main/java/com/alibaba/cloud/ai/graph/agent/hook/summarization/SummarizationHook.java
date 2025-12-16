@@ -44,14 +44,15 @@ import org.slf4j.LoggerFactory;
  * Hook that summarizes conversation history when token limits are approached.
  *
  * This hook monitors message token counts and automatically summarizes older
- * messages when a threshold is reached, preserving recent messages and maintaining
- * context continuity.
+ * messages when a threshold is reached, preserving the first user message and 
+ * recent messages to maintain context continuity.
  *
  * Example:
  * SummarizationHook summarizer = SummarizationHook.builder()
  *     .model(chatModel)
  *     .maxTokensBeforeSummary(4000)
  *     .messagesToKeep(20)
+ *     .keepFirstUserMessage(true)  // Default: true
  *     .build();
  */
 @HookPositions({HookPosition.BEFORE_MODEL})
@@ -74,6 +75,7 @@ public class SummarizationHook extends MessagesModelHook {
 	private static final String SUMMARY_PREFIX = "## Previous conversation summary:";
 	private static final int DEFAULT_MESSAGES_TO_KEEP = 20;
 	private static final int SEARCH_RANGE_FOR_TOOL_PAIRS = 5;
+	private static final boolean DEFAULT_KEEP_FIRST_USER_MESSAGE = true;
 
 	private final ChatModel model;
 	private final Integer maxTokensBeforeSummary;
@@ -81,6 +83,7 @@ public class SummarizationHook extends MessagesModelHook {
 	private final TokenCounter tokenCounter;
 	private final String summaryPrompt;
 	private final String summaryPrefix;
+	private final boolean keepFirstUserMessage;
 
 	private SummarizationHook(Builder builder) {
 		this.model = builder.model;
@@ -89,6 +92,7 @@ public class SummarizationHook extends MessagesModelHook {
 		this.tokenCounter = builder.tokenCounter;
 		this.summaryPrompt = builder.summaryPrompt;
 		this.summaryPrefix = builder.summaryPrefix;
+		this.keepFirstUserMessage = builder.keepFirstUserMessage;
 	}
 
 	public static Builder builder() {
@@ -117,19 +121,47 @@ public class SummarizationHook extends MessagesModelHook {
 			return new AgentCommand(previousMessages);
 		}
 
-		List<Message> toSummarize = previousMessages.subList(0, cutoffIndex);
-		List<Message> toPreserve = previousMessages.subList(cutoffIndex, previousMessages.size());
+		UserMessage firstUserMessage = null;
+		if (keepFirstUserMessage) {
+			for (Message msg : previousMessages) {
+				if (msg instanceof UserMessage) {
+					firstUserMessage = (UserMessage) msg;
+					break;
+				}
+			}
+		}
+
+		List<Message> toSummarize = new ArrayList<>();
+		for (int i = 0; i < cutoffIndex; i++) {
+			Message msg = previousMessages.get(i);
+			if (msg != firstUserMessage) {
+				toSummarize.add(msg);
+			}
+		}
 
 		String summary = createSummary(toSummarize);
 
-		List<Message> newMessages = new ArrayList<>();
-		newMessages.add(new UserMessage(
-				"Here is a summary of the conversation to date:\n\n" + summary));
-		// Add preserved messages
-		newMessages.addAll(toPreserve);
+		SystemMessage summaryMessage = new SystemMessage(summaryPrefix + "\n" + summary);
 
-		log.info("Summarized {} messages, keeping {} recent messages",
-				toSummarize.size(), toPreserve.size());
+		List<Message> recentMessages = new ArrayList<>();
+		for (int i = cutoffIndex; i < previousMessages.size(); i++) {
+			recentMessages.add(previousMessages.get(i));
+		}
+
+		List<Message> newMessages = new ArrayList<>();
+		if (firstUserMessage != null) {
+			newMessages.add(firstUserMessage);
+		}
+		newMessages.add(summaryMessage);
+		newMessages.addAll(recentMessages);
+
+		if (firstUserMessage != null) {
+			log.info("Summarized {} messages, keeping {} recent messages (First UserMessage preserved)",
+					toSummarize.size(), recentMessages.size());
+		} else {
+			log.info("Summarized {} messages, keeping {} recent messages",
+					toSummarize.size(), recentMessages.size());
+		}
 
 		return new AgentCommand(newMessages, UpdatePolicy.REPLACE);
 	}
@@ -287,6 +319,7 @@ public class SummarizationHook extends MessagesModelHook {
 		private TokenCounter tokenCounter = TokenCounter.approximateMsgCounter();
 		private String summaryPrompt = DEFAULT_SUMMARY_PROMPT;
 		private String summaryPrefix = SUMMARY_PREFIX;
+		private boolean keepFirstUserMessage = DEFAULT_KEEP_FIRST_USER_MESSAGE;
 
 		public Builder model(ChatModel model) {
 			this.model = model;
@@ -315,6 +348,11 @@ public class SummarizationHook extends MessagesModelHook {
 
 		public Builder tokenCounter(TokenCounter counter) {
 			this.tokenCounter = counter;
+			return this;
+		}
+
+		public Builder keepFirstUserMessage(boolean keep) {
+			this.keepFirstUserMessage = keep;
 			return this;
 		}
 

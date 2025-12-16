@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.serializer.std;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -44,6 +45,7 @@ public class SpringAIStateSerializer extends ObjectStreamStateSerializer {
 		mapper().register(Message.class, new MessageSerializer());
 		mapper().register(AssistantMessage.ToolCall.class, new ToolCallSerializer());
 		mapper().register(ToolResponseMessage.ToolResponse.class, new ToolResponseSerializer());
+		mapper().register(StreamingOutput.class, new StreamingOutputSerializer());
 
 		// Conditionally register DeepSeekAssistantMessage serializer if available
 		registerDeepSeekSupportIfAvailable();

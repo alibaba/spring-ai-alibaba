@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.hook.messages;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 
@@ -30,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 
 public abstract class MessagesModelHook implements Hook {
 	private String agentName;
+	private ReactAgent agent;
 
 	public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
 		return new AgentCommand(previousMessages);
@@ -45,6 +47,16 @@ public abstract class MessagesModelHook implements Hook {
 
 	public String getAgentName() {
 		return agentName;
+	}
+
+	@Override
+	public ReactAgent getAgent() {
+		return agent;
+	}
+
+	@Override
+	public void setAgent(ReactAgent agent) {
+		this.agent = agent;
 	}
 
 	/**
