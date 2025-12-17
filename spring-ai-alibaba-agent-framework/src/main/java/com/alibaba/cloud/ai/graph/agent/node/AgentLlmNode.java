@@ -158,12 +158,20 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.options(chatOptions.copy())
 				.context(config.metadata().orElse(new HashMap<>()));
 
-        // Extract tool names from toolCallbacks and pass them to ModelRequest
+        // Extract tool names and descriptions from toolCallbacks and pass them to ModelRequest
         if (toolCallbacks != null && !toolCallbacks.isEmpty()) {
-            List<String> toolNames = toolCallbacks.stream()
-                    .map(callback -> callback.getToolDefinition().name())
-                    .toList();
+            List<String> toolNames = new ArrayList<>();
+            Map<String, String> toolDescriptions = new HashMap<>();
+            for (ToolCallback callback : toolCallbacks) {
+                String name = callback.getToolDefinition().name();
+                String description = callback.getToolDefinition().description();
+                toolNames.add(name);
+                if (description != null && !description.isEmpty()) {
+                    toolDescriptions.put(name, description);
+                }
+            }
             requestBuilder.tools(toolNames);
+            requestBuilder.toolDescriptions(toolDescriptions);
         }
 
 		if (StringUtils.hasLength(this.systemPrompt)) {
