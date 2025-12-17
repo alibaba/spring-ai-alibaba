@@ -253,11 +253,11 @@ public class ToolSelectionExample {
 						   "当用户想要预订住宿时使用此工具。")
 		public String searchHotels(
 				@ToolParam(description = "城市名称") String city,
-				@ToolParam(description = "入住日期，格式：YYYY-MM-DD") String checkIn) {
+				@ToolParam(description = "入住日期，格式：YYYY-MM-DD") String arrivalDate) {
 			return String.format("%s 酒店推荐（%s 入住）：\n" +
 				"1. 希尔顿酒店 ★★★★★ ¥800/晚\n" +
 				"2. 如家酒店 ★★★ ¥280/晚\n" +
-				"3. 民宿小院 ★★★★ ¥450/晚", city, checkIn);
+				"3. 民宿小院 ★★★★ ¥450/晚", city, arrivalDate);
 		}
 
 		@Tool(name = "get_attractions",
