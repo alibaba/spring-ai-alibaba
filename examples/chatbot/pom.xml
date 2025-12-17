@@ -33,8 +33,8 @@
 	<properties>
 		<java.version>17</java.version>
 		<spring-ai.version>1.1.0</spring-ai.version>
-		<spring-ai-alibaba.version>1.1.0.0-RC1</spring-ai-alibaba.version>
-		<spring-ai-alibaba-extensions.version>1.1.0.0-RC1</spring-ai-alibaba-extensions.version>
+		<spring-ai-alibaba.version>1.1.0.0-RC2</spring-ai-alibaba.version>
+		<spring-ai-alibaba-extensions.version>1.1.0.0-RC2</spring-ai-alibaba-extensions.version>
 
 		<graalvm.polyglot.version>24.2.1</graalvm.polyglot.version>
 	</properties>
