@@ -56,7 +56,6 @@ import java.util.stream.Collectors;
 import static com.alibaba.cloud.ai.graph.GraphRunnerContext.INTERRUPT_AFTER;
 import static com.alibaba.cloud.ai.graph.StateGraph.*;
 import static com.alibaba.cloud.ai.graph.internal.node.ParallelNode.getExecutor;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Node executor that processes node execution and result handling. This class
@@ -228,8 +227,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 					if (lastResponse == null) {
 						lastChatResponseRef.set(response);
 					} else {
-						final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
-								"lastResponse text cannot be null");
+						var lastMessageText = "";
+						if (lastResponse.getResult().getOutput().getText() != null) {
+							log.info("Received AssistantMessage with null text, AssistantMessage:\n {}.", lastResponse.getResult().getOutput());
+							lastMessageText = lastResponse.getResult().getOutput().getText();
+						}
 
 						final var currentMessageText = currentMessage.getText();
 
