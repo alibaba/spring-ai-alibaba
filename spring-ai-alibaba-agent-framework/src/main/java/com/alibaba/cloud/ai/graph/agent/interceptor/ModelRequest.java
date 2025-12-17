@@ -39,12 +39,18 @@ public class ModelRequest {
 	// dynamic tool callbacks for current request.
 	private final List<ToolCallback> dynamicToolCallbacks;
 
-	public ModelRequest(SystemMessage systemMessage, List<Message> messages, ToolCallingChatOptions options, List<String> tools, List<ToolCallback> dynamicToolCallbacks, Map<String, Object> context) {
+	// tool descriptions for tool selection, mapping tool name to description.
+	private final Map<String, String> toolDescriptions;
+
+	public ModelRequest(SystemMessage systemMessage, List<Message> messages, ToolCallingChatOptions options,
+			List<String> tools, List<ToolCallback> dynamicToolCallbacks, Map<String, String> toolDescriptions,
+			Map<String, Object> context) {
 		this.systemMessage = systemMessage;
 		this.messages = messages;
 		this.options = options;
 		this.tools = tools;
 		this.dynamicToolCallbacks = dynamicToolCallbacks;
+		this.toolDescriptions = toolDescriptions;
 		this.context = context;
 	}
 
@@ -58,6 +64,7 @@ public class ModelRequest {
 				.options(request.options)
 				.tools(request.tools)
 				.dynamicToolCallbacks(request.dynamicToolCallbacks)
+				.toolDescriptions(request.toolDescriptions)
 				.context(request.context);
 	}
 
@@ -81,6 +88,10 @@ public class ModelRequest {
 		return dynamicToolCallbacks;
 	}
 
+	public Map<String, String> getToolDescriptions() {
+		return toolDescriptions;
+	}
+
 	public Map<String, Object> getContext() {
 		return context;
 	}
@@ -91,6 +102,9 @@ public class ModelRequest {
 		private ToolCallingChatOptions options;
 		private List<String> tools = List.of();
 		private List<ToolCallback> dynamicToolCallbacks = List.of();
+
+		private Map<String, String> toolDescriptions = new HashMap<>();
+
 		private Map<String, Object> context = new HashMap<>();
 
 		public Builder systemMessage(SystemMessage systemMessage) {
@@ -122,6 +136,13 @@ public class ModelRequest {
 			return this;
 		}
 
+		public Builder toolDescriptions(Map<String, String> toolDescriptions) {
+			if (toolDescriptions != null) {
+				this.toolDescriptions = new HashMap<>(toolDescriptions);
+			}
+			return this;
+		}
+
 		public Builder context(Map<String, Object> context) {
 			if (context != null) {
 				this.context = new HashMap<>(context);
@@ -130,7 +151,8 @@ public class ModelRequest {
 		}
 
 		public ModelRequest build() {
-			return new ModelRequest(systemMessage, messages, options, tools, dynamicToolCallbacks, context);
+			return new ModelRequest(systemMessage, messages, options, tools, dynamicToolCallbacks, toolDescriptions,
+					context);
 		}
 	}
 }
