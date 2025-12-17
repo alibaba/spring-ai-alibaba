@@ -229,7 +229,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 					} else {
 						var lastMessageText = "";
 						if (lastResponse.getResult().getOutput().getText() != null) {
-							log.info("Received AssistantMessage with null text, AssistantMessage:\n {}.", lastResponse.getResult().getOutput());
 							lastMessageText = lastResponse.getResult().getOutput().getText();
 						}
 
@@ -237,7 +236,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 						var newMessage = AssistantMessage.builder()
 								.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
-								.properties(currentMessage.getMetadata())
+								.properties(currentMessage.getMetadata()) // TODO, reasoningContent in metadata is not aggregated
 								.toolCalls(mergeToolCalls(lastResponse.getResult().getOutput().getToolCalls(),
 										currentMessage.getToolCalls()))
 								.media(currentMessage.getMedia())
