@@ -16,10 +16,12 @@
 package com.alibaba.cloud.ai.graph.agent.model;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -27,9 +29,12 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,13 +95,12 @@ class ReactAgentOpenAiTest {
 	void setUp() {
 		// Create OpenAiApi instance using the API key from environment variable
 		OpenAiApi openAiApi = OpenAiApi.builder()
-//				.baseUrl("https://dashscope.aliyuncs.com/compatible-mode/")
-			.apiKey(System.getenv("AI_OPENAI_API_KEY"))
-			.baseUrl(System.getenv("AI_OPENAI_API_BASE_URL"))
+				.baseUrl("https://dashscope.aliyuncs.com/compatible-mode/")
+			.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 			.build();
 
 		OpenAiChatModel openAiChatModel = OpenAiChatModel.builder()
-				.defaultOptions(OpenAiChatOptions.builder().model("o1-mini-0912").build())
+				.defaultOptions(OpenAiChatOptions.builder().model("qwen-plus").build())
 				.openAiApi(openAiApi).build();
 
 		// Create OpenAi ChatModel instance
@@ -246,6 +250,72 @@ class ReactAgentOpenAiTest {
 		assertTrue(result.isPresent(), "Result should be present");
 		System.out.println("=== Full state output ===");
 		System.out.println(result.get());
+	}
+
+	@Test
+	public void testReactAgentStreamWithCustomChatOptions() throws Exception {
+		// Configure custom OpenAiChatOptions with extra body parameters
+		OpenAiChatOptions customChatOptions = OpenAiChatOptions.builder()
+				.model("qwen-plus")
+				.temperature(0.7)
+				.extraBody(Map.of(
+						"enable_thinking", true
+				))
+				.build();
+
+		// Create ReactAgent with custom chat options
+		ReactAgent agent = ReactAgent.builder()
+				.name("streaming_agent")
+				.model(chatModel)
+				.chatOptions(customChatOptions)
+				.saver(new MemorySaver())
+				.enableLogging(true)
+				.build();
+
+		System.out.println("=== Testing stream() with custom chat options ===");
+		System.out.println("Model: qwen-plus");
+		System.out.println("Temperature: 0.7");
+		System.out.println("Extra parameters: top_k=50, repetition_penalty=1.1, frequency_penalty=0.5");
+		System.out.println();
+
+		// Use stream() method to get streaming output
+		Flux<NodeOutput> stream = agent.stream("帮我写一首关于秋天的短诗，不超过50字。");
+
+		AtomicInteger chunkCount = new AtomicInteger(0);
+		StringBuilder completeContent = new StringBuilder();
+
+		stream.doOnNext(output -> {
+			assertNotNull(output, "NodeOutput should not be null");
+			System.out.println("节点: " + output.node() + ", Agent: " + output.agent());
+
+			if (output instanceof StreamingOutput<?> streamingOutput) {
+				// Handle streaming output
+				if (streamingOutput.message() != null && streamingOutput.message().getText() != null) {
+					String content = streamingOutput.message().getText();
+					if (!content.isEmpty()) {
+						System.out.print(content);
+						completeContent.append(content);
+						chunkCount.incrementAndGet();
+					}
+				}
+			} else {
+				// Handle final node output
+				System.out.println("\n[节点完成] State: " + output.state());
+			}
+		})
+		.doOnComplete(() -> {
+			System.out.println("\n\n=== Stream completed ===");
+			System.out.println("Total chunks: " + chunkCount.get());
+			System.out.println("Complete content length: " + completeContent.length());
+			assertTrue(chunkCount.get() > 0, "Should have received at least one streaming chunk");
+			assertTrue(completeContent.length() > 0, "Should have received some content");
+		})
+		.doOnError(error -> {
+			System.err.println("Error during streaming: " + error.getMessage());
+			error.printStackTrace();
+			fail("Stream execution failed: " + error.getMessage());
+		})
+		.blockLast(); // Block to wait for completion in test
 	}
 
 	private static CompileConfig getCompileConfig() {

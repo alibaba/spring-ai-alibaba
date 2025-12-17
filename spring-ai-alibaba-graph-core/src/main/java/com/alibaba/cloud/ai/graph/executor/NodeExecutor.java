@@ -228,8 +228,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 					if (lastResponse == null) {
 						lastChatResponseRef.set(response);
 					} else {
-						final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
-								"lastResponse text cannot be null");
+						var lastMessageText = "";
+						if (lastResponse.getResult().getOutput().getText() != null) {
+							log.info("Received AssistantMessage with null text, AssistantMessage:\n {}.", lastResponse.getResult().getOutput());
+							lastMessageText = lastResponse.getResult().getOutput().getText();
+						}
 
 						final var currentMessageText = currentMessage.getText();
 
