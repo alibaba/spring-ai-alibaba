@@ -89,7 +89,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				Optional<ToolFeedback> toolFeedbackOpt = interruptionMetadata.toolFeedbacks().stream()
-						.filter(tf -> tf.getName().equals(toolCall.name()))
+						.filter(tf -> tf.getId().equals(toolCall.id()))
 						.findFirst();
 
 				if (toolFeedbackOpt.isPresent()) {

@@ -729,15 +729,15 @@ public class ReactAgent extends BaseAgent {
 					ToolResponseMessage toolResponseMessage = (ToolResponseMessage) lastMessage;
 
 					if (assistantMessage.hasToolCalls()) {
-						Set<String> requestedToolNames = assistantMessage.getToolCalls().stream()
-								.map(toolCall -> toolCall.name())
+						Set<String> requestedToolIds = assistantMessage.getToolCalls().stream()
+								.map(AssistantMessage.ToolCall::id)
 								.collect(java.util.stream.Collectors.toSet());
 
-						Set<String> executedToolNames = toolResponseMessage.getResponses().stream()
-								.map(response -> response.name())
+						Set<String> executedToolIds = toolResponseMessage.getResponses().stream()
+								.map(ToolResponseMessage.ToolResponse::id)
 								.collect(java.util.stream.Collectors.toSet());
 
-						if (executedToolNames.containsAll(requestedToolNames)) {
+						if (executedToolIds.containsAll(requestedToolIds)) {
 							return modelDestination; // All requested tools were executed or responded
 						} else {
 							return AGENT_TOOL_NAME; // Some tools are still pending
