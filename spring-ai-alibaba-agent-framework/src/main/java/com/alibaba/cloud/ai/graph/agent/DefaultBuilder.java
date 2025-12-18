@@ -41,6 +41,14 @@ public class DefaultBuilder extends Builder {
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultBuilder.class);
 
+	public DefaultBuilder() {
+		super();
+	}
+
+	public DefaultBuilder(ReactAgent agent) {
+		super(agent);
+	}
+
 	public static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING
 				= "LLM may have adapted the tool name '{}', especially if the name was truncated due to length limits. If this is the case, you can customize the prefixing and processing logic using McpToolNamePrefixGenerator";
 
@@ -69,7 +77,11 @@ public class DefaultBuilder extends Builder {
 			chatClient = clientBuilder.build();
 		}
 
-		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder().agentName(this.name).chatClient(chatClient);
+		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
+				.agentName(this.name)
+				.chatClient(chatClient)
+				.chatModel(model)
+				.chatOptions(chatOptions);
 
 		if (outputKey != null && !outputKey.isEmpty()) {
 			llmNodeBuilder.outputKey(outputKey);

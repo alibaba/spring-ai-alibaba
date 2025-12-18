@@ -113,6 +113,36 @@ public abstract class Builder {
 	
 	protected Executor executor;
 
+	protected Builder() {
+	}
+
+	protected Builder(ReactAgent agent) {
+		this.name = agent.name();
+		this.description = agent.description();
+		this.instruction = agent.instruction();
+		this.model = agent.getLlmNode().getChatModel();
+		this.chatOptions = agent.getLlmNode().getChatOptions();
+		this.tools = agent.getToolNode().getToolCallbacks() != null ? new ArrayList<>(agent.getToolNode().getToolCallbacks()) : new ArrayList<>();
+		this.hooks = agent.getHooks() != null ? new ArrayList<>(agent.getHooks()) : new ArrayList<>();
+		this.modelInterceptors = agent.getModelInterceptors() != null ? new ArrayList<>(agent.getModelInterceptors()) : new ArrayList<>();
+		this.toolInterceptors = agent.getToolInterceptors() != null ? new ArrayList<>(agent.getToolInterceptors()) : new ArrayList<>();
+		this.includeContents = agent.isIncludeContents();
+		this.returnReasoningContents = agent.isReturnReasoningContents();
+		this.outputKey = agent.getOutputKey();
+		this.outputKeyStrategy = agent.getOutputKeyStrategy();
+		this.stateSerializer = agent.getStateSerializer();
+		this.executor = agent.getExecutor();
+		this.compileConfig = agent.getCompileConfig();
+		this.inputSchema = agent.getInputSchema();
+		this.inputType = agent.getInputType();
+		this.outputSchema = agent.getOutputSchema();
+		this.outputType = agent.getOutputType();
+
+		if (this.compileConfig != null && this.compileConfig.checkpointSaver().isPresent()) {
+			this.saver = this.compileConfig.checkpointSaver().get();
+		}
+	}
+
 	public Builder name(String name) {
 		this.name = name;
 		return this;

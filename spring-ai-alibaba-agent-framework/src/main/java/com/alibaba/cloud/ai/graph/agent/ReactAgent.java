@@ -60,6 +60,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
+import java.util.concurrent.Executor;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -77,8 +79,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_async;
 import static java.lang.String.format;
 
-
 public class ReactAgent extends BaseAgent {
+
 	Logger logger = LoggerFactory.getLogger(ReactAgent.class);
 
 	private final AgentLlmNode llmNode;
@@ -131,12 +133,83 @@ public class ReactAgent extends BaseAgent {
         hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
 	}
 
+	public AgentLlmNode getLlmNode() {
+		return llmNode;
+	}
+
+	public AgentToolNode getToolNode() {
+		return toolNode;
+	}
+
+	public List<? extends Hook> getHooks() {
+		return hooks;
+	}
+
+	public List<ModelInterceptor> getModelInterceptors() {
+		return modelInterceptors;
+	}
+
+	public List<ToolInterceptor> getToolInterceptors() {
+		return toolInterceptors;
+	}
+
+	public StateSerializer getStateSerializer() {
+		return stateSerializer;
+	}
+
+	public Executor getExecutor() {
+		return executor;
+	}
+
+	public CompileConfig getCompileConfig() {
+		return compileConfig;
+	}
+
+	public String getInputSchema() {
+		return inputSchema;
+	}
+
+	public Type getInputType() {
+		return inputType;
+	}
+
+	public String getOutputSchema() {
+		return outputSchema;
+	}
+
+	public Class<?> getOutputType() {
+		return outputType;
+	}
+
+	public String getOutputKey() {
+		return outputKey;
+	}
+
+	public KeyStrategy getOutputKeyStrategy() {
+		return outputKeyStrategy;
+	}
+
+	public boolean isIncludeContents() {
+		return includeContents;
+	}
+
+	public boolean isReturnReasoningContents() {
+		return returnReasoningContents;
+	}
+
 	public static Builder builder() {
 		return new DefaultAgentBuilderFactory().builder();
 	}
 
 	public static Builder builder(AgentBuilderFactory agentBuilderFactory) {
 		return agentBuilderFactory.builder();
+	}
+
+	/**
+	 * Returns a builder pre-populated with the current configuration for mutation.
+	 */
+	public Builder mutate() {
+		return new DefaultBuilder(this);
 	}
 
 	public AssistantMessage call(String message) throws GraphRunnerException {
