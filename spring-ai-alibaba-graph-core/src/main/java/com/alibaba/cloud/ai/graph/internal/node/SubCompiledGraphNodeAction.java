@@ -26,9 +26,9 @@ import com.alibaba.cloud.ai.graph.utils.TypeRef;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import static com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode.outputKeyToParent;
-import static com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode.resumeSubGraphId;
-import static com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode.subGraphId;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.resumeSubGraphId;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.subGraphId;
 import static java.lang.String.format;
 
 /**
@@ -48,7 +48,7 @@ import static java.lang.String.format;
  * @see AsyncNodeActionWithConfig
  */
 public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentCompileConfig,
-		CompiledGraph subGraph) implements AsyncNodeActionWithConfig {
+		CompiledGraph subGraph) implements AsyncNodeActionWithConfig, ResumableSubGraphAction {
 
 	public String getResumeSubGraphId() {
 		return resumeSubGraphId(nodeId);

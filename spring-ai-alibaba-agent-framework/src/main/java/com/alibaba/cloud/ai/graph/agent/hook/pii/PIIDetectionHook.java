@@ -15,12 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph.agent.hook.pii;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
-import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -29,10 +30,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Detect and handle Personally Identifiable Information (PII) in agent conversations.
@@ -49,7 +47,7 @@ import java.util.concurrent.CompletableFuture;
  *     .build();
  */
 @HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
-public class PIIDetectionHook extends ModelHook {
+public class PIIDetectionHook extends MessagesModelHook {
 
 	private final PIIType piiType;
 	private final RedactionStrategy strategy;
@@ -72,12 +70,11 @@ public class PIIDetectionHook extends ModelHook {
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
+	public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
 		List<Message> processedMessages = new ArrayList<>();
 		boolean hasChanges = false;
 
-		for (Message message : messages) {
+		for (Message message : previousMessages) {
 			Message processed = processMessage(message);
 			processedMessages.add(processed);
 			if (processed != message) {
@@ -86,32 +83,28 @@ public class PIIDetectionHook extends ModelHook {
 		}
 
 		if (hasChanges) {
-			Map<String, Object> updates = new HashMap<>();
-			updates.put("messages", processedMessages);
-			return CompletableFuture.completedFuture(updates);
+			return new AgentCommand(processedMessages, UpdatePolicy.REPLACE);
 		}
 
-		return CompletableFuture.completedFuture(Map.of());
+		return new AgentCommand(previousMessages);
 	}
 
 	@Override
-	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+	public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
 		// Only process if applyToOutput is enabled
 		if (!applyToOutput) {
-			return CompletableFuture.completedFuture(Map.of());
+			return new AgentCommand(previousMessages);
 		}
 
-		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-
-		if (messages.isEmpty()) {
-			return CompletableFuture.completedFuture(Map.of());
+		if (previousMessages.isEmpty()) {
+			return new AgentCommand(previousMessages);
 		}
 
 		// Find the last AI message
 		AssistantMessage aiMessage = null;
 		int lastIndex = -1;
-		for (int i = messages.size() - 1; i >= 0; i--) {
-			if (messages.get(i) instanceof AssistantMessage am) {
+		for (int i = previousMessages.size() - 1; i >= 0; i--) {
+			if (previousMessages.get(i) instanceof AssistantMessage am) {
 				aiMessage = am;
 				lastIndex = i;
 				break;
@@ -119,20 +112,20 @@ public class PIIDetectionHook extends ModelHook {
 		}
 
 		if (aiMessage == null) {
-			return CompletableFuture.completedFuture(Map.of());
+			return new AgentCommand(previousMessages);
 		}
 
 		String content = aiMessage.getText();
 
 		if (content == null || content.isEmpty()) {
-			return CompletableFuture.completedFuture(Map.of());
+			return new AgentCommand(previousMessages);
 		}
 
 		// Detect PII
 		ProcessResult result = processText(content);
 
 		if (!result.hasMatches) {
-			return CompletableFuture.completedFuture(Map.of());
+			return new AgentCommand(previousMessages);
 		}
 
 		// Apply strategy
@@ -141,7 +134,7 @@ public class PIIDetectionHook extends ModelHook {
 		}
 
 		if (result.redactedText.equals(content)) {
-			return CompletableFuture.completedFuture(Map.of());
+			return new AgentCommand(previousMessages);
 		}
 
 		// Create updated message
@@ -152,12 +145,10 @@ public class PIIDetectionHook extends ModelHook {
 			.media(aiMessage.getMedia())
 			.build();
 
-		List<Message> updatedMessages = new ArrayList<>(messages);
+		List<Message> updatedMessages = new ArrayList<>(previousMessages);
 		updatedMessages.set(lastIndex, updatedMessage);
 
-		Map<String, Object> updates = new HashMap<>();
-		updates.put("messages", updatedMessages);
-		return CompletableFuture.completedFuture(updates);
+		return new AgentCommand(updatedMessages, UpdatePolicy.REPLACE);
 	}
 
 	private Message processMessage(Message message) {

@@ -50,6 +50,8 @@ public class AppenderChannel<T> implements Channel<List<T>> {
 
 	}
 
+
+
 	private final Reducer<List<T>> reducer;
 
 	private final Supplier<List<T>> defaultProvider;

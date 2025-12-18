@@ -21,7 +21,7 @@
 ## What's Agent Framework
 
 <p align="center">
-    <img src="./docs/imgs/saa-architecture.png" alt="architecture" style="max-width: 740px; height: 508px" />
+    <img src="./docs/imgs/architecture-new.png" alt="architecture" style="max-width: 740px; height: 508px" />
 </p>
 
 Spring AI Alibaba Agent Framework is an agent development framework centered around the design philosophy of **ReactAgent**, enabling developers to build agents with core capabilities such as automatic **Context Engineering** and **Human In The Loop** interaction.
@@ -56,7 +56,7 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 1. Download the code.
 
 	```shell
-	git clone https://github.com/alibaba/spring-ai-alibaba.git
+	git clone --depth=1 https://github.com/alibaba/spring-ai-alibaba.git
 	cd examples/chatbot
 	```
 
@@ -80,44 +80,29 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 	<img src="./docs/imgs/chatbot-chat-ui.gif" alt="chatbot-ui" style="max-width: 740px; height: 508px" />
 </p>
 
-### Chatbot Code Explained
+## Chatbot Code Explained
 
-1. Add dependencies.
+1. Add dependencies
 
 	```xml
 	<dependencies>
 	  <dependency>
 	    <groupId>com.alibaba.cloud.ai</groupId>
 	    <artifactId>spring-ai-alibaba-agent-framework</artifactId>
-	    <version>1.1.0.0-M5</version>
+	    <version>1.1.0.0-RC2</version>
 	  </dependency>
 	  <!-- Assume you are going to use DashScope Model. Refer to docs for how to choose model.-->
 	  <dependency>
 	    <groupId>com.alibaba.cloud.ai</groupId>
 	    <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-	    <version>1.1.0.0-M5</version>
+	    <version>1.1.0.0-RC2</version>
 	  </dependency>
 	</dependencies>
 	```
 
-2. Create ChatBot agent
-
-	```java
-	ReactAgent chatBotAgent =
-		 ReactAgent.builder()
-			.name("SAA")
-			.model(chatModel)
-			.instruction(INSTRUCTION)
-			.enableLogging(true)
-			.tools(
-				executeShellCommand,
-				executePythonCode,
-				viewTextFile
-			)
-			.build();
-	
-	AssistantMessage message = writerAgent.call("斐波那契数列的第6个数是？");
-	```
+2. Define Chatbot
+   
+	For more details of how to write a Chatbot, please check the [Quick Start](https://java2ai.com/docs/quick-start) on our official website.
 
 ## 📚 Documentation
 * [Overview](https://java2ai.com/docs/overview) - High level overview of the framework
@@ -153,6 +138,10 @@ This project consists of three core components:
 * WeChat Group (微信公众号), scan the QR code below and follow us.
 
 <img src="./docs/imgs/wechat-account.jpg" style="width:260px;"/>
+
+## Resources
+* [AI-Native Application Architecture White Paper](https://developer.aliyun.com/ebook/8479)：Co-authored by 40 frontline engineers and endorsed by 15 industry experts, this 200,000+ word white paper is the first comprehensive guide dedicated to the full DevOps lifecycle of AI-native applications. It systematically breaks down core concepts and key challenges, offering practical problem-solving approaches and architectural insights.
+
 
 ## Star History
 

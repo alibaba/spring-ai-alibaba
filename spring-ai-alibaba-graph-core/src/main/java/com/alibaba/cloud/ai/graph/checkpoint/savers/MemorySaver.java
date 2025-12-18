@@ -20,7 +20,14 @@ import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.utils.TryFunction;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 
@@ -29,9 +36,12 @@ import static java.lang.String.format;
 public class MemorySaver implements BaseCheckpointSaver {
 
 	final Map<String, LinkedList<Checkpoint>> _checkpointsByThread = new HashMap<>();
-
 	private final ReentrantLock _lock = new ReentrantLock();
 
+	/**
+	 * Protected constructor for MemorySaver.
+	 * Use {@link #builder()} to create instances.
+	 */
 	public MemorySaver() {
 	}
 
@@ -43,35 +53,17 @@ public class MemorySaver implements BaseCheckpointSaver {
 		return new Builder();
 	}
 
-	/**
-	 * Builder class for MemorySaver.
-	 */
-	public static class Builder {
-
-		/**
-		 * Builds a new MemorySaver instance.
-		 * @return a new MemorySaver instance
-		 */
-		public MemorySaver build() {
-			return new MemorySaver();
-		}
-	}
-
-	protected LinkedList<Checkpoint> loadedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints)
-			throws Exception {
+	protected LinkedList<Checkpoint> loadedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints) throws Exception {
 		return checkpoints;
 	}
 
-	protected void insertedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
-			throws Exception {
+	protected void insertedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint) throws Exception {
 	}
 
-	protected void updatedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
-			throws Exception {
+	protected void updatedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint) throws Exception {
 	}
 
-	protected void releasedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Tag releaseTag)
-			throws Exception {
+	protected void releasedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Tag releaseTag) throws Exception {
 	}
 
 	protected final <T> T loadOrInitCheckpoints(RunnableConfig config,
@@ -79,30 +71,10 @@ public class MemorySaver implements BaseCheckpointSaver {
 		_lock.lock();
 		try {
 			var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
-			return transformer.tryApply(
-					loadedCheckpoints(config, _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>())));
+			return transformer.tryApply(loadedCheckpoints(config, _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>())));
 
-		} finally {
-			_lock.unlock();
 		}
-	}
-
-	public Map<String, LinkedList<Checkpoint>> get_checkpointsByThread() {
-		return _checkpointsByThread;
-	}
-
-	@Override
-	public boolean clear(RunnableConfig config) {
-		_lock.lock();
-		try {
-			var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
-			LinkedList<Checkpoint> checkpoints = _checkpointsByThread.get(threadId);
-			if (checkpoints != null) {
-				checkpoints.clear();
-				return true;
-			}
-			return false;
-		} finally {
+		finally {
 			_lock.unlock();
 		}
 	}
@@ -115,7 +87,8 @@ public class MemorySaver implements BaseCheckpointSaver {
 	public final Collection<Checkpoint> list(RunnableConfig config) {
 		try {
 			return loadOrInitCheckpoints(config, Collections::unmodifiableCollection);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -134,7 +107,8 @@ public class MemorySaver implements BaseCheckpointSaver {
 				return getLast(checkpoints, config);
 
 			});
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -149,17 +123,18 @@ public class MemorySaver implements BaseCheckpointSaver {
 				int index = IntStream.range(0, checkpoints.size())
 						.filter(i -> checkpoints.get(i).getId().equals(checkPointId))
 						.findFirst()
-						.orElseThrow(() -> (new NoSuchElementException(
-								format("Checkpoint with id %s not found!", checkPointId))));
+						.orElseThrow(() -> (new NoSuchElementException(format("Checkpoint with id %s not found!", checkPointId))));
 				checkpoints.set(index, checkpoint);
 				updatedCheckpoint(config, checkpoints, checkpoint);
-				return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
+				return config;
 			}
 
 			checkpoints.push(checkpoint); // Add Checkpoint
 			insertedCheckpoint(config, checkpoints, checkpoint);
 
-			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
+			return RunnableConfig.builder(config)
+					.checkPointId(checkpoint.getId())
+					.build();
 
 		});
 	}
@@ -179,4 +154,16 @@ public class MemorySaver implements BaseCheckpointSaver {
 		});
 	}
 
+	/**
+	 * Builder class for MemorySaver.
+	 */
+	public static class Builder {
+		/**
+		 * Builds a new MemorySaver instance.
+		 * @return a new MemorySaver instance
+		 */
+		public MemorySaver build() {
+			return new MemorySaver();
+		}
+	}
 }

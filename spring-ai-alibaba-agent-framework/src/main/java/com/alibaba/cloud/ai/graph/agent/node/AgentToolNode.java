@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_TOOL_NAME;
 import static com.alibaba.cloud.ai.graph.agent.DefaultBuilder.POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
@@ -54,7 +55,6 @@ import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_
 import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_ID_DEFAULT;
 
 public class AgentToolNode implements NodeActionWithConfig {
-	public static final String TOOL_NODE_NAME = "tool";
 	private static final Logger logger = LoggerFactory.getLogger(AgentToolNode.class);
 
 	private final String agentName;
@@ -138,8 +138,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 			List<ToolResponseMessage.ToolResponse> existingResponses = toolResponseMessage.getResponses();
 			List<ToolResponseMessage.ToolResponse> allResponses = new ArrayList<>(existingResponses);
 
-			Set<String> executedToolNames = existingResponses.stream()
-					.map(ToolResponseMessage.ToolResponse::name)
+			Set<String> executedToolIds = existingResponses.stream()
+					.map(ToolResponseMessage.ToolResponse::id)
 					.collect(Collectors.toSet());
 
 			if (enableActingLog) {
@@ -147,7 +147,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			}
 
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-				if (executedToolNames.contains(toolCall.name())) {
+				if (executedToolIds.contains(toolCall.id())) {
 					continue;
 				}
 
@@ -160,7 +160,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			ToolResponseMessage newToolResponseMessage =
 					ToolResponseMessage.builder().responses(allResponses).build();
 			newMessages.add(newToolResponseMessage);
-			newMessages.add(new RemoveByHash<>(assistantMessage));
+			newMessages.add(new RemoveByHash<>(toolResponseMessage));
 			updatedState.put("messages", newMessages);
 
 			if (enableActingLog) {
@@ -173,7 +173,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			}
 
 		} else {
-			throw new IllegalStateException("Last message is not an AssistantMessage or ToolResponseMessage");
+			throw new IllegalStateException("Last message is neither an AssistantMessage nor an ToolResponseMessage");
 		}
 
 		// Merge extra state from tool calls
@@ -229,9 +229,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 					}
 				}
 			} catch (ToolExecutionException e) {
-				logger.error("[ThreadId {}] Agent {} acting, tool {} execution failed. "
-						+ "The agent loop has ended, please use ToolRetryInterceptor to customize the retry and policy on tool failure. \n"
-						, config.threadId().orElse(THREAD_ID_DEFAULT), agentName, req.getToolName(), e);
+				logger.error("[ThreadId {}] Agent {} acting, tool {} execution failed, handle to {} processor to decide the next move (terminate or continue). "
+						, config.threadId().orElse(THREAD_ID_DEFAULT), agentName, req.getToolName(), toolExecutionExceptionProcessor.getClass().getName(), e);
 				result = toolExecutionExceptionProcessor.process(e);
 			}
 
@@ -254,7 +253,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 	}
 
 	public String getName() {
-		return TOOL_NODE_NAME;
+		return AGENT_TOOL_NAME;
 	}
 
 	public static Builder builder() {

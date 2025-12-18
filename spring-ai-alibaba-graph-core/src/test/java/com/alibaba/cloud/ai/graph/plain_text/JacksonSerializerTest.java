@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSeri
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mapOf;
@@ -34,7 +35,7 @@ public class JacksonSerializerTest {
 
 		OverAllState state = new OverAllState(mapOf("prop1", "value1"));
 
-		JacksonStateSerializer serializer = new JacksonStateSerializer(OverAllState::new) {
+		JacksonStateSerializer serializer = new JacksonStateSerializer(OverAllState::new, new ObjectMapper()) {
 		};
 
 		Class<?> type = serializer.getStateType();

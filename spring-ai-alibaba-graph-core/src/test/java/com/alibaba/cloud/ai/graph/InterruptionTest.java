@@ -42,7 +42,7 @@ public class InterruptionTest {
 
 	@Test
 	public void interruptAfterEdgeEvaluation() throws Exception {
-		var saver = new MemorySaver();
+		var saver = MemorySaver.builder().build();
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().defaultStrategy(KeyStrategy.REPLACE)
 			.addStrategy("messages")
 			.build();
@@ -112,7 +112,7 @@ public class InterruptionTest {
 	@Test
 	public void interruptBeforeEdgeEvaluation() throws Exception {
 
-		var saver = new MemorySaver();
+		var saver = MemorySaver.builder().build();
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder().defaultStrategy(KeyStrategy.REPLACE)
 			.addStrategy("messages")
 			.build();

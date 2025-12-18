@@ -25,7 +25,7 @@ import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
@@ -171,7 +171,7 @@ public class ExecutionController {
 		}
 
 		try {
-			BaseAgent agent = agentLoader.loadAgent(request.appName);
+			Agent agent = agentLoader.loadAgent(request.appName);
 			RunnableConfig runnableConfig = RunnableConfig.builder()
 					.threadId(request.threadId)
 					.addMetadata("user_id", request.userId)
@@ -205,7 +205,7 @@ public class ExecutionController {
 		}
 
 		try {
-			BaseAgent agent = agentLoader.loadAgent(request.appName);
+			Agent agent = agentLoader.loadAgent(request.appName);
 
 			InterruptionMetadata.Builder metadataBuilder = InterruptionMetadata.builder();
 
@@ -247,7 +247,7 @@ public class ExecutionController {
 	}
 
 	@NotNull
-	private Flux<ServerSentEvent<String>> executeAgent(UserMessage userMessage, BaseAgent agent, RunnableConfig runnableConfig) throws GraphRunnerException {
+	private Flux<ServerSentEvent<String>> executeAgent(UserMessage userMessage, Agent agent, RunnableConfig runnableConfig) throws GraphRunnerException {
 
 		Flux<NodeOutput> agentStream;
 

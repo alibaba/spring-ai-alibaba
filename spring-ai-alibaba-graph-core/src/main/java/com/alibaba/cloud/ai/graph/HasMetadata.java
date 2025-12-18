@@ -68,6 +68,14 @@ public interface HasMetadata<B extends HasMetadata.Builder<B>> {
 		return metadata(key);
 	};
 
+	default <T> Optional<T> getMetadataAndRemove(String key, TypeRef<T> typeRef) {
+		Optional<T> value = metadata(key, typeRef);
+		if (value.isPresent()) {
+			metadata().ifPresent(m -> m.remove(key));
+		}
+		return value;
+	};
+
 	/**
 	 * Formats a node ID by prefixing it with the interrupt prefix. The formatted node ID
 	 * follows the pattern "__INTERRUPT__(nodeId)".

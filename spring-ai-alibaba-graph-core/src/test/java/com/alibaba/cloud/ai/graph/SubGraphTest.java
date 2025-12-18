@@ -24,7 +24,6 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -35,7 +34,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.logging.LogManager;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -237,7 +235,7 @@ public class SubGraphTest {
 		var B_B2 = SubGraphNode.formatId("B", "B2");
 		var B_C = SubGraphNode.formatId("B", "C");
 
-		SaverConfig saver = SaverConfig.builder().register(new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(MemorySaver.builder().build()).build();
 
 		var withSaver = workflowParent.compile(CompileConfig.builder().saverConfig(saver).build());
 
@@ -354,7 +352,7 @@ public class SubGraphTest {
 		var B_B2 = SubGraphNode.formatId("B", "B2");
 		var B_C = SubGraphNode.formatId("B", "C");
 
-		SaverConfig saver = SaverConfig.builder().register(new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(MemorySaver.builder().build()).build();
 
 		var withSaver = workflowParent.compile(CompileConfig.builder().saverConfig(saver).build());
 
@@ -408,7 +406,7 @@ public class SubGraphTest {
 	@Test
 	public void testCheckpointWithSubgraph() throws Exception {
 
-		SaverConfig saver = SaverConfig.builder().register(new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(MemorySaver.builder().build()).build();
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 		var workflowChild = new StateGraph().addNode("step_1", _makeNode("child:step1"))
@@ -447,7 +445,7 @@ public class SubGraphTest {
 	 */
 	@Test
 	public void testOtherCreateSubgraph2() throws Exception {
-		SaverConfig saver = SaverConfig.builder().register(new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(MemorySaver.builder().build()).build();
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 		var workflowChild = new StateGraph(createKeyStrategyFactory()).addNode("step_1", _makeNode("child:step1"))
@@ -536,7 +534,7 @@ public class SubGraphTest {
 
 	@Test
 	public void testNestedSubgraph() throws Exception {
-		SaverConfig saver = SaverConfig.builder().register(new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(MemorySaver.builder().build()).build();
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 
@@ -582,7 +580,7 @@ public class SubGraphTest {
 	@Test
 	public void testParallelSubgraph() throws Exception {
 
-		SaverConfig saver = SaverConfig.builder().register( new MemorySaver()).build();
+		SaverConfig saver = SaverConfig.builder().register(MemorySaver.builder().build()).build();
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 
@@ -615,12 +613,12 @@ public class SubGraphTest {
         }).addNode("node1", AsyncNodeActionWithConfig.node_async((state, config) -> {
                     CompiledGraph compile = childGraph1.compile(compileConfig);
                     Flux<NodeOutput> nodeOutputFlux = compile.stream(state.data(), config);
-                    return Map.of("messages", GraphFlux.of("node1", "messages", nodeOutputFlux, nodeOutput -> nodeOutput, (Function<NodeOutput, String>) nodeOutput -> nodeOutput.toString()));
+                    return Map.of("messages",  nodeOutputFlux);
                 }))
                 .addNode("node2", AsyncNodeActionWithConfig.node_async((state, config) -> {
                     CompiledGraph compile = childGraph2.compile(compileConfig);
                     Flux<NodeOutput> nodeOutputFlux = compile.stream(state.data(), config);
-                    return Map.of("messages", GraphFlux.of("node2", "messages", nodeOutputFlux, nodeOutput -> nodeOutput, (Function<NodeOutput, String>) nodeOutput -> nodeOutput.toString()));
+                    return Map.of("messages", nodeOutputFlux);
                 }))
                 .addEdge(START, "node1")
                 .addEdge(START, "node2")

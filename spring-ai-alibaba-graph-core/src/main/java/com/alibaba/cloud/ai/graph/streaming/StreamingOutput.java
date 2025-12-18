@@ -37,6 +37,8 @@ public class StreamingOutput<T> extends NodeOutput {
 	@JsonIgnore
 	private final T originData;
 
+	private OutputType outputType;
+
 	public StreamingOutput(T originData, String node, OverAllState state) {
 		super(node, state);
 		this.chunk = null;
@@ -54,6 +56,15 @@ public class StreamingOutput<T> extends NodeOutput {
 		trySetTokenUsage(originData);
 	}
 
+	public StreamingOutput(T originData, String node, String agentName, OverAllState state, OutputType outputType) {
+		super(node, agentName, state);
+		this.chunk = null;
+		this.message = null;
+		this.originData = originData;
+		this.outputType = outputType;
+		trySetTokenUsage(originData);
+	}
+
 	// new constructor to support Message
 	public StreamingOutput(Message message, T originData, String node, String agentName, OverAllState state) {
 		super(node, agentName, state);
@@ -63,11 +74,28 @@ public class StreamingOutput<T> extends NodeOutput {
 		trySetTokenUsage(originData);
 	}
 
+	public StreamingOutput(Message message, T originData, String node, String agentName, OverAllState state, OutputType outputType) {
+		super(node, agentName, state);
+		this.message = message;
+		this.originData = originData;
+		this.chunk = extractChunkFromMessage(message);
+		this.outputType = outputType;
+		trySetTokenUsage(originData);
+	}
+
 	public StreamingOutput(Message message, String node, String agentName, OverAllState state) {
 		super(node, agentName, state);
 		this.message = message;
 		this.chunk = extractChunkFromMessage(message);
 		this.originData = null;
+	}
+
+	public StreamingOutput(Message message, String node, String agentName, OverAllState state, OutputType outputType) {
+		super(node, agentName, state);
+		this.message = message;
+		this.chunk = extractChunkFromMessage(message);
+		this.originData = null;
+		this.outputType = outputType;
 	}
 
 	// Constructor for Message with OverAllState and Usage (for buildNodeOutput)
@@ -79,12 +107,30 @@ public class StreamingOutput<T> extends NodeOutput {
 		setTokenUsage(usage);
 	}
 
+	public StreamingOutput(Message message, String node, String agentName, OverAllState state, Usage usage, OutputType outputType) {
+		super(node, agentName, state);
+		this.message = message;
+		this.chunk = extractChunkFromMessage(message);
+		this.originData = null;
+		this.outputType = outputType;
+		setTokenUsage(usage);
+	}
+
 	// Constructor for node output without Message but with Usage
 	public StreamingOutput(String node, String agentName, OverAllState state, Usage usage) {
 		super(node, agentName, state);
 		this.message = null;
 		this.chunk = null;
 		this.originData = null;
+		setTokenUsage(usage);
+	}
+
+	public StreamingOutput(String node, String agentName, OverAllState state, Usage usage, OutputType outputType) {
+		super(node, agentName, state);
+		this.message = null;
+		this.chunk = null;
+		this.originData = null;
+		this.outputType = outputType;
 		setTokenUsage(usage);
 	}
 
@@ -135,6 +181,10 @@ public class StreamingOutput<T> extends NodeOutput {
 
 	public Message message() {
 		return message;
+	}
+
+	public OutputType getOutputType() {
+		return outputType;
 	}
 
 	@Override

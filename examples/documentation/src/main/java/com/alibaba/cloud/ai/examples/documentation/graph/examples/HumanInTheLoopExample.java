@@ -299,8 +299,13 @@ public class HumanInTheLoopExample {
 	 * 继续执行 Graph（interruptBefore 模式）
 	 */
 	public static void continueExecutionWithInterruptBefore(CompiledGraph graph, RunnableConfig updateConfig) {
+		// 添加恢复执行的元数据标记
+		RunnableConfig resumeConfig = RunnableConfig.builder(updateConfig)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
+
 		// 继续执行 Graph（input 为 null，使用之前的状态）
-		graph.stream(null, updateConfig)
+		graph.stream(null, resumeConfig)
 				.doOnNext(event -> System.out.println(event))
 				.doOnError(error -> System.err.println("流错误: " + error.getMessage()))
 				.doOnComplete(() -> System.out.println("流完成"))
@@ -328,8 +333,13 @@ public class HumanInTheLoopExample {
 	 * 继续执行直到完成（interruptBefore 模式）
 	 */
 	public static void continueExecutionUntilComplete(CompiledGraph graph, RunnableConfig updateConfig) {
+		// 添加恢复执行的元数据标记
+		RunnableConfig resumeConfig = RunnableConfig.builder(updateConfig)
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
+
 		// 继续执行 Graph
-		graph.stream(null, updateConfig)
+		graph.stream(null, resumeConfig)
 				.doOnNext(event -> System.out.println(event))
 				.doOnError(error -> System.err.println("流错误: " + error.getMessage()))
 				.doOnComplete(() -> System.out.println("流完成"))

@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
@@ -42,10 +43,12 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.NamedExecutable;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -701,7 +704,7 @@ public class StateGraphTest {
 			keyStrategyMap.put("prop1", (o, o2) -> o2);
 			return keyStrategyMap;
 		};
-		PlainTextStateSerializer plainTextStateSerializer = new StateGraph.JacksonSerializer();
+		PlainTextStateSerializer plainTextStateSerializer = new SpringAIJacksonStateSerializer(OverAllState::new, new ObjectMapper());
 		StateGraph workflow = new StateGraph(keyStrategyFactory, plainTextStateSerializer).addEdge(START, "agent_1")
 				.addNode("agent_1", node_async(state -> {
 					log.info("agent_1\n{}", state);
@@ -939,7 +942,7 @@ public class StateGraphTest {
 			}
 		}).build());
 
-		app.stream(Map.of(), RunnableConfig.builder().addParallelNodeExecutor("A", ForkJoinPool.commonPool()).build())
+		app.stream(Map.of(), RunnableConfig.builder().build())
 			.blockLast();
 
 		log.info("Before nodeIds: {}", beforeNodeIds);
@@ -1130,5 +1133,57 @@ public class StateGraphTest {
 		assertTrue(result.isPresent());
 
 	}
+
+	@Test
+	public void testStreamingNodeWithFluxException() throws Exception {
+		StateGraph workflow = new StateGraph(createKeyStrategyFactory()).addEdge(START, "agent_1")
+				.addNode("agent_1", node_async(state -> {
+					log.info("agent_1\n{}", state);
+					return Map.of("pro1", Flux.just("response1", "response2", "response3")
+							.map(value -> {
+								if (value.equals("response3")) {
+									throw new RuntimeException("Exception in map operation");
+								}
+								return value;
+							}));
+				}))
+				.addEdge("agent_1", END);
+
+		CompiledGraph app = workflow.compile();
+
+		assertThrows(RuntimeException.class,
+				() -> app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1")));
+
+		Flux<NodeOutput> flux = app.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		
+		// 验证前两个元素正常输出
+		Flux<NodeOutput> fluxForFirstTwo = app.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		List<NodeOutput> firstTwoElements = fluxForFirstTwo.take(2).collectList().block();
+		assertNotNull(firstTwoElements);
+		assertEquals(2, firstTwoElements.size());
+		
+		// 验证第三个元素会抛出异常
+		assertThrows(RuntimeException.class, () -> flux.blockLast());
+	}
+
+	@Test
+	public void testStreamingNodeWithNodeException() throws Exception {
+		StateGraph workflow = new StateGraph(createKeyStrategyFactory()).addEdge(START, "agent_1")
+				.addNode("agent_1", node_async(state -> {
+					throw new RuntimeException("forced exception for testing");
+				}))
+				.addEdge("agent_1", END);
+
+		CompiledGraph app = workflow.compile();
+
+		// 验证 invoke 会抛出异常
+		assertThrows(RuntimeException.class,
+				() -> app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1")));
+
+		// 验证 stream 也会抛出异常
+		Flux<NodeOutput> flux = app.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
+		assertThrows(RuntimeException.class, () -> flux.blockLast());
+	}
+
 
 }

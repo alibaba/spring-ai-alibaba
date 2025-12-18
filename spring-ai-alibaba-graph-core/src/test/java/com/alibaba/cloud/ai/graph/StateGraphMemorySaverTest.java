@@ -106,7 +106,7 @@ public class StateGraphMemorySaverTest {
 			.addEdge(START, "agent_1")
 			.addEdge("agent_1", END);
 
-		var saver = new MemorySaver();
+		var saver = MemorySaver.builder().build();
 
 		var compileConfig = CompileConfig.builder()
 			.saverConfig(SaverConfig.builder()
@@ -191,7 +191,7 @@ public class StateGraphMemorySaverTest {
 			.addNode("agent_1", node_async(agent_1))
 			.addConditionalEdges("agent_1", edge_async(shouldContinue), Map.of("next", "agent_1", "exit", END));
 
-		var saver = new VersionedMemorySaver();
+		var saver = VersionedMemorySaver.builder().build();
 
 		var compileConfig = CompileConfig.builder()
 			.saverConfig(SaverConfig.builder()
@@ -265,7 +265,7 @@ public class StateGraphMemorySaverTest {
 			.addConditionalEdges("agent", edge_async(shouldContinue_whether), Map.of("tools", "tools", END, END))
 			.addEdge("tools", "agent");
 
-		var saver = new MemorySaver();
+		var saver = MemorySaver.builder().build();
 
 		var compileConfig = CompileConfig.builder()
 			.saverConfig(SaverConfig.builder()
@@ -355,7 +355,7 @@ public class StateGraphMemorySaverTest {
 			.addConditionalEdges("agent", edge_async(shouldContinue_whether), Map.of("tools", "tools", END, END))
 			.addEdge("tools", "agent");
 
-		var saver = new MemorySaver();
+		var saver = MemorySaver.builder().build();
 
 		var compileConfig = CompileConfig.builder()
 			.saverConfig(SaverConfig.builder().register(saver).build())
@@ -406,7 +406,7 @@ public class StateGraphMemorySaverTest {
 
 		var threadId = "thread_1";
 
-		var saver = new VersionedMemorySaver();
+		var saver = VersionedMemorySaver.builder().build();
 
 		// Check for error
 		var configWithVersion = RunnableConfig.builder().threadId(threadId).build();
