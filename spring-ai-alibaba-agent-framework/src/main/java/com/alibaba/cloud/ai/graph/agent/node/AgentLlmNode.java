@@ -84,7 +84,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private String instruction;
 
-	private ToolCallingChatOptions chatOptions;
+	private ToolCallingChatOptions toolCallingChatOptions;
 
 	private boolean enableReasoningLog;
 
@@ -301,8 +301,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<Message> messages = new ArrayList<>(modelRequest.getMessages());
 
 		// FIXME, there should have only one SystemMessage.
-		//  Users may have added SystemMessages in hooks or somewhere else, simply remove will cause unexpected agent behaviour.
-//		messages.removeIf(message -> message instanceof SystemMessage);
+		// Users may have added SystemMessages in hooks or somewhere else, simply remove will cause unexpected agent behaviour.
+		// messages.removeIf(message -> message instanceof SystemMessage);
 
 		// Add the SystemMessage from modelRequest at the beginning if present
 		if (modelRequest.getSystemMessage() != null) {
@@ -514,8 +514,6 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private boolean enableReasoningLog;
 
-		private ChatOptions chatOptions;
-
 		public Builder agentName(String agentName) {
 			this.agentName = agentName;
 			return this;
@@ -573,11 +571,6 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder enableReasoningLog(boolean enableReasoningLog) {
 			this.enableReasoningLog = enableReasoningLog;
-			return this;
-		}
-
-		public Builder chatOptions(ChatOptions chatOptions) {
-			this.chatOptions = chatOptions;
 			return this;
 		}
 
