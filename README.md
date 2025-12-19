@@ -62,7 +62,7 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 
 2. Start the ChatBot.
 
-	Before start, set API-KEY firat (visit <a href="https://bailian.console.aliyun.com/?apiKey=1&tab=api#/api" target="_blank">Aliyun Bailian</a> to get API-KEY):
+	Before starting, set API-KEY first (visit <a href="https://bailian.console.aliyun.com/?apiKey=1&tab=api#/api" target="_blank">Aliyun Bailian</a> to get API-KEY):
 	```shell
 	# this example uses 'spring-ai-alibaba-starter-dashscope', visit https://java2ai.com to learn how to use OpenAI/DeepSeek.
 	export AI_DASHSCOPE_API_KEY=your-api-key
