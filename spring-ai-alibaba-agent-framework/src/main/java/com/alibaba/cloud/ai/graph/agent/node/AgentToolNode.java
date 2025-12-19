@@ -32,7 +32,6 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -85,7 +84,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 			List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				// Execute tool call with interceptor chain
-				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall);
+				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config,
+						extraStateFromToolCall);
 				toolResponses.add(response.toToolResponse());
 			}
 
@@ -113,7 +113,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 				}
 
 				// Execute tool call with interceptor chain
-				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall);
+				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config,
+						extraStateFromToolCall);
 				allResponses.add(response.toToolResponse());
 			}
 
@@ -149,16 +150,18 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Create base handler that actually executes the tool
 		ToolCallHandler baseHandler = req -> {
 			ToolCallback toolCallback = resolve(req.getToolName());
+			Map<String, Object> contextMap = new HashMap<>(req.getContext());
+			contextMap.putAll(Map.of("state", state, "config", config, "extraState", extraStateFromToolCall));
+
 			String result = toolCallback.call(
-				req.getArguments(),
-				new ToolContext(Map.of("state", state, "config", config, "extraState", extraStateFromToolCall))
-			);
+					req.getArguments(),
+					new ToolContext(contextMap));
 			return ToolCallResponse.of(req.getToolCallId(), req.getToolName(), result);
 		};
 
 		// Chain interceptors if any
 		ToolCallHandler chainedHandler = InterceptorChain.chainToolInterceptors(
-			toolInterceptors, baseHandler);
+				toolInterceptors, baseHandler);
 
 		// Execute the chained handler
 		return chainedHandler.call(request);
@@ -166,9 +169,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private ToolCallback resolve(String toolName) {
 		return toolCallbacks.stream()
-			.filter(callback -> callback.getToolDefinition().name().equals(toolName))
-			.findFirst()
-			.orElseGet(() -> toolCallbackResolver.resolve(toolName));
+				.filter(callback -> callback.getToolDefinition().name().equals(toolName))
+				.findFirst()
+				.orElseGet(() -> toolCallbackResolver.resolve(toolName));
 	}
 
 	public static Builder builder() {
