@@ -164,6 +164,29 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return handleGraphFlux(context, embedGraphFlux.get(), updateState, resultValue);
 			}
 
+			// Check for interruptAfter hook (after apply() but before state merge)
+			String currentNodeId = context.getCurrentNodeId();
+			AsyncNodeActionWithConfig action = context.getNodeAction(currentNodeId);
+			if (action instanceof InterruptableAction) {
+				Optional<InterruptionMetadata> interruptMetadata = ((InterruptableAction) action)
+					.interruptAfter(currentNodeId, context.cloneState(context.getCurrentStateData()),
+						updateState, context.getConfig());
+				if (interruptMetadata.isPresent()) {
+					// Merge state first to ensure correct state on resume
+					context.mergeIntoCurrentState(updateState);
+					// Determine next node before creating checkpoint
+					Command nextCommand = context.nextNodeId(currentNodeId, context.getCurrentStateData());
+					context.setNextNodeId(nextCommand.gotoNode());
+					// Build checkpoint with correct nextNodeId
+					context.buildNodeOutputAndAddCheckpoint(updateState);
+					// Call NODE_AFTER listeners
+					context.doListeners(NODE_AFTER, null);
+					// Return interruption
+					resultValue.set(interruptMetadata.get());
+					return Flux.just(GraphResponse.done(interruptMetadata.get()));
+				}
+			}
+
 			context.mergeIntoCurrentState(updateState);
 
 			if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
