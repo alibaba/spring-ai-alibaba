@@ -639,7 +639,7 @@ public class SubGraphTest {
         // Subgraph A: provides the strategy for aKey
         KeyStrategyFactory subAKeyFactory = () -> Map.of("aKey", new ReplaceStrategy());
 
-        // Subgraph B: provides the strategy for aKey
+        // Subgraph B: provides the strategy for bKey
         KeyStrategyFactory subBKeyFactory = () -> Map.of("bKey", new ReplaceStrategy());
 
         KeyStrategyFactory mainKeyFactory = () -> {
