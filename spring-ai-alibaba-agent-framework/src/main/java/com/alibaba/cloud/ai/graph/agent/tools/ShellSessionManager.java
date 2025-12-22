@@ -574,14 +574,23 @@ public class ShellSessionManager {
 		 */
 		private static List<String> getDefaultShellCommand() {
 			String os = System.getProperty("os.name").toLowerCase();
+			
 			if (os.contains("windows")) {
 				// Windows: use PowerShell for better compatibility and features
 				return Arrays.asList("powershell.exe");
+			} else if (os.contains("mac")) {
+				// macOS: prefer zsh (default since Catalina), fallback to bash, then sh
+				if (new File("/bin/zsh").exists()) {
+					return Arrays.asList("/bin/zsh");
+				} else if (new File("/bin/bash").exists()) {
+					return Arrays.asList("/bin/bash");
+				} else {
+					return Arrays.asList("/bin/sh");
+				}
 			} else {
-				// Linux/macOS: try bash first, fallback to sh
-				String bashPath = "/bin/bash";
-				if (new File(bashPath).exists()) {
-					return Arrays.asList(bashPath);
+				// Linux and other Unix-like systems: prefer bash, fallback to sh
+				if (new File("/bin/bash").exists()) {
+					return Arrays.asList("/bin/bash");
 				} else {
 					return Arrays.asList("/bin/sh");
 				}
