@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2024-2025 the original author or authors.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ https://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.alibaba.cloud.ai</groupId>
+    <artifactId>spring-ai-alibaba-admin</artifactId>
+    <version>${revision}</version>
+    <packaging>pom</packaging>
+    <name>Spring AI Alibaba Admin</name>
+    <description>Server implementation of admin</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+
+    <modules>
+        <module>spring-ai-alibaba-admin-server-start</module>
+        <module>spring-ai-alibaba-admin-server-core</module>
+        <module>spring-ai-alibaba-admin-server-runtime</module>
+        <module>spring-ai-alibaba-admin-server-openapi</module>
+    </modules>
+
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>17</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+
+        <spring-ai-alibaba.version>1.0.0.3</spring-ai-alibaba.version>
+        <spring-ai.version>1.0.3</spring-ai.version>
+        <spring-boot.version>3.3.6</spring-boot.version>
+
+        <!-- 数据库相关 -->
+        <druid.version>1.2.20</druid.version>
+        <mybatis-plus.version>3.5.9</mybatis-plus.version>
+        <mysql.version>8.0.33</mysql.version>
+
+        <!-- 工具库 -->
+        <lombok.version>1.18.30</lombok.version>
+        <slf4j.version>2.0.7</slf4j.version>
+        <logback.version>1.5.8</logback.version>
+        <commons-lang3.version>3.11</commons-lang3.version>
+        <commons-collections.version>3.2.2</commons-collections.version>
+
+        <!-- 搜索引擎 -->
+        <elasticsearch.version>8.13.4</elasticsearch.version>
+        <jakarta.json.version>2.1.3</jakarta.json.version>
+
+        <!-- 监控追踪 -->
+        <json-schema-validator.version>1.0.87</json-schema-validator.version>
+
+        <!-- Nacos -->
+        <nacos.version>2023.0.3.3</nacos.version>
+
+        <!-- SpringDoc OpenAPI -->
+        <springdoc.version>2.6.0</springdoc.version>
+
+        <!-- Redisson -->
+        <redisson.version>3.27.2</redisson.version>
+
+        <!-- Aliyun OSS -->
+        <aliyun-oss.version>3.17.4</aliyun-oss.version>
+
+        <!-- Swagger -->
+        <swagger-parser.version>2.1.22</swagger-parser.version>
+        <swagger-inflector.version>2.0.11</swagger-inflector.version>
+        <swagger-models.version>2.2.16</swagger-models.version>
+
+        <!-- Argon2 -->
+        <argon2.version>2.11</argon2.version>
+
+        <!-- JGraphT -->
+        <jgrapht.version>1.5.2</jgrapht.version>
+
+        <!-- Guava -->
+        <guava.version>33.4.6-jre</guava.version>
+
+        <!-- OGNL -->
+        <ognl.version>3.4.7</ognl.version>
+
+        <!-- Nashorn -->
+        <nashorn.version>15.4</nashorn.version>
+
+        <!-- ASM -->
+        <asm.version>9.5</asm.version>
+
+        <!-- GraalVM -->
+        <graalvm-js.version>22.3.1</graalvm-js.version>
+        <graalvm-python.version>24.2.1</graalvm-python.version>
+        <graalvm-truffle.version>24.2.1</graalvm-truffle.version>
+        <graalvm-sdk.version>24.2.1</graalvm-sdk.version>
+        <graalvm-polyglot.version>24.2.1</graalvm-polyglot.version>
+
+        <!-- RocketMQ -->
+        <rocketmq-client.version>5.0.7</rocketmq-client.version>
+
+        <!-- JWT -->
+        <jjwt.version>0.12.6</jjwt.version>
+
+        <!-- MCP -->
+        <mcp.version>0.9.0</mcp.version>
+
+        <!-- maven plugin -->
+        <maven-compiler-plugin.version>3.9.0</maven-compiler-plugin.version>
+        <maven-eclipse-plugin.version>2.10</maven-eclipse-plugin.version>
+        <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
+        <build-helper-maven-plugin.version>3.4.0</build-helper-maven-plugin.version>
+        <maven-antrun.version>1.8</maven-antrun.version>
+        <flatten-maven-plugin.version>1.2.7</flatten-maven-plugin.version>
+        <spring-javaformat-maven-plugin.version>0.0.44</spring-javaformat-maven-plugin.version>
+
+        <maven.deploy.skip>true</maven.deploy.skip>
+
+        <revision>1.0.0-SNAPSHOT</revision>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-admin-server-runtime</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-admin-server-core</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jcl-over-slf4j</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid-spring-boot-starter</artifactId>
+                <version>${druid.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-jsqlparser</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-annotation</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-core</artifactId>
+                <version>${spring-ai-alibaba.version}</version>
+            </dependency>
+
+            <!-- Nacos -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-alibaba-nacos-config</artifactId>
+                <version>${nacos.version}</version>
+            </dependency>
+
+            <!-- Elasticsearch -->
+            <dependency>
+                <groupId>co.elastic.clients</groupId>
+                <artifactId>elasticsearch-java</artifactId>
+                <version>${elasticsearch.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.elasticsearch.client</groupId>
+                <artifactId>elasticsearch-rest-client</artifactId>
+                <version>${elasticsearch.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.json</groupId>
+                <artifactId>jakarta.json-api</artifactId>
+                <version>${jakarta.json.version}</version>
+            </dependency>
+
+            <!-- JSON Schema验证 -->
+            <dependency>
+                <groupId>com.networknt</groupId>
+                <artifactId>json-schema-validator</artifactId>
+                <version>${json-schema-validator.version}</version>
+            </dependency>
+
+            <!-- SpringDoc OpenAPI -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+
+            <!-- Redisson -->
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+
+            <!-- Aliyun OSS -->
+            <dependency>
+                <groupId>com.aliyun.oss</groupId>
+                <artifactId>aliyun-sdk-oss</artifactId>
+                <version>${aliyun-oss.version}</version>
+            </dependency>
+
+            <!-- Swagger -->
+            <dependency>
+                <groupId>io.swagger.parser.v3</groupId>
+                <artifactId>swagger-parser</artifactId>
+                <version>${swagger-parser.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger</groupId>
+                <artifactId>swagger-inflector</artifactId>
+                <version>${swagger-inflector.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-models</artifactId>
+                <version>${swagger-models.version}</version>
+            </dependency>
+
+            <!-- Argon2 -->
+            <dependency>
+                <groupId>de.mkammerer</groupId>
+                <artifactId>argon2-jvm</artifactId>
+                <version>${argon2.version}</version>
+            </dependency>
+
+            <!-- JGraphT -->
+            <dependency>
+                <groupId>org.jgrapht</groupId>
+                <artifactId>jgrapht-core</artifactId>
+                <version>${jgrapht.version}</version>
+            </dependency>
+
+            <!-- Guava -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+
+            <!-- OGNL -->
+            <dependency>
+                <groupId>ognl</groupId>
+                <artifactId>ognl</artifactId>
+                <version>${ognl.version}</version>
+            </dependency>
+
+            <!-- Commons Collections -->
+            <dependency>
+                <groupId>commons-collections</groupId>
+                <artifactId>commons-collections</artifactId>
+                <version>${commons-collections.version}</version>
+            </dependency>
+
+            <!-- Nashorn -->
+            <dependency>
+                <groupId>org.openjdk.nashorn</groupId>
+                <artifactId>nashorn-core</artifactId>
+                <version>${nashorn.version}</version>
+            </dependency>
+
+            <!-- ASM -->
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-commons</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-tree</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm-util</artifactId>
+                <version>${asm.version}</version>
+            </dependency>
+
+            <!-- GraalVM -->
+            <dependency>
+                <groupId>org.graalvm.js</groupId>
+                <artifactId>js</artifactId>
+                <version>${graalvm-js.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.js</groupId>
+                <artifactId>js-scriptengine</artifactId>
+                <version>${graalvm-js.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.python</groupId>
+                <artifactId>python-language</artifactId>
+                <version>${graalvm-python.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.truffle</groupId>
+                <artifactId>truffle-api</artifactId>
+                <version>${graalvm-truffle.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.sdk</groupId>
+                <artifactId>graal-sdk</artifactId>
+                <version>${graalvm-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graalvm.polyglot</groupId>
+                <artifactId>polyglot</artifactId>
+                <version>${graalvm-polyglot.version}</version>
+            </dependency>
+
+            <!-- RocketMQ -->
+            <dependency>
+                <groupId>org.apache.rocketmq</groupId>
+                <artifactId>rocketmq-client-java</artifactId>
+                <version>${rocketmq-client.version}</version>
+            </dependency>
+
+            <!-- JWT -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+
+            <!-- MCP -->
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp</artifactId>
+                <version>${mcp.version}</version>
+            </dependency>
+
+            <!-- MySQL Connector J (newer artifact) -->
+            <dependency>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
+                <version>${mysql.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                        <parameters>true</parameters>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <repositories>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+        </repository>
+        <repository>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <id>spring-snapshots</id>
+            <name>Spring Snapshots</name>
+            <url>https://repo.spring.io/snapshot</url>
+        </repository>
+    </repositories>
+
+</project>

@@ -1,0 +1,65 @@
+{
+  "name": "agentscope-frontend",
+  "version": "0.0.1",
+  "description": "agentscope-frontend",
+  "keywords": [],
+  "author": "",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build:app": "cd packages/main && npm run build && cd ..",
+    "build:flow": "cd packages/spark-flow && npm run build && cd ..",
+    "build:subtree": "npm run clear",
+    "build:subtree:java": "npm run build:subtree && npm install && npm run build:flow && BACK_END=java npm run build:app",
+    "build:subtree:python": "npm run build:subtree && npm install && npm run build:flow && BACK_END=python npm run build:app",
+    "clear": "rimraf node_modules packages/spark-flow/node_modules packages/main/node_modules packages/main/src/.umi",
+    "lint": "umi lint {packages/main/src,packages/spark-flow/src}/**/*.{ts,tsx,less} --fix",
+    "prepare": "husky install",
+    "re-install": "npm run clear && npm install && npm run build:flow",
+    "re-install:flow": "npm run build:flow && rimraf packages/main/node_modules && npm install"
+  },
+  "lint-staged": {
+    "*.{jsx,ts,tsx,css,less}": [
+      "umi lint"
+    ],
+    "*.{jsx,less,md}": [
+      "prettier --no-error-on-unmatched-pattern --cache --write"
+    ],
+    "*.ts?(x)": [
+      "prettier --no-error-on-unmatched-pattern --cache --parser=typescript --write"
+    ]
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.0.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/modifiers": "^7.0.0",
+    "@dnd-kit/sortable": "^8.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@spark-ai/chat": "^1.1.3",
+    "@spark-ai/design": "^1.0.3",
+    "antd": "5.23.2",
+    "axios": "^1.8.4",
+    "react": "^18",
+    "react-dom": "^18",
+    "uuid": "^3.4.0"
+  },
+  "devDependencies": {
+    "@umijs/lint": "^4.4.11",
+    "babel-jest": "^29.6.1",
+    "copyfiles": "^2.4.1",
+    "cross-env": "^10.1.0",
+    "eslint": "^8",
+    "husky": "^9.1.7",
+    "jest": "^29.6.2",
+    "lerna": "^7.1.4",
+    "lint-staged": "^13.2.3",
+    "postcss-less": "^6.0.0",
+    "prettier": "^3.0.0",
+    "prettier-plugin-organize-imports": "^4.1.0",
+    "prettier-plugin-packagejson": "^2.5.14",
+    "rimraf": "^6.1.0",
+    "stylelint": "^14.16.1",
+    "umi": "^4.4.11"
+  }
+}

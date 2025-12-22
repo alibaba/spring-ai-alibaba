@@ -1,0 +1,64 @@
+.tokenItem {
+  display: flex;
+
+  span:nth-child(1) {
+    display: inline-block;
+    width: 100px;
+    color: var(--ag-ant-color-text-secondary);
+    font-size: 14px;
+    line-height: 24px;
+  }
+
+  span:nth-child(2) {
+    color: var(--ag-ant-color-text);
+    font-size: 14px;
+    line-height: 24px;
+  }
+}
+
+.icon {
+  font-size: 12px !important;
+}
+
+.tokenTag,
+.tagResult {
+  margin: 0;
+  span:last-child {
+    margin-left: 2px;
+  }
+}
+
+.tagResult.success {
+  background: var(--ag-ant-color-success-bg);
+  border-color: var(--ag-ant-color-success-border);
+  color: var(--ag-ant-color-success);
+
+  .icon {
+    color: var(--ag-ant-color-success);
+  }
+}
+
+.tagResult.fail {
+  background: var(--ag-ant-color-error-bg);
+  border-color: var(--ag-ant-color-error-border);
+  color: var(--ag-ant-color-error);
+
+  .icon {
+    color: var(--ag-ant-color-error);
+  }
+}
+
+.tagResult.executing {
+  .icon {
+    animation: spin 3s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

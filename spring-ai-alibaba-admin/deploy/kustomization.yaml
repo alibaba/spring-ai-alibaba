@@ -1,0 +1,20 @@
+# Kustomization file for optional use with kubectl apply -k
+# This allows you to apply all resources at once
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: spring-ai-admin
+
+resources:
+  - namespace.yaml
+  - middleware/mysql/mysql-deployment.yaml
+  - middleware/elasticsearch/elasticsearch-deployment.yaml
+  - middleware/kibana/kibana-deployment.yaml
+  - middleware/redis/redis-deployment.yaml
+  - middleware/nacos/nacos-deployment.yaml
+  - middleware/rocketmq/rocketmq-deployment.yaml
+  - middleware/loongcollector/loongcollector-deployment.yaml
+  - backend/backend-deployment.yaml
+  - frontend/frontend-deployment.yaml
+  - ingress.yaml
+

@@ -1,0 +1,30 @@
+# Elasticsearch 配置文件
+spring:
+  elasticsearch:
+    # Elasticsearch 服务地址
+    # 支持通过环境变量 SPRING_ELASTICSEARCH_URL 覆盖，默认值用于本地开发
+    url: ${SPRING_ELASTICSEARCH_URL:http://localhost:9200}
+    # 连接超时时间（毫秒）
+    connect-timeout: 5000
+    # 读取超时时间（毫秒）
+    socket-timeout: 60000
+    # 连接池配置
+    connection-pool:
+      # 最大连接数
+      max-connections: 100
+      # 最大空闲连接数
+      max-idle-connections: 50
+      # 连接保活时间（毫秒）
+      keep-alive: 300000
+
+# 应用追踪配置
+app:
+  tracing:
+    # 索引配置
+    index:
+      # traces 索引名称
+      traces-index: loongsuite_traces
+      # 索引分片数
+      shards: 1
+      # 索引副本数
+      replicas: 0

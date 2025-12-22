@@ -1,0 +1,264 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rmq-namesrv
+  namespace: spring-ai-admin
+  labels:
+    app: rmq-namesrv
+spec:
+  serviceName: rmq-namesrv
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rmq-namesrv
+  template:
+    metadata:
+      labels:
+        app: rmq-namesrv
+    spec:
+      containers:
+      - name: rmq-namesrv
+        image: apache/rocketmq:5.3.2
+        ports:
+        - containerPort: 9876
+          name: namesrv
+        env:
+        - name: NAMESRV_ADDR
+          value: "rmq-namesrv:9876"
+        - name: HEAP_OPTS
+          value: "-Xms128M -Xmx256M -Xmn128M"
+        command:
+        - sh
+        - mqnamesrv
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "ps aux | grep mqnamesrv | grep -v grep || exit 1"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "ps aux | grep mqnamesrv | grep -v grep || exit 1"
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rmq-namesrv
+  namespace: spring-ai-admin
+  labels:
+    app: rmq-namesrv
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9876
+    targetPort: 9876
+    protocol: TCP
+    name: namesrv
+  selector:
+    app: rmq-namesrv
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rmq-broker-store
+  namespace: spring-ai-admin
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rmq-broker
+  namespace: spring-ai-admin
+  labels:
+    app: rmq-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rmq-broker
+  template:
+    metadata:
+      labels:
+        app: rmq-broker
+    spec:
+      containers:
+      - name: rmq-broker
+        image: apache/rocketmq:5.3.2
+        ports:
+        - containerPort: 10909
+          name: vip
+        - containerPort: 10911
+          name: broker
+        - containerPort: 10912
+          name: broker-vip
+        env:
+        - name: NAMESRV_ADDR
+          value: "rmq-namesrv:9876"
+        - name: HEAP_OPTS
+          value: "-Xms256M -Xmx512M -Xmn256M -XX:MaxDirectMemorySize=128M"
+        command:
+        - sh
+        - mqbroker
+        volumeMounts:
+        - name: rmq-store
+          mountPath: /home/rocketmq/store
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "ps aux | grep mqbroker | grep -v grep || exit 1"
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - "ps aux | grep mqbroker | grep -v grep || exit 1"
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+      volumes:
+      - name: rmq-store
+        persistentVolumeClaim:
+          claimName: rmq-broker-store
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rmq-broker
+  namespace: spring-ai-admin
+  labels:
+    app: rmq-broker
+spec:
+  type: ClusterIP
+  ports:
+  - port: 10909
+    targetPort: 10909
+    protocol: TCP
+    name: vip
+  - port: 10911
+    targetPort: 10911
+    protocol: TCP
+    name: broker
+  - port: 10912
+    targetPort: 10912
+    protocol: TCP
+    name: broker-vip
+  selector:
+    app: rmq-broker
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rmq-proxy-config
+  namespace: spring-ai-admin
+data:
+  rmq-proxy.json: |
+    {
+      "rocketMQHome": "/home/rocketmq",
+      "namesrvAddr": "rmq-namesrv:9876"
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rmq-proxy
+  namespace: spring-ai-admin
+  labels:
+    app: rmq-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rmq-proxy
+  template:
+    metadata:
+      labels:
+        app: rmq-proxy
+    spec:
+      containers:
+      - name: rmq-proxy
+        image: apache/rocketmq:5.3.2
+        ports:
+        - containerPort: 18080
+          name: http
+        - containerPort: 18081
+          name: https
+        env:
+        - name: NAMESRV_ADDR
+          value: "rmq-namesrv:9876"
+        - name: HEAP_OPTS
+          value: "-Xms128M -Xmx256M -Xmn128M"
+        command:
+        - sh
+        - mqproxy
+        args:
+        - -pc
+        - /home/rocketmq/conf/rmq-proxy.json
+        volumeMounts:
+        - name: rmq-proxy-config
+          mountPath: /home/rocketmq/conf
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: rmq-proxy-config
+        configMap:
+          name: rmq-proxy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rmq-proxy
+  namespace: spring-ai-admin
+  labels:
+    app: rmq-proxy
+spec:
+  type: ClusterIP
+  ports:
+  - port: 18080
+    targetPort: 18080
+    protocol: TCP
+    name: http
+  - port: 18081
+    targetPort: 18081
+    protocol: TCP
+    name: https
+  selector:
+    app: rmq-proxy
+
