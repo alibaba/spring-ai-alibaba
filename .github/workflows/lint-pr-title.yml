@@ -53,6 +53,7 @@ jobs:
             memories
             tool-calls
             graph
+            higress
             jmanus
             mcp
             prompt

@@ -59,6 +59,9 @@
         <module>spring-ai-alibaba-jmanus</module>
         <module>spring-ai-alibaba-deepresearch</module>
 
+        <!-- Spring AI Alibaba Model Call API -->
+        <module>community/model-calls/spring-ai-alibaba-higress</module>
+
         <!-- Spring AI Alibaba Tool Call Plugins -->
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-common</module>
         <module>community/tool-calls/spring-ai-alibaba-starter-tool-calling-time</module>
