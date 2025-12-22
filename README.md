@@ -20,8 +20,12 @@
 
 ## What's Agent Framework
 
+> **NOTICE!** Spring Ai Alibaba is a project designed and created for multi-agent and workflow orchestration. So the `ReactAgent` in Spring Ai Alibaba is under the hood run on Graph Runtime and is designed mainly for workflow orchestration.
+> 
+> If you are looking for a more advanced ReactAgent paradigm for building model-derived agents, please checkout the **<a href="https://github.com/agentscope-ai/agentscope-java">AgentScope</a>** project we have built recently. The Spring Ai Alibaba `ReactAgent` part will still be maintained and continue to receive bug fixes and critical security patches, we will be focusing more on Spring Ai integrtion and multi-agent orchestration.
+
 <p align="center">
-    <img src="./docs/imgs/architecture-new.png" alt="architecture" style="max-width: 740px; height: 508px" />
+    <img src="./docs/imgs/saa-architecture.png" alt="architecture" style="max-width: 740px; height: 508px" />
 </p>
 
 Spring AI Alibaba Agent Framework is an agent development framework centered around the design philosophy of **ReactAgent**, enabling developers to build agents with core capabilities such as automatic **Context Engineering** and **Human In The Loop** interaction.

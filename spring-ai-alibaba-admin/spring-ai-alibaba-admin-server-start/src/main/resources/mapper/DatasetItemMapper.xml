@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.cloud.ai.studio.admin.mapper.DatasetItemMapper">
+
+    <!-- Dataset Item table fields -->
+    <sql id="dataset_item_columns">
+        id, dataset_id, columns_config, data_content, create_time, update_time
+    </sql>
+
+    <!-- Dataset Item entity mapping -->
+    <resultMap id="datasetItemResultMap" type="com.alibaba.cloud.ai.studio.admin.entity.DatasetItemDO">
+        <id property="id" column="id"/>
+        <result property="datasetId" column="dataset_id"/>
+        <result property="columnsConfig" column="columns_config"/>
+        <result property="dataContent" column="data_content"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <!-- Create dataset item -->
+    <insert id="insert" parameterType="com.alibaba.cloud.ai.studio.admin.entity.DatasetItemDO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dataset_item (dataset_id, columns_config, data_content, create_time, update_time)
+        VALUES (#{datasetId}, #{columnsConfig}, #{dataContent}, NOW(), NOW())
+    </insert>
+
+    <!-- Delete dataset item by ID (logical delete) -->
+    <update id="deleteById">
+        UPDATE dataset_item
+        SET deleted = 1
+        WHERE id = #{id}
+    </update>
+
+    <!-- Get dataset item by ID -->
+    <select id="selectById" resultMap="datasetItemResultMap">
+        SELECT <include refid="dataset_item_columns"/>
+        FROM dataset_item
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- Query dataset item list -->
+    <select id="list" resultMap="datasetItemResultMap">
+        SELECT <include refid="dataset_item_columns"/>
+        FROM dataset_item
+        <where>
+            deleted = 0
+            <if test="datasetId != null">
+                AND dataset_id = #{datasetId}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- Query dataset item count -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM dataset_item
+        <where>
+            deleted = 0
+            <if test="datasetId != null">
+                AND dataset_id = #{datasetId}
+            </if>
+        </where>
+    </select>
+
+    <!-- Update dataset item -->
+    <update id="update">
+        UPDATE dataset_item
+        <set>
+            <if test="dataContent != null">data_content = #{dataContent},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- Find dataset items by dataset Version ID -->
+    <select id="selectByDatasetVersionId" resultMap="datasetItemResultMap">
+        SELECT <include refid="dataset_item_columns"/>
+        FROM dataset_item
+        WHERE dataset_version_id = #{datasetVersionId} AND deleted = 0
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- Find dataset items by dataset ID with pagination -->
+    <select id="selectByDatasetIdWithPagination" resultMap="datasetItemResultMap">
+        SELECT <include refid="dataset_item_columns"/>
+        FROM dataset_item
+        WHERE dataset_id = #{datasetId} AND deleted = 0
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- Find dataset items by dataset ID and item IDs with pagination -->
+     <select id="selectByDatasetIdAndItemIdsWithPagination" resultMap="datasetItemResultMap">
+        SELECT <include refid="dataset_item_columns"/>
+        FROM dataset_item
+        WHERE dataset_id = #{datasetId} AND deleted = 0
+        AND id IN
+        <foreach collection="itemIds" item="itemId" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectByDatasetIdAndItemIds" resultMap="datasetItemResultMap">
+        SELECT <include refid="dataset_item_columns"/>
+        FROM dataset_item
+        WHERE dataset_id = #{datasetId} AND deleted = 0
+        AND id IN
+        <foreach collection="itemIds" item="itemId" open="(" separator="," close=")">
+            #{itemId}
+        </foreach>
+        ORDER BY create_time DESC
+    </select>
+
+
+    <!-- Batch delete dataset items by IDs -->
+    <update id="batchDeleteByIds">
+        UPDATE dataset_item
+        SET deleted = 1
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

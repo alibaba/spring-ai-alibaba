@@ -1,0 +1,82 @@
+@import '../../index.less';
+.spark-flow-tools {
+  box-shadow:
+    0 12px 24px -16px rgb(54 54 73 / 4%),
+    0 12px 40px 0 rgb(51 51 71 / 8%),
+    0 0 1px 0 rgb(44 44 54 / 2%);
+  border: 1px solid e('var(--@{ant-prefix}-color-border-secondary)');
+  background: e('var(--@{ant-prefix}-color-bg-base)');
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.spark-flow-tool-icon-btn {
+  cursor: pointer;
+  transition: 0.4s ease-in-out;
+  color: e('var(--@{ant-prefix}-color-text)');
+  border-radius: 6px;
+
+  &:hover:not(.spark-flow-tool-icon-btn-disabled),
+  &.spark-flow-tool-icon-btn-active {
+    color: e('var(--@{ant-prefix}-color-primary)');
+    background: e('var(--@{ant-prefix}-color-primary-bg)');
+  }
+
+  &.spark-flow-tool-icon-btn-disabled {
+    cursor: not-allowed;
+    color: e('var(--@{ant-prefix}-color-text-disabled)');
+  }
+
+  .@{ant-prefix}-popover .@{ant-prefix}-popover-content,
+  .@{ant-prefix}-dropdown .@{ant-prefix}-dropdown-menu {
+    margin-bottom: 6px;
+  }
+}
+
+.spark-flow-tools-scale-rate {
+  width: 36px;
+  text-align: center;
+}
+
+.spark-flow-touch-mode-select-item {
+  cursor: pointer;
+  border-radius: 4px;
+  transition: 0.4s ease-in-out;
+  width: 300px;
+  padding: 8px 12px;
+
+  &-icon {
+    background: e('var(--@{ant-prefix}-color-fill-secondary)');
+    color: e('var(--@{ant-prefix}-color-text-secondary)');
+    border-radius: 4px;
+  }
+
+  &-label {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+    color: e('var(--@{ant-prefix}-color-text)');
+  }
+
+  &-desc {
+    font-size: 12px;
+    line-height: 18px;
+    color: e('var(--@{ant-prefix}-color-text-secondary)');
+  }
+
+  &:hover,
+  &.spark-flow-touch-mode-select-item-active {
+    background: e('var(--@{ant-prefix}-color-primary-bg)');
+
+    .spark-flow-touch-mode-select-item-icon {
+      background: e('var(--@{ant-prefix}-color-primary-border)');
+      color: e('var(--@{ant-prefix}-color-primary)');
+    }
+  }
+}
+
+.spark-flow-touch-mode-btn-container {
+  .@{ant-prefix}-popover .@{ant-prefix}-popover-inner {
+    padding: 4px;
+  }
+}

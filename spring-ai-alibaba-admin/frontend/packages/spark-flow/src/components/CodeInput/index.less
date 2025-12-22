@@ -1,0 +1,82 @@
+@import '../../index.less';
+
+.spark-flow-code-input {
+  position: relative;
+  border: 1px solid e('var(--@{ant-prefix}-color-border)');
+  border-radius: 6px;
+  padding: 4px 0;
+  background: e('var(--@{ant-prefix}-color-bg-container)');
+
+  .cm-content {
+    margin: 0;
+    padding: 0;
+  }
+
+  .cm-gutters {
+    border-radius: 6px 0 0 6px;
+    background: transparent;
+  }
+
+  .cm-editor {
+    border-radius: 6px;
+    height: auto;
+    min-height: 22px;
+    background: transparent;
+
+    &.cm-focused {
+      outline: none !important;
+    }
+  }
+
+  &:not(.spark-flow-code-input-modal-content) .cm-activeLine {
+    background-color: transparent !important;
+  }
+
+  .cm-diagnosticText {
+    color: e('var(--@{ant-prefix}-color-error)');
+    font-size: 12px;
+  }
+
+  .cm-diagnosticAction {
+    color: e('var(--@{ant-prefix}-color-primary)');
+    cursor: pointer;
+    margin-left: 8px;
+  }
+
+  &.spark-flow-code-input-compact {
+    border-radius: 0 6px 6px 0;
+
+    .cm-editor {
+      border-radius: 0 6px 6px 0;
+    }
+  }
+
+  &.spark-flow-code-input-disabled {
+    cursor: not-allowed;
+    background: e('var(--@{ant-prefix}-color-bg-container-disabled)');
+  }
+
+  .spark-flow-code-input-expand-icon {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    pointer-events: none;
+    opacity: 0;
+    background-color: e('var(--@{ant-prefix}-color-mauve-bg)');
+    transition: all 0.3s ease-in-out;
+    border-radius: 4px;
+  }
+
+  &:hover {
+    .spark-flow-code-input-expand-icon {
+      pointer-events: auto;
+      opacity: 1;
+    }
+  }
+}
+
+.spark-flow-code-input-modal-content {
+  .cm-editor {
+    height: 60vh;
+  }
+}

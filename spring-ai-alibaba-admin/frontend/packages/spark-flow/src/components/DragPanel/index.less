@@ -1,0 +1,23 @@
+.spark-drag-panel {
+  position: relative;
+  height: 100%;
+
+  &-handle {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    cursor: ew-resize;
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+
+    &--dragging {
+      background-color: #1890ff;
+    }
+
+    &--hovering {
+      background-color: #e6f7ff;
+    }
+  }
+}

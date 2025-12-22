@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loongcollector-config
+  namespace: spring-ai-admin
+data:
+  otlp_pipeline.yaml: |
+    # LoongCollector configuration
+    # Add your pipeline configuration here
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loongcollector
+  namespace: spring-ai-admin
+  labels:
+    app: loongcollector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loongcollector
+  template:
+    metadata:
+      labels:
+        app: loongcollector
+    spec:
+      containers:
+      - name: loongcollector
+        image: sls-opensource-registry.cn-shanghai.cr.aliyuncs.com/loongcollector-community-edition/loongcollector:3.1.4
+        ports:
+        - containerPort: 4318
+          name: otlp
+        volumeMounts:
+        - name: loongcollector-config
+          mountPath: /usr/local/loongcollector/conf/continuous_pipeline_config/local
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+      volumes:
+      - name: loongcollector-config
+        configMap:
+          name: loongcollector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loongcollector
+  namespace: spring-ai-admin
+  labels:
+    app: loongcollector
+spec:
+  type: ClusterIP
+  ports:
+  - port: 4318
+    targetPort: 4318
+    protocol: TCP
+    name: otlp
+  selector:
+    app: loongcollector
+

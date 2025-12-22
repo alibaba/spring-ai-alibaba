@@ -1,0 +1,23 @@
+@import '../../index.less';
+
+.draggable-item {
+  position: relative;
+}
+
+.drag-handle {
+  cursor: grab;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-touch-callout: none;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  i {
+    font-size: 16px;
+    color: e('var(--@{ant-prefix}-color-text-secondary)');
+  }
+}
