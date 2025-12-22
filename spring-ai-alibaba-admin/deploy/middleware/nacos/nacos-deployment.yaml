@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nacos-secret
+  namespace: spring-ai-admin
+type: Opaque
+stringData:
+  nacos-auth-token: dG9rZW5hbHNka2ZqbGFza2RqZmxhc2tkamZsYXNrZGpmb3dpZWpmbztzZGxm
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nacos-data
+  namespace: spring-ai-admin
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nacos
+  namespace: spring-ai-admin
+  labels:
+    app: nacos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nacos
+  template:
+    metadata:
+      labels:
+        app: nacos
+    spec:
+      containers:
+      - name: nacos
+        image: nacos/nacos-server:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8848
+          name: client
+        - containerPort: 9848
+          name: client-rpc
+        env:
+        - name: MODE
+          value: "standalone"
+        - name: NACOS_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: nacos-secret
+              key: nacos-auth-token
+        - name: NACOS_AUTH_IDENTITY_KEY
+          value: "admin"
+        - name: NACOS_AUTH_IDENTITY_VALUE
+          value: "admin"
+        volumeMounts:
+        - name: nacos-data
+          mountPath: /home/nacos/data
+        - name: nacos-logs
+          mountPath: /home/nacos/logs
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+      volumes:
+      - name: nacos-data
+        persistentVolumeClaim:
+          claimName: nacos-data
+      - name: nacos-logs
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nacos
+  namespace: spring-ai-admin
+  labels:
+    app: nacos
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 8848
+    targetPort: 8848
+    protocol: TCP
+    name: client
+  - port: 9848
+    targetPort: 9848
+    protocol: TCP
+    name: client-rpc
+  selector:
+    app: nacos
+

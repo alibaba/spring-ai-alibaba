@@ -1,0 +1,152 @@
+server:
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript
+    min-response-size: 2048
+nacos:
+  # 支持通过环境变量 NACOS_SERVER_ADDR 覆盖，默认值用于本地开发
+  server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      export:
+        enabled: true
+      # 支持通过环境变量 MANAGEMENT_OTLP_TRACING_EXPORT_ENDPOINT 覆盖
+      endpoint: ${MANAGEMENT_OTLP_TRACING_EXPORT_ENDPOINT:http://localhost:4318/v1/traces}
+    metrics:
+      export:
+        enabled: false
+    logging:
+      export:
+        enabled: false
+  opentelemetry:
+    resource-attributes:
+      service:
+        # shouldn't be changed
+        name: spring-ai-alibaba-studio
+        version: 1.0
+      deployment:
+        environment: test
+  endpoints:
+    web:
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+spring:
+  ai:
+    chat:
+      client:
+        observations:
+          log-prompt: true
+      observations:
+        log-prompt: true
+        log-completion: true
+    image:
+      observations:
+        log-prompt: true
+    vectorstore:
+      observations:
+        log-query-response: true
+    alibaba:
+      arms:
+        enabled: true
+        model:
+          capture-input: true
+          capture-output: true
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 500MB
+      enabled: true
+  application:
+    name: saa-studio
+  config:
+    import: 
+      - classpath:initializr.yml
+      - classpath:elasticsearch.yml
+
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 支持通过环境变量覆盖，默认值用于本地开发
+    # SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/admin?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai}
+    username: ${SPRING_DATASOURCE_USERNAME:admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      filters: stat,wall,slf4j
+      filter:
+        stat:
+          log-slow-sql: true
+          slow-sql-millis: 1000
+          enabled: true
+        slf4j:
+          enabled: true
+          statement-executable-sql-log-enable: true
+          statement-log-error-enabled: true
+
+  data:
+    redis:
+      # 支持通过环境变量覆盖，默认值用于本地开发
+      # SPRING_REDIS_HOST, SPRING_REDIS_PORT, SPRING_REDIS_DATABASE
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
+      database: ${SPRING_REDIS_DATABASE:0}
+  freemarker:
+    cache: false
+    charset: UTF-8
+    suffix: .html
+    enabled: true
+    content-type: text/html
+    template-loader-path: classpath:/templates/
+  elasticsearch:
+    # Spring Boot 默认 Elasticsearch 配置（如果使用 Spring Data Elasticsearch）
+    # 注意：自定义 ElasticsearchClient 的配置在 elasticsearch.yml 中
+    # 支持通过环境变量 SPRING_ELASTICSEARCH_URIS 覆盖，默认值用于本地开发
+    uris: ${SPRING_ELASTICSEARCH_URIS:http://localhost:9200}
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+      jakarta:
+        persistence:
+          jdbc:
+            # 使用与 datasource 相同的配置，通过环境变量覆盖
+            url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/admin?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai}
+            user: ${SPRING_DATASOURCE_USERNAME:admin}
+            password: ${SPRING_DATASOURCE_PASSWORD:admin}
+            driver: com.mysql.cj.jdbc.Driver
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.alibaba.cloud.ai.studio.admin.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+rocketmq:
+  # 支持通过环境变量覆盖，默认值用于本地开发
+  # ROCKETMQ_ENDPOINTS, ROCKETMQ_DOCUMENT_INDEX_TOPIC, ROCKETMQ_DOCUMENT_INDEX_GROUP
+  endpoints: ${ROCKETMQ_ENDPOINTS:localhost:18080}
+  document-index-topic: ${ROCKETMQ_DOCUMENT_INDEX_TOPIC:topic_saa_studio_document_index}
+  document_index_group: ${ROCKETMQ_DOCUMENT_INDEX_GROUP:group_saa_studio_document_index}
+
+initializr:
+  web:
+    enabled: false
+logging:
+  level:
+    org.springframework.boot.autoconfigure: INFO
+    org.springframework.boot.task: INFO
+

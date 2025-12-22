@@ -1,0 +1,234 @@
+version: '3.8'
+
+services:
+
+  mysql:
+    container_name: mysql
+    restart: always
+    image: sca-registry.cn-hangzhou.cr.aliyuncs.com/dubbo/mysql:8.0.35
+    user: "${UID}:${GID}"
+    env_file:
+      - ./mysql.env
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/mysql/data:/var/lib/mysql
+      - ${MIDDLEWARE_HOME:-.}/mysql/log:/var/log
+      - ${MIDDLEWARE_HOME:-.}/conf/mysql:/etc/mysql/conf.d
+      - ${MIDDLEWARE_HOME:-.}/init/mysql:/docker-entrypoint-initdb.d/
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.1.2
+    container_name: elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - cluster.name=es-cluster
+      - node.name=es-node-1
+      - bootstrap.memory_lock=true
+      - http.cors.enabled=true
+      - http.cors.allow-origin="*"
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - o11y-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.1.2
+    container_name: kibana
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - o11y-network
+
+  elasticsearch-init:
+    image: curlimages/curl:latest
+    container_name: elasticsearch-init
+    restart: "no"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/init/elasticsearch:/scripts
+    working_dir: /scripts
+    command: ["sh", "init-indices.sh"]
+    networks:
+      - o11y-network
+
+  loongcollector:
+    image: sls-opensource-registry.cn-shanghai.cr.aliyuncs.com/loongcollector-community-edition/loongcollector:3.1.4
+    container_name: loongcollector
+    restart: always
+    depends_on:
+      elasticsearch-init:
+        condition: service_completed_successfully
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/conf/loongcollector:/usr/local/loongcollector/conf/continuous_pipeline_config/local
+    ports:
+      - "4318:4318"
+    networks:
+      - o11y-network
+
+  nacos:
+    container_name: nacos
+    restart: always
+    image: nacos/nacos-server:latest
+    ports:
+      - "7080:8080"
+      - "7848:8848"
+      - "8848:9848"
+    environment:
+      - MODE=standalone
+      - NACOS_AUTH_TOKEN=dG9rZW5hbHNka2ZqbGFza2RqZmxhc2tkamZsYXNrZGpmb3dpZWpmbztzZGxm
+      - NACOS_AUTH_IDENTITY_KEY=admin
+      - NACOS_AUTH_IDENTITY_VALUE=admin
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/nacos/logs:/home/nacos/logs
+      - ${MIDDLEWARE_HOME:-.}/nacos/data:/home/nacos/data
+
+  redis:
+    restart: always
+    image: redis:7.2.5
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/redis/data:/data
+    command: redis-server
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+  rmq_namesrv:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq_namesrv
+    user: "${UID}:${GID}"
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      - NAMESRV_ADDR=rmq_namesrv:9876
+      - HEAP_OPTS=-Xms128M -Xmx256M -Xmn128M
+    ports:
+      - "9876:9876"
+    networks:
+      - rocketmq
+    command: sh mqnamesrv
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "ps aux | grep mqnamesrv | grep -v grep || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  rmq_broker:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq_broker
+    restart: always
+    user: "${UID}:${GID}"
+    env_file:
+      - ./.env
+    environment:
+      - NAMESRV_ADDR=rmq_namesrv:9876
+      - HEAP_OPTS=-Xms256M -Xmx512M -Xmn256M -XX:MaxDirectMemorySize=128M
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/rocketmq/store:/home/rocketmq/store
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    depends_on:
+      - rmq_namesrv
+    networks:
+      - rocketmq
+    command: sh mqbroker
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "ps aux | grep mqbroker | grep -v grep || exit 1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  rmq_proxy:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq_proxy
+    restart: always
+    user: "${UID}:${GID}"
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/conf/rocketmq:/home/rocketmq/conf
+    env_file:
+      - ./.env
+    environment:
+      - NAMESRV_ADDR=rmq_namesrv:9876
+      - HEAP_OPTS=-Xms128M -Xmx256M -Xmn128M
+    networks:
+      - rocketmq
+    depends_on:
+      - rmq_broker
+      - rmq_namesrv
+    ports:
+      - "18080:18080"
+      - "18081:18081"
+    command: sh mqproxy -pc /home/rocketmq/conf/rmq-proxy.json
+  init-topic:
+    image: apache/rocketmq:5.3.2
+    container_name: rmq-init-topic
+    restart: "no"
+    depends_on:
+      rmq_namesrv:
+        condition: service_healthy
+      rmq_broker:
+        condition: service_healthy
+    networks:
+      - rocketmq
+    entrypoint: >
+      sh -c "
+        echo 'Waiting for RocketMQ to be ready...' &&
+        sleep 60 &&
+        until sh mqadmin clusterList -n rmq_namesrv:9876; do
+          echo 'Waiting for RocketMQ to be fully ready...' &&
+          sleep 10
+        done &&
+        echo 'Creating topic...' &&
+        sh mqadmin updateTopic -n rmq_namesrv:9876 -t topic_saa_studio_document_index -c DefaultCluster -a +message.type=NORMAL &&
+        sh mqadmin updateSubGroup -n rmq_namesrv:9876 -g group_saa_studio_document_index -c DefaultCluster &&
+        echo 'Verifying topic creation...' &&
+        sh mqadmin topicList -n rmq_namesrv:9876 &&
+        echo 'Topic creation completed'"
+volumes:
+  elasticsearch_data:
+    driver: local
+
+networks:
+  rocketmq:
+    driver: bridge
+  o11y-network:
+    driver: bridge

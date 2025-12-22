@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spring-ai-admin-ingress
+  namespace: spring-ai-admin
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # If you want to enable SSL, uncomment and configure:
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: spring-ai-admin.local  # Change this to your actual domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: spring-ai-admin-server
+            port:
+              number: 8080
+  # Uncomment below if you have SSL certificates
+  # tls:
+  # - hosts:
+  #   - spring-ai-admin.local
+  #   secretName: spring-ai-admin-tls
+

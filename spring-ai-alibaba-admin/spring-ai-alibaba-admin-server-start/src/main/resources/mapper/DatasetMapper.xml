@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.cloud.ai.studio.admin.mapper.DatasetMapper">
+
+    <!-- 评测集表字段 -->
+    <sql id="dataset_columns">
+        id, name, description, columns_config, create_time, update_time, deleted
+    </sql>
+
+    <!-- 评测集实体映射 -->
+    <resultMap id="datasetResultMap" type="com.alibaba.cloud.ai.studio.admin.entity.DatasetDO">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="columnsConfig" column="columns_config"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <!-- 创建评测集 -->
+    <insert id="insert" parameterType="com.alibaba.cloud.ai.studio.admin.entity.DatasetDO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dataset (name, description, columns_config, create_time, deleted)
+        VALUES (#{name}, #{description}, #{columnsConfig}, NOW(), 0)
+    </insert>
+
+    <!-- 根据ID删除评测集（逻辑删除） -->
+    <update id="deleteById" parameterType="long">
+        UPDATE dataset SET deleted = 1 WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID获取评测集 -->
+    <select id="selectById" resultMap="datasetResultMap">
+        SELECT <include refid="dataset_columns"/>
+        FROM dataset
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 查询评测集列表 -->
+    <select id="selectList" resultMap="datasetResultMap">
+        SELECT
+        <include refid="dataset_columns"/>
+        FROM dataset
+        <where>
+            deleted = 0
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 查询评测集总数 -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM dataset
+        <where>
+            deleted = 0
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 更新评测集 -->
+    <update id="update" parameterType="com.alibaba.cloud.ai.studio.admin.entity.DatasetDO">
+        UPDATE dataset
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+
+</mapper>

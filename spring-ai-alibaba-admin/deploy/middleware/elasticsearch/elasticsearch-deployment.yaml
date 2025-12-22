@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: elasticsearch-data
+  namespace: spring-ai-admin
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: elasticsearch
+  namespace: spring-ai-admin
+  labels:
+    app: elasticsearch
+spec:
+  serviceName: elasticsearch
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+      - name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:9.1.2
+        ports:
+        - containerPort: 9200
+          name: http
+        - containerPort: 9300
+          name: transport
+        env:
+        - name: discovery.type
+          value: "single-node"
+        - name: xpack.security.enabled
+          value: "false"
+        - name: xpack.security.enrollment.enabled
+          value: "false"
+        - name: ES_JAVA_OPTS
+          value: "-Xms1g -Xmx1g"
+        - name: cluster.name
+          value: "es-cluster"
+        - name: node.name
+          value: "es-node-1"
+        - name: bootstrap.memory_lock
+          value: "true"
+        - name: http.cors.enabled
+          value: "true"
+        - name: http.cors.allow-origin
+          value: "*"
+        - name: action.destructive_requires_name
+          value: "false"
+        volumeMounts:
+        - name: elasticsearch-data
+          mountPath: /usr/share/elasticsearch/data
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+      initContainers:
+      - name: sysctl
+        image: busybox:1.35
+        securityContext:
+          privileged: true
+        command:
+        - sh
+        - -c
+        - |
+          sysctl -w vm.max_map_count=262144
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: spring-ai-admin
+  labels:
+    app: elasticsearch
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9200
+    targetPort: 9200
+    protocol: TCP
+    name: http
+  - port: 9300
+    targetPort: 9300
+    protocol: TCP
+    name: transport
+  selector:
+    app: elasticsearch
+
