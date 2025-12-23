@@ -544,6 +544,14 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 					}
 					return "";
 				}
+				else if ("submitted".equals(state)) {
+					// submitted is the initial state when a task is created, should be ignored
+					return "";
+				}
+				else if ("canceled".equals(state)) {
+					// canceled state should be ignored
+					return "";
+				}
 				else {
 					return "Agent State: " + state;
 				}
