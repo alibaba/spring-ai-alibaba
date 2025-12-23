@@ -100,7 +100,6 @@ DEFAULT_PASSWORD=123456
 Finally, run the development server:
 
 ```bash
-cd main
 npm run dev
 ```
 
