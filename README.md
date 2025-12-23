@@ -18,23 +18,19 @@
     </h3>
 </html>
 
-## What's Agent Framework
-
-> **NOTICE!** Spring Ai Alibaba is a project designed and created for multi-agent and workflow orchestration. So the `ReactAgent` in Spring Ai Alibaba is under the hood run on Graph Runtime and is designed mainly for workflow orchestration.
-> 
-> If you are looking for a more advanced ReactAgent paradigm for building model-derived agents, please checkout the **<a href="https://github.com/agentscope-ai/agentscope-java">AgentScope</a>** project we have built recently. The Spring Ai Alibaba `ReactAgent` part will still be maintained and continue to receive bug fixes and critical security patches, we will be focusing more on Spring Ai integrtion and multi-agent orchestration.
+## Architecture
 
 <p align="center">
-    <img src="./docs/imgs/saa-architecture.png" alt="architecture" style="max-width: 740px; height: 508px" />
+    <img src="./docs/imgs/architecture-new.png" alt="architecture" style="max-width: 740px; height: 508px" />
 </p>
 
-Spring AI Alibaba Agent Framework is an agent development framework centered around the design philosophy of **ReactAgent**, enabling developers to build agents with core capabilities such as automatic **Context Engineering** and **Human In The Loop** interaction.
+Spring AI Alibaba Admin is a one-stop Agent platform that supports visualized Agent development, observability, evaluation, and MCP management, etc. It also integrates with open-source low-code platforms like Dify, enabling rapid migration from DSL to Spring AI Alibaba project.
 
-For scenarios requiring more complex process control, Agent Framework offers built-in workflows like `SequentialAgent`, `ParallelAgent`, `RoutingAgent`, and `LoopAgent` based on its **Graph Runtime**. Developers can also flexibly orchestrate more complex workflows using the Graph API.
+Spring AI Alibaba Agent Framework is an agent development framework that can quickly develop agents with builtin **Context Engineering** and **Human In The Loop** support. For scenarios requiring more complex process control, Agent Framework offers built-in workflows like `SequentialAgent`, `ParallelAgent`, `RoutingAgent`, `LoopAgent` and `SupervisorAgent`.
+
+Spring AI Alibaba Graph serves as the underlying runtime of the Agent Framework, providing essential capabilities such as persistence, workflow orchestration, and streaming required for long-running stateful agents. Compared to the Agent Framework, users can build more flexible multi-agent workflows based on the Graph API.
 
 ## Core Features
-
-* **[ReactAgent](https://java2ai.com/docs/frameworks/agent-framework/tutorials/agents)**: Build intelligent agents with reasoning and acting capabilities, following the ReAct (Reasoning + Acting) paradigm for iterative problem-solving.
 
 * **[Multi-Agent Orchestration](https://java2ai.com/docs/frameworks/agent-framework/advanced/multi-agent)**: Compose multiple agents with built-in patterns including `SequentialAgent`, `ParallelAgent`, `LlmRoutingAgent`, and `LoopAgent` for complex task execution.
 
