@@ -6,7 +6,6 @@ server:
 nacos:
   # 支持通过环境变量 NACOS_SERVER_ADDR 覆盖，默认值在各个 profile 中定义
   server-addr: ${NACOS_SERVER_ADDR}
-
 management:
   tracing:
     sampling:
@@ -69,7 +68,6 @@ spring:
     import:
       - classpath:initializr.yml
       - classpath:elasticsearch.yml
-
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -92,7 +90,6 @@ spring:
           enabled: true
           statement-executable-sql-log-enable: true
           statement-log-error-enabled: true
-
   data:
     redis:
       # 支持通过环境变量覆盖，默认值在各个 profile 中定义
@@ -134,14 +131,12 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-
 rocketmq:
   # 支持通过环境变量覆盖，默认值在各个 profile 中定义
   # ROCKETMQ_ENDPOINTS, ROCKETMQ_DOCUMENT_INDEX_TOPIC, ROCKETMQ_DOCUMENT_INDEX_GROUP
   endpoints: ${ROCKETMQ_ENDPOINTS}
   document-index-topic: ${ROCKETMQ_DOCUMENT_INDEX_TOPIC:topic_saa_studio_document_index}
   document_index_group: ${ROCKETMQ_DOCUMENT_INDEX_GROUP:group_saa_studio_document_index}
-
 initializr:
   web:
     enabled: false
@@ -149,4 +144,3 @@ logging:
   level:
     org.springframework.boot.autoconfigure: INFO
     org.springframework.boot.task: INFO
-

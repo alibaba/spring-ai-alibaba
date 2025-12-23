@@ -101,4 +101,3 @@ spec:
       name: client-rpc
   selector:
     app: nacos
-

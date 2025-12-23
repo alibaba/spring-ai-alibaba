@@ -16,7 +16,6 @@
 # - 必须在部署 MySQL Deployment 之前创建此 ConfigMap
 # - 如果 MySQL 已经初始化过，再次创建 ConfigMap 不会重新执行脚本
 # - 如果需要重新初始化，需要删除 MySQL 的 PVC 和数据
-
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -31,4 +30,3 @@ data:
   agentscope-schema.sql: |
     # 请使用 kubectl create 命令从文件创建，而不是直接使用此 YAML
     # 或者将 docker/middleware/init/mysql/agentscope-schema.sql 的内容粘贴到这里
-

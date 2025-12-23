@@ -14,12 +14,10 @@
 # limitations under the License.
 #
 name: 🫡 Issue and PullRequest Command
-
 on:
   issue_comment:
     types:
       - created
-
 jobs:
   actbot:
     if: (github.repository == 'alibaba/spring-ai-alibaba')

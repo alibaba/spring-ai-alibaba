@@ -30,14 +30,13 @@ paths:
                   status:
                     type: "integer"
                     description: "返回状态"
-                    enum: [ 0, 1 ]
+                    enum: [0, 1]
         "400":
           description: "错误的请求"
         "401":
           description: "未授权"
         "500":
           description: "服务器内部错误"
-
   "/weatherInfo2":
     post:
       summary: "API名称"
@@ -61,7 +60,7 @@ paths:
                   status:
                     type: "integer"
                     description: "返回状态"
-                    enum: [ 0, 1 ]
+                    enum: [0, 1]
         "400":
           description: "错误的请求"
         "401":

@@ -15,6 +15,5 @@ spring:
               # 实际的连接地址为：http://localhost:8080/sse
               url: "https://mcp.jina.ai"
         request-timeout: 60000
-
 server:
   port: 8080

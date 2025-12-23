@@ -261,4 +261,3 @@ spec:
       name: https
   selector:
     app: rmq-proxy
-
