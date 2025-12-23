@@ -14,32 +14,26 @@
 # limitations under the License.
 #
 name: 🔍 Check Chinese Content in Jmanus
-
 on:
   pull_request:
     paths:
       - 'spring-ai-alibaba-jmanus/src/main/java/**/*.java'
       - 'spring-ai-alibaba-jmanus/ui-vue3/src/**'
-
 permissions:
   contents: read
-
 jobs:
   check-chinese-content:
     runs-on: ubuntu-latest
     name: Check for Chinese content in Jmanus
-
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-
       - name: Check Chinese content in Jmanus
         run: |
           echo "🔍 Checking for Chinese content in Jmanus Java and frontend files..."

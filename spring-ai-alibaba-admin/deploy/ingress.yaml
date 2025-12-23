@@ -12,26 +12,25 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: spring-ai-admin.local  # Change this to your actual domain
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend
-            port:
-              number: 80
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: spring-ai-admin-server
-            port:
-              number: 8080
-      # Uncomment below if you have SSL certificates
-      # tls:
-      #   - hosts:
-      #     - spring-ai-admin.local
-      #     secretName: spring-ai-admin-tls
-
+    - host: spring-ai-admin.local # Change this to your actual domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: spring-ai-admin-server
+                port:
+                  number: 8080
+        # Uncomment below if you have SSL certificates
+        # tls:
+        #   - hosts:
+        #     - spring-ai-admin.local
+        #     secretName: spring-ai-admin-tls

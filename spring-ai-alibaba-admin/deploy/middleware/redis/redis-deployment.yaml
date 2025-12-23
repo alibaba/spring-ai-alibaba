@@ -82,4 +82,3 @@ spec:
       name: redis
   selector:
     app: redis
-
