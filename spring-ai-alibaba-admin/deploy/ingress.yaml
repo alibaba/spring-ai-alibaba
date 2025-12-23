@@ -29,9 +29,9 @@ spec:
             name: spring-ai-admin-server
             port:
               number: 8080
-  # Uncomment below if you have SSL certificates
-  # tls:
-  # - hosts:
-  #   - spring-ai-admin.local
-  #   secretName: spring-ai-admin-tls
+      # Uncomment below if you have SSL certificates
+      # tls:
+      #   - hosts:
+      #     - spring-ai-admin.local
+      #     secretName: spring-ai-admin-tls
 
