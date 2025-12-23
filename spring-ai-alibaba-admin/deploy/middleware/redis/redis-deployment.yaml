@@ -63,8 +63,8 @@ spec:
             timeoutSeconds: 3
       volumes:
         - name: redis-data
-        persistentVolumeClaim:
-          claimName: redis-data
+          persistentVolumeClaim:
+            claimName: redis-data
 ---
 apiVersion: v1
 kind: Service
@@ -77,9 +77,9 @@ spec:
   type: ClusterIP
   ports:
     - port: 6379
-    targetPort: 6379
-    protocol: TCP
-    name: redis
+      targetPort: 6379
+      protocol: TCP
+      name: redis
   selector:
     app: redis
 

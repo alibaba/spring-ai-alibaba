@@ -26,5 +26,3 @@ management:
   otlp:
     tracing:
       endpoint: http://47.239.212.78:4318/v1/traces
-
-

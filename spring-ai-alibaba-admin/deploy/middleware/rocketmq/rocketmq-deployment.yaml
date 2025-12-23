@@ -80,7 +80,7 @@ metadata:
   namespace: spring-ai-admin
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   resources:
     requests:
       storage: 20Gi
