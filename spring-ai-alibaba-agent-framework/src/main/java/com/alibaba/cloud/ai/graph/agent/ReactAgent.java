@@ -186,6 +186,7 @@ public class ReactAgent extends BaseAgent {
 		return inputSchema;
 	}
 
+	@Override
 	public Type getInputType() {
 		return inputType;
 	}
