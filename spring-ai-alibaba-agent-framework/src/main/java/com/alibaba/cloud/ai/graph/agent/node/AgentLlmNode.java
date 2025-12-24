@@ -125,6 +125,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		return chatOptions;
 	}
 
+	public ChatClient getChatClient() {
+		return chatClient;
+	}
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		this.toolCallbacks = toolCallbacks;
 	}
