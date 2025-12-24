@@ -203,6 +203,7 @@ public class ReactAgent extends BaseAgent {
 		return outputKey;
 	}
 
+	@Override
 	public KeyStrategy getOutputKeyStrategy() {
 		return outputKeyStrategy;
 	}
