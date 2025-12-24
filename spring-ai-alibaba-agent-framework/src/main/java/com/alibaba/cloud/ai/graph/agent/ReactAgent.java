@@ -199,6 +199,7 @@ public class ReactAgent extends BaseAgent {
 		return outputType;
 	}
 
+	@Override
 	public String getOutputKey() {
 		return outputKey;
 	}
