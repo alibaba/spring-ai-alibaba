@@ -181,6 +181,7 @@ public class ReactAgent extends BaseAgent {
 		return compileConfig;
 	}
 
+	@Override
 	public String getInputSchema() {
 		return inputSchema;
 	}
