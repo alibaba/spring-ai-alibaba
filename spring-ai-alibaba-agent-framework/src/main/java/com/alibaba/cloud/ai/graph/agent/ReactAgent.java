@@ -205,6 +205,7 @@ public class ReactAgent extends BaseAgent {
 		return outputKeyStrategy;
 	}
 
+	@Override
 	public boolean isIncludeContents() {
 		return includeContents;
 	}
