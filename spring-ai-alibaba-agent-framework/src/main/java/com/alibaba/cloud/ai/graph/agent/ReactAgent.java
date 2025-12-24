@@ -212,6 +212,7 @@ public class ReactAgent extends BaseAgent {
 		return includeContents;
 	}
 
+	@Override
 	public boolean isReturnReasoningContents() {
 		return returnReasoningContents;
 	}
