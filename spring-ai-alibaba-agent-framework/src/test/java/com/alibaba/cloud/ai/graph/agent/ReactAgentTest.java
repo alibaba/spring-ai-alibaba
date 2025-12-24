@@ -867,34 +867,34 @@ class ReactAgentTest {
 		return (RunnableConfig) method.invoke(agent, config);
 	}
 
-	    @Test
-    public void testMutate() {
-        ChatModel chatModel = mock(ChatModel.class);
+	@Test
+	public void testMutate() {
+		ChatModel chatModel = mock(ChatModel.class);
 
-        ReactAgent agent = ReactAgent.builder()
-                .name("original_agent")
-                .description("Original Description")
-                .model(chatModel)
-                .instruction("Original Instruction")
-                .build();
+		ReactAgent agent = ReactAgent.builder()
+				.name("original_agent")
+				.description("Original Description")
+				.model(chatModel)
+				.instruction("Original Instruction")
+				.build();
 
-        ReactAgent mutatedAgent = agent.mutate()
-                .name("mutated_agent")
-                .description("Mutated Description")
-                .instruction("Mutated Instruction")
-                .build();
+		ReactAgent mutatedAgent = agent.mutate()
+				.name("mutated_agent")
+				.description("Mutated Description")
+				.instruction("Mutated Instruction")
+				.build();
 
-        assertEquals("original_agent", agent.name());
-        assertEquals("Original Description", agent.description());
-        assertEquals("Original Instruction", agent.instruction());
+		assertEquals("original_agent", agent.name());
+		assertEquals("Original Description", agent.description());
+		assertEquals("Original Instruction", agent.instruction());
 
-        assertEquals("mutated_agent", mutatedAgent.name());
-        assertEquals("Mutated Description", mutatedAgent.description());
-        assertEquals("Mutated Instruction", mutatedAgent.instruction());
+		assertEquals("mutated_agent", mutatedAgent.name());
+		assertEquals("Mutated Description", mutatedAgent.description());
+		assertEquals("Mutated Instruction", mutatedAgent.instruction());
 
-        // Verify model is preserved
-        assertNotNull(mutatedAgent.getLlmNode().getChatModel());
-        assertEquals(chatModel, mutatedAgent.getLlmNode().getChatModel());
-    }
+		// Verify model is preserved
+		assertNotNull(mutatedAgent.getLlmNode().getChatModel());
+		assertEquals(chatModel, mutatedAgent.getLlmNode().getChatModel());
+	}
 
 }
