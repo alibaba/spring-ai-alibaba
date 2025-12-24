@@ -191,6 +191,7 @@ public class ReactAgent extends BaseAgent {
 		return inputType;
 	}
 
+	@Override
 	public String getOutputSchema() {
 		return outputSchema;
 	}
