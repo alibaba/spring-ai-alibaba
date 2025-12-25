@@ -24,10 +24,13 @@ import org.springframework.ai.chat.metadata.EmptyUsage;
 
 import io.a2a.spec.AgentCard;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Flux;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -126,6 +129,120 @@ class A2aNodeActionWithConfigTests {
 		AgentCard agentCard = mock(AgentCard.class);
 		when(agentCard.name()).thenReturn("test-agent");
 		return new AgentCardWrapper(agentCard);
+	}
+
+	// ==================== Tests for Issue #3608 fixes ====================
+
+	private static final Method EXTRACT_RESPONSE_TEXT = initExtractResponseTextMethod();
+
+	/**
+	 * Test that extractResponseText returns empty string for "submitted" state.
+	 * This is a fix for Issue #3608 - "Agent State: submitted" should not be returned.
+	 */
+	@Test
+	void extractResponseText_withSubmittedState_returnsEmptyString() throws Exception {
+		Map<String, Object> result = new HashMap<>();
+		result.put("kind", "status-update");
+		Map<String, Object> status = new HashMap<>();
+		status.put("state", "submitted");
+		result.put("status", status);
+
+		String response = invokeExtractResponseText(result);
+		assertEquals("", response, "submitted state should return empty string, not 'Agent State: submitted'");
+	}
+
+	/**
+	 * Test that extractResponseText returns empty string for "canceled" state.
+	 */
+	@Test
+	void extractResponseText_withCanceledState_returnsEmptyString() throws Exception {
+		Map<String, Object> result = new HashMap<>();
+		result.put("kind", "status-update");
+		Map<String, Object> status = new HashMap<>();
+		status.put("state", "canceled");
+		result.put("status", status);
+
+		String response = invokeExtractResponseText(result);
+		assertEquals("", response, "canceled state should return empty string");
+	}
+
+	/**
+	 * Test that extractResponseText returns empty string for known ignorable states.
+	 */
+	@ParameterizedTest
+	@ValueSource(strings = {"completed", "processing", "failed", "submitted", "canceled"})
+	void extractResponseText_withIgnorableStates_returnsEmptyString(String state) throws Exception {
+		Map<String, Object> result = new HashMap<>();
+		result.put("kind", "status-update");
+		Map<String, Object> status = new HashMap<>();
+		status.put("state", state);
+		result.put("status", status);
+
+		String response = invokeExtractResponseText(result);
+		assertEquals("", response, state + " state should return empty string");
+	}
+
+	/**
+	 * Test that extractResponseText returns "Agent State: xxx" for unknown states.
+	 */
+	@Test
+	void extractResponseText_withUnknownState_returnsAgentStateMessage() throws Exception {
+		Map<String, Object> result = new HashMap<>();
+		result.put("kind", "status-update");
+		Map<String, Object> status = new HashMap<>();
+		status.put("state", "unknown_state");
+		result.put("status", status);
+
+		String response = invokeExtractResponseText(result);
+		assertEquals("Agent State: unknown_state", response, "Unknown state should return 'Agent State: xxx'");
+	}
+
+	/**
+	 * Test that extractResponseText correctly extracts text from "working" state.
+	 */
+	@Test
+	void extractResponseText_withWorkingState_extractsMessageText() throws Exception {
+		Map<String, Object> result = new HashMap<>();
+		result.put("kind", "status-update");
+		Map<String, Object> status = new HashMap<>();
+		status.put("state", "working");
+		Map<String, Object> message = new HashMap<>();
+		message.put("parts", List.of(Map.of("text", "Processing your request...")));
+		status.put("message", message);
+		result.put("status", status);
+
+		String response = invokeExtractResponseText(result);
+		assertEquals("Processing your request...", response);
+	}
+
+	/**
+	 * Test that extractResponseText correctly extracts text from artifact-update.
+	 */
+	@Test
+	void extractResponseText_withArtifactUpdate_extractsArtifactText() throws Exception {
+		Map<String, Object> result = new HashMap<>();
+		result.put("kind", "artifact-update");
+		Map<String, Object> artifact = new HashMap<>();
+		artifact.put("parts", List.of(Map.of("text", "This is the artifact response")));
+		result.put("artifact", artifact);
+
+		String response = invokeExtractResponseText(result);
+		assertEquals("This is the artifact response", response);
+	}
+
+	private String invokeExtractResponseText(Map<String, Object> result) throws Exception {
+		return (String) EXTRACT_RESPONSE_TEXT.invoke(this.action, result);
+	}
+
+	private static Method initExtractResponseTextMethod() {
+		try {
+			Method method = A2aNodeActionWithConfig.class.getDeclaredMethod("extractResponseText", Map.class);
+			method.setAccessible(true);
+			return method;
+		}
+		catch (NoSuchMethodException ex) {
+			throw new IllegalStateException(ex);
+		}
 	}
 
 }
