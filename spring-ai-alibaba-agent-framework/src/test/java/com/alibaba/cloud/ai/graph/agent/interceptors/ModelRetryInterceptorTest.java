@@ -189,7 +189,7 @@ class ModelRetryInterceptorTest {
 		AtomicInteger attemptCount = new AtomicInteger(0);
 		
 		// 测试自定义可重试异常
-		ModelCallHandler handler1 = request -> {
+		ModelCallHandler handler1 = req -> {
 			attemptCount.incrementAndGet();
 			throw new RuntimeException("custom-retry error");
 		};
@@ -203,7 +203,7 @@ class ModelRetryInterceptorTest {
 
 		// 测试不可重试异常
 		attemptCount.set(0);
-		ModelCallHandler handler2 = request -> {
+		ModelCallHandler handler2 = req -> {
 			attemptCount.incrementAndGet();
 			throw new RuntimeException("other error");
 		};
