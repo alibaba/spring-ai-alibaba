@@ -21,7 +21,7 @@ spring:
           discovery:
             enabled: true  # 启用 A2A 服务发现，用于发现远程智能体
           registry:
-            enabled: true  # 启用 Nacos Registry，将本地 Agent 注册到 Nacos
+            enabled: true  # 启用 Nacos Registry（需要 Nacos 3.x+）
         server:
           version: 1.0.0
           card:

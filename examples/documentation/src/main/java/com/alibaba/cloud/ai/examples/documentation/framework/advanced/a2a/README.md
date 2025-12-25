@@ -97,13 +97,22 @@ curl http://localhost:8080/.well-known/agent.json
 **Nacos 控制台**：
 - 打开 http://localhost:8848/nacos
 - 登录（nacos/nacos）
-- 查看 A2A 服务注册维度，应该能看到 `data_analysis_agent`
+- 进入左侧菜单的 **Agent管理** 页面
+- 在服务列表中应该能看到 `data_analysis_agent` 相关的服务注册信息
 
-**通过 API 查询 Nacos 中的 Agent**：
+**通过 Nacos 服务发现 API 查询**：
 ```bash
-# 需要 Nacos A2A API（如果启用）
-curl "http://localhost:8848/nacos/v1/ai/a2a/agent?agentName=data_analysis_agent"
+# 查询 agent-endpoints 分组下的服务列表
+curl "http://localhost:8848/nacos/v1/ns/service/list?pageNo=1&pageSize=10&groupName=agent-endpoints&username=nacos&password=nacos"
+
+# 查询特定 Agent 服务的实例信息（需要使用 Nacos 返回的完整服务名）
+curl "http://localhost:8848/nacos/v1/ns/instance/list?serviceName=____:data_095analysis_095agent::1.0.0&groupName=agent-endpoints&username=nacos&password=nacos"
 ```
+
+> **注意**：
+> - Agent 信息通过 Nacos 的服务注册机制存储，而非独立的 A2A REST API
+> - 服务名格式为：`____:agent_name::version`（下划线和特殊字符会被编码）
+> - API 调用需要提供 Nacos 认证信息（username 和 password）
 
 ## 关键代码
 
