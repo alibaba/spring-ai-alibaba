@@ -1,0 +1,8 @@
+node_modules
+.history
+.DS_Store
+*.module.css
+*.module.css.map
+.cursor/**
+.env
+.vscode

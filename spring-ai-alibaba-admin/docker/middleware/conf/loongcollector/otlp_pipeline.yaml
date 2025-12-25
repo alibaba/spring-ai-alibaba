@@ -1,0 +1,21 @@
+enable: true
+inputs:
+  - Type: service_otlp
+    Protocals:
+      HTTP:
+        Endpoint: 0.0.0.0:4318
+        MaxRecvMsgSizeMiB: 64
+        ReadTimeoutSec: 10
+        ShutdownTimeoutSec: 5
+flushers:
+  - Type: flusher_stdout
+    OnlyStdout: true
+    Tags: true
+  - Type: flusher_elasticsearch
+    Addresses:
+      - http://elasticsearch:9200
+    Index: loongsuite_traces
+    Authentication:
+      PlainText:
+        Username: elastic
+        Password: elastic

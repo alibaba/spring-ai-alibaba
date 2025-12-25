@@ -1,0 +1,209 @@
+/* Evaluator Debug Page Styles */
+
+.evaluator-debug-page {
+  min-height: calc(100vh - 64px);
+}
+
+.evaluator-debug-page .ant-card {
+  border-radius: 8px;
+}
+
+.evaluator-debug-page .ant-card-head {
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.evaluator-debug-page .ant-card-head-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.evaluator-debug-page .ant-descriptions-item-label {
+  font-weight: 500;
+  color: #666;
+}
+
+.evaluator-debug-page .ant-descriptions-item-content {
+  color: #333;
+}
+
+.evaluator-debug-page .ant-form-item-label > label {
+  font-weight: 500;
+}
+
+.evaluator-debug-page .ant-input,
+.evaluator-debug-page .ant-input:focus,
+.evaluator-debug-page .ant-input-focused {
+  border-color: #1890ff;
+  transition: border-color 0.2s ease-in-out;
+}
+
+/* General button improvements to prevent flickering */
+.evaluator-debug-page .ant-btn {
+  transition: all 0.2s ease-in-out;
+  border: 1px solid transparent;
+}
+
+.evaluator-debug-page .ant-btn:hover,
+.evaluator-debug-page .ant-btn:focus {
+  /* transform: translateY(-1px); */
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
+}
+
+.evaluator-debug-page .ant-btn:active {
+  /* transform: translateY(0); */
+}
+
+.evaluator-debug-page .ant-btn-primary {
+  /* background: linear-gradient(90deg, #1890ff 0%, #40a9ff 100%);
+  border: none;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  overflow: hidden; */
+}
+
+.evaluator-debug-page .ant-btn-primary:hover,
+.evaluator-debug-page .ant-btn-primary:focus {
+  /* background: linear-gradient(90deg, #1677ff 0%, #52c41a 100%);
+  box-shadow: 0 2px 4px rgba(22, 119, 255, 0.3);
+  transform: translateY(-1px); */
+}
+
+.evaluator-debug-page .ant-btn-primary:active {
+  /* transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(22, 119, 255, 0.2); */
+}
+
+/* Loading button specific styles to prevent flickering */
+.evaluator-debug-page .ant-btn-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.evaluator-debug-page .ant-btn-loading::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  bottom: -1px;
+  right: -1px;
+  background: inherit;
+  opacity: 0.35;
+  border-radius: inherit;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.evaluator-debug-page .ant-btn[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.evaluator-debug-page .fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 992px) {
+  .evaluator-debug-page .ant-col {
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .evaluator-debug-page {
+    padding: 16px;
+  }
+  
+  .evaluator-debug-page .ant-card {
+    margin-bottom: 16px;
+  }
+}
+
+/* Custom scrollbar for prompt display */
+.evaluator-debug-page .prompt-display::-webkit-scrollbar {
+  width: 6px;
+}
+
+.evaluator-debug-page .prompt-display::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.evaluator-debug-page .prompt-display::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.evaluator-debug-page .prompt-display::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 变量输入框样式 */
+.evaluator-debug-page .template-variables-section {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.evaluator-debug-page .template-variables-title {
+  color: #1890ff;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.evaluator-debug-page .template-variables-description {
+  color: #666;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.evaluator-debug-page .variable-input-item {
+  margin-bottom: 16px;
+}
+
+.evaluator-debug-page .variable-input-item .ant-form-item-label > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.evaluator-debug-page .variable-tag {
+  margin: 0;
+  font-size: 11px;
+  padding: 2px 6px;
+  height: 20px;
+  line-height: 16px;
+  border-radius: 10px;
+}
+
+.evaluator-debug-page .variable-input-item .ant-input {
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+.evaluator-debug-page .variable-input-item .ant-input:focus,
+.evaluator-debug-page .variable-input-item .ant-input-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.evaluator-debug-page .variables-divider {
+  margin: 16px 0;
+  border-color: #e8e8e8;
+}

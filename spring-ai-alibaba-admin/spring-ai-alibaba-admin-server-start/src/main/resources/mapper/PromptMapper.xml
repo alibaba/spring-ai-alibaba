@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.cloud.ai.studio.admin.mapper.PromptMapper">
+
+    <!-- Prompt表字段 -->
+    <sql id="prompt_columns">
+        id, prompt_key, prompt_desc, latest_version, tags, create_time, update_time
+    </sql>
+
+    <!-- Prompt实体映射 -->
+    <resultMap id="promptResultMap" type="com.alibaba.cloud.ai.studio.admin.entity.PromptDO">
+        <id property="id" column="id"/>
+        <result property="promptKey" column="prompt_key"/>
+        <result property="promptDesc" column="prompt_desc"/>
+        <result property="latestVersion" column="latest_version"/>
+        <result property="tags" column="tags"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <!-- 创建Prompt -->
+    <insert id="insert" parameterType="com.alibaba.cloud.ai.studio.admin.entity.PromptDO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO prompt (prompt_key, prompt_desc, latest_version, tags, create_time, update_time)
+        VALUES (#{promptKey}, #{promptDesc}, #{latestVersion}, #{tags}, NOW(), NOW())
+    </insert>
+
+    <!-- 根据Prompt Key删除Prompt（物理删除，因为表中没有deleted字段） -->
+    <delete id="deleteByPromptKey">
+        DELETE FROM prompt WHERE prompt_key = #{promptKey}
+    </delete>
+
+    <!-- 根据Prompt Key获取Prompt -->
+    <select id="selectByPromptKey" resultMap="promptResultMap">
+        SELECT <include refid="prompt_columns"/>
+        FROM prompt
+        WHERE prompt_key = #{promptKey}
+    </select>
+
+    <!-- 查询Prompt列表 -->
+    <select id="selectList" resultMap="promptResultMap">
+        SELECT <include refid="prompt_columns"/>
+        FROM prompt
+        WHERE 1=1
+        <if test="promptKey != null and promptKey != ''">
+            <choose>
+                <when test="search == 'accurate'">
+                    AND prompt_key = #{promptKey}
+                </when>
+                <otherwise>
+                    AND prompt_key LIKE CONCAT('%', #{promptKey}, '%')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="tag != null and tag != ''">
+            AND (tags = #{tag} OR tags LIKE CONCAT('%,', #{tag}, ',%') OR tags LIKE CONCAT(#{tag}, ',%') OR tags LIKE CONCAT('%,', #{tag}))
+        </if>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 查询Prompt总数 -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM prompt
+        WHERE 1=1
+        <if test="promptKey != null and promptKey != ''">
+            <choose>
+                <when test="search == 'accurate'">
+                    AND prompt_key = #{promptKey}
+                </when>
+                <otherwise>
+                    AND prompt_key LIKE CONCAT('%', #{promptKey}, '%')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="tag != null and tag != ''">
+            AND (tags = #{tag} OR tags LIKE CONCAT('%,', #{tag}, ',%') OR tags LIKE CONCAT(#{tag}, ',%') OR tags LIKE CONCAT('%,', #{tag}))
+        </if>
+    </select>
+
+    <!-- 更新Prompt -->
+    <update id="update" parameterType="com.alibaba.cloud.ai.studio.admin.entity.PromptDO">
+        UPDATE prompt
+        <set>
+            <if test="promptDesc != null">prompt_desc = #{promptDesc},</if>
+            <if test="tags != null">tags = #{tags},</if>
+            update_time = NOW()
+        </set>
+        WHERE prompt_key = #{promptKey}
+    </update>
+
+    <!-- 更新最新版本 -->
+    <update id="updateLatestVersion">
+        UPDATE prompt
+        SET latest_version = #{latestVersion}, update_time = NOW()
+        WHERE prompt_key = #{promptKey}
+    </update>
+
+    <!-- 根据Prompt Key获取Prompt及其最新版本状态 -->
+    <select id="selectByPromptKeyWithLatestVersionStatus" resultType="java.util.Map">
+        SELECT 
+            p.id,
+            p.prompt_key,
+            p.prompt_desc,
+            p.latest_version,
+            p.tags,
+            p.create_time,
+            p.update_time,
+            pv.status as latest_version_status
+        FROM prompt p
+        LEFT JOIN prompt_version pv ON p.prompt_key = pv.prompt_key AND p.latest_version = pv.version
+        WHERE p.prompt_key = #{promptKey}
+    </select>
+
+    <!-- 查询Prompt列表及其最新版本状态 -->
+    <select id="selectListWithLatestVersionStatus" resultType="java.util.Map">
+        SELECT 
+            p.id,
+            p.prompt_key,
+            p.prompt_desc,
+            p.latest_version,
+            p.tags,
+            p.create_time,
+            p.update_time,
+            pv.status as latest_version_status
+        FROM prompt p
+        LEFT JOIN prompt_version pv ON p.prompt_key = pv.prompt_key AND p.latest_version = pv.version
+        WHERE 1=1
+        <if test="promptKey != null and promptKey != ''">
+            <choose>
+                <when test="search == 'accurate'">
+                    AND p.prompt_key = #{promptKey}
+                </when>
+                <otherwise>
+                    AND p.prompt_key LIKE CONCAT('%', #{promptKey}, '%')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="tag != null and tag != ''">
+            AND (p.tags = #{tag} OR p.tags LIKE CONCAT('%,', #{tag}, ',%') OR p.tags LIKE CONCAT(#{tag}, ',%') OR p.tags LIKE CONCAT('%,', #{tag}))
+        </if>
+        ORDER BY p.create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+</mapper>

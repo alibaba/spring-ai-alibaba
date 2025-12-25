@@ -221,6 +221,8 @@ public class ShellSessionManager {
 		private final Path workspace;
 		private final List<String> command;
 		private final Map<String, String> env;
+		private final boolean isWindows;
+		private final boolean isPowerShell;
 		private Process process;
 		private BufferedWriter stdin;
 		private BlockingQueue<OutputLine> outputQueue;
@@ -231,6 +233,10 @@ public class ShellSessionManager {
 			this.command = command;
 			this.env = env;
 			this.outputQueue = new LinkedBlockingQueue<>();
+			// Detect shell type
+			String shellCmd = command.isEmpty() ? "" : command.get(0).toLowerCase();
+			this.isPowerShell = shellCmd.contains("powershell");
+			this.isWindows = shellCmd.contains("cmd") || isPowerShell;
 		}
 
 		void start() throws IOException {
@@ -326,7 +332,18 @@ public class ShellSessionManager {
 				if (!command.endsWith("\n")) {
 					stdin.write("\n");
 				}
-				stdin.write(String.format("printf '%s %%s\\n' $?\n", marker));
+				
+				// Send marker command based on shell type
+				if (isPowerShell) {
+					// PowerShell: use $LASTEXITCODE for exit code
+					stdin.write(String.format("Write-Output \"%s $LASTEXITCODE\"\n", marker));
+				} else if (isWindows) {
+					// Windows cmd.exe: use ERRORLEVEL
+					stdin.write(String.format("echo %s %%ERRORLEVEL%%\n", marker));
+				} else {
+					// Unix/Linux: use $? for exit code
+					stdin.write(String.format("printf '%s %%s\\n' $?\n", marker));
+				}
 				stdin.flush();
 
 				// Collect output
@@ -548,9 +565,37 @@ public class ShellSessionManager {
 		private long terminationTimeout = 5000; // 5 seconds
 		private int maxOutputLines = 1000;
 		private Long maxOutputBytes = null;
-		private List<String> shellCommand = Arrays.asList("/bin/bash");
+		private List<String> shellCommand = getDefaultShellCommand();
 		private final Map<String, String> environment = new HashMap<>();
 		private final List<RedactionRule> redactionRules = new ArrayList<>();
+
+		/**
+		 * Get default shell command based on the operating system.
+		 */
+		private static List<String> getDefaultShellCommand() {
+			String os = System.getProperty("os.name").toLowerCase();
+			
+			if (os.contains("windows")) {
+				// Windows: use PowerShell for better compatibility and features
+				return Arrays.asList("powershell.exe");
+			} else if (os.contains("mac")) {
+				// macOS: prefer zsh (default since Catalina), fallback to bash, then sh
+				if (new File("/bin/zsh").exists()) {
+					return Arrays.asList("/bin/zsh");
+				} else if (new File("/bin/bash").exists()) {
+					return Arrays.asList("/bin/bash");
+				} else {
+					return Arrays.asList("/bin/sh");
+				}
+			} else {
+				// Linux and other Unix-like systems: prefer bash, fallback to sh
+				if (new File("/bin/bash").exists()) {
+					return Arrays.asList("/bin/bash");
+				} else {
+					return Arrays.asList("/bin/sh");
+				}
+			}
+		}
 
 		public Builder workspaceRoot(String path) {
 			this.workspaceRoot = Path.of(path);

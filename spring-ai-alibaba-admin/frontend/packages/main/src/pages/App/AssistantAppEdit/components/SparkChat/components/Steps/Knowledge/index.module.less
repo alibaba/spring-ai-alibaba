@@ -1,0 +1,87 @@
+.assistantModule {
+  background: var(--ag-ant-color-bg-layout);
+  border-radius: 8px;
+  .header {
+    padding: 6px 12px;
+    display: flex;
+    justify-content: space-between;
+    border-radius: 8px 8px 0 0;
+
+    .title {
+      font-weight: 500;
+      font-size: 12px;
+
+      span {
+        font-size: 14px;
+        margin-right: 4px;
+      }
+    }
+  }
+
+  .content {
+    padding: 8px 12px;
+    border-top: 1px solid var(--ag-ant-color-border-secondary);
+  }
+
+  .con {
+    padding-left: 16px;
+    margin-bottom: 8px;
+
+    &:last-of-type(1) {
+      margin-bottom: 0px;
+    }
+
+    .value {
+      max-height: 126px;
+      margin-top: 8px;
+      overflow: auto;
+      :global {
+        .sail-markdown-markdownContent {
+          min-height: 0px;
+        }
+      }
+    }
+
+    .expandBtn {
+      margin-left: 4px;
+    }
+  }
+}
+
+.resultItem {
+  .header {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    line-height: 20px;
+    color: var(--ag-ant-color-text);
+    gap: 4px;
+  }
+}
+
+
+@keyframes runningAnim {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.imageList {
+  margin-top: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.textNull {
+  color: var(--ag-ant-color-text-label);
+}
+
+.scoreDesc {
+  color: var(--ag-ant-color-text-description);
+  margin-top: 8px;
+}

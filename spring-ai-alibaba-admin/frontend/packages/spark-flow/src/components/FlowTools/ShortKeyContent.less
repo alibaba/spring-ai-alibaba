@@ -1,0 +1,38 @@
+@import '../../index.less';
+.spark-flow-short-key-container {
+  min-width: 224px;
+
+  .spark-flow-short-key-row {
+    gap: 8px;
+
+    .spark-flow-command-key-label,
+    .spark-flow-command-key {
+      margin: 0;
+      font-size: 10px;
+      border: none;
+      color: e('var(--@{ant-prefix}-color-primary)');
+      background: e('var(--@{ant-prefix}-color-primary-bg)');
+      font-weight: normal;
+    }
+
+    .spark-flow-short-key-name {
+      font-weight: 500;
+      font-size: 12px;
+      line-height: 20px;
+      color: e('var(--@{ant-prefix}-color-text)');
+      margin: 0;
+    }
+
+    .spark-flow-keys-container {
+      gap: 2px;
+
+      .spark-flow-or-text {
+        color: e('var(--@{ant-prefix}-color-text-secondary)');
+      }
+
+      .spark-flow-command-key {
+        font-family: 'Source Han Sans', sans-serif;
+      }
+    }
+  }
+}
