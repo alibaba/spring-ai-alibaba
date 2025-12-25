@@ -135,7 +135,7 @@ class ModelRetryInterceptorTest {
 		ModelCallHandler handler = request -> {
 			int count = attemptCount.incrementAndGet();
 			if (count < 3) {
-				// 模拟 AgentLlmNode 捕获异常后返回的消息
+				// Simulate the message returned by AgentLlmNode after capturing an exception.
 				return ModelResponse.of(new AssistantMessage("Exception: I/O error on POST request for \"https://api.deepseek.com/chat/completions\": Remote host terminated the handshake"));
 			}
 			return ModelResponse.of(new AssistantMessage("Success after retry"));
@@ -173,7 +173,7 @@ class ModelRetryInterceptorTest {
 		long duration = System.currentTimeMillis() - startTime;
 
 		assertEquals(3, attemptCount.get());
-		// 第一次重试: 100ms, 第二次重试: 200ms, 总共至少 300ms
+		// First retry: 100ms, Second retry: 200ms, Total at least 300ms
 		assertTrue(duration >= 300, "应该有指数退避延迟");
 		assertTrue(duration < 1000, "延迟不应该太长");
 	}
@@ -188,7 +188,7 @@ class ModelRetryInterceptorTest {
 
 		AtomicInteger attemptCount = new AtomicInteger(0);
 		
-		// 测试自定义可重试异常
+		// Test custom retryable exceptions
 		ModelCallHandler handler1 = req -> {
 			attemptCount.incrementAndGet();
 			throw new RuntimeException("custom-retry error");
@@ -201,7 +201,7 @@ class ModelRetryInterceptorTest {
 		});
 		assertEquals(3, attemptCount.get(), "自定义可重试异常应该重试");
 
-		// 测试不可重试异常
+		// Test cannot be retried exception
 		attemptCount.set(0);
 		ModelCallHandler handler2 = req -> {
 			attemptCount.incrementAndGet();
@@ -219,7 +219,7 @@ class ModelRetryInterceptorTest {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
 			.maxAttempts(4)
 			.initialDelay(100)
-			.maxDelay(150)  // 限制最大延迟
+			.maxDelay(150)
 			.backoffMultiplier(3.0)
 			.build();
 
@@ -238,8 +238,8 @@ class ModelRetryInterceptorTest {
 		interceptor.interceptModel(request, handler);
 		long duration = System.currentTimeMillis() - startTime;
 
-		// 第1次重试: 100ms, 第2次重试: 150ms (限制), 第3次重试: 150ms (限制)
-		// 总共至少 400ms，但不应超过 600ms
+		// First retry: 100ms, Second retry: 150ms (limit), Third retry: 150ms (limit)
+		// Total at least 400ms, but should not exceed 600ms
 		assertTrue(duration >= 400, "应该有延迟");
 		assertTrue(duration < 600, "maxDelay 应该生效");
 	}
@@ -248,7 +248,7 @@ class ModelRetryInterceptorTest {
 	void testZeroDelay() {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
 			.maxAttempts(3)
-			.initialDelay(0)  // 无延迟
+			.initialDelay(0)
 			.build();
 
 		long startTime = System.currentTimeMillis();
