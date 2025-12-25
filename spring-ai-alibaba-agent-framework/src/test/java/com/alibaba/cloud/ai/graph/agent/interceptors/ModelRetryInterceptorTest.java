@@ -96,7 +96,7 @@ class ModelRetryInterceptorTest {
 		});
 
 		assertEquals(3, attemptCount.get(), "应该尝试3次");
-		assertTrue(exception.getMessage().contains("已达到最大重试次数"));
+		assertTrue(exception.getMessage().contains("maximum number of retries reached"));
 	}
 
 	@Test
@@ -120,7 +120,7 @@ class ModelRetryInterceptorTest {
 		});
 
 		assertEquals(1, attemptCount.get(), "不可重试的异常应该只尝试一次");
-		assertTrue(exception.getMessage().contains("不可重试的异常"));
+		assertTrue(exception.getMessage().contains("non-retryable exception"));
 	}
 
 	@Test
