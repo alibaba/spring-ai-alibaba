@@ -29,10 +29,8 @@ import java.util.function.Predicate;
 
 /**
  * The model calls a retry interceptor to handle retryable exceptions such as network errors.
- *
  * When a model call fails, it will be retried according to the configured retry policy until it succeeds or the maximum number of retries is reached.
- *
- * 示例:
+ * Example:
  * <pre>
  * ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
  *     .maxAttempts(3)
