@@ -24,14 +24,13 @@ import org.springframework.ai.chat.messages.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
+
 import java.util.function.Predicate;
 
 /**
- * 模型调用重试拦截器，用于处理网络错误等可重试的异常。
+ * The model calls a retry interceptor to handle retryable exceptions such as network errors.
  *
- * 当模型调用失败时，会根据配置的重试策略进行重试，直到成功或达到最大重试次数。
+ * When a model call fails, it will be retried according to the configured retry policy until it succeeds or the maximum number of retries is reached.
  *
  * 示例:
  * <pre>
@@ -73,85 +72,85 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
 				if (attempt > 1) {
-					log.info("重试模型调用，第 {} 次尝试（共 {} 次）", attempt, maxAttempts);
+					log.info("Retry model call, on the {}th attempt (out of {} attempts).", attempt, maxAttempts);
 				}
 
 				ModelResponse modelResponse = handler.call(request);
 				Message message = (Message) modelResponse.getMessage();
 
-				// 检查响应是否包含异常信息（从 AgentLlmNode 捕获的异常）
+				// Check if the response contains any exception information (exceptions captured from AgentLlmNode).
 				if (message != null && message.getText() != null && message.getText().startsWith("Exception:")) {
 					String exceptionText = message.getText();
-					log.warn("模型调用返回异常消息: {}", exceptionText);
+					log.warn("The model call returned an exception message: {}", exceptionText);
 					
-					// 从文本中提取异常信息并判断是否可重试
+					// Extract anomaly information from the text and determine whether a retry is possible.
 					if (attempt < maxAttempts && isRetryableExceptionMessage(exceptionText)) {
 						lastException = new RuntimeException(exceptionText);
-						// 等待后重试
+						// Wait and try again
 						if (currentDelay > 0) {
 							try {
-								log.info("等待 {} ms 后重试", currentDelay);
+								log.info("Retry after {} ms", currentDelay);
 								Thread.sleep(currentDelay);
 							} catch (InterruptedException e) {
 								Thread.currentThread().interrupt();
-								throw new RuntimeException("重试被中断", e);
+								throw new RuntimeException("Retry interrupted", e);
 							}
 						}
-						// 计算下次延迟时间（指数退避）
+						// Calculate the next delay time (exponential backoff)
 						currentDelay = Math.min((long) (currentDelay * backoffMultiplier), maxDelay);
 						continue;
 					} else if (attempt >= maxAttempts) {
-						log.error("达到最大重试次数 {}，模型调用失败", maxAttempts);
-						throw new RuntimeException("模型调用失败，已达到最大重试次数: " + exceptionText);
+						log.error("The maximum number of retries has been reached {}, and the model call has failed.", maxAttempts);
+						throw new RuntimeException("Model call failed, maximum number of retries reached:" + exceptionText);
 					}
 					
-					// 不可重试的异常，直接返回
+					// For non-retryable exceptions, return immediately.
 					return modelResponse;
 				}
 
-				// 成功响应
+				// Successful response
 				if (attempt > 1) {
-					log.info("模型调用在第 {} 次尝试后成功", attempt);
+					log.info("The model call succeeded after the {}th attempt.", attempt);
 				}
 				return modelResponse;
 
 			} catch (Exception e) {
 				lastException = e;
-				log.warn("模型调用失败（尝试 {}/{}）: {}", attempt, maxAttempts, e.getMessage());
+				log.warn("Model call failed (attempted {}/{}): {}", attempt, maxAttempts, e.getMessage());
 
 				if (attempt >= maxAttempts) {
-					log.error("达到最大重试次数 {}，模型调用失败", maxAttempts);
-					throw new RuntimeException("模型调用失败，已达到最大重试次数", lastException);
+					log.error("The maximum number of retries has been reached {}, and the model call has failed.", maxAttempts);
+					throw new RuntimeException("Model call failed, maximum number of retries reached.", lastException);
 				}
 
-				// 判断异常是否可重试
+				// Determine if an exception can be retried.
 				if (!retryableExceptionPredicate.test(e)) {
-					log.warn("异常不可重试，直接抛出: {}", e.getMessage());
-					throw new RuntimeException("模型调用失败（不可重试的异常）", e);
+					log.warn("Exceptions cannot be retried and are thrown immediately: {}", e.getMessage());
+					throw new RuntimeException("Model call failed (non-retryable exception)", e);
 				}
 
-				// 等待后重试
+				// Wait and try again
 				if (currentDelay > 0) {
 					try {
-						log.info("等待 {} ms 后重试", currentDelay);
+						log.info("Retry after {} ms", currentDelay);
 						Thread.sleep(currentDelay);
 					} catch (InterruptedException ie) {
 						Thread.currentThread().interrupt();
-						throw new RuntimeException("重试被中断", ie);
+						throw new RuntimeException("Retry interrupted", ie);
 					}
 				}
 
-				// 计算下次延迟时间（指数退避）
+				// Calculate the next delay time (exponential backoff)
 				currentDelay = Math.min((long) (currentDelay * backoffMultiplier), maxDelay);
 			}
 		}
 
-		// 所有重试都失败
-		throw new RuntimeException("模型调用失败，已达到最大重试次数 " + maxAttempts, lastException);
+		// All retries failed.
+		throw new RuntimeException("Model call failed, maximum number of retries reached. " + maxAttempts, lastException);
 	}
 
 	/**
-	 * 判断异常消息是否表示可重试的错误
+	 * Determine if the exception message indicates a retryable error.
 	 */
 	private boolean isRetryableExceptionMessage(String exceptionText) {
 		String lowerText = exceptionText.toLowerCase();
@@ -171,62 +170,62 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 
 	public static class Builder {
 		private int maxAttempts = 3;
-		private long initialDelay = 1000; // 1秒
-		private long maxDelay = 30000; // 30秒
+		private long initialDelay = 1000;
+		private long maxDelay = 30000;
 		private double backoffMultiplier = 2.0;
 		private Predicate<Exception> retryableExceptionPredicate = Builder::isRetryableException;
 
 		/**
-		 * 设置最大重试次数（包含首次调用）
-		 * @param maxAttempts 最大尝试次数，必须 >= 1
+		 * Set the maximum number of retries (including the first call).
+		 * @param maxAttempts The maximum number of attempts must be >= 1.
 		 */
 		public Builder maxAttempts(int maxAttempts) {
 			if (maxAttempts < 1) {
-				throw new IllegalArgumentException("maxAttempts 必须 >= 1");
+				throw new IllegalArgumentException("maxAttempts must be greater than or equal to 1");
 			}
 			this.maxAttempts = maxAttempts;
 			return this;
 		}
 
 		/**
-		 * 设置初始重试延迟（毫秒）
-		 * @param initialDelay 初始延迟时间，单位毫秒
+		 * Set the initial retry delay (milliseconds).
+		 * @param initialDelay Initial delay time, in milliseconds
 		 */
 		public Builder initialDelay(long initialDelay) {
 			if (initialDelay < 0) {
-				throw new IllegalArgumentException("initialDelay 必须 >= 0");
+				throw new IllegalArgumentException("initialDelay must be greater than or equal to 0.");
 			}
 			this.initialDelay = initialDelay;
 			return this;
 		}
 
 		/**
-		 * 设置最大重试延迟（毫秒）
-		 * @param maxDelay 最大延迟时间，单位毫秒
+		 * Set the maximum retry delay (milliseconds).
+		 * @param maxDelay Maximum delay time, in milliseconds
 		 */
 		public Builder maxDelay(long maxDelay) {
 			if (maxDelay < 0) {
-				throw new IllegalArgumentException("maxDelay 必须 >= 0");
+				throw new IllegalArgumentException("maxDelay must be greater than or equal to 0.");
 			}
 			this.maxDelay = maxDelay;
 			return this;
 		}
 
 		/**
-		 * 设置退避倍数（每次重试延迟时间的倍增系数）
-		 * @param backoffMultiplier 退避倍数，必须 >= 1.0
+		 * Set the backoff factor (the multiplier for the delay time on each retry).
+		 * @param backoffMultiplier The retreat factor must be >= 1.0
 		 */
 		public Builder backoffMultiplier(double backoffMultiplier) {
 			if (backoffMultiplier < 1.0) {
-				throw new IllegalArgumentException("backoffMultiplier 必须 >= 1.0");
+				throw new IllegalArgumentException("The backoffMultiplier must be >= 1.0");
 			}
 			this.backoffMultiplier = backoffMultiplier;
 			return this;
 		}
 
 		/**
-		 * 设置自定义的可重试异常判断逻辑
-		 * @param predicate 异常判断函数
+		 * Configure custom retryable exception handling logic
+		 * @param predicate Exception detection function
 		 */
 		public Builder retryableExceptionPredicate(Predicate<Exception> predicate) {
 			this.retryableExceptionPredicate = predicate;
@@ -238,7 +237,7 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 		}
 
 		/**
-		 * 默认的可重试异常判断逻辑
+		 * Default retryable exception handling logic
 		 */
 		private static boolean isRetryableException(Exception e) {
 			String message = e.getMessage();
@@ -247,8 +246,8 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 			}
 
 			String lowerMessage = message.toLowerCase();
-			
-			// 网络相关异常
+
+			// Network-related exceptions
 			if (lowerMessage.contains("i/o error") ||
 				lowerMessage.contains("remote host terminated") ||
 				lowerMessage.contains("connection") ||
@@ -258,13 +257,13 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 				return true;
 			}
 
-			// Spring WebClient 相关异常
+			// Spring WebClient related exceptions
 			if (e.getClass().getName().contains("ResourceAccessException") ||
 				e.getClass().getName().contains("WebClientRequestException")) {
 				return true;
 			}
 
-			// 检查异常类型
+			// Check the exception type
 			Throwable cause = e.getCause();
 			while (cause != null) {
 				String causeClassName = cause.getClass().getName();
