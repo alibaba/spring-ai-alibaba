@@ -54,14 +54,18 @@ public class FileSystemSaver extends MemorySaver {
 
 	private final Serializer<Checkpoint> serializer;
 
+
+	private final boolean overwriteMode;
+
 	@SuppressWarnings("unchecked")
-	protected FileSystemSaver(Path targetFolder, StateSerializer stateSerializer) {
+	protected FileSystemSaver(Path targetFolder, StateSerializer stateSerializer, boolean overwriteMode) {
 		if(stateSerializer == null) {
 			this.serializer = new CheckPointSerializer(StateGraph.DEFAULT_JACKSON_SERIALIZER);
 		} else {
 			this.serializer = new CheckPointSerializer(stateSerializer);
 		}
 		this.targetFolder = Objects.requireNonNull(targetFolder, "targetFolder cannot be null");
+		this.overwriteMode = overwriteMode;
 
 		try {
 			if (Files.exists(targetFolder) && !Files.isDirectory(targetFolder)) {
@@ -135,6 +139,14 @@ public class FileSystemSaver extends MemorySaver {
 	@Override
 	protected void insertedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
 			throws Exception {
+		if (overwriteMode) {
+			if (StateGraph.START.equals(checkpoint.getNodeId()) && checkpoints.size() > 1) {
+				Checkpoint current = checkpoints.getFirst();
+				checkpoints.clear();
+				checkpoints.add(current);
+			}
+		}
+
 		File targetFile = getFile(config);
 		serialize(checkpoints, targetFile);
 	}
@@ -217,6 +229,7 @@ public class FileSystemSaver extends MemorySaver {
 	public static class Builder extends MemorySaver.Builder {
 		private Path targetFolder;
 		private StateSerializer stateSerializer;
+		private boolean overwriteMode = false;
 
 		public Builder targetFolder(Path targetFolder) {
 			this.targetFolder = targetFolder;
@@ -228,13 +241,18 @@ public class FileSystemSaver extends MemorySaver {
 			return this;
 		}
 
+		public Builder overwriteMode(boolean overwriteMode) {
+			this.overwriteMode = overwriteMode;
+			return this;
+		}
+
 		/**
 		 * Builds a new FileSystemSaver instance.
 		 * @return a new FileSystemSaver instance
 		 * @throws IllegalArgumentException if targetFolder or stateSerializer is null
 		 */
 		public FileSystemSaver build() {
-			return new FileSystemSaver(targetFolder, stateSerializer);
+			return new FileSystemSaver(targetFolder, stateSerializer, overwriteMode);
 		}
 	}
 

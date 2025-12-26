@@ -361,4 +361,143 @@ public class StateGraphFileSystemSaverTest {
 
 	}
 
+	@Test
+	public void testInsertMode() throws Exception {
+		var saver = FileSystemSaver.builder()
+				.targetFolder(Paths.get(rootPath, "testInsertMode"))
+				.overwriteMode(false)
+				.build();
+
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+				.addStrategy("agent_1:prop1")
+				.build();
+
+		var graph = new StateGraph(keyStrategyFactory)
+				.addNode("agent_1", node_async(state -> Map.of("agent_1:prop1", "agent_1:test")))
+				.addEdge(START, "agent_1")
+				.addEdge("agent_1", END);
+
+		var compileConfig = CompileConfig.builder()
+				.saverConfig(SaverConfig.builder().register(saver).build())
+				.releaseThread(false)
+				.build();
+
+		var runnableConfig = RunnableConfig.builder().threadId("test-insert-thread").build();
+		var workflow = graph.compile(compileConfig);
+
+		try {
+			saver.deleteFile(runnableConfig);
+
+			var result1 = workflow.invoke(Map.of("input", "test1"), runnableConfig);
+			assertTrue(result1.isPresent());
+
+			var result2 = workflow.invoke(Map.of("input", "test2"), runnableConfig);
+			assertTrue(result2.isPresent());
+
+			var history = workflow.getStateHistory(runnableConfig);
+			assertFalse(history.isEmpty());
+			assertEquals(4, history.size(), "插入模式应该保留所有历史记录");
+		} finally {
+			saver.deleteFile(runnableConfig);
+		}
+	}
+
+	@Test
+	public void testOverwriteMode() throws Exception {
+		var saver = FileSystemSaver.builder()
+				.targetFolder(Paths.get(rootPath, "testOverwriteMode"))
+				.overwriteMode(true)
+				.build();
+
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+				.addStrategy("agent_1:prop1")
+				.build();
+
+		var graph = new StateGraph(keyStrategyFactory)
+				.addNode("agent_1", node_async(state -> Map.of("agent_1:prop1", "agent_1:test_overwrite")))
+				.addEdge(START, "agent_1")
+				.addEdge("agent_1", END);
+
+		var compileConfig = CompileConfig.builder()
+				.saverConfig(SaverConfig.builder().register(saver).build())
+				.releaseThread(false)
+				.build();
+
+		var runnableConfig = RunnableConfig.builder().threadId("test-overwrite-thread").build();
+		var workflow = graph.compile(compileConfig);
+
+		try {
+			saver.deleteFile(runnableConfig);
+
+			var result1 = workflow.invoke(Map.of("input", "test1"), runnableConfig);
+			assertTrue(result1.isPresent());
+
+			var result2 = workflow.invoke(Map.of("input", "test2"), runnableConfig);
+			assertTrue(result2.isPresent());
+
+			var result3 = workflow.invoke(Map.of("input", "test3"), runnableConfig);
+			assertTrue(result3.isPresent());
+
+			var history = workflow.getStateHistory(runnableConfig);
+			assertFalse(history.isEmpty());
+			assertEquals(2, history.size(), "覆盖模式应该只保留最新执行的记录");
+
+			var lastSnapshot = workflow.lastStateOf(runnableConfig);
+			assertTrue(lastSnapshot.isPresent());
+			assertEquals("agent_1", lastSnapshot.get().node());
+			assertEquals("agent_1:test_overwrite", lastSnapshot.get().state().value("agent_1:prop1").orElse(null));
+		} finally {
+			saver.deleteFile(runnableConfig);
+		}
+	}
+
+	@Test
+	public void testOverwriteModeDataConsistency() throws Exception {
+		var saver = FileSystemSaver.builder()
+				.targetFolder(Paths.get(rootPath, "testOverwriteModeDataConsistency"))
+				.overwriteMode(true)
+				.build();
+
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+				.addStrategy("agent_1:prop1")
+				.build();
+
+		var graph = new StateGraph(keyStrategyFactory)
+				.addNode("agent_1", node_async(state -> {
+					Object input = state.data().get("input");
+					return Map.of("agent_1:prop1", "processed_" + input);
+				}))
+				.addEdge(START, "agent_1")
+				.addEdge("agent_1", END);
+
+		var compileConfig = CompileConfig.builder()
+				.saverConfig(SaverConfig.builder().register(saver).build())
+				.releaseThread(false)
+				.build();
+
+		var runnableConfig = RunnableConfig.builder().threadId("test-consistency-thread").build();
+		var workflow = graph.compile(compileConfig);
+
+		try {
+			saver.deleteFile(runnableConfig);
+
+			String[] inputs = {"data1", "data2", "data3", "data4", "data5"};
+			for (String input : inputs) {
+				var result = workflow.invoke(Map.of("input", input), runnableConfig);
+				assertTrue(result.isPresent());
+
+				var lastSnapshot = workflow.lastStateOf(runnableConfig);
+				assertTrue(lastSnapshot.isPresent());
+				assertEquals("processed_" + input,
+						lastSnapshot.get().state().value("agent_1:prop1").orElse(null),
+						"应该能读取到最新覆盖的数据");
+			}
+
+			var history = workflow.getStateHistory(runnableConfig);
+			assertEquals(2, history.size(), "覆盖模式应该只保留最新执行的记录");
+		} finally {
+			saver.deleteFile(runnableConfig);
+		}
+	}
+
 }

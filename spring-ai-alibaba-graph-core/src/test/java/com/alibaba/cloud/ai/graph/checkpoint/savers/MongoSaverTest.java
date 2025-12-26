@@ -22,24 +22,23 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.oracle.CreateOption;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.oracle.OracleSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.mongo.MongoSaver;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import oracle.jdbc.OracleConnection;
-import oracle.jdbc.datasource.OracleDataSource;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.oracle.OracleContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -51,16 +50,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @EnabledIfDockerAvailable
 @EnabledIf(value = "isCI", disabledReason = "this test is designed to run only in the GitHub CI environment.")
 @Testcontainers
-public class OracleSaverTest {
+public class MongoSaverTest {
     private static boolean isCI() {
         return "true".equalsIgnoreCase(System.getProperty("CI", System.getenv("CI")));
     }
 
-    protected static final String ORACLE_IMAGE_NAME = "gvenzl/oracle-free:23.7-slim-faststart";
-    protected static OracleDataSource DATA_SOURCE;
-    protected static OracleDataSource SYSDBA_DATA_SOURCE;
-
-    protected static OracleContainer oracleContainer;
+    protected static final String MONGODB_IMAGE_NAME = "mongo:7.0";
+    protected static MongoClient MONGO_CLIENT;
+    protected static GenericContainer<?> mongoDBContainer;
 
     static KeyStrategyFactory keyStrategyFactory = () -> {
         Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
@@ -69,73 +66,47 @@ public class OracleSaverTest {
     };
 
     @BeforeAll
-    public static void setup() throws IOException {
-        try {
-            DATA_SOURCE = new oracle.jdbc.datasource.impl.OracleDataSource();
-            SYSDBA_DATA_SOURCE = new oracle.jdbc.datasource.impl.OracleDataSource();
-            String urlFromEnv = System.getenv("ORACLE_JDBC_URL");
+    public static void setup() {
+        String urlFromEnv = System.getenv("MONGODB_CONNECTION_STRING");
 
-            if (urlFromEnv == null) {
-                // The Ryuk component is relied upon to stop this container.
-                oracleContainer = new OracleContainer(ORACLE_IMAGE_NAME)
-                        .withStartupTimeout(Duration.ofSeconds(600))
-                        .withConnectTimeoutSeconds(600)
-                        .withDatabaseName("pdb1")
-                        .withUsername("testuser")
-                        .withPassword("testpwd");
-                oracleContainer.start();
+        if (urlFromEnv == null) {
+            mongoDBContainer = new GenericContainer<>(DockerImageName.parse(MONGODB_IMAGE_NAME))
+                    .withExposedPorts(27017);
+            mongoDBContainer.start();
 
-                initDataSource(
-                        DATA_SOURCE,
-                        oracleContainer.getJdbcUrl(),
-                        oracleContainer.getUsername(),
-                        oracleContainer.getPassword());
-                initDataSource(SYSDBA_DATA_SOURCE, oracleContainer.getJdbcUrl(), "sys", oracleContainer.getPassword());
+            String connectionString = String.format("mongodb://%s:%d",
+                    mongoDBContainer.getHost(),
+                    mongoDBContainer.getMappedPort(27017));
 
-            } else {
-                initDataSource(
-                        DATA_SOURCE,
-                        urlFromEnv,
-                        System.getenv("ORACLE_JDBC_USER"),
-                        System.getenv("ORACLE_JDBC_PASSWORD"));
-                initDataSource(
-                        SYSDBA_DATA_SOURCE,
-                        urlFromEnv,
-                        System.getenv("ORACLE_JDBC_USER"),
-                        System.getenv("ORACLE_JDBC_PASSWORD"));
-            }
-            SYSDBA_DATA_SOURCE.setConnectionProperty(OracleConnection.CONNECTION_PROPERTY_INTERNAL_LOGON, "SYSDBA");
-
-        } catch (SQLException sqlException) {
-            throw new AssertionError(sqlException);
+            MongoClientSettings settings = MongoClientSettings.builder()
+                    .applyConnectionString(new ConnectionString(connectionString))
+                    .build();
+            MONGO_CLIENT = MongoClients.create(settings);
+        } else {
+            MongoClientSettings settings = MongoClientSettings.builder()
+                    .applyConnectionString(new ConnectionString(urlFromEnv))
+                    .build();
+            MONGO_CLIENT = MongoClients.create(settings);
         }
-
     }
 
     @AfterAll
     public static void tearDown() {
-        if (oracleContainer != null) {
-            oracleContainer.close();
+        if (MONGO_CLIENT != null) {
+            MONGO_CLIENT.close();
         }
-    }
-
-    static void initDataSource(OracleDataSource dataSource, String url, String username, String password)
-            throws SQLException {
-        dataSource.setURL(url + "?oracle.jdbc.provider.json=jackson-json-provider");
-        dataSource.setUser(username);
-        dataSource.setPassword(password);
+        if (mongoDBContainer != null) {
+            mongoDBContainer.close();
+        }
     }
 
     @Test
     public void testCheckpointWithReleasedThread() throws Exception {
-
-        var saver = OracleSaver.builder()
-                .dataSource(DATA_SOURCE)
+        var saver = MongoSaver.builder()
+                .client(MONGO_CLIENT)
                 .build();
 
-        NodeAction agent_1 = state ->
-             Map.of("agent_1:prop1", "agent_1:test");
-
+        NodeAction agent_1 = state -> Map.of("agent_1:prop1", "agent_1:test");
 
         var graph = new StateGraph(keyStrategyFactory)
                 .addNode("agent_1", node_async(agent_1))
@@ -160,19 +131,15 @@ public class OracleSaverTest {
         var history = workflow.getStateHistory(runnableConfig);
 
         assertTrue(history.isEmpty());
-
     }
 
     @Test
     public void testCheckpointWithNotReleasedThread() throws Exception {
-        var saver = OracleSaver.builder()
-                .createOption(CreateOption.CREATE_OR_REPLACE)
-                .dataSource(DATA_SOURCE)
+        var saver = MongoSaver.builder()
+                .client(MONGO_CLIENT)
                 .build();
 
-        NodeAction agent_1 = state ->
-            Map.of("agent_1:prop1", "agent_1:test");
-
+        NodeAction agent_1 = state -> Map.of("agent_1:prop1", "agent_1:test");
 
         var graph = new StateGraph(keyStrategyFactory)
                 .addNode("agent_1", node_async(agent_1))
@@ -204,7 +171,6 @@ public class OracleSaverTest {
         assertEquals("agent_1", lastSnapshot.get().node());
         assertEquals(END, lastSnapshot.get().next());
 
-        // UPDATE STATE
         final var updatedConfig = workflow.updateState(lastSnapshot.get().config(), Map.of("update", "update test"));
 
         var updatedSnapshot = workflow.stateOf(updatedConfig);
@@ -214,9 +180,8 @@ public class OracleSaverTest {
         assertEquals("update test", updatedSnapshot.get().state().value("update").get());
         assertEquals(END, lastSnapshot.get().next());
 
-        // test checkpoints reloading from database
-        saver = OracleSaver.builder()
-                .dataSource(DATA_SOURCE)
+        saver = MongoSaver.builder()
+                .client(MONGO_CLIENT)
                 .build();
 
         compileConfig = CompileConfig.builder()
@@ -242,14 +207,12 @@ public class OracleSaverTest {
         assertEquals(END, lastSnapshot.get().next());
 
         saver.release(runnableConfig);
-
     }
 
     @Test
     public void testInsertMode() throws Exception {
-        var saver = OracleSaver.builder()
-                .createOption(CreateOption.CREATE_OR_REPLACE)
-                .dataSource(DATA_SOURCE)
+        var saver = MongoSaver.builder()
+                .client(MONGO_CLIENT)
                 .overwriteMode(false)
                 .build();
 
@@ -285,9 +248,8 @@ public class OracleSaverTest {
 
     @Test
     public void testOverwriteMode() throws Exception {
-        var saver = OracleSaver.builder()
-                .createOption(CreateOption.CREATE_OR_REPLACE)
-                .dataSource(DATA_SOURCE)
+        var saver = MongoSaver.builder()
+                .client(MONGO_CLIENT)
                 .overwriteMode(true)
                 .build();
 
@@ -332,9 +294,8 @@ public class OracleSaverTest {
 
     @Test
     public void testOverwriteModeDataConsistency() throws Exception {
-        var saver = OracleSaver.builder()
-                .createOption(CreateOption.CREATE_OR_REPLACE)
-                .dataSource(DATA_SOURCE)
+        var saver = MongoSaver.builder()
+                .client(MONGO_CLIENT)
                 .overwriteMode(true)
                 .build();
 
@@ -373,5 +334,4 @@ public class OracleSaverTest {
 
         saver.release(runnableConfig);
     }
-
 }
