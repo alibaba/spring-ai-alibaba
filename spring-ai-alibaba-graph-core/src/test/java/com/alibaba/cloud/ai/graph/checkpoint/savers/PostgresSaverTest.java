@@ -316,7 +316,6 @@ public class PostgresSaverTest {
                         .dropTablesFirst(true)
                         .build();
 
-        // addUniqueConstraint(); // 注释掉：唯一约束与overwriteMode冲突（单次运行产生多个checkpoints共享thread_id）
 
         saver = buildPostgresSaver()
                         .overwriteMode(true)
@@ -370,7 +369,6 @@ public class PostgresSaverTest {
                         .dropTablesFirst(true)
                         .build();
 
-        // addUniqueConstraint(); // 注释掉：唯一约束与overwriteMode冲突（单次运行产生多个checkpoints共享thread_id）
 
         saver = buildPostgresSaver()
                         .overwriteMode(true)

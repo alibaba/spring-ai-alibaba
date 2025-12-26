@@ -305,7 +305,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 				checkpoints.set(index, checkpoint);
 			}
 			else {
-				// Add Checkpoint (overwriteMode 每次都清空)
+				// Only the latest checkpoint will be retained.
 				if (overwriteMode && !checkpoints.isEmpty()) {
 					checkpoints.clear();
 				}

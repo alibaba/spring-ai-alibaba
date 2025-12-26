@@ -338,7 +338,7 @@ public class MysqlSaver extends MemorySaver {
 				upsertStatement.execute();
 			}
 
-			// 检查是否需要清空旧的 checkpoints（overwriteMode 每次put都清空）
+			// Only the latest checkpoint will be retained.
 			if (overwriteMode && !checkpoints.isEmpty()) {
 				String deleteSql = """
 						DELETE FROM GRAPH_CHECKPOINT
@@ -351,10 +351,10 @@ public class MysqlSaver extends MemorySaver {
 					deleteStatement.setString(1, threadName);
 					deleteStatement.execute();
 				}
-				// 清空内存中的旧 checkpoints
+				// clear
 				checkpoints.clear();
 			}
-			// 插入新的 checkpoint
+			// insert
 			try (PreparedStatement checkpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
 				checkpointStatement.setString(1, checkpoint.getId());
 				checkpointStatement.setString(2, checkpoint.getNodeId());
@@ -395,7 +395,6 @@ public class MysqlSaver extends MemorySaver {
 		try (Connection ignored = conn = dataSource.getConnection()) {
 			conn.setAutoCommit(false); // Start transaction
 
-			// 先删除已存在的同名released threads，避免唯一约束冲突
 			String deleteReleasedSql = """
 					DELETE FROM GRAPH_THREAD
 					WHERE thread_name = ? AND is_released = TRUE

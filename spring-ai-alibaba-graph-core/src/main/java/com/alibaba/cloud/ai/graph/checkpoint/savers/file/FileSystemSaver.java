@@ -139,7 +139,7 @@ public class FileSystemSaver extends MemorySaver {
 	@Override
 	protected void insertedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
 			throws Exception {
-		// overwriteMode 每次都清空，只保留最新checkpoint
+		//Only the latest checkpoint will be retained
 		if (overwriteMode && checkpoints.size() > 1) {
 			Checkpoint current = checkpoints.getFirst();
 			checkpoints.clear();

@@ -293,7 +293,6 @@ public class MysqlSaverTest {
 
     @Test
     public void testOverwriteMode() throws Exception {
-        // addUniqueConstraint(); // 注释掉：唯一约束与overwriteMode冲突（单次运行产生多个checkpoints共享thread_id）
 
         var saver = MysqlSaver.builder()
                 .dataSource(DATA_SOURCE)
@@ -342,7 +341,6 @@ public class MysqlSaverTest {
 
     @Test
     public void testOverwriteModeDataConsistency() throws Exception {
-        // addUniqueConstraint(); // 注释掉：唯一约束与overwriteMode冲突（单次运行产生多个checkpoints共享thread_id）
 
         var saver = MysqlSaver.builder()
                 .dataSource(DATA_SOURCE)

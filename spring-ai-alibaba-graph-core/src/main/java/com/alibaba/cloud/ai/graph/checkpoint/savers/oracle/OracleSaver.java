@@ -417,7 +417,7 @@ public class OracleSaver extends MemorySaver {
 		try (Connection ignored = conn = dataSource.getConnection()) {
 			conn.setAutoCommit(false); // Start transaction
 
-			// 检查是否需要清空旧的 checkpoints（overwriteMode 每次put都清空）
+			// Only the latest checkpoint will be retained.
 			if (overwriteMode && !checkpoints.isEmpty()) {
 				String deleteSql = """
 						DELETE FROM GRAPH_CHECKPOINT
@@ -430,7 +430,7 @@ public class OracleSaver extends MemorySaver {
 					deleteStatement.setString(1, threadName);
 					deleteStatement.execute();
 				}
-				// 清空内存中的旧 checkpoints
+				// clear
 				checkpoints.clear();
 			}
 			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);

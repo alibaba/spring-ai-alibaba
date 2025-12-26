@@ -418,7 +418,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 				collection.insertOne(clientSession, tempDocument);
 			}
 			else {
-				// overwriteMode 每次都清空
+				// Only the latest checkpoint will be retained.
 				if (overwriteMode && !checkpointLinkedList.isEmpty()) {
 					checkpointLinkedList.clear();
 				}

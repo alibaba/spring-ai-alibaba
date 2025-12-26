@@ -269,7 +269,7 @@ public class PostgresSaver extends MemorySaver {
 			}
 		}
 
-		// 2. 检查是否需要清空旧的 checkpoints（overwriteMode 每次put都清空）
+		// Only the latest checkpoint will be retained.
 		if (overwriteMode && !checkpoints.isEmpty()) {
 			String deleteSql = """
 					DELETE FROM GraphCheckpoint
@@ -279,7 +279,7 @@ public class PostgresSaver extends MemorySaver {
 				deleteStatement.setObject(1, threadUUID, Types.OTHER);
 				deleteStatement.execute();
 			}
-			// 清空内存中的旧 checkpoints
+			// clear
 			checkpoints.clear();
 		}
 
