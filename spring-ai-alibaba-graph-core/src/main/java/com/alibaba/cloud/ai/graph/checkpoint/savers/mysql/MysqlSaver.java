@@ -132,7 +132,6 @@ public class MysqlSaver extends MemorySaver {
 			INSERT INTO GRAPH_THREAD (thread_id, thread_name, is_released)
 			VALUES (?, ?, FALSE)
 			ON DUPLICATE KEY UPDATE
-				thread_id = VALUES(thread_id),
 				is_released = FALSE
 			""";
 
