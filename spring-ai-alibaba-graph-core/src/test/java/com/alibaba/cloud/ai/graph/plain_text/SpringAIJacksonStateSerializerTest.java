@@ -318,4 +318,77 @@ class SpringAIJacksonStateSerializerTest {
 		return result;
 	}
 
+
+	@Test
+	void testNoDoubleClassField() throws Exception {
+
+		AssistantMessage assistantMsg = AssistantMessage.builder()
+			.content("test response")
+			.properties(Map.of("key", "value"))
+			.build();
+		verifyClassFieldCount(assistantMsg, "AssistantMessage");
+
+		SystemMessage systemMsg = SystemMessage.builder()
+			.text("system prompt")
+			.metadata(Map.of("source", "test"))
+			.build();
+		verifyClassFieldCount(systemMsg, "SystemMessage");
+
+		UserMessage userMsg = UserMessage.builder()
+			.text("user query")
+			.metadata(Map.of("user_id", "123"))
+			.build();
+		verifyClassFieldCount(userMsg, "UserMessage");
+
+		Document doc = Document.builder()
+			.id("doc_001")
+			.text("document content")
+			.metadata(Map.of("type", "pdf"))
+			.score(0.95)
+			.build();
+		verifyClassFieldCount(doc, "Document");
+
+		List<ToolResponseMessage.ToolResponse> responses = List.of(
+			new ToolResponseMessage.ToolResponse("call_1", "tool1", "{\"result\": 1}")
+		);
+		ToolResponseMessage toolMsg = ToolResponseMessage.builder()
+			.responses(responses)
+			.metadata(Map.of("tool", "test"))
+			.build();
+		verifyClassFieldCount(toolMsg, "ToolResponseMessage");
+	}
+
+
+	private void verifyClassFieldCount(Object object, String objectType) throws IOException {
+		Map<String, Object> data = new HashMap<>();
+		data.put("object", object);
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(baos);
+		serializer.writeData(data, oos);
+		oos.flush();
+
+		String serializedContent = baos.toString();
+
+		int classCount = countOccurrences(serializedContent, "\"@class\"");
+
+		assertTrue(classCount >= 1,
+			String.format("%s 序列化后应至少包含一个 @class 字段，实际: %d", objectType, classCount));
+
+
+		assertTrue(classCount <= 10,
+			String.format("%s 序列化后 @class 字段不应过多（可能重复），实际: %d", objectType, classCount));
+	}
+
+
+	private int countOccurrences(String text, String substring) {
+		int count = 0;
+		int index = 0;
+		while ((index = text.indexOf(substring, index)) != -1) {
+			count++;
+			index += substring.length();
+		}
+		return count;
+	}
+
 }
