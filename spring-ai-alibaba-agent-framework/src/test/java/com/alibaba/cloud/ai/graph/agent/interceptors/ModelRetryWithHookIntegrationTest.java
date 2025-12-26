@@ -63,6 +63,7 @@ class ModelRetryWithHookIntegrationTest {
 		// Simulate 3 rounds of calls
 		for (int round = 1; round <= 3; round++) {
 			final int currentRound = round;
+			final AtomicInteger roundAttempts = new AtomicInteger(0);
 			
 			// 1. Hook beforeModel - Check limits
 			OverAllState state = new OverAllState(Map.of());
@@ -73,13 +74,14 @@ class ModelRetryWithHookIntegrationTest {
 			requestContext.put(ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY, config);
 
 			ModelCallHandler handler = request -> {
-				int count = totalApiCalls.incrementAndGet();
+				totalApiCalls.incrementAndGet();
+				int attempt = roundAttempts.incrementAndGet();
 				// Round 1: Retry 1 time then succeed (2 calls total)
 				// Round 2: Retry 2 times then succeed (3 calls total)
 				// Round 3: Succeed immediately (1 call total)
-				if (currentRound == 1 && count < 2) {
+				if (currentRound == 1 && attempt < 2) {
 					throw new RuntimeException("I/O error: connection timeout");
-				} else if (currentRound == 2 && count < 4) {
+				} else if (currentRound == 2 && attempt < 3) {
 					throw new RuntimeException("I/O error: connection timeout");
 				}
 				return ModelResponse.of(new AssistantMessage("Success round " + currentRound));
@@ -254,7 +256,8 @@ class ModelRetryWithHookIntegrationTest {
 		RunnableConfig config = RunnableConfig.builder().build();
 		AtomicInteger totalApiCalls = new AtomicInteger(0);
 
-		// Round 1: Retry 1 time then succeed (2 calls total)
+		// Round 1: Retry 2 times then succeed (3 calls total)
+		// This will reach the runLimit exactly
 		{
 			OverAllState state = new OverAllState(Map.of());
 			hook.beforeModel(state, config).get();
@@ -262,9 +265,11 @@ class ModelRetryWithHookIntegrationTest {
 			Map<String, Object> requestContext = new HashMap<>();
 			requestContext.put(ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY, config);
 
+			AtomicInteger roundAttempts = new AtomicInteger(0);
 			ModelCallHandler handler = request -> {
-				int count = totalApiCalls.incrementAndGet();
-				if (count < 2) {
+				totalApiCalls.incrementAndGet();
+				int attempt = roundAttempts.incrementAndGet();
+				if (attempt < 3) {
 					throw new RuntimeException("I/O error");
 				}
 				return ModelResponse.of(new AssistantMessage("Success"));
@@ -280,20 +285,21 @@ class ModelRetryWithHookIntegrationTest {
 
 		// Verify state after round 1
 		int hookRunCountAfterRound1 = (int) config.context().get("__model_call_limit_run_count__");
-		assertEquals(2, hookRunCountAfterRound1, "After round 1, Hook count should be 2 (1 original + 1 retry)");
+		// Hook count = 2 retries + 1 afterModel = 3
+		assertEquals(3, hookRunCountAfterRound1, "After round 1, Hook count should be 3 (2 retries + 1 afterModel)");
 
 		// Round 2: Try to call, but should be blocked by Hook in beforeModel
 		{
 			OverAllState state = new OverAllState(Map.of());
 			
-			// Hook should throw exception because limit is already reached (2) + 1 more would exceed runLimit=3
+			// Hook should throw exception because runCount=3 >= runLimit=3
 			assertThrows(ModelCallLimitExceededException.class, () -> {
 				hook.beforeModel(state, config).get();
 			}, "After reaching limit, Hook should block calls in beforeModel phase");
 		}
 
-		// Verify total API call count: only 2 from round 1
-		assertEquals(2, totalApiCalls.get(), "Hook limit should prevent subsequent calls");
+		// Verify total API call count: only 3 from round 1
+		assertEquals(3, totalApiCalls.get(), "Hook limit should prevent subsequent calls");
 	}
 }
 
