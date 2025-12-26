@@ -897,7 +897,8 @@ class RedisSaverTest {
 				.releaseThread(false)
 				.build();
 
-		var runnableConfig = RunnableConfig.builder().build();
+		String threadId = "test-thread-" + UUID.randomUUID();
+		var runnableConfig = RunnableConfig.builder().threadId(threadId).build();
 		var workflow = graph.compile(compileConfig);
 
 		Map<String, Object> inputs1 = Map.of("input", "test1");
@@ -941,7 +942,8 @@ class RedisSaverTest {
 				.releaseThread(false)
 				.build();
 
-		var runnableConfig = RunnableConfig.builder().build();
+		String threadId = "test-thread-" + UUID.randomUUID();
+		var runnableConfig = RunnableConfig.builder().threadId(threadId).build();
 		var workflow = graph.compile(compileConfig);
 
 		Map<String, Object> inputs1 = Map.of("input", "test1");
@@ -997,7 +999,8 @@ class RedisSaverTest {
 				.releaseThread(false)
 				.build();
 
-		var runnableConfig = RunnableConfig.builder().build();
+		String threadId = "test-thread-" + UUID.randomUUID();
+		var runnableConfig = RunnableConfig.builder().threadId(threadId).build();
 		var workflow = graph.compile(compileConfig);
 
 		String[] inputs = {"data1", "data2", "data3", "data4", "data5"};

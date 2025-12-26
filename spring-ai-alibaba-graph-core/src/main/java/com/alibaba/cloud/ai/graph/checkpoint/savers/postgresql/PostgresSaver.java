@@ -251,27 +251,6 @@ public class PostgresSaver extends MemorySaver {
 				VALUES (?, ?, ?, ?, ?, ?::jsonb, ?)
 				""";
 
-
-		var upsertCheckpointSql = """
-				INSERT INTO GraphCheckpoint(
-				checkpoint_id,
-				parent_checkpoint_id,
-				thread_id,
-				node_id,
-				next_node_id,
-				state_data,
-				state_content_type)
-				VALUES (?, ?, ?, ?, ?, ?::jsonb, ?)
-				ON CONFLICT (thread_id) DO UPDATE SET
-				    checkpoint_id = EXCLUDED.checkpoint_id,
-				    parent_checkpoint_id = EXCLUDED.parent_checkpoint_id,
-				    node_id = EXCLUDED.node_id,
-				    next_node_id = EXCLUDED.next_node_id,
-				    state_data = EXCLUDED.state_data,
-				    state_content_type = EXCLUDED.state_content_type,
-				    saved_at = CURRENT_TIMESTAMP
-				""";
-
 		UUID threadUUID = null;
 
 		// 1. Upsert thread information
@@ -290,10 +269,20 @@ public class PostgresSaver extends MemorySaver {
 			}
 		}
 
+		// 2. 检查是否需要清空旧的 checkpoints（overwriteMode 且新运行开始）
+		if (overwriteMode && StateGraph.START.equals(checkpoint.getNodeId()) && checkpoints.size() > 1) {
+			String deleteSql = """
+					DELETE FROM GraphCheckpoint
+					WHERE thread_id = ?
+					""";
+			try (PreparedStatement deleteStatement = conn.prepareStatement(deleteSql)) {
+				deleteStatement.setObject(1, threadUUID, Types.OTHER);
+				deleteStatement.execute();
+			}
+		}
 
-		// 2. Insert or Upsert checkpoint data
-		String sql = overwriteMode ? upsertCheckpointSql : insertCheckpointSql;
-		try (PreparedStatement ps = conn.prepareStatement(sql)) {
+		// 3. Insert checkpoint data
+		try (PreparedStatement ps = conn.prepareStatement(insertCheckpointSql)) {
 			var field = 0;
 			// checkpoint_id
 			ps.setObject(++field,

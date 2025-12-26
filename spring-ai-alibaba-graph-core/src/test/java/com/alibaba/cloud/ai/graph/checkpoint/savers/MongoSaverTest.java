@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.mongo.MongoSaver;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
@@ -119,6 +120,7 @@ public class MongoSaverTest {
                 .build();
 
         var runnableConfig = RunnableConfig.builder()
+                .threadId("test-thread-" + UUID.randomUUID())
                 .build();
         var workflow = graph.compile(compileConfig);
 
@@ -189,7 +191,7 @@ public class MongoSaverTest {
                 .releaseThread(false)
                 .build();
 
-        runnableConfig = RunnableConfig.builder().build();
+        runnableConfig = RunnableConfig.builder().threadId("test-thread-" + UUID.randomUUID()).build();
         workflow = graph.compile(compileConfig);
 
         history = workflow.getStateHistory(runnableConfig);

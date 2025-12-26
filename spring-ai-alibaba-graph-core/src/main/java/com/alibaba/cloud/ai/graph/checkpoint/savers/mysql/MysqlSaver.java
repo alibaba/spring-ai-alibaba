@@ -337,9 +337,23 @@ public class MysqlSaver extends MemorySaver {
 				upsertStatement.execute();
 			}
 
-			// 根据 overwriteMode 决定使用 INSERT 还是 UPSERT
-			String sql = overwriteMode ? UPSERT_CHECKPOINT : INSERT_CHECKPOINT;
-			try (PreparedStatement checkpointStatement = conn.prepareStatement(sql)) {
+			// 检查是否需要清空旧的 checkpoints（overwriteMode 且新运行开始）
+			if (overwriteMode && StateGraph.START.equals(checkpoint.getNodeId()) && checkpoints.size() > 1) {
+				String deleteSql = """
+						DELETE FROM GRAPH_CHECKPOINT
+						WHERE thread_id = (
+						    SELECT thread_id FROM GRAPH_THREAD
+						    WHERE thread_name = ? AND is_released = FALSE
+						)
+						""";
+				try (PreparedStatement deleteStatement = conn.prepareStatement(deleteSql)) {
+					deleteStatement.setString(1, threadName);
+					deleteStatement.execute();
+				}
+			}
+
+			// 插入新的 checkpoint
+			try (PreparedStatement checkpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
 				checkpointStatement.setString(1, checkpoint.getId());
 				checkpointStatement.setString(2, checkpoint.getNodeId());
 				checkpointStatement.setString(3, checkpoint.getNextNodeId());
@@ -349,14 +363,14 @@ public class MysqlSaver extends MemorySaver {
 			}
 
 			conn.commit();
-			log.debug("Checkpoint {} for thread {} {} successfully.",
-					checkpoint.getId(), threadName, overwriteMode ? "upserted" : "inserted");
+			log.debug("Checkpoint {} for thread {} inserted successfully.",
+					checkpoint.getId(), threadName);
 		}
 		catch (SQLException | IOException e) {
-			log.error("Error {} checkpoint with id {} in thread {}",
-					overwriteMode ? "upserting" : "inserting", checkpoint.getId(), threadName, e);
+			log.error("Error inserting checkpoint with id {} in thread {}",
+					checkpoint.getId(), threadName, e);
 			rollback(conn, checkpoint, threadName);
-			throw new Exception("Unable to " + (overwriteMode ? "upsert" : "insert") + " checkpoint", e);
+			throw new Exception("Unable to insert checkpoint", e);
 		}
 
 	}
