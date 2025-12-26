@@ -15,10 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.modelretry;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+import com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants;
 
 import org.springframework.ai.chat.messages.Message;
 import org.slf4j.Logger;
@@ -43,6 +45,10 @@ import java.util.function.Predicate;
 public class ModelRetryInterceptor extends ModelInterceptor {
 
 	private static final Logger log = LoggerFactory.getLogger(ModelRetryInterceptor.class);
+	
+	// Constants for ModelCallLimitHook counters
+	private static final String THREAD_COUNT_KEY = "__model_call_limit_thread_count__";
+	private static final String RUN_COUNT_KEY = "__model_call_limit_run_count__";
 
 	private final int maxAttempts;
 	private final long initialDelay;
@@ -66,11 +72,26 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 		Exception lastException = null;
 		long currentDelay = initialDelay;
+		
+		// Get RunnableConfig to update Hook counters on retries
+		RunnableConfig config = null;
+		if (request.getContext() != null && request.getContext().containsKey(ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY)) {
+			Object configObj = request.getContext().get(ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY);
+			if (configObj instanceof RunnableConfig) {
+				config = (RunnableConfig) configObj;
+			}
+		}
 
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
 				if (attempt > 1) {
 					log.info("Retry model call, on the {}th attempt (out of {} attempts).", attempt, maxAttempts);
+					
+					// Update ModelCallLimitHook counters for retry attempts
+					// This ensures retries are counted towards the limit
+					if (config != null) {
+						updateHookCounters(config);
+					}
 				}
 
 				ModelResponse modelResponse = handler.call(request);
@@ -159,6 +180,33 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 				lowerText.contains("network") ||
 				lowerText.contains("handshake") ||
 				lowerText.contains("socket");
+	}
+	
+	/**
+	 * Update ModelCallLimitHook counters to account for retry attempts.
+	 * This ensures that retries are counted towards the model call limit,
+	 * making the Interceptor compatible with ModelCallLimitHook.
+	 * 
+	 * @param config the RunnableConfig containing Hook counters
+	 */
+	private void updateHookCounters(RunnableConfig config) {
+		try {
+			// Increment thread count
+			int threadCount = config.context().containsKey(THREAD_COUNT_KEY)
+					? (int) config.context().get(THREAD_COUNT_KEY) : 0;
+			config.context().put(THREAD_COUNT_KEY, threadCount + 1);
+			
+			// Increment run count
+			int runCount = config.context().containsKey(RUN_COUNT_KEY)
+					? (int) config.context().get(RUN_COUNT_KEY) : 0;
+			config.context().put(RUN_COUNT_KEY, runCount + 1);
+			
+			log.debug("Updated Hook counters for retry: threadCount={}, runCount={}", 
+					threadCount + 1, runCount + 1);
+		} catch (Exception e) {
+			// Don't let counter update failures break the retry logic
+			log.warn("Failed to update Hook counters: {}", e.getMessage());
+		}
 	}
 
 	@Override
