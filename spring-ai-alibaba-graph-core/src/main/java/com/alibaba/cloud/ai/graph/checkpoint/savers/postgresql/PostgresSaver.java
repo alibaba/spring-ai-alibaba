@@ -279,6 +279,12 @@ public class PostgresSaver extends MemorySaver {
 				deleteStatement.setObject(1, threadUUID, Types.OTHER);
 				deleteStatement.execute();
 			}
+			// 清空内存中的旧 checkpoints，只保留当前新插入的
+			if (checkpoints.size() > 1) {
+				Checkpoint current = checkpoints.getFirst();
+				checkpoints.clear();
+				checkpoints.add(current);
+			}
 		}
 
 		// 3. Insert checkpoint data
