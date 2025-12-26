@@ -429,8 +429,13 @@ public class OracleSaver extends MemorySaver {
 					deleteStatement.setString(1, threadName);
 					deleteStatement.execute();
 				}
+				// 清空内存中的旧 checkpoints，只保留当前新插入的
+				if (checkpoints.size() > 1) {
+					Checkpoint current = checkpoints.getFirst();
+					checkpoints.clear();
+					checkpoints.add(current);
+				}
 			}
-
 			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);
 				 PreparedStatement checkpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
 

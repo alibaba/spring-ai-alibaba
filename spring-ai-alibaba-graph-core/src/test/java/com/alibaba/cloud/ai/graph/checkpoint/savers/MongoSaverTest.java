@@ -153,7 +153,7 @@ public class MongoSaverTest {
                 .releaseThread(false)
                 .build();
 
-        var runnableConfig = RunnableConfig.builder().build();
+        var runnableConfig = RunnableConfig.builder().threadId("test-thread-" + UUID.randomUUID()).build();
         var workflow = graph.compile(compileConfig);
 
         Map<String, Object> inputs = Map.of("input", "test1");
@@ -230,7 +230,7 @@ public class MongoSaverTest {
                 .releaseThread(false)
                 .build();
 
-        var runnableConfig = RunnableConfig.builder().build();
+        var runnableConfig = RunnableConfig.builder().threadId("test-thread-" + UUID.randomUUID()).build();
         var workflow = graph.compile(compileConfig);
 
         Map<String, Object> inputs1 = Map.of("input", "test1");
@@ -267,7 +267,7 @@ public class MongoSaverTest {
                 .releaseThread(false)
                 .build();
 
-        var runnableConfig = RunnableConfig.builder().build();
+        var runnableConfig = RunnableConfig.builder().threadId("test-thread-" + UUID.randomUUID()).build();
         var workflow = graph.compile(compileConfig);
 
         Map<String, Object> inputs1 = Map.of("input", "test1");
@@ -316,7 +316,7 @@ public class MongoSaverTest {
                 .releaseThread(false)
                 .build();
 
-        var runnableConfig = RunnableConfig.builder().build();
+        var runnableConfig = RunnableConfig.builder().threadId("test-thread-" + UUID.randomUUID()).build();
         var workflow = graph.compile(compileConfig);
 
         String[] inputs = {"data1", "data2", "data3", "data4", "data5"};

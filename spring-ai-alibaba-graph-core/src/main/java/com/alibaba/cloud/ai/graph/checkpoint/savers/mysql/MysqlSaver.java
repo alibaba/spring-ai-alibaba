@@ -350,8 +350,13 @@ public class MysqlSaver extends MemorySaver {
 					deleteStatement.setString(1, threadName);
 					deleteStatement.execute();
 				}
+				// 清空内存中的旧 checkpoints，只保留当前新插入的
+				if (checkpoints.size() > 1) {
+					Checkpoint current = checkpoints.getFirst();
+					checkpoints.clear();
+					checkpoints.add(current);
+				}
 			}
-
 			// 插入新的 checkpoint
 			try (PreparedStatement checkpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
 				checkpointStatement.setString(1, checkpoint.getId());
