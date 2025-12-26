@@ -399,10 +399,20 @@ public class MysqlSaver extends MemorySaver {
 		try (Connection ignored = conn = dataSource.getConnection()) {
 			conn.setAutoCommit(false); // Start transaction
 
+			// 先删除已存在的同名released threads，避免唯一约束冲突
+			String deleteReleasedSql = """
+					DELETE FROM GRAPH_THREAD
+					WHERE thread_name = ? AND is_released = TRUE
+					""";
+			try (PreparedStatement deleteStatement = conn.prepareStatement(deleteReleasedSql)) {
+				deleteStatement.setString(1, threadName);
+				deleteStatement.executeUpdate();
+			}
+
 			try (PreparedStatement preparedStatement = conn.prepareStatement(RELEASE_THREAD)) {
 				preparedStatement.setString(1, threadName);
 				int rowsAffected = preparedStatement.executeUpdate();
-				
+
 				if (rowsAffected == 0) {
 					conn.rollback();
 					throw new IllegalStateException(
