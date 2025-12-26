@@ -418,10 +418,9 @@ public class MongoSaver implements BaseCheckpointSaver {
 				collection.insertOne(clientSession, tempDocument);
 			}
 			else {
-				if (overwriteMode) {
-					if (StateGraph.START.equals(checkpoint.getNodeId()) && !checkpointLinkedList.isEmpty()) {
-						checkpointLinkedList.clear();
-					}
+				// overwriteMode 每次都清空
+				if (overwriteMode && !checkpointLinkedList.isEmpty()) {
+					checkpointLinkedList.clear();
 				}
 				checkpointLinkedList.push(checkpoint);
 				Document tempDocument = new Document().append("_id", checkpointDocId)

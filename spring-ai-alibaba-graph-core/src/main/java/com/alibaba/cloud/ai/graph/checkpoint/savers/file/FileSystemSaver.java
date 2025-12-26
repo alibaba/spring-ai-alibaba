@@ -139,12 +139,11 @@ public class FileSystemSaver extends MemorySaver {
 	@Override
 	protected void insertedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
 			throws Exception {
-		if (overwriteMode) {
-			if (StateGraph.START.equals(checkpoint.getNodeId()) && checkpoints.size() > 1) {
-				Checkpoint current = checkpoints.getFirst();
-				checkpoints.clear();
-				checkpoints.add(current);
-			}
+		// overwriteMode 每次都清空，只保留最新checkpoint
+		if (overwriteMode && checkpoints.size() > 1) {
+			Checkpoint current = checkpoints.getFirst();
+			checkpoints.clear();
+			checkpoints.add(current);
 		}
 
 		File targetFile = getFile(config);

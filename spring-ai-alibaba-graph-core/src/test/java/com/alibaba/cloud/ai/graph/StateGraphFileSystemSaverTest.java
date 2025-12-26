@@ -440,7 +440,7 @@ public class StateGraphFileSystemSaverTest {
 
 			var history = workflow.getStateHistory(runnableConfig);
 			assertFalse(history.isEmpty());
-			assertEquals(2, history.size(), "覆盖模式应该只保留最新执行的记录");
+			assertEquals(1, history.size(), "覆盖模式每次put都清空，只保留最新checkpoint");
 
 			var lastSnapshot = workflow.lastStateOf(runnableConfig);
 			assertTrue(lastSnapshot.isPresent());
@@ -494,7 +494,7 @@ public class StateGraphFileSystemSaverTest {
 			}
 
 			var history = workflow.getStateHistory(runnableConfig);
-			assertEquals(2, history.size(), "覆盖模式应该只保留最新执行的记录");
+			assertEquals(1, history.size(), "覆盖模式每次put都清空，只保留最新checkpoint");
 		} finally {
 			saver.deleteFile(runnableConfig);
 		}

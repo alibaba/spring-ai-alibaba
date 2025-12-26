@@ -305,11 +305,9 @@ public class RedisSaver implements BaseCheckpointSaver {
 				checkpoints.set(index, checkpoint);
 			}
 			else {
-				// Add Checkpoint
-				if (overwriteMode) {
-					if (StateGraph.START.equals(checkpoint.getNodeId()) && !checkpoints.isEmpty()) {
-						checkpoints.clear();
-					}
+				// Add Checkpoint (overwriteMode 每次都清空)
+				if (overwriteMode && !checkpoints.isEmpty()) {
+					checkpoints.clear();
 				}
 				checkpoints.push(checkpoint);
 			}

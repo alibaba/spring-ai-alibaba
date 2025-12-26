@@ -269,8 +269,8 @@ public class PostgresSaver extends MemorySaver {
 			}
 		}
 
-		// 2. 检查是否需要清空旧的 checkpoints（overwriteMode 且新运行开始）
-		if (overwriteMode && StateGraph.START.equals(checkpoint.getNodeId()) && checkpoints.size() > 1) {
+		// 2. 检查是否需要清空旧的 checkpoints（overwriteMode 每次put都清空）
+		if (overwriteMode && !checkpoints.isEmpty()) {
 			String deleteSql = """
 					DELETE FROM GraphCheckpoint
 					WHERE thread_id = ?
@@ -279,12 +279,8 @@ public class PostgresSaver extends MemorySaver {
 				deleteStatement.setObject(1, threadUUID, Types.OTHER);
 				deleteStatement.execute();
 			}
-			// 清空内存中的旧 checkpoints，只保留当前新插入的
-			if (checkpoints.size() > 1) {
-				Checkpoint current = checkpoints.getFirst();
-				checkpoints.clear();
-				checkpoints.add(current);
-			}
+			// 清空内存中的旧 checkpoints
+			checkpoints.clear();
 		}
 
 		// 3. Insert checkpoint data
