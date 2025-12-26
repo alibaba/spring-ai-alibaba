@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 
 /**
- * 序列化 NodeOutput 的序列化器。
+ * Serializer for NodeOutput.
  */
 public class JacksonNodeOutputSerializer extends StdSerializer<NodeOutput> {
 
