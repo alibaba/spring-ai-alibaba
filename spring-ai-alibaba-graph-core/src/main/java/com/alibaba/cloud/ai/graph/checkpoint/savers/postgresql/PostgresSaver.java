@@ -52,9 +52,12 @@ public class PostgresSaver extends MemorySaver {
 
 	private final StateSerializer stateSerializer;
 
+	private final boolean overwriteMode;
+
 	protected PostgresSaver(Builder builder) throws SQLException {
 		this.datasource = builder.datasource;
 		this.stateSerializer = builder.stateSerializer;
+		this.overwriteMode = builder.overwriteMode;
 		initTable(builder.dropTablesFirst, builder.createTables);
 	}
 
@@ -247,6 +250,28 @@ public class PostgresSaver extends MemorySaver {
 				state_content_type)
 				VALUES (?, ?, ?, ?, ?, ?::jsonb, ?)
 				""";
+
+
+		var upsertCheckpointSql = """
+				INSERT INTO GraphCheckpoint(
+				checkpoint_id,
+				parent_checkpoint_id,
+				thread_id,
+				node_id,
+				next_node_id,
+				state_data,
+				state_content_type)
+				VALUES (?, ?, ?, ?, ?, ?::jsonb, ?)
+				ON CONFLICT (thread_id) DO UPDATE SET
+				    checkpoint_id = EXCLUDED.checkpoint_id,
+				    parent_checkpoint_id = EXCLUDED.parent_checkpoint_id,
+				    node_id = EXCLUDED.node_id,
+				    next_node_id = EXCLUDED.next_node_id,
+				    state_data = EXCLUDED.state_data,
+				    state_content_type = EXCLUDED.state_content_type,
+				    saved_at = CURRENT_TIMESTAMP
+				""";
+
 		UUID threadUUID = null;
 
 		// 1. Upsert thread information
@@ -266,8 +291,9 @@ public class PostgresSaver extends MemorySaver {
 		}
 
 
-		// 2. Insert checkpoint data
-		try (PreparedStatement ps = conn.prepareStatement(insertCheckpointSql)) {
+		// 2. Insert or Upsert checkpoint data
+		String sql = overwriteMode ? upsertCheckpointSql : insertCheckpointSql;
+		try (PreparedStatement ps = conn.prepareStatement(sql)) {
 			var field = 0;
 			// checkpoint_id
 			ps.setObject(++field,
@@ -443,6 +469,7 @@ public class PostgresSaver extends MemorySaver {
 		private boolean createTables;
 		private boolean dropTablesFirst;
 		private DataSource datasource;
+		private boolean overwriteMode = false;
 
 		public Builder stateSerializer(StateSerializer stateSerializer) {
 			this.stateSerializer = stateSerializer;
@@ -481,6 +508,11 @@ public class PostgresSaver extends MemorySaver {
 
 		public Builder dropTablesFirst(boolean dropTablesFirst) {
 			this.dropTablesFirst = dropTablesFirst;
+			return this;
+		}
+
+		public Builder overwriteMode(boolean overwriteMode) {
+			this.overwriteMode = overwriteMode;
 			return this;
 		}
 

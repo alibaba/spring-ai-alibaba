@@ -28,7 +28,10 @@ import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -230,6 +233,184 @@ public class PostgresSaverTest {
 
         saver.release( runnableConfig );
 
+    }
+
+
+    private void addUniqueConstraint() throws Exception {
+        String jdbcUrl = postgres.getJdbcUrl();
+        String username = postgres.getUsername();
+        String password = postgres.getPassword();
+
+        try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password);
+             Statement stmt = conn.createStatement()) {
+
+            stmt.execute("""
+                    WITH latest_checkpoints AS (
+                        SELECT checkpoint_id,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY thread_id
+                                   ORDER BY saved_at DESC, checkpoint_id DESC
+                               ) AS rn
+                        FROM GraphCheckpoint
+                    )
+                    DELETE FROM GraphCheckpoint
+                    WHERE checkpoint_id IN (
+                        SELECT checkpoint_id FROM latest_checkpoints WHERE rn > 1
+                    )
+                    """);
+
+            try {
+                stmt.execute("CREATE UNIQUE INDEX idx_unique_graphcheckpoint_thread ON GraphCheckpoint(thread_id)");
+            } catch (Exception e) {
+                // 忽略已存在的错误
+                log.debug("Index already exists or error creating index: {}", e.getMessage());
+            }
+        }
+    }
+
+
+    @Test
+    public void testInsertMode() throws Exception {
+        var saver = buildPostgresSaver()
+                        .dropTablesFirst(true)
+                        .overwriteMode(false)
+                        .build();
+
+        NodeAction agent_1 = state -> {
+            log.info( "agent_1");
+            return Map.of("agent_1:prop1", "agent_1:test");
+        };
+
+        var graph = new StateGraph(keyStrategyFactory)
+                .addNode("agent_1", node_async( agent_1 ))
+                .addEdge( START,"agent_1")
+                .addEdge( "agent_1",  END);
+
+        var compileConfig = CompileConfig.builder()
+                                .saverConfig(SaverConfig.builder().register(saver).build())
+                                .releaseThread(false)
+                                .build();
+
+        var runnableConfig = RunnableConfig.builder().build();
+        var workflow = graph.compile( compileConfig );
+
+        Map<String, Object> inputs1 = Map.of( "input", "test1");
+        var result1 = workflow.invoke( inputs1, runnableConfig );
+        assertTrue( result1.isPresent() );
+
+        Map<String, Object> inputs2 = Map.of( "input", "test2");
+        var result2 = workflow.invoke( inputs2, runnableConfig );
+        assertTrue( result2.isPresent() );
+
+        var history = workflow.getStateHistory( runnableConfig );
+        assertFalse( history.isEmpty() );
+        assertEquals( 4, history.size(), "插入模式应该保留所有历史记录" );
+
+        saver.release( runnableConfig );
+    }
+
+
+    @Test
+    public void testOverwriteMode() throws Exception {
+        var saver = buildPostgresSaver()
+                        .dropTablesFirst(true)
+                        .build();
+
+        addUniqueConstraint();
+
+        saver = buildPostgresSaver()
+                        .overwriteMode(true)
+                        .build();
+
+        NodeAction agent_1 = state -> {
+            log.info( "agent_1");
+            return Map.of("agent_1:prop1", "agent_1:test_overwrite");
+        };
+
+        var graph = new StateGraph(keyStrategyFactory)
+                .addNode("agent_1", node_async( agent_1 ))
+                .addEdge( START,"agent_1")
+                .addEdge( "agent_1",  END);
+
+        var compileConfig = CompileConfig.builder()
+                                .saverConfig(SaverConfig.builder().register(saver).build())
+                                .releaseThread(false)
+                                .build();
+
+        var runnableConfig = RunnableConfig.builder().build();
+        var workflow = graph.compile( compileConfig );
+
+        Map<String, Object> inputs1 = Map.of( "input", "test1");
+        var result1 = workflow.invoke( inputs1, runnableConfig );
+        assertTrue( result1.isPresent() );
+
+        Map<String, Object> inputs2 = Map.of( "input", "test2");
+        var result2 = workflow.invoke( inputs2, runnableConfig );
+        assertTrue( result2.isPresent() );
+
+        Map<String, Object> inputs3 = Map.of( "input", "test3");
+        var result3 = workflow.invoke( inputs3, runnableConfig );
+        assertTrue( result3.isPresent() );
+
+        var history = workflow.getStateHistory( runnableConfig );
+        assertFalse( history.isEmpty() );
+        assertEquals( 2, history.size(), "覆盖模式应该只保留最新执行的记录" );
+
+        var lastSnapshot = workflow.lastStateOf( runnableConfig );
+        assertTrue( lastSnapshot.isPresent() );
+        assertEquals( "agent_1", lastSnapshot.get().node() );
+        assertEquals( "agent_1:test_overwrite", lastSnapshot.get().state().value("agent_1:prop1").orElse(null) );
+
+        saver.release( runnableConfig );
+    }
+
+    @Test
+    public void testOverwriteModeDataConsistency() throws Exception {
+        var saver = buildPostgresSaver()
+                        .dropTablesFirst(true)
+                        .build();
+
+        addUniqueConstraint();
+
+        saver = buildPostgresSaver()
+                        .overwriteMode(true)
+                        .build();
+
+        NodeAction agent_1 = state -> {
+            Object input = state.data().get("input");
+            log.info( "agent_1 processing: {}", input);
+            return Map.of("agent_1:prop1", "processed_" + input);
+        };
+
+        var graph = new StateGraph(keyStrategyFactory)
+                .addNode("agent_1", node_async( agent_1 ))
+                .addEdge( START,"agent_1")
+                .addEdge( "agent_1",  END);
+
+        var compileConfig = CompileConfig.builder()
+                                .saverConfig(SaverConfig.builder().register(saver).build())
+                                .releaseThread(false)
+                                .build();
+
+        var runnableConfig = RunnableConfig.builder().build();
+        var workflow = graph.compile( compileConfig );
+
+        String[] inputs = {"data1", "data2", "data3", "data4", "data5"};
+        for (String input : inputs) {
+            var result = workflow.invoke( Map.of("input", input), runnableConfig );
+            assertTrue( result.isPresent() );
+
+            var lastSnapshot = workflow.lastStateOf( runnableConfig );
+            assertTrue( lastSnapshot.isPresent() );
+            assertEquals( "processed_" + input,
+                    lastSnapshot.get().state().value("agent_1:prop1").orElse(null),
+                    "应该能读取到最新覆盖的数据" );
+        }
+
+        var history = workflow.getStateHistory( runnableConfig );
+        assertEquals( 2, history.size(), "覆盖模式应该只保留最新执行的记录" );
+
+        saver.release( runnableConfig );
     }
 
 }

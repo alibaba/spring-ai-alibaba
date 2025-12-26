@@ -27,6 +27,8 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.mysql.CreateOption;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.mysql.MysqlSaver;
 
+import java.sql.Connection;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -231,6 +233,156 @@ public class MysqlSaverTest {
 
         saver.release(runnableConfig);
 
+    }
+
+
+    private void addUniqueConstraint() throws Exception {
+        try (Connection conn = DATA_SOURCE.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("DELETE c1 FROM GRAPH_CHECKPOINT c1 " +
+                    "INNER JOIN GRAPH_CHECKPOINT c2 " +
+                    "ON c1.thread_id = c2.thread_id AND c1.saved_at < c2.saved_at");
+
+            try {
+                stmt.execute("ALTER TABLE GRAPH_CHECKPOINT ADD UNIQUE INDEX idx_unique_thread (thread_id)");
+            } catch (Exception e) {
+                // 忽略已存在的错误
+            }
+        }
+    }
+
+
+    @Test
+    public void testInsertMode() throws Exception {
+        var saver = MysqlSaver.builder()
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .dataSource(DATA_SOURCE)
+                .overwriteMode(false)
+                .build();
+
+        NodeAction agent_1 = state -> Map.of("agent_1:prop1", "agent_1:test");
+
+        var graph = new StateGraph(keyStrategyFactory)
+                .addNode("agent_1", node_async(agent_1))
+                .addEdge(START, "agent_1")
+                .addEdge("agent_1", END);
+
+        var compileConfig = CompileConfig.builder()
+                .saverConfig(SaverConfig.builder().register(saver).build())
+                .releaseThread(false)
+                .build();
+
+        var runnableConfig = RunnableConfig.builder().build();
+        var workflow = graph.compile(compileConfig);
+
+        Map<String, Object> inputs1 = Map.of("input", "test1");
+        var result1 = workflow.invoke(inputs1, runnableConfig);
+        assertTrue(result1.isPresent());
+
+        Map<String, Object> inputs2 = Map.of("input", "test2");
+        var result2 = workflow.invoke(inputs2, runnableConfig);
+        assertTrue(result2.isPresent());
+
+        var history = workflow.getStateHistory(runnableConfig);
+        assertFalse(history.isEmpty());
+        assertEquals(4, history.size(), "插入模式应该保留所有历史记录");
+
+        saver.release(runnableConfig);
+    }
+
+
+    @Test
+    public void testOverwriteMode() throws Exception {
+        addUniqueConstraint();
+
+        var saver = MysqlSaver.builder()
+                .dataSource(DATA_SOURCE)
+                .overwriteMode(true)
+                .build();
+
+        NodeAction agent_1 = state -> Map.of("agent_1:prop1", "agent_1:test_overwrite");
+
+        var graph = new StateGraph(keyStrategyFactory)
+                .addNode("agent_1", node_async(agent_1))
+                .addEdge(START, "agent_1")
+                .addEdge("agent_1", END);
+
+        var compileConfig = CompileConfig.builder()
+                .saverConfig(SaverConfig.builder().register(saver).build())
+                .releaseThread(false)
+                .build();
+
+        var runnableConfig = RunnableConfig.builder().build();
+        var workflow = graph.compile(compileConfig);
+
+        Map<String, Object> inputs1 = Map.of("input", "test1");
+        var result1 = workflow.invoke(inputs1, runnableConfig);
+        assertTrue(result1.isPresent());
+
+        Map<String, Object> inputs2 = Map.of("input", "test2");
+        var result2 = workflow.invoke(inputs2, runnableConfig);
+        assertTrue(result2.isPresent());
+
+        Map<String, Object> inputs3 = Map.of("input", "test3");
+        var result3 = workflow.invoke(inputs3, runnableConfig);
+        assertTrue(result3.isPresent());
+
+        var history = workflow.getStateHistory(runnableConfig);
+        assertFalse(history.isEmpty());
+        assertEquals(2, history.size(), "覆盖模式应该只保留最新执行的记录");
+
+        var lastSnapshot = workflow.lastStateOf(runnableConfig);
+        assertTrue(lastSnapshot.isPresent());
+        assertEquals("agent_1", lastSnapshot.get().node());
+        assertEquals("agent_1:test_overwrite", lastSnapshot.get().state().value("agent_1:prop1").orElse(null));
+
+        saver.release(runnableConfig);
+    }
+
+
+    @Test
+    public void testOverwriteModeDataConsistency() throws Exception {
+        addUniqueConstraint();
+
+        var saver = MysqlSaver.builder()
+                .dataSource(DATA_SOURCE)
+                .overwriteMode(true)
+                .build();
+
+        NodeAction agent_1 = state -> {
+            Object input = state.data().get("input");
+            return Map.of("agent_1:prop1", "processed_" + input);
+        };
+
+        var graph = new StateGraph(keyStrategyFactory)
+                .addNode("agent_1", node_async(agent_1))
+                .addEdge(START, "agent_1")
+                .addEdge("agent_1", END);
+
+        var compileConfig = CompileConfig.builder()
+                .saverConfig(SaverConfig.builder().register(saver).build())
+                .releaseThread(false)
+                .build();
+
+        var runnableConfig = RunnableConfig.builder().build();
+        var workflow = graph.compile(compileConfig);
+
+        String[] inputs = {"data1", "data2", "data3", "data4", "data5"};
+        for (String input : inputs) {
+            var result = workflow.invoke(Map.of("input", input), runnableConfig);
+            assertTrue(result.isPresent());
+
+            var lastSnapshot = workflow.lastStateOf(runnableConfig);
+            assertTrue(lastSnapshot.isPresent());
+            assertEquals("processed_" + input,
+                    lastSnapshot.get().state().value("agent_1:prop1").orElse(null),
+                    "应该能读取到最新覆盖的数据");
+        }
+
+        var history = workflow.getStateHistory(runnableConfig);
+        assertEquals(2, history.size(), "覆盖模式应该只保留最新执行的记录");
+
+        saver.release(runnableConfig);
     }
 
 }

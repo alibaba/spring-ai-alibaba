@@ -141,6 +141,19 @@ public class MysqlSaver extends MemorySaver {
 			WHERE thread_name = ? AND is_released = FALSE
 			""";
 
+	private static final String UPSERT_CHECKPOINT = """
+			INSERT INTO GRAPH_CHECKPOINT(checkpoint_id, thread_id, node_id, next_node_id, state_data)
+			SELECT ?, thread_id, ?, ?, ?
+			FROM GRAPH_THREAD
+			WHERE thread_name = ? AND is_released = FALSE
+			ON DUPLICATE KEY UPDATE
+			    checkpoint_id = VALUES(checkpoint_id),
+			    node_id = VALUES(node_id),
+			    next_node_id = VALUES(next_node_id),
+			    state_data = VALUES(state_data),
+			    saved_at = CURRENT_TIMESTAMP
+			""";
+
 	private static final String UPDATE_CHECKPOINT = """
 			UPDATE GRAPH_CHECKPOINT
 			SET
@@ -175,6 +188,7 @@ public class MysqlSaver extends MemorySaver {
 	private final DataSource dataSource;
 	private final CreateOption createOption;
 	private final StateSerializer stateSerializer;
+	private final boolean overwriteMode;
 
 	/**
 	 * Private constructor used by the builder to create a new instance of
@@ -186,6 +200,7 @@ public class MysqlSaver extends MemorySaver {
 		this.dataSource = builder.dataSource;
 		this.createOption = builder.createOption;
 		this.stateSerializer = builder.stateSerializer;
+		this.overwriteMode = builder.overwriteMode;
 		initTables();
 	}
 
@@ -316,29 +331,32 @@ public class MysqlSaver extends MemorySaver {
 		try (Connection ignored = conn = dataSource.getConnection()) {
 			conn.setAutoCommit(false); // Start transaction
 
-			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);
-				 PreparedStatement insertCheckpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
-
+			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD)) {
 				upsertStatement.setString(1, UUID.randomUUID().toString());
 				upsertStatement.setString(2, threadName);
 				upsertStatement.execute();
+			}
 
-				insertCheckpointStatement.setString(1, checkpoint.getId());
-				insertCheckpointStatement.setString(2, checkpoint.getNodeId());
-				insertCheckpointStatement.setString(3, checkpoint.getNextNodeId());
-				insertCheckpointStatement.setString(4, encodeState(checkpoint.getState()));
-				insertCheckpointStatement.setString(5, threadName);
-
-				insertCheckpointStatement.execute();
+			// 根据 overwriteMode 决定使用 INSERT 还是 UPSERT
+			String sql = overwriteMode ? UPSERT_CHECKPOINT : INSERT_CHECKPOINT;
+			try (PreparedStatement checkpointStatement = conn.prepareStatement(sql)) {
+				checkpointStatement.setString(1, checkpoint.getId());
+				checkpointStatement.setString(2, checkpoint.getNodeId());
+				checkpointStatement.setString(3, checkpoint.getNextNodeId());
+				checkpointStatement.setString(4, encodeState(checkpoint.getState()));
+				checkpointStatement.setString(5, threadName);
+				checkpointStatement.execute();
 			}
 
 			conn.commit();
-			log.debug("Checkpoint {} for thread {} inserted successfully.", checkpoint.getId(), threadName);
+			log.debug("Checkpoint {} for thread {} {} successfully.",
+					checkpoint.getId(), threadName, overwriteMode ? "upserted" : "inserted");
 		}
 		catch (SQLException | IOException e) {
-			log.error("Error inserting checkpoint with id {} in thread {}", checkpoint.getId(), threadName, e);
+			log.error("Error {} checkpoint with id {} in thread {}",
+					overwriteMode ? "upserting" : "inserting", checkpoint.getId(), threadName, e);
 			rollback(conn, checkpoint, threadName);
-			throw new Exception("Unable to insert checkpoint", e);
+			throw new Exception("Unable to " + (overwriteMode ? "upsert" : "insert") + " checkpoint", e);
 		}
 
 	}
@@ -481,6 +499,7 @@ public class MysqlSaver extends MemorySaver {
 		private DataSource dataSource;
 		private CreateOption createOption = CreateOption.CREATE_IF_NOT_EXISTS;
 		private StateSerializer stateSerializer;
+		private boolean overwriteMode = false;
 
 		/**
 		 * Sets the state serializer
@@ -512,6 +531,11 @@ public class MysqlSaver extends MemorySaver {
 		 */
 		public Builder createOption(CreateOption createOption) {
 			this.createOption = createOption;
+			return this;
+		}
+
+		public Builder overwriteMode(boolean overwriteMode) {
+			this.overwriteMode = overwriteMode;
 			return this;
 		}
 
