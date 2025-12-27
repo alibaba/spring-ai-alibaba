@@ -17,8 +17,8 @@
 package com.alibaba.cloud.ai.agent.nacos.config;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.alibaba.cloud.ai.agent.nacos.NacosOptions;
@@ -42,19 +42,25 @@ public class NacosAgentConfig {
 
 	@Bean
 	public Properties nacosAgentProxyProperties(ConfigurableEnvironment environment) {
-		Properties props = new Properties();
-		Map<String, Object> map = environment.getPropertySources().stream()
-				.filter(ps -> ps instanceof EnumerablePropertySource)
-				.map(ps -> ((EnumerablePropertySource) ps).getPropertyNames())
-				.flatMap(Arrays::stream)
-				.filter(name -> name.startsWith("spring.ai.alibaba.agent.proxy.nacos."))
-				.collect(Collectors.toMap(
-						key -> key.substring("spring.ai.alibaba.agent.proxy.nacos.".length()),
-						environment::getProperty
-				));
+        Properties props = new Properties();
+        String prefix = "spring.ai.alibaba.agent.proxy.nacos.";
 
-		map.forEach((k, v) -> props.setProperty(k, (String) v));
-		return props;
+
+        Set<String> propertyNames = environment.getPropertySources().stream()
+                .filter(ps -> ps instanceof EnumerablePropertySource)
+                .flatMap(ps -> Arrays.stream(((EnumerablePropertySource<?>) ps).getPropertyNames()))
+                .filter(name -> name.startsWith(prefix))
+                .collect(Collectors.toSet());
+
+
+        propertyNames.forEach(name -> {
+            String value = environment.getProperty(name);
+            if (value != null) {
+                props.setProperty(name.substring(prefix.length()), value);
+            }
+        });
+
+        return props;
 	}
 
 	@Bean
