@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
@@ -153,10 +154,14 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		renderTemplatedUserMessage(messages, state.data());
 
 		// Create ModelRequest
+		Map<String, Object> requestContext = new HashMap<>(config.metadata().orElse(new HashMap<>()));
+		// Pass RunnableConfig to allow interceptors to update Hook counters
+		requestContext.put(ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY, config);
+		
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
 				.messages(messages)
 				.options(chatOptions.copy())
-				.context(config.metadata().orElse(new HashMap<>()));
+				.context(requestContext);
 
         // Extract tool names and descriptions from toolCallbacks and pass them to ModelRequest
         if (toolCallbacks != null && !toolCallbacks.isEmpty()) {
