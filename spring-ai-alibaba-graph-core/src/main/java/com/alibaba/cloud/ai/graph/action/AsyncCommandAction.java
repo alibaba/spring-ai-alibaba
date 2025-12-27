@@ -39,7 +39,7 @@ public interface AsyncCommandAction extends BiFunction<OverAllState, RunnableCon
 	}
 
 	static AsyncCommandAction of(AsyncEdgeAction action) {
-		return (state, config) -> action.apply(state).thenApply(Command::new);
+		return (state, config) -> action.apply(state,config).thenApply(Command::new);
 	}
 
 }
