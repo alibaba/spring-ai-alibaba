@@ -373,11 +373,12 @@ class SpringAIJacksonStateSerializerTest {
 		int classCount = countOccurrences(serializedContent, "\"@class\"");
 
 		assertTrue(classCount >= 1,
-			String.format("%s 序列化后应至少包含一个 @class 字段，实际: %d", objectType, classCount));
-
+			String.format("%s serialization should contain at least one @class field, but found: %d",
+				objectType, classCount));
 
 		assertTrue(classCount <= 10,
-			String.format("%s 序列化后 @class 字段不应过多（可能重复），实际: %d", objectType, classCount));
+			String.format("%s serialization should not contain too many @class fields (possible duplication), but found: %d",
+				objectType, classCount));
 	}
 
 
