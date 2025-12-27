@@ -17,7 +17,9 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.type.WritableTypeId;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,8 +61,19 @@ public interface DeepSeekAssistantMessageHandler {
 		public void serialize(DeepSeekAssistantMessage msg, JsonGenerator gen, SerializerProvider provider)
 				throws IOException {
 			gen.writeStartObject();
-			gen.writeStringField("@class", msg.getClass().getName());
+			serializeFields(msg, gen, provider);
+			gen.writeEndObject();
+		}
 
+		@Override
+		public void serializeWithType(DeepSeekAssistantMessage msg, JsonGenerator gen, SerializerProvider provider, TypeSerializer typeSer)
+				throws IOException {
+			WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, typeSer.typeId(msg, JsonToken.START_OBJECT));
+			serializeFields(msg, gen, provider);
+			typeSer.writeTypeSuffix(gen, typeIdDef);
+		}
+
+		private void serializeFields(DeepSeekAssistantMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
 			String text = msg.getText();
 			gen.writeStringField(Field.TEXT.name, text);
 
@@ -88,14 +101,6 @@ public interface DeepSeekAssistantMessageHandler {
 
 			java.util.Map<String, Object> metadata = msg.getMetadata();
 			serializeMetadata(gen, metadata);
-
-			gen.writeEndObject();
-		}
-
-		@Override
-		public void serializeWithType(DeepSeekAssistantMessage value, JsonGenerator gen,
-				SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
-			serialize(value, gen, serializers);
 		}
 
 	}

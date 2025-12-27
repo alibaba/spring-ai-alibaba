@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class SpringAIJacksonStateSerializerTest {
 
@@ -316,6 +317,99 @@ class SpringAIJacksonStateSerializerTest {
 		@SuppressWarnings("unchecked")
 		T result = (T) deserializedData.get("object");
 		return result;
+	}
+
+
+	@Test
+	void testNoDoubleClassField() throws Exception {
+
+		AssistantMessage assistantMsg = AssistantMessage.builder()
+			.content("test response")
+			.properties(Map.of("key", "value"))
+			.build();
+		verifyNoDuplicateClassField(assistantMsg, "AssistantMessage", 1);
+
+		SystemMessage systemMsg = SystemMessage.builder()
+			.text("system prompt")
+			.metadata(Map.of("source", "test"))
+			.build();
+		verifyNoDuplicateClassField(systemMsg, "SystemMessage", 1);
+
+		UserMessage userMsg = UserMessage.builder()
+			.text("user query")
+			.metadata(Map.of("user_id", "123"))
+			.build();
+		verifyNoDuplicateClassField(userMsg, "UserMessage", 1);
+
+		Document doc = Document.builder()
+			.id("doc_001")
+			.text("document content")
+			.metadata(Map.of("type", "pdf"))
+			.score(0.95)
+			.build();
+		verifyNoDuplicateClassField(doc, "Document", 1);
+
+		List<ToolResponseMessage.ToolResponse> responses = List.of(
+			new ToolResponseMessage.ToolResponse("call_1", "tool1", "{\"result\": 1}")
+		);
+		ToolResponseMessage toolMsg = ToolResponseMessage.builder()
+			.responses(responses)
+			.metadata(Map.of("tool", "test"))
+			.build();
+		verifyNoDuplicateClassField(toolMsg, "ToolResponseMessage", 1);
+	}
+
+
+	private void verifyNoDuplicateClassField(Object object, String objectType, int expectedClassCount) throws IOException {
+		Map<String, Object> data = new HashMap<>();
+		data.put("object", object);
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(baos);
+		serializer.writeData(data, oos);
+		oos.flush();
+
+		String serializedContent = baos.toString();
+		int actualClassCount = countOccurrences(serializedContent, "\"@class\"");
+		assertEquals(expectedClassCount, actualClassCount,
+			String.format("%s serialization should contain exactly %d @class field(s), but found: %d. " +
+				"If the actual count is double the expected count, this indicates Bug #3895 (duplicate @class fields). " +
+				"If the count is less than expected, the serialization may have issues with type information.\n" +
+				"Serialized content:\n%s",
+				objectType, expectedClassCount, actualClassCount, serializedContent));
+
+		verifyNoIdenticalClassValues(serializedContent, objectType);
+	}
+
+
+	private void verifyNoIdenticalClassValues(String serializedContent, String objectType) {
+		java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\"@class\":\"([^\"]+)\"");
+		java.util.regex.Matcher matcher = pattern.matcher(serializedContent);
+
+		java.util.Map<String, Integer> classValueCounts = new java.util.HashMap<>();
+		while (matcher.find()) {
+			String className = matcher.group(1);
+			classValueCounts.put(className, classValueCounts.getOrDefault(className, 0) + 1);
+		}
+		for (java.util.Map.Entry<String, Integer> entry : classValueCounts.entrySet()) {
+			if (!entry.getKey().contains("java.util") && entry.getValue() > 1) {
+				fail(String.format(
+					"%s serialization contains duplicate @class value: \"%s\" appears %d times. " +
+					"This indicates .\nClass value counts: %s\nSerialized content:\n%s",
+					objectType, entry.getKey(), entry.getValue(), classValueCounts, serializedContent));
+			}
+		}
+	}
+
+
+	private int countOccurrences(String text, String substring) {
+		int count = 0;
+		int index = 0;
+		while ((index = text.indexOf(substring, index)) != -1) {
+			count++;
+			index += substring.length();
+		}
+		return count;
 	}
 
 }

@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.type.WritableTypeId;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import org.springframework.ai.chat.messages.AssistantMessage;
 
@@ -58,7 +60,18 @@ public interface AssistantMessageHandler {
 	@Override
 	public void serialize(AssistantMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
 		gen.writeStartObject();
-		gen.writeStringField("@class", msg.getClass().getName());
+		serializeFields(msg, gen, provider);
+		gen.writeEndObject();
+	}
+
+	@Override
+	public void serializeWithType(AssistantMessage msg, JsonGenerator gen, SerializerProvider provider, TypeSerializer typeSer) throws IOException {
+		WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, typeSer.typeId(msg, JsonToken.START_OBJECT));
+		serializeFields(msg, gen, provider);
+		typeSer.writeTypeSuffix(gen, typeIdDef);
+	}
+
+	private void serializeFields(AssistantMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
 		gen.writeStringField(Field.TEXT.name, msg.getText());
 
 		gen.writeArrayFieldStart(Field.TOOL_CALLS.name);
@@ -79,15 +92,8 @@ public interface AssistantMessageHandler {
 		// gen.writeObject(media);
 		// }
 		// gen.writeEndArray();
-
-		gen.writeEndObject();
 	}
-
-		@Override
-		public void serializeWithType(AssistantMessage value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
-			serialize(value, gen, serializers);
-		}
-	}
+}
 
 	class Deserializer extends StdDeserializer<AssistantMessage> {
 
