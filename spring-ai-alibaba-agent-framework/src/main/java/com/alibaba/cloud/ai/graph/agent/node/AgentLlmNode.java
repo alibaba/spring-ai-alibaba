@@ -35,6 +35,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -75,11 +76,15 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private ChatClient chatClient;
 
+	private ChatModel chatModel;
+
+	private ChatOptions chatOptions;
+
 	private String systemPrompt;
 
 	private String instruction;
 
-	private ToolCallingChatOptions chatOptions;
+	private ToolCallingChatOptions toolCallingChatOptions;
 
 	private boolean enableReasoningLog;
 
@@ -99,14 +104,30 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			this.modelInterceptors = builder.modelInterceptors;
 		}
 		this.chatClient = builder.chatClient;
+		this.chatModel = builder.chatModel;
 		this.chatOptions = buildChatOptions(builder.chatOptions, this.toolCallbacks);
 		this.enableReasoningLog = builder.enableReasoningLog;
+		this.toolCallingChatOptions = ToolCallingChatOptions.builder()
+				.toolCallbacks(toolCallbacks)
+				.internalToolExecutionEnabled(false)
+				.build();
 	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
+	public ChatModel getChatModel() {
+		return chatModel;
+	}
+
+	public ChatOptions getChatOptions() {
+		return chatOptions;
+	}
+
+	public ChatClient getChatClient() {
+		return chatClient;
+	}
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		this.toolCallbacks = toolCallbacks;
 	}
@@ -283,8 +304,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<Message> messages = new ArrayList<>(modelRequest.getMessages());
 
 		// FIXME, there should have only one SystemMessage.
-		//  Users may have added SystemMessages in hooks or somewhere else, simply remove will cause unexpected agent behaviour.
-//		messages.removeIf(message -> message instanceof SystemMessage);
+		// Users may have added SystemMessages in hooks or somewhere else, simply remove will cause unexpected agent behaviour.
+		// messages.removeIf(message -> message instanceof SystemMessage);
 
 		// Add the SystemMessage from modelRequest at the beginning if present
 		if (modelRequest.getSystemMessage() != null) {
@@ -482,6 +503,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private ChatClient chatClient;
 
+		private ChatModel chatModel;
+
+		private ChatOptions chatOptions;
+
 		private List<Advisor> advisors;
 
 		private List<ToolCallback> toolCallbacks;
@@ -491,8 +516,6 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		private String instruction;
 
 		private boolean enableReasoningLog;
-
-		private ChatOptions chatOptions;
 
 		public Builder agentName(String agentName) {
 			this.agentName = agentName;
@@ -534,6 +557,16 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			return this;
 		}
 
+		public Builder chatModel(ChatModel chatModel) {
+			this.chatModel = chatModel;
+			return this;
+		}
+
+		public Builder chatOptions(ChatOptions chatOptions) {
+			this.chatOptions = chatOptions;
+			return this;
+		}
+
 		public Builder instruction(String instruction) {
 			this.instruction = instruction;
 			return this;
@@ -541,11 +574,6 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder enableReasoningLog(boolean enableReasoningLog) {
 			this.enableReasoningLog = enableReasoningLog;
-			return this;
-		}
-
-		public Builder chatOptions(ChatOptions chatOptions) {
-			this.chatOptions = chatOptions;
 			return this;
 		}
 
