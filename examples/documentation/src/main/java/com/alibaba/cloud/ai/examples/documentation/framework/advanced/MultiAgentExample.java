@@ -32,6 +32,8 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.template.StringTemplateRenderer;
+import org.springframework.ai.template.TemplateRenderer;
 
 import java.util.List;
 import java.util.Map;
@@ -391,6 +393,112 @@ public class MultiAgentExample {
 		// LLM会路由到 translatorAgent
 
 		System.out.println("LLM路由示例执行完成");
+	}
+
+	/**
+	 * 示例5.5：使用自定义 TemplateRenderer 与多智能体协作
+	 *
+	 * 展示如何在多智能体场景中使用 StringTemplateRenderer.builder() 来定制占位符分隔符。
+	 * 使用 [[variable]] 替代默认的 {variable} 作为占位符格式。
+	 */
+	public void example5_5_customTemplateRenderer() throws Exception {
+		// 使用 StringTemplateRenderer.builder() 创建自定义分隔符的 TemplateRenderer
+		// 使用 [[ 和 ]] 作为占位符分隔符
+		TemplateRenderer customRenderer = StringTemplateRenderer.builder()
+				.startDelimiterToken("[[")
+				.endDelimiterToken("]]")
+				.build();
+
+		// 创建专业化的子Agent - 注意 instruction 中使用 [[variable]] 格式
+		ReactAgent writerAgent = ReactAgent.builder()
+				.name("writer_agent")
+				.model(chatModel)
+				.description("擅长创作各类文章，包括散文、诗歌等文学作品")
+				.instruction("""
+						你是一个知名的作家，擅长写作和创作。
+						当前主题：[[topic]]
+						文体要求：[[style]]
+						字数要求：[[word_count]]
+						请根据用户的提问进行回答。
+						""")
+				.templateRenderer(customRenderer)
+				.outputKey("writer_output")
+				.build();
+
+		ReactAgent reviewerAgent = ReactAgent.builder()
+				.name("reviewer_agent")
+				.model(chatModel)
+				.description("擅长对文章进行评论、修改和润色")
+				.instruction("""
+						你是一个知名的评论家，擅长对文章进行评论和修改。
+						评审标准：[[review_criteria]]
+						关注要点：[[focus_points]]
+						对于散文类文章，请确保文章中必须包含对于风景的描述。
+						""")
+				.templateRenderer(customRenderer)
+				.outputKey("reviewer_output")
+				.build();
+
+		ReactAgent translatorAgent = ReactAgent.builder()
+				.name("translator_agent")
+				.model(chatModel)
+				.description("擅长将文章翻译成各种语言")
+				.instruction("""
+						你是一个专业的翻译家，能够准确地将文章翻译成目标语言。
+						目标语言：[[target_language]]
+						翻译风格：[[translation_style]]
+						""")
+				.templateRenderer(customRenderer)
+				.outputKey("translator_output")
+				.build();
+
+		// 创建路由Agent
+		LlmRoutingAgent routingAgent = LlmRoutingAgent.builder()
+				.name("content_routing_agent")
+				.description("根据用户需求智能路由到合适的专家Agent")
+				.model(chatModel)
+				.subAgents(List.of(writerAgent, reviewerAgent, translatorAgent))
+				.build();
+
+		// 使用 - 传入带有自定义占位符变量的输入
+		System.out.println("自定义模板路由测试1: 写作请求");
+		Map<String, Object> writerInput = Map.of(
+				"input", "帮我写一篇关于春天的散文",
+				"topic", "春天",
+				"style", "散文",
+				"word_count", "200字左右"
+		);
+		Optional<OverAllState> result1 = routingAgent.invoke(writerInput);
+		if (result1.isPresent()) {
+			result1.get().value("writer_output").ifPresent(output ->
+					System.out.println("写作输出: " + output));
+		}
+
+		System.out.println("\n自定义模板路由测试2: 评审请求");
+		Map<String, Object> reviewerInput = Map.of(
+				"input", "请帮我修改这篇文章：春天来了，花开了。",
+				"review_criteria", "语言流畅、描述生动",
+				"focus_points", "修辞手法、意境营造"
+		);
+		Optional<OverAllState> result2 = routingAgent.invoke(reviewerInput);
+		if (result2.isPresent()) {
+			result2.get().value("reviewer_output").ifPresent(output ->
+					System.out.println("评审输出: " + output));
+		}
+
+		System.out.println("\n自定义模板路由测试3: 翻译请求");
+		Map<String, Object> translatorInput = Map.of(
+				"input", "请将以下内容翻译成英文：春暖花开",
+				"target_language", "英文",
+				"translation_style", "文学性翻译"
+		);
+		Optional<OverAllState> result3 = routingAgent.invoke(translatorInput);
+		if (result3.isPresent()) {
+			result3.get().value("translator_output").ifPresent(output ->
+					System.out.println("翻译输出: " + output));
+		}
+
+		System.out.println("\n自定义TemplateRenderer多智能体示例执行完成");
 	}
 
 	/**

@@ -38,6 +38,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 
 import org.springframework.util.StringUtils;
@@ -76,6 +77,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	private ChatClient chatClient;
 
 	private String systemPrompt;
+
+	private TemplateRenderer templateRenderer;
 
 	private String instruction;
 
@@ -346,7 +349,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	}
 
 	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
-		PromptTemplate promptTemplate = new PromptTemplate(prompt);
+		PromptTemplate promptTemplate = PromptTemplate.builder().template(prompt).renderer(templateRenderer).build();
 		return promptTemplate.render(params);
 	}
 
@@ -480,6 +483,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private String systemPrompt;
 
+		private TemplateRenderer templateRenderer;
+
 		private ChatClient chatClient;
 
 		private List<Advisor> advisors;
@@ -511,6 +516,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder systemPrompt(String systemPrompt) {
 			this.systemPrompt = systemPrompt;
+			return this;
+		}
+
+		public Builder templateRenderer(TemplateRenderer templateRenderer) {
+			this.templateRenderer = templateRenderer;
 			return this;
 		}
 
