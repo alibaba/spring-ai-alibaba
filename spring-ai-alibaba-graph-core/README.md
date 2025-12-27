@@ -33,9 +33,59 @@ The core of the framework includes: **StateGraph** (the state graph for defining
    The executable form of a StateGraph.
    Handles the actual execution, state transitions, and streaming of results.
    Supports interruption, parallel nodes, and checkpointing.
+6. InterruptableAction
+   Interface for actions that can interrupt graph execution.
+   Provides two hook points: `interrupt()` (before execution) and `interruptAfter()` (after execution).
+   Useful for human-in-the-loop scenarios, approval workflows, and multi-turn conversations.
 
 ## How It's Used (Typical Flow)
 - Define StateGraph: In a Spring configuration, you define a StateGraph bean, add nodes (each encapsulating a model call or logic), and connect them with edges.
 - Configure State: Use an OverAllStateFactory to define the initial state and key strategies.
 - Execution: The graph is compiled and executed, with state flowing through nodes and edges, and conditional logic determining the path.
 - Integration: Typically exposed via a REST controller or service in a Spring Boot app.
+
+## Interruption Support
+
+Spring AI Alibaba Graph supports interrupting workflow execution at specific points, enabling human-in-the-loop scenarios.
+
+### InterruptableAction Interface
+
+```java
+public interface InterruptableAction {
+    // Called BEFORE node execution - can prevent execution
+    Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config);
+
+    // Called AFTER node execution - can inspect results and interrupt
+    default Optional<InterruptionMetadata> interruptAfter(String nodeId, OverAllState state,
+            Map<String, Object> actionResult, RunnableConfig config) {
+        return Optional.empty();
+    }
+}
+```
+
+### Example Usage
+
+```java
+public class ReviewAction implements AsyncNodeActionWithConfig, InterruptableAction {
+
+    @Override
+    public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+        return CompletableFuture.completedFuture(Map.of("result", "generated_content"));
+    }
+
+    @Override
+    public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+        return Optional.empty(); // Don't interrupt before execution
+    }
+
+    @Override
+    public Optional<InterruptionMetadata> interruptAfter(String nodeId, OverAllState state,
+            Map<String, Object> actionResult, RunnableConfig config) {
+        // Interrupt after execution for human review
+        return Optional.of(InterruptionMetadata.builder(nodeId, state)
+            .addMetadata("reason", "needs_review")
+            .addMetadata("content", actionResult.get("result"))
+            .build());
+    }
+}
+```
