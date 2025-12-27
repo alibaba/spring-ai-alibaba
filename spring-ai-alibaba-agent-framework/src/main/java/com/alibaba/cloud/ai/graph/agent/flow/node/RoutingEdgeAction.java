@@ -16,24 +16,22 @@
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.converter.BeanOutputConverter;
-
 import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RoutingEdgeAction implements AsyncEdgeAction {
 	private static final Logger logger = LoggerFactory.getLogger(RoutingEdgeAction.class);
@@ -81,7 +79,7 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 	}
 
 	@Override
-	public CompletableFuture<String> apply(OverAllState state) {
+	public CompletableFuture<String> apply(OverAllState state, RunnableConfig runnableConfig) {
 		CompletableFuture<String> result = new CompletableFuture<>();
 		try {
 			List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
