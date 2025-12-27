@@ -16,10 +16,11 @@
 package com.alibaba.cloud.ai.graph.action;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import io.opentelemetry.context.Context;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 /**
  * Represents an asynchronous edge action that operates on an agent state and returns a
@@ -27,14 +28,14 @@ import java.util.function.Function;
  *
  */
 @FunctionalInterface
-public interface AsyncEdgeAction extends Function<OverAllState, CompletableFuture<String>> {
+public interface AsyncEdgeAction extends BiFunction<OverAllState, RunnableConfig, CompletableFuture<String>> {
 
 	/**
 	 * Applies this action to the given agent state.
 	 * @param state the agent state
 	 * @return a CompletableFuture representing the result of the action
 	 */
-	CompletableFuture<String> apply(OverAllState state);
+	CompletableFuture<String> apply(OverAllState state, RunnableConfig runnableConfig);
 
 	/**
 	 * Creates an asynchronous edge action from a synchronous edge action.
@@ -42,17 +43,17 @@ public interface AsyncEdgeAction extends Function<OverAllState, CompletableFutur
 	 * @return an asynchronous edge action
 	 */
 	static AsyncEdgeAction edge_async(EdgeAction syncAction) {
-		return state -> {
-			Context context = Context.current();
-			CompletableFuture<String> result = new CompletableFuture<>();
-			try {
-				result.complete(syncAction.apply(state));
-			}
-			catch (Exception e) {
-				result.completeExceptionally(e);
-			}
-			return result;
-		};
+		return (state, runnableConfig) -> {
+            Context context = Context.current();
+            CompletableFuture<String> result = new CompletableFuture<>();
+            try {
+                result.complete(syncAction.apply(state,runnableConfig));
+            }
+            catch (Exception e) {
+                result.completeExceptionally(e);
+            }
+            return result;
+        };
 	}
 
 }

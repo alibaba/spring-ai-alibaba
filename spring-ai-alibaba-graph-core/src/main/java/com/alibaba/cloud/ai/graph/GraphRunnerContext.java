@@ -19,33 +19,23 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
-
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.metadata.Usage;
-
-import org.springframework.util.CollectionUtils;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.util.CollectionUtils;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
-import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.alibaba.cloud.ai.graph.StateGraph.*;
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 
@@ -198,8 +188,8 @@ public class GraphRunnerContext {
 		return nextNodeId(compiledGraph.getEdge(nodeId), state, nodeId);
 	}
 
-	private Command nextNodeId(com.alibaba.cloud.ai.graph.internal.edge.EdgeValue route, Map<String, Object> state,
-			String nodeId) throws Exception {
+	private Command nextNodeId(EdgeValue route, Map<String, Object> state,
+							   String nodeId) throws Exception {
 		if (route == null) {
 			throw RunnableErrors.missingEdge.exception(nodeId);
 		}
