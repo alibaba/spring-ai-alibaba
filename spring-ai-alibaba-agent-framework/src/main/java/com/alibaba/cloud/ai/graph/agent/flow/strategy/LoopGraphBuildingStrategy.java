@@ -74,7 +74,7 @@ public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
         Agent subAgent = config.getSubAgents().get(0);
         graph.addNode(subAgent.name(), subAgent.getGraph());
         graph.addConditionalEdges(loopStrategy.loopDispatchNodeName(), edge_async(
-                (state, runnableConfig) -> {
+                state -> {
                     Boolean value = state.value(loopStrategy.loopFlagKey(), false);
                     return value ? "continue" : "break";
                 }

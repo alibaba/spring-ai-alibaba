@@ -67,7 +67,7 @@ public class StateGraphFileSystemSaverTest {
 				log.info("agent_1: step: {}", steps);
 				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
 			}))
-			.addConditionalEdges("agent_1", edge_async((state, config) -> {
+			.addConditionalEdges("agent_1", edge_async(state -> {
 				int steps = (int) state.data().get("steps");
 				if (steps >= expectedSteps) {
 					return "exit";
@@ -165,7 +165,7 @@ public class StateGraphFileSystemSaverTest {
 				log.info("agent_1: step: {}", steps);
 				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
 			}))
-			.addConditionalEdges("agent_1", edge_async((state, config) -> {
+			.addConditionalEdges("agent_1", edge_async(state -> {
 				int steps = (int) state.data().get("steps");
 				if (steps >= expectedSteps) {
 					return "exit";
@@ -264,7 +264,7 @@ public class StateGraphFileSystemSaverTest {
 				log.info("agent_1: step: {}", steps);
 				return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
 			}))
-			.addConditionalEdges("agent_1", edge_async((state, config) -> {
+			.addConditionalEdges("agent_1", edge_async(state -> {
 				int steps = (int) state.data().get("steps");
 				if (steps >= expectedSteps) {
 					return "exit";

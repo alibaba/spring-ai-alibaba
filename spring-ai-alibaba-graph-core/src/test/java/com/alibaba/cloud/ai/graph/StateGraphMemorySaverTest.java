@@ -25,8 +25,6 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.VersionedMemorySaver;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -35,12 +33,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.LogManager;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static java.lang.String.format;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StateGraphMemorySaverTest {
 
@@ -68,7 +75,7 @@ public class StateGraphMemorySaverTest {
 	// Simulate LLM agent
 	NodeAction tool_whether = state -> Map.of("messages", "temperature in Napoli is 30 degree");
 
-	EdgeAction shouldContinue_whether = (state, config) -> {
+	EdgeAction shouldContinue_whether = state -> {
 		List<String> messages = (List<String>) state.value("messages").get();
 		return messages.get(messages.size() - 1).equals("tool_calls") ? "tools" : END;
 	};
@@ -172,7 +179,7 @@ public class StateGraphMemorySaverTest {
 			return Map.of("steps", steps, "messages", format("agent_1:step %d", steps));
 		};
 
-		EdgeAction shouldContinue = (state, config) -> {
+		EdgeAction shouldContinue = state -> {
 			Integer steps = (Integer) state.value("steps").get();
 			if (steps >= expectedSteps) {
 				return "exit";
