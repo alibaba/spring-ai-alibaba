@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class SpringAIJacksonStateSerializerTest {
 
@@ -326,19 +327,19 @@ class SpringAIJacksonStateSerializerTest {
 			.content("test response")
 			.properties(Map.of("key", "value"))
 			.build();
-		verifyClassFieldCount(assistantMsg, "AssistantMessage");
+		verifyNoDuplicateClassField(assistantMsg, "AssistantMessage", 1);
 
 		SystemMessage systemMsg = SystemMessage.builder()
 			.text("system prompt")
 			.metadata(Map.of("source", "test"))
 			.build();
-		verifyClassFieldCount(systemMsg, "SystemMessage");
+		verifyNoDuplicateClassField(systemMsg, "SystemMessage", 1);
 
 		UserMessage userMsg = UserMessage.builder()
 			.text("user query")
 			.metadata(Map.of("user_id", "123"))
 			.build();
-		verifyClassFieldCount(userMsg, "UserMessage");
+		verifyNoDuplicateClassField(userMsg, "UserMessage", 1);
 
 		Document doc = Document.builder()
 			.id("doc_001")
@@ -346,7 +347,7 @@ class SpringAIJacksonStateSerializerTest {
 			.metadata(Map.of("type", "pdf"))
 			.score(0.95)
 			.build();
-		verifyClassFieldCount(doc, "Document");
+		verifyNoDuplicateClassField(doc, "Document", 1);
 
 		List<ToolResponseMessage.ToolResponse> responses = List.of(
 			new ToolResponseMessage.ToolResponse("call_1", "tool1", "{\"result\": 1}")
@@ -355,11 +356,11 @@ class SpringAIJacksonStateSerializerTest {
 			.responses(responses)
 			.metadata(Map.of("tool", "test"))
 			.build();
-		verifyClassFieldCount(toolMsg, "ToolResponseMessage");
+		verifyNoDuplicateClassField(toolMsg, "ToolResponseMessage", 1);
 	}
 
 
-	private void verifyClassFieldCount(Object object, String objectType) throws IOException {
+	private void verifyNoDuplicateClassField(Object object, String objectType, int expectedClassCount) throws IOException {
 		Map<String, Object> data = new HashMap<>();
 		data.put("object", object);
 
@@ -369,16 +370,35 @@ class SpringAIJacksonStateSerializerTest {
 		oos.flush();
 
 		String serializedContent = baos.toString();
+		int actualClassCount = countOccurrences(serializedContent, "\"@class\"");
+		assertEquals(expectedClassCount, actualClassCount,
+			String.format("%s serialization should contain exactly %d @class field(s), but found: %d. " +
+				"If the actual count is double the expected count, this indicates Bug #3895 (duplicate @class fields). " +
+				"If the count is less than expected, the serialization may have issues with type information.\n" +
+				"Serialized content:\n%s",
+				objectType, expectedClassCount, actualClassCount, serializedContent));
 
-		int classCount = countOccurrences(serializedContent, "\"@class\"");
+		verifyNoIdenticalClassValues(serializedContent, objectType);
+	}
 
-		assertTrue(classCount >= 1,
-			String.format("%s serialization should contain at least one @class field, but found: %d",
-				objectType, classCount));
 
-		assertTrue(classCount <= 10,
-			String.format("%s serialization should not contain too many @class fields (possible duplication), but found: %d",
-				objectType, classCount));
+	private void verifyNoIdenticalClassValues(String serializedContent, String objectType) {
+		java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\"@class\":\"([^\"]+)\"");
+		java.util.regex.Matcher matcher = pattern.matcher(serializedContent);
+
+		java.util.Map<String, Integer> classValueCounts = new java.util.HashMap<>();
+		while (matcher.find()) {
+			String className = matcher.group(1);
+			classValueCounts.put(className, classValueCounts.getOrDefault(className, 0) + 1);
+		}
+		for (java.util.Map.Entry<String, Integer> entry : classValueCounts.entrySet()) {
+			if (!entry.getKey().contains("java.util") && entry.getValue() > 1) {
+				fail(String.format(
+					"%s serialization contains duplicate @class value: \"%s\" appears %d times. " +
+					"This indicates .\nClass value counts: %s\nSerialized content:\n%s",
+					objectType, entry.getKey(), entry.getValue(), classValueCounts, serializedContent));
+			}
+		}
 	}
 
 
