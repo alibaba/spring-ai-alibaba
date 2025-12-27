@@ -1173,12 +1173,12 @@ public class StateGraphTest {
 	}
 
 	@Test
-	public void testEdgeWithRunableConfig() throws Exception {
+	public void testEdgeWithRunnableConfig() throws Exception {
 
 		StateGraph workflow = new StateGraph(createKeyStrategyFactory())
 				.addConditionalEdges(START, AsyncEdgeAction.edge_async((state, runnableConfig) -> {
 					log.info("run with state: {} and config: {}", state, runnableConfig);
-					// 验证传入的配置是否与调用时传入的一致
+					// 验证传入的配置是否与调用时传入的一致1
 					assertEquals("thread1", runnableConfig.threadId().orElse(null));
 					assertTrue(runnableConfig.metadata("prop1").isPresent());
 					assertEquals("value1", runnableConfig.metadata("prop1").get());
