@@ -15,11 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
-
 import java.util.concurrent.CompletableFuture;
+
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 
 /**
  * An async edge action that evaluates conditions to determine routing paths. This class
@@ -30,7 +29,7 @@ public class ConditionEvaluatorAction implements AsyncEdgeAction {
 	private static final String CONDITION_KEY = "_condition_result";
 
 	@Override
-	public CompletableFuture<String> apply(OverAllState state, RunnableConfig runnableConfig) {
+	public CompletableFuture<String> apply(OverAllState state) {
 		CompletableFuture<String> result = new CompletableFuture<>();
 
 		try {

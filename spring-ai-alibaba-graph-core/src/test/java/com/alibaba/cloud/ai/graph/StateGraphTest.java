@@ -15,7 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.*;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.action.CommandAction;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -27,6 +31,18 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.NamedExecutable;
 import org.junit.jupiter.api.Test;
@@ -34,20 +50,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
-
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class StateGraphTest {
 
@@ -144,7 +157,7 @@ public class StateGraphTest {
 		log.info("{}", exception.getMessage());
 
 		exception = assertThrows(GraphStateException.class,
-				() -> workflow.addConditionalEdges("agent_1", edge_async((state, config) -> "agent_3"), Map.of()));
+				() -> workflow.addConditionalEdges("agent_1", edge_async(state -> "agent_3"), Map.of()));
 		log.info("{}", exception.getMessage());
 
 	}
@@ -635,7 +648,7 @@ public class StateGraphTest {
 			.addEdge("C", END);
 
 		exception = assertThrows(GraphStateException.class,
-				() -> noConditionalEdge.addConditionalEdges("A", edge_async((state, config) -> "next"), Map.of("next", "A2")));
+				() -> noConditionalEdge.addConditionalEdges("A", edge_async(state -> "next"), Map.of("next", "A2")));
 		assertEquals("conditional edge from 'A' already exist!", exception.getMessage());
 
 		var noConditionalEdgeOnBranch = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
@@ -649,7 +662,7 @@ public class StateGraphTest {
 			.addEdge("A", "A3")
 			.addEdge("A1", "B")
 			.addEdge("A2", "B")
-			.addConditionalEdges("A3", edge_async((state, config) -> "next"), Map.of("next", "B"))
+			.addConditionalEdges("A3", edge_async(state -> "next"), Map.of("next", "B"))
 			.addEdge("B", "C")
 			.addEdge(START, "A")
 			.addEdge("C", END);
@@ -1170,31 +1183,6 @@ public class StateGraphTest {
 		// 验证 stream 也会抛出异常
 		Flux<NodeOutput> flux = app.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 		assertThrows(RuntimeException.class, () -> flux.blockLast());
-	}
-
-	@Test
-	public void testEdgeWithRunnableConfig() throws Exception {
-
-		StateGraph workflow = new StateGraph(createKeyStrategyFactory())
-				.addConditionalEdges(START, AsyncEdgeAction.edge_async((state, runnableConfig) -> {
-					log.info("run with state: {} and config: {}", state, runnableConfig);
-					// 验证传入的配置是否与调用时传入的一致1
-					assertEquals("thread1", runnableConfig.threadId().orElse(null));
-					assertTrue(runnableConfig.metadata("prop1").isPresent());
-					assertEquals("value1", runnableConfig.metadata("prop1").get());
-					return "agent_1";
-				}), Map.of("agent_1", "agent_1"))
-				.addNode("agent_1", node_async(state -> Map.of("test","test")))
-				.addEdge("agent_1", END);
-		CompiledGraph app = workflow.compile();
-		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"), new RunnableConfig.Builder()
-				.addMetadata("prop1", "value1")  // 使用addMetadata而不是addStateUpdate，因为RunnableConfig使用metadata存储键值对
-				.threadId("thread1")
-				.build());
-		
-		// 验证执行成功
-		assertTrue(result.isPresent());
-
 	}
 
 
