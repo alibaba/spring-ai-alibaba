@@ -66,18 +66,23 @@ public class RedisSaver implements BaseCheckpointSaver {
 	private final Serializer<Checkpoint> checkpointSerializer;
 	private RedissonClient redisson;
 
+
+	private final boolean overwriteMode;
+
 	/**
 	 * Protected constructor for RedisSaver.
 	 * Use {@link #builder()} to create instances.
 	 *
 	 * @param redisson the redisson
 	 * @param stateSerializer the state serializer
+	 * @param overwriteMode only keeps the latest checkpoint
 	 */
-	protected RedisSaver(RedissonClient redisson, StateSerializer stateSerializer) {
+	protected RedisSaver(RedissonClient redisson, StateSerializer stateSerializer, boolean overwriteMode) {
 		requireNonNull(redisson, "redisson cannot be null");
 		requireNonNull(stateSerializer, "stateSerializer cannot be null");
 		this.redisson = redisson;
 		this.checkpointSerializer = new CheckPointSerializer(stateSerializer);
+		this.overwriteMode = overwriteMode;
 	}
 
 	/**
@@ -301,7 +306,10 @@ public class RedisSaver implements BaseCheckpointSaver {
 				checkpoints.set(index, checkpoint);
 			}
 			else {
-				// Add Checkpoint
+				// Only the latest checkpoint will be retained.
+				if (overwriteMode && !checkpoints.isEmpty()) {
+					checkpoints.clear();
+				}
 				checkpoints.push(checkpoint);
 			}
 
@@ -385,6 +393,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 	public static class Builder {
 		private RedissonClient redisson;
 		private StateSerializer stateSerializer;
+		private boolean overwriteMode = false;
 
 		/**
 		 * Sets the Redisson client.
@@ -409,6 +418,17 @@ public class RedisSaver implements BaseCheckpointSaver {
 		}
 
 		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode whether to enable overwrite mode (only keeps the latest checkpoint)
+		 * @return this builder
+		 */
+		public Builder overwriteMode(boolean overwriteMode) {
+			this.overwriteMode = overwriteMode;
+			return this;
+		}
+
+		/**
 		 * Builds a new RedisSaver instance.
 		 * @return a new RedisSaver instance
 		 * @throws IllegalArgumentException if redisson or stateSerializer is null
@@ -420,7 +440,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 			if (stateSerializer == null) {
 				this.stateSerializer = StateGraph.DEFAULT_JACKSON_SERIALIZER;
 			}
-			return new RedisSaver(redisson, stateSerializer);
+			return new RedisSaver(redisson, stateSerializer, overwriteMode);
 		}
 	}
 

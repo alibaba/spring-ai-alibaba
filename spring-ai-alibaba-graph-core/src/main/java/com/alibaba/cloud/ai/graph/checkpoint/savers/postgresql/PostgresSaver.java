@@ -52,9 +52,12 @@ public class PostgresSaver extends MemorySaver {
 
 	private final StateSerializer stateSerializer;
 
+	private final boolean overwriteMode;
+
 	protected PostgresSaver(Builder builder) throws SQLException {
 		this.datasource = builder.datasource;
 		this.stateSerializer = builder.stateSerializer;
+		this.overwriteMode = builder.overwriteMode;
 		initTable(builder.dropTablesFirst, builder.createTables);
 	}
 
@@ -247,6 +250,7 @@ public class PostgresSaver extends MemorySaver {
 				state_content_type)
 				VALUES (?, ?, ?, ?, ?, ?::jsonb, ?)
 				""";
+
 		UUID threadUUID = null;
 
 		// 1. Upsert thread information
@@ -265,8 +269,21 @@ public class PostgresSaver extends MemorySaver {
 			}
 		}
 
+		// Only the latest checkpoint will be retained.
+		if (overwriteMode && !checkpoints.isEmpty()) {
+			String deleteSql = """
+					DELETE FROM GraphCheckpoint
+					WHERE thread_id = ?
+					""";
+			try (PreparedStatement deleteStatement = conn.prepareStatement(deleteSql)) {
+				deleteStatement.setObject(1, threadUUID, Types.OTHER);
+				deleteStatement.execute();
+			}
+			// clear
+			checkpoints.clear();
+		}
 
-		// 2. Insert checkpoint data
+		// 3. Insert checkpoint data
 		try (PreparedStatement ps = conn.prepareStatement(insertCheckpointSql)) {
 			var field = 0;
 			// checkpoint_id
@@ -443,6 +460,7 @@ public class PostgresSaver extends MemorySaver {
 		private boolean createTables;
 		private boolean dropTablesFirst;
 		private DataSource datasource;
+		private boolean overwriteMode = false;
 
 		public Builder stateSerializer(StateSerializer stateSerializer) {
 			this.stateSerializer = stateSerializer;
@@ -479,8 +497,25 @@ public class PostgresSaver extends MemorySaver {
 			return this;
 		}
 
+		/**
+		 * Sets whether to drop tables first.
+		 *
+		 * @param dropTablesFirst whether to drop tables first
+		 * @return this builder
+		 */
 		public Builder dropTablesFirst(boolean dropTablesFirst) {
 			this.dropTablesFirst = dropTablesFirst;
+			return this;
+		}
+
+		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode only keeps the latest checkpoint
+		 * @return this builder
+		 */
+		public Builder overwriteMode(boolean overwriteMode) {
+			this.overwriteMode = overwriteMode;
 			return this;
 		}
 
