@@ -28,10 +28,7 @@ import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -233,39 +230,6 @@ public class PostgresSaverTest {
 
         saver.release( runnableConfig );
 
-    }
-
-
-    private void addUniqueConstraint() throws Exception {
-        String jdbcUrl = postgres.getJdbcUrl();
-        String username = postgres.getUsername();
-        String password = postgres.getPassword();
-
-        try (Connection conn = DriverManager.getConnection(jdbcUrl, username, password);
-             Statement stmt = conn.createStatement()) {
-
-            stmt.execute("""
-                    WITH latest_checkpoints AS (
-                        SELECT checkpoint_id,
-                               ROW_NUMBER() OVER (
-                                   PARTITION BY thread_id
-                                   ORDER BY saved_at DESC, checkpoint_id DESC
-                               ) AS rn
-                        FROM GraphCheckpoint
-                    )
-                    DELETE FROM GraphCheckpoint
-                    WHERE checkpoint_id IN (
-                        SELECT checkpoint_id FROM latest_checkpoints WHERE rn > 1
-                    )
-                    """);
-
-            try {
-                stmt.execute("CREATE UNIQUE INDEX idx_unique_graphcheckpoint_thread ON GraphCheckpoint(thread_id)");
-            } catch (Exception e) {
-                // 忽略已存在的错误
-                log.debug("Index already exists or error creating index: {}", e.getMessage());
-            }
-        }
     }
 
 

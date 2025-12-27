@@ -27,8 +27,6 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.mysql.CreateOption;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.mysql.MysqlSaver;
 
-import java.sql.Connection;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -233,22 +231,6 @@ public class MysqlSaverTest {
 
         saver.release(runnableConfig);
 
-    }
-
-
-    private void addUniqueConstraint() throws Exception {
-        try (Connection conn = DATA_SOURCE.getConnection();
-             Statement stmt = conn.createStatement()) {
-            stmt.execute("DELETE c1 FROM GRAPH_CHECKPOINT c1 " +
-                    "INNER JOIN GRAPH_CHECKPOINT c2 " +
-                    "ON c1.thread_id = c2.thread_id AND c1.saved_at < c2.saved_at");
-
-            try {
-                stmt.execute("ALTER TABLE GRAPH_CHECKPOINT ADD UNIQUE INDEX idx_unique_thread (thread_id)");
-            } catch (Exception e) {
-                // 忽略已存在的错误
-            }
-        }
     }
 
 

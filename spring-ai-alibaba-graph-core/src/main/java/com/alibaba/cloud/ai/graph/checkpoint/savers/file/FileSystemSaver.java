@@ -139,11 +139,9 @@ public class FileSystemSaver extends MemorySaver {
 	@Override
 	protected void insertedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
 			throws Exception {
-		//Only the latest checkpoint will be retained
+		// Only the latest checkpoint will be retained
 		if (overwriteMode && checkpoints.size() > 1) {
-			Checkpoint current = checkpoints.getFirst();
-			checkpoints.clear();
-			checkpoints.add(current);
+			checkpoints.subList(1, checkpoints.size()).clear();
 		}
 
 		File targetFile = getFile(config);
@@ -230,16 +228,34 @@ public class FileSystemSaver extends MemorySaver {
 		private StateSerializer stateSerializer;
 		private boolean overwriteMode = false;
 
+		/**
+		 * Sets the target folder.
+		 *
+		 * @param targetFolder the target folder
+		 * @return this builder
+		 */
 		public Builder targetFolder(Path targetFolder) {
 			this.targetFolder = targetFolder;
 			return this;
 		}
 
+		/**
+		 * Sets the state serializer.
+		 *
+		 * @param stateSerializer the state serializer
+		 * @return this builder
+		 */
 		public Builder stateSerializer(StateSerializer stateSerializer) {
 			this.stateSerializer = stateSerializer;
 			return this;
 		}
 
+		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode only keeps the latest checkpoint
+		 * @return this builder
+		 */
 		public Builder overwriteMode(boolean overwriteMode) {
 			this.overwriteMode = overwriteMode;
 			return this;

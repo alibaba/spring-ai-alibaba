@@ -142,19 +142,6 @@ public class MysqlSaver extends MemorySaver {
 			WHERE thread_name = ? AND is_released = FALSE
 			""";
 
-	private static final String UPSERT_CHECKPOINT = """
-			INSERT INTO GRAPH_CHECKPOINT(checkpoint_id, thread_id, node_id, next_node_id, state_data)
-			SELECT ?, thread_id, ?, ?, ?
-			FROM GRAPH_THREAD
-			WHERE thread_name = ? AND is_released = FALSE
-			ON DUPLICATE KEY UPDATE
-			    checkpoint_id = VALUES(checkpoint_id),
-			    node_id = VALUES(node_id),
-			    next_node_id = VALUES(next_node_id),
-			    state_data = VALUES(state_data),
-			    saved_at = CURRENT_TIMESTAMP
-			""";
-
 	private static final String UPDATE_CHECKPOINT = """
 			UPDATE GRAPH_CHECKPOINT
 			SET
@@ -559,6 +546,12 @@ public class MysqlSaver extends MemorySaver {
 			return this;
 		}
 
+		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode only keeps the latest checkpoint
+		 * @return this builder
+		 */
 		public Builder overwriteMode(boolean overwriteMode) {
 			this.overwriteMode = overwriteMode;
 			return this;

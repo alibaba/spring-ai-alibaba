@@ -497,11 +497,23 @@ public class PostgresSaver extends MemorySaver {
 			return this;
 		}
 
+		/**
+		 * Sets whether to drop tables first.
+		 *
+		 * @param dropTablesFirst whether to drop tables first
+		 * @return this builder
+		 */
 		public Builder dropTablesFirst(boolean dropTablesFirst) {
 			this.dropTablesFirst = dropTablesFirst;
 			return this;
 		}
 
+		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode only keeps the latest checkpoint
+		 * @return this builder
+		 */
 		public Builder overwriteMode(boolean overwriteMode) {
 			this.overwriteMode = overwriteMode;
 			return this;

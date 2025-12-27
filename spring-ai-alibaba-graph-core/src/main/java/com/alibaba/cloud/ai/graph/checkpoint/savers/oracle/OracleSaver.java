@@ -156,27 +156,6 @@ public class OracleSaver extends MemorySaver {
 			WHERE THREAD_NAME = ? AND IS_RELEASED = FALSE
 			""";
 
-	private static final String UPSERT_CHECKPOINT = """
-			MERGE INTO GRAPH_CHECKPOINT target
-			USING (
-			    SELECT ?, t.thread_id, ?, ?, ?, ?
-			    FROM GRAPH_THREAD t
-			    WHERE t.THREAD_NAME = ? AND t.IS_RELEASED = FALSE
-			) source (checkpoint_id, thread_id, node_id, next_node_id, state_data, state_content_type)
-			ON (target.thread_id = source.thread_id)
-			WHEN MATCHED THEN
-			    UPDATE SET
-			        target.checkpoint_id = source.checkpoint_id,
-			        target.node_id = source.node_id,
-			        target.next_node_id = source.next_node_id,
-			        target.state_data = source.state_data,
-			        target.state_content_type = source.state_content_type,
-			        target.saved_at = CURRENT_TIMESTAMP
-			WHEN NOT MATCHED THEN
-			    INSERT (checkpoint_id, thread_id, node_id, next_node_id, state_data, state_content_type)
-			    VALUES (source.checkpoint_id, source.thread_id, source.node_id, source.next_node_id, source.state_data, source.state_content_type)
-			""";
-
 	private static final String UPDATE_CHECKPOINT = """
 			UPDATE GRAPH_CHECKPOINT
 			SET
@@ -224,6 +203,7 @@ public class OracleSaver extends MemorySaver {
 	 * @param dataSource      the data source
 	 * @param createOption    the create options
 	 * @param stateSerializer the state serializer
+	 * @param overwriteMode   only keeps the latest checkpoint
 	 */
 	private OracleSaver(DataSource dataSource, CreateOption createOption, StateSerializer stateSerializer, boolean overwriteMode) {
 		this.dataSource = dataSource;
@@ -634,6 +614,12 @@ public class OracleSaver extends MemorySaver {
 			return this;
 		}
 
+		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode only keeps the latest checkpoint
+		 * @return this builder
+		 */
 		public Builder overwriteMode(boolean overwriteMode) {
 			this.overwriteMode = overwriteMode;
 			return this;

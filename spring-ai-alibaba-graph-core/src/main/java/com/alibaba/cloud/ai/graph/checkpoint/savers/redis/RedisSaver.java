@@ -75,6 +75,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 	 *
 	 * @param redisson the redisson
 	 * @param stateSerializer the state serializer
+	 * @param overwriteMode only keeps the latest checkpoint
 	 */
 	protected RedisSaver(RedissonClient redisson, StateSerializer stateSerializer, boolean overwriteMode) {
 		requireNonNull(redisson, "redisson cannot be null");
@@ -416,6 +417,12 @@ public class RedisSaver implements BaseCheckpointSaver {
 			return this;
 		}
 
+		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode whether to enable overwrite mode (only keeps the latest checkpoint)
+		 * @return this builder
+		 */
 		public Builder overwriteMode(boolean overwriteMode) {
 			this.overwriteMode = overwriteMode;
 			return this;
