@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.LogManager;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -631,5 +633,47 @@ public class SubGraphTest {
                 .map(NodeOutput::state)
                 .block();
 	}
+
+    @Test
+    public void testMultiSubgraphKeyStrategyMerge() throws Exception {
+        // Subgraph A: provides the strategy for aKey
+        KeyStrategyFactory subAKeyFactory = () -> Map.of("aKey", new ReplaceStrategy());
+
+        // Subgraph B: provides the strategy for bKey
+        KeyStrategyFactory subBKeyFactory = () -> Map.of("bKey", new ReplaceStrategy());
+
+        KeyStrategyFactory mainKeyFactory = () -> {
+            Map<String, KeyStrategy> map = new HashMap<>();
+            map.put("mainKey", new ReplaceStrategy());
+            return map;
+        };
+
+        StateGraph subGraphA = new StateGraph("subA", subAKeyFactory)
+                .addNode("a1", node_async(s -> Map.of("aKey", "A1")))
+                .addEdge(StateGraph.START, "a1")
+                .addEdge("a1", StateGraph.END);
+
+        StateGraph subGraphB = new StateGraph("subB", subBKeyFactory)
+                .addNode("b1", node_async(s -> Map.of("bKey", "B1")))
+                .addEdge(StateGraph.START, "b1")
+                .addEdge("b1", StateGraph.END);
+
+        StateGraph mainGraph = new StateGraph("main", mainKeyFactory)
+                .addNode("subA", subGraphA)
+                .addNode("subB", subGraphB)
+                .addEdge(StateGraph.START, "subA")
+                .addEdge("subA", "subB")
+                .addEdge("subB", StateGraph.END);
+
+        CompiledGraph compiled = mainGraph.compile();
+
+        Set<String> mergedKeys = compiled.getKeyStrategyMap().keySet();
+
+        assertEquals(3, mergedKeys.size());
+
+        assertTrue(mergedKeys.contains("mainKey"));
+        assertTrue(mergedKeys.contains("aKey"));
+        assertTrue(mergedKeys.contains("bKey"));
+    }
 
 }
