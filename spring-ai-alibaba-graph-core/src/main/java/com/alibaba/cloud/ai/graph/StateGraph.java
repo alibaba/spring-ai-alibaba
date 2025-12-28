@@ -15,13 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
-import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-
 import com.alibaba.cloud.ai.graph.exception.Errors;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
@@ -37,16 +33,7 @@ import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.LinkedHashSet;
+import java.util.*;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -418,6 +405,21 @@ public class StateGraph {
 	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeAction condition, Map<String, String> mappings)
 			throws GraphStateException {
 		return addConditionalEdges(sourceId, AsyncCommandAction.of(condition), mappings);
+	}
+
+
+	/**
+	 * Adds conditional edges to the graph based on the provided edge action with configuration and mappings.
+	 * @param sourceId the identifier of the source node
+	 * @param asyncEdgeActionWithConfig the edge action with configuration used to determine the target node
+	 * @param mappings the mappings of conditions to target nodes
+	 * @return this state graph instance
+	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
+	 * empty, or the edge already exists
+	 */
+	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeActionWithConfig asyncEdgeActionWithConfig, Map<String, String> mappings)
+			throws GraphStateException {
+		return addConditionalEdges(sourceId, AsyncCommandAction.of(asyncEdgeActionWithConfig), mappings);
 	}
 
 	/**

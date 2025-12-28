@@ -150,7 +150,7 @@ public class SubGraphTest {
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
-			.addConditionalEdges(START, edge_async((state, config) -> "a"), Map.of("a", "A", "b", "B"))
+			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
 			.addEdge("B", "C")
 			.addEdge("C", END);
@@ -182,13 +182,13 @@ public class SubGraphTest {
 			.addNode("C", _makeNode("subgraph(C)"))
 			.addEdge(START, "B1")
 			.addEdge("B1", "B2")
-			.addConditionalEdges("B2", edge_async((state, config) -> "c"), Map.of(END, END, "c", "C"))
+			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
-			.addConditionalEdges(START, edge_async((state, config) -> "a"), Map.of("a", "A", "b", "B"))
+			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
 			.addEdge("B", "C")
 			.addEdge("C", END);
@@ -220,13 +220,13 @@ public class SubGraphTest {
 			.addNode("C", _makeNode("subgraph(C)"))
 			.addEdge(START, "B1")
 			.addEdge("B1", "B2")
-			.addConditionalEdges("B2", edge_async((state, config) -> "c"), Map.of(END, END, "c", "C"))
+			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
-			.addConditionalEdges(START, edge_async((state, config) -> "a"), Map.of("a", "A", "b", "B"))
+			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
 			.addEdge("B", "C")
 			.addEdge("C", END);
@@ -297,15 +297,15 @@ public class SubGraphTest {
 			.addNode("C", _makeNode("subgraph(C)"))
 			.addEdge(START, "B1")
 			.addEdge("B1", "B2")
-			.addConditionalEdges("B2", edge_async((state, config) -> "c"), Map.of(END, END, "c", "C"))
+			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
-			.addConditionalEdges(START, edge_async((state, config) -> "a"), Map.of("a", "A", "b", "B"))
+			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
-			.addConditionalEdges("B", edge_async((state, config) -> "c"), Map.of("c", "C", "a", "A"))
+			.addConditionalEdges("B", edge_async(state -> "c"), Map.of("c", "C", "a", "A"))
 			.addEdge("C", END);
 
 		var processed = ProcessedNodesEdgesAndConfig.process(workflowParent, CompileConfig.builder().build());
@@ -335,16 +335,16 @@ public class SubGraphTest {
 			.addNode("C", _makeNode("subgraph(C)"))
 			.addEdge(START, "B1")
 			.addEdge("B1", "B2")
-			.addConditionalEdges("B2", edge_async((state, config) -> "c"), Map.of(END, END, "c", "C"))
+			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
 			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
 			.addNode("C", _makeNode("C"))
 			.addNode("C1", _makeNode("C1"))
-			.addConditionalEdges(START, edge_async((state, config) -> "a"), Map.of("a", "A", "b", "B"))
+			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
 			.addEdge("A", "B")
-			.addConditionalEdges("B", edge_async((state, config) -> "c"), Map.of("c", "C1", "a", "A"))
+			.addConditionalEdges("B", edge_async(state -> "c"), Map.of("c", "C1", "a", "A"))
 			.addEdge("C1", "C")
 			.addEdge("C", END);
 
