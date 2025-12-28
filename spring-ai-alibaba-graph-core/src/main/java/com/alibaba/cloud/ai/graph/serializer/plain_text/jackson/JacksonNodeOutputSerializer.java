@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.type.WritableTypeId;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
@@ -35,16 +37,21 @@ public class JacksonNodeOutputSerializer extends StdSerializer<NodeOutput> {
     @Override
     public void serialize(NodeOutput value, JsonGenerator gen, SerializerProvider provider) throws IOException {
         gen.writeStartObject();
-        gen.writeStringField("@class", value.getClass().getName());
-        gen.writeStringField("node", value.node());
-        gen.writeStringField("agent", value.agent());
-        gen.writeObjectField("state", value.state());
-        gen.writeBooleanField("subGraph", value.isSubGraph());
+        serializeFields(value, gen, provider);
         gen.writeEndObject();
     }
 
     @Override
-    public void serializeWithType(NodeOutput value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
-        serialize(value, gen, serializers);
+    public void serializeWithType(NodeOutput value, JsonGenerator gen, SerializerProvider provider, TypeSerializer typeSer) throws IOException {
+        WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, typeSer.typeId(value, JsonToken.START_OBJECT));
+        serializeFields(value, gen, provider);
+        typeSer.writeTypeSuffix(gen, typeIdDef);
+    }
+
+    private void serializeFields(NodeOutput value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        gen.writeStringField("node", value.node());
+        gen.writeStringField("agent", value.agent());
+        gen.writeObjectField("state", value.state());
+        gen.writeBooleanField("subGraph", value.isSubGraph());
     }
 }
