@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.cloud.ai.studio.admin.mapper.EvaluatorTemplateMapper">
+
+    <resultMap id="evaluatorTemplateResultMap" type="com.alibaba.cloud.ai.studio.admin.entity.EvaluatorTemplateDO">
+        <id column="id" property="id"/>
+        <result column="evaluator_template_key" property="evaluatorTemplateKey"/>
+        <result column="template_desc" property="templateDesc"/>
+        <result column="template" property="template"/>
+        <result column="variables" property="variables"/>
+        <result column="model_config" property="modelConfig"/>
+    </resultMap>
+
+    <sql id="base_column_list">
+        id, evaluator_template_key, template_desc, template, variables, model_config
+    </sql>
+
+    <sql id="table_name">
+        evaluator_template
+    </sql>
+
+
+
+    <select id="selectById" resultMap="evaluatorTemplateResultMap">
+        SELECT
+        <include refid="base_column_list"/>
+        FROM
+        <include refid="table_name"/>
+        WHERE id = #{id}
+    </select>
+
+
+
+    <select id="list" resultMap="evaluatorTemplateResultMap">
+        SELECT
+        <include refid="base_column_list"/>
+        FROM
+        <include refid="table_name"/>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="count" resultType="int">
+        SELECT COUNT(*) FROM
+        <include refid="table_name"/>
+    </select>
+
+</mapper>

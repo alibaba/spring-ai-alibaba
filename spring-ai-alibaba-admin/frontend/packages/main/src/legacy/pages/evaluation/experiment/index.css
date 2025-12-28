@@ -1,0 +1,41 @@
+/* 实验管理页面专用样式 - 修复Ant Design按钮样式被Tailwind覆盖的问题 */
+
+/* 确保实验管理页面中的主要按钮显示正确的蓝色样式 */
+.experiment-page .ant-btn-primary {
+  background-color: #1677ff !important;
+  border-color: #1677ff !important;
+  color: #ffffff !important;
+}
+
+.experiment-page .ant-btn-primary:hover {
+  background-color: #4096ff !important;
+  border-color: #4096ff !important;
+  color: #ffffff !important;
+}
+
+.experiment-page .ant-btn-primary:focus {
+  background-color: #1677ff !important;
+  border-color: #1677ff !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 0 rgba(5, 145, 255, 0.1) !important;
+}
+
+.experiment-page .ant-btn-primary:active {
+  background-color: #0958d9 !important;
+  border-color: #0958d9 !important;
+  color: #ffffff !important;
+}
+
+/* 其他实验页面专用样式 */
+.experiment-page .experiment-header {
+  margin-bottom: 24px;
+}
+
+.experiment-page .experiment-filters {
+  margin-bottom: 16px;
+}
+
+.experiment-page .experiment-table {
+  background: white;
+  border-radius: 8px;
+}

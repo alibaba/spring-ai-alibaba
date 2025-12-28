@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.cloud.ai.studio.admin.mapper.EvaluatorMapper">
+
+    <resultMap id="evaluatorResultMap" type="com.alibaba.cloud.ai.studio.admin.entity.EvaluatorDO">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deleted" column="deleted"/>
+    </resultMap>
+
+    <sql id="table_name">evaluator</sql>
+
+    <sql id="base_column_list">
+        id, name, description, create_time, update_time, deleted
+    </sql>
+
+    <!-- 创建评估器 -->
+    <insert id="insert" parameterType="com.alibaba.cloud.ai.studio.admin.entity.EvaluatorDO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO
+        <include refid="table_name"/>
+        (name, description, create_time, update_time, deleted)
+        VALUES
+        (#{name}, #{description}, NOW(), NOW(), 0)
+    </insert>
+
+    <!-- 根据ID删除评估器（逻辑删除） -->
+    <update id="deleteById">
+        UPDATE
+        <include refid="table_name"/>
+        SET deleted = 1
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID获取评估器 -->
+    <select id="selectById" resultMap="evaluatorResultMap">
+        SELECT
+        <include refid="base_column_list"/>
+        FROM
+        <include refid="table_name"/>
+        WHERE id = #{id} AND deleted = 0
+    </select>
+
+    <!-- 分页查询评估器列表 -->
+    <select id="selectList" resultMap="evaluatorResultMap">
+        SELECT
+        <include refid="base_column_list"/>
+        FROM
+        <include refid="table_name"/>
+        WHERE deleted = 0
+        <if test="name != null and name != ''">
+            AND name LIKE CONCAT('%', #{name}, '%')
+        </if>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计评估器数量 -->
+    <select id="count" resultType="int">
+        SELECT COUNT(*) FROM
+        <include refid="table_name"/>
+        WHERE deleted = 0
+        <if test="name != null and name != ''">
+            AND name LIKE CONCAT('%', #{name}, '%')
+        </if>
+    </select>
+
+    <!-- 更新评估器 -->
+    <update id="update" parameterType="com.alibaba.cloud.ai.studio.admin.entity.EvaluatorDO">
+        UPDATE
+        <include refid="table_name"/>
+        <set>
+            update_time = NOW(),
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+        </set>
+        WHERE id = #{id} AND deleted = 0
+    </update>
+</mapper>
