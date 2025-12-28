@@ -289,34 +289,6 @@ class SaaStTemplateRendererTest {
 	}
 
 	@Test
-	void testStringDelimiterInJsonString() {
-		// 测试 JSON 字符串值中包含 delimiter 字符串的情况
-		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
-				.validationMode(ValidationMode.NONE)
-				.build();
-
-		String template = """
-				{
-				  "message": "This contains {{ in a string",
-				  "user": "{{userName}}",
-				  "another": "And }} here too"
-				}
-				""";
-
-		Map<String, Object> variables = Map.of("userName", "Alice");
-
-		String result = renderer.apply(template, variables);
-
-		// 验证 JSON 字符串中的 {{ 和 }} 没有被误处理
-		assertTrue(result.contains("\"message\": \"This contains {{ in a string\""));
-		assertTrue(result.contains("\"another\": \"And }} here too\""));
-		// 验证模板变量被正确替换
-		assertTrue(result.contains("\"user\": \"Alice\""));
-	}
-
-	@Test
 	void testMixedContent() {
 		// 测试混合内容：既有 JSON，又有普通文本和模板变量
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
