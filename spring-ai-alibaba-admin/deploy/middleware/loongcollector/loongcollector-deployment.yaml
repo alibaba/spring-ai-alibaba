@@ -26,25 +26,25 @@ spec:
         app: loongcollector
     spec:
       containers:
-      - name: loongcollector
-        image: sls-opensource-registry.cn-shanghai.cr.aliyuncs.com/loongcollector-community-edition/loongcollector:3.1.4
-        ports:
-        - containerPort: 4318
-          name: otlp
-        volumeMounts:
-        - name: loongcollector-config
-          mountPath: /usr/local/loongcollector/conf/continuous_pipeline_config/local
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "1000m"
+        - name: loongcollector
+          image: sls-opensource-registry.cn-shanghai.cr.aliyuncs.com/loongcollector-community-edition/loongcollector:3.1.4
+          ports:
+            - containerPort: 4318
+              name: otlp
+          volumeMounts:
+            - name: loongcollector-config
+              mountPath: /usr/local/loongcollector/conf/continuous_pipeline_config/local
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
       volumes:
-      - name: loongcollector-config
-        configMap:
-          name: loongcollector-config
+        - name: loongcollector-config
+          configMap:
+            name: loongcollector-config
 ---
 apiVersion: v1
 kind: Service
@@ -56,10 +56,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 4318
-    targetPort: 4318
-    protocol: TCP
-    name: otlp
+    - port: 4318
+      targetPort: 4318
+      protocol: TCP
+      name: otlp
   selector:
     app: loongcollector
-

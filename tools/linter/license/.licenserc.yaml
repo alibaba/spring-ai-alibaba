@@ -80,4 +80,5 @@ header:
     - 'tools/linter/codespell/.codespell.ignorewords'
     - 'tools/linter/codespell/.codespell.skip'
     - 'spring-ai-alibaba-studio/agent-chat-ui'
+    - 'spring-ai-alibaba-admin'
   comment: never

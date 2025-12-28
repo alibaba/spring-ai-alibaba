@@ -58,7 +58,7 @@
     "prettier": "^3.0.0",
     "prettier-plugin-organize-imports": "^4.1.0",
     "prettier-plugin-packagejson": "^2.5.14",
-    "rimraf": "^6.1.0",
+    "rimraf": "^6.1.2",
     "stylelint": "^14.16.1",
     "umi": "^4.4.11"
   }

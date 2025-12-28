@@ -16,37 +16,37 @@ spec:
         app: kibana
     spec:
       containers:
-      - name: kibana
-        image: docker.elastic.co/kibana/kibana:9.1.2
-        ports:
-        - containerPort: 5601
-          name: http
-        env:
-        - name: ELASTICSEARCH_HOSTS
-          value: "http://elasticsearch:9200"
-        - name: xpack.security.enabled
-          value: "false"
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "1000m"
-        livenessProbe:
-          httpGet:
-            path: /api/status
-            port: 5601
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          timeoutSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /api/status
-            port: 5601
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 3
+        - name: kibana
+          image: docker.elastic.co/kibana/kibana:9.1.2
+          ports:
+            - containerPort: 5601
+              name: http
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              value: "http://elasticsearch:9200"
+            - name: xpack.security.enabled
+              value: "false"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /api/status
+              port: 5601
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /api/status
+              port: 5601
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
 ---
 apiVersion: v1
 kind: Service
@@ -58,10 +58,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 5601
-    targetPort: 5601
-    protocol: TCP
-    name: http
+    - port: 5601
+      targetPort: 5601
+      protocol: TCP
+      name: http
   selector:
     app: kibana
-

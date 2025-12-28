@@ -17,44 +17,44 @@ spec:
         app: rmq-namesrv
     spec:
       containers:
-      - name: rmq-namesrv
-        image: apache/rocketmq:5.3.2
-        ports:
-        - containerPort: 9876
-          name: namesrv
-        env:
-        - name: NAMESRV_ADDR
-          value: "rmq-namesrv:9876"
-        - name: HEAP_OPTS
-          value: "-Xms128M -Xmx256M -Xmn128M"
-        command:
-        - sh
-        - mqnamesrv
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          exec:
-            command:
+        - name: rmq-namesrv
+          image: apache/rocketmq:5.3.2
+          ports:
+            - containerPort: 9876
+              name: namesrv
+          env:
+            - name: NAMESRV_ADDR
+              value: "rmq-namesrv:9876"
+            - name: HEAP_OPTS
+              value: "-Xms128M -Xmx256M -Xmn128M"
+          command:
             - sh
-            - -c
-            - "ps aux | grep mqnamesrv | grep -v grep || exit 1"
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-        readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - "ps aux | grep mqnamesrv | grep -v grep || exit 1"
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
+            - mqnamesrv
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "ps aux | grep mqnamesrv | grep -v grep || exit 1"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "ps aux | grep mqnamesrv | grep -v grep || exit 1"
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
 ---
 apiVersion: v1
 kind: Service
@@ -66,10 +66,10 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 9876
-    targetPort: 9876
-    protocol: TCP
-    name: namesrv
+    - port: 9876
+      targetPort: 9876
+      protocol: TCP
+      name: namesrv
   selector:
     app: rmq-namesrv
 ---
@@ -103,55 +103,55 @@ spec:
         app: rmq-broker
     spec:
       containers:
-      - name: rmq-broker
-        image: apache/rocketmq:5.3.2
-        ports:
-        - containerPort: 10909
-          name: vip
-        - containerPort: 10911
-          name: broker
-        - containerPort: 10912
-          name: broker-vip
-        env:
-        - name: NAMESRV_ADDR
-          value: "rmq-namesrv:9876"
-        - name: HEAP_OPTS
-          value: "-Xms256M -Xmx512M -Xmn256M -XX:MaxDirectMemorySize=128M"
-        command:
-        - sh
-        - mqbroker
-        volumeMounts:
-        - name: rmq-store
-          mountPath: /home/rocketmq/store
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "1Gi"
-            cpu: "1000m"
-        livenessProbe:
-          exec:
-            command:
+        - name: rmq-broker
+          image: apache/rocketmq:5.3.2
+          ports:
+            - containerPort: 10909
+              name: vip
+            - containerPort: 10911
+              name: broker
+            - containerPort: 10912
+              name: broker-vip
+          env:
+            - name: NAMESRV_ADDR
+              value: "rmq-namesrv:9876"
+            - name: HEAP_OPTS
+              value: "-Xms256M -Xmx512M -Xmn256M -XX:MaxDirectMemorySize=128M"
+          command:
             - sh
-            - -c
-            - "ps aux | grep mqbroker | grep -v grep || exit 1"
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          timeoutSeconds: 5
-        readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - "ps aux | grep mqbroker | grep -v grep || exit 1"
-          initialDelaySeconds: 30
-          periodSeconds: 5
-          timeoutSeconds: 3
+            - mqbroker
+          volumeMounts:
+            - name: rmq-store
+              mountPath: /home/rocketmq/store
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "ps aux | grep mqbroker | grep -v grep || exit 1"
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "ps aux | grep mqbroker | grep -v grep || exit 1"
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
       volumes:
-      - name: rmq-store
-        persistentVolumeClaim:
-          claimName: rmq-broker-store
+        - name: rmq-store
+          persistentVolumeClaim:
+            claimName: rmq-broker-store
 ---
 apiVersion: v1
 kind: Service
@@ -163,18 +163,18 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 10909
-    targetPort: 10909
-    protocol: TCP
-    name: vip
-  - port: 10911
-    targetPort: 10911
-    protocol: TCP
-    name: broker
-  - port: 10912
-    targetPort: 10912
-    protocol: TCP
-    name: broker-vip
+    - port: 10909
+      targetPort: 10909
+      protocol: TCP
+      name: vip
+    - port: 10911
+      targetPort: 10911
+      protocol: TCP
+      name: broker
+    - port: 10912
+      targetPort: 10912
+      protocol: TCP
+      name: broker-vip
   selector:
     app: rmq-broker
 ---
@@ -208,38 +208,38 @@ spec:
         app: rmq-proxy
     spec:
       containers:
-      - name: rmq-proxy
-        image: apache/rocketmq:5.3.2
-        ports:
-        - containerPort: 18080
-          name: http
-        - containerPort: 18081
-          name: https
-        env:
-        - name: NAMESRV_ADDR
-          value: "rmq-namesrv:9876"
-        - name: HEAP_OPTS
-          value: "-Xms128M -Xmx256M -Xmn128M"
-        command:
-        - sh
-        - mqproxy
-        args:
-        - -pc
-        - /home/rocketmq/conf/rmq-proxy.json
-        volumeMounts:
-        - name: rmq-proxy-config
-          mountPath: /home/rocketmq/conf
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+        - name: rmq-proxy
+          image: apache/rocketmq:5.3.2
+          ports:
+            - containerPort: 18080
+              name: http
+            - containerPort: 18081
+              name: https
+          env:
+            - name: NAMESRV_ADDR
+              value: "rmq-namesrv:9876"
+            - name: HEAP_OPTS
+              value: "-Xms128M -Xmx256M -Xmn128M"
+          command:
+            - sh
+            - mqproxy
+          args:
+            - -pc
+            - /home/rocketmq/conf/rmq-proxy.json
+          volumeMounts:
+            - name: rmq-proxy-config
+              mountPath: /home/rocketmq/conf
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
       volumes:
-      - name: rmq-proxy-config
-        configMap:
-          name: rmq-proxy-config
+        - name: rmq-proxy-config
+          configMap:
+            name: rmq-proxy-config
 ---
 apiVersion: v1
 kind: Service
@@ -251,14 +251,13 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 18080
-    targetPort: 18080
-    protocol: TCP
-    name: http
-  - port: 18081
-    targetPort: 18081
-    protocol: TCP
-    name: https
+    - port: 18080
+      targetPort: 18080
+      protocol: TCP
+      name: http
+    - port: 18081
+      targetPort: 18081
+      protocol: TCP
+      name: https
   selector:
     app: rmq-proxy
-

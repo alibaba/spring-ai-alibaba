@@ -16,7 +16,6 @@ spring:
       max-idle-connections: 50
       # 连接保活时间（毫秒）
       keep-alive: 300000
-
 # 应用追踪配置
 app:
   tracing:
