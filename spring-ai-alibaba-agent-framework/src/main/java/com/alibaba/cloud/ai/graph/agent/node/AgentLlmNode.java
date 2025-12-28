@@ -349,8 +349,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	}
 
 	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
-		PromptTemplate promptTemplate = PromptTemplate.builder().template(prompt).renderer(templateRenderer).build();
-		return promptTemplate.render(params);
+		PromptTemplate.Builder builder = PromptTemplate.builder().template(prompt);
+		if (templateRenderer != null) {
+			builder.renderer(templateRenderer);
+		}
+		return builder.build().render(params);
 	}
 
 	public void augmentUserMessage(List<Message> messages, String outputSchema) {

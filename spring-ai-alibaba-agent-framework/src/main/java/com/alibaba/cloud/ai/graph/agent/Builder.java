@@ -61,7 +61,7 @@ public abstract class Builder {
 	protected String systemPrompt;
 
 	// Provide customized template renderer instance, for example
-	// StTemplateRenderer.builder().startDelimiterToken("{{").endDelimiterToken("}}").build()
+	// SaaStTemplateRenderer.builder().startDelimiterToken("{{").endDelimiterToken("}}").build()
 	protected TemplateRenderer templateRenderer;
 
 	protected ChatModel model;
