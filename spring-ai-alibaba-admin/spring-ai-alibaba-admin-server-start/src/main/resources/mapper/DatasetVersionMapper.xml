@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.cloud.ai.studio.admin.mapper.DatasetVersionMapper">
+
+    <!-- Dataset Version table fields -->
+    <sql id="dataset_version_columns">
+        id, dataset_id, version, description, data_count, status, experiments, dataset_items, create_time, update_time
+    </sql>
+
+    <!-- Dataset Version entity mapping -->
+    <resultMap id="datasetVersionResultMap" type="com.alibaba.cloud.ai.studio.admin.entity.DatasetVersionDO">
+        <id property="id" column="id"/>
+        <result property="datasetId" column="dataset_id"/>
+        <result property="version" column="version"/>
+        <result property="description" column="description"/>
+        <result property="dataCount" column="data_count"/>
+        <result property="status" column="status"/>
+        <result property="experiments" column="experiments"/>
+        <result property="datasetItems" column="dataset_items"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <!-- Create dataset version -->
+    <insert id="insert" parameterType="com.alibaba.cloud.ai.studio.admin.entity.DatasetVersionDO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dataset_version (dataset_id, version, description, data_count, status, experiments, dataset_items)
+        VALUES (#{datasetId}, #{version}, #{description}, #{dataCount}, #{status}, #{experiments}, #{datasetItems})
+    </insert>
+
+    <!-- Delete dataset version by ID -->
+    <delete id="deleteById">
+        DELETE FROM dataset_version
+        WHERE id = #{id}
+    </delete>
+
+    <!-- Get dataset version by ID -->
+    <select id="selectById" resultMap="datasetVersionResultMap">
+        SELECT <include refid="dataset_version_columns"/>
+        FROM dataset_version
+        WHERE id = #{id}
+    </select>
+
+    <!-- Query dataset version list -->
+    <select id="selectList" resultMap="datasetVersionResultMap">
+        SELECT <include refid="dataset_version_columns"/>
+        FROM dataset_version
+        WHERE dataset_id = #{datasetId}
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- Query dataset version count -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM dataset_version
+        WHERE dataset_id = #{datasetId}
+    </select>
+
+    <!-- Update dataset version -->
+    <update id="update">
+        UPDATE dataset_version
+        SET description = #{description},
+            status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <!-- Update dataset version -->
+    <update id="updateExperiments">
+        UPDATE dataset_version
+        SET experiments = #{experiments}
+        WHERE id = #{id}
+    </update>
+
+
+    <update id="updateDatasetItems">
+        UPDATE dataset_version
+        SET dataset_items = #{datasetItems},
+            data_count = #{dataCount}
+        WHERE id = #{id}
+    </update>
+
+
+    <!-- Find latest version by dataset ID -->
+    <select id="selectLatestByDatasetId" resultMap="datasetVersionResultMap">
+        SELECT <include refid="dataset_version_columns"/>
+        FROM dataset_version
+        WHERE dataset_id = #{datasetId}
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- Delete dataset versions by dataset ID -->
+    <delete id="deleteByDatasetId">
+        DELETE FROM dataset_version
+        WHERE dataset_id = #{datasetId}
+    </delete>
+
+    <!-- 获取最新版本号 -->
+    <select id="selectLatestVersion" resultMap="datasetVersionResultMap">
+        SELECT *
+        FROM dataset_version
+        WHERE dataset_id = #{datasetId}
+        ORDER BY create_time DESC
+        LIMIT 1
+    </select>
+
+</mapper>

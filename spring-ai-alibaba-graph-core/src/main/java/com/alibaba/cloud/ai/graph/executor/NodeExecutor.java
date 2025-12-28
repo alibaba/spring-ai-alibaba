@@ -56,7 +56,6 @@ import java.util.stream.Collectors;
 import static com.alibaba.cloud.ai.graph.GraphRunnerContext.INTERRUPT_AFTER;
 import static com.alibaba.cloud.ai.graph.StateGraph.*;
 import static com.alibaba.cloud.ai.graph.internal.node.ParallelNode.getExecutor;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Node executor that processes node execution and result handling. This class
@@ -228,14 +227,16 @@ public class NodeExecutor extends BaseGraphExecutor {
 					if (lastResponse == null) {
 						lastChatResponseRef.set(response);
 					} else {
-						final var lastMessageText = requireNonNull(lastResponse.getResult().getOutput().getText(),
-								"lastResponse text cannot be null");
+						var lastMessageText = "";
+						if (lastResponse.getResult().getOutput().getText() != null) {
+							lastMessageText = lastResponse.getResult().getOutput().getText();
+						}
 
 						final var currentMessageText = currentMessage.getText();
 
 						var newMessage = AssistantMessage.builder()
 								.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
-								.properties(currentMessage.getMetadata())
+								.properties(currentMessage.getMetadata()) // TODO, reasoningContent in metadata is not aggregated
 								.toolCalls(mergeToolCalls(lastResponse.getResult().getOutput().getToolCalls(),
 										currentMessage.getToolCalls()))
 								.media(currentMessage.getMedia())
@@ -249,7 +250,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 						lastChatResponseRef.set(newResponse);
 					}
 					GraphResponse<NodeOutput> lastGraphResponse = GraphResponse
-						.of(context.buildStreamingOutput(response.getResult().getOutput(), response, nodeId));
+						.of(context.buildStreamingOutput(response.getResult().getOutput(), response, nodeId, true));
 					 lastGraphResponseRef.set(lastGraphResponse);
 					return lastGraphResponse;
 				}
@@ -266,7 +267,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 					try {
 						log.info("Received element of type '{}' in embedded Flux for key '{}', wrapping in StreamingOutput.",
 							element.getClass().getName(), key);
-						StreamingOutput<?> streamingOutput = context.buildStreamingOutput(element, nodeId);
+						StreamingOutput<?> streamingOutput = context.buildStreamingOutput(element, nodeId, true);
 						GraphResponse<NodeOutput> graphResponse = GraphResponse.of(streamingOutput);
 						lastGraphResponseRef.set(graphResponse);
 						return graphResponse;

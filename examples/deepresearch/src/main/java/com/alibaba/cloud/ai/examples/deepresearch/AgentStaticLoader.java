@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.examples.deepresearch;
 import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.agent.Agent;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 
 import org.springframework.ai.tool.ToolCallback;

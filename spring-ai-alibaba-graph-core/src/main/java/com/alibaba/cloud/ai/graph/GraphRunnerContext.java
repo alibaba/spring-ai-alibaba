@@ -19,33 +19,23 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
-import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
-
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.metadata.Usage;
-
-import org.springframework.util.CollectionUtils;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.util.CollectionUtils;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
-import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.alibaba.cloud.ai.graph.StateGraph.*;
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 
@@ -198,8 +188,8 @@ public class GraphRunnerContext {
 		return nextNodeId(compiledGraph.getEdge(nodeId), state, nodeId);
 	}
 
-	private Command nextNodeId(com.alibaba.cloud.ai.graph.internal.edge.EdgeValue route, Map<String, Object> state,
-			String nodeId) throws Exception {
+	private Command nextNodeId(EdgeValue route, Map<String, Object> state,
+							   String nodeId) throws Exception {
 		if (route == null) {
 			throw RunnableErrors.missingEdge.exception(nodeId);
 		}
@@ -248,54 +238,20 @@ public class GraphRunnerContext {
 		return buildNodeOutput(nodeId);
 	}
 
-	/**
-	 * Comparing to buildNodeOutput, this method also adds a checkpoint if
-	 * checkpoint saver is configured.
-	 */
-	public NodeOutput buildNodeOutputAndAddCheckpoint() throws Exception {
-		Optional<Checkpoint> cp = addCheckpoint(currentNodeId, nextNodeId);
-		return buildOutput(currentNodeId, cp);
-	}
-
-	// StreamingOutput builders for nodes with Flux streaming output. 'originData'
-	// can be ChatResponse, just like ChatResponse in normal NodeOutput.
-
-	public StreamingOutput<?> buildStreamingOutput(GraphFlux<?> graphFlux, Object originData, String nodeId) {
-		// Create StreamingOutput with GraphFlux's nodeId (preserves real node identity)
-		StreamingOutput<?> output;
-		if (graphFlux.hasChunkResult()) {
-			Object chunkResult = graphFlux.getChunkResult().apply(originData);
-			String chunk = chunkResult != null ? chunkResult.toString() : null;
-			output = new StreamingOutput<>(chunk, originData, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-					this.overallState);
-		} else {
-			output = new StreamingOutput<>(originData, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-					this.overallState);
-		}
-		output.setSubGraph(true);
-		return output;
-	}
-
-	public StreamingOutput<?> buildStreamingOutput(Message message, Object originData, String nodeId) {
+	public StreamingOutput<?> buildStreamingOutput(Message message, Object originData, String nodeId, boolean streaming) {
 		// Create StreamingOutput with chunk and originData
+		OutputType outputType = OutputType.from(streaming, nodeId);
 		StreamingOutput<?> output = new StreamingOutput<>(message, originData, nodeId,
-				(String) config.metadata("_AGENT_").orElse(""), this.overallState);
+				(String) config.metadata("_AGENT_").orElse(""), this.overallState, outputType);
 		output.setSubGraph(true);
 		return output;
 	}
 
-	public StreamingOutput<?> buildStreamingOutput(Message message, String nodeId) {
+	public StreamingOutput<?> buildStreamingOutput(Object originData, String nodeId, boolean streaming) {
 		// Create StreamingOutput with chunk only
-		StreamingOutput<?> output = new StreamingOutput<>(message, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-				this.overallState);
-		output.setSubGraph(true);
-		return output;
-	}
-
-	public StreamingOutput<?> buildStreamingOutput(Object originData, String nodeId) {
-		// Create StreamingOutput with chunk only
+		OutputType outputType = OutputType.from(streaming, nodeId);
 		StreamingOutput<?> output = new StreamingOutput<>(originData, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-				this.overallState);
+				this.overallState, outputType);
 		output.setSubGraph(true);
 		return output;
 	}
@@ -460,19 +416,19 @@ public class GraphRunnerContext {
 	 */
 	public NodeOutput buildNodeOutputAndAddCheckpoint(Map<String, Object> updateStates) throws Exception {
 		Optional<Checkpoint> cp = addCheckpoint(currentNodeId, nextNodeId);
-		return buildOutput(currentNodeId, updateStates, cp);
+		return buildOutput(currentNodeId, updateStates, cp, false);
 	}
 
-	public NodeOutput buildOutput(String nodeId, Map<String, Object> updateStates, Optional<Checkpoint> checkpoint)
+	public NodeOutput buildOutput(String nodeId, Map<String, Object> updateStates, Optional<Checkpoint> checkpoint, boolean streaming)
 			throws Exception {
 		if (checkpoint.isPresent() && config.streamMode() == CompiledGraph.StreamMode.SNAPSHOTS) {
 			return StateSnapshot.of(getKeyStrategyMap(), checkpoint.get(), config,
 					compiledGraph.stateGraph.getStateSerializer().stateFactory());
 		}
-		return buildNodeOutput(nodeId, updateStates);
+		return buildNodeOutput(nodeId, updateStates, streaming);
 	}
 
-	public NodeOutput buildNodeOutput(String nodeId, Map<String, Object> updateStates) throws Exception {
+	public NodeOutput buildNodeOutput(String nodeId, Map<String, Object> updateStates, boolean streaming) throws Exception {
 		Message message = null;
 
 		// Check if updateStates is not empty
@@ -492,12 +448,14 @@ public class GraphRunnerContext {
 			}
 		}
 
+		OutputType outputType = OutputType.from(streaming, nodeId);
+
 		if (message != null) {
 			return new StreamingOutput<>(message, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-					cloneState(this.overallState.data()), tokenUsage);
+					cloneState(this.overallState.data()), tokenUsage, outputType);
 		} else {
 			return new StreamingOutput<>(nodeId, (String) config.metadata("_AGENT_").orElse(""),
-					cloneState(this.overallState.data()), tokenUsage);
+					cloneState(this.overallState.data()), tokenUsage, outputType);
 		}
 	}
 

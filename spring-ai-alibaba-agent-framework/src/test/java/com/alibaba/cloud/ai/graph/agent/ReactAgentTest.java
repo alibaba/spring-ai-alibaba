@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -427,6 +428,7 @@ class ReactAgentTest {
 				.saver(new MemorySaver())
 				.stateSerializer(serializer)
 				.enableLogging(true)
+				.chatOptions(DashScopeChatOptions.builder().enableThinking(true).build())
 				.build();
 
 		// Test streaming

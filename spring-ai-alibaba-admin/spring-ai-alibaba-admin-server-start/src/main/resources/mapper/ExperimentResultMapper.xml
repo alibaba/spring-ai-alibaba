@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.cloud.ai.studio.admin.mapper.ExperimentResultMapper">
+
+    <resultMap id="experimentResultResultMap" type="com.alibaba.cloud.ai.studio.admin.entity.ExperimentResultDO">
+        <id property="id" column="id"/>
+        <result property="experimentId" column="experiment_id"/>
+        <result property="input" column="input"/>
+        <result property="actualOutput" column="actual_output"/>
+        <result property="referenceOutput" column="reference_output"/>
+        <result property="score" column="score"/>
+        <result property="reason" column="reason"/>
+        <result property="evaluationTime" column="evaluation_time"/>
+        <result property="evaluatorVersionId" column="evaluator_version_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="table_name">experiment_result</sql>
+
+    <sql id="base_column_list">
+        id, experiment_id, input, actual_output, reference_output, score, reason, evaluation_time, evaluator_version_id, create_time, update_time
+    </sql>
+
+    <!-- 批量创建实验结果 -->
+    <insert id="batchInsert">
+        INSERT INTO
+        <include refid="table_name"/>
+        (experiment_id, input, actual_output, reference_output, score, reason, evaluation_time, evaluator_version_id, create_time, update_time)
+        VALUES
+        <foreach collection="experimentResults" item="result" separator=",">
+            (#{result.experimentId}, #{result.input}, #{result.actualOutput}, #{result.referenceOutput}, 
+             #{result.score}, #{result.reason}, #{result.evaluationTime}, #{result.evaluatorVersionId}, NOW(), NOW())
+        </foreach>
+    </insert>
+
+    <!-- 根据实验ID删除实验结果 -->
+    <delete id="deleteByExperimentId">
+        DELETE FROM
+        <include refid="table_name"/>
+        WHERE experiment_id = #{experimentId}
+    </delete>
+
+    <!-- Get experiment result by ID -->
+    <select id="selectById" resultMap="experimentResultResultMap">
+        SELECT <include refid="base_column_list"/>
+        FROM experiment_result
+        WHERE id = #{id}
+    </select>
+
+    <!-- Query experiment result list by experiment ID -->
+    <select id="selectByExperimentId" resultMap="experimentResultResultMap">
+        SELECT <include refid="base_column_list"/>
+        FROM experiment_result
+        WHERE experiment_id = #{experimentId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- Query experiment result count by experiment ID -->
+    <select id="selectCountByExperimentIdAndEvaluator" resultType="int">
+        SELECT COUNT(*)
+        FROM experiment_result
+        WHERE experiment_id = #{experimentId}
+        and evaluator_version_id = #{evaluatorVersionId}
+    </select>
+
+    <!-- 分页查询实验结果 -->
+    <select id="selectByExperimentAndEvaluator" resultMap="experimentResultResultMap">
+        SELECT
+        <include refid="base_column_list"/>
+        FROM
+        <include refid="table_name"/>
+        WHERE experiment_id = #{experimentId}
+        and evaluator_version_id = #{evaluatorVersionId}
+    </select>
+
+
+
+    <select id="selectByExperimentAndEvaluatorWithPageble"
+            resultType="com.alibaba.cloud.ai.studio.admin.entity.ExperimentResultDO">
+        SELECT
+        <include refid="base_column_list"/>
+        FROM
+        <include refid="table_name"/>
+        WHERE experiment_id = #{experimentId}
+        and evaluator_version_id = #{evaluatorVersionId}
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+
+    </select>
+
+
+
+
+    <!-- 根据ID更新实验结果 -->
+    <update id="updateById" parameterType="com.alibaba.cloud.ai.studio.admin.entity.ExperimentResultDO">
+        UPDATE
+        <include refid="table_name"/>
+        <set>
+            <if test="input != null">input = #{input},</if>
+            <if test="actualOutput != null">actual_output = #{actualOutput},</if>
+            <if test="referenceOutput != null">reference_output = #{referenceOutput},</if>
+            <if test="score != null">score = #{score},</if>
+            <if test="reason != null">reason = #{reason},</if>
+            <if test="evaluationTime != null">evaluation_time = #{evaluationTime},</if>
+            <if test="evaluatorVersionId != null">evaluator_version_id = #{evaluatorVersionId},</if>
+            update_time = NOW(),
+        </set>
+        WHERE id = #{id}
+    </update>
+
+
+</mapper>

@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
+import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
@@ -88,7 +89,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				Optional<ToolFeedback> toolFeedbackOpt = interruptionMetadata.toolFeedbacks().stream()
-						.filter(tf -> tf.getName().equals(toolCall.name()))
+						.filter(tf -> tf.getId().equals(toolCall.id()))
 						.findFirst();
 
 				if (toolFeedbackOpt.isPresent()) {
@@ -188,7 +189,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 
 	private Optional<InterruptionMetadata> buildInterruptionMetadata(OverAllState state, AssistantMessage lastMessage) {
 		boolean needsInterruption = false;
-		InterruptionMetadata.Builder builder = InterruptionMetadata.builder(getName(), state);
+		InterruptionMetadata.Builder builder = InterruptionMetadata.builder(Hook.getFullHookName(this), state);
 		for (AssistantMessage.ToolCall toolCall : lastMessage.getToolCalls()) {
 			if (approvalOn.containsKey(toolCall.name())) {
 				ToolConfig toolConfig = approvalOn.get(toolCall.name());

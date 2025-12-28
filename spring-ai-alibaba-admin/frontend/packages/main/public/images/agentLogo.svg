@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="none" version="1.1" width="160" height="160" viewBox="0 0 160 160">
+  <defs>
+    <clipPath id="master_svg0_214_10369">
+      <rect x="0" y="0" width="160" height="160" rx="0"/>
+    </clipPath>
+    <linearGradient x1="0.8508383631706238" y1="1" x2="-0.06120876057581487" y2="0.1331127746388019" id="master_svg1_71_18930">
+      <stop offset="0%" stop-color="#6460D9" stop-opacity="1"/>
+      <stop offset="55.714285373687744%" stop-color="#8D77FE" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#master_svg0_214_10369)">
+    <g>
+      <g>
+        <path d="M29,114.2C29,120.1647,33.83532,125,39.8,125L121.2,125C127.1647,125,132,120.1647,132,114.2L132,60C132,46.7452,121.2548,36,108,36L53,36C39.7452,36,29,46.7452,29,60L29,114.2Z" fill="url(#master_svg1_71_18930)" fill-opacity="1"/>
+      </g>
+      <g>
+        <path d="M44,64L44,62C44,55.37258,49.37258,50,56,50L107,50C113.6274,50,119,55.37258,119,62L119,64C119,70.6274,113.6274,76,107,76L56,76C49.37258,76,44,70.6274,44,64Z" fill="#D9DAF1" fill-opacity="1"/>
+      </g>
+      <g>
+        <path d="" fill="#FFFFFF" fill-opacity="0"/>
+      </g>
+      <g transform="matrix(0,1,-1,0,91,35)">
+        <path d="M28,64.14286C28,67.92995,31.070050000000002,71,34.85714,71L49.1429,71C52.93,71,56,67.92995,56,64.14286C56,63.511675,55.488299999999995,63,54.8571,63L29.14286,63C28.511675,63,28,63.511675,28,64.14286Z" fill="#BCB5FF" fill-opacity="1"/>
+      </g>
+      <g transform="matrix(0,1,1,0,70,-70)">
+        <path d="M133,64.14286C133,67.92995,136.07005,71,139.85714,71L154.1429,71C157.93,71,161,67.92995,161,64.14286C161,63.511675,160.4883,63,159.8571,63L134.14286,63C133.511675,63,133,63.511675,133,64.14286Z" fill="#BCB5FF" fill-opacity="1"/>
+      </g>
+      <g transform="matrix(-1,1.9073489454513037e-7,1.9073489454513037e-7,1,220.46788406371883,-0.000021025460398504947)">
+        <path d="" fill="#FFFFFF" fill-opacity="0"/>
+      </g>
+    </g>
+    <g>
+      <rect x="53" y="60" width="14" height="6" rx="3" fill="#FFFFFF" fill-opacity="1"/>
+    </g>
+    <g>
+      <rect x="96" y="60" width="14" height="6" rx="3" fill="#FFFFFF" fill-opacity="1"/>
+    </g>
+  </g>
+</svg>

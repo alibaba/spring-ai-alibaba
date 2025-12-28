@@ -1,0 +1,72 @@
+{
+  "name": "@agentscope-ai/flow",
+  "version": "0.0.13",
+  "description": "A powerful and flexible flow canvas rendering engine designed for AI applications. Provides comprehensive workflow visualization and interaction capabilities for platforms like Dify and Bailian, enabling seamless creation and management of complex AI agent workflows with an intuitive drag-and-drop interface.",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build:css": "tailwindcss -i ./tailwind.css -o ./dist/index.css --minify",
+  "build:copy": "copyfiles ./tailwind.css ./dist/tailwind.css",
+    "build:replace": "node -e \"const fs=require('fs'); const content=fs.readFileSync('./dist/index.js','utf8'); fs.writeFileSync('./dist/index.js', content.replace('../tailwind.css', './index.css'));\"",
+    "build": "father build && npm run build:css && npm run build:copy && npm run build:replace",
+    "build:watch": "father dev",
+    "dev": "dumi dev && father dev",
+    "docs:build": "dumi build",
+    "docs:preview": "dumi preview",
+    "doctor": "father doctor",
+    "prepublishOnly": "father doctor && npm run build",
+    "start": "npm run dev"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^8.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@spark-ai/design": "^1.0.3",
+    "@uiw/codemirror-theme-vscode": "^4.23.10",
+    "@uiw/react-codemirror": "4.20.2",
+    "@codemirror/lang-javascript": "^6.2.3",
+    "@codemirror/lang-python": "^6.1.7",
+    "@codemirror/view": "^6.9.2",
+    "@xyflow/react": "12.3.5",
+    "ahooks": "3.8.1",
+    "classnames": "^2.5.1",
+    "elkjs": "^0.9.3",
+    "lodash-es": "^4.17.21",
+    "use-bus": "^2.5.2",
+    "@codemirror/autocomplete": "^6.0.0",
+    "@codemirror/lint": "^6.0.0",
+    "zustand": "^5.0.3",
+    "dayjs": "^1.11.13"
+  },
+  "devDependencies": {
+    "antd": "5.23.2",
+    "@commitlint/cli": "^17.1.2",
+    "@commitlint/config-conventional": "^17.1.0",
+    "@types/lodash-es": "^4.17.12",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@umijs/plugins": "^4.3.8",
+    "dumi": "^2.4.13",
+    "father": "^4.1.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "tailwindcss": "^3.4.15"
+  },
+  "peerDependencies": {
+    "antd": "5.23.2",
+    "react": ">=16.9.0",
+    "react-dom": ">=16.9.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "authors": []
+}

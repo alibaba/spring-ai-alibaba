@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -96,7 +97,7 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		}
 
 		// Perform tool selection
-		Set<String> selectedToolNames = selectTools(availableTools, lastUserQuery);
+		Set<String> selectedToolNames = selectTools(availableTools, lastUserQuery, request.getToolDescriptions());
 
 		log.info("Selected {} tools from {} available: {}",
 				selectedToolNames.size(), availableTools.size(), selectedToolNames);
@@ -124,12 +125,19 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		return null;
 	}
 
-	private Set<String> selectTools(List<String> toolNames, String userQuery) {
+	private Set<String> selectTools(List<String> toolNames, String userQuery, Map<String, String> toolDescriptions) {
 		try {
-			// Build tool list for prompt
+			// Build tool list for prompt with descriptions
 			StringBuilder toolList = new StringBuilder();
 			for (String toolName : toolNames) {
-				toolList.append("- ").append(toolName).append("\n");
+				toolList.append("- ").append(toolName);
+				if (toolDescriptions != null) {
+					String description = toolDescriptions.get(toolName);
+					if (description != null && !description.isEmpty()) {
+						toolList.append(": ").append(description);
+					}
+				}
+				toolList.append("\n");
 			}
 
 			String maxToolsInstruction = maxTools != null
