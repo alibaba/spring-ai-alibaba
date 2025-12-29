@@ -75,7 +75,8 @@ public class CompiledGraph {
 	public final CompileConfig compileConfig;
 
 	/**
-	 * The Node Factories - stores factory functions instead of instances to ensure thread safety.
+	 * The Node Factories - stores factory functions instead of instances to ensure
+	 * thread safety.
 	 */
 	final Map<String, Node.ActionFactory> nodeFactories = new LinkedHashMap<>();
 
@@ -92,7 +93,8 @@ public class CompiledGraph {
 
 	/**
 	 * Constructs a CompiledGraph with the given StateGraph.
-	 * @param stateGraph the StateGraph to be used in this CompiledGraph
+	 * 
+	 * @param stateGraph    the StateGraph to be used in this CompiledGraph
 	 * @param compileConfig the compile config
 	 * @throws GraphStateException the graph state exception
 	 */
@@ -100,13 +102,12 @@ public class CompiledGraph {
 		this.maxIterations = compileConfig.recursionLimit();
 		this.stateGraph = stateGraph;
 
-
 		this.keyStrategyMap = stateGraph.getKeyStrategyFactory()
-			.apply()
-			.entrySet()
-			.stream()
-			.map(e -> Map.entry(e.getKey(), e.getValue()))
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+				.apply()
+				.entrySet()
+				.stream()
+				.map(e -> Map.entry(e.getKey(), e.getValue()))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
 
@@ -142,11 +143,12 @@ public class CompiledGraph {
 
 		// RE-CREATE THE EVENTUALLY UPDATED COMPILE CONFIG
 		this.compileConfig = CompileConfig.builder(compileConfig)
-			.interruptsBefore(processedData.interruptsBefore())
-			.interruptsAfter(processedData.interruptsAfter())
-			.build();
+				.interruptsBefore(processedData.interruptsBefore())
+				.interruptsAfter(processedData.interruptsAfter())
+				.build();
 
-		// STORE NODE FACTORIES - for thread safety, we store factories instead of instances
+		// STORE NODE FACTORIES - for thread safety, we store factories instead of
+		// instances
 		for (var n : processedData.nodes().elements) {
 			var factory = n.actionFactory();
 			Objects.requireNonNull(factory, format("action factory for node id '%s' is null!", n.id()));
@@ -158,29 +160,28 @@ public class CompiledGraph {
 			var targets = e.targets();
 			if (targets.size() == 1) {
 				edges.put(e.sourceId(), targets.get(0));
-			}
-			else {
+			} else {
 				Supplier<Stream<EdgeValue>> parallelNodeStream = () -> targets.stream()
-					.filter(target -> nodeFactories.containsKey(target.id()));
+						.filter(target -> nodeFactories.containsKey(target.id()));
 
 				var parallelNodeEdges = parallelNodeStream.get()
-					.map(target -> new Edge(target.id()))
-					.filter(ee -> processedData.edges().elements.contains(ee))
-					.map(ee -> processedData.edges().elements.indexOf(ee))
-					.map(index -> processedData.edges().elements.get(index))
-					.toList();
+						.map(target -> new Edge(target.id()))
+						.filter(ee -> processedData.edges().elements.contains(ee))
+						.map(ee -> processedData.edges().elements.indexOf(ee))
+						.map(index -> processedData.edges().elements.get(index))
+						.toList();
 
 				var parallelNodeTargets = parallelNodeEdges.stream()
-					.map(ee -> ee.target().id())
-					.collect(Collectors.toSet());
+						.map(ee -> ee.target().id())
+						.collect(Collectors.toSet());
 
 				if (parallelNodeTargets.size() > 1) {
 
 					// find the first defer node
 
 					var conditionalEdges = parallelNodeEdges.stream()
-						.filter(ee -> ee.target().value() != null)
-						.toList();
+							.filter(ee -> ee.target().value() != null)
+							.toList();
 					if (!conditionalEdges.isEmpty()) {
 						throw Errors.unsupportedConditionalEdgeOnParallelNode.exception(e.sourceId(),
 								conditionalEdges.stream().map(Edge::sourceId).toList());
@@ -188,21 +189,23 @@ public class CompiledGraph {
 					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
 				}
 
-			var targetList = parallelNodeStream.get().toList();
+				var targetList = parallelNodeStream.get().toList();
 
-			var actions = targetList.stream()
-				.map(target -> {
-					try {
-						return nodeFactories.get(target.id()).apply(compileConfig);
-					} catch (GraphStateException ex) {
-						throw new RuntimeException("Failed to create parallel node action for target: " + target.id() + ". Cause: " + ex.getMessage(), ex);
-					}
-				})
-				.toList();
+				var actions = targetList.stream()
+						.map(target -> {
+							try {
+								return nodeFactories.get(target.id()).apply(compileConfig);
+							} catch (GraphStateException ex) {
+								throw new RuntimeException("Failed to create parallel node action for target: "
+										+ target.id() + ". Cause: " + ex.getMessage(), ex);
+							}
+						})
+						.toList();
 
-			var actionNodeIds = targetList.stream().map(EdgeValue::id).toList();
+				var actionNodeIds = targetList.stream().map(EdgeValue::id).toList();
 
-			var parallelNode = new ParallelNode(e.sourceId(), actions, actionNodeIds, keyStrategyMap, compileConfig);
+				var parallelNode = new ParallelNode(e.sourceId(), actions, actionNodeIds, keyStrategyMap,
+						compileConfig);
 
 				nodeFactories.put(parallelNode.id(), parallelNode.actionFactory());
 
@@ -217,21 +220,24 @@ public class CompiledGraph {
 
 	public Collection<StateSnapshot> getStateHistory(RunnableConfig config) {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
+				.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
 		return saver.list(config)
-			.stream()
-			.map(checkpoint -> StateSnapshot.of(keyStrategyMap, checkpoint, config, stateGraph.getStateFactory()))
-			.collect(toList());
+				.stream()
+				.map(checkpoint -> StateSnapshot.of(keyStrategyMap, checkpoint, config, stateGraph.getStateFactory()))
+				.collect(toList());
 	}
 
 	/**
-	 * Same of {@link #stateOf(RunnableConfig)} but throws an IllegalStateException if
+	 * Same of {@link #stateOf(RunnableConfig)} but throws an IllegalStateException
+	 * if
 	 * checkpoint is not found.
+	 * 
 	 * @param config the RunnableConfig
 	 * @return the StateSnapshot of the given RunnableConfig
-	 * @throws IllegalStateException if the saver is not defined, or no checkpoint is
-	 * found
+	 * @throws IllegalStateException if the saver is not defined, or no checkpoint
+	 *                               is
+	 *                               found
 	 */
 	public StateSnapshot getState(RunnableConfig config) {
 		return stateOf(config).orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
@@ -239,23 +245,26 @@ public class CompiledGraph {
 
 	/**
 	 * Get the StateSnapshot of the given RunnableConfig.
+	 * 
 	 * @param config the RunnableConfig
 	 * @return an Optional of StateSnapshot of the given RunnableConfig
 	 * @throws IllegalStateException if the saver is not defined
 	 */
 	public Optional<StateSnapshot> stateOf(RunnableConfig config) {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
+				.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
 		return saver.get(config)
-			.map(checkpoint -> StateSnapshot.of(keyStrategyMap, checkpoint, config, stateGraph.getStateFactory()));
+				.map(checkpoint -> StateSnapshot.of(keyStrategyMap, checkpoint, config, stateGraph.getStateFactory()));
 
 	}
 
 	/**
-	 * Update the state of the graph with the given values. If asNode is given, it will be
+	 * Update the state of the graph with the given values. If asNode is given, it
+	 * will be
 	 * used to determine the next node to run. If not given, the next node will be
 	 * determined by the state graph.
+	 * 
 	 * @param config the RunnableConfig containing the graph state
 	 * @param values the values to be updated
 	 * @param asNode the node id to be used for the next node. can be null
@@ -265,13 +274,13 @@ public class CompiledGraph {
 	public RunnableConfig updateState(RunnableConfig config, Map<String, Object> values, String asNode)
 			throws Exception {
 		BaseCheckpointSaver saver = compileConfig.checkpointSaver()
-			.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
+				.orElseThrow(() -> (new IllegalStateException("Missing CheckpointSaver!")));
 
 		// merge values with checkpoint values
 		Checkpoint branchCheckpoint = saver.get(config)
-			.map(Checkpoint::copyOf)
-			.map(cp -> cp.updateState(values, keyStrategyMap))
-			.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
+				.map(Checkpoint::copyOf)
+				.map(cp -> cp.updateState(values, keyStrategyMap))
+				.orElseThrow(() -> (new IllegalStateException("Missing Checkpoint!")));
 
 		String nextNodeId = null;
 		if (asNode != null) {
@@ -289,6 +298,7 @@ public class CompiledGraph {
 
 	/***
 	 * Update the state of the graph with the given values.
+	 * 
 	 * @param config the RunnableConfig containing the graph state
 	 * @param values the values to be updated
 	 * @return the updated RunnableConfig
@@ -328,8 +338,9 @@ public class CompiledGraph {
 
 	/**
 	 * Determines the next node ID based on the current node ID and state.
+	 * 
 	 * @param nodeId the current node ID
-	 * @param state the current state
+	 * @param state  the current state
 	 * @return the next node command
 	 * @throws Exception if there is an error determining the next node ID
 	 */
@@ -363,10 +374,10 @@ public class CompiledGraph {
 			String nextNodeId, OverAllState overAllState) throws Exception {
 		if (compileConfig.checkpointSaver().isPresent()) {
 			var cp = Checkpoint.builder()
-				.nodeId(nodeId)
-				.state(cloneState(state, overAllState))
-				.nextNodeId(nextNodeId)
-				.build();
+					.nodeId(nodeId)
+					.state(cloneState(state, overAllState))
+					.nextNodeId(nextNodeId)
+					.build();
 			compileConfig.checkpointSaver().get().put(config, cp);
 			return Optional.of(cp);
 		}
@@ -376,6 +387,7 @@ public class CompiledGraph {
 
 	/**
 	 * Gets initial state.
+	 * 
 	 * @param inputs the inputs
 	 * @param config the config
 	 * @return the initial state
@@ -383,23 +395,26 @@ public class CompiledGraph {
 	public Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
 
 		return compileConfig.checkpointSaver()
-			.flatMap(saver -> saver.get(config))
-			.map(cp -> OverAllState.updateState(cp.getState(), inputs, keyStrategyMap))
-			.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, keyStrategyMap));
+				.flatMap(saver -> saver.get(config))
+				.map(cp -> OverAllState.updateState(cp.getState(), inputs, keyStrategyMap))
+				.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, keyStrategyMap));
 	}
 
 	/**
 	 * Clone state over all state.
+	 * 
 	 * @param data the data
 	 * @return the over all state
 	 */
 	OverAllState cloneState(Map<String, Object> data, OverAllState overAllState)
 			throws IOException, ClassNotFoundException {
-		return new OverAllState(stateGraph.getStateSerializer().cloneObject(data).data(), overAllState.keyStrategies(), overAllState.getStore());
+		return new OverAllState(stateGraph.getStateSerializer().cloneObject(data).data(), overAllState.keyStrategies(),
+				overAllState.getStore());
 	}
 
 	/**
 	 * Clone state over all state.
+	 * 
 	 * @param data the data
 	 * @return the over all state
 	 */
@@ -415,7 +430,8 @@ public class CompiledGraph {
 		try {
 			return factory != null ? factory.apply(compileConfig) : null;
 		} catch (GraphStateException e) {
-			throw new RuntimeException("Failed to create node action for nodeId: " + nodeId + ". Cause: " + e.getMessage(), e);
+			throw new RuntimeException(
+					"Failed to create node action for nodeId: " + nodeId + ". Cause: " + e.getMessage(), e);
 		}
 	}
 
@@ -472,8 +488,7 @@ public class CompiledGraph {
 		try {
 			GraphRunner runner = new GraphRunner(this, config);
 			return runner.run(state);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			return Flux.error(e);
 		}
 	}
@@ -481,6 +496,7 @@ public class CompiledGraph {
 	/**
 	 * Creates a Flux stream of NodeOutput based on the provided inputs. This is the
 	 * modern reactive approach using Project Reactor.
+	 * 
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return a Flux stream of NodeOutput
@@ -491,8 +507,9 @@ public class CompiledGraph {
 
 	/**
 	 * Creates a Flux stream from an initial state.
+	 * 
 	 * @param overAllState the initial state
-	 * @param config the configuration
+	 * @param config       the configuration
 	 * @return a Flux stream of NodeOutput
 	 */
 	public Flux<NodeOutput> streamFromInitialNode(OverAllState overAllState, RunnableConfig config) {
@@ -502,7 +519,7 @@ public class CompiledGraph {
 			return runner.run(overAllState).flatMap(data -> {
 				if (data.isDone()) {
 					if (data.resultValue().isPresent() && data.resultValue().get() instanceof NodeOutput) {
-						return Flux.just((NodeOutput)data.resultValue().get());
+						return Flux.just((NodeOutput) data.resultValue().get());
 					} else {
 						return Flux.empty();
 					}
@@ -513,14 +530,14 @@ public class CompiledGraph {
 
 				return Mono.fromFuture(data.getOutput()).flux();
 			});
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			return Flux.error(e);
 		}
 	}
 
 	/**
 	 * Creates a Flux stream of NodeOutput based on the provided inputs.
+	 * 
 	 * @param inputs the input map
 	 * @return a Flux stream of NodeOutput
 	 */
@@ -530,6 +547,7 @@ public class CompiledGraph {
 
 	/**
 	 * Creates a Flux stream with empty inputs.
+	 * 
 	 * @return a Flux stream of NodeOutput
 	 */
 	public Flux<NodeOutput> stream() {
@@ -538,6 +556,7 @@ public class CompiledGraph {
 
 	/**
 	 * Creates a Flux stream for snapshots based on the provided inputs.
+	 * 
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return a Flux stream of NodeOutput containing snapshots
@@ -549,6 +568,7 @@ public class CompiledGraph {
 
 	/**
 	 * Calls the graph execution and returns the final state.
+	 * 
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return an Optional containing the final state
@@ -559,17 +579,19 @@ public class CompiledGraph {
 
 	/**
 	 * Calls the graph execution from initial state and returns the final state.
+	 * 
 	 * @param overAllState the initial state
-	 * @param config the configuration
+	 * @param config       the configuration
 	 * @return an Optional containing the final state
 	 */
 	public Optional<OverAllState> invoke(OverAllState overAllState, RunnableConfig config) {
 		return Optional
-			.ofNullable(streamFromInitialNode(overAllState, config).last().map(NodeOutput::state).block());
+				.ofNullable(streamFromInitialNode(overAllState, config).last().map(NodeOutput::state).block());
 	}
 
 	/**
 	 * Calls the graph execution and returns the final state.
+	 * 
 	 * @param inputs the input map
 	 * @return an Optional containing the final state
 	 */
@@ -591,6 +613,7 @@ public class CompiledGraph {
 
 	/**
 	 * Schedule the graph execution with enhanced configuration options.
+	 * 
 	 * @param scheduleConfig the schedule configuration
 	 * @return a ScheduledGraphExecution instance for managing the scheduled task
 	 */
@@ -599,17 +622,25 @@ public class CompiledGraph {
 	}
 
 	private OverAllState stateCreate(Map<String, Object> inputs) {
+		// Enforce Execution ID availability
+		if (!inputs.containsKey(GraphLifecycleListener.EXECUTION_ID_KEY)) {
+			Map<String, Object> newInputs = new HashMap<>(inputs);
+			newInputs.put(GraphLifecycleListener.EXECUTION_ID_KEY, java.util.UUID.randomUUID().toString());
+			inputs = newInputs;
+		}
+
 		// Creates a new OverAllState instance using key strategies from the graph
 		// and provided input data.
 		return OverAllStateBuilder.builder()
-			.withKeyStrategies(getKeyStrategyMap())
-			.withData(inputs)
-			.withStore(compileConfig.getStore())
-			.build();
+				.withKeyStrategies(getKeyStrategyMap())
+				.withData(inputs)
+				.withStore(compileConfig.getStore())
+				.build();
 	}
 
 	/**
 	 * Get the last StateSnapshot of the given RunnableConfig.
+	 * 
 	 * @param config - the RunnableConfig
 	 * @return the last StateSnapshot of the given RunnableConfig if any
 	 */
@@ -619,8 +650,9 @@ public class CompiledGraph {
 
 	/**
 	 * Generates a drawable graph representation of the state graph.
-	 * @param type the type of graph representation to generate
-	 * @param title the title of the graph
+	 * 
+	 * @param type                  the type of graph representation to generate
+	 * @param title                 the title of the graph
 	 * @param printConditionalEdges whether to print conditional edges
 	 * @return a diagram code of the state graph
 	 */
@@ -634,7 +666,8 @@ public class CompiledGraph {
 
 	/**
 	 * Generates a drawable graph representation of the state graph.
-	 * @param type the type of graph representation to generate
+	 * 
+	 * @param type  the type of graph representation to generate
 	 * @param title the title of the graph
 	 * @return a diagram code of the state graph
 	 */
@@ -646,7 +679,9 @@ public class CompiledGraph {
 	}
 
 	/**
-	 * Generates a drawable graph representation of the state graph with default title.
+	 * Generates a drawable graph representation of the state graph with default
+	 * title.
+	 * 
 	 * @param type the type of graph representation to generate
 	 * @return a diagram code of the state graph
 	 */
@@ -671,6 +706,7 @@ public class CompiledGraph {
 	}
 
 }
+
 /**
  * The type Processed nodes edges and config.
  */
@@ -679,8 +715,9 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 
 	/**
 	 * Instantiates a new Processed nodes edges and config.
+	 * 
 	 * @param stateGraph the state graph
-	 * @param config the config
+	 * @param config     the config
 	 */
 	ProcessedNodesEdgesAndConfig(StateGraph stateGraph, CompileConfig config) {
 		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter(), Map.of());
@@ -688,8 +725,9 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 
 	/**
 	 * Process processed nodes edges and config.
+	 * 
 	 * @param stateGraph the state graph
-	 * @param config the config
+	 * @param config     the config
 	 * @return the processed nodes edges and config
 	 * @throws GraphStateException the graph state exception
 	 */
@@ -737,8 +775,9 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 
 			// Process Interruption (Before) Subgraph(s)
 			interruptsBefore = interruptsBefore.stream()
-				.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId : interrupt)
-				.collect(Collectors.toUnmodifiableSet());
+					.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId
+							: interrupt)
+					.collect(Collectors.toUnmodifiableSet());
 
 			var edgesWithSubgraphTargetId = edges.edgesByTargetId(subgraphNode.id());
 
@@ -751,7 +790,8 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 
 				var newEdge = edgeWithSubgraphTargetId.withSourceAndTargetIdsUpdated(subgraphNode, Function.identity(),
 						id -> new EdgeValue((Objects.equals(id, subgraphNode.id())
-								? subgraphNode.formatId(sgEdgeStartTarget.id()) : id)));
+								? subgraphNode.formatId(sgEdgeStartTarget.id())
+								: id)));
 				edges.elements.remove(edgeWithSubgraphTargetId);
 				edges.elements.add(newEdge);
 			}
@@ -770,28 +810,29 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 			if (interruptsAfter.contains(subgraphNode.id())) {
 
 				var exceptionMessage = (edgeWithSubgraphSourceId.target()
-					.id() == null) ? "'interruption after' on subgraph is not supported yet!" : format(
-							"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: '%s'",
-							edgeWithSubgraphSourceId.target().id());
+						.id() == null) ? "'interruption after' on subgraph is not supported yet!"
+								: format(
+										"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: '%s'",
+										edgeWithSubgraphSourceId.target().id());
 				throw new GraphStateException(exceptionMessage);
 			}
 
 			sgEdgesEnd.stream()
-				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-						id -> (Objects.equals(id, END) ? edgeWithSubgraphSourceId.target()
-								: new EdgeValue(subgraphNode.formatId(id)))))
-				.forEach(edges.elements::add);
+					.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
+							id -> (Objects.equals(id, END) ? edgeWithSubgraphSourceId.target()
+									: new EdgeValue(subgraphNode.formatId(id)))))
+					.forEach(edges.elements::add);
 			edges.elements.remove(edgeWithSubgraphSourceId);
 
 			//
 			// Process edges
 			//
 			processedSubGraphEdges.elements.stream()
-				.filter(e -> !Objects.equals(e.sourceId(), START))
-				.filter(e -> !e.anyMatchByTargetId(END))
-				.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-						id -> new EdgeValue(subgraphNode.formatId(id))))
-				.forEach(edges.elements::add);
+					.filter(e -> !Objects.equals(e.sourceId(), START))
+					.filter(e -> !e.anyMatchByTargetId(END))
+					.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
+							id -> new EdgeValue(subgraphNode.formatId(id))))
+					.forEach(edges.elements::add);
 
 			//
 			// Process nodes
