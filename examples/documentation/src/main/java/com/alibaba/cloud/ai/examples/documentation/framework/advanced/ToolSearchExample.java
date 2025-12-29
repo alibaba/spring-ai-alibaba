@@ -335,12 +335,6 @@ public class ToolSearchExample {
 
 	public record TranslateRequest(String text, String fromLang, String toLang) {}
 
-	/**
-	 * Main 方法：运行所有示例
-	 * 
-	 * 使用前请设置环境变量：
-	 * export AI_DASHSCOPE_API_KEY=your_api_key
-	 */
 	public static void main(String[] args) {
 		// 检查 API Key
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
