@@ -111,6 +111,19 @@ public class DefaultBuilder extends Builder {
 			}
 		}
 
+		// Auto-configure ToolCallbackResolver from ToolSearchModelInterceptor if not explicitly set
+		if (resolver == null && CollectionUtils.isNotEmpty(modelInterceptors)) {
+			for (ModelInterceptor interceptor : modelInterceptors) {
+				if (interceptor instanceof com.alibaba.cloud.ai.graph.agent.interceptor.toolsearch.ToolSearchModelInterceptor) {
+					com.alibaba.cloud.ai.graph.agent.interceptor.toolsearch.ToolSearchModelInterceptor toolSearchInterceptor =
+						(com.alibaba.cloud.ai.graph.agent.interceptor.toolsearch.ToolSearchModelInterceptor) interceptor;
+					resolver = toolSearchInterceptor.getToolCallbackResolver();
+					logger.info("Auto-configured ToolCallbackResolver from ToolSearchModelInterceptor");
+					break;
+				}
+			}
+		}
+
 		// Collect tools from interceptors
 		// - regularTools: user-provided tools
 		// - interceptorTools: tools from interceptors
