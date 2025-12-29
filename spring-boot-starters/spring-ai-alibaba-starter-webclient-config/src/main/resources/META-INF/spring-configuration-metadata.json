@@ -1,0 +1,61 @@
+{
+  "groups": [
+    {
+      "name": "spring.ai.alibaba.webclient",
+      "type": "com.alibaba.cloud.ai.autoconfigure.webclient.WebClientConfigProperties",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.webclient.WebClientConfigProperties",
+      "description": "Configuration properties for WebClient connection pooling to prevent connection reset errors."
+    }
+  ],
+  "properties": [
+    {
+      "name": "spring.ai.alibaba.webclient.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.webclient.WebClientConfigProperties",
+      "defaultValue": true,
+      "description": "Enable WebClient connection pool configuration."
+    },
+    {
+      "name": "spring.ai.alibaba.webclient.max-connections",
+      "type": "java.lang.Integer",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.webclient.WebClientConfigProperties",
+      "defaultValue": 500,
+      "description": "Maximum number of connections per host."
+    },
+    {
+      "name": "spring.ai.alibaba.webclient.max-idle-time",
+      "type": "java.time.Duration",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.webclient.WebClientConfigProperties",
+      "defaultValue": "30s",
+      "description": "Maximum time a connection can be idle before being evicted. This helps prevent 'Connection reset' errors when the server closes idle connections."
+    },
+    {
+      "name": "spring.ai.alibaba.webclient.max-life-time",
+      "type": "java.time.Duration",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.webclient.WebClientConfigProperties",
+      "defaultValue": "5m",
+      "description": "Maximum time a connection can live."
+    },
+    {
+      "name": "spring.ai.alibaba.webclient.eviction-interval",
+      "type": "java.time.Duration",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.webclient.WebClientConfigProperties",
+      "defaultValue": "10s",
+      "description": "Interval for evicting idle connections in background."
+    },
+    {
+      "name": "spring.ai.alibaba.webclient.pending-acquire-queue",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.webclient.WebClientConfigProperties",
+      "defaultValue": true,
+      "description": "Enable pending acquire queue."
+    },
+    {
+      "name": "spring.ai.alibaba.webclient.max-pending-acquires",
+      "type": "java.lang.Integer",
+      "sourceType": "com.alibaba.cloud.ai.autoconfigure.webclient.WebClientConfigProperties",
+      "defaultValue": 1000,
+      "description": "Maximum pending acquire requests."
+    }
+  ]
+}

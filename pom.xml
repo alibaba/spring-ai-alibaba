@@ -58,6 +58,7 @@
         <module>spring-boot-starters/spring-ai-alibaba-starter-config-nacos</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-builtin-nodes</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-webclient-config</module>
     </modules>
 
     <scm>
