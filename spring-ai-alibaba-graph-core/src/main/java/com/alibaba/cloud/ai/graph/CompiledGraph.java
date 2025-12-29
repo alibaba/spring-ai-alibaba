@@ -622,6 +622,11 @@ public class CompiledGraph {
 	}
 
 	private OverAllState stateCreate(Map<String, Object> inputs) {
+		// Handle null inputs (resume scenarios)
+		if (inputs == null) {
+			inputs = new HashMap<>();
+		}
+
 		// Enforce Execution ID availability
 		if (!inputs.containsKey(GraphLifecycleListener.EXECUTION_ID_KEY)) {
 			Map<String, Object> newInputs = new HashMap<>(inputs);
