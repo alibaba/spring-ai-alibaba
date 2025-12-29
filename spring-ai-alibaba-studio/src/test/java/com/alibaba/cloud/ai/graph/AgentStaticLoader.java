@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -34,9 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
-
-import jakarta.annotation.Nonnull;
-
 
 /**
  * Static Agent Loader for programmatically provided agents.
@@ -82,7 +80,7 @@ class AgentStaticLoader implements AgentLoader {
 	}
 
 	@Override
-	@Nonnull
+	@NonNull
 	public List<String> listAgents() {
 		return agents.keySet().stream().toList();
 	}
