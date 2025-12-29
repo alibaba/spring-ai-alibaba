@@ -41,8 +41,10 @@ import reactor.core.publisher.Hooks;
 /**
  * Auto-configuration for Graph observation functionality.
  *
- * Provides automatic setup of: - GraphObservationLifecycleListener for lifecycle events -
- * ObservationHandlers for different graph components (when dependencies are available) -
+ * Provides automatic setup of: - GraphObservationLifecycleListener for
+ * lifecycle events -
+ * ObservationHandlers for different graph components (when dependencies are
+ * available) -
  * Default CompileConfig with observation support
  *
  * @author sixiyida
@@ -51,8 +53,7 @@ import reactor.core.publisher.Hooks;
 @AutoConfiguration
 @ConditionalOnClass({ StateGraph.class, ObservationRegistry.class })
 @EnableConfigurationProperties(GraphObservationProperties.class)
-@ConditionalOnProperty(prefix = GraphObservationProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(prefix = GraphObservationProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
 public class GraphObservationAutoConfiguration {
 
 	private static final Logger log = LoggerFactory.getLogger(GraphObservationAutoConfiguration.class);
@@ -67,7 +68,7 @@ public class GraphObservationAutoConfiguration {
 		if (registry != ObservationRegistry.NOOP) {
 			try {
 				ContextRegistry.getInstance()
-					.registerThreadLocalAccessor(new ObservationThreadLocalAccessor(registry));
+						.registerThreadLocalAccessor(new ObservationThreadLocalAccessor(registry));
 
 				log.info("Successfully registered ObservationThreadLocalAccessor for Reactor context propagation");
 
@@ -84,7 +85,9 @@ public class GraphObservationAutoConfiguration {
 	}
 
 	/**
-	 * Creates a GraphObservationLifecycleListener that monitors graph lifecycle events.
+	 * Creates a GraphObservationLifecycleListener that monitors graph lifecycle
+	 * events.
+	 * 
 	 * @param observationRegistry the observation registry for creating observations
 	 * @return configured GraphObservationLifecycleListener
 	 */
@@ -95,10 +98,18 @@ public class GraphObservationAutoConfiguration {
 		return new GraphObservationLifecycleListener(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 	}
 
+	@Bean
+	@ConditionalOnMissingBean
+	public org.springframework.ai.chat.observation.ChatModelObservationConvention springAiAlibabaChatModelObservationConvention() {
+		return new com.alibaba.cloud.ai.graph.observation.SpringAiAlibabaChatModelObservationConvention();
+	}
+
 	/**
 	 * Creates a default CompileConfig with observation support.
-	 * @param observationRegistry the observation registry
-	 * @param graphObservationLifecycleListeners the graph observation lifecycle listener
+	 * 
+	 * @param observationRegistry                the observation registry
+	 * @param graphObservationLifecycleListeners the graph observation lifecycle
+	 *                                           listener
 	 * @return configured CompileConfig with observation support
 	 */
 	@Bean
@@ -107,7 +118,7 @@ public class GraphObservationAutoConfiguration {
 			ObjectProvider<GraphObservationLifecycleListener> graphObservationLifecycleListeners) {
 
 		CompileConfig.Builder builder = CompileConfig.builder()
-			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		graphObservationLifecycleListeners.ifUnique(builder::withLifecycleListener);
 
@@ -125,6 +136,7 @@ public class GraphObservationAutoConfiguration {
 
 		/**
 		 * Creates GraphObservationHandler for graph-level observations.
+		 * 
 		 * @param meterRegistry the meter registry for metrics
 		 * @return configured GraphObservationHandler
 		 */
@@ -136,6 +148,7 @@ public class GraphObservationAutoConfiguration {
 
 		/**
 		 * Creates GraphNodeObservationHandler for node-level observations.
+		 * 
 		 * @param meterRegistry the meter registry for metrics
 		 * @return configured GraphNodeObservationHandler
 		 */
@@ -147,6 +160,7 @@ public class GraphObservationAutoConfiguration {
 
 		/**
 		 * Creates GraphEdgeObservationHandler for edge-level observations.
+		 * 
 		 * @param meterRegistry the meter registry for metrics
 		 * @return configured GraphEdgeObservationHandler
 		 */
@@ -157,7 +171,6 @@ public class GraphObservationAutoConfiguration {
 		}
 
 	}
-
 
 	public static class ObservationThreadLocalAccessorRegistrar {
 		// Marker class
