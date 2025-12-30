@@ -239,19 +239,28 @@ public class GraphRunnerContext {
 	}
 
 	public StreamingOutput<?> buildStreamingOutput(Message message, Object originData, String nodeId, boolean streaming) {
+		// Calculate next nodes from the context
+		String nextNode = calculateNextNode(nodeId);
+		List<String> allNextNodes = calculateAllNextNodes(nodeId);
+
 		// Create StreamingOutput with chunk and originData
 		OutputType outputType = OutputType.from(streaming, nodeId);
 		StreamingOutput<?> output = new StreamingOutput<>(message, originData, nodeId,
-				(String) config.metadata("_AGENT_").orElse(""), this.overallState, outputType);
+				(String) config.metadata("_AGENT_").orElse(""), this.overallState);
+		output.setTokenUsage(this.tokenUsage);
 		output.setSubGraph(true);
 		return output;
 	}
 
 	public StreamingOutput<?> buildStreamingOutput(Object originData, String nodeId, boolean streaming) {
-		// Create StreamingOutput with chunk only
+		// Calculate next nodes from the context
+		String nextNode = calculateNextNode(nodeId);
+		List<String> allNextNodes = calculateAllNextNodes(nodeId);
+
 		OutputType outputType = OutputType.from(streaming, nodeId);
 		StreamingOutput<?> output = new StreamingOutput<>(originData, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-				this.overallState, outputType);
+				this.overallState);
+		output.setTokenUsage(this.tokenUsage);
 		output.setSubGraph(true);
 		return output;
 	}
