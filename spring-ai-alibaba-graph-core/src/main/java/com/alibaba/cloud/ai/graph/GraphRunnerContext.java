@@ -259,11 +259,57 @@ public class GraphRunnerContext {
 	// Normal NodeOutput builders for nodes with normal message output.
 
 	public NodeOutput buildNodeOutput(String nodeId) throws Exception {
+		// Calculate next nodes from the context
+		String nextNode = calculateNextNode(nodeId);
+		List<String> allNextNodes = calculateAllNextNodes(nodeId);
+
 		return NodeOutput.of(
 				nodeId,
 				(String) config.metadata("_AGENT_").orElse(""),
 				cloneState(this.overallState.data()),
-				this.tokenUsage);
+				this.tokenUsage,
+				nextNode,
+				allNextNodes);
+	}
+
+	/**
+	 * Calculate the next execution node for the given current node.
+	 */
+	private String calculateNextNode(String nodeId) {
+		EdgeValue edgeValue = compiledGraph.getEdge(nodeId);
+		if (edgeValue == null) {
+			return null;
+		}
+
+		if (edgeValue.id() != null) {
+			// Direct edge
+			return edgeValue.id();
+		} else if (edgeValue.value() != null) {
+			// Conditional edge - return the first available target
+			return edgeValue.value().mappings().values().stream().findFirst().orElse(null);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get all possible next execution nodes for the given current node.
+	 */
+	private List<String> calculateAllNextNodes(String nodeId) {
+		EdgeValue edgeValue = compiledGraph.getEdge(nodeId);
+		if (edgeValue == null) {
+			return List.of();
+		}
+
+		if (edgeValue.id() != null) {
+			// Direct edge
+			return List.of(edgeValue.id());
+		} else if (edgeValue.value() != null) {
+			// Conditional edge
+			return new ArrayList<>(edgeValue.value().mappings().values());
+		}
+
+		return List.of();
 	}
 
 	public OverAllState cloneState(Map<String, Object> data) throws Exception {
@@ -429,6 +475,10 @@ public class GraphRunnerContext {
 	}
 
 	public NodeOutput buildNodeOutput(String nodeId, Map<String, Object> updateStates, boolean streaming) throws Exception {
+		// Calculate next nodes from the context
+		String nextNode = calculateNextNode(nodeId);
+		List<String> allNextNodes = calculateAllNextNodes(nodeId);
+
 		Message message = null;
 
 		// Check if updateStates is not empty
@@ -452,10 +502,10 @@ public class GraphRunnerContext {
 
 		if (message != null) {
 			return new StreamingOutput<>(message, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-					cloneState(this.overallState.data()), tokenUsage, outputType);
+					cloneState(this.overallState.data()), tokenUsage, nextNode, allNextNodes, outputType);
 		} else {
 			return new StreamingOutput<>(nodeId, (String) config.metadata("_AGENT_").orElse(""),
-					cloneState(this.overallState.data()), tokenUsage, outputType);
+					cloneState(this.overallState.data()), tokenUsage, nextNode, allNextNodes, outputType);
 		}
 	}
 

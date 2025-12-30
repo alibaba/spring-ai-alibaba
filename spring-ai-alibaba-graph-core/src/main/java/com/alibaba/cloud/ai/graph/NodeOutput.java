@@ -38,10 +38,10 @@ public class NodeOutput {
 	}
 
 	/**
-	 * Build NodeOutput with execution context for next node navigation
+	 * Build NodeOutput with calculated next nodes information
 	 */
-	public static NodeOutput of(String node, String agentName, OverAllState state, Usage tokenUsage, CompiledGraph compiledGraph) {
-		return new NodeOutput(node, agentName, tokenUsage, state, compiledGraph);
+	public static NodeOutput of(String node, String agentName, OverAllState state, Usage tokenUsage, String nextNode, List<String> allNextNodes) {
+		return new NodeOutput(node, agentName, tokenUsage, state, nextNode, allNextNodes);
 	}
 
 	/**
@@ -58,9 +58,14 @@ public class NodeOutput {
 	protected final OverAllState state;
 
 	/**
-	 * The compiled graph context for node navigation.
+	 * The next execution node.
 	 */
-	protected final CompiledGraph compiledGraph;
+	protected final String nextNode;
+
+	/**
+	 * All possible next execution nodes.
+	 */
+	protected final List<String> allNextNodes;
 
 	protected boolean subGraph = false;
 
@@ -116,10 +121,7 @@ public class NodeOutput {
 	 * @return the next node identifier, or null if there's no next node
 	 */
 	public String getNextNode() {
-		if (compiledGraph == null) {
-			return null;
-		}
-		return compiledGraph.getNextNode(this.node);
+		return this.nextNode;
 	}
 
 	/**
@@ -127,17 +129,18 @@ public class NodeOutput {
 	 * @return list of all next node identifiers, empty list if there are no next nodes
 	 */
 	public List<String> getAllNextNodes() {
-		if (compiledGraph == null) {
+		if (this.allNextNodes == null) {
 			return List.of();
 		}
-		return compiledGraph.getAllNextNodes(this.node);
+		return this.allNextNodes;
 	}
 
 	protected NodeOutput(String node, String agentName, OverAllState state) {
 		this.node = node;
 		this.agent = agentName;
 		this.state = state;
-		this.compiledGraph = null;
+		this.nextNode = null;
+		this.allNextNodes = null;
 	}
 
 	protected NodeOutput(String node, String agentName, Usage tokenUsage, OverAllState state) {
@@ -145,27 +148,30 @@ public class NodeOutput {
 		this.agent = agentName;
 		this.state = state;
 		this.tokenUsage = tokenUsage;
-		this.compiledGraph = null;
+		this.nextNode = null;
+		this.allNextNodes = null;
 	}
 
-	protected NodeOutput(String node, String agentName, Usage tokenUsage, OverAllState state, CompiledGraph compiledGraph) {
+	protected NodeOutput(String node, String agentName, Usage tokenUsage, OverAllState state, String nextNode, List<String> allNextNodes) {
 		this.node = node;
 		this.agent = agentName;
 		this.state = state;
 		this.tokenUsage = tokenUsage;
-		this.compiledGraph = compiledGraph;
+		this.nextNode = nextNode;
+		this.allNextNodes = allNextNodes;
 	}
 
 	protected NodeOutput(String node, OverAllState state) {
 		this.node = node;
 		this.state = state;
-		this.compiledGraph = null;
+		this.nextNode = null;
+		this.allNextNodes = null;
 	}
 
 	@Override
 	public String toString() {
-		return format("NodeOutput{node=%s, agent=%s, tokenUsage=%s, state=%s, subGraph=%s}",
-				node(), agent(), tokenUsage(), state(), isSubGraph());
+		return format("NodeOutput{node=%s, agent=%s, tokenUsage=%s, state=%s, nextNode=%s, allNextNodes=%s, subGraph=%s}",
+				node(), agent(), tokenUsage(), state(), nextNode, allNextNodes, isSubGraph());
 	}
 
 }

@@ -19,9 +19,11 @@ import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -58,41 +60,76 @@ class NodeOutputNextNodeTest {
         compiledGraph = stateGraph.compile();
     }
 
+    // Helper method to create NodeOutput with calculated next nodes
+    private NodeOutput createNodeOutputWithNextNodes(String nodeId) throws Exception {
+        String nextNode = getNextNode(nodeId);
+        List<String> allNextNodes = getAllNextNodes(nodeId);
+
+        return NodeOutput.of(nodeId, "agent" + nodeId, overAllState, null, nextNode, allNextNodes);
+    }
+
+    // Helper methods to calculate next nodes (simplified versions of GraphRunnerContext logic)
+    private String getNextNode(String nodeId) {
+        EdgeValue edgeValue = compiledGraph.getEdge(nodeId);
+        if (edgeValue == null) {
+            return null;
+        }
+        if (edgeValue.id() != null) {
+            return edgeValue.id();
+        } else if (edgeValue.value() != null) {
+            return edgeValue.value().mappings().values().stream().findFirst().orElse(null);
+        }
+        return null;
+    }
+
+    private List<String> getAllNextNodes(String nodeId) {
+        EdgeValue edgeValue = compiledGraph.getEdge(nodeId);
+        if (edgeValue == null) {
+            return List.of();
+        }
+        if (edgeValue.id() != null) {
+            return List.of(edgeValue.id());
+        } else if (edgeValue.value() != null) {
+            return new ArrayList<>(edgeValue.value().mappings().values());
+        }
+        return List.of();
+    }
+
     @Test
-    void testGetNextNode_FromNode1() {
-        NodeOutput nodeOutput = NodeOutput.of("node1", "agent1", overAllState, null, compiledGraph);
+    void testGetNextNode_FromNode1() throws Exception {
+        NodeOutput nodeOutput = createNodeOutputWithNextNodes("node1");
 
         String nextNode = nodeOutput.getNextNode();
         assertEquals("node2", nextNode, "Expected next node from node1 to be node2");
     }
 
     @Test
-    void testGetNextNode_FromNode2() {
-        NodeOutput nodeOutput = NodeOutput.of("node2", "agent2", overAllState, null, compiledGraph);
+    void testGetNextNode_FromNode2() throws Exception {
+        NodeOutput nodeOutput = createNodeOutputWithNextNodes("node2");
 
         String nextNode = nodeOutput.getNextNode();
         assertEquals(StateGraph.END, nextNode, "Expected next node from node2 to be END");
     }
 
     @Test
-    void testGetNextNode_fromNonExistentNode() {
-        NodeOutput nodeOutput = NodeOutput.of("nonexistent", "agent", overAllState, null, compiledGraph);
+    void testGetNextNode_fromNonExistentNode() throws Exception {
+        NodeOutput nodeOutput = NodeOutput.of("nonexistent", "agent", overAllState, null, null, List.of());
 
         String nextNode = nodeOutput.getNextNode();
         assertNull(nextNode, "Expected null for non-existent node");
     }
 
     @Test
-    void testGetNextNode_WithoutCompiledGraph() {
+    void testGetNextNode_WithoutNextNode() {
         NodeOutput nodeOutput = NodeOutput.of("node1", "agent1", overAllState, null);
 
         String nextNode = nodeOutput.getNextNode();
-        assertNull(nextNode, "Expected null when compiledGraph is not provided");
+        assertNull(nextNode, "Expected null when next node is not provided");
     }
 
     @Test
-    void testGetAllNextNodes_FromNode1() {
-        NodeOutput nodeOutput = NodeOutput.of("node1", "agent1", overAllState, null, compiledGraph);
+    void testGetAllNextNodes_FromNode1() throws Exception {
+        NodeOutput nodeOutput = createNodeOutputWithNextNodes("node1");
 
         List<String> nextNodes = nodeOutput.getAllNextNodes();
         assertEquals(1, nextNodes.size(), "Expected exactly one next node from node1");
@@ -100,8 +137,8 @@ class NodeOutputNextNodeTest {
     }
 
     @Test
-    void testGetAllNextNodes_FromNode2() {
-        NodeOutput nodeOutput = NodeOutput.of("node2", "agent2", overAllState, null, compiledGraph);
+    void testGetAllNextNodes_FromNode2() throws Exception {
+        NodeOutput nodeOutput = createNodeOutputWithNextNodes("node2");
 
         List<String> nextNodes = nodeOutput.getAllNextNodes();
         assertEquals(1, nextNodes.size(), "Expected exactly one next node from node2");
@@ -109,16 +146,16 @@ class NodeOutputNextNodeTest {
     }
 
     @Test
-    void testGetAllNextNodes_WithoutCompiledGraph() {
+    void testGetAllNextNodes_WithoutNextNodes() {
         NodeOutput nodeOutput = NodeOutput.of("node1", "agent1", overAllState, null);
 
         List<String> nextNodes = nodeOutput.getAllNextNodes();
-        assertTrue(nextNodes.isEmpty(), "Expected empty list when compiledGraph is not provided");
+        assertTrue(nextNodes.isEmpty(), "Expected empty list when next nodes are not provided");
     }
 
     @Test
     void testGetAllNextNodes_fromNonExistentNode() {
-        NodeOutput nodeOutput = NodeOutput.of("nonexistent", "agent", overAllState, null, compiledGraph);
+        NodeOutput nodeOutput = NodeOutput.of("nonexistent", "agent", overAllState, null, null, List.of());
 
         List<String> nextNodes = nodeOutput.getAllNextNodes();
         assertTrue(nextNodes.isEmpty(), "Expected empty list for non-existent node");
@@ -147,7 +184,13 @@ class NodeOutputNextNodeTest {
         conditionalGraph.addEdge("node3", StateGraph.END);
 
         CompiledGraph conditionalCompiledGraph = conditionalGraph.compile();
-        NodeOutput nodeOutput = NodeOutput.of("node1", "agent1", overAllState, null, conditionalCompiledGraph);
+
+        // Create NodeOutput with calculated next nodes for conditional graph
+        EdgeValue edgeValue = conditionalCompiledGraph.getEdge("node1");
+        String nextNodeFromGraph = edgeValue.value().mappings().values().stream().findFirst().orElse(null);
+        List<String> allNextNodesFromGraph = new ArrayList<>(edgeValue.value().mappings().values());
+
+        NodeOutput nodeOutput = NodeOutput.of("node1", "agent1", overAllState, null, nextNodeFromGraph, allNextNodesFromGraph);
 
         // Test getNextNode for conditional edge (should return first available target)
         String nextNode = nodeOutput.getNextNode();
@@ -164,7 +207,7 @@ class NodeOutputNextNodeTest {
     @Test
     void testExistingFunctionalityUnchanged() {
         // Ensure existing NodeOutput functionality still works
-        NodeOutput nodeOutput = NodeOutput.of("node1", "agent1", overAllState, null, compiledGraph);
+        NodeOutput nodeOutput = NodeOutput.of("node1", "agent1", overAllState, null);
 
         assertEquals("node1", nodeOutput.node());
         assertEquals("agent1", nodeOutput.agent());
