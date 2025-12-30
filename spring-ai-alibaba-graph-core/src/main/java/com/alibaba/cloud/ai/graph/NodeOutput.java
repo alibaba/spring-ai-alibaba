@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import org.springframework.ai.chat.metadata.Usage;
 
+import java.util.List;
 import java.util.Objects;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -37,6 +38,13 @@ public class NodeOutput {
 	}
 
 	/**
+	 * Build NodeOutput with execution context for next node navigation
+	 */
+	public static NodeOutput of(String node, String agentName, OverAllState state, Usage tokenUsage, CompiledGraph compiledGraph) {
+		return new NodeOutput(node, agentName, tokenUsage, state, compiledGraph);
+	}
+
+	/**
 	 * The identifier of the node.
 	 */
 	protected final String node;
@@ -48,6 +56,11 @@ public class NodeOutput {
 	 * The state associated with the node.
 	 */
 	protected final OverAllState state;
+
+	/**
+	 * The compiled graph context for node navigation.
+	 */
+	protected final CompiledGraph compiledGraph;
 
 	protected boolean subGraph = false;
 
@@ -98,10 +111,33 @@ public class NodeOutput {
 		return state;
 	}
 
+	/**
+	 * Get the next execution node based on the graph structure.
+	 * @return the next node identifier, or null if there's no next node
+	 */
+	public String getNextNode() {
+		if (compiledGraph == null) {
+			return null;
+		}
+		return compiledGraph.getNextNode(this.node);
+	}
+
+	/**
+	 * Get all possible next execution nodes.
+	 * @return list of all next node identifiers, empty list if there are no next nodes
+	 */
+	public List<String> getAllNextNodes() {
+		if (compiledGraph == null) {
+			return List.of();
+		}
+		return compiledGraph.getAllNextNodes(this.node);
+	}
+
 	protected NodeOutput(String node, String agentName, OverAllState state) {
 		this.node = node;
 		this.agent = agentName;
 		this.state = state;
+		this.compiledGraph = null;
 	}
 
 	protected NodeOutput(String node, String agentName, Usage tokenUsage, OverAllState state) {
@@ -109,11 +145,21 @@ public class NodeOutput {
 		this.agent = agentName;
 		this.state = state;
 		this.tokenUsage = tokenUsage;
+		this.compiledGraph = null;
+	}
+
+	protected NodeOutput(String node, String agentName, Usage tokenUsage, OverAllState state, CompiledGraph compiledGraph) {
+		this.node = node;
+		this.agent = agentName;
+		this.state = state;
+		this.tokenUsage = tokenUsage;
+		this.compiledGraph = compiledGraph;
 	}
 
 	protected NodeOutput(String node, OverAllState state) {
 		this.node = node;
 		this.state = state;
+		this.compiledGraph = null;
 	}
 
 	@Override

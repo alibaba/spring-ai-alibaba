@@ -31,9 +31,11 @@ import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -438,6 +440,50 @@ public class CompiledGraph {
 	 */
 	public int getMaxIterations() {
 		return maxIterations;
+	}
+
+	/**
+	 * Get the next execution node for the given current node.
+	 * @param currentNodeId the current node identifier
+	 * @return the next node identifier, or null if there's no next node
+	 */
+	public String getNextNode(String currentNodeId) {
+		EdgeValue edgeValue = edges.get(currentNodeId);
+		if (edgeValue == null) {
+			return null;
+		}
+
+		if (edgeValue.id() != null) {
+			// Direct edge
+			return edgeValue.id();
+		} else if (edgeValue.value() != null) {
+			// Conditional edge - return the first available target
+			return edgeValue.value().mappings().values().stream().findFirst().orElse(null);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get all possible next execution nodes for the given current node.
+	 * @param currentNodeId the current node identifier
+	 * @return list of all next node identifiers, empty list if there are no next nodes
+	 */
+	public List<String> getAllNextNodes(String currentNodeId) {
+		EdgeValue edgeValue = edges.get(currentNodeId);
+		if (edgeValue == null) {
+			return List.of();
+		}
+
+		if (edgeValue.id() != null) {
+			// Direct edge
+			return List.of(edgeValue.id());
+		} else if (edgeValue.value() != null) {
+			// Conditional edge
+			return new ArrayList<>(edgeValue.value().mappings().values());
+		}
+
+		return List.of();
 	}
 
 	/**
