@@ -188,11 +188,10 @@ public class ToolSearchExample {
 			.enableLogging(true)
 			.build();
 
-		// 测试用不同的描述方式
 		String[] testQueries = {
-			"外面温度怎么样？",           // 模糊描述天气
-			"给我同事发个消息",           // 模糊描述邮件
-			"帮我算一下数学题"            // 模糊描述计算
+			"外面温度怎么样？",
+			"给我同事发个消息",
+			"帮我算一下数学题"
 		};
 
 		for (String query : testQueries) {
@@ -335,12 +334,6 @@ public class ToolSearchExample {
 
 	public record TranslateRequest(String text, String fromLang, String toLang) {}
 
-	/**
-	 * Main 方法：运行所有示例
-	 * 
-	 * 使用前请设置环境变量：
-	 * export AI_DASHSCOPE_API_KEY=your_api_key
-	 */
 	public static void main(String[] args) {
 		// 检查 API Key
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");

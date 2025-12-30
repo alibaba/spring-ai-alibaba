@@ -32,10 +32,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
- * 工具搜索工具（Tool Search Tool）
- * 允许 LLM 动态搜索可用的工具
- *
- * @author ikeike443
+ * 工具搜索工具
  */
 public class ToolSearchTool implements BiFunction<ToolSearchTool.Request, ToolContext, ToolSearchTool.Response> {
 
@@ -157,4 +154,3 @@ public class ToolSearchTool implements BiFunction<ToolSearchTool.Request, ToolCo
 }
 
 }
-

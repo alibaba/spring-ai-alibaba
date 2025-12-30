@@ -35,28 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 动态工具搜索拦截器
- * 实现按需加载工具的能力，显著降低Token成本
- *
- * 工作原理：
- * 1. 第一次调用时只注入ToolSearchTool，不注入defaultTools
- * 2. 监听LLM响应，检测是否调用了tool_search
- * 3. 如果调用了，提取搜索关键词，执行搜索
- * 4. 将搜索到的工具动态添加到下一轮请求中
- * 5. 递归调用LLM，直到没有tool_search调用或达到最大深度
- *
- * 示例用法：
- * <pre>
- * ToolSearcher searcher = new LuceneToolSearcher();
- * searcher.indexTools(allTools);
- *
- * ToolSearchModelInterceptor interceptor = ToolSearchModelInterceptor.builder()
- *     .toolSearcher(searcher)
- *     .maxResults(5)
- *     .maxRecursionDepth(3)
- *     .build();
- * </pre>
- *
- * @author ikeike443
  */
 public class ToolSearchModelInterceptor extends ModelInterceptor {
 
@@ -80,7 +58,6 @@ public class ToolSearchModelInterceptor extends ModelInterceptor {
 
 	/**
 	 * 缓存找到的工具，供 ToolCallbackResolver 使用
-	 * Key: tool name, Value: ToolCallback
 	 */
 	private final Map<String, ToolCallback> cachedTools = new ConcurrentHashMap<>();
 
@@ -121,45 +98,27 @@ public class ToolSearchModelInterceptor extends ModelInterceptor {
 
 	@Override
 	public List<ToolCallback> getTools() {
-		// 拦截器提供ToolSearchTool
-		return Collections.singletonList(toolSearchTool);
+		return Collections.emptyList();
 	}
 
-	/**
-	 * 获取 ToolCallbackResolver，用于动态解析工具
-	 * 这个 resolver 应该被设置到 AgentToolNode 中
-	 *
-	 * @return ToolCallbackResolver 实例
-	 */
 	public ToolCallbackResolver getToolCallbackResolver() {
 		return toolCallbackResolver;
 	}
 
 	@Override
 	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
-		// 获取当前递归深度
 		int currentDepth = getRecursionDepth(request);
 
 		log.debug("Processing request at recursion depth: {}", currentDepth);
 
-		// 检查是否超过最大递归深度
 		if (currentDepth >= maxRecursionDepth) {
 			log.warn("Maximum recursion depth ({}) reached, stopping tool search", maxRecursionDepth);
 			return handler.call(request);
 		}
 
-		// 第一次调用：只注入ToolSearchTool，不注入其他工具
-		if (currentDepth == 0) {
-			log.debug("First call, injecting only ToolSearchTool");
-			request = ModelRequest.builder(request)
-				.dynamicToolCallbacks(Collections.singletonList(toolSearchTool))
-				.build();
-		}
 
-		// 调用LLM
 		ModelResponse response = handler.call(request);
 
-		// 检查响应是否包含工具调用
 		Object messageObj = response.getMessage();
 		if (!(messageObj instanceof AssistantMessage)) {
 			log.debug("Response is not an AssistantMessage, returning directly");
@@ -168,73 +127,83 @@ public class ToolSearchModelInterceptor extends ModelInterceptor {
 
 		AssistantMessage message = (AssistantMessage) messageObj;
 
-		// 检查是否调用了tool_search
 		List<AssistantMessage.ToolCall> toolCalls = message.getToolCalls();
 		if (toolCalls == null || toolCalls.isEmpty()) {
 			log.debug("No tool calls in response, returning directly");
 			return response;
 		}
 
-		// 查找tool_search调用
-		AssistantMessage.ToolCall toolSearchCall = null;
+		// 收集所有的 tool_search 调用
+		List<AssistantMessage.ToolCall> toolSearchCalls = new ArrayList<>();
 		for (AssistantMessage.ToolCall toolCall : toolCalls) {
 			if (TOOL_SEARCH_NAME.equals(toolCall.name())) {
-				toolSearchCall = toolCall;
-				break;
+				toolSearchCalls.add(toolCall);
 			}
 		}
 
-		if (toolSearchCall == null) {
+		if (toolSearchCalls.isEmpty()) {
 			log.debug("No tool_search call found, returning directly");
 			return response;
 		}
 
-		// 提取搜索关键词
-		String query = extractSearchQuery(toolSearchCall);
-		if (query == null || query.isEmpty()) {
-			log.warn("Failed to extract search query from tool_search call");
+		log.info("Detected {} tool_search calls", toolSearchCalls.size());
+
+		// 处理所有的 tool_search 调用，收集所有找到的工具
+		List<ToolCallback> allFoundTools = new ArrayList<>();
+
+		for (AssistantMessage.ToolCall toolSearchCall : toolSearchCalls) {
+			String query = extractSearchQuery(toolSearchCall);
+			if (query == null || query.isEmpty()) {
+				log.warn("Failed to extract search query from tool_search call");
+				continue;
+			}
+
+			log.info("Processing tool_search call with query: {}", query);
+
+			List<ToolCallback> foundTools = toolSearcher.search(query, maxResults);
+			if (foundTools.isEmpty()) {
+				log.warn("No tools found for query: {}", query);
+				continue;
+			}
+
+			log.info("Found {} tools for query: {}", foundTools.size(), query);
+
+			// 缓存找到的工具，供 ToolCallbackResolver 使用
+			for (ToolCallback tool : foundTools) {
+				String toolName = tool.getToolDefinition().name();
+				cachedTools.put(toolName, tool);
+				log.debug("Cached tool: {}", toolName);
+
+				// 避免重复添加
+				if (!allFoundTools.contains(tool)) {
+					allFoundTools.add(tool);
+				}
+			}
+		}
+
+		if (allFoundTools.isEmpty()) {
+			log.warn("No tools found from any tool_search calls");
 			return response;
 		}
 
-		log.info("Detected tool_search call with query: {}", query);
-
-		// 搜索工具
-		List<ToolCallback> foundTools = toolSearcher.search(query, maxResults);
-		if (foundTools.isEmpty()) {
-			log.warn("No tools found for query: {}", query);
-			return response;
-		}
-
-		log.info("Found {} tools for query: {}", foundTools.size(), query);
-
-		// 获取已注入的工具列表
 		List<ToolCallback> injectedTools = getInjectedTools(request);
 
-		// 合并新找到的工具
 		List<ToolCallback> mergedTools = new ArrayList<>(injectedTools);
-		mergedTools.add(toolSearchTool); // 保留ToolSearchTool
-		for (ToolCallback tool : foundTools) {
+		for (ToolCallback tool : allFoundTools) {
 			if (!mergedTools.contains(tool)) {
 				mergedTools.add(tool);
 			}
 		}
 
 		log.debug("Total tools after merge: {}", mergedTools.size());
-
-		// 创建新的请求，增加递归深度
-		// 重要：不传递 options，避免与 dynamicToolCallbacks 中的工具重复
-		// AgentLlmNode 会使用 dynamicToolCallbacks 创建新的 options
 		ModelRequest newRequest = ModelRequest.builder(request)
-			.options(null)  // 清空 options，避免重复
+			.options(null)
 			.dynamicToolCallbacks(mergedTools)
 			.context(request.getContext())
 			.build();
 
-		// 更新上下文
 		newRequest.getContext().put(RECURSION_DEPTH_KEY, currentDepth + 1);
 		newRequest.getContext().put(INJECTED_TOOLS_KEY, mergedTools);
-
-		// 递归调用
 		log.debug("Recursively calling handler with {} tools at depth {}", mergedTools.size(), currentDepth + 1);
 		return handler.call(newRequest);
 	}
@@ -324,4 +293,3 @@ public class ToolSearchModelInterceptor extends ModelInterceptor {
 }
 
 }
-
