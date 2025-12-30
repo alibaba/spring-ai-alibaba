@@ -17,12 +17,17 @@
 package com.alibaba.cloud.ai.examples.documentation.framework.advanced.a2a;
 
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
 
 import org.springframework.ai.chat.model.ChatModel;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import jakarta.annotation.Nonnull;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * 定义并暴露本地 ReactAgent
@@ -31,7 +36,7 @@ import org.springframework.context.annotation.Configuration;
 public class A2AAgentConfig {
 
 	@Bean(name = "dataAnalysisAgent")
-	public ReactAgent dataAnalysisAgent(@Qualifier("dashscopeChatModel") ChatModel chatModel) {
+	public ReactAgent dataAnalysisAgent(@Qualifier("dashScopeChatModel") ChatModel chatModel) {
 		return ReactAgent.builder()
 				.name("data_analysis_agent")
 				.model(chatModel)
@@ -40,5 +45,24 @@ public class A2AAgentConfig {
 						"你能够理解用户的数据分析需求，提供准确的统计计算结果和专业的分析建议。")
 				.outputKey("messages")
 				.build();
+	}
+
+	@Bean
+	public AgentLoader agentLoader(@Qualifier("dataAnalysisAgent") ReactAgent dataAnalysisAgent) {
+		return new AgentLoader() {
+			@Override
+			@Nonnull
+			public List<String> listAgents() {
+				return List.of(dataAnalysisAgent.name());
+			}
+
+			@Override
+			public com.alibaba.cloud.ai.graph.agent.Agent loadAgent(String name) {
+				if (dataAnalysisAgent.name().equals(name)) {
+					return dataAnalysisAgent;
+				}
+				throw new NoSuchElementException("Agent not found: " + name);
+			}
+		};
 	}
 }

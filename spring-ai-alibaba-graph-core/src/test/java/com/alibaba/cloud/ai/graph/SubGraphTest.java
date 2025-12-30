@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.LogManager;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -58,7 +60,7 @@ public class SubGraphTest {
 
 	/**
 	 * Get an initialized OverAllState instance with predefined key strategies.
-	 * 
+	 *
 	 * @return Initialized OverAllState object.
 	 */
 	private static KeyStrategyFactory createKeyStrategyFactory() {
@@ -76,7 +78,7 @@ public class SubGraphTest {
 	/**
 	 * Create an AsyncNodeAction that returns a map with the given ID as value for
 	 * "messages".
-	 * 
+	 *
 	 * @param id The identifier for the node action.
 	 * @return An AsyncNodeAction producing a map with the message ID.
 	 */
@@ -86,7 +88,7 @@ public class SubGraphTest {
 
 	/**
 	 * Execute the workflow and extract the names of processed nodes.
-	 * 
+	 *
 	 * @param workflow Compiled graph to execute.
 	 * @param input    Initial input data for execution.
 	 * @return A list containing the names of executed nodes in order.
@@ -152,12 +154,12 @@ public class SubGraphTest {
 				.addEdge("B2", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
-				.addNode("B", workflowChild)
-				.addNode("C", _makeNode("C"))
-				.addConditionalEdges(START, edge_async((state, config) -> "a"), Map.of("a", "A", "b", "B"))
-				.addEdge("A", "B")
-				.addEdge("B", "C")
-				.addEdge("C", END);
+			.addNode("B", workflowChild)
+			.addNode("C", _makeNode("C"))
+			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
+			.addEdge("A", "B")
+			.addEdge("B", "C")
+			.addEdge("C", END);
 
 		var processed = ProcessedNodesEdgesAndConfig.process(workflowParent, CompileConfig.builder().build());
 		processed.nodes().elements.forEach(System.out::println);
@@ -182,20 +184,20 @@ public class SubGraphTest {
 	public void testMergeSubgraph03() throws Exception {
 
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
-				.addNode("B2", _makeNode("B2"))
-				.addNode("C", _makeNode("subgraph(C)"))
-				.addEdge(START, "B1")
-				.addEdge("B1", "B2")
-				.addConditionalEdges("B2", edge_async((state, config) -> "c"), Map.of(END, END, "c", "C"))
-				.addEdge("C", END);
+			.addNode("B2", _makeNode("B2"))
+			.addNode("C", _makeNode("subgraph(C)"))
+			.addEdge(START, "B1")
+			.addEdge("B1", "B2")
+			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
+			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
-				.addNode("B", workflowChild)
-				.addNode("C", _makeNode("C"))
-				.addConditionalEdges(START, edge_async((state, config) -> "a"), Map.of("a", "A", "b", "B"))
-				.addEdge("A", "B")
-				.addEdge("B", "C")
-				.addEdge("C", END);
+			.addNode("B", workflowChild)
+			.addNode("C", _makeNode("C"))
+			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
+			.addEdge("A", "B")
+			.addEdge("B", "C")
+			.addEdge("C", END);
 
 		var processed = ProcessedNodesEdgesAndConfig.process(workflowParent, CompileConfig.builder().build());
 		processed.nodes().elements.forEach(System.out::println);
@@ -220,20 +222,20 @@ public class SubGraphTest {
 	@Test
 	public void testMergeSubgraph03WithInterruption() throws Exception {
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
-				.addNode("B2", _makeNode("B2"))
-				.addNode("C", _makeNode("subgraph(C)"))
-				.addEdge(START, "B1")
-				.addEdge("B1", "B2")
-				.addConditionalEdges("B2", edge_async((state, config) -> "c"), Map.of(END, END, "c", "C"))
-				.addEdge("C", END);
+			.addNode("B2", _makeNode("B2"))
+			.addNode("C", _makeNode("subgraph(C)"))
+			.addEdge(START, "B1")
+			.addEdge("B1", "B2")
+			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
+			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
-				.addNode("B", workflowChild)
-				.addNode("C", _makeNode("C"))
-				.addConditionalEdges(START, edge_async((state, config) -> "a"), Map.of("a", "A", "b", "B"))
-				.addEdge("A", "B")
-				.addEdge("B", "C")
-				.addEdge("C", END);
+			.addNode("B", workflowChild)
+			.addNode("C", _makeNode("C"))
+			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
+			.addEdge("A", "B")
+			.addEdge("B", "C")
+			.addEdge("C", END);
 
 		var B_B1 = SubGraphNode.formatId("B", "B1");
 		var B_B2 = SubGraphNode.formatId("B", "B2");
@@ -299,20 +301,20 @@ public class SubGraphTest {
 	@Test
 	public void testMergeSubgraph04() throws Exception {
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
-				.addNode("B2", _makeNode("B2"))
-				.addNode("C", _makeNode("subgraph(C)"))
-				.addEdge(START, "B1")
-				.addEdge("B1", "B2")
-				.addConditionalEdges("B2", edge_async((state, config) -> "c"), Map.of(END, END, "c", "C"))
-				.addEdge("C", END);
+			.addNode("B2", _makeNode("B2"))
+			.addNode("C", _makeNode("subgraph(C)"))
+			.addEdge(START, "B1")
+			.addEdge("B1", "B2")
+			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
+			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
-				.addNode("B", workflowChild)
-				.addNode("C", _makeNode("C"))
-				.addConditionalEdges(START, edge_async((state, config) -> "a"), Map.of("a", "A", "b", "B"))
-				.addEdge("A", "B")
-				.addConditionalEdges("B", edge_async((state, config) -> "c"), Map.of("c", "C", "a", "A"))
-				.addEdge("C", END);
+			.addNode("B", workflowChild)
+			.addNode("C", _makeNode("C"))
+			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
+			.addEdge("A", "B")
+			.addConditionalEdges("B", edge_async(state -> "c"), Map.of("c", "C", "a", "A"))
+			.addEdge("C", END);
 
 		var processed = ProcessedNodesEdgesAndConfig.process(workflowParent, CompileConfig.builder().build());
 		processed.nodes().elements.forEach(System.out::println);
@@ -337,22 +339,22 @@ public class SubGraphTest {
 	@Test
 	public void testMergeSubgraph04WithInterruption() throws Exception {
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
-				.addNode("B2", _makeNode("B2"))
-				.addNode("C", _makeNode("subgraph(C)"))
-				.addEdge(START, "B1")
-				.addEdge("B1", "B2")
-				.addConditionalEdges("B2", edge_async((state, config) -> "c"), Map.of(END, END, "c", "C"))
-				.addEdge("C", END);
+			.addNode("B2", _makeNode("B2"))
+			.addNode("C", _makeNode("subgraph(C)"))
+			.addEdge(START, "B1")
+			.addEdge("B1", "B2")
+			.addConditionalEdges("B2", edge_async(state -> "c"), Map.of(END, END, "c", "C"))
+			.addEdge("C", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
-				.addNode("B", workflowChild)
-				.addNode("C", _makeNode("C"))
-				.addNode("C1", _makeNode("C1"))
-				.addConditionalEdges(START, edge_async((state, config) -> "a"), Map.of("a", "A", "b", "B"))
-				.addEdge("A", "B")
-				.addConditionalEdges("B", edge_async((state, config) -> "c"), Map.of("c", "C1", "a", "A"))
-				.addEdge("C1", "C")
-				.addEdge("C", END);
+			.addNode("B", workflowChild)
+			.addNode("C", _makeNode("C"))
+			.addNode("C1", _makeNode("C1"))
+			.addConditionalEdges(START, edge_async(state -> "a"), Map.of("a", "A", "b", "B"))
+			.addEdge("A", "B")
+			.addConditionalEdges("B", edge_async(state -> "c"), Map.of("c", "C1", "a", "A"))
+			.addEdge("C1", "C")
+			.addEdge("C", END);
 
 		var B_B1 = SubGraphNode.formatId("B", "B1");
 		var B_B2 = SubGraphNode.formatId("B", "B2");
@@ -640,5 +642,47 @@ public class SubGraphTest {
 				.map(NodeOutput::state)
 				.block();
 	}
+
+    @Test
+    public void testMultiSubgraphKeyStrategyMerge() throws Exception {
+        // Subgraph A: provides the strategy for aKey
+        KeyStrategyFactory subAKeyFactory = () -> Map.of("aKey", new ReplaceStrategy());
+
+        // Subgraph B: provides the strategy for bKey
+        KeyStrategyFactory subBKeyFactory = () -> Map.of("bKey", new ReplaceStrategy());
+
+        KeyStrategyFactory mainKeyFactory = () -> {
+            Map<String, KeyStrategy> map = new HashMap<>();
+            map.put("mainKey", new ReplaceStrategy());
+            return map;
+        };
+
+        StateGraph subGraphA = new StateGraph("subA", subAKeyFactory)
+                .addNode("a1", node_async(s -> Map.of("aKey", "A1")))
+                .addEdge(StateGraph.START, "a1")
+                .addEdge("a1", StateGraph.END);
+
+        StateGraph subGraphB = new StateGraph("subB", subBKeyFactory)
+                .addNode("b1", node_async(s -> Map.of("bKey", "B1")))
+                .addEdge(StateGraph.START, "b1")
+                .addEdge("b1", StateGraph.END);
+
+        StateGraph mainGraph = new StateGraph("main", mainKeyFactory)
+                .addNode("subA", subGraphA)
+                .addNode("subB", subGraphB)
+                .addEdge(StateGraph.START, "subA")
+                .addEdge("subA", "subB")
+                .addEdge("subB", StateGraph.END);
+
+        CompiledGraph compiled = mainGraph.compile();
+
+        Set<String> mergedKeys = compiled.getKeyStrategyMap().keySet();
+
+        assertEquals(3, mergedKeys.size());
+
+        assertTrue(mergedKeys.contains("mainKey"));
+        assertTrue(mergedKeys.contains("aKey"));
+        assertTrue(mergedKeys.contains("bKey"));
+    }
 
 }

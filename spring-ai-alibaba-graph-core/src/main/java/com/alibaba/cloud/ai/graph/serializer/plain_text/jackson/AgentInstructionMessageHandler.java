@@ -21,6 +21,8 @@ import java.io.IOException;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.type.WritableTypeId;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -55,15 +57,20 @@ public interface AgentInstructionMessageHandler {
 		@Override
 		public void serialize(AgentInstructionMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
 			gen.writeStartObject();
-			gen.writeStringField("@class", msg.getClass().getName());
-			gen.writeStringField(Field.TEXT.name, msg.getText());
-			serializeMetadata(gen, msg.getMetadata());
+			serializeFields(msg, gen, provider);
 			gen.writeEndObject();
 		}
 
 		@Override
-		public void serializeWithType(AgentInstructionMessage value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
-			serialize(value, gen, serializers);
+		public void serializeWithType(AgentInstructionMessage msg, JsonGenerator gen, SerializerProvider provider, TypeSerializer typeSer) throws IOException {
+			WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, typeSer.typeId(msg, JsonToken.START_OBJECT));
+			serializeFields(msg, gen, provider);
+			typeSer.writeTypeSuffix(gen, typeIdDef);
+		}
+
+		private void serializeFields(AgentInstructionMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
+			gen.writeStringField(Field.TEXT.name, msg.getText());
+			serializeMetadata(gen, msg.getMetadata());
 		}
 	}
 

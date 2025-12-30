@@ -55,7 +55,7 @@ public class StateGraphTest {
 
 	/**
 	 * Sorts a map by its keys and returns a list of entries.
-	 * 
+	 *
 	 * @param map The map to be sorted.
 	 * @return A list of map entries sorted by key.
 	 */
@@ -67,7 +67,7 @@ public class StateGraphTest {
 	 * Filters out internal keys (starting with underscore) from a map.
 	 * This is useful for test assertions to ignore automatically-injected keys like
 	 * _graph_execution_id_.
-	 * 
+	 *
 	 * @param map The map to filter.
 	 * @return A new map without internal keys.
 	 */
@@ -162,7 +162,7 @@ public class StateGraphTest {
 		log.info("{}", exception.getMessage());
 
 		exception = assertThrows(GraphStateException.class,
-				() -> workflow.addConditionalEdges("agent_1", edge_async((state, config) -> "agent_3"), Map.of()));
+				() -> workflow.addConditionalEdges("agent_1", edge_async(state -> "agent_3"), Map.of()));
 		log.info("{}", exception.getMessage());
 
 	}
@@ -654,25 +654,24 @@ public class StateGraphTest {
 				.addEdge("C", END);
 
 		exception = assertThrows(GraphStateException.class,
-				() -> noConditionalEdge.addConditionalEdges("A", edge_async((state, config) -> "next"),
-						Map.of("next", "A2")));
+				() -> noConditionalEdge.addConditionalEdges("A", edge_async(state -> "next"), Map.of("next", "A2")));
 		assertEquals("conditional edge from 'A' already exist!", exception.getMessage());
 
 		var noConditionalEdgeOnBranch = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
-				.addNode("A1", makeNode("A1"))
-				.addNode("A2", makeNode("A2"))
-				.addNode("A3", makeNode("A3"))
-				.addNode("B", makeNode("B"))
-				.addNode("C", makeNode("C"))
-				.addEdge("A", "A1")
-				.addEdge("A", "A2")
-				.addEdge("A", "A3")
-				.addEdge("A1", "B")
-				.addEdge("A2", "B")
-				.addConditionalEdges("A3", edge_async((state, config) -> "next"), Map.of("next", "B"))
-				.addEdge("B", "C")
-				.addEdge(START, "A")
-				.addEdge("C", END);
+			.addNode("A1", makeNode("A1"))
+			.addNode("A2", makeNode("A2"))
+			.addNode("A3", makeNode("A3"))
+			.addNode("B", makeNode("B"))
+			.addNode("C", makeNode("C"))
+			.addEdge("A", "A1")
+			.addEdge("A", "A2")
+			.addEdge("A", "A3")
+			.addEdge("A1", "B")
+			.addEdge("A2", "B")
+			.addConditionalEdges("A3", edge_async(state -> "next"), Map.of("next", "B"))
+			.addEdge("B", "C")
+			.addEdge(START, "A")
+			.addEdge("C", END);
 
 		exception = assertThrows(GraphStateException.class, noConditionalEdgeOnBranch::compile);
 		assertEquals(
@@ -741,7 +740,7 @@ public class StateGraphTest {
 
 	/**
 	 * Used to provide test data for the testWithSubSerialize method
-	 * 
+	 *
 	 * @param name
 	 * @param age
 	 */
@@ -1199,30 +1198,183 @@ public class StateGraphTest {
 		assertThrows(RuntimeException.class, () -> flux.blockLast());
 	}
 
+	/**
+	 * Tests the addConditionalEdges method with AsyncEdgeActionWithConfig and a mapping of conditional routes.
+	 * This test verifies that conditional edges work properly with configuration-based routing.
+	 */
 	@Test
-	public void testEdgeWithRunnableConfig() throws Exception {
+	public void testAddConditionalEdgesWithConfig() throws Exception {
+		// Create a state graph with key strategies
+		StateGraph workflow = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			keyStrategyMap.put("prop1", new ReplaceStrategy());
+			return keyStrategyMap;
+		});
 
-		StateGraph workflow = new StateGraph(createKeyStrategyFactory())
-				.addConditionalEdges(START, AsyncEdgeAction.edge_async((state, runnableConfig) -> {
-					log.info("run with state: {} and config: {}", state, runnableConfig);
-					// 验证传入的配置是否与调用时传入的一致1
-					assertEquals("thread1", runnableConfig.threadId().orElse(null));
-					assertTrue(runnableConfig.metadata("prop1").isPresent());
-					assertEquals("value1", runnableConfig.metadata("prop1").get());
-					return "agent_1";
-				}), Map.of("agent_1", "agent_1"))
-				.addNode("agent_1", node_async(state -> Map.of("test", "test")))
-				.addEdge("agent_1", END);
+		// Add nodes to the workflow
+		workflow.addNode("start", node_async(state -> {
+			log.info("start node");
+			return Map.of("messages", "start");
+		}))
+		.addNode("conditional_node", node_async(state -> {
+			log.info("conditional_node");
+			return Map.of("messages", "processing");
+		}))
+		.addNode("route1", node_async(state -> {
+			log.info("route1");
+			return Map.of("messages", "route1_result", "prop1", "value1");
+		}))
+		.addNode("route2", node_async(state -> {
+			log.info("route2");
+			return Map.of("messages", "route2_result", "prop1", "value2");
+		}))
+		.addNode("end", node_async(state -> {
+			log.info("end");
+			return Map.of("messages", "end");
+		}));
+
+		// Add conditional edges using the AsyncEdgeActionWithConfig with explicit cast to resolve method ambiguity
+		workflow.addConditionalEdges("conditional_node",AsyncEdgeActionWithConfig.edge_async((state, config) -> {
+			// Check if there's a specific value in the state to determine the route
+			String prop1Value = state.value("prop1",String.class).get();
+			if (prop1Value.equals("value1")) {
+				return "route1";
+			} else {
+				return "route2";
+			}
+		})  , Map.of(
+			"route1", "route1",
+			"route2", "route2"
+		));
+
+		// Add regular edges to connect the workflow
+		workflow.addEdge(START, "start")
+			.addEdge("start", "conditional_node")
+			.addEdge("route1", "end")
+			.addEdge("route2", "end")
+			.addEdge("end", END);
+
+		// Compile the workflow
 		CompiledGraph app = workflow.compile();
-		Optional<OverAllState> result = app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"),
-				new RunnableConfig.Builder()
-						.addMetadata("prop1", "value1") // 使用addMetadata而不是addStateUpdate，因为RunnableConfig使用metadata存储键值对
-						.threadId("thread1")
-						.build());
 
-		// 验证执行成功
+		// Test the workflow with initial state that should route to route2
+		Optional<OverAllState> result = app.invoke(Map.of("prop1", "initial_value"),RunnableConfig.builder().threadId("test-thread-1").build());
 		assertTrue(result.isPresent());
+		log.info("Result: {}", result.get().data());
 
+		// Verify the result went through the correct route
+		List<String> messages = (List<String>) result.get().value("messages").get();
+		assertIterableEquals(List.of("start", "processing", "route2_result", "end"), messages);
+
+		// Test with state that should route to route1
+		Optional<OverAllState> result2 = app.invoke(Map.of("prop1", "value1"), RunnableConfig.builder().threadId("test-thread-2").build());
+		assertTrue(result2.isPresent());
+		log.info("Result2: {}", result2.get().data());
+
+		List<String> messages2 = (List<String>) result2.get().value("messages").get();
+		assertIterableEquals(List.of("start", "processing", "route1_result", "end"), messages2);
+	}
+
+	/**
+	 * Tests the addConditionalEdges method with configuration-based routing.
+	 * This test verifies that the conditional edge can access and use the RunnableConfig.
+	 */
+	@Test
+	public void testAddConditionalEdgesWithConfigAccess() throws Exception {
+		StateGraph workflow = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			return keyStrategyMap;
+		});
+
+		// Add nodes
+		workflow.addNode("start", node_async(state -> {
+			log.info("start node");
+			return Map.of("messages", "start");
+		}))
+		.addNode("conditional_node", node_async(state -> {
+			log.info("conditional_node");
+			return Map.of("messages", "processing");
+		}))
+		.addNode("config_route", node_async(state -> {
+			log.info("config_route");
+			return Map.of("messages", "config_route_result");
+		}))
+		.addNode("default_route", node_async(state -> {
+			log.info("default_route");
+			return Map.of("messages", "default_route_result");
+		}));
+
+		workflow.addConditionalEdges("conditional_node", AsyncEdgeActionWithConfig.edge_async( (state, config) -> {
+			// Check if a specific value is in the config metadata
+			Optional<Object> configValue = config.metadata("test_route");
+			if (configValue.isPresent() && "config_route".equals(configValue.get())) {
+				return "config_route";
+			} else {
+				return "default_route";
+			}
+		}), Map.of(
+			"config_route", "config_route",
+			"default_route", "default_route"
+		));
+
+		workflow.addEdge(START, "start")
+			.addEdge("start", "conditional_node")
+			.addEdge("config_route", END)
+			.addEdge("default_route", END);
+
+		CompiledGraph app = workflow.compile();
+
+		// Test with config that should route to config_route
+		RunnableConfig config = RunnableConfig.builder().threadId("config-thread").addMetadata("test_route", "config_route").build();
+		Optional<OverAllState> result = app.invoke(Map.of(), config);
+		assertTrue(result.isPresent());
+		log.info("Config result: {}", result.get().data());
+
+		List<String> messages = (List<String>) result.get().value("messages").get();
+		assertIterableEquals(List.of("start", "processing", "config_route_result"), messages);
+
+		// Test with default config that should route to default_route
+		RunnableConfig defaultConfig = RunnableConfig.builder().threadId("default-thread").build();
+		Optional<OverAllState> result2 = app.invoke(Map.of(), defaultConfig);
+		assertTrue(result2.isPresent());
+		log.info("Default config result: {}", result2.get().data());
+
+		List<String> messages2 = (List<String>) result2.get().value("messages").get();
+		assertIterableEquals(List.of("start", "processing", "default_route_result"), messages2);
+	}
+
+	/**
+	 * Tests error conditions for the addConditionalEdges method.
+	 */
+	@Test
+	public void testAddConditionalEdgesWithConfigErrors() throws GraphStateException {
+		StateGraph workflow = new StateGraph();
+
+		// Add a node to work with
+		workflow.addNode("node1", node_async(state -> Map.of()));
+
+		// Test that adding conditional edges to END node throws an exception
+		GraphStateException exception = assertThrows(GraphStateException.class, () -> {
+			workflow.addConditionalEdges(END, AsyncEdgeActionWithConfig.edge_async((state, config) -> "next"), Map.of("next", "node1"));
+		});
+
+		assertEquals("END is not a valid edge sourceId!", exception.getMessage());
+
+		// Test that adding conditional edges with empty mappings throws an exception
+		GraphStateException exception2 = assertThrows(GraphStateException.class, () -> {
+			workflow.addConditionalEdges("node1", AsyncEdgeActionWithConfig.edge_async((state, config) -> "next"), Map.of());
+		});
+
+		assertEquals("edge mapping is empty!", exception2.getMessage());
+
+		// Test that adding conditional edges with null mappings throws an exception
+		GraphStateException exception3 = assertThrows(GraphStateException.class, () -> {
+			workflow.addConditionalEdges("node1",AsyncEdgeActionWithConfig.edge_async((state, config) -> "next"), null);
+		});
+
+		assertEquals("edge mapping is empty!", exception3.getMessage());
 	}
 
 }

@@ -20,11 +20,12 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
-import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -44,7 +45,7 @@ public class StateGraphRepresentationTest {
 	}
 
 	// Dummy condition function that always returns an empty string
-	CompletableFuture<String> dummyCondition(OverAllState state,RunnableConfig runnableConfig) {
+	CompletableFuture<String> dummyCondition(OverAllState state) {
 		return CompletableFuture.completedFuture("");
 	}
 

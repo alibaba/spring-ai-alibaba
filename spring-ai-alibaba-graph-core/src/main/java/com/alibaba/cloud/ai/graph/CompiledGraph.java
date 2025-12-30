@@ -117,17 +117,6 @@ public class CompiledGraph {
 				this.keyStrategyMap.put(entry.getKey(), entry.getValue());
 			}
 		}
-		// set extra Key and KeyStrategy defined from sub Graphs (Other SubGraphs)
-		for (var n : processedData.nodes().elements) {
-			if (n instanceof SubGraphNode sgNode) {
-				var subGraphKeyStrategies = sgNode.keyStrategies();
-				for (var ksEntry : subGraphKeyStrategies.entrySet()) {
-					if (!this.keyStrategyMap.containsKey(ksEntry.getKey())) {
-						this.keyStrategyMap.put(ksEntry.getKey(), ksEntry.getValue());
-					}
-				}
-			}
-		}
 
 		// CHECK INTERRUPTIONS
 		for (String interruption : processedData.interruptsBefore()) {
@@ -750,14 +739,18 @@ record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interr
 		var nodes = new Nodes(stateGraph.nodes.exceptSubStateGraphNodes());
 		var edges = new Edges(stateGraph.edges.elements);
 
-		Map<String, KeyStrategy> keyStrategyMap = Map.of();
+		Map<String, KeyStrategy> keyStrategyMap = new LinkedHashMap<>();
 
 		for (var subgraphNode : subgraphNodes) {
 
 			var sgWorkflow = subgraphNode.subGraph();
-			keyStrategyMap = subgraphNode.keyStrategies();
 
-			ProcessedNodesEdgesAndConfig processedSubGraph = process(sgWorkflow, config);
+            // Merges keyStrategies of this subgraph.
+            subgraphNode.keyStrategies().forEach(keyStrategyMap::putIfAbsent);
+            // Merges the keyStrategyMap aggregated from recursive subgraphs.
+            ProcessedNodesEdgesAndConfig processedSubGraph = process(sgWorkflow, config);
+            processedSubGraph.keyStrategyMap().forEach(keyStrategyMap::putIfAbsent);
+
 			Nodes processedSubGraphNodes = processedSubGraph.nodes;
 			Edges processedSubGraphEdges = processedSubGraph.edges;
 
