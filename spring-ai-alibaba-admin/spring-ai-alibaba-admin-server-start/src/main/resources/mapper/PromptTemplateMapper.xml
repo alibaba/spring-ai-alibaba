@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.cloud.ai.studio.admin.mapper.PromptTemplateMapper">
+
+    <!-- Prompt模板表字段 -->
+    <sql id="prompt_template_columns">
+        id, prompt_template_key, tags, template_desc, template, variables, model_config
+    </sql>
+
+    <!-- Prompt模板实体映射 -->
+    <resultMap id="promptTemplateResultMap" type="com.alibaba.cloud.ai.studio.admin.entity.PromptTemplateDO">
+        <id property="id" column="id"/>
+        <result property="promptTemplateKey" column="prompt_template_key"/>
+        <result property="tags" column="tags"/>
+        <result property="templateDesc" column="template_desc"/>
+        <result property="template" column="template"/>
+        <result property="variables" column="variables"/>
+        <result property="modelConfig" column="model_config"/>
+    </resultMap>
+
+    <!-- 根据模板Key获取Prompt模板 -->
+    <select id="selectByPromptTemplateKey" resultMap="promptTemplateResultMap">
+        SELECT <include refid="prompt_template_columns"/>
+        FROM prompt_build_template
+        WHERE prompt_template_key = #{promptTemplateKey}
+    </select>
+
+    <!-- 查询Prompt模板列表 -->
+    <select id="selectList" resultMap="promptTemplateResultMap">
+        SELECT <include refid="prompt_template_columns"/>
+        FROM prompt_build_template
+        WHERE 1=1
+        <if test="promptTemplateKey != null and promptTemplateKey != ''">
+            <choose>
+                <when test="search == 'accurate'">
+                    AND prompt_template_key = #{promptTemplateKey}
+                </when>
+                <otherwise>
+                    AND prompt_template_key LIKE CONCAT('%', #{promptTemplateKey}, '%')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="tag != null and tag != ''">
+            AND (tags = #{tag} OR tags LIKE CONCAT('%,', #{tag}, ',%') OR tags LIKE CONCAT(#{tag}, ',%') OR tags LIKE CONCAT('%,', #{tag}))
+        </if>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 查询Prompt模板总数 -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM prompt_build_template
+        WHERE 1=1
+        <if test="promptTemplateKey != null and promptTemplateKey != ''">
+            <choose>
+                <when test="search == 'accurate'">
+                    AND prompt_template_key = #{promptTemplateKey}
+                </when>
+                <otherwise>
+                    AND prompt_template_key LIKE CONCAT('%', #{promptTemplateKey}, '%')
+                </otherwise>
+            </choose>
+        </if>
+        <if test="tag != null and tag != ''">
+            AND (tags = #{tag} OR tags LIKE CONCAT('%,', #{tag}, ',%') OR tags LIKE CONCAT(#{tag}, ',%') OR tags LIKE CONCAT('%,', #{tag}))
+        </if>
+    </select>
+
+</mapper>

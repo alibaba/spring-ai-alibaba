@@ -25,10 +25,9 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import java.util.Map;
 import java.util.Objects;
 
-import static java.lang.String.format;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
 
 public class SubCompiledGraphNode extends Node implements SubGraphNode {
-	private static final String OUTPUT_KEY_TO_PARENT_SUFFIX = "_compiled_graph";
 	private final CompiledGraph subGraph;
 	private final String id;
 
@@ -48,15 +47,4 @@ public class SubCompiledGraphNode extends Node implements SubGraphNode {
 		return Map.of(outputKeyToParent(id), new ReplaceStrategy());
 	}
 
-	public static String subGraphId(String nodeId) {
-		return format("subgraph_%s", nodeId);
-	}
-
-	public static String resumeSubGraphId(String nodeId) {
-		return format("resume_%s", subGraphId(nodeId));
-	}
-
-	public static String outputKeyToParent(String nodeId) {
-		return format("%s_%s", subGraphId(nodeId), OUTPUT_KEY_TO_PARENT_SUFFIX);
-	}
 }

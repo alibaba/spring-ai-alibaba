@@ -14,7 +14,6 @@ spring:
             jina:
               url: "https://mcp.jina.ai" # Spring AI will append /sse suffix to the url automatically
         request-timeout: 60000
-
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

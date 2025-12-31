@@ -1,6 +1,5 @@
 server:
   port: 8080
-
 spring:
   application:
     name: documentation-examples
@@ -19,9 +18,9 @@ spring:
           username: ${NACOS_USERNAME:nacos}
           password: ${NACOS_PASSWORD:nacos}
           discovery:
-            enabled: true  # 启用 A2A 服务发现，用于发现远程智能体
+            enabled: true # 启用 A2A 服务发现，用于发现远程智能体
           registry:
-            enabled: true  # 启用 Nacos Registry，将本地 Agent 注册到 Nacos
+            enabled: true  # 启用 Nacos Registry（需要 Nacos 3.x+）
         server:
           version: 1.0.0
           card:
@@ -33,7 +32,6 @@ spring:
               url: https://sca.aliyun.com/ai/
               contact:
                 email: dev@alibabacloud.com
-
 # 日志配置
 logging:
   level:

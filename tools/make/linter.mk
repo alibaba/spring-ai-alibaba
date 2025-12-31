@@ -66,12 +66,12 @@ markdown-lint-fix: ## Fix the markdown files style.
 .PHONY: newline-check
 newline-check: ## Check the newline
 	@$(LOG_TARGET)
-	python tools/scripts/new-line-check.py check
+	python3 tools/scripts/new-line-check.py check
 
 .PHONY: newline-fix
 newline-fix: ## Fix the newline
 	@$(LOG_TARGET)
-	python tools/scripts/new-line-check.py fix
+	python3 tools/scripts/new-line-check.py fix
 
 .PHONY: secrets-check
 secrets-check: ## Check the secrets

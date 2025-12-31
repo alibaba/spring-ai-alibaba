@@ -20,8 +20,9 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,12 +39,19 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 
 	private final Map<String, Object> metadata;
 
+	private List<AssistantMessage.ToolCall> toolsAutomaticallyApproved;
+
 	private List<ToolFeedback> toolFeedbacks;
 
 	private InterruptionMetadata(Builder builder) {
 		super(builder.nodeId, builder.state);
 		this.metadata = builder.metadata();
 		this.toolFeedbacks = new ArrayList<>(builder.toolFeedbacks);
+		if (builder.toolsAutomaticallyApproved != null) {
+			this.toolsAutomaticallyApproved = builder.toolsAutomaticallyApproved;
+		} else {
+			this.toolsAutomaticallyApproved = new ArrayList<>();
+		}
 	}
 
 	/**
@@ -60,7 +68,7 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 
 	@Override
 	public Optional<Map<String, Object>> metadata() {
-		return Optional.of(Collections.unmodifiableMap(metadata));
+		return Optional.of(metadata);
 	}
 
 	public List<ToolFeedback> toolFeedbacks() {
@@ -68,6 +76,10 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 			return new ArrayList<>();
 		}
 		return toolFeedbacks;
+	}
+
+	public List<AssistantMessage.ToolCall> getToolsAutomaticallyApproved() {
+		return toolsAutomaticallyApproved;
 	}
 
 	@Override
@@ -93,9 +105,16 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 	}
 
 	public static Builder builder(InterruptionMetadata interruptionMetadata) {
-		return new Builder(interruptionMetadata.metadata().orElse(Map.of()))
+		Builder builder = new Builder(interruptionMetadata.metadata().orElse(Map.of()))
 			.nodeId(interruptionMetadata.node())
 			.state(interruptionMetadata.state());
+		if (interruptionMetadata.getToolsAutomaticallyApproved() != null) {
+			builder.toolsAutomaticallyApproved(interruptionMetadata.getToolsAutomaticallyApproved());
+		}
+		// if (interruptionMetadata.toolFeedbacks() != null && !interruptionMetadata.toolFeedbacks().isEmpty()) {
+		// 	builder.toolFeedbacks(interruptionMetadata.toolFeedbacks());
+		// }
+		return builder;
 	}
 
 	/**
@@ -104,6 +123,8 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 	 */
 	public static class Builder extends HasMetadata.Builder<Builder> {
 		List<ToolFeedback> toolFeedbacks;
+
+		List<AssistantMessage.ToolCall> toolsAutomaticallyApproved;
 
 		String nodeId;
 
@@ -145,6 +166,19 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 
 		public Builder toolFeedbacks(List<ToolFeedback> toolFeedbacks) {
 			this.toolFeedbacks = new ArrayList<>(toolFeedbacks);
+			return this;
+		}
+
+		public Builder addToolsAutomaticallyApproved(AssistantMessage.ToolCall toolCall) {
+			if (this.toolsAutomaticallyApproved == null) {
+				this.toolsAutomaticallyApproved = new ArrayList<>();
+			}
+			this.toolsAutomaticallyApproved.add(toolCall);
+			return this;
+		}
+
+		public Builder toolsAutomaticallyApproved(List<AssistantMessage.ToolCall> toolsAutomaticallyApproved) {
+			this.toolsAutomaticallyApproved = new ArrayList<>(toolsAutomaticallyApproved);
 			return this;
 		}
 

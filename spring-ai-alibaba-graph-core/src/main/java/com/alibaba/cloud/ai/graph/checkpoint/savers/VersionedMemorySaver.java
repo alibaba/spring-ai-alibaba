@@ -45,10 +45,18 @@ public class VersionedMemorySaver implements BaseCheckpointSaver, HasVersions {
 	private final ReentrantLock _lock = new ReentrantLock();
 
 	/**
-	 * Default constructor for the {@link VersionedMemorySaver} class. Initializes a new
-	 * instance of the class with default settings.
+	 * Protected constructor for VersionedMemorySaver.
+	 * Use {@link #builder()} to create instances.
 	 */
-	public VersionedMemorySaver() {
+	protected VersionedMemorySaver() {
+	}
+
+	/**
+	 * Creates a new builder for VersionedMemorySaver.
+	 * @return a new Builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
@@ -95,9 +103,9 @@ public class VersionedMemorySaver implements BaseCheckpointSaver, HasVersions {
 		_lock.lock();
 		try {
 			return getCheckpointHistoryByThread(threadId).map(history -> history.get(threadVersion))
-				.map(Tag::checkpoints)
-				.orElseThrow(() -> new IllegalArgumentException(
-						format("Version %s for thread %s not found", threadVersion, threadId)));
+					.map(Tag::checkpoints)
+					.orElseThrow(() -> new IllegalArgumentException(
+							format("Version %s for thread %s not found", threadVersion, threadId)));
 
 		}
 		finally {
@@ -114,8 +122,8 @@ public class VersionedMemorySaver implements BaseCheckpointSaver, HasVersions {
 	@Override
 	public Collection<Integer> versionsByThreadId(String threadId) {
 		return getCheckpointHistoryByThread(ofNullable(threadId).orElse(THREAD_ID_DEFAULT))
-			.map(history -> (Collection<Integer>) history.keySet())
-			.orElse(Collections.emptyList());
+				.map(history -> (Collection<Integer>) history.keySet())
+				.orElse(Collections.emptyList());
 	}
 
 	/**
@@ -186,11 +194,6 @@ public class VersionedMemorySaver implements BaseCheckpointSaver, HasVersions {
 		}
 	}
 
-	@Override
-	public boolean clear(RunnableConfig config) {
-		return false;
-	}
-
 	/**
 	 * Releases a {@link Tag} based on the provided {@link RunnableConfig}.
 	 * @param config The configuration for the release operation.
@@ -218,6 +221,20 @@ public class VersionedMemorySaver implements BaseCheckpointSaver, HasVersions {
 		}
 		finally {
 			_lock.unlock();
+		}
+	}
+
+	/**
+	 * Builder class for VersionedMemorySaver.
+	 */
+	public static class Builder {
+
+		/**
+		 * Builds a new VersionedMemorySaver instance.
+		 * @return a new VersionedMemorySaver instance
+		 */
+		public VersionedMemorySaver build() {
+			return new VersionedMemorySaver();
 		}
 	}
 

@@ -29,11 +29,6 @@
     <name>Spring AI Alibaba Starter Graph Observation</name>
     <description>Spring Boot Starter for Spring AI Alibaba Graph Observation</description>
     <url>https://github.com/alibaba/spring-ai-alibaba</url>
-    <scm>
-        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
-        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
-        <url>https://github.com/alibaba/spring-ai-alibaba</url>
-    </scm>
     <licenses>
         <license>
             <name>Apache 2.0</name>
@@ -50,6 +45,11 @@
             <organizationUrl>https://aliyun.com</organizationUrl>
         </developer>
     </developers>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
 
     <dependencies>
 
@@ -83,6 +83,11 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>context-propagation</artifactId>
             <optional>true</optional>
         </dependency>
 

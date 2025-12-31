@@ -1,0 +1,154 @@
+.form {
+  position: relative;
+  padding: 40px 132px;
+
+  .form-content {
+    max-width: 960px;
+    width: 80%;
+    margin: 0 auto;
+  }
+
+  .form-area {
+    border-radius: 8px;
+
+    .title {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 20px;
+      line-height: 24px;
+
+      &.required {
+        &::after {
+          content: '*';
+          color: var(--ag-ant-color-error);
+          font-size: 12px;
+          line-height: 24px;
+          margin-left: 4px;
+        }
+      }
+    }
+
+    .tip {
+      color: var(--ag-ant-color-text-description);
+      font-size: 12px;
+      line-height: 20px;
+      margin-top: 8px;
+    }
+  }
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background-color: var(--ag-ant-color-border-secondary);
+  display: inline-block;
+}
+
+
+.tool {
+  padding-bottom: 20px;
+  padding-right: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--ag-ant-color-border-secondary);
+  .image {
+    width: 40px;
+    height: 40px;
+  }
+
+  .name {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 22px;
+  }
+
+  .desc {
+    color: var(--ag-ant-color-text-description);
+    text-wrap: wrap;
+    -webkit-line-clamp: 1;
+    text-overflow: ellipsis;
+    -webkit-box-orient: vertical;
+    font-size: 12px;
+    line-height: 22px;
+    display: -webkit-box;
+    overflow: hidden;
+  }
+}
+
+.container {
+  height: 100%;
+  .content-header {
+    padding: 16px 20px;
+  }
+
+  .tool-icon {
+    width: 40px;
+    font-size: 24px;
+  }
+
+  .title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ag-ant-color-text-base);
+  }
+
+  .name {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 22px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+  }
+
+  .desc {
+    color: var(--ag-ant-color-text-description);
+    font-size: 12px;
+    line-height: 18px;
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.field {
+  height: 44px;
+
+  .title {
+    color: var(--ag-ant-color-text-disabled);
+    line-height: 20px;
+    font-size: 12px;
+    padding: 0 6px;
+  }
+
+  .children {
+    padding: 0 6px;
+    max-width: 240px;
+    min-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 24px;
+  }
+}
+
+.scroll-control {
+  position: fixed;
+  top: 120px;
+  right: 24px;
+  z-index: 10;
+  padding: 40px 24px;
+}
+
+.collapse {
+  background-color: var(--ag-ant-color-fill-quaternary);
+}
+
+.bottom-bar {
+  width: 80%;
+  max-width: 960px;
+  margin: 0 auto;
+}

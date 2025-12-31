@@ -60,16 +60,8 @@ public class RoutingGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 			// Add the current sub-agent as a node
 			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, graph);
 			edgeRoutingMap.put(subAgent.name(), subAgent.name());
-			// Connect sub-agents to END (unless they are FlowAgents with their own
-			// sub-agents)
-			if (subAgent instanceof FlowAgent subFlowAgent) {
-				if (subFlowAgent.subAgents() == null || subFlowAgent.subAgents().isEmpty()) {
-					graph.addEdge(subAgent.name(), END);
-				}
-			}
-			else {
-				graph.addEdge(subAgent.name(), END);
-			}
+			// Connect sub-agents to END
+			graph.addEdge(subAgent.name(), END);
 		}
 
 		// Connect parent to sub-agents via conditional routing

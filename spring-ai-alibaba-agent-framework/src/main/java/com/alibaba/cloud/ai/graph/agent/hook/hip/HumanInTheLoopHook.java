@@ -22,11 +22,13 @@ import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
+import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
+import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -45,7 +47,7 @@ import org.slf4j.LoggerFactory;
 @HookPositions(HookPosition.AFTER_MODEL)
 public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWithConfig, InterruptableAction {
 	private static final Logger log = LoggerFactory.getLogger(HumanInTheLoopHook.class);
-
+    public static final String HITL_NODE_NAME = "HITL";
 	private Map<String, ToolConfig> approvalOn;
 
 	private HumanInTheLoopHook(Builder builder) {
@@ -63,18 +65,17 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 
 	@Override
 	public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-		Optional<Object> feedback = config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY);
-		InterruptionMetadata interruptionMetadata = (InterruptionMetadata) feedback.orElse(null);
+		Optional<InterruptionMetadata> feedback = config.getMetadataAndRemove(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, new TypeRef<InterruptionMetadata>() { });
+		InterruptionMetadata interruptionMetadata = feedback.orElse(null);
 
 		if (interruptionMetadata == null) {
-			log.info("No human feedback found in the runnable config metadata, no tool to execute or none needs feedback.");
+			log.debug("No human feedback found in the runnable config metadata, no tool to execute or none needs feedback.");
 			return CompletableFuture.completedFuture(Map.of());
 		}
 
-		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-		Message lastMessage = messages.get(messages.size() - 1);
+		AssistantMessage assistantMessage = getLastAssistantMessage(state);
 
-		if (lastMessage instanceof AssistantMessage assistantMessage) {
+		if (assistantMessage != null) {
 
 			if (!assistantMessage.hasToolCalls()) {
 				log.info("Found human feedback but last AssistantMessage has no tool calls, nothing to process for human feedback.");
@@ -88,7 +89,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				Optional<ToolFeedback> toolFeedbackOpt = interruptionMetadata.toolFeedbacks().stream()
-						.filter(tf -> tf.getName().equals(toolCall.name()))
+						.filter(tf -> tf.getId().equals(toolCall.id()))
 						.findFirst();
 
 				if (toolFeedbackOpt.isPresent()) {
@@ -103,6 +104,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 						newToolCalls.add(editedToolCall);
 					}
 					else if (result == FeedbackResult.REJECTED) {
+						newToolCalls.add(toolCall);
 						ToolResponseMessage.ToolResponse response = new ToolResponseMessage.ToolResponse(toolCall.id(), toolCall.name(), String.format("Tool call request for %s has been rejected by human. The reason for why this tool is rejected and the suggestion for next possible tool choose is listed as below:\n %s.", toolFeedback.getName(), toolFeedback.getDescription()));
 						responses.add(response);
 					}
@@ -116,10 +118,6 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 			Map<String, Object> updates = new HashMap<>();
 			List<Object> newMessages = new ArrayList<>();
 
-			if (!rejectedMessage.getResponses().isEmpty()) {
-				newMessages.add(rejectedMessage);
-			}
-
 			if (!newToolCalls.isEmpty()) {
 				// Replace the last message with the new assistant message containing updated tool calls
 				newMessages.add(AssistantMessage.builder()
@@ -129,6 +127,11 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 					.media(assistantMessage.getMedia())
 					.build());
 				newMessages.add(new RemoveByHash<>(assistantMessage));
+			}
+
+			// ToolResponseMessages must be added after AssistantMessage
+			if (!rejectedMessage.getResponses().isEmpty()) {
+				newMessages.add(rejectedMessage);
 			}
 
 			updates.put("messages", newMessages);
@@ -143,77 +146,131 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 
 	@Override
 	public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+		AssistantMessage lastMessage = getLastAssistantMessage(state);
+
+		if (lastMessage == null || !lastMessage.hasToolCalls()) {
+			return Optional.empty();
+		}
+
 		Optional<Object> feedback = config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY);
 		if (feedback.isPresent()) {
 			if (!(feedback.get() instanceof InterruptionMetadata)) {
 				throw new IllegalArgumentException("Human feedback metadata must be of type InterruptionMetadata.");
 			}
 
-			if (!validateFeedback((InterruptionMetadata) feedback.get())) {
-				return Optional.of((InterruptionMetadata)feedback.get());
+			if (!validateFeedback((InterruptionMetadata) feedback.get(), lastMessage.getToolCalls())) {
+				return buildInterruptionMetadata(state, lastMessage);
 			}
 			return Optional.empty();
 		}
 
+		// 2. If last message is AssistantMessage
+		return buildInterruptionMetadata(state, lastMessage);
+	}
+
+	private static AssistantMessage getLastAssistantMessage(OverAllState state) {
 		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-		Message lastMessage = messages.get(messages.size() - 1);
 
-		if (lastMessage instanceof AssistantMessage assistantMessage) {
-			// 2. If last message is AssistantMessage
-			if (assistantMessage.hasToolCalls()) {
-				boolean needsInterruption = false;
-				InterruptionMetadata.Builder builder = InterruptionMetadata.builder(getName(), state);
-				for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-					if (approvalOn.containsKey(toolCall.name())) {
-						ToolConfig toolConfig = approvalOn.get(toolCall.name());
-						String description = toolConfig.getDescription();
-						String content = "The AI is requesting to use the tool: " + toolCall.name() + ".\n"
-								+ (description != null ? ("Description: " + description + "\n") : "")
-								+ "With the following arguments: " + toolCall.arguments() + "\n"
-								+ "Do you approve?";
-						// TODO, create a designated tool metadata field in InterruptionMetadata?
-						builder.addToolFeedback(InterruptionMetadata.ToolFeedback.builder().id(toolCall.id())
-										.name(toolCall.name()).description(content).arguments(toolCall.arguments()).build())
-								.build();
-						needsInterruption = true;
-					}
+		AssistantMessage lastMessage = null;
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			Message msg = messages.get(i);
+			if (msg instanceof AssistantMessage assistantMessage) {
+				// If the next element (i+1) is a ToolResponseMessage, return empty(tools already executed)
+				if (i + 1 < messages.size() && messages.get(i + 1) instanceof ToolResponseMessage) {
+					break;
 				}
-				return needsInterruption ? Optional.of(builder.build()) : Optional.empty();
+				// If the next element is not a ToolResponseMessage, assign and continue
+				lastMessage = assistantMessage;
+				break;
 			}
 		}
-		return Optional.empty();
+		return lastMessage;
 	}
 
-	private boolean validateFeedback(InterruptionMetadata feedback) {
-		if (feedback == null || feedback.toolFeedbacks() == null || feedback.toolFeedbacks().isEmpty()) {
-			return false;
-		}
-
-		List<InterruptionMetadata.ToolFeedback> toolFeedbacks = feedback.toolFeedbacks();
-
-		// 1. Ensure each ToolFeedback's result is not empty
-		for (InterruptionMetadata.ToolFeedback toolFeedback : toolFeedbacks) {
-			if (toolFeedback.getResult() == null) {
-				return false;
+	private Optional<InterruptionMetadata> buildInterruptionMetadata(OverAllState state, AssistantMessage lastMessage) {
+		boolean needsInterruption = false;
+		InterruptionMetadata.Builder builder = InterruptionMetadata.builder(Hook.getFullHookName(this), state);
+		for (AssistantMessage.ToolCall toolCall : lastMessage.getToolCalls()) {
+			if (approvalOn.containsKey(toolCall.name())) {
+				ToolConfig toolConfig = approvalOn.get(toolCall.name());
+				String description = toolConfig.getDescription();
+				String content = "The AI is requesting to use the tool: " + toolCall.name() + ".\n"
+						+ (description != null ? ("Description: " + description + "\n") : "")
+						+ "With the following arguments: " + toolCall.arguments() + "\n"
+						+ "Do you approve?";
+				// TODO, create a designated tool metadata field in InterruptionMetadata?
+				builder.addToolFeedback(ToolFeedback.builder().id(toolCall.id())
+								.name(toolCall.name()).description(content).arguments(toolCall.arguments()).build())
+						.build();
+				needsInterruption = true;
+			} else {
+				builder.addToolsAutomaticallyApproved(toolCall);
 			}
 		}
-
-		// 2. Ensure ToolFeedback count matches approvalOn count and all names are in approvalOn
-		if (toolFeedbacks.size() != approvalOn.size()) {
-			return false;
-		}
-		for (InterruptionMetadata.ToolFeedback toolFeedback : toolFeedbacks) {
-			if (!approvalOn.containsKey(toolFeedback.getName())) {
-				return false;
-			}
-		}
-
-		return true;
+		return needsInterruption ? Optional.of(builder.build()) : Optional.empty();
 	}
+
+    private boolean validateFeedback(InterruptionMetadata feedback, List<AssistantMessage.ToolCall> toolCalls) {
+        if (feedback == null || feedback.toolFeedbacks() == null || feedback.toolFeedbacks().isEmpty()) {
+            return false;
+        }
+
+        List<InterruptionMetadata.ToolFeedback> toolFeedbacks = feedback.toolFeedbacks();
+
+        // 1. Tool calls in this step that actually require human approval (names defined in approvalOn)
+        List<AssistantMessage.ToolCall> toolCallsNeedingApproval = toolCalls.stream()
+                .filter(tc -> approvalOn.containsKey(tc.name()))
+                .toList();
+
+        // If no tool calls in this step require human approval, validation is trivially satisfied
+        if (toolCallsNeedingApproval.isEmpty()) {
+            return true;
+        }
+
+        // 2. For each tool call requiring approval, ensure corresponding feedback exists and its result is non-null
+        for (AssistantMessage.ToolCall call : toolCallsNeedingApproval) {
+            InterruptionMetadata.ToolFeedback matchedFeedback = toolFeedbacks.stream()
+                    .filter(tf -> tf.getName().equals(call.name())
+                            // Also validate id if ToolFeedback contains id field
+                            && call.id().equals(tf.getId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (matchedFeedback == null) {
+                log.warn("Missing feedback for tool {} (id={}); waiting for human input.",
+                        call.name(), call.id());
+                return false;
+            }
+
+            // Ensure the feedback result is provided
+            if (matchedFeedback.getResult() == null) {
+                log.warn("Feedback result for tool {} (id={}) is null; waiting for human input.",
+                        call.name(), call.id());
+                return false;
+            }
+        }
+
+        // 3. Optional: log unexpected or extra feedback entries that do not match any pending approval tool
+        for (InterruptionMetadata.ToolFeedback tf : toolFeedbacks) {
+            boolean matched = toolCallsNeedingApproval.stream()
+                    .anyMatch(call -> call.name().equals(tf.getName()) && call.id().equals(tf.getId()));
+            if (!matched) {
+                log.warn("Ignoring unexpected tool feedback: name={}, id={}", tf.getName(), tf.getId());
+            }
+        }
+
+
+
+
+
+
+
+        return true;
+    }
 
 	@Override
 	public String getName() {
-		return "HIP";
+		return HITL_NODE_NAME;
 	}
 
 	@Override

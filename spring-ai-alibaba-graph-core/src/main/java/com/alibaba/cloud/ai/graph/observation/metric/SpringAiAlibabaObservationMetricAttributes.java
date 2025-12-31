@@ -16,8 +16,10 @@
 package com.alibaba.cloud.ai.graph.observation.metric;
 
 /**
- * Enumeration defining metric attributes for Spring AI Alibaba graph observations.
- * Provides standardized attribute names for graph, node, and edge metrics. Used for
+ * Enumeration defining metric attributes for Spring AI Alibaba graph
+ * observations.
+ * Provides standardized attribute names for graph, node, and edge metrics. Used
+ * for
  * tagging and categorizing observation metrics in monitoring systems.
  *
  * @author XiaoYunTao
@@ -53,13 +55,35 @@ public enum SpringAiAlibabaObservationMetricAttributes {
 	/**
 	 * Attribute indicating the success status of a graph edge operation.
 	 */
-	GRAPH_EDGE_SUCCESS("spring.ai.alibaba.graph.edge.success");
+	GRAPH_EDGE_SUCCESS("spring.ai.alibaba.graph.edge.success"),
+
+	/**
+	 * Attribute for Generative AI Prompt.
+	 */
+	GEN_AI_PROMPT("gen_ai.prompt"),
+
+	/**
+	 * Attribute for Generative AI Completion.
+	 */
+	GEN_AI_COMPLETION("gen_ai.completion"),
+
+	/**
+	 * Attribute for Langfuse Input.
+	 */
+	LANGFUSE_INPUT("langfuse.observation.input"),
+
+	/**
+	 * Attribute for Langfuse Output.
+	 */
+	LANGFUSE_OUTPUT("langfuse.observation.output");
 
 	private final String value;
 
 	/**
-	 * Constructs a new SpringAiAlibabaObservationMetricAttributes with the specified
+	 * Constructs a new SpringAiAlibabaObservationMetricAttributes with the
+	 * specified
 	 * value.
+	 * 
 	 * @param value the string representation of this attribute
 	 */
 	SpringAiAlibabaObservationMetricAttributes(String value) {
@@ -68,6 +92,7 @@ public enum SpringAiAlibabaObservationMetricAttributes {
 
 	/**
 	 * Gets the string value of this attribute.
+	 * 
 	 * @return the string representation of this attribute
 	 */
 	public String value() {

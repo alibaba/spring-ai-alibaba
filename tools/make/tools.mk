@@ -16,6 +16,12 @@
 
 .PHONY: tools
 
+
+
+# Default values for GitHub Actions variables (avoid warnings in local environment)
+GITHUB_PATH ?= /dev/null
+GITHUB_ENV ?= /dev/null
+
 tools: ## Install ci tools
 
 	@$(LOG_TARGET)
@@ -25,26 +31,50 @@ tools: ## Install ci tools
 	npm --version
 
 	@echo "Installing markdownlint-cli"
-	npm install markdownlint-cli --global
+	@if command -v markdownlint >/dev/null 2>&1; then \
+		echo "markdownlint-cli is already installed, skipping..."; \
+	else \
+		npm install markdownlint-cli --global; \
+	fi
 
 	@echo "Installing licenses-eyes"
-	go install github.com/apache/skywalking-eyes/cmd/license-eye@v0.6.1-0.20250110091440-69f34abb75ec
+	@if command -v license-eye >/dev/null 2>&1; then \
+		echo "license-eye is already installed, skipping..."; \
+	else \
+		go install github.com/apache/skywalking-eyes/cmd/license-eye@v0.6.1-0.20250110091440-69f34abb75ec; \
+	fi
 
 	@echo "Installing codespell"
-	pip install codespell
+	@if command -v codespell >/dev/null 2>&1; then \
+		echo "codespell is already installed, skipping..."; \
+	else \
+		pip install codespell; \
+	fi
 
 	@echo "Installing yamllint"
-	pip install yamllint==1.35.1
+	@if command -v yamllint >/dev/null 2>&1; then \
+		echo "yamllint is already installed, skipping..."; \
+	else \
+		pip install yamllint==1.35.1; \
+	fi
 
 	@echo "Installing yamlfmt"
-	go install github.com/google/yamlfmt/cmd/yamlfmt@latest
+	@if command -v yamlfmt >/dev/null 2>&1; then \
+		echo "yamlfmt is already installed, skipping..."; \
+	else \
+		go install github.com/google/yamlfmt/cmd/yamlfmt@latest; \
+	fi
 
 	@echo "Installing gitleaks"
-	mkdir -p tools/bin && \
-	cd tools/bin && \
-	git clone https://github.com/gitleaks/gitleaks && \
-	cd gitleaks && \
-	make build && \
-	chmod +x gitleaks && \
-	cp gitleaks /usr/local/bin && \
-	cd .. && rm -rf gitleaks
+@if command -v gitleaks >/dev/null 2>&1; then \
+		echo "gitleaks is already installed, skipping..."; \
+	else \
+		mkdir -p tools/bin && \
+		cd tools/bin && \
+		git clone https://github.com/gitleaks/gitleaks && \
+		cd gitleaks && \
+		make build && \
+		chmod +x gitleaks && \
+		cp gitleaks /usr/local/bin && \
+		cd .. && rm -rf gitleaks; \
+	fi

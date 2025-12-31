@@ -23,6 +23,7 @@ import static java.lang.String.format;
 public enum Errors {
 
 	invalidNodeIdentifier("END is not a valid node id!"), invalidEdgeIdentifier("END is not a valid edge sourceId!"),
+	nodeIdNotMatchError("node id (%s) specified in addNode method doesn't match the id (%s) of the node to be added!"),
 	duplicateNodeError("node with id: %s already exist!"), duplicateEdgeError("edge with id: %s already exist!"),
 	duplicateConditionalEdgeError("conditional edge from '%s' already exist!"),
 	edgeMappingIsEmpty("edge mapping is empty!"), missingEntryPoint("missing Entry Point"),
@@ -34,8 +35,9 @@ public enum Errors {
 	unsupportedConditionalEdgeOnParallelNode(
 			"parallel node doesn't support conditional branch, but on [%s] a conditional branch on %s have been found!"),
 	illegalMultipleTargetsOnParallelNode("parallel node [%s] must have only one target, but %s have been found!"),
-	interruptionNodeNotExist("node '%s' configured as interruption doesn't exist!");
-
+	interruptionNodeNotExist("node '%s' configured as interruption doesn't exist!"),
+	emptySourceNodeByEdge("Source nodeIds missing for addEdges(sourceIds, %s)!"),
+	emptyTargetNodeByEdge("Target nodeIds missing for addEdges(%s, targetIds)!");
 	private final String errorMessage;
 
 	Errors(String errorMessage) {

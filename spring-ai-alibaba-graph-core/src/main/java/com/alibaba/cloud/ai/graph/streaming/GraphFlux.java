@@ -82,6 +82,10 @@ public class GraphFlux<T> {
         return new GraphFlux<>(nodeId, flux,null, null,null);
     }
 
+    public static <T> GraphFlux<T> of(String nodeId, String key, Flux<T> flux) {
+        return new GraphFlux<>(nodeId, flux,key, null,null);
+    }
+
     /**
      * Static factory method to create a GraphFlux instance with a result mapping function
      *
@@ -148,8 +152,6 @@ public class GraphFlux<T> {
     public boolean hasChunkResult() {
         return chunkResult != null;
     }
-
-
 
 
     @Override

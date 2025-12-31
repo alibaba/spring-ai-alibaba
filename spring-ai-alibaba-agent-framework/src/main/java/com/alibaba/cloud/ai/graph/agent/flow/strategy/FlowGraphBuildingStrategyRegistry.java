@@ -15,9 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Registry for FlowGraphStrategy implementations. This allows for dynamic registration
@@ -132,6 +132,7 @@ public class FlowGraphBuildingStrategyRegistry {
 		registerStrategy(new ParallelGraphBuildingStrategy());
 		registerStrategy(new ConditionalGraphBuildingStrategy());
 		registerStrategy(new LoopGraphBuildingStrategy());
+		registerStrategy(new SupervisorGraphBuildingStrategy());
 	}
 
 }

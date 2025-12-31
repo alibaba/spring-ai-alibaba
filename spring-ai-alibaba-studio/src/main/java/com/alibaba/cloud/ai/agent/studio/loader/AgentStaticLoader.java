@@ -16,7 +16,7 @@
 
 package com.alibaba.cloud.ai.agent.studio.loader;
 
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 
 import java.util.List;
 import java.util.Map;
@@ -41,13 +41,13 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
  */
 class AgentStaticLoader implements AgentLoader {
 
-	private Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
+	private Map<String, Agent> agents = new ConcurrentHashMap<>();
 
 	public AgentStaticLoader() {
 	}
 
-	public AgentStaticLoader(BaseAgent... agents) {
-		this.agents = stream(agents).collect(toUnmodifiableMap(BaseAgent::name, identity()));
+	public AgentStaticLoader(Agent... agents) {
+		this.agents = stream(agents).collect(toUnmodifiableMap(Agent::name, identity()));
 	}
 
 	@Override
@@ -57,12 +57,12 @@ class AgentStaticLoader implements AgentLoader {
 	}
 
 	@Override
-	public BaseAgent loadAgent(String name) {
+	public Agent loadAgent(String name) {
 		if (name == null || name.trim().isEmpty()) {
 			throw new IllegalArgumentException("Agent name cannot be null or empty");
 		}
 
-		BaseAgent agent = agents.get(name);
+		Agent agent = agents.get(name);
 		if (agent == null) {
 			throw new NoSuchElementException("Agent not found: " + name);
 		}

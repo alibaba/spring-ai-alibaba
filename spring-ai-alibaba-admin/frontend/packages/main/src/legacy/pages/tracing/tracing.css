@@ -1,0 +1,67 @@
+
+.span-waterfall-chart .ant-tree-treenode {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.span-waterfall-chart .ant-tree-switcher {
+  display: flex;
+  align-items: center;
+}
+
+.span-waterfall-chart .ant-tree-node-content-wrapper {
+  flex-grow: 1;
+}
+
+.span-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.span-info {
+  width: 200px;
+  min-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 16px;
+  font-size: 12px;
+}
+
+.span-timeline-container {
+  flex-grow: 1;
+  position: relative;
+  height: 20px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+}
+
+.span-bar {
+  position: absolute;
+  height: 100%;
+  border-radius: 4px;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.span-bar:hover {
+  opacity: 1;
+  transform: scaleY(1.1);
+}
+
+.span-bar-label {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: white;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 8px);
+}

@@ -15,13 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
-import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-
 import com.alibaba.cloud.ai.graph.exception.Errors;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
@@ -37,16 +33,7 @@ import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.LinkedHashSet;
+import java.util.*;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -93,12 +80,12 @@ public class StateGraph {
 	/**
 	 * Factory for providing key strategies.
 	 */
-	private KeyStrategyFactory keyStrategyFactory;
+	private final KeyStrategyFactory keyStrategyFactory;
 
 	/**
 	 * Name of the graph.
 	 */
-	private String name;
+	private final String name;
 
 	/**
 	 * Serializer for the state.
@@ -106,50 +93,9 @@ public class StateGraph {
 	private final StateSerializer stateSerializer;
 
 	/**
-	 * Jackson-based serializer for state.
+	 * Default Jackson serializer instance.
 	 */
-	static class JacksonSerializer extends SpringAIJacksonStateSerializer {
-
-        /**
-         * Instantiates a new Jackson serializer.
-         */
-        public JacksonSerializer() {
-            super(OverAllState::new);
-        }
-
-        /**
-         * Gets object mapper.
-         *
-         * @return the object mapper
-         */
-        ObjectMapper getObjectMapper() {
-            return objectMapper;
-        }
-
-	}
-
-	/**
-	 * Constructs a StateGraph with the specified name, key strategy factory, and state
-	 * serializer.
-	 * @param name the name of the graph
-	 * @param keyStrategyFactory the factory for providing key strategies
-	 * @param stateSerializer the state serializer to use
-	 */
-	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory, StateSerializer stateSerializer) {
-		this.name = name;
-		this.keyStrategyFactory = keyStrategyFactory;
-		this.stateSerializer = Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
-	}
-
-	/**
-	 * Constructs a StateGraph with the specified key strategy factory and state serializer.
-	 * @param keyStrategyFactory the factory for providing key strategies
-	 * @param stateSerializer the state serializer to use
-	 */
-	public StateGraph(KeyStrategyFactory keyStrategyFactory, StateSerializer stateSerializer) {
-		this.keyStrategyFactory = keyStrategyFactory;
-		this.stateSerializer = Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
-	}
+	public static final StateSerializer DEFAULT_JACKSON_SERIALIZER = new SpringAIJacksonStateSerializer(OverAllState::new, new ObjectMapper());
 
 	/**
 	 * Constructs a StateGraph with the specified name, key strategy factory, and state
@@ -201,18 +147,14 @@ public class StateGraph {
 	}
 
 	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory) {
-		this.name = name;
-		this.keyStrategyFactory = keyStrategyFactory;
-		this.stateSerializer = new JacksonSerializer();
+		this(name, keyStrategyFactory, DEFAULT_JACKSON_SERIALIZER);
 	}
-
 	/**
 	 * Constructs a StateGraph with the provided key strategy factory.
 	 * @param keyStrategyFactory the factory for providing key strategies
 	 */
 	public StateGraph(KeyStrategyFactory keyStrategyFactory) {
-		this.keyStrategyFactory = keyStrategyFactory;
-		this.stateSerializer = new JacksonSerializer();
+		this(null, keyStrategyFactory, DEFAULT_JACKSON_SERIALIZER);
 	}
 
 	/**
@@ -220,8 +162,29 @@ public class StateGraph {
 	 * serializer.
 	 */
 	public StateGraph() {
-		this.stateSerializer = new JacksonSerializer();
-		this.keyStrategyFactory = HashMap::new;
+		this(null, HashMap::new, DEFAULT_JACKSON_SERIALIZER);
+	}
+
+	/**
+	 * Constructs a StateGraph with the specified key strategy factory and state serializer.
+	 * @param keyStrategyFactory the factory for providing key strategies
+	 * @param stateSerializer the state serializer to use
+	 */
+	public StateGraph(KeyStrategyFactory keyStrategyFactory, StateSerializer stateSerializer) {
+		this(null, keyStrategyFactory, Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null"));
+	}
+
+	/**
+	 * Constructs a StateGraph with the specified name, key strategy factory, and state
+	 * serializer.
+	 * @param name the name of the graph
+	 * @param keyStrategyFactory the factory for providing key strategies
+	 * @param stateSerializer the state serializer to use
+	 */
+	public StateGraph(String name, KeyStrategyFactory keyStrategyFactory, StateSerializer stateSerializer) {
+		this.name = name;
+		this.keyStrategyFactory = keyStrategyFactory;
+		this.stateSerializer = Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
 	}
 
 	/**
@@ -294,7 +257,7 @@ public class StateGraph {
 			throw Errors.invalidNodeIdentifier.exception(END);
 		}
 		if (!Objects.equals(node.id(), id)) {
-			throw Errors.invalidNodeIdentifier.exception(node.id(), id);
+			throw Errors.nodeIdNotMatchError.exception(node.id(), id);
 		}
 
 		if (nodes.elements.contains(node)) {
@@ -400,6 +363,26 @@ public class StateGraph {
 		return this;
 	}
 
+	public StateGraph addEdge(List<String> sourceIds, String targetId) throws GraphStateException {
+		if (sourceIds == null || sourceIds.isEmpty()) {
+			throw Errors.emptySourceNodeByEdge.exception(targetId);
+		}
+		for (String sourceId : sourceIds) {
+			addEdge(sourceId, targetId);
+		}
+		return this;
+	}
+
+	public StateGraph addEdge(String sourceId, List<String> targetIds) throws GraphStateException {
+		if (targetIds == null || targetIds.isEmpty()) {
+			throw Errors.emptyTargetNodeByEdge.exception(sourceId);
+		}
+		for (String targetId : targetIds) {
+			addEdge(sourceId, targetId);
+		}
+		return this;
+	}
+
 	/**
 	 * Adds conditional edges to the graph based on the provided condition and mappings.
 	 * @param sourceId the identifier of the source node
@@ -442,6 +425,21 @@ public class StateGraph {
 	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeAction condition, Map<String, String> mappings)
 			throws GraphStateException {
 		return addConditionalEdges(sourceId, AsyncCommandAction.of(condition), mappings);
+	}
+
+
+	/**
+	 * Adds conditional edges to the graph based on the provided edge action with configuration and mappings.
+	 * @param sourceId the identifier of the source node
+	 * @param asyncEdgeActionWithConfig the edge action with configuration used to determine the target node
+	 * @param mappings the mappings of conditions to target nodes
+	 * @return this state graph instance
+	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
+	 * empty, or the edge already exists
+	 */
+	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeActionWithConfig asyncEdgeActionWithConfig, Map<String, String> mappings)
+			throws GraphStateException {
+		return addConditionalEdges(sourceId, AsyncCommandAction.of(asyncEdgeActionWithConfig), mappings);
 	}
 
 	/**

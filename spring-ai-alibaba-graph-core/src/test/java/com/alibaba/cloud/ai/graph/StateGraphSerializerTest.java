@@ -15,12 +15,14 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.checkpoint.savers.file.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -148,11 +150,11 @@ public class StateGraphSerializerTest {
 			.addEdge("node1", END);
 		
 		// Create FileSystemSaver using the same serializer from StateGraph
-		com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver saver = 
-			new com.alibaba.cloud.ai.graph.checkpoint.savers.FileSystemSaver(
-				java.nio.file.Paths.get("target", "test-serializer-saver"),
-				graph.getStateSerializer()
-			);
+		FileSystemSaver saver =
+			FileSystemSaver.builder()
+					.targetFolder(Paths.get("target", "test-serializer-saver"))
+					.stateSerializer(graph.getStateSerializer())
+					.build();
 		
 		// Verify serializer consistency
 		StateSerializer graphSerializer = graph.getStateSerializer();

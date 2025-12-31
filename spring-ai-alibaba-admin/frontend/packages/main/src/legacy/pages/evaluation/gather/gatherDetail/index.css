@@ -1,0 +1,68 @@
+/* 添加数据弹框滚动优化 */
+.gather-detail-page .ant-modal {
+  max-height: 90vh;
+}
+
+.gather-detail-page .ant-modal-body {
+  max-height: calc(90vh - 110px);
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+/* 自定义滚动条样式 */
+.gather-detail-page .ant-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gather-detail-page .ant-modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.gather-detail-page .ant-modal-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.gather-detail-page .ant-modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 表单内滚动区域样式 */
+.gather-detail-page .add-data-form-container {
+  max-height: calc(90vh - 150px);
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.gather-detail-page .add-data-form-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gather-detail-page .add-data-form-container::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 3px;
+}
+
+.gather-detail-page .add-data-form-container::-webkit-scrollbar-thumb {
+  background: #dee2e6;
+  border-radius: 3px;
+}
+
+.gather-detail-page .add-data-form-container::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
+
+/* 确保文本域不可调整大小 */
+.gather-detail-page .ant-input {
+  resize: none;
+}
+
+/* 表单项间距优化 */
+.gather-detail-page .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.gather-detail-page .ant-form-item:last-child {
+  margin-bottom: 0;
+}

@@ -1,0 +1,224 @@
+.configTimeline {
+  :global {
+    .ag-ant-timeline-item {
+      margin-bottom: 4px;
+    }
+
+    .ag-ant-timeline-item-head {
+      background-color: var(--ag-ant-color-primary-bg);
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  }
+}
+
+.config {
+  background-color: var(--ag-ant-color-bg-base);
+  overflow-y: auto;
+  height: 100%;
+  width: calc(100% - 0px);
+  flex-shrink: 0;
+  transition: width 0.5s ease;
+
+  // 独立滚动条样式
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--ag-ant-color-fill-secondary);
+    border-radius: 6px;
+    border: 1px solid var(--ag-ant-color-border);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--ag-ant-color-text-tertiary);
+    border-radius: 6px;
+    border: 2px solid var(--ag-ant-color-bg-base);
+    background-clip: padding-box;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--ag-ant-color-text-secondary);
+    }
+
+    &:active {
+      background: var(--ag-ant-color-text);
+    }
+  }
+
+  &::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  // Firefox 支持
+  scrollbar-width: thin;
+  scrollbar-color: var(--ag-ant-color-text-tertiary) var(--ag-ant-color-fill-secondary);
+}
+
+// 为配置时间线添加独立滚动条
+.configTimelineContainer {
+  height: calc(100% - 80px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  margin-right: -4px;
+  border-radius: 8px;
+
+  // 独立滚动条样式
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--ag-ant-color-fill-alter);
+    border-radius: 4px;
+    margin: 4px 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--ag-ant-color-text-disabled);
+    border-radius: 4px;
+    min-height: 30px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--ag-ant-color-text-tertiary);
+    }
+
+    &:active {
+      background: var(--ag-ant-color-text-secondary);
+    }
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  // Firefox 支持
+  scrollbar-width: thin;
+  scrollbar-color: var(--ag-ant-color-text-disabled) var(--ag-ant-color-fill-alter);
+}
+
+.container {
+  height: 100%;
+  display: flex;
+  background-color: var(--ag-ant-color-border-secondary);
+
+  .divider {
+    width: 1px;
+  }
+
+  :global {
+    .ag-ant-tabs-nav {
+      padding: 0 24px 1px !important;
+      border-bottom: 0 !important;
+    }
+  }
+
+  .titleWrapper {
+    width: 100%;
+    height: 52px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-width: 0px 0px 1px 0px;
+    border-style: dashed;
+    border-color: var(--ag-ant-color-fill);
+    margin-bottom: 16px;
+  }
+
+  .header1 {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 32px;
+    color: var(--ag-ant-color-text-tertiary);
+  }
+}
+
+.testWindow {
+  position: relative;
+  height: 100%;
+  flex: 1;
+  border-left: 1px solid var(--ag-ant-color-border-secondary);
+  border-bottom: none;
+  width: 100%;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 32px;
+}
+
+.formTitle {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.expandBtn {
+  font-size: 14px;
+  line-height: 1;
+
+  &.hidden {
+    transform: rotate(180deg);
+  }
+}
+
+.debugIcon {
+  display: flex;
+  position: absolute;
+  height: 24px;
+  width: 24px;
+  cursor: pointer;
+  margin-top: 54px;
+  font-size: 20px;
+  padding: 5px 5px 5px 5px;
+  border-radius: 0 4px 4px 0;
+  border: 1px solid var(--ag-ant-color-border);
+  border-width: 1px 1px 1px 0;
+  background-color: var(--ag-ant-color-bg-base);
+  z-index: 1;
+
+  :global {
+    .bl-iconfont {
+      font-size: 14px !important;
+    }
+  }
+}
+
+.divider1 {
+  position: relative;
+  width: 1px;
+  height: 100%;
+
+  img {
+    width: 16px;
+    height: 100%;
+    position: absolute;
+    left: -1px;
+    cursor: col-resize !important;
+    opacity: 0;
+    user-select: none;
+  }
+}
+
+.resizeHandle {
+  cursor: col-resize !important;
+  outline: none;
+  width: 1px;
+  display: flex;
+  justify-content: stretch;
+  align-items: stretch;
+  transition: background-color 0.2s linear;
+
+  &:hover {
+    .divider1 {
+      background-color: var(--ag-ant-color-primary-hover);
+    }
+  }
+}
