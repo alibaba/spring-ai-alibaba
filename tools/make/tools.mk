@@ -66,7 +66,7 @@ tools: ## Install ci tools
 	fi
 
 	@echo "Installing gitleaks"
-@if command -v gitleaks >/dev/null 2>&1; then \
+    @if command -v gitleaks >/dev/null 2>&1; then \
 		echo "gitleaks is already installed, skipping..."; \
 	else \
 		mkdir -p tools/bin && \
