@@ -53,8 +53,14 @@ class GenericMapDeserializer extends StdDeserializer<Map<String, Object>> {
 
 		while (fields.hasNext()) {
 			final var entry = fields.next();
+			String key = entry.getKey();
 
-			result.put(entry.getKey(), JacksonDeserializer.valueFromNode(entry.getValue(), mapper, typeMapper));
+
+			if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
+				continue;
+			}
+
+			result.put(key, JacksonDeserializer.valueFromNode(entry.getValue(), mapper, typeMapper));
 		}
 
 		return result;

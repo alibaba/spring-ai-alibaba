@@ -553,4 +553,108 @@ public class StateGraphFileSystemSaverTest {
 		}
 	}
 
+
+	@Test
+	public void testUserScenarioWithoutExplicitMetadata() throws Exception {
+
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+			.addStrategy("messages")
+			.addStrategy("lastResponse")
+			.build();
+
+		StateGraph workflow = new StateGraph(keyStrategyFactory)
+			.addEdge(START, "processNode")
+			.addNode("processNode", node_async(state -> {
+				@SuppressWarnings("unchecked")
+				var messages = (java.util.List<String>) state.value("messages").orElse(new java.util.ArrayList<String>());
+				var newMessages = new java.util.ArrayList<>(messages);
+				newMessages.add("Message " + (messages.size() + 1));
+
+				GraphResponse<?> response = GraphResponse.of(
+					"Processed message " + newMessages.size()
+				);
+
+				log.info("ProcessNode execution: messages={}, response={}",
+					newMessages.size(), response.resultValue().orElse(null));
+
+				return Map.of(
+					"messages", newMessages,
+					"lastResponse", response
+				);
+			}))
+			.addEdge("processNode", END);
+		var saver = FileSystemSaver.builder()
+			.targetFolder(Paths.get(rootPath, "bug3895-user-scenario"))
+			.stateSerializer(workflow.getStateSerializer())
+			.build();
+
+		CompileConfig compileConfig = CompileConfig.builder()
+			.saverConfig(SaverConfig.builder()
+				.register(saver)
+				.build())
+			.build();
+
+		CompiledGraph app = workflow.compile(compileConfig);
+		String threadId = "user-scenario-thread";
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+
+		try {
+			saver.deleteFile(config);
+
+			for (int round = 0; round < 5; round++) {
+				log.info("=== Round {} ===", round + 1);
+
+				Optional<OverAllState> stateOpt = app.invoke(Map.of(), config);
+				assertTrue(stateOpt.isPresent(), "State should be present");
+
+				OverAllState result = stateOpt.get();
+				var messages = (java.util.List<?>) result.data().get("messages");
+				assertNotNull(messages, "Messages should not be null");
+				assertEquals(round + 1, messages.size(),
+					"Round " + (round + 1) + ": Should have " + (round + 1) + " messages");
+
+				Object lastResponseObj = result.data().get("lastResponse");
+				assertNotNull(lastResponseObj, "LastResponse should not be null");
+				assertTrue(lastResponseObj instanceof GraphResponse,
+					"LastResponse should be GraphResponse instance");
+
+				@SuppressWarnings("unchecked")
+				GraphResponse<Object> lastResponse = (GraphResponse<Object>) lastResponseObj;
+
+				Map<String, Object> metadata = lastResponse.getAllMetadata();
+
+				assertFalse(metadata.containsKey("@class"),
+					"Round " + (round + 1) + ": metadata should NOT contain @class field");
+				assertFalse(metadata.containsKey("@type"),
+					"Round " + (round + 1) + ": metadata should NOT contain @type field");
+				assertFalse(metadata.containsKey("@typeHint"),
+					"Round " + (round + 1) + ": metadata should NOT contain @typeHint field");
+
+				log.info("Round {} passed: GraphResponse metadata is clean, size={}, keys={}",
+					round + 1, metadata.size(), metadata.keySet());
+				StateSnapshot snapshot = app.getState(config);
+				assertNotNull(snapshot, "Snapshot should not be null");
+
+				OverAllState snapshotState = snapshot.state();
+				assertNotNull(snapshotState, "Snapshot state should not be null");
+
+				Object restoredResponseObj = snapshotState.data().get("lastResponse");
+				if (restoredResponseObj instanceof GraphResponse) {
+					@SuppressWarnings("unchecked")
+					GraphResponse<Object> restoredResponse = (GraphResponse<Object>) restoredResponseObj;
+					Map<String, Object> restoredMetadata = restoredResponse.getAllMetadata();
+
+					assertFalse(restoredMetadata.containsKey("@class"),
+						"Round " + (round + 1) + ": Restored metadata should NOT contain @class");
+
+					log.info("Round {} snapshot verified: Restored GraphResponse is clean",
+						round + 1);
+				}
+			}
+
+		} finally {
+			saver.deleteFile(config);
+		}
+	}
+
 }
