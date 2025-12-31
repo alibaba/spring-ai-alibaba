@@ -1,4 +1,4 @@
-# How to Contribute
+## How to Contribute
 
 [中文版本](./CONTRIBUTING-zh.md)
 
@@ -38,7 +38,7 @@ If you are a first-time contributor, you can claim a relatively simple task from
 
 After forking the repository, new commits may have appeared in the original repository's main branch. To avoid conflicts between your PR and the commits in the main branch, you need to regularly merge from the main branch.
 
-- In your local spring-ai-alibaba directory, execute `git remote add upstream https://github.com/alibaba/spring-ai-alibaba` to add the original repository address as a remote.
+- In your local spring-ai-alibaba directory, execute `git remote add upstream https://github.com/alibaba/spring-ai-alibaba` to add the original repository address as the remote upstream.
 - In your local spring-ai-alibaba directory, execute `git fetch upstream` to fetch the remote updates to your local machine.
 - In your local spring-ai-alibaba directory, execute `git checkout main` to switch to the main branch.
 - In your local spring-ai-alibaba directory, execute `git rebase upstream/main` to rebase the latest code.
