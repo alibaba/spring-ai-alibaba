@@ -77,4 +77,4 @@ tools: ## Install ci tools
 		chmod +x gitleaks && \
 		cp gitleaks /usr/local/bin && \
 		cd .. && rm -rf gitleaks; \
-	fi
+    fi
