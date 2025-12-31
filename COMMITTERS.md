@@ -11,7 +11,7 @@
 | <img width="30px" src="https://github.com/VLSMB.png">                | VLSMB             | [VLSMB](https://github.com/VLSMB)                                  | 25th July 2025 |
 | <img width="30px" src="https://github.com/anyin-xyz.png">            | Jingyang Chen     | [anyin-xyz](https://github.com/anyin-xyz)                                  | 24th Dec 2025 |
 | <img width="30px" src="https://github.com/zxuexingzhijie.png">       | Makoto            | [zxuexingzhijie](https://github.com/zxuexingzhijie)                                  | 24th Dec 2025 |
-| <img width="30px" src="https://github.com/Wangzy455.png">            | Ziwen Wang        | [Wangzy455](https://github.com/Wangzy455)                                  | 24th Dec 2025 |
+| <img width="30px" src="https://github.com/Wangzy455.png">            | Ziyuan Wang       | [Wangzy455](https://github.com/Wangzy455)                                  | 24th Dec 2025 |
 | <img width="30px" src="https://github.com/xiaohai-78.png">           | Yuntao Xiao       | [xiaohai-78](https://github.com/xiaohai-78)                                  | 24th Dec 2025 |
 | <img width="30px" src="https://github.com/SCMRCORE.png">             | Guo He            | [SCMRCORE](https://github.com/SCMRCORE)                                  | 24th Dec 2025 |
 
