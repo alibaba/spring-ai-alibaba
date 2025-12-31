@@ -236,8 +236,7 @@ public class PostgresSaverTest {
 
 
 	@Test
-	public void testBug3895PostgresSaverMultipleRoundTrips() throws Exception {
-		log.info("Testing Bug #3895 fix with PostgresSaver");
+	public void testPostgresSaverMultipleRoundTrips() throws Exception {
 
 		var saver = buildPostgresSaver()
 			.dropTablesFirst(true)

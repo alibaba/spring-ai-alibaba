@@ -363,8 +363,7 @@ public class StateGraphFileSystemSaverTest {
 
 
 	@Test
-	public void testBug3895FileSystemSaverMultipleRoundTrips() throws Exception {
-		log.info("Testing Bug #3895 fix with FileSystemSaver");
+	public void testFileSystemSaverMultipleRoundTrips() throws Exception {
 
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
 			.addStrategy("counter")
@@ -467,8 +466,7 @@ public class StateGraphFileSystemSaverTest {
 	}
 
 	@Test
-	public void testBug3895NestedGraphResponseWithFileSystemSaver() throws Exception {
-		log.info("Testing Bug #3895 fix: nested GraphResponse with FileSystemSaver");
+	public void testNestedGraphResponseWithFileSystemSaver() throws Exception {
 
 		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
 			.addStrategy("data")
