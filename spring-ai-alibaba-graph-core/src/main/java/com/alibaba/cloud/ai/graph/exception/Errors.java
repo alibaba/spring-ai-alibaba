@@ -35,8 +35,9 @@ public enum Errors {
 	unsupportedConditionalEdgeOnParallelNode(
 			"parallel node doesn't support conditional branch, but on [%s] a conditional branch on %s have been found!"),
 	illegalMultipleTargetsOnParallelNode("parallel node [%s] must have only one target, but %s have been found!"),
-	interruptionNodeNotExist("node '%s' configured as interruption doesn't exist!");
-
+	interruptionNodeNotExist("node '%s' configured as interruption doesn't exist!"),
+	emptySourceNodeByEdge("Source nodeIds missing for addEdges(sourceIds, %s)!"),
+	emptyTargetNodeByEdge("Target nodeIds missing for addEdges(%s, targetIds)!");
 	private final String errorMessage;
 
 	Errors(String errorMessage) {

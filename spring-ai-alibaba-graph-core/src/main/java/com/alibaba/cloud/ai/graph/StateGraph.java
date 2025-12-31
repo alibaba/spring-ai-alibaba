@@ -363,6 +363,26 @@ public class StateGraph {
 		return this;
 	}
 
+	public StateGraph addEdge(List<String> sourceIds, String targetId) throws GraphStateException {
+		if (sourceIds == null || sourceIds.isEmpty()) {
+			throw Errors.emptySourceNodeByEdge.exception(targetId);
+		}
+		for (String sourceId : sourceIds) {
+			addEdge(sourceId, targetId);
+		}
+		return this;
+	}
+
+	public StateGraph addEdge(String sourceId, List<String> targetIds) throws GraphStateException {
+		if (targetIds == null || targetIds.isEmpty()) {
+			throw Errors.emptyTargetNodeByEdge.exception(sourceId);
+		}
+		for (String targetId : targetIds) {
+			addEdge(sourceId, targetId);
+		}
+		return this;
+	}
+
 	/**
 	 * Adds conditional edges to the graph based on the provided condition and mappings.
 	 * @param sourceId the identifier of the source node
