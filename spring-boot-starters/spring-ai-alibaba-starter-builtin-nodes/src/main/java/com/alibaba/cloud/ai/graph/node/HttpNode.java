@@ -131,7 +131,7 @@ public class HttpNode implements NodeAction {
 			Map<String, String> finalHeaders = replaceVariables(headers, state);
 			Map<String, String> finalQueryParams = replaceVariables(queryParams, state);
 
-			UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(finalUrl);
+			UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(finalUrl);
 			finalQueryParams.forEach(uriBuilder::queryParam);
 			URI finalUri = uriBuilder.build().toUri();
 
@@ -330,7 +330,7 @@ public class HttpNode implements NodeAction {
 
 	private Map<String, Object> processResponse(ResponseEntity<byte[]> responseEntity, OverAllState state) {
 		Map<String, Object> result = new HashMap<>();
-		result.put("status", responseEntity.getStatusCodeValue());
+		result.put("status", responseEntity.getStatusCode().value());
 		result.put("headers", responseEntity.getHeaders());
 		byte[] body = responseEntity.getBody();
 		if (body == null) {
@@ -360,7 +360,7 @@ public class HttpNode implements NodeAction {
 	}
 
 	private String extractFilename(HttpHeaders headers) {
-		if (headers.containsKey(HttpHeaders.CONTENT_DISPOSITION)) {
+		if (headers.containsHeader(HttpHeaders.CONTENT_DISPOSITION)) {
 			String cd = headers.getFirst(HttpHeaders.CONTENT_DISPOSITION);
 			if (cd != null && cd.contains("filename=")) {
 				return cd.split("filename=")[1].replace("\"", "");
@@ -372,7 +372,7 @@ public class HttpNode implements NodeAction {
 	private boolean isFileResponse(ResponseEntity<?> response) {
 		HttpHeaders headers = response.getHeaders();
 		String contentType = Optional.ofNullable(headers.getContentType()).map(MediaType::toString).orElse("");
-		if (headers.containsKey(HttpHeaders.CONTENT_DISPOSITION)) {
+		if (headers.containsHeader(HttpHeaders.CONTENT_DISPOSITION)) {
 			String cd = headers.getFirst(HttpHeaders.CONTENT_DISPOSITION);
 			if (cd != null && (cd.startsWith("attachment") || cd.contains("filename="))) {
 				return true;

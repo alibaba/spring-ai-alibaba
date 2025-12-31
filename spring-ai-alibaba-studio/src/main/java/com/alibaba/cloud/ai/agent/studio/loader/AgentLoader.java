@@ -16,10 +16,9 @@
 package com.alibaba.cloud.ai.agent.studio.loader;
 
 import com.alibaba.cloud.ai.graph.agent.Agent;
+import org.jspecify.annotations.NonNull;
 
 import java.util.List;
-
-import jakarta.annotation.Nonnull;
 
 /**
  * Interface for loading agents.
@@ -58,7 +57,7 @@ public interface AgentLoader {
 	 * @return ImmutableList of agent names. Must not return null - return an empty list if no agents
 	 *     are available.
 	 */
-	@Nonnull
+	@NonNull
 	List<String> listAgents();
 
 	/**

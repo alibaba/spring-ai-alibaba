@@ -25,6 +25,7 @@ import io.micrometer.context.ContextRegistry;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,6 +72,7 @@ class GraphObservationAutoConfigurationTest {
 	@BeforeEach
 	void setUpFunctionalTests() {
 		functionalTestObservationRegistry = ObservationRegistry.create();
+		functionalTestObservationRegistry.observationConfig().observationHandler(new SimpleHandler());
 
 		ContextRegistry.getInstance()
 			.registerThreadLocalAccessor(new ObservationThreadLocalAccessor(functionalTestObservationRegistry));
@@ -355,7 +357,9 @@ class GraphObservationAutoConfigurationTest {
 
 		@Bean
 		ObservationRegistry observationRegistry() {
-			return ObservationRegistry.create();
+			ObservationRegistry registry = ObservationRegistry.create();
+			registry.observationConfig().observationHandler(new SimpleHandler());
+			return registry;
 		}
 
 	}
@@ -366,6 +370,14 @@ class GraphObservationAutoConfigurationTest {
 		@Bean
 		MeterRegistry meterRegistry() {
 			return new SimpleMeterRegistry();
+		}
+
+	}
+
+	static class SimpleHandler implements ObservationHandler<Observation.Context> {
+		@Override
+		public boolean supportsContext(Observation.Context handlerContext) {
+			return true;
 		}
 
 	}
