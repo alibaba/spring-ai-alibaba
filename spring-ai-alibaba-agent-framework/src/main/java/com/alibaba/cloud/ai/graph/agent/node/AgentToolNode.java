@@ -218,7 +218,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 					toolContextMap.putAll(Map.of(AGENT_STATE_CONTEXT_KEY, state, AGENT_CONFIG_CONTEXT_KEY, config, AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraStateFromToolCall));
 					result = toolCallback.call(req.getArguments(), new ToolContext(toolContextMap));
 				} else {
-					// FIXME, currently MCP Tool does not support State and RunnableConfig transmission in ToolContext.
+					// MCP tools receive the merged request/context map but do not receive agent state or RunnableConfig keys in ToolContext.
 
 					result = toolCallback.call(req.getArguments(), new ToolContext(toolContextMap));
 				}
