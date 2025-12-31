@@ -684,6 +684,9 @@ class ReactAgentTest {
 			// END
 		}).blockLast();
 
+		if (finalOutput == null) {
+			fail("ReactAgent stream completed without emitting any NodeOutput");
+		}
 		System.out.println("ReactAgent Final Output: " + finalOutput.state());
 
 		// Verify that all expected output types were received
