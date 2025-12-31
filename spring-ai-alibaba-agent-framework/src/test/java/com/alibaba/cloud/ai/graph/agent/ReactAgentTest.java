@@ -24,12 +24,14 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -55,6 +57,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -615,6 +618,83 @@ class ReactAgentTest {
         // 校验 hasTools 以检查是否包含工具定义
         assertTrue(testHasTools(react ), "Tools should have been set");
     }
+
+	@Test
+	public void testReactAgentStreamingWithTools() throws GraphRunnerException {
+
+		// Define a simple ModelHook that returns custom data
+		ModelHook streamingModelHook = new ModelHook() {
+			@Override
+			public String getName() {
+				return "streaming_test_hook";
+			}
+
+			@Override
+			public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+				return CompletableFuture.completedFuture(Map.of(
+					"hook_type", "before_model",
+					"custom_data", "streaming_hook_data",
+					"timestamp", System.currentTimeMillis()
+				));
+			}
+
+			@Override
+			public HookPosition[] getHookPositions() {
+				return new HookPosition[]{HookPosition.BEFORE_MODEL};
+			}
+		};
+
+		var react = ReactAgent.builder()
+				.name("demoReactAgent")
+				.model(chatModel)
+				.instruction("地点为: {target_topic}")
+				.tools(ToolCallbacks.from(new TestTools()))
+				.hooks(List.of(streamingModelHook))
+				.systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
+				.outputKey("final_answer")
+				.build();
+
+		// Track whether we've seen each expected output type
+		AtomicBoolean hasAgentModelStreaming = new AtomicBoolean(false);
+		AtomicBoolean hasAgentModelFinished = new AtomicBoolean(false);
+		AtomicBoolean hasAgentToolFinished = new AtomicBoolean(false);
+		AtomicBoolean hasAgentHookFinished = new AtomicBoolean(false);
+
+		Flux<NodeOutput> flux = react.stream("上海,北京");
+		NodeOutput finalOutput = flux.doOnNext(output -> {
+			// START
+			if (output instanceof StreamingOutput<?> streamingOutput) {
+				System.out.println("ReactAgent Streaming Output Chunk: " + streamingOutput.getOutputType());
+				System.out.println("ReactAgent Streaming Output Chunk: " + streamingOutput.message());
+
+				// Check for expected output types
+				if (streamingOutput.getOutputType() == OutputType.AGENT_MODEL_STREAMING) {
+					hasAgentModelStreaming.set(true);
+				}
+				if (streamingOutput.getOutputType() == OutputType.AGENT_MODEL_FINISHED) {
+					hasAgentModelFinished.set(true);
+				}
+				if (streamingOutput.getOutputType() == OutputType.AGENT_TOOL_FINISHED) {
+					hasAgentToolFinished.set(true);
+				}
+				if (streamingOutput.getOutputType() == OutputType.AGENT_HOOK_FINISHED) {
+					hasAgentHookFinished.set(true);
+				}
+			}
+			// END
+		}).blockLast();
+
+		if (finalOutput == null) {
+			fail("ReactAgent stream completed without emitting any NodeOutput");
+		}
+		System.out.println("ReactAgent Final Output: " + finalOutput.state());
+
+		// Verify that all expected output types were received
+		assertTrue(hasAgentModelStreaming.get(), "Should have received AGENT_MODEL_STREAMING output");
+		assertTrue(hasAgentModelFinished.get(), "Should have received AGENT_MODEL_FINISHED output");
+		assertTrue(hasAgentToolFinished.get(), "Should have received AGENT_TOOL_FINISHED output");
+		assertTrue(hasAgentHookFinished.get(), "Should have received AGENT_HOOK_FINISHED output");
+	}
 
     @Test
     public void testReactAgentWithMultiple() throws GraphRunnerException, NoSuchFieldException, IllegalAccessException {
