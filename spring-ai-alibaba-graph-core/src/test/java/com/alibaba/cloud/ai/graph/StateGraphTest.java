@@ -1377,4 +1377,43 @@ public class StateGraphTest {
 		assertEquals("edge mapping is empty!", exception3.getMessage());
 	}
 
+	@Test
+	void testCommandNode_Issue3917() throws Exception {
+		AsyncCommandAction commandAction = (state, config) ->
+				completedFuture( new Command("D",
+						Map.of( "messages", "B",
+								"next_node", "C2")) );
+
+		var graph = new StateGraph(createKeyStrategyFactory())
+				.addNode("A", makeNode("A"))
+				.addNode("B", commandAction, EdgeMappings.builder()
+						.toEND()
+						.to("C")
+						.to("D")
+						.build())
+				.addNode("C1", makeNode("C1"))
+				.addNode("C2", makeNode("C2"))
+				.addNode("C", makeNode("C"))
+				.addNode("D", makeNode("D"))
+				.addEdge(START, "A")
+				.addEdge("A", "B")
+				.addEdge("D","C1")
+				.addEdge("D","C2")
+				.addEdge("C", END)
+				.addEdge( "C1", END )
+				.addEdge( "C2", END )
+				.compile();
+
+		var steps = Objects.requireNonNull(graph.stream(Map.of())
+				.doOnNext(nodeOutput -> log.info("node: " + nodeOutput.node()))
+				.collectList()
+				.block());
+
+
+		assertEquals(6, steps.size());
+		assertEquals( "B", steps.get(2).state().value("messages",List.class).get().get(1));
+		assertEquals( "C2", steps.get(2).state().value("next_node").orElse(null));
+
+	}
+
 }
