@@ -361,4 +361,198 @@ public class StateGraphFileSystemSaverTest {
 
 	}
 
+
+	@Test
+	public void testBug3895FileSystemSaverMultipleRoundTrips() throws Exception {
+		log.info("Testing Bug #3895 fix with FileSystemSaver");
+
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+			.addStrategy("counter")
+			.addStrategy("graphResponse")
+			.build();
+
+		StateGraph workflow = new StateGraph(keyStrategyFactory)
+			.addEdge(START, "node1")
+			.addNode("node1", node_async(state -> {
+				int counter = (int) state.value("counter").orElse(0);
+				counter++;
+
+				Map<String, Object> metadata = Map.of(
+					"iteration", counter,
+					"nodeId", "node1",
+					"timestamp", System.currentTimeMillis()
+				);
+				GraphResponse<?> response = GraphResponse.of("Result " + counter, metadata);
+
+				log.info("Node1 execution {}: created GraphResponse with metadata: {}", counter, metadata);
+
+				return Map.of(
+					"counter", counter,
+					"graphResponse", response
+				);
+			}))
+			.addEdge("node1", END);
+		var saver = FileSystemSaver.builder()
+			.targetFolder(Paths.get(rootPath, "bug3895-test"))
+			.stateSerializer(workflow.getStateSerializer())
+			.build();
+
+		CompileConfig compileConfig = CompileConfig.builder()
+			.saverConfig(SaverConfig.builder()
+				.register(saver)
+				.build())
+			.build();
+
+		CompiledGraph app = workflow.compile(compileConfig);
+
+		String threadId = "bug3895-test-thread";
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+
+		try {
+			saver.deleteFile(config);
+
+			for (int i = 0; i < 5; i++) {
+				log.info("=== Iteration {} ===", i + 1);
+
+				Optional<OverAllState> stateOpt = app.invoke(Map.of(), config);
+
+				log.info("Iteration {} result available: {}", i + 1, stateOpt.isPresent());
+
+				assertTrue(stateOpt.isPresent(), "State should be present");
+				OverAllState result = stateOpt.get();
+				assertEquals(i + 1, result.data().get("counter"), "Counter should be " + (i + 1));
+
+				Object graphResponseObj = result.data().get("graphResponse");
+				assertNotNull(graphResponseObj, "GraphResponse should not be null");
+				assertTrue(graphResponseObj instanceof GraphResponse,
+					"Should be GraphResponse instance");
+
+				@SuppressWarnings("unchecked")
+				GraphResponse<Object> graphResponse = (GraphResponse<Object>) graphResponseObj;
+
+				Map<String, Object> metadata = graphResponse.getAllMetadata();
+				assertFalse(metadata.containsKey("@class"),
+					"Iteration " + (i + 1) + ": metadata should NOT contain @class field (Bug #3895)");
+				assertFalse(metadata.containsKey("@type"),
+					"Iteration " + (i + 1) + ": metadata should NOT contain @type field");
+				assertFalse(metadata.containsKey("@typeHint"),
+					"Iteration " + (i + 1) + ": metadata should NOT contain @typeHint field");
+
+				assertEquals(3, metadata.size(),
+					"Iteration " + (i + 1) + ": metadata should have exactly 3 fields (no accumulated type markers)");
+				assertEquals(i + 1, metadata.get("iteration"),
+					"Iteration metadata should match");
+				assertEquals("node1", metadata.get("nodeId"),
+					"NodeId should be preserved");
+				assertNotNull(metadata.get("timestamp"),
+					"Timestamp should be preserved");
+
+				log.info("Iteration {} passed: metadata is clean, size={}, keys={}",
+					i + 1, metadata.size(), metadata.keySet());
+
+				StateSnapshot snapshot = app.getState(config);
+				assertNotNull(snapshot, "Snapshot should not be null");
+
+				OverAllState snapshotState = snapshot.state();
+				assertNotNull(snapshotState, "Snapshot state should not be null");
+				assertEquals(i + 1, snapshotState.data().get("counter"),
+					"Snapshot counter should match");
+
+				log.info("Iteration {} checkpoint saved successfully", i + 1);
+			}
+
+		} finally {
+			saver.deleteFile(config);
+		}
+	}
+
+	@Test
+	public void testBug3895NestedGraphResponseWithFileSystemSaver() throws Exception {
+		log.info("Testing Bug #3895 fix: nested GraphResponse with FileSystemSaver");
+
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+			.addStrategy("data")
+			.build();
+
+		StateGraph workflow = new StateGraph(keyStrategyFactory)
+			.addEdge(START, "node1")
+			.addNode("node1", node_async(state -> {
+				GraphResponse<?> innerResponse = GraphResponse.of(
+					"Inner result",
+					Map.of("inner_key", "inner_value")
+				);
+
+				GraphResponse<?> outerResponse = GraphResponse.of(
+					Map.of("nested", innerResponse, "other", "data"),
+					Map.of("outer_key", "outer_value")
+				);
+
+				return Map.of("data", outerResponse);
+			}))
+			.addEdge("node1", END);
+
+		var saver = FileSystemSaver.builder()
+			.targetFolder(Paths.get(rootPath, "bug3895-nested-test"))
+			.stateSerializer(workflow.getStateSerializer())
+			.build();
+
+		CompileConfig compileConfig = CompileConfig.builder()
+			.saverConfig(SaverConfig.builder()
+				.register(saver)
+				.build())
+			.build();
+
+		CompiledGraph app = workflow.compile(compileConfig);
+		RunnableConfig config = RunnableConfig.builder().threadId("nested-test").build();
+
+		try {
+			saver.deleteFile(config);
+
+			for (int i = 0; i < 3; i++) {
+				log.info("=== Nested Iteration {} ===", i + 1);
+
+				Optional<OverAllState> stateOpt = app.invoke(Map.of(), config);
+				assertTrue(stateOpt.isPresent(), "State should be present");
+				OverAllState result = stateOpt.get();
+
+				Object dataObj = result.data().get("data");
+				assertNotNull(dataObj, "Data should not be null");
+				assertTrue(dataObj instanceof GraphResponse, "Should be GraphResponse");
+
+				@SuppressWarnings("unchecked")
+				GraphResponse<Object> outerResponse = (GraphResponse<Object>) dataObj;
+
+				Map<String, Object> outerMetadata = outerResponse.getAllMetadata();
+				assertFalse(outerMetadata.containsKey("@class"),
+					"Outer metadata should NOT contain @class");
+				assertEquals(1, outerMetadata.size(),
+					"Outer metadata should have 1 field");
+
+				Object resultValue = outerResponse.resultValue().orElse(null);
+				assertNotNull(resultValue, "Result value should not be null");
+				assertTrue(resultValue instanceof Map, "Result should be a Map");
+
+				@SuppressWarnings("unchecked")
+				Map<String, Object> resultMap = (Map<String, Object>) resultValue;
+
+				Object nestedObj = resultMap.get("nested");
+				assertTrue(nestedObj instanceof GraphResponse,
+					"Nested value should be GraphResponse");
+
+				@SuppressWarnings("unchecked")
+				GraphResponse<Object> innerResponse = (GraphResponse<Object>) nestedObj;
+				Map<String, Object> innerMetadata = innerResponse.getAllMetadata();
+				assertFalse(innerMetadata.containsKey("@class"),
+					"Inner metadata should NOT contain @class");
+				assertEquals(1, innerMetadata.size(),
+					"Inner metadata should have 1 field");
+
+				log.info("Nested iteration {} passed", i + 1);
+			}
+
+		} finally {
+			saver.deleteFile(config);
+		}
+	}
+
 }
