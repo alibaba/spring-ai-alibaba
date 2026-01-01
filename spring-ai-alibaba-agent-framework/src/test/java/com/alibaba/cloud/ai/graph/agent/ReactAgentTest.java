@@ -946,4 +946,21 @@ class ReactAgentTest {
 		return (RunnableConfig) method.invoke(agent, config);
 	}
 
+	@Test
+	public void testInstructionSentToLLM() throws Exception {
+		String instructionText = "请用简洁的语言回答";
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("instruction_test_agent")
+				.model(chatModel)
+				.instruction(instructionText)
+				.saver(new MemorySaver())
+				.build();
+
+		assertNotNull(agent, "Agent 不应为空");
+
+		AssistantMessage response = agent.call("测试问题");
+		assertNotNull(response, "响应不应为空");
+	}
+
 }

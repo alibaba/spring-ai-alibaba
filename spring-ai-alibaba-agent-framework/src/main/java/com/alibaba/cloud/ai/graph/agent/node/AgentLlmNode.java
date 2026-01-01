@@ -178,6 +178,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			requestBuilder.systemMessage(new SystemMessage(this.systemPrompt));
 		}
 
+		if (StringUtils.hasLength(this.instruction)) {
+			List<Message> messagesWithInstruction = new ArrayList<>();
+			messagesWithInstruction.add(new SystemMessage(this.instruction));
+			messagesWithInstruction.addAll(messages);
+			requestBuilder.messages(messagesWithInstruction);
+		}
+
 		ModelRequest modelRequest = requestBuilder.build();
 
 		// add streaming support
