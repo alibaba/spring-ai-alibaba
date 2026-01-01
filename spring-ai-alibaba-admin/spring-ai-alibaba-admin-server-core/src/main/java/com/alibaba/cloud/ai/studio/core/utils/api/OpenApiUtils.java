@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -535,7 +535,7 @@ public class OpenApiUtils {
 			if (!CollectionUtils.isEmpty(paths)) {
 				// 遍历每个 url
 				paths.forEach((path, pathItem) -> pathItem.readOperationsMap().values().forEach(operation -> {
-					// 遍历 get post put 等方法
+					// 遍历 get post put 等方�?
 					if (operation != null) {
 						List<ApiParameter> subResult = parseRestfulMethod(operation);
 						if (!CollectionUtils.isEmpty(subResult)) {
@@ -598,7 +598,7 @@ public class OpenApiUtils {
 			Object paramSource = schema.getExtensions().get(DEFINED_EXTENSION);
 			if (paramSource instanceof String && String.valueOf(paramSource).equals(EXTENSION_USER_SOURCE)) {
 				String type = schema.getType();
-				// 防止用户使用 "token" 类型的参数
+				// 防止用户使用 "token" 类型的参�?
 				if (StringUtils.isNotBlank(type) && TOKEN_TYPE.equals(type)) {
 					throw new YAMLException("Type \"token\" is not allowed.");
 				}
@@ -691,7 +691,7 @@ public class OpenApiUtils {
 	public static List<ApiParameter> parseOpenAPISchemaWithOutUserSource(String yamlString) {
 		ParseOptions parseOptions = new ParseOptions();
 		parseOptions.setResolve(true);
-		// 关联所有引用
+		// 关联所有引�?
 		parseOptions.setResolveFully(true);
 		SwaggerParseResult parseResult = new OpenAPIV3Parser().readContents(yamlString, null, parseOptions);
 		if (parseResult.getMessages() != null && !parseResult.getMessages().isEmpty()) {

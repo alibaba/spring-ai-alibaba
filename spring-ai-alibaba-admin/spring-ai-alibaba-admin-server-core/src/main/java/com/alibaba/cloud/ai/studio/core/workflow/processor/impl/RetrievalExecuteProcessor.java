@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,7 +133,7 @@ public class RetrievalExecuteProcessor extends AbstractExecuteProcessor {
 		@JsonProperty("knowledge_base_ids")
 		private List<String> knowledgeBaseIds;
 
-		// 知识库检索策略
+		// 知识库检索策�?
 		@JsonProperty("prompt_strategy")
 		private String promptStrategy = "topk";
 

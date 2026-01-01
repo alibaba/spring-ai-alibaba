@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,9 +50,9 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
 
 	public static final String END_TIME_STR = "9999-12-31 23:59:59";
 
-	public static final String DATE_SMALL_STR_SHOW = "yyyy年MM月dd号HH点mm分";
+	public static final String DATE_SMALL_STR_SHOW = "yyyy年MM月dd号HH点mm�?;
 
-	public static final String DATE_MONTH_DAY_STR_SHOW = "MM月dd号";
+	public static final String DATE_MONTH_DAY_STR_SHOW = "MM月dd�?;
 
 	// Supported date parse patterns
 	private static final String[] parsePatterns = { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM",
@@ -332,7 +332,7 @@ public class DateUtils extends org.apache.commons.lang3.time.DateUtils {
 		// 获取当前月第一天：
 		Calendar c = Calendar.getInstance();
 		c.add(Calendar.MONTH, 0);
-		c.set(Calendar.DAY_OF_MONTH, 1);// 设置为1号,当前日期既为本月第一天
+		c.set(Calendar.DAY_OF_MONTH, 1);// 设置�?�?当前日期既为本月第一�?
 		String first = format.format(c.getTime());
 		return first;
 	}

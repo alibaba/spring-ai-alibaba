@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -762,7 +762,7 @@ public abstract class AbstractExecuteProcessor implements ExecuteProcessor {
 							outputParamsRef.getProperties());
 				}
 				else {
-					// 如果object没有继续的属性，则不解析，直接将所有内容直接放入target对象中
+					// 如果object没有继续的属性，则不解析，直接将所有内容直接放入target对象�?
 					jsonObject.putAll((Map<String, Object>) sourceMap.get(outputParamsRef.getKey()));
 				}
 			}

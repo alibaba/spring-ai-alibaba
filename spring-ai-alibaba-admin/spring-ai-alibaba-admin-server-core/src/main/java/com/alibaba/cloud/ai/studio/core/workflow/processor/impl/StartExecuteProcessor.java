@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.studio.core.base.constants.CacheConstants.WORKFLOW_SESSION_VARIABLE_KEY_TEMPLATE;
 
 /**
- * 应用编排执行接口类
+ * 应用编排执行接口�?
  *
  * @since 1.0.0.3
  */

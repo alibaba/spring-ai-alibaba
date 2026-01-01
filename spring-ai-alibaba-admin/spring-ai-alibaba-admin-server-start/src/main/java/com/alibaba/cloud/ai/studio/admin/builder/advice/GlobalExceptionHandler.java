@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,10 +100,10 @@ public class GlobalExceptionHandler {
 			String message = "请求参数格式错误，请检查JSON格式是否正确";
 			if (hmne.getMessage() != null) {
 				if (hmne.getMessage().contains("JSON parse error")) {
-					message = "JSON格式错误，请检查参数格式";
+					message = "JSON格式错误，请检查参数格�?;
 				}
 				else if (hmne.getMessage().contains("Required request body is missing")) {
-					message = "请求体不能为空";
+					message = "请求体不能为�?;
 				}
 			}
 			// Create Error object directly with custom message

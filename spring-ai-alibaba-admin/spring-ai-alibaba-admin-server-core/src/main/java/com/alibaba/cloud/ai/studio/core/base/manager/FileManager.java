@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,7 +143,7 @@ public class FileManager {
 			URL imageUrl = new URL(url);
 			// noinspection StartSSRFNetHookCheckingInspection
 			java.io.InputStream is = imageUrl.openStream();
-			byte[] bytes = new byte[Math.min(is.available(), 1024)]; // 读取前1KB用于识别
+			byte[] bytes = new byte[Math.min(is.available(), 1024)]; // 读取�?KB用于识别
 			is.read(bytes);
 			is.close();
 			MediaType mediaType = null;
@@ -170,7 +170,7 @@ public class FileManager {
 						&& bytes[3] == (byte) 0x6D) {
 					mediaType = MediaType.APPLICATION_XML;
 				}
-				// JSON格式 - 检查开头是否为 { 或 [
+				// JSON格式 - 检查开头是否为 { �?[
 				else if (bytes[0] == (byte) 0x7B || bytes[0] == (byte) 0x5B) {
 					mediaType = MediaType.APPLICATION_JSON;
 				}

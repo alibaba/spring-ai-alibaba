@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			return any.get();
 		}
 
-		// 筛选出nodeType为End的响应
+		// 筛选出nodeType为End的响�?
 		List<WorkflowResponse> endNodeResponses = allResponses.stream()
 			.filter(resp -> NodeTypeEnum.END.getCode().equals(resp.getNodeType()))
 			.sorted((r1, r2) -> Integer.compare(r1.getNodeMsgSeqId(), r2.getNodeMsgSeqId()))
@@ -124,7 +124,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 			}
 		}
 
-		// 构建最终响应
+		// 构建最终响�?
 		WorkflowResponse finalResponse = allResponses.get(allResponses.size() - 1);
 		finalResponse.setMessage(new ChatMessage(MessageRole.ASSISTANT, contentBuilder.toString()));
 		return finalResponse;
@@ -285,7 +285,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 				});
 			}
 
-			// 处理messages作为上下文
+			// 处理messages作为上下�?
 			if (!CollectionUtils.isEmpty(request.getMessages())) {
 				workflowContext.getSysMap().put(SYS_HISTORY_LIST_KEY, request.getMessages());
 			}

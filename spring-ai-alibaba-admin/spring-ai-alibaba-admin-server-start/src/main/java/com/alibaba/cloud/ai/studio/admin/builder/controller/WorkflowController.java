@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -525,7 +525,7 @@ public class WorkflowController {
 	public SseEmitter streamEvents(@PathVariable("appId") String appId, @RequestBody ApiTaskRunRequest request) {
 		SseEmitter emitter = new SseEmitter(0L);
 
-		// 设置超时和完成回调
+		// 设置超时和完成回�?
 		emitter.onTimeout(() -> {
 			ApiTaskMsg timeoutMsg = new ApiTaskMsg();
 			timeoutMsg.setEvent(ApiTaskMsg.Event.Error.name());
@@ -601,7 +601,7 @@ public class WorkflowController {
 		List<NodeResult> lastNodeResults = Lists.newArrayList();
 		Map<String, AtomicInteger> recmsgSeqIdMap = Maps.newHashMap();
 		while (true) {
-			// 检查超时
+			// 检查超�?
 			if (System.currentTimeMillis() - startTime > InvokeSourceEnum.api.getTimeoutSeconds() * 1000) {
 				sendTimeoutMessage(emitter, taskId, conversationId);
 				break;
@@ -631,7 +631,7 @@ public class WorkflowController {
 				lastNodeResults = currentNodeResults;
 			}
 
-			// 处理任务状态
+			// 处理任务状�?
 			if (handleTaskStatus(emitter, latestContext, taskId, conversationId)) {
 				break;
 			}

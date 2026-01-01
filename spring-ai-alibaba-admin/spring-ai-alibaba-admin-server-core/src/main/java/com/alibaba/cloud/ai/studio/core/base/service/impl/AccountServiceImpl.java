@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,7 +225,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, AccountEntity
 	}
 
 	private void initAccountData(String workspaceId, String accountId) {
-		// 初始化通义千问提供商
+		// 初始化通义千问提供�?
 		ProviderConfigInfo providerConfigInfo = new ProviderConfigInfo();
 		providerConfigInfo.setProvider("Tongyi");
 		providerConfigInfo.setName("Tongyi");
@@ -283,7 +283,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, AccountEntity
 				createModelConfig("text-embedding-v3", "text-embedding-v3", "text_embedding", "chat",
 						Arrays.asList("embedding")),
 
-				// 重排序模型
+				// 重排序模�?
 				createModelConfig("gte-rerank-v2", "gte-rerank-v2", "rerank", "chat", null));
 
 		for (ModelConfigInfo model : models) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ public class Sequence {
 		this.workerId = getMaxWorkerId(datacenterId, maxWorkerId);
 		long end = System.nanoTime();
 		if (end - start > Sequence.MAX_START_INTERVAL_TIME) {
-			// 一般这里启动慢,是未指定inetAddress时出现,请查看本机hostname,将本机hostname写入至本地系统hosts文件之中进行解析
+			// 一般这里启动慢,是未指定inetAddress时出�?请查看本机hostname,将本机hostname写入至本地系统hosts文件之中进行解析
 			logger.warn("Initialization Sequence Very Slow! Get datacenterId:{} workerId:{}", this.datacenterId,
 					this.workerId);
 		}
@@ -121,7 +121,7 @@ public class Sequence {
 	/**
 	 * 有参构造器
 	 * @param workerId 工作机器 ID
-	 * @param datacenterId 序列号
+	 * @param datacenterId 序列�?
 	 */
 	public Sequence(long workerId, long datacenterId) {
 		Assert.isTrue(!(workerId > maxWorkerId || workerId < 0),
@@ -147,7 +147,7 @@ public class Sequence {
 			mpid.append(name.split(StringPool.AT)[0]);
 		}
 		/*
-		 * MAC + PID 的 hashcode 获取16个低位
+		 * MAC + PID �?hashcode 获取16个低�?
 		 */
 		return (mpid.toString().hashCode() & 0xffff) % (maxWorkerId + 1);
 	}

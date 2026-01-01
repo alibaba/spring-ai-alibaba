@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -278,7 +278,7 @@ public class LLMExecuteProcessor extends AbstractExecuteProcessor {
 	private UserMessage constructUserMessage(Node node, ModelConfig modelConfig, String userPrompt,
 			WorkflowContext context) {
 		userPrompt = replaceTemplateContent(userPrompt, context);
-		// 构造视觉理解
+		// 构造视觉理�?
 		ModelConfig.SkillConfig visionConfig = modelConfig.getVisionConfig();
 		if (visionConfig != null && BooleanUtils.isTrue(visionConfig.getEnable())) {
 			List<Node.InputParam> visionParams = visionConfig.getParams();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,7 +180,7 @@ public class IteratorExecuteProcessor extends AbstractExecuteProcessor {
 
 			if (context.getTaskStatus().equals(NodeStatusEnum.FAIL.getCode())) {
 				nodeResult.setNodeStatus(NodeStatusEnum.FAIL.getCode());
-				nodeResult.setError(ErrorCode.WORKFLOW_EXECUTE_ERROR.toError("主流程已失败，循环节点失败"));
+				nodeResult.setError(ErrorCode.WORKFLOW_EXECUTE_ERROR.toError("主流程已失败，循环节点失�?));
 				break;
 			}
 
@@ -788,7 +788,7 @@ public class IteratorExecuteProcessor extends AbstractExecuteProcessor {
 					&& !operator.equals(JudgeOperator.IS_NOT_NULL.getCode())
 					&& !operator.equals(JudgeOperator.IS_TRUE.getCode())
 					&& !operator.equals(JudgeOperator.IS_FALSE.getCode())) {
-				// is_null、is_not_null、is_true、is_false不需要右值
+				// is_null、is_not_null、is_true、is_false不需要右�?
 				return false;
 			}
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,11 +82,11 @@ import java.util.stream.Collectors;
 public class ClassifierExecuteProcessor extends AbstractExecuteProcessor {
 
 	// Pattern for extracting decision results
-	private final static Pattern DECISION_PATTERN = Pattern.compile("<Decision>：(.*?)\\s|<Decision>：(.*)",
+	private final static Pattern DECISION_PATTERN = Pattern.compile("<Decision>�?.*?)\\s|<Decision>�?.*)",
 			Pattern.DOTALL);
 
 	// Pattern for extracting thought process
-	private final static Pattern THOUGHT_PATTERN = Pattern.compile("(?<=<Thinking>：).*?(?=<Decision>)", Pattern.DOTALL);
+	private final static Pattern THOUGHT_PATTERN = Pattern.compile("(?<=<Thinking>�?.*?(?=<Decision>)", Pattern.DOTALL);
 
 	private static final Logger log = LoggerFactory.getLogger(ClassifierExecuteProcessor.class);
 
@@ -329,14 +329,14 @@ public class ClassifierExecuteProcessor extends AbstractExecuteProcessor {
 			}
 		}, error -> {
 			nodeResult.setNodeStatus(NodeStatusEnum.FAIL.getCode());
-			nodeResult.setErrorInfo("模型调用失败：" + error.getMessage());
+			nodeResult.setErrorInfo("模型调用失败�? + error.getMessage());
 			countDownLatch.countDown();
 		}, () -> {
 			String content = responseBuilder.toString();
 			log.info("log used for query classify response:{} , requestId:{}", content, context.getRequestId());
 
 			if ("efficient".equals(config.getModeSwitch())) {
-				// 快速模式 - 直接提取决策结果
+				// 快速模�?- 直接提取决策结果
 				dtu.setDecisions(Lists.newArrayList(content.trim()));
 				dtu.setThought("");
 			}
@@ -477,7 +477,7 @@ public class ClassifierExecuteProcessor extends AbstractExecuteProcessor {
 
 		private List<Condition> conditions;
 
-		// 模式设置，advanced:效果模式 efficient:快速模式
+		// 模式设置，advanced:效果模式 efficient:快速模�?
 		@JsonProperty("mode_switch")
 		private String modeSwitch = "advanced";
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,10 +56,10 @@ public class ApiExampleController {
 
 		Map<String, Object> result = new HashMap<>();
 		result.put("orderId", "100001");
-		result.put("description", "订单详情为尤尼克斯羽毛球拍");
+		result.put("description", "订单详情为尤尼克斯羽毛球�?);
 
 		Map<String, Object> data = new HashMap<>();
-		data.put("company", "顺丰快递");
+		data.put("company", "顺丰快�?);
 		data.put("city", "苏州");
 		result.put("data", data);
 
@@ -90,7 +90,7 @@ public class ApiExampleController {
 
 		Map<String, Object> result = new HashMap<>();
 		result.put("orderId", orderId);
-		result.put("description", "订单详情为尤尼克斯羽毛球拍");
+		result.put("description", "订单详情为尤尼克斯羽毛球�?);
 
 		List<Map<String, Object>> items = new ArrayList<>();
 		Map<String, Object> item = new HashMap<>();
@@ -101,7 +101,7 @@ public class ApiExampleController {
 
 		Map<String, Object> item2 = new HashMap<>();
 		item.put("itemId", "2002");
-		item.put("itemName", "亚狮龙7号");
+		item.put("itemName", "亚狮�?�?);
 		item.put("price", 99.5);
 		items.add(item);
 
@@ -131,7 +131,7 @@ public class ApiExampleController {
 
 		Map<String, Object> result = new HashMap<>();
 		result.put("orderId", orderId);
-		result.put("description", "订单详情为尤尼克斯羽毛球拍");
+		result.put("description", "订单详情为尤尼克斯羽毛球�?);
 
 		List<Map<String, Object>> items = new ArrayList<>();
 		Map<String, Object> item = new HashMap<>();
