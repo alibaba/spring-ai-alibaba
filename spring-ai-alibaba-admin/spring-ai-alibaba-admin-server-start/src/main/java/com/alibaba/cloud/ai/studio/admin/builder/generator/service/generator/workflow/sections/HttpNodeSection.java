@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class HttpNodeSection implements NodeSection<HttpNodeData> {
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(String.format("// —— HttpNode [%s] ——%n", id));
+		sb.append(String.format("// —�?HttpNode [%s] —�?n", id));
 		sb.append(String.format("HttpNode %s = HttpNode.builder()%n", varName));
 		if (d.getMethod() != null && d.getMethod() != HttpMethod.GET) {
 			sb.append(String.format(".method(HttpMethod.%s)%n", d.getMethod().name()));
@@ -99,7 +99,7 @@ public class HttpNodeSection implements NodeSection<HttpNodeData> {
 
 		sb.append(".build();\n");
 
-		// 辅助节点，用于转换HttpNode的结果
+		// 辅助节点，用于转换HttpNode的结�?
 		String assistNodeCode = String.format("wrapperHttpNodeAction(%s, \"%s\")", varName, varName);
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName,
 				assistNodeCode));

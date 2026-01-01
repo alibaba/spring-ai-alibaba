@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,11 +63,11 @@ class SpringAIJacksonStateSerializerTest {
 
 		SystemMessage original = SystemMessage.builder().text("You are a helpful assistant").metadata(metadata).build();
 
-		// 创建包含SystemMessage的状态数据
+		// 创建包含SystemMessage的状态数�?
 		Map<String, Object> data = new HashMap<>();
 		data.put("systemMessage", original);
 
-		// 序列化
+		// 序列�?
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ObjectOutputStream oos = new ObjectOutputStream(baos);
 		serializer.writeData(data, oos);
@@ -137,7 +137,7 @@ class SpringAIJacksonStateSerializerTest {
 		metadata.put("tool_execution_id", "exec_123");
 		metadata.put("execution_time", 150);
 
-		// 创建ToolResponse对象列表 - 根据实际ToolResponse的构造方式
+		// 创建ToolResponse对象列表 - 根据实际ToolResponse的构造方�?
 		List<ToolResponseMessage.ToolResponse> responses = List.of(
 				new ToolResponseMessage.ToolResponse("tool_call_1", "calculator", "{\"result\": 42}"),
 				new ToolResponseMessage.ToolResponse("tool_call_2", "weather", "{\"temperature\": 25}"));
@@ -232,7 +232,7 @@ class SpringAIJacksonStateSerializerTest {
 			.score(0.8)
 			.build();
 
-		// 创建包含多种类型的状态数据
+		// 创建包含多种类型的状态数�?
 		Map<String, Object> data = new HashMap<>();
 		data.put("system", systemMessage);
 		data.put("user", userMessage);
@@ -262,7 +262,7 @@ class SpringAIJacksonStateSerializerTest {
 
 	@Test
 	void testComplexMetadataSerialization() throws Exception {
-		// 测试复杂元数据的序列化
+		// 测试复杂元数据的序列�?
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("string_field", "test_value");
 		metadata.put("number_field", 42);
@@ -302,7 +302,7 @@ class SpringAIJacksonStateSerializerTest {
 		Map<String, Object> data = new HashMap<>();
 		data.put("object", object);
 
-		// 序列化
+		// 序列�?
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ObjectOutputStream oos = new ObjectOutputStream(baos);
 		serializer.writeData(data, oos);
@@ -313,7 +313,7 @@ class SpringAIJacksonStateSerializerTest {
 		ObjectInputStream ois = new ObjectInputStream(bais);
 		Map<String, Object> deserializedData = serializer.readData(ois);
 
-		// 返回反序列化的对象
+		// 返回反序列化的对�?
 		@SuppressWarnings("unchecked")
 		T result = (T) deserializedData.get("object");
 		return result;

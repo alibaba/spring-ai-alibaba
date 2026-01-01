@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import com.alibaba.cloud.ai.studio.admin.builder.generator.service.dsl.DSLDialec
  * @author robocanic
  * @since 2025/5/23
  */
-// TODO: 将assistMethodCode生成的代码单独放在生成工程的一个类中
+// TODO: 将assistMethodCode生成的代码单独放在生成工程的一个类�?
 public interface NodeSection<T extends NodeData> {
 
 	boolean support(NodeType nodeType);
@@ -40,8 +40,8 @@ public interface NodeSection<T extends NodeData> {
 	String render(Node node, String varName);
 
 	/**
-	 * 返回当前节点需要导入的类列表
-	 * @return 类列表
+	 * 返回当前节点需要导入的类列�?
+	 * @return 类列�?
 	 */
 	List<String> getImports();
 
@@ -57,10 +57,10 @@ public interface NodeSection<T extends NodeData> {
 	}
 
 	/**
-	 * 生成stateGraph边的代码。edge列表为从当前节点出发的边。 如果当前节点有条件边，则应重写本方法。本方法默认为无条件的边。
+	 * 生成stateGraph边的代码。edge列表为从当前节点出发的边�?如果当前节点有条件边，则应重写本方法。本方法默认为无条件的边�?
 	 * @param nodeData 当前节点（边起始节点）的数据
 	 * @param edges 边列表，且边的source和handle应格式化为varName
-	 * @return 生成的代码
+	 * @return 生成的代�?
 	 */
 	default String renderEdges(T nodeData, List<Edge> edges) {
 		StringBuilder sb = new StringBuilder();

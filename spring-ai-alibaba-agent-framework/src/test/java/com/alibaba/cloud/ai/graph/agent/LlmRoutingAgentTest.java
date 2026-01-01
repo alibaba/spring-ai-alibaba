@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,16 +56,16 @@ class LlmRoutingAgentTest {
 		ReactAgent proseWriterAgent = ReactAgent.builder()
 			.name("prose_writer_agent")
 			.model(chatModel)
-			.description("可以写散文文章。")
-			.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
+			.description("可以写散文文章�?)
+			.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答�?)
 			.outputKey("prose_article")
 			.build();
 
 		ReactAgent poemWriterAgent = ReactAgent.builder()
 			.name("poem_writer_agent")
 			.model(chatModel)
-			.description("可以写现代诗。")
-			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问，调用工具进行回复。")
+			.description("可以写现代诗�?)
+			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问，调用工具进行回复�?)
 			.outputKey("poem_article")
 			.tools(List.of(createPoetToolCallback()))
 			.build();
@@ -73,7 +73,7 @@ class LlmRoutingAgentTest {
 		LlmRoutingAgent blogAgent = LlmRoutingAgent.builder()
 			.name("blog_agent")
 			.model(chatModel)
-			.description("可以根据用户给定的主题写文章或作诗。")
+			.description("可以根据用户给定的主题写文章或作诗�?)
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent))
 			.build();
 
@@ -82,11 +82,11 @@ class LlmRoutingAgentTest {
 			GraphRepresentation representation = blogAgent.getGraph().getGraph(GraphRepresentation.Type.PLANTUML);
 			System.out.println(representation.content());
 
-			Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的现代诗");
-			blogAgent.invoke("帮我写一个100字左右的现代诗");
-			Optional<OverAllState> result3 = blogAgent.invoke("帮我写一个100字左右的现代诗");
+			Optional<OverAllState> result = blogAgent.invoke("帮我写一�?00字左右的现代�?);
+			blogAgent.invoke("帮我写一�?00字左右的现代�?);
+			Optional<OverAllState> result3 = blogAgent.invoke("帮我写一�?00字左右的现代�?);
 
-			// 验证结果不为空
+			// 验证结果不为�?
 			assertTrue(result.isPresent(), "Result should be present");
 			assertTrue(result3.isPresent(), "Third result should be present");
 
@@ -94,7 +94,7 @@ class LlmRoutingAgentTest {
 			OverAllState state3 = result3.get();
 
 			assertTrue(state.value("input").isPresent(), "Input should be present in state");
-			assertEquals("帮我写一个100字左右的现代诗", state.value("input").get(), "Input should match the request");
+			assertEquals("帮我写一�?00字左右的现代�?, state.value("input").get(), "Input should match the request");
 
 			assertTrue(state.value("poem_article").isPresent(), "Poem article should be present");
 			AssistantMessage poemContent = (AssistantMessage) state.value("poem_article").get();

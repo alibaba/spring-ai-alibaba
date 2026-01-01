@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,18 +41,18 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 
 /**
  * 流式输出示例
- * 演示如何在 Spring AI Alibaba Graph 中实现流式输出
+ * 演示如何�?Spring AI Alibaba Graph 中实现流式输�?
  */
 public class StreamingExample {
 
 	/**
-	 * 使用 StateGraph 实现流式输出的完整示例
+	 * 使用 StateGraph 实现流式输出的完整示�?
 	 *
-	 * @param chatClientBuilder ChatClient 构建器
-	 * @throws GraphStateException 图执行异常
+	 * @param chatClientBuilder ChatClient 构建�?
+	 * @throws GraphStateException 图执行异�?
 	 */
 	public static void streamLLMTokens(ChatClient.Builder chatClientBuilder) throws GraphStateException {
-		// 定义状态策略
+		// 定义状态策�?
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
 			keyStrategyMap.put("query", new AppendStrategy());
@@ -67,7 +67,7 @@ public class StreamingExample {
 		// 创建处理节点
 		ProcessStreamingNode processNode = new ProcessStreamingNode();
 
-		// 构建图
+		// 构建�?
 		StateGraph stateGraph = new StateGraph(keyStrategyFactory)
 				.addNode("streaming_node", AsyncNodeAction.node_async(streamingNode))
 				.addNode("process_node", AsyncNodeAction.node_async(processNode))
@@ -75,7 +75,7 @@ public class StreamingExample {
 				.addEdge("streaming_node", "process_node")
 				.addEdge("process_node", END);
 
-		// 编译图
+		// 编译�?
 		CompiledGraph graph = stateGraph.compile(
 				CompileConfig.builder()
 						.build()
@@ -86,26 +86,26 @@ public class StreamingExample {
 				.threadId("streaming_thread")
 				.build();
 
-		// 使用流式方式执行图
-		System.out.println("开始流式输出...\n");
+		// 使用流式方式执行�?
+		System.out.println("开始流式输�?..\n");
 
 		graph.stream(Map.of("query", "请用一句话介绍 Spring AI"), config)
 				.doOnNext(output -> {
 					// 处理流式输出
 					if (output instanceof StreamingOutput<?> streamingOutput) {
-						// 流式输出块
+						// 流式输出�?
 						String chunk = streamingOutput.chunk();
 						if (chunk != null && !chunk.isEmpty()) {
 							System.out.print(chunk); // 实时打印流式内容
 						}
 					}
 					else {
-						// 普通节点输出
+						// 普通节点输�?
 						String nodeId = output.node();
 						Map<String, Object> state = output.state().data();
 						System.out.println("\n节点 '" + nodeId + "' 执行完成");
 						if (state.containsKey("result")) {
-							System.out.println("最终结果: " + state.get("result"));
+							System.out.println("最终结�? " + state.get("result"));
 						}
 					}
 				})
@@ -115,25 +115,25 @@ public class StreamingExample {
 				.doOnError(error -> {
 					System.err.println("流式输出错误: " + error.getMessage());
 				})
-				.blockLast(); // 阻塞等待流完成
+				.blockLast(); // 阻塞等待流完�?
 	}
 
 	public static void main(String[] args) {
 		System.out.println("=== 流式输出示例 ===\n");
 
 		try {
-			// 示例 1: 使用 Spring AI 的流式 LLM tokens（需要 ChatClient）
-			System.out.println("示例 1: 使用 Spring AI 的流式 LLM tokens");
-			System.out.println("注意: 此示例需要 ChatClient，跳过执行");
+			// 示例 1: 使用 Spring AI 的流�?LLM tokens（需�?ChatClient�?
+			System.out.println("示例 1: 使用 Spring AI 的流�?LLM tokens");
+			System.out.println("注意: 此示例需�?ChatClient，跳过执�?);
 			System.out.println("使用方法: streamLLMTokens(ChatClient.builder()...)");
 			// streamLLMTokens(ChatClient.builder()...);
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
-			System.out.println("提示: 请配置 ChatClient 后运行完整示例");
+			System.out.println("所有示例执行完�?);
+			System.out.println("提示: 请配�?ChatClient 后运行完整示�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
@@ -163,7 +163,7 @@ public class StreamingExample {
 	}
 
 	/**
-	 * 处理流式输出的节点 - 接收并处理流式响应
+	 * 处理流式输出的节�?- 接收并处理流式响�?
 	 */
 	public static class ProcessStreamingNode implements NodeAction {
 
@@ -171,7 +171,7 @@ public class StreamingExample {
 		public Map<String, Object> apply(OverAllState state) {
 			// 从状态中获取流式响应结果
 			Object messages = state.value("messages").orElse("");
-			String result = "流式响应已处理完成: " + messages;
+			String result = "流式响应已处理完�? " + messages;
 			return Map.of("result", result);
 		}
 	}

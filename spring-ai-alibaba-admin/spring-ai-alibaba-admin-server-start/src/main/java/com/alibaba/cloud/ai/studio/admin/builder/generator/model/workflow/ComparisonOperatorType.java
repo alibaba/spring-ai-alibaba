@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ public enum ComparisonOperatorType {
 	}, List.of(VariableType.NUMBER),
 			(objName, constVal) -> String.format("(%s.doubleValue() == %s)", objName, constVal)),
 	NOT_EQUAL("not_equal", type -> switch (type) {
-		case DIFY -> "â‰ ";
+		case DIFY -> "â‰?;
 		case STUDIO -> "notEquals";
 		default -> "unknown";
 	}, List.of(VariableType.NUMBER),
@@ -105,13 +105,13 @@ public enum ComparisonOperatorType {
 	}, List.of(VariableType.NUMBER),
 			(objName, constVal) -> String.format("(%s.doubleValue() < %s)", objName, constVal)),
 	NOT_LESS_THAN("not_less_than", type -> switch (type) {
-		case DIFY -> "â‰¥";
+		case DIFY -> "â‰?;
 		case STUDIO -> "greaterAndEqual";
 		default -> "unknown";
 	}, List.of(VariableType.NUMBER),
 			(objName, constVal) -> String.format("(%s.doubleValue() >= %s)", objName, constVal)),
 	NOT_GREATER_THAN("not_greater_than", type -> switch (type) {
-		case DIFY -> "â‰¤";
+		case DIFY -> "â‰?;
 		case STUDIO -> "lessAndEqual";
 		default -> "unknown";
 	}, List.of(VariableType.NUMBER),

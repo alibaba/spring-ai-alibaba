@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,17 +36,17 @@ class DockerCodeExecutorTest {
 	@EnabledIf(value = "isCI", disabledReason = "this test is designed to run only in the GitHub CI environment.")
 	@Test
 	void testPython3Sum() throws Exception {
-		// 1. 构造 DockerCodeExecutor
+		// 1. 构�?DockerCodeExecutor
 		DockerCodeExecutor executor = new DockerCodeExecutor();
 
-		// 2. 构造代码块（Python3 求和）
+		// 2. 构造代码块（Python3 求和�?
 		String code = """
 				def main(inputs):
 				    return {\"result\": sum(inputs)}
 				""";
 		CodeBlock codeBlock = new CodeBlock("python3", code);
 
-		// 3. 构造执行配置
+		// 3. 构造执行配�?
 		Path workDir = Files.createTempDirectory("docker-code-exec-test");
 		CodeExecutionConfig config = new CodeExecutionConfig().setDocker("python:3.10")
 			.setWorkDir(workDir.toAbsolutePath().toString())

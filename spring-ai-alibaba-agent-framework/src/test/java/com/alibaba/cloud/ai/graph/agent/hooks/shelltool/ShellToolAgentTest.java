@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class ShellToolAgentTest {
 		try {
 
 			ShellTool.Builder shellToolBuilder = ShellTool.builder(tempWorkspace.toString())
-				.withCommandTimeout(30000)  // 30秒超时
+				.withCommandTimeout(30000)  // 30秒超�?
 				.withMaxOutputLines(500);
 
 			if (System.getProperty("os.name").toLowerCase().contains("windows")) {
@@ -94,27 +94,27 @@ public class ShellToolAgentTest {
 
 			List<Message> messages = new ArrayList<>();
 			String testCommand = System.getProperty("os.name").toLowerCase().contains("windows") ?
-				"请帮我创建一个名为 test.txt 的文件，内容为 'Hello from ShellTool!'，然后列出当前目录的文件，最后显示 test.txt 文件的内容。请使用Windows PowerShell兼容的命令。" :
+				"请帮我创建一个名�?test.txt 的文件，内容�?'Hello from ShellTool!'，然后列出当前目录的文件，最后显�?test.txt 文件的内容。请使用Windows PowerShell兼容的命令�? :
 				"请帮我完成以下任务：\n" +
-				"1. 创建一个名为 test.txt 的文件，内容为 'Hello from ShellTool!'\n" +
+				"1. 创建一个名�?test.txt 的文件，内容�?'Hello from ShellTool!'\n" +
 				"2. 列出当前目录的文件\n" +
 				"3. 显示 test.txt 文件的内容\n" +
-				"请按步骤执行，每步执行完告诉我结果。";
+				"请按步骤执行，每步执行完告诉我结果�?;
 
 			messages.add(new UserMessage(testCommand));
 
 			// 执行 Agent
-			System.out.println("开始执行 Agent...");
+			System.out.println("开始执�?Agent...");
 			Optional<OverAllState> result = agent.invoke(messages);
 
 			assertTrue(result.isPresent(), "Agent 应该返回结果");
 			Object messagesObj = result.get().value("messages").get();
-			assertNotNull(messagesObj, "返回的消息不应该为 null");
+			assertNotNull(messagesObj, "返回的消息不应该�?null");
 
-			System.out.println("Agent 执行成功，返回消息数量: " +
+			System.out.println("Agent 执行成功，返回消息数�? " +
 				(messagesObj instanceof List ? ((List<?>) messagesObj).size() : "未知"));
 			System.out.println("Agent 结果: " + messagesObj);
-			System.out.println("✓ ShellTool 与 ShellToolAgentHook 集成测试执行成功");
+			System.out.println("�?ShellTool �?ShellToolAgentHook 集成测试执行成功");
 		}
 		finally {
 			// 清理临时目录

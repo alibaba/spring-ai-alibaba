@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,13 +39,13 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * 为图添加持久化（记忆）示例
- * 演示如何使用 Checkpointer 为 StateGraph 提供持久化记忆
+ * 为图添加持久化（记忆）示�?
+ * 演示如何使用 Checkpointer �?StateGraph 提供持久化记�?
  */
 public class PersistenceExample {
 
 	/**
-	 * 不使用 Checkpointer 的示例
+	 * 不使�?Checkpointer 的示�?
 	 */
 	public static CompiledGraph createGraphWithoutCheckpointer(ChatClient.Builder chatClientBuilder) throws GraphStateException {
 		KeyStrategyFactory keyStrategyFactory = () -> {
@@ -69,13 +69,13 @@ public class PersistenceExample {
 	}
 
 	/**
-	 * 添加持久化（记忆）
+	 * 添加持久化（记忆�?
 	 */
 	public static CompiledGraph createGraphWithCheckpointer(ChatClient.Builder chatClientBuilder) throws GraphStateException {
 		// 创建 Checkpointer
 		var checkpointer = new MemorySaver();
 
-		// 配置持久化
+		// 配置持久�?
 		var compileConfig = CompileConfig.builder()
 				.saverConfig(SaverConfig.builder()
 						.register(checkpointer)
@@ -97,20 +97,20 @@ public class PersistenceExample {
 				.addEdge(START, "agent")
 				.addEdge("agent", END);
 
-		// 编译带持久化的 Graph
+		// 编译带持久化�?Graph
 		return workflow.compile(compileConfig);
 	}
 
 	/**
-	 * 测试带持久化的 Graph
+	 * 测试带持久化�?Graph
 	 */
 	public static void testGraphWithPersistence(CompiledGraph persistentGraph) {
-		// 创建运行配置（使用 threadId 标识会话）
+		// 创建运行配置（使�?threadId 标识会话�?
 		var config = RunnableConfig.builder()
 				.threadId("user-alice-session")
 				.build();
 
-		// 第一次调用 - 介绍自己
+		// 第一次调�?- 介绍自己
 		System.out.println("=== First call with persistence - Introduction ===");
 		var result1 = persistentGraph.invoke(
 				Map.of("messages", List.of("Hi, I'm Alice, nice to meet you")),
@@ -120,7 +120,7 @@ public class PersistenceExample {
 		List<String> messages1 = (List<String>) result1.get().data().get("messages");
 		System.out.println("Response: " + messages1.get(messages1.size() - 1));
 
-		// 第二次调用 - 询问名字（有持久化，可以记住）
+		// 第二次调�?- 询问名字（有持久化，可以记住�?
 		System.out.println("=== Second call with persistence - Ask name ===");
 		var result2 = persistentGraph.invoke(
 				Map.of("messages", List.of("What's my name?")),
@@ -132,24 +132,24 @@ public class PersistenceExample {
 	}
 
 	/**
-	 * 多会话隔离
+	 * 多会话隔�?
 	 */
 	public static void multiSessionIsolation(CompiledGraph persistentGraph) {
-		// Alice 的会话
+		// Alice 的会�?
 		var aliceConfig = RunnableConfig.builder()
 				.threadId("user-alice")
 				.build();
 
 		persistentGraph.invoke(Map.of("messages", List.of("Hi, I'm Alice")), aliceConfig);
 
-		// Bob 的会话
+		// Bob 的会�?
 		var bobConfig = RunnableConfig.builder()
 				.threadId("user-bob")
 				.build();
 
 		persistentGraph.invoke(Map.of("messages", List.of("Hi, I'm Bob")), bobConfig);
 
-		// Alice 询问名字 - 能记住
+		// Alice 询问名字 - 能记�?
 		var aliceResult = persistentGraph.invoke(
 				Map.of("messages", List.of("What's my name?")),
 				aliceConfig
@@ -165,7 +165,7 @@ public class PersistenceExample {
 	}
 
 	/**
-	 * 获取当前状态
+	 * 获取当前状�?
 	 */
 	public static void getCurrentState(CompiledGraph graph) {
 		RunnableConfig config = RunnableConfig.builder()
@@ -181,14 +181,14 @@ public class PersistenceExample {
 	}
 
 	/**
-	 * 获取状态历史
+	 * 获取状态历�?
 	 */
 	public static void getStateHistory(CompiledGraph graph) {
 		RunnableConfig config = RunnableConfig.builder()
 				.threadId("user-alice")
 				.build();
 
-		// 获取所有历史状态
+		// 获取所有历史状�?
 		List<StateSnapshot> history = (List<StateSnapshot>) graph.getStateHistory(config);
 
 		System.out.println("=== State History ===");
@@ -200,50 +200,50 @@ public class PersistenceExample {
 	}
 
 	public static void main(String[] args) {
-		System.out.println("=== 持久化示例 ===\n");
+		System.out.println("=== 持久化示�?===\n");
 
 		try {
-			// 示例 1: 不使用 Checkpointer 的示例（需要 ChatClient）
-			System.out.println("示例 1: 不使用 Checkpointer 的示例");
-			System.out.println("注意: 此示例需要 ChatClient，跳过执行");
+			// 示例 1: 不使�?Checkpointer 的示例（需�?ChatClient�?
+			System.out.println("示例 1: 不使�?Checkpointer 的示�?);
+			System.out.println("注意: 此示例需�?ChatClient，跳过执�?);
 			// CompiledGraph graphWithoutCheckpointer = createGraphWithoutCheckpointer(ChatClient.builder(...));
 			System.out.println();
 
-			// 示例 2: 添加持久化（需要 ChatClient）
-			System.out.println("示例 2: 添加持久化");
-			System.out.println("注意: 此示例需要 ChatClient，跳过执行");
+			// 示例 2: 添加持久化（需�?ChatClient�?
+			System.out.println("示例 2: 添加持久�?);
+			System.out.println("注意: 此示例需�?ChatClient，跳过执�?);
 			// CompiledGraph persistentGraph = createGraphWithCheckpointer(ChatClient.builder(...));
 			System.out.println();
 
-			// 示例 3: 测试带持久化的 Graph（需要 CompiledGraph）
-			System.out.println("示例 3: 测试带持久化的 Graph");
-			System.out.println("注意: 此示例需要 CompiledGraph，跳过执行");
+			// 示例 3: 测试带持久化�?Graph（需�?CompiledGraph�?
+			System.out.println("示例 3: 测试带持久化�?Graph");
+			System.out.println("注意: 此示例需�?CompiledGraph，跳过执�?);
 			// testGraphWithPersistence(persistentGraph);
 			System.out.println();
 
-			// 示例 4: 多会话隔离（需要 CompiledGraph）
-			System.out.println("示例 4: 多会话隔离");
-			System.out.println("注意: 此示例需要 CompiledGraph，跳过执行");
+			// 示例 4: 多会话隔离（需�?CompiledGraph�?
+			System.out.println("示例 4: 多会话隔�?);
+			System.out.println("注意: 此示例需�?CompiledGraph，跳过执�?);
 			// multiSessionIsolation(persistentGraph);
 			System.out.println();
 
-			// 示例 5: 获取当前状态（需要 CompiledGraph）
-			System.out.println("示例 5: 获取当前状态");
-			System.out.println("注意: 此示例需要 CompiledGraph，跳过执行");
+			// 示例 5: 获取当前状态（需�?CompiledGraph�?
+			System.out.println("示例 5: 获取当前状�?);
+			System.out.println("注意: 此示例需�?CompiledGraph，跳过执�?);
 			// getCurrentState(persistentGraph);
 			System.out.println();
 
-			// 示例 6: 获取状态历史（需要 CompiledGraph）
-			System.out.println("示例 6: 获取状态历史");
-			System.out.println("注意: 此示例需要 CompiledGraph，跳过执行");
+			// 示例 6: 获取状态历史（需�?CompiledGraph�?
+			System.out.println("示例 6: 获取状态历�?);
+			System.out.println("注意: 此示例需�?CompiledGraph，跳过执�?);
 			// getStateHistory(persistentGraph);
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
-			System.out.println("提示: 请配置 ChatClient 后运行完整示例");
+			System.out.println("所有示例执行完�?);
+			System.out.println("提示: 请配�?ChatClient 后运行完整示�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

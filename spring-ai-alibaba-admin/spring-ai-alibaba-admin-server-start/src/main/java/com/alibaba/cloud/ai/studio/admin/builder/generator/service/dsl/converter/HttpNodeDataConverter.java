@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 					headers = (Map<String, String>) headersObj;
 				}
 				else if (headersObj instanceof String str) {
-					// Dify DSL以"key:value"的形式每行存储一个headers对
+					// Dify DSL�?key:value"的形式每行存储一个headers�?
 					headers = Arrays.stream(str.split("\\r?\\n"))
 						.map(line -> line.split(":"))
 						.filter(parts -> parts.length == 2)
@@ -107,7 +107,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 					queryParams = (Map<String, String>) paramsObj;
 				}
 				else if (paramsObj instanceof String str) {
-					// Dify DSL以"key:value"的形式每行存储一个params对
+					// Dify DSL�?key:value"的形式每行存储一个params�?
 					queryParams = Arrays.stream(str.split("\\r?\\n"))
 						.map(line -> line.split(":"))
 						.filter(parts -> parts.length == 2)
@@ -272,7 +272,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 	public BiConsumer<HttpNodeData, Map<String, String>> postProcessConsumer(DSLDialectType dialectType) {
 		return switch (dialectType) {
 			case DIFY -> emptyProcessConsumer().andThen((httpNodeData, idToVarName) -> {
-				// 设置输出键
+				// 设置输出�?
 				httpNodeData.setOutputKey(httpNodeData.getVarName() + "_"
 						+ HttpNodeData.getDefaultOutputSchemas(dialectType).get(0).getName());
 				httpNodeData.setOutputs(HttpNodeData.getDefaultOutputSchemas(dialectType));
@@ -282,7 +282,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 					.entrySet()
 					.stream()
 					.collect(Collectors.toMap(
-							// HttpNode源代码使用${}的变量格式
+							// HttpNode源代码使�?{}的变量格�?
 							entry -> this.convertVarTemplate(dialectType, entry.getKey().replace("{{#", "${{#"),
 									idToVarName),
 							entry -> this.convertVarTemplate(dialectType, entry.getValue().replace("{{#", "${{#"),
@@ -319,7 +319,7 @@ public class HttpNodeDataConverter extends AbstractNodeDataConverter<HttpNodeDat
 				}
 			});
 			case STUDIO -> emptyProcessConsumer().andThen((httpNodeData, idToVarName) -> {
-				// 设置输出键
+				// 设置输出�?
 				httpNodeData.setOutputKey(httpNodeData.getVarName() + "_"
 						+ HttpNodeData.getDefaultOutputSchemas(dialectType).get(0).getName());
 				httpNodeData.setOutputs(HttpNodeData.getDefaultOutputSchemas(dialectType));

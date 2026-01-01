@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 			public QuestionClassifierNodeData parse(Map<String, Object> data) {
 				QuestionClassifierNodeData nodeData = new QuestionClassifierNodeData();
 
-				// 获取必要的信息
+				// 获取必要的信�?
 				String modeName = this.exactChatModelName(DSLDialectType.DIFY, data);
 				Map<String, Object> modeParams = this.exactChatModelParam(DSLDialectType.DIFY, data);
 				List<String> inputSelectorList = Optional
@@ -111,7 +111,7 @@ public class QuestionClassifyNodeDataConverter extends AbstractNodeDataConverter
 			@Override
 			public QuestionClassifierNodeData parse(Map<String, Object> data) throws JsonProcessingException {
 				QuestionClassifierNodeData nodeData = new QuestionClassifierNodeData();
-				// 从data中提取必要信息
+				// 从data中提取必要信�?
 				String modeName = this.exactChatModelName(DSLDialectType.STUDIO, data);
 				Map<String, Object> modeParams = this.exactChatModelParam(DSLDialectType.STUDIO, data);
 

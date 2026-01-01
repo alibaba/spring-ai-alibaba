@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ public class Issue2702ReproductionTest {
 		return new ChatModel() {
 			@Override
 			public ChatResponse call(Prompt prompt) {
-				return new ChatResponse(List.of(new Generation(new AssistantMessage("这是一个测试"))));
+				return new ChatResponse(List.of(new Generation(new AssistantMessage("这是一个测�?))));
 			}
 
 			@Override
@@ -86,7 +86,7 @@ public class Issue2702ReproductionTest {
 					
 					// Normal chunk 2
 					Mono.delay(Duration.ofMillis(10))
-						.map(i -> new ChatResponse(List.of(new Generation(new AssistantMessage("一个"))))),
+						.map(i -> new ChatResponse(List.of(new Generation(new AssistantMessage("一�?))))),
 					
 					// 🔥 Simulate usage-only chunk (null result) - this is what causes the NPE
 					Mono.delay(Duration.ofMillis(10))
@@ -142,22 +142,22 @@ public class Issue2702ReproductionTest {
 
 		compiledGraph.stream(input)
 			.doOnNext(output -> {
-				log.info("✅ 接收到流式输出: {}", output);
+				log.info("�?接收到流式输�? {}", output);
 			})
 			.doOnError(error -> {
 				if (error instanceof NullPointerException) {
 					hasNPE.set(true);
-					log.error("❌ 检测到 NullPointerException (Issue #2702 未修复):", error);
+					log.error("�?检测到 NullPointerException (Issue #2702 未修�?:", error);
 				} else if (error.getCause() instanceof NullPointerException) {
 					hasNPE.set(true);
-					log.error("❌ 检测到 NullPointerException (Issue #2702 未修复, 在 cause 中):", error.getCause());
+					log.error("�?检测到 NullPointerException (Issue #2702 未修�? �?cause �?:", error.getCause());
 				} else {
 					hasError.set(true);
 					log.warn("⚠️ 检测到其他错误:", error);
 				}
 			})
 			.doOnComplete(() -> {
-				log.info("✅ 流式调用完成");
+				log.info("�?流式调用完成");
 				latch.countDown();
 			})
 			.subscribe(
@@ -175,13 +175,13 @@ public class Issue2702ReproductionTest {
 
 		// 6. Verify no NPE occurred
 		assertFalse(hasNPE.get(), 
-			"❌ 检测到 NodeExecutor 中的 NullPointerException！这表示 Issue #2702 未修复。");
+			"�?检测到 NodeExecutor 中的 NullPointerException！这表示 Issue #2702 未修复�?);
 
 		if (hasError.get()) {
 			log.warn("注意：检测到其他错误（可能是 GraphFluxGenerator 等其他组件需要类似修复）");
 		}
 
-		log.info("✅ 测试通过：NodeExecutor 中的 null result NPE 已修复（Issue #2702）");
+		log.info("�?测试通过：NodeExecutor 中的 null result NPE 已修复（Issue #2702�?);
 	}
 }
 

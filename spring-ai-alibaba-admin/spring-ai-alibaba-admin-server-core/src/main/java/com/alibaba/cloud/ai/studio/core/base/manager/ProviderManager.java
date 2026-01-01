@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ public class ProviderManager extends ServiceImpl<ProviderMapper, ProviderEntity>
 			throw e;
 		}
 		catch (Exception e) {
-			log.error("新增提供商失败: " + e.getMessage(), e);
+			log.error("新增提供商失�? " + e.getMessage(), e);
 			return false;
 		}
 	}
@@ -135,7 +135,7 @@ public class ProviderManager extends ServiceImpl<ProviderMapper, ProviderEntity>
 				throw new BizException(ErrorCode.INVALID_PARAMS.toError("input_params", "provider not found"));
 			}
 
-			// 更新提供商信息
+			// 更新提供商信�?
 			existingProvider.setGmtModified(new Date());
 			existingProvider.setModifier(context.getAccountId());
 

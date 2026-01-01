@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ public class ExecutionController {
 //			BaseAgent agent = agentLoader.loadAgent(request.appName);
 //			RunnableConfig runnableConfig = RunnableConfig.builder().threadId(request.threadId)
 //					.addMetadata("user_id", request.userId).build();
-//			// request.stateDelta 目前用不到
+//			// request.stateDelta 目前用不�?
 //			Optional<NodeOutput> state = agent.invokeAndGetOutput(request.newMessage, runnableConfig);
 //
 //			return state.orElseThrow(() -> {
@@ -128,7 +128,7 @@ public class ExecutionController {
 //					.threadId(request.threadId)
 //					.addMetadata("user_id", request.userId)
 //					.build();
-//			// request.stateDelta 目前用不到
+//			// request.stateDelta 目前用不�?
 //			Flux<NodeOutput> agentStream = agent.stream(request.newMessage, runnableConfig);
 //
 //			// Create a heartbeat Flux to keep connection alive (emit every 15 seconds)

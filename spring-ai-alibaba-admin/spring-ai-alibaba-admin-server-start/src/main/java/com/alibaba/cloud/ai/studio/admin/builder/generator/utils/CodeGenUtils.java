@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,19 +29,19 @@ public final class CodeGenUtils {
 
 	/**
 	 * null 值转空字符串
-	 * @param s 输入字符串
-	 * @return 非空字符串
+	 * @param s 输入字符�?
+	 * @return 非空字符�?
 	 */
 	public static String nvl(String s) {
 		return s == null ? "" : s;
 	}
 
 	/**
-	 * 转义字符串用于 Java 代码生成。
-	 * 主要用于生成 Java 字符串字面量，会转义反斜杠和双引号。
+	 * 转义字符串用�?Java 代码生成�?
+	 * 主要用于生成 Java 字符串字面量，会转义反斜杠和双引号�?
 	 *
-	 * @param s 输入字符串
-	 * @return 转义后的字符串
+	 * @param s 输入字符�?
+	 * @return 转义后的字符�?
 	 */
 	public static String esc(String s) {
 		return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
@@ -57,10 +57,10 @@ public final class CodeGenUtils {
 	}
 
 	/**
-	 * 对象转整数（安全转换）。
+	 * 对象转整数（安全转换）�?
 	 *
-	 * @param v 输入值
-	 * @return 整数值，无法转换时返回 null
+	 * @param v 输入�?
+	 * @return 整数值，无法转换时返�?null
 	 */
 	public static Integer toInt(Object v) {
 		if (v instanceof Integer i) {
@@ -74,15 +74,15 @@ public final class CodeGenUtils {
 				return Integer.parseInt(s.trim());
 			}
 			catch (Exception ignore) {
-				// 忽略解析异常，返回 null
+				// 忽略解析异常，返�?null
 			}
 		}
 		return null;
 	}
 
 	/**
-	 * 检查字符串是否为空（null 或 空白）
-	 * @param s 输入字符串
+	 * 检查字符串是否为空（null �?空白�?
+	 * @param s 输入字符�?
 	 * @return true 如果字符串为 null 或只包含空白字符
 	 */
 	public static boolean isBlank(String s) {

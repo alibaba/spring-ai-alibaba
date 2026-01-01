@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,14 +36,14 @@ public class IterationNodeData extends NodeData {
 		);
 	}
 
-	// NodeData的来源节点名称
+	// NodeData的来源节点名�?
 	private final String sourceVarName;
 
 	private int parallelCount = 1;
 
 	private int maxIterationCount = Integer.MAX_VALUE;
 
-	// Dify的迭代索引从0开始，而Studio的从1开始，故需要设置这个值
+	// Dify的迭代索引从0开始，而Studio的从1开始，故需要设置这个�?
 	private int indexOffset = 0;
 
 	// itemKey和outputKey的后缀在Dify中固定，但在Studio中用户可以自定义

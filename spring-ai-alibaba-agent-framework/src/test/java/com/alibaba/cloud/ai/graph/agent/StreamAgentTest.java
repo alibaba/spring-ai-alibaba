@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ class StreamAgentTest {
 
 	@BeforeEach
 	void setUp() {
-		// 先创建 DashScopeApi 实例
+		// 先创�?DashScopeApi 实例
 		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 
 		// 创建 DashScope ChatModel 实例
@@ -52,30 +52,30 @@ class StreamAgentTest {
 		ReactAgent proseWriterAgent = ReactAgent.builder()
 			.name("prose_writer_agent")
 			.model(chatModel)
-			.description("可以写散文文章。")
-			.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
+			.description("可以写散文文章�?)
+			.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答�?)
 			.outputKey("prose_article")
 			.build();
 
 		ReactAgent poemWriterAgent = ReactAgent.builder()
 			.name("poem_writer_agent")
 			.model(chatModel)
-			.description("可以写现代诗。")
-			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问进行回答。")
+			.description("可以写现代诗�?)
+			.instruction("你是一个知名的诗人，擅长写现代诗。请根据用户的提问进行回答�?)
 			.outputKey("poem_article")
 			.build();
 
 		LlmRoutingAgent blogAgent = LlmRoutingAgent.builder()
 			.name("blog_agent")
 			.model(chatModel)
-			.description("可以根据用户给定的主题写文章或作诗。")
+			.description("可以根据用户给定的主题写文章或作诗�?)
 			.subAgents(List.of(proseWriterAgent, poemWriterAgent))
 			.build();
 
 		try {
 			List<NodeOutput> outputs = new ArrayList<>();
 
-			Flux<NodeOutput> result = blogAgent.stream("帮我写一个100字左右的散文");
+			Flux<NodeOutput> result = blogAgent.stream("帮我写一�?00字左右的散文");
 			result.doOnNext(nodeOutput -> {
 				System.out.println(nodeOutput);
 				outputs.add(nodeOutput);

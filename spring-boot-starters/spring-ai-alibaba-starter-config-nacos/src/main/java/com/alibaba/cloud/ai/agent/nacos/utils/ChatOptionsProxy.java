@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,20 +28,20 @@ import net.sf.cglib.proxy.MethodProxy;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
- * 基于CGLIB的动态代理工厂
+ * 基于CGLIB的动态代理工�?
  * 通过创建子类的方式实现多接口功能
  */
 public class ChatOptionsProxy {
 
 	/**
-	 * 创建同时实现ChatOptions和ObservationMetadataAwareOptions接口的代理对象
+	 * 创建同时实现ChatOptions和ObservationMetadataAwareOptions接口的代理对�?
 	 *
 	 * @param chatOptions 原始的ChatOptions对象
 	 * @param initialMetadata 初始的观察元数据
 	 * @return 代理对象，同时实现了ChatOptions和ObservationMetadataAwareOptions接口
 	 */
 	public static Object createProxy(ChatOptions chatOptions, Map<String, String> initialMetadata) {
-		// 创建CGLIB增强器
+		// 创建CGLIB增强�?
 		Enhancer enhancer = new Enhancer();
 
 		// 设置父类为ChatOptionsImpl
@@ -50,7 +50,7 @@ public class ChatOptionsProxy {
 		// 设置要实现的接口
 		enhancer.setInterfaces(new Class[] {ChatOptions.class, ObservationMetadataAwareOptions.class});
 
-		// 设置回调处理器
+		// 设置回调处理�?
 		enhancer.setCallback(new CglibMethodInterceptor(chatOptions, initialMetadata));
 
 		// 创建代理对象
@@ -58,7 +58,7 @@ public class ChatOptionsProxy {
 	}
 
 	/**
-	 * CGLIB方法拦截器
+	 * CGLIB方法拦截�?
 	 */
 	private static class CglibMethodInterceptor implements MethodInterceptor {
 
@@ -84,12 +84,12 @@ public class ChatOptionsProxy {
 				return createCopiedProxy();
 			}
 
-			// 处理ChatOptions接口的方法 - 直接转发到原始对象
+			// 处理ChatOptions接口的方�?- 直接转发到原始对�?
 			if (declaringClass == ChatOptions.class) {
 				return method.invoke(chatOptions, args);
 			}
 
-			// 处理ObservationMetadataAwareOptions接口的方法
+			// 处理ObservationMetadataAwareOptions接口的方�?
 			if (declaringClass == ObservationMetadataAwareOptions.class) {
 				return handleObservationMethod(methodName, args);
 			}
@@ -99,7 +99,7 @@ public class ChatOptionsProxy {
 				return handleObjectMethod(methodName, args, obj);
 			}
 
-			// 处理父类方法 - 转发到原始对象
+			// 处理父类方法 - 转发到原始对�?
 			return method.invoke(chatOptions, args);
 		}
 
@@ -113,7 +113,7 @@ public class ChatOptionsProxy {
 			ChatOptions copiedChatOptions;
 			try {
 				Method copyMethod = chatOptions.getClass().getMethod("copy");
-				// 如果是 private 或 protected，需要 setAccessible(true)
+				// 如果�?private �?protected，需�?setAccessible(true)
 				copyMethod.setAccessible(true);
 				Object result = copyMethod.invoke(chatOptions);
 				if (!(result instanceof ChatOptions)) {
@@ -128,7 +128,7 @@ public class ChatOptionsProxy {
 				throw new RuntimeException("Failed to invoke copy() method", e);
 			}
 
-			// 创建新的代理对象（深拷贝 metadata）
+			// 创建新的代理对象（深拷贝 metadata�?
 			return ChatOptionsProxy.createProxy(
 					copiedChatOptions,
 					new HashMap<>(this.observationMetadata)
@@ -136,7 +136,7 @@ public class ChatOptionsProxy {
 		}
 
 		/**
-		 * 处理观察方法 - 基于方法名动态处理
+		 * 处理观察方法 - 基于方法名动态处�?
 		 */
 		private Object handleObservationMethod(String methodName, Object[] args) {
 			switch (methodName) {

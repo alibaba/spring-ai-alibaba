@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class EndNodeSection implements NodeSection<EndNodeData> {
 
 		String codeStr;
 		if ("text".equalsIgnoreCase(data.getOutputType())) {
-			// 如果输出类型为text，则使用对应的输出模板输出最终结果
+			// 如果输出类型为text，则使用对应的输出模板输出最终结�?
 			if (data.getTextTemplateVars().isEmpty()) {
 				codeStr = String.format("state -> Map.of(\"%s\", %s)", data.getOutputKey(),
 						ObjectToCodeUtil.toCode(data.getTextTemplate()));
@@ -80,7 +80,7 @@ public class EndNodeSection implements NodeSection<EndNodeData> {
 						.collect(Collectors.joining(", ")));
 		}
 
-		// 最终节点用于输出用户选中的变量
+		// 最终节点用于输出用户选中的变�?
 		sb.append("stateGraph.addNode(\"")
 			.append(varName)
 			.append("\", AsyncNodeAction.node_async(")

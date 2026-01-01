@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -201,7 +201,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 	}
 
 	private String renderEdgeSections(List<Edge> edges, List<Node> nodes, Map<String, String> varNames) {
-		// nodeVarName -> node的映射
+		// nodeVarName -> node的映�?
 		Map<String, Node> nodeMap = nodes.stream()
 			.collect(Collectors.toMap(node -> node.getData().getVarName(), Function.identity()));
 
@@ -218,7 +218,7 @@ public class WorkflowProjectGenerator implements ProjectGenerator {
 			sb.append(section.renderEdges(nodeMap.get(varName).getData(), edgeList));
 		});
 
-		// 统一生成end节点到StateGraph.END的边（避免边重复）
+		// 统一生成end节点到StateGraph.END的边（避免边重复�?
 		List<String> endNodeList = nodes.stream()
 			.filter(node -> NodeType.END.equals(node.getType()))
 			.map(Node::getId)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ public class AgentNodeData extends NodeData {
 	}
 
 	public void setAgentStrategyName(String agentStrategyName) {
-		// todo: 支持更多的策略，如MCP，多轮对话
+		// todo: 支持更多的策略，如MCP，多轮对�?
 		this.agentStrategyName = switch (agentStrategyName) {
 			case "function_calling" -> "TOOL_CALLING";
 			default -> "REACT";

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,15 +36,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 检索增强生成（RAG）示例
+ * 检索增强生成（RAG）示�?
  *
  * 演示如何使用RAG技术为LLM提供外部知识，包括：
- * 1. 构建知识库
+ * 1. 构建知识�?
  * 2. 两步RAG
  * 3. Agentic RAG
  * 4. 混合RAG
  *
- * 参考文档: advanced_doc/rag.md
+ * 参考文�? advanced_doc/rag.md
  */
 public class RAGExample {
 
@@ -57,7 +57,7 @@ public class RAGExample {
 	}
 
 	/**
-	 * Main方法：运行所有示例
+	 * Main方法：运行所有示�?
 	 *
 	 * 注意：需要配置ChatModel和VectorStore实例才能运行
 	 */
@@ -78,14 +78,14 @@ public class RAGExample {
 
 		if (chatModel == null || vectorStore == null) {
 			System.err.println("错误：请先配置ChatModel和VectorStore实例");
-			System.err.println("请设置 AI_DASHSCOPE_API_KEY 环境变量，并配置VectorStore实例");
+			System.err.println("请设�?AI_DASHSCOPE_API_KEY 环境变量，并配置VectorStore实例");
 			return;
 		}
 
 		// 创建示例实例
 		RAGExample example = new RAGExample(chatModel, vectorStore);
 
-		// 运行所有示例
+		// 运行所有示�?
 		example.runAllExamples();
 	}
 
@@ -104,23 +104,23 @@ public class RAGExample {
 		TokenTextSplitter splitter = new TokenTextSplitter();
 		List<Document> chunks = splitter.apply(documents);
 
-		// 3. 将块添加到向量存储
+		// 3. 将块添加到向量存�?
 		vectorStore.add(chunks);
 
-		// 现在可以使用向量存储进行检索
+		// 现在可以使用向量存储进行检�?
 		List<Document> results = vectorStore.similaritySearch("查询文本");
 
-		System.out.println("知识库构建完成，检索到 " + results.size() + " 个相关文档");
+		System.out.println("知识库构建完成，检索到 " + results.size() + " 个相关文�?);
 	}
 
 	/**
 	 * 示例2：两步RAG
 	 *
-	 * 检索步骤总是在生成步骤之前执行
+	 * 检索步骤总是在生成步骤之前执�?
 	 */
 	public void example2_twoStepRAG() {
-		// 两步RAG：检索 -> 生成
-		String userQuestion = "Spring AI Alibaba支持哪些模型？";
+		// 两步RAG：检�?-> 生成
+		String userQuestion = "Spring AI Alibaba支持哪些模型�?;
 
 		// Step 1: Retrieve relevant documents
 		List<Document> relevantDocs = vectorStore.similaritySearch(userQuestion);
@@ -133,7 +133,7 @@ public class RAGExample {
 		// Step 3: Generate answer with context
 		ChatClient chatClient = ChatClient.builder(chatModel).build();
 		String answer = chatClient.prompt()
-				.user(u -> u.text("基于以下上下文回答问题：\n\n上下文：\n" + context + "\n\n问题：" + userQuestion))
+				.user(u -> u.text("基于以下上下文回答问题：\n\n上下文：\n" + context + "\n\n问题�? + userQuestion))
 				.call()
 				.content();
 
@@ -148,13 +148,13 @@ public class RAGExample {
 	/**
 	 * 示例3：Agentic RAG
 	 *
-	 * Agent决定何时以及如何检索信息
+	 * Agent决定何时以及如何检索信�?
 	 */
 	public void example3_agenticRAG() throws Exception {
-		// 创建文档检索工具
+		// 创建文档检索工�?
 		class DocumentSearchTool {
 			public Response search(Request request) {
-				// 从向量存储检索相关文档
+				// 从向量存储检索相关文�?
 				List<Document> docs = vectorStore.similaritySearch(request.query());
 
 				// 合并文档内容
@@ -176,7 +176,7 @@ public class RAGExample {
 		ToolCallback searchCallback = FunctionToolCallback.builder("search_documents",
 						(Function<DocumentSearchTool.Request, DocumentSearchTool.Response>)
 								request -> searchTool.search(request))
-				.description("搜索文档以查找相关信息")
+				.description("搜索文档以查找相关信�?)
 				.inputType(DocumentSearchTool.Request.class)
 				.build();
 
@@ -184,12 +184,12 @@ public class RAGExample {
 		ReactAgent ragAgent = ReactAgent.builder()
 				.name("rag_agent")
 				.model(chatModel)
-				.instruction("你是一个智能助手。当需要查找信息时，使用search_documents工具。" +
-						"基于检索到的信息回答用户的问题，并引用相关片段。")
+				.instruction("你是一个智能助手。当需要查找信息时，使用search_documents工具�? +
+						"基于检索到的信息回答用户的问题，并引用相关片段�?)
 				.tools(searchCallback)
 				.build();
 
-		// Agent会自动决定何时调用检索工具
+		// Agent会自动决定何时调用检索工�?
 		ragAgent.invoke("Spring AI Alibaba支持哪些向量数据库？");
 
 		System.out.println("Agentic RAG示例执行完成");
@@ -198,13 +198,13 @@ public class RAGExample {
 	/**
 	 * 示例4：多源RAG
 	 *
-	 * Agent可以从多个来源检索信息
+	 * Agent可以从多个来源检索信�?
 	 */
 	public void example4_multiSourceRAG() throws Exception {
-		// 创建多个检索工具
+		// 创建多个检索工�?
 		class WebSearchTool {
 			public Response search(Request request) {
-				return new Response("从网络搜索到的信息: " + request.query());
+				return new Response("从网络搜索到的信�? " + request.query());
 			}
 
 			public record Request(String query) { }
@@ -243,21 +243,21 @@ public class RAGExample {
 		ToolCallback webSearchCallback = FunctionToolCallback.builder("web_search",
 						(Function<WebSearchTool.Request, WebSearchTool.Response>)
 								req -> webSearchTool.search(req))
-				.description("搜索互联网以获取最新信息")
+				.description("搜索互联网以获取最新信�?)
 				.inputType(WebSearchTool.Request.class)
 				.build();
 
 		ToolCallback databaseQueryCallback = FunctionToolCallback.builder("database_query",
 						(Function<DatabaseQueryTool.Request, DatabaseQueryTool.Response>)
 								req -> dbQueryTool.query(req))
-				.description("查询内部数据库")
+				.description("查询内部数据�?)
 				.inputType(DatabaseQueryTool.Request.class)
 				.build();
 
 		ToolCallback documentSearchCallback = FunctionToolCallback.builder("document_search",
 						(Function<DocumentSearchTool.Request, DocumentSearchTool.Response>)
 								req -> docSearchTool.search(req))
-				.description("搜索文档库")
+				.description("搜索文档�?)
 				.inputType(DocumentSearchTool.Request.class)
 				.build();
 
@@ -265,11 +265,11 @@ public class RAGExample {
 		ReactAgent multiSourceAgent = ReactAgent.builder()
 				.name("multi_source_rag_agent")
 				.model(chatModel)
-				.instruction("你可以访问多个信息源：" +
+				.instruction("你可以访问多个信息源�? +
 						"1. web_search - 用于最新的互联网信息\n" +
 						"2. database_query - 用于内部数据\n" +
 						"3. document_search - 用于文档库\n" +
-						"根据问题选择最合适的工具。")
+						"根据问题选择最合适的工具�?)
 				.tools(webSearchCallback, databaseQueryCallback, documentSearchCallback)
 				.build();
 
@@ -299,10 +299,10 @@ public class RAGExample {
 
 				int maxAttempts = 3;
 				for (int attempt = 0; attempt < maxAttempts; attempt++) {
-					// 2. 检索文档
+					// 2. 检索文�?
 					List<Document> docs = vectorStore.similaritySearch(enhancedQuery);
 
-					// 3. 检索验证
+					// 3. 检索验�?
 					if (!isRetrievalSufficient(docs)) {
 						enhancedQuery = refineQuery(enhancedQuery, docs);
 						continue;
@@ -317,16 +317,16 @@ public class RAGExample {
 						return answer;
 					}
 
-					// 6. 根据验证结果决定下一步
+					// 6. 根据验证结果决定下一�?
 					if (validation.shouldRetry()) {
 						enhancedQuery = refineBasedOnValidation(enhancedQuery, validation);
 					}
 					else {
-						return answer; // 返回当前最佳答案
+						return answer; // 返回当前最佳答�?
 					}
 				}
 
-				return "无法生成满意的答案";
+				return "无法生成满意的答�?;
 			}
 
 			private String enhanceQuery(String query) {
@@ -387,21 +387,21 @@ public class RAGExample {
 		}
 
 		HybridRAGSystem hybridRAG = new HybridRAGSystem(chatModel, vectorStore);
-		String answer = hybridRAG.answer("解释一下Spring AI Alibaba的核心功能");
+		String answer = hybridRAG.answer("解释一下Spring AI Alibaba的核心功�?);
 
 		System.out.println("混合RAG答案: " + answer);
 		System.out.println("混合RAG示例执行完成");
 	}
 
 	/**
-	 * 运行所有示例
+	 * 运行所有示�?
 	 */
 	public void runAllExamples() {
-		System.out.println("=== 检索增强生成（RAG）示例 ===\n");
+		System.out.println("=== 检索增强生成（RAG）示�?===\n");
 
 		try {
-			System.out.println("示例1: 构建知识库");
-			// example1_buildKnowledgeBase(); // 需要实际文件路径
+			System.out.println("示例1: 构建知识�?);
+			// example1_buildKnowledgeBase(); // 需要实际文件路�?
 			System.out.println();
 
 			System.out.println("示例2: 两步RAG");
@@ -422,7 +422,7 @@ public class RAGExample {
 
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

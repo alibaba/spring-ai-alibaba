@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ public class ModelManager {
 		// 检查提供商是否存在
 		ProviderConfigInfo providerDetail = providerManager.getProviderDetail(modelConfigInfo.getProvider(), false);
 		if (providerDetail == null) {
-			log.error("提供商[{}]不存在", modelConfigInfo.getProvider());
+			log.error("提供商[{}]不存�?, modelConfigInfo.getProvider());
 			throw new BizException(ErrorCode.INVALID_PARAMS.toError("input_params", "provider is invalid"));
 		}
 
@@ -69,7 +69,7 @@ public class ModelManager {
 		queryWrapper.eq("workspace_id", context.getWorkspaceId());
 		ModelEntity existModelEntity = modelMapper.selectOne(queryWrapper);
 		if (existModelEntity != null) {
-			log.error("模型[{}]已存在", modelConfigInfo.getModelId());
+			log.error("模型[{}]已存�?, modelConfigInfo.getModelId());
 			throw new BizException(ErrorCode.INVALID_PARAMS.toError("input_params", "model existed"));
 		}
 
@@ -99,11 +99,11 @@ public class ModelManager {
 		// 检查提供商是否存在
 		ProviderConfigInfo providerDetail = providerManager.getProviderDetail(modelConfigInfo.getProvider(), false);
 		if (providerDetail == null) {
-			log.error("提供商[{}]不存在", modelConfigInfo.getProvider());
+			log.error("提供商[{}]不存�?, modelConfigInfo.getProvider());
 			throw new BizException(ErrorCode.INVALID_PARAMS.toError("input_params", "provider is invalid"));
 		}
 
-		// 检查模型是否存在
+		// 检查模型是否存�?
 		QueryWrapper<ModelEntity> queryWrapper = new QueryWrapper<>();
 		queryWrapper.eq("provider", providerDetail.getProvider());
 		queryWrapper.eq("model_id", modelConfigInfo.getModelId());
@@ -112,7 +112,7 @@ public class ModelManager {
 		}
 		ModelEntity existingModel = modelMapper.selectOne(queryWrapper);
 		if (existingModel == null) {
-			log.error("模型[{}]不存在", modelConfigInfo.getModelId());
+			log.error("模型[{}]不存�?, modelConfigInfo.getModelId());
 			throw new BizException(ErrorCode.INVALID_PARAMS.toError("input_params", "model not found"));
 		}
 
@@ -146,7 +146,7 @@ public class ModelManager {
 	 */
 	public boolean deleteModel(String provider, String modelId) {
 		RequestContext context = RequestContextHolder.getRequestContext();
-		// 检查模型是否存在
+		// 检查模型是否存�?
 		QueryWrapper<ModelEntity> queryWrapper = new QueryWrapper<>();
 		queryWrapper.eq("model_id", modelId);
 		queryWrapper.eq("provider", provider);
@@ -155,7 +155,7 @@ public class ModelManager {
 		}
 		ModelEntity existingModel = modelMapper.selectOne(queryWrapper);
 		if (existingModel == null) {
-			log.error("模型[{}]不存在", modelId);
+			log.error("模型[{}]不存�?, modelId);
 			throw new BizException(ErrorCode.INVALID_PARAMS.toError("input_params", "model not found"));
 		}
 
@@ -256,7 +256,7 @@ public class ModelManager {
 
 			ModelEntity modelEntity = modelMapper.selectOne(queryWrapper);
 			if (modelEntity == null) {
-				log.error("模型[{}]不存在", modelId);
+				log.error("模型[{}]不存�?, modelId);
 				throw new BizException(ErrorCode.INVALID_PARAMS.toError("input_params", "model not found"));
 			}
 
@@ -294,7 +294,7 @@ public class ModelManager {
 		}
 		
 		QueryWrapper<ModelEntity> queryWrapper = new QueryWrapper<>();
-		// 只有当 workspaceId 不为 null 时才添加过滤条件
+		// 只有�?workspaceId 不为 null 时才添加过滤条件
 		if (StringUtils.isNotBlank(workspaceId)) {
 			queryWrapper.eq("workspace_id", workspaceId);
 		}
@@ -303,7 +303,7 @@ public class ModelManager {
 			// 通过 id 查找
 			queryWrapper.eq("id", modelIdOrName);
 		} else if (modelIdOrName instanceof String) {
-			// 通过 name 或 model_id 查找
+			// 通过 name �?model_id 查找
 			String value = (String) modelIdOrName;
 			queryWrapper.and(wrapper -> wrapper.eq("name", value).or().eq("model_id", value));
 		} else {

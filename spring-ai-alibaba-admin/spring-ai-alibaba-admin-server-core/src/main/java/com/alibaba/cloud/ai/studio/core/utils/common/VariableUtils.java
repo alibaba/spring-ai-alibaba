@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,7 +123,7 @@ public class VariableUtils {
 			if (matcher.matches()) {
 				// 将[]转为{}，适配array下的获取逻辑
 				String replaceExpression = expression.replaceAll("\\[", "\\{").replaceAll("\\]", "\\}");
-				// 这里执行的命令会被拦截
+				// 这里执行的命令会被拦�?
 				Ognl.setValue(replaceExpression, payload, value);
 				return true;
 			}

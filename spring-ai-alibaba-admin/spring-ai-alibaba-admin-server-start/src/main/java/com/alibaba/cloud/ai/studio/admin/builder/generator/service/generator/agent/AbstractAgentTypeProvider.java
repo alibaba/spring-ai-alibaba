@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.Map;
 import static com.alibaba.cloud.ai.studio.admin.builder.generator.utils.CodeGenUtils.*;
 
 /**
- * AgentTypeProvider 的抽象基类，提供通用的校验逻辑和渲染工具
+ * AgentTypeProvider 的抽象基类，提供通用的校验逻辑和渲染工�?
  *
  * @author yHong
  * @version 1.0
@@ -51,13 +51,13 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 
 	/**
 	 * 子类实现特定的校验逻辑
-	 * @param root DSL 根对象
+	 * @param root DSL 根对�?
 	 */
 	protected abstract void validateSpecific(Map<String, Object> root);
 
 	/**
 	 * 校验 handle 是否存在
-	 * @param root DSL 根对象
+	 * @param root DSL 根对�?
 	 * @return handle Map
 	 */
 	@SuppressWarnings("unchecked")
@@ -74,8 +74,8 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 
 	/**
 	 * 校验必须有子代理
-	 * @param root DSL 根对象
-	 * @param minCount 最小数量
+	 * @param root DSL 根对�?
+	 * @param minCount 最小数�?
 	 */
 	@SuppressWarnings("unchecked")
 	protected List<Map<String, Object>> requireSubAgents(Map<String, Object> root, int minCount) {
@@ -92,11 +92,11 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 	}
 
 	/**
-	 * 校验数值字段
-	 * @param value 字段值
-	 * @param fieldName 字段名
-	 * @param minValue 最小值（包含）
-	 * @return 数值
+	 * 校验数值字�?
+	 * @param value 字段�?
+	 * @param fieldName 字段�?
+	 * @param minValue 最小值（包含�?
+	 * @return 数�?
 	 */
 	protected int requirePositiveNumber(Object value, String fieldName, int minValue) {
 		if (value == null) {
@@ -129,11 +129,11 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 	}
 
 	/**
-	 * 生成基础 builder 代码（name, description, outputKey）
-	 * @param builderName builder 类名（如 "ReactAgent", "SequentialAgent"）
-	 * @param varName 变量名
+	 * 生成基础 builder 代码（name, description, outputKey�?
+	 * @param builderName builder 类名（如 "ReactAgent", "SequentialAgent"�?
+	 * @param varName 变量�?
 	 * @param shell Agent 基础信息
-	 * @return 生成的代码
+	 * @return 生成的代�?
 	 */
 	protected StringBuilder generateBasicBuilderCode(String builderName, String varName, AgentShell shell) {
 		StringBuilder code = new StringBuilder();
@@ -158,10 +158,10 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 	}
 
 	/**
-	 * 生成状态策略代码 todo: 目前渲染的每个子agent都有自己的state注册， 需要确认flowAgent的state是全局统一的还是子agent隔离的
+	 * 生成状态策略代�?todo: 目前渲染的每个子agent都有自己的state注册�?需要确认flowAgent的state是全局统一的还是子agent隔离�?
 	 * @param handle Agent handle 配置
-	 * @param defaultMessagesStrategy 当 messages 策略未定义时的默认值（null 表示不添加默认值）
-	 * @return 生成的状态策略代码和是否有 messages 策略的标志
+	 * @param defaultMessagesStrategy �?messages 策略未定义时的默认值（null 表示不添加默认值）
+	 * @return 生成的状态策略代码和是否�?messages 策略的标�?
 	 */
 	protected StateStrategyResult generateStateStrategyCode(Map<String, Object> handle,
 			String defaultMessagesStrategy) {
@@ -198,7 +198,7 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 	}
 
 	/**
-	 * 状态策略生成结果
+	 * 状态策略生成结�?
 	 */
 	protected static class StateStrategyResult {
 
@@ -214,7 +214,7 @@ public abstract class AbstractAgentTypeProvider implements AgentTypeProvider {
 	}
 
 	/**
-	 * 添加子代理列表
+	 * 添加子代理列�?
 	 */
 	protected void appendSubAgents(StringBuilder code, List<String> childVarNames) {
 		if (childVarNames != null && !childVarNames.isEmpty()) {

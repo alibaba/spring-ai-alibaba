@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,10 +64,10 @@ import java.util.concurrent.CompletableFuture;
  */
 public class HooksExample {
 
-	// ==================== 基础 Hook 和 Interceptor 配置 ====================
+	// ==================== 基础 Hook �?Interceptor 配置 ====================
 
 	/**
-	 * 示例1：添加 Hooks 和 Interceptors
+	 * 示例1：添�?Hooks �?Interceptors
 	 */
 	public static void basicHooksAndInterceptors() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -81,7 +81,7 @@ public class HooksExample {
 		// 创建工具（示例）
 		ToolCallback[] tools = new ToolCallback[0];
 
-		// 创建 Hooks 和 Interceptors
+		// 创建 Hooks �?Interceptors
 		ModelHook loggingHook = new LoggingModelHook();
 		MessagesModelHook messageTrimmingHook = new MessageTrimmingHook();
 		ModelInterceptor guardrailInterceptor = new GuardrailInterceptor();
@@ -97,10 +97,10 @@ public class HooksExample {
 				.build();
 	}
 
-	// ==================== 消息压缩（Summarization） ====================
+	// ==================== 消息压缩（Summarization�?====================
 
 	/**
-	 * 示例2：消息压缩 Hook
+	 * 示例2：消息压�?Hook
 	 */
 	public static void messageSummarization() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -167,7 +167,7 @@ public class HooksExample {
 	// ==================== 模型调用限制 ====================
 
 	/**
-	 * 示例4：模型调用限制
+	 * 示例4：模型调用限�?
 	 */
 	public static void modelCallLimit() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -181,16 +181,16 @@ public class HooksExample {
 		ReactAgent agent = ReactAgent.builder()
 				.name("my_agent")
 				.model(chatModel)
-				.hooks(ModelCallLimitHook.builder().runLimit(5).build())  // 限制模型调用次数为5次
+				.hooks(ModelCallLimitHook.builder().runLimit(5).build())  // 限制模型调用次数�?�?
 				.saver(new MemorySaver())
 				.build();
 	}
 
 
-	// ==================== PII 检测 ====================
+	// ==================== PII 检�?====================
 
 	/**
-	 * 示例6：PII 检测
+	 * 示例6：PII 检�?
 	 */
 	public static void piiDetection() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -218,7 +218,7 @@ public class HooksExample {
 	// ==================== 工具重试 ====================
 
 	/**
-	 * 示例7：工具重试
+	 * 示例7：工具重�?
 	 */
 	public static void toolRetry() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -271,7 +271,7 @@ public class HooksExample {
 	// ==================== LLM Tool Selector ====================
 
 	/**
-	 * 示例9：LLM 工具选择器
+	 * 示例9：LLM 工具选择�?
 	 */
 	public static void llmToolSelector() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -299,7 +299,7 @@ public class HooksExample {
 	// ==================== LLM Tool Emulator ====================
 
 	/**
-	 * 示例10：LLM 工具模拟器
+	 * 示例10：LLM 工具模拟�?
 	 */
 	public static void llmToolEmulator() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -343,9 +343,9 @@ public class HooksExample {
 				.build();
 	}
 
-	// ==================== 自定义 Hooks ====================
+	// ==================== 自定�?Hooks ====================
 
-	// 创建示例工具的辅助方法
+	// 创建示例工具的辅助方�?
 	private static ToolCallback createSendEmailTool() {
 		return FunctionToolCallback.builder("sendEmailTool", (String input) -> "Email sent")
 				.description("Send an email")
@@ -360,7 +360,7 @@ public class HooksExample {
 				.build();
 	}
 
-	// ==================== 自定义 Interceptors ====================
+	// ==================== 自定�?Interceptors ====================
 
 	private static ToolCallback createSearchTool() {
 		return FunctionToolCallback.builder("searchTool", (String input) -> "Search results")
@@ -387,43 +387,43 @@ public class HooksExample {
 
 	public static void main(String[] args) {
 		System.out.println("=== Hooks and Interceptors Tutorial Examples ===");
-		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
+		System.out.println("注意：需要设�?AI_DASHSCOPE_API_KEY 环境变量\n");
 
 		try {
-			System.out.println("\n--- 示例1：基础 Hooks 和 Interceptors ---");
+			System.out.println("\n--- 示例1：基础 Hooks �?Interceptors ---");
 			basicHooksAndInterceptors();
 
-			System.out.println("\n--- 示例2：消息压缩 Hook ---");
+			System.out.println("\n--- 示例2：消息压�?Hook ---");
 			messageSummarization();
 
-			System.out.println("\n--- 示例3：人工介入循环 ---");
+			System.out.println("\n--- 示例3：人工介入循�?---");
 			humanInTheLoop();
 
-			System.out.println("\n--- 示例4：模型调用限制 ---");
+			System.out.println("\n--- 示例4：模型调用限�?---");
 			modelCallLimit();
 
-			System.out.println("\n--- 示例5：PII 检测 ---");
+			System.out.println("\n--- 示例5：PII 检�?---");
 			piiDetection();
 
-			System.out.println("\n--- 示例6：工具重试 ---");
+			System.out.println("\n--- 示例6：工具重�?---");
 			toolRetry();
 
-			System.out.println("\n--- 示例7：规划（Planning） ---");
+			System.out.println("\n--- 示例7：规划（Planning�?---");
 			planning();
 
-			System.out.println("\n--- 示例8：LLM 工具选择器 ---");
+			System.out.println("\n--- 示例8：LLM 工具选择�?---");
 			llmToolSelector();
 
-			System.out.println("\n--- 示例9：LLM 工具模拟器 ---");
+			System.out.println("\n--- 示例9：LLM 工具模拟�?---");
 			llmToolEmulator();
 
 			System.out.println("\n--- 示例10：上下文编辑 ---");
 			contextEditing();
 
-			System.out.println("\n=== 所有示例执行完成 ===");
+			System.out.println("\n=== 所有示例执行完�?===");
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时发生错误: " + e.getMessage());
+			System.err.println("执行示例时发生错�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
@@ -444,8 +444,8 @@ public class HooksExample {
 			// 在模型调用前执行
 			System.out.println("准备调用模型...");
 
-			// 可以修改状态
-			// 例如：添加额外的上下文
+			// 可以修改状�?
+			// 例如：添加额外的上下�?
 			return CompletableFuture.completedFuture(Map.of("extra_context", "某些额外信息"));
 		}
 
@@ -472,7 +472,7 @@ public class HooksExample {
 
 		@Override
 		public CompletableFuture<Map<String, Object>> beforeAgent(OverAllState state, RunnableConfig config) {
-			System.out.println("Agent 开始执行");
+			System.out.println("Agent 开始执�?);
 			// 可以初始化资源、记录开始时间等
 			return CompletableFuture.completedFuture(Map.of("start_time", System.currentTimeMillis()));
 		}
@@ -497,15 +497,15 @@ public class HooksExample {
 
 		@Override
 		public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
-			// 请求前记录
-			System.out.println("发送请求到模型: " + request.getMessages().size() + " 条消息");
+			// 请求前记�?
+			System.out.println("发送请求到模型: " + request.getMessages().size() + " 条消�?);
 
 			long startTime = System.currentTimeMillis();
 
 			// 执行实际调用
 			ModelResponse response = handler.call(request);
 
-			// 响应后记录
+			// 响应后记�?
 			long duration = System.currentTimeMillis() - startTime;
 			System.out.println("模型响应耗时: " + duration + "ms");
 
@@ -586,7 +586,7 @@ public class HooksExample {
 
 	/**
 	 * 消息修剪 Hook
-	 * 使用 MessagesModelHook 实现，在模型调用前修剪消息列表，只保留最后 10 条消息
+	 * 使用 MessagesModelHook 实现，在模型调用前修剪消息列表，只保留最�?10 条消�?
 	 */
 	@HookPositions({HookPosition.BEFORE_MODEL})
 	private static class MessageTrimmingHook extends MessagesModelHook {
@@ -599,22 +599,22 @@ public class HooksExample {
 
 		@Override
 		public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
-			// 如果消息数量超过限制，只保留最后 MAX_MESSAGES 条消息
+			// 如果消息数量超过限制，只保留最�?MAX_MESSAGES 条消�?
 			if (previousMessages.size() > MAX_MESSAGES) {
 				List<Message> trimmedMessages = previousMessages.subList(
 						previousMessages.size() - MAX_MESSAGES,
 						previousMessages.size()
 				);
-				// 使用 REPLACE 策略替换所有消息
+				// 使用 REPLACE 策略替换所有消�?
 				return new AgentCommand(trimmedMessages, UpdatePolicy.REPLACE);
 			}
-			// 如果消息数量未超过限制，返回原始消息（不进行修改）
+			// 如果消息数量未超过限制，返回原始消息（不进行修改�?
 			return new AgentCommand(previousMessages);
 		}
 	}
 
 	/**
-	 * 护栏拦截器
+	 * 护栏拦截�?
 	 */
 	private static class GuardrailInterceptor extends ModelInterceptor {
 		@Override
@@ -632,7 +632,7 @@ public class HooksExample {
 	// ==================== Main 方法 ====================
 
 	/**
-	 * 重试工具拦截器
+	 * 重试工具拦截�?
 	 */
 	private static class RetryToolInterceptor extends ToolInterceptor {
 		@Override

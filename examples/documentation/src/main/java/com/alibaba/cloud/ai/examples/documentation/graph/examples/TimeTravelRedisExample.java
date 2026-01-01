@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * Redis 时光旅行示例
- * 演示如何使用 Redis 持久化查看和恢复 Graph 执行的历史状态
+ * 演示如何使用 Redis 持久化查看和恢复 Graph 执行的历史状�?
  */
 public class TimeTravelRedisExample {
 
@@ -52,7 +52,7 @@ public class TimeTravelRedisExample {
 		// 创建 Checkpointer
 		var checkpointer = RedisSaver.builder().redisson(redisson).build();
 
-		// 配置持久化
+		// 配置持久�?
 		var compileConfig = CompileConfig.builder()
 				.saverConfig(SaverConfig.builder()
 						.register(checkpointer)
@@ -63,7 +63,7 @@ public class TimeTravelRedisExample {
 	}
 
 	/**
-	 * 执行 Graph 并生成历史
+	 * 执行 Graph 并生成历�?
 	 */
 	public static void executeGraphAndGenerateHistory(CompiledGraph graph) {
 		// 配置线程 ID
@@ -80,14 +80,14 @@ public class TimeTravelRedisExample {
 	}
 
 	/**
-	 * 查看状态历史
+	 * 查看状态历�?
 	 */
 	public static void viewStateHistory(CompiledGraph graph) {
 		var config = RunnableConfig.builder()
 				.threadId("conversation-redis-1")
 				.build();
 
-		// 获取所有历史状态
+		// 获取所有历史状�?
 		List<StateSnapshot> history = (List<StateSnapshot>) graph.getStateHistory(config);
 
 		System.out.println("State history:");
@@ -100,31 +100,31 @@ public class TimeTravelRedisExample {
 	}
 
 	/**
-	 * 回溯到历史状态
+	 * 回溯到历史状�?
 	 */
 	public static void travelBackToHistory(CompiledGraph graph) {
 		var config = RunnableConfig.builder()
 				.threadId("conversation-redis-1")
 				.build();
 
-		// 获取所有历史状态
+		// 获取所有历史状�?
 		List<StateSnapshot> history = (List<StateSnapshot>) graph.getStateHistory(config);
 
 		if (history.size() < 2) {
-			System.out.println("历史记录不足，无法回溯");
+			System.out.println("历史记录不足，无法回�?);
 			return;
 		}
 
-		// 获取特定的历史状态 (例如第二个状态)
+		// 获取特定的历史状�?(例如第二个状�?
 		StateSnapshot historicalSnapshot = history.get(1);
 
-		// 使用历史状态的 checkpoint ID 创建新配置
+		// 使用历史状态的 checkpoint ID 创建新配�?
 		var historicalConfig = RunnableConfig.builder()
 				.threadId("conversation-redis-1")
 				.checkPointId(historicalSnapshot.config().checkPointId().orElse(null))
 				.build();
 
-		// 从历史状态继续执行
+		// 从历史状态继续执�?
 		graph.invoke(
 				Map.of("query", "New question from historical state"),
 				historicalConfig
@@ -139,15 +139,15 @@ public class TimeTravelRedisExample {
 				.threadId("conversation-redis-1")
 				.build();
 
-		// 获取所有历史状态
+		// 获取所有历史状�?
 		List<StateSnapshot> history = (List<StateSnapshot>) graph.getStateHistory(config);
 
 		if (history.size() < 2) {
-			System.out.println("历史记录不足，无法创建分支");
+			System.out.println("历史记录不足，无法创建分�?);
 			return;
 		}
 
-		// 获取特定的历史状态
+		// 获取特定的历史状�?
 		StateSnapshot historicalSnapshot = history.get(1);
 
 		// 从历史状态创建新分支
@@ -156,7 +156,7 @@ public class TimeTravelRedisExample {
 				.checkPointId(historicalSnapshot.config().checkPointId().orElse(null))
 				.build();
 
-		// 在新分支上执行
+		// 在新分支上执�?
 		graph.invoke(
 				Map.of("query", "Alternative path"),
 				branchConfig
@@ -187,7 +187,7 @@ public class TimeTravelRedisExample {
 				.addEdge("step2", "step3")
 				.addEdge("step3", END);
 
-		// 配置持久化
+		// 配置持久�?
 		var checkpointer = RedisSaver.builder().redisson(redisson).build();
 		var compileConfig = CompileConfig.builder()
 				.saverConfig(SaverConfig.builder()
@@ -202,7 +202,7 @@ public class TimeTravelRedisExample {
 				.threadId("demo-redis")
 				.build();
 
-		// 清理之前的状态（如果存在）
+		// 清理之前的状态（如果存在�?
 		checkpointer.release(config);
 
 		graph.invoke(Map.of(), config);
@@ -215,7 +215,7 @@ public class TimeTravelRedisExample {
 			System.out.println("---");
 		});
 
-		// 回溯到 step1
+		// 回溯�?step1
 		StateSnapshot step1Snapshot = history.stream()
 				.filter(s -> "step1".equals(s.node()))
 				.findFirst()
@@ -226,14 +226,14 @@ public class TimeTravelRedisExample {
 				.checkPointId(step1Snapshot.config().checkPointId().orElse(null))
 				.build();
 
-		// 从 step1 重新执行
+		// �?step1 重新执行
 		graph.invoke(Map.of(), replayConfig);
 	}
 
 	public static void main(String[] args) {
 		System.out.println("=== Redis 时光旅行示例 ===\n");
 
-		// 初始化 Redis 客户端
+		// 初始�?Redis 客户�?
 		Config config = new Config();
 		config.useSingleServer()
 				.setAddress("redis://localhost:6379");
@@ -260,7 +260,7 @@ public class TimeTravelRedisExample {
 
 			CompiledGraph graph = configureCheckpoint(builder, redisson);
 			
-			// 清理旧数据
+			// 清理旧数�?
 			RunnableConfig cleanConfig = RunnableConfig.builder().threadId("conversation-redis-1").build();
 			RedisSaver.builder().redisson(redisson).build().release(cleanConfig);
 			RunnableConfig cleanBranchConfig = RunnableConfig.builder().threadId("conversation-redis-1-branch").build();
@@ -269,18 +269,18 @@ public class TimeTravelRedisExample {
 			System.out.println("Checkpoint 配置完成");
 			System.out.println();
 
-			// 示例 2: 执行 Graph 并生成历史
-			System.out.println("示例 2: 执行 Graph 并生成历史");
+			// 示例 2: 执行 Graph 并生成历�?
+			System.out.println("示例 2: 执行 Graph 并生成历�?);
 			executeGraphAndGenerateHistory(graph);
 			System.out.println();
 
-			// 示例 3: 查看状态历史
-			System.out.println("示例 3: 查看状态历史");
+			// 示例 3: 查看状态历�?
+			System.out.println("示例 3: 查看状态历�?);
 			viewStateHistory(graph);
 			System.out.println();
 
-			// 示例 4: 回溯到历史状态
-			System.out.println("示例 4: 回溯到历史状态");
+			// 示例 4: 回溯到历史状�?
+			System.out.println("示例 4: 回溯到历史状�?);
 			travelBackToHistory(graph);
 			System.out.println();
 
@@ -294,12 +294,12 @@ public class TimeTravelRedisExample {
 			completeExample(redisson);
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
-			System.out.println("提示: 请配置 Redis 连接后运行完整示例");
-			System.out.println("提示: 需要添加 Redisson 依赖: org.redisson:redisson");
+			System.out.println("所有示例执行完�?);
+			System.out.println("提示: 请配�?Redis 连接后运行完整示�?);
+			System.out.println("提示: 需要添�?Redisson 依赖: org.redisson:redisson");
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		} finally {
 			redisson.shutdown();

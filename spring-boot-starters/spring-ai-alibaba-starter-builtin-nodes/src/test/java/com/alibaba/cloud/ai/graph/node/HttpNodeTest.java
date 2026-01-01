@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,16 +225,16 @@ public class HttpNodeTest {
 		Map<String, Object> result = node.apply(new OverAllState());
 		Map<String, Object> messages = (Map<String, Object>) result.get("messages");
 
-		assertTrue(messages.containsKey("files"), "应包含 files 键");
+		assertTrue(messages.containsKey("files"), "应包�?files �?);
 		@SuppressWarnings("unchecked")
 		List<String> files = (List<String>) messages.get("files");
 		String fileId = files.get(0);
 		assertNotNull(fileId, "应有 File ID");
 
 		InMemoryFileStorage.FileRecord record = InMemoryFileStorage.get(fileId);
-		assertNotNull(record, "应能通过 ID 获取缓存的 FileRecord");
+		assertNotNull(record, "应能通过 ID 获取缓存�?FileRecord");
 		assertEquals("test.png", record.getName(), "record 名称应为 test.png");
-		assertArrayEquals(fileBytes, record.getContent(), "缓存的内容应与原始字节一致");
+		assertArrayEquals(fileBytes, record.getContent(), "缓存的内容应与原始字节一�?);
 		InMemoryFileStorage.clear();
 	}
 

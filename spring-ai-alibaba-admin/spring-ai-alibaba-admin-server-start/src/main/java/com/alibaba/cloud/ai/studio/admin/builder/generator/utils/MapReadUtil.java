@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public final class MapReadUtil {
 	 */
 	public static Map<String, Object> safeCastToMapWithStringKey(Object obj) {
 		if (obj instanceof Map<?, ?> map) {
-			// 检查所有键是否是 String
+			// 检查所有键是否�?String
 			for (Object key : map.keySet()) {
 				if (!(key instanceof String)) {
 					return null;
@@ -81,7 +81,7 @@ public final class MapReadUtil {
 	}
 
 	/**
-	 * 读取Map多层的值
+	 * 读取Map多层的�?
 	 * @param map map
 	 * @param clazz 值的类型
 	 * @param keys 多层key
@@ -95,7 +95,7 @@ public final class MapReadUtil {
 			}
 			Object object = map.get(key);
 			if (i == keys.length - 1) {
-				// 最后一层数据，判断是不是目标类型
+				// 最后一层数据，判断是不是目标类�?
 				try {
 					return clazz.cast(object);
 				}
@@ -136,7 +136,7 @@ public final class MapReadUtil {
 	/**
 	 * 将map对应的字段赋值给特定的record类型
 	 * @param map map
-	 * @param clazz record类
+	 * @param clazz record�?
 	 * @return record对象
 	 */
 	public static <T extends Record> T castMapToRecord(Map<String, Object> map, Class<T> clazz) {
@@ -147,11 +147,11 @@ public final class MapReadUtil {
 		Object[] params = Arrays.stream(constructor.getParameters()).map(p -> {
 			Object object = map.get(p.getName());
 			if (object == null) {
-				// 尝试将名称转换为下划线命名
+				// 尝试将名称转换为下划线命�?
 				String name = camelToSnakeCase(p.getName());
 				object = map.get(name);
 			}
-			// 判断是否为对应类型
+			// 判断是否为对应类�?
 			if (object == null || !p.getType().isInstance(object)) {
 				return null;
 			}

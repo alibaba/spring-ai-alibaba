@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class HumanInTheLoopTest {
 		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右散文");
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一�?00字左右散�?);
 
 		InterruptionMetadata feedbackMetadata = buildRejectionFeedback(interruptionMetadata);
 
@@ -91,7 +91,7 @@ public class HumanInTheLoopTest {
 		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右散文");
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一�?00字左右散�?);
 
 		InterruptionMetadata feedbackMetadata = buildApprovalFeedback(interruptionMetadata);
 
@@ -113,7 +113,7 @@ public class HumanInTheLoopTest {
 		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右散文");
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一�?00字左右散�?);
 
 		InterruptionMetadata feedbackMetadata = buildEditedFeedback(interruptionMetadata);
 
@@ -171,7 +171,7 @@ public class HumanInTheLoopTest {
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
 		// First invocation - should interrupt for first tool (poem)
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "第一次先调用工具帮我写一篇100字左右散文，然后第二次再调用工具查询写作当天北京天气情况。");
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "第一次先调用工具帮我写一�?00字左右散文，然后第二次再调用工具查询写作当天北京天气情况�?);
 
 		// Approve first tool
 		InterruptionMetadata feedbackMetadata = buildApprovalFeedback(interruptionMetadata);
@@ -188,7 +188,7 @@ public class HumanInTheLoopTest {
 
 	private ReactAgent createAgent() {
 		Map approvalOn = Map.of(
-				"poem", ToolConfig.builder().description("请确认诗歌工具执行").build()
+				"poem", ToolConfig.builder().description("请确认诗歌工具执�?).build()
 		);
 
 		return ReactAgent.builder()
@@ -203,8 +203,8 @@ public class HumanInTheLoopTest {
 
 	private ReactAgent createAgentWithMultipleTools() {
 		Map approvalOn = Map.of(
-				"poem", ToolConfig.builder().description("请确认诗歌工具执行").build(),
-				"weather_tool", ToolConfig.builder().description("请确认天气工具执行").build()
+				"poem", ToolConfig.builder().description("请确认诗歌工具执�?).build(),
+				"weather_tool", ToolConfig.builder().description("请确认天气工具执�?).build()
 		);
 
 		return ReactAgent.builder()
@@ -225,7 +225,7 @@ public class HumanInTheLoopTest {
 	private InterruptionMetadata performFirstInvocationAndCheckMultipleToolsRequested(ReactAgent agent, RunnableConfig runnableConfig) throws Exception {
 		// First invocation - should trigger interruption for human approval
 		System.out.println("\n=== First Invocation: Expecting Interruption with Multiple Tools ===");
-		Optional<NodeOutput> result = agent.invokeAndGetOutput("帮我写一篇100字左右散文，同时在文章最后包含写作当天北京天气情况。", runnableConfig);
+		Optional<NodeOutput> result = agent.invokeAndGetOutput("帮我写一�?00字左右散文，同时在文章最后包含写作当天北京天气情况�?, runnableConfig);
 
 		// Assert first invocation results in interruption
 		Assertions.assertTrue(result.isPresent(), "First invocation should return a result");
@@ -307,7 +307,7 @@ public class HumanInTheLoopTest {
 			InterruptionMetadata.ToolFeedback rejectedFeedback = InterruptionMetadata.ToolFeedback
 				.builder(toolFeedback)
 				.result(InterruptionMetadata.ToolFeedback.FeedbackResult.REJECTED)
-				.description("不用使用这个工具，你自己完成写作。")
+				.description("不用使用这个工具，你自己完成写作�?)
 				.build();
 			newBuilder.addToolFeedback(rejectedFeedback);
 		});
@@ -583,9 +583,9 @@ public class HumanInTheLoopTest {
 				.build();
 
 		Map approvalOn = Map.of(
-				"tool1", ToolConfig.builder().description("工具1需要审批").build(),
-				"tool2", ToolConfig.builder().description("工具2需要审批").build(),
-				"tool3", ToolConfig.builder().description("工具3需要审批").build()
+				"tool1", ToolConfig.builder().description("工具1需要审�?).build(),
+				"tool2", ToolConfig.builder().description("工具2需要审�?).build(),
+				"tool3", ToolConfig.builder().description("工具3需要审�?).build()
 		);
 
 		return ReactAgent.builder()
@@ -600,7 +600,7 @@ public class HumanInTheLoopTest {
 	private InterruptionMetadata performFirstInvocationAndCheckThreeToolsRequested(ReactAgent agent, RunnableConfig runnableConfig) throws Exception {
 		// First invocation - should trigger interruption for human approval
 		System.out.println("\n=== First Invocation: Expecting Interruption with Three Tools ===");
-		Optional<NodeOutput> result = agent.invokeAndGetOutput("执行所有工具", runnableConfig);
+		Optional<NodeOutput> result = agent.invokeAndGetOutput("执行所有工�?, runnableConfig);
 
 		// Assert first invocation results in interruption
 		Assertions.assertTrue(result.isPresent(), "First invocation should return a result");

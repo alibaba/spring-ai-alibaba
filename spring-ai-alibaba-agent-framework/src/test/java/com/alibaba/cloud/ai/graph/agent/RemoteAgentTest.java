@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ class RemoteAgentTest {
 
 	@BeforeEach
 	void setUp() {
-		// 先创建 DashScopeApi 实例
+		// 先创�?DashScopeApi 实例
 		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 
 		// 创建 DashScope ChatModel 实例
@@ -57,14 +57,14 @@ class RemoteAgentTest {
 		// A2aRemoteAgent currencyExchangeAgent = A2aRemoteAgent.builder()
 		// .name("writer_agent")
 		// .agentCard(RemoteAgentCard.builder().url("http://0.0.0.0:8080").build())
-		// .description("可以写文章。")
+		// .description("可以写文章�?)
 		// .outputKey("output")
 		// .build();
 		//
 		// try {
 		// // Start streaming and consume chunks as they arrive
 		// AsyncGenerator<NodeOutput> generator =
-		// currencyExchangeAgent.stream(Map.of("input", "你好，给我写个100字的散文"));
+		// currencyExchangeAgent.stream(Map.of("input", "你好，给我写�?00字的散文"));
 		// int chunkCount = 0;
 		// while (true) {
 		// AsyncGenerator.Data<NodeOutput> data = generator.next();
@@ -88,7 +88,7 @@ class RemoteAgentTest {
 		//
 		// try {
 		// Optional<OverAllState> result = currencyExchangeAgent.invoke(Map.of("input",
-		// "你好，给我写一个100字的描写西湖的文章"));
+		// "你好，给我写一�?00字的描写西湖的文�?));
 		// System.out.println("Final Result: " + result.get());
 		// } catch (Exception e) {
 		// e.printStackTrace();

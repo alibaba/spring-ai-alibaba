@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,9 +109,9 @@ class ReactAgentDeepSeekTest {
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver()).build();
 
 		try {
-			Optional<OverAllState> result = agent.invoke("帮我写一篇100字左右散文。");
-			Optional<OverAllState> result2 = agent.invoke(new UserMessage("帮我写一首现代诗歌。"));
-			Optional<OverAllState> result3 = agent.invoke("帮我写一首现代诗歌2。");
+			Optional<OverAllState> result = agent.invoke("帮我写一�?00字左右散文�?);
+			Optional<OverAllState> result2 = agent.invoke(new UserMessage("帮我写一首现代诗歌�?));
+			Optional<OverAllState> result3 = agent.invoke("帮我写一首现代诗�?�?);
 
 			assertTrue(result.isPresent(), "First result should be present");
 			OverAllState state1 = result.get();
@@ -143,7 +143,7 @@ class ReactAgentDeepSeekTest {
 
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver())
 				.build();
-		AssistantMessage message = agent.call("帮我写一篇100字左右散文。");
+		AssistantMessage message = agent.call("帮我写一�?00字左右散文�?);
 		System.out.println(message.getText());
 	}
 
@@ -178,7 +178,7 @@ class ReactAgentDeepSeekTest {
 				.outputSchema(customSchema)
 				.build();
 
-		AssistantMessage message = agent.call("帮我写一首关于春天的诗歌。");
+		AssistantMessage message = agent.call("帮我写一首关于春天的诗歌�?);
 		assertNotNull(message, "Message should not be null");
 		assertNotNull(message.getText(), "Message text should not be null");
 		System.out.println("=== Output with custom schema ===");
@@ -200,7 +200,7 @@ class ReactAgentDeepSeekTest {
 				.outputType(PoemOutput.class)
 				.build();
 
-		AssistantMessage message = agent.call("帮我写一首关于秋天的现代诗。");
+		AssistantMessage message = agent.call("帮我写一首关于秋天的现代诗�?);
 		assertNotNull(message, "Message should not be null");
 		assertNotNull(message.getText(), "Message text should not be null");
 		System.out.println("=== Output with outputType (auto-generated schema) ===");
@@ -244,7 +244,7 @@ class ReactAgentDeepSeekTest {
 				.outputSchema(jsonSchema)
 				.build();
 
-		Optional<OverAllState> result = agent.invoke("分析这句话：春天来了，万物复苏，生机勃勃。");
+		Optional<OverAllState> result = agent.invoke("分析这句话：春天来了，万物复苏，生机勃勃�?);
 
 		assertTrue(result.isPresent(), "Result should be present");
 		System.out.println("=== Full state output ===");
@@ -258,23 +258,23 @@ class ReactAgentDeepSeekTest {
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_agent")
 				.model(chatModel)
-				.description("可以写文章。")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+				.description("可以写文章�?)
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答�?)
 				.saver(new MemorySaver())
 				.build();
 
 		ReactAgent reviewerAgent = ReactAgent.builder()
 				.name("reviewer_agent")
 				.model(chatModel)
-				.description("可以对文章进行评论和修改。")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
+				.description("可以对文章进行评论和修改�?)
+				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述�?)
 				.saver(new MemorySaver())
 				.build();
 
 		ReactAgent blogAgent = ReactAgent.builder()
 				.name("blog_agent")
 				.model(chatModel)
-				.instruction("首先，根据用户给定的主题写一篇文章，然后将文章交给评论员进行审核，必要时做出修改。")
+				.instruction("首先，根据用户给定的主题写一篇文章，然后将文章交给评论员进行审核，必要时做出修改�?)
 				.tools(List.of(AgentTool.getFunctionToolCallback(writerAgent),
 						AgentTool.getFunctionToolCallback(reviewerAgent)))
 				.saver(new MemorySaver())
@@ -282,7 +282,7 @@ class ReactAgentDeepSeekTest {
 
 		try {
 			Optional<OverAllState> result = blogAgent
-					.invoke(new UserMessage("帮我写一个100字左右的散文"));
+					.invoke(new UserMessage("帮我写一�?00字左右的散文"));
 
 			assertTrue(result.isPresent(), "Result should be present");
 
@@ -306,7 +306,7 @@ class ReactAgentDeepSeekTest {
 	public void testAgentToolWithInputSchema() throws Exception {
 
 
-		// 使用 inputSchema 定义工具的输入格式
+		// 使用 inputSchema 定义工具的输入格�?
 		String writerInputSchema = """
 				{
 					"type": "object",
@@ -330,7 +330,7 @@ class ReactAgentDeepSeekTest {
 				.name("structured_writer_agent")
 				.model(chatModel)
 				.description("根据结构化输入写文章")
-				.instruction("你是一个专业作家。请严格按照输入的主题、字数和风格要求创作文章。")
+				.instruction("你是一个专业作家。请严格按照输入的主题、字数和风格要求创作文章�?)
 				.inputSchema(writerInputSchema)
 				.saver(saver)
 				.build();
@@ -338,14 +338,14 @@ class ReactAgentDeepSeekTest {
 		ReactAgent coordinatorAgent = ReactAgent.builder()
 				.name("coordinator_agent")
 				.model(chatModel)
-				.instruction("你需要调用写作工具来完成用户的写作请求。请根据用户需求，使用结构化的参数调用写作工具。")
+				.instruction("你需要调用写作工具来完成用户的写作请求。请根据用户需求，使用结构化的参数调用写作工具�?)
 				.tools(List.of(AgentTool.getFunctionToolCallback(writerAgent)))
 				.saver(saver)
 				.build();
 
 		try {
 			Optional<OverAllState> result = coordinatorAgent
-					.invoke("请写一篇关于春天的抒情散文，大约150字，直接写作不要再询问我了");
+					.invoke("请写一篇关于春天的抒情散文，大�?50字，直接写作不要再询问我�?);
 
 			assertTrue(result.isPresent(), "Result should be present");
 			System.out.println("=== Agent Tool with InputSchema Test ===");
@@ -361,7 +361,7 @@ class ReactAgentDeepSeekTest {
 	public void testAgentToolWithOutputSchema() throws Exception {
 
 
-		// 使用 outputSchema 定义工具的输出格式
+		// 使用 outputSchema 定义工具的输出格�?
 		String writerOutputSchema = """
 				{
 					"type": "object",
@@ -382,8 +382,8 @@ class ReactAgentDeepSeekTest {
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_with_output_schema")
 				.model(chatModel)
-				.description("写文章并返回结构化输出")
-				.instruction("你是一个专业作家。请创作文章并严格按照指定的JSON格式返回结果。")
+				.description("写文章并返回结构化输�?)
+				.instruction("你是一个专业作家。请创作文章并严格按照指定的JSON格式返回结果�?)
 				.outputSchema(writerOutputSchema)
 				.saver(new MemorySaver())
 				.build();
@@ -391,7 +391,7 @@ class ReactAgentDeepSeekTest {
 		ReactAgent coordinatorAgent = ReactAgent.builder()
 				.name("coordinator_output_schema")
 				.model(chatModel)
-				.instruction("调用写作工具完成用户请求，工具会返回结构化的文章数据。")
+				.instruction("调用写作工具完成用户请求，工具会返回结构化的文章数据�?)
 				.tools(List.of(AgentTool.getFunctionToolCallback(writerAgent)))
 				.saver(new MemorySaver())
 				.build();
@@ -418,8 +418,8 @@ class ReactAgentDeepSeekTest {
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_with_output_type")
 				.model(chatModel)
-				.description("写文章并返回类型化输出")
-				.instruction("你是一个专业作家。请创作文章并返回包含 title、content 和 style 的结构化结果。")
+				.description("写文章并返回类型化输�?)
+				.instruction("你是一个专业作家。请创作文章并返回包�?title、content �?style 的结构化结果�?)
 				.outputType(PoemOutput.class)
 				.saver(new MemorySaver())
 				.build();
@@ -427,7 +427,7 @@ class ReactAgentDeepSeekTest {
 		ReactAgent coordinatorAgent = ReactAgent.builder()
 				.name("coordinator_output_type")
 				.model(chatModel)
-				.instruction("调用写作工具完成用户请求。")
+				.instruction("调用写作工具完成用户请求�?)
 				.tools(List.of(AgentTool.getFunctionToolCallback(writerAgent)))
 				.saver(new MemorySaver())
 				.build();

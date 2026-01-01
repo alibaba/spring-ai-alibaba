@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 提供 HTTP 接口来调用 A2A 示例
+ * 提供 HTTP 接口来调�?A2A 示例
  */
 @RestController
 @RequestMapping("/api/a2a")
@@ -39,7 +39,7 @@ public class A2AExampleController {
 	}
 
 	/**
-	 * 运行统一的 A2A 演示
+	 * 运行统一�?A2A 演示
 	 *
 	 * @return 执行结果
 	 */
@@ -53,7 +53,7 @@ public class A2AExampleController {
 		}
 		catch (Exception e) {
 			response.put("status", "error");
-			response.put("message", "执行演示时出错: " + e.getMessage());
+			response.put("message", "执行演示时出�? " + e.getMessage());
 			response.put("error", e.getClass().getSimpleName());
 		}
 		return response;

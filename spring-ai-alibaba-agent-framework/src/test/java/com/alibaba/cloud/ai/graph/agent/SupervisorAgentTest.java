@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ class SupervisorAgentTest {
 				.name("writer_agent")
 				.model(chatModel)
 				.description("擅长创作各类文章，包括散文、诗歌等文学作品")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答�?)
 				.outputKey("writer_output")
 				.build();
 
@@ -66,7 +66,7 @@ class SupervisorAgentTest {
 				.name("translator_agent")
 				.model(chatModel)
 				.description("擅长将文章翻译成各种语言")
-				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言。")
+				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言�?)
 				.outputKey("translator_output")
 				.build();
 
@@ -123,7 +123,7 @@ class SupervisorAgentTest {
 				.name("writer_agent")
 				.model(chatModel)
 				.description("擅长创作各类文章，包括散文、诗歌等文学作品")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答�?)
 				.outputKey("writer_output")
 				.build();
 
@@ -132,7 +132,7 @@ class SupervisorAgentTest {
 				.name("article_writer")
 				.model(chatModel)
 				.description("专业写作Agent")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：{input}。")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：{input}�?)
 				.outputKey("article")
 				.build();
 
@@ -140,25 +140,25 @@ class SupervisorAgentTest {
 				.name("reviewer")
 				.model(chatModel)
 				.description("专业评审Agent")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。" +
+				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改�? +
 						"对于散文类文章，请确保文章中必须包含对于西湖风景的描述。待评论文章：\n\n {article}" +
-						"最终只返回修改后的文章，不要包含任何评论信息。")
+						"最终只返回修改后的文章，不要包含任何评论信息�?)
 				.outputKey("reviewed_article")
 				.build();
 
 		// Create nested SequentialAgent
 		SequentialAgent writingWorkflowAgent = SequentialAgent.builder()
 				.name("writing_workflow_agent")
-				.description("完整的写作工作流：先写文章，然后进行评审和修改")
+				.description("完整的写作工作流：先写文章，然后进行评审和修�?)
 				.subAgents(List.of(articleWriterAgent, reviewerAgent))
 				.build();
 
 		// Define professional supervisor instruction
 		final String SUPERVISOR_SYSTEM_PROMPT = """
-				你是一个智能的内容管理监督者，负责协调和管理多个专业Agent来完成用户的内容处理需求。
+				你是一个智能的内容管理监督者，负责协调和管理多个专业Agent来完成用户的内容处理需求�?
 
 				## 你的职责
-				1. 分析用户需求，将其分解为合适的子任务
+				1. 分析用户需求，将其分解为合适的子任�?
 				2. 根据任务特性，选择合适的Agent进行处理
 				3. 监控任务执行状态，决定是否需要继续处理或完成任务
 				4. 当所有任务完成时，返回FINISH结束流程
@@ -175,12 +175,12 @@ class SupervisorAgentTest {
 				### writing_workflow_agent
 				- **功能**: 完整的写作工作流，包含两个步骤：先写文章，然后进行评审和修改
 				- **适用场景**:
-				  * 用户需要高质量的文章，要求经过评审和修改
-				  * 任务明确要求"确保质量"、"需要评审"、"需要修改"等
-				  * 需要多步骤处理的复杂写作任务
+				  * 用户需要高质量的文章，要求经过评审和修�?
+				  * 任务明确要求"确保质量"�?需要评�?�?需要修�?�?
+				  * 需要多步骤处理的复杂写作任�?
 				- **工作流程**: 
-				  1. article_writer: 根据用户需求创作文章
-				  2. reviewer: 对文章进行评审和修改，确保质量
+				  1. article_writer: 根据用户需求创作文�?
+				  2. reviewer: 对文章进行评审和修改，确保质�?
 				- **输出**: reviewed_article
 
 				## 决策规则
@@ -194,13 +194,13 @@ class SupervisorAgentTest {
 				   - 如果还有未完成的任务，继续路由到相应的Agent
 
 				## 响应格式
-				只返回Agent名称（writer_agent、writing_workflow_agent）或FINISH，不要包含其他解释。
+				只返回Agent名称（writer_agent、writing_workflow_agent）或FINISH，不要包含其他解释�?
 				""";
 
 		// Create SupervisorAgent with nested SequentialAgent
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
-				.description("内容管理监督者，负责协调写作和完整写作工作流等任务")
+				.description("内容管理监督者，负责协调写作和完整写作工作流等任�?)
 				.model(chatModel)
 				.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
 				.subAgents(List.of(writerAgent, writingWorkflowAgent))
@@ -242,7 +242,7 @@ class SupervisorAgentTest {
 				.name("writer_agent")
 				.model(chatModel)
 				.description("擅长创作各类文章")
-				.instruction("你是一个知名的作家。")
+				.instruction("你是一个知名的作家�?)
 				.outputKey("writer_output")
 				.build();
 
@@ -250,14 +250,14 @@ class SupervisorAgentTest {
 				.name("translator_agent")
 				.model(chatModel)
 				.description("擅长将文章翻译成各种语言")
-				.instruction("你是一个专业的翻译家。")
+				.instruction("你是一个专业的翻译家�?)
 				.outputKey("translator_output")
 				.build();
 
 		// Create SupervisorAgent
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
-				.description("内容管理监督者")
+				.description("内容管理监督�?)
 				.model(chatModel)
 				.subAgents(List.of(writerAgent, translatorAgent))
 				.build();
@@ -292,7 +292,7 @@ class SupervisorAgentTest {
 				.name("writer_agent")
 				.model(chatModel)
 				.description("擅长创作各类文章，包括散文、诗歌等文学作品")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：\n\n {input}。")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：\n\n {input}�?)
 				.outputKey("writer_output")
 				.build();
 
@@ -300,13 +300,13 @@ class SupervisorAgentTest {
 				.name("translator_agent")
 				.model(chatModel)
 				.description("擅长将文章翻译成各种语言")
-				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言。待翻译文章：\n\n {writer_output}。")
+				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言。待翻译文章：\n\n {writer_output}�?)
 				.outputKey("translator_output")
 				.build();
 
 		// Define supervisor instruction for multi-step tasks
 		final String SUPERVISOR_SYSTEM_PROMPT = """
-				你是一个智能的内容管理监督者。
+				你是一个智能的内容管理监督者�?
 				
 				## 可用的子Agent及其职责
 				
@@ -320,8 +320,8 @@ class SupervisorAgentTest {
 				
 				## 决策规则
 				
-				1. **多步骤任务处理**:
-				   - 如果用户需求包含多个步骤（如"先写文章，然后翻译"），需要分步处理
+				1. **多步骤任务处�?*:
+				   - 如果用户需求包含多个步骤（�?先写文章，然后翻�?），需要分步处�?
 				   - 先路由到第一个合适的Agent，等待其完成
 				   - 完成后，根据剩余需求继续路由到下一个Agent
 				   - 直到所有步骤完成，返回FINISH
@@ -330,13 +330,13 @@ class SupervisorAgentTest {
 				   - 当用户的所有需求都已满足时，返回FINISH
 				
 				## 响应格式
-				只返回Agent名称（writer_agent、translator_agent）或FINISH，不要包含其他解释。
+				只返回Agent名称（writer_agent、translator_agent）或FINISH，不要包含其他解释�?
 				""";
 
 		// Create SupervisorAgent
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
-				.description("内容管理监督者，负责协调写作和翻译任务")
+				.description("内容管理监督者，负责协调写作和翻译任�?)
 				.model(chatModel)
 				.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
 				.subAgents(List.of(writerAgent, translatorAgent))
@@ -394,8 +394,8 @@ class SupervisorAgentTest {
 		ReactAgent articleWriterAgent = ReactAgent.builder()
 				.name("article_writer")
 				.model(chatModel)
-				.description("专业写作Agent，负责创作文章")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：{input}。")
+				.description("专业写作Agent，负责创作文�?)
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：{input}�?)
 				.outputKey("article_content")
 				.build();
 
@@ -404,7 +404,7 @@ class SupervisorAgentTest {
 				.name("translator_agent")
 				.model(chatModel)
 				.description("擅长将文章翻译成各种语言")
-				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言。待翻译文章：\n\n {article_content}。")
+				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言。待翻译文章：\n\n {article_content}�?)
 				.outputKey("translator_output")
 				.build();
 
@@ -412,8 +412,8 @@ class SupervisorAgentTest {
 				.name("reviewer_agent")
 				.model(chatModel)
 				.description("擅长对文章进行评审和修改")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。待评审文章：\n\n {article_content}。"
-						+ "请对文章进行评审，指出优点和需要改进的地方，并返回评审后的改进版本。")
+				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。待评审文章：\n\n {article_content}�?
+						+ "请对文章进行评审，指出优点和需要改进的地方，并返回评审后的改进版本�?)
 				.outputKey("reviewer_output")
 				.build();
 
@@ -421,29 +421,29 @@ class SupervisorAgentTest {
 		// The instruction contains {article_content} placeholder which will be replaced
 		// with the output from the first ReactAgent in SequentialAgent
 		final String SUPERVISOR_INSTRUCTION = """
-				你是一个智能的内容处理监督者，你可以看到前序Agent的聊天历史与任务处理记录。当前，你收到了以下文章内容：
+				你是一个智能的内容处理监督者，你可以看到前序Agent的聊天历史与任务处理记录。当前，你收到了以下文章内容�?
 
 				{article_content}
 
-				请根据文章内容的特点，决定是进行翻译还是评审：
+				请根据文章内容的特点，决定是进行翻译还是评审�?
 				- 如果文章是中文且需要翻译，选择 translator_agent
 				- 如果文章需要评审和改进，选择 reviewer_agent
-				- 如果任务完成，返回 FINISH
+				- 如果任务完成，返�?FINISH
 				""";
 
 		final String SUPERVISOR_SYSTEM_PROMPT = """
-				你是一个智能的内容处理监督者，负责协调翻译和评审任务。
+				你是一个智能的内容处理监督者，负责协调翻译和评审任务�?
 
 				## 可用的子Agent及其职责
 
 				### translator_agent
 				- **功能**: 擅长将文章翻译成各种语言
-				- **适用场景**: 当文章需要翻译成其他语言时
+				- **适用场景**: 当文章需要翻译成其他语言�?
 				- **输出**: translator_output
 
 				### reviewer_agent
 				- **功能**: 擅长对文章进行评审和修改
-				- **适用场景**: 当文章需要评审、改进或优化时
+				- **适用场景**: 当文章需要评审、改进或优化�?
 				- **输出**: reviewer_output
 
 				## 决策规则
@@ -453,10 +453,10 @@ class SupervisorAgentTest {
 				   - 如果文章需要评审、改进或优化，选择 reviewer_agent
 
 				2. **任务完成判断**:
-				   - 当所有任务完成时，返回 FINISH
+				   - 当所有任务完成时，返�?FINISH
 
 				## 响应格式
-				只返回Agent名称（translator_agent、reviewer_agent）或FINISH，不要包含其他解释。
+				只返回Agent名称（translator_agent、reviewer_agent）或FINISH，不要包含其他解释�?
 				""";
 
 		// Create SupervisorAgent with instruction that uses placeholder

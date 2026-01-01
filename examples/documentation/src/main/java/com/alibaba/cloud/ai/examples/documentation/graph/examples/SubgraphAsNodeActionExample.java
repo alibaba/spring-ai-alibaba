@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * 子图作为节点操作示例
- * 演示如何将子图作为 NodeAction 在父图中使用
+ * 演示如何将子图作�?NodeAction 在父图中使用
  */
 public class SubgraphAsNodeActionExample {
 
@@ -95,7 +95,7 @@ public class SubgraphAsNodeActionExample {
 
 		CompiledGraph subGraph = createSubGraph(keyStrategyFactory);
 		CompiledGraph parentGraph = useInParentGraph(keyStrategyFactory, subGraph);
-		System.out.println("所有示例执行完成");
+		System.out.println("所有示例执行完�?);
 	}
 
 	/**
@@ -118,7 +118,7 @@ public class SubgraphAsNodeActionExample {
 			Map<String, Object> subInput = Map.of("input", input);
 			Optional<OverAllState> subResult = subGraph.invoke(subInput);
 
-			// 返回结果给父图
+			// 返回结果给父�?
 			String result = (String) subResult.get().value("result").orElse("");
 			return Map.of("processed", result);
 		}
@@ -145,7 +145,7 @@ public class SubgraphAsNodeActionExample {
 
 		@Override
 		public Map<String, Object> apply(OverAllState state) {
-			// 从父状态读取指定键的数据
+			// 从父状态读取指定键的数�?
 			Object input = state.value(inputKey).orElse(null);
 
 			// 执行子图

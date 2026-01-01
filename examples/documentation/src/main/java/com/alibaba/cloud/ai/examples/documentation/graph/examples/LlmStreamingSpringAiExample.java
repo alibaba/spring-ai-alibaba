@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import reactor.core.publisher.Flux;
 
 /**
  * Spring AI Alibaba LLM 流式集成示例
- * 演示如何在 Spring AI Alibaba Graph 中使用 LLM 流式输出功能
+ * 演示如何�?Spring AI Alibaba Graph 中使�?LLM 流式输出功能
  */
 public class LlmStreamingSpringAiExample {
 
@@ -71,29 +71,29 @@ public class LlmStreamingSpringAiExample {
 		System.out.println("=== Spring AI Alibaba LLM 流式集成示例 ===\n");
 
 		try {
-			// 示例 1: 使用流式 ChatClient（需要 ChatClient）
+			// 示例 1: 使用流式 ChatClient（需�?ChatClient�?
 			System.out.println("示例 1: 使用流式 ChatClient");
-			System.out.println("注意: 此示例需要 ChatClient，跳过执行");
+			System.out.println("注意: 此示例需�?ChatClient，跳过执�?);
 			// useStreamingChatClient(chatClient);
 			System.out.println();
 
-			// 示例 2: 使用 Reactor 的阻塞式处理（需要 ChatClient）
+			// 示例 2: 使用 Reactor 的阻塞式处理（需�?ChatClient�?
 			System.out.println("示例 2: 使用 Reactor 的阻塞式处理");
-			System.out.println("注意: 此示例需要 ChatClient，跳过执行");
+			System.out.println("注意: 此示例需�?ChatClient，跳过执�?);
 			// useBlockingStreaming(chatClient);
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
-			System.out.println("提示: 请配置 ChatClient 后运行完整示例");
+			System.out.println("所有示例执行完�?);
+			System.out.println("提示: 请配�?ChatClient 后运行完整示�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
 
 	/**
-	 * 在 Graph 节点中使用流式输出
+	 * �?Graph 节点中使用流式输�?
 	 */
 	public static class StreamingAgentNode implements NodeAction {
 

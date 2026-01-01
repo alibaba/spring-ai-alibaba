@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,23 +57,23 @@ public class Case {
 
 	public static class Condition {
 
-		// 左值数据类型
+		// 左值数据类�?
 		private VariableType varType;
 
-		// 右值数据类型
+		// 右值数据类�?
 		private VariableType referenceType;
 
 		private ComparisonOperatorType comparisonOperator;
 
-		// 左值
+		// 左�?
 		private VariableSelector targetSelector;
 
-		// 右值
+		// 右�?
 		private String referenceValue;
 
 		private VariableSelector referenceSelector;
 
-		// 参考值可能来自stateKey，也有可能直接是常量值，也有可能没有参考值
+		// 参考值可能来自stateKey，也有可能直接是常量值，也有可能没有参考�?
 		public String getValue() {
 			if (referenceValue != null) {
 				return referenceValue;

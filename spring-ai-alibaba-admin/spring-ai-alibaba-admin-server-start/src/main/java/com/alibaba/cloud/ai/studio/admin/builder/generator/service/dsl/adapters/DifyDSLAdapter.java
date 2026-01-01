@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,12 +186,12 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
 		Map<String, Node> nodeIdMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
 
-		// 根据parnetId进行分组，为了给迭代节点的起始节点传递迭代数据
+		// 根据parnetId进行分组，为了给迭代节点的起始节点传递迭代数�?
 		Map<String, List<Node>> groupByParentId = nodes.stream()
 			.filter(node -> Objects.nonNull(node.getParentId()))
 			.collect(Collectors.groupingBy(Node::getParentId));
 
-		// 统计具有出度的节点
+		// 统计具有出度的节�?
 		Set<String> nodeIdHasOut = edges.stream().map(Edge::getSource).collect(Collectors.toSet());
 
 		groupByParentId.forEach((parentId, subNodes) -> {
@@ -219,7 +219,7 @@ public class DifyDSLAdapter extends AbstractDSLAdapter {
 			endNode.setData(nodeData).setType(NodeType.ITERATION_END).setParentId(parentId);
 			nodes.add(endNode);
 
-			// 计算每个节点的出度，出度为0的点将与迭代终止节点相连接
+			// 计算每个节点的出度，出度�?的点将与迭代终止节点相连�?
 			subNodes.stream().map(Node::getId).filter(id -> !nodeIdHasOut.contains(id)).forEach(id -> {
 				Edge newEdge = new Edge().setSource(id).setTarget(nodeData.getVarName());
 				edges.add(newEdge);

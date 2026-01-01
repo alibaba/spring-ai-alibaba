@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,8 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 		String id = node.getId();
 
 		StringBuilder sb = new StringBuilder();
-		sb.append(String.format("// —— BranchNode [%s] ——%n", id));
-		// 条件判断在条件边上，本节点为空节点
+		sb.append(String.format("// —�?BranchNode [%s] —�?n", id));
+		// 条件判断在条件边上，本节点为空节�?
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(state -> Map.of()));%n%n",
 				varName));
 
@@ -56,17 +56,17 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 
 	@Override
 	public String renderEdges(BranchNodeData branchNodeData, List<Edge> edges) {
-		// 此处规定Edge的sourceHandle为caseId，前面的转化需要符合这条规则
+		// 此处规定Edge的sourceHandle为caseId，前面的转化需要符合这条规�?
 		String srcVar = branchNodeData.getVarName();
 		StringBuilder sb = new StringBuilder();
 		List<Case> cases = branchNodeData.getCases();
 
-		// 维护一个caseId到caseName的映射
+		// 维护一个caseId到caseName的映�?
 		AtomicInteger count = new AtomicInteger(1);
 		Map<String, String> caseIdToName = cases.stream()
 			.map(Case::getId)
 			.collect(Collectors.toUnmodifiableMap(id -> id, id -> {
-				// 如果一些节点的caseId本身就有含义，直接使用
+				// 如果一些节点的caseId本身就有含义，直接使�?
 				if (id.equalsIgnoreCase("default") || id.equalsIgnoreCase("true") || id.equalsIgnoreCase("false")) {
 					return id;
 				}
@@ -84,7 +84,7 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 					constValue = "\"" + constValue + "\"";
 				}
 
-				// 根据变量类型生成安全的访问代码
+				// 根据变量类型生成安全的访问代�?
 				String objName = generateSafeVariableAccess(condition);
 				return condition.getComparisonOperator().convert(objName, constValue);
 			}).toList();
@@ -95,7 +95,7 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 			conditionsBuffer.append(String.format("return \"%s\";", caseIdToName.get(c.getId())));
 			conditionsBuffer.append("}\n");
 		}
-		// 最后需要加上else的结果
+		// 最后需要加上else的结�?
 		conditionsBuffer.append(String.format("return \"%s\";", branchNodeData.getDefaultCase()));
 
 		// 构建Map
@@ -108,7 +108,7 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 			.map(v -> String.format("\"%s\"", v))
 			.collect(Collectors.joining(", ")) + ")";
 
-		// 构建最终代码
+		// 构建最终代�?
 		sb.append("stateGraph.addConditionalEdges(\"")
 			.append(srcVar)
 			.append("\", edge_async(state -> {\n")
@@ -126,18 +126,18 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 
 		switch (varType) {
 			case FILE:
-				// 支持从 VariableSelector 中获取属性路径
+				// 支持�?VariableSelector 中获取属性路�?
 				VariableSelector selector = condition.getTargetSelector();
 				boolean accessExtension = selector != null
 						&& (selector.getLabel() != null && selector.getLabel().contains("extension")
 								|| selector.getName() != null && selector.getName().contains("extension"));
 
 				if (accessExtension) {
-					// 如果是访问扩展名属性，直接访问扩展名字段
+					// 如果是访问扩展名属性，直接访问扩展名字�?
 					return String.format("state.value(\"%s\", String.class).orElse(null)", variablePath);
 				}
 				else {
-					// 从文件对象中提取扩展名
+					// 从文件对象中提取扩展�?
 					return String.format(
 							"state.value(\"%s\", java.io.File.class).map(file -> { " + "String name = file.getName(); "
 									+ "int dotIndex = name.lastIndexOf('.'); "
@@ -161,7 +161,7 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 			case OBJECT:
 				return String.format("state.value(\"%s\", Object.class).orElse(null)", variablePath);
 			default:
-				// 使用默认的类型
+				// 使用默认的类�?
 				return String.format("state.value(\"%s\", Object.class).orElse(null)", variablePath);
 		}
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,8 +64,8 @@ class SequentialAgentTest {
 		ReactAgent writerAgent = ReactAgent.builder()
 			.name("writer_agent")
 			.model(chatModel)
-			.description("可以写文章。")
-			.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+			.description("可以写文章�?)
+			.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答�?)
 			.outputKey("article")
 			.enableLogging(true)
 			.build();
@@ -73,19 +73,19 @@ class SequentialAgentTest {
 		ReactAgent reviewerAgent = ReactAgent.builder()
 			.name("reviewer_agent")
 			.model(chatModel)
-			.description("可以对文章进行评论和修改。")
-			.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最终只返回修改后的文章，不要包含任何评论信息。")
+			.description("可以对文章进行评论和修改�?)
+			.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最终只返回修改后的文章，不要包含任何评论信息�?)
 			.outputKey("reviewed_article")
 			.build();
 
 		SequentialAgent blogAgent = SequentialAgent.builder()
 			.name("blog_agent")
-			.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论。")
+			.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论�?)
 			.subAgents(List.of(writerAgent, reviewerAgent))
 			.build();
 
 		try {
-			Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的散文");
+			Optional<OverAllState> result = blogAgent.invoke("帮我写一�?00字左右的散文");
 
 			assertTrue(result.isPresent(), "Result should be present");
 
@@ -115,8 +115,8 @@ class SequentialAgentTest {
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_agent")
 				.model(chatModel)
-				.description("可以写文章。")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+				.description("可以写文章�?)
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答�?)
 				.returnReasoningContents(true)
 				.tools(List.of(createPoetToolCallback()))
 				.outputKey("article")
@@ -125,8 +125,8 @@ class SequentialAgentTest {
 		ReactAgent reviewerAgent = ReactAgent.builder()
 				.name("reviewer_agent")
 				.model(chatModel)
-				.description("可以对文章进行评论和修改。")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最终只返回修改后的文章，不要包含任何评论信息。")
+				.description("可以对文章进行评论和修改�?)
+				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最终只返回修改后的文章，不要包含任何评论信息�?)
 				.returnReasoningContents(true)
 				.tools(List.of(createReviewerToolCallback()))
 				.outputKey("reviewed_article")
@@ -134,12 +134,12 @@ class SequentialAgentTest {
 
 		SequentialAgent blogAgent = SequentialAgent.builder()
 				.name("blog_agent")
-				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论。")
+				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论�?)
 				.subAgents(List.of(writerAgent, reviewerAgent))
 				.build();
 
 		try {
-			Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的散文");
+			Optional<OverAllState> result = blogAgent.invoke("帮我写一�?00字左右的散文");
 
 			assertTrue(result.isPresent(), "Result should be present");
 
@@ -160,8 +160,8 @@ class SequentialAgentTest {
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_agent")
 				.model(chatModel)
-				.description("可以写文章。")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+				.description("可以写文章�?)
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答�?)
 				.returnReasoningContents(false) // by default false
 				.tools(List.of(createPoetToolCallback()))
 				.outputKey("article")
@@ -170,8 +170,8 @@ class SequentialAgentTest {
 		ReactAgent reviewerAgent = ReactAgent.builder()
 				.name("reviewer_agent")
 				.model(chatModel)
-				.description("可以对文章进行评论和修改。")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最终只返回修改后的文章，不要包含任何评论信息。")
+				.description("可以对文章进行评论和修改�?)
+				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最终只返回修改后的文章，不要包含任何评论信息�?)
 				.returnReasoningContents(false)  // by default false
 				.tools(List.of(createReviewerToolCallback()))
 				.outputKey("reviewed_article")
@@ -179,12 +179,12 @@ class SequentialAgentTest {
 
 		SequentialAgent blogAgent = SequentialAgent.builder()
 				.name("blog_agent")
-				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论。")
+				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论�?)
 				.subAgents(List.of(writerAgent, reviewerAgent))
 				.build();
 
 		try {
-			Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的散文");
+			Optional<OverAllState> result = blogAgent.invoke("帮我写一�?00字左右的散文");
 			assertTrue(result.isPresent(), "Result should be present");
 			OverAllState state = result.get();
 			assertTrue(state.value("article").isPresent(), "Article should be present after writer agent");
@@ -203,8 +203,8 @@ class SequentialAgentTest {
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_agent")
 				.model(chatModel)
-				.description("可以写文章。")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+				.description("可以写文章�?)
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答�?)
 				.outputKey("article")
 				.enableLogging(true)
 				.build();
@@ -212,15 +212,15 @@ class SequentialAgentTest {
 		ReactAgent reviewerAgent = ReactAgent.builder()
 				.name("reviewer_agent")
 				.model(chatModel)
-				.description("可以对文章进行评论和修改。")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最后输出修改后的文章，不要包含任何评论信息。")
+				.description("可以对文章进行评论和修改�?)
+				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。最后输出修改后的文章，不要包含任何评论信息�?)
 				.outputKey("reviewed_article")
 				.enableLogging(true)
 				.build();
 
 		SequentialAgent child_1 = SequentialAgent.builder()
 				.name("child_1")
-				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
+				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改�?)
 				.subAgents(List.of(writerAgent, reviewerAgent))
 				.build();
 
@@ -228,9 +228,9 @@ class SequentialAgentTest {
 		ReactAgent signature_agent = ReactAgent.builder()
 				.name("signature_agent")
 				.model(chatModel)
-				.description("为文章增加固定的署名。")
+				.description("为文章增加固定的署名�?)
 				.includeContents(true)
-				.instruction("你负责为生成的文章署名，请将署名附加在文章最后。署名：Spring AI Alibaba。")
+				.instruction("你负责为生成的文章署名，请将署名附加在文章最后。署名：Spring AI Alibaba�?)
 				.outputKey("signed_article")
 				.enableLogging(true)
 				.build();
@@ -238,13 +238,13 @@ class SequentialAgentTest {
 
 		SequentialAgent blogAgentParent = SequentialAgent.builder()
 				.name("blogAgentParent")
-				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改。")
+				.description("可以根据用户给定的主题写一篇文章，然后将文章交给评论员进行评论，必要时做出修改�?)
 				.subAgents(List.of(child_1, signature_agent, getChild3()))
 				.build();
 
 		try {
 			List<NodeOutput> result = new ArrayList<>();
-			 blogAgentParent.stream( "帮我写一个100字左右的散文").doOnNext(output -> {
+			 blogAgentParent.stream( "帮我写一�?00字左右的散文").doOnNext(output -> {
 				 System.out.println(output);
 				 result.add(output);
 			}).blockLast();
@@ -273,7 +273,7 @@ class SequentialAgentTest {
 				.name("prose_writer_agent")
 				.model(chatModel)
 				.description("专门写散文的AI助手")
-				.instruction("你是一个知名的散文作家，擅长写优美的散文。用户会给你一个主题，你只需要创作一篇100字左右的散文，不要写诗或做总结。请专注于散文创作，确保内容优美、意境深远。")
+				.instruction("你是一个知名的散文作家，擅长写优美的散文。用户会给你一个主题，你只需要创作一�?00字左右的散文，不要写诗或做总结。请专注于散文创作，确保内容优美、意境深远�?)
 				.outputKey("prose_result")
 				.build();
 
@@ -281,7 +281,7 @@ class SequentialAgentTest {
 				.name("poem_writer_agent")
 				.model(chatModel)
 				.description("专门写现代诗的AI助手")
-				.instruction("你是一个知名的现代诗人，擅长写现代诗。用户会给你一个主题，你只需要创作一首现代诗，不要写散文或做总结。请专注于诗歌创作，确保语言精炼、意象丰富。")
+				.instruction("你是一个知名的现代诗人，擅长写现代诗。用户会给你一个主题，你只需要创作一首现代诗，不要写散文或做总结。请专注于诗歌创作，确保语言精炼、意象丰富�?)
 				.outputKey("poem_result")
 				.build();
 
@@ -289,7 +289,7 @@ class SequentialAgentTest {
 				.name("summary_agent")
 				.model(chatModel)
 				.description("专门做内容总结的AI助手")
-				.instruction("你是一个专业的内容分析师，擅长对主题进行总结和提炼。用户会给你一个主题，你只需要对这个主题进行简要总结，不要写散文或诗歌。请专注于总结分析，确保观点清晰、概括准确。")
+				.instruction("你是一个专业的内容分析师，擅长对主题进行总结和提炼。用户会给你一个主题，你只需要对这个主题进行简要总结，不要写散文或诗歌。请专注于总结分析，确保观点清晰、概括准确�?)
 				.outputKey("summary_result")
 				.build();
 
@@ -298,7 +298,7 @@ class SequentialAgentTest {
 				.name(name)
 				.description("并行执行多个创作任务，包括写散文、写诗和做总结")
 				.subAgents(List.of(proseWriterAgent, poemWriterAgent, summaryAgent))
-				.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // ✅ 添加合并策略
+				.mergeStrategy(new ParallelAgent.DefaultMergeStrategy()) // �?添加合并策略
 				.build();
 
 		return parallelAgent;
@@ -310,10 +310,10 @@ class SequentialAgentTest {
 		ReactAgent reviserAgent = ReactAgent.builder()
 				.name("reviser_agent")
 				.model(chatModel)
-				.description("对文章进行错别字订正。")
-				.includeContents(false) // 不包含上下文内容，专注于当前文章的审核
+				.description("对文章进行错别字订正�?)
+				.includeContents(false) // 不包含上下文内容，专注于当前文章的审�?
 				.instruction("""
-					你是一个排版专家，负责检查错别字、语法等问题，最终输出修改后的文档原文，输出不要包含无关信息。
+					你是一个排版专家，负责检查错别字、语法等问题，最终输出修改后的文档原文，输出不要包含无关信息�?
 			
 					以下是文档原文：
 					{reviewed_article}
@@ -325,10 +325,10 @@ class SequentialAgentTest {
 		ReactAgent censorAgent = ReactAgent.builder()
 				.name("censor_agent")
 				.model(chatModel)
-				.description("可以对文章内容进行合规性审查。")
-				.includeContents(false) // 不包含上下文内容，专注于当前文章的审核
+				.description("可以对文章内容进行合规性审查�?)
+				.includeContents(false) // 不包含上下文内容，专注于当前文章的审�?
 				.instruction("""
-					你是一个合规审查专员，审查文章中是否有违法或者不合规的内容，如果有的话需要进行改进。最终输出修改后的文档原文，输出不要包含无关信息。
+					你是一个合规审查专员，审查文章中是否有违法或者不合规的内容，如果有的话需要进行改进。最终输出修改后的文档原文，输出不要包含无关信息�?
 			
 					以下是文档原文：
 					{reviewed_article}
@@ -339,7 +339,7 @@ class SequentialAgentTest {
 
 		SequentialAgent child_3 = SequentialAgent.builder()
 				.name("child_3")
-				.description("可以根据对用户给定的文章进行排版、合规等检查和订正。")
+				.description("可以根据对用户给定的文章进行排版、合规等检查和订正�?)
 				.subAgents(List.of(reviserAgent, censorAgent))
 				.build();
 
@@ -351,8 +351,8 @@ class SequentialAgentTest {
         ReactAgent sqlGenerateAgent = ReactAgent.builder()
                 .name("sqlGenerateAgent")
                 .model(chatModel)
-                .description("可以根据用户的自然语言生成MySQL的SQL代码。")
-                .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户的自然语言，输出对应的SQL。")
+                .description("可以根据用户的自然语言生成MySQL的SQL代码�?)
+                .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户的自然语言，输出对应的SQL�?)
                 .outputSchema("""
                         {
                             "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -375,21 +375,21 @@ class SequentialAgentTest {
         ReactAgent sqlRatingAgent = ReactAgent.builder()
                 .name("sqlRatingAgent")
                 .model(chatModel)
-                .description("可以根据输入的自然语言和SQL语句的匹配度进行评分。")
-                .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户输入的自然语言和对应的SQL语句，输出一个评分。评分为一个浮点数，在0到1之间。越趋近于1说明SQL越匹配自然语言。")
+                .description("可以根据输入的自然语言和SQL语句的匹配度进行评分�?)
+                .instruction("你是一个熟悉MySQL数据库的小助手，请你根据用户输入的自然语言和对应的SQL语句，输出一个评分。评分为一个浮点数，在0�?之间。越趋近�?说明SQL越匹配自然语言�?)
                 .outputType(Double.class)
                 .outputKey("score")
 				.enableLogging(true)
                 .build();
 
-        // 测试放在一个SequentialAgent中
+        // 测试放在一个SequentialAgent�?
         SequentialAgent agent = SequentialAgent.builder()
                 .name("sql_agent")
-                .description("可以根据用户的输入，生成SQL语句，并对其评分。")
+                .description("可以根据用户的输入，生成SQL语句，并对其评分�?)
                 .subAgents(List.of(sqlGenerateAgent, sqlRatingAgent))
                 .build();
 
-        Optional<OverAllState> state = agent.invoke("现在我有一个user表，我想要查询前10个用户，如何写SQL语句？");
+        Optional<OverAllState> state = agent.invoke("现在我有一个user表，我想要查询前10个用户，如何写SQL语句�?);
         assertTrue(state.isPresent());
         OverAllState overAllState = state.get();
         assertTrue(overAllState.value("messages").isPresent());

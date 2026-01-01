@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 						String.class);
 				List<Map<String, Object>> inputParams = MapReadUtil
 					.safeCastToListWithMap(MapReadUtil.getMapDeepValue(data, String.class, "config", "input_params"));
-				// Studio DSL 此值是一个模板值
+				// Studio DSL 此值是一个模板�?
 				String inputKey;
 				if (inputParams != null && !inputParams.isEmpty()) {
 					inputKey = inputParams.get(0).get("value").toString();
@@ -162,7 +162,7 @@ public class KnowledgeRetrievalNodeDataConverter extends AbstractNodeDataConvert
 				nodeData.setOutputs(KnowledgeRetrievalNodeData.getDefaultOutputSchemas(dialectType)))
 				.andThen(super.postProcessConsumer(dialectType))
 				.andThen((nodeData, idToVarName) -> {
-					// 获取最终的输入输出Key名
+					// 获取最终的输入输出Key�?
 					nodeData.setOutputKey(nodeData.getOutputs().get(0).getName());
 					nodeData.setInputKey(nodeData.getInputs().get(0).getNameInCode());
 				});

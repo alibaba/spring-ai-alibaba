@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -188,7 +188,7 @@ public class StateGraphStreamTest {
 			if (t.value("messages").isEmpty())
 				return completedFuture("result");
 			List collectedMessages = (List) t.value("messages").get();
-			// 使用异步方式等待流结束
+			// 使用异步方式等待流结�?
 			CompletableFuture<String> resultFuture = new CompletableFuture<>();
 			if (!collectedMessages.isEmpty()) {
 				resultFuture.complete("toolNode");
@@ -268,7 +268,7 @@ public class StateGraphStreamTest {
 			return Map.of("messages", "Received: " + input, "count", 1);
 		})).addNode("processData", node_async(s -> {
 
-			final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
+			final List<String> data = asList("这是", "一�?, "流式", "输出", "测试");
 			AtomicInteger timeOff = new AtomicInteger(1);
 			final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
 					(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
@@ -284,7 +284,7 @@ public class StateGraphStreamTest {
 			.addEdge("generateResponse", END);
 
 		CompiledGraph compiledGraph = stateGraph.compile();
-		// 初始化输入
+		// 初始化输�?
 		compiledGraph.stream(Map.of("input", "hoho~~")).subscribe(output -> {
 			System.out.println("Node output: " + output);
 		});
@@ -319,7 +319,7 @@ public class StateGraphStreamTest {
 			.addEdge("generateResponse", END);
 
 		CompiledGraph compiledGraph = stateGraph.compile();
-		// 初始化输入
+		// 初始化输�?
 		compiledGraph.stream(Map.of("input", "hoho~~")).subscribe(output -> {
 			System.out.println("Node output: " + output);
 		});
@@ -347,7 +347,7 @@ public class StateGraphStreamTest {
 			.addEdge("result", END);
 
 		CompiledGraph compile = stateGraph.compile();
-		compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小���章"))
+		compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一�?0字的小����?))
 			.subscribe(nodeOutput -> System.out.println("Node output: " + nodeOutput));
 	}
 
@@ -374,7 +374,7 @@ public class StateGraphStreamTest {
 			.addEdge("result", END);
 
 		CompiledGraph compile = stateGraph.compile();
-		compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章")).subscribe(output -> {
+		compile.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一�?0字的小文�?)).subscribe(output -> {
 			System.out.println("Node output: " + output);
 		});
 	}
@@ -395,14 +395,14 @@ public class StateGraphStreamTest {
 			String input = s.value("input", "");
 			return Map.of("messages", "Received: " + input, "count", 1);
 		})).addNode("processData", node_async(s -> {
-			// 处理数据 - 这里可以是耗时操作，会以流式方式返回结果
-			final List<String> data = asList("这是", "一个", "流式", "输出", "测试");
+			// 处理数据 - 这里可以是耗时操作，会以流式方式返回结�?
+			final List<String> data = asList("这是", "一�?, "流式", "输出", "测试");
 			AtomicInteger timeOff = new AtomicInteger(1);
 			final AsyncGenerator<NodeOutput> it = AsyncGenerator.collect(data.iterator(),
 					(index, add) -> add.accept(of("processData", index, 500L * timeOff.getAndIncrement(), s)));
 			return Map.of("messages", it);
 		})).addNode("generateResponse", node_async(s -> {
-			// 生成最终响应
+			// 生成最终响�?
 			int count = s.value("count", 0);
 			return Map.of("messages", "Response generated (processed " + count + " items)", "result", "Success");
 		}))
@@ -448,7 +448,7 @@ public class StateGraphStreamTest {
 		CompiledGraph compile = stateGraph.compile();
 
 		compile
-			.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一个10字的小文章"),
+			.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "给我写一�?0字的小文�?),
 					RunnableConfig.builder().addParallelNodeExecutor(START, ForkJoinPool.commonPool()).build())
 			.subscribe(output -> {
 				System.out.println("Node output: " + output);

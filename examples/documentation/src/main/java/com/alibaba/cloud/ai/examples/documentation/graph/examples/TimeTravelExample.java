@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * 时光旅行示例
- * 演示如何查看和恢复 Graph 执行的历史状态
+ * 演示如何查看和恢�?Graph 执行的历史状�?
  */
 public class TimeTravelExample {
 
@@ -49,7 +49,7 @@ public class TimeTravelExample {
 		// 创建 Checkpointer
 		var checkpointer = new MemorySaver();
 
-		// 配置持久化
+		// 配置持久�?
 		var compileConfig = CompileConfig.builder()
 				.saverConfig(SaverConfig.builder()
 						.register(checkpointer)
@@ -60,7 +60,7 @@ public class TimeTravelExample {
 	}
 
 	/**
-	 * 执行 Graph 并生成历史
+	 * 执行 Graph 并生成历�?
 	 */
 	public static void executeGraphAndGenerateHistory(CompiledGraph graph) {
 		// 配置线程 ID
@@ -77,14 +77,14 @@ public class TimeTravelExample {
 	}
 
 	/**
-	 * 查看状态历史
+	 * 查看状态历�?
 	 */
 	public static void viewStateHistory(CompiledGraph graph) {
 		var config = RunnableConfig.builder()
 				.threadId("conversation-1")
 				.build();
 
-		// 获取所有历史状态
+		// 获取所有历史状�?
 		List<StateSnapshot> history = (List<StateSnapshot>) graph.getStateHistory(config);
 
 		System.out.println("State history:");
@@ -97,26 +97,26 @@ public class TimeTravelExample {
 	}
 
 	/**
-	 * 回溯到历史状态
+	 * 回溯到历史状�?
 	 */
 	public static void travelBackToHistory(CompiledGraph graph) {
 		var config = RunnableConfig.builder()
 				.threadId("conversation-1")
 				.build();
 
-		// 获取所有历史状态
+		// 获取所有历史状�?
 		List<StateSnapshot> history = (List<StateSnapshot>) graph.getStateHistory(config);
 
-		// 获取特定的历史状态
+		// 获取特定的历史状�?
 		StateSnapshot historicalSnapshot = history.get(1);
 
-		// 使用历史状态的 checkpoint ID 创建新配置
+		// 使用历史状态的 checkpoint ID 创建新配�?
 		var historicalConfig = RunnableConfig.builder()
 				.threadId("conversation-1")
 				.checkPointId(historicalSnapshot.config().checkPointId().orElse(null))
 				.build();
 
-		// 从历史状态继续执行
+		// 从历史状态继续执�?
 		graph.invoke(
 				Map.of("query", "New question from historical state"),
 				historicalConfig
@@ -131,10 +131,10 @@ public class TimeTravelExample {
 				.threadId("conversation-1")
 				.build();
 
-		// 获取所有历史状态
+		// 获取所有历史状�?
 		List<StateSnapshot> history = (List<StateSnapshot>) graph.getStateHistory(config);
 
-		// 获取特定的历史状态
+		// 获取特定的历史状�?
 		StateSnapshot historicalSnapshot = history.get(1);
 
 		// 从历史状态创建新分支
@@ -143,7 +143,7 @@ public class TimeTravelExample {
 				.checkPointId(historicalSnapshot.config().checkPointId().orElse(null))
 				.build();
 
-		// 在新分支上执行
+		// 在新分支上执�?
 		graph.invoke(
 				Map.of("query", "Alternative path"),
 				branchConfig
@@ -174,7 +174,7 @@ public class TimeTravelExample {
 				.addEdge("step2", "step3")
 				.addEdge("step3", END);
 
-		// 配置持久化
+		// 配置持久�?
 		var checkpointer = new MemorySaver();
 		var compileConfig = CompileConfig.builder()
 				.saverConfig(SaverConfig.builder()
@@ -199,7 +199,7 @@ public class TimeTravelExample {
 			System.out.println("---");
 		});
 
-		// 回溯到 step1
+		// 回溯�?step1
 		StateSnapshot step1Snapshot = history.stream()
 				.filter(s -> "step1".equals(s.node()))
 				.findFirst()
@@ -210,7 +210,7 @@ public class TimeTravelExample {
 				.checkPointId(step1Snapshot.config().checkPointId().orElse(null))
 				.build();
 
-		// 从 step1 重新执行
+		// �?step1 重新执行
 		graph.invoke(Map.of(), replayConfig);
 	}
 
@@ -240,18 +240,18 @@ public class TimeTravelExample {
 			System.out.println("Checkpoint 配置完成");
 			System.out.println();
 
-			// 示例 2: 执行 Graph 并生成历史
-			System.out.println("示例 2: 执行 Graph 并生成历史");
+			// 示例 2: 执行 Graph 并生成历�?
+			System.out.println("示例 2: 执行 Graph 并生成历�?);
 			executeGraphAndGenerateHistory(graph);
 			System.out.println();
 
-			// 示例 3: 查看状态历史
-			System.out.println("示例 3: 查看状态历史");
+			// 示例 3: 查看状态历�?
+			System.out.println("示例 3: 查看状态历�?);
 			viewStateHistory(graph);
 			System.out.println();
 
-			// 示例 4: 回溯到历史状态
-			System.out.println("示例 4: 回溯到历史状态");
+			// 示例 4: 回溯到历史状�?
+			System.out.println("示例 4: 回溯到历史状�?);
 			System.out.println("注意: 此示例需要有效的历史状态，跳过执行");
 			// travelBackToHistory(graph);
 			System.out.println();
@@ -267,10 +267,10 @@ public class TimeTravelExample {
 			completeExample();
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
+			System.out.println("所有示例执行完�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

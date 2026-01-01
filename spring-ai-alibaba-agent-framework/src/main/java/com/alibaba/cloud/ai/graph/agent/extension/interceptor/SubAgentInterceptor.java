@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public class SubAgentInterceptor extends ModelInterceptor {
 	private static final String DEFAULT_SYSTEM_PROMPT = """
 		## `task` (subagent spawner)
 		
-		You have access to a `task` tool to launch short-lived subagents that handle isolated tasks. These agents are ephemeral â€” they live only for the duration of the task and return a single result.
+		You have access to a `task` tool to launch short-lived subagents that handle isolated tasks. These agents are ephemeral â€?they live only for the duration of the task and return a single result.
 		
 		When to use the task tool:
 		- When a task is complex and multi-step, and can be fully delegated in isolation
@@ -78,10 +78,10 @@ public class SubAgentInterceptor extends ModelInterceptor {
 		- When you only care about the output of the subagent, and not the intermediate steps (ex. performing a lot of research and then returned a synthesized report, performing a series of computations or lookups to achieve a concise, relevant answer.)
 		
 		Subagent lifecycle:
-		1. **Spawn** â†’ Provide clear role, instructions, and expected output
-		2. **Run** â†’ The subagent completes the task autonomously
-		3. **Return** â†’ The subagent provides a single structured result
-		4. **Reconcile** â†’ Incorporate or synthesize the result into the main thread
+		1. **Spawn** â†?Provide clear role, instructions, and expected output
+		2. **Run** â†?The subagent completes the task autonomously
+		3. **Return** â†?The subagent provides a single structured result
+		4. **Reconcile** â†?Incorporate or synthesize the result into the main thread
 		
 		When NOT to use the task tool:
 		- If you need to see the intermediate reasoning or steps after the subagent has completed (the task tool hides them)

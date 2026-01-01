@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class DocumentExtractorNodeSection implements NodeSection<DocumentExtract
 		String id = node.getId();
 
 		StringBuilder sb = new StringBuilder();
-		sb.append(String.format("// —— DocumentExtractorNode [%s] ——%n", id));
+		sb.append(String.format("// —�?DocumentExtractorNode [%s] —�?n", id));
 		sb.append(String.format("DocumentExtractorNode %s = DocumentExtractorNode.builder()%n", varName));
 
 		List<com.alibaba.cloud.ai.studio.admin.builder.generator.model.VariableSelector> inputs = data.getInputs();

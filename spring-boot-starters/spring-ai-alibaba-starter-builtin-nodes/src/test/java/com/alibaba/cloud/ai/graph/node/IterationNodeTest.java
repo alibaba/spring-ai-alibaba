@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -246,7 +246,7 @@ public class IterationNodeTest {
 				int x = state.value("item", Integer.class).orElseThrow();
 				return Map.of("item_result", x * x * x);
 			}));
-		// 构造迭代节点
+		// 构造迭代节�?
 		IterationNode.<Integer, Integer>converter()
 			.subGraphStartNodeName("apply")
 			.subGraphEndNodeName("apply")

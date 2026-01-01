@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ import java.util.function.Function;
 
 /**
  * Tools Tutorial - 完整代码示例
- * 展示如何创建和使用Tools让Agent与外部系统交互
+ * 展示如何创建和使用Tools让Agent与外部系统交�?
  *
  * 来源：tools.md
  */
@@ -55,7 +55,7 @@ public class ToolsExample {
 	// ==================== 基础工具定义 ====================
 
 	/**
-	 * 示例1：编程方式规范 - FunctionToolCallback
+	 * 示例1：编程方式规�?- FunctionToolCallback
 	 */
 	public static void programmaticToolSpecification() {
 		ToolCallback toolCallback = FunctionToolCallback
@@ -92,7 +92,7 @@ public class ToolsExample {
 	 */
 	public static void customToolName() {
 		ToolCallback searchTool = FunctionToolCallback
-				.builder("web_search", new SearchFunction())  // 自定义名称
+				.builder("web_search", new SearchFunction())  // 自定义名�?
 				.description("Search the web for information")
 				.inputType(String.class)
 				.build();
@@ -112,7 +112,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例5：高级模式定义
+	 * 示例5：高级模式定�?
 	 */
 	public static void advancedSchemaDefinition() {
 		ToolCallback weatherTool = FunctionToolCallback
@@ -123,7 +123,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例6：访问状态
+	 * 示例6：访问状�?
 	 */
 	public static void accessingState() {
 		// 创建工具
@@ -134,7 +134,7 @@ public class ToolsExample {
 				.build();
 	}
 
-	// ==================== 自定义工具属性 ====================
+	// ==================== 自定义工具属�?====================
 
 	/**
 	 * 示例7：访问上下文
@@ -154,7 +154,7 @@ public class ToolsExample {
 				.inputType(String.class)
 				.build();
 
-		// 在 ReactAgent 中使用
+		// �?ReactAgent 中使�?
 		ReactAgent agent = ReactAgent.builder()
 				.name("financial_assistant")
 				.model(chatModel)
@@ -171,7 +171,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例8：使用存储访问跨对话的持久数据
+	 * 示例8：使用存储访问跨对话的持久数�?
 	 */
 	public static void accessingMemoryStore() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -182,7 +182,7 @@ public class ToolsExample {
 				.dashScopeApi(dashScopeApi)
 				.build();
 
-		// 配置持久化存储
+		// 配置持久化存�?
 		MemorySaver memorySaver = new MemorySaver();
 
 		// 创建工具
@@ -204,7 +204,7 @@ public class ToolsExample {
 
 		agent.call("Save user: userid: abc123, name: Foo, age: 25, email: foo@example.com", config1);
 
-		// 第二个会话：获取用户信息，注意这里用的是不同的 threadId
+		// 第二个会话：获取用户信息，注意这里用的是不同�?threadId
 		RunnableConfig config2 = RunnableConfig.builder()
 				.threadId("session_2")
 				.build();
@@ -213,7 +213,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例9：在 ReactAgent 中使用工具
+	 * 示例9：在 ReactAgent 中使用工�?
 	 */
 	public static void toolsInReactAgent() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -237,7 +237,7 @@ public class ToolsExample {
 				.inputType(String.class)
 				.build();
 
-		// 创建带有工具的 Agent
+		// 创建带有工具�?Agent
 		ReactAgent agent = ReactAgent.builder()
 				.name("my_agent")
 				.model(chatModel)
@@ -252,7 +252,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例10：完整的工具使用示例（使用 tools 方法）
+	 * 示例10：完整的工具使用示例（使�?tools 方法�?
 	 */
 	public static void comprehensiveToolExample() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -298,7 +298,7 @@ public class ToolsExample {
 				.saver(new MemorySaver())
 				.build();
 
-		// 使用不同的工具
+		// 使用不同的工�?
 		RunnableConfig config = RunnableConfig.builder()
 				.threadId("session_1")
 				.build();
@@ -309,7 +309,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例11：使用 methodTools - 基于 @Tool 注解的方法工具
+	 * 示例11：使�?methodTools - 基于 @Tool 注解的方法工�?
 	 */
 	public static void methodToolsExample() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -320,16 +320,16 @@ public class ToolsExample {
 				.dashScopeApi(dashScopeApi)
 				.build();
 
-		// 创建带有 @Tool 注解方法的工具对象
+		// 创建带有 @Tool 注解方法的工具对�?
 		CalculatorTools calculatorTools = new CalculatorTools();
 
-		// 使用 methodTools 方法，传入带有 @Tool 注解方法的对象
+		// 使用 methodTools 方法，传入带�?@Tool 注解方法的对�?
 		ReactAgent agent = ReactAgent.builder()
 				.name("calculator_agent")
 				.model(chatModel)
 				.description("An agent that can perform calculations")
 				.instruction("You are a helpful calculator assistant. Use the available tools to perform calculations.")
-				.methodTools(calculatorTools)  // 传入带有 @Tool 注解方法的对象
+				.methodTools(calculatorTools)  // 传入带有 @Tool 注解方法的对�?
 				.saver(new MemorySaver())
 				.build();
 
@@ -342,7 +342,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例12：使用多个 methodTools 对象
+	 * 示例12：使用多�?methodTools 对象
 	 */
 	public static void multipleMethodToolsExample() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -375,7 +375,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例13：使用 ToolCallbackProvider
+	 * 示例13：使�?ToolCallbackProvider
 	 */
 	public static void toolCallbackProviderExample() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -413,7 +413,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例14：使用 toolNames 和 resolver（必须配合使用）
+	 * 示例14：使�?toolNames �?resolver（必须配合使用）
 	 */
 	public static void toolNamesWithResolverExample() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -435,18 +435,18 @@ public class ToolsExample {
 				.inputType(CalculatorRequest.class)
 				.build();
 
-		// 创建 StaticToolCallbackResolver，包含所有工具
+		// 创建 StaticToolCallbackResolver，包含所有工�?
 		StaticToolCallbackResolver resolver = new StaticToolCallbackResolver(
 				List.of(calculatorTool, searchTool));
 
-		// 使用 toolNames 指定要使用的工具名称，必须配合 resolver 使用
+		// 使用 toolNames 指定要使用的工具名称，必须配�?resolver 使用
 		ReactAgent agent = ReactAgent.builder()
 				.name("multi_tool_agent")
 				.model(chatModel)
 				.description("An agent with multiple tools")
 				.instruction("You are a helpful assistant with access to calculator and search tools.")
-				.toolNames("calculator", "search")  // 使用工具名称而不是 ToolCallback 实例
-				.resolver(resolver)  // 必须提供 resolver 来解析工具名称
+				.toolNames("calculator", "search")  // 使用工具名称而不�?ToolCallback 实例
+				.resolver(resolver)  // 必须提供 resolver 来解析工具名�?
 				.saver(new MemorySaver())
 				.build();
 
@@ -458,7 +458,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例15：使用 resolver 直接解析工具
+	 * 示例15：使�?resolver 直接解析工具
 	 */
 	public static void resolverExample() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -486,7 +486,7 @@ public class ToolsExample {
 				.description("An agent using ToolCallbackResolver")
 				.instruction("You are a helpful calculator assistant.")
 				.tools(calculatorTool)  // 直接指定工具
-				.resolver(resolver)  // 同时设置 resolver 供工具节点使用
+				.resolver(resolver)  // 同时设置 resolver 供工具节点使�?
 				.saver(new MemorySaver())
 				.build();
 
@@ -498,7 +498,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 示例16：组合使用多种工具提供方式
+	 * 示例16：组合使用多种工具提供方�?
 	 */
 	public static void combinedToolProvisionExample() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -570,7 +570,7 @@ public class ToolsExample {
 
 	public static void main(String[] args) {
 		System.out.println("=== Tools Tutorial Examples ===");
-		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
+		System.out.println("注意：需要设�?AI_DASHSCOPE_API_KEY 环境变量\n");
 
 		try {
 			System.out.println("\n--- 示例1：编程式工具规范 ---");
@@ -585,53 +585,53 @@ public class ToolsExample {
 			System.out.println("\n--- 示例4：自定义工具描述 ---");
 			customToolDescription();
 
-			System.out.println("\n--- 示例5：高级 Schema 定义 ---");
+			System.out.println("\n--- 示例5：高�?Schema 定义 ---");
 			advancedSchemaDefinition();
 
-			System.out.println("\n--- 示例6：访问状态 ---");
+			System.out.println("\n--- 示例6：访问状�?---");
 			accessingState();
 
 			System.out.println("\n--- 示例7：访问上下文 ---");
 			accessingContext();
 
-			System.out.println("\n--- 示例8：访问内存存储 ---");
+			System.out.println("\n--- 示例8：访问内存存�?---");
 			accessingMemoryStore();
 
 			System.out.println("\n--- 示例9：ReactAgent 中的工具 ---");
 			toolsInReactAgent();
 
-			System.out.println("\n--- 示例10：综合工具示例（tools 方法） ---");
+			System.out.println("\n--- 示例10：综合工具示例（tools 方法�?---");
 			comprehensiveToolExample();
 
-			System.out.println("\n--- 示例11：使用 methodTools（@Tool 注解） ---");
+			System.out.println("\n--- 示例11：使�?methodTools（@Tool 注解�?---");
 			methodToolsExample();
 
-			System.out.println("\n--- 示例12：多个 methodTools 对象 ---");
+			System.out.println("\n--- 示例12：多�?methodTools 对象 ---");
 			multipleMethodToolsExample();
 
-			System.out.println("\n--- 示例13：使用 ToolCallbackProvider ---");
+			System.out.println("\n--- 示例13：使�?ToolCallbackProvider ---");
 			toolCallbackProviderExample();
 
-			System.out.println("\n--- 示例14：使用 toolNames 和 resolver ---");
+			System.out.println("\n--- 示例14：使�?toolNames �?resolver ---");
 			toolNamesWithResolverExample();
 
-			System.out.println("\n--- 示例15：使用 resolver ---");
+			System.out.println("\n--- 示例15：使�?resolver ---");
 			resolverExample();
 
-			System.out.println("\n--- 示例16：组合使用多种工具提供方式 ---");
+			System.out.println("\n--- 示例16：组合使用多种工具提供方�?---");
 			combinedToolProvisionExample();
 
-			System.out.println("\n=== 所有示例执行完成 ===");
+			System.out.println("\n=== 所有示例执行完�?===");
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时发生错误: " + e.getMessage());
+			System.err.println("执行示例时发生错�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
 
 	public enum Unit {C, F}
 
-	// ==================== 访问上下文 ====================
+	// ==================== 访问上下�?====================
 
 	public enum UnitType {CELSIUS, FAHRENHEIT}
 
@@ -645,10 +645,10 @@ public class ToolsExample {
 		}
 	}
 
-	// ==================== Context（上下文） ====================
+	// ==================== Context（上下文�?====================
 
 	public record WeatherRequest(
-			@ToolParam(description = "城市或坐标") String location,
+			@ToolParam(description = "城市或坐�?) String location,
 			Unit unit
 	) { }
 
@@ -666,10 +666,10 @@ public class ToolsExample {
 		}
 	}
 
-	// ==================== 在 ReactAgent 中使用工具 ====================
+	// ==================== �?ReactAgent 中使用工�?====================
 
 	/**
-	 * 计算器函数
+	 * 计算器函�?
 	 */
 	public static class CalculatorFunction implements Function<String, String> {
 		@Override
@@ -682,7 +682,7 @@ public class ToolsExample {
 	// ==================== 完整示例 ====================
 
 	/**
-	 * 天气输入（使用记录类）
+	 * 天气输入（使用记录类�?
 	 */
 	public record WeatherInput(
 			@ToolParam(description = "City name or coordinates") String location,
@@ -693,7 +693,7 @@ public class ToolsExample {
 	// ==================== 辅助方法 ====================
 
 	/**
-	 * 天气函数（高级版）
+	 * 天气函数（高级版�?
 	 */
 	public static class WeatherFunction implements Function<WeatherInput, String> {
 		@Override
@@ -724,7 +724,7 @@ public class ToolsExample {
 			OverAllState state = (OverAllState) toolContext.getContext().get("state");
 			RunnableConfig config = (RunnableConfig) toolContext.getContext().get("config");
 
-			// 从state中获取消息
+			// 从state中获取消�?
 			Optional<Object> messagesOpt = state.value("messages");
 			List<Message> messages = messagesOpt.isPresent()
 					? (List<Message>) messagesOpt.get()
@@ -796,7 +796,7 @@ public class ToolsExample {
 		}
 	}
 
-	// ==================== MethodTools 相关类 ====================
+	// ==================== MethodTools 相关�?====================
 
 	/**
 	 * 计算器工具类 - 使用 @Tool 注解
@@ -830,7 +830,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 天气工具类 - 使用 @Tool 注解
+	 * 天气工具�?- 使用 @Tool 注解
 	 */
 	public static class WeatherTools {
 		@Tool(description = "Get current weather for a location")
@@ -846,10 +846,10 @@ public class ToolsExample {
 		}
 	}
 
-	// ==================== ToolCallbackProvider 相关类 ====================
+	// ==================== ToolCallbackProvider 相关�?====================
 
 	/**
-	 * 自定义 ToolCallbackProvider 实现
+	 * 自定�?ToolCallbackProvider 实现
 	 */
 	public static class CustomToolCallbackProvider implements ToolCallbackProvider {
 		private final List<ToolCallback> toolCallbacks;
@@ -865,7 +865,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 带上下文的搜索工具
+	 * 带上下文的搜索工�?
 	 */
 	public static class SearchToolWithContext implements BiFunction<String, ToolContext, String> {
 		@Override
@@ -874,10 +874,10 @@ public class ToolsExample {
 		}
 	}
 
-	// ==================== Resolver 相关类 ====================
+	// ==================== Resolver 相关�?====================
 
 	/**
-	 * 搜索请求类（用于复合类型）
+	 * 搜索请求类（用于复合类型�?
 	 */
 	public static class SearchRequest {
 		@JsonProperty(required = true)
@@ -893,7 +893,7 @@ public class ToolsExample {
 	}
 
 	/**
-	 * 使用复合类型的搜索函数
+	 * 使用复合类型的搜索函�?
 	 */
 	public static class SearchFunctionWithRequest implements BiFunction<SearchRequest, ToolContext, String> {
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ import java.util.stream.Stream;
  * @author vlsmb
  * @since 2025/8/27
  */
-// TODO: 与DifyDSLAdapter合并一些重复代码
+// TODO: 与DifyDSLAdapter合并一些重复代�?
 @Component
 public class StudioDSLAdapter extends AbstractDSLAdapter {
 
@@ -87,7 +87,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 		Graph graph = this.constructGraph(data);
 		workflow.setGraph(graph);
 
-		// 节点的输出变量
+		// 节点的输出变�?
 		List<Variable> extraVars = graph.getNodes().stream().flatMap(node -> {
 			NodeType type = node.getType();
 			@SuppressWarnings("unchecked")
@@ -161,7 +161,7 @@ public class StudioDSLAdapter extends AbstractDSLAdapter {
 			.collect(Collectors.toMap(Node::getId, n -> n.getData().getVarName()));
 		Map<String, Node> nodeIdMap = nodes.stream().collect(Collectors.toMap(Node::getId, n -> n));
 
-		// 根据parnetId进行分组，为了给迭代节点的起始节点传递迭代数据
+		// 根据parnetId进行分组，为了给迭代节点的起始节点传递迭代数�?
 		Map<String, List<Node>> groupByParentId = nodes.stream()
 			.filter(node -> Objects.nonNull(node.getParentId()))
 			.collect(Collectors.groupingBy(Node::getParentId));

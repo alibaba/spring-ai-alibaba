@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,10 +78,10 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 		Map<String, Object> dump(T nodeData);
 
 		/**
-		 * 将模板字符串转换为变量选择器
+		 * 将模板字符串转换为变量选择�?
 		 * @param dialectType dsl语言
-		 * @param template 模板字符串
-		 * @return 变量选择器
+		 * @param template 模板字符�?
+		 * @return 变量选择�?
 		 */
 		default VariableSelector varTemplateToSelector(DSLDialectType dialectType, String template) {
 			if (template == null) {
@@ -179,17 +179,17 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 	private static final Pattern VAR_TEMPLATE_PATTERN = Pattern.compile("\\{(\\w+)}");
 
 	/**
-	 * 将文本中变量占位符进行转化，比如Dify DSL的"你好，{{#123.query#}}"转化为"你好，{nodeName1_query}"
+	 * 将文本中变量占位符进行转化，比如Dify DSL�?你好，{{#123.query#}}"转化�?你好，{nodeName1_query}"
 	 * @param dialectType dsl语言
-	 * @param templateString 模板字符串
-	 * @param idToVarName nodeId转nodeVarName的映射
+	 * @param templateString 模板字符�?
+	 * @param idToVarName nodeId转nodeVarName的映�?
 	 * @return 转换结果
 	 */
 	protected String convertVarTemplate(DSLDialectType dialectType, String templateString,
 			Map<String, String> idToVarName) {
 		BiFunction<String, Map<String, String>, String> func = switch (dialectType) {
 			case DIFY -> (str, map) -> {
-				// todo: 模板支持上下文
+				// todo: 模板支持上下�?
 				if (Strings.isNullOrEmpty(str)) {
 					return str;
 				}
@@ -229,8 +229,8 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 
 	/**
 	 * 获取模板中的变量占位符，比如"你好{var1}，{var2}"返回"[var1, var2]"
-	 * @param template 模板字符串
-	 * @return 变量占位符列表
+	 * @param template 模板字符�?
+	 * @return 变量占位符列�?
 	 */
 	protected List<String> getVarTemplateKeys(String template) {
 		Matcher matcher = VAR_TEMPLATE_PATTERN.matcher(template);
@@ -238,7 +238,7 @@ public abstract class AbstractNodeDataConverter<T extends NodeData> implements N
 	}
 
 	/**
-	 * 创建一个空处理Consumer，便于使用.andThen编程
+	 * 创建一个空处理Consumer，便于使�?andThen编程
 	 * @return BiConsumer
 	 */
 	protected BiConsumer<T, Map<String, String>> emptyProcessConsumer() {

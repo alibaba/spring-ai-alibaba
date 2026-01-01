@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,14 +44,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
- * 上下文工程（Context Engineering）示例
+ * 上下文工程（Context Engineering）示�?
  *
- * 演示如何通过上下文工程提高Agent的可靠性，包括：
- * 1. 模型上下文：系统提示、消息历史、工具、模型选择、响应格式
- * 2. 工具上下文：工具访问和修改状态
+ * 演示如何通过上下文工程提高Agent的可靠性，包括�?
+ * 1. 模型上下文：系统提示、消息历史、工具、模型选择、响应格�?
+ * 2. 工具上下文：工具访问和修改状�?
  * 3. 生命周期上下文：Hook机制
  *
- * 参考文档: advanced_doc/context-engineering.md
+ * 参考文�? advanced_doc/context-engineering.md
  */
 public class ContextEngineeringExample {
 
@@ -62,7 +62,7 @@ public class ContextEngineeringExample {
 	}
 
 	/**
-	 * Main方法：运行所有示例
+	 * Main方法：运行所有示�?
 	 *
 	 * 注意：需要配置ChatModel实例才能运行
 	 */
@@ -79,24 +79,24 @@ public class ContextEngineeringExample {
 
 		if (chatModel == null) {
 			System.err.println("错误：请先配置ChatModel实例");
-			System.err.println("请设置 AI_DASHSCOPE_API_KEY 环境变量");
+			System.err.println("请设�?AI_DASHSCOPE_API_KEY 环境变量");
 			return;
 		}
 
 		// 创建示例实例
 		ContextEngineeringExample example = new ContextEngineeringExample(chatModel);
 
-		// 运行所有示例
+		// 运行所有示�?
 		example.runAllExamples();
 	}
 
 	/**
-	 * 示例1：基于状态的动态提示
+	 * 示例1：基于状态的动态提�?
 	 *
 	 * 根据对话长度调整系统提示
 	 */
 	public void example1_stateAwarePrompt() throws GraphRunnerException {
-		// 创建一个模型拦截器，根据对话长度调整系统提示
+		// 创建一个模型拦截器，根据对话长度调整系统提�?
 		class StateAwarePromptInterceptor extends ModelInterceptor {
 			@Override
 			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
@@ -104,14 +104,14 @@ public class ContextEngineeringExample {
 				int messageCount = messages.size();
 
 				// 基础提示
-				String basePrompt = "你是一个有用的助手。";
+				String basePrompt = "你是一个有用的助手�?;
 
 				// 根据消息数量调整提示
 				if (messageCount > 10) {
-					basePrompt += "\n这是一个长对话 - 请尽量保持精准简捷。";
+					basePrompt += "\n这是一个长对话 - 请尽量保持精准简捷�?;
 				}
 
-				// 更新系统消息（参考 TodoListInterceptor 的实现方式）
+				// 更新系统消息（参�?TodoListInterceptor 的实现方式）
 				SystemMessage enhancedSystemMessage;
 				if (request.getSystemMessage() == null) {
 					enhancedSystemMessage = new SystemMessage(basePrompt);
@@ -122,12 +122,12 @@ public class ContextEngineeringExample {
 					);
 				}
 
-				// 创建增强的请求
+				// 创建增强的请�?
 				ModelRequest enhancedRequest = ModelRequest.builder(request)
 						.systemMessage(enhancedSystemMessage)
 						.build();
 
-				// 调用处理器
+				// 调用处理�?
 				return handler.call(enhancedRequest);
 			}
 
@@ -146,7 +146,7 @@ public class ContextEngineeringExample {
 
 		// 测试
 		agent.invoke("你好");
-		System.out.println("基于状态的动态提示示例执行完成");
+		System.out.println("基于状态的动态提示示例执行完�?);
 	}
 
 	/**
@@ -155,7 +155,7 @@ public class ContextEngineeringExample {
 	 * 从长期记忆加载用户偏好并生成个性化提示
 	 */
 	public void example2_personalizedPrompt() throws GraphRunnerException {
-		// 用户偏好类
+		// 用户偏好�?
 		class UserPreferences {
 			private String communicationStyle;
 			private String language;
@@ -196,9 +196,9 @@ public class ContextEngineeringExample {
 
 		UserPreferenceStore store = new UserPreferenceStore();
 		store.savePreferences("user_001",
-				new UserPreferences("友好轻松", "中文", List.of("技术", "阅读")));
+				new UserPreferences("友好轻松", "中文", List.of("技�?, "阅读")));
 
-		// 从长期记忆加载用户偏好
+		// 从长期记忆加载用户偏�?
 		class PersonalizedPromptInterceptor extends ModelInterceptor {
 			private final UserPreferenceStore store;
 
@@ -211,13 +211,13 @@ public class ContextEngineeringExample {
 				// 从运行时上下文获取用户ID
 				String userId = getUserIdFromContext(request);
 
-				// 从存储加载用户偏好
+				// 从存储加载用户偏�?
 				UserPreferences prefs = store.getPreferences(userId);
 
 				// 构建个性化提示
 				String personalizedPrompt = buildPersonalizedPrompt(prefs);
 
-				// 更新系统消息（参考 TodoListInterceptor 的实现方式）
+				// 更新系统消息（参�?TodoListInterceptor 的实现方式）
 				SystemMessage enhancedSystemMessage;
 				if (request.getSystemMessage() == null) {
 					enhancedSystemMessage = new SystemMessage(personalizedPrompt);
@@ -228,33 +228,33 @@ public class ContextEngineeringExample {
 					);
 				}
 
-				// 创建增强的请求
+				// 创建增强的请�?
 				ModelRequest enhancedRequest = ModelRequest.builder(request)
 						.systemMessage(enhancedSystemMessage)
 						.build();
 
-				// 调用处理器
+				// 调用处理�?
 				return handler.call(enhancedRequest);
 			}
 
 			private String getUserIdFromContext(ModelRequest request) {
 				// 从请求上下文提取用户ID
-				return "user_001"; // 简化示例
+				return "user_001"; // 简化示�?
 			}
 
 			private String buildPersonalizedPrompt(UserPreferences prefs) {
-				StringBuilder prompt = new StringBuilder("你是一个有用的助手。");
+				StringBuilder prompt = new StringBuilder("你是一个有用的助手�?);
 
 				if (prefs.getCommunicationStyle() != null) {
 					prompt.append("\n沟通风格：").append(prefs.getCommunicationStyle());
 				}
 
 				if (prefs.getLanguage() != null) {
-					prompt.append("\n使用语言：").append(prefs.getLanguage());
+					prompt.append("\n使用语言�?).append(prefs.getLanguage());
 				}
 
 				if (!prefs.getInterests().isEmpty()) {
-					prompt.append("\n用户兴趣：").append(String.join(", ", prefs.getInterests()));
+					prompt.append("\n用户兴趣�?).append(String.join(", ", prefs.getInterests()));
 				}
 
 				return prompt.toString();
@@ -272,14 +272,14 @@ public class ContextEngineeringExample {
 				.interceptors(new PersonalizedPromptInterceptor(store))
 				.build();
 
-		agent.invoke("介绍一下最新的AI技术");
+		agent.invoke("介绍一下最新的AI技�?);
 		System.out.println("个性化提示示例执行完成");
 	}
 
 	/**
-	 * 示例3：消息过滤
+	 * 示例3：消息过�?
 	 *
-	 * 只保留最近的N条消息，避免上下文过长
+	 * 只保留最近的N条消息，避免上下文过�?
 	 */
 	public void example3_messageFilter() {
 		class MessageFilterInterceptor extends ModelInterceptor {
@@ -293,7 +293,7 @@ public class ContextEngineeringExample {
 			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler next) {
 				List<Message> messages = request.getMessages();
 
-				// 只保留最近的N条消息
+				// 只保留最近的N条消�?
 				if (messages.size() > maxMessages) {
 					List<Message> filtered = new ArrayList<>();
 
@@ -356,16 +356,16 @@ public class ContextEngineeringExample {
 						Collections.emptyList()
 				);
 
-				// 更新工具选项（注：实际实现需要根据框架API调整）
-				// 这里展示概念性代码
-				System.out.println("为角色 " + userRole + " 选择了 " + allowedTools.size() + " 个工具");
+				// 更新工具选项（注：实际实现需要根据框架API调整�?
+				// 这里展示概念性代�?
+				System.out.println("为角�?" + userRole + " 选择�?" + allowedTools.size() + " 个工�?);
 
 				return next.call(request);
 			}
 
 			private String getUserRole(ModelRequest request) {
 				// 从请求上下文提取用户角色
-				return "user"; // 简化示例
+				return "user"; // 简化示�?
 			}
 
 			@Override
@@ -374,7 +374,7 @@ public class ContextEngineeringExample {
 			}
 		}
 
-		// 配置基于角色的工具（示例）
+		// 配置基于角色的工具（示例�?
 		Map<String, List<ToolCallback>> roleTools = Map.of(
 				"admin", List.of(/* readTool, writeTool, deleteTool */),
 				"user", List.of(/* readTool */),
@@ -391,9 +391,9 @@ public class ContextEngineeringExample {
 	}
 
 	/**
-	 * 示例5：日志记录 Hook
+	 * 示例5：日志记�?Hook
 	 *
-	 * 使用MessagesModelHook在模型调用前后记录日志
+	 * 使用MessagesModelHook在模型调用前后记录日�?
 	 */
 	public void example5_loggingHook() throws GraphRunnerException {
 		@HookPositions({HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL})
@@ -406,7 +406,7 @@ public class ContextEngineeringExample {
 			@Override
 			public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
 				// 在模型调用前记录
-				System.out.println("模型调用前 - 消息数: " + previousMessages.size());
+				System.out.println("模型调用�?- 消息�? " + previousMessages.size());
 				// 不修改消息，返回原始消息
 				return new AgentCommand(previousMessages);
 			}
@@ -414,7 +414,7 @@ public class ContextEngineeringExample {
 			@Override
 			public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
 				// 在模型调用后记录
-				System.out.println("模型调用后 - 响应已生成");
+				System.out.println("模型调用�?- 响应已生�?);
 				// 不修改消息，返回原始消息
 				return new AgentCommand(previousMessages);
 			}
@@ -432,7 +432,7 @@ public class ContextEngineeringExample {
 	}
 
 	/**
-	 * 示例6：消息摘要 Hook
+	 * 示例6：消息摘�?Hook
 	 *
 	 * 当对话过长时自动生成摘要
 	 * 使用MessagesModelHook实现
@@ -463,7 +463,7 @@ public class ContextEngineeringExample {
 				// 生成对话摘要
 				String summary = generateSummary(previousMessages);
 
-				// 查找是否已存在 SystemMessage
+				// 查找是否已存�?SystemMessage
 				SystemMessage existingSystemMessage = null;
 				for (Message msg : previousMessages) {
 					if (msg instanceof SystemMessage) {
@@ -473,10 +473,10 @@ public class ContextEngineeringExample {
 				}
 
 				// 创建摘要 SystemMessage
-				String summaryText = "之前对话摘要：" + summary;
+				String summaryText = "之前对话摘要�? + summary;
 				SystemMessage summarySystemMessage;
 				if (existingSystemMessage != null) {
-					// 如果存在 SystemMessage，追加摘要信息
+					// 如果存在 SystemMessage，追加摘要信�?
 					summarySystemMessage = new SystemMessage(
 							existingSystemMessage.getText() + "\n\n" + summaryText
 					);
@@ -496,25 +496,25 @@ public class ContextEngineeringExample {
 				// 构建新的消息列表
 				List<Message> newMessages = new ArrayList<>();
 				newMessages.add(summarySystemMessage);
-				// 添加最近的消息，排除旧的 SystemMessage（如果存在）
+				// 添加最近的消息，排除旧�?SystemMessage（如果存在）
 				for (Message msg : recentMessages) {
 					if (msg != existingSystemMessage) {
 						newMessages.add(msg);
 					}
 				}
 
-				// 使用 REPLACE 策略替换所有消息
+				// 使用 REPLACE 策略替换所有消�?
 				return new AgentCommand(newMessages, UpdatePolicy.REPLACE);
 			}
 
 			private String generateSummary(List<Message> messages) {
-				// 使用另一个模型生成摘要
+				// 使用另一个模型生成摘�?
 				String conversation = messages.stream()
 						.map(Message::getText)
 						.collect(Collectors.joining("\n"));
 
 				// 简化示例：返回固定摘要
-				return "之前讨论了多个主题...";
+				return "之前讨论了多个主�?..";
 			}
 		}
 
@@ -528,13 +528,13 @@ public class ContextEngineeringExample {
 	}
 
 	/**
-	 * 运行所有示例
+	 * 运行所有示�?
 	 */
 	public void runAllExamples() {
-		System.out.println("=== 上下文工程（Context Engineering）示例 ===\n");
+		System.out.println("=== 上下文工程（Context Engineering）示�?===\n");
 
 		try {
-			System.out.println("示例1: 基于状态的动态提示");
+			System.out.println("示例1: 基于状态的动态提�?);
 			example1_stateAwarePrompt();
 			System.out.println();
 
@@ -560,7 +560,7 @@ public class ContextEngineeringExample {
 
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

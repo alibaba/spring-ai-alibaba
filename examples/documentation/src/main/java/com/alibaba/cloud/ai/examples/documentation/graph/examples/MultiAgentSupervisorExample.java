@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,13 +50,13 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 /**
  * Multi-Agent Supervisor 示例
  *
- * 演示如何使用 LLM 来协调不同的 agents。
- * 创建一个 agent 组，其中包含一个 supervisor agent 来帮助委派任务。
+ * 演示如何使用 LLM 来协调不同的 agents�?
+ * 创建一�?agent 组，其中包含一�?supervisor agent 来帮助委派任务�?
  *
- * 架构：
+ * 架构�?
  * - Supervisor Agent: 负责路由到不同的 worker agents
- * - Researcher Agent: 负责研究任务，使用搜索工具
- * - Coder Agent: 负责代码执行任务，使用代码执行工具
+ * - Researcher Agent: 负责研究任务，使用搜索工�?
+ * - Coder Agent: 负责代码执行任务，使用代码执行工�?
  */
 public class MultiAgentSupervisorExample {
 
@@ -74,11 +74,11 @@ public class MultiAgentSupervisorExample {
 	public static void main(String[] args) {
 		System.out.println("=== Multi-Agent Supervisor 示例 ===\n");
 
-		// 检查环境变量
+		// 检查环境变�?
 		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
 		if (apiKey == null || apiKey.isEmpty()) {
-			System.err.println("错误：请先配置 AI_DASHSCOPE_API_KEY 环境变量");
-			System.err.println("示例需要 DashScope API Key 才能运行");
+			System.err.println("错误：请先配�?AI_DASHSCOPE_API_KEY 环境变量");
+			System.err.println("示例需�?DashScope API Key 才能运行");
 			return;
 		}
 
@@ -88,12 +88,12 @@ public class MultiAgentSupervisorExample {
 					.apiKey(apiKey)
 					.build();
 
-			// 创建 ChatModel（用于 Supervisor）
+			// 创建 ChatModel（用�?Supervisor�?
 			ChatModel chatModel = DashScopeChatModel.builder()
 					.dashScopeApi(dashScopeApi)
 					.build();
 
-			// 创建 ChatModel（用于 Worker Agents，可以使用相同的模型）
+			// 创建 ChatModel（用�?Worker Agents，可以使用相同的模型�?
 			ChatModel chatModelWithTool = DashScopeChatModel.builder()
 					.dashScopeApi(dashScopeApi)
 					.build();
@@ -113,10 +113,10 @@ public class MultiAgentSupervisorExample {
 			// 执行示例 2: Supervisor -> Researcher
 			example.executeGraphWithResearcher(graph);
 
-			System.out.println("\n所有示例执行完成");
+			System.out.println("\n所有示例执行完�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
@@ -125,7 +125,7 @@ public class MultiAgentSupervisorExample {
 	 * 创建 Multi-Agent Supervisor Graph
 	 */
 	public CompiledGraph createSupervisorGraph() throws GraphStateException {
-		// 定义状态管理策略
+		// 定义状态管理策�?
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			HashMap<String, KeyStrategy> strategies = new HashMap<>();
 			strategies.put("messages", new AppendStrategy());
@@ -164,14 +164,14 @@ public class MultiAgentSupervisorExample {
 	}
 
 	/**
-	 * 执行 Graph（Supervisor -> Coder）
+	 * 执行 Graph（Supervisor -> Coder�?
 	 */
 	public void executeGraphWithCoder(CompiledGraph graph) {
 		System.out.println("\n=== 执行 Graph (Supervisor -> Coder) ===");
 
 		Map<String, Object> input = Map.of(
 				"messages", List.of(
-						Map.of("role", "user", "content", "1 + 1 的结果是多少？")
+						Map.of("role", "user", "content", "1 + 1 的结果是多少�?)
 				)
 		);
 
@@ -180,14 +180,14 @@ public class MultiAgentSupervisorExample {
 				.build();
 
 		graph.stream(input, config)
-				.doOnNext(event -> System.out.println("节点: " + event.node() + ", 状态: " + event.state()))
-				.doOnError(error -> System.err.println("流错误: " + error.getMessage()))
-				.doOnComplete(() -> System.out.println("流完成"))
+				.doOnNext(event -> System.out.println("节点: " + event.node() + ", 状�? " + event.state()))
+				.doOnError(error -> System.err.println("流错�? " + error.getMessage()))
+				.doOnComplete(() -> System.out.println("流完�?))
 				.blockLast();
 	}
 
 	/**
-	 * 执行 Graph（Supervisor -> Researcher）
+	 * 执行 Graph（Supervisor -> Researcher�?
 	 */
 	public void executeGraphWithResearcher(CompiledGraph graph) {
 		System.out.println("\n=== 执行 Graph (Supervisor -> Researcher) ===");
@@ -203,9 +203,9 @@ public class MultiAgentSupervisorExample {
 				.build();
 
 		graph.stream(input, config)
-				.doOnNext(event -> System.out.println("节点: " + event.node() + ", 状态: " + event.state()))
-				.doOnError(error -> System.err.println("流错误: " + error.getMessage()))
-				.doOnComplete(() -> System.out.println("流完成"))
+				.doOnNext(event -> System.out.println("节点: " + event.node() + ", 状�? " + event.state()))
+				.doOnError(error -> System.err.println("流错�? " + error.getMessage()))
+				.doOnComplete(() -> System.out.println("流完�?))
 				.blockLast();
 	}
 
@@ -215,19 +215,19 @@ public class MultiAgentSupervisorExample {
 	public static class SearchTool implements BiFunction<SearchTool.SearchRequest, ToolContext, String> {
 
 		public static final String DESCRIPTION = """
-				使用此工具在互联网上执行搜索。
+				使用此工具在互联网上执行搜索�?
 				
 				Usage:
 				- query 参数是要搜索的查询字符串
 				- 工具会执行搜索并返回搜索结果
-				- 这是一个模拟实现，返回固定的搜索结果
+				- 这是一个模拟实现，返回固定的搜索结�?
 				""";
 
 		@Override
 		public String apply(SearchRequest request, ToolContext toolContext) {
 			System.out.println("搜索查询: '" + request.query + "'");
 			// 模拟搜索结果
-			return "下一届冬奥会将在意大利的科尔蒂纳举行，时间是2026年";
+			return "下一届冬奥会将在意大利的科尔蒂纳举行，时间是2026�?;
 		}
 
 		/**
@@ -235,7 +235,7 @@ public class MultiAgentSupervisorExample {
 		 */
 		public static class SearchRequest {
 			@JsonProperty(required = true)
-			@JsonPropertyDescription("要搜索的查询字符串")
+			@JsonPropertyDescription("要搜索的查询字符�?)
 			public String query;
 
 			public SearchRequest() {
@@ -253,13 +253,13 @@ public class MultiAgentSupervisorExample {
 	public static class CoderTool implements BiFunction<CoderTool.CodeRequest, ToolContext, String> {
 
 		public static final String DESCRIPTION = """
-				使用此工具执行 Java 代码并进行数学计算。
+				使用此工具执�?Java 代码并进行数学计算�?
 				
 				Usage:
-				- request 参数是要执行的代码请求
-				- 如果你想查看某个值的输出，应该使用 `System.out.println(...);` 打印出来
+				- request 参数是要执行的代码请�?
+				- 如果你想查看某个值的输出，应该使�?`System.out.println(...);` 打印出来
 				- 这对用户可见
-				- 这是一个模拟实现，返回固定的执行结果
+				- 这是一个模拟实现，返回固定的执行结�?
 				""";
 
 		@Override
@@ -301,7 +301,7 @@ public class MultiAgentSupervisorExample {
 
 		@Override
 		public Map<String, Object> apply(OverAllState state) throws Exception {
-			// 获取最后一条消息
+			// 获取最后一条消�?
 			List<Object> messages = (List<Object>) state.value("messages").orElse(List.of());
 			if (messages.isEmpty()) {
 				throw new IllegalStateException("No messages in state");
@@ -313,11 +313,11 @@ public class MultiAgentSupervisorExample {
 			// 构建系统提示
 			String membersList = String.join(", ", members);
 			String systemPrompt = String.format(
-					"你是一个 supervisor，负责管理以下 workers 之间的对话：%s。\n" +
+					"你是一�?supervisor，负责管理以�?workers 之间的对话：%s。\n" +
 							"根据以下用户请求，响应应该由哪个 worker 来处理。\n" +
 							"每个 worker 将执行任务并返回结果和状态。\n" +
-							"当任务完成时，响应 FINISH。\n" +
-							"只返回 worker 名称（%s）或 FINISH，不要返回其他内容。",
+							"当任务完成时，响�?FINISH。\n" +
+							"只返�?worker 名称�?s）或 FINISH，不要返回其他内容�?,
 					membersList, membersList
 			);
 
@@ -328,14 +328,14 @@ public class MultiAgentSupervisorExample {
 					.call()
 					.content();
 
-			// 清理结果，确保只返回 worker 名称或 FINISH
+			// 清理结果，确保只返回 worker 名称�?FINISH
 			String next = normalizeRoute(result, members);
 
 			return Map.of("next", next);
 		}
 
 		/**
-		 * 规范化路由结果
+		 * 规范化路由结�?
 		 */
 		private String normalizeRoute(String result, String[] members) {
 			if (result == null || result.trim().isEmpty()) {
@@ -349,7 +349,7 @@ public class MultiAgentSupervisorExample {
 				return "FINISH";
 			}
 
-			// 检查是否匹配任何成员
+			// 检查是否匹配任何成�?
 			for (String member : members) {
 				if (normalized.equals(member.toLowerCase()) ||
 						normalized.contains(member.toLowerCase())) {
@@ -357,9 +357,9 @@ public class MultiAgentSupervisorExample {
 				}
 			}
 
-			// 如果无法确定，根据消息内容推断
+			// 如果无法确定，根据消息内容推�?
 			// 这里可以根据实际需求添加更智能的路由逻辑
-			// 默认返回第一个 worker
+			// 默认返回第一�?worker
 			return members.length > 0 ? members[0] : "FINISH";
 		}
 
@@ -395,7 +395,7 @@ public class MultiAgentSupervisorExample {
 
 		@Override
 		public Map<String, Object> apply(OverAllState state) throws Exception {
-			// 获取最后一条消息
+			// 获取最后一条消�?
 			List<Object> messages = (List<Object>) state.value("messages").orElse(List.of());
 			if (messages.isEmpty()) {
 				throw new IllegalStateException("No messages in state");
@@ -403,7 +403,7 @@ public class MultiAgentSupervisorExample {
 
 			String lastMessageText = extractTextFromMessage(messages.get(messages.size() - 1));
 
-			// 使用 ChatClient 调用 LLM，LLM 可能会调用搜索工具
+			// 使用 ChatClient 调用 LLM，LLM 可能会调用搜索工�?
 			String result = chatClient.prompt()
 					.user(lastMessageText)
 					.call()
@@ -447,7 +447,7 @@ public class MultiAgentSupervisorExample {
 
 		@Override
 		public Map<String, Object> apply(OverAllState state) throws Exception {
-			// 获取最后一条消息
+			// 获取最后一条消�?
 			List<Object> messages = (List<Object>) state.value("messages").orElse(List.of());
 			if (messages.isEmpty()) {
 				throw new IllegalStateException("No messages in state");
@@ -455,7 +455,7 @@ public class MultiAgentSupervisorExample {
 
 			String lastMessageText = extractTextFromMessage(messages.get(messages.size() - 1));
 
-			// 使用 ChatClient 调用 LLM，LLM 可能会调用代码执行工具
+			// 使用 ChatClient 调用 LLM，LLM 可能会调用代码执行工�?
 			String result = chatClient.prompt()
 					.user(lastMessageText)
 					.call()

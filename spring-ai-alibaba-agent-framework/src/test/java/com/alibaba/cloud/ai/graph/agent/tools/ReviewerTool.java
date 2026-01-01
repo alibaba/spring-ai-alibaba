@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ public class ReviewerTool implements BiFunction<String, ToolContext, String> {
 			ToolContext toolContext) {
 		count++;
 		System.out.println("Reviewer tool called : " + article);
-		return "晨光初透，薄雾如纱，轻轻覆在西湖的湖面上。断桥残影映水，柳丝拂波，露珠悬于草尖，欲坠未坠。远处山色空蒙，画舫轻移，划开一池碧琉璃。风过处，荷香暗送，落叶轻旋，似在低语岁月的秘密。原来人间至美，不过西湖一瞬的静谧与诗意。";
+		return "晨光初透，薄雾如纱，轻轻覆在西湖的湖面上。断桥残影映水，柳丝拂波，露珠悬于草尖，欲坠未坠。远处山色空蒙，画舫轻移，划开一池碧琉璃。风过处，荷香暗送，落叶轻旋，似在低语岁月的秘密。原来人间至美，不过西湖一瞬的静谧与诗意�?;
 	}
 
 	public static ToolCallback createReviewerToolCallback() {

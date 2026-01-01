@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class SequentialAgentProvider extends AbstractAgentTypeProvider {
 
 	@Override
 	public String jsonSchema() {
-		// 顺序编排本身无需太多专属字段（先预留 chat_options/compile_config/state）
+		// 顺序编排本身无需太多专属字段（先预留 chat_options/compile_config/state�?
 		return """
 				{
 				  "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -87,16 +87,16 @@ public class SequentialAgentProvider extends AbstractAgentTypeProvider {
 		// 使用基类方法生成基础 builder 代码
 		StringBuilder code = generateBasicBuilderCode("SequentialAgent", var, shell);
 
-		// SequentialAgent 特有的字段
+		// SequentialAgent 特有的字�?
 		if (shell.inputKeys() != null && !shell.inputKeys().isEmpty()) {
 			String primaryInputKey = shell.inputKeys().get(0);
 			code.append(".inputKey(\"").append(esc(primaryInputKey)).append("\")\n");
 		}
 
-		// 使用基类方法添加子代理
+		// 使用基类方法添加子代�?
 		appendSubAgents(code, childVarNames);
 
-		// 使用基类方法生成状态策略代码
+		// 使用基类方法生成状态策略代�?
 		StateStrategyResult stateResult = generateStateStrategyCode(handle, "new AppendStrategy()");
 		code.append(stateResult.code);
 

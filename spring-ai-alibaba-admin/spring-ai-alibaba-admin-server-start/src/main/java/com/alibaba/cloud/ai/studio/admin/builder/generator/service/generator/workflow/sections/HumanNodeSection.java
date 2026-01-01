@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ public class HumanNodeSection implements NodeSection<HumanNodeData> {
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(String.format("// —— HumanNode [%s] ——%n", id));
+		sb.append(String.format("// —�?HumanNode [%s] —�?n", id));
 
 		String condKey = d.getInterruptConditionKey();
 		// If the policy is conditioned, you need to read the boolean value from the

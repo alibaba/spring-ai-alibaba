@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,10 @@ public class Prompts {
 			- Format: [1] Source Title: URL
 			
 			Structure your report appropriately for the question type:
-			- Comparison: intro â†’ overview A â†’ overview B â†’ comparison â†’ conclusion
+			- Comparison: intro â†?overview A â†?overview B â†?comparison â†?conclusion
 			- List: Simple numbered/bulleted list or separate sections per item
-			- Overview/Summary: intro â†’ concept 1 â†’ concept 2 â†’ ... â†’ conclusion
-			- Analysis: thesis â†’ evidence â†’ analysis â†’ conclusion
+			- Overview/Summary: intro â†?concept 1 â†?concept 2 â†?... â†?conclusion
+			- Analysis: thesis â†?evidence â†?analysis â†?conclusion
 			""";
 
 	// Sub-agent prompt for research

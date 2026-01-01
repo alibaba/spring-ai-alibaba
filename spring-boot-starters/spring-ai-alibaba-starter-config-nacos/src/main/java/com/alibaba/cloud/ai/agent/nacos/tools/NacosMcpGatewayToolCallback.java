@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 
 	private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*(\\.[\\w]+(?:\\.[\\w]+)*)\\s*\\}\\}");
 
-	// 匹配 {{ ${nacos.dataId/group} }} 或 {{ ${nacos.dataId/group}.key1.key2 }}
+	// 匹配 {{ ${nacos.dataId/group} }} �?{{ ${nacos.dataId/group}.key1.key2 }}
 	private static final Pattern NACOS_TEMPLATE_PATTERN = Pattern
 			.compile("\\{\\{\\s*\\$\\{nacos\\.([^}]+)\\}(\\.[\\w]+(?:\\.[\\w]+)*)?\\s*}}");
 
@@ -120,9 +120,9 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 
 	/**
 	 * 解析Nacos引用
-	 * @param nacosRef 引用字符串，格式为 dataId/group
-	 * @param dotNotation 点语法部分，格式为 .key1.key2（可能为null）
-	 * @return 解析后的值
+	 * @param nacosRef 引用字符串，格式�?dataId/group
+	 * @param dotNotation 点语法部分，格式�?.key1.key2（可能为null�?
+	 * @return 解析后的�?
 	 */
 	private String resolveNacosReference(String nacosRef, String dotNotation) {
 		if (!org.springframework.util.StringUtils.hasText(nacosRef)) {
@@ -152,7 +152,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				return configContent;
 			}
 
-			// 如果有点语法，去掉开头的点号，然后解析JSON并提取指定字段
+			// 如果有点语法，去掉开头的点号，然后解析JSON并提取指定字�?
 			String jsonPath = dotNotation.startsWith(".") ? dotNotation.substring(1) : dotNotation;
 			return extractJsonValueFromNacos(configContent, jsonPath);
 
@@ -198,10 +198,10 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	}
 
 	/**
-	 * 从JSON字符串中提取指定路径的值
-	 * @param jsonString JSON字符串
+	 * 从JSON字符串中提取指定路径的�?
+	 * @param jsonString JSON字符�?
 	 * @param jsonPath JSON路径，如 key1.key2
-	 * @return 提取的值
+	 * @return 提取的�?
 	 */
 	private String extractJsonValueFromNacos(String jsonString, String jsonPath) throws JsonProcessingException {
 
@@ -223,7 +223,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				return null;
 			}
 
-			// 根据节点类型返回合适的值
+			// 根据节点类型返回合适的�?
 			if (currentNode.isTextual()) {
 				return currentNode.asText();
 			}
@@ -234,7 +234,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				return String.valueOf(currentNode.asBoolean());
 			}
 			else {
-				// 对于复杂对象，返回JSON字符串
+				// 对于复杂对象，返回JSON字符�?
 				return currentNode.toString();
 			}
 		}
@@ -263,7 +263,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 		Matcher matcher = TEMPLATE_PATTERN.matcher(template);
 		StringBuilder result = new StringBuilder();
 		while (matcher.find()) {
-			// 获取完整路径，如 .args.name 或 .data.key1.key2
+			// 获取完整路径，如 .args.name �?.data.key1.key2
 			String fullPath = matcher.group(1);
 			String replacement = resolvePathValue(fullPath, args, extendedData);
 			matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
@@ -277,11 +277,11 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	}
 
 	/**
-	 * 根据路径解析值
-	 * @param fullPath 完整路径，如 .args.name 或 .data.key1.key2
+	 * 根据路径解析�?
+	 * @param fullPath 完整路径，如 .args.name �?.data.key1.key2
 	 * @param args 参数数据映射
 	 * @param extendedData 扩展数据（JSON字符串）
-	 * @return 解析后的值
+	 * @return 解析后的�?
 	 */
 	private String resolvePathValue(String fullPath, Map<String, Object> args, String extendedData) {
 		if (fullPath == null || fullPath.isEmpty()) {
@@ -297,10 +297,10 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			return "";
 		}
 
-		// 确定数据源
+		// 确定数据�?
 		Object dataSource;
 		if (pathParts[0].equals("args")) {
-			// 从args中取值
+			// 从args中取�?
 			dataSource = args;
 			// 如果只有args，没有具体字段名
 			if (pathParts.length == 1) {
@@ -316,7 +316,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			}
 		}
 		else {
-			// 从extendedData中取值
+			// 从extendedData中取�?
 			// 首先将extendedData字符串解析为JSON对象
 			try {
 				if (StringUtils.hasText(extendedData)) {
@@ -335,20 +335,20 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				return "";
 			}
 
-			// 特殊处理直接访问extendedData的情况
+			// 特殊处理直接访问extendedData的情�?
 			if (pathParts.length == 1 && fullPath.equals("extendedData")) {
 				return extendedData != null ? extendedData : "";
 			}
 		}
 
-		// 如果数据源为空
+		// 如果数据源为�?
 		if (dataSource == null) {
 			return "";
 		}
 		// 处理嵌套路径
 		Object currentValue = dataSource;
 		int startIndex = pathParts[0].equals("args") ? 1 : 0;
-		// 如果是args，从索引1开始；否则从索引0开始
+		// 如果是args，从索引1开始；否则从索�?开�?
 
 		for (int i = startIndex; i < pathParts.length; i++) {
 			String key = pathParts[i];
@@ -404,7 +404,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				}
 				catch (Exception e) {
 					logger.error("[call] Failed to parse input to args", e);
-					// 如果解析失败，尝试作为单个参数处理
+					// 如果解析失败，尝试作为单个参数处�?
 					args.put("input", input);
 				}
 			}
@@ -444,7 +444,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	}
 
 	/**
-	 * 处理MCP流式协议的工具调用 (mcp-sse, mcp-streamable)
+	 * 处理MCP流式协议的工具调�?(mcp-sse, mcp-streamable)
 	 */
 	private String handleMcpStreamProtocol(Map<String, Object> args, McpServerRemoteServiceConfig remoteServerConfig,
 			String protocol) throws NacosException {
@@ -458,14 +458,14 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			logger.info("[handleMcpStreamProtocol] Tool callback instance: {}", JacksonUtils.toJson(mcpEndpointInfo));
 			String exportPath = remoteServerConfig.getExportPath();
 
-			// 构建基础URL，根据协议类型调整
+			// 构建基础URL，根据协议类型调�?
 			String transportProtocol = StringUtils.hasText(serviceRef.getTransportProtocol()) ? serviceRef.getTransportProtocol() : "http";
 			StringBuilder baseUrl;
 			if ("mcp-sse".equalsIgnoreCase(protocol)) {
 				baseUrl = new StringBuilder(transportProtocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort());
 			}
 			else {
-				// mcp-streamable 或其他协议
+				// mcp-streamable 或其他协�?
 				baseUrl = new StringBuilder(transportProtocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort());
 			}
 
@@ -473,13 +473,13 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 					args, baseUrl.toString());
 
 			try {
-				// 获取工具名称 - 从工具定义名称中提取实际的工具名称
+				// 获取工具名称 - 从工具定义名称中提取实际的工具名�?
 				String toolDefinitionName = this.toolDefinition.name();
 				if (toolDefinitionName == null || toolDefinitionName.isEmpty()) {
 					throw new RuntimeException("Tool definition name is not available");
 				}
 
-				// 工具定义名称格式为: serverName_tools_toolName
+				// 工具定义名称格式�? serverName_tools_toolName
 				// 需要提取最后的 toolName 部分
 				String toolName;
 				if (toolDefinitionName.contains("_tools_")) {
@@ -494,7 +494,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 					throw new RuntimeException("Extracted tool name is empty");
 				}
 
-				// 构建传输层
+				// 构建传输�?
 				StringBuilder sseEndpoint = new StringBuilder("/sse");
 				if (exportPath != null && !exportPath.isEmpty()) {
 					sseEndpoint = new StringBuilder(exportPath);
@@ -524,10 +524,10 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				}
 
 				// 添加自定义请求头（如果需要）
-				// 这里可以根据需要添加认证头等
+				// 这里可以根据需要添加认证头�?
 				HttpClientSseClientTransport transport = transportBuilder.build();
 
-				// 创建MCP同步客户端
+				// 创建MCP同步客户�?
 				McpSyncClient client = McpClient.sync(transport).build();
 				try {
 					// 初始化客户端

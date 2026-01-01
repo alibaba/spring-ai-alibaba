@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,7 +117,7 @@ class LongTermMemoryTest {
 
 					// Inject user context into system message
 					String userContext = String.format(
-							"用户信息：姓名=%s, 年龄=%s, 邮箱=%s, 偏好=%s",
+							"用户信息：姓�?%s, 年龄=%s, 邮箱=%s, 偏好=%s",
 							profileData.get("name"),
 							profileData.get("age"),
 							profileData.get("email"),
@@ -155,7 +155,7 @@ class LongTermMemoryTest {
 
 		// Pre-populate memory store with user profile
 		Map<String, Object> profileData = new HashMap<>();
-		profileData.put("name", "王小明");
+		profileData.put("name", "王小�?);
 		profileData.put("age", 28);
 		profileData.put("email", "wang@example.com");
 		profileData.put("preferences", List.of("喜欢咖啡", "喜欢阅读"));
@@ -177,13 +177,13 @@ class LongTermMemoryTest {
 				.build();
 
 		// Ask agent about user information
-		Optional<OverAllState> result = agent.invoke("请介绍一下我的信息。", config);
+		Optional<OverAllState> result = agent.invoke("请介绍一下我的信息�?, config);
 		AssistantMessage response = (AssistantMessage) result.get().value("messages")
 				.map(m -> ((List<Message>) m).get(((List<Message>) m).size() - 1))
 				.orElseThrow();
 
 		System.out.println("Response with long-term memory: " + response.getText());
-		assertTrue(response.getText().contains("王小明") || response.getText().contains("28"),
+		assertTrue(response.getText().contains("王小�?) || response.getText().contains("28"),
 				"Agent should use information from long-term memory");
 	}
 
@@ -200,11 +200,11 @@ class LongTermMemoryTest {
 					memoryStore.putItem(item);
 					System.out.println("Saved to memory: namespace=" + request.namespace() +
 							", key=" + request.key() + ", value=" + request.value());
-					return new MemoryResponse("成功保存到记忆", request.value());
+					return new MemoryResponse("成功保存到记�?, request.value());
 				};
 
 		ToolCallback saveMemoryTool = FunctionToolCallback.builder("saveMemory", saveMemoryFunction)
-				.description("保存信息到长期记忆。参数：namespace=命名空间列表, key=键, value=值的Map")
+				.description("保存信息到长期记忆。参数：namespace=命名空间列表, key=�? value=值的Map")
 				.inputType(SaveMemoryRequest.class)
 				.build();
 
@@ -220,12 +220,12 @@ class LongTermMemoryTest {
 					} else {
 						System.out.println("Not found in memory: namespace=" + request.namespace() +
 								", key=" + request.key());
-						return new MemoryResponse("未找到记忆", Map.of());
+						return new MemoryResponse("未找到记�?, Map.of());
 					}
 				};
 
 		ToolCallback getMemoryTool = FunctionToolCallback.builder("getMemory", getMemoryFunction)
-				.description("从长期记忆中获取信息。参数：namespace=命名空间列表, key=键")
+				.description("从长期记忆中获取信息。参数：namespace=命名空间列表, key=�?)
 				.inputType(GetMemoryRequest.class)
 				.build();
 
@@ -243,7 +243,7 @@ class LongTermMemoryTest {
 
 		// First conversation: save user's favorite color
 		Optional<OverAllState> result1 = agent.invoke(
-				"请帮我记住：我最喜欢的颜色是蓝色。使用 saveMemory 工具保存，namespace 使用 [\"user_preferences\"]，key 使用 \"favorite_color\"，value 使用 {\"color\": \"蓝色\"}。",
+				"请帮我记住：我最喜欢的颜色是蓝色。使�?saveMemory 工具保存，namespace 使用 [\"user_preferences\"]，key 使用 \"favorite_color\"，value 使用 {\"color\": \"蓝色\"}�?,
 				config
 		);
 		assertTrue(result1.isPresent());
@@ -253,7 +253,7 @@ class LongTermMemoryTest {
 
 		// Second conversation: retrieve the saved information
 		Optional<OverAllState> result2 = agent.invoke(
-				"我最喜欢的颜色是什么？使用 getMemory 工具，namespace=[\"user_preferences\"], key=\"favorite_color\"。",
+				"我最喜欢的颜色是什么？使用 getMemory 工具，namespace=[\"user_preferences\"], key=\"favorite_color\"�?,
 				config
 		);
 		AssistantMessage response2 = (AssistantMessage) result2.get().value("messages")
@@ -303,7 +303,7 @@ class LongTermMemoryTest {
 				}
 
 				Map<String, Object> profile = profileOpt.get().getValue();
-				String contextInfo = String.format("长期记忆：用户 %s, 职业: %s",
+				String contextInfo = String.format("长期记忆：用�?%s, 职业: %s",
 						profile.get("name"), profile.get("occupation"));
 
 				// Inject into messages
@@ -320,7 +320,7 @@ class LongTermMemoryTest {
 		// Setup long-term memory
 		Map<String, Object> userProfile = new HashMap<>();
 		userProfile.put("name", "李工程师");
-		userProfile.put("occupation", "软件工程师");
+		userProfile.put("occupation", "软件工程�?);
 
 		StoreItem profileItem = StoreItem.of(List.of("profiles"), "user_002", userProfile);
 		memoryStore.putItem(profileItem);
@@ -339,11 +339,11 @@ class LongTermMemoryTest {
 				.build();
 
 		// Short-term: remember within conversation
-		agent.invoke("我今天在做一个 Spring 项目。", config);
+		agent.invoke("我今天在做一�?Spring 项目�?, config);
 
 		// Ask question that requires both memories
 		Optional<OverAllState> result = agent.invoke(
-				"根据我的职业和今天的工作，给我一些建议。",
+				"根据我的职业和今天的工作，给我一些建议�?,
 				config
 		);
 
@@ -366,11 +366,11 @@ class LongTermMemoryTest {
 				(request, context) -> {
 					StoreItem item = StoreItem.of(request.namespace(), request.key(), request.value());
 					memoryStore.putItem(item);
-					return new MemoryResponse("已保存", request.value());
+					return new MemoryResponse("已保�?, request.value());
 				};
 
 		ToolCallback saveMemoryTool = FunctionToolCallback.builder("saveMemory", saveMemoryFunction)
-				.description("保存到长期记忆")
+				.description("保存到长期记�?)
 				.inputType(SaveMemoryRequest.class)
 				.build();
 
@@ -379,13 +379,13 @@ class LongTermMemoryTest {
 				(request, context) -> {
 					Optional<StoreItem> itemOpt = memoryStore.getItem(request.namespace(), request.key());
 					return new MemoryResponse(
-							itemOpt.isPresent() ? "找到" : "未找到",
+							itemOpt.isPresent() ? "找到" : "未找�?,
 							itemOpt.map(StoreItem::getValue).orElse(Map.of())
 					);
 				};
 
 		ToolCallback getMemoryTool = FunctionToolCallback.builder("getMemory", getMemoryFunction)
-				.description("从长期记忆获取")
+				.description("从长期记忆获�?)
 				.inputType(GetMemoryRequest.class)
 				.build();
 
@@ -403,7 +403,7 @@ class LongTermMemoryTest {
 				.build();
 
 		agent.invoke(
-				"记住我的密码是 secret123。用 saveMemory 保存，namespace=[\"credentials\"], key=\"user_003_password\", value={\"password\": \"secret123\"}。",
+				"记住我的密码�?secret123。用 saveMemory 保存，namespace=[\"credentials\"], key=\"user_003_password\", value={\"password\": \"secret123\"}�?,
 				session1
 		);
 
@@ -414,7 +414,7 @@ class LongTermMemoryTest {
 				.build();
 
 		Optional<OverAllState> result = agent.invoke(
-				"我的密码是什么？用 getMemory 获取，namespace=[\"credentials\"], key=\"user_003_password\"。",
+				"我的密码是什么？�?getMemory 获取，namespace=[\"credentials\"], key=\"user_003_password\"�?,
 				session2
 		);
 
@@ -502,8 +502,8 @@ class LongTermMemoryTest {
 				.build();
 
 		// User expresses preferences
-		agent.invoke("我喜欢喝绿茶。", config);
-		agent.invoke("我偏好早上运动。", config);
+		agent.invoke("我喜欢喝绿茶�?, config);
+		agent.invoke("我偏好早上运动�?, config);
 
 		// Verify preferences were stored
 		Optional<StoreItem> savedPrefs = memoryStore.getItem(List.of("user_data"), "user_004_preferences");

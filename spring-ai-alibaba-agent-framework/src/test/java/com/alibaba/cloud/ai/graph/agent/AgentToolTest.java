@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,28 +145,28 @@ class AgentToolTest {
 		ReactAgent writerAgent = ReactAgent.builder()
 			.name("writer_agent")
 			.model(chatModel)
-			.description("可以写文章。")
-			.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+			.description("可以写文章�?)
+			.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答�?)
 			.build();
 
 		ReactAgent reviewerAgent = ReactAgent.builder()
 			.name("reviewer_agent")
 			.model(chatModel)
-			.description("可以对文章进行评论和修改。")
-			.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
+			.description("可以对文章进行评论和修改�?)
+			.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。对于散文类文章，请确保文章中必须包含对于西湖风景的描述�?)
 			.build();
 
 		ReactAgent blogAgent = ReactAgent.builder()
 			.name("blog_agent")
 			.model(chatModel)
-			.instruction("首先，根据用户给定的主题写一篇文章，然后将文章交给评论员进行审核，必要时做出修改。")
+			.instruction("首先，根据用户给定的主题写一篇文章，然后将文章交给评论员进行审核，必要时做出修改�?)
 			.tools(List.of(AgentTool.getFunctionToolCallback(writerAgent),
 					AgentTool.getFunctionToolCallback(reviewerAgent)))
 			.build();
 
 		try {
 			Optional<OverAllState> result = blogAgent
-				.invoke(new UserMessage("帮我写一个100字左右的散文"));
+				.invoke(new UserMessage("帮我写一�?00字左右的散文"));
 
 			assertTrue(result.isPresent(), "Result should be present");
 
@@ -188,7 +188,7 @@ class AgentToolTest {
 
 	@Test
 	public void testAgentToolWithInputSchema() throws Exception {
-		// 使用 inputSchema 定义工具的输入格式
+		// 使用 inputSchema 定义工具的输入格�?
 		String writerInputSchema = """
 				{
 					"type": "object",
@@ -211,20 +211,20 @@ class AgentToolTest {
 			.name("structured_writer_agent")
 			.model(chatModel)
 			.description("根据结构化输入写文章")
-			.instruction("你是一个专业作家。请严格按照输入的主题、字数和风格要求创作文章。")
+			.instruction("你是一个专业作家。请严格按照输入的主题、字数和风格要求创作文章�?)
 			.inputSchema(writerInputSchema)
 			.build();
 
 		ReactAgent coordinatorAgent = ReactAgent.builder()
 			.name("coordinator_agent")
 			.model(chatModel)
-			.instruction("你需要调用写作工具来完成用户的写作请求。请根据用户需求，使用结构化的参数调用写作工具。")
+			.instruction("你需要调用写作工具来完成用户的写作请求。请根据用户需求，使用结构化的参数调用写作工具�?)
 			.tools(List.of(AgentTool.getFunctionToolCallback(writerAgent)))
 			.build();
 
 		try {
 			Optional<OverAllState> result = coordinatorAgent
-				.invoke("请写一篇关于春天的散文，大约150字");
+				.invoke("请写一篇关于春天的散文，大�?50�?);
 
 			assertTrue(result.isPresent(), "Result should be present");
 			System.out.println("=== Agent Tool with InputSchema Test ===");
@@ -243,20 +243,20 @@ class AgentToolTest {
 			.name("typed_writer_agent")
 			.model(chatModel)
 			.description("根据类型化输入写文章")
-			.instruction("你是一个专业作家。请严格按照输入的 topic（主题）、wordCount（字数）和 style（风格）要求创作文章。")
+			.instruction("你是一个专业作家。请严格按照输入�?topic（主题）、wordCount（字数）�?style（风格）要求创作文章�?)
 			.inputType(ArticleRequest.class)
 			.build();
 
 		ReactAgent coordinatorAgent = ReactAgent.builder()
 			.name("coordinator_with_type_agent")
 			.model(chatModel)
-			.instruction("你需要调用写作工具来完成用户的写作请求。工具接收 JSON 格式的参数。")
+			.instruction("你需要调用写作工具来完成用户的写作请求。工具接�?JSON 格式的参数�?)
 			.tools(List.of(AgentTool.getFunctionToolCallback(writerAgent)))
 			.build();
 
 		try {
 			Optional<OverAllState> result = coordinatorAgent
-				.invoke("请写一篇关于秋天的现代诗，大约100字");
+				.invoke("请写一篇关于秋天的现代诗，大约100�?);
 
 			assertTrue(result.isPresent(), "Result should be present");
 			System.out.println("=== Agent Tool with InputType Test ===");
@@ -270,7 +270,7 @@ class AgentToolTest {
 
 	@Test
 	public void testAgentToolWithOutputSchema() throws Exception {
-		// 使用 outputSchema 定义工具的输出格式
+		// 使用 outputSchema 定义工具的输出格�?
 		String writerOutputSchema = """
 				{
 					"$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -293,15 +293,15 @@ class AgentToolTest {
 		ReactAgent writerAgent = ReactAgent.builder()
 			.name("writer_with_output_schema")
 			.model(chatModel)
-			.description("写文章并返回结构化输出")
-			.instruction("你是一个专业作家。请创作文章并严格按照指定的JSON格式返回结果。")
+			.description("写文章并返回结构化输�?)
+			.instruction("你是一个专业作家。请创作文章并严格按照指定的JSON格式返回结果�?)
 			.outputSchema(writerOutputSchema)
 			.build();
 
 		ReactAgent coordinatorAgent = ReactAgent.builder()
 			.name("coordinator_output_schema")
 			.model(chatModel)
-			.instruction("调用写作工具完成用户请求，工具会返回结构化的文章数据。")
+			.instruction("调用写作工具完成用户请求，工具会返回结构化的文章数据�?)
 			.tools(List.of(AgentTool.getFunctionToolCallback(writerAgent)))
 			.outputType(ArticleOutput.class)
 			.build();
@@ -326,15 +326,15 @@ class AgentToolTest {
 		ReactAgent writerAgent = ReactAgent.builder()
 			.name("writer_with_output_type")
 			.model(chatModel)
-			.description("写文章并返回类型化输出")
-			.instruction("你是一个专业作家。请创作文章并返回包含 title、content 和 characterCount 的结构化结果。")
+			.description("写文章并返回类型化输�?)
+			.instruction("你是一个专业作家。请创作文章并返回包�?title、content �?characterCount 的结构化结果�?)
 			.outputType(ArticleOutput.class)
 			.build();
 
 		ReactAgent coordinatorAgent = ReactAgent.builder()
 			.name("coordinator_output_type")
 			.model(chatModel)
-			.instruction("调用写作工具完成用户请求。")
+			.instruction("调用写作工具完成用户请求�?)
 			.tools(List.of(AgentTool.getFunctionToolCallback(writerAgent)))
 			.build();
 
@@ -354,12 +354,12 @@ class AgentToolTest {
 
 	@Test
 	public void testAgentToolWithAllSchemaTypes() throws Exception {
-		// 综合测试：同时使用 inputType 和 outputType
+		// 综合测试：同时使�?inputType �?outputType
 		ReactAgent writerAgent = ReactAgent.builder()
 			.name("full_typed_writer")
 			.model(chatModel)
 			.description("完整类型化的写作工具")
-			.instruction("根据结构化输入（topic、wordCount、style）创作文章，并返回结构化输出（title、content、characterCount）。")
+			.instruction("根据结构化输入（topic、wordCount、style）创作文章，并返回结构化输出（title、content、characterCount）�?)
 			.inputType(ArticleRequest.class)
 			.outputType(ArticleOutput.class)
 			.build();
@@ -368,14 +368,14 @@ class AgentToolTest {
 			.name("typed_reviewer")
 			.model(chatModel)
 			.description("完整类型化的评审工具")
-			.instruction("对文章进行评审，返回评审意见（comment、approved、suggestions）。")
+			.instruction("对文章进行评审，返回评审意见（comment、approved、suggestions）�?)
 			.outputType(ReviewOutput.class)
 			.build();
 
 		ReactAgent orchestratorAgent = ReactAgent.builder()
 			.name("orchestrator")
 			.model(chatModel)
-			.instruction("协调写作和评审流程。先调用写作工具创作文章，然后调用评审工具进行评审。")
+			.instruction("协调写作和评审流程。先调用写作工具创作文章，然后调用评审工具进行评审�?)
 			.tools(List.of(
 					AgentTool.getFunctionToolCallback(writerAgent),
 					AgentTool.getFunctionToolCallback(reviewerAgent)))
@@ -383,7 +383,7 @@ class AgentToolTest {
 
 		try {
 			Optional<OverAllState> result = orchestratorAgent
-				.invoke("请写一篇关于友谊的散文，约200字，需要评审");
+				.invoke("请写一篇关于友谊的散文，约200字，需要评�?);
 
 			assertTrue(result.isPresent(), "Result should be present");
 			System.out.println("=== Agent Tool with All Schema Types Test ===");
@@ -416,8 +416,8 @@ class AgentToolTest {
 		ReactAgent reviewerAgent = ReactAgent.builder()
 			.name("mixed_schema_reviewer")
 			.model(chatModel)
-			.description("使用混合 schema 的评审工具")
-			.instruction("根据给定的文章内容和评审标准进行评审，返回结构化的评审结果。")
+			.description("使用混合 schema 的评审工�?)
+			.instruction("根据给定的文章内容和评审标准进行评审，返回结构化的评审结果�?)
 			.inputSchema(customInputSchema)
 			.outputType(ReviewOutput.class)
 			.build();
@@ -425,7 +425,7 @@ class AgentToolTest {
 		ReactAgent mainAgent = ReactAgent.builder()
 			.name("main_agent")
 			.model(chatModel)
-			.instruction("使用评审工具对用户提供的内容进行评审。")
+			.instruction("使用评审工具对用户提供的内容进行评审�?)
 			.tools(List.of(AgentTool.getFunctionToolCallback(reviewerAgent)))
 			.build();
 

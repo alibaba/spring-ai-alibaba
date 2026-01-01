@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,12 +39,12 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * 子图示例
- * 演示如何在 Spring AI Alibaba Graph 中使用子图
+ * 演示如何�?Spring AI Alibaba Graph 中使用子�?
  */
 public class SubgraphExample {
 
 	/**
-	 * 示例 1: 添加编译的子图作为节点
+	 * 示例 1: 添加编译的子图作为节�?
 	 */
 	public static void addCompiledSubgraphAsNode() throws GraphStateException {
 		KeyStrategyFactory keyStrategyFactory = () -> {
@@ -92,7 +92,7 @@ public class SubgraphExample {
 	 * 示例 2: 在节点操作中调用子图
 	 */
 	public static void callSubgraphInNodeAction() throws GraphStateException {
-		// 父图状态
+		// 父图状�?
 		KeyStrategyFactory parentKeyStrategyFactory = () -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
 			keyStrategyMap.put("parentData", new ReplaceStrategy());
@@ -100,7 +100,7 @@ public class SubgraphExample {
 			return keyStrategyMap;
 		};
 
-		// 子图状态（完全不同）
+		// 子图状态（完全不同�?
 		KeyStrategyFactory childKeyStrategyFactory = () -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
 			keyStrategyMap.put("childInput", new ReplaceStrategy());
@@ -124,10 +124,10 @@ public class SubgraphExample {
 
 		// 父图中的转换节点
 		var transformAndCallChild = node_async(state -> {
-			// 1. 从父状态提取数据
+			// 1. 从父状态提取数�?
 			String parentData = (String) state.value("parentData").orElse("");
 
-			// 2. 转换为子图输入
+			// 2. 转换为子图输�?
 			Map<String, Object> childInput = Map.of("childInput", parentData);
 
 			// 3. 调用子图
@@ -136,7 +136,7 @@ public class SubgraphExample {
 					RunnableConfig.builder().build()
 			).orElseThrow();
 
-			// 4. 转换子图输出回父状态
+			// 4. 转换子图输出回父状�?
 			String childOutput = (String) childResult.value("childOutput").orElse("");
 			return Map.of("processedResult", childOutput);
 		});
@@ -152,7 +152,7 @@ public class SubgraphExample {
 	}
 
 	/**
-	 * 示例 3: 可视化子图
+	 * 示例 3: 可视化子�?
 	 */
 	public static void visualizeSubgraph() throws GraphStateException {
 		KeyStrategyFactory keyStrategyFactory = () -> {
@@ -195,7 +195,7 @@ public class SubgraphExample {
 
 		CompiledGraph compiledChild = childGraph.compile();
 
-		// 执行父图并获取流式输出
+		// 执行父图并获取流式输�?
 		Flux<NodeOutput> stream = compiledChild.stream(
 				Map.of("data", "input"),
 				RunnableConfig.builder().threadId("parent-thread").build()
@@ -211,8 +211,8 @@ public class SubgraphExample {
 		System.out.println("=== 子图示例 ===\n");
 
 		try {
-			// 示例 1: 添加编译的子图作为节点
-			System.out.println("示例 1: 添加编译的子图作为节点");
+			// 示例 1: 添加编译的子图作为节�?
+			System.out.println("示例 1: 添加编译的子图作为节�?);
 			addCompiledSubgraphAsNode();
 			System.out.println();
 
@@ -221,8 +221,8 @@ public class SubgraphExample {
 			callSubgraphInNodeAction();
 			System.out.println();
 
-			// 示例 3: 可视化子图
-			System.out.println("示例 3: 可视化子图");
+			// 示例 3: 可视化子�?
+			System.out.println("示例 3: 可视化子�?);
 			visualizeSubgraph();
 			System.out.println();
 
@@ -231,10 +231,10 @@ public class SubgraphExample {
 			streamSubgraph();
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
+			System.out.println("所有示例执行完�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

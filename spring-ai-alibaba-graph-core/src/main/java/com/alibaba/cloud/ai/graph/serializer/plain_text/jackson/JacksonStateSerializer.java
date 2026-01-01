@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,22 +129,22 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			return null;
 		}
 
-		// 1. GraphResponse â†’ snapshot map (fully normalize internally)
+		// 1. GraphResponse â†?snapshot map (fully normalize internally)
 		if (value instanceof GraphResponse) {
 			return normalizeGraphResponse((GraphResponse<?>) value);
 		}
 
-		// 2. ChatResponse â†’ snapshot map (fully normalize internally)
+		// 2. ChatResponse â†?snapshot map (fully normalize internally)
 		if (value instanceof ChatResponse) {
 			return normalizeChatResponse((ChatResponse) value);
 		}
 
-		// 3. CompletableFuture â†’ snapshot map (fully normalize internally)
+		// 3. CompletableFuture â†?snapshot map (fully normalize internally)
 		if (value instanceof CompletableFuture) {
 			return normalizeCompletableFuture((CompletableFuture<?>) value);
 		}
 
-		// 4. Map â†’ shallow scan for GraphResponse/ChatResponse/CompletableFuture
+		// 4. Map â†?shallow scan for GraphResponse/ChatResponse/CompletableFuture
 		if (value instanceof Map) {
 			Map<?, ?> map = (Map<?, ?>) value;
 			Map<Object, Object> result = new LinkedHashMap<>(map.size());
@@ -159,7 +159,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			return changed ? result : value;
 		}
 
-		// 5. Collection â†’ shallow scan for GraphResponse/ChatResponse/CompletableFuture
+		// 5. Collection â†?shallow scan for GraphResponse/ChatResponse/CompletableFuture
 		if (value instanceof Collection) {
 			Collection<?> collection = (Collection<?>) value;
 			List<Object> result = new ArrayList<>(collection.size());
@@ -174,7 +174,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			return changed ? result : value;
 		}
 
-	// 6. Array â†’ shallow scan for GraphResponse/ChatResponse/CompletableFuture
+	// 6. Array â†?shallow scan for GraphResponse/ChatResponse/CompletableFuture
 	if (value.getClass().isArray()) {
 		// Check if it's a primitive array (int[], double[], etc.)
 		Class<?> componentType = value.getClass().getComponentType();
@@ -199,7 +199,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		return changed ? result : value;
 	}
 
-	// 7. Optional â†’ unwrap and check
+	// 7. Optional â†?unwrap and check
 		if (value instanceof Optional) {
 			Optional<?> opt = (Optional<?>) value;
 			if (opt.isEmpty()) {
@@ -210,7 +210,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			return normalized == unwrapped ? value : normalized;
 		}
 
-		// 7. Other types â†’ return as-is (assumed serializable)
+		// 7. Other types â†?return as-is (assumed serializable)
 		return value;
 	}
 
@@ -293,22 +293,22 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			return null;
 		}
 
-		// 1. GraphResponse â†’ snapshot map
+		// 1. GraphResponse â†?snapshot map
 		if (value instanceof GraphResponse) {
 			return normalizeGraphResponse((GraphResponse<?>) value);
 		}
 
-		// 2. ChatResponse â†’ snapshot map
+		// 2. ChatResponse â†?snapshot map
 		if (value instanceof ChatResponse) {
 			return normalizeChatResponse((ChatResponse) value);
 		}
 
-		// 3. CompletableFuture â†’ snapshot map
+		// 3. CompletableFuture â†?snapshot map
 		if (value instanceof CompletableFuture) {
 			return normalizeCompletableFuture((CompletableFuture<?>) value);
 		}
 
-		// 4. Map â†’ recursive normalization
+		// 4. Map â†?recursive normalization
 		if (value instanceof Map) {
 			Map<?, ?> map = (Map<?, ?>) value;
 			Map<Object, Object> normalized = new LinkedHashMap<>(map.size());
@@ -316,13 +316,13 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			return normalized;
 		}
 
-		// 5. Collection â†’ recursive normalization
+		// 5. Collection â†?recursive normalization
 		if (value instanceof Collection) {
 			Collection<?> collection = (Collection<?>) value;
 			return collection.stream().map(this::deepNormalizeValue).collect(Collectors.toList());
 		}
 
-	// 6. Array â†’ recursive normalization
+	// 6. Array â†?recursive normalization
 	if (value.getClass().isArray()) {
 		// Check if it's a primitive array
 		Class<?> componentType = value.getClass().getComponentType();
@@ -335,12 +335,12 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		return Arrays.stream(array).map(this::deepNormalizeValue).toArray();
 	}
 
-		// 6. Optional â†’ unwrap and normalize
+		// 6. Optional â†?unwrap and normalize
 		if (value instanceof Optional) {
 			return ((Optional<?>) value).map(this::deepNormalizeValue).orElse(null);
 		}
 
-		// 7. Other types â†’ return as-is (assumed serializable)
+		// 7. Other types â†?return as-is (assumed serializable)
 		return value;
 	}
 

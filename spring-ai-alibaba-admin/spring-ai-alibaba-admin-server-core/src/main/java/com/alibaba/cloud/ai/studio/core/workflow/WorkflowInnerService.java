@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public class WorkflowInnerService {
 	public WorkflowContext getContextCache(String workspaceId, String taskId) {
 		WorkflowContext context = redisManager.get(WORKFLOW_TASK_CONTEXT_PREFIX + workspaceId + "_" + taskId);
 
-		// 确保返回的context有有效的版本号
+		// 确保返回的context有有效的版本�?
 		if (context != null && context.getVersion() <= 0) {
 			context.setVersion(1L);
 		}
@@ -99,7 +99,7 @@ public class WorkflowInnerService {
 	public void forceRefreshContextCache(WorkflowContext context) {
 		String cacheKey = WORKFLOW_TASK_CONTEXT_PREFIX + context.getWorkspaceId() + "_" + context.getTaskId();
 
-		// 确保context有有效的版本号
+		// 确保context有有效的版本�?
 		if (context.getVersion() <= 0) {
 			context.setVersion(1L);
 		}
@@ -108,21 +108,21 @@ public class WorkflowInnerService {
 		WorkflowContext existingContext = redisManager.get(cacheKey);
 
 		if (existingContext != null) {
-			// 确保existingContext有有效的版本号
+			// 确保existingContext有有效的版本�?
 			if (existingContext.getVersion() <= 0) {
 				existingContext.setVersion(1L);
 			}
 
-			// 如果缓存中存在context，进行版本比较
+			// 如果缓存中存在context，进行版本比�?
 			if (existingContext.getVersion() > context.getVersion()) {
-				// 缓存中的版本更新或相同，需要合并
+				// 缓存中的版本更新或相同，需要合�?
 				log.debug("Version conflict detected: existing={}, new={}, taskId={}", existingContext.getVersion(),
 						context.getVersion(), context.getTaskId());
 
 				// 合并context版本
 				WorkflowContext mergedContext = mergeContextVersions(existingContext, context);
 
-				// 更新版本号
+				// 更新版本�?
 				mergedContext.setVersion(Math.max(existingContext.getVersion(), context.getVersion()) + 1);
 
 				// 保存合并后的context
@@ -132,7 +132,7 @@ public class WorkflowInnerService {
 						mergedContext.getVersion());
 			}
 			else {
-				// 新context版本更高，直接保存
+				// 新context版本更高，直接保�?
 				context.setVersion(existingContext.getVersion() + 1);
 				redisManager.put(cacheKey, context, Duration.ofHours(1));
 
@@ -141,7 +141,7 @@ public class WorkflowInnerService {
 			}
 		}
 		else {
-			// 缓存中不存在context，直接保存
+			// 缓存中不存在context，直接保�?
 			context.setVersion(1L);
 			redisManager.put(cacheKey, context, Duration.ofHours(1));
 
@@ -298,7 +298,7 @@ public class WorkflowInnerService {
 	}
 
 	/**
-	 * 合并两个WorkflowContext版本，确保新数据不会被旧数据覆盖 优先保留新context中的数据，但保留旧context中可能被遗漏的重要信息
+	 * 合并两个WorkflowContext版本，确保新数据不会被旧数据覆盖 优先保留新context中的数据，但保留旧context中可能被遗漏的重要信�?
 	 * @param existingContext 现有的context
 	 * @param newContext 新的context
 	 * @return 合并后的context
@@ -312,12 +312,12 @@ public class WorkflowInnerService {
 			return newContext;
 		}
 
-		// 确保合并后的context有有效的版本号
+		// 确保合并后的context有有效的版本�?
 		if (mergedContext.getVersion() <= 0) {
 			mergedContext.setVersion(1L);
 		}
 
-		// 合并nodeResultMap - 保留所有节点的最新结果
+		// 合并nodeResultMap - 保留所有节点的最新结�?
 		if (existingContext.getNodeResultMap() != null) {
 			existingContext.getNodeResultMap().forEach((nodeId, nodeResult) -> {
 				// 如果新context中没有该节点的结果，或者新context中该节点状态更早，则保留旧结果
@@ -328,7 +328,7 @@ public class WorkflowInnerService {
 			});
 		}
 
-		// 合并variablesMap - 保留所有变量，新值优先
+		// 合并variablesMap - 保留所有变量，新值优�?
 		if (existingContext.getVariablesMap() != null) {
 			existingContext.getVariablesMap().forEach((key, value) -> {
 				if (!mergedContext.getVariablesMap().containsKey(key)) {
@@ -337,9 +337,9 @@ public class WorkflowInnerService {
 			});
 		}
 
-		// 合并executeOrderList - 保留完整的执行顺序
+		// 合并executeOrderList - 保留完整的执行顺�?
 		if (existingContext.getExecuteOrderList() != null && mergedContext.getExecuteOrderList() != null) {
-			// 合并执行顺序，避免重复
+			// 合并执行顺序，避免重�?
 			existingContext.getExecuteOrderList().forEach(nodeId -> {
 				if (!mergedContext.getExecuteOrderList().contains(nodeId)) {
 					mergedContext.getExecuteOrderList().add(nodeId);
@@ -374,13 +374,13 @@ public class WorkflowInnerService {
 
 	/**
 	 * 判断节点状态是否更早（用于版本合并时的优先级判断）
-	 * @param newStatus 新状态
-	 * @param oldStatus 旧状态
-	 * @return true如果新状态比旧状态更早
+	 * @param newStatus 新状�?
+	 * @param oldStatus 旧状�?
+	 * @return true如果新状态比旧状态更�?
 	 */
 	private boolean isNodeStatusOlder(String newStatus, String oldStatus) {
 		// 定义状态优先级：EXECUTING < SUCCESS < FAIL < PAUSE
-		// 数字越小表示状态越早
+		// 数字越小表示状态越�?
 		java.util.Map<String, Integer> statusPriority = Map.of(NodeStatusEnum.EXECUTING.getCode(), 1,
 				NodeStatusEnum.SUCCESS.getCode(), 2, NodeStatusEnum.FAIL.getCode(), 3, NodeStatusEnum.PAUSE.getCode(),
 				4);
@@ -388,7 +388,7 @@ public class WorkflowInnerService {
 		Integer newPriority = statusPriority.get(newStatus);
 		Integer oldPriority = statusPriority.get(oldStatus);
 
-		// 如果状态不在预定义列表中，认为新状态更早
+		// 如果状态不在预定义列表中，认为新状态更�?
 		if (newPriority == null) {
 			return true;
 		}

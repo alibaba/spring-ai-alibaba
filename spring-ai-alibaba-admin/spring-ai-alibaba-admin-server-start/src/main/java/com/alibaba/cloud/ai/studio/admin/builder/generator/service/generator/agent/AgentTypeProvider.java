@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,25 +25,25 @@ import java.util.Map;
  */
 public interface AgentTypeProvider {
 
-	// 类型标识，对齐 schema 中 agent.type，如 "ReactAgent"、"SequentialAgent"
+	// 类型标识，对�?schema �?agent.type，如 "ReactAgent"�?SequentialAgent"
 	String type();
 
 	// handle 的版本号（用于迁移）
 	String handleVersion();
 
-	// 返回该 type 的 handle 的 JSON Schema（前端表单渲染、校验）
+	// 返回�?type �?handle �?JSON Schema（前端表单渲染、校验）
 	String jsonSchema();
 
-	// 返回该 type 的 handle 默认值（前端新建时的初始值）
+	// 返回�?type �?handle 默认值（前端新建时的初始值）
 	Map<String, Object> defaultHandle();
 
-	// 版本迁移（从旧版本 handle 升级到当前 handleVersion）
+	// 版本迁移（从旧版�?handle 升级到当�?handleVersion�?
 	Map<String, Object> migrate(Map<String, Object> oldHandle, String fromVersion);
 
-	// 渲染代码分段：根据壳层 + handle + 子 Agent 变量名（父节点调用时传入）产出代码与导入
+	// 渲染代码分段：根据壳�?+ handle + �?Agent 变量名（父节点调用时传入）产出代码与导入
 	CodeSections render(AgentShell shell, Map<String, Object> handle, RenderContext ctx, List<String> childVarNames);
 
-	// 校验 DSL 数据的有效性
+	// 校验 DSL 数据的有效�?
 	void validateDSL(Map<String, Object> root);
 
 }

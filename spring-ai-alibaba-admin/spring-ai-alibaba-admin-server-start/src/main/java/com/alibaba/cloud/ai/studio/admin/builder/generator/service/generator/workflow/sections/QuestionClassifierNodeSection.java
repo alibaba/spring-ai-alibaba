@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 	public String render(Node node, String varName) {
 		QuestionClassifierNodeData nodeData = (QuestionClassifierNodeData) node.getData();
 		return String.format("""
-				// —— QuestionClassifierNode [%s] ——
+				// —�?QuestionClassifierNode [%s] —�?
 				stateGraph.addNode("%s", AsyncNodeAction.node_async(
 				    createQuestionClassifierAction(chatModel, %s, %s, "%s", "%s", %s, %s)
 				));
@@ -60,7 +60,7 @@ public class QuestionClassifierNodeSection implements NodeSection<QuestionClassi
 	@Override
 	public String renderEdges(QuestionClassifierNodeData nodeData, List<Edge> edges) {
 		Map<String, String> classIdToName = nodeData.getClassIdToName();
-		// 规定edge的sourceHandle为caseId，前面的转化需要符合这条规则
+		// 规定edge的sourceHandle为caseId，前面的转化需要符合这条规�?
 		String edgeCode = String.format("""
 				state -> {
 				    String result = state.value("%s").orElseThrow().toString();

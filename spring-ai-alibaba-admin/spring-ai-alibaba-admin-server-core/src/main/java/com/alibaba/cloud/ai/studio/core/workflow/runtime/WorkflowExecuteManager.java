@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -326,7 +326,7 @@ public class WorkflowExecuteManager {
 
 		long lastRefreshTime = System.currentTimeMillis();
 
-		// 根据invokeSource设置不同的刷新频率
+		// 根据invokeSource设置不同的刷新频�?
 		Integer refreshInterval = getRefreshIntervalByInvokeSource(context.getInvokeSource());
 
 		while (!done.get()) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import java.util.List;
  * @author vlsmb
  * @since 2025/7/23
  */
-// TODO: 支持并行模式、错误处理，支持Studio的默认输入值，支持Studio的多输入/多输出
+// TODO: 支持并行模式、错误处理，支持Studio的默认输入值，支持Studio的多输入/多输�?
 @Component
 public class IterationNodeSection implements NodeSection<IterationNodeData> {
 
@@ -81,7 +81,7 @@ public class IterationNodeSection implements NodeSection<IterationNodeData> {
 					nodeData.getIndexOffset());
 		}
 
-		// TODO: 添加辅助节点以支持迭代起始节点并行
+		// TODO: 添加辅助节点以支持迭代起始节点并�?
 		@Override
 		public String renderEdges(IterationNodeData nodeData, List<Edge> edges) {
 			Edge edge = edges.get(0);
@@ -170,7 +170,7 @@ public class IterationNodeSection implements NodeSection<IterationNodeData> {
 					nodeData.getResultSelector().getNameInCode(), nodeData.getOutputKey());
 		}
 
-		// TODO: 添加辅助节点以支持迭代终止节点并行
+		// TODO: 添加辅助节点以支持迭代终止节点并�?
 		@Override
 		public String renderEdges(IterationNodeData nodeData, List<Edge> edges) {
 			Edge edge = edges.get(0);

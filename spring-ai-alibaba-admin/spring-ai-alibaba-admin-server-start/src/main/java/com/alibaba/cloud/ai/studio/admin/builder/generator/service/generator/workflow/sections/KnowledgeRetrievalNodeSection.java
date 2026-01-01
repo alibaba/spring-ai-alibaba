@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-// TODO: 支持其他格式的文档，如PDF、ZIP等
+// TODO: 支持其他格式的文档，如PDF、ZIP�?
 // TODO: 解析并应用RerankModel、EmbeddingModel配置
 // TODO: 支持从OSS获取资源文件，或者在生成项目中从OSS获取资源文件
 @Component
@@ -50,7 +50,7 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 		return NodeType.RETRIEVER.equals(nodeType);
 	}
 
-	// 用于获取Studio存储的文档
+	// 用于获取Studio存储的文�?
 	private final DocumentService studioDocumentService;
 
 	private final String studioStoragePath;
@@ -70,7 +70,7 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 				throw new IllegalArgumentException(
 						"The current mode does not support Studio's knowledge retrieval node code generation. Please start the complete StudioApplication class");
 			}
-			// 根据knowledgeBaseIds获取对应的资源文件
+			// 根据knowledgeBaseIds获取对应的资源文�?
 			List<ResourceFile> resourceFiles = Optional.ofNullable(nodeData.getKnowledgeBaseIds())
 				.orElse(List.of())
 				.stream()
@@ -117,7 +117,7 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 							throw new UnsupportedOperationException("unsupported document type: " + documentType);
 					};
 					String fileName = document.getName();
-					// 构造文件记录
+					// 构造文件记�?
 					return new ResourceFile(fileName, switch (documentType) {
 						case FILE -> ResourceFile.Type.CLASS_PATH;
 						case URL -> ResourceFile.Type.URL;
@@ -137,7 +137,7 @@ public class KnowledgeRetrievalNodeSection implements NodeSection<KnowledgeRetri
 		}
 
 		return String.format("""
-				// —— KnowledgeRetrievalNode [%s] ——
+				// —�?KnowledgeRetrievalNode [%s] —�?
 				KnowledgeRetrievalNode %s = KnowledgeRetrievalNode.builder()
 				    .topK(%s)
 				    .similarityThreshold(%s)

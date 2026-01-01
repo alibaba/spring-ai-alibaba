@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,18 +48,18 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * 人工介入（Human-in-the-Loop）示例
+ * 人工介入（Human-in-the-Loop）示�?
  *
  * 演示如何使用人工介入Hook为Agent工具调用添加人工监督，包括：
- * 1. 配置中断和审批
- * 2. 批准（approve）决策
- * 3. 编辑（edit）决策
- * 4. 拒绝（reject）决策
+ * 1. 配置中断和审�?
+ * 2. 批准（approve）决�?
+ * 3. 编辑（edit）决�?
+ * 4. 拒绝（reject）决�?
  * 5. 处理多个工具调用
- * 6. Workflow中嵌套ReactAgent的人工中断
+ * 6. Workflow中嵌套ReactAgent的人工中�?
  * 7. 实用工具方法
  *
- * 参考文档: advanced_doc/human-in-the-loop.md
+ * 参考文�? advanced_doc/human-in-the-loop.md
  */
 public class HumanInTheLoopExample {
 
@@ -70,7 +70,7 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * 实用工具方法：批准所有工具调用
+	 * 实用工具方法：批准所有工具调�?
 	 */
 	public static InterruptionMetadata approveAll(InterruptionMetadata interruptionMetadata) {
 		InterruptionMetadata.Builder builder = InterruptionMetadata.builder()
@@ -89,7 +89,7 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * 实用工具方法：拒绝所有工具调用
+	 * 实用工具方法：拒绝所有工具调�?
 	 */
 	public static InterruptionMetadata rejectAll(InterruptionMetadata interruptionMetadata, String reason) {
 		InterruptionMetadata.Builder builder = InterruptionMetadata.builder()
@@ -141,7 +141,7 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * Main方法：运行所有示例
+	 * Main方法：运行所有示�?
 	 *
 	 * 注意：需要配置ChatModel实例才能运行
 	 */
@@ -158,38 +158,38 @@ public class HumanInTheLoopExample {
 
 		if (chatModel == null) {
 			System.err.println("错误：请先配置ChatModel实例");
-			System.err.println("请设置 AI_DASHSCOPE_API_KEY 环境变量");
+			System.err.println("请设�?AI_DASHSCOPE_API_KEY 环境变量");
 			return;
 		}
 
 		// 创建示例实例
 		HumanInTheLoopExample example = new HumanInTheLoopExample(chatModel);
 
-		// 运行所有示例
+		// 运行所有示�?
 		example.runAllExamples();
 	}
 
 	/**
 	 * 示例1：配置中断和基本使用
 	 *
-	 * 为特定工具配置人工审批
+	 * 为特定工具配置人工审�?
 	 */
 	public void example1_basicConfiguration() {
 		// 配置检查点保存器（人工介入需要检查点来处理中断）
 		MemorySaver memorySaver = new MemorySaver();
 
 		// 创建工具回调（示例）
-		ToolCallback writeFileTool = FunctionToolCallback.builder("write_file", (args) -> "文件已写入")
+		ToolCallback writeFileTool = FunctionToolCallback.builder("write_file", (args) -> "文件已写�?)
 				.description("写入文件")
 				.inputType(String.class)
 				.build();
 
-		ToolCallback executeSqlTool = FunctionToolCallback.builder("execute_sql", (args) -> "SQL已执行")
+		ToolCallback executeSqlTool = FunctionToolCallback.builder("execute_sql", (args) -> "SQL已执�?)
 				.description("执行SQL语句")
 				.inputType(String.class)
 				.build();
 
-		ToolCallback readDataTool = FunctionToolCallback.builder("read_data", (args) -> "数据已读取")
+		ToolCallback readDataTool = FunctionToolCallback.builder("read_data", (args) -> "数据已读�?)
 				.description("读取数据")
 				.inputType(String.class)
 				.build();
@@ -197,10 +197,10 @@ public class HumanInTheLoopExample {
 		// 创建人工介入Hook
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
 				.approvalOn("write_file", ToolConfig.builder()
-						.description("文件写入操作需要审批")
+						.description("文件写入操作需要审�?)
 						.build())
 				.approvalOn("execute_sql", ToolConfig.builder()
-						.description("SQL执行操作需要审批")
+						.description("SQL执行操作需要审�?)
 						.build())
 				.build();
 
@@ -217,21 +217,21 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * 示例2：批准（approve）决策
+	 * 示例2：批准（approve）决�?
 	 *
-	 * 人工批准工具调用并继续执行
+	 * 人工批准工具调用并继续执�?
 	 */
 	public void example2_approveDecision() throws Exception {
 		MemorySaver memorySaver = new MemorySaver();
 
-		ToolCallback poetTool = FunctionToolCallback.builder("poem", (args) -> "春江潮水连海平，海上明月共潮生...")
+		ToolCallback poetTool = FunctionToolCallback.builder("poem", (args) -> "春江潮水连海平，海上明月共潮�?..")
 				.description("写诗工具")
 				.inputType(String.class)
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
 				.approvalOn("poem", ToolConfig.builder()
-						.description("请确认诗歌创作操作")
+						.description("请确认诗歌创作操�?)
 						.build())
 				.build();
 
@@ -248,10 +248,10 @@ public class HumanInTheLoopExample {
 				.threadId(threadId)
 				.build();
 
-		// 第一次调用 - 触发中断
+		// 第一次调�?- 触发中断
 		System.out.println("=== 第一次调用：期望中断 ===");
 		Optional<NodeOutput> result = agent.invokeAndGetOutput(
-				"帮我写一首100字左右的诗",
+				"帮我写一�?00字左右的�?,
 				config
 		);
 
@@ -259,7 +259,7 @@ public class HumanInTheLoopExample {
 		if (result.isPresent() && result.get() instanceof InterruptionMetadata) {
 			InterruptionMetadata interruptionMetadata = (InterruptionMetadata) result.get();
 
-			System.out.println("检测到中断，需要人工审批");
+			System.out.println("检测到中断，需要人工审�?);
 			List<InterruptionMetadata.ToolFeedback> toolFeedbacks =
 					interruptionMetadata.toolFeedbacks();
 
@@ -274,7 +274,7 @@ public class HumanInTheLoopExample {
 					.nodeId(interruptionMetadata.node())
 					.state(interruptionMetadata.state());
 
-			// 对每个工具调用设置批准决策
+			// 对每个工具调用设置批准决�?
 			interruptionMetadata.toolFeedbacks().forEach(toolFeedback -> {
 				InterruptionMetadata.ToolFeedback approvedFeedback =
 						InterruptionMetadata.ToolFeedback.builder(toolFeedback)
@@ -304,9 +304,9 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * 示例3：编辑（edit）决策
+	 * 示例3：编辑（edit）决�?
 	 *
-	 * 人工编辑工具参数后继续执行
+	 * 人工编辑工具参数后继续执�?
 	 */
 	public void example3_editDecision() throws Exception {
 		MemorySaver memorySaver = new MemorySaver();
@@ -318,7 +318,7 @@ public class HumanInTheLoopExample {
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
 				.approvalOn("execute_sql", ToolConfig.builder()
-						.description("SQL执行操作需要审批")
+						.description("SQL执行操作需要审�?)
 						.build())
 				.build();
 
@@ -335,7 +335,7 @@ public class HumanInTheLoopExample {
 				.threadId(threadId)
 				.build();
 
-		// 第一次调用 - 触发中断
+		// 第一次调�?- 触发中断
 		Optional<NodeOutput> result = agent.invokeAndGetOutput(
 				"删除数据库中的旧记录",
 				config
@@ -377,21 +377,21 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * 示例4：拒绝（reject）决策
+	 * 示例4：拒绝（reject）决�?
 	 *
-	 * 人工拒绝工具调用并终止当前流程
+	 * 人工拒绝工具调用并终止当前流�?
 	 */
 	public void example4_rejectDecision() throws Exception {
 		MemorySaver memorySaver = new MemorySaver();
 
-		ToolCallback deleteTool = FunctionToolCallback.builder("delete_data", (args) -> "数据已删除")
+		ToolCallback deleteTool = FunctionToolCallback.builder("delete_data", (args) -> "数据已删�?)
 				.description("删除数据")
 				.inputType(String.class)
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
 				.approvalOn("delete_data", ToolConfig.builder()
-						.description("删除操作需要审批")
+						.description("删除操作需要审�?)
 						.build())
 				.build();
 
@@ -408,9 +408,9 @@ public class HumanInTheLoopExample {
 				.threadId(threadId)
 				.build();
 
-		// 第一次调用 - 触发中断
+		// 第一次调�?- 触发中断
 		Optional<NodeOutput> result = agent.invokeAndGetOutput(
-				"删除所有用户数据",
+				"删除所有用户数�?,
 				config
 		);
 
@@ -426,7 +426,7 @@ public class HumanInTheLoopExample {
 				InterruptionMetadata.ToolFeedback rejectedFeedback =
 						InterruptionMetadata.ToolFeedback.builder(toolFeedback)
 								.result(InterruptionMetadata.ToolFeedback.FeedbackResult.REJECTED)
-								.description("不允许删除操作，请使用归档功能代替。")
+								.description("不允许删除操作，请使用归档功能代替�?)
 								.build();
 				feedbackBuilder.addToolFeedback(rejectedFeedback);
 			});
@@ -446,7 +446,7 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * 示例5：处理多个工具调用
+	 * 示例5：处理多个工具调�?
 	 *
 	 * 一次性处理多个需要审批的工具调用
 	 */
@@ -469,9 +469,9 @@ public class HumanInTheLoopExample {
 				.build();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
-				.approvalOn("tool1", ToolConfig.builder().description("工具1需要审批").build())
-				.approvalOn("tool2", ToolConfig.builder().description("工具2需要审批").build())
-				.approvalOn("tool3", ToolConfig.builder().description("工具3需要审批").build())
+				.approvalOn("tool1", ToolConfig.builder().description("工具1需要审�?).build())
+				.approvalOn("tool2", ToolConfig.builder().description("工具2需要审�?).build())
+				.approvalOn("tool3", ToolConfig.builder().description("工具3需要审�?).build())
 				.build();
 
 		ReactAgent agent = ReactAgent.builder()
@@ -487,7 +487,7 @@ public class HumanInTheLoopExample {
 				.threadId(threadId)
 				.build();
 
-		Optional<NodeOutput> result = agent.invokeAndGetOutput("执行所有工具", config);
+		Optional<NodeOutput> result = agent.invokeAndGetOutput("执行所有工�?, config);
 
 		if (result.isPresent() && result.get() instanceof InterruptionMetadata) {
 			InterruptionMetadata interruptionMetadata = (InterruptionMetadata) result.get();
@@ -541,16 +541,16 @@ public class HumanInTheLoopExample {
 	}
 
 	/**
-	 * 示例6：Workflow中嵌套ReactAgent的人工中断
+	 * 示例6：Workflow中嵌套ReactAgent的人工中�?
 	 *
-	 * 演示如何在StateGraph工作流中嵌套带有HumanInTheLoopHook的ReactAgent，
-	 * 并处理工作流执行过程中的中断和恢复
+	 * 演示如何在StateGraph工作流中嵌套带有HumanInTheLoopHook的ReactAgent�?
+	 * 并处理工作流执行过程中的中断和恢�?
 	 */
 	public void example6_workflowWithHumanInTheLoop() throws Exception {
 		// 创建工具回调
 		ToolCallback searchTool = FunctionToolCallback
-				.builder("search", (args) -> "搜索结果：AI Agent是能够感知环境、自主决策并采取行动的智能系统。")
-				.description("搜索工具，用于查找相关信息")
+				.builder("search", (args) -> "搜索结果：AI Agent是能够感知环境、自主决策并采取行动的智能系统�?)
+				.description("搜索工具，用于查找相关信�?)
 				.inputType(String.class)
 				.build();
 
@@ -566,14 +566,14 @@ public class HumanInTheLoopExample {
 				.saver(saver)
 				.hooks(HumanInTheLoopHook.builder()
 						.approvalOn("search", ToolConfig.builder()
-								.description("搜索操作需要人工审批，请确认是否执行搜索")
+								.description("搜索操作需要人工审批，请确认是否执行搜�?)
 								.build())
 						.build())
 				.tools(searchTool)
 				.enableLogging(true)
 				.build();
 
-		// 创建预处理Node：清理输入
+		// 创建预处理Node：清理输�?
 		class PreprocessorNode implements NodeAction {
 			@Override
 			public Map<String, Object> apply(OverAllState state) throws Exception {
@@ -584,21 +584,21 @@ public class HumanInTheLoopExample {
 			}
 		}
 
-		// 创建验证Node：验证结果质量
+		// 创建验证Node：验证结果质�?
 		class ValidatorNode implements NodeAction {
 			@Override
 			public Map<String, Object> apply(OverAllState state) throws Exception {
 				Optional<Object> qaResultOpt = state.value("qa_result");
 				if (qaResultOpt.isPresent() && qaResultOpt.get() instanceof Message message) {
 					boolean isValid = message.getText().length() > 30; // 简单验证：答案长度需大于30
-					System.out.println("验证节点：结果验证 -> " + (isValid ? "通过" : "不通过"));
+					System.out.println("验证节点：结果验�?-> " + (isValid ? "通过" : "不通过"));
 					return Map.of("is_valid", isValid);
 				}
 				return Map.of("is_valid", false);
 			}
 		}
 
-		// 定义状态管理策略
+		// 定义状态管理策�?
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			HashMap<String, KeyStrategy> strategies = new HashMap<>();
 			strategies.put("input", new ReplaceStrategy());
@@ -608,17 +608,17 @@ public class HumanInTheLoopExample {
 			return strategies;
 		};
 
-		// 构建工作流
+		// 构建工作�?
 		StateGraph workflow = new StateGraph(keyStrategyFactory);
 
 		// 添加普通Node
 		workflow.addNode("preprocess", node_async(new PreprocessorNode()));
 		workflow.addNode("validate", node_async(new ValidatorNode()));
 
-		// 添加Agent Node（嵌套的ReactAgent）
+		// 添加Agent Node（嵌套的ReactAgent�?
 		workflow.addNode(qaAgent.name(), qaAgent.asNode(
 				true,   // includeContents: 传递父图的消息历史
-				false   // includeReasoning: 不返回推理过程
+				false   // includeReasoning: 不返回推理过�?
 		));
 
 		// 定义流程：预处理 -> Agent处理 -> 验证
@@ -639,7 +639,7 @@ public class HumanInTheLoopExample {
 				)
 		);
 
-		// 编译工作流
+		// 编译工作�?
 		CompiledGraph compiledGraph = workflow.compile(
 				CompileConfig.builder()
 						.saverConfig(SaverConfig.builder().register(saver).build())
@@ -649,18 +649,18 @@ public class HumanInTheLoopExample {
 		String threadId = "workflow-hilt-001";
 		Map<String, Object> input = Map.of("input", "请解释量子计算的基本原理");
 
-		// 第一次调用 - 可能触发中断
-		System.out.println("=== 第一次调用工作流：可能触发中断 ===");
+		// 第一次调�?- 可能触发中断
+		System.out.println("=== 第一次调用工作流：可能触发中�?===");
 		Optional<NodeOutput> nodeOutputOptional = compiledGraph.invokeAndGetOutput(
 				input,
 				RunnableConfig.builder().threadId(threadId).build()
 		);
 
-		// 检查是否发生中断
+		// 检查是否发生中�?
 		if (nodeOutputOptional.isPresent() && nodeOutputOptional.get() instanceof InterruptionMetadata interruptionMetadata) {
-			System.out.println("\n工作流被中断，等待人工审核。");
+			System.out.println("\n工作流被中断，等待人工审核�?);
 			System.out.println("中断节点: " + interruptionMetadata.node());
-			System.out.println("中断状态: " + interruptionMetadata.state());
+			System.out.println("中断状�? " + interruptionMetadata.state());
 
 			List<InterruptionMetadata.ToolFeedback> feedbacks = interruptionMetadata.toolFeedbacks();
 			System.out.println("需要审批的工具调用数量: " + feedbacks.size());
@@ -677,7 +677,7 @@ public class HumanInTheLoopExample {
 					.nodeId(interruptionMetadata.node())
 					.state(interruptionMetadata.state());
 
-			// 对每个工具调用设置批准决策
+			// 对每个工具调用设置批准决�?
 			feedbacks.forEach(toolFeedback -> {
 				feedbackBuilder.addToolFeedback(
 						InterruptionMetadata.ToolFeedback.builder(toolFeedback)
@@ -689,39 +689,39 @@ public class HumanInTheLoopExample {
 			InterruptionMetadata approvalMetadata = feedbackBuilder.build();
 
 			// 使用批准决策恢复执行
-			System.out.println("\n=== 第二次调用：使用批准决策恢复工作流 ===");
+			System.out.println("\n=== 第二次调用：使用批准决策恢复工作�?===");
 			RunnableConfig resumableConfig = RunnableConfig.builder()
 					.threadId(threadId)
 					.addHumanFeedback(approvalMetadata)
 					.build();
 
 			nodeOutputOptional = compiledGraph.invokeAndGetOutput(Map.of(), resumableConfig);
-			System.out.println("\n工作流中嵌套ReactAgent的人工中断示例执行完成");
+			System.out.println("\n工作流中嵌套ReactAgent的人工中断示例执行完�?);
 
 		}
 
 	}
 
 	/**
-	 * 运行所有示例
+	 * 运行所有示�?
 	 */
 	public void runAllExamples() {
-		System.out.println("=== 人工介入（Human-in-the-Loop）示例 ===\n");
+		System.out.println("=== 人工介入（Human-in-the-Loop）示�?===\n");
 
 		try {
-//			System.out.println("示例1: 配置中断和基本使用");
+//			System.out.println("示例1: 配置中断和基本使�?);
 //			example1_basicConfiguration();
 //			System.out.println();
 //
-//			System.out.println("示例2: 批准（approve）决策");
+//			System.out.println("示例2: 批准（approve）决�?);
 //			example2_approveDecision();
 //			System.out.println();
 //
-//			System.out.println("示例3: 编辑（edit）决策");
+//			System.out.println("示例3: 编辑（edit）决�?);
 //			example3_editDecision();
 //			System.out.println();
 //
-//			System.out.println("示例4: 拒绝（reject）决策");
+//			System.out.println("示例4: 拒绝（reject）决�?);
 //			example4_rejectDecision();
 //			System.out.println();
 //
@@ -729,13 +729,13 @@ public class HumanInTheLoopExample {
 //			example5_multipleTools();
 //			System.out.println();
 
-			System.out.println("示例6: Workflow中嵌套ReactAgent的人工中断");
+			System.out.println("示例6: Workflow中嵌套ReactAgent的人工中�?);
 			example6_workflowWithHumanInTheLoop();
 			System.out.println();
 
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

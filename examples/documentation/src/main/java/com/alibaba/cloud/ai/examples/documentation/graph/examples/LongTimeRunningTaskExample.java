@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * 持久化执行示例
- * 演示长时间运行任务的持久化执行
+ * 持久化执行示�?
+ * 演示长时间运行任务的持久化执�?
  */
 public class LongTimeRunningTaskExample {
 
@@ -49,7 +49,7 @@ public class LongTimeRunningTaskExample {
 	 * 示例: 长时间运行的数据处理任务
 	 */
 	public static void longRunningDataProcessingTask() throws GraphStateException {
-		// 定义状态
+		// 定义状�?
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
 			keyStrategyMap.put("items", new ReplaceStrategy());
@@ -58,12 +58,12 @@ public class LongTimeRunningTaskExample {
 			return keyStrategyMap;
 		};
 
-		// 处理数据的节点
+		// 处理数据的节�?
 		var processData = node_async(state -> {
 			List<String> items = (List<String>) state.value("items").orElse(List.of());
 			int processedCount = (int) state.value("processedCount").orElse(0);
 
-			// 批量处理（例如每次处理 100 个）
+			// 批量处理（例如每次处�?100 个）
 			int batchSize = 100;
 			int start = processedCount;
 			int end = Math.min(start + batchSize, items.size());
@@ -79,7 +79,7 @@ public class LongTimeRunningTaskExample {
 			);
 		});
 
-		// 检查是否完成
+		// 检查是否完�?
 		var checkComplete = edge_async(state -> {
 			int processedCount = (int) state.value("processedCount").orElse(0);
 			List<String> items = (List<String>) state.value("items").orElse(List.of());
@@ -87,14 +87,14 @@ public class LongTimeRunningTaskExample {
 			return processedCount >= items.size() ? END : "process_data";
 		});
 
-		// 创建图
+		// 创建�?
 		StateGraph stateGraph = new StateGraph(keyStrategyFactory)
 				.addNode("process_data", processData)
 				.addEdge(START, "process_data")
 				.addConditionalEdges("process_data", checkComplete,
 						Map.of(END, END, "process_data", "process_data"));
 
-		// 配置持久化
+		// 配置持久�?
 		SaverConfig saverConfig = SaverConfig.builder()
 				.register(new MemorySaver())
 				.build();
@@ -140,14 +140,14 @@ public class LongTimeRunningTaskExample {
 		catch (Exception e) {
 			System.err.println("第一次执行失败，准备重试: " + e.getMessage());
 
-			// 使用相同的 threadId 重新执行，将从检查点恢复
-			// 传入 null 作为输入，表示从上次状态继续
+			// 使用相同�?threadId 重新执行，将从检查点恢复
+			// 传入 null 作为输入，表示从上次状态继�?
 			graph.invoke(Map.of(), config);
 		}
 	}
 
 	public static void main(String[] args) {
-		System.out.println("=== 持久化执行示例 ===\n");
+		System.out.println("=== 持久化执行示�?===\n");
 
 		try {
 			// 示例 1: 长时间运行的数据处理任务
@@ -155,16 +155,16 @@ public class LongTimeRunningTaskExample {
 			longRunningDataProcessingTask();
 			System.out.println();
 
-			// 示例 2: 从错误中恢复（需要 CompiledGraph）
+			// 示例 2: 从错误中恢复（需�?CompiledGraph�?
 			System.out.println("示例 2: 从错误中恢复");
-			System.out.println("注意: 此示例需要 CompiledGraph，跳过执行");
+			System.out.println("注意: 此示例需�?CompiledGraph，跳过执�?);
 			// errorRecoveryExample(graph);
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
+			System.out.println("所有示例执行完�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

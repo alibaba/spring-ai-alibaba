@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * 子图作为 StateGraph 示例
- * 演示如何将 StateGraph 组合使用
+ * 演示如何�?StateGraph 组合使用
  */
 public class SubgraphAsStateGraphExample {
 
@@ -93,7 +93,7 @@ public class SubgraphAsStateGraphExample {
 				.addNode("prepare", node_async(state -> {
 					return Map.of("data", "hello world");
 				}))
-				// 将子图作为节点添加
+				// 将子图作为节点添�?
 				.addNode("process", subGraph)
 				.addNode("finalize", node_async(state -> {
 					String output = (String) state.value("output").orElse("");
@@ -117,7 +117,7 @@ public class SubgraphAsStateGraphExample {
 			return strategies;
 		};
 
-		// 先编译子图
+		// 先编译子�?
 		CompiledGraph compiledSubGraph = createProcessingSubGraph().compile();
 
 		// 在父图中使用
@@ -142,11 +142,11 @@ public class SubgraphAsStateGraphExample {
 		System.out.println("=== 子图作为 StateGraph 示例 ===");
 		StateGraph parentGraph1 = createParentGraphWithDirectEmbedding();
 		StateGraph parentGraph2 = createParentGraphWithCompiledSubGraph();
-		System.out.println("所有示例执行完成");
+		System.out.println("所有示例执行完�?);
 	}
 
 	/**
-	 * 状态隔离示例
+	 * 状态隔离示�?
 	 */
 	public static class IsolatedSubGraphNode implements NodeAction {
 		private final CompiledGraph subGraph;
@@ -157,16 +157,16 @@ public class SubgraphAsStateGraphExample {
 
 		@Override
 		public Map<String, Object> apply(OverAllState parentState) {
-			// 提取父状态数据
+			// 提取父状态数�?
 			String input = (String) parentState.value("input").orElse("");
 
-			// 创建子图独立状态
+			// 创建子图独立状�?
 			Map<String, Object> subState = Map.of("subInput", input);
 
 			// 执行子图
 			Optional<OverAllState> subResult = subGraph.invoke(subState);
 
-			// 将子图结果映射回父状态
+			// 将子图结果映射回父状�?
 			String output = (String) subResult.get().value("subOutput").orElse("");
 			return Map.of("output", output);
 		}

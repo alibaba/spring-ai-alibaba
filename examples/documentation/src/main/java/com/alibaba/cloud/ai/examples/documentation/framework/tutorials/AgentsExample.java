@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ public class AgentsExample {
 	}
 
 	/**
-	 * 示例2：高级模型配置
+	 * 示例2：高级模型配�?
 	 */
 	public static void advancedModelConfiguration() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -97,9 +97,9 @@ public class AgentsExample {
 		ChatModel chatModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
-						.temperature(0.7)      // 控制随机性
-						.maxToken(2000)       // 最大输出长度
-						.topP(0.9)            // 核采样参数
+						.temperature(0.7)      // 控制随机�?
+						.maxToken(2000)       // 最大输出长�?
+						.topP(0.9)            // 核采样参�?
 						.enableThinking(true)
 						.build())
 				.build();
@@ -119,7 +119,7 @@ public class AgentsExample {
 		// 创建工具回调
 		ToolCallback searchTool = FunctionToolCallback
 				.builder("search", new SearchTool())
-				.description("搜索信息的工具")
+				.description("搜索信息的工�?)
 				.inputType(String.class)
 				.build();
 
@@ -146,12 +146,12 @@ public class AgentsExample {
 		ReactAgent agent = ReactAgent.builder()
 				.name("my_agent")
 				.model(chatModel)
-				.systemPrompt("你是一个专业的技术助手。请准确、简洁地回答问题。")
+				.systemPrompt("你是一个专业的技术助手。请准确、简洁地回答问题�?)
 				.build();
 	}
 
 	/**
-	 * 示例6：使用 instruction
+	 * 示例6：使�?instruction
 	 */
 	public static void instructionUsage() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -163,15 +163,15 @@ public class AgentsExample {
 				.build();
 
 		String instruction = """
-				你是一个经验丰富的软件架构师。
+				你是一个经验丰富的软件架构师�?
 				
-				在回答问题时，请：
-				1. 首先理解用户的核心需求
-				2. 分析可能的技术方案
+				在回答问题时，请�?
+				1. 首先理解用户的核心需�?
+				2. 分析可能的技术方�?
 				3. 提供清晰的建议和理由
 				4. 如果需要更多信息，主动询问
 				
-				保持专业、友好的语气。
+				保持专业、友好的语气�?
 				""";
 
 		ReactAgent agent = ReactAgent.builder()
@@ -216,7 +216,7 @@ public class AgentsExample {
 				.model(chatModel)
 				.build();
 
-		// 字符串输入
+		// 字符串输�?
 		AssistantMessage response = agent.call("杭州的天气怎么样？");
 		System.out.println(response.getText());
 
@@ -226,14 +226,14 @@ public class AgentsExample {
 
 		// 多个消息
 		List<Message> messages = List.of(
-				new UserMessage("我想了解 Java 多线程"),
-				new UserMessage("特别是线程池的使用")
+				new UserMessage("我想了解 Java 多线�?),
+				new UserMessage("特别是线程池的使�?)
 		);
 		AssistantMessage response3 = agent.call(messages);
 	}
 
 	/**
-	 * 示例9：获取完整状态
+	 * 示例9：获取完整状�?
 	 */
 	public static void getFullState() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -258,7 +258,7 @@ public class AgentsExample {
 			Optional<Object> messages = state.value("messages");
 			List<Message> messageList = (List<Message>) messages.get();
 
-			// 访问自定义状态
+			// 访问自定义状�?
 			Optional<Object> customData = state.value("custom_key");
 
 			System.out.println("完整状态：" + state);
@@ -266,7 +266,7 @@ public class AgentsExample {
 	}
 
 	/**
-	 * 示例10：使用配置
+	 * 示例10：使用配�?
 	 */
 	public static void useConfiguration() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -294,7 +294,7 @@ public class AgentsExample {
 	// ==================== 调用 Agent ====================
 
 	/**
-	 * 示例10.1：流式调用 - 基础用法
+	 * 示例10.1：流式调�?- 基础用法
 	 */
 	public static void basicStreamInvocation() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -311,7 +311,7 @@ public class AgentsExample {
 				.build();
 
 		// 流式输出
-		Flux<NodeOutput> stream = agent.stream("帮我写一首关于春天的诗");
+		Flux<NodeOutput> stream = agent.stream("帮我写一首关于春天的�?);
 
 		stream.subscribe(
 				output -> {
@@ -328,7 +328,7 @@ public class AgentsExample {
 	}
 
 	/**
-	 * 示例10.2：流式调用 - 高级用法
+	 * 示例10.2：流式调�?- 高级用法
 	 */
 	public static void advancedStreamInvocation() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -349,23 +349,23 @@ public class AgentsExample {
 				.threadId("stream_thread_1")
 				.build();
 
-		// 使用配置的流式调用
-		Flux<NodeOutput> stream = agent.stream(new UserMessage("解释一下量子计算"), config);
+		// 使用配置的流式调�?
+		Flux<NodeOutput> stream = agent.stream(new UserMessage("解释一下量子计�?), config);
 
 		// 使用 doOnNext 处理中间输出
 		stream.doOnNext(output -> {
 					if (!output.isSTART() && !output.isEND()) {
-						System.out.println("处理中...");
+						System.out.println("处理�?..");
 						System.out.println("当前节点: " + output.node());
 					}
 				})
-				.doOnComplete(() -> System.out.println("所有节点处理完成"))
-				.doOnError(e -> System.err.println("流处理错误: " + e.getMessage()))
+				.doOnComplete(() -> System.out.println("所有节点处理完�?))
+				.doOnError(e -> System.err.println("流处理错�? " + e.getMessage()))
 				.blockLast(); // 阻塞等待完成
 	}
 
 	/**
-	 * 示例10.3：流式调用 - 收集所有输出
+	 * 示例10.3：流式调�?- 收集所有输�?
 	 */
 	public static void collectStreamOutputs() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -381,17 +381,17 @@ public class AgentsExample {
 				.model(chatModel)
 				.build();
 
-		Flux<NodeOutput> stream = agent.stream("分析机器学习的应用场景");
+		Flux<NodeOutput> stream = agent.stream("分析机器学习的应用场�?);
 
-		// 收集所有输出
+		// 收集所有输�?
 		List<NodeOutput> outputs = stream.collectList().block();
 
 		if (outputs != null) {
-			System.out.println("总共收到 " + outputs.size() + " 个节点输出");
+			System.out.println("总共收到 " + outputs.size() + " 个节点输�?);
 
-			// 获取最终输出
+			// 获取最终输�?
 			NodeOutput lastOutput = outputs.get(outputs.size() - 1);
-			System.out.println("最终状态: " + lastOutput.state());
+			System.out.println("最终状�? " + lastOutput.state());
 
 			// 获取消息
 			Optional<Object> messages = lastOutput.state().value("messages");
@@ -399,7 +399,7 @@ public class AgentsExample {
 				List<Message> messageList = (List<Message>) messages.get();
 				Message lastMessage = messageList.get(messageList.size() - 1);
 				if (lastMessage instanceof AssistantMessage assistantMsg) {
-					System.out.println("最终回复: " + assistantMsg.getText());
+					System.out.println("最终回�? " + assistantMsg.getText());
 				}
 			}
 		}
@@ -421,13 +421,13 @@ public class AgentsExample {
 				.saver(new MemorySaver())
 				.build();
 
-		AssistantMessage response = agent.call("写一首关于春天的诗");
-		// 输出会遵循 PoemOutput 的结构
+		AssistantMessage response = agent.call("写一首关于春天的�?);
+		// 输出会遵�?PoemOutput 的结�?
 		System.out.println(response.getText());
 	}
 
 	/**
-	 * 示例12：使用 outputSchema
+	 * 示例12：使�?outputSchema
 	 */
 	public static void structuredOutputWithSchema() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -449,11 +449,11 @@ public class AgentsExample {
 				.saver(new MemorySaver())
 				.build();
 
-		AssistantMessage response = agent.call("分析这段文本：春天来了，万物复苏。");
+		AssistantMessage response = agent.call("分析这段文本：春天来了，万物复苏�?);
 	}
 
 	/**
-	 * 示例13：配置记忆
+	 * 示例13：配置记�?
 	 */
 	public static void configureMemory() throws GraphRunnerException {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -471,7 +471,7 @@ public class AgentsExample {
 				.saver(new MemorySaver())
 				.build();
 
-		// 使用 thread_id 维护对话上下文
+		// 使用 thread_id 维护对话上下�?
 		RunnableConfig config = RunnableConfig.builder()
 				.threadId("user_123")
 				.build();
@@ -480,62 +480,62 @@ public class AgentsExample {
 		agent.call("我叫什么名字？", config);  // 输出: "你叫张三"
 	}
 
-	// ==================== 结构化输出 ====================
+	// ==================== 结构化输�?====================
 
 	public static void main(String[] args) {
 		System.out.println("=== Agents Tutorial Examples ===");
-		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
+		System.out.println("注意：需要设�?AI_DASHSCOPE_API_KEY 环境变量\n");
 
 		try {
 			System.out.println("\n--- 示例1：基础模型配置 ---");
 			basicModelConfiguration();
 
-			System.out.println("\n--- 示例2：高级模型配置 ---");
+			System.out.println("\n--- 示例2：高级模型配�?---");
 			advancedModelConfiguration();
 
-			System.out.println("\n--- 示例3：工具使用 ---");
+			System.out.println("\n--- 示例3：工具使�?---");
 			toolUsage();
 
 			System.out.println("\n--- 示例5：基础 System Prompt ---");
 			basicSystemPrompt();
 
-			System.out.println("\n--- 示例6：使用 instruction ---");
+			System.out.println("\n--- 示例6：使�?instruction ---");
 			instructionUsage();
 
-			System.out.println("\n--- 示例7：动态 System Prompt ---");
+			System.out.println("\n--- 示例7：动�?System Prompt ---");
 			dynamicSystemPrompt();
 
 			System.out.println("\n--- 示例8：基础调用 ---");
 			basicInvocation();
 
-			System.out.println("\n--- 示例9：获取完整状态 ---");
+			System.out.println("\n--- 示例9：获取完整状�?---");
 			getFullState();
 
-			System.out.println("\n--- 示例10：使用配置 ---");
+			System.out.println("\n--- 示例10：使用配�?---");
 			useConfiguration();
 
-			System.out.println("\n--- 示例10.1：流式调用 - 基础用法 ---");
+			System.out.println("\n--- 示例10.1：流式调�?- 基础用法 ---");
 			basicStreamInvocation();
 
-			System.out.println("\n--- 示例10.2：流式调用 - 高级用法 ---");
+			System.out.println("\n--- 示例10.2：流式调�?- 高级用法 ---");
 			advancedStreamInvocation();
 
-			System.out.println("\n--- 示例10.3：流式调用 - 收集所有输出 ---");
+			System.out.println("\n--- 示例10.3：流式调�?- 收集所有输�?---");
 			collectStreamOutputs();
 
-			System.out.println("\n--- 示例11：使用 outputType ---");
+			System.out.println("\n--- 示例11：使�?outputType ---");
 			structuredOutputWithType();
 
-			System.out.println("\n--- 示例12：使用 outputSchema ---");
+			System.out.println("\n--- 示例12：使�?outputSchema ---");
 			structuredOutputWithSchema();
 
-			System.out.println("\n--- 示例13：配置记忆 ---");
+			System.out.println("\n--- 示例13：配置记�?---");
 			configureMemory();
 
-			System.out.println("\n=== 所有示例执行完成 ===");
+			System.out.println("\n=== 所有示例执行完�?===");
 		}
 		catch (GraphRunnerException e) {
-			System.err.println("执行示例时发生错误: " + e.getMessage());
+			System.err.println("执行示例时发生错�? " + e.getMessage());
 			e.printStackTrace();
 		}
 		catch (Exception e) {
@@ -550,14 +550,14 @@ public class AgentsExample {
 	public static class SearchTool implements BiFunction<String, ToolContext, String> {
 		@Override
 		public String apply(
-				@ToolParam(description = "搜索关键词") String query,
+				@ToolParam(description = "搜索关键�?) String query,
 				ToolContext toolContext) {
-			return "搜索结果：" + query;
+			return "搜索结果�? + query;
 		}
 	}
 
 	/**
-	 * 示例4：工具错误处理
+	 * 示例4：工具错误处�?
 	 */
 	public static class ToolErrorInterceptor extends ToolInterceptor {
 		@Override
@@ -580,12 +580,12 @@ public class AgentsExample {
 	// ==================== Memory ====================
 
 	/**
-	 * 示例7：动态 System Prompt
+	 * 示例7：动�?System Prompt
 	 */
 	public static class DynamicPromptInterceptor extends ModelInterceptor {
 		@Override
 		public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
-			// 基于上下文动态调整 system prompt
+			// 基于上下文动态调�?system prompt
 			Map<String, Object> context = request.getContext();
 
 			// 根据上下文构建动态提示词
@@ -602,7 +602,7 @@ public class AgentsExample {
 				);
 			}
 
-			// 创建增强的请求
+			// 创建增强的请�?
 			ModelRequest modifiedRequest = ModelRequest.builder(request)
 					.systemMessage(enhancedSystemMessage)
 					.build();
@@ -616,21 +616,21 @@ public class AgentsExample {
 
 			return switch (userRole) {
 				case "expert" -> """
-						你正在与技术专家对话。
+						你正在与技术专家对话�?
 						- 使用专业术语
-						- 深入技术细节
+						- 深入技术细�?
 						- 提供高级建议
 						""";
 				case "beginner" -> """
-						你正在与初学者对话。
+						你正在与初学者对话�?
 						- 使用简单易懂的语言
 						- 详细解释概念
-						- 提供入门级建议
+						- 提供入门级建�?
 						""";
 				default -> """
-						你是一个专业的助手。
-						- 根据问题复杂度调整回答
-						- 保持友好和专业
+						你是一个专业的助手�?
+						- 根据问题复杂度调整回�?
+						- 保持友好和专�?
 						""";
 			};
 		}
@@ -644,7 +644,7 @@ public class AgentsExample {
 	// ==================== Hooks ====================
 
 	/**
-	 * 示例11：使用 outputType
+	 * 示例11：使�?outputType
 	 */
 	public static class PoemOutput {
 		private String title;
@@ -721,7 +721,7 @@ public class AgentsExample {
 	}
 
 	/**
-	 * 示例14：AgentHook - 在 Agent 开始/结束时执行
+	 * 示例14：AgentHook - �?Agent 开�?结束时执�?
 	 */
 	public static class LoggingHook extends AgentHook {
 		@Override
@@ -739,7 +739,7 @@ public class AgentsExample {
 
 		@Override
 		public CompletableFuture<Map<String, Object>> beforeAgent(OverAllState state, RunnableConfig config) {
-			System.out.println("Agent 开始执行");
+			System.out.println("Agent 开始执�?);
 			return CompletableFuture.completedFuture(Map.of());
 		}
 
@@ -754,7 +754,7 @@ public class AgentsExample {
 
 	/**
 	 * 示例15：MessagesModelHook - 在模型调用前修剪消息
-	 * 使用 MessagesModelHook 实现，在模型调用前修剪消息列表，只保留最后 MAX_MESSAGES 条消息
+	 * 使用 MessagesModelHook 实现，在模型调用前修剪消息列表，只保留最�?MAX_MESSAGES 条消�?
 	 */
 	@HookPositions({HookPosition.BEFORE_MODEL})
 	public static class MessageTrimmingHook extends MessagesModelHook {
@@ -767,35 +767,35 @@ public class AgentsExample {
 
 		@Override
 		public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
-			// 如果消息数量超过限制，只保留最后 MAX_MESSAGES 条消息
+			// 如果消息数量超过限制，只保留最�?MAX_MESSAGES 条消�?
 			if (previousMessages.size() > MAX_MESSAGES) {
 				List<Message> trimmedMessages = previousMessages.subList(
 						previousMessages.size() - MAX_MESSAGES,
 						previousMessages.size()
 				);
-				// 使用 REPLACE 策略替换所有消息
+				// 使用 REPLACE 策略替换所有消�?
 				return new AgentCommand(trimmedMessages, UpdatePolicy.REPLACE);
 			}
-			// 如果消息数量未超过限制，返回原始消息（不进行修改）
+			// 如果消息数量未超过限制，返回原始消息（不进行修改�?
 			return new AgentCommand(previousMessages);
 		}
 	}
 
 	/**
-	 * 示例16：ModelInterceptor - 内容安全检查
+	 * 示例16：ModelInterceptor - 内容安全检�?
 	 */
 	public static class GuardrailInterceptor extends ModelInterceptor {
 		@Override
 		public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
-			// 前置：检查输入
+			// 前置：检查输�?
 			if (containsSensitiveContent(request.getMessages())) {
-				return ModelResponse.of(new AssistantMessage("检测到不适当的内容"));
+				return ModelResponse.of(new AssistantMessage("检测到不适当的内�?));
 			}
 
 			// 执行调用
 			ModelResponse response = handler.call(request);
 
-			// 后置：检查输出
+			// 后置：检查输�?
 			return sanitizeIfNeeded(response);
 		}
 
@@ -818,7 +818,7 @@ public class AgentsExample {
 	// ==================== Main 方法 ====================
 
 	/**
-	 * 示例17：ToolInterceptor - 监控和错误处理
+	 * 示例17：ToolInterceptor - 监控和错误处�?
 	 */
 	public static class ToolMonitoringInterceptor extends ToolInterceptor {
 		@Override

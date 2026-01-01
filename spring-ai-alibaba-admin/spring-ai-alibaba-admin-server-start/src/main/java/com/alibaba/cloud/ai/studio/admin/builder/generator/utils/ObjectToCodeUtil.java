@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * 定义一些常用对象的构造方法代码
+ * 定义一些常用对象的构造方法代�?
  *
  * @author vlsmb
  * @since 2025/9/5
@@ -57,7 +57,7 @@ public final class ObjectToCodeUtil {
 		}
 		else if (object instanceof String) {
 			try {
-				// 尝试使用Jackson打印字符串，以便转义特殊字符，如果失败则进行简单处理
+				// 尝试使用Jackson打印字符串，以便转义特殊字符，如果失败则进行简单处�?
 				return objectMapper.writeValueAsString(object.toString());
 			}
 			catch (Exception e) {

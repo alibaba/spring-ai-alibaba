@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,8 +81,8 @@ class ContextEditingTest {
 						.build();
 
 		try {
-			Optional<OverAllState> result = agent.invoke("帮我写一篇100字左右散文。"
-					+ "工具调用要求：先调用 `poem` 工具写一首诗，然后调用 `reviewer` 工具对诗进行润色，再次调用 `poem` 工具重新改写诗，最后调用 `reviewer` 工具，输出最终诗词。");
+			Optional<OverAllState> result = agent.invoke("帮我写一�?00字左右散文�?
+					+ "工具调用要求：先调用 `poem` 工具写一首诗，然后调�?`reviewer` 工具对诗进行润色，再次调�?`poem` 工具重新改写诗，最后调�?`reviewer` 工具，输出最终诗词�?);
 
 			assertEquals(2, poetTool.count, "Poet tool should be called twice");
 			assertEquals(2, reviewerTool.count, "Reviewer tool should be called twice");

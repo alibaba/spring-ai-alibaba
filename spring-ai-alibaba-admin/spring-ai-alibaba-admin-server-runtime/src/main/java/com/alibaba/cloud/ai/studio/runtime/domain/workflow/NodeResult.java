@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Data
 public class NodeResult implements Serializable {
 
-	// 是否多分支节点
+	// 是否多分支节�?
 	@JsonProperty("is_multi_branch")
 	private boolean isMultiBranch = false;
 
-	// 多分支节点结果
+	// 多分支节点结�?
 	@JsonProperty("multi_branch_results")
 	private List<MultiBranchReference> multiBranchResults;
 
@@ -85,14 +85,14 @@ public class NodeResult implements Serializable {
 	@JsonProperty("parent_node_id")
 	private String parentNodeId;
 
-	// 判���是否批处理节点
+	// 判���是否批处理节�?
 	@JsonProperty("is_batch")
 	private boolean isBatch = false;
 
-	// 批处理结果返回
+	// 批处理结果返�?
 	private List<NodeResult> batches = new CopyOnWriteArrayList<>();
 
-	// 批次序号,仅isBatch = false时生效
+	// 批次序号,仅isBatch = false时生�?
 	private Integer index;
 
 	private String ext;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 public class ParallelBranchExample {
 
 	/**
-	 * 创建节点的辅助方法
+	 * 创建节点的辅助方�?
 	 */
 	private static AsyncNodeAction makeNode(String message) {
 		return node_async(state -> Map.of("messages", List.of(message)));
@@ -62,12 +62,12 @@ public class ParallelBranchExample {
 				.addNode("A3", makeNode("A3"))
 				.addNode("B", makeNode("B"))
 				.addNode("C", makeNode("C"))
-				.addEdge("A", "A1")    // A 到 A1
-				.addEdge("A", "A2")    // A 到 A2（并行）
-				.addEdge("A", "A3")    // A 到 A3（并行）
-				.addEdge("A1", "B")    // A1 汇聚到 B
-				.addEdge("A2", "B")    // A2 汇聚到 B
-				.addEdge("A3", "B")    // A3 汇聚到 B
+				.addEdge("A", "A1")    // A �?A1
+				.addEdge("A", "A2")    // A �?A2（并行）
+				.addEdge("A", "A3")    // A �?A3（并行）
+				.addEdge("A1", "B")    // A1 汇聚�?B
+				.addEdge("A2", "B")    // A2 汇聚�?B
+				.addEdge("A3", "B")    // A3 汇聚�?B
 				.addEdge("B", "C")
 				.addEdge(START, "A")
 				.addEdge("C", END);
@@ -82,13 +82,13 @@ public class ParallelBranchExample {
 		// 执行 Graph
 		compiledGraph.stream(Map.of())
 				.doOnNext(step -> System.out.println(step))
-				.doOnError(error -> System.err.println("流错误: " + error.getMessage()))
-				.doOnComplete(() -> System.out.println("流完成"))
+				.doOnError(error -> System.err.println("流错�? " + error.getMessage()))
+				.doOnComplete(() -> System.out.println("流完�?))
 				.blockLast();
 	}
 
 	/**
-	 * 使用编译的子图作为并行节点
+	 * 使用编译的子图作为并行节�?
 	 */
 	public static CompiledGraph useCompiledSubgraphAsParallelNode() throws GraphStateException {
 		KeyStrategyFactory keyStrategyFactory = () -> {
@@ -143,7 +143,7 @@ public class ParallelBranchExample {
 			// 示例 1: 定义带并行分支的 Graph
 			System.out.println("示例 1: 定义带并行分支的 Graph");
 			CompiledGraph graph = createParallelBranchGraph();
-			System.out.println("并行分支图创建完成");
+			System.out.println("并行分支图创建完�?);
 			System.out.println();
 
 			// 示例 2: 执行并行 Graph
@@ -151,16 +151,16 @@ public class ParallelBranchExample {
 			executeParallelGraph(graph);
 			System.out.println();
 
-			// 示例 3: 使用编译的子图作为并行节点
-			System.out.println("示例 3: 使用编译的子图作为并行节点");
+			// 示例 3: 使用编译的子图作为并行节�?
+			System.out.println("示例 3: 使用编译的子图作为并行节�?);
 			CompiledGraph subgraphGraph = useCompiledSubgraphAsParallelNode();
 			System.out.println("子图作为并行节点示例创建完成");
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
+			System.out.println("所有示例执行完�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

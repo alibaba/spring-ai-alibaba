@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,7 @@ class RedisSaverTest {
 		return "true".equalsIgnoreCase(System.getProperty("CI", System.getenv("CI")));
 	}
 
-	// 使用较为稳定的版本
+	// 使用较为稳定的版�?
 
 	@Container
 	private static final GenericContainer<?> redisContainer = new GenericContainer<>(
@@ -120,7 +120,7 @@ class RedisSaverTest {
 		String threadId = "test-thread-" + UUID.randomUUID();
 		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
 
-		// 构造 checkpoint
+		// 构�?checkpoint
 		Checkpoint cp1 = Checkpoint.builder()
 				.id("cp1")
 				.state(java.util.Map.of("data", "data1"))
@@ -134,17 +134,17 @@ class RedisSaverTest {
 				.nextNodeId("node2")
 				.build();
 
-		// put 第一个
+		// put 第一�?
 		redisSaver.put(config, cp1);
-		// put 第二个
+		// put 第二�?
 		redisSaver.put(config, cp2);
 
-		// list 检查
+		// list 检�?
 		List<Checkpoint> list = (List<Checkpoint>) redisSaver.list(config);
 		assertEquals(2, list.size());
-		assertEquals("cp2", list.get(0).getId()); // push 到头部
+		assertEquals("cp2", list.get(0).getId()); // push 到头�?
 
-		// get 最新
+		// get 最�?
 		Optional<Checkpoint> latest = redisSaver.get(config);
 		assertTrue(latest.isPresent());
 		assertEquals("cp2", latest.get().getId());

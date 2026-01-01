@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,9 +112,9 @@ class ReactAgentOpenAiTest {
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver()).build();
 
 		try {
-			Optional<OverAllState> result = agent.invoke("帮我写一篇100字左右散文。");
-			Optional<OverAllState> result2 = agent.invoke(new UserMessage("帮我写一首现代诗歌。"));
-			Optional<OverAllState> result3 = agent.invoke("帮我写一首现代诗歌2。");
+			Optional<OverAllState> result = agent.invoke("帮我写一�?00字左右散文�?);
+			Optional<OverAllState> result2 = agent.invoke(new UserMessage("帮我写一首现代诗歌�?));
+			Optional<OverAllState> result3 = agent.invoke("帮我写一首现代诗�?�?);
 
 			assertTrue(result.isPresent(), "First result should be present");
 			OverAllState state1 = result.get();
@@ -145,7 +145,7 @@ class ReactAgentOpenAiTest {
 	public void testReactAgentMessage() throws Exception {
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver())
 				.build();
-		AssistantMessage message = agent.call("帮我写一篇100字左右散文。");
+		AssistantMessage message = agent.call("帮我写一�?00字左右散文�?);
 		System.out.println(message.getText());
 	}
 
@@ -179,7 +179,7 @@ class ReactAgentOpenAiTest {
 				.outputSchema(customSchema)
 				.build();
 
-		AssistantMessage message = agent.call("帮我写一首关于春天的诗歌。");
+		AssistantMessage message = agent.call("帮我写一首关于春天的诗歌�?);
 		assertNotNull(message, "Message should not be null");
 		assertNotNull(message.getText(), "Message text should not be null");
 		System.out.println("=== Output with custom schema ===");
@@ -201,7 +201,7 @@ class ReactAgentOpenAiTest {
 				.outputType(PoemOutput.class)
 				.build();
 
-		AssistantMessage message = agent.call("帮我写一首关于秋天的现代诗。");
+		AssistantMessage message = agent.call("帮我写一首关于秋天的现代诗�?);
 		assertNotNull(message, "Message should not be null");
 		assertNotNull(message.getText(), "Message text should not be null");
 		System.out.println("=== Output with outputType (auto-generated schema) ===");
@@ -245,7 +245,7 @@ class ReactAgentOpenAiTest {
 				.outputSchema(jsonSchema)
 				.build();
 
-		Optional<OverAllState> result = agent.invoke("分析这句话：春天来了，万物复苏，生机勃勃。");
+		Optional<OverAllState> result = agent.invoke("分析这句话：春天来了，万物复苏，生机勃勃�?);
 
 		assertTrue(result.isPresent(), "Result should be present");
 		System.out.println("=== Full state output ===");
@@ -279,7 +279,7 @@ class ReactAgentOpenAiTest {
 		System.out.println();
 
 		// Use stream() method to get streaming output
-		Flux<NodeOutput> stream = agent.stream("帮我写一首关于秋天的短诗，不超过50字。");
+		Flux<NodeOutput> stream = agent.stream("帮我写一首关于秋天的短诗，不超过50字�?);
 
 		AtomicInteger chunkCount = new AtomicInteger(0);
 		StringBuilder completeContent = new StringBuilder();

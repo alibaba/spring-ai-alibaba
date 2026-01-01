@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import java.util.Map;
  */
 public class Agent {
 
-	// 基础属性
+	// 基础属�?
 	private String agentClass; // ReactAgent, SequentialAgent, ParallelAgent.etc
 
 	private String name;
@@ -37,7 +37,7 @@ public class Agent {
 	@Deprecated
 	private String inputKey;
 
-	// 支持多输入键（与 schema: input_keys 对齐）
+	// 支持多输入键（与 schema: input_keys 对齐�?
 	@Deprecated
 	private List<String> inputKeys;
 
@@ -61,13 +61,13 @@ public class Agent {
 	// 流程控制配置
 	private Map<String, Object> flowConfig;
 
-	// 状态管理配置
+	// 状态管理配�?
 	private Map<String, String> stateConfig;
 
 	// 钩子配置
 	private Map<String, Object> hooks;
 
-	// 动态 handle：原样透传每种 agent type 的专属配置
+	// 动�?handle：原样透传每种 agent type 的专属配�?
 	private Map<String, Object> handle;
 
 	public Agent() {

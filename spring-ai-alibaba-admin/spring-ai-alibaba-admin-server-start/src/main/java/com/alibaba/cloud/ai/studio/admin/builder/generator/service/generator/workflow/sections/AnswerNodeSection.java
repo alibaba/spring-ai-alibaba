@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class AnswerNodeSection implements NodeSection<AnswerNodeData> {
 		String id = node.getId();
 		StringBuilder sb = new StringBuilder();
 
-		sb.append("// —— AnswerNode [").append(id).append("] ——\n");
+		sb.append("// —�?AnswerNode [").append(id).append("] ——\n");
 		sb.append("AnswerNode ").append(varName).append(" = AnswerNode.builder()\n");
 
 		if (d.getAnswer() != null) {

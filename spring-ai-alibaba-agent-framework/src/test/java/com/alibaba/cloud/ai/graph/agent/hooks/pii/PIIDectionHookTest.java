@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,10 +61,10 @@ public class PIIDectionHookTest {
 
         ReactAgent agent = createAgent(hook, "test-pii-redact-agent", chatModel);
 
-        System.out.println("=== 测试PII检测（REDACT策略）===");
+        System.out.println("=== 测试PII检测（REDACT策略�?==");
 
         List<Message> messages = new ArrayList<>();
-        messages.add(new UserMessage("我的邮箱地址是 test@example.com，请记住它。"));
+        messages.add(new UserMessage("我的邮箱地址�?test@example.com，请记住它�?));
 
         Optional<OverAllState> result = agent.invoke(messages);
 
@@ -80,7 +80,7 @@ public class PIIDectionHookTest {
                 if (message instanceof UserMessage) {
                     String content = message.getText();
                     if (content.contains("[REDACTED_EMAIL]")) {
-                        System.out.println("✓ 成功检测并替换用户消息中的邮箱地址");
+                        System.out.println("�?成功检测并替换用户消息中的邮箱地址");
                     }
                 } else if (message instanceof AssistantMessage) {
                     String content = message.getText();
@@ -101,10 +101,10 @@ public class PIIDectionHookTest {
 
         ReactAgent agent = createAgent(hook, "test-pii-mask-agent", chatModel);
 
-        System.out.println("\n=== 测试PII检测（MASK策略）===");
+        System.out.println("\n=== 测试PII检测（MASK策略�?==");
 
         List<Message> messages = new ArrayList<>();
-        messages.add(new UserMessage("我的信用卡号是 1234 5678 9012 3456，请帮我检查一下。"));
+        messages.add(new UserMessage("我的信用卡号�?1234 5678 9012 3456，请帮我检查一下�?));
 
         Optional<OverAllState> result = agent.invoke(messages);
 
@@ -137,17 +137,17 @@ public class PIIDectionHookTest {
 
         ReactAgent agent = createAgent(hook, "test-pii-block-agent", chatModel);
 
-        System.out.println("\n=== 测试PII检测（BLOCK策略）===");
+        System.out.println("\n=== 测试PII检测（BLOCK策略�?==");
 
         List<Message> messages = new ArrayList<>();
-        messages.add(new UserMessage("我的服务器IP地址是 192.168.1.100，请不要泄露。"));
+        messages.add(new UserMessage("我的服务器IP地址�?192.168.1.100，请不要泄露�?));
 
         try {
             Optional<OverAllState> result = agent.invoke(messages);
-            System.out.println("未抛出异常，可能IP未被正确检测");
+            System.out.println("未抛出异常，可能IP未被正确检�?);
         } catch (Exception e) {
             if (e.getCause() instanceof com.alibaba.cloud.ai.graph.agent.hook.pii.PIIDetectionException) {
-                System.out.println("✓ 成功检测到IP地址并阻止处理: " + e.getCause().getMessage());
+                System.out.println("�?成功检测到IP地址并阻止处�? " + e.getCause().getMessage());
             } else {
                 System.out.println("抛出其他异常: " + e.getMessage());
             }
@@ -165,7 +165,7 @@ public class PIIDectionHookTest {
         System.out.println("\n=== 测试不带PII检测的对话 ===");
 
         List<Message> messages = new ArrayList<>();
-        messages.add(new UserMessage("你好，有什么可以帮助你的吗？"));
+        messages.add(new UserMessage("你好，有什么可以帮助你的吗�?));
 
         Optional<OverAllState> result = agent.invoke(messages);
 
@@ -176,7 +176,7 @@ public class PIIDectionHookTest {
         if (messagesObj instanceof List) {
             List<Message> resultMessages = (List<Message>) messagesObj;
             System.out.println("返回消息数量: " + resultMessages.size());
-            System.out.println("✓ 正常对话流程，未触发PII检测");
+            System.out.println("�?正常对话流程，未触发PII检�?);
         }
     }
 
@@ -194,7 +194,7 @@ public class PIIDectionHookTest {
         System.out.println("\n=== 测试自定义PII检测器 ===");
 
         List<Message> messages = new ArrayList<>();
-        messages.add(new UserMessage("我的手机号码是 13812345678，请保存。"));
+        messages.add(new UserMessage("我的手机号码�?13812345678，请保存�?));
 
         Optional<OverAllState> result = agent.invoke(messages);
 

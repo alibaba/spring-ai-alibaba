@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ public class EndNodeData extends NodeData {
 
 	private final static Pattern VAR_PATTERN = Pattern.compile("\\{(\\w+)}");
 
-	// textTemplate出现的变量名称
+	// textTemplate出现的变量名�?
 	private List<String> textTemplateVars;
 
 	public String getOutputKey() {
@@ -67,7 +67,7 @@ public class EndNodeData extends NodeData {
 
 	public void setTextTemplate(String textTemplate) {
 		this.textTemplate = textTemplate;
-		// 更新textTemplateVars，模板的{vars}为要提取的变量
+		// 更新textTemplateVars，模板的{vars}为要提取的变�?
 		Matcher matcher = VAR_PATTERN.matcher(textTemplate);
 		List<String> vars = new ArrayList<>();
 		while (matcher.find()) {

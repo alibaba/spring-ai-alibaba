@@ -1,5 +1,5 @@
 #
-# Copyright 2024-2025 the original author or authors.
+# Copyright 2024-2026 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ jobs:
           echo ""
 
           if python tools/scripts/check-chinese-content.py --fail-on-found; then
-            echo "✅ No Chinese content found - Check passed!"
+            echo "�?No Chinese content found - Check passed!"
           else
             echo ""
             echo "## 🚨 Chinese Content Detected in Jmanus"
@@ -55,25 +55,25 @@ jobs:
             echo ""
             echo "### Modification Suggestions:"
             echo ""
-            echo "1. **Chinese Comments** → Change to English Comments"
+            echo "1. **Chinese Comments** �?Change to English Comments"
             echo "   Example:"
-            echo "   // ❌ Incorrect: // 这是一个用户服务类"
-            echo "   // ✅ Correct:   // This is a user service class"
+            echo "   // �?Incorrect: // 这是一个用户服务类"
+            echo "   // �?Correct:   // This is a user service class"
             echo ""
-            echo "2. **Chinese Strings** → Extract to resource files or use English"
+            echo "2. **Chinese Strings** �?Extract to resource files or use English"
             echo "   Example:"
-            echo "   // ❌ Incorrect: String message = \"用户不存在\";"
-            echo "   // ✅ Correct:   String message = messageSource.getMessage(\"user.not.found\", null, locale);"
+            echo "   // �?Incorrect: String message = \"用户不存在\";"
+            echo "   // �?Correct:   String message = messageSource.getMessage(\"user.not.found\", null, locale);"
             echo ""
-            echo "3. **Chinese Identifiers** → Use English identifiers"
+            echo "3. **Chinese Identifiers** �?Use English identifiers"
             echo "   Example:"
-            echo "   // ❌ Incorrect: String 用户名 = \"admin\";"
-            echo "   // ✅ Correct:   String username = \"admin\";"
+            echo "   // �?Incorrect: String 用户�?= \"admin\";"
+            echo "   // �?Correct:   String username = \"admin\";"
             echo ""
-            echo "4. **Vue Template Content** → Use i18n for internationalization"
+            echo "4. **Vue Template Content** �?Use i18n for internationalization"
             echo "   Example:"
-            echo "   <!-- ❌ Incorrect: <div>用户管理</div> -->"
-            echo "   <!-- ✅ Correct:   <div>{{ \$t('user.management') }}</div> -->"
+            echo "   <!-- �?Incorrect: <div>用户管理</div> -->"
+            echo "   <!-- �?Correct:   <div>{{ \$t('user.management') }}</div> -->"
             echo ""
             echo "**Note:** i18n configuration files are automatically excluded from this check."
             echo ""

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 /**
- * Agent 项目生成器：将 Agent Schema 转为最小可运行工程（编译 Agent 为 CompiledGraph）
+ * Agent 项目生成器：�?Agent Schema 转为最小可运行工程（编�?Agent �?CompiledGraph�?
  */
 @Component
 public class AgentProjectGenerator implements ProjectGenerator {
@@ -77,13 +77,13 @@ public class AgentProjectGenerator implements ProjectGenerator {
 		App app = dslAdapter.importDSL(projectDescription.getDsl());
 		Agent root = (Agent) app.getSpec();
 
-		// 渲染构造 Agent 的 Java 代码片段（支持递归/并行）
+		// 渲染构�?Agent �?Java 代码片段（支持递归/并行�?
 		RenderContext ctx = new RenderContext();
 		CodeSections sections = collectSections(root, ctx);
 		String agentSection = sections.getCode()
 				+ String.format("%nreturn %s.getAndCompileGraph();%n", sections.getVarName());
 
-		// 模板渲染并写入
+		// 模板渲染并写�?
 		Map<String, Object> agentBuilderModel = new HashMap<>();
 		agentBuilderModel.put(PACKAGE_NAME, projectDescription.getPackageName());
 		agentBuilderModel.put(IMPORT_SECTION, String.join("\n", sections.getImports()));
@@ -108,7 +108,7 @@ public class AgentProjectGenerator implements ProjectGenerator {
 			try {
 				String template = templateRenderer.render(templateName, model);
 
-				// 覆盖写文件（自动创建/替换文件）
+				// 覆盖写文件（自动创建/替换文件�?
 				Files.writeString(filePath, template, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 			}
 			catch (IOException e) {
@@ -141,14 +141,14 @@ public class AgentProjectGenerator implements ProjectGenerator {
 			}
 		}
 
-		// 当前节点由 Provider 渲染
+		// 当前节点�?Provider 渲染
 		AgentTypeProvider provider = providerRegistry.get(agent.getAgentClass());
 		AgentShell shell = AgentShell.of(agent.getAgentClass(), agent.getName(), agent.getDescription(),
 				agent.getInstruction(), agent.getInputKeys(), agent.getOutputKey());
 		Map<String, Object> handle = agent.getHandle() == null ? java.util.Map.of() : agent.getHandle();
 		CodeSections me = provider.render(shell, handle, ctx, childVars);
 
-		// 合并 imports 与 hasResolver，拼接顺序：子在前、父在后
+		// 合并 imports �?hasResolver，拼接顺序：子在前、父在后
 		for (CodeSections cs : childSections) {
 			me.getImports().addAll(cs.getImports());
 			if (cs.isHasResolver())

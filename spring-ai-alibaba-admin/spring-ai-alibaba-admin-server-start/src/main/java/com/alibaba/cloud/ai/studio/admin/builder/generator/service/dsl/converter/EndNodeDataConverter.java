@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 						"text_template");
 				nodeData.setTextTemplate(textTemplate);
 
-				// 获取输出键
+				// 获取输出�?
 				List<?> jsonParams = MapReadUtil.getMapDeepValue(data, List.class, "config", "node_param",
 						"json_params");
 				// 转换为VariableSelector
@@ -152,7 +152,7 @@ public class EndNodeDataConverter extends AbstractNodeDataConverter<EndNodeData>
 			case STUDIO -> emptyProcessConsumer().andThen((data, idToVarName) -> {
 				// 格式化textTemplate
 				data.setTextTemplate(this.convertVarTemplate(dialectType, data.getTextTemplate(), idToVarName));
-				// 设置输出键
+				// 设置输出�?
 				String outputKey = data.getVarName() + "_" + EndNodeData.getDefaultOutputSchema().getName();
 				data.setOutputKey(outputKey);
 				data.setOutputs(List.of(EndNodeData.getDefaultOutputSchema()));

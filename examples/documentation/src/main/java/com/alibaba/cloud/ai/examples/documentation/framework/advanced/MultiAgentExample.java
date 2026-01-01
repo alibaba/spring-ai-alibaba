@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,16 +43,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import reactor.core.publisher.Flux;
 
 /**
- * 多智能体（Multi-agent）示例
+ * 多智能体（Multi-agent）示�?
  *
- * 演示不同的 Multi-agent 协作模式，包括：
- * 1. 顺序执行（Sequential Agent）
- * 2. 并行执行（Parallel Agent）
- * 3. LLM路由（LlmRoutingAgent）
- * 4. 自定义合并策略
- * 5. 监督者模式（SupervisorAgent）
+ * 演示不同�?Multi-agent 协作模式，包括：
+ * 1. 顺序执行（Sequential Agent�?
+ * 2. 并行执行（Parallel Agent�?
+ * 3. LLM路由（LlmRoutingAgent�?
+ * 4. 自定义合并策�?
+ * 5. 监督者模式（SupervisorAgent�?
  *
- * 参考文档: advanced_doc/multi-agent.md
+ * 参考文�? advanced_doc/multi-agent.md
  */
 public class MultiAgentExample {
 
@@ -63,7 +63,7 @@ public class MultiAgentExample {
 	}
 
 	/**
-	 * Main方法：运行所有示例
+	 * Main方法：运行所有示�?
 	 *
 	 * 注意：需要配置ChatModel实例才能运行
 	 */
@@ -80,21 +80,21 @@ public class MultiAgentExample {
 
 		if (chatModel == null) {
 			System.err.println("错误：请先配置ChatModel实例");
-			System.err.println("请设置 AI_DASHSCOPE_API_KEY 环境变量");
+			System.err.println("请设�?AI_DASHSCOPE_API_KEY 环境变量");
 			return;
 		}
 
 		// 创建示例实例
 		MultiAgentExample example = new MultiAgentExample(chatModel);
 
-		// 运行所有示例
+		// 运行所有示�?
 		example.runAllExamples();
 	}
 
 	/**
-	 * 示例1：顺序执行（Sequential Agent）
+	 * 示例1：顺序执行（Sequential Agent�?
 	 *
-	 * 多个Agent按预定义的顺序依次执行，每个Agent的输出成为下一个Agent的输入
+	 * 多个Agent按预定义的顺序依次执行，每个Agent的输出成为下一个Agent的输�?
 	 */
 	public void example1_sequentialAgent() throws Exception {
 		// 创建专业化的子Agent
@@ -102,7 +102,7 @@ public class MultiAgentExample {
 				.name("writer_agent")
 				.model(chatModel)
 				.description("专业写作Agent")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：{input}。")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：{input}�?)
 				.outputKey("article")
 				.build();
 
@@ -110,9 +110,9 @@ public class MultiAgentExample {
 				.name("reviewer_agent")
 				.model(chatModel)
 				.description("专业评审Agent")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。" +
+				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改�? +
 						"对于散文类文章，请确保文章中必须包含对于西湖风景的描述。待评论文章：\n\n {article}" +
-						"最终只返回修改后的文章，不要包含任何评论信息。")
+						"最终只返回修改后的文章，不要包含任何评论信息�?)
 				.outputKey("reviewed_article")
 				.build();
 
@@ -124,29 +124,29 @@ public class MultiAgentExample {
 				.build();
 
 		// 使用
-		Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的散文");
+		Optional<OverAllState> result = blogAgent.invoke("帮我写一�?00字左右的散文");
 
 		if (result.isPresent()) {
 			OverAllState state = result.get();
 
-			// 访问第一个Agent的输出
+			// 访问第一个Agent的输�?
 			state.value("article").ifPresent(article -> {
 				if (article instanceof AssistantMessage) {
 					System.out.println("原始文章: " + ((AssistantMessage) article).getText());
 				}
 			});
 
-			// 访问第二个Agent的输出
+			// 访问第二个Agent的输�?
 			state.value("reviewed_article").ifPresent(reviewedArticle -> {
 				if (reviewedArticle instanceof AssistantMessage) {
-					System.out.println("评审后文章: " + ((AssistantMessage) reviewedArticle).getText());
+					System.out.println("评审后文�? " + ((AssistantMessage) reviewedArticle).getText());
 				}
 			});
 		}
 	}
 
 	/**
-	 * 示例2：控制推理内容
+	 * 示例2：控制推理内�?
 	 *
 	 * 使用 returnReasoningContents 控制是否在消息历史中包含中间推理
 	 */
@@ -161,32 +161,32 @@ public class MultiAgentExample {
 		ReactAgent reviewerAgent = ReactAgent.builder()
 				.name("reviewer_agent")
 				.model(chatModel)
-				.instruction("请对文章进行评审修正：\n{article}，最终返回评审修正后的文章内容")
-				.includeContents(true) // 包含上一个Agent的推理内容
+				.instruction("请对文章进行评审修正：\n{article}，最终返回评审修正后的文章内�?)
+				.includeContents(true) // 包含上一个Agent的推理内�?
 				.returnReasoningContents(true)  // 返回推理过程
 				.outputKey("reviewed_article")
 				.build();
 
 
-		// 每个子agent的推理内容，下一个执行的子agent会看到上一个子agent的推理内容
+		// 每个子agent的推理内容，下一个执行的子agent会看到上一个子agent的推理内�?
 		SequentialAgent blogAgent = SequentialAgent.builder()
 				.name("blog_agent")
 				.subAgents(List.of(writerAgent, reviewerAgent))
 				.build();
 
-		Optional<OverAllState> result = blogAgent.invoke("帮我写一个100字左右的散文");
+		Optional<OverAllState> result = blogAgent.invoke("帮我写一�?00字左右的散文");
 
 		if (result.isPresent()) {
 			// 消息历史将包含所有工具调用和推理过程
 			List<Message> messages = (List<Message>) result.get().value("messages").orElse(List.of());
-			System.out.println("消息数量: " + messages.size()); // 包含所有中间步骤
+			System.out.println("消息数量: " + messages.size()); // 包含所有中间步�?
 		}
 	}
 
 	/**
-	 * 示例3：并行执行（Parallel Agent）
+	 * 示例3：并行执行（Parallel Agent�?
 	 *
-	 * 多个Agent同时处理相同的输入，它们的结果被收集并合并
+	 * 多个Agent同时处理相同的输入，它们的结果被收集并合�?
 	 */
 	public void example3_parallelAgent() throws Exception {
 		// 创建多个专业化Agent
@@ -194,8 +194,8 @@ public class MultiAgentExample {
 				.name("prose_writer_agent")
 				.model(chatModel)
 				.description("专门写散文的AI助手")
-				.instruction("你是一个知名的散文作家，擅长写优美的散文。" +
-						"用户会给你一个主题：{input}，你只需要创作一篇100字左右的散文。")
+				.instruction("你是一个知名的散文作家，擅长写优美的散文�? +
+						"用户会给你一个主题：{input}，你只需要创作一�?00字左右的散文�?)
 				.outputKey("prose_result")
 				.enableLogging(true)
 				.build();
@@ -204,8 +204,8 @@ public class MultiAgentExample {
 				.name("poem_writer_agent")
 				.model(chatModel)
 				.description("专门写现代诗的AI助手")
-				.instruction("你是一个知名的现代诗人，擅长写现代诗。" +
-						"用户会给你的主题是：{input}，你只需要创作一首现代诗。")
+				.instruction("你是一个知名的现代诗人，擅长写现代诗�? +
+						"用户会给你的主题是：{input}，你只需要创作一首现代诗�?)
 				.outputKey("poem_result")
 				.enableLogging(true)
 				.build();
@@ -214,8 +214,8 @@ public class MultiAgentExample {
 				.name("summary_agent")
 				.model(chatModel)
 				.description("专门做内容总结的AI助手")
-				.instruction("你是一个专业的内容分析师，擅长对主题进行总结和提炼。" +
-						"用户会给你一个主题：{input}，你只需要对这个主题进行简要总结。")
+				.instruction("你是一个专业的内容分析师，擅长对主题进行总结和提炼�? +
+						"用户会给你一个主题：{input}，你只需要对这个主题进行简要总结�?)
 				.outputKey("summary_result")
 				.enableLogging(true)
 				.build();
@@ -231,7 +231,7 @@ public class MultiAgentExample {
 
 		ExecutorService executorService = Executors.newFixedThreadPool(3);
 		// 使用
-		Flux<NodeOutput> flux = parallelAgent.stream("以'西湖'为主题", RunnableConfig.builder().addParallelNodeExecutor("parallel_creative_agent", executorService).build());
+		Flux<NodeOutput> flux = parallelAgent.stream("�?西湖'为主�?, RunnableConfig.builder().addParallelNodeExecutor("parallel_creative_agent", executorService).build());
 
 		AtomicReference<NodeOutput> lastOutput = new AtomicReference<>();
 		flux.doOnNext(nodeOutput -> {
@@ -244,12 +244,12 @@ public class MultiAgentExample {
 
 			NodeOutput output = lastOutput.get();
 			if (output == null) {
-				System.out.println("未收到任何输出，无法展示结果。");
+				System.out.println("未收到任何输出，无法展示结果�?);
 				return;
 			}
 
 			OverAllState state = output.state();
-			// 访问各个Agent的输出
+			// 访问各个Agent的输�?
 			state.value("prose_result").ifPresent(r ->
 					System.out.println("散文: " + r));
 			state.value("poem_result").ifPresent(r ->
@@ -267,10 +267,10 @@ public class MultiAgentExample {
 	/**
 	 * 示例4：自定义合并策略
 	 *
-	 * 实现自定义的合并策略来控制如何组合多个Agent的输出
+	 * 实现自定义的合并策略来控制如何组合多个Agent的输�?
 	 */
 	public void example4_customMergeStrategy() throws Exception {
-		// 自定义合并策略
+		// 自定义合并策�?
 		class CustomMergeStrategy implements ParallelAgent.MergeStrategy {
 			@Override
 			public Map<String, Object> merge(Map<String, Object> mergedState, OverAllState state) {
@@ -318,7 +318,7 @@ public class MultiAgentExample {
 				.outputKey("agent3_result")
 				.build();
 
-		// 使用自定义合并策略
+		// 使用自定义合并策�?
 		ParallelAgent parallelAgent = ParallelAgent.builder()
 				.name("parallel_agent")
 				.subAgents(List.of(agent1, agent2, agent3))
@@ -333,12 +333,12 @@ public class MultiAgentExample {
 			state.value("all_results").ifPresent(mergeResult -> {
 				System.out.println("合并结果: " + mergeResult);
 			});
-			System.out.println("自定义合并策略示例执行成功");
+			System.out.println("自定义合并策略示例执行成�?);
 		}
 	}
 
 	/**
-	 * 示例5：LLM路由（LlmRoutingAgent）
+	 * 示例5：LLM路由（LlmRoutingAgent�?
 	 *
 	 * 使用大语言模型动态决定将请求路由到哪个子Agent
 	 */
@@ -348,7 +348,7 @@ public class MultiAgentExample {
 				.name("writer_agent")
 				.model(chatModel)
 				.description("擅长创作各类文章，包括散文、诗歌等文学作品")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答。")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答�?)
 				.outputKey("writer_output")
 				.build();
 
@@ -356,8 +356,8 @@ public class MultiAgentExample {
 				.name("reviewer_agent")
 				.model(chatModel)
 				.description("擅长对文章进行评论、修改和润色")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。" +
-						"对于散文类文章，请确保文章中必须包含对于西湖风景的描述。")
+				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改�? +
+						"对于散文类文章，请确保文章中必须包含对于西湖风景的描述�?)
 				.outputKey("reviewer_output")
 				.build();
 
@@ -365,7 +365,7 @@ public class MultiAgentExample {
 				.name("translator_agent")
 				.model(chatModel)
 				.description("擅长将文章翻译成各种语言")
-				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言。")
+				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言�?)
 				.outputKey("translator_output")
 				.build();
 
@@ -383,7 +383,7 @@ public class MultiAgentExample {
 		// LLM会路由到 writerAgent
 
 		System.out.println("路由测试2: 修改请求");
-		Optional<OverAllState> result2 = routingAgent.invoke("请帮我修改这篇文章：春天来了，花开了。");
+		Optional<OverAllState> result2 = routingAgent.invoke("请帮我修改这篇文章：春天来了，花开了�?);
 		// LLM会路由到 reviewerAgent
 
 		System.out.println("路由测试3: 翻译请求");
@@ -394,34 +394,34 @@ public class MultiAgentExample {
 	}
 
 	/**
-	 * 示例6：优化路由准确性
+	 * 示例6：优化路由准确�?
 	 *
-	 * 通过提供清晰明确的Agent描述来提高路由的准确性
+	 * 通过提供清晰明确的Agent描述来提高路由的准确�?
 	 */
 	public void example6_optimizedRouting() throws Exception {
 		// 1. 提供清晰明确的Agent描述
 		ReactAgent codeAgent = ReactAgent.builder()
 				.name("code_agent")
 				.model(chatModel)
-				.description("专门处理编程相关问题，包括代码编写、调试、重构和优化。" +
-						"擅长Java、Python、JavaScript等主流编程语言。")
-				.instruction("你是一个资深的软件工程师...")
+				.description("专门处理编程相关问题，包括代码编写、调试、重构和优化�? +
+						"擅长Java、Python、JavaScript等主流编程语言�?)
+				.instruction("你是一个资深的软件工程�?..")
 				.build();
 
-		// 2. 明确Agent的职责边界
+		// 2. 明确Agent的职责边�?
 		ReactAgent businessAgent = ReactAgent.builder()
 				.name("business_agent")
 				.model(chatModel)
-				.description("专门处理商业分析、市场研究和战略规划问题。" +
-						"不处理技术实现细节。")
-				.instruction("你是一个资深的商业分析师...")
+				.description("专门处理商业分析、市场研究和战略规划问题�? +
+						"不处理技术实现细节�?)
+				.instruction("你是一个资深的商业分析�?..")
 				.build();
 
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_agent")
 				.model(chatModel)
-				.description("专门处理内容创作，包括文章、报告、文案等写作任务。")
-				.instruction("你是一个专业作家...")
+				.description("专门处理内容创作，包括文章、报告、文案等写作任务�?)
+				.instruction("你是一个专业作�?..")
 				.build();
 
 		// 3. 使用不同领域的Agent避免重叠
@@ -432,17 +432,17 @@ public class MultiAgentExample {
 				.build();
 
 		// 测试路由
-		routingAgent.invoke("如何用Java实现单例模式？");
+		routingAgent.invoke("如何用Java实现单例模式�?);
 		routingAgent.invoke("分析一下这个市场的竞争态势");
-		routingAgent.invoke("写一篇产品介绍文案");
+		routingAgent.invoke("写一篇产品介绍文�?);
 
 		System.out.println("优化路由示例执行完成");
 	}
 
 	/**
-	 * 示例7：混合模式 - 结合顺序、并行和路由
+	 * 示例7：混合模�?- 结合顺序、并行和路由
 	 *
-	 * 组合不同的模式创建复杂的工作流
+	 * 组合不同的模式创建复杂的工作�?
 	 */
 	public void example7_hybridPattern() throws Exception {
 		// 创建研究Agent（并行执行）
@@ -478,13 +478,13 @@ public class MultiAgentExample {
 				.outputKey("analysis_result")
 				.build();
 
-		// 创建报告Agent（路由选择格式）
+		// 创建报告Agent（路由选择格式�?
 		ReactAgent pdfReportAgent = ReactAgent.builder()
 				.name("pdf_report")
 				.model(chatModel)
 				.description("生成PDF格式报告")
 				.instruction("""
-						请根据研究结果和分析结果生成一份PDF格式的报告。
+						请根据研究结果和分析结果生成一份PDF格式的报告�?
 						
 						研究结果：{research_data}
 						分析结果：{analysis_result}
@@ -497,7 +497,7 @@ public class MultiAgentExample {
 				.model(chatModel)
 				.description("生成HTML格式报告")
 				.instruction("""
-						请根据研究结果和分析结果生成一份HTML格式的报告。
+						请根据研究结果和分析结果生成一份HTML格式的报告�?
 						
 						研究结果：{research_data}
 						分析结果：{analysis_result}
@@ -515,13 +515,13 @@ public class MultiAgentExample {
 		// 组合成顺序工作流
 		SequentialAgent hybridWorkflow = SequentialAgent.builder()
 				.name("research_workflow")
-				.description("完整的研究工作流：并行收集 -> 分析 -> 路由生成报告")
+				.description("完整的研究工作流：并行收�?-> 分析 -> 路由生成报告")
 				.subAgents(List.of(researchAgent, analysisAgent, reportAgent))
 				.build();
 
 
-		// 打印工作流图表
-		System.out.println("\n=== 混合模式工作流图表 ===");
+		// 打印工作流图�?
+		System.out.println("\n=== 混合模式工作流图�?===");
 		printGraphRepresentation(hybridWorkflow);
 		System.out.println("=========================\n");
 
@@ -533,11 +533,11 @@ public class MultiAgentExample {
 	}
 
 	/**
-	 * 示例8：监督者模式（SupervisorAgent）
+	 * 示例8：监督者模式（SupervisorAgent�?
 	 *
-	 * SupervisorAgent 与 LlmRoutingAgent 类似，但有以下关键区别：
-	 * 1. 子Agent处理完成后会返回到Supervisor，而不是直接结束
-	 * 2. Supervisor可以决定继续路由到其他子Agent，或者标记任务完成（FINISH）
+	 * SupervisorAgent �?LlmRoutingAgent 类似，但有以下关键区别：
+	 * 1. 子Agent处理完成后会返回到Supervisor，而不是直接结�?
+	 * 2. Supervisor可以决定继续路由到其他子Agent，或者标记任务完成（FINISH�?
 	 * 3. 支持嵌套Agent（如SequentialAgent、ParallelAgent）作为子Agent
 	 *
 	 * 这个示例展示了如何使用SupervisorAgent管理包含普通ReactAgent和嵌套SequentialAgent的复杂工作流
@@ -545,10 +545,10 @@ public class MultiAgentExample {
 	public void example8_supervisorAgent() throws Exception {
 		// 定义专业的监督者指令（如果不定义，则使用系统默认的提示词）
 		final String SUPERVISOR_INSTRUCTION = """
-				你是一个智能的内容管理监督者，负责协调和管理多个专业Agent来完成用户的内容处理需求。
+				你是一个智能的内容管理监督者，负责协调和管理多个专业Agent来完成用户的内容处理需求�?
 
 				## 你的职责
-				1. 分析用户需求，将其分解为合适的子任务
+				1. 分析用户需求，将其分解为合适的子任�?
 				2. 根据任务特性，选择合适的Agent进行处理
 				3. 监控任务执行状态，决定是否需要继续处理或完成任务
 				4. 当所有任务完成时，返回FINISH结束流程
@@ -572,12 +572,12 @@ public class MultiAgentExample {
 				### writing_workflow_agent
 				- **功能**: 完整的写作工作流，包含两个步骤：先写文章，然后进行评审和修改
 				- **适用场景**:
-				  * 用户需要高质量的文章，要求经过评审和修改
-				  * 任务明确要求"确保质量"、"需要评审"、"需要修改"等
-				  * 需要多步骤处理的复杂写作任务
+				  * 用户需要高质量的文章，要求经过评审和修�?
+				  * 任务明确要求"确保质量"�?需要评�?�?需要修�?�?
+				  * 需要多步骤处理的复杂写作任�?
 				- **工作流程**: 
-				  1. article_writer: 根据用户需求创作文章
-				  2. reviewer: 对文章进行评审和修改，确保质量
+				  1. article_writer: 根据用户需求创作文�?
+				  2. reviewer: 对文章进行评审和修改，确保质�?
 				- **输出**: reviewed_article
 
 				## 决策规则
@@ -587,8 +587,8 @@ public class MultiAgentExample {
 				   - 如果用户只需要简单写作，选择 writer_agent
 				   - 如果用户需要高质量文章或明确要求评审，选择 writing_workflow_agent
 
-				2. **多步骤任务处理**:
-				   - 如果用户需求包含多个步骤（如"先写文章，然后翻译"），需要分步处理
+				2. **多步骤任务处�?*:
+				   - 如果用户需求包含多个步骤（�?先写文章，然后翻�?），需要分步处�?
 				   - 先路由到第一个合适的Agent，等待其完成
 				   - 完成后，根据剩余需求继续路由到下一个Agent
 				   - 直到所有步骤完成，返回FINISH
@@ -598,14 +598,14 @@ public class MultiAgentExample {
 				   - 如果还有未完成的任务，继续路由到相应的Agent
 
 				## 响应格式
-				只返回Agent名称（writer_agent、translator_agent、writing_workflow_agent）或FINISH，不要包含其他解释。
+				只返回Agent名称（writer_agent、translator_agent、writing_workflow_agent）或FINISH，不要包含其他解释�?
 				""";
 		// 1. 创建普通的ReactAgent子Agent
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_agent")
 				.model(chatModel)
 				.description("擅长创作各类文章，包括散文、诗歌等文学作品")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：\n\n {input}。")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：\n\n {input}�?)
 				.outputKey("writer_output")
 				.build();
 
@@ -613,18 +613,18 @@ public class MultiAgentExample {
 				.name("translator_agent")
 				.model(chatModel)
 				.description("擅长将文章翻译成各种语言")
-				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言。" +
-						"如果待翻译的内容已存在于状态中，请使用：\n\n {writer_output}。")
+				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言�? +
+						"如果待翻译的内容已存在于状态中，请使用：\n\n {writer_output}�?)
 				.outputKey("translator_output")
 				.build();
 
 		// 2. 创建嵌套的SequentialAgent作为子Agent
-		// 这个SequentialAgent包含多个步骤：先写文章，再评审
+		// 这个SequentialAgent包含多个步骤：先写文章，再评�?
 		ReactAgent articleWriterAgent = ReactAgent.builder()
 				.name("article_writer")
 				.model(chatModel)
 				.description("专业写作Agent")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：{input}。")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：{input}�?)
 				.outputKey("article")
 				.build();
 
@@ -632,16 +632,16 @@ public class MultiAgentExample {
 				.name("reviewer")
 				.model(chatModel)
 				.description("专业评审Agent")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。" +
+				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改�? +
 						"对于散文类文章，请确保文章中必须包含对于西湖风景的描述。待评论文章：\n\n {article}" +
-						"最终只返回修改后的文章，不要包含任何评论信息。")
+						"最终只返回修改后的文章，不要包含任何评论信息�?)
 				.outputKey("reviewed_article")
 				.build();
 
 		// 创建嵌套的SequentialAgent
 		SequentialAgent writingWorkflowAgent = SequentialAgent.builder()
 				.name("writing_workflow_agent")
-				.description("完整的写作工作流：先写文章，然后进行评审和修改")
+				.description("完整的写作工作流：先写文章，然后进行评审和修�?)
 				.subAgents(List.of(articleWriterAgent, reviewerAgent))
 				.build();
 
@@ -655,7 +655,7 @@ public class MultiAgentExample {
 				.build();
 
 		// 使用示例
-		System.out.println("监督者测试1: 简单写作任务");
+		System.out.println("监督者测�?: 简单写作任�?);
 		Optional<OverAllState> result1 = supervisorAgent.invoke("帮我写一篇关于春天的短文");
 		// Supervisor会路由到writer_agent，处理完成后返回Supervisor，Supervisor判断完成返回FINISH
 		if (result1.isPresent()) {
@@ -663,16 +663,16 @@ public class MultiAgentExample {
 					System.out.println("写作结果: " + output));
 		}
 
-		System.out.println("\n监督者测试2: 需要完整工作流的任务");
+		System.out.println("\n监督者测�?: 需要完整工作流的任�?);
 		Optional<OverAllState> result2 = supervisorAgent.invoke("帮我写一篇关于西湖的散文，并确保质量");
 		// Supervisor会路由到writing_workflow_agent（嵌套SequentialAgent），
 		// 该Agent会先写文章，然后评审，完成后返回Supervisor，Supervisor判断完成返回FINISH
 		if (result2.isPresent()) {
 			result2.get().value("reviewed_article").ifPresent(output ->
-					System.out.println("评审后文章: " + output));
+					System.out.println("评审后文�? " + output));
 		}
 
-		System.out.println("\n监督者测试3: 翻译任务");
+		System.out.println("\n监督者测�?: 翻译任务");
 		Optional<OverAllState> result3 = supervisorAgent.invoke("请将以下内容翻译成英文：春暖花开");
 		// Supervisor会路由到translator_agent，处理完成后返回Supervisor，Supervisor判断完成返回FINISH
 		if (result3.isPresent()) {
@@ -680,7 +680,7 @@ public class MultiAgentExample {
 					System.out.println("翻译结果: " + output));
 		}
 
-		System.out.println("\n监督者测试4: 多步骤任务（可能需要多次路由）");
+		System.out.println("\n监督者测�?: 多步骤任务（可能需要多次路由）");
 		Optional<OverAllState> result4 = supervisorAgent.invoke("先帮我写一篇关于春天的文章，然后翻译成英文");
 		// Supervisor可能会：
 		// 1. 先路由到writer_agent写文章，完成后返回Supervisor
@@ -693,13 +693,13 @@ public class MultiAgentExample {
 					System.out.println("翻译结果: " + output));
 		}
 
-		// 打印工作流图表
-		System.out.println("\n=== SupervisorAgent 工作流图表 ===");
+		// 打印工作流图�?
+		System.out.println("\n=== SupervisorAgent 工作流图�?===");
 		printGraphRepresentation(supervisorAgent);
 		System.out.println("==================================\n");
 
 		// 示例5：SupervisorAgent作为SequentialAgent的子Agent，使用占位符
-		System.out.println("\n监督者测试5: SupervisorAgent作为SequentialAgent的子Agent（使用占位符）");
+		System.out.println("\n监督者测�?: SupervisorAgent作为SequentialAgent的子Agent（使用占位符�?);
 		example8_supervisorAgentAsSequentialSubAgent();
 		System.out.println();
 
@@ -711,16 +711,16 @@ public class MultiAgentExample {
 	 *
 	 * 这个示例展示了：
 	 * 1. SupervisorAgent可以作为SequentialAgent的子Agent
-	 * 2. SupervisorAgent的instruction可以使用占位符引用前序Agent的输出
-	 * 3. SupervisorAgent的子Agent的instruction也可以使用占位符引用前序Agent的输出
+	 * 2. SupervisorAgent的instruction可以使用占位符引用前序Agent的输�?
+	 * 3. SupervisorAgent的子Agent的instruction也可以使用占位符引用前序Agent的输�?
 	 */
 	private void example8_supervisorAgentAsSequentialSubAgent() throws Exception {
-		// 1. 创建第一个Agent，用于生成文章内容
+		// 1. 创建第一个Agent，用于生成文章内�?
 		ReactAgent articleWriterAgent = ReactAgent.builder()
 				.name("article_writer")
 				.model(chatModel)
-				.description("专业写作Agent，负责创作文章")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：{input}。")
+				.description("专业写作Agent，负责创作文�?)
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答：{input}�?)
 				.outputKey("article_content")
 				.build();
 
@@ -729,7 +729,7 @@ public class MultiAgentExample {
 				.name("translator_agent")
 				.model(chatModel)
 				.description("擅长将文章翻译成各种语言")
-				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言。待翻译文章：\n\n {article_content}。")
+				.instruction("你是一个专业的翻译家，能够准确地将文章翻译成目标语言。待翻译文章：\n\n {article_content}�?)
 				.outputKey("translator_output")
 				.build();
 
@@ -737,59 +737,59 @@ public class MultiAgentExample {
 				.name("reviewer_agent")
 				.model(chatModel)
 				.description("擅长对文章进行评审和修改")
-				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。待评审文章：\n\n {article_content}。"
-						+ "请对文章进行评审，指出优点和需要改进的地方，并返回评审后的改进版本。")
+				.instruction("你是一个知名的评论家，擅长对文章进行评论和修改。待评审文章：\n\n {article_content}�?
+						+ "请对文章进行评审，指出优点和需要改进的地方，并返回评审后的改进版本�?)
 				.outputKey("reviewer_output")
 				.build();
 
-		// 3. 定义SupervisorAgent的instruction，使用占位符引用前序Agent的输出
-		// 这个instruction包含 {article_content} 占位符，会被替换为第一个Agent的输出
+		// 3. 定义SupervisorAgent的instruction，使用占位符引用前序Agent的输�?
+		// 这个instruction包含 {article_content} 占位符，会被替换为第一个Agent的输�?
 		final String SUPERVISOR_INSTRUCTION = """
-				你是一个智能的内容处理监督者，你可以看到前序Agent的聊天历史与任务处理记录。当前，你收到了以下文章内容：
+				你是一个智能的内容处理监督者，你可以看到前序Agent的聊天历史与任务处理记录。当前，你收到了以下文章内容�?
 
 				{article_content}
 
 				请根据文章内容的特点和用户需求，决定是进行翻译还是评审：
 				- 如果用户要求翻译或文章需要翻译成其他语言，选择 translator_agent
 				- 如果用户要求评审、改进或优化文章，选择 reviewer_agent
-				- 如果任务完成，返回 FINISH
+				- 如果任务完成，返�?FINISH
 				""";
 
 		final String SUPERVISOR_SYSTEM_PROMPT = """
-				你是一个智能的内容处理监督者，负责协调翻译和评审任务。
+				你是一个智能的内容处理监督者，负责协调翻译和评审任务�?
 
 				## 可用的子Agent及其职责
 
 				### translator_agent
 				- **功能**: 擅长将文章翻译成各种语言
-				- **适用场景**: 当文章需要翻译成其他语言时
+				- **适用场景**: 当文章需要翻译成其他语言�?
 				- **输出**: translator_output
 
 				### reviewer_agent
 				- **功能**: 擅长对文章进行评审和修改
-				- **适用场景**: 当文章需要评审、改进或优化时
+				- **适用场景**: 当文章需要评审、改进或优化�?
 				- **输出**: reviewer_output
 
 				## 决策规则
 
-				1. **根据文章内容和用户需求判断**:
+				1. **根据文章内容和用户需求判�?*:
 				   - 如果用户要求翻译或文章需要翻译成其他语言，选择 translator_agent
 				   - 如果用户要求评审、改进或优化文章，选择 reviewer_agent
 
 				2. **任务完成判断**:
-				   - 当所有任务完成时，返回 FINISH
+				   - 当所有任务完成时，返�?FINISH
 
 				## 响应格式
-				只返回Agent名称（translator_agent、reviewer_agent）或FINISH，不要包含其他解释。
+				只返回Agent名称（translator_agent、reviewer_agent）或FINISH，不要包含其他解释�?
 				""";
 
-		// 4. 创建SupervisorAgent，其instruction使用占位符
+		// 4. 创建SupervisorAgent，其instruction使用占位�?
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
 				.description("内容处理监督者，根据前序Agent的输出决定翻译或评审")
 				.model(chatModel)
 				.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
-				.instruction(SUPERVISOR_INSTRUCTION) // 这个instruction包含 {article_content} 占位符
+				.instruction(SUPERVISOR_INSTRUCTION) // 这个instruction包含 {article_content} 占位�?
 				.subAgents(List.of(translatorAgent, reviewerAgent))
 				.build();
 
@@ -800,7 +800,7 @@ public class MultiAgentExample {
 				.subAgents(List.of(articleWriterAgent, supervisorAgent))
 				.build();
 
-		// 测试场景1：写文章后翻译
+		// 测试场景1：写文章后翻�?
 		System.out.println("场景1: 写文章后翻译");
 		Optional<OverAllState> result1 = sequentialAgent.invoke("帮我写一篇关于春天的短文，然后翻译成英文");
 		if (result1.isPresent()) {
@@ -817,7 +817,7 @@ public class MultiAgentExample {
 			});
 		}
 
-		// 测试场景2：写文章后评审
+		// 测试场景2：写文章后评�?
 		System.out.println("\n场景2: 写文章后评审");
 		Optional<OverAllState> result2 = sequentialAgent.invoke("帮我写一篇关于春天的短文，然后进行评审和改进");
 		if (result2.isPresent()) {
@@ -836,7 +836,7 @@ public class MultiAgentExample {
 	}
 
 	/**
-	 * 打印工作流图表（支持SupervisorAgent）
+	 * 打印工作流图表（支持SupervisorAgent�?
 	 */
 	private void printGraphRepresentation(SupervisorAgent agent) {
 		GraphRepresentation representation = agent.getAndCompileGraph().getGraph(GraphRepresentation.Type.PLANTUML);
@@ -849,34 +849,34 @@ public class MultiAgentExample {
 				.description("根据用户的问题和提炼的位置信息查询天气。\n\n 用户问题：{input} \n\n 位置信息：{location}")
 				.model(chatModel)
 				.outputKey("weather")
-				.systemPrompt("你是一个天气查询专家").build();
+				.systemPrompt("你是一个天气查询专�?).build();
 
 		ReactAgent locationAgent = ReactAgent.builder()
 				.name("location_agent")
 				.description("根据用户的问题，进行位置查询。\n 用户问题：{input}")
 				.model(chatModel)
 				.outputKey("location")
-				.systemPrompt("你是一个位置查询专家").build();
+				.systemPrompt("你是一个位置查询专�?).build();
 
 		SequentialAgent sequentialAgent = SequentialAgent.builder()
-				.name("天气小助手")
-				.description("天气小助手")
+				.name("天气小助�?)
+				.description("天气小助�?)
 				.subAgents(List.of(locationAgent, reactAgent))
 				.build();
 
 		LlmRoutingAgent routingAgent = LlmRoutingAgent.builder()
-				.name("用户小助手")
-				.description("帮助用户完成各种需求")
-//				.routingInstruction(""); // 可以提供详尽的说明，告知routing路由职责，如何选择子Agent等，用于替代系统默认的prompt。
+				.name("用户小助�?)
+				.description("帮助用户完成各种需�?)
+//				.routingInstruction(""); // 可以提供详尽的说明，告知routing路由职责，如何选择子Agent等，用于替代系统默认的prompt�?
 				.model(chatModel)
 				.subAgents(List.of(sequentialAgent)).build();
 
-		Optional<OverAllState> invoke = routingAgent.invoke("天气怎么样");
+		Optional<OverAllState> invoke = routingAgent.invoke("天气怎么�?);
 		System.out.println(invoke);
 	}
 
 	/**
-	 * 打印工作流图表
+	 * 打印工作流图�?
 	 *
 	 * 使用PlantUML格式展示Agent工作流的结构
 	 */
@@ -886,13 +886,13 @@ public class MultiAgentExample {
 	}
 
 	/**
-	 * 运行所有示例
+	 * 运行所有示�?
 	 */
 	public void runAllExamples() {
-		System.out.println("=== 多智能体（Multi-agent）示例 ===\n");
+		System.out.println("=== 多智能体（Multi-agent）示�?===\n");
 
 		try {
-			System.out.println("示例1: 顺序执行（Sequential Agent）");
+			System.out.println("示例1: 顺序执行（Sequential Agent�?);
 			example1_sequentialAgent();
 			System.out.println();
 
@@ -900,19 +900,19 @@ public class MultiAgentExample {
 			example2_controlReasoningContents();
 			System.out.println();
 
-			System.out.println("示例3: 并行执行（Parallel Agent）");
+			System.out.println("示例3: 并行执行（Parallel Agent�?);
 			example3_parallelAgent();
 			System.out.println();
 
-			System.out.println("示例4: 自定义合并策略");
+			System.out.println("示例4: 自定义合并策�?);
 			example4_customMergeStrategy();
 			System.out.println();
 //
-			System.out.println("示例5: LLM路由（LlmRoutingAgent）");
+			System.out.println("示例5: LLM路由（LlmRoutingAgent�?);
 			example5_llmRoutingAgent();
 			System.out.println();
 
-			System.out.println("示例6: 优化路由准确性");
+			System.out.println("示例6: 优化路由准确�?);
 			example6_optimizedRouting();
 			System.out.println();
 
@@ -920,7 +920,7 @@ public class MultiAgentExample {
 			example7_hybridPattern();
 			System.out.println();
 
-			System.out.println("示例8: 监督者模式（SupervisorAgent）");
+			System.out.println("示例8: 监督者模式（SupervisorAgent�?);
 			example8_supervisorAgent();
 			System.out.println();
 
@@ -928,7 +928,7 @@ public class MultiAgentExample {
 
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

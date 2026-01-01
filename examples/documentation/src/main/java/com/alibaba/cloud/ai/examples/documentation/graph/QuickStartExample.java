@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,21 +52,21 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * Graph 工作流编排快速入门示例
+ * Graph 工作流编排快速入门示�?
  * 
- * 本示例演示如何通过将客服邮件处理流程分解为离散步骤来使用 Spring AI Alibaba Graph 构建智能工作流。
+ * 本示例演示如何通过将客服邮件处理流程分解为离散步骤来使�?Spring AI Alibaba Graph 构建智能工作流�?
  * 
- * 示例包含：
- * 1. 状态定义（EmailClassification）
+ * 示例包含�?
+ * 1. 状态定义（EmailClassification�?
  * 2. 节点实现（读取邮件、分类意图、搜索文档、Bug跟踪、起草回复、人工审核、发送回复）
- * 3. Graph 组装和配置
+ * 3. Graph 组装和配�?
  * 4. 测试执行
  */
 public class QuickStartExample {
 
 	private static final Logger log = LoggerFactory.getLogger(QuickStartExample.class);
 
-	// ==================== 状态定义 ====================
+	// ==================== 状态定�?====================
 
 	/**
 	 * 邮件分类结构
@@ -195,9 +195,9 @@ public class QuickStartExample {
 					分析这封客户邮件并进行分类：
 
 					邮件: %s
-					发件人: %s
+					发件�? %s
 
-					提供分类，包括意图、紧急程度、主题和摘要。
+					提供分类，包括意图、紧急程度、主题和摘要�?
 
 					意图应该是以下之一: question, bug, billing, feature, complex
 					紧急程度应该是以下之一: low, medium, high, critical
@@ -205,16 +205,16 @@ public class QuickStartExample {
 					以JSON格式返回: {"intent": "...", "urgency": "...", "topic": "...", "summary": "..."}
 					""", emailContent, senderEmail);
 
-			// 获取结构化响应
+			// 获取结构化响�?
 			String response = chatClient.prompt()
 					.user(classificationPrompt)
 					.call()
 					.content();
 
-			// 解析为 EmailClassification 对象
+			// 解析�?EmailClassification 对象
 			EmailClassification classification = parseClassification(response);
 
-			// 根据分类确定下一个节点
+			// 根据分类确定下一个节�?
 			String nextNode;
 			if ("billing".equals(classification.getIntent()) ||
 					"critical".equals(classification.getUrgency())) {
@@ -235,12 +235,12 @@ public class QuickStartExample {
 		}
 
 		/**
-		 * 简化的JSON解析（实际应用中使用Jackson或Gson）
+		 * 简化的JSON解析（实际应用中使用Jackson或Gson�?
 		 */
 		private EmailClassification parseClassification(String jsonResponse) {
 			EmailClassification classification = new EmailClassification();
 
-			// 简单的正则表达式解析
+			// 简单的正则表达式解�?
 			Pattern intentPattern = Pattern.compile("\"intent\"\\s*:\\s*\"([^\"]+)\"");
 			Pattern urgencyPattern = Pattern.compile("\"urgency\"\\s*:\\s*\"([^\"]+)\"");
 			Pattern topicPattern = Pattern.compile("\"topic\"\\s*:\\s*\"([^\"]+)\"");
@@ -266,7 +266,7 @@ public class QuickStartExample {
 				classification.setSummary(matcher.group(1));
 			}
 
-			// 如果解析失败，设置默认值
+			// 如果解析失败，设置默认�?
 			if (classification.getIntent() == null) {
 				classification.setIntent("question");
 			}
@@ -291,7 +291,7 @@ public class QuickStartExample {
 
 		@Override
 		public Map<String, Object> apply(OverAllState state) throws Exception {
-			// 从分类构建搜索查询
+			// 从分类构建搜索查�?
 			EmailClassification classification = state.value("classification")
 					.map(v -> (EmailClassification) v)
 					.orElse(new EmailClassification());
@@ -299,10 +299,10 @@ public class QuickStartExample {
 
 			try {
 				// 实现您的搜索逻辑
-				// 存储原始搜索结果，而不是格式化的文本
+				// 存储原始搜索结果，而不是格式化的文�?
 				List<String> searchResults = List.of(
 						"通过设置 > 安全 > 更改密码重置密码",
-						"密码必须至少12个字符",
+						"密码必须至少12个字�?,
 						"包含大写字母、小写字母、数字和符号"
 				);
 
@@ -315,7 +315,7 @@ public class QuickStartExample {
 			} catch (Exception e) {
 				// 对于可恢复的搜索错误，存储错误并继续
 				log.warn("Search error: {}", e.getMessage());
-				List<String> errorResult = List.of("搜索暂时不可用: " + e.getMessage());
+				List<String> errorResult = List.of("搜索暂时不可�? " + e.getMessage());
 				return Map.of(
 						"search_results", errorResult,
 						"next_node", "draft_response"
@@ -331,7 +331,7 @@ public class QuickStartExample {
 
 		@Override
 		public Map<String, Object> apply(OverAllState state) throws Exception {
-			// 在您的bug跟踪系统中创建票据
+			// 在您的bug跟踪系统中创建票�?
 			String ticketId = "BUG-12345";  // 将通过API创建
 
 			log.info("Created bug ticket: {}", ticketId);
@@ -386,20 +386,20 @@ public class QuickStartExample {
 				contextSections.add("客户等级: " + history.getOrDefault("tier", "standard"));
 			}
 
-			// 使用格式化的上下文构建提示
+			// 使用格式化的上下文构建提�?
 			String draftPrompt = String.format("""
-					为这封客户邮件起草回复:
+					为这封客户邮件起草回�?
 					%s
 
 					邮件意图: %s
-					紧急程度: %s
+					紧急程�? %s
 
 					%s
 
 					指南:
 					- 专业且有帮助
-					- 解决他们的具体问题
-					- 在相关时使用提供的文档
+					- 解决他们的具体问�?
+					- 在相关时使用提供的文�?
 					""",
 					emailContent,
 					classification.getIntent(),
@@ -412,16 +412,16 @@ public class QuickStartExample {
 					.call()
 					.content();
 
-			// 根据紧急程度和意图确定是否需要人工审核
+			// 根据紧急程度和意图确定是否需要人工审�?
 			boolean needsReview =
 					List.of("high", "critical").contains(classification.getUrgency()) ||
 							"complex".equals(classification.getIntent());
 
-			// 路由到适当的下一个节点
+			// 路由到适当的下一个节�?
 			String nextNode = needsReview ? "human_review" : "send_reply";
 
 			return Map.of(
-					"draft_response", response,  // 仅存储原始响应
+					"draft_response", response,  // 仅存储原始响�?
 					"next_node", nextNode
 			);
 		}
@@ -430,9 +430,9 @@ public class QuickStartExample {
 	/**
 	 * 人工审核节点
 	 * 
-	 * 注意：在 interruptBefore 模式下，中断是在编译配置中设置的（见 createEmailAgentGraph 方法）。
-	 * 节点本身不需要做任何特殊处理，只需要正常返回状态即可。
-	 * 当执行到此节点前时，Graph 会自动中断，等待人工输入。
+	 * 注意：在 interruptBefore 模式下，中断是在编译配置中设置的（见 createEmailAgentGraph 方法）�?
+	 * 节点本身不需要做任何特殊处理，只需要正常返回状态即可�?
+	 * 当执行到此节点前时，Graph 会自动中断，等待人工输入�?
 	 */
 	public static class HumanReviewNode implements NodeAction {
 
@@ -449,13 +449,13 @@ public class QuickStartExample {
 					"draft_response", state.value("draft_response").map(v -> (String) v).orElse(""),
 					"urgency", classification.getUrgency(),
 					"intent", classification.getIntent(),
-					"action", "请审核并批准/编辑此响应"
+					"action", "请审核并批准/编辑此响�?
 			);
 
 			log.info("Waiting for human review: {}", reviewData);
 
-			// 返回审核数据和下一个节点
-			// 注意：在 interruptBefore 模式下，此节点在人工输入后才会执行
+			// 返回审核数据和下一个节�?
+			// 注意：在 interruptBefore 模式下，此节点在人工输入后才会执�?
 			return Map.of(
 					"review_data", reviewData,
 					"status", "waiting_for_review",
@@ -465,7 +465,7 @@ public class QuickStartExample {
 	}
 
 	/**
-	 * 发送回复节点
+	 * 发送回复节�?
 	 */
 	public static class SendReplyNode implements NodeAction {
 
@@ -475,7 +475,7 @@ public class QuickStartExample {
 					.map(v -> (String) v)
 					.orElse("");
 
-			// 与邮件服务集成
+			// 与邮件服务集�?
 			log.info("Sending reply: {}...", 
 					draftResponse.length() > 100 
 							? draftResponse.substring(0, 100) 
@@ -503,7 +503,7 @@ public class QuickStartExample {
 		var humanReview = node_async(new HumanReviewNode());
 		var sendReply = node_async(new SendReplyNode());
 
-		// 创建图
+		// 创建�?
 		StateGraph workflow = new StateGraph(createKeyStrategyFactory())
 				.addNode("read_email", readEmail)
 				.addNode("classify_intent", classifyIntent)
@@ -513,12 +513,12 @@ public class QuickStartExample {
 				.addNode("human_review", humanReview)
 				.addNode("send_reply", sendReply);
 
-		// 添加基本边
+		// 添加基本�?
 		workflow.addEdge(START, "read_email");
 		workflow.addEdge("read_email", "classify_intent");
 		workflow.addEdge("send_reply", END);
 
-		// 添加条件边（基于节点返回的 next_node）
+		// 添加条件边（基于节点返回�?next_node�?
 		workflow.addConditionalEdges("classify_intent",
 				edge_async(state -> {
 					return (String) state.value("next_node").orElse("draft_response");
@@ -550,7 +550,7 @@ public class QuickStartExample {
 		workflow.addEdge("search_documentation", "draft_response");
 		workflow.addEdge("bug_tracking", "draft_response");
 
-		// 配置持久化
+		// 配置持久�?
 		var memory = new MemorySaver();
 		var compileConfig = CompileConfig.builder()
 				.saverConfig(SaverConfig.builder()
@@ -565,12 +565,12 @@ public class QuickStartExample {
 	// ==================== 测试方法 ====================
 
 	/**
-	 * 测试紧急账单问题
+	 * 测试紧急账单问�?
 	 */
 	public static void testBillingIssue(CompiledGraph app) throws Exception {
-		log.info("=== 测试紧急账单问题 ===");
+		log.info("=== 测试紧急账单问�?===");
 
-		// 测试紧急账单问题
+		// 测试紧急账单问�?
 		Map<String, Object> initialState = Map.of(
 				"email_content", "我的订阅被收费两次了！这很紧急！",
 				"sender_email", "customer@example.com",
@@ -583,13 +583,13 @@ public class QuickStartExample {
 				.threadId("customer_123")
 				.build();
 
-		// 使用 stream 执行，直到中断点（human_review）
-		// 图将在 human_review 处暂停（因为配置了 interruptBefore）
+		// 使用 stream 执行，直到中断点（human_review�?
+		// 图将�?human_review 处暂停（因为配置�?interruptBefore�?
 		Flux<NodeOutput> stream = app.stream(initialState, config);
 		stream
 				.doOnNext(output -> log.info("节点输出: {}", output))
 				.doOnError(error -> log.error("执行错误: {}", error.getMessage()))
-				.doOnComplete(() -> log.info("流完成"))
+				.doOnComplete(() -> log.info("流完�?))
 				.blockLast();
 
 		// 获取当前状态，检查是否有草稿回复
@@ -604,33 +604,33 @@ public class QuickStartExample {
 		}
 
 		// 准备好后，提供人工输入以恢复
-		// 使用 updateState 更新状态（interruptBefore 模式下，传入 null 作为节点 ID）
+		// 使用 updateState 更新状态（interruptBefore 模式下，传入 null 作为节点 ID�?
 		var updatedConfig = app.updateState(config, Map.of(
 				"approved", true,
-				"edited_response", "我们对重复收费深表歉意。我已经立即启动了退款..."
+				"edited_response", "我们对重复收费深表歉意。我已经立即启动了退�?.."
 		), null);
 
-		// 继续执行（input 为 null，使用之前的状态）
+		// 继续执行（input �?null，使用之前的状态）
 		app.stream(null, updatedConfig)
 				.doOnNext(output -> log.info("节点输出: {}", output))
 				.doOnError(error -> log.error("执行错误: {}", error.getMessage()))
-				.doOnComplete(() -> log.info("流完成"))
+				.doOnComplete(() -> log.info("流完�?))
 				.blockLast();
 
-		// 获取最终状态
+		// 获取最终状�?
 		var finalState = app.getState(updatedConfig);
 		String status = (String) finalState.state().data().get("status");
 		log.info("Email sent successfully! Status: {}", status);
 	}
 
 	/**
-	 * 测试简单问题
+	 * 测试简单问�?
 	 */
 	public static void testSimpleQuestion(CompiledGraph app) {
-		log.info("=== 测试简单问题 ===");
+		log.info("=== 测试简单问�?===");
 
 		Map<String, Object> initialState = Map.of(
-				"email_content", "如何重置我的密码？",
+				"email_content", "如何重置我的密码�?,
 				"sender_email", "user@example.com",
 				"email_id", "email_456",
 				"messages", new ArrayList<String>()
@@ -640,20 +640,20 @@ public class QuickStartExample {
 				.threadId("user_456")
 				.build();
 
-		// invoke 返回 Optional<OverAllState>，需要使用 orElseThrow() 获取结果
+		// invoke 返回 Optional<OverAllState>，需要使�?orElseThrow() 获取结果
 		var result = app.invoke(initialState, config).orElseThrow();
 		log.info("Simple question processed. Status: {}", result.data().get("status"));
 	}
 
 	/**
-	 * 主方法
+	 * 主方�?
 	 */
 	public static void main(String[] args) throws Exception {
 		log.info("========================================");
-		log.info("Graph 工作流编排快速入门示例");
+		log.info("Graph 工作流编排快速入门示�?);
 		log.info("========================================\n");
 
-		// 注意：实际使用时需要提供 ChatModel 实例
+		// 注意：实际使用时需要提�?ChatModel 实例
 		// 创建 DashScope API 实例
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))

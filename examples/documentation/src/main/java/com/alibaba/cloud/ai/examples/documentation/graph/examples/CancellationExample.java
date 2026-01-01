@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,14 +45,14 @@ public class CancellationExample {
 		Map<String, Object> inputData = new HashMap<>();
 		// ... 添加输入数据
 
-		// 执行图并获取流
+		// 执行图并获取�?
 		Flux<NodeOutput> stream = compiledGraph.stream(inputData, runnableConfig);
 
-		// 从新线程在 500 毫秒后请求取消
+		// 从新线程�?500 毫秒后请求取�?
 		CompletableFuture.runAsync(() -> {
 			try {
 				Thread.sleep(500);
-				// Flux 使用 dispose() 来取消
+				// Flux 使用 dispose() 来取�?
 				System.out.println("请求取消执行");
 			}
 			catch (InterruptedException e) {
@@ -63,8 +63,8 @@ public class CancellationExample {
 		// 异步处理每个输出
 		var disposable = stream.subscribe(
 				output -> System.out.println("当前迭代节点: " + output),
-				error -> System.out.println("流错误: " + error.getMessage()),
-				() -> System.out.println("流完成")
+				error -> System.out.println("流错�? " + error.getMessage()),
+				() -> System.out.println("流完�?)
 		);
 
 		// 等待流完成或取消
@@ -76,11 +76,11 @@ public class CancellationExample {
 		}
 
 		// 验证是否已取消（Flux 使用 isDisposed 检查）
-		System.out.println("是否已取消: " + disposable.isDisposed());
+		System.out.println("是否已取�? " + disposable.isDisposed());
 	}
 
 	/**
-	 * 示例 2: 使用迭代器消费流时取消
+	 * 示例 2: 使用迭代器消费流时取�?
 	 */
 	public static void cancelWithIterator(CompiledGraph compiledGraph, boolean mayInterruptIfRunning) {
 		// 创建运行配置
@@ -92,27 +92,27 @@ public class CancellationExample {
 		Map<String, Object> inputData = new HashMap<>();
 		// ... 添加输入数据
 
-		// 执行图并获取流
+		// 执行图并获取�?
 		Flux<NodeOutput> stream = compiledGraph.stream(inputData, runnableConfig);
 
-		// 从新线程在 500 毫秒后请求取消
+		// 从新线程�?500 毫秒后请求取�?
 		var disposable = stream.subscribe(
 				output -> {
 					System.out.println("当前迭代节点: " + output);
 				},
 				error -> {
-					System.out.println("流错误: " + error.getMessage());
+					System.out.println("流错�? " + error.getMessage());
 				},
 				() -> {
-					System.out.println("流完成");
+					System.out.println("流完�?);
 				}
 		);
 
 		CompletableFuture.runAsync(() -> {
 			try {
 				Thread.sleep(500);
-				disposable.dispose(); // 取消流
-				System.out.println("已请求取消执行");
+				disposable.dispose(); // 取消�?
+				System.out.println("已请求取消执�?);
 			}
 			catch (InterruptedException e) {
 				throw new RuntimeException(e);
@@ -127,19 +127,19 @@ public class CancellationExample {
 			System.out.println("流被中断: " + e.getMessage());
 		}
 
-		// 验证取消状态
-		System.out.println("是否已取消: " + disposable.isDisposed());
+		// 验证取消状�?
+		System.out.println("是否已取�? " + disposable.isDisposed());
 	}
 
 	/**
-	 * 检查取消状态
+	 * 检查取消状�?
 	 */
 	public static void checkCancellationStatus(Disposable disposable) {
 		if (disposable.isDisposed()) {
-			System.out.println("流已被取消");
+			System.out.println("流已被取�?);
 		}
 		else {
-			System.out.println("流仍在运行");
+			System.out.println("流仍在运�?);
 		}
 	}
 
@@ -147,23 +147,23 @@ public class CancellationExample {
 		System.out.println("=== Graph 执行取消示例 ===\n");
 
 		try {
-			// 示例 1: 使用 forEachAsync 消费流时取消（需要 CompiledGraph）
+			// 示例 1: 使用 forEachAsync 消费流时取消（需�?CompiledGraph�?
 			System.out.println("示例 1: 使用 forEachAsync 消费流时取消");
-			System.out.println("注意: 此示例需要 CompiledGraph，跳过执行");
+			System.out.println("注意: 此示例需�?CompiledGraph，跳过执�?);
 			// cancelWithForEachAsync(compiledGraph, true);
 			System.out.println();
 
-			// 示例 2: 使用迭代器消费流时取消（需要 CompiledGraph）
-			System.out.println("示例 2: 使用迭代器消费流时取消");
-			System.out.println("注意: 此示例需要 CompiledGraph，跳过执行");
+			// 示例 2: 使用迭代器消费流时取消（需�?CompiledGraph�?
+			System.out.println("示例 2: 使用迭代器消费流时取�?);
+			System.out.println("注意: 此示例需�?CompiledGraph，跳过执�?);
 			// cancelWithIterator(compiledGraph, true);
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
-			System.out.println("提示: 请配置 CompiledGraph 后运行完整示例");
+			System.out.println("所有示例执行完�?);
+			System.out.println("提示: 请配�?CompiledGraph 后运行完整示�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

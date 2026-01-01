@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ public class PoemTool {
 	 * @param toolContext the tool context
 	 * @return a generated poem
 	 */
-	@Tool(description = "用来写诗的工具，可以根据用户的查询生成诗歌内容")
+	@Tool(description = "用来写诗的工具，可以根据用户的查询生成诗歌内�?)
 	public String writePoem(
 			@ToolParam(description = "The original user query that triggered this tool call") String originalUserQuery,
 			ToolContext toolContext) {
@@ -54,8 +54,8 @@ public class PoemTool {
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
-		return "在城市的缝隙里，  \n" + "一束光悄悄发芽，  \n" + "穿过钢筋水泥的沉默，  \n" + "在风中轻轻说话。  \n" + "\n" + "夜色如墨，却不再黑，  \n"
-				+ "星星点亮了每一个角落，  \n" + "我站在时间的边缘，  \n" + "等一朵云，轻轻落下";
+		return "在城市的缝隙里，  \n" + "一束光悄悄发芽�? \n" + "穿过钢筋水泥的沉默，  \n" + "在风中轻轻说话�? \n" + "\n" + "夜色如墨，却不再黑，  \n"
+				+ "星星点亮了每一个角落，  \n" + "我站在时间的边缘�? \n" + "等一朵云，轻轻落�?;
 	}
 
 	/**

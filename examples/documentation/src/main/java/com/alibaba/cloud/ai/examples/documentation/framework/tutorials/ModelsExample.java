@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class ModelsExample {
 	// ==================== DashScopeChatModel ====================
 
 	/**
-	 * 示例1：创建 ChatModel
+	 * 示例1：创�?ChatModel
 	 */
 	public static void createChatModel() {
 		// 创建 DashScope API 实例
@@ -61,7 +61,7 @@ public class ModelsExample {
 	}
 
 	/**
-	 * 示例2：简单调用
+	 * 示例2：简单调�?
 	 */
 	public static void simpleCall() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -72,13 +72,13 @@ public class ModelsExample {
 				.dashScopeApi(dashScopeApi)
 				.build();
 
-		// 使用字符串直接调用
+		// 使用字符串直接调�?
 		String response = chatModel.call("介绍一下Spring框架");
 		System.out.println(response);
 	}
 
 	/**
-	 * 示例3：使用 Prompt
+	 * 示例3：使�?Prompt
 	 */
 	public static void usePrompt() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -90,9 +90,9 @@ public class ModelsExample {
 				.build();
 
 		// 创建 Prompt
-		Prompt prompt = new Prompt(new UserMessage("解释什么是微服务架构"));
+		Prompt prompt = new Prompt(new UserMessage("解释什么是微服务架�?));
 
-		// 调用并获取响应
+		// 调用并获取响�?
 		ChatResponse response = chatModel.call(prompt);
 		String answer = response.getResult().getOutput().getText();
 		System.out.println(answer);
@@ -101,7 +101,7 @@ public class ModelsExample {
 	// ==================== 配置选项 ====================
 
 	/**
-	 * 示例4：使用 ChatOptions
+	 * 示例4：使�?ChatOptions
 	 */
 	public static void useChatOptions() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -133,14 +133,14 @@ public class ModelsExample {
 				.dashScopeApi(dashScopeApi)
 				.build();
 
-		// 创建带有特定选项的 Prompt
+		// 创建带有特定选项�?Prompt
 		DashScopeChatOptions runtimeOptions = DashScopeChatOptions.builder()
 				.withTemperature(0.3)  // 更低的温度，更确定的输出
 				.withMaxToken(500)
 				.build();
 
 		Prompt prompt = new Prompt(
-				new UserMessage("用一句话总结Java的特点"),
+				new UserMessage("用一句话总结Java的特�?),
 				runtimeOptions
 		);
 
@@ -150,7 +150,7 @@ public class ModelsExample {
 	// ==================== 流式响应 ====================
 
 	/**
-	 * 示例6：流式响应
+	 * 示例6：流式响�?
 	 */
 	public static void streamingResponse() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -163,10 +163,10 @@ public class ModelsExample {
 
 		// 使用流式 API
 		Flux<ChatResponse> responseStream = chatModel.stream(
-				new Prompt("详细解释Spring Boot的自动配置原理")
+				new Prompt("详细解释Spring Boot的自动配置原�?)
 		);
 
-		// 订阅并处理流式响应
+		// 订阅并处理流式响�?
 		responseStream.subscribe(
 				chatResponse -> {
 					String content = chatResponse.getResult()
@@ -182,7 +182,7 @@ public class ModelsExample {
 	// ==================== 多轮对话 ====================
 
 	/**
-	 * 示例7：多轮对话
+	 * 示例7：多轮对�?
 	 */
 	public static void multiTurnConversation() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -197,8 +197,8 @@ public class ModelsExample {
 		List<Message> messages = List.of(
 				new SystemMessage("你是一个Java专家"),
 				new UserMessage("什么是Spring Boot?"),
-				new AssistantMessage("Spring Boot是..."),
-				new UserMessage("它有什么优势?")
+				new AssistantMessage("Spring Boot�?.."),
+				new UserMessage("它有什么优�?")
 		);
 
 		Prompt prompt = new Prompt(messages);
@@ -208,7 +208,7 @@ public class ModelsExample {
 	// ==================== 函数调用 ====================
 
 	/**
-	 * 示例8：函数调用
+	 * 示例8：函数调�?
 	 */
 	public static void functionCalling() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -222,9 +222,9 @@ public class ModelsExample {
 		// 定义函数
 		ToolCallback weatherFunction = FunctionToolCallback.builder("getWeather", (city) -> {
 					// 实际的天气查询逻辑
-					return "晴朗，25°C";
+					return "晴朗�?5°C";
 				})
-				.description("获取指定城市的天气")
+				.description("获取指定城市的天�?)
 				.inputType(String.class)
 				.build();
 
@@ -233,11 +233,11 @@ public class ModelsExample {
 				.withToolCallbacks(List.of(weatherFunction))
 				.build();
 
-		Prompt prompt = new Prompt("北京的天气怎么样?", options);
+		Prompt prompt = new Prompt("北京的天气怎么�?", options);
 		ChatResponse response = chatModel.call(prompt);
 	}
 
-	// ==================== 与 ReactAgent 集成 ====================
+	// ==================== �?ReactAgent 集成 ====================
 
 	/**
 	 * 示例9：与 ReactAgent 集成
@@ -273,10 +273,10 @@ public class ModelsExample {
 
 		// 配置各种选项
 		DashScopeChatOptions options = DashScopeChatOptions.builder()
-				.withModel("qwen-max")              // 使用旗舰版模型
-				.withTemperature(0.7)               // 控制随机性
-				.withMaxToken(4000)                // 最大输出长度
-				.withTopP(0.9)                      // 核采样
+				.withModel("qwen-max")              // 使用旗舰版模�?
+				.withTemperature(0.7)               // 控制随机�?
+				.withMaxToken(4000)                // 最大输出长�?
+				.withTopP(0.9)                      // 核采�?
 				.build();
 
 		ChatModel chatModel = DashScopeChatModel.builder()
@@ -284,10 +284,10 @@ public class ModelsExample {
 				.defaultOptions(options)
 				.build();
 
-		// 创建复杂的对话
+		// 创建复杂的对�?
 		List<Message> messages = List.of(
-				new SystemMessage("你是一位资深的软件架构师，精通微服务和云原生技术。"),
-				new UserMessage("如何设计一个高可用的微服务系统？")
+				new SystemMessage("你是一位资深的软件架构师，精通微服务和云原生技术�?),
+				new UserMessage("如何设计一个高可用的微服务系统�?)
 		);
 
 		Prompt prompt = new Prompt(messages);
@@ -312,7 +312,7 @@ public class ModelsExample {
 						.build())
 				.build();
 
-		// qwen-plus: 通义千问增强版
+		// qwen-plus: 通义千问增强�?
 		ChatModel plusModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
@@ -320,7 +320,7 @@ public class ModelsExample {
 						.build())
 				.build();
 
-		// qwen-max: 通义千问旗舰版
+		// qwen-max: 通义千问旗舰�?
 		ChatModel maxModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
@@ -328,15 +328,15 @@ public class ModelsExample {
 						.build())
 				.build();
 
-		// 使用不同的模型
-		String question = "什么是人工智能？";
+		// 使用不同的模�?
+		String question = "什么是人工智能�?;
 		String turboResponse = turboModel.call(question);
 		String plusResponse = plusModel.call(question);
 		String maxResponse = maxModel.call(question);
 	}
 
 	/**
-	 * 示例12：错误处理
+	 * 示例12：错误处�?
 	 */
 	public static void errorHandling() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -367,7 +367,7 @@ public class ModelsExample {
 
 		String question = "给我讲一个有趣的故事";
 
-		// 低温度 - 更确定、更保守的输出
+		// 低温�?- 更确定、更保守的输�?
 		ChatModel conservativeModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
@@ -375,7 +375,7 @@ public class ModelsExample {
 						.build())
 				.build();
 
-		// 中温度 - 平衡的输出
+		// 中温�?- 平衡的输�?
 		ChatModel balancedModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
@@ -383,7 +383,7 @@ public class ModelsExample {
 						.build())
 				.build();
 
-		// 高温度 - 更有创意、更随机的输出
+		// 高温�?- 更有创意、更随机的输�?
 		ChatModel creativeModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
@@ -404,52 +404,52 @@ public class ModelsExample {
 
 	public static void main(String[] args) {
 		System.out.println("=== Models Tutorial Examples ===");
-		System.out.println("注意：需要设置 AI_DASHSCOPE_API_KEY 环境变量\n");
+		System.out.println("注意：需要设�?AI_DASHSCOPE_API_KEY 环境变量\n");
 
 		try {
-			System.out.println("\n--- 示例1：创建 ChatModel ---");
+			System.out.println("\n--- 示例1：创�?ChatModel ---");
 			createChatModel();
 
-			System.out.println("\n--- 示例2：简单调用 ---");
+			System.out.println("\n--- 示例2：简单调�?---");
 			simpleCall();
 
-			System.out.println("\n--- 示例3：使用 Prompt ---");
+			System.out.println("\n--- 示例3：使�?Prompt ---");
 			usePrompt();
 
-			System.out.println("\n--- 示例4：使用 ChatOptions ---");
+			System.out.println("\n--- 示例4：使�?ChatOptions ---");
 			useChatOptions();
 
 			System.out.println("\n--- 示例5：运行时选项覆盖 ---");
 			runtimeOptionsOverride();
 
-			System.out.println("\n--- 示例6：流式响应 ---");
+			System.out.println("\n--- 示例6：流式响�?---");
 			streamingResponse();
 
-			System.out.println("\n--- 示例7：多轮对话 ---");
+			System.out.println("\n--- 示例7：多轮对�?---");
 			multiTurnConversation();
 
-			System.out.println("\n--- 示例8：函数调用 ---");
+			System.out.println("\n--- 示例8：函数调�?---");
 			functionCalling();
 
 			System.out.println("\n--- 示例9：与 ReactAgent 集成 ---");
 			integrationWithReactAgent();
 
-			System.out.println("\n--- 示例10：综合配置 ---");
+			System.out.println("\n--- 示例10：综合配�?---");
 			comprehensiveConfiguration();
 
-			System.out.println("\n--- 示例11：不同模型使用 ---");
+			System.out.println("\n--- 示例11：不同模型使�?---");
 			differentModelsUsage();
 
-			System.out.println("\n--- 示例12：错误处理 ---");
+			System.out.println("\n--- 示例12：错误处�?---");
 			errorHandling();
 
-			System.out.println("\n--- 示例13：温度效果 ---");
+			System.out.println("\n--- 示例13：温度效�?---");
 			temperatureEffect();
 
-			System.out.println("\n=== 所有示例执行完成 ===");
+			System.out.println("\n=== 所有示例执行完�?===");
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时发生错误: " + e.getMessage());
+			System.err.println("执行示例时发生错�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

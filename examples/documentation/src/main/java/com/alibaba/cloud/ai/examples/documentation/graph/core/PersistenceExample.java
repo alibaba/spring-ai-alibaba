@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,16 +37,16 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * 持久化示例
+ * 持久化示�?
  * 演示如何使用 Checkpointer 实现工作流状态持久化
  */
 public class PersistenceExample {
 
 	/**
-	 * 示例 1: 基本持久化配置
+	 * 示例 1: 基本持久化配�?
 	 */
 	public static void basicPersistenceExample() throws GraphStateException {
-		// 定义状态策略
+		// 定义状态策�?
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
 			keyStrategyMap.put("foo", new ReplaceStrategy());
@@ -63,7 +63,7 @@ public class PersistenceExample {
 			return Map.of("foo", "b", "bar", List.of("b"));
 		});
 
-		// 创建图
+		// 创建�?
 		StateGraph stateGraph = new StateGraph(keyStrategyFactory)
 				.addNode("node_a", nodeA)
 				.addNode("node_b", nodeB)
@@ -76,14 +76,14 @@ public class PersistenceExample {
 				.register(new MemorySaver())
 				.build();
 
-		// 编译图
+		// 编译�?
 		CompiledGraph graph = stateGraph.compile(
 				CompileConfig.builder()
 						.saverConfig(saverConfig)
 						.build()
 		);
 
-		// 运行图
+		// 运行�?
 		RunnableConfig config = RunnableConfig.builder()
 				.threadId("1")
 				.build();
@@ -96,19 +96,19 @@ public class PersistenceExample {
 	}
 
 	/**
-	 * 示例 2: 获取状态
+	 * 示例 2: 获取状�?
 	 */
 	public static void getStateExample(CompiledGraph graph) {
 		RunnableConfig config = RunnableConfig.builder()
 				.threadId("1")
 				.build();
 
-		// 获取最新的状态快照
+		// 获取最新的状态快�?
 		StateSnapshot stateSnapshot = graph.getState(config);
 		System.out.println("Current state: " + stateSnapshot.state());
 		System.out.println("Current node: " + stateSnapshot.node());
 
-		// 获取特定 checkpoint_id 的状态快照
+		// 获取特定 checkpoint_id 的状态快�?
 		RunnableConfig configWithCheckpoint = RunnableConfig.builder()
 				.threadId("1")
 				.checkPointId("1ef663ba-28fe-6528-8002-5a559208592c")
@@ -118,7 +118,7 @@ public class PersistenceExample {
 	}
 
 	/**
-	 * 示例 3: 获取状态历史
+	 * 示例 3: 获取状态历�?
 	 */
 	public static void getStateHistoryExample(CompiledGraph graph) {
 		RunnableConfig config = RunnableConfig.builder()
@@ -136,7 +136,7 @@ public class PersistenceExample {
 	}
 
 	/**
-	 * 示例 4: 更新状态
+	 * 示例 4: 更新状�?
 	 */
 	public static void updateStateExample(CompiledGraph graph) throws Exception {
 		KeyStrategyFactory keyStrategyFactory = () -> {
@@ -159,7 +159,7 @@ public class PersistenceExample {
 	}
 
 	/**
-	 * 示例 5: 重放（Replay）
+	 * 示例 5: 重放（Replay�?
 	 */
 	public static void replayExample(CompiledGraph graph) {
 		RunnableConfig config = RunnableConfig.builder()
@@ -172,15 +172,15 @@ public class PersistenceExample {
 	}
 
 	public static void main(String[] args) {
-		System.out.println("=== 持久化示例 ===\n");
+		System.out.println("=== 持久化示�?===\n");
 
 		try {
-			// 示例 1: 基本持久化配置
-			System.out.println("示例 1: 基本持久化配置");
+			// 示例 1: 基本持久化配�?
+			System.out.println("示例 1: 基本持久化配�?);
 			basicPersistenceExample();
 			System.out.println();
 
-			// 创建图用于后续示例
+			// 创建图用于后续示�?
 			KeyStrategyFactory keyStrategyFactory = () -> {
 				Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
 				keyStrategyMap.put("foo", new ReplaceStrategy());
@@ -213,31 +213,31 @@ public class PersistenceExample {
 			input.put("foo", "");
 			graph.invoke(input, config);
 
-			// 示例 2: 获取状态
-			System.out.println("示例 2: 获取状态");
+			// 示例 2: 获取状�?
+			System.out.println("示例 2: 获取状�?);
 			getStateExample(graph);
 			System.out.println();
 
-			// 示例 3: 获取状态历史
-			System.out.println("示例 3: 获取状态历史");
+			// 示例 3: 获取状态历�?
+			System.out.println("示例 3: 获取状态历�?);
 			getStateHistoryExample(graph);
 			System.out.println();
 
-			// 示例 4: 更新状态
-			System.out.println("示例 4: 更新状态");
+			// 示例 4: 更新状�?
+			System.out.println("示例 4: 更新状�?);
 			updateStateExample(graph);
 			System.out.println();
 
-			// 示例 5: 重放（需要有效的 checkpointId）
-			System.out.println("示例 5: 重放（需要有效的 checkpointId）");
-			System.out.println("注意: 此示例需要有效的 checkpointId，跳过执行");
+			// 示例 5: 重放（需要有效的 checkpointId�?
+			System.out.println("示例 5: 重放（需要有效的 checkpointId�?);
+			System.out.println("注意: 此示例需要有效的 checkpointId，跳过执�?);
 			// replayExample(graph);
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
+			System.out.println("所有示例执行完�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

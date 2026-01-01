@@ -1,5 +1,5 @@
 ///*
-// * Copyright 2024-2025 the original author or authors.
+// * Copyright 2024-2026 the original author or authors.
 // *
 // * Licensed under the Apache License, Version 2.0 (the "License");
 // * you may not use this file except in compliance with the License.
@@ -46,14 +46,14 @@
 //	private static final Logger logger = LoggerFactory.getLogger(KnowledgeRetrievalNode.class);
 //
 //	List<Document> documents = List.of(new Document(
-//			"产品说明书:产品名称：智能机器人\n" + "产品描述：智能机器人是一个智能设备，能够自动完成各种任务。\n" + "功能：\n" + "1. 自动导航：机器人能够自动导航到指定位置。\n"
+//			"产品说明�?产品名称：智能机器人\n" + "产品描述：智能机器人是一个智能设备，能够自动完成各种任务。\n" + "功能：\n" + "1. 自动导航：机器人能够自动导航到指定位置。\n"
 //					+ "2. 自动抓取：机器人能够自动抓取物品。\n" + "3. 自动放置：机器人能够自动放置物品。\n",
 //			Map.of("type", "instruction", // 文档类型
 //					"year", "2023", // 年份
 //					"month", "06" // 月份
 //			)),
 //			new Document(
-//					"产品说明书:产品名称：智能家居控制器\n" + "产品描述：智能家居控制器是一款集成化设备，可远程控制多种智能家电。\n" + "功能：\n"
+//					"产品说明�?产品名称：智能家居控制器\n" + "产品描述：智能家居控制器是一款集成化设备，可远程控制多种智能家电。\n" + "功能：\n"
 //							+ "1. 远程控制：通过手机APP远程控制家电开关和调节。\n" + "2. 定时任务：设置家电定时开启或关闭。\n" + "3. 场景模式：支持多种场景模式一键切换。\n"
 //							+ "4. 能耗统计：实时监控并统计家电能耗数据。\n",
 //
@@ -82,7 +82,7 @@
 //
 //	Map<String, Object> initStateMap() {
 //		Map<String, Object> modifiableMap = new HashMap<>();
-//		modifiableMap.put("user_prompt", "你将作为一名机器人产品的专家，对于用户的使用需求作出解答");
+//		modifiableMap.put("user_prompt", "你将作为一名机器人产品的专家，对于用户的使用需求作出解�?);
 //		modifiableMap.put("top_k", 5);
 //		modifiableMap.put("similarity_threshold", 0.1);
 //		modifiableMap.put("filter_expression", filterExpression);
@@ -127,7 +127,7 @@
 //
 //		KnowledgeRetrievalNode node = initNodeBuilder().build();
 //		Map<String, Object> stateMap = initStateMap();
-//		// 原本topk为5
+//		// 原本topk�?
 //		Map<String, Object> newState = node.apply(new OverAllState(stateMap));
 //		logger.info("文档检索结果加入prompt为{}", newState.get("user_prompt"));
 //		assertEquals(2, node.documents.size());
@@ -147,11 +147,11 @@
 //
 //		KnowledgeRetrievalNode node = initNodeBuilder().build();
 //		Map<String, Object> stateMap = initStateMap();
-//		// 原本similarity_threshold为0，1
+//		// 原本similarity_threshold�?�?
 //		Map<String, Object> newState = node.apply(new OverAllState(stateMap));
 //		logger.info("文档检索结果加入prompt为{}", newState.get("user_prompt"));
 //		assertEquals(2, node.documents.size());
-//		// 修改为0.5
+//		// 修改�?.5
 //		stateMap.put("similarity_threshold", 0.5);
 //		newState = node.apply(new OverAllState(stateMap));
 //		logger.info("文档检索结果加入prompt为{}", newState.get("user_prompt"));
@@ -188,7 +188,7 @@
 //		KnowledgeRetrievalNode node = initNodeBuilder().build();
 //		Map<String, Object> stateMap = initStateMap();
 //
-//		// rerankOptions原本默认topN为3
+//		// rerankOptions原本默认topN�?
 //		Map<String, Object> newState = node.apply(new OverAllState(stateMap));
 //		logger.info("文档检索结果加入prompt为{}", newState.get("user_prompt"));
 //		assertEquals(2, node.documents.size());

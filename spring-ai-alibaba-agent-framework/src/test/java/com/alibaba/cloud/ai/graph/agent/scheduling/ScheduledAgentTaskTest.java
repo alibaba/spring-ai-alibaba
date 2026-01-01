@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class ScheduledAgentTaskTest {
 
 	@BeforeEach
 	void setUp() {
-		// 先创建 DashScopeApi 实例
+		// 先创�?DashScopeApi 实例
 		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 
 		// 创建 DashScope ChatModel 实例
@@ -156,7 +156,7 @@ public class ScheduledAgentTaskTest {
 			// Verify task is stopped
 			assertThat(task.isStopped()).isTrue();
 
-			System.out.println("✅ Cron test completed successfully - executed " + executionCount.get() + " times");
+			System.out.println("�?Cron test completed successfully - executed " + executionCount.get() + " times");
 
 		}
 		catch (Exception e) {

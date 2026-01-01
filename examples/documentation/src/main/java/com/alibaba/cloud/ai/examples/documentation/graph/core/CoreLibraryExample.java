@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
- * 核心库概念指南示例
- * 演示 State、Nodes、Edges 的基本用法
+ * 核心库概念指南示�?
+ * 演示 State、Nodes、Edges 的基本用�?
  */
 public class CoreLibraryExample {
 
@@ -49,7 +49,7 @@ public class CoreLibraryExample {
 	}
 
 	/**
-	 * 示例 B: 自定义 KeyStrategyFactory
+	 * 示例 B: 自定�?KeyStrategyFactory
 	 */
 	public static KeyStrategyFactory createCustomKeyStrategyFactory() {
 		return () -> {
@@ -109,7 +109,7 @@ public class CoreLibraryExample {
 	}
 
 	/**
-	 * 条件边示例
+	 * 条件边示�?
 	 */
 	public static void conditionalEdgesExample() throws GraphStateException {
 		KeyStrategyFactory keyStrategyFactory = createKeyStrategyFactory();
@@ -129,7 +129,7 @@ public class CoreLibraryExample {
 	}
 
 	public static void main(String[] args) {
-		System.out.println("=== 核心库概念示例 ===\n");
+		System.out.println("=== 核心库概念示�?===\n");
 
 		try {
 			// 示例 1: 基本节点示例
@@ -142,15 +142,15 @@ public class CoreLibraryExample {
 			removeMessagesExample();
 			System.out.println();
 
-			// 示例 3: 条件边示例
-			System.out.println("示例 3: 条件边示例");
+			// 示例 3: 条件边示�?
+			System.out.println("示例 3: 条件边示�?);
 			conditionalEdgesExample();
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
+			System.out.println("所有示例执行完�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}

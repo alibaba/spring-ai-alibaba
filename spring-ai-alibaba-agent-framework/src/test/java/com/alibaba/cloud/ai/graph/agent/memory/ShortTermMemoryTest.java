@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ class ShortTermMemoryTest {
 				.build();
 
 		// First interaction: introduce name
-		Optional<OverAllState> result1 = agent.invoke("你好！我叫张三。", config);
+		Optional<OverAllState> result1 = agent.invoke("你好！我叫张三�?, config);
 		assertTrue(result1.isPresent(), "First response should be present");
 
 		AssistantMessage response1 = (AssistantMessage) result1.get().value("messages")
@@ -131,14 +131,14 @@ class ShortTermMemoryTest {
 				.threadId("thread_alice")
 				.build();
 
-		agent.invoke("你好，我叫 Alice。", config1);
+		agent.invoke("你好，我�?Alice�?, config1);
 
 		// Thread 2: User named Bob
 		RunnableConfig config2 = RunnableConfig.builder()
 				.threadId("thread_bob")
 				.build();
 
-		agent.invoke("你好，我叫 Bob。", config2);
+		agent.invoke("你好，我�?Bob�?, config2);
 
 		// Ask for name in thread 1 - should be Alice
 		Optional<OverAllState> result1 = agent.invoke("我叫什么名字？", config1);
@@ -231,9 +231,9 @@ class ShortTermMemoryTest {
 				.build();
 
 		// Have multiple interactions
-		agent.invoke("你好，我叫 Bob", config);
+		agent.invoke("你好，我�?Bob", config);
 		agent.invoke("我喜欢猫", config);
-		agent.invoke("我也喜欢狗", config);
+		agent.invoke("我也喜欢�?, config);
 		agent.invoke("给我讲个笑话", config);
 
 		// After multiple interactions, the message count should be trimmed
@@ -311,7 +311,7 @@ class ShortTermMemoryTest {
 
 		// Have multiple interactions
 		agent.invoke("记住：密码是 12345", config);
-		agent.invoke("再记住：我的邮箱是 test@example.com", config);
+		agent.invoke("再记住：我的邮箱�?test@example.com", config);
 		agent.invoke("今天天气怎么样？", config);
 
 		// After deletion hook, old messages should be removed
@@ -343,7 +343,7 @@ class ShortTermMemoryTest {
 				.build();
 
 		// First interaction: user provides their location
-		agent.invoke("我住在北京。", config);
+		agent.invoke("我住在北京�?, config);
 
 		// Second interaction: ask about weather (agent should remember location)
 		Optional<OverAllState> result = agent.invoke("我这里的天气怎么样？", config);
@@ -377,7 +377,7 @@ class ShortTermMemoryTest {
 				.build();
 
 		// Have a conversation
-		agent1.invoke("你好，我叫李明，今年25岁。", config);
+		agent1.invoke("你好，我叫李明，今年25岁�?, config);
 
 		// Create a new agent instance with the same saver and threadId
 		ReactAgent agent2 = ReactAgent.builder()

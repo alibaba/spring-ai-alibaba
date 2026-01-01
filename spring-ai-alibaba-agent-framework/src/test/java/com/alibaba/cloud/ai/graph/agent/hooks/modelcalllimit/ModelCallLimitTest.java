@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,12 +59,12 @@ public class ModelCallLimitTest {
 
         // 第一次调用，执行第二次推理时报错
         assertThrows(ModelCallLimitExceededException.class, () -> {
-            agent.invoke("你好，帮我分两次调用weather工具，查询北京和上海的天气");
+            agent.invoke("你好，帮我分两次调用weather工具，查询北京和上海的天�?);
         }, "第一次调用应该抛出ModelCallLimitExceededException异常");
 
-        // 第二次调用，正常执行，不受之前影响
+        // 第二次调用，正常执行，不受之前影�?
         Optional<OverAllState> result2 = agent.invoke("你好");
-        assertTrue(result2.isPresent(), "第二次调用应该返回结果而不是抛出异常");
+        assertTrue(result2.isPresent(), "第二次调用应该返回结果而不是抛出异�?);
     }
 
     @Test
@@ -76,17 +76,17 @@ public class ModelCallLimitTest {
 
         ReactAgent agent = createAgent(hook, "test-agent", chatModel);
 
-        // END 之前实现是添加 AssistantMessage 提示模型去中止, 此处用例不验证
-        // 第一次调用，正常执行，不受之前影响
+        // END 之前实现是添�?AssistantMessage 提示模型去中�? 此处用例不验�?
+        // 第一次调用，正常执行，不受之前影�?
         Optional<OverAllState> result1 = agent.invoke("你好");
-        assertTrue(result1.isPresent(), "第一次调用应该返回结果而不是抛出异常");
+        assertTrue(result1.isPresent(), "第一次调用应该返回结果而不是抛出异�?);
 
-        // 第二次调用，正常执行，不会导致异常
+        // 第二次调用，正常执行，不会导致异�?
         assertDoesNotThrow(() -> {
             agent.invoke("你好，调用weather工具，查询北京的天气");
         });
 
-        // 第三次调用，正常执行，不会导致异常
+        // 第三次调用，正常执行，不会导致异�?
         assertDoesNotThrow(() -> {
             agent.invoke("你好，调用weather工具，查询上海的天气");
         });

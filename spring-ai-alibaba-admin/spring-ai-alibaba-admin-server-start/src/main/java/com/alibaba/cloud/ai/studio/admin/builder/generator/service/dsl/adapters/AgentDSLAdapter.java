@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,12 +84,12 @@ public class AgentDSLAdapter implements DSLAdapter {
 		}
 		agent.setOutputKey(asString(root.get("output_key")));
 
-		// 透传 handle（不感知字段）
+		// 透传 handle（不感知字段�?
 		if (root.get("handle") instanceof Map<?, ?> h) {
 			agent.setHandle((Map<String, Object>) h);
 		}
 
-		// 递归 sub_agents（只解析壳层 + 透传 handle）
+		// 递归 sub_agents（只解析壳层 + 透传 handle�?
 		if (root.get("sub_agents") instanceof List<?> children) {
 			List<Agent> subs = new java.util.ArrayList<>();
 			for (Object o : children) {
@@ -133,7 +133,7 @@ public class AgentDSLAdapter implements DSLAdapter {
 		if (isBlank(type) || isBlank(name)) {
 			throw new IllegalArgumentException("invalid agent dsl: 'type/agent_class' and 'name' are required");
 		}
-		// 针对不同 Agent 类型的校验
+		// 针对不同 Agent 类型的校�?
 		validateAgentTypeSpecificConstraints(type, root);
 	}
 
@@ -180,7 +180,7 @@ public class AgentDSLAdapter implements DSLAdapter {
 		if (a instanceof Map) {
 			return (Map<String, Object>) a;
 		}
-		// 兼容扁平结构：认为当前 data 自身即 agent
+		// 兼容扁平结构：认为当�?data 自身�?agent
 		if (data.containsKey("agent_class") || data.containsKey("type") || data.containsKey("name")) {
 			return data;
 		}
@@ -225,7 +225,7 @@ public class AgentDSLAdapter implements DSLAdapter {
 	private Map<String, Object> dumpAgent(Agent agent) {
 		Map<String, Object> m = new HashMap<>();
 
-		// 基础属性
+		// 基础属�?
 		if (agent.getAgentClass() != null) {
 			m.put("type", agent.getAgentClass());
 		}

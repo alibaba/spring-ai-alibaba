@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -383,12 +383,12 @@ public class StateGraphTest {
 				.addEdge("step_3", END)
 				.compile();
 
-		// 使用实时流式处理，收集最后一个状态
+		// 使用实时流式处理，收集最后一个状�?
 		final OverAllState[] finalState = new OverAllState[1];
 		workflowParent.stream(Map.of())
 				.doOnNext(System.out::println) // 实时输出每个节点执行结果
 				.map(NodeOutput::state)
-				.doOnNext(state -> finalState[0] = state) // 保存最后的状态
+				.doOnNext(state -> finalState[0] = state) // 保存最后的状�?
 				.blockLast(); // 只等待流完成，不阻塞中间过程
 
 		assertTrue(finalState[0] != null);
@@ -469,17 +469,17 @@ public class StateGraphTest {
 		List<String> messages = (List<String>) finalState[0].value("messages").get();
 		log.info("messages: {}", messages);
 
-		// 验证所有节点都被执行，但不关心并行节点的顺序
-		assertEquals("A", messages.get(0)); // A 应该是第一个
-		assertEquals("B", messages.get(messages.size() - 2)); // B 应该是倒数第二个
-		assertEquals("C", messages.get(messages.size() - 1)); // C 应该是最后一个
+		// 验证所有节点都被执行，但不关心并行节点的顺�?
+		assertEquals("A", messages.get(0)); // A 应该是第一�?
+		assertEquals("B", messages.get(messages.size() - 2)); // B 应该是倒数第二�?
+		assertEquals("C", messages.get(messages.size() - 1)); // C 应该是最后一�?
 
-		// 验证并行节点 A1, A2, A3 都在结果中
+		// 验证并行节点 A1, A2, A3 都在结果�?
 		assertTrue(messages.contains("A1"), "A1 should be in the result");
 		assertTrue(messages.contains("A2"), "A2 should be in the result");
 		assertTrue(messages.contains("A3"), "A3 should be in the result");
 
-		// 验证总长度正确
+		// 验证总长度正�?
 		assertEquals(6, messages.size(), "Should have 6 messages: A, A1, A2, A3, B, C");
 
 		workflow = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
@@ -511,16 +511,16 @@ public class StateGraphTest {
 		assertTrue(finalState2[0] != null);
 		List<String> messages2 = (List<String>) finalState2[0].value("messages").get();
 
-		// 验证所有节点都被执行，但不关心并行节点的顺序
-		assertEquals("B", messages2.get(messages2.size() - 2)); // B 应该是倒数第二个
-		assertEquals("C", messages2.get(messages2.size() - 1)); // C 应该是最后一个
+		// 验证所有节点都被执行，但不关心并行节点的顺�?
+		assertEquals("B", messages2.get(messages2.size() - 2)); // B 应该是倒数第二�?
+		assertEquals("C", messages2.get(messages2.size() - 1)); // C 应该是最后一�?
 
-		// 验证并行节点 A1, A2, A3 都在结果中
+		// 验证并行节点 A1, A2, A3 都在结果�?
 		assertTrue(messages2.contains("A1"), "A1 should be in the result");
 		assertTrue(messages2.contains("A2"), "A2 should be in the result");
 		assertTrue(messages2.contains("A3"), "A3 should be in the result");
 
-		// 验证总长度正确
+		// 验证总长度正�?
 		assertEquals(5, messages2.size(), "Should have 5 messages: A1, A2, A3, B, C");
 
 	}
@@ -563,11 +563,11 @@ public class StateGraphTest {
 				.addEdge("C2", END)
 				.compile();
 
-		// 使用实时流式处理，收集所有步骤用于测试验证
+		// 使用实时流式处理，收集所有步骤用于测试验�?
 		final List<NodeOutput> allSteps = new ArrayList<>();
 		graph.stream(Map.of())
 				.doOnNext(System.out::println) // 实时输出每个节点执行结果
-				.doOnNext(allSteps::add) // 收集所有步骤
+				.doOnNext(allSteps::add) // 收集所有步�?
 				.blockLast(); // 只等待流完成，不阻塞中间过程
 
 		assertEquals(5, allSteps.size());
@@ -605,7 +605,7 @@ public class StateGraphTest {
 		app.stream(null, runnableConfig)
 				.doOnNext(output -> System.out.println("Resume: " + output)) // 实时输出恢复过程
 				.map(NodeOutput::state)
-				.doOnNext(state -> resumeState[0] = state) // 保存最后的状态
+				.doOnNext(state -> resumeState[0] = state) // 保存最后的状�?
 				.blockLast(); // 只等待流完成，不阻塞中间过程
 
 		assertTrue(resumeState[0] != null);
@@ -1169,7 +1169,7 @@ public class StateGraphTest {
 
 		Flux<NodeOutput> flux = app.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 
-		// 验证前两个元素正常输出
+		// 验证前两个元素正常输�?
 		Flux<NodeOutput> fluxForFirstTwo = app.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 		List<NodeOutput> firstTwoElements = fluxForFirstTwo.take(2).collectList().block();
 		assertNotNull(firstTwoElements);
@@ -1189,7 +1189,7 @@ public class StateGraphTest {
 
 		CompiledGraph app = workflow.compile();
 
-		// 验证 invoke 会抛出异常
+		// 验证 invoke 会抛出异�?
 		assertThrows(RuntimeException.class,
 				() -> app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1")));
 

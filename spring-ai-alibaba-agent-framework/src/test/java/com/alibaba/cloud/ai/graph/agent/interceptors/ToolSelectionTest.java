@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,7 +147,7 @@ class ToolSelectionTest {
 				.build();
 
 		try {
-			Optional<OverAllState> result = agent.invoke("帮我预订一张去上海的车票");
+			Optional<OverAllState> result = agent.invoke("帮我预订一张去上海的车�?);
 
 			// Assert that the result is present
 			assertTrue(result.isPresent(), "Agent result should be present");
@@ -198,7 +198,7 @@ class ToolSelectionTest {
 
 		try {
 			// Query that requires ticket and hotel but not weather
-			Optional<OverAllState> result = agent.invoke("帮我预订12月30日去北京的车票和酒店");
+			Optional<OverAllState> result = agent.invoke("帮我预订12�?0日去北京的车票和酒店");
 
 			// Assert that the result is present
 			assertTrue(result.isPresent(), "Agent result should be present");

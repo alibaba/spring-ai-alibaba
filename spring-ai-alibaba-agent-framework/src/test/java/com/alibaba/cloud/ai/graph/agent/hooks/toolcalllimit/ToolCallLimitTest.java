@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ public class ToolCallLimitTest {
 
     @Test
     public void testThreadLimitWithErrorBehavior() throws Exception {
-        // 限制 1 次
+        // 限制 1 �?
         ToolCallLimitHook hook = ToolCallLimitHook.builder()
                 .threadLimit(2)
                 .exitBehavior(ToolCallLimitHook.ExitBehavior.ERROR)
@@ -60,9 +60,9 @@ public class ToolCallLimitTest {
             agent.invoke("你好，帮我分别调用几次weather工具，查询北京、上海、杭州的天气");
         }, "第一次调用应该抛出ModelCallLimitExceededException异常");
 
-        // 第二次调用，正常执行，不受之前影响
+        // 第二次调用，正常执行，不受之前影�?
         Optional<OverAllState> result2 = agent.invoke("帮我查询成都天气");
-        assertTrue(result2.isPresent(), "第二次调用应该返回结果而不是抛出异常");
+        assertTrue(result2.isPresent(), "第二次调用应该返回结果而不是抛出异�?);
     }
 
     @Test
@@ -74,16 +74,16 @@ public class ToolCallLimitTest {
 
         ReactAgent agent = createAgent(hook, "test-agent", chatModel);
 
-        // 第一次调用，正常执行，不受之前影响
+        // 第一次调用，正常执行，不受之前影�?
         Optional<OverAllState> result1 = agent.invoke("你好");
-        assertTrue(result1.isPresent(), "第一次调用应该返回结果而不是抛出异常");
+        assertTrue(result1.isPresent(), "第一次调用应该返回结果而不是抛出异�?);
 
-        // 第二次调用，正常执行，不会导致异常
+        // 第二次调用，正常执行，不会导致异�?
         assertDoesNotThrow(() -> {
             agent.invoke("你好，调用weather工具，查询北京的天气");
         });
 
-        // 第三次调用，正常执行，不会导致异常
+        // 第三次调用，正常执行，不会导致异�?
         assertDoesNotThrow(() -> {
             agent.invoke("你好，调用weather工具，查询上海的天气");
         });

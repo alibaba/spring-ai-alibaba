@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import reactor.core.publisher.Flux;
 
 /**
  * MCP 节点示例
- * 演示如何为指定节点分配 MCP 工具
+ * 演示如何为指定节点分�?MCP 工具
  */
 public class McpNodeExample {
 
@@ -45,17 +45,17 @@ public class McpNodeExample {
 		System.out.println("=== MCP 节点示例 ===\n");
 
 		try {
-			// 示例: 配置 MCP 节点（需要 ChatClient 和 ToolCallbacks）
+			// 示例: 配置 MCP 节点（需�?ChatClient �?ToolCallbacks�?
 			System.out.println("示例: 配置 MCP 节点");
-			System.out.println("注意: 此示例需要 ChatClient 和 ToolCallbacks，跳过执行");
+			System.out.println("注意: 此示例需�?ChatClient �?ToolCallbacks，跳过执�?);
 			// configureMcpNode(ChatClient.builder(...), toolCallbacks);
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
-			System.out.println("提示: 请配置 ChatClient 和 ToolCallbacks 后运行完整示例");
+			System.out.println("所有示例执行完�?);
+			System.out.println("提示: 请配�?ChatClient �?ToolCallbacks 后运行完整示�?);
 		}
 		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
+			System.err.println("执行示例时出�? " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
@@ -70,7 +70,7 @@ public class McpNodeExample {
 		private final ChatClient chatClient;
 
 		public McpNode(ChatClient.Builder chatClientBuilder, Set<ToolCallback> toolCallbacks) {
-			// 为节点配置 MCP 工具
+			// 为节点配�?MCP 工具
 			this.chatClient = chatClientBuilder
 					.defaultToolCallbacks(toolCallbacks.toArray(ToolCallback[]::new))
 					.build();

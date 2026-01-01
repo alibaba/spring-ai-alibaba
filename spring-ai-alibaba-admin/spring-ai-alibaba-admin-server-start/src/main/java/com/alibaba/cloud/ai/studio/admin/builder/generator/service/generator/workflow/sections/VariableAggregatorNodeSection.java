@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ public class VariableAggregatorNodeSection implements NodeSection<VariableAggreg
 
 		String id = node.getId();
 
-		sb.append(String.format("// —— VariableAggregatorNode [%s] ——%n", id));
+		sb.append(String.format("// —�?VariableAggregatorNode [%s] —�?n", id));
 		sb.append(String.format("VariableAggregatorNode %s = VariableAggregatorNode.builder()\n", varName));
 
 		// .variables
@@ -97,7 +97,7 @@ public class VariableAggregatorNodeSection implements NodeSection<VariableAggreg
 
 		sb.append("    .build();\n");
 
-		// 辅助节点，将节点输出转为定义的格式
+		// 辅助节点，将节点输出转为定义的格�?
 		String assistNodeCode;
 		if (hasGroup) {
 			assistNodeCode = String.format("wrapperAggregatorNodeAction(%s, \"%s\", \"%s\", %s)", varName, varName,
