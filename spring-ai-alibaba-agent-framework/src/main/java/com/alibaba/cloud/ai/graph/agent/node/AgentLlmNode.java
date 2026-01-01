@@ -180,7 +180,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		if (StringUtils.hasLength(this.instruction)) {
 			List<Message> messagesWithInstruction = new ArrayList<>();
-			messagesWithInstruction.add(new SystemMessage(this.instruction));
+			messagesWithInstruction.add(new UserMessage(this.instruction));
 			messagesWithInstruction.addAll(messages);
 			requestBuilder.messages(messagesWithInstruction);
 		}
