@@ -92,6 +92,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		this.outputSchema = builder.outputSchema;
 		this.systemPrompt = builder.systemPrompt;
 		this.instruction = builder.instruction;
+		this.templateRenderer = builder.templateRenderer;
 		if (builder.advisors != null) {
 			this.advisors = builder.advisors;
 		}
