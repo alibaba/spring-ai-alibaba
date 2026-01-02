@@ -49,8 +49,8 @@ class SaaStTemplateRendererTest {
 	@Test
 	void testStringDelimiter() {
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -65,8 +65,8 @@ class SaaStTemplateRendererTest {
 	void testJsonContentWithStringDelimiter() {
 		// 测试使用多字符 delimiter 来避免与 JSON 内容冲突
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -120,8 +120,8 @@ class SaaStTemplateRendererTest {
 	void testComplexJsonWithStringDelimiter() {
 		// 测试复杂的 JSON 内容与模板变量混合
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -156,8 +156,8 @@ class SaaStTemplateRendererTest {
 	void testNestedDelimiters() {
 		// 测试嵌套的 delimiter
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -176,8 +176,8 @@ class SaaStTemplateRendererTest {
 	void testPropertyAccess() {
 		// 测试属性访问
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -193,8 +193,8 @@ class SaaStTemplateRendererTest {
 	@Test
 	void testMultipleVariables() {
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -212,8 +212,8 @@ class SaaStTemplateRendererTest {
 	@Test
 	void testValidationModeThrow() {
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.THROW)
 				.build();
 
@@ -228,8 +228,8 @@ class SaaStTemplateRendererTest {
 	@Test
 	void testValidationModeWarn() {
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.WARN)
 				.build();
 
@@ -244,8 +244,8 @@ class SaaStTemplateRendererTest {
 	@Test
 	void testValidationModeNone() {
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -261,8 +261,8 @@ class SaaStTemplateRendererTest {
 	void testJsonArrayWithStringDelimiter() {
 		// 测试包含 JSON 数组的情况
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -292,8 +292,8 @@ class SaaStTemplateRendererTest {
 	void testMixedContent() {
 		// 测试混合内容：既有 JSON，又有普通文本和模板变量
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -340,8 +340,8 @@ class SaaStTemplateRendererTest {
 	void testBuilderWithStringDelimiters() {
 		// 测试 Builder 使用 String delimiter
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("<<")
-				.endDelimiterToken(">>")
+				.startDelimiter("<<")
+				.endDelimiter(">>")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -355,8 +355,8 @@ class SaaStTemplateRendererTest {
 	@Test
 	void testEmptyTemplate() {
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -371,8 +371,8 @@ class SaaStTemplateRendererTest {
 	@Test
 	void testNullVariables() {
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 
@@ -387,8 +387,8 @@ class SaaStTemplateRendererTest {
 	void testComplexNestedJson() {
 		// 测试复杂的嵌套 JSON 结构
 		SaaStTemplateRenderer renderer = SaaStTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.validationMode(ValidationMode.NONE)
 				.build();
 

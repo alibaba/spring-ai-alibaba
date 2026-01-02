@@ -574,7 +574,7 @@ public class SaaStTemplateRenderer implements TemplateRenderer {
 		 * @param startDelimiterString The start delimiter string (e.g., "{{").
 		 * @return This builder instance for chaining.
 		 */
-		public SaaStTemplateRenderer.Builder startDelimiterToken(String startDelimiterString) {
+		public SaaStTemplateRenderer.Builder startDelimiter(String startDelimiterString) {
 			Assert.hasText(startDelimiterString, "startDelimiterString cannot be null or empty");
 			this.startDelimiterString = startDelimiterString;
 			this.useStringDelimiters = true;
@@ -591,7 +591,7 @@ public class SaaStTemplateRenderer implements TemplateRenderer {
 		 * @param endDelimiterString The end delimiter string (e.g., "}}").
 		 * @return This builder instance for chaining.
 		 */
-		public SaaStTemplateRenderer.Builder endDelimiterToken(String endDelimiterString) {
+		public SaaStTemplateRenderer.Builder endDelimiter(String endDelimiterString) {
 			Assert.hasText(endDelimiterString, "endDelimiterString cannot be null or empty");
 			this.endDelimiterString = endDelimiterString;
 			this.useStringDelimiters = true;
