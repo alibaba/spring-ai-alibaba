@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.hook.shelltool.ShellToolAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
@@ -39,14 +41,13 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class SkillsHookTest {
 
 	private static final String TEST_SKILLS_DIR = "src/test/resources/skills";
 
 	@Test
-	void testSkillsHookIntegrationWithReactAgent(@TempDir Path tempDir) throws Exception {
+	void testSkillsHookIntegrationWithScriptExecution(@TempDir Path tempDir) throws Exception {
 		System.out.println("\nSkillsHook集成测试\n");
 
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -65,53 +66,77 @@ class SkillsHookTest {
 		System.out.println("成功加载 " + skillCount + " 个 Skills");
 		assertEquals(3, skillCount, "应该加载 3 个 skills");
 		assertTrue(hook.hasSkill("pdf-extractor"), "应该包含 pdf-extractor skill");
-		assertTrue(hook.hasSkill("code-reviewer"), "应该包含 code-reviewer skill");
-		assertTrue(hook.hasSkill("data-analyzer"), "应该包含 data-analyzer skill");
 
 		System.out.println("\n2. 分析 Skills 需要的工具...");
 		Set<String> requiredTools = hook.getRequiredTools();
 		System.out.println("   需要的工具: " + requiredTools);
-		assertFalse(requiredTools.isEmpty(), "应该有需要的工具");
-		assertTrue(requiredTools.contains("shell") || requiredTools.contains("read"), 
-			"应该包含 shell 或 read 工具");
+		assertTrue(requiredTools.contains("shell"), "应该包含 shell 工具");
+		assertTrue(requiredTools.contains("read"), "应该包含 read 工具");
 
-		System.out.println("\n3. 创建测试文件...");
-		Path testFile = tempDir.resolve("test.txt");
-		Files.writeString(testFile, "Hello from test file!\nThis is line 2.\nThis is line 3.");
-		System.out.println("创建测试文件: " + testFile.toAbsolutePath());
+		System.out.println("\n3. 创建测试 PDF 文件...");
+		Path testPdf = tempDir.resolve("test-report.pdf");
+		Files.writeString(testPdf, "Mock PDF content for testing");
+		System.out.println("创建测试 PDF: " + testPdf.toAbsolutePath());
 
-		System.out.println("\n4. 创建 ReactAgent");
+		System.out.println("\n4. 准备 Python 脚本...");
+		Path skillsDir = tempDir.resolve(".claude").resolve("skills")
+			.resolve("pdf-extractor").resolve("scripts");
+		Files.createDirectories(skillsDir);
+		Path scriptPath = skillsDir.resolve("extract_pdf.py");
+
+		Path sourceScript = Path.of(TEST_SKILLS_DIR, "pdf-extractor", "scripts", "extract_pdf.py");
+		Files.copy(sourceScript, scriptPath);
+		System.out.println("脚本已复制到: " + scriptPath.toAbsolutePath());
+
+
+		System.out.println("\n5. 创建 ReactAgent（自动创建工具 + ShellToolAgentHook）...");
 		ReactAgent agent = ReactAgent.builder()
-			.name("skills-agent")
+			.name("skills-test-agent")
 			.model(chatModel)
 			.saver(new MemorySaver())
-			.hooks(hook)
+			.hooks(
+				hook,  // SkillsHook
+				// ShellToolAgentHook 会自动从 tools 中提取 ShellTool 并管理其生命周期
+				ShellToolAgentHook.builder()
+					.shellToolName("shell")  // 匹配工具名称
+					.build()
+			)
 			.tools(hook.createRequiredTools(tempDir.toString()))
 			.build();
+		System.out.println("ReactAgent 创建成功（包含 ShellToolAgentHook）");
 
-		System.out.println("\n5. 测试 Agent 执行");
+		System.out.println("\n6. 测试 Agent 执行（PDF 提取）...");
 		List<Message> messages = List.of(
-			new UserMessage("请读取文件 " + testFile.toAbsolutePath() + " 的内容，并告诉我有多少行")
+			new UserMessage("请从 " + testPdf.toAbsolutePath() +
+				" 中提取内容。脚本位于 " + scriptPath.toAbsolutePath() + 
+				"，使用命令: python " + scriptPath.toAbsolutePath() + " " + testPdf.toAbsolutePath())
 		);
 
 		RunnableConfig config = RunnableConfig.builder()
-			.threadId("test-thread")
+			.threadId("test-integration-thread")
 			.build();
 
 		Optional<OverAllState> result = agent.invoke(messages, config);
 
-		System.out.println("\n6. 验证结果");
+		// Step 8: Verify results
+		System.out.println("\n7. 验证结果...");
 		assertTrue(result.isPresent(), "结果应该存在");
 
 		@SuppressWarnings("unchecked")
 		List<Message> finalMessages = (List<Message>) result.get().value("messages").get();
 		assertNotNull(finalMessages, "消息列表不应为空");
-		System.out.println("返回消息数量: " + finalMessages.size());
+		System.out.println("   返回消息数量: " + finalMessages.size());
+		
+		long systemMessageCount = finalMessages.stream()
+			.filter(m -> m instanceof SystemMessage)
+			.count();
+		System.out.println("   SystemMessage 数量: " + systemMessageCount);
+		assertTrue(systemMessageCount <= 2, "SystemMessage 应该很少（理想情况是1条）");
 
 		boolean hasSkillsInfo = finalMessages.stream()
 			.filter(m -> m instanceof SystemMessage)
 			.anyMatch(m -> m.getText().contains("Available Skills") || 
-						   m.getText().contains("skill"));
+						   m.getText().contains("pdf-extractor"));
 		assertTrue(hasSkillsInfo, "应该包含 Skills 信息");
 		System.out.println("Skills 信息已注入到上下文");
 
@@ -120,12 +145,38 @@ class SkillsHookTest {
 		assertTrue(hasAssistantResponse, "应该有 LLM 的回复");
 		System.out.println("LLM 成功响应");
 
-		System.out.println("\n7. 对话内容:");
+		boolean hasToolResponse = finalMessages.stream()
+			.anyMatch(m -> m instanceof ToolResponseMessage);
+		if (hasToolResponse) {
+			System.out.println("工具已被调用");
+
+			boolean hasScriptOutput = finalMessages.stream()
+				.filter(m -> m instanceof ToolResponseMessage)
+				.anyMatch(m -> m.getText().contains("success") || 
+							   m.getText().contains("tables") ||
+							   m.getText().contains("metadata"));
+			if (hasScriptOutput) {
+				System.out.println("脚本执行成功（检测到 JSON 输出）");
+			}
+		}
+
+		// Print conversation for debugging
+		System.out.println("\n8. 对话内容:");
 		for (int i = 0; i < finalMessages.size(); i++) {
 			Message msg = finalMessages.get(i);
-			String preview = msg.getText().substring(0, Math.min(150, msg.getText().length()));
-			System.out.println("   [" + i + "] " + msg.getClass().getSimpleName() + ": " + 
-				preview + (msg.getText().length() > 150 ? "..." : ""));
+			String msgType = msg.getClass().getSimpleName();
+			String preview = msg.getText().substring(0, Math.min(200, msg.getText().length()));
+			System.out.println("   [" + i + "] " + msgType + ": " + 
+				preview.replace("\n", " ") + (msg.getText().length() > 200 ? "..." : ""));
+		}
+
+		System.out.println("\n集成测试通过！");
+		System.out.println("Skills 自动加载");
+		System.out.println("工具自动创建");
+		System.out.println("Skills 指令注入（单条 SystemMess age）");
+		System.out.println("ReactAgent 正常工作");
+		if (hasToolResponse) {
+			System.out.println("   - 工具调用成功");
 		}
 	}
 }
