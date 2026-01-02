@@ -105,56 +105,59 @@ public class SkillsHook extends ModelHook {
 			return CompletableFuture.completedFuture(Map.of());
 		}
 
-		boolean modified = false;
 		List<Message> newMessages = new ArrayList<>(messages);
 
-		if (!skillsListInjectedPerThread.getOrDefault(threadId, false)) {
-			String skillsListPrompt = skillRegistry.generateSkillsListPrompt();
-			if (!skillsListPrompt.isEmpty()) {
-				SystemMessage skillsListMessage = new SystemMessage(skillsListPrompt);
-				newMessages.add(0, skillsListMessage);
-				skillsListInjectedPerThread.put(threadId, true);
-				modified = true;
-				logger.debug("Thread {} Injected skills list with {} skills",
-					threadId, skillRegistry.size());
-			}
-		}
-
+		// Check if this is the first call for this thread
+		boolean isFirstCall = !skillsListInjectedPerThread.getOrDefault(threadId, false);
+		
+		// Get user request for skill matching
 		String userRequest = extractLastUserMessage(messages);
+		
+		// Match relevant skills
+		List<SkillMetadata> matchedSkills = new ArrayList<>();
+		Set<String> loadedSkills = loadedSkillsPerThread.computeIfAbsent(
+			threadId, k -> new HashSet<>());
+		
 		if (userRequest != null && !userRequest.isEmpty()) {
-			List<SkillMetadata> matchedSkills = skillRegistry.matchSkills(userRequest);
-			
-			Set<String> loadedSkills = loadedSkillsPerThread.computeIfAbsent(
-				threadId, k -> new HashSet<>());
-
-			for (SkillMetadata skill : matchedSkills) {
-				if (!loadedSkills.contains(skill.getName())) {
-					try {
-						String fullContent = skill.loadFullContent();
-						String skillPrompt = formatSkillContent(skill.getName(), fullContent);
-						
-						SystemMessage skillMessage = new SystemMessage(skillPrompt);
-						// Insert before the last user message
-						newMessages.add(newMessages.size() - 1, skillMessage);
-						
-						loadedSkills.add(skill.getName());
-						modified = true;
-						
-						logger.info("[Thread {}] Loaded skill '{}' for request", 
-							threadId, skill.getName());
-						
-					} catch (IOException e) {
-						logger.error("[Thread {}] Failed to load skill '{}': {}", 
-							threadId, skill.getName(), e.getMessage(), e);
-					}
-				}
-			}
+			matchedSkills = skillRegistry.matchSkills(userRequest).stream()
+				.filter(skill -> !loadedSkills.contains(skill.getName()))
+				.toList();
 		}
 
-		if (modified) {
-			Map<String, Object> update = new HashMap<>();
-			update.put("messages", newMessages);
-			return CompletableFuture.completedFuture(update);
+		// Only inject if it's first call OR there are new matched skills
+		if (isFirstCall || !matchedSkills.isEmpty()) {
+			try {
+				// Build complete system prompt (single message)
+				String systemPrompt = buildSystemPrompt(isFirstCall, matchedSkills);
+				
+				if (!systemPrompt.isEmpty()) {
+					SystemMessage skillsMessage = new SystemMessage(systemPrompt);
+					
+					// Insert at the beginning (after any existing system messages)
+					int insertIndex = findSystemMessageInsertIndex(newMessages);
+					newMessages.add(insertIndex, skillsMessage);
+					
+					// Mark as injected
+					if (isFirstCall) {
+						skillsListInjectedPerThread.put(threadId, true);
+						logger.debug("[Thread {}] Injected skills overview with {} skills", 
+							threadId, skillRegistry.size());
+					}
+					
+					// Mark matched skills as loaded
+					for (SkillMetadata skill : matchedSkills) {
+						loadedSkills.add(skill.getName());
+						logger.info("[Thread {}] Activated skill '{}'", threadId, skill.getName());
+					}
+					
+					Map<String, Object> update = new HashMap<>();
+					update.put("messages", newMessages);
+					return CompletableFuture.completedFuture(update);
+				}
+			} catch (Exception e) {
+				logger.error("[Thread {}] Failed to inject skills: {}", 
+					threadId, e.getMessage(), e);
+			}
 		}
 
 		return CompletableFuture.completedFuture(Map.of());
@@ -190,14 +193,64 @@ public class SkillsHook extends ModelHook {
 	}
 
 	/**
-	 * Format skill content for injection into the prompt.
+	 * Build a complete system prompt combining skills overview and matched skills.
+	 * This creates a single, structured system message instead of multiple messages.
+	 * 
+	 * @param includeOverview whether to include the skills overview (first call only)
+	 * @param matchedSkills list of skills that matched the user request
+	 * @return formatted system prompt
 	 */
-	private String formatSkillContent(String skillName, String content) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("\n## Active Skill: ").append(skillName).append("\n\n");
-		sb.append(content);
-		sb.append("\n");
-		return sb.toString();
+	private String buildSystemPrompt(boolean includeOverview, List<SkillMetadata> matchedSkills) {
+		StringBuilder prompt = new StringBuilder();
+
+		// Part 1: Skills overview (only on first call)
+		if (includeOverview && skillRegistry.size() > 0) {
+			prompt.append("You are an AI assistant with access to specialized skills.\n");
+			prompt.append("When a user's request aligns with a skill's purpose, you should apply that skill's instructions.\n\n");
+			prompt.append("Available Skills:\n");
+			
+			for (SkillMetadata skill : skillRegistry.listAll()) {
+				prompt.append(String.format("- **%s**: %s\n", skill.getName(), skill.getDescription()));
+			}
+			
+			prompt.append("\n");
+		}
+
+		// Part 2: Activated skills (full content)
+		if (!matchedSkills.isEmpty()) {
+			if (includeOverview) {
+				prompt.append("---\n\n");
+				prompt.append("The following skills have been activated for this request:\n\n");
+			}
+			
+			for (SkillMetadata skill : matchedSkills) {
+				try {
+					String fullContent = skill.loadFullContent();
+					prompt.append("## ").append(skill.getName()).append("\n\n");
+					prompt.append(fullContent).append("\n\n");
+				} catch (IOException e) {
+					logger.error("Failed to load skill '{}': {}", skill.getName(), e.getMessage());
+				}
+			}
+		}
+
+		return prompt.toString();
+	}
+
+	/**
+	 * Find the appropriate index to insert system message.
+	 * Insert after any existing system messages but before user messages.
+	 * 
+	 * @param messages the current message list
+	 * @return the index where the system message should be inserted
+	 */
+	private int findSystemMessageInsertIndex(List<Message> messages) {
+		for (int i = 0; i < messages.size(); i++) {
+			if (!(messages.get(i) instanceof SystemMessage)) {
+				return i;
+			}
+		}
+		return 0;
 	}
 
 	/**
