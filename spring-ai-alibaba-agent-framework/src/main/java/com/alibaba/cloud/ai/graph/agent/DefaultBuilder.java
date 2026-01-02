@@ -84,6 +84,10 @@ public class DefaultBuilder extends Builder {
 			llmNodeBuilder.systemPrompt(systemPrompt);
 		}
 
+		if (instruction != null) {
+			llmNodeBuilder.instruction(instruction);
+		}
+
 		String outputSchema = null;
 		if (StringUtils.hasLength(this.outputSchema) ) {
 			outputSchema = this.outputSchema;
@@ -243,4 +247,3 @@ public class DefaultBuilder extends Builder {
 	}
 
 }
-

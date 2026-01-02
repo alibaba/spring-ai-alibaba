@@ -946,4 +946,28 @@ class ReactAgentTest {
 		return (RunnableConfig) method.invoke(agent, config);
 	}
 
+	@Test
+	public void testInstructionSentToLLM() throws Exception {
+		String systemPromptText = "你是一个专业的技术问答助手，擅长用简洁明了的语言解释复杂的技术概念。";
+		String instructionText = "请用不超过100字简洁地回答用户的问题，重点突出核心要点。";
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("instruction_test_agent")
+				.model(chatModel)
+				.systemPrompt(systemPromptText)
+				.instruction(instructionText)
+				.saver(new MemorySaver())
+				.enableLogging(true)
+				.build();
+
+		assertNotNull(agent, "Agent 不应为空");
+
+		AssistantMessage response = agent.call("什么是 RESTful API?");
+		assertNotNull(response, "响应不应为空");
+		assertNotNull(response.getText(), "响应文本不应为空");
+		assertFalse(response.getText().isEmpty(), "响应文本不应为空字符串");
+		assertTrue(response.getText().length() > 0, "响应应该有内容");
+	}
+
 }
+
