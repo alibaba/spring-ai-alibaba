@@ -107,13 +107,10 @@ public class SkillsHook extends ModelHook {
 
 		List<Message> newMessages = new ArrayList<>(messages);
 
-		// Check if this is the first call for this thread
 		boolean isFirstCall = !skillsListInjectedPerThread.getOrDefault(threadId, false);
-		
-		// Get user request for skill matching
+
 		String userRequest = extractLastUserMessage(messages);
-		
-		// Match relevant skills
+
 		List<SkillMetadata> matchedSkills = new ArrayList<>();
 		Set<String> loadedSkills = loadedSkillsPerThread.computeIfAbsent(
 			threadId, k -> new HashSet<>());
@@ -124,30 +121,25 @@ public class SkillsHook extends ModelHook {
 				.toList();
 		}
 
-		// Only inject if it's first call OR there are new matched skills
 		if (isFirstCall || !matchedSkills.isEmpty()) {
 			try {
-				// Build complete system prompt (single message)
 				String systemPrompt = buildSystemPrompt(isFirstCall, matchedSkills);
 				
 				if (!systemPrompt.isEmpty()) {
 					SystemMessage skillsMessage = new SystemMessage(systemPrompt);
-					
-					// Insert at the beginning (after any existing system messages)
+
 					int insertIndex = findSystemMessageInsertIndex(newMessages);
 					newMessages.add(insertIndex, skillsMessage);
-					
-					// Mark as injected
+
 					if (isFirstCall) {
 						skillsListInjectedPerThread.put(threadId, true);
-						logger.debug("[Thread {}] Injected skills overview with {} skills", 
+						logger.debug("Thread {} Injected skills overview with {} skills",
 							threadId, skillRegistry.size());
 					}
-					
-					// Mark matched skills as loaded
+
 					for (SkillMetadata skill : matchedSkills) {
 						loadedSkills.add(skill.getName());
-						logger.info("[Thread {}] Activated skill '{}'", threadId, skill.getName());
+						logger.info("Thread {} Activated skill '{}'", threadId, skill.getName());
 					}
 					
 					Map<String, Object> update = new HashMap<>();
@@ -155,7 +147,7 @@ public class SkillsHook extends ModelHook {
 					return CompletableFuture.completedFuture(update);
 				}
 			} catch (Exception e) {
-				logger.error("[Thread {}] Failed to inject skills: {}", 
+				logger.error("Thread {} Failed to inject skills: {}",
 					threadId, e.getMessage(), e);
 			}
 		}
@@ -165,9 +157,8 @@ public class SkillsHook extends ModelHook {
 
 	@Override
 	public Map<String, KeyStrategy> getKeyStrategys() {
-		// No custom key strategies needed
-		return Map.of();
-	}
+        return super.getKeyStrategys();
+    }
 
 	/**
 	 * Extract messages from state.
@@ -203,17 +194,9 @@ public class SkillsHook extends ModelHook {
 	private String buildSystemPrompt(boolean includeOverview, List<SkillMetadata> matchedSkills) {
 		StringBuilder prompt = new StringBuilder();
 
-		// Part 1: Skills overview (only on first call)
 		if (includeOverview && skillRegistry.size() > 0) {
-			prompt.append("You are an AI assistant with access to specialized skills.\n");
-			prompt.append("When a user's request aligns with a skill's purpose, you should apply that skill's instructions.\n\n");
-			prompt.append("Available Skills:\n");
-			
-			for (SkillMetadata skill : skillRegistry.listAll()) {
-				prompt.append(String.format("- **%s**: %s\n", skill.getName(), skill.getDescription()));
-			}
-			
-			prompt.append("\n");
+			String skillsListPrompt = skillRegistry.generateSkillsListPrompt();
+			prompt.append(skillsListPrompt);
 		}
 
 		// Part 2: Activated skills (full content)
@@ -272,6 +255,81 @@ public class SkillsHook extends ModelHook {
 	 */
 	public boolean hasSkill(String skillName) {
 		return skillRegistry.contains(skillName);
+	}
+
+	/**
+	 * Load a skill from a directory at runtime.
+	 * This allows dynamically adding skills without restarting the application.
+	 * 
+	 * @param skillDirectory the directory containing SKILL.md
+	 * @return true if the skill was loaded successfully
+	 */
+	public boolean loadSkill(String skillDirectory) {
+		try {
+			SkillScanner scanner = new SkillScanner();
+			SkillMetadata skill = scanner.loadSkill(java.nio.file.Path.of(skillDirectory));
+			
+			if (skill != null) {
+				skillRegistry.register(skill);
+				logger.info("Loaded skill '{}' from {}", skill.getName(), skillDirectory);
+				return true;
+			} else {
+				logger.warn("Failed to load skill from {}", skillDirectory);
+				return false;
+			}
+		} catch (Exception e) {
+			logger.error("Error loading skill from {}: {}", skillDirectory, e.getMessage(), e);
+			return false;
+		}
+	}
+
+	/**
+	 * Unload a skill at runtime.
+	 * This removes the skill from the registry.
+	 * 
+	 * <p>Example usage:
+	 * <pre>{@code
+	 * hook.unloadSkill("pdf-extractor");
+	 * }</pre>
+	 * 
+	 * @param skillName the name of the skill to unload
+	 * @return true if the skill was unloaded successfully
+	 */
+	public boolean unloadSkill(String skillName) {
+		boolean removed = skillRegistry.unregister(skillName);
+		if (removed) {
+			logger.info("Unloaded skill '{}'", skillName);
+		}
+		return removed;
+	}
+
+	/**
+	 * Reload a skill at runtime.
+	 * This unloads the existing skill and loads it again from disk.
+	 * Useful for updating skill definitions without restarting.
+	 * 
+	 * <p>Example usage:
+	 * <pre>{@code
+	 * hook.reloadSkill("pdf-extractor", "./skills/pdf-extractor");
+	 * }</pre>
+	 * 
+	 * @param skillName the name of the skill to reload
+	 * @param skillDirectory the directory containing SKILL.md
+	 * @return true if the skill was reloaded successfully
+	 */
+	public boolean reloadSkill(String skillName, String skillDirectory) {
+		logger.info("Reloading skill '{}'", skillName);
+		unloadSkill(skillName);
+		return loadSkill(skillDirectory);
+	}
+
+	/**
+	 * Get all registered skills.
+	 * 
+	 * @return list of all skill metadata
+	 */
+	public List<SkillMetadata> listSkills() {
+		return skillRegistry.listAll();
 	}
 
 	/**

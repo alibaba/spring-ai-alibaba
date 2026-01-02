@@ -95,8 +95,7 @@ class SkillsHookTest {
 			.model(chatModel)
 			.saver(new MemorySaver())
 			.hooks(
-				hook,  // SkillsHook
-				// ShellToolAgentHook 会自动从 tools 中提取 ShellTool 并管理其生命周期
+				hook,
 				ShellToolAgentHook.builder()
 					.shellToolName("shell")  // 匹配工具名称
 					.build()
@@ -168,15 +167,6 @@ class SkillsHookTest {
 			String preview = msg.getText().substring(0, Math.min(200, msg.getText().length()));
 			System.out.println("   [" + i + "] " + msgType + ": " + 
 				preview.replace("\n", " ") + (msg.getText().length() > 200 ? "..." : ""));
-		}
-
-		System.out.println("\n集成测试通过！");
-		System.out.println("Skills 自动加载");
-		System.out.println("工具自动创建");
-		System.out.println("Skills 指令注入（单条 SystemMess age）");
-		System.out.println("ReactAgent 正常工作");
-		if (hasToolResponse) {
-			System.out.println("   - 工具调用成功");
 		}
 	}
 }

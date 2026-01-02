@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Metadata for a Claude-style Skill.
  * 
- * A Skill is a reusable package of instructions and context that extends Claude's capabilities.
+ * A Skill is a reusable package of instructions and context that extends the LLM's capabilities.
  * Skills are automatically discovered and used by the LLM when relevant to the user's request.
  */
 public class SkillMetadata {
@@ -88,9 +88,9 @@ public class SkillMetadata {
 
 	/**
 	 * Load the full content of the SKILL.md file.
-	 * The content is cached after the first load.
+	 * The content is cached after the first load (lazy loading).
 	 * 
-	 * @return the full content of the skill (without frontmatter)
+	 * @return the full content of SKILL.md (without frontmatter)
 	 * @throws IOException if the skill file cannot be read
 	 */
 	public String loadFullContent() throws IOException {

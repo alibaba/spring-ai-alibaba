@@ -87,3 +87,4 @@ Action: Execute script, extract and format table data
 User: "What's the metadata of document.pdf?"
 Action: Execute script, return document properties
 ```
+

@@ -115,6 +115,28 @@ public class SkillRegistry {
 	}
 
 	/**
+	 * Unregister a skill by name.
+	 * Package-private: Only used internally by SkillsHook.
+	 * 
+	 * @param name the skill name to unregister
+	 * @return true if the skill was removed, false if it didn't exist
+	 */
+	boolean unregister(String name) {
+		if (name == null || name.isEmpty()) {
+			throw new IllegalArgumentException("Skill name cannot be null or empty");
+		}
+		
+		SkillMetadata removed = skills.remove(name);
+		if (removed != null) {
+			logger.info("Unregistered skill: {}", name);
+			return true;
+		} else {
+			logger.debug("Attempted to unregister non-existent skill: {}", name);
+			return false;
+		}
+	}
+
+	/**
 	 * Match skills based on user request.
 	 * 
 	 * Uses simple keyword matching: checks if words from the skill's description
@@ -170,7 +192,7 @@ public class SkillRegistry {
 	/**
 	 * Generate a prompt describing all available skills.
 	 * This prompt is injected into the LLM's context to enable skill discovery.
-	 * 
+	 *
 	 * @return the skills list prompt
 	 */
 	public String generateSkillsListPrompt() {
