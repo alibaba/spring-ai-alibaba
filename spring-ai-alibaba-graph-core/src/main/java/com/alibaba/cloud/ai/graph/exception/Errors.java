@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,9 @@ public enum Errors {
 	unsupportedConditionalEdgeOnParallelNode(
 			"parallel node doesn't support conditional branch, but on [%s] a conditional branch on %s have been found!"),
 	illegalMultipleTargetsOnParallelNode("parallel node [%s] must have only one target, but %s have been found!"),
-	interruptionNodeNotExist("node '%s' configured as interruption doesn't exist!");
-
+	interruptionNodeNotExist("node '%s' configured as interruption doesn't exist!"),
+	emptySourceNodeByEdge("Source nodeIds missing for addEdges(sourceIds, %s)!"),
+	emptyTargetNodeByEdge("Target nodeIds missing for addEdges(%s, targetIds)!");
 	private final String errorMessage;
 
 	Errors(String errorMessage) {

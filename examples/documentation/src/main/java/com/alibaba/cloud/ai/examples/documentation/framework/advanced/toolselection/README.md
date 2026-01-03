@@ -268,7 +268,7 @@ mvn -q -pl examples/documentation -am exec:java \
 
 | 版本 | 变更 |
 |------|------|
-| 1.1.0.0-RC2 | 新增 `toolDescriptions` 支持，提高工具选择准确性 |
+| 1.1.0.0 | 新增 `toolDescriptions` 支持，提高工具选择准确性 |
 
 ---
 
