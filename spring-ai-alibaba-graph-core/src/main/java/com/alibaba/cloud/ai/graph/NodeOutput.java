@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import org.springframework.ai.chat.metadata.Usage;
 
+import java.util.List;
 import java.util.Objects;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -37,6 +38,13 @@ public class NodeOutput {
 	}
 
 	/**
+	 * Build NodeOutput with calculated next nodes information
+	 */
+	public static NodeOutput of(String node, String agentName, OverAllState state, Usage tokenUsage, String nextNode, List<String> allNextNodes) {
+		return new NodeOutput(node, agentName, tokenUsage, state, nextNode, allNextNodes);
+	}
+
+	/**
 	 * The identifier of the node.
 	 */
 	protected final String node;
@@ -48,6 +56,16 @@ public class NodeOutput {
 	 * The state associated with the node.
 	 */
 	protected final OverAllState state;
+
+	/**
+	 * The next execution node.
+	 */
+	protected final String nextNode;
+
+	/**
+	 * All possible next execution nodes.
+	 */
+	protected final List<String> allNextNodes;
 
 	protected boolean subGraph = false;
 
@@ -98,10 +116,31 @@ public class NodeOutput {
 		return state;
 	}
 
+	/**
+	 * Get the next execution node based on the graph structure.
+	 * @return the next node identifier, or null if there's no next node
+	 */
+	public String getNextNode() {
+		return this.nextNode;
+	}
+
+	/**
+	 * Get all possible next execution nodes.
+	 * @return list of all next node identifiers, empty list if there are no next nodes
+	 */
+	public List<String> getAllNextNodes() {
+		if (this.allNextNodes == null) {
+			return List.of();
+		}
+		return this.allNextNodes;
+	}
+
 	protected NodeOutput(String node, String agentName, OverAllState state) {
 		this.node = node;
 		this.agent = agentName;
 		this.state = state;
+		this.nextNode = null;
+		this.allNextNodes = null;
 	}
 
 	protected NodeOutput(String node, String agentName, Usage tokenUsage, OverAllState state) {
@@ -109,17 +148,30 @@ public class NodeOutput {
 		this.agent = agentName;
 		this.state = state;
 		this.tokenUsage = tokenUsage;
+		this.nextNode = null;
+		this.allNextNodes = null;
+	}
+
+	protected NodeOutput(String node, String agentName, Usage tokenUsage, OverAllState state, String nextNode, List<String> allNextNodes) {
+		this.node = node;
+		this.agent = agentName;
+		this.state = state;
+		this.tokenUsage = tokenUsage;
+		this.nextNode = nextNode;
+		this.allNextNodes = allNextNodes;
 	}
 
 	protected NodeOutput(String node, OverAllState state) {
 		this.node = node;
 		this.state = state;
+		this.nextNode = null;
+		this.allNextNodes = null;
 	}
 
 	@Override
 	public String toString() {
-		return format("NodeOutput{node=%s, agent=%s, tokenUsage=%s, state=%s, subGraph=%s}",
-				node(), agent(), tokenUsage(), state(), isSubGraph());
+		return format("NodeOutput{node=%s, agent=%s, tokenUsage=%s, state=%s, nextNode=%s, allNextNodes=%s, subGraph=%s}",
+				node(), agent(), tokenUsage(), state(), nextNode, allNextNodes, isSubGraph());
 	}
 
 }
