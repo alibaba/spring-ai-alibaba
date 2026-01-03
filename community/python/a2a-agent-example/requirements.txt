@@ -1,0 +1,21 @@
+# Python A2A Agent Example Dependencies
+# For Spring AI Alibaba cross-language A2A integration
+
+# Web framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# HTTP client for Nacos registration
+requests>=2.31.0
+
+# OpenAI compatible client (for agent logic)
+openai>=1.0.0
+
+# Async support
+httpx>=0.25.0
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# SSE support
+sse-starlette>=1.6.0
