@@ -116,6 +116,24 @@ public class StreamingOutput<T> extends NodeOutput {
 		this.outputType = outputType;
 	}
 
+	// Constructor for Message with originData, nextNode and allNextNodes
+	public StreamingOutput(Message message, T originData, String node, String agentName, OverAllState state, String nextNode, List<String> allNextNodes, OutputType outputType) {
+		super(node, agentName, extractUsage(originData), state, nextNode, allNextNodes);
+		this.message = message;
+		this.originData = originData;
+		this.chunk = extractChunkFromMessage(message);
+		this.outputType = outputType;
+	}
+
+	// Constructor for originData with nextNode and allNextNodes (without Message)
+	public StreamingOutput(T originData, String node, String agentName, OverAllState state, String nextNode, List<String> allNextNodes, OutputType outputType) {
+		super(node, agentName, extractUsage(originData), state, nextNode, allNextNodes);
+		this.chunk = null;
+		this.message = null;
+		this.originData = originData;
+		this.outputType = outputType;
+	}
+
 	// Constructor for Message with OverAllState and Usage (for buildNodeOutput)
 	public StreamingOutput(Message message, String node, String agentName, OverAllState state, Usage usage) {
 		super(node, agentName, usage, state);
@@ -177,6 +195,15 @@ public class StreamingOutput<T> extends NodeOutput {
 			if (!assistantMessage.hasToolCalls()) {
 				return assistantMessage.getText();
 			}
+		}
+		return null;
+	}
+
+	private static Usage extractUsage(Object originData) {
+		if (originData instanceof ChatResponse chatResponse) {
+			return chatResponse.getMetadata().getUsage();
+		} else if (originData instanceof Usage usage) {
+			return usage;
 		}
 		return null;
 	}

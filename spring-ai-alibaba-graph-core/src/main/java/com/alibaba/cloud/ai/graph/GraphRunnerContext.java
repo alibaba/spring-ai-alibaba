@@ -246,7 +246,7 @@ public class GraphRunnerContext {
 		// Create StreamingOutput with chunk and originData
 		OutputType outputType = OutputType.from(streaming, nodeId);
 		StreamingOutput<?> output = new StreamingOutput<>(message, originData, nodeId,
-				(String) config.metadata("_AGENT_").orElse(""), this.overallState);
+				(String) config.metadata("_AGENT_").orElse(""), this.overallState, nextNode, allNextNodes, outputType);
 		output.setSubGraph(true);
 		return output;
 	}
@@ -258,7 +258,7 @@ public class GraphRunnerContext {
 
 		OutputType outputType = OutputType.from(streaming, nodeId);
 		StreamingOutput<?> output = new StreamingOutput<>(originData, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-				this.overallState);
+				this.overallState, nextNode, allNextNodes, outputType);
 		output.setSubGraph(true);
 		return output;
 	}
