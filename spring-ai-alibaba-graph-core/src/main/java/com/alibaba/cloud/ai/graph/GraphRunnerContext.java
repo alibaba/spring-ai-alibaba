@@ -247,7 +247,6 @@ public class GraphRunnerContext {
 		OutputType outputType = OutputType.from(streaming, nodeId);
 		StreamingOutput<?> output = new StreamingOutput<>(message, originData, nodeId,
 				(String) config.metadata("_AGENT_").orElse(""), this.overallState);
-		output.setTokenUsage(this.tokenUsage);
 		output.setSubGraph(true);
 		return output;
 	}
@@ -260,7 +259,6 @@ public class GraphRunnerContext {
 		OutputType outputType = OutputType.from(streaming, nodeId);
 		StreamingOutput<?> output = new StreamingOutput<>(originData, nodeId, (String) config.metadata("_AGENT_").orElse(""),
 				this.overallState);
-		output.setTokenUsage(this.tokenUsage);
 		output.setSubGraph(true);
 		return output;
 	}
