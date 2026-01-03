@@ -39,6 +39,8 @@ public class AgentCardConverterUtil {
 			return null;
 		}
 
+		boolean supportsAuthenticatedExtendedCard = Boolean.TRUE.equals(agentCard.getSupportsAuthenticatedExtendedCard());
+
 		return new io.a2a.spec.AgentCard.Builder().protocolVersion(agentCard.getProtocolVersion())
 			.name(agentCard.getName())
 			.description(agentCard.getDescription())
@@ -55,7 +57,7 @@ public class AgentCardConverterUtil {
 			.security(agentCard.getSecurity())
 			.defaultInputModes(agentCard.getDefaultInputModes())
 			.defaultOutputModes(agentCard.getDefaultOutputModes())
-			.supportsAuthenticatedExtendedCard(agentCard.getSupportsAuthenticatedExtendedCard())
+			.supportsAuthenticatedExtendedCard(supportsAuthenticatedExtendedCard)
 			.build();
 	}
 
@@ -98,9 +100,9 @@ public class AgentCardConverterUtil {
 			return null;
 		}
 
-		return new io.a2a.spec.AgentCapabilities.Builder().streaming(nacosCapabilities.getStreaming())
-			.pushNotifications(nacosCapabilities.getPushNotifications())
-			.stateTransitionHistory(nacosCapabilities.getStateTransitionHistory())
+		return new io.a2a.spec.AgentCapabilities.Builder().streaming(Boolean.TRUE.equals(nacosCapabilities.getStreaming()))
+			.pushNotifications(Boolean.TRUE.equals(nacosCapabilities.getPushNotifications()))
+			.stateTransitionHistory(Boolean.TRUE.equals(nacosCapabilities.getStateTransitionHistory()))
 			.build();
 	}
 

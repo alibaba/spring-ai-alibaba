@@ -29,6 +29,16 @@ target/
 ### .env files contain local environment variables ###
 .env
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
 # Maven ignore
 .flattened-pom.xml
 

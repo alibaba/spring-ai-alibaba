@@ -1,0 +1,42 @@
+# Spring AI Alibaba - Call Python A2A Agent Example
+# This configuration enables Nacos discovery to find Python agents
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: saa-call-python-agent
+
+  ai:
+    alibaba:
+      # DashScope configuration (for local agent if needed)
+      dashscope:
+        api-key: ${DASHSCOPE_API_KEY:}
+
+      # A2A configuration
+      a2a:
+        nacos:
+          # Nacos server connection
+          server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+          namespace: ${NACOS_NAMESPACE:public}
+          username: ${NACOS_USERNAME:nacos}
+          password: ${NACOS_PASSWORD:nacos}
+
+          # Enable discovery to find Python agents
+          discovery:
+            enabled: true
+
+          # Disable registry (this app is only a consumer)
+          registry:
+            enabled: false
+
+# Python agent name to discover
+python:
+  agent:
+    name: python-translator-agent
+
+logging:
+  level:
+    com.alibaba.cloud.ai: DEBUG
+    com.alibaba.cloud.ai.graph.agent.a2a: DEBUG
