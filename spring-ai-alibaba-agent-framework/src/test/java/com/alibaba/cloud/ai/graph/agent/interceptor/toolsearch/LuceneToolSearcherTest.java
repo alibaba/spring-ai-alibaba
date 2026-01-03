@@ -15,13 +15,16 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.toolsearch;
 
+import org.apache.lucene.analysis.core.SimpleAnalyzer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -95,6 +98,62 @@ class LuceneToolSearcherTest {
 		assertEquals("get_weather", results.get(0).getToolDefinition().name());
 	}
 
+	@Test
+	void testBuilderWithCustomAnalyzer() {
+		LuceneToolSearcher customSearcher = LuceneToolSearcher.builder()
+			.analyzer(new SimpleAnalyzer())
+			.build();
+
+		customSearcher.indexTools(testTools);
+		List<ToolCallback> results = customSearcher.search("weather", 10);
+
+		assertNotNull(results);
+		assertFalse(results.isEmpty());
+	}
+
+	@Test
+	void testBuilderWithCustomBoosts() {
+		Map<String, Float> customBoosts = new HashMap<>();
+		customBoosts.put("name", 1.0f);
+		customBoosts.put("description", 5.0f);
+		customBoosts.put("parameters", 1.0f);
+
+		LuceneToolSearcher customSearcher = LuceneToolSearcher.builder()
+			.fieldBoosts(customBoosts)
+			.build();
+
+		customSearcher.indexTools(testTools);
+		List<ToolCallback> results = customSearcher.search("database", 10);
+
+		assertNotNull(results);
+		assertFalse(results.isEmpty());
+		assertTrue(results.get(0).getToolDefinition().description().contains("database"));
+	}
+
+	@Test
+	void testBuilderClearAndCustomFields() {
+		LuceneToolSearcher customSearcher = LuceneToolSearcher.builder()
+			.clearIndexFields()
+			.addIndexField("name", 5.0f)
+			.addIndexField("description", 3.0f)
+			.build();
+
+		customSearcher.indexTools(testTools);
+		List<ToolCallback> results = customSearcher.search("weather", 10);
+
+		assertNotNull(results);
+		assertFalse(results.isEmpty());
+	}
+
+	@Test
+	void testBuilderValidation() {
+		assertThrows(IllegalStateException.class, () -> {
+			LuceneToolSearcher.builder()
+				.clearIndexFields()
+				.build();
+		});
+	}
+
 
 	private List<ToolCallback> createTestTools() {
 		List<ToolCallback> tools = new ArrayList<>();
@@ -145,4 +204,3 @@ class LuceneToolSearcherTest {
 	}
 
 }
-

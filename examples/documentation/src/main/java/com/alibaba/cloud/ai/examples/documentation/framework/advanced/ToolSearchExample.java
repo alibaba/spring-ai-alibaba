@@ -43,11 +43,8 @@ public class ToolSearchExample {
     }
 
     public static void main(String[] args) {
-        // 检查 API Key
         String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
         if (apiKey == null || apiKey.isEmpty()) {
-            System.err.println("错误：请先设置环境变量 AI_DASHSCOPE_API_KEY");
-            System.err.println("示例：export AI_DASHSCOPE_API_KEY=your_api_key");
             return;
         }
 
@@ -77,8 +74,11 @@ public class ToolSearchExample {
 
     public void basicToolSearchUsage() throws Exception {
 
-        // 步骤1: 创建工具搜索器
-        LuceneToolSearcher toolSearcher = new LuceneToolSearcher();
+        LuceneToolSearcher toolSearcher = LuceneToolSearcher.builder()
+                .fieldBoost("name", 3.0f)           // 工具名称权重最高
+                .fieldBoost("description", 2.0f)    // 描述权重次之
+                .fieldBoost("parameters", 1.0f)     // 参数权重最低
+                .build();
 
         // 步骤2: 创建所有可用工具
         List<ToolCallback> availableTools = createAvailableTools();
@@ -88,7 +88,12 @@ public class ToolSearchExample {
         System.out.println("✓ 已索引 " + availableTools.size() + " 个工具");
 
         // 步骤4: 创建拦截器
-        ToolSearchModelInterceptor interceptor = ToolSearchModelInterceptor.builder().toolSearcher(toolSearcher).maxResults(5).maxRecursionDepth(3).build();
+        ToolSearchModelInterceptor interceptor = ToolSearchModelInterceptor.builder()
+                .toolSearcher(toolSearcher)
+                .maxResults(5)
+                .maxRecursionDepth(3)
+                .depthExceededStrategy(ToolSearchModelInterceptor.DepthExceededStrategy.USE_CACHED_TOOLS)
+                .build();
 
         // 步骤5: 创建 tool_search 工具
         ToolCallback toolSearchTool = ToolSearchTool.builder(toolSearcher).withMaxResults(5).build();
@@ -110,12 +115,17 @@ public class ToolSearchExample {
 
     public void multiStepToolDiscovery() throws Exception {
 
-        // 创建工具搜索环境
-        LuceneToolSearcher toolSearcher = new LuceneToolSearcher();
+        LuceneToolSearcher toolSearcher = LuceneToolSearcher.builder()
+                .fieldBoost("description", 3.0f)
+                .build();
         toolSearcher.indexTools(createAvailableTools());
 
-        // 创建拦截器
-        ToolSearchModelInterceptor interceptor = ToolSearchModelInterceptor.builder().toolSearcher(toolSearcher).maxResults(5).maxRecursionDepth(5).build();
+        ToolSearchModelInterceptor interceptor = ToolSearchModelInterceptor.builder()
+                .toolSearcher(toolSearcher)
+                .maxResults(5)
+                .maxRecursionDepth(5)
+                .depthExceededStrategy(ToolSearchModelInterceptor.DepthExceededStrategy.USE_CACHED_TOOLS)
+                .build();
 
         // 创建 tool_search 工具
         ToolCallback toolSearchTool = ToolSearchTool.builder(toolSearcher).withMaxResults(5).build();
@@ -138,7 +148,12 @@ public class ToolSearchExample {
         LuceneToolSearcher toolSearcher = new LuceneToolSearcher();
         toolSearcher.indexTools(createAvailableTools());
 
-        ToolSearchModelInterceptor interceptor = ToolSearchModelInterceptor.builder().toolSearcher(toolSearcher).maxResults(5).maxRecursionDepth(3).build();
+        ToolSearchModelInterceptor interceptor = ToolSearchModelInterceptor.builder()
+                .toolSearcher(toolSearcher)
+                .maxResults(5)
+                .maxRecursionDepth(3)
+                .depthExceededStrategy(ToolSearchModelInterceptor.DepthExceededStrategy.RETURN_ERROR_MESSAGE)
+                .build();
 
         ToolCallback toolSearchTool = ToolSearchTool.builder(toolSearcher).withMaxResults(5).build();
 
@@ -156,10 +171,19 @@ public class ToolSearchExample {
 
     public void fuzzySearchCapability() throws Exception {
 
-        LuceneToolSearcher toolSearcher = new LuceneToolSearcher();
+        LuceneToolSearcher toolSearcher = LuceneToolSearcher.builder()
+                .clearIndexFields()
+                .addIndexField("name", 5.0f)
+                .addIndexField("description", 3.0f)
+                .build();
         toolSearcher.indexTools(createAvailableTools());
 
-        ToolSearchModelInterceptor interceptor = ToolSearchModelInterceptor.builder().toolSearcher(toolSearcher).maxResults(5).maxRecursionDepth(3).build();
+        ToolSearchModelInterceptor interceptor = ToolSearchModelInterceptor.builder()
+                .toolSearcher(toolSearcher)
+                .maxResults(5)
+                .maxRecursionDepth(3)
+                .depthExceededStrategy(ToolSearchModelInterceptor.DepthExceededStrategy.USE_CACHED_TOOLS)
+                .build();
 
         ToolCallback toolSearchTool = ToolSearchTool.builder(toolSearcher).withMaxResults(5).build();
 

@@ -52,6 +52,8 @@ public class ToolSearchModelInterceptor extends ModelInterceptor {
 
 	private final int maxRecursionDepth;
 
+	private final DepthExceededStrategy depthExceededStrategy;
+
 	private final ToolCallback toolSearchTool;
 
 	private final ObjectMapper objectMapper;
@@ -60,6 +62,31 @@ public class ToolSearchModelInterceptor extends ModelInterceptor {
 	 * 缓存找到的工具，供 ToolCallbackResolver 使用
 	 */
 	private final Map<String, ToolCallback> cachedTools = new ConcurrentHashMap<>();
+
+	/**
+	 * 达到最大深度时的处理策略
+	 */
+	public enum DepthExceededStrategy {
+		/**
+		 * 直接返回，不做任何处理
+		 */
+		RETURN_DIRECTLY,
+
+		/**
+		 * 使用已缓存的工具继续执行
+		 */
+		USE_CACHED_TOOLS,
+
+		/**
+		 * 抛出异常
+		 */
+		THROW_EXCEPTION,
+
+		/**
+		 * 返回友好的错误消息
+		 */
+		RETURN_ERROR_MESSAGE
+	}
 
 	/**
 	 * ToolCallbackResolver 实现，用于在工具执行时动态提供工具
@@ -81,6 +108,7 @@ public class ToolSearchModelInterceptor extends ModelInterceptor {
 		this.toolSearcher = builder.toolSearcher;
 		this.maxResults = builder.maxResults;
 		this.maxRecursionDepth = builder.maxRecursionDepth;
+		this.depthExceededStrategy = builder.depthExceededStrategy;
 		this.toolSearchTool = ToolSearchTool.builder(toolSearcher)
 			.withMaxResults(maxResults)
 			.build();
@@ -112,8 +140,9 @@ public class ToolSearchModelInterceptor extends ModelInterceptor {
 		log.debug("Processing request at recursion depth: {}", currentDepth);
 
 		if (currentDepth >= maxRecursionDepth) {
-			log.warn("Maximum recursion depth ({}) reached, stopping tool search", maxRecursionDepth);
-			return handler.call(request);
+			log.warn("Maximum recursion depth ({}) reached, applying strategy: {}", maxRecursionDepth,
+					depthExceededStrategy);
+			return handleDepthExceeded(request, handler);
 		}
 
 
@@ -209,6 +238,47 @@ public class ToolSearchModelInterceptor extends ModelInterceptor {
 	}
 
 	/**
+	 * 处理达到最大递归深度的情况
+	 */
+	private ModelResponse handleDepthExceeded(ModelRequest request, ModelCallHandler handler) {
+		switch (depthExceededStrategy) {
+			case RETURN_DIRECTLY:
+				return handler.call(request);
+
+			case USE_CACHED_TOOLS:
+				if (!cachedTools.isEmpty()) {
+					log.info("Using {} cached tools at max depth", cachedTools.size());
+					List<ToolCallback> tools = new ArrayList<>(cachedTools.values());
+					ModelRequest newRequest = ModelRequest.builder(request)
+						.options(null)
+						.dynamicToolCallbacks(tools)
+						.context(request.getContext())
+						.build();
+					return handler.call(newRequest);
+				}
+				else {
+					log.warn("No cached tools available, returning directly");
+					return handler.call(request);
+				}
+
+			case THROW_EXCEPTION:
+				throw new IllegalStateException(
+						String.format("Maximum tool search recursion depth (%d) exceeded", maxRecursionDepth));
+
+			case RETURN_ERROR_MESSAGE:
+				String errorMessage = String.format(
+						"无法完成任务：已达到工具搜索的最大递归深度 (%d)。" + "当前已缓存 %d 个工具，但可能仍不足以完成任务。" + "建议：1) 增加 maxRecursionDepth；2) 提供更多初始工具；3) 简化任务需求。",
+						maxRecursionDepth, cachedTools.size());
+
+				AssistantMessage errorMsg = new AssistantMessage(errorMessage);
+				return ModelResponse.of(errorMsg);
+
+			default:
+				return handler.call(request);
+		}
+	}
+
+	/**
 	 * 从请求上下文中获取当前递归深度
 	 */
 	private int getRecursionDepth(ModelRequest request) {
@@ -268,6 +338,8 @@ public class ToolSearchModelInterceptor extends ModelInterceptor {
 
 		private int maxRecursionDepth = 3;
 
+		private DepthExceededStrategy depthExceededStrategy = DepthExceededStrategy.USE_CACHED_TOOLS;
+
 		public Builder toolSearcher(ToolSearcher toolSearcher) {
 			this.toolSearcher = toolSearcher;
 			return this;
@@ -280,6 +352,14 @@ public class ToolSearchModelInterceptor extends ModelInterceptor {
 
 		public Builder maxRecursionDepth(int maxRecursionDepth) {
 			this.maxRecursionDepth = maxRecursionDepth;
+			return this;
+		}
+
+		/**
+		 * 设置达到最大深度时的处理策略
+		 */
+		public Builder depthExceededStrategy(DepthExceededStrategy strategy) {
+			this.depthExceededStrategy = strategy;
 			return this;
 		}
 

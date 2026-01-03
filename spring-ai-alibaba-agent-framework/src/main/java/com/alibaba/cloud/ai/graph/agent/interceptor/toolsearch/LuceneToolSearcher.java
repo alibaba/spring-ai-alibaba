@@ -54,14 +54,30 @@ public class LuceneToolSearcher implements ToolSearcher {
 
 	private final ObjectMapper objectMapper;
 
+	private final Map<String, Float> fieldBoosts;
+
+	private final List<String> indexFields;
+
 	private IndexSearcher indexSearcher;
 
 	private final Map<String, ToolCallback> toolCallbackMap = new HashMap<>();
 
+
 	public LuceneToolSearcher() {
-		this.indexDirectory = new ByteBuffersDirectory();
-		this.analyzer = new StandardAnalyzer();
+		this(builder());
+	}
+
+	private LuceneToolSearcher(Builder builder) {
+		this.indexDirectory = builder.indexDirectory != null ? builder.indexDirectory : new ByteBuffersDirectory();
+		this.analyzer = builder.analyzer != null ? builder.analyzer : new StandardAnalyzer();
 		this.objectMapper = new ObjectMapper();
+		this.fieldBoosts = new HashMap<>(builder.fieldBoosts);
+		this.indexFields = new ArrayList<>(builder.indexFields);
+	}
+
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	@Override
@@ -74,19 +90,11 @@ public class LuceneToolSearcher implements ToolSearcher {
 				ToolDefinition definition = tool.getToolDefinition();
 				Document doc = new Document();
 
-				// 索引工具名称
-				doc.add(new TextField("name", definition.name(), Field.Store.YES));
-
-				// 索引工具描述
-				String description = definition.description();
-				if (description != null && !description.isEmpty()) {
-					doc.add(new TextField("description", description, Field.Store.YES));
-				}
-
-				// 索引工具参数信息
-				String inputSchema = definition.inputSchema();
-				if (inputSchema != null && !inputSchema.isEmpty()) {
-					doc.add(new TextField("parameters", inputSchema, Field.Store.YES));
+				for (String fieldName : indexFields) {
+					String fieldValue = getFieldValue(definition, fieldName);
+					if (fieldValue != null && !fieldValue.isEmpty()) {
+						doc.add(new TextField(fieldName, fieldValue, Field.Store.YES));
+					}
 				}
 
 				// 存储完整的Schema
@@ -105,10 +113,26 @@ public class LuceneToolSearcher implements ToolSearcher {
 			DirectoryReader indexReader = DirectoryReader.open(indexDirectory);
 			this.indexSearcher = new IndexSearcher(indexReader);
 
-			log.info("Successfully indexed {} tools", tools.size());
+			log.info("Successfully indexed {} tools with fields: {}", tools.size(), indexFields);
 		}
 		catch (IOException e) {
 			throw new RuntimeException("Failed to index tools", e);
+		}
+	}
+
+	/**
+	 * 从 ToolDefinition 中获取指定字段的值
+	 */
+	private String getFieldValue(ToolDefinition definition, String fieldName) {
+		switch (fieldName) {
+			case "name":
+				return definition.name();
+			case "description":
+				return definition.description();
+			case "parameters":
+				return definition.inputSchema();
+			default:
+				return null;
 		}
 	}
 
@@ -119,14 +143,9 @@ public class LuceneToolSearcher implements ToolSearcher {
 		}
 
 		try {
-			// 构建多字段查询
-			Map<String, Float> boosts = new HashMap<>();
-			boosts.put("name", 3.0f);
-			boosts.put("description", 2.0f);
-			boosts.put("parameters", 1.0f);
-
-			MultiFieldQueryParser parser = new MultiFieldQueryParser(
-					new String[] { "name", "description", "parameters" }, analyzer, boosts);
+			// 使用配置的字段和权重构建多字段查询
+			String[] fields = indexFields.toArray(new String[0]);
+			MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, analyzer, fieldBoosts);
 
 			// 转义特殊字符
 			String escapedQuery = QueryParser.escape(query);
@@ -196,5 +215,80 @@ public class LuceneToolSearcher implements ToolSearcher {
 		}
 	}
 
-}
 
+	public static class Builder {
+
+		private Directory indexDirectory;
+
+		private Analyzer analyzer;
+
+		private final Map<String, Float> fieldBoosts = new HashMap<>();
+
+		private final List<String> indexFields = new ArrayList<>();
+
+		public Builder() {
+			indexFields.add("name");
+			indexFields.add("description");
+			indexFields.add("parameters");
+
+			fieldBoosts.put("name", 3.0f);
+			fieldBoosts.put("description", 2.0f);
+			fieldBoosts.put("parameters", 1.0f);
+		}
+
+
+		public Builder indexDirectory(Directory indexDirectory) {
+			this.indexDirectory = indexDirectory;
+			return this;
+		}
+
+
+		public Builder analyzer(Analyzer analyzer) {
+			this.analyzer = analyzer;
+			return this;
+		}
+
+
+		public Builder fieldBoost(String fieldName, float boost) {
+			this.fieldBoosts.put(fieldName, boost);
+			return this;
+		}
+
+
+		public Builder fieldBoosts(Map<String, Float> boosts) {
+			this.fieldBoosts.putAll(boosts);
+			return this;
+		}
+
+
+		public Builder addIndexField(String fieldName) {
+			if (!this.indexFields.contains(fieldName)) {
+				this.indexFields.add(fieldName);
+			}
+			return this;
+		}
+
+
+		public Builder addIndexField(String fieldName, float boost) {
+			addIndexField(fieldName);
+			fieldBoost(fieldName, boost);
+			return this;
+		}
+
+
+		public Builder clearIndexFields() {
+			this.indexFields.clear();
+			this.fieldBoosts.clear();
+			return this;
+		}
+
+		public LuceneToolSearcher build() {
+			if (indexFields.isEmpty()) {
+				throw new IllegalStateException("At least one index field must be configured");
+			}
+			return new LuceneToolSearcher(this);
+		}
+
+	}
+
+}
