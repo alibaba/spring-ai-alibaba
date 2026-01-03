@@ -278,10 +278,6 @@ public class PostgresSaverTest {
     public void testOverwriteMode() throws Exception {
         var saver = buildPostgresSaver()
                         .dropTablesFirst(true)
-                        .build();
-
-
-        saver = buildPostgresSaver()
                         .overwriteMode(true)
                         .build();
 
@@ -331,10 +327,6 @@ public class PostgresSaverTest {
     public void testOverwriteModeDataConsistency() throws Exception {
         var saver = buildPostgresSaver()
                         .dropTablesFirst(true)
-                        .build();
-
-
-        saver = buildPostgresSaver()
                         .overwriteMode(true)
                         .build();
 
