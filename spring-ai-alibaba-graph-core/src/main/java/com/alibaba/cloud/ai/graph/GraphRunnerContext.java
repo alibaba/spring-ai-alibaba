@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.CollectionUtils;
@@ -270,11 +271,14 @@ public class GraphRunnerContext {
 		String nextNode = calculateNextNode(nodeId);
 		List<String> allNextNodes = calculateAllNextNodes(nodeId);
 
+		// Extract tokenUsage from current state instead of using cached field
+		Usage tokenUsage = extractTokenUsageFromCurrentState();
+
 		return NodeOutput.of(
 				nodeId,
 				(String) config.metadata("_AGENT_").orElse(""),
 				cloneState(this.overallState.data()),
-				this.tokenUsage,
+				tokenUsage,
 				nextNode,
 				allNextNodes);
 	}
@@ -384,6 +388,40 @@ public class GraphRunnerContext {
 		return filteredState;
 	}
 
+	/**
+	 * Extract tokenUsage from the latest AssistantMessage in the current state.
+	 * This method retrieves the most recent tokenUsage from messages instead of relying on cached context field.
+	 *
+	 * @return the Usage object from the latest AssistantMessage, or null if not present
+	 */
+	private Usage extractTokenUsageFromCurrentState() {
+		Map<String, Object> stateData = this.overallState.data();
+		if (stateData == null) {
+			return null;
+		}
+
+		// Get messages from state
+		Object messagesObj = stateData.get("messages");
+		if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
+			// Iterate from the end to find the latest AssistantMessage with tokenUsage
+			for (int i = messagesList.size() - 1; i >= 0; i--) {
+				Object msgObj = messagesList.get(i);
+				// Only check AssistantMessage since only AI-generated messages have token usage
+				if (msgObj instanceof AssistantMessage assistantMessage) {
+					var metadata = assistantMessage.getMetadata();
+					if (metadata != null) {
+						Object usageObj = metadata.get("usage");
+						if (usageObj instanceof Usage usage) {
+							return usage;
+						}
+					}
+				}
+			}
+		}
+
+		return null;
+	}
+
 	// ================================================================================================================
 	// Getter and Setter Methods
 	// ================================================================================================================
@@ -485,6 +523,9 @@ public class GraphRunnerContext {
 		// Calculate next nodes from the context
 		String nextNode = calculateNextNode(nodeId);
 		List<String> allNextNodes = calculateAllNextNodes(nodeId);
+
+		// Extract tokenUsage from current state instead of using cached field
+		Usage tokenUsage = extractTokenUsageFromCurrentState();
 
 		Message message = null;
 
