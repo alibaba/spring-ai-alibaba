@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2026 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.flow.builder;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
+import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -49,6 +50,8 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	public StateSerializer stateSerializer;
 
 	public Executor executor;
+
+	public List<Hook> hooks;
 
 	/**
 	 * Sets the agent name.
@@ -116,6 +119,16 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	 */
 	public B executor(Executor executor) {
 		this.executor = executor;
+		return self();
+	}
+
+	/**
+	 * Sets the hooks for the agent.
+	 * @param hooks the list of hooks to use
+	 * @return this builder instance for method chaining
+	 */
+	public B hooks(List<Hook> hooks) {
+		this.hooks = hooks;
 		return self();
 	}
 
