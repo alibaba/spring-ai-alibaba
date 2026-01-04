@@ -443,50 +443,6 @@ public class CompiledGraph {
 	}
 
 	/**
-	 * Get the next execution node for the given current node.
-	 * @param currentNodeId the current node identifier
-	 * @return the next node identifier, or null if there's no next node
-	 */
-	public String getNextNode(String currentNodeId) {
-		EdgeValue edgeValue = edges.get(currentNodeId);
-		if (edgeValue == null) {
-			return null;
-		}
-
-		if (edgeValue.id() != null) {
-			// Direct edge
-			return edgeValue.id();
-		} else if (edgeValue.value() != null) {
-			// Conditional edge - return the first available target
-			return edgeValue.value().mappings().values().stream().findFirst().orElse(null);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Get all possible next execution nodes for the given current node.
-	 * @param currentNodeId the current node identifier
-	 * @return list of all next node identifiers, empty list if there are no next nodes
-	 */
-	public List<String> getAllNextNodes(String currentNodeId) {
-		EdgeValue edgeValue = edges.get(currentNodeId);
-		if (edgeValue == null) {
-			return List.of();
-		}
-
-		if (edgeValue.id() != null) {
-			// Direct edge
-			return List.of(edgeValue.id());
-		} else if (edgeValue.value() != null) {
-			// Conditional edge
-			return new ArrayList<>(edgeValue.value().mappings().values());
-		}
-
-		return List.of();
-	}
-
-	/**
 	 * Sets the maximum number of iterations for the graph execution.
 	 *
 	 * @param maxIterations the maximum number of iterations
