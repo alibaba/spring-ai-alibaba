@@ -155,7 +155,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		// Create ModelRequest
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
 				.messages(messages)
-				.options(chatOptions.copy())
+				.options(this.chatOptions != null ? this.chatOptions.copy() : null)
 				.context(config.metadata().orElse(new HashMap<>()));
 
         // Extract tool names and descriptions from toolCallbacks and pass them to ModelRequest
@@ -321,10 +321,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	 */
 	private ToolCallingChatOptions buildChatOptions(ChatOptions chatOptions, List<ToolCallback> toolCallbacks) {
 		if (chatOptions == null) {
-			return ToolCallingChatOptions.builder()
-					.toolCallbacks(toolCallbacks)
-					.internalToolExecutionEnabled(false)
-					.build();
+			return null;
 		}
 
 		if (chatOptions instanceof ToolCallingChatOptions builderToolCallingOptions) {
@@ -457,21 +454,23 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
 		filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
 
-		ToolCallingChatOptions chatOptions = modelRequest.getOptions();
-		if (chatOptions == null) {
-			chatOptions = ToolCallingChatOptions.builder()
-					.toolCallbacks(filteredToolCallbacks)
-					.internalToolExecutionEnabled(false)
-					.build();
-		} else {
-			chatOptions.setToolCallbacks(filteredToolCallbacks);
-			chatOptions.setInternalToolExecutionEnabled(false);
-		}
+        var promptSpec = this.chatClient.prompt()
+                .messages(messages)
+                .advisors(this.advisors);
 
-		return chatClient.prompt()
-				.options(chatOptions)
-				.messages(messages)
-				.advisors(advisors);
+        ToolCallingChatOptions requestOptions = modelRequest.getOptions();
+
+        if (requestOptions != null) {
+            requestOptions.setToolCallbacks(filteredToolCallbacks);
+            requestOptions.setInternalToolExecutionEnabled(false);
+            promptSpec.options(requestOptions);
+        } else {
+            if (!filteredToolCallbacks.isEmpty()) {
+                promptSpec.tools(filteredToolCallbacks);
+            }
+        }
+
+        return promptSpec;
 	}
 
 	public String getName() {
