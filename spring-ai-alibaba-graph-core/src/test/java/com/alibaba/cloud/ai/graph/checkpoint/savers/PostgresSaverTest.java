@@ -15,13 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint.savers;
 
-import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.postgresql.PostgresSaver;
@@ -260,10 +254,8 @@ public class PostgresSaverTest {
 					"nodeId", "node1",
 					"timestamp", System.currentTimeMillis()
 				);
-				com.alibaba.cloud.ai.graph.GraphResponse<?> response =
-					com.alibaba.cloud.ai.graph.GraphResponse.of("Result " + counter, metadata);
-
-				log.info("Node1 execution {}: created GraphResponse with metadata: {}", counter, metadata);
+				GraphResponse<?> response =
+					GraphResponse.of("Result " + counter, metadata);
 
 				return Map.of(
 					"counter", counter,
@@ -285,11 +277,9 @@ public class PostgresSaverTest {
 
 		try {
 			for (int i = 0; i < 5; i++) {
-				log.info("=== Iteration {} ===", i + 1);
 
 				var stateOpt = app.invoke(Map.of(), config);
 
-				log.info("Iteration {} result available: {}", i + 1, stateOpt.isPresent());
 
 				assertTrue(stateOpt.isPresent(), "State should be present");
 				var result = stateOpt.get();
@@ -297,12 +287,12 @@ public class PostgresSaverTest {
 
 				Object graphResponseObj = result.data().get("graphResponse");
 				assertNotNull(graphResponseObj, "GraphResponse should not be null");
-				assertTrue(graphResponseObj instanceof com.alibaba.cloud.ai.graph.GraphResponse,
+				assertTrue(graphResponseObj instanceof GraphResponse,
 					"Should be GraphResponse instance");
 
 				@SuppressWarnings("unchecked")
-				com.alibaba.cloud.ai.graph.GraphResponse<Object> graphResponse =
-					(com.alibaba.cloud.ai.graph.GraphResponse<Object>) graphResponseObj;
+				GraphResponse<Object> graphResponse =
+					(GraphResponse<Object>) graphResponseObj;
 
 				Map<String, Object> metadata = graphResponse.getAllMetadata();
 				assertFalse(metadata.containsKey("@class"),
@@ -322,8 +312,6 @@ public class PostgresSaverTest {
 				assertNotNull(metadata.get("timestamp"),
 					"Timestamp should be preserved");
 
-				log.info("Iteration {} passed: metadata is clean, size={}, keys={}",
-					i + 1, metadata.size(), metadata.keySet());
 
 				var snapshot = app.getState(config);
 				assertNotNull(snapshot, "Snapshot should not be null");
@@ -333,7 +321,6 @@ public class PostgresSaverTest {
 				assertEquals(i + 1, snapshotState.data().get("counter"),
 					"Snapshot counter should match");
 
-				log.info("Iteration {} checkpoint saved successfully", i + 1);
 			}
 
 
@@ -364,13 +351,11 @@ public class PostgresSaverTest {
 				var newMessages = new java.util.ArrayList<>(messages);
 				newMessages.add("Message " + (messages.size() + 1));
 
-				com.alibaba.cloud.ai.graph.GraphResponse<?> response =
-					com.alibaba.cloud.ai.graph.GraphResponse.of(
+				GraphResponse<?> response =
+					GraphResponse.of(
 						"Processed message " + newMessages.size()
 					);
 
-				log.info("ProcessNode execution: messages={}, response={}",
-					newMessages.size(), response.resultValue().orElse(null));
 
 				return Map.of(
 					"messages", newMessages,
@@ -391,7 +376,6 @@ public class PostgresSaverTest {
 
 		try {
 			for (int round = 0; round < 5; round++) {
-				log.info("=== Round {} ===", round + 1);
 
 				var stateOpt = app.invoke(Map.of(), config);
 				assertTrue(stateOpt.isPresent(), "State should be present");
@@ -404,12 +388,12 @@ public class PostgresSaverTest {
 
 				Object lastResponseObj = result.data().get("lastResponse");
 				assertNotNull(lastResponseObj, "LastResponse should not be null");
-				assertTrue(lastResponseObj instanceof com.alibaba.cloud.ai.graph.GraphResponse,
+				assertTrue(lastResponseObj instanceof GraphResponse,
 					"LastResponse should be GraphResponse instance");
 
 				@SuppressWarnings("unchecked")
-				com.alibaba.cloud.ai.graph.GraphResponse<Object> lastResponse =
-					(com.alibaba.cloud.ai.graph.GraphResponse<Object>) lastResponseObj;
+				GraphResponse<Object> lastResponse =
+					(GraphResponse<Object>) lastResponseObj;
 
 				Map<String, Object> metadata = lastResponse.getAllMetadata();
 
@@ -420,8 +404,6 @@ public class PostgresSaverTest {
 				assertFalse(metadata.containsKey("@typeHint"),
 					"Round " + (round + 1) + ": metadata should NOT contain @typeHint field");
 
-				log.info("Round {} passed: GraphResponse metadata is clean, size={}, keys={}",
-					round + 1, metadata.size(), metadata.keySet());
 
 				var snapshot = app.getState(config);
 				assertNotNull(snapshot, "Snapshot should not be null");
@@ -430,17 +412,15 @@ public class PostgresSaverTest {
 				assertNotNull(snapshotState, "Snapshot state should not be null");
 
 				Object restoredResponseObj = snapshotState.data().get("lastResponse");
-				if (restoredResponseObj instanceof com.alibaba.cloud.ai.graph.GraphResponse) {
+				if (restoredResponseObj instanceof GraphResponse) {
 					@SuppressWarnings("unchecked")
-					com.alibaba.cloud.ai.graph.GraphResponse<Object> restoredResponse =
-						(com.alibaba.cloud.ai.graph.GraphResponse<Object>) restoredResponseObj;
+					GraphResponse<Object> restoredResponse =
+						(GraphResponse<Object>) restoredResponseObj;
 					Map<String, Object> restoredMetadata = restoredResponse.getAllMetadata();
 
 					assertFalse(restoredMetadata.containsKey("@class"),
 						"Round " + (round + 1) + ": Restored metadata should NOT contain @class");
 
-					log.info("Round {} snapshot verified: Restored GraphResponse is clean",
-						round + 1);
 				}
 			}
 

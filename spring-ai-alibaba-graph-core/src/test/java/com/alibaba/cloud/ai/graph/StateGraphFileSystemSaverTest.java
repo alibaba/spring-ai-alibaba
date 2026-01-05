@@ -411,11 +411,9 @@ public class StateGraphFileSystemSaverTest {
 			saver.deleteFile(config);
 
 			for (int i = 0; i < 5; i++) {
-				log.info("=== Iteration {} ===", i + 1);
 
 				Optional<OverAllState> stateOpt = app.invoke(Map.of(), config);
 
-				log.info("Iteration {} result available: {}", i + 1, stateOpt.isPresent());
 
 				assertTrue(stateOpt.isPresent(), "State should be present");
 				OverAllState result = stateOpt.get();
@@ -446,8 +444,6 @@ public class StateGraphFileSystemSaverTest {
 				assertNotNull(metadata.get("timestamp"),
 					"Timestamp should be preserved");
 
-				log.info("Iteration {} passed: metadata is clean, size={}, keys={}",
-					i + 1, metadata.size(), metadata.keySet());
 
 				StateSnapshot snapshot = app.getState(config);
 				assertNotNull(snapshot, "Snapshot should not be null");
@@ -457,7 +453,6 @@ public class StateGraphFileSystemSaverTest {
 				assertEquals(i + 1, snapshotState.data().get("counter"),
 					"Snapshot counter should match");
 
-				log.info("Iteration {} checkpoint saved successfully", i + 1);
 			}
 
 		} finally {
@@ -507,7 +502,6 @@ public class StateGraphFileSystemSaverTest {
 			saver.deleteFile(config);
 
 			for (int i = 0; i < 3; i++) {
-				log.info("=== Nested Iteration {} ===", i + 1);
 
 				Optional<OverAllState> stateOpt = app.invoke(Map.of(), config);
 				assertTrue(stateOpt.isPresent(), "State should be present");
@@ -545,7 +539,6 @@ public class StateGraphFileSystemSaverTest {
 				assertEquals(1, innerMetadata.size(),
 					"Inner metadata should have 1 field");
 
-				log.info("Nested iteration {} passed", i + 1);
 			}
 
 		} finally {
@@ -574,8 +567,6 @@ public class StateGraphFileSystemSaverTest {
 					"Processed message " + newMessages.size()
 				);
 
-				log.info("ProcessNode execution: messages={}, response={}",
-					newMessages.size(), response.resultValue().orElse(null));
 
 				return Map.of(
 					"messages", newMessages,
@@ -602,7 +593,6 @@ public class StateGraphFileSystemSaverTest {
 			saver.deleteFile(config);
 
 			for (int round = 0; round < 5; round++) {
-				log.info("=== Round {} ===", round + 1);
 
 				Optional<OverAllState> stateOpt = app.invoke(Map.of(), config);
 				assertTrue(stateOpt.isPresent(), "State should be present");
@@ -630,8 +620,6 @@ public class StateGraphFileSystemSaverTest {
 				assertFalse(metadata.containsKey("@typeHint"),
 					"Round " + (round + 1) + ": metadata should NOT contain @typeHint field");
 
-				log.info("Round {} passed: GraphResponse metadata is clean, size={}, keys={}",
-					round + 1, metadata.size(), metadata.keySet());
 				StateSnapshot snapshot = app.getState(config);
 				assertNotNull(snapshot, "Snapshot should not be null");
 
@@ -647,8 +635,116 @@ public class StateGraphFileSystemSaverTest {
 					assertFalse(restoredMetadata.containsKey("@class"),
 						"Round " + (round + 1) + ": Restored metadata should NOT contain @class");
 
-					log.info("Round {} snapshot verified: Restored GraphResponse is clean",
-						round + 1);
+				}
+			}
+
+		} finally {
+			saver.deleteFile(config);
+		}
+	}
+
+	@Test
+	public void testSameThreadIdMultipleInvocations() throws Exception {
+
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+			.addStrategy("counter")
+			.addStrategy("response")
+			.build();
+
+		StateGraph workflow = new StateGraph(keyStrategyFactory)
+			.addEdge(START, "node1")
+			.addNode("node1", node_async(state -> {
+				int counter = (int) state.value("counter").orElse(0);
+				counter++;
+
+				Map<String, Object> metadata = Map.of(
+					"requestId", "req-" + counter,
+					"timestamp", System.currentTimeMillis(),
+					"nodeId", "node1"
+				);
+				GraphResponse<?> response = GraphResponse.of("Result " + counter, metadata);
+
+				return Map.of(
+					"counter", counter,
+					"response", response
+				);
+			}))
+			.addEdge("node1", END);
+
+		var saver = FileSystemSaver.builder()
+			.targetFolder(Paths.get(rootPath, "same-threadid-test"))
+			.stateSerializer(workflow.getStateSerializer())
+			.build();
+
+		CompileConfig compileConfig = CompileConfig.builder()
+			.saverConfig(SaverConfig.builder()
+				.register(saver)
+				.build())
+			.build();
+
+		CompiledGraph app = workflow.compile(compileConfig);
+
+		String threadId = "same-thread-id";
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+
+		try {
+			saver.deleteFile(config);
+
+			for (int i = 0; i < 10; i++) {
+
+				Optional<OverAllState> stateOpt = app.invoke(Map.of(), config);
+
+				assertTrue(stateOpt.isPresent(), "State should be present");
+				OverAllState result = stateOpt.get();
+				assertEquals(i + 1, result.data().get("counter"), "Counter should be " + (i + 1));
+
+				Object responseObj = result.data().get("response");
+				assertNotNull(responseObj, "Response should not be null");
+				assertTrue(responseObj instanceof GraphResponse, "Should be GraphResponse instance");
+
+				@SuppressWarnings("unchecked")
+				GraphResponse<Object> graphResponse = (GraphResponse<Object>) responseObj;
+
+				Map<String, Object> metadata = graphResponse.getAllMetadata();
+
+				assertFalse(metadata.containsKey("@class"),
+					"Invocation " + (i + 1) + ": metadata should NOT contain @class field");
+				assertFalse(metadata.containsKey("@type"),
+					"Invocation " + (i + 1) + ": metadata should NOT contain @type field");
+				assertFalse(metadata.containsKey("@typeHint"),
+					"Invocation " + (i + 1) + ": metadata should NOT contain @typeHint field");
+
+				assertEquals(3, metadata.size(),
+					"Invocation " + (i + 1) + ": metadata should have exactly 3 fields");
+				assertEquals("req-" + (i + 1), metadata.get("requestId"),
+					"RequestId should match");
+				assertEquals("node1", metadata.get("nodeId"),
+					"NodeId should be preserved");
+				assertNotNull(metadata.get("timestamp"),
+					"Timestamp should be preserved");
+
+
+				StateSnapshot snapshot = app.getState(config);
+				assertNotNull(snapshot, "Snapshot should not be null");
+
+				OverAllState snapshotState = snapshot.state();
+				assertNotNull(snapshotState, "Snapshot state should not be null");
+				assertEquals(i + 1, snapshotState.data().get("counter"),
+					"Snapshot counter should match");
+
+				Object snapshotResponseObj = snapshotState.data().get("response");
+				if (snapshotResponseObj instanceof GraphResponse) {
+					@SuppressWarnings("unchecked")
+					GraphResponse<Object> snapshotResponse = (GraphResponse<Object>) snapshotResponseObj;
+					Map<String, Object> snapshotMetadata = snapshotResponse.getAllMetadata();
+
+					assertFalse(snapshotMetadata.containsKey("@class"),
+						"Invocation " + (i + 1) + ": Snapshot metadata should NOT contain @class");
+					assertFalse(snapshotMetadata.containsKey("@type"),
+						"Invocation " + (i + 1) + ": Snapshot metadata should NOT contain @type");
+					assertFalse(snapshotMetadata.containsKey("@typeHint"),
+						"Invocation " + (i + 1) + ": Snapshot metadata should NOT contain @typeHint");
+
 				}
 			}
 
