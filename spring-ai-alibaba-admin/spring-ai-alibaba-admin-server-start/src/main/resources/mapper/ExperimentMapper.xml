@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.cloud.ai.studio.admin.mapper.ExperimentMapper">
+
+    <resultMap id="experimentResultMap" type="com.alibaba.cloud.ai.studio.admin.entity.ExperimentDO">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="datasetId" column="dataset_id"/>
+        <result property="datasetVersionId" column="dataset_version_id"/>
+        <result property="datasetVersion" column="dataset_version"/>
+        <result property="evaluationObjectConfig" column="evaluation_object_config"/>
+        <result property="evaluatorConfig" column="evaluator_config"/>
+        <result property="status" column="status"/>
+        <result property="progress" column="progress"/>
+        <result property="completeTime" column="complete_time"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <resultMap id="experimentResultResultMap" type="com.alibaba.cloud.ai.studio.admin.entity.ExperimentResultDO">
+        <id property="id" column="id"/>
+        <result property="experimentId" column="experiment_id"/>
+        <result property="input" column="input"/>
+        <result property="actualOutput" column="actual_output"/>
+        <result property="referenceOutput" column="reference_output"/>
+        <result property="score" column="score"/>
+        <result property="reason" column="reason"/>
+        <result property="evaluationTime" column="evaluation_time"/>
+        <result property="evaluatorVersionId" column="evaluator_version_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="experiment_table_name">experiment</sql>
+    <sql id="experiment_result_table_name">experiment_result</sql>
+
+    <sql id="experiment_base_column_list">
+        id, name, description, dataset_id, dataset_version_id, dataset_version,evaluation_object_config,
+        evaluator_config, status, progress, complete_time, create_time, update_time
+    </sql>
+
+    <sql id="experiment_result_base_column_list">
+        id, experiment_id, input, actual_output, reference_output, score, reason, evaluation_time, evaluator_version_id, create_time, update_time
+    </sql>
+
+    <!-- 创建实验 -->
+    <insert id="insert" parameterType="com.alibaba.cloud.ai.studio.admin.entity.ExperimentDO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO
+        <include refid="experiment_table_name"/>
+        (name, description, dataset_id, dataset_version_id, dataset_version,evaluation_object_config,
+         evaluator_config, status, progress, complete_time, create_time, update_time)
+        VALUES
+        (#{name}, #{description}, #{datasetId}, #{datasetVersionId}, #{datasetVersion},#{evaluationObjectConfig},
+         #{evaluatorConfig}, #{status}, #{progress}, #{completeTime}, NOW(), NOW())
+    </insert>
+
+
+    <!-- 根据ID获取实验 -->
+    <select id="selectById" resultMap="experimentResultMap">
+        SELECT
+        <include refid="experiment_base_column_list"/>
+        FROM
+        <include refid="experiment_table_name"/>
+        WHERE id = #{id}
+    </select>
+
+    <!-- 分页查询实验列表 -->
+    <select id="selectList" resultMap="experimentResultMap">
+        SELECT
+        <include refid="experiment_base_column_list"/>
+        FROM
+        <include refid="experiment_table_name"/>
+        where 1=1
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        ORDER BY create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+
+    <!-- 分页查询datasetId实验列表 -->
+    <select id="selectByDatasetId" resultMap="experimentResultMap">
+        SELECT
+        <include refid="experiment_base_column_list"/>
+        FROM
+        <include refid="experiment_table_name"/>
+        where dataset_id = #{datasetId}
+        ORDER BY create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+
+
+    <!-- 统计实验数量 -->
+    <select id="count" resultType="int">
+        SELECT COUNT(*) FROM
+        <include refid="experiment_table_name"/>
+        <where>
+            <if test="name != null and name != ''">
+                name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+
+    <!-- 统计datasetId实验数量 -->
+    <select id="selectCountByDatasetId" resultType="int">
+        SELECT COUNT(*) FROM
+        <include refid="experiment_table_name"/>
+        where dataset_id = #{datasetId}
+    </select>
+
+    <!-- 根据评估器ID分页查询实验列表 -->
+    <select id="selectByEvaluatorId" resultMap="experimentResultMap">
+        SELECT
+        <include refid="experiment_base_column_list"/>
+        FROM
+        <include refid="experiment_table_name"/>
+        WHERE evaluator_config LIKE CONCAT('%"evaluatorId":', #{evaluatorId}, '%')
+        ORDER BY create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 根据评估器版本ID分页查询实验列表 -->
+    <select id="selectByEvaluatorVersionId" resultMap="experimentResultMap">
+        SELECT
+        <include refid="experiment_base_column_list"/>
+        FROM
+        <include refid="experiment_table_name"/>
+        WHERE evaluator_config LIKE CONCAT('%"evaluatorVersionId":"', #{evaluatorVersionId}, '"%')
+        ORDER BY create_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 统计使用指定评估器的实验数量 -->
+    <select id="selectCountByEvaluatorId" resultType="int">
+        SELECT COUNT(*) FROM
+        <include refid="experiment_table_name"/>
+        WHERE evaluator_config LIKE CONCAT('%"evaluatorId":"', #{evaluatorId}, '"%')
+    </select>
+
+    <!-- 统计使用指定评估器版本的实验数量 -->
+    <select id="selectCountByEvaluatorVersionId" resultType="int">
+        SELECT COUNT(*) FROM
+        <include refid="experiment_table_name"/>
+        WHERE evaluator_config LIKE CONCAT('%"evaluatorVersionId":"', #{evaluatorVersionId}, '"%')
+    </select>
+
+    <!-- 根据ID更新实验 -->
+    <update id="updateById" parameterType="com.alibaba.cloud.ai.studio.admin.entity.ExperimentDO">
+        UPDATE
+        <include refid="experiment_table_name"/>
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="datasetId != null">dataset_id = #{datasetId},</if>
+            <if test="datasetVersionId != null and datasetVersionId != ''">dataset_version_id = #{datasetVersionId},</if>
+            <if test="evaluationObjectConfig != null">evaluation_object_config = #{evaluationObjectConfig},</if>
+            <if test="evaluatorConfig != null">evaluator_config = #{evaluatorConfig},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="progress != null">progress = #{progress},</if>
+            <if test="completeTime != null">complete_time = #{completeTime},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 创建实验结果 -->
+    <insert id="insertResult" parameterType="com.alibaba.cloud.ai.studio.admin.entity.ExperimentResultDO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO
+        <include refid="experiment_result_table_name"/>
+        (experiment_id, input, actual_output, reference_output, score, reason, evaluation_time, evaluator_version_id, create_time, update_time)
+        VALUES
+        (#{experimentId}, #{input}, #{actualOutput}, #{referenceOutput}, #{score}, #{reason}, #{evaluationTime}, #{evaluatorVersionId}, NOW(), NOW())
+    </insert>
+
+    <!-- 根据实验ID删除实验结果 -->
+    <delete id="deleteById">
+        DELETE FROM
+        <include refid="experiment_table_name"/>
+        WHERE id = #{id}
+    </delete>
+
+
+
+</mapper>

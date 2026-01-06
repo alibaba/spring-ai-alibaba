@@ -1,4 +1,4 @@
-# Copyright 2024-2025 the original author or authors.
+# Copyright 2024-2026 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,30 +17,30 @@
 .PHONY: test
 test: ## Run tests
 	@$(LOG_TARGET)
-	mvnd test
+	./mvnw test
 
 # Separate build and test to speed up execution
 .PHONY: build
 build: ## Build the project
 	@$(LOG_TARGET)
-	mvnd -Dmvnd.connectTimeout=30000 -B package --file pom.xml -DskipTests=true
+	./mvnw -B package --file pom.xml -DskipTests=true
 
 .PHONY: format-fix
 format-fix: ## Format the code
 	@$(LOG_TARGET)
-	mvnd -Dmvnd.connectTimeout=30000 spring-javaformat:apply
+	./mvnw spring-javaformat:apply
 
 .PHONY: format-check
 format-check: ## Format Check the code
 	@$(LOG_TARGET)
-	mvnd -Dmvnd.connectTimeout=30000 spring-javaformat:validate
+	./mvnw spring-javaformat:validate
 
 .PHONY: spotless-apply
 spotless-apply: ## Run spotless and apply changes
 	@$(LOG_TARGET)
-	mvnd -Dmvnd.connectTimeout=30000 spotless:apply
+	./mvnw spotless:apply
 
 .PHONY: checkstyle-check
 checkstyle-check: ## Checkstyle Check the code and output to target/checkstyle-report.xml
 	@$(LOG_TARGET)
-	mvnd -Dmvnd.connectTimeout=30000 -Dcheckstyle.skip=false -Dcheckstyle.output.file=checkstyle-report.xml checkstyle:check
+	./mvnw -Dcheckstyle.skip=false -Dcheckstyle.output.file=checkstyle-report.xml checkstyle:check

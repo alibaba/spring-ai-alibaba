@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,6 +176,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		if (StringUtils.hasLength(this.systemPrompt)) {
 			requestBuilder.systemMessage(new SystemMessage(this.systemPrompt));
+		}
+
+		if (StringUtils.hasLength(this.instruction)) {
+			List<Message> messagesWithInstruction = new ArrayList<>();
+			messagesWithInstruction.add(new UserMessage(this.instruction));
+			messagesWithInstruction.addAll(messages);
+			requestBuilder.messages(messagesWithInstruction);
 		}
 
 		ModelRequest modelRequest = requestBuilder.build();

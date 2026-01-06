@@ -1,0 +1,12 @@
+{
+  "extends": "./src/.umi/tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@src/*": ["src/*"]
+    }
+  },
+  "include": ["src"]
+}

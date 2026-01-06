@@ -1,0 +1,149 @@
+/* 实验详情页面样式 */
+.experiment-detail-page {
+  min-height: 100vh;
+}
+
+.experiment-detail-page .ant-card {
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.experiment-detail-page .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.experiment-detail-page .ant-card-head-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.experiment-detail-page .ant-descriptions-item-label {
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.experiment-detail-page .ant-btn {
+  border-radius: 6px;
+}
+
+.experiment-detail-page .ant-btn-primary {
+  background-color: #1677ff !important;
+  border-color: #1677ff !important;
+}
+
+.experiment-detail-page .ant-btn-primary:hover {
+  background-color: #4096ff !important;
+  border-color: #4096ff !important;
+}
+
+/* Tab导航样式 */
+.experiment-detail-page .border-b {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.experiment-detail-page .border-b-2 {
+  border-bottom: 2px solid;
+}
+
+.experiment-detail-page .border-blue-500 {
+  border-color: #3b82f6;
+}
+
+.experiment-detail-page .text-blue-600 {
+  color: #2563eb;
+}
+
+/* 状态卡片样式 */
+.experiment-detail-page .grid {
+  display: grid;
+}
+
+.experiment-detail-page .grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.experiment-detail-page .grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.experiment-detail-page .grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.experiment-detail-page .gap-6 {
+  gap: 1.5rem;
+}
+
+/* 进度条样式 */
+.experiment-detail-page .ant-progress {
+  margin-bottom: 0;
+}
+
+.experiment-detail-page .ant-progress-line {
+  margin-bottom: 0;
+}
+
+/* 代码块样式 */
+.experiment-detail-page .font-mono {
+  font-family: ui-monospace, SFMono-Regular, 'Menlo', 'Monaco', 'Cascadia Code', 'Segoe UI Mono', 'Roboto Mono', monospace;
+}
+
+.experiment-detail-page .bg-gray-50 {
+  background-color: #f9fafb;
+}
+
+/* 字段映射样式 */
+.experiment-detail-page .space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+/* 响应式调整 */
+@media (min-width: 768px) {
+  .experiment-detail-page .md\\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .experiment-detail-page .flex {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .experiment-detail-page .justify-between {
+    justify-content: flex-start;
+  }
+  
+  .experiment-detail-page .ant-card {
+    margin-bottom: 16px;
+  }
+  
+  .experiment-detail-page .space-x-8 {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  /* 移动端状态卡片保持4列布局，但缩小字体 */
+  .experiment-detail-page .grid-cols-4 .ant-card {
+    padding: 8px 12px;
+  }
+  
+  .experiment-detail-page .grid-cols-4 .text-2xl {
+    font-size: 1.25rem;
+  }
+  
+  .experiment-detail-page .grid-cols-4 .text-sm {
+    font-size: 0.75rem;
+  }
+}
+
+/* Alert组件样式 */
+.experiment-detail-page .ant-alert {
+  border-radius: 8px;
+}
+
+/* Tag组件样式 */
+.experiment-detail-page .ant-tag {
+  border-radius: 4px;
+  font-weight: 500;
+}

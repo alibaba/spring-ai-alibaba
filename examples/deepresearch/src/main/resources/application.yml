@@ -9,12 +9,12 @@ spring:
         enabled: true
         toolcallback:
           enabled: true
-        sse:
+        streamable-http:
           connections:
             jina:
-              # 实际的连接地址为：http://localhost:8080/sse
+              # 官方地址：https://mcp.jina.ai 本地部署：http://127.0.0.1:8787
               url: "https://mcp.jina.ai"
+              endpoint: "/sse"
         request-timeout: 60000
-
 server:
   port: 8080

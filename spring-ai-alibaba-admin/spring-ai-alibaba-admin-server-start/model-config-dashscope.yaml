@@ -1,0 +1,26 @@
+models:
+  - id: 1
+    name: qwen-plus
+    provider: dashscope
+    modelName: qwen-plus
+    baseUrl: https://dashscope.aliyuncs.com/compatible-mode
+    apiKey: ${DASHSCOPE_API_KEY}
+    status: 1
+    defaultParameters:
+      temperature: 0.7
+      maxTokens: 4096
+    supportedParameters:
+      - name: temperature
+        type: number
+        minValue: 0
+        maxValue: 2
+        defaultValue: 0.7
+        required: false
+        description: 采样温度
+      - name: maxTokens
+        type: number
+        minValue: 1
+        maxValue: 4096
+        defaultValue: 1024
+        required: false
+        description: 最大输出token

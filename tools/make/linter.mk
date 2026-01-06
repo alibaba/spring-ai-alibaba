@@ -1,4 +1,4 @@
-# Copyright 2024-2025 the original author or authors.
+# Copyright 2024-2026 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,12 +66,12 @@ markdown-lint-fix: ## Fix the markdown files style.
 .PHONY: newline-check
 newline-check: ## Check the newline
 	@$(LOG_TARGET)
-	python tools/scripts/new-line-check.py check
+	python3 tools/scripts/new-line-check.py check
 
 .PHONY: newline-fix
 newline-fix: ## Fix the newline
 	@$(LOG_TARGET)
-	python tools/scripts/new-line-check.py fix
+	python3 tools/scripts/new-line-check.py fix
 
 .PHONY: secrets-check
 secrets-check: ## Check the secrets
