@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.executor;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.GraphRunnerContext;
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
@@ -438,19 +439,23 @@ public class NodeExecutor extends BaseGraphExecutor {
 							&& !(e.getValue() instanceof ParallelGraphFlux))
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-			context.mergeIntoCurrentState(partialStateWithoutFlux);
-
 			Map<String, Object> updateState = new HashMap<>();
 			if (nodeResultValue.isPresent()) {
 				Object value = nodeResultValue.get();
 				if (value instanceof Map<?, ?>) {
 					updateState = (Map<String, Object>) value;
-					context.mergeIntoCurrentState(updateState);
 				}
 				else {
 					throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
 				}
 			}
+
+			Map<String, Object> combinedUpdateState = new HashMap<>(partialStateWithoutFlux);
+			combinedUpdateState.putAll(updateState);
+			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfterForStreaming(context, combinedUpdateState);
+
+			context.mergeIntoCurrentState(partialStateWithoutFlux);
+			context.mergeIntoCurrentState(updateState);
 
 			try {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
@@ -459,6 +464,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				context.buildNodeOutputAndAddCheckpoint(updateState);
 
 				context.doListeners(NODE_AFTER, null);
+				interruptAfterMetadata.ifPresent(context::setReturnFromEmbedWithValue);
 			}
 			catch (Exception e) {
 				throw new RuntimeException(e);
@@ -610,6 +616,10 @@ public class NodeExecutor extends BaseGraphExecutor {
 					.filter(e -> !(e.getValue() instanceof GraphFlux))
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+			Map<String, Object> combinedUpdateState = new HashMap<>(partialStateWithoutGraphFlux);
+			combinedUpdateState.putAll(resultMap);
+			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfterForStreaming(context, combinedUpdateState);
+
 			context.mergeIntoCurrentState(partialStateWithoutGraphFlux);
 
 			// Merge the result from GraphFlux processing
@@ -624,6 +634,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				context.buildNodeOutputAndAddCheckpoint(partialStateWithoutGraphFlux);
 
 				context.doListeners(NODE_AFTER, null);
+				interruptAfterMetadata.ifPresent(context::setReturnFromEmbedWithValue);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -631,6 +642,36 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 		return processedFlux
 				.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+	}
+
+	/**
+	 * Checks interruptAfter hook for streaming nodes using the pre-merge state.
+	 * <p>
+	 * This method must be called <strong>before</strong> the streaming state updates are
+	 * merged into the {@link OverAllState} to keep semantics consistent with the
+	 * non-streaming interruptAfter hook.
+	 * @param context the graph runner context
+	 * @param actionResult the streaming node action result (state delta) passed to interruptAfter
+	 * @return interruption metadata if the hook triggers
+	 */
+	private Optional<InterruptionMetadata> interruptAfterForStreaming(GraphRunnerContext context,
+			Map<String, Object> actionResult) {
+		String currentNodeId = context.getCurrentNodeId();
+		AsyncNodeActionWithConfig action = context.getNodeAction(currentNodeId);
+
+		if (!(action instanceof InterruptableAction interruptableAction)) {
+			return Optional.empty();
+		}
+
+		try {
+			OverAllState stateBeforeMerge = context.cloneState(context.getCurrentStateData());
+			return interruptableAction.interruptAfter(currentNodeId, stateBeforeMerge, actionResult,
+					context.getConfig());
+		}
+		catch (Exception e) {
+			context.doListeners(ERROR, e);
+			throw new RuntimeException("Failed to check interruptAfter hook for streaming node", e);
+		}
 	}
 
 	/**
@@ -694,6 +735,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 					.filter(e -> !(e.getValue() instanceof ParallelGraphFlux))
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+			// Check interruptAfter hook for streaming nodes using the pre-merge state.
+			Map<String, Object> combinedUpdateState = new HashMap<>(partialStateWithoutParallelGraphFlux);
+			combinedUpdateState.putAll(combinedResultMap);
+			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfterForStreaming(context, combinedUpdateState);
+
 			context.mergeIntoCurrentState(partialStateWithoutParallelGraphFlux);
 
 			// Merge the combined results from ParallelGraphFlux processing
@@ -708,6 +754,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				context.buildNodeOutputAndAddCheckpoint(partialStateWithoutParallelGraphFlux);
 
 				context.doListeners(NODE_AFTER, null);
+				interruptAfterMetadata.ifPresent(context::setReturnFromEmbedWithValue);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
