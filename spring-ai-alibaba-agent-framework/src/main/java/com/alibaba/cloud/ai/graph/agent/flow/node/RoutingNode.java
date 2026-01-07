@@ -32,6 +32,7 @@ import org.springframework.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,7 +132,7 @@ public class RoutingNode implements AsyncNodeActionWithConfig {
 	 * Otherwise, adds a default instruction message.
 	 */
 	private List<Message> prepareMessagesWithInstruction(List<Message> messages) {
-		java.util.ArrayList<Message> messagesWithInstruction = new java.util.ArrayList<>(messages);
+		List<Message> messagesWithInstruction = new ArrayList<>(messages);
 		
 		// Check if rootAgent is LlmRoutingAgent and has instruction
 		if (rootAgent instanceof LlmRoutingAgent llmRoutingAgent) {
@@ -175,7 +176,7 @@ public class RoutingNode implements AsyncNodeActionWithConfig {
 					logger.warn("RoutingAgent {} retry attempt {}/{}. Previous invalid decision: {}",
 							rootAgent.name(), attempt, maxRetries, lastInvalidDecision);
 
-					java.util.ArrayList<Message> messagesWithFeedback = new java.util.ArrayList<>();
+					List<Message> messagesWithFeedback = new ArrayList<>();
 					boolean systemMessageFound = false;
 
 					for (Message msg : messages) {
