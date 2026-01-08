@@ -106,7 +106,7 @@ npm run dev
 
 ### 5. Access the Application
 
-Open your browser and visit http://localhost:8080 to use the SAA Admin platform.
+Open your browser and visit http://localhost:8000 to use the SAA Admin platform.
 
 At this point, you can already manage, debug, evaluate, and observe prompts on the platform. If you expect your Spring AI Alibaba Agent application to integrate with Nacos for prompt loading and dynamic updates, and observe the online running status, you can refer to step 6 to configure your AI Agent application.
 
