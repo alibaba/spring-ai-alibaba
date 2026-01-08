@@ -85,14 +85,23 @@ nacos:
 ```
 
 ### 4. Start SAA Admin
-Execute the startup script in the root directory. This script will help you start the database-related services
+#### 4.1 Start Middleware Services
+Navigate to the `docker/middleware` directory in the project root and execute the startup script to launch the required middleware services (MySQL, Elasticsearch, Nacos, Redis, RocketMQ):
 
 ```bash
-sh start.sh
+cd docker/middleware
+sh run.sh
 ```
-Start the application in the spring-ai-alibaba-admin-server-start directory
+#### 4.2 Start Backend Service
+Navigate to the `spring-ai-alibaba-admin-server-start` directory and start the application:
 ```bash
 mvn spring-boot:run
+```
+#### 4.3 Start Frontend Service
+Navigate to the `frontend` directory in the project root, read the corresponding README to install dependencies and configure the environment, then start the service:
+```bash
+cd packages/main
+npm run dev
 ```
 
 ### 5. Access the Application

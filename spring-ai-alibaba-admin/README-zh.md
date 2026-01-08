@@ -90,14 +90,25 @@ nacos:
 ```
 
 ### 4. 启动SAA Admin
-在根目录下，执行启动脚本。该脚本会帮助您启动好数据库相关的服务
+#### 4.1 启动中间件服务
+在项目根目录下，进入 `docker/middleware` 目录并执行启动脚本来启动所需的中间件服务（MySQL、Elasticsearch、Nacos、Redis、RocketMQ）：
 
 ```bash
-sh start.sh
+cd docker/middleware
+sh run.sh
 ```
-spring-ai-alibaba-admin-server-start 目录下启动应用程序
+#### 4.2 启动后端服务
+进入 `spring-ai-alibaba-admin-server-start` 目录并启动应用程序：
+
 ```bash
 mvn spring-boot:run
+```
+#### 4.3 启动前端服务
+在项目根目录下进入 `frontend` 目录，阅读对应的README，安装相关依赖以及进行环境配置后，启动服务：
+
+```bash
+cd packages/main
+npm run dev
 ```
 ### 5. 访问应用
 
