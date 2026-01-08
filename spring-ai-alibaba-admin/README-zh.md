@@ -111,6 +111,7 @@ mvn spring-boot:run
 cd packages/main
 npm run dev
 ```
+
 ### 5. 访问应用
 
 打开浏览器访问 http://localhost:8000 即可使用 SAA Admin 平台。
