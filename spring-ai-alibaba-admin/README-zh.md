@@ -90,6 +90,7 @@ nacos:
 ```
 
 ### 4. 启动SAA Admin
+
 #### 4.1 启动中间件服务
 在项目根目录下，进入 `docker/middleware` 目录并执行启动脚本来启动所需的中间件服务（MySQL、Elasticsearch、Nacos、Redis、RocketMQ）：
 
@@ -112,7 +113,7 @@ npm run dev
 ```
 ### 5. 访问应用
 
-打开浏览器访问 http://localhost:8080/admin 即可使用 SAA Admin 平台。
+打开浏览器访问 http://localhost:8000 即可使用 SAA Admin 平台。
 
 至此，您已经可以在平台中对prompt进行管理、调试、评估、可观测。如果您期望Spring AI Alibaba Agent应用能够集成Nacos以实现prompt加载以及动态更新，并且观测线上的运行情况，可以参照第六步配置您的 AI Agent 应用。
 
