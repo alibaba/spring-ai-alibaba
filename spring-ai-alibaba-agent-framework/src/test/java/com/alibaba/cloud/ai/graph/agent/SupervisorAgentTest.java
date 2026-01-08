@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SupervisorAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
@@ -234,6 +235,9 @@ class SupervisorAgentTest {
 
 	@Test
 	public void testSupervisorAgentGraphRepresentation() throws Exception {
+		LlmRoutingAgent.builder().hooks(
+				List.of(HookFactory.createLogAgentHook())
+		)
 		// Create simple sub-agents
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_agent")
