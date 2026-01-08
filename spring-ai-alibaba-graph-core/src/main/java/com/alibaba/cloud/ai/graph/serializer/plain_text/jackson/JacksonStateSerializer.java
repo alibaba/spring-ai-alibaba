@@ -256,7 +256,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			}
 		}
 
-		snapshot.put("metadata", new LinkedHashMap<>(response.getAllMetadata()));
+		snapshot.put("metadata", cleanMetadata(response.getAllMetadata()));
 		return snapshot;
 	}
 
@@ -282,6 +282,69 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		}
 		
 		return snapshot;
+	}
+
+	private Map<String, Object> cleanMetadata(Map<String, Object> metadata) {
+		if (metadata == null || metadata.isEmpty()) {
+			return new LinkedHashMap<>();
+		}
+
+		Map<String, Object> cleaned = new LinkedHashMap<>();
+		for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+			String key = entry.getKey();
+			if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
+				continue;
+			}
+			cleaned.put(key, cleanValue(entry.getValue()));
+		}
+		return cleaned;
+	}
+
+
+	private Object cleanValue(Object value) {
+		if (value == null) {
+			return null;
+		}
+
+		if (value instanceof Map) {
+			Map<?, ?> map = (Map<?, ?>) value;
+			Map<Object, Object> cleaned = new LinkedHashMap<>();
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				Object key = entry.getKey();
+				if (key instanceof String) {
+					String keyStr = (String) key;
+					if ("@class".equals(keyStr) || "@type".equals(keyStr) || "@typeHint".equals(keyStr)) {
+						continue;
+					}
+				}
+				cleaned.put(key, cleanValue(entry.getValue()));
+			}
+			return cleaned;
+		}
+
+		if (value instanceof Collection) {
+			Collection<?> collection = (Collection<?>) value;
+			List<Object> cleaned = new ArrayList<>(collection.size());
+			for (Object item : collection) {
+				cleaned.add(cleanValue(item));
+			}
+			return cleaned;
+		}
+
+		if (value.getClass().isArray()) {
+			Class<?> componentType = value.getClass().getComponentType();
+			if (componentType.isPrimitive()) {
+				return value;
+			}
+			Object[] array = (Object[]) value;
+			Object[] cleaned = new Object[array.length];
+			for (int i = 0; i < array.length; i++) {
+				cleaned[i] = cleanValue(array[i]);
+			}
+			return cleaned;
+		}
+
+		return value;
 	}
 
 	/**
