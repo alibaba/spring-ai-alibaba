@@ -17,6 +17,9 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.action.MultiCommand;
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
+import com.alibaba.cloud.ai.graph.internal.node.ConditionalParallelNode;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
@@ -198,7 +201,7 @@ public class GraphRunnerContext {
 		return nextNodeId(compiledGraph.getEdge(nodeId), state, nodeId);
 	}
 
-	private Command nextNodeId(com.alibaba.cloud.ai.graph.internal.edge.EdgeValue route, Map<String, Object> state,
+	private Command nextNodeId(EdgeValue route, Map<String, Object> state,
 			String nodeId) throws Exception {
 		if (route == null) {
 			throw RunnableErrors.missingEdge.exception(nodeId);
@@ -207,14 +210,30 @@ public class GraphRunnerContext {
 			return new Command(route.id(), state);
 		}
 		if (route.value() != null) {
-			var command = route.value().action().apply(this.overallState, config).get();
-			var newRoute = command.gotoNode();
-			String result = route.value().mappings().get(newRoute);
-			if (result == null) {
-				throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+			var edgeCondition = route.value();
+			
+			// Check if this is a multi-command action
+			if (edgeCondition.isMultiCommand()) {
+				// Multi-command action - route to ConditionalParallelNode
+				// The ConditionalParallelNode is dynamically created in CompiledGraph
+				String conditionalParallelNodeId = ConditionalParallelNode.formatNodeId(nodeId);
+				// Return Command pointing to ConditionalParallelNode
+				// The ConditionalParallelNode will handle the MultiCommand internally
+				return new Command(conditionalParallelNodeId, state);
+			} else {
+				// Single Command action (original logic)
+				var singleAction = edgeCondition.singleAction();
+				var command = singleAction.apply(this.overallState, config).get();
+				
+				// Single Command case
+				var newRoute = command.gotoNode();
+				String result = route.value().mappings().get(newRoute);
+				if (result == null) {
+					throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+				}
+				this.mergeIntoCurrentState(command.update());
+				return new Command(result, state);
 			}
-			this.mergeIntoCurrentState(command.update());
-			return new Command(result, state);
 		}
 		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}

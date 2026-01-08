@@ -1416,4 +1416,260 @@ public class StateGraphTest {
 
 	}
 
+	/**
+	 * Tests the addConditionalEdgesWithMultiCommand method to verify parallel execution of multiple nodes.
+	 * This test verifies that when a conditional edge returns multiple nodes, they are executed in parallel.
+	 */
+	@Test
+	public void testAddConditionalEdgesWithMultiCommand() throws Exception {
+		// Create a state graph with key strategies
+		StateGraph workflow = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			keyStrategyMap.put("results", new AppendStrategy());
+			return keyStrategyMap;
+		});
+
+		// Track execution order to verify parallel execution
+		List<String> executionOrder = Collections.synchronizedList(new ArrayList<>());
+
+		// Add nodes to the workflow
+		workflow.addNode("start", node_async(state -> {
+			log.info("start node");
+			executionOrder.add("start");
+			return Map.of("messages", "start");
+		}))
+		.addNode("conditional_node", node_async(state -> {
+			log.info("conditional_node");
+			executionOrder.add("conditional_node");
+			return Map.of("messages", "processing");
+		}))
+		.addNode("node_a", node_async(state -> {
+			log.info("node_a executing");
+			executionOrder.add("node_a");
+			// Simulate some work
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			return Map.of("messages", "node_a_result", "results", "result_a");
+		}))
+		.addNode("node_b", node_async(state -> {
+			log.info("node_b executing");
+			executionOrder.add("node_b");
+			// Simulate some work
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			return Map.of("messages", "node_b_result", "results", "result_b");
+		}))
+		.addNode("node_c", node_async(state -> {
+			log.info("node_c executing");
+			executionOrder.add("node_c");
+			// Simulate some work
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			return Map.of("messages", "node_c_result", "results", "result_c");
+		}))
+		.addNode("end", node_async(state -> {
+			log.info("end node");
+			executionOrder.add("end");
+			return Map.of("messages", "end");
+		}));
+
+		// Add conditional edges using addConditionalEdgesWithMultiCommand
+		// This will route to multiple nodes in parallel
+		workflow.addConditionalEdgesWithMultiCommand(
+			"conditional_node",
+			AsyncMultiCommandAction.node_async((state, config) -> 
+				new MultiCommand(List.of("route_a", "route_b", "route_c"))
+			),
+			Map.of(
+				"route_a", "node_a",
+				"route_b", "node_b",
+				"route_c", "node_c"
+			)
+		);
+
+		// Add regular edges to connect the workflow
+		workflow.addEdge(START, "start")
+			.addEdge("start", "conditional_node")
+			.addEdge("node_a", "end")
+			.addEdge("node_b", "end")
+			.addEdge("node_c", "end")
+			.addEdge("end", END);
+
+		// Compile the workflow
+		CompiledGraph app = workflow.compile();
+
+		// Execute the workflow
+		Optional<OverAllState> result = app.invoke(
+			Map.of("initial", "value"),
+			RunnableConfig.builder().threadId("test-multi-command-1").build()
+		);
+
+		// Verify the result
+		assertTrue(result.isPresent());
+		log.info("Result: {}", result.get().data());
+
+		// Verify that all parallel nodes were executed
+		List<String> messages = (List<String>) result.get().value("messages").get();
+		assertTrue(messages.contains("start"));
+		assertTrue(messages.contains("processing"));
+		assertTrue(messages.contains("node_a_result"));
+		assertTrue(messages.contains("node_b_result"));
+		assertTrue(messages.contains("node_c_result"));
+		assertTrue(messages.contains("end"));
+
+		// Verify that all results were collected
+		List<String> results = (List<String>) result.get().value("results").get();
+		assertEquals(3, results.size());
+		assertTrue(results.contains("result_a"));
+		assertTrue(results.contains("result_b"));
+		assertTrue(results.contains("result_c"));
+
+		log.info("Execution order: {}", executionOrder);
+		log.info("Messages: {}", messages);
+		log.info("Results: {}", results);
+	}
+
+	/**
+	 * Tests addConditionalEdgesWithMultiCommand with dynamic condition-based routing.
+	 * Verifies that the condition can dynamically determine which nodes to execute in parallel.
+	 */
+	@Test
+	public void testAddConditionalEdgesWithMultiCommandDynamic() throws Exception {
+		StateGraph workflow = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			keyStrategyMap.put("flags", new ReplaceStrategy());
+			return keyStrategyMap;
+		});
+
+		// Add nodes
+		workflow.addNode("start", node_async(state -> {
+			return Map.of("messages", "start", "flags", Map.of("flag1", true, "flag2", true, "flag3", false));
+		}))
+		.addNode("conditional_node", node_async(state -> {
+			return Map.of("messages", "processing");
+		}))
+		.addNode("node_1", node_async(state -> {
+			return Map.of("messages", "node_1_result");
+		}))
+		.addNode("node_2", node_async(state -> {
+			return Map.of("messages", "node_2_result");
+		}))
+		.addNode("node_3", node_async(state -> {
+			return Map.of("messages", "node_3_result");
+		}))
+		.addNode("end", node_async(state -> {
+			return Map.of("messages", "end");
+		}));
+
+		// Add conditional edges that dynamically determine which nodes to execute based on flags
+		workflow.addConditionalEdgesWithMultiCommand(
+			"conditional_node",
+			AsyncMultiCommandAction.node_async((state, config) -> {
+				@SuppressWarnings("unchecked")
+				Map<String, Boolean> flags = (Map<String, Boolean>) state.value("flags").orElse(Map.of());
+				List<String> routes = new ArrayList<>();
+				
+				if (Boolean.TRUE.equals(flags.get("flag1"))) {
+					routes.add("route1");
+				}
+				if (Boolean.TRUE.equals(flags.get("flag2"))) {
+					routes.add("route2");
+				}
+				if (Boolean.TRUE.equals(flags.get("flag3"))) {
+					routes.add("route3");
+				}
+				
+				return new MultiCommand(routes);
+			}),
+			Map.of(
+				"route1", "node_1",
+				"route2", "node_2",
+				"route3", "node_3"
+			)
+		);
+
+		// Add edges
+		workflow.addEdge(START, "start")
+			.addEdge("start", "conditional_node")
+			.addEdge("node_1", "end")
+			.addEdge("node_2", "end")
+			.addEdge("node_3", "end")
+			.addEdge("end", END);
+
+		// Compile and execute
+		CompiledGraph app = workflow.compile();
+		Optional<OverAllState> result = app.invoke(
+			Map.of(),
+			RunnableConfig.builder().threadId("test-multi-command-2").build()
+		);
+
+		// Verify results
+		assertTrue(result.isPresent());
+		List<String> messages = (List<String>) result.get().value("messages").get();
+		
+		// Should execute node_1 and node_2 (flag1 and flag2 are true), but not node_3 (flag3 is false)
+		assertTrue(messages.contains("node_1_result"));
+		assertTrue(messages.contains("node_2_result"));
+		assertFalse(messages.contains("node_3_result"));
+		assertTrue(messages.contains("end"));
+		
+		log.info("Dynamic routing result - Messages: {}", messages);
+	}
+
+	/**
+	 * Tests addConditionalEdgesWithMultiCommand with single node (edge case).
+	 * Verifies that even when only one node is returned, it still works correctly.
+	 */
+	@Test
+	public void testAddConditionalEdgesWithMultiCommandSingleNode() throws Exception {
+		StateGraph workflow = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			return keyStrategyMap;
+		});
+
+		workflow.addNode("start", node_async(state -> Map.of("messages", "start")))
+			.addNode("conditional_node", node_async(state -> Map.of("messages", "processing")))
+			.addNode("single_node", node_async(state -> Map.of("messages", "single_result")))
+			.addNode("end", node_async(state -> Map.of("messages", "end")));
+
+		// Return only one node in MultiCommand
+		workflow.addConditionalEdgesWithMultiCommand(
+			"conditional_node",
+			AsyncMultiCommandAction.node_async((state, config) -> 
+				new MultiCommand(List.of("route_single"))
+			),
+			Map.of("route_single", "single_node")
+		);
+
+		workflow.addEdge(START, "start")
+			.addEdge("start", "conditional_node")
+			.addEdge("single_node", "end")
+			.addEdge("end", END);
+
+		CompiledGraph app = workflow.compile();
+		Optional<OverAllState> result = app.invoke(
+			Map.of(),
+			RunnableConfig.builder().threadId("test-multi-command-3").build()
+		);
+
+		assertTrue(result.isPresent());
+		List<String> messages = (List<String>) result.get().value("messages").get();
+		assertTrue(messages.contains("single_result"));
+		assertTrue(messages.contains("end"));
+		
+		log.info("Single node result - Messages: {}", messages);
+	}
+
 }

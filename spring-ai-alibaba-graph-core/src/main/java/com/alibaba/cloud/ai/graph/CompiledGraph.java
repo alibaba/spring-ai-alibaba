@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.action.MultiCommand;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.Errors;
@@ -25,6 +26,7 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.internal.node.ConditionalParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
@@ -148,7 +150,31 @@ public class CompiledGraph {
 		for (var e : processedData.edges().elements) {
 			var targets = e.targets();
 			if (targets.size() == 1) {
-				edges.put(e.sourceId(), targets.get(0));
+				var target = targets.get(0);
+				// Check if this is a conditional edge
+				if (target.value() != null) {
+					var edgeCondition = target.value();
+					// Check if this is a multi-command action (returns multiple nodes)
+					if (edgeCondition.isMultiCommand()) {
+						// Multi-command action - create ConditionalParallelNode for parallel execution
+						var conditionalParallelNode = new ConditionalParallelNode(
+								e.sourceId(),
+								edgeCondition,
+								nodeFactories,
+								keyStrategyMap,
+								compileConfig);
+						
+						nodeFactories.put(conditionalParallelNode.id(), conditionalParallelNode.actionFactory());
+						edges.put(e.sourceId(), new EdgeValue(conditionalParallelNode.id()));
+						// The ConditionalParallelNode will handle parallel execution internally
+					} else {
+						// Single Command action - same as regular single target edge
+						edges.put(e.sourceId(), target);
+					}
+				} else {
+					// Regular single target edge (no condition)
+					edges.put(e.sourceId(), target);
+				}
 			} else {
 				Supplier<Stream<EdgeValue>> parallelNodeStream = () -> targets.stream()
 						.filter(target -> nodeFactories.containsKey(target.id()));
@@ -203,7 +229,6 @@ public class CompiledGraph {
 				edges.put(parallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
 
 			}
-
 		}
 	}
 
@@ -308,19 +333,27 @@ public class CompiledGraph {
 		}
 		if (route.value() != null) {
 			OverAllState derefState = stateGraph.getStateFactory().apply(state);
+			var edgeCondition = route.value();
 
-			var command = route.value().action().apply(derefState, config).get();
+			// Check if this is a multi-command action
+			if (edgeCondition.isMultiCommand()) {
+				// Multi-command action - route to ConditionalParallelNode
+				String conditionalParallelNodeId = ConditionalParallelNode.formatNodeId(nodeId);
+				return new Command(conditionalParallelNodeId, state);
+			} else {
+				// Single Command action
+				var singleAction = edgeCondition.singleAction();
+				var command = singleAction.apply(derefState, config).get();
 
-			var newRoute = command.gotoNode();
+				var newRoute = command.gotoNode();
+				String result = route.value().mappings().get(newRoute);
+				if (result == null) {
+					throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+				}
 
-			String result = route.value().mappings().get(newRoute);
-			if (result == null) {
-				throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+				var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
+				return new Command(result, currentState);
 			}
-
-			var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
-
-			return new Command(result, currentState);
 		}
 		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}
