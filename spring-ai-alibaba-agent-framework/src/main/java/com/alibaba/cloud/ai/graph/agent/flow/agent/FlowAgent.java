@@ -86,7 +86,7 @@ public abstract class FlowAgent extends Agent {
 		}
 
 		// Set hooks if available
-		if (this.hooks != null) {
+		if (this.hooks != null && !this.hooks.isEmpty()) {
 			config.hooks(this.hooks);
 		}
 
