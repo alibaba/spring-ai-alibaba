@@ -18,182 +18,156 @@ package com.alibaba.cloud.ai.graph.streaming;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import java.io.Serializable;
+import java.util.Map;
+
 import static java.lang.String.format;
 
 public class StreamingOutput<T> extends NodeOutput {
 
-	@Deprecated
-	private final String chunk;
+    private final String chunk;
 
-	private final Message message;
+    private final Message message;
 
-	@JsonIgnore
-	private final T originData;
+    @JsonIgnore
+    private final T originData;
 
-	private OutputType outputType;
+    private OutputType outputType;
 
-	public StreamingOutput(T originData, String node, OverAllState state) {
-		super(node, state);
-		this.chunk = null;
-		this.message = null;
-		this.originData = originData;
-		trySetTokenUsage(originData);
-	}
+    private Map<String, Serializable> metadata;
 
-	// agentName is for graph and node working on Agent mode
-	public StreamingOutput(T originData, String node, String agentName, OverAllState state) {
-		super(node, agentName, state);
-		this.chunk = null;
-		this.message = null;
-		this.originData = originData;
-		trySetTokenUsage(originData);
-	}
+    private StreamingOutput(Builder<T> builder) {
+        super(builder.node, builder.agentName, builder.tokenUsage, builder.state);
+        this.chunk = builder.chunk;
+        this.message = builder.message;
+        this.originData = builder.originData;
+        this.metadata = builder.metadata;
+        this.outputType = builder.outputType;
+        trySetTokenUsage();
+    }
 
-	public StreamingOutput(T originData, String node, String agentName, OverAllState state, OutputType outputType) {
-		super(node, agentName, state);
-		this.chunk = null;
-		this.message = null;
-		this.originData = originData;
-		this.outputType = outputType;
-		trySetTokenUsage(originData);
-	}
-
-	// new constructor to support Message
-	public StreamingOutput(Message message, T originData, String node, String agentName, OverAllState state) {
-		super(node, agentName, state);
-		this.message = message;
-		this.originData = originData;
-		this.chunk = extractChunkFromMessage(message);
-		trySetTokenUsage(originData);
-	}
-
-	public StreamingOutput(Message message, T originData, String node, String agentName, OverAllState state, OutputType outputType) {
-		super(node, agentName, state);
-		this.message = message;
-		this.originData = originData;
-		this.chunk = extractChunkFromMessage(message);
-		this.outputType = outputType;
-		trySetTokenUsage(originData);
-	}
-
-	public StreamingOutput(Message message, String node, String agentName, OverAllState state) {
-		super(node, agentName, state);
-		this.message = message;
-		this.chunk = extractChunkFromMessage(message);
-		this.originData = null;
-	}
-
-	public StreamingOutput(Message message, String node, String agentName, OverAllState state, OutputType outputType) {
-		super(node, agentName, state);
-		this.message = message;
-		this.chunk = extractChunkFromMessage(message);
-		this.originData = null;
-		this.outputType = outputType;
-	}
-
-	// Constructor for Message with OverAllState and Usage (for buildNodeOutput)
-	public StreamingOutput(Message message, String node, String agentName, OverAllState state, Usage usage) {
-		super(node, agentName, state);
-		this.message = message;
-		this.chunk = extractChunkFromMessage(message);
-		this.originData = null;
-		setTokenUsage(usage);
-	}
-
-	public StreamingOutput(Message message, String node, String agentName, OverAllState state, Usage usage, OutputType outputType) {
-		super(node, agentName, state);
-		this.message = message;
-		this.chunk = extractChunkFromMessage(message);
-		this.originData = null;
-		this.outputType = outputType;
-		setTokenUsage(usage);
-	}
-
-	// Constructor for node output without Message but with Usage
-	public StreamingOutput(String node, String agentName, OverAllState state, Usage usage) {
-		super(node, agentName, state);
-		this.message = null;
-		this.chunk = null;
-		this.originData = null;
-		setTokenUsage(usage);
-	}
-
-	public StreamingOutput(String node, String agentName, OverAllState state, Usage usage, OutputType outputType) {
-		super(node, agentName, state);
-		this.message = null;
-		this.chunk = null;
-		this.originData = null;
-		this.outputType = outputType;
-		setTokenUsage(usage);
-	}
-
-	@Deprecated
-	public StreamingOutput(String chunk, T originData, String node, String agentName, OverAllState state) {
-		super(node, agentName, state);
-		this.chunk = chunk;
-		this.message = null;
-		this.originData = originData;
-		trySetTokenUsage(originData);
-	}
-
-	@Deprecated
-	public StreamingOutput(String chunk, String node, String agentName, OverAllState state) {
-		super(node, agentName, state);
-		this.chunk = chunk;
-		this.message = null;
-		this.originData = null;
-	}
-
-	private static String extractChunkFromMessage(Message message) {
-		if (message instanceof AssistantMessage assistantMessage) {
-			if (!assistantMessage.hasToolCalls()) {
-				return assistantMessage.getText();
-			}
-		}
-		return null;
-	}
+    private void trySetTokenUsage() {
+        if (originData != null) {
+            if (originData instanceof ChatResponse chatResponse) {
+                setTokenUsage(chatResponse.getMetadata().getUsage());
+            } else if (originData instanceof Usage usage) {
+                setTokenUsage(usage);
+            }
+        } else if (metadata != null && metadata.containsKey("usage")) {
+            Object usageObj = metadata.get("usage");
+            if (usageObj instanceof Usage usage) {
+                setTokenUsage(usage);
+            }
+        }
+    }
 
 
-	private void trySetTokenUsage(T originData) {
-		if (originData instanceof ChatResponse chatResponse) {
-			setTokenUsage(chatResponse.getMetadata().getUsage());
-		} else if (originData instanceof Usage usage) {
-			setTokenUsage(usage);
-		}
-	}
+    public String chunk() {
+        return chunk;
+    }
 
-	@Deprecated
-	public String chunk() {
-		return chunk;
-	}
+    @JsonIgnore
+    public T getOriginData() {
+        return originData;
+    }
 
-	@JsonIgnore
-	public T getOriginData() {
-		return originData;
-	}
+    public Map<String, Serializable> getMetadata() {
+        return metadata;
+    }
 
-	public Message message() {
-		return message;
-	}
+    public Message message() {
+        return message;
+    }
 
-	public OutputType getOutputType() {
-		return outputType;
-	}
+    public OutputType getOutputType() {
+        return outputType;
+    }
 
-	@Override
-	public String toString() {
-		if (node() == null) {
-			return format("StreamingOutput{message=%s, chunk=%s}", message(), chunk());
-		}
-		return format("StreamingOutput{node=%s, agent=%s, message=%s, chunk=%s, tokenUsage=%s, state=%s, subGraph=%s}",
-				node(), agent(), message(), chunk(), tokenUsage(), state(), isSubGraph());
-	}
+    @Override
+    public String toString() {
+        if (node() == null) {
+            return format("StreamingOutput{message=%s, chunk=%s}", message(), chunk());
+        }
+        return format("StreamingOutput{node=%s, agent=%s, message=%s, chunk=%s, tokenUsage=%s, state=%s, subGraph=%s}",
+                node(), agent(), message(), chunk(), tokenUsage(), state(), isSubGraph());
+    }
+
+    public static <T> StreamingOutput.Builder<T> builder() {
+        return new StreamingOutput.Builder<>();
+    }
+
+    public static class Builder<T> {
+        public String chunk;
+        private Message message;
+        private T originData;
+        private Map<String, Serializable> metadata;
+        private OutputType outputType;
+
+        private String node;
+        private OverAllState state;
+        private String agentName;
+        private Usage tokenUsage;
+
+
+        public Builder() {
+        }
+
+        public Builder<T> message(Message message) {
+            this.message = message;
+            return this;
+        }
+
+        public Builder<T> originData(T originData) {
+            this.originData = originData;
+            return this;
+        }
+
+        public Builder<T> metadata(Map<String, Serializable> metadata) {
+            this.metadata = metadata;
+            return this;
+        }
+
+        public Builder<T> outputType(OutputType outputType) {
+            this.outputType = outputType;
+            return this;
+        }
+
+        public Builder<T> node(String node) {
+            this.node = node;
+            return this;
+        }
+
+        public Builder<T> state(OverAllState state) {
+            this.state = state;
+            return this;
+        }
+
+        public Builder<T> agentName(String agentName) {
+            this.agentName = agentName;
+            return this;
+        }
+
+        public Builder<T> tokenUsage(Usage tokenUsage) {
+            this.tokenUsage = tokenUsage;
+            return this;
+        }
+
+        public Builder<T> chunk(String chunk) {
+            this.chunk = chunk;
+            return this;
+        }
+
+        public StreamingOutput<T> build() {
+            StreamingOutput<T> output = new StreamingOutput<T>(this);
+            output.trySetTokenUsage();
+            return output;
+        }
+    }
 
 }

@@ -416,7 +416,12 @@ public class StateGraphTest {
 			log.info("call node {}", id);
 			final AsyncGenerator<NodeOutput> it = AsyncGeneratorQueue.of(new LinkedBlockingQueue<>(), queue -> {
 				for (int i = 0; i < 10; ++i) {
-					queue.add(AsyncGenerator.Data.of(completedFuture(new StreamingOutput(id + i, id, state))));
+					StreamingOutput<?> streamingOutput = StreamingOutput.builder()
+							.node(id)
+							.state(state)
+							.chunk(id+1)
+							.build();
+					queue.add(AsyncGenerator.Data.of(completedFuture(streamingOutput)));
 				}
 			});
 

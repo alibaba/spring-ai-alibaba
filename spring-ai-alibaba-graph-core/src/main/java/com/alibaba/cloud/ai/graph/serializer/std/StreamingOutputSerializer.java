@@ -94,10 +94,23 @@ public class StreamingOutputSerializer implements NullableObjectSerializer<Strea
 		// Prefer constructor with message if message is present
 		StreamingOutput<?> output;
 		if (message != null) {
-			output = new StreamingOutput<>(message, node, agent, state, outputType);
+			output = StreamingOutput.builder()
+					.node(node)
+					.agentName(agent)
+					.state(state)
+					.chunk(chunk)
+					.message(message)
+					.outputType(outputType)
+					.build();
 		} else {
 			// Fallback to deprecated constructor with chunk (for backward compatibility)
-			output = new StreamingOutput<>(chunk, node, agent, state);
+			output = StreamingOutput.builder()
+					.node(node)
+					.agentName(agent)
+					.state(state)
+					.chunk(chunk)
+					.outputType(outputType)
+					.build();
 		}
 		
 		output.setSubGraph(subGraph);

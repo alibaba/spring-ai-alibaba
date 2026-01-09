@@ -43,7 +43,7 @@ public class GlobSearchTool implements BiFunction<GlobSearchTool.Request, ToolCo
 		this.rootPath = Paths.get(rootPath).toAbsolutePath().normalize();
 	}
 
-	public record Request(
+	public static record Request(
 			@JsonProperty(required = true)
 			@JsonPropertyDescription("The glob pattern to match files against")
 			String pattern,
