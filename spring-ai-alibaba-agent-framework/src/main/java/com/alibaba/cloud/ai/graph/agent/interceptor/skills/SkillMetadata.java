@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook.skills;
+package com.alibaba.cloud.ai.graph.agent.interceptor.skills;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -39,7 +39,8 @@ public class SkillMetadata {
 
 	private String model;
 
-	// Lazy-loaded full content
+	private String source;
+
 	private String fullContent;
 
 	public SkillMetadata() {
@@ -86,13 +87,14 @@ public class SkillMetadata {
 		this.model = model;
 	}
 
-	/**
-	 * Load the full content of the SKILL.md file.
-	 * The content is cached after the first load (lazy loading).
-	 * 
-	 * @return the full content of SKILL.md (without frontmatter)
-	 * @throws IOException if the skill file cannot be read
-	 */
+	public String getSource() {
+		return source;
+	}
+
+	public void setSource(String source) {
+		this.source = source;
+	}
+
 	public String loadFullContent() throws IOException {
 		if (fullContent == null) {
 			Path skillFile = Path.of(skillPath, "SKILL.md");
@@ -106,10 +108,6 @@ public class SkillMetadata {
 		return fullContent;
 	}
 
-	/**
-	 * Remove YAML frontmatter from the skill content.
-	 * Frontmatter is delimited by --- at the start and end.
-	 */
 	private String removeFrontmatter(String content) {
 		if (!content.startsWith("---")) {
 			return content;
@@ -155,6 +153,11 @@ public class SkillMetadata {
 			return this;
 		}
 
+		public Builder source(String source) {
+			metadata.source = source;
+			return this;
+		}
+
 		public SkillMetadata build() {
 			if (metadata.name == null || metadata.name.isEmpty()) {
 				throw new IllegalStateException("Skill name is required");
@@ -177,6 +180,7 @@ public class SkillMetadata {
 				", skillPath='" + skillPath + '\'' +
 				", allowedTools=" + allowedTools +
 				", model='" + model + '\'' +
+				", source='" + source + '\'' +
 				'}';
 	}
 }
