@@ -63,7 +63,7 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 
 	```shell
 	git clone --depth=1 https://github.com/alibaba/spring-ai-alibaba.git
-	cd examples/chatbot
+	cd spring-ai-alibaba/examples/chatbot
 	```
 
 2. Start the ChatBot.
