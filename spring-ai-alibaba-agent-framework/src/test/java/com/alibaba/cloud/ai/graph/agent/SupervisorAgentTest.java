@@ -235,9 +235,6 @@ class SupervisorAgentTest {
 
 	@Test
 	public void testSupervisorAgentGraphRepresentation() throws Exception {
-		LlmRoutingAgent.builder().hooks(
-				List.of(HookFactory.createLogAgentHook())
-		)
 		// Create simple sub-agents
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_agent")
