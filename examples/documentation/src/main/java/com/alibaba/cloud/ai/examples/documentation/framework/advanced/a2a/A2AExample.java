@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class A2AExample {
 	private final ReactAgent localDataAnalysisAgent;
 
 	@Autowired
-	public A2AExample(@Qualifier("dashscopeChatModel") ChatModel chatModel,
+	public A2AExample(@Qualifier("dashScopeChatModel") ChatModel chatModel,
 			AgentCardProvider agentCardProvider,
 			@Qualifier("dataAnalysisAgent") ReactAgent localDataAnalysisAgent) {
 		this.chatModel = chatModel;
@@ -94,6 +94,7 @@ public class A2AExample {
 				.name("data_analysis_agent")
 				.agentCardProvider(agentCardProvider)  // 从 Nacos 自动获取 AgentCard
 				.description("数据分析远程代理")
+				.instruction("{input}")  // 将用户输入传递给远程 Agent
 				.build();
 		System.out.println("✓ A2aRemoteAgent 构建成功，AgentCard 已从 Nacos 获取");
 		System.out.println();

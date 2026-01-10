@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,5 +130,46 @@ public class GraphResponseSerializationRoundTripTest {
 		
 		assertEquals("data", restoredContainer.get("other"), "Other values should be preserved");
 	}
-}
 
+	@Test
+	void multipleSerializationRoundTripsShouldNotCauseDuplicateClassFields() throws Exception {
+		OverAllState originalState = new OverAllState();
+		Map<String, Object> metadata = Map.of(
+			"key1", "value1",
+			"key2", 42,
+			"nested", Map.of("innerKey", "innerValue")
+		);
+		GraphResponse<?> response = GraphResponse.of("Test result", metadata);
+		originalState.updateState(Map.of("response", response));
+
+		SpringAIJacksonStateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
+
+		OverAllState currentState = originalState;
+		for (int i = 0; i < 5; i++) {
+			currentState = serializer.cloneObject(currentState);
+
+			Object value = currentState.value("response").orElse(null);
+			assertNotNull(value, "Round " + (i + 1) + ": Value should not be null");
+			assertTrue(value instanceof GraphResponse,
+				"Round " + (i + 1) + ": Should still be GraphResponse");
+
+			@SuppressWarnings("unchecked")
+			GraphResponse<Object> restoredResponse = (GraphResponse<Object>) value;
+			Map<String, Object> restoredMetadata = restoredResponse.getAllMetadata();
+
+			assertEquals("value1", restoredMetadata.get("key1"),
+				"Round " + (i + 1) + ": metadata key1 should be preserved");
+			assertEquals(42, restoredMetadata.get("key2"),
+				"Round " + (i + 1) + ": metadata key2 should be preserved");
+			assertFalse(restoredMetadata.containsKey("@class"),
+				"Round " + (i + 1) + ": metadata should NOT contain @class field (Bug #3895)");
+			assertFalse(restoredMetadata.containsKey("@type"),
+				"Round " + (i + 1) + ": metadata should NOT contain @type field");
+			assertFalse(restoredMetadata.containsKey("@typeHint"),
+				"Round " + (i + 1) + ": metadata should NOT contain @typeHint field");
+
+			assertEquals(3, restoredMetadata.size(),
+				"Round " + (i + 1) + ": metadata size should remain 3 (no accumulated fields)");
+		}
+	}
+}

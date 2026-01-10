@@ -1,5 +1,5 @@
 {
-  "name": "@agentscope-ai/flow",
+  "name": "@spark-ai/flow",
   "version": "0.0.13",
   "description": "A powerful and flexible flow canvas rendering engine designed for AI applications. Provides comprehensive workflow visualization and interaction capabilities for platforms like Dify and Bailian, enabling seamless creation and management of complex AI agent workflows with an intuitive drag-and-drop interface.",
   "module": "dist/index.js",

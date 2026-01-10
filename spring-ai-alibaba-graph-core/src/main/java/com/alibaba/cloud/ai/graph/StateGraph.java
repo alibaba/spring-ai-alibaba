@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -360,6 +360,26 @@ public class StateGraph {
 			edges.elements.add(newEdge);
 		}
 
+		return this;
+	}
+
+	public StateGraph addEdge(List<String> sourceIds, String targetId) throws GraphStateException {
+		if (sourceIds == null || sourceIds.isEmpty()) {
+			throw Errors.emptySourceNodeByEdge.exception(targetId);
+		}
+		for (String sourceId : sourceIds) {
+			addEdge(sourceId, targetId);
+		}
+		return this;
+	}
+
+	public StateGraph addEdge(String sourceId, List<String> targetIds) throws GraphStateException {
+		if (targetIds == null || targetIds.isEmpty()) {
+			throw Errors.emptyTargetNodeByEdge.exception(sourceId);
+		}
+		for (String targetId : targetIds) {
+			addEdge(sourceId, targetId);
+		}
 		return this;
 	}
 
