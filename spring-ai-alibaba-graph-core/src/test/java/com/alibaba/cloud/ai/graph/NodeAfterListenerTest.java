@@ -198,6 +198,7 @@ public class NodeAfterListenerTest {
 
 		app.stream(Map.of(), RunnableConfig.builder()
 			.addParallelNodeExecutor("A", ForkJoinPool.commonPool())
+						.addParallelNodeAggregatorPolicy()
 			.build()).blockLast();
 
 		assertTrue(afterCount.containsKey("A"), "After should be called for node A");

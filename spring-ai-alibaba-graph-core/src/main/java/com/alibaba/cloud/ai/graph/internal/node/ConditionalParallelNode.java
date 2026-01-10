@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
 import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
+import static com.alibaba.cloud.ai.graph.internal.node.ParallelNode.formatNodeId;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -72,10 +73,6 @@ public class ConditionalParallelNode extends Node {
 		this.nodeFactories = nodeFactories;
 		this.channels = channels;
 		this.compileConfig = compileConfig;
-	}
-
-	public static String formatNodeId(String sourceNodeId) {
-		return format("%s%s", CONDITIONAL_PARALLEL_NODE_PREFIX, requireNonNull(sourceNodeId, "sourceNodeId cannot be null!"));
 	}
 
 	private static ActionFactory createActionFactory(
