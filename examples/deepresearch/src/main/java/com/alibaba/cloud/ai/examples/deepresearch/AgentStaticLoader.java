@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -31,9 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
-
-import jakarta.annotation.Nonnull;
-
 
 /**
  * Static Agent Loader for programmatically provided agents.
@@ -67,7 +65,7 @@ class AgentStaticLoader implements AgentLoader {
 	}
 
 	@Override
-	@Nonnull
+	@NonNull
 	public List<String> listAgents() {
 		return agents.keySet().stream().toList();
 	}
