@@ -16,20 +16,16 @@
 
 package com.alibaba.cloud.ai.examples.chatbot;
 
-import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
-import com.alibaba.cloud.ai.graph.GraphRepresentation;
-import com.alibaba.cloud.ai.graph.agent.Agent;
-
-
-import org.springframework.stereotype.Component;
-
-
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
-import jakarta.annotation.Nonnull;
+import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.agent.Agent;
+import org.jspecify.annotations.NonNull;
+import org.springframework.stereotype.Component;
 
 
 /**
@@ -56,7 +52,7 @@ class AgentStaticLoader implements AgentLoader {
 	}
 
 	@Override
-	@Nonnull
+	@NonNull
 	public List<String> listAgents() {
 		return agents.keySet().stream().toList();
 	}
