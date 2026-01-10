@@ -17,7 +17,6 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
-import com.alibaba.cloud.ai.graph.action.MultiCommand;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.Errors;
@@ -166,6 +165,20 @@ public class CompiledGraph {
 						
 						nodeFactories.put(conditionalParallelNode.id(), conditionalParallelNode.actionFactory());
 						edges.put(e.sourceId(), new EdgeValue(conditionalParallelNode.id()));
+
+						// Find parallel node targets from mappings
+						var mappedNodeIds = edgeCondition.mappings().values().stream()
+								.filter(nodeId -> nodeFactories.containsKey(nodeId))
+								.collect(Collectors.toSet());
+						
+						var parallelNodeTargets = findParallelNodeTargets(mappedNodeIds);
+						
+						if (!parallelNodeTargets.isEmpty()) {
+							// Set edge from ConditionalParallelNode to the next node
+							// All parallel nodes point to the same target, use that target
+							edges.put(conditionalParallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
+						}
+
 						// The ConditionalParallelNode will handle parallel execution internally
 					} else {
 						// Single Command action - same as regular single target edge
@@ -320,6 +333,28 @@ public class CompiledGraph {
 	 */
 	public RunnableConfig updateState(RunnableConfig config, Map<String, Object> values) throws Exception {
 		return updateState(config, values, null);
+	}
+
+	/**
+	 * Finds the target nodes for a set of source node IDs by looking up their edges.
+	 * This is used to determine where parallel nodes should route after execution.
+	 * Similar to the logic used for ParallelNode.
+	 * 
+	 * @param sourceNodeIds the set of source node IDs to find targets for
+	 * @return a set of target node IDs that the source nodes point to
+	 */
+	private Set<String> findParallelNodeTargets(Set<String> sourceNodeIds) {
+		var parallelNodeEdges = sourceNodeIds.stream()
+				.map(nodeId -> new Edge(nodeId))  // Create Edge object with nodeId as source
+				.filter(ee -> processedData.edges().elements.contains(ee))
+				.map(ee -> processedData.edges().elements.indexOf(ee))
+				.map(index -> processedData.edges().elements.get(index))
+				.toList();
+
+		return parallelNodeEdges.stream()
+				.map(ee -> ee.target().id())
+				.filter(Objects::nonNull)
+				.collect(Collectors.toSet());
 	}
 
 	private Command nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, RunnableConfig config)

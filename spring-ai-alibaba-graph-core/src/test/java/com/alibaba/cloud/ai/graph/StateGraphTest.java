@@ -1421,7 +1421,7 @@ public class StateGraphTest {
 	 * This test verifies that when a conditional edge returns multiple nodes, they are executed in parallel.
 	 */
 	@Test
-	public void testAddConditionalEdgesWithMultiCommand() throws Exception {
+	public void testAddParallelConditionalEdges() throws Exception {
 		// Create a state graph with key strategies
 		StateGraph workflow = new StateGraph(() -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
@@ -1485,7 +1485,7 @@ public class StateGraphTest {
 
 		// Add conditional edges using addConditionalEdgesWithMultiCommand
 		// This will route to multiple nodes in parallel
-		workflow.addConditionalEdgesWithMultiCommand(
+		workflow.addParallelConditionalEdges(
 			"conditional_node",
 			AsyncMultiCommandAction.node_async((state, config) -> 
 				new MultiCommand(List.of("route_a", "route_b", "route_c"))
@@ -1544,7 +1544,7 @@ public class StateGraphTest {
 	 * Verifies that the condition can dynamically determine which nodes to execute in parallel.
 	 */
 	@Test
-	public void testAddConditionalEdgesWithMultiCommandDynamic() throws Exception {
+	public void testAddParallelConditionalEdgesDynamic() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
 			keyStrategyMap.put("messages", new AppendStrategy());
@@ -1573,7 +1573,7 @@ public class StateGraphTest {
 		}));
 
 		// Add conditional edges that dynamically determine which nodes to execute based on flags
-		workflow.addConditionalEdgesWithMultiCommand(
+		workflow.addParallelConditionalEdges(
 			"conditional_node",
 			AsyncMultiCommandAction.node_async((state, config) -> {
 				@SuppressWarnings("unchecked")
@@ -1632,7 +1632,7 @@ public class StateGraphTest {
 	 * Verifies that even when only one node is returned, it still works correctly.
 	 */
 	@Test
-	public void testAddConditionalEdgesWithMultiCommandSingleNode() throws Exception {
+	public void testAddParallelConditionalEdgesWithSingleNode() throws Exception {
 		StateGraph workflow = new StateGraph(() -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
 			keyStrategyMap.put("messages", new AppendStrategy());
@@ -1645,7 +1645,7 @@ public class StateGraphTest {
 			.addNode("end", node_async(state -> Map.of("messages", "end")));
 
 		// Return only one node in MultiCommand
-		workflow.addConditionalEdgesWithMultiCommand(
+		workflow.addParallelConditionalEdges(
 			"conditional_node",
 			AsyncMultiCommandAction.node_async((state, config) -> 
 				new MultiCommand(List.of("route_single"))
