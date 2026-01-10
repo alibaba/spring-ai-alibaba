@@ -251,8 +251,15 @@ public class GraphRunnerContext {
 	public StreamingOutput<?> buildStreamingOutput(Message message, Object originData, String nodeId, boolean streaming) {
 		// Create StreamingOutput with chunk and originData
 		OutputType outputType = OutputType.from(streaming, nodeId);
-		StreamingOutput<?> output = new StreamingOutput<>(message, originData, nodeId,
-				(String) config.metadata("_AGENT_").orElse(""), this.overallState, outputType);
+		StreamingOutput<?> output = StreamingOutput.builder()
+				.node(nodeId)
+				.agentName((String) config.metadata("_AGENT_").orElse(""))
+				.state(this.overallState)
+				.tokenUsage(this.tokenUsage)
+				.chunk(message.getText())
+				.originData(originData)
+				.outputType(outputType)
+				.build();
 		output.setSubGraph(true);
 		return output;
 	}
@@ -260,8 +267,14 @@ public class GraphRunnerContext {
 	public StreamingOutput<?> buildStreamingOutput(Object originData, String nodeId, boolean streaming) {
 		// Create StreamingOutput with chunk only
 		OutputType outputType = OutputType.from(streaming, nodeId);
-		StreamingOutput<?> output = new StreamingOutput<>(originData, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-				this.overallState, outputType);
+		StreamingOutput<?> output = StreamingOutput.builder()
+				.node(nodeId)
+				.agentName((String) config.metadata("_AGENT_").orElse(""))
+				.state(this.overallState)
+				.tokenUsage(this.tokenUsage)
+				.originData(originData)
+				.outputType(outputType)
+				.build();
 		output.setSubGraph(true);
 		return output;
 	}
@@ -461,11 +474,24 @@ public class GraphRunnerContext {
 		OutputType outputType = OutputType.from(streaming, nodeId);
 
 		if (message != null) {
-			return new StreamingOutput<>(message, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-					cloneState(this.overallState.data()), tokenUsage, outputType);
+			return StreamingOutput.builder()
+					.node(nodeId)
+					.agentName((String) config.metadata("_AGENT_").orElse(""))
+					.state(cloneState(this.overallState.data()))
+					.tokenUsage(tokenUsage)
+					.chunk(message.getText())
+					.message(message)
+					.outputType(outputType)
+					.build();
 		} else {
-			return new StreamingOutput<>(nodeId, (String) config.metadata("_AGENT_").orElse(""),
-					cloneState(this.overallState.data()), tokenUsage, outputType);
+			return StreamingOutput.builder()
+					.node(nodeId)
+					.agentName((String) config.metadata("_AGENT_").orElse(""))
+					.state(cloneState(this.overallState.data()))
+					.tokenUsage(tokenUsage)
+					.outputType(outputType)
+					.chunk("")
+					.build();
 		}
 	}
 

@@ -138,13 +138,13 @@ public class WriteTodosTool implements BiFunction<WriteTodosTool.Request, ToolCo
 
 
 	@JsonClassDescription("Request to write or update todos")
-	public record Request(
+	public static record Request(
 			@JsonProperty(required = true, value = "todos")
 			@JsonPropertyDescription("List of todo items with content and status")
 			List<Todo> todos
 	) {}
 
-	public record Response(String message) {}
+	public static record Response(String message) {}
 
 	public static Builder builder() {
 		return new Builder();

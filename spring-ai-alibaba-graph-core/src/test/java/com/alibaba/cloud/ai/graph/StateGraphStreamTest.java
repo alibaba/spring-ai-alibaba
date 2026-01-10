@@ -115,7 +115,11 @@ public class StateGraphStreamTest {
 			catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			}
-			return new StreamingOutput(index, node, overAllState);
+			return StreamingOutput.builder()
+					.chunk(index)
+					.node(node)
+					.state(overAllState)
+					.build();
 		});
 	}
 
@@ -142,7 +146,12 @@ public class StateGraphStreamTest {
 					queue.add(Data.done());
 				}
 				else {
-					queue.add(Data.of(new StreamingOutput(str + new Random().nextInt(10), "llmNode", s)));
+					StreamingOutput<?> streamingOutput = StreamingOutput.builder()
+							.chunk(str + new Random().nextInt(10))
+							.node("llmNode")
+							.state(s)
+							.build();
+					queue.add(Data.of(CompletableFuture.completedFuture(streamingOutput)));
 				}
 			}
 		}).start();

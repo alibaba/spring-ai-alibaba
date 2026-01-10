@@ -31,14 +31,14 @@ import java.io.IOException;
  * Custom deserializer for StreamingOutput.
  * Supports deserialization of outputType and message fields.
  */
-public class StreamingOutputDeserializer extends StdDeserializer<StreamingOutput> {
+public class StreamingOutputDeserializer extends StdDeserializer<StreamingOutput<?>> {
 
     public StreamingOutputDeserializer() {
         super(StreamingOutput.class);
     }
 
     @Override
-    public StreamingOutput deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+    public StreamingOutput<?> deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
         ObjectMapper objectMapper = (ObjectMapper) jsonParser.getCodec();
         JsonNode node = jsonParser.getCodec().readTree(jsonParser);
 
@@ -73,11 +73,23 @@ public class StreamingOutputDeserializer extends StdDeserializer<StreamingOutput
         // Prefer constructor with message if message is present
         if (message != null) {
             // Use constructor with message
-            StreamingOutput<?> output = new StreamingOutput<>(message, nodeName, agentName, state, outputType);
-            return output;
+            return StreamingOutput.builder()
+                    .node(nodeName)
+                    .agentName(agentName)
+                    .state(state)
+                    .chunk(chunk)
+                    .message(message)
+                    .outputType(outputType)
+                    .build();
         } else {
             // Fallback to deprecated constructor with chunk (for backward compatibility)
-            return new StreamingOutput<>(chunk, nodeName, agentName, state);
+            return StreamingOutput.builder()
+                    .node(nodeName)
+                    .agentName(agentName)
+                    .state(state)
+                    .chunk(chunk)
+                    .outputType(outputType)
+                    .build();
         }
     }
 }
