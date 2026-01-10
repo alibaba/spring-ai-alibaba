@@ -26,9 +26,9 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.lang.Nullable;
-import org.springframework.retry.policy.SimpleRetryPolicy;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
 
 import java.util.Arrays;
 import java.util.List;
@@ -76,8 +76,7 @@ public class AgentNode implements NodeAction {
 
 		// Initialize retryTemplate
 		this.retryTemplate = new RetryTemplate();
-		SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
-		retryPolicy.setMaxAttempts(this.maxIterations);
+		RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(this.maxIterations).build();
 		this.retryTemplate.setRetryPolicy(retryPolicy);
 
 		// Initialize toolCallbacks
@@ -123,7 +122,7 @@ public class AgentNode implements NodeAction {
 			case TOOL_CALLING, REACT -> {
 				// Retry mechanism
 				try {
-					yield this.retryTemplate.execute(retryContext -> {
+					yield this.retryTemplate.execute(() -> {
 						String content = this.chatClient.prompt(systemPrompt)
 							.toolCallbacks(this.toolCallbacks)
 							.user(userPrompt)

@@ -26,9 +26,16 @@ import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
-
 import org.springframework.util.StringUtils;
 
 import java.io.BufferedReader;
@@ -44,14 +51,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -240,27 +239,27 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 				post.setHeader("Accept", "text/event-stream");
 				post.setEntity(new StringEntity(requestPayload, ContentType.APPLICATION_JSON));
 
-				try (CloseableHttpResponse response = httpClient.execute(post)) {
-					int statusCode = response.getStatusLine().getStatusCode();
+				httpClient.execute(post, response -> {
+					int statusCode = response.getCode();
 					if (statusCode != 200) {
 						StreamingOutput errorOutput = buildStreamingOutput("HTTP request failed, status: " + statusCode, state);
 						queue.add(AsyncGenerator.Data.of(errorOutput));
-						return;
+						return null;
 					}
 
 					HttpEntity entity = response.getEntity();
 					if (entity == null) {
 						StreamingOutput errorOutput = buildStreamingOutput("Empty HTTP entity", state);
 						queue.add(AsyncGenerator.Data.of(errorOutput));
-						return;
+						return null;
 					}
 
-					String contentType = entity.getContentType() != null ? entity.getContentType().getValue() : "";
+					String contentType = entity.getContentType() != null ? entity.getContentType() : "";
 					boolean isEventStream = contentType.contains("text/event-stream");
 
 					if (isEventStream) {
 						try (BufferedReader reader = new BufferedReader(
-								new InputStreamReader(entity.getContent(), StandardCharsets.UTF_8))) {
+							new InputStreamReader(entity.getContent(), StandardCharsets.UTF_8))) {
 							String line;
 							while ((line = reader.readLine()) != null) {
 								String trimmed = line.trim();
@@ -273,8 +272,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 								}
 								try {
 									Map<String, Object> parsed = JSON.parseObject(jsonContent,
-											new TypeReference<Map<String, Object>>() {
-											});
+										new TypeReference<Map<String, Object>>() {
+										});
 									Map<String, Object> result = (Map<String, Object>) parsed.get("result");
 									if (result != null) {
 										String text = extractResponseText(result);
@@ -295,8 +294,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 						String body = EntityUtils.toString(entity, "UTF-8");
 						try {
 							Map<String, Object> resultMap = JSON.parseObject(body,
-									new TypeReference<Map<String, Object>>() {
-									});
+								new TypeReference<Map<String, Object>>() {
+								});
 							Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
 							String text = extractResponseText(result);
 							if (text != null && !text.isEmpty()) {
@@ -309,7 +308,9 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 								.of(buildStreamingOutput("Error: " + ex.getMessage(), state)));
 						}
 					}
-				}
+
+					return null;
+				});
 			}
 			catch (Exception e) {
 				StreamingOutput errorOutput = buildStreamingOutput("Error: " + e.getMessage(), state);
@@ -782,8 +783,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 			post.setHeader("Content-Type", "application/json");
 			post.setEntity(new StringEntity(requestPayload, ContentType.APPLICATION_JSON));
 
-			try (CloseableHttpResponse response = httpClient.execute(post)) {
-				int statusCode = response.getStatusLine().getStatusCode();
+			return httpClient.execute(post, response -> {
+				int statusCode = response.getCode();
 				if (statusCode != 200) {
 					throw new IllegalStateException("HTTP request failed, status: " + statusCode);
 				}
@@ -792,7 +793,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 					throw new IllegalStateException("Empty HTTP entity");
 				}
 				return EntityUtils.toString(entity, "UTF-8");
-			}
+			});
 		}
 	}
 
