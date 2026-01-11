@@ -221,7 +221,7 @@ public abstract class Agent {
 		return doInvokeAndGetOutput(inputs, config);
 	}
 
-    // ------------------- Message Stream methods -------------------
+	// ------------------- Message Stream methods -------------------
 
 	/**
 	 * Streams the execution result as a {@link Flux} of {@link Message} objects
@@ -429,9 +429,9 @@ public abstract class Agent {
 	 * @param stream the stream of {@link NodeOutput} produced during graph execution
 	 * @return a {@link Flux} emitting only non-null {@link Message} instances
 	 */
-    private Flux<Message> extractMessages(Flux<NodeOutput> stream) {
-        return stream.filter(o -> o instanceof StreamingOutput<?> so && so.message() != null)
-                .map(o -> ((StreamingOutput<?>) o).message());
-    }
+	private Flux<Message> extractMessages(Flux<NodeOutput> stream) {
+		return stream.filter(o -> o instanceof StreamingOutput<?> so && so.message() != null)
+				.map(o -> ((StreamingOutput<?>) o).message());
+	}
 
 }
