@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ public abstract class FlowAgent extends Agent {
 		}
 
 		// Set hooks if available
-		if (this.hooks != null) {
+		if (this.hooks != null && !this.hooks.isEmpty()) {
 			config.hooks(this.hooks);
 		}
 
@@ -117,6 +117,15 @@ public abstract class FlowAgent extends Agent {
 
 	public List<Agent> subAgents() {
 		return this.subAgents;
+	}
+
+	/**
+	 * Returns the list of hooks configured for this agent.
+	 * Hooks can be used for message trimming, summarization, logging, and other purposes.
+	 * @return the list of hooks, or null if no hooks are configured
+	 */
+	public List<Hook> hooks() {
+		return this.hooks;
 	}
 
 }
