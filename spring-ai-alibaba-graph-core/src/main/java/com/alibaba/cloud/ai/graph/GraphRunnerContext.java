@@ -18,9 +18,9 @@ package com.alibaba.cloud.ai.graph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
-import com.alibaba.cloud.ai.graph.internal.node.ConditionalParallelNode;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
+import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
@@ -215,7 +215,7 @@ public class GraphRunnerContext {
 			if (edgeCondition.isMultiCommand()) {
 				// Multi-command action - route to ConditionalParallelNode
 				// The ConditionalParallelNode is dynamically created in CompiledGraph
-				String conditionalParallelNodeId = ConditionalParallelNode.formatNodeId(nodeId);
+				String conditionalParallelNodeId = ParallelNode.formatNodeId(nodeId);
 				// Return Command pointing to ConditionalParallelNode
 				// The ConditionalParallelNode will handle the MultiCommand internally
 				return new Command(conditionalParallelNodeId, state);

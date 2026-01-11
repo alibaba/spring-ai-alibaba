@@ -33,7 +33,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
@@ -51,14 +54,6 @@ public class ConditionalParallelNode extends Node {
 
 	private static final Logger logger = LoggerFactory.getLogger(ConditionalParallelNode.class);
 
-	public static final String CONDITIONAL_PARALLEL_NODE_PREFIX = "__CONDITIONAL_PARALLEL__";
-
-	private final EdgeCondition edgeCondition;
-	private final Map<String, Node.ActionFactory> nodeFactories;
-	private final Map<String, KeyStrategy> channels;
-	private final CompileConfig compileConfig;
-	private final String sourceNodeId;
-
 	public ConditionalParallelNode(
 			String sourceNodeId,
 			EdgeCondition edgeCondition,
@@ -66,11 +61,6 @@ public class ConditionalParallelNode extends Node {
 			Map<String, KeyStrategy> channels,
 			CompileConfig compileConfig) {
 		super(formatNodeId(sourceNodeId), createActionFactory(sourceNodeId, edgeCondition, nodeFactories, channels, compileConfig));
-		this.sourceNodeId = sourceNodeId;
-		this.edgeCondition = edgeCondition;
-		this.nodeFactories = nodeFactories;
-		this.channels = channels;
-		this.compileConfig = compileConfig;
 	}
 
 	private static ActionFactory createActionFactory(

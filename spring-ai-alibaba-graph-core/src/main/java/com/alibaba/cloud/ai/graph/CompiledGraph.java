@@ -373,7 +373,7 @@ public class CompiledGraph {
 			// Check if this is a multi-command action
 			if (edgeCondition.isMultiCommand()) {
 				// Multi-command action - route to ConditionalParallelNode
-				String conditionalParallelNodeId = ConditionalParallelNode.formatNodeId(nodeId);
+				String conditionalParallelNodeId = ParallelNode.formatNodeId(nodeId);
 				return new Command(conditionalParallelNodeId, state);
 			} else {
 				// Single Command action
