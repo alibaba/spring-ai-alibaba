@@ -33,6 +33,7 @@ import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 
@@ -220,6 +221,33 @@ public abstract class Agent {
 		return doInvokeAndGetOutput(inputs, config);
 	}
 
+    // ------------------- Message Stream methods -------------------
+
+    public Flux<Message> streamMessages(String message) throws GraphRunnerException {
+        return stream(message)
+                .transform(this::extractMessages);
+    }
+
+    public Flux<Message> streamMessages(String message, RunnableConfig config) throws GraphRunnerException {
+        return stream(message, config)
+                .transform(this::extractMessages);
+    }
+
+    public Flux<Message> streamMessages(UserMessage message) throws GraphRunnerException {
+        return stream(message)
+                .transform(this::extractMessages);
+    }
+
+    public Flux<Message> streamMessages(UserMessage message, RunnableConfig config) throws GraphRunnerException {
+        return stream(message, config)
+                .transform(this::extractMessages);
+    }
+
+    public Flux<Message> streamMessages(List<Message> messages) throws GraphRunnerException {
+        return stream(messages)
+                .transform(this::extractMessages);
+    }
+
 	// ------------------- Stream methods -------------------
 
 	public Flux<NodeOutput> stream(String message) throws GraphRunnerException {
@@ -326,5 +354,10 @@ public abstract class Agent {
 	}
 
 	protected abstract StateGraph initGraph() throws GraphStateException;
+
+    private Flux<Message> extractMessages(Flux<NodeOutput> stream) {
+        return stream.filter(o -> o instanceof StreamingOutput<?> so && so.message() != null)
+                .map(o -> ((StreamingOutput<?>) o).message());
+    }
 
 }
