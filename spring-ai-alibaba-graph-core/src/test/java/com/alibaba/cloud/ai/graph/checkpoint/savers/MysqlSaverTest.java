@@ -45,6 +45,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfDockerAvailable
 @EnabledIf(value = "isCI", disabledReason = "this test is designed to run only in the GitHub CI environment.")
@@ -363,6 +364,53 @@ public class MysqlSaverTest {
         assertEquals(1, history.size(), "覆盖模式每次put都清空，只保留最新checkpoint");
 
         saver.release(runnableConfig);
+    }
+
+    @Test
+    public void testThreadNotReactivatedAfterRelease() throws Exception {
+        var saver = MysqlSaver.builder()
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .dataSource(DATA_SOURCE)
+                .build();
+
+        NodeAction agent_1 = state -> Map.of("agent_1:prop1", "agent_1:test");
+
+        var graph = new StateGraph(keyStrategyFactory)
+                .addNode("agent_1", node_async(agent_1))
+                .addEdge(START, "agent_1")
+                .addEdge("agent_1", END);
+
+        var compileConfig = CompileConfig.builder()
+                .saverConfig(SaverConfig.builder().register(saver).build())
+                .releaseThread(false)
+                .build();
+
+        var runnableConfig = RunnableConfig.builder().threadId("test-release-thread").build();
+        var workflow = graph.compile(compileConfig);
+
+        try {
+            var result1 = workflow.invoke(Map.of("input", "test1"), runnableConfig);
+            assertTrue(result1.isPresent());
+
+            var history1 = workflow.getStateHistory(runnableConfig);
+            assertFalse(history1.isEmpty(), "应该有历史记录");
+
+            saver.release(runnableConfig);
+
+            var history2 = workflow.getStateHistory(runnableConfig);
+            assertTrue(history2.isEmpty(), "释放后历史记录应该为空");
+
+            var result3 = workflow.invoke(Map.of("input", "test2"), runnableConfig);
+            assertTrue(result3.isPresent());
+
+            var history3 = workflow.getStateHistory(runnableConfig);
+            assertFalse(history3.isEmpty(), "新线程应该有历史记录");
+            assertEquals(2, history3.size(), "新线程应该只有2个checkpoint（START和agent_1）");
+
+            saver.release(runnableConfig);
+        } catch (Exception e) {
+            fail("测试失败: " + e.getMessage());
+        }
     }
 
 }

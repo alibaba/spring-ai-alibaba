@@ -132,7 +132,7 @@ public class MysqlSaver extends MemorySaver {
 			INSERT INTO GRAPH_THREAD (thread_id, thread_name, is_released)
 			VALUES (?, ?, FALSE)
 			ON DUPLICATE KEY UPDATE
-				is_released = FALSE
+				thread_id = thread_id
 			""";
 
 	private static final String INSERT_CHECKPOINT = """
@@ -381,15 +381,6 @@ public class MysqlSaver extends MemorySaver {
 		Connection conn = null;
 		try (Connection ignored = conn = dataSource.getConnection()) {
 			conn.setAutoCommit(false); // Start transaction
-
-			String deleteReleasedSql = """
-					DELETE FROM GRAPH_THREAD
-					WHERE thread_name = ? AND is_released = TRUE
-					""";
-			try (PreparedStatement deleteStatement = conn.prepareStatement(deleteReleasedSql)) {
-				deleteStatement.setString(1, threadName);
-				deleteStatement.executeUpdate();
-			}
 
 			try (PreparedStatement preparedStatement = conn.prepareStatement(RELEASE_THREAD)) {
 				preparedStatement.setString(1, threadName);
