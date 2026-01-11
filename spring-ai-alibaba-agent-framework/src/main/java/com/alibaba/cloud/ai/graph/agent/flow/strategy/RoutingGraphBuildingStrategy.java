@@ -24,48 +24,67 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingNode;
-import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
 /**
  * Strategy for building LLM-based routing graphs. In a routing graph, an LLM decides
  * which sub-agent should handle the task based on the input content and agent
  * capabilities.
+ * 
+ * <p>This strategy extends AbstractFlowGraphBuildingStrategy and customizes hook handling:
+ * beforeModel/afterModel hooks wrap around the RoutingNode instead of the root agent.</p>
  */
 public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrategy {
+
+	/**
+	 * Override to connect beforeAgent hooks directly to root transparent node,
+	 * skipping beforeModel hooks (which will be handled around RoutingNode).
+	 */
+	@Override
+	protected String determineNextNodeAfterBeforeAgentHooks() {
+		// Always connect to root transparent node
+		return this.rootAgent.name();
+	}
+
+	/**
+	 * Override to determine entry node without considering beforeModel hooks,
+	 * since those hooks are handled around RoutingNode in buildCoreGraph().
+	 */
+	@Override
+	protected String determineEntryNodeForGraph() {
+		// Don't consider beforeModel hooks for entry node (they're handled around RoutingNode)
+		if (!this.beforeAgentHooks.isEmpty()) {
+			return this.beforeAgentHooks.get(0).getName() + ".before";
+		}
+		return this.rootAgent.name();
+	}
 
 	@Override
 	protected void buildCoreGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		validateRoutingConfig(config);
 
-		// Add routing node (where LLM makes routing decision)
+		// Step 1: Add routing node (where LLM makes routing decision)
 		String routingNodeName = rootAgent.name() + "_routing";
 		graph.addNode(routingNodeName, new RoutingNode(config.getChatModel(), rootAgent, config.getSubAgents()));
 
-		// Determine routing-specific nodes
-		String routingEntryNode = determineRoutingEntryNode(routingNodeName);
-		String routingExitNode = determineRoutingExitNode(routingNodeName);
-
-		// Connect root transparent node to routing entry (with beforeModel hooks if present)
+		// Step 2: Add beforeModel hooks around RoutingNode and connect
 		String firstBeforeModelNode = addBeforeModelHookNodesToGraph(graph, routingNodeName, beforeModelHooks);
 		graph.addEdge(rootAgent.name(), firstBeforeModelNode);
 
-		// Connect routing node to afterModel hooks (if present)
-		addAfterModelHookNodesToGraph(graph, routingNodeName, afterModelHooks);
+		// Step 3: Add afterModel hooks after RoutingNode
+		String routingExitNode = addAfterModelHookNodesToGraph(graph, routingNodeName, afterModelHooks);
 
-		// Process sub-agents for routing
+		// Step 4: Process sub-agents for routing
 		Map<String, String> edgeRoutingMap = new HashMap<>();
 		for (Agent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
 			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, graph);
 			edgeRoutingMap.put(subAgent.name(), subAgent.name());
-			// Connect sub-agents to END
-			graph.addEdge(subAgent.name(), END);
+			// Connect sub-agents to exitNode (afterAgent hooks or END)
+			graph.addEdge(subAgent.name(), this.exitNode);
 		}
 
-		// Connect routing exit to sub-agents via conditional routing
+		// Step 5: Connect routing exit to sub-agents via conditional routing
 		// The routing decision is stored in state by RoutingNode
 		AsyncEdgeAction routingDecisionAction = state -> {
 			String decision = (String) state.value(RoutingNode.getRoutingDecisionKey()).orElse(null);
@@ -75,26 +94,6 @@ public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrat
 			return java.util.concurrent.CompletableFuture.completedFuture(decision);
 		};
 		graph.addConditionalEdges(routingExitNode, routingDecisionAction, edgeRoutingMap);
-	}
-
-	/**
-	 * Determine the routing entry node (where routing decision starts)
-	 */
-	private String determineRoutingEntryNode(String routingNodeName) {
-		if (!beforeModelHooks.isEmpty()) {
-			return Hook.getFullHookName(beforeModelHooks.get(0)) + ".beforeModel";
-		}
-		return routingNodeName;
-	}
-
-	/**
-	 * Determine the routing exit node (after routing decision and after-model hooks)
-	 */
-	private String determineRoutingExitNode(String routingNodeName) {
-		if (!afterModelHooks.isEmpty()) {
-			return Hook.getFullHookName(afterModelHooks.get(afterModelHooks.size() - 1)) + ".afterModel";
-		}
-		return routingNodeName;
 	}
 
 	@Override

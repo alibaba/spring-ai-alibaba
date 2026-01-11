@@ -122,21 +122,21 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 		addAfterAgentHookNodesToGraph(this.graph, this.afterAgentHooks);
 
 		// Step 5: Determine entry and exit nodes
-		this.entryNode = determineEntryNode(this.rootAgent, this.beforeAgentHooks, this.beforeModelHooks);
-		this.exitNode = determineExitNode(this.afterAgentHooks);
+		// Allow subclasses to customize entry/exit node determination
+		this.entryNode = determineEntryNodeForGraph();
+		this.exitNode = determineExitNodeForGraph();
 
 		// Step 6: Add starting edge
 		this.graph.addEdge(START, this.entryNode);
 
 		// Step 7: Chain beforeAgent hooks if present
 		if (!this.beforeAgentHooks.isEmpty()) {
-			String nextNode = !this.beforeModelHooks.isEmpty()
-					? this.beforeModelHooks.get(0).getName() + ".beforeModel"
-					: this.rootAgent.name();
+			String nextNode = determineNextNodeAfterBeforeAgentHooks();
 			chainBeforeAgentHooks(this.graph, this.beforeAgentHooks, nextNode);
 		}
 
 		// Step 8: Delegate to subclass for core graph building
+		// Subclasses can choose to handle model hooks themselves by overriding shouldAutoHandleModelHooks()
 		buildCoreGraph(config);
 
 		// Step 9: Chain afterAgent hooks if present
@@ -145,6 +145,52 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 		}
 
 		return this.graph;
+	}
+
+	/**
+	 * Determines the next node to connect after beforeAgent hooks.
+	 * Subclasses can override this to customize the connection behavior.
+	 * <p>
+	 * Default behavior: connects to the first beforeModel hook if present, otherwise to rootAgent.
+	 * <p>
+	 * For routing strategies, this might return rootAgent name directly since model hooks
+	 * are handled around the RoutingNode instead.
+	 *
+	 * @return the name of the next node to connect to
+	 */
+	protected String determineNextNodeAfterBeforeAgentHooks() {
+		if (!this.beforeModelHooks.isEmpty()) {
+			return Hook.getFullHookName(this.beforeModelHooks.get(0)) + ".beforeModel";
+		}
+		return this.rootAgent.name();
+	}
+
+	/**
+	 * Determines the entry node for the entire graph.
+	 * Subclasses can override this to customize entry node determination.
+	 * <p>
+	 * Default behavior: uses beforeAgent hooks if present, otherwise beforeModel hooks, 
+	 * otherwise rootAgent.
+	 * <p>
+	 * For routing strategies that handle model hooks differently, this can be overridden
+	 * to exclude beforeModel hooks from entry node consideration.
+	 *
+	 * @return the name of the entry node
+	 */
+	protected String determineEntryNodeForGraph() {
+		return determineEntryNode(this.rootAgent, this.beforeAgentHooks, this.beforeModelHooks);
+	}
+
+	/**
+	 * Determines the exit node for the entire graph.
+	 * Subclasses can override this to customize exit node determination.
+	 * <p>
+	 * Default behavior: uses the last afterAgent hook if present, otherwise END.
+	 *
+	 * @return the name of the exit node
+	 */
+	protected String determineExitNodeForGraph() {
+		return determineExitNode(this.afterAgentHooks);
 	}
 
 	/**
@@ -215,7 +261,7 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 	protected void addBeforeAgentHookNodesToGraph(StateGraph graph, List<Hook> beforeAgentHooks)
 			throws GraphStateException {
 		for (Hook hook : beforeAgentHooks) {
-			String hookNodeName = hook.getName() + ".before";
+			String hookNodeName = Hook.getFullHookName(hook) + ".before";
 
 			if (hook instanceof AgentHook agentHook) {
 				graph.addNode(hookNodeName, agentHook::beforeAgent);
@@ -235,7 +281,7 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 	protected void addAfterAgentHookNodesToGraph(StateGraph graph, List<Hook> afterAgentHooks)
 			throws GraphStateException {
 		for (Hook hook : afterAgentHooks) {
-			String hookNodeName = hook.getName() + ".after";
+			String hookNodeName = Hook.getFullHookName(hook) + ".after";
 
 			if (hook instanceof AgentHook agentHook) {
 				graph.addNode(hookNodeName, agentHook::afterAgent);
@@ -261,20 +307,20 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 			return defaultFirstNode;
 		}
 
-		String firstNodeName = beforeModelHooks.get(0).getName() + ".beforeModel";
+		String firstNodeName = Hook.getFullHookName(beforeModelHooks.get(0)) + ".beforeModel";
 		String prevHookNodeName = null;
 
 		for (Hook hook : beforeModelHooks) {
-			String hookNodeName = hook.getName() + ".beforeModel";
+			String hookNodeName = Hook.getFullHookName(hook) + ".beforeModel";
 
 			if (hook instanceof ModelHook modelHook) {
 				if (hook instanceof InterruptionHook interruptionHook) {
-					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", interruptionHook);
+					graph.addNode(hookNodeName, interruptionHook);
 				} else {
-					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", modelHook::beforeModel);
+					graph.addNode(hookNodeName, modelHook::beforeModel);
 				}
 			} else if (hook instanceof MessagesModelHook messagesModelHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".beforeModel",
+				graph.addNode(hookNodeName,
 						MessagesModelHook.beforeModelAction(messagesModelHook));
 			}
 
@@ -311,16 +357,16 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 		String lastHookNodeName = null;
 
 		for (Hook hook : afterModelHooks) {
-			String hookNodeName = hook.getName() + ".afterModel";
+			String hookNodeName = Hook.getFullHookName(hook) + ".afterModel";
 
 			if (hook instanceof ModelHook modelHook) {
 				if (hook instanceof InterruptionHook interruptionHook) {
-					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", interruptionHook);
+					graph.addNode(hookNodeName, interruptionHook);
 				} else {
-					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", modelHook::afterModel);
+					graph.addNode(hookNodeName, modelHook::afterModel);
 				}
 			} else if (hook instanceof MessagesModelHook messagesModelHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".afterModel",
+				graph.addNode(hookNodeName,
 						MessagesModelHook.afterModelAction(messagesModelHook));
 			}
 
@@ -350,11 +396,11 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 			String nextNode) throws GraphStateException {
 		for (int i = 0; i < beforeAgentHooks.size(); i++) {
 			Hook hook = beforeAgentHooks.get(i);
-			String hookNodeName = hook.getName() + ".before";
+			String hookNodeName = Hook.getFullHookName(hook) + ".before";
 
 			if (i < beforeAgentHooks.size() - 1) {
 				// Connect to next beforeAgent hook
-				String nextHookName = beforeAgentHooks.get(i + 1).getName() + ".before";
+				String nextHookName = Hook.getFullHookName(beforeAgentHooks.get(i + 1)) + ".before";
 				graph.addEdge(hookNodeName, nextHookName);
 			} else {
 				// Last beforeAgent hook connects to next node
@@ -377,15 +423,15 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 		}
 
 		// Connect first afterAgent hook to END
-		String firstHookName = afterAgentHooks.get(0).getName() + ".after";
+		String firstHookName = Hook.getFullHookName(afterAgentHooks.get(0)) + ".after";
 		graph.addEdge(firstHookName, END);
 
 		// Chain remaining hooks in reverse order
 		for (int i = afterAgentHooks.size() - 1; i > 0; i--) {
 			Hook currentHook = afterAgentHooks.get(i);
 			Hook prevHook = afterAgentHooks.get(i - 1);
-			String currentHookName = currentHook.getName() + ".after";
-			String prevHookName = prevHook.getName() + ".after";
+			String currentHookName = Hook.getFullHookName(currentHook) + ".after";
+			String prevHookName = Hook.getFullHookName(prevHook) + ".after";
 			graph.addEdge(currentHookName, prevHookName);
 		}
 	}
@@ -398,7 +444,7 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 	 */
 	protected String determineExitNode(List<Hook> afterAgentHooks) {
 		if (!afterAgentHooks.isEmpty()) {
-			return afterAgentHooks.get(afterAgentHooks.size() - 1).getName() + ".after";
+			return Hook.getFullHookName(afterAgentHooks.get(afterAgentHooks.size() - 1)) + ".after";
 		}
 		return END;
 	}
@@ -414,9 +460,9 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 	protected String determineEntryNode(Agent rootAgent, List<Hook> beforeAgentHooks,
 			List<Hook> beforeModelHooks) {
 		if (!beforeAgentHooks.isEmpty()) {
-			return beforeAgentHooks.get(0).getName() + ".before";
+			return Hook.getFullHookName(beforeAgentHooks.get(0)) + ".before";
 		} else if (!beforeModelHooks.isEmpty()) {
-			return beforeModelHooks.get(0).getName() + ".beforeModel";
+			return Hook.getFullHookName(beforeModelHooks.get(0)) + ".beforeModel";
 		}
 		return rootAgent.name();
 	}
