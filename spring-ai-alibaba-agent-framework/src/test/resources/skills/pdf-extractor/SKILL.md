@@ -1,7 +1,6 @@
 ---
 name: pdf-extractor
 description: Extract text, tables, and form data from PDF documents for analysis and processing. Use when user asks to extract, parse, or analyze PDF files.
-allowed-tools: [read, shell, write]
 ---
 
 # PDF Extractor Skill
