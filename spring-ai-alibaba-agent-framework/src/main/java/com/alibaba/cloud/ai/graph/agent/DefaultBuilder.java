@@ -84,6 +84,10 @@ public class DefaultBuilder extends Builder {
 			llmNodeBuilder.systemPrompt(systemPrompt);
 		}
 
+		if (templateRenderer != null) {
+			llmNodeBuilder.templateRenderer(templateRenderer);
+    }
+    
 		if (instruction != null) {
 			llmNodeBuilder.instruction(instruction);
 		}

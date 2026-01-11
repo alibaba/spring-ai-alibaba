@@ -39,6 +39,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 
 import org.springframework.lang.Nullable;
@@ -79,6 +80,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private String systemPrompt;
 
+	private TemplateRenderer templateRenderer;
+
 	private String instruction;
 
 	private ToolCallingChatOptions chatOptions;
@@ -91,6 +94,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		this.outputSchema = builder.outputSchema;
 		this.systemPrompt = builder.systemPrompt;
 		this.instruction = builder.instruction;
+		this.templateRenderer = builder.templateRenderer;
 		if (builder.advisors != null) {
 			this.advisors = builder.advisors;
 		}
@@ -353,8 +357,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	}
 
 	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
-		PromptTemplate promptTemplate = new PromptTemplate(prompt);
-		return promptTemplate.render(params);
+		PromptTemplate.Builder builder = PromptTemplate.builder().template(prompt);
+		if (templateRenderer != null) {
+			builder.renderer(templateRenderer);
+		}
+		return builder.build().render(params);
 	}
 
 	public void augmentUserMessage(List<Message> messages, String outputSchema) {
@@ -506,6 +513,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private String systemPrompt;
 
+		private TemplateRenderer templateRenderer;
+
 		private ChatClient chatClient;
 
 		private List<Advisor> advisors;
@@ -537,6 +546,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder systemPrompt(String systemPrompt) {
 			this.systemPrompt = systemPrompt;
+			return this;
+		}
+
+		public Builder templateRenderer(TemplateRenderer templateRenderer) {
+			this.templateRenderer = templateRenderer;
 			return this;
 		}
 
