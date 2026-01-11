@@ -18,8 +18,8 @@ package com.alibaba.cloud.ai.graph.agent.flow.builder;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
-import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
 import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategy;
+import com.alibaba.cloud.ai.graph.agent.flow.strategy.FlowGraphBuildingStrategyRegistry;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
@@ -93,14 +93,6 @@ public class FlowGraphBuilder {
 			this.stateSerializer = stateSerializer;
 		}
 
-		public List<Hook> getHooks() {
-			return hooks;
-		}
-
-		public void setHooks(List<Hook> hooks) {
-			this.hooks = hooks;
-		}
-
 		public Agent getRootAgent() {
 			return rootAgent;
 		}
@@ -131,6 +123,14 @@ public class FlowGraphBuilder {
 
 		public void setChatModel(ChatModel chatModel) {
 			this.chatModel = chatModel;
+		}
+
+		public List<Hook> getHooks() {
+			return hooks;
+		}
+
+		public void setHooks(List<Hook> hooks) {
+			this.hooks = hooks;
 		}
 
 		// Builder methods
@@ -179,8 +179,7 @@ public class FlowGraphBuilder {
 		}
 
 		/**
-		 * Sets hooks for the graph. Hooks allow intercepting and modifying execution
-		 * at various points in the agent lifecycle.
+		 * Sets the hooks for the graph.
 		 * @param hooks the list of hooks to use
 		 * @return this config instance for method chaining
 		 */

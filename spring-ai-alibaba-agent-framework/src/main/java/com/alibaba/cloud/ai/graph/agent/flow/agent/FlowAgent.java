@@ -46,7 +46,7 @@ public abstract class FlowAgent extends Agent {
 	}
 
 	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
-			StateSerializer stateSerializer) {
+						StateSerializer stateSerializer) {
 		super(name, description);
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
@@ -54,7 +54,7 @@ public abstract class FlowAgent extends Agent {
 	}
 
 	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
-			StateSerializer stateSerializer, Executor executor) {
+						StateSerializer stateSerializer, Executor executor) {
 		super(name, description);
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
@@ -63,7 +63,7 @@ public abstract class FlowAgent extends Agent {
 	}
 
 	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
-			StateSerializer stateSerializer, Executor executor, List<Hook> hooks) {
+						StateSerializer stateSerializer, Executor executor, List<Hook> hooks) {
 		super(name, description);
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
