@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.ArrayList;
@@ -113,7 +114,7 @@ class StreamAgentTest {
 		assertFalse(outputs.isEmpty());
     }
 
-    @Test
+	@Test
 	public void testStreamMessageLlmRoutingAgent() throws Exception {
 		ReactAgent proseWriterAgent = ReactAgent.builder()
 				.name("prose_writer_agent")
@@ -145,6 +146,44 @@ class StreamAgentTest {
 			System.out.println(message);
 			outputs.add(message);
 		}).then().block();
+
+		assertFalse(outputs.isEmpty());
+	}
+
+	@Test
+	public void testStreamMessageWithAgentToolFinishedType() throws Exception {
+		ReactAgent writerAgent = ReactAgent.builder()
+				.name("return_agent0")
+				.model(chatModel)
+				.description("奇数 Agent")
+				.instruction("如果是奇数，返回数字111。除此之外不返回任何信息。")
+				.build();
+
+		ReactAgent reviewerAgent = ReactAgent.builder()
+				.name("return_agent1")
+				.model(chatModel)
+				.description("偶数 Agent")
+				.instruction("如果是偶数，返回数字222。除此之外不返回任何信息。")
+				.build();
+
+		ReactAgent blogAgent = ReactAgent.builder()
+				.name("blog_agent")
+				.model(chatModel)
+				.instruction("根据用户输入的数字交给对应的Agent处理。" +
+						"调用完成后，如果结果是 111，则输出333；如果结果是222，则输出444。" +
+						"不要再进行任何额外推理或工具调用。")
+				.tools(List.of(
+						AgentTool.getFunctionToolCallback(writerAgent),
+						AgentTool.getFunctionToolCallback(reviewerAgent)
+				))
+				.build();
+
+		List<Message> outputs = new ArrayList<>();
+		blogAgent.streamMessages("2")
+				.filter(message -> message instanceof ToolResponseMessage)
+				.doOnNext(outputs::add)
+				.then()
+				.block();
 
 		assertFalse(outputs.isEmpty());
 	}

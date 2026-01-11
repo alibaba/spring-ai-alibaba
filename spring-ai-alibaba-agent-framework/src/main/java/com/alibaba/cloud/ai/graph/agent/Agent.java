@@ -33,6 +33,7 @@ import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -421,17 +422,36 @@ public abstract class Agent {
 	/**
 	 * Extracts {@link Message} objects from a stream of {@link NodeOutput}.
 	 * <p>
-	 * This helper method filters the incoming {@link NodeOutput} stream to retain
-	 * only {@link StreamingOutput} instances that contain a non-null
-	 * {@link Message}, and then maps those outputs to the embedded
-	 * {@link Message} objects.
+	 * This helper method filters the incoming {@link NodeOutput} stream to retain only
+	 * {@link StreamingOutput} instances whose {@link OutputType} is intended to expose
+	 * messages at the Agent API level ({@code AGENT_MODEL_STREAMING} or
+	 * {@code AGENT_TOOL_FINISHED}), and whose embedded {@link Message} is non-null.
+	 * <p>
+	 * All other {@link NodeOutput} types (such as tool or hook intermediate outputs)
+	 * are intentionally filtered out to avoid leaking graph-level implementation
+	 * details to Agent API consumers.
 	 *
 	 * @param stream the stream of {@link NodeOutput} produced during graph execution
-	 * @return a {@link Flux} emitting only non-null {@link Message} instances
+	 * @return a {@link Flux} emitting only user-facing {@link Message} instances
 	 */
 	private Flux<Message> extractMessages(Flux<NodeOutput> stream) {
-		return stream.filter(o -> o instanceof StreamingOutput<?> so && so.message() != null)
+		return stream.filter(o -> o instanceof StreamingOutput<?> so
+						&& isMessageOutputType(so.getOutputType())
+						&& so.message() != null)
 				.map(o -> ((StreamingOutput<?>) o).message());
+	}
+
+	/**
+	 * Checks whether the given {@link OutputType} indicates a message-type output.
+	 * <p>
+	 * include {@link OutputType#AGENT_MODEL_STREAMING} and {@link OutputType#AGENT_TOOL_FINISHED}.
+	 *
+	 * @param type the {@link OutputType} to check
+	 * @return true if the output type is a message-type output, false otherwise
+	 */
+	private boolean isMessageOutputType(OutputType type) {
+		return type == OutputType.AGENT_MODEL_STREAMING
+				|| type == OutputType.AGENT_TOOL_FINISHED;
 	}
 
 }
