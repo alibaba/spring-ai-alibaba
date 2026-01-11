@@ -390,12 +390,12 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
-	 * Updates the partial state from a schema using channels.
+	 * Updates the partial state from a schema using keyStrategyMap.
 	 * @param state The current state as a map of key-value pairs.
 	 * @param partialState The partial state to be updated.
 	 * @param keyStrategies A map of channel names to their implementations.
 	 * @return An updated version of the partial state after applying the schema and
-	 * channels.
+	 * keyStrategyMap.
 	 */
 	private static Map<String, Object> updatePartialStateFromSchema(Map<String, Object> state,
 			Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategies) {

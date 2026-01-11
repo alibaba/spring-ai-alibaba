@@ -356,7 +356,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 * When a parallel node is executed, it will look for an executor in the
 		 * {@link RunnableConfig} metadata. If found, it will be used to run the parallel
 		 * branches concurrently.
-		 * @param nodeId the ID of the parallel node.
+		 * @param nodeId the ID of the parallel starting node.
 		 * @param executor the {@link Executor} to use for the parallel node.
 		 * @return this {@code Builder} instance for method chaining.
 		 */
