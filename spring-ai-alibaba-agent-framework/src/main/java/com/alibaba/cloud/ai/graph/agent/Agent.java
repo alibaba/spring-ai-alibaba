@@ -223,31 +223,89 @@ public abstract class Agent {
 
     // ------------------- Message Stream methods -------------------
 
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a plain text input.
+	 * <p>
+	 * This is a convenience API built on top of {@code stream(...)} that extracts
+	 * and emits {@link Message} instances directly instead of low-level
+	 * {@code NodeOutput} objects. It is intended for use cases that only care
+	 * about the generated messages and do not require access to graph
+	 * orchestration or node execution details.
+	 *
+	 * @param message the input message as plain text
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
 	public Flux<Message> streamMessages(String message) throws GraphRunnerException {
 		return stream(message)
 				.transform(this::extractMessages);
     }
 
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a plain text input and a custom {@link RunnableConfig}.
+	 *
+	 * @param message the input message as plain text
+	 * @param config runtime configuration controlling execution behavior
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
 	public Flux<Message> streamMessages(String message, RunnableConfig config) throws GraphRunnerException {
 		return stream(message, config)
 				.transform(this::extractMessages);
     }
 
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a {@link UserMessage} as input.
+	 *
+	 * @param message the user message input
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
 	public Flux<Message> streamMessages(UserMessage message) throws GraphRunnerException {
 		return stream(message)
 				.transform(this::extractMessages);
     }
 
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a {@link UserMessage} as input and a custom {@link RunnableConfig}.
+	 *
+	 * @param message the user message input
+	 * @param config runtime configuration controlling execution behavior
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
 	public Flux<Message> streamMessages(UserMessage message, RunnableConfig config) throws GraphRunnerException {
 		return stream(message, config)
 				.transform(this::extractMessages);
     }
 
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a list of input {@link Message} instances.
+	 *
+	 * @param messages the input messages
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
 	public Flux<Message> streamMessages(List<Message> messages) throws GraphRunnerException {
 		return stream(messages)
 				.transform(this::extractMessages);
     }
 
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a list of input {@link Message} instances and a custom
+	 * {@link RunnableConfig}.
+	 *
+	 * @param messages the input messages
+	 * @param config runtime configuration controlling execution behavior
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
 	public Flux<Message> streamMessages(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
 		return stream(messages, config)
 			.transform(this::extractMessages);
@@ -360,6 +418,17 @@ public abstract class Agent {
 
 	protected abstract StateGraph initGraph() throws GraphStateException;
 
+	/**
+	 * Extracts {@link Message} objects from a stream of {@link NodeOutput}.
+	 * <p>
+	 * This helper method filters the incoming {@link NodeOutput} stream to retain
+	 * only {@link StreamingOutput} instances that contain a non-null
+	 * {@link Message}, and then maps those outputs to the embedded
+	 * {@link Message} objects.
+	 *
+	 * @param stream the stream of {@link NodeOutput} produced during graph execution
+	 * @return a {@link Flux} emitting only non-null {@link Message} instances
+	 */
     private Flux<Message> extractMessages(Flux<NodeOutput> stream) {
         return stream.filter(o -> o instanceof StreamingOutput<?> so && so.message() != null)
                 .map(o -> ((StreamingOutput<?>) o).message());
