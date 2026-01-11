@@ -319,6 +319,15 @@ public class MysqlSaver extends MemorySaver {
 		try (Connection ignored = conn = dataSource.getConnection()) {
 			conn.setAutoCommit(false); // Start transaction
 
+			String cleanupReleasedSql = """
+					DELETE FROM GRAPH_THREAD
+					WHERE thread_name = ? AND is_released = TRUE
+					""";
+			try (PreparedStatement cleanupStatement = conn.prepareStatement(cleanupReleasedSql)) {
+				cleanupStatement.setString(1, threadName);
+				cleanupStatement.executeUpdate();
+			}
+
 			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD)) {
 				upsertStatement.setString(1, UUID.randomUUID().toString());
 				upsertStatement.setString(2, threadName);
