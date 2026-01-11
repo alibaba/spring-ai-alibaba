@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.internal.node;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.NodeAggregationStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
@@ -47,6 +48,7 @@ public class ParallelNode extends Node {
 	private static final Logger logger = LoggerFactory.getLogger(ParallelNode.class);
 
 	public static final String PARALLEL_PREFIX = "__PARALLEL__";
+	public static final String PARALLEL_TARGET_PREFIX = "__PARALLEL_TARGET__";
 
 	static {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -78,6 +80,26 @@ public class ParallelNode extends Node {
 						.filter(value -> value instanceof Executor)
 						.map(Executor.class::cast)
 						.orElse(DEFAULT_EXECUTOR));
+	}
+
+	/**
+	 * Gets the aggregation strategy for a parallel node from the configuration.
+	 * First checks for node-specific strategy using formatted targetNodeId (the node right after parallel branches),
+	 * then falls back to default strategy. If no strategy is configured, defaults to ALL_OF.
+	 * 
+	 * @param config the RunnableConfig containing the strategy configuration
+	 * @param targetNodeId the ID of the target node that follows the parallel node
+	 * @return the NodeAggregationStrategy to use
+	 */
+	public static NodeAggregationStrategy getAggregationStrategy(RunnableConfig config, String targetNodeId) {
+		String formattedTargetNodeId = formatTargetNodeId(targetNodeId);
+		return config.metadata(formattedTargetNodeId)
+				.filter(value -> value instanceof NodeAggregationStrategy)
+				.map(NodeAggregationStrategy.class::cast)
+				.orElseGet(() -> config.metadata(RunnableConfig.DEFAULT_PARALLEL_AGGREGATION_STRATEGY_KEY)
+						.filter(value -> value instanceof NodeAggregationStrategy)
+						.map(NodeAggregationStrategy.class::cast)
+						.orElse(NodeAggregationStrategy.ALL_OF));
 	}
 
 	/**
@@ -206,7 +228,43 @@ public class ParallelNode extends Node {
 		return format("%s(%s)", PARALLEL_PREFIX, requireNonNull(nodeId, "nodeId cannot be null!"));
 	}
 
-	public record AsyncParallelNodeAction(String nodeId, List<AsyncNodeActionWithConfig> actions,
+	/**
+	 * Formats the target node ID for aggregation strategy configuration.
+	 * This adds a prefix to distinguish target node IDs used for aggregation strategy lookup.
+	 * 
+	 * @param targetNodeId the ID of the target node that follows the parallel node
+	 * @return formatted target node ID with prefix
+	 */
+	public static String formatTargetNodeId(String targetNodeId) {
+		return format("%s(%s)", PARALLEL_TARGET_PREFIX, requireNonNull(targetNodeId, "targetNodeId cannot be null!"));
+	}
+
+	/**
+	 * Represents an asynchronous parallel node action that executes multiple branches concurrently.
+	 * This record encapsulates all the information needed to execute parallel branches and aggregate their results.
+	 * 
+	 * @param nodeId the formatted identifier of the parallel node (with {@link #PARALLEL_PREFIX} prefix).
+	 *               This is used for logging and executor lookup in RunnableConfig.
+	 * @param targetNodeId the ID of the target node that follows the parallel branches (the merge node).
+	 *                     This is used to look up the aggregation strategy configuration (ANY_OF or ALL_OF)
+	 *                     from RunnableConfig using {@link #formatTargetNodeId(String)}. The strategy determines
+	 *                     whether to wait for all branches to complete (ALL_OF) or proceed with the first
+	 *                     completed branch (ANY_OF).
+	 * @param actions the list of actions to be executed in parallel. Each action represents a branch
+	 *                in the parallel execution flow. These actions are executed concurrently using
+	 *                the executor configured in RunnableConfig.
+	 * @param actionNodeIds the list of node IDs corresponding to each action. Must have the same size
+	 *                      as the actions list. Each ID identifies the actual node being executed in
+	 *                      the corresponding parallel branch. Used for lifecycle listener callbacks and logging.
+	 * @param channels the key strategy map that defines how state values are merged when multiple
+	 *                 parallel branches produce results with the same keys. Keys in this map correspond
+	 *                 to state keys, and values define the merge strategy (e.g., AppendStrategy, ReplaceStrategy).
+	 *                 This is used by {@link OverAllState#updateState(Map, Map, Map)} when processing results.
+	 * @param compileConfig the compilation configuration containing lifecycle listeners and other
+	 *                      compile-time settings. Lifecycle listeners are invoked before and after each
+	 *                      parallel branch execution.
+	 */
+	public record AsyncParallelNodeAction(String nodeId, String targetNodeId, List<AsyncNodeActionWithConfig> actions,
 			List<String> actionNodeIds, Map<String, KeyStrategy> channels, CompileConfig compileConfig)
 			implements AsyncNodeActionWithConfig {
 
@@ -265,15 +323,31 @@ public class ParallelNode extends Node {
 				futures.add(future);
 			}
 
-			// Wait for all tasks to complete
-			return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
-				// Collect all results
-				List<Map<String, Object>> results = futures.stream()
-						.map(CompletableFuture::join)
-						.collect(Collectors.toList());
+			// Get aggregation strategy from config
+			NodeAggregationStrategy strategy = getAggregationStrategy(config, targetNodeId);
+			
+			if (strategy == NodeAggregationStrategy.ANY_OF) {
+				// Wait for any task to complete
+				// anyOf returns CompletableFuture<Object> where the Object is the result of the first completed future
+				return CompletableFuture.anyOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
+					@SuppressWarnings("unchecked")
+					Map<String, Object> firstResult = (Map<String, Object>) v;
+					List<Map<String, Object>> results = new ArrayList<>();
+					results.add(firstResult);
 
-				return processParallelResults(results, state, actions);
-			});
+					return processParallelResults(results, state, actions);
+				});
+			} else {
+				// Wait for all tasks to complete (default behavior)
+				return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
+					// Collect all results
+					List<Map<String, Object>> results = futures.stream()
+							.map(CompletableFuture::join)
+							.collect(Collectors.toList());
+
+					return processParallelResults(results, state, actions);
+				});
+			}
 		}
 
 		/**
@@ -357,10 +431,29 @@ public class ParallelNode extends Node {
 		}
 	}
 
-	public ParallelNode(String id, List<AsyncNodeActionWithConfig> actions, List<String> actionNodeIds,
+	/**
+	 * Constructs a new ParallelNode instance.
+	 * 
+	 * @param id the identifier of the parallel node (will be formatted with {@link #PARALLEL_PREFIX})
+	 * @param targetNodeId the ID of the target node that follows the parallel branches (the merge node).
+	 *                     This is used to look up the aggregation strategy configuration (ANY_OF or ALL_OF)
+	 *                     from RunnableConfig. The strategy determines whether to wait for all branches to
+	 *                     complete (ALL_OF) or proceed with the first completed branch (ANY_OF).
+	 * @param actions the list of actions to be executed in parallel. Each action represents a branch
+	 *                in the parallel execution flow.
+	 * @param actionNodeIds the list of node IDs corresponding to each action. Must have the same size
+	 *                      as the actions list. Each ID identifies the actual node being executed in
+	 *                      the corresponding parallel branch.
+	 * @param channels the key strategy map that defines how state values are merged when multiple
+	 *                 parallel branches produce results with the same keys. Keys in this map correspond
+	 *                 to state keys, and values define the merge strategy (e.g., AppendStrategy, ReplaceStrategy).
+	 * @param compileConfig the compilation configuration containing lifecycle listeners and other
+	 *                      compile-time settings that affect how the parallel node is executed.
+	 */
+	public ParallelNode(String id, String targetNodeId, List<AsyncNodeActionWithConfig> actions, List<String> actionNodeIds,
 			Map<String, KeyStrategy> channels, CompileConfig compileConfig) {
 		super(formatNodeId(id),
-				(config) -> new AsyncParallelNodeAction(formatNodeId(id), actions, actionNodeIds, channels,
+				(config) -> new AsyncParallelNodeAction(formatNodeId(id), targetNodeId, actions, actionNodeIds, channels,
 						compileConfig));
 	}
 

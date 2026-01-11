@@ -193,14 +193,15 @@ public class CompiledGraph {
 
 				var actionNodeIds = targetList.stream().map(EdgeValue::id).toList();
 
-				var parallelNode = new ParallelNode(e.sourceId(), actions, actionNodeIds, keyStrategyMap,
+				var targetNodeId = parallelNodeTargets.iterator().next();
+				var parallelNode = new ParallelNode(e.sourceId(), targetNodeId, actions, actionNodeIds, keyStrategyMap,
 						compileConfig);
 
 				nodeFactories.put(parallelNode.id(), parallelNode.actionFactory());
 
 				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
 
-				edges.put(parallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
+				edges.put(parallelNode.id(), new EdgeValue(targetNodeId));
 
 			}
 
