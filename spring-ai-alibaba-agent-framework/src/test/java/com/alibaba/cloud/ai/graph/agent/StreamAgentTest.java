@@ -93,60 +93,60 @@ class StreamAgentTest {
 		}
 	}
 
-    @Test
-    public void testStreamMessageAgent() throws Exception {
-        ReactAgent proseWriterAgent = ReactAgent.builder()
-                .name("prose_writer_agent")
-                .model(chatModel)
-                .description("可以写散文文章。")
-                .instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
-                .build();
+	@Test
+	public void testStreamMessageAgent() throws Exception {
+		ReactAgent proseWriterAgent = ReactAgent.builder()
+				.name("prose_writer_agent")
+				.model(chatModel)
+				.description("可以写散文文章。")
+				.instruction("你是一个知名的作家，擅长写散文。请根据用户的提问进行回答。")
+				.build();
 
-        List<Message> outputs = new ArrayList<>();
+		List<Message> outputs = new ArrayList<>();
 
-        Flux<Message> result = proseWriterAgent.streamMessages("帮我写一个100字左右的散文");
-        result.doOnNext(message -> {
-            System.out.println(message);
-            outputs.add(message);
-        }).then().block();
+		Flux<Message> result = proseWriterAgent.streamMessages("帮我写一个100字左右的散文");
+		result.doOnNext(message -> {
+			System.out.println(message);
+			outputs.add(message);
+		}).then().block();
 
-        assertFalse(outputs.isEmpty());
+		assertFalse(outputs.isEmpty());
     }
 
     @Test
-    public void testStreamMessageLlmRoutingAgent() throws Exception {
-        ReactAgent proseWriterAgent = ReactAgent.builder()
-                .name("prose_writer_agent")
-                .model(chatModel)
-                .description("可以写散文文章。")
-                .instruction("你是一个知名的作家，只写散文，不是散文将直接拒绝写作。请根据用户的提问进行回答。")
-                .outputKey("prose_article")
-                .build();
+	public void testStreamMessageLlmRoutingAgent() throws Exception {
+		ReactAgent proseWriterAgent = ReactAgent.builder()
+				.name("prose_writer_agent")
+				.model(chatModel)
+				.description("可以写散文文章。")
+				.instruction("你是一个知名的作家，只写散文，不是散文将直接拒绝写作。请根据用户的提问进行回答。")
+				.outputKey("prose_article")
+				.build();
 
-        ReactAgent poemWriterAgent = ReactAgent.builder()
-                .name("poem_writer_agent")
-                .model(chatModel)
-                .description("可以写现代诗。")
-                .instruction("你是一个知名的诗人，只写现代诗，不是现代诗将直接拒绝写作。请根据用户的提问进行回答。")
-                .outputKey("poem_article")
-                .build();
+		ReactAgent poemWriterAgent = ReactAgent.builder()
+				.name("poem_writer_agent")
+				.model(chatModel)
+				.description("可以写现代诗。")
+				.instruction("你是一个知名的诗人，只写现代诗，不是现代诗将直接拒绝写作。请根据用户的提问进行回答。")
+				.outputKey("poem_article")
+				.build();
 
-        LlmRoutingAgent writerAgent = LlmRoutingAgent.builder()
-                .name("writer_agent")
-                .model(chatModel)
-                .description("可以根据用户给定的主题写文章或作诗。")
-                .subAgents(List.of(proseWriterAgent, poemWriterAgent))
-                .build();
+		LlmRoutingAgent writerAgent = LlmRoutingAgent.builder()
+				.name("writer_agent")
+				.model(chatModel)
+				.description("可以根据用户给定的主题写文章或作诗。")
+				.subAgents(List.of(proseWriterAgent, poemWriterAgent))
+				.build();
 
-        List<Message> outputs = new ArrayList<>();
+		List<Message> outputs = new ArrayList<>();
 
-        Flux<Message> result = writerAgent.streamMessages("帮我写一个100字左右的散文");
-        result.doOnNext(message -> {
-            System.out.println(message);
-            outputs.add(message);
-        }).then().block();
+		Flux<Message> result = writerAgent.streamMessages("帮我写一个100字左右的散文");
+		result.doOnNext(message -> {
+			System.out.println(message);
+			outputs.add(message);
+		}).then().block();
 
-        assertFalse(outputs.isEmpty());
-    }
+		assertFalse(outputs.isEmpty());
+	}
 
 }
