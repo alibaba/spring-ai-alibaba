@@ -86,11 +86,4 @@ public class SkillRegistry {
 			return false;
 		}
 	}
-
-	public java.util.Set<String> getAllRequiredTools() {
-		return skills.values().stream()
-			.flatMap(skill -> skill.getAllowedTools().stream())
-			.map(String::toLowerCase)
-			.collect(java.util.stream.Collectors.toSet());
-	}
 }

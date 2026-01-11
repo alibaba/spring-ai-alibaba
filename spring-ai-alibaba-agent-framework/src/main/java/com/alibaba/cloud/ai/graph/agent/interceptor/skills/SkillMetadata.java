@@ -18,8 +18,6 @@ package com.alibaba.cloud.ai.graph.agent.interceptor.skills;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Metadata for a Claude-style Skill.
@@ -35,16 +33,11 @@ public class SkillMetadata {
 
 	private String skillPath;
 
-	private List<String> allowedTools;
-
-	private String model;
-
 	private String source;
 
 	private String fullContent;
 
 	public SkillMetadata() {
-		this.allowedTools = new ArrayList<>();
 	}
 
 	public String getName() {
@@ -69,22 +62,6 @@ public class SkillMetadata {
 
 	public void setSkillPath(String skillPath) {
 		this.skillPath = skillPath;
-	}
-
-	public List<String> getAllowedTools() {
-		return allowedTools;
-	}
-
-	public void setAllowedTools(List<String> allowedTools) {
-		this.allowedTools = allowedTools != null ? allowedTools : new ArrayList<>();
-	}
-
-	public String getModel() {
-		return model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
 	}
 
 	public String getSource() {
@@ -143,16 +120,6 @@ public class SkillMetadata {
 			return this;
 		}
 
-		public Builder allowedTools(List<String> allowedTools) {
-			metadata.allowedTools = allowedTools != null ? new ArrayList<>(allowedTools) : new ArrayList<>();
-			return this;
-		}
-
-		public Builder model(String model) {
-			metadata.model = model;
-			return this;
-		}
-
 		public Builder source(String source) {
 			metadata.source = source;
 			return this;
@@ -178,8 +145,6 @@ public class SkillMetadata {
 				"name='" + name + '\'' +
 				", description='" + description + '\'' +
 				", skillPath='" + skillPath + '\'' +
-				", allowedTools=" + allowedTools +
-				", model='" + model + '\'' +
 				", source='" + source + '\'' +
 				'}';
 	}

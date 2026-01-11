@@ -118,24 +118,6 @@ public class SkillScanner {
 				.skillPath(skillDir.toString())
 				.source(source);
 
-			if (frontmatter.containsKey("allowed-tools")) {
-				Object allowedTools = frontmatter.get("allowed-tools");
-				if (allowedTools instanceof List) {
-					@SuppressWarnings("unchecked")
-					List<String> tools = (List<String>) allowedTools;
-					builder.allowedTools(tools);
-				} else if (allowedTools instanceof String) {
-					// Handle comma-separated string
-					String toolsStr = (String) allowedTools;
-					List<String> tools = List.of(toolsStr.split("\\s*,\\s*"));
-					builder.allowedTools(tools);
-				}
-			}
-
-			if (frontmatter.containsKey("model")) {
-				builder.model((String) frontmatter.get("model"));
-			}
-
 			return builder.build();
 
 		} catch (IOException e) {

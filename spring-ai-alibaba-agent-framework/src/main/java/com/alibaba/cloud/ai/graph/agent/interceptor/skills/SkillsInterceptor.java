@@ -22,7 +22,6 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.tool.ToolCallback;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Interceptor for integrating Claude-style Skills into ReactAgent.
@@ -84,6 +82,10 @@ public class SkillsInterceptor extends ModelInterceptor {
 		String skillsPrompt = buildSkillsPrompt(skills);
 		SystemMessage enhanced = enhanceSystemMessage(request.getSystemMessage(), skillsPrompt);
 
+		if (logger.isDebugEnabled()) {
+			logger.debug("Enhanced system message:\n{}", enhanced.getText());
+		}
+
 		ModelRequest modified = ModelRequest.builder(request)
 			.systemMessage(enhanced)
 			.build();
@@ -125,7 +127,11 @@ public class SkillsInterceptor extends ModelInterceptor {
 	private String buildSkillsPrompt(List<SkillMetadata> skills) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("\n## Skills System\n\n");
-		sb.append("You have access to a skills library that provides specialized capabilities and domain knowledge.\n\n");
+		sb.append("You have access to a skills library that provides specialized knowledge and workflows.\n\n");
+		
+		sb.append("**CRITICAL: Skills are NOT tools!**\n");
+		sb.append("Skills are instruction documents that guide you on how to use your available tools. ");
+		sb.append("You cannot directly call a skill - you must first read its SKILL.md file to understand the workflow.\n\n");
 
 		List<SkillMetadata> userSkills = new ArrayList<>();
 		List<SkillMetadata> projectSkills = new ArrayList<>();
@@ -154,8 +160,8 @@ public class SkillsInterceptor extends ModelInterceptor {
 		if (!userSkills.isEmpty()) {
 			sb.append("*User Skills:*\n");
 			for (SkillMetadata skill : userSkills) {
-				sb.append(String.format("- **%s**: %s\n", skill.getName(), skill.getDescription()));
-				sb.append(String.format("  → Read `%s/SKILL.md` for full instructions\n", skill.getSkillPath()));
+				sb.append(String.format("- **%s** (skill guide): %s\n", skill.getName(), skill.getDescription()));
+				sb.append(String.format("  → MUST read `%s/SKILL.md` first to learn how to use this skill\n", skill.getSkillPath()));
 			}
 			sb.append("\n");
 		}
@@ -163,24 +169,29 @@ public class SkillsInterceptor extends ModelInterceptor {
 		if (!projectSkills.isEmpty()) {
 			sb.append("*Project Skills:*\n");
 			for (SkillMetadata skill : projectSkills) {
-				sb.append(String.format("- **%s**: %s\n", skill.getName(), skill.getDescription()));
-				sb.append(String.format("  → Read `%s/SKILL.md` for full instructions\n", skill.getSkillPath()));
+				sb.append(String.format("- **%s** (skill guide): %s\n", skill.getName(), skill.getDescription()));
+				sb.append(String.format("  → MUST read `%s/SKILL.md` first to learn how to use this skill\n", skill.getSkillPath()));
 			}
 			sb.append("\n");
 		}
 
-		sb.append("**How to Use Skills (Progressive Disclosure):**\n\n");
-		sb.append("Skills follow a **progressive disclosure** pattern - you know they exist (name + description above), ");
-		sb.append("but you only read the full instructions when needed:\n\n");
-		sb.append("1. **Recognize when a skill applies**: Check if the user's task matches any skill's description\n");
-		sb.append("2. **Read the skill's full instructions**: Use read_file tool with the path shown above\n");
-		sb.append("3. **Follow the skill's instructions**: SKILL.md contains step-by-step workflows, best practices, and examples\n");
-		sb.append("4. **Access supporting files**: Skills may include Python scripts, configs, or additional markdown files - ");
-		sb.append("use absolute paths and read_file tool to access them as referenced in SKILL.md\n\n");
+		sb.append("**How to Use Skills (MANDATORY Process):**\n\n");
+		sb.append("When a user's request matches a skill's description, you MUST follow this process:\n\n");
+		sb.append("1. **Read the SKILL.md file**: Use read_file tool with the path shown above\n");
+		sb.append("2. **Understand the workflow**: The SKILL.md contains step-by-step instructions\n");
+		sb.append("3. **Use your available tools**: Follow the skill's instructions to use tools like shell, read_file, write_file, etc.\n");
+		sb.append("4. **Access supporting files**: If the skill references other files, read them using read_file with absolute paths\n\n");
+		sb.append("**Example Workflow:**\n");
+		sb.append("User asks: \"Search for papers about transformers\"\n");
+		sb.append("→ You recognize arxiv-search skill applies\n");
+		sb.append("→ You call: read_file(\"path/to/arxiv-search/SKILL.md\")\n");
+		sb.append("→ You learn the skill requires executing a Python script with shell tool\n");
+		sb.append("→ You call: shell(command=\"python3 path/to/arxiv_search.py 'transformers'\")\n\n");
 		sb.append("**Important Notes:**\n");
-		sb.append("- Do not mention the skill name unless asked - seamlessly apply its logic\n");
-		sb.append("- If a skill references other files (e.g., \"See extraction.md for details\"), read them using read_file\n");
-		sb.append("- Use absolute paths for all file operations within skills\n");
+		sb.append("- Never try to call a skill directly as a tool (e.g., arxiv-search() is WRONG)\n");
+		sb.append("- Always read SKILL.md first - it contains the actual instructions\n");
+		sb.append("- Skills guide you to use your existing tools in specific ways\n");
+		sb.append("- Do not mention the skill name to users unless asked - seamlessly apply its logic\n");
 
 		return sb.toString();
 	}
@@ -204,10 +215,10 @@ public class SkillsInterceptor extends ModelInterceptor {
 		return skillRegistry.listAll();
 	}
 
-	public Set<String> getRequiredTools() {
-		return skillRegistry.getAllRequiredTools();
-	}
-
+	/**
+	 * Reloads all skills from configured directories.
+	 * Clears existing skills and rescans the directories.
+	 */
 	public synchronized void reloadSkills() {
 		logger.info("Reloading skills...");
 		skillRegistry.clear();
@@ -215,89 +226,58 @@ public class SkillsInterceptor extends ModelInterceptor {
 		loadSkills();
 	}
 
-	public synchronized boolean loadSkill(String skillDirectory) {
+	/**
+	 * Loads a skill from the specified directory.
+	 * 
+	 * @param skillDirectory The directory containing SKILL.md (must not be null or empty)
+	 * @throws IllegalArgumentException if skillDirectory is null or empty
+	 * @throws IllegalStateException if SKILL.md not found or skill loading fails
+	 * @throws RuntimeException if an unexpected error occurs during loading
+	 */
+	public synchronized void loadSkill(String skillDirectory) {
+		if (skillDirectory == null || skillDirectory.isEmpty()) {
+			throw new IllegalArgumentException("Skill directory cannot be null or empty");
+		}
+		
 		try {
 			SkillScanner scanner = new SkillScanner();
 			SkillMetadata skill = scanner.loadSkill(Path.of(skillDirectory));
 			
-			if (skill != null) {
-				skillRegistry.register(skill);
-				logger.info("Loaded skill '{}' from {}", skill.getName(), skillDirectory);
-				return true;
-			} else {
-				logger.warn("Failed to load skill from {}", skillDirectory);
-				return false;
+			if (skill == null) {
+				throw new IllegalStateException("Failed to load skill from " + skillDirectory);
 			}
+			
+			skillRegistry.register(skill);
+			logger.info("Loaded skill '{}' from {}", skill.getName(), skillDirectory);
+			
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			// Re-throw validation and state exceptions
+			throw e;
 		} catch (Exception e) {
 			logger.error("Error loading skill from {}: {}", skillDirectory, e.getMessage(), e);
-			return false;
+			throw new RuntimeException("Failed to load skill from " + skillDirectory, e);
 		}
 	}
 
-	public synchronized boolean unloadSkill(String skillName) {
-		boolean removed = skillRegistry.unregister(skillName);
-		if (removed) {
-			logger.info("Unloaded skill '{}'", skillName);
+	/**
+	 * Unloads a skill by name.
+	 * 
+	 * @param skillName The name of the skill to unload (must not be null or empty)
+	 * @throws IllegalArgumentException if skillName is null or empty
+	 * @throws IllegalStateException if skill does not exist
+	 */
+	public synchronized void unloadSkill(String skillName) {
+		if (skillName == null || skillName.isEmpty()) {
+			throw new IllegalArgumentException("Skill name cannot be null or empty");
 		}
-		return removed;
-	}
-
-	@Override
-	public List<ToolCallback> getTools() {
-		Set<String> requiredTools = getRequiredTools();
-		List<ToolCallback> tools = new ArrayList<>();
-
-		for (String toolName : requiredTools) {
-			ToolCallback tool = createToolCallback(toolName);
-			if (tool != null) {
-				tools.add(tool);
-			}
-		}
-
-		return tools;
-	}
-
-	private ToolCallback createToolCallback(String toolName) {
-		String normalizedName = toolName.toLowerCase();
 		
-		return switch (normalizedName) {
-			case "shell" -> null;
-			
-			case "read", "read_file" -> com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.ReadFileTool
-				.createReadFileToolCallback(
-					com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.ReadFileTool.DESCRIPTION
-				);
-			
-			case "write", "write_file" -> com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.WriteFileTool
-				.createWriteFileToolCallback(
-					com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.WriteFileTool.DESCRIPTION
-				);
-			
-			case "list", "list_files" -> com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.ListFilesTool
-				.createListFilesToolCallback(
-					com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.ListFilesTool.DESCRIPTION
-				);
-			
-			case "grep", "grep_search" -> com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.GrepTool
-				.createGrepToolCallback(
-					com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.GrepTool.DESCRIPTION
-				);
-			
-			case "glob", "glob_search" -> com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.GlobTool
-				.createGlobToolCallback(
-					com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.GlobTool.DESCRIPTION
-				);
-			
-			case "edit", "edit_file" -> com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.EditFileTool
-				.createEditFileToolCallback(
-					com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem.EditFileTool.DESCRIPTION
-				);
-			
-			default -> {
-				logger.warn("Unknown tool '{}' required by skills, skipping", toolName);
-				yield null;
-			}
-		};
+		if (!skillRegistry.contains(skillName)) {
+			throw new IllegalStateException("Skill not found: " + skillName + 
+				". Use hasSkill() to check if skill exists before unloading.");
+		}
+		
+		skillRegistry.unregister(skillName);
+		logger.info("Unloaded skill '{}'", skillName);
 	}
 
 	@Override
