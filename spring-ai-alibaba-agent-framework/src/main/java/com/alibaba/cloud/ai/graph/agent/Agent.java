@@ -223,29 +223,34 @@ public abstract class Agent {
 
     // ------------------- Message Stream methods -------------------
 
-    public Flux<Message> streamMessages(String message) throws GraphRunnerException {
-        return stream(message)
-                .transform(this::extractMessages);
+	public Flux<Message> streamMessages(String message) throws GraphRunnerException {
+		return stream(message)
+				.transform(this::extractMessages);
     }
 
-    public Flux<Message> streamMessages(String message, RunnableConfig config) throws GraphRunnerException {
-        return stream(message, config)
-                .transform(this::extractMessages);
+	public Flux<Message> streamMessages(String message, RunnableConfig config) throws GraphRunnerException {
+		return stream(message, config)
+				.transform(this::extractMessages);
     }
 
-    public Flux<Message> streamMessages(UserMessage message) throws GraphRunnerException {
-        return stream(message)
-                .transform(this::extractMessages);
+	public Flux<Message> streamMessages(UserMessage message) throws GraphRunnerException {
+		return stream(message)
+				.transform(this::extractMessages);
     }
 
-    public Flux<Message> streamMessages(UserMessage message, RunnableConfig config) throws GraphRunnerException {
-        return stream(message, config)
-                .transform(this::extractMessages);
+	public Flux<Message> streamMessages(UserMessage message, RunnableConfig config) throws GraphRunnerException {
+		return stream(message, config)
+				.transform(this::extractMessages);
     }
 
-    public Flux<Message> streamMessages(List<Message> messages) throws GraphRunnerException {
-        return stream(messages)
-                .transform(this::extractMessages);
+	public Flux<Message> streamMessages(List<Message> messages) throws GraphRunnerException {
+		return stream(messages)
+				.transform(this::extractMessages);
+    }
+
+	public Flux<Message> streamMessages(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
+		return stream(messages, config)
+			.transform(this::extractMessages);
     }
 
 	// ------------------- Stream methods -------------------
@@ -296,24 +301,24 @@ public abstract class Agent {
 	}
 
 	protected RunnableConfig buildNonStreamConfig(RunnableConfig config) {
-		RunnableConfig.Builder builder = config == null 
-			? RunnableConfig.builder() 
+		RunnableConfig.Builder builder = config == null
+			? RunnableConfig.builder()
 			: RunnableConfig.builder(config);
-		
+
 		builder.addMetadata("_stream_", false).addMetadata("_AGENT_", name);
 		applyExecutorConfig(builder);
-		
+
 		return builder.build();
 	}
 
 	protected RunnableConfig buildStreamConfig(RunnableConfig config) {
-		RunnableConfig.Builder builder = config == null 
-			? RunnableConfig.builder() 
+		RunnableConfig.Builder builder = config == null
+			? RunnableConfig.builder()
 			: RunnableConfig.builder(config);
-		
+
 		builder.addMetadata("_AGENT_", name);
 		applyExecutorConfig(builder);
-		
+
 		return builder.build();
 	}
 
