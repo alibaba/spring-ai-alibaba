@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -542,6 +542,14 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 							}
 						}
 					}
+					return "";
+				}
+				else if ("submitted".equals(state)) {
+					// submitted is the initial state when a task is created, should be ignored
+					return "";
+				}
+				else if ("canceled".equals(state)) {
+					// canceled state should be ignored
 					return "";
 				}
 				else {

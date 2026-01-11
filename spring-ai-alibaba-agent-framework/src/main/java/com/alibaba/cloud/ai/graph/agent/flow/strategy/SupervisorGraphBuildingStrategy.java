@@ -1,3 +1,4 @@
+package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 /*
  * Copyright 2024-2025 the original author or authors.
  *
@@ -13,23 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.SupervisorAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.SupervisorEdgeAction;
-import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * Strategy for building supervisor-based routing graphs. In a supervisor graph, an LLM
@@ -37,42 +34,39 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * supervisor after completion. The supervisor can then either route to another sub-agent
  * or mark the task as complete (END).
  */
-public class SupervisorGraphBuildingStrategy implements FlowGraphBuildingStrategy {
+public class SupervisorGraphBuildingStrategy extends AbstractFlowGraphBuildingStrategy {
 
 	@Override
-	public StateGraph buildGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
-		validateConfig(config);
+	protected void buildCoreGraph(FlowGraphBuilder.FlowGraphConfig config)
+			throws GraphStateException {
 		validateSupervisorConfig(config);
 
-		StateGraph graph = config.getStateSerializer() != null
-				? new StateGraph(config.getName(), config.getKeyStrategyFactory(), config.getStateSerializer())
-				: new StateGraph(config.getName(), config.getKeyStrategyFactory());
-		Agent rootAgent = config.getRootAgent();
+		SupervisorAgent supervisorRootAgent = (SupervisorAgent) this.rootAgent;
 
-		// Add root transparent node
-		graph.addNode(rootAgent.name(), node_async(new TransparentNode()));
+		// Add and chain beforeModel hooks
+		if (!this.beforeModelHooks.isEmpty()) {
+			addBeforeModelHookNodesToGraph(this.graph, this.rootAgent.name(), this.beforeModelHooks);
+		}
 
-		// Add starting edge
-		graph.addEdge(START, rootAgent.name());
+		// Add afterModel hook nodes and get the routing target
+		String afterModelNodeName = addAfterModelHookNodesToGraph(this.graph, this.rootAgent.name(), this.afterModelHooks);
 
 		// Process sub-agents for routing
 		Map<String, String> edgeRoutingMap = new HashMap<>();
 		for (Agent subAgent : config.getSubAgents()) {
-			// Add the current sub-agent as a node
-			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, graph);
+			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, this.graph);
 			edgeRoutingMap.put(subAgent.name(), subAgent.name());
-			// Connect sub-agents back to supervisor (not to END)
-			graph.addEdge(subAgent.name(), rootAgent.name());
+			// Sub-agent returns to the entry node (could be beforeAgent/beforeModel hook)
+			this.graph.addEdge(subAgent.name(), this.entryNode);
 		}
 
 		// Add END as a possible routing destination
 		edgeRoutingMap.put(END, END);
 
-		// Connect parent to sub-agents or END via conditional routing
-		graph.addConditionalEdges(rootAgent.name(),
-				new SupervisorEdgeAction(config.getChatModel(), rootAgent, config.getSubAgents()), edgeRoutingMap);
-
-		return graph;
+		// Connect supervisor to routing logic
+		String routingSourceNode = this.afterModelHooks.isEmpty() ? this.rootAgent.name() : afterModelNodeName;
+		this.graph.addConditionalEdges(routingSourceNode,
+				new SupervisorEdgeAction(config.getChatModel(), supervisorRootAgent, config.getSubAgents()), edgeRoutingMap);
 	}
 
 	@Override
@@ -82,7 +76,7 @@ public class SupervisorGraphBuildingStrategy implements FlowGraphBuildingStrateg
 
 	@Override
 	public void validateConfig(FlowGraphBuilder.FlowGraphConfig config) {
-		FlowGraphBuildingStrategy.super.validateConfig(config);
+		super.validateConfig(config);
 		validateSupervisorConfig(config);
 	}
 
@@ -107,4 +101,3 @@ public class SupervisorGraphBuildingStrategy implements FlowGraphBuildingStrateg
 	}
 
 }
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,11 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.LoopStrategy;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
@@ -33,8 +31,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
@@ -47,80 +43,87 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * @author vlsmb
  * @since 2025/8/25
  */
-public class LoopGraphBuildingStrategy implements FlowGraphBuildingStrategy {
+public class LoopGraphBuildingStrategy extends AbstractFlowGraphBuildingStrategy {
 
-    @Override
-    public StateGraph buildGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
-        validateConfig(config);
-        StateGraph graph = config.getStateSerializer() != null
-                ? new StateGraph(config.getName(), config.getKeyStrategyFactory(), config.getStateSerializer())
-                : new StateGraph(config.getName(), config.getKeyStrategyFactory());
-        Agent rootAgent = config.getRootAgent();
+	@Override
+	protected void buildCoreGraph(FlowGraphBuilder.FlowGraphConfig config)
+			throws GraphStateException {
 
-        // Add root transparent node
-        graph.addNode(rootAgent.name(), node_async(new TransparentNode()));
-        // Add starting edge
-        graph.addEdge(START, rootAgent.name());
+		// Add beforeModel hooks
+		String loopStartNode = this.rootAgent.name();
+		if (!this.beforeModelHooks.isEmpty()) {
+			loopStartNode = addBeforeModelHookNodesToGraph(this.graph, this.rootAgent.name(), this.beforeModelHooks);
+		}
 
+		// Build loop graph based on loopStrategy
+		LoopStrategy loopStrategy = (LoopStrategy) config.getCustomProperty(LoopAgent.LOOP_STRATEGY);
+		this.graph.addNode(loopStrategy.loopInitNodeName(), node_async(loopStrategy::loopInit));
+		this.graph.addEdge(loopStartNode, loopStrategy.loopInitNodeName());
 
-        // Build loop graph based on loopStrategy
-        LoopStrategy loopStrategy = (LoopStrategy) config.getCustomProperty(LoopAgent.LOOP_STRATEGY);
-        graph.addNode(loopStrategy.loopInitNodeName(), node_async(loopStrategy::loopInit));
-        graph.addEdge(rootAgent.name(), loopStrategy.loopInitNodeName());
+		this.graph.addNode(loopStrategy.loopDispatchNodeName(), node_async(loopStrategy::loopDispatch));
+		this.graph.addEdge(loopStrategy.loopInitNodeName(), loopStrategy.loopDispatchNodeName());
 
-        graph.addNode(loopStrategy.loopDispatchNodeName(), node_async(loopStrategy::loopDispatch));
-        graph.addEdge(loopStrategy.loopInitNodeName(), loopStrategy.loopDispatchNodeName());
+		Agent subAgent = config.getSubAgents().get(0);
+		this.graph.addNode(subAgent.name(), subAgent.getGraph());
 
-        Agent subAgent = config.getSubAgents().get(0);
-        graph.addNode(subAgent.name(), subAgent.getGraph());
-        graph.addConditionalEdges(loopStrategy.loopDispatchNodeName(), edge_async(
-                state -> {
-                    Boolean value = state.value(loopStrategy.loopFlagKey(), false);
-                    return value ? "continue" : "break";
-                }
-        ), Map.of("continue", subAgent.name(), "break", END));
+		// Add afterModel hooks if present for loop dispatch
+		String loopExitNode = this.exitNode;
+		if (!this.afterModelHooks.isEmpty()) {
+			String afterModelNodeName = addAfterModelHookNodesToGraph(this.graph, loopStrategy.loopDispatchNodeName(), this.afterModelHooks);
+			this.graph.addConditionalEdges(afterModelNodeName, edge_async(
+					state -> {
+						Boolean value = state.value(loopStrategy.loopFlagKey(), false);
+						return value ? "continue" : "break";
+					}
+			), Map.of("continue", subAgent.name(), "break", loopExitNode));
+		} else {
+			this.graph.addConditionalEdges(loopStrategy.loopDispatchNodeName(), edge_async(
+					state -> {
+						Boolean value = state.value(loopStrategy.loopFlagKey(), false);
+						return value ? "continue" : "break";
+					}
+			), Map.of("continue", subAgent.name(), "break", loopExitNode));
+		}
 
-        graph.addEdge(subAgent.name(), loopStrategy.loopDispatchNodeName());
+		this.graph.addEdge(subAgent.name(), loopStrategy.loopDispatchNodeName());
+	}
 
-        return graph;
-    }
+	@Override
+	public String getStrategyType() {
+		return FlowAgentEnum.LOOP.getType();
+	}
 
-    @Override
-    public String getStrategyType() {
-        return FlowAgentEnum.LOOP.getType();
-    }
+	@Override
+	public KeyStrategyFactory generateKeyStrategyFactory(FlowGraphBuilder.FlowGraphConfig config) {
+		KeyStrategyFactory factory = super.generateKeyStrategyFactory(config);
+		return () -> {
+			Map<String, KeyStrategy> map1 = factory.apply();
+			LoopStrategy loopStrategy = (LoopStrategy) config.getCustomProperty(LoopAgent.LOOP_STRATEGY);
+			Map<String, KeyStrategy> map2 = loopStrategy.tempKeys().stream()
+					.collect(Collectors.toMap(
+							k -> k,
+							k -> new ReplaceStrategy(),
+							(k1, k2) -> k1
+					));
+			return Stream.of(map1, map2).flatMap(m -> m.entrySet().stream())
+					.collect(Collectors.toMap(
+							Map.Entry::getKey,
+							Map.Entry::getValue,
+							(k1, k2) -> k1
+					));
+		};
+	}
 
-    @Override
-    public KeyStrategyFactory generateKeyStrategyFactory(FlowGraphBuilder.FlowGraphConfig config) {
-        KeyStrategyFactory factory = FlowGraphBuildingStrategy.super.generateKeyStrategyFactory(config);
-        return () -> {
-            Map<String, KeyStrategy> map1 = factory.apply();
-            LoopStrategy loopStrategy = (LoopStrategy) config.getCustomProperty(LoopAgent.LOOP_STRATEGY);
-            Map<String, KeyStrategy> map2 = loopStrategy.tempKeys().stream()
-                    .collect(Collectors.toMap(
-                            k -> k,
-                            k -> new ReplaceStrategy(),
-                            (k1, k2) -> k1
-                    ));
-            return Stream.of(map1, map2).flatMap(m -> m.entrySet().stream())
-                    .collect(Collectors.toMap(
-                            Map.Entry::getKey,
-                            Map.Entry::getValue,
-                            (k1, k2) -> k1
-                    ));
-        };
-    }
-
-    @Override
-    public void validateConfig(FlowGraphBuilder.FlowGraphConfig config) {
-        FlowGraphBuildingStrategy.super.validateConfig(config);
-        Object object = config.getCustomProperty(LoopAgent.LOOP_STRATEGY);
-        if(!(object instanceof LoopStrategy)) {
-            throw new IllegalArgumentException("loopStrategy must be an instance of LoopStrategy");
-        }
-        List<Agent> subAgents = config.getSubAgents();
-        if(subAgents.size() != 1) {
-            throw new IllegalArgumentException("loopAgent must have only one subAgent");
-        }
-    }
+	@Override
+	public void validateConfig(FlowGraphBuilder.FlowGraphConfig config) {
+		super.validateConfig(config);
+		Object object = config.getCustomProperty(LoopAgent.LOOP_STRATEGY);
+		if(!(object instanceof LoopStrategy)) {
+			throw new IllegalArgumentException("loopStrategy must be an instance of LoopStrategy");
+		}
+		List<Agent> subAgents = config.getSubAgents();
+		if(subAgents.size() != 1) {
+			throw new IllegalArgumentException("loopAgent must have only one subAgent");
+		}
+	}
 }

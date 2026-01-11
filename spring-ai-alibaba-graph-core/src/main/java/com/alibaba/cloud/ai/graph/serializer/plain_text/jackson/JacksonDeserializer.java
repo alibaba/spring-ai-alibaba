@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,11 @@ public interface JacksonDeserializer<T> {
 		var fields = node.fields();
 		while (fields.hasNext()) {
 			var entry = fields.next();
-			result.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
+			String key = entry.getKey();
+			if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
+				continue;
+			}
+			result.put(key, valueFromNode(entry.getValue(), objectMapper, typeMapper));
 		}
 		return result;
 	}
@@ -315,7 +319,11 @@ public interface JacksonDeserializer<T> {
 				var fields = valueNode.fields();
 				while (fields.hasNext()) {
 					var entry = fields.next();
-					result.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
+					String key = entry.getKey();
+					if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
+						continue;
+					}
+					result.put(key, valueFromNode(entry.getValue(), objectMapper, typeMapper));
 				}
 				yield result;
 			}
@@ -460,7 +468,11 @@ public interface JacksonDeserializer<T> {
 				var fields = metadataNode.fields();
 				while (fields.hasNext()) {
 					var entry = fields.next();
-					metadata.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
+					String key = entry.getKey();
+					if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
+						continue;
+					}
+					metadata.put(key, valueFromNode(entry.getValue(), objectMapper, typeMapper));
 				}
 			}
 		}

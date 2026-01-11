@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,14 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.ConditionEvaluator;
 import com.alibaba.cloud.ai.graph.agent.flow.node.ConditionEvaluatorAction;
-import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
@@ -37,29 +33,29 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * execution path is determined by evaluating conditions based on the current state, and
  * different agents are selected accordingly.
  */
-public class ConditionalGraphBuildingStrategy implements FlowGraphBuildingStrategy {
+public class ConditionalGraphBuildingStrategy extends AbstractFlowGraphBuildingStrategy {
 
 	@Override
-	public StateGraph buildGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
-		validateConfig(config);
+	protected void buildCoreGraph(FlowGraphBuilder.FlowGraphConfig config)
+			throws GraphStateException {
 		validateConditionalConfig(config);
 
-		StateGraph graph = config.getStateSerializer() != null
-				? new StateGraph(config.getName(), config.getKeyStrategyFactory(), config.getStateSerializer())
-				: new StateGraph(config.getName(), config.getKeyStrategyFactory());
-		Agent rootAgent = config.getRootAgent();
-
-		// Add root transparent node
-		graph.addNode(rootAgent.name(),
-				node_async(new TransparentNode()));
-
-		// Add starting edge
-		graph.addEdge(START, rootAgent.name());
+		// Add beforeModel hooks
+		String conditionSourceNode = this.rootAgent.name();
+		if (!this.beforeModelHooks.isEmpty()) {
+			conditionSourceNode = addBeforeModelHookNodesToGraph(this.graph, this.rootAgent.name(), this.beforeModelHooks);
+		}
 
 		// Add condition evaluator node
-		String conditionNodeName = rootAgent.name() + "_condition";
-		graph.addNode(conditionNodeName, node_async(new ConditionEvaluator()));
-		graph.addEdge(rootAgent.name(), conditionNodeName);
+		String conditionNodeName = this.rootAgent.name() + "_condition";
+		this.graph.addNode(conditionNodeName, node_async(new ConditionEvaluator()));
+		this.graph.addEdge(conditionSourceNode, conditionNodeName);
+
+		// Add afterModel hooks if present for condition node
+		String routingSourceNode = conditionNodeName;
+		if (!this.afterModelHooks.isEmpty()) {
+			routingSourceNode = addAfterModelHookNodesToGraph(this.graph, conditionNodeName, this.afterModelHooks);
+		}
 
 		// Process conditional agents
 		Map<String, String> conditionRoutingMap = new HashMap<>();
@@ -67,21 +63,19 @@ public class ConditionalGraphBuildingStrategy implements FlowGraphBuildingStrate
 			String condition = entry.getKey();
 			Agent subAgent = entry.getValue();
 
-			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, graph);
+			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, this.graph);
 
 			conditionRoutingMap.put(condition, subAgent.name());
 
-			// Connect agent to END
-			graph.addEdge(subAgent.name(), END);
+			// Connect agent to exit node
+			this.graph.addEdge(subAgent.name(), this.exitNode);
 		}
 
-		// Add default END condition if no conditions match
-		conditionRoutingMap.put("default", END);
+		// Add default exit node condition if no conditions match
+		conditionRoutingMap.put("default", this.exitNode);
 
-		// Connect condition node to agents via conditional routing
-		graph.addConditionalEdges(conditionNodeName, new ConditionEvaluatorAction(), conditionRoutingMap);
-
-		return graph;
+		// Connect routing source node to agents via conditional routing
+		this.graph.addConditionalEdges(routingSourceNode, new ConditionEvaluatorAction(), conditionRoutingMap);
 	}
 
 	@Override
@@ -91,7 +85,7 @@ public class ConditionalGraphBuildingStrategy implements FlowGraphBuildingStrate
 
 	@Override
 	public void validateConfig(FlowGraphBuilder.FlowGraphConfig config) {
-		FlowGraphBuildingStrategy.super.validateConfig(config);
+		super.validateConfig(config);
 		validateConditionalConfig(config);
 	}
 

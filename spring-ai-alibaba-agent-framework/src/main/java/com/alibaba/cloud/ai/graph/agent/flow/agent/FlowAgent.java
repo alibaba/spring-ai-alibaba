@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
+import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
@@ -36,6 +37,8 @@ public abstract class FlowAgent extends Agent {
 
 	protected StateSerializer stateSerializer;
 
+	protected List<Hook> hooks;
+
 	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents) {
 		super(name, description);
 		this.compileConfig = compileConfig;
@@ -43,7 +46,7 @@ public abstract class FlowAgent extends Agent {
 	}
 
 	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
-			StateSerializer stateSerializer) {
+						StateSerializer stateSerializer) {
 		super(name, description);
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
@@ -51,12 +54,22 @@ public abstract class FlowAgent extends Agent {
 	}
 
 	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
-			StateSerializer stateSerializer, Executor executor) {
+						StateSerializer stateSerializer, Executor executor) {
 		super(name, description);
 		this.compileConfig = compileConfig;
 		this.subAgents = subAgents;
 		this.stateSerializer = stateSerializer;
 		this.executor = executor;
+	}
+
+	protected FlowAgent(String name, String description, CompileConfig compileConfig, List<Agent> subAgents,
+						StateSerializer stateSerializer, Executor executor, List<Hook> hooks) {
+		super(name, description);
+		this.compileConfig = compileConfig;
+		this.subAgents = subAgents;
+		this.stateSerializer = stateSerializer;
+		this.executor = executor;
+		this.hooks = hooks;
 	}
 
 	@Override
@@ -70,6 +83,11 @@ public abstract class FlowAgent extends Agent {
 		// Set state serializer if available
 		if (this.stateSerializer != null) {
 			config.stateSerializer(this.stateSerializer);
+		}
+
+		// Set hooks if available
+		if (this.hooks != null && !this.hooks.isEmpty()) {
+			config.hooks(this.hooks);
 		}
 
 		// Delegate to specific graph builder based on agent type
@@ -99,6 +117,15 @@ public abstract class FlowAgent extends Agent {
 
 	public List<Agent> subAgents() {
 		return this.subAgents;
+	}
+
+	/**
+	 * Returns the list of hooks configured for this agent.
+	 * Hooks can be used for message trimming, summarization, logging, and other purposes.
+	 * @return the list of hooks, or null if no hooks are configured
+	 */
+	public List<Hook> hooks() {
+		return this.hooks;
 	}
 
 }

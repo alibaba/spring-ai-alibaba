@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,14 @@ package com.alibaba.cloud.ai.graph.agent.flow.builder;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
+import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -49,6 +52,8 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	public StateSerializer stateSerializer;
 
 	public Executor executor;
+
+	public List<Hook> hooks;
 
 	/**
 	 * Sets the agent name.
@@ -116,6 +121,42 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	 */
 	public B executor(Executor executor) {
 		this.executor = executor;
+		return self();
+	}
+
+	/**
+	 * Sets hooks for the agent. Hooks allow you to intercept and modify agent execution
+	 * at various points (before/after agent, before/after model calls).
+	 * <p>
+	 * Common use cases include:
+	 * <ul>
+	 *   <li>Message trimming to reduce token consumption</li>
+	 *   <li>Conversation summarization for long-running threads</li>
+	 *   <li>Logging and monitoring</li>
+	 *   <li>Content filtering and safety checks</li>
+	 * </ul>
+	 * @param hooks varargs of Hook instances
+	 * @return this builder instance for method chaining
+	 */
+	public B hooks(Hook... hooks) {
+		if (this.hooks == null) {
+			this.hooks = new ArrayList<>();
+		}
+		this.hooks.addAll(Arrays.asList(hooks));
+		return self();
+	}
+
+	/**
+	 * Sets hooks for the agent from a list.
+	 * @param hooks list of Hook instances
+	 * @return this builder instance for method chaining
+	 * @see #hooks(Hook...)
+	 */
+	public B hooks(List<? extends Hook> hooks) {
+		if (this.hooks == null) {
+			this.hooks = new ArrayList<>();
+		}
+		this.hooks.addAll(hooks);
 		return self();
 	}
 

@@ -1,4 +1,4 @@
-# Copyright 2024-2025 the original author or authors.
+# Copyright 2024-2026 the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 .PHONY: tools
 
-MVND_VERSION := 2.0.0-rc-3
+
 
 # Default values for GitHub Actions variables (avoid warnings in local environment)
 GITHUB_PATH ?= /dev/null
@@ -75,18 +75,6 @@ tools: ## Install ci tools
 		cd gitleaks && \
 		make build && \
 		chmod +x gitleaks && \
-    	cp gitleaks /usr/local/bin && \
+		cp gitleaks /usr/local/bin && \
 		cd .. && rm -rf gitleaks; \
-	fi
-
-	@echo "Installing mvnd"
-	@if command -v mvnd >/dev/null 2>&1; then \
-		echo "mvnd is already installed, skipping..."; \
-	else \
-		curl -sL https://dlcdn.apache.org/maven/mvnd/$(MVND_VERSION)/maven-mvnd-$(MVND_VERSION)-linux-amd64.zip -o mvnd.zip && \
-		unzip -q mvnd.zip && \
-		mkdir -p ${HOME}/.local && \
-		mv maven-mvnd-$(MVND_VERSION)-linux-amd64 ${HOME}/.local/mvnd && \
-		echo "${HOME}/.local/mvnd/bin" >> ${GITHUB_PATH} && \
-		echo "MVND_HOME=${HOME}/.local/mvnd" >> ${GITHUB_ENV}; \
 	fi

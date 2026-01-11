@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,21 +21,18 @@ import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SupervisorAgent;
-
+import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
+import com.alibaba.cloud.ai.graph.agent.utils.HookFactory;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.List;
 import java.util.Optional;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class SupervisorAgentTest {
@@ -526,5 +523,67 @@ class SupervisorAgentTest {
 		}
 	}
 
+	@Test
+	public void testSupervisorAgentWithHookFactory() throws Exception {
+		// Create sub-agents
+		ReactAgent writerAgent = ReactAgent.builder()
+				.name("writer_agent")
+				.model(chatModel)
+				.description("擅长创作各类文章")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答")
+				.outputKey("writer_output")
+				.build();
+
+		// Use HookFactory to create a LogAgentHook
+		AgentHook logHook = HookFactory.createLogAgentHook();
+
+		// Create SupervisorAgent with the hook
+		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
+				.name("content_supervisor")
+				.description("内容管理监督者，负责协调写作")
+				.model(chatModel)
+				.subAgents(List.of(writerAgent))
+				.hooks(List.of(logHook))
+				.systemPrompt("""
+					你是一个智能的内容处理监督者，负责协调写作任务。
+					
+					## 可用的子Agent及其职责
+					
+					### writer_agent
+					- **功能**: 你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答
+					- **输出**: writer_output
+					
+					## 响应格式
+					只返回Agent名称（translator_agent、reviewer_agent）或FINISH，不要包含其他解释。
+					""")
+				.build();
+
+		try {
+			System.out.println("\n========== Starting SupervisorAgent with HookFactory Test ==========\n");
+
+			// Execute the agent
+			Optional<OverAllState> result = supervisorAgent.invoke("帮我写一篇关于春天的短文");
+
+			assertTrue(result.isPresent(), "Result should be present");
+			OverAllState state = result.get();
+
+			// Verify input is preserved
+			assertTrue(state.value("input").isPresent(), "Input should be present in state");
+			assertEquals("帮我写一篇关于春天的短文", state.value("input").get(), "Input should match the request");
+
+			// Verify at least one agent output exists
+			boolean hasWriterOutput = state.value("writer_output").isPresent();
+			assertTrue(hasWriterOutput, "Writer output should be present");
+
+			System.out.println("\n========== SupervisorAgent with HookFactory Test Completed ==========\n");
+
+            AssistantMessage writerContent = (AssistantMessage) state.value("writer_output").get();
+            System.out.println("Writer output: " + writerContent.getText());
+        }
+		catch (Exception e) {
+			e.printStackTrace();
+			fail("SupervisorAgent with HookFactory execution failed: " + e.getMessage());
+		}
+	}
 }
 

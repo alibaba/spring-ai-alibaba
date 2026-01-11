@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,53 +15,49 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * Strategy for building sequential execution graphs. In a sequential graph, agents are
  * connected in a linear chain where each agent's output becomes the input for the next
  * agent.
  */
-public class SequentialGraphBuildingStrategy implements FlowGraphBuildingStrategy {
+public class SequentialGraphBuildingStrategy extends AbstractFlowGraphBuildingStrategy {
 
 	@Override
-	public StateGraph buildGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
-		validateConfig(config);
+	protected void buildCoreGraph(FlowGraphBuilder.FlowGraphConfig config)
+			throws GraphStateException {
 		validateSequentialConfig(config);
 
-		StateGraph graph = config.getStateSerializer() != null
-				? new StateGraph(config.getName(), config.getKeyStrategyFactory(), config.getStateSerializer())
-				: new StateGraph(config.getName(), config.getKeyStrategyFactory());
-		Agent rootAgent = config.getRootAgent();
-
-		// Add root transparent node
-		graph.addNode(rootAgent.name(), node_async(new TransparentNode()));
-
-		// Add starting edge
-		graph.addEdge(START, rootAgent.name());
+		// Add beforeModel hooks
+		String currentNodeName = this.rootAgent.name();
+		if (!this.beforeModelHooks.isEmpty()) {
+			currentNodeName = addBeforeModelHookNodesToGraph(this.graph, this.rootAgent.name(), this.beforeModelHooks);
+		}
 
 		// Process sub-agents sequentially
-		Agent currentAgent = rootAgent;
+		Agent currentAgent = this.rootAgent;
 		for (Agent subAgent : config.getSubAgents()) {
-			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, graph);
-			graph.addEdge(currentAgent.name(), subAgent.name());
+			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, this.graph);
+			this.graph.addEdge(currentAgent.name(), subAgent.name());
 			currentAgent = subAgent;
 		}
 
-		// Connect the last agent to END
-		graph.addEdge(currentAgent.name(), END);
+		// Add afterModel hooks if present
+		if (!this.afterModelHooks.isEmpty()) {
+			String afterModelNodeName = addAfterModelHookNodesToGraph(this.graph, currentAgent.name(), this.afterModelHooks);
+			currentNodeName = afterModelNodeName;
+		} else {
+			currentNodeName = currentAgent.name();
+		}
 
-		return graph;
+		// Connect the last node to exit node
+		this.graph.addEdge(currentNodeName, this.exitNode);
 	}
 
 	@Override
@@ -71,7 +67,7 @@ public class SequentialGraphBuildingStrategy implements FlowGraphBuildingStrateg
 
 	@Override
 	public void validateConfig(FlowGraphBuilder.FlowGraphConfig config) {
-		FlowGraphBuildingStrategy.super.validateConfig(config);
+		super.validateConfig(config);
 		validateSequentialConfig(config);
 	}
 

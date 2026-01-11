@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.LogManager;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -58,6 +60,7 @@ public class SubGraphTest {
 
 	/**
 	 * Get an initialized OverAllState instance with predefined key strategies.
+	 *
 	 * @return Initialized OverAllState object.
 	 */
 	private static KeyStrategyFactory createKeyStrategyFactory() {
@@ -75,6 +78,7 @@ public class SubGraphTest {
 	/**
 	 * Create an AsyncNodeAction that returns a map with the given ID as value for
 	 * "messages".
+	 *
 	 * @param id The identifier for the node action.
 	 * @return An AsyncNodeAction producing a map with the message ID.
 	 */
@@ -84,21 +88,23 @@ public class SubGraphTest {
 
 	/**
 	 * Execute the workflow and extract the names of processed nodes.
+	 *
 	 * @param workflow Compiled graph to execute.
-	 * @param input Initial input data for execution.
+	 * @param input    Initial input data for execution.
 	 * @return A list containing the names of executed nodes in order.
 	 * @throws Exception If an error occurs during execution.
 	 */
 	private List<String> _execute(CompiledGraph workflow, Map<String, Object> input) throws Exception {
 		return workflow.stream(input, RunnableConfig.builder().threadId("SubGraphTest").build())
-			.doOnNext(System.out::println)
-			.map(NodeOutput::node)
-			.collectList()
-			.block();
+				.doOnNext(System.out::println)
+				.map(NodeOutput::node)
+				.collectList()
+				.block();
 	}
 
 	private List<String> _resume(CompiledGraph workflow, Map<String, Object> input) throws Exception {
-		RunnableConfig resumeConfig = RunnableConfig.builder().threadId("SubGraphTest").addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder").build();
+		RunnableConfig resumeConfig = RunnableConfig.builder().threadId("SubGraphTest")
+				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder").build();
 		return workflow.stream(input, resumeConfig)
 				.doOnNext(System.out::println)
 				.map(NodeOutput::node)
@@ -113,18 +119,18 @@ public class SubGraphTest {
 	public void testMergeSubgraph01() throws Exception {
 
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
-			.addNode("B2", _makeNode("B2"))
-			.addEdge(START, "B1")
-			.addEdge("B1", "B2")
-			.addEdge("B2", END);
+				.addNode("B2", _makeNode("B2"))
+				.addEdge(START, "B1")
+				.addEdge("B1", "B2")
+				.addEdge("B2", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
-			.addNode("B", workflowChild)
-			.addNode("C", _makeNode("C"))
-			.addEdge(START, "A")
-			.addEdge("A", "B")
-			.addEdge("B", "C")
-			.addEdge("C", END);
+				.addNode("B", workflowChild)
+				.addNode("C", _makeNode("C"))
+				.addEdge(START, "A")
+				.addEdge("A", "B")
+				.addEdge("B", "C")
+				.addEdge("C", END);
 
 		var B_B1 = SubGraphNode.formatId("B", "B1");
 		var B_B2 = SubGraphNode.formatId("B", "B2");
@@ -142,10 +148,10 @@ public class SubGraphTest {
 	public void testMergeSubgraph02() throws Exception {
 
 		var workflowChild = new StateGraph().addNode("B1", _makeNode("B1"))
-			.addNode("B2", _makeNode("B2"))
-			.addEdge(START, "B1")
-			.addEdge("B1", "B2")
-			.addEdge("B2", END);
+				.addNode("B2", _makeNode("B2"))
+				.addEdge(START, "B1")
+				.addEdge("B1", "B2")
+				.addEdge("B2", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("A", _makeNode("A"))
 			.addNode("B", workflowChild)
@@ -244,7 +250,8 @@ public class SubGraphTest {
 		// INTERRUPT AFTER B1
 		CompileConfig compileConfig = CompileConfig.builder().saverConfig(saver).interruptAfter(B_B1).build();
 		var interruptAfterB1 = workflowParent.compile(compileConfig);
-		//The last B_B1 node is duplicated because an InterruptionMetadata NodeOutput is emitted after the edge evaluation of node B_B1.
+		// The last B_B1 node is duplicated because an InterruptionMetadata NodeOutput
+		// is emitted after the edge evaluation of node B_B1.
 		assertIterableEquals(List.of(START, "A", B_B1, B_B1), _execute(interruptAfterB1, Map.of()));
 
 		// RESUME AFTER B1
@@ -252,9 +259,10 @@ public class SubGraphTest {
 
 		// INTERRUPT AFTER B2
 		var interruptAfterB2 = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build());
+				.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build());
 
-		//The last B_B2 node is duplicated because an InterruptionMetadata NodeOutput is emitted after the edge evaluation of node B_B2.
+		// The last B_B2 node is duplicated because an InterruptionMetadata NodeOutput
+		// is emitted after the edge evaluation of node B_B2.
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_B2), _execute(interruptAfterB2, Map.of()));
 
 		// RESUME AFTER B2
@@ -262,7 +270,7 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE C
 		var interruptBeforeC = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
+				.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, B_C), _execute(interruptBeforeC, Map.of()));
 
@@ -271,7 +279,7 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE SUBGRAPH B
 		var interruptBeforeSubgraphB = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
+				.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
 		assertIterableEquals(List.of(START, "A", "A"), _execute(interruptBeforeSubgraphB, Map.of()));
 
 		// RESUME AFTER SUBGRAPH B
@@ -360,7 +368,7 @@ public class SubGraphTest {
 
 		// INTERRUPT AFTER B1
 		var interruptAfterB1 = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B1).build());
+				.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B1).build());
 		assertIterableEquals(List.of(START, "A", B_B1, B_B1), _execute(interruptAfterB1, Map.of()));
 
 		// RESUME AFTER B1
@@ -368,7 +376,7 @@ public class SubGraphTest {
 
 		// INTERRUPT AFTER B2
 		var interruptAfterB2 = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build());
+				.compile(CompileConfig.builder().saverConfig(saver).interruptAfter(B_B2).build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_B2), _execute(interruptAfterB2, Map.of()));
 
@@ -377,7 +385,7 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE C
 		var interruptBeforeC = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
+				.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("C").build());
 
 		assertIterableEquals(List.of(START, "A", B_B1, B_B2, B_C, "C1", "C1"), _execute(interruptBeforeC, Map.of()));
 
@@ -386,7 +394,7 @@ public class SubGraphTest {
 
 		// INTERRUPT BEFORE SUBGRAPH B
 		var interruptBeforeB = workflowParent
-			.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
+				.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("B").build());
 		assertIterableEquals(List.of(START, "A", "A"), _execute(interruptBeforeB, Map.of()));
 
 		// RESUME BEFORE SUBGRAPH B
@@ -410,29 +418,29 @@ public class SubGraphTest {
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 		var workflowChild = new StateGraph().addNode("step_1", _makeNode("child:step1"))
-			.addNode("step_2", _makeNode("child:step2"))
-			.addNode("step_3", _makeNode("child:step3"))
-			.addEdge(START, "step_1")
-			.addEdge("step_1", "step_2")
-			.addEdge("step_2", "step_3")
-			.addEdge("step_3", END);
+				.addNode("step_2", _makeNode("child:step2"))
+				.addNode("step_3", _makeNode("child:step3"))
+				.addEdge(START, "step_1")
+				.addEdge("step_1", "step_2")
+				.addEdge("step_2", "step_3")
+				.addEdge("step_3", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("step_1", _makeNode("step1"))
-			.addNode("step_2", _makeNode("step2"))
-			.addNode("step_3", _makeNode("step3"))
-			.addNode("subgraph", workflowChild)
-			.addEdge(START, "step_1")
-			.addEdge("step_1", "step_2")
-			.addEdge("step_2", "subgraph")
-			.addEdge("subgraph", "step_3")
-			.addEdge("step_3", END)
-			.compile(compileConfig);
+				.addNode("step_2", _makeNode("step2"))
+				.addNode("step_3", _makeNode("step3"))
+				.addNode("subgraph", workflowChild)
+				.addEdge(START, "step_1")
+				.addEdge("step_1", "step_2")
+				.addEdge("step_2", "subgraph")
+				.addEdge("subgraph", "step_3")
+				.addEdge("step_3", END)
+				.compile(compileConfig);
 
 		var result = workflowParent.stream()
-			.doOnNext(n -> log.info("{}", n))
-			.reduce((a, b) -> b)
-			.map(NodeOutput::state)
-			.block();
+				.doOnNext(n -> log.info("{}", n))
+				.reduce((a, b) -> b)
+				.map(NodeOutput::state)
+				.block();
 
 		assertNotNull(result);
 		assertIterableEquals(List.of("step1", "step2", "child:step1", "child:step2", "child:step3", "step3"),
@@ -449,32 +457,32 @@ public class SubGraphTest {
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 		var workflowChild = new StateGraph(createKeyStrategyFactory()).addNode("step_1", _makeNode("child:step1"))
-			.addNode("step_2", _makeNode("child:step2"))
-			.addNode("step_3", _makeNode("child:step3"))
-			.addEdge(START, "step_1")
-			.addEdge("step_1", "step_2")
-			.addEdge("step_2", "step_3")
-			.addEdge("step_3", END);
+				.addNode("step_2", _makeNode("child:step2"))
+				.addNode("step_3", _makeNode("child:step3"))
+				.addEdge(START, "step_1")
+				.addEdge("step_1", "step_2")
+				.addEdge("step_2", "step_3")
+				.addEdge("step_3", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("step_1", _makeNode("step1"))
-			.addNode("step_2", _makeNode("step2"))
-			.addNode("step_3", _makeNode("step3"))
-			.addNode("subgraph", AsyncNodeActionWithConfig.node_async((t, config) -> {
-				// Reference the parent class Overallstate or create a new one
-				return workflowChild.compile().invoke(Map.copyOf(t.data())).orElseThrow().data();
-			}))
-			.addEdge(START, "step_1")
-			.addEdge("step_1", "step_2")
-			.addEdge("step_2", "subgraph")
-			.addEdge("subgraph", "step_3")
-			.addEdge("step_3", END)
-			.compile(compileConfig);
+				.addNode("step_2", _makeNode("step2"))
+				.addNode("step_3", _makeNode("step3"))
+				.addNode("subgraph", AsyncNodeActionWithConfig.node_async((t, config) -> {
+					// Reference the parent class Overallstate or create a new one
+					return workflowChild.compile().invoke(Map.copyOf(t.data())).orElseThrow().data();
+				}))
+				.addEdge(START, "step_1")
+				.addEdge("step_1", "step_2")
+				.addEdge("step_2", "subgraph")
+				.addEdge("subgraph", "step_3")
+				.addEdge("step_3", END)
+				.compile(compileConfig);
 
 		var result = workflowParent.stream()
-			.doOnNext(n -> log.info("{}", n))
-			.reduce((a, b) -> b)
-			.map(NodeOutput::state)
-			.block();
+				.doOnNext(n -> log.info("{}", n))
+				.reduce((a, b) -> b)
+				.map(NodeOutput::state)
+				.block();
 
 		assertNotNull(result);
 	}
@@ -527,9 +535,13 @@ public class SubGraphTest {
 		CompiledGraph compile = parentGraph.compile();
 		System.out.println(compile.getGraph(GraphRepresentation.Type.PLANTUML).content());
 		OverAllState state = compile.invoke(Map.of()).orElseThrow();
+		// Filter out internal keys (like _graph_execution_id_) for comparison
+		Map<String, Object> actualData = state.data().entrySet().stream()
+				.filter(entry -> !entry.getKey().startsWith("_"))
+				.collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		assertEquals(
 				Map.of("messages", List.of("go to p_node1", "p_node1", "p_node2", "go to node 1", "node1", "node2")),
-				state.data());
+				actualData);
 	}
 
 	@Test
@@ -539,43 +551,42 @@ public class SubGraphTest {
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 
 		var workflowChildChild = new StateGraph(createKeyStrategyFactory()).addNode("step_1", _makeNode("child:step1"))
-			.addNode("step_2", _makeNode("child:step2"))
-			.addNode("step_3", _makeNode("child:step3"))
-			.addEdge(START, "step_1")
-			.addEdge("step_1", "step_2")
-			.addEdge("step_2", "step_3")
-			.addEdge("step_3", END);
+				.addNode("step_2", _makeNode("child:step2"))
+				.addNode("step_3", _makeNode("child:step3"))
+				.addEdge(START, "step_1")
+				.addEdge("step_1", "step_2")
+				.addEdge("step_2", "step_3")
+				.addEdge("step_3", END);
 
 		var workflowChild = new StateGraph(createKeyStrategyFactory()).addNode("step_1", _makeNode("child:step1"))
-			.addNode("step_2", _makeNode("child:step2"))
-			.addNode("step_3", _makeNode("child:step3"))
-			.addNode("subsubgraph", workflowChildChild)
-			.addEdge(START, "step_1")
-			.addEdge("step_1", "step_2")
-			.addEdge("step_2", "subsubgraph")
-			.addEdge("subsubgraph", "step_3")
-			.addEdge("step_3", END);
+				.addNode("step_2", _makeNode("child:step2"))
+				.addNode("step_3", _makeNode("child:step3"))
+				.addNode("subsubgraph", workflowChildChild)
+				.addEdge(START, "step_1")
+				.addEdge("step_1", "step_2")
+				.addEdge("step_2", "subsubgraph")
+				.addEdge("subsubgraph", "step_3")
+				.addEdge("step_3", END);
 
 		var workflowParent = new StateGraph(createKeyStrategyFactory()).addNode("step_1", _makeNode("step1"))
-			.addNode("step_2", _makeNode("step2"))
-			.addNode("step_3", _makeNode("step3"))
-			.addNode("subgraph", workflowChild)
-			.addEdge(START, "step_1")
-			.addEdge("step_1", "step_2")
-			.addEdge("step_2", "subgraph")
-			.addEdge("subgraph", "step_3")
-			.addEdge("step_3", END)
-			.compile(compileConfig);
+				.addNode("step_2", _makeNode("step2"))
+				.addNode("step_3", _makeNode("step3"))
+				.addNode("subgraph", workflowChild)
+				.addEdge(START, "step_1")
+				.addEdge("step_1", "step_2")
+				.addEdge("step_2", "subgraph")
+				.addEdge("subgraph", "step_3")
+				.addEdge("step_3", END)
+				.compile(compileConfig);
 
 		var result = workflowParent.stream()
-			.doOnNext(n -> log.info("{}", n))
-			.reduce((a, b) -> b)
-			.map(NodeOutput::state)
-			.block();
+				.doOnNext(n -> log.info("{}", n))
+				.reduce((a, b) -> b)
+				.map(NodeOutput::state)
+				.block();
 
 		assertNotNull(result);
 	}
-
 
 	@Test
 	public void testParallelSubgraph() throws Exception {
@@ -584,52 +595,94 @@ public class SubGraphTest {
 
 		var compileConfig = CompileConfig.builder().saverConfig(saver).build();
 
-        StateGraph childGraph1 = new StateGraph(() -> {
-            HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
-            stringKeyStrategyHashMap.put("messages", new AppendStrategy());
-            return stringKeyStrategyHashMap;
-        }).addNode("sub1_node1", _makeNode("node1"))
-                .addNode("sub1_node2", _makeNode("node2"))
-                .addEdge(START, "sub1_node1")
-                .addEdge(START, "sub1_node2")
-                .addEdge("sub1_node1", END)
-                .addEdge("sub1_node2", END);
+		StateGraph childGraph1 = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+			stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+			return stringKeyStrategyHashMap;
+		}).addNode("sub1_node1", _makeNode("node1"))
+				.addNode("sub1_node2", _makeNode("node2"))
+				.addEdge(START, "sub1_node1")
+				.addEdge(START, "sub1_node2")
+				.addEdge("sub1_node1", END)
+				.addEdge("sub1_node2", END);
 
-        StateGraph childGraph2 = new StateGraph(() -> {
-            HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
-            stringKeyStrategyHashMap.put("messages", new AppendStrategy());
-            return stringKeyStrategyHashMap;
-        }).addNode("node1", _makeNode("node1"))
-                .addNode("node2", _makeNode("node2"))
-                .addEdge(START, "node1")
-                .addEdge(START, "node2")
-                .addEdge("node1", END)
-                .addEdge("node2", END);
+		StateGraph childGraph2 = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+			stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+			return stringKeyStrategyHashMap;
+		}).addNode("node1", _makeNode("node1"))
+				.addNode("node2", _makeNode("node2"))
+				.addEdge(START, "node1")
+				.addEdge(START, "node2")
+				.addEdge("node1", END)
+				.addEdge("node2", END);
 
-        StateGraph parentGraph = new StateGraph(() -> {
-            HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
-            stringKeyStrategyHashMap.put("messages", new AppendStrategy());
-            return stringKeyStrategyHashMap;
-        }).addNode("node1", AsyncNodeActionWithConfig.node_async((state, config) -> {
-                    CompiledGraph compile = childGraph1.compile(compileConfig);
-                    Flux<NodeOutput> nodeOutputFlux = compile.stream(state.data(), config);
-                    return Map.of("messages",  nodeOutputFlux);
-                }))
-                .addNode("node2", AsyncNodeActionWithConfig.node_async((state, config) -> {
-                    CompiledGraph compile = childGraph2.compile(compileConfig);
-                    Flux<NodeOutput> nodeOutputFlux = compile.stream(state.data(), config);
-                    return Map.of("messages", nodeOutputFlux);
-                }))
-                .addEdge(START, "node1")
-                .addEdge(START, "node2")
-                .addEdge("node1", END)
-                .addEdge("node2", END);
-        CompiledGraph compile = parentGraph.compile(compileConfig);
-        Flux<NodeOutput> stream = compile.stream(Map.of());
-        stream.doOnNext(n -> log.info("{}", n))
-                .reduce((a, b) -> b)
-                .map(NodeOutput::state)
-                .block();
+		StateGraph parentGraph = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> stringKeyStrategyHashMap = new HashMap<>();
+			stringKeyStrategyHashMap.put("messages", new AppendStrategy());
+			return stringKeyStrategyHashMap;
+		}).addNode("node1", AsyncNodeActionWithConfig.node_async((state, config) -> {
+			CompiledGraph compile = childGraph1.compile(compileConfig);
+			Flux<NodeOutput> nodeOutputFlux = compile.stream(state.data(), config);
+			return Map.of("messages", nodeOutputFlux);
+		}))
+				.addNode("node2", AsyncNodeActionWithConfig.node_async((state, config) -> {
+					CompiledGraph compile = childGraph2.compile(compileConfig);
+					Flux<NodeOutput> nodeOutputFlux = compile.stream(state.data(), config);
+					return Map.of("messages", nodeOutputFlux);
+				}))
+				.addEdge(START, "node1")
+				.addEdge(START, "node2")
+				.addEdge("node1", END)
+				.addEdge("node2", END);
+		CompiledGraph compile = parentGraph.compile(compileConfig);
+		Flux<NodeOutput> stream = compile.stream(Map.of());
+		stream.doOnNext(n -> log.info("{}", n))
+				.reduce((a, b) -> b)
+				.map(NodeOutput::state)
+				.block();
 	}
+
+    @Test
+    public void testMultiSubgraphKeyStrategyMerge() throws Exception {
+        // Subgraph A: provides the strategy for aKey
+        KeyStrategyFactory subAKeyFactory = () -> Map.of("aKey", new ReplaceStrategy());
+
+        // Subgraph B: provides the strategy for bKey
+        KeyStrategyFactory subBKeyFactory = () -> Map.of("bKey", new ReplaceStrategy());
+
+        KeyStrategyFactory mainKeyFactory = () -> {
+            Map<String, KeyStrategy> map = new HashMap<>();
+            map.put("mainKey", new ReplaceStrategy());
+            return map;
+        };
+
+        StateGraph subGraphA = new StateGraph("subA", subAKeyFactory)
+                .addNode("a1", node_async(s -> Map.of("aKey", "A1")))
+                .addEdge(StateGraph.START, "a1")
+                .addEdge("a1", StateGraph.END);
+
+        StateGraph subGraphB = new StateGraph("subB", subBKeyFactory)
+                .addNode("b1", node_async(s -> Map.of("bKey", "B1")))
+                .addEdge(StateGraph.START, "b1")
+                .addEdge("b1", StateGraph.END);
+
+        StateGraph mainGraph = new StateGraph("main", mainKeyFactory)
+                .addNode("subA", subGraphA)
+                .addNode("subB", subGraphB)
+                .addEdge(StateGraph.START, "subA")
+                .addEdge("subA", "subB")
+                .addEdge("subB", StateGraph.END);
+
+        CompiledGraph compiled = mainGraph.compile();
+
+        Set<String> mergedKeys = compiled.getKeyStrategyMap().keySet();
+
+        assertEquals(3, mergedKeys.size());
+
+        assertTrue(mergedKeys.contains("mainKey"));
+        assertTrue(mergedKeys.contains("aKey"));
+        assertTrue(mergedKeys.contains("bKey"));
+    }
 
 }

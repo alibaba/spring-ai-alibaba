@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,9 @@ public class A2aRemoteAgent extends BaseAgent {
 		}
 
 		StateGraph graph = new StateGraph(name, this.keyStrategyFactory);
-		graph.addNode("A2aNode", AsyncNodeActionWithConfig.node_async(new A2aNodeActionWithConfig(agentCard, name, includeContents, outputKey, instruction, streaming)));
+		graph.addNode("A2aNode", AsyncNodeActionWithConfig.node_async(
+				new A2aNodeActionWithConfig(agentCard, name, includeContents, outputKey, instruction, streaming,
+						this.shareState, this.compileConfig)));
 		graph.addEdge(StateGraph.START, "A2aNode");
 		graph.addEdge("A2aNode", StateGraph.END);
 		return graph;
@@ -98,7 +100,7 @@ public class A2aRemoteAgent extends BaseAgent {
 
 		public A2aRemoteAgentNode(String id, boolean includeContents, boolean returnReasoningContents, String instruction, AgentCardWrapper agentCard, boolean streaming, boolean shareState, CompiledGraph subGraph) {
 			super(Objects.requireNonNull(id, "id cannot be null"),
-					(config) -> AsyncNodeActionWithConfig.node_async(new A2aNodeActionWithConfig(agentCard, subGraph.stateGraph.getName(), includeContents, instruction, A2aRemoteAgent.this.outputKey, streaming, shareState, config)));
+					(config) -> AsyncNodeActionWithConfig.node_async(new A2aNodeActionWithConfig(agentCard, subGraph.stateGraph.getName(), includeContents, A2aRemoteAgent.this.outputKey, instruction, streaming, shareState, config)));
 			this.subGraph = subGraph;
 		}
 
