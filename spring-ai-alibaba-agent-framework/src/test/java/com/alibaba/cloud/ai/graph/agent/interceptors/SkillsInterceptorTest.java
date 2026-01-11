@@ -145,7 +145,9 @@ class SkillsInterceptorTest {
 			assertNotNull(sysMsg);
 			assertTrue(sysMsg.getText().contains("Skills System"));
 			assertTrue(sysMsg.getText().contains("test-skill"));
-			assertTrue(sysMsg.getText().contains("Progressive Disclosure"));
+			assertTrue(sysMsg.getText().contains("CRITICAL: Skills are NOT tools!"));
+			assertTrue(sysMsg.getText().contains("MANDATORY Process"));
+			assertTrue(sysMsg.getText().contains("MUST read"));
 			return new ModelResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("ok")))));
 		};
 
