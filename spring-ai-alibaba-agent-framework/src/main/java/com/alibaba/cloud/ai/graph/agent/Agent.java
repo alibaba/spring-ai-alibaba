@@ -359,24 +359,24 @@ public abstract class Agent {
 	}
 
 	protected RunnableConfig buildNonStreamConfig(RunnableConfig config) {
-		RunnableConfig.Builder builder = config == null
-			? RunnableConfig.builder()
+		RunnableConfig.Builder builder = config == null 
+			? RunnableConfig.builder() 
 			: RunnableConfig.builder(config);
-
+		
 		builder.addMetadata("_stream_", false).addMetadata("_AGENT_", name);
 		applyExecutorConfig(builder);
-
+		
 		return builder.build();
 	}
 
 	protected RunnableConfig buildStreamConfig(RunnableConfig config) {
-		RunnableConfig.Builder builder = config == null
-			? RunnableConfig.builder()
+		RunnableConfig.Builder builder = config == null 
+			? RunnableConfig.builder() 
 			: RunnableConfig.builder(config);
-
+		
 		builder.addMetadata("_AGENT_", name);
 		applyExecutorConfig(builder);
-
+		
 		return builder.build();
 	}
 
