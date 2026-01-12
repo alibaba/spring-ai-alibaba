@@ -20,6 +20,8 @@ import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_MODEL_NAME;
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_TOOL_NAME;
 
 public enum OutputType {
+	GRAPH_START,
+	GRAPH_END,
 	AGENT_MODEL_STREAMING,
 	AGENT_MODEL_FINISHED,
 	AGENT_TOOL_STREAMING,

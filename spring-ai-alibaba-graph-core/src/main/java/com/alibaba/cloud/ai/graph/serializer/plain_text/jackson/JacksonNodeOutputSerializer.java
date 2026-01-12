@@ -16,12 +16,14 @@
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.WritableTypeId;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import org.springframework.ai.chat.metadata.Usage;
 
 import java.io.IOException;
 
@@ -53,5 +55,15 @@ public class JacksonNodeOutputSerializer extends StdSerializer<NodeOutput> {
         gen.writeStringField("agent", value.agent());
         gen.writeObjectField("state", value.state());
         gen.writeBooleanField("subGraph", value.isSubGraph());
+
+        OutputType outputType = value.getOutputType();
+        if (outputType != null) {
+            gen.writeStringField("outputType", outputType.name());
+        }
+
+        Usage tokenUsage = value.tokenUsage();
+        if (tokenUsage != null) {
+            gen.writeObjectField("tokenUsage", tokenUsage);
+        }
     }
 }
