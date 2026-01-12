@@ -401,7 +401,7 @@ public class StateGraph {
 			throw Errors.edgeMappingIsEmpty.exception(sourceId);
 		}
 
-		var newEdge = new Edge(sourceId, new EdgeValue(new EdgeCondition(condition, mappings)));
+		var newEdge = new Edge(sourceId, new EdgeValue(EdgeCondition.single(condition, mappings)));
 
 		if (edges.elements.contains(newEdge)) {
 			throw Errors.duplicateConditionalEdgeError.exception(sourceId);
@@ -440,6 +440,38 @@ public class StateGraph {
 	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeActionWithConfig asyncEdgeActionWithConfig, Map<String, String> mappings)
 			throws GraphStateException {
 		return addConditionalEdges(sourceId, AsyncCommandAction.of(asyncEdgeActionWithConfig), mappings);
+	}
+
+	/**
+	 * Adds conditional edges to the graph that can route to multiple nodes in parallel.
+	 * This method is used when the condition action can return multiple target nodes
+	 * that should be executed in parallel.
+	 *
+	 * @param sourceId the identifier of the source node
+	 * @param condition the multi-command action used to determine multiple target nodes
+	 * @param mappings the mappings of conditions to target nodes
+	 * @return this state graph instance
+	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
+	 * empty, or the edge already exists
+	 */
+	public StateGraph addParallelConditionalEdges(String sourceId, AsyncMultiCommandAction condition, Map<String, String> mappings)
+			throws GraphStateException {
+		if (Objects.equals(sourceId, END)) {
+			throw Errors.invalidEdgeIdentifier.exception(END);
+		}
+		if (mappings == null || mappings.isEmpty()) {
+			throw Errors.edgeMappingIsEmpty.exception(sourceId);
+		}
+
+		var newEdge = new Edge(sourceId, new EdgeValue(EdgeCondition.multi(condition, mappings)));
+
+		if (edges.elements.contains(newEdge)) {
+			throw Errors.duplicateConditionalEdgeError.exception(sourceId);
+		}
+		else {
+			edges.elements.add(newEdge);
+		}
+		return this;
 	}
 
 	/**
