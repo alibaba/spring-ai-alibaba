@@ -23,6 +23,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import io.opentelemetry.context.Context;
+
 /**
  * Interface for actions that can return multiple target nodes for parallel execution.
  * This is used when a conditional edge needs to route to multiple nodes simultaneously.
@@ -40,6 +42,7 @@ public interface AsyncMultiCommandAction extends BiFunction<OverAllState, Runnab
 	 */
 	static AsyncMultiCommandAction node_async(MultiCommandAction syncAction) {
 		return (state, config) -> {
+			Context context = Context.current();
 			var result = new CompletableFuture<MultiCommand>();
 			try {
 				result.complete(syncAction.apply(state, config));

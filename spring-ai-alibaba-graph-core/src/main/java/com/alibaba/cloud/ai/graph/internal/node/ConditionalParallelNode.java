@@ -142,8 +142,7 @@ public class ConditionalParallelNode extends Node {
 					stateSnapshot.updateStateWithKeyStrategies(commandUpdate, keyStrategyMap);
 				}
 
-				Executor executor = ParallelNode.getExecutor(config, nodeId);
-				return evalNodeActionAsync(action, nodeId, stateSnapshot, config, executor)
+				return evalNodeActionSync(action, nodeId, stateSnapshot, config)
 						.thenApply(result -> {
 							// Merge command updates with node result
 							Map<String, Object> merged = new HashMap<>(commandUpdate);
@@ -205,7 +204,7 @@ public class ConditionalParallelNode extends Node {
 
 				// First try to get node-specific executor, then default executor, finally use DEFAULT_EXECUTOR
 				// Use nodeId (ConditionalParallelNode's formatted ID) for executor configuration, same as ParallelNode
-				Executor executor = ParallelNode.getExecutor(config, nodeId);
+				Executor executor = ParallelNode.getExecutor(config, ParallelNode.formatNodeId(nodeId));
 
 				CompletableFuture<Map<String, Object>> future = evalNodeActionAsync(
 						action, actualNodeId, stateSnapshot, config, executor);
