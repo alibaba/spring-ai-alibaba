@@ -1483,7 +1483,7 @@ public class StateGraphTest {
 			return Map.of("messages", "end");
 		}));
 
-		// Add conditional edges using addConditionalEdgesWithMultiCommand
+		// Add conditional edges using addParallelConditionalEdges
 		// This will route to multiple nodes in parallel
 		workflow.addParallelConditionalEdges(
 			"conditional_node",
