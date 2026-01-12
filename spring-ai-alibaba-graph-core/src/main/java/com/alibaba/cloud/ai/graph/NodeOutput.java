@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.ai.chat.metadata.Usage;
 
 import java.util.Objects;
@@ -51,6 +52,7 @@ public class NodeOutput {
 	 * <p>
 	 * Null for backward compatibility when deserializing older payloads.
 	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
 	protected OutputType outputType;
 	/**
 	 * The state associated with the node.
