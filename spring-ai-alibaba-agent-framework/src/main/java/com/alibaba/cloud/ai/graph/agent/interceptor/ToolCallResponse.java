@@ -48,6 +48,31 @@ public class ToolCallResponse {
 		return new ToolCallResponse(result, toolName, toolCallId);
 	}
 
+	/**
+	 * Creates an error response for a failed tool execution.
+	 * @param toolCallId the tool call ID
+	 * @param toolName the tool name
+	 * @param errorMessage the error message
+	 * @return a new error ToolCallResponse
+	 */
+	public static ToolCallResponse error(String toolCallId, String toolName, String errorMessage) {
+		return new ToolCallResponse("Error: " + errorMessage, toolName, toolCallId, "error",
+				Map.of("error", true, "errorMessage", errorMessage));
+	}
+
+	/**
+	 * Creates an error response for a failed tool execution from a Throwable. Preserves
+	 * the exception class name when message is null.
+	 * @param toolCallId the tool call ID
+	 * @param toolName the tool name
+	 * @param cause the exception that caused the failure
+	 * @return a new error ToolCallResponse
+	 */
+	public static ToolCallResponse error(String toolCallId, String toolName, Throwable cause) {
+		String errorMessage = cause.getMessage() != null ? cause.getMessage() : cause.getClass().getSimpleName();
+		return error(toolCallId, toolName, errorMessage);
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -70,6 +95,14 @@ public class ToolCallResponse {
 
 	public Map<String, Object> getMetadata() {
 		return Collections.unmodifiableMap(metadata);
+	}
+
+	/**
+	 * Checks if this response represents an error.
+	 * @return true if this is an error response
+	 */
+	public boolean isError() {
+		return "error".equals(status);
 	}
 
 	public ToolResponseMessage.ToolResponse toToolResponse() {
