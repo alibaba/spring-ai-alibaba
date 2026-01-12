@@ -204,7 +204,7 @@ public class ConditionalParallelNode extends Node {
 
 				// First try to get node-specific executor, then default executor, finally use DEFAULT_EXECUTOR
 				// Use nodeId (ConditionalParallelNode's formatted ID) for executor configuration, same as ParallelNode
-				Executor executor = ParallelNode.getExecutor(config, ParallelNode.formatNodeId(nodeId));
+				Executor executor = ParallelNode.getExecutor(config, this.nodeId);
 
 				CompletableFuture<Map<String, Object>> future = evalNodeActionAsync(
 						action, actualNodeId, stateSnapshot, config, executor);
