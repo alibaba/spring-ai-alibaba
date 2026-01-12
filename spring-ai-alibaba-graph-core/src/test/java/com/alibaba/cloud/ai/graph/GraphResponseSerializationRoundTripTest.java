@@ -35,7 +35,7 @@ public class GraphResponseSerializationRoundTripTest {
 		OverAllState originalState = new OverAllState();
 		NodeOutput nodeOutput = NodeOutput.of("n1", "agentA", new OverAllState(), null)
 				.setOutputType(OutputType.GRAPH_NODE_FINISHED);
-		originalState.updateState(java.util.Map.of("node_output", nodeOutput));
+		originalState.updateState(Map.of("node_output", nodeOutput));
 
 		SpringAIJacksonStateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
 		OverAllState restoredState = serializer.cloneObject(originalState);
