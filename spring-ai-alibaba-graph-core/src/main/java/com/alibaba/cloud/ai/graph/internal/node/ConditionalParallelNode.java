@@ -165,19 +165,19 @@ public class ConditionalParallelNode extends Node {
 			List<AsyncNodeActionWithConfig> actions = new ArrayList<>();
 			List<String> actionNodeIds = new ArrayList<>();
 
-			for (String nodeId : targetNodeIds) {
-				Node.ActionFactory factory = nodeFactories.get(nodeId);
+			for (String targetNodeId : targetNodeIds) {
+				Node.ActionFactory factory = nodeFactories.get(targetNodeId);
 				if (factory == null) {
-					logger.warn("Node factory not found for node: {}, skipping", nodeId);
+					logger.warn("Node factory not found for node: {}, skipping", targetNodeId);
 					continue;
 				}
 
 				try {
 					AsyncNodeActionWithConfig action = factory.apply(compileConfig);
 					actions.add(action);
-					actionNodeIds.add(nodeId);
+					actionNodeIds.add(targetNodeId);
 				} catch (Exception e) {
-					logger.error("Error creating action for node {}: {}", nodeId, e.getMessage(), e);
+					logger.error("Error creating action for node {}: {}", targetNodeId, e.getMessage(), e);
 				}
 			}
 

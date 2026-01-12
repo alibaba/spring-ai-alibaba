@@ -162,17 +162,24 @@ public class CompiledGraph {
 								nodeFactories,
 								keyStrategyMap,
 								compileConfig);
-						
+
 						nodeFactories.put(conditionalParallelNode.id(), conditionalParallelNode.actionFactory());
 						edges.put(e.sourceId(), new EdgeValue(conditionalParallelNode.id()));
 
 						// Find parallel node targets from mappings
 						var mappedNodeIds = edgeCondition.mappings().values().stream()
-								.filter(nodeId -> nodeFactories.containsKey(nodeId))
 								.collect(Collectors.toSet());
-						
+
+						// Validate that all mapped nodes exist in the graph
+						var missingNodeIds = mappedNodeIds.stream()
+								.filter(nodeId -> !nodeFactories.containsKey(nodeId))
+								.collect(Collectors.toSet());
+						if (!missingNodeIds.isEmpty()) {
+							throw new GraphStateException("Conditional multi-command mapping from node '"
+									+ e.sourceId() + "' references unknown target nodes: " + missingNodeIds);
+						}
+
 						var parallelNodeTargets = findParallelNodeTargets(mappedNodeIds);
-						
 						if (!parallelNodeTargets.isEmpty()) {
 							// Set edge from ConditionalParallelNode to the next node
 							// All parallel nodes point to the same target, use that target
