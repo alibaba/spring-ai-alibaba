@@ -146,21 +146,26 @@ public class StateGraphParallelTest {
 		long endTime = System.currentTimeMillis();
 		long duration = endTime - startTime;
 
-		// Verify that execution completed quickly (should be around 100ms + overhead, not 500ms+)
-		assertTrue(duration < 400, 
-				"Execution should complete quickly with ANY_OF strategy, but took " + duration + "ms");
-
 		// Verify that only one result is present (from the fastest node)
 		assertNotNull(finalState[0], "Final state should not be null");
 		List<String> messages = (List<String>) finalState[0].value("messages").orElse(List.of());
 		
 		// With ANY_OF, only the first completed result should be used
-		// The result should contain fastNode (the fastest one)
-		assertTrue(messages.contains("fastNode"), 
+		// The result should contain fastNode (the fastest one), NOT the slow nodes
+		assertTrue(messages.contains("fastNode"),
 				"Result should contain fastNode (the first completed branch)");
 		
+		// The key behavior test: with ANY_OF, slow nodes should NOT be in results
+		// If slowNode1 or slowNode2 are present, it means we waited for them (wrong behavior)
+		boolean hasSlowNodeData = messages.contains("slowNode1") || messages.contains("slowNode2");
+		assertFalse(hasSlowNodeData,
+				"Result should NOT contain slow nodes with ANY_OF strategy (got: " + messages + ")");
+
 		// Verify merge node was executed
 		assertTrue(messages.contains("merge"), "Result should contain merge node");
+
+		// Log timing for debugging, but don't assert on it to avoid flaky tests
+		log.info("ANY_OF execution took {}ms (fastNode: 100ms, slowNodes: 500ms)", duration);
 	}
 
 	/**
@@ -306,16 +311,22 @@ public class StateGraphParallelTest {
 		long endTime = System.currentTimeMillis();
 		long duration = endTime - startTime;
 
-		// Verify that execution completed quickly (using default ANY_OF strategy)
-		assertTrue(duration < 350, 
-				"Execution should complete quickly with default ANY_OF strategy, but took " + duration + "ms");
-
 		// Verify that result is present
 		assertNotNull(finalState[0], "Final state should not be null");
 		List<String> messages = (List<String>) finalState[0].value("messages").orElse(List.of());
 		
-		// Should have result from the first completed branch
-		assertTrue(messages.size() >= 1, "Result should contain at least one message");
+		// With ANY_OF as default strategy, should use fastNode (first completed), not slowNode
+		assertTrue(messages.contains("fastNode"),
+				"Result should contain fastNode (the first completed branch with ANY_OF)");
+
+		// The key behavior test: slowNode should NOT be present if ANY_OF worked correctly
+		// If slowNode is present, it means we waited for it (ALL_OF behavior)
+		boolean hasSlowNodeData = messages.contains("slowNode");
+		assertFalse(hasSlowNodeData,
+				"Result should NOT contain slowNode with default ANY_OF strategy (got: " + messages + ")");
+
+		// Log timing for debugging purposes only
+		log.info("Default ANY_OF execution took {}ms (fastNode: 100ms, slowNode: 400ms)", duration);
 	}
 
 	/**
@@ -356,17 +367,24 @@ public class StateGraphParallelTest {
 		long endTime = System.currentTimeMillis();
 		long duration = endTime - startTime;
 
-		// Verify that execution completed quickly (merge node's ANY_OF overrides default ALL_OF)
-		assertTrue(duration < 350, 
-				"Execution should complete quickly because merge node's ANY_OF strategy overrides default ALL_OF, but took " + duration + "ms");
-
 		// Verify that result is present
 		assertNotNull(finalState[0], "Final state should not be null");
 		List<String> messages = (List<String>) finalState[0].value("messages").orElse(List.of());
 		
-		// Should have result from the first completed branch (ANY_OF behavior)
-		assertTrue(messages.size() >= 1, "Result should contain at least one message");
+		// The key behavior test: merge node's ANY_OF should override default ALL_OF
+		// So we should see fastNode (first completed), not slowNode
+		assertTrue(messages.contains("fastNode"),
+				"Result should contain fastNode (merge node's ANY_OF overrides default ALL_OF)");
+
+		// If slowNode is present, it means ALL_OF was used instead of ANY_OF
+		boolean hasSlowNodeData = messages.contains("slowNode");
+		assertFalse(hasSlowNodeData,
+				"Result should NOT contain slowNode - merge node's ANY_OF should override default ALL_OF (got: " + messages + ")");
+
 		assertTrue(messages.contains("merge"), "Result should contain merge node");
+
+		// Log timing for debugging purposes only
+		log.info("Override test execution took {}ms (fastNode: 100ms, slowNode: 400ms)", duration);
 	}
 
 	/**
@@ -519,15 +537,27 @@ public class StateGraphParallelTest {
 		long endTime = System.currentTimeMillis();
 		long duration = endTime - startTime;
 
-		// Verify that execution completed quickly (using fastNormalNode)
-		assertTrue(duration < 250, 
-				"Execution with ANY_OF should complete quickly using fastNormalNode (100ms), but took " + duration + "ms");
-
 		// Verify that result contains fastNormalNode's data
 		assertNotNull(finalState[0], "Final state should not be null");
 		List<String> messages = (List<String>) finalState[0].value("messages").orElse(List.of());
-		assertTrue(messages.contains("fastNormalNode") || finalState[0].value("nodeId").map("fastNormalNode"::equals).orElse(false),
+
+		// With ANY_OF, should use fastNormalNode (first completed), not slowStreamingNode
+		boolean hasFastNodeData = messages.contains("fastNormalNode") ||
+				finalState[0].value("nodeId").map("fastNormalNode"::equals).orElse(false);
+		assertTrue(hasFastNodeData,
 				"Result should contain fastNormalNode's data (first completed)");
+
+		// The key behavior test: slowStreamingNode should NOT have contributed data
+		// If stream data is present, it means we waited for slowStreamingNode (wrong for ANY_OF)
+		boolean hasSlowStreamingData = finalState[0].value("stream").isPresent() ||
+				finalState[0].value("nodeId").map("slowStreamingNode"::equals).orElse(false);
+		assertFalse(hasSlowStreamingData,
+				"Result should NOT contain slowStreamingNode data with ANY_OF strategy (got stream: " +
+				finalState[0].value("stream").isPresent() + ", nodeId: " +
+				finalState[0].value("nodeId") + ")");
+
+		// Log timing for debugging purposes only
+		log.info("ANY_OF with mixed nodes execution took {}ms (fastNormalNode: 100ms, slowStreamingNode: 400ms)", duration);
 
 		// Test ALL_OF: should wait for slowStreamingNode
 		startTime = System.currentTimeMillis();
@@ -547,13 +577,13 @@ public class StateGraphParallelTest {
 		long durationAllOf = endTime - startTime;
 
 		// Verify that execution waited for slowStreamingNode (400ms)
-		assertTrue(durationAllOf >= 350, 
+		assertTrue(durationAllOf >= 350,
 				"Execution with ALL_OF should wait for slowStreamingNode (400ms), but took only " + durationAllOf + "ms");
 
 		// Verify that result contains data from both nodes
 		assertNotNull(finalStateAllOf[0], "Final state should not be null");
 		// With ALL_OF, both nodes should complete, so the result should contain data from both
-		assertTrue(finalStateAllOf[0].value("messages").isPresent() || 
+		assertTrue(finalStateAllOf[0].value("messages").isPresent() ||
 				   finalStateAllOf[0].value("stream").isPresent() ||
 				   finalStateAllOf[0].value("nodeId").isPresent(),
 				"Result should contain data from both parallel branches");

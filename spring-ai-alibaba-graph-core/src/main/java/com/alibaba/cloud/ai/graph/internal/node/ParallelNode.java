@@ -304,6 +304,63 @@ public class ParallelNode extends Node {
 			}, executor);
 		}
 
+		/**
+		 * Wait for the first successful completion among multiple futures.
+		 * This method returns a CompletableFuture that completes with the result of the first
+		 * future that completes successfully (without exception). If all futures fail, the returned
+		 * future fails with a CompletionException containing details of all failures.
+		 *
+		 * Thread-safety: CompletableFuture.complete() is thread-safe and atomic. Only the first
+		 * successful completion will trigger the result future. Multiple concurrent calls to
+		 * complete() are safe - only the first one succeeds and triggers downstream processing.
+		 *
+		 * @param futures the list of futures to wait for
+		 * @return a CompletableFuture that completes with the first successful result
+		 */
+		private CompletableFuture<Map<String, Object>> waitForFirstSuccessful(
+				List<CompletableFuture<Map<String, Object>>> futures) {
+
+			CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
+			AtomicInteger completedCount = new AtomicInteger(0);
+			List<Throwable> failures = new CopyOnWriteArrayList<>();
+			int totalFutures = futures.size();
+
+			for (int i = 0; i < totalFutures; i++) {
+				final int index = i;
+				futures.get(i).whenComplete((value, throwable) -> {
+					if (throwable == null) {
+						if (result.complete(value)) {
+							logger.debug("ANY_OF strategy: Future {} completed successfully first", index);
+						}
+						completedCount.incrementAndGet();
+					} else {
+						// This future failed - record the failure
+						logger.debug("ANY_OF strategy: Future {} failed with exception", index, throwable);
+						failures.add(throwable);
+
+						// Check if all futures have completed (both successful and failed)
+						if (completedCount.incrementAndGet() == totalFutures) {
+							// All futures have completed, check if result is still not set
+							// This means ALL futures failed (no successful completion)
+							if (!result.isDone()) {
+								// Create a composite exception with all failures
+								RuntimeException compositeException = new RuntimeException(
+									String.format("ALL %d parallel branches failed in ANY_OF strategy", totalFutures)
+								);
+								for (Throwable failure : failures) {
+									compositeException.addSuppressed(failure);
+								}
+								result.completeExceptionally(compositeException);
+								logger.error("ANY_OF strategy: All {} futures failed", totalFutures, compositeException);
+							}
+						}
+					}
+				});
+			}
+
+			return result;
+		}
+
 		@Override
 		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
 			List<CompletableFuture<Map<String, Object>>> futures = new ArrayList<>();
@@ -323,31 +380,47 @@ public class ParallelNode extends Node {
 				futures.add(future);
 			}
 
-			// Get aggregation strategy from config
-			NodeAggregationStrategy strategy = getAggregationStrategy(config, targetNodeId);
-			
-			if (strategy == NodeAggregationStrategy.ANY_OF) {
-				// Wait for any task to complete
-				// anyOf returns CompletableFuture<Object> where the Object is the result of the first completed future
-				return CompletableFuture.anyOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
-					@SuppressWarnings("unchecked")
-					Map<String, Object> firstResult = (Map<String, Object>) v;
-					List<Map<String, Object>> results = new ArrayList<>();
-					results.add(firstResult);
+		// Get aggregation strategy from config
+		NodeAggregationStrategy strategy = getAggregationStrategy(config, targetNodeId);
 
-					return processParallelResults(results, state, actions);
-				});
-			} else {
-				// Wait for all tasks to complete (default behavior)
-				return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
-					// Collect all results
-					List<Map<String, Object>> results = futures.stream()
-							.map(CompletableFuture::join)
-							.collect(Collectors.toList());
+		if (strategy == NodeAggregationStrategy.ANY_OF) {
+			// Wait for the first successful task to complete
+			// This implementation returns the first successful result, skipping failures
+			// Only fails if ALL tasks fail
+			return waitForFirstSuccessful(futures).thenApply(firstSuccessfulResult -> {
+				// Cancel remaining futures to prevent unnecessary execution and resource waste
+				int cancelledCount = 0;
+				for (CompletableFuture<Map<String, Object>> future : futures) {
+					if (!future.isDone()) {
+						// mayInterruptIfRunning=true: Stop running tasks to save resources
+						// Tasks should handle InterruptedException gracefully, this might cause unexpected behavior if not handled properly
+						boolean cancelled = future.cancel(true);
+						if (cancelled) {
+							cancelledCount++;
+							logger.debug("Cancelled pending future in ANY_OF strategy");
+						}
+					}
+				}
+				if (cancelledCount > 0) {
+					logger.info("ANY_OF strategy: Cancelled {} remaining futures after first successful completion", cancelledCount);
+				}
 
-					return processParallelResults(results, state, actions);
-				});
-			}
+				List<Map<String, Object>> results = new ArrayList<>();
+				results.add(firstSuccessfulResult);
+
+				return processParallelResults(results, state, actions);
+			});
+		} else {
+			// Wait for all tasks to complete (default behavior)
+			return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(v -> {
+				// Collect all results
+				List<Map<String, Object>> results = futures.stream()
+						.map(CompletableFuture::join)
+						.collect(Collectors.toList());
+
+				return processParallelResults(results, state, actions);
+			});
+		}
 		}
 
 		/**
