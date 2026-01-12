@@ -33,6 +33,8 @@ import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 
@@ -220,6 +222,96 @@ public abstract class Agent {
 		return doInvokeAndGetOutput(inputs, config);
 	}
 
+	// ------------------- Message Stream methods -------------------
+
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a plain text input.
+	 * <p>
+	 * This is a convenience API built on top of {@code stream(...)} that extracts
+	 * and emits {@link Message} instances directly instead of low-level
+	 * {@code NodeOutput} objects. It is intended for use cases that only care
+	 * about the generated messages and do not require access to graph
+	 * orchestration or node execution details.
+	 *
+	 * @param message the input message as plain text
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Flux<Message> streamMessages(String message) throws GraphRunnerException {
+		return stream(message)
+				.transform(this::extractMessages);
+    }
+
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a plain text input and a custom {@link RunnableConfig}.
+	 *
+	 * @param message the input message as plain text
+	 * @param config runtime configuration controlling execution behavior
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Flux<Message> streamMessages(String message, RunnableConfig config) throws GraphRunnerException {
+		return stream(message, config)
+				.transform(this::extractMessages);
+    }
+
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a {@link UserMessage} as input.
+	 *
+	 * @param message the user message input
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Flux<Message> streamMessages(UserMessage message) throws GraphRunnerException {
+		return stream(message)
+				.transform(this::extractMessages);
+    }
+
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a {@link UserMessage} as input and a custom {@link RunnableConfig}.
+	 *
+	 * @param message the user message input
+	 * @param config runtime configuration controlling execution behavior
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Flux<Message> streamMessages(UserMessage message, RunnableConfig config) throws GraphRunnerException {
+		return stream(message, config)
+				.transform(this::extractMessages);
+    }
+
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a list of input {@link Message} instances.
+	 *
+	 * @param messages the input messages
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Flux<Message> streamMessages(List<Message> messages) throws GraphRunnerException {
+		return stream(messages)
+				.transform(this::extractMessages);
+    }
+
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects
+	 * using a list of input {@link Message} instances and a custom
+	 * {@link RunnableConfig}.
+	 *
+	 * @param messages the input messages
+	 * @param config runtime configuration controlling execution behavior
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Flux<Message> streamMessages(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
+		return stream(messages, config)
+			.transform(this::extractMessages);
+    }
+
 	// ------------------- Stream methods -------------------
 
 	public Flux<NodeOutput> stream(String message) throws GraphRunnerException {
@@ -326,5 +418,40 @@ public abstract class Agent {
 	}
 
 	protected abstract StateGraph initGraph() throws GraphStateException;
+
+	/**
+	 * Extracts {@link Message} objects from a stream of {@link NodeOutput}.
+	 * <p>
+	 * This helper method filters the incoming {@link NodeOutput} stream to retain only
+	 * {@link StreamingOutput} instances whose {@link OutputType} is intended to expose
+	 * messages at the Agent API level ({@code AGENT_MODEL_STREAMING} or
+	 * {@code AGENT_TOOL_FINISHED}), and whose embedded {@link Message} is non-null.
+	 * <p>
+	 * All other {@link NodeOutput} types (such as tool or hook intermediate outputs)
+	 * are intentionally filtered out to avoid leaking graph-level implementation
+	 * details to Agent API consumers.
+	 *
+	 * @param stream the stream of {@link NodeOutput} produced during graph execution
+	 * @return a {@link Flux} emitting only user-facing {@link Message} instances
+	 */
+	private Flux<Message> extractMessages(Flux<NodeOutput> stream) {
+		return stream.filter(o -> o instanceof StreamingOutput<?> so
+						&& isMessageOutputType(so.getOutputType())
+						&& so.message() != null)
+				.map(o -> ((StreamingOutput<?>) o).message());
+	}
+
+	/**
+	 * Checks whether the given {@link OutputType} indicates a message-type output.
+	 * <p>
+	 * include {@link OutputType#AGENT_MODEL_STREAMING} and {@link OutputType#AGENT_TOOL_FINISHED}.
+	 *
+	 * @param type the {@link OutputType} to check
+	 * @return true if the output type is a message-type output, false otherwise
+	 */
+	private boolean isMessageOutputType(OutputType type) {
+		return type == OutputType.AGENT_MODEL_STREAMING
+				|| type == OutputType.AGENT_TOOL_FINISHED;
+	}
 
 }
