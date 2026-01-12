@@ -384,7 +384,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 * executes, it will look for an aggregation strategy using the target node ID (the node
 		 * that follows the parallel node). If found, it will use the specified strategy to determine
 		 * whether to wait for all branches (ALL_OF) or proceed with the first completed branch (ANY_OF).
-		 * @param targetNodeId the ID of the target node that follows the parallel branch nodes (the nodes that are executed in parallel).
+		 * @param targetNodeId the ID of the merge node (the single node that aggregates results from all parallel branches) that follows the parallel branch nodes.
 		 * @param strategy the {@link NodeAggregationStrategy} to use for aggregation.
 		 * @return this {@code Builder} instance for method chaining.
 		 */
