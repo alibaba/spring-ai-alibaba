@@ -47,6 +47,8 @@ public class ParallelNode extends Node {
 	private static final Logger logger = LoggerFactory.getLogger(ParallelNode.class);
 
 	public static final String PARALLEL_PREFIX = "__PARALLEL__";
+	
+	public static final String MAX_CONCURRENCY_KEY = "__MAX_CONCURRENCY__";
 
 	static {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -206,6 +208,10 @@ public class ParallelNode extends Node {
 		return format("%s(%s)", PARALLEL_PREFIX, requireNonNull(nodeId, "nodeId cannot be null!"));
 	}
 
+	public static String formatMaxConcurrencyKey(String nodeId) {
+		return format("%s_%s", MAX_CONCURRENCY_KEY, requireNonNull(nodeId, "nodeId cannot be null!"));
+	}
+
 	public record AsyncParallelNodeAction(String nodeId, List<AsyncNodeActionWithConfig> actions,
 			List<String> actionNodeIds, Map<String, KeyStrategy> channels, CompileConfig compileConfig)
 			implements AsyncNodeActionWithConfig {
@@ -246,8 +252,74 @@ public class ParallelNode extends Node {
 			}, executor);
 		}
 
+		/**
+		 * Executes a node action asynchronously with semaphore-based concurrency control.
+		 * This method ensures that the number of concurrently executing tasks does not exceed
+		 * the specified limit by using a semaphore to acquire permits before execution.
+		 *
+		 * @param action the node action to execute
+		 * @param actualNodeId the ID of the node being executed
+		 * @param state the state snapshot for this execution
+		 * @param config the runnable configuration
+		 * @param executor the executor to use for async execution
+		 * @param semaphore the semaphore used to control concurrency
+		 * @return a CompletableFuture containing the execution results
+		 */
+		private CompletableFuture<Map<String, Object>> evalNodeActionWithSemaphore(
+				AsyncNodeActionWithConfig action,
+				String actualNodeId,
+				OverAllState state,
+				RunnableConfig config,
+				Executor executor,
+				Semaphore semaphore) {
+			
+			return CompletableFuture.supplyAsync(() -> {
+				try {
+					// Acquire semaphore permit (blocks if max concurrency reached)
+					logger.debug("Node {} waiting for semaphore permit. Available permits: {}", 
+							actualNodeId, semaphore.availablePermits());
+					semaphore.acquire();
+					logger.debug("Node {} acquired semaphore permit. Remaining permits: {}", 
+							actualNodeId, semaphore.availablePermits());
+					
+					try {
+						logger.debug("Executing task for node {} in thread {} with concurrency control", 
+								actualNodeId, Thread.currentThread().getName());
+						return evalNodeActionSync(action, actualNodeId, state, config).join();
+					} finally {
+						// Always release the semaphore permit
+						semaphore.release();
+						logger.debug("Node {} released semaphore permit. Available permits: {}", 
+								actualNodeId, semaphore.availablePermits());
+					}
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					logger.error("Node {} was interrupted while waiting for semaphore", actualNodeId, e);
+					throw new RuntimeException("Interrupted while waiting for execution slot", e);
+				} catch (Exception e) {
+					logger.error("Error executing task for node {}", actualNodeId, e);
+					throw new RuntimeException(e);
+				}
+			}, executor);
+		}
+
 		@Override
 		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+			// Get maxConcurrency from config metadata
+			Integer maxConcurrency = config.metadata(formatMaxConcurrencyKey(nodeId))
+					.filter(value -> value instanceof Integer)
+					.map(Integer.class::cast)
+					.orElse(null);
+			
+			// Create semaphore for concurrency control if maxConcurrency is set
+			Semaphore semaphore = maxConcurrency != null ? new Semaphore(maxConcurrency) : null;
+			
+			if (semaphore != null) {
+				logger.info("Parallel node {} will execute with max concurrency: {}", nodeId, maxConcurrency);
+			} else {
+				logger.debug("Parallel node {} will execute without concurrency limit", nodeId);
+			}
+
 			List<CompletableFuture<Map<String, Object>>> futures = new ArrayList<>();
 			for (int i = 0; i < actions.size(); i++) {
 				AsyncNodeActionWithConfig action = actions.get(i);
@@ -260,7 +332,13 @@ public class ParallelNode extends Node {
 				// First try to get node-specific executor, then default executor, finally use DEFAULT_EXECUTOR
 				Executor executor = getExecutor(config, nodeId);
 
-				CompletableFuture<Map<String, Object>> future = evalNodeActionAsync(action, actualNodeId, stateSnapshot, config, executor);
+				// Use semaphore-controlled execution if maxConcurrency is set
+				CompletableFuture<Map<String, Object>> future;
+				if (semaphore != null) {
+					future = evalNodeActionWithSemaphore(action, actualNodeId, stateSnapshot, config, executor, semaphore);
+				} else {
+					future = evalNodeActionAsync(action, actualNodeId, stateSnapshot, config, executor);
+				}
 
 				futures.add(future);
 			}

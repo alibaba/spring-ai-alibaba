@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
@@ -24,6 +25,7 @@ import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +101,42 @@ public class ParallelAgent extends FlowAgent {
 	 */
 	public Integer maxConcurrency() {
 		return maxConcurrency;
+	}
+
+	/**
+	 * Override buildNonStreamConfig to add maxConcurrency to RunnableConfig metadata.
+	 * This allows the ParallelNode to access the concurrency limit during execution.
+	 */
+	@Override
+	protected RunnableConfig buildNonStreamConfig(RunnableConfig config) {
+		RunnableConfig baseConfig = super.buildNonStreamConfig(config);
+		
+		// If maxConcurrency is set, add it to the config metadata
+		if (this.maxConcurrency != null) {
+			return RunnableConfig.builder(baseConfig)
+					.addMetadata(ParallelNode.formatMaxConcurrencyKey(this.name()), this.maxConcurrency)
+					.build();
+		}
+		
+		return baseConfig;
+	}
+
+	/**
+	 * Override buildStreamConfig to add maxConcurrency to RunnableConfig metadata.
+	 * This allows the ParallelNode to access the concurrency limit during execution.
+	 */
+	@Override
+	protected RunnableConfig buildStreamConfig(RunnableConfig config) {
+		RunnableConfig baseConfig = super.buildStreamConfig(config);
+		
+		// If maxConcurrency is set, add it to the config metadata
+		if (this.maxConcurrency != null) {
+			return RunnableConfig.builder(baseConfig)
+					.addMetadata(ParallelNode.formatMaxConcurrencyKey(this.name()), this.maxConcurrency)
+					.build();
+		}
+		
+		return baseConfig;
 	}
 
 	/**
