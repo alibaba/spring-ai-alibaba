@@ -31,7 +31,7 @@ public class LlmRoutingAgent extends FlowAgent {
 	private final String instruction;
 
 	protected LlmRoutingAgent(LlmRoutingAgentBuilder builder) {
-		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor);
+		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor, builder.hooks);
 		this.chatModel = builder.chatModel;
 		this.fallbackAgent = builder.fallbackAgent;
 		this.systemPrompt = builder.systemPrompt;

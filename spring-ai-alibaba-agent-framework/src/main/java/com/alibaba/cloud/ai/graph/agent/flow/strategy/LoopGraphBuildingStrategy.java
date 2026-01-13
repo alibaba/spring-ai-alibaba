@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.LoopStrategy;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
+import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
@@ -49,10 +50,17 @@ public class LoopGraphBuildingStrategy extends AbstractFlowGraphBuildingStrategy
 	protected void buildCoreGraph(FlowGraphBuilder.FlowGraphConfig config)
 			throws GraphStateException {
 
-		// Add beforeModel hooks
-		String loopStartNode = this.rootAgent.name();
+		// Determine the start node for loop execution
+		// If there are beforeModel hooks, they will be connected to rootAgent.name() by the template method
+		// Otherwise, rootAgent.name() will be the entry point
+		String loopStartNode = getRootAgent().name();
+
+		// Add a transparent node as the loop start point
+		this.graph.addNode(loopStartNode, node_async(new TransparentNode()));
+
+		// Connect beforeModel hooks to the loop start node if they exist
 		if (!this.beforeModelHooks.isEmpty()) {
-			loopStartNode = addBeforeModelHookNodesToGraph(this.graph, this.rootAgent.name(), this.beforeModelHooks);
+			connectBeforeModelHookEdges(this.graph, loopStartNode, this.beforeModelHooks);
 		}
 
 		// Build loop graph based on loopStrategy
@@ -69,7 +77,7 @@ public class LoopGraphBuildingStrategy extends AbstractFlowGraphBuildingStrategy
 		// Add afterModel hooks if present for loop dispatch
 		String loopExitNode = this.exitNode;
 		if (!this.afterModelHooks.isEmpty()) {
-			String afterModelNodeName = addAfterModelHookNodesToGraph(this.graph, loopStrategy.loopDispatchNodeName(), this.afterModelHooks);
+			String afterModelNodeName = connectAfterModelHookEdges(this.graph, loopStrategy.loopDispatchNodeName(), this.afterModelHooks);
 			this.graph.addConditionalEdges(afterModelNodeName, edge_async(
 					state -> {
 						Boolean value = state.value(loopStrategy.loopFlagKey(), false);
