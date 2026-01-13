@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -555,7 +556,8 @@ class ParallelAgentTest {
 		RunnableConfig config = buildNonStreamConfig(parallelAgent, null);
 		assertNotNull(config);
 		
-		String maxConcurrencyKey = ParallelNode.formatMaxConcurrencyKey("testParallelAgent");
+		// Use formatNodeId to match the actual key used by ParallelAgent
+		String maxConcurrencyKey = ParallelNode.formatMaxConcurrencyKey(ParallelNode.formatNodeId("testParallelAgent"));
 		assertTrue(config.metadata(maxConcurrencyKey).isPresent(), 
 				"MaxConcurrency should be present in config metadata");
 		assertEquals(2, config.metadata(maxConcurrencyKey).get(),
@@ -607,8 +609,10 @@ class ParallelAgentTest {
 						System.out.println("Agent " + agentIndex + " completed");
 					}
 					
-					OverAllState state = new OverAllState();
-					state.data().put("agent" + agentIndex + "_result", "completed");
+					// Create result map (don't modify state.data() directly as it returns UnmodifiableMap)
+					Map<String, Object> resultData = new HashMap<>();
+					resultData.put("agent" + agentIndex + "_result", "completed");
+					OverAllState state = new OverAllState(resultData);
 					return Optional.of(state);
 				}
 
@@ -619,7 +623,14 @@ class ParallelAgentTest {
 
 				@Override
 				public Node asNode(boolean includeContents, boolean returnReasoningContents) {
-					return null; // Not needed for this test
+					// Return a valid Node with an action factory that wraps the agent's doInvoke
+					return new Node(this.name(), (config) -> (state, runnableConfig) -> {
+						// Execute the agent and return the result state as a map
+						Optional<OverAllState> result = this.doInvoke(state.data(), runnableConfig);
+						return CompletableFuture.completedFuture(
+							result.map(s -> s.data()).orElse(new HashMap<>())
+						);
+					});
 				}
 			};
 			slowAgents.add(slowAgent);
@@ -634,22 +645,18 @@ class ParallelAgentTest {
 				.build();
 
 		// Execute the agent using invoke with a simple string message
-		try {
-			Optional<OverAllState> result = parallelAgent.invoke("test input");
-			assertNotNull(result);
+		Optional<OverAllState> result = parallelAgent.invoke("test input");
+		assertNotNull(result);
 			
-			// Verify that maximum observed concurrency did not exceed limit
-			System.out.println("Maximum observed concurrent execution: " + maxObservedConcurrent.get());
-			assertTrue(maxObservedConcurrent.get() <= 2,
-					"Maximum concurrent execution should not exceed maxConcurrency. Expected: 2, but was: " + maxObservedConcurrent.get());
+		// Verify that maximum observed concurrency did not exceed limit
+		System.out.println("Maximum observed concurrent execution: " + maxObservedConcurrent.get());
+		assertTrue(maxObservedConcurrent.get() <= 2,
+				"Maximum concurrent execution should not exceed maxConcurrency. Expected: 2, but was: " + maxObservedConcurrent.get());
 			
-			// Also verify it's greater than 1 (meaning parallel execution did happen)
-			assertTrue(maxObservedConcurrent.get() >= 1,
-					"Should have at least some concurrent execution");
-		} catch (Exception e) {
-			// It's okay if execution fails in test environment, we're mainly testing the concurrency control mechanism
-			System.out.println("Test execution note: " + e.getMessage());
-		}
+		// Also verify it's greater than 1 (meaning parallel execution did happen)
+		assertTrue(maxObservedConcurrent.get() >= 1,
+				"Should have at least some concurrent execution");
+
 	}
 
 	/**
@@ -674,7 +681,8 @@ class ParallelAgentTest {
 		RunnableConfig config = buildNonStreamConfig(parallelAgent, null);
 		assertNotNull(config);
 		
-		String maxConcurrencyKey = ParallelNode.formatMaxConcurrencyKey("unlimitedParallelAgent");
+		// Use formatNodeId to match the actual key used by ParallelAgent
+		String maxConcurrencyKey = ParallelNode.formatMaxConcurrencyKey(ParallelNode.formatNodeId("unlimitedParallelAgent"));
 		assertFalse(config.metadata(maxConcurrencyKey).isPresent(), 
 				"MaxConcurrency should NOT be present in config metadata when not set");
 	}
