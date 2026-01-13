@@ -15,7 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.graph.agent.tool.ToolResult;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.util.json.JsonParser;
 
@@ -23,34 +25,98 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Converter for tool call results that supports text, multimodal content, and ToolResult.
+ *
+ * <p>Handles the following result types:</p>
+ * <ul>
+ *   <li>{@link ToolResult} - Rich results with text and/or media</li>
+ *   <li>{@link Media} - Single media content</li>
+ *   <li>{@link Collection} of {@link Media} - Multiple media content</li>
+ *   <li>{@link AssistantMessage} - Text or media content</li>
+ *   <li>Other objects - Serialized to JSON</li>
+ * </ul>
+ *
+ * @author disaster
+ * @since 1.0.0
+ */
 public class MessageToolCallResultConverter implements ToolCallResultConverter {
 
 	private static final Logger logger = LoggerFactory.getLogger(MessageToolCallResultConverter.class);
 
 	/**
-	 * Currently Spring AI ToolResponseMessage only supports text type, that's why the return type of this method is String.
-	 * More types like image/audio/video/file can be supported in the future.
+	 * Converts tool result to a string representation.
+	 * Supports ToolResult, Media, and other types.
 	 */
 	public String convert(@Nullable Object result, @Nullable Type returnType) {
 		if (returnType == Void.TYPE) {
 			logger.debug("The tool has no return type. Converting to conventional response.");
 			return JsonParser.toJson("Done");
-		} else if (result instanceof AssistantMessage assistantMessage) {
+		}
+
+		if (result == null) {
+			return "";
+		}
+
+		if (result instanceof String str) {
+			return str;
+		}
+
+		// Handle ToolResult - rich result model
+		if (result instanceof ToolResult toolResult) {
+			return toolResult.toStringResult();
+		}
+
+		// Handle single Media
+		if (result instanceof Media media) {
+			return serializeMedia(media);
+		}
+
+		// Handle collection of Media
+		if (result instanceof Collection<?> collection && !collection.isEmpty()) {
+			Object first = collection.iterator().next();
+			if (first instanceof Media) {
+				@SuppressWarnings("unchecked")
+				List<Media> mediaList = new ArrayList<>((Collection<Media>) collection);
+				return ToolResult.media(mediaList).toStringResult();
+			}
+		}
+
+		// Handle AssistantMessage
+		if (result instanceof AssistantMessage assistantMessage) {
 			if (StringUtils.hasLength(assistantMessage.getText())) {
+				// Check if there's also media content
+				if (CollectionUtils.isNotEmpty(assistantMessage.getMedia())) {
+					return ToolResult.mixed(assistantMessage.getText(), assistantMessage.getMedia()).toStringResult();
+				}
 				return assistantMessage.getText();
-			} else if (CollectionUtils.isNotEmpty(assistantMessage.getMedia())) {
-				throw new UnsupportedOperationException("Currently Spring AI ToolResponseMessage only supports text type, that's why the return type of this method is String. More types like image/audio/video/file can be supported in the future.");
+			}
+			else if (CollectionUtils.isNotEmpty(assistantMessage.getMedia())) {
+				// Media-only result
+				return ToolResult.media(assistantMessage.getMedia()).toStringResult();
 			}
 			logger.warn("The tool returned an empty AssistantMessage. Converting to conventional response.");
 			return JsonParser.toJson("Done");
-		} else {
-			logger.debug("Converting tool result to JSON.");
-			return JsonParser.toJson(result);
 		}
+
+		// Default: try JSON serialization
+		logger.debug("Converting tool result to JSON.");
+		return JsonParser.toJson(result);
 	}
+
+	/**
+	 * Serializes a single Media to ToolResult format.
+	 */
+	private String serializeMedia(Media media) {
+		return ToolResult.media(List.of(media)).toStringResult();
+	}
+
 }

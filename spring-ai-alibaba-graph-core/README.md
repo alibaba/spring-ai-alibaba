@@ -89,3 +89,39 @@ public class ReviewAction implements AsyncNodeActionWithConfig, InterruptableAct
     }
 }
 ```
+
+## Streaming Output Support
+
+Spring AI Alibaba Graph supports streaming output for tool execution results, enabling real-time result delivery.
+
+### ToolStreamingOutput
+
+Streaming output wrapper for tool execution results, compatible with the NodeExecutor pipeline. This class provides tool-specific streaming output that includes tool identification (toolCallId and toolName) in addition to the standard streaming output properties.
+
+```java
+// Create streaming output for a tool chunk
+ToolResult chunk = ToolResult.chunk("Processing...");
+ToolStreamingOutput<ToolResult> output = new ToolStreamingOutput<>(
+    chunk,                              // The chunk data
+    "agent_tool",                       // Node ID
+    "myAgent",                          // Agent name
+    state,                              // State snapshot
+    OutputType.AGENT_TOOL_STREAMING,    // Output type (STREAMING or FINISHED)
+    "call_123",                         // Tool call ID
+    "searchTool"                        // Tool name
+);
+
+// Check if this is the final chunk
+if (output.isFinalChunk()) {
+    // Handle completion
+}
+
+// Get JSON-formatted chunk for serialization
+String json = output.chunk();
+// Output: {"toolCallId":"call_123","toolName":"searchTool","data":"Processing..."}
+```
+
+### OutputType for Tools
+
+- `AGENT_TOOL_STREAMING` - Tool is executing, emitting intermediate results
+- `AGENT_TOOL_FINISHED` - Tool execution completed, final result

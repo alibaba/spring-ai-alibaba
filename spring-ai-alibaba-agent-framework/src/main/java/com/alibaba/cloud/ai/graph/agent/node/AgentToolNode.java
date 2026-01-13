@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.ToolStreamingOutput;
 import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
@@ -29,8 +31,12 @@ import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellableAsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
+import com.alibaba.cloud.ai.graph.agent.tool.StreamingToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCancelledException;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolResult;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolStateCollector;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolStreamingErrorHandler;
+import com.alibaba.cloud.ai.graph.GraphResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +53,7 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +67,14 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_TOOL_NAME;
 import static com.alibaba.cloud.ai.graph.agent.DefaultBuilder.POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING;
@@ -111,6 +124,13 @@ public class AgentToolNode implements NodeActionWithConfig {
 	private ToolCallbackResolver toolCallbackResolver;
 
 	private ToolExecutionExceptionProcessor toolExecutionExceptionProcessor;
+
+	// Cached scheduler for streaming tool execution
+	private volatile Scheduler cachedToolScheduler;
+
+	private volatile Executor cachedExecutor;
+
+	private final Object schedulerLock = new Object();
 
 	public AgentToolNode(Builder builder) {
 		this.agentName = builder.agentName;
@@ -423,11 +443,16 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	/**
 	 * Routes tool execution based on callback type.
+	 * Streaming tools take priority over async tools.
 	 */
 	private ToolCallResponse executeToolByType(ToolCallback toolCallback, ToolCallRequest request,
 			Map<String, Object> toolContextMap, RunnableConfig config, Map<String, Object> extraStateFromToolCall) {
 
-		if (toolCallback instanceof AsyncToolCallback async) {
+		// Streaming tools take priority (they also implement AsyncToolCallback)
+		if (toolCallback instanceof StreamingToolCallback streaming) {
+			return executeStreamingToolBlocking(streaming, request, toolContextMap, config);
+		}
+		else if (toolCallback instanceof AsyncToolCallback async) {
 			return executeAsyncTool(async, request, toolContextMap, config, extraStateFromToolCall);
 		}
 		else {
@@ -544,6 +569,243 @@ public class AgentToolNode implements NodeActionWithConfig {
 		catch (Exception e) {
 			logger.error("Tool {} execution failed: {}", request.getToolName(), e.getMessage(), e);
 			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), e);
+		}
+	}
+
+	/**
+	 * Execute a streaming tool in blocking mode.
+	 * Collects all stream results and returns as a single response.
+	 */
+	private ToolCallResponse executeStreamingToolBlocking(StreamingToolCallback callback, ToolCallRequest request,
+			Map<String, Object> toolContextMap, RunnableConfig config) {
+
+		ToolContext context = new ToolContext(toolContextMap);
+
+		try {
+			// Blocking mode: collect all streaming results
+			ToolResult result = callback.callStream(request.getArguments(), context)
+				.reduce(ToolResult::merge)
+				.block(callback.getTimeout());
+
+			if (result == null) {
+				result = ToolResult.text("No result");
+			}
+
+			if (enableActingLog) {
+				logger.info("[ThreadId {}] Agent {} acting, streaming tool {} finished",
+						config.threadId().orElse(THREAD_ID_DEFAULT), agentName, request.getToolName());
+				if (logger.isDebugEnabled()) {
+					logger.debug("Tool {} returned: {}", request.getToolName(), result);
+				}
+			}
+
+			return ToolCallResponse.ofRich(request.getToolCallId(), request.getToolName(), result);
+		}
+		catch (Exception e) {
+			String errorMsg = ToolStreamingErrorHandler.extractErrorMessage(e);
+			logger.error("Streaming tool {} execution failed: {}", request.getToolName(), errorMsg, e);
+			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), errorMsg);
+		}
+	}
+
+	/**
+	 * Executes tool calls with streaming output support.
+	 * Returns a Flux that emits ToolStreamingOutput for each chunk.
+	 *
+	 * <p>This method is designed for use with streaming graph execution.
+	 * Each tool's intermediate results are emitted as they become available,
+	 * and a final {@link GraphResponse#done(Map)} is emitted when all tools complete.</p>
+	 *
+	 * @param toolCalls the tool calls to execute
+	 * @param state the current state
+	 * @param config the runtime configuration
+	 * @return a Flux of streaming outputs and a final done response
+	 */
+	public Flux<Object> executeToolCallsStreaming(List<AssistantMessage.ToolCall> toolCalls, OverAllState state,
+			RunnableConfig config) {
+
+		Executor executor = getToolExecutor(config);
+		Scheduler toolScheduler = getOrCreateToolScheduler(executor);
+		OverAllState stateSnapshot = state.snapShot().orElse(state);
+		ToolStateCollector stateCollector = new ToolStateCollector(toolCalls.size(), state.keyStrategies());
+		ToolCallResponse[] orderedResponses = new ToolCallResponse[toolCalls.size()];
+
+		List<Flux<Object>> perToolFluxes = IntStream.range(0, toolCalls.size()).mapToObj(index -> {
+			AssistantMessage.ToolCall toolCall = toolCalls.get(index);
+			Map<String, Object> toolUpdateMap = stateCollector.createToolUpdateMap(index);
+			ToolCallback callback = resolve(toolCall.name());
+
+			if (callback == null) {
+				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolCall.name());
+				orderedResponses[index] = ToolCallResponse.error(toolCall.id(), toolCall.name(),
+						"No ToolCallback found for tool name: " + toolCall.name());
+				return Flux.<Object>just(ToolStreamingErrorHandler.handleError(toolCall.id(), toolCall.name(),
+						new IllegalStateException("No ToolCallback found"), stateSnapshot, AGENT_TOOL_NAME, agentName));
+			}
+
+			Map<String, Object> toolContextMap = buildToolContextMap(callback, stateSnapshot, config, toolUpdateMap);
+			AtomicReference<ToolResult> accumulator = new AtomicReference<>();
+
+			if (callback instanceof StreamingToolCallback streaming) {
+				ToolContext toolCtx = new ToolContext(toolContextMap);
+				return streaming.callStream(toolCall.arguments(), toolCtx)
+					.timeout(streaming.getTimeout())
+					.doOnNext(chunk -> accumulator.updateAndGet(prev -> prev == null ? chunk : prev.merge(chunk)))
+					.<Object>map(chunk -> createStreamingOutput(toolCall, chunk, stateSnapshot, false))
+					.concatWith(Mono.fromSupplier(() -> {
+						ToolResult finalResult = accumulator.get() != null
+								? accumulator.get().withFinal(true)
+								: ToolResult.text("Done").withFinal(true);
+						orderedResponses[index] = ToolCallResponse.ofRich(toolCall.id(), toolCall.name(), finalResult);
+						return (Object) createStreamingOutput(toolCall, finalResult, stateSnapshot, true);
+					}))
+					.onErrorResume(ex -> {
+						// Discard any partial state updates from the failed tool
+						stateCollector.discardToolUpdateMap(index);
+						String msg = ToolStreamingErrorHandler.extractErrorMessage(ex);
+						orderedResponses[index] = ToolCallResponse.error(toolCall.id(), toolCall.name(), msg);
+						ToolStreamingOutput<ToolResult> errorOutput = ToolStreamingErrorHandler.handleError(toolCall, ex,
+								stateSnapshot, AGENT_TOOL_NAME, agentName);
+						return Flux.just(errorOutput);
+					})
+					.subscribeOn(toolScheduler);
+			}
+			else if (callback instanceof AsyncToolCallback async) {
+				// Async tool: emit single result
+				// Support CancellableAsyncToolCallback for cooperative cancellation
+				ToolContext toolCtx = new ToolContext(toolContextMap);
+				DefaultCancellationToken cancellationToken = (async instanceof CancellableAsyncToolCallback)
+						? new DefaultCancellationToken()
+						: null;
+
+				Mono<Object> asyncMono = Mono.fromFuture(() -> {
+					if (async instanceof CancellableAsyncToolCallback cancellable) {
+						return cancellable.callAsync(toolCall.arguments(), toolCtx, cancellationToken);
+					}
+					return async.callAsync(toolCall.arguments(), toolCtx);
+				})
+					.timeout(async.getTimeout())
+					.map(result -> {
+						ToolResult toolResult = ToolResult.text(result).withFinal(true);
+						orderedResponses[index] = ToolCallResponse.ofRich(toolCall.id(), toolCall.name(), toolResult);
+						return (Object) createStreamingOutput(toolCall, toolResult, stateSnapshot, true);
+					})
+					.onErrorResume(ex -> {
+						// Cancel the token on timeout to notify the tool to stop gracefully
+						if (cancellationToken != null && ToolStreamingErrorHandler.isTimeout(ex)) {
+							cancellationToken.cancel();
+						}
+						// Discard any partial state updates from the failed tool
+						stateCollector.discardToolUpdateMap(index);
+						String msg = ToolStreamingErrorHandler.extractErrorMessage(ex);
+						orderedResponses[index] = ToolCallResponse.error(toolCall.id(), toolCall.name(), msg);
+						return Mono.just(
+								ToolStreamingErrorHandler.handleError(toolCall, ex, stateSnapshot, AGENT_TOOL_NAME, agentName));
+					});
+
+				return asyncMono.flux().subscribeOn(toolScheduler);
+			}
+			else {
+				// Sync tool: emit single result
+				ToolContext toolCtx = new ToolContext(toolContextMap);
+				return Mono.fromCallable(() -> {
+					String result = callback.call(toolCall.arguments(), toolCtx);
+					ToolResult toolResult = ToolResult.text(result).withFinal(true);
+					orderedResponses[index] = ToolCallResponse.ofRich(toolCall.id(), toolCall.name(), toolResult);
+					return (Object) createStreamingOutput(toolCall, toolResult, stateSnapshot, true);
+				})
+					.onErrorResume(ex -> {
+						// Discard any partial state updates from the failed tool
+						stateCollector.discardToolUpdateMap(index);
+						String msg = ToolStreamingErrorHandler.extractErrorMessage(ex);
+						orderedResponses[index] = ToolCallResponse.error(toolCall.id(), toolCall.name(), msg);
+						return Mono.just(
+								ToolStreamingErrorHandler.handleError(toolCall, ex, stateSnapshot, AGENT_TOOL_NAME, agentName));
+					})
+					.flux()
+					.subscribeOn(toolScheduler);
+			}
+		}).toList();
+
+		// Merge based on configuration (use maxParallelTools to limit concurrency)
+		Flux<Object> merged = (parallelToolExecution && toolCalls.size() > 1)
+				? Flux.fromIterable(perToolFluxes).flatMap(f -> f, maxParallelTools)
+				: Flux.concat(perToolFluxes);
+
+		// Critical: emit done event at stream end
+		return merged.concatWith(Mono.fromSupplier(() -> {
+			Map<String, Object> doneMap = buildToolDoneMap(orderedResponses, stateCollector);
+			return GraphResponse.done(doneMap);
+		}).flux());
+	}
+
+	/**
+	 * Creates a streaming output for a tool chunk.
+	 */
+	private ToolStreamingOutput<ToolResult> createStreamingOutput(AssistantMessage.ToolCall toolCall, ToolResult chunk,
+			OverAllState stateSnapshot, boolean isFinal) {
+
+		OutputType outputType = isFinal ? OutputType.AGENT_TOOL_FINISHED : OutputType.AGENT_TOOL_STREAMING;
+
+		return new ToolStreamingOutput<>(chunk, AGENT_TOOL_NAME, agentName, stateSnapshot, outputType, toolCall.id(),
+				toolCall.name());
+	}
+
+	/**
+	 * Builds the tool context map for a tool callback.
+	 *
+	 * <p>Note: Unlike {@link #executeToolCallWithInterceptors}, this method also merges
+	 * {@code config.metadata()} to ensure feature parity between blocking and streaming execution.</p>
+	 */
+	private Map<String, Object> buildToolContextMap(ToolCallback callback, OverAllState state, RunnableConfig config,
+			Map<String, Object> extraStateFromToolCall) {
+
+		Map<String, Object> toolContextMap = new HashMap<>(toolContext);
+
+		// Merge config metadata to match behavior of executeToolCallWithInterceptors
+		config.metadata().ifPresent(toolContextMap::putAll);
+
+		// Handle tools that need state injection
+		if (callback instanceof StateAwareToolCallback || callback instanceof FunctionToolCallback<?, ?>
+				|| callback instanceof MethodToolCallback) {
+			toolContextMap.putAll(Map.of(AGENT_STATE_CONTEXT_KEY, state, AGENT_CONFIG_CONTEXT_KEY, config,
+					AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraStateFromToolCall));
+		}
+
+		return toolContextMap;
+	}
+
+	/**
+	 * Builds the done map containing tool responses and merged state updates.
+	 */
+	private Map<String, Object> buildToolDoneMap(ToolCallResponse[] responses, ToolStateCollector stateCollector) {
+		Map<String, Object> doneMap = new HashMap<>();
+
+		List<ToolResponseMessage.ToolResponse> toolResponses = Arrays.stream(responses)
+			.filter(Objects::nonNull)
+			.map(ToolCallResponse::toToolResponse)
+			.toList();
+
+		doneMap.put("messages", ToolResponseMessage.builder().responses(toolResponses).build());
+		doneMap.putAll(stateCollector.mergeAll());
+
+		return doneMap;
+	}
+
+	/**
+	 * Gets or creates a cached Scheduler from the executor.
+	 */
+	private Scheduler getOrCreateToolScheduler(Executor executor) {
+		if (cachedToolScheduler != null && cachedExecutor == executor) {
+			return cachedToolScheduler;
+		}
+		synchronized (schedulerLock) {
+			if (cachedToolScheduler != null && cachedExecutor == executor) {
+				return cachedToolScheduler;
+			}
+			cachedExecutor = executor;
+			cachedToolScheduler = Schedulers.fromExecutor(executor);
+			return cachedToolScheduler;
 		}
 	}
 
