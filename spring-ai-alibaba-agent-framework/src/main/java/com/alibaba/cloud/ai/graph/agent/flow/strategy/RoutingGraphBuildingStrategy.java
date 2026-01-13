@@ -18,13 +18,15 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncMultiCommandAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * Strategy for building LLM-based routing graphs. In a routing graph, an LLM decides
@@ -65,7 +67,11 @@ public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrat
 
 		// Step 1: Add routing node (where LLM makes routing decision)
 		String routingNodeName = rootAgent.name() + "_routing";
-		graph.addNode(routingNodeName, new RoutingNode(config.getChatModel(), rootAgent, config.getSubAgents()));
+		graph.addNode(routingNodeName, node_async((state) -> {
+			// This is a transparent node that just passes through
+			// The actual routing logic is handled by the parallel conditional edges
+			return Map.of();
+		}));
 
 		// Step 2: Add beforeModel hooks around RoutingNode and connect
 		String firstBeforeModelNode = addBeforeModelHookNodesToGraph(graph, routingNodeName, beforeModelHooks);
@@ -84,16 +90,17 @@ public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrat
 			graph.addEdge(subAgent.name(), this.exitNode);
 		}
 
-		// Step 5: Connect routing exit to sub-agents via conditional routing
-		// The routing decision is stored in state by RoutingNode
-		AsyncEdgeAction routingDecisionAction = state -> {
-			String decision = (String) state.value(RoutingNode.getRoutingDecisionKey()).orElse(null);
-			if (decision == null) {
-				throw new IllegalStateException("Routing decision not found in state");
-			}
-			return java.util.concurrent.CompletableFuture.completedFuture(decision);
-		};
-		graph.addConditionalEdges(routingExitNode, routingDecisionAction, edgeRoutingMap);
+		// Step 5: Add parallel conditional edges for routing
+		// This allows routing to one or multiple sub-agents in parallel
+		// Note: We use addParallelConditionalEdges here because routingExitNode is the exit
+		// from afterModel hooks, not a new node. For simpler cases without hooks, you can use:
+		// graph.addNode(nodeId, AsyncMultiCommandAction.node_async(action), mappings)
+		RoutingNode routingNode = new RoutingNode(config.getChatModel(), rootAgent, config.getSubAgents());
+		graph.addParallelConditionalEdges(
+				routingExitNode,
+				AsyncMultiCommandAction.node_async(routingNode),
+				edgeRoutingMap
+		);
 	}
 
 	@Override
