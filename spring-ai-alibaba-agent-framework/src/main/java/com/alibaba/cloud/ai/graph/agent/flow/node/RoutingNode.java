@@ -247,20 +247,35 @@ public class RoutingNode implements MultiCommandAction {
 	 */
 	public record RoutingDecision(String agent, List<String> agents) {
 		/**
-		 * Default constructor - handles both single and multiple agent responses
+		 * Canonical constructor - handles both single and multiple agent responses
 		 */
-		public RoutingDecision {
-			// If agents is null or empty, but agent is provided, create a list from agent
-			if ((agents == null || agents.isEmpty()) && agent != null && !agent.isEmpty()) {
-				agents = Collections.singletonList(agent);
+		public RoutingDecision(String agent, List<String> agents) {
+			// Determine the agents list first
+			if (agents != null && !agents.isEmpty()) {
+				// agents is provided and not empty, use it
+				this.agents = agents;
 			}
-			// If agent is null but agents is provided, use first agent for backward compatibility
-			if (agent == null && agents != null && !agents.isEmpty()) {
-				agent = agents.get(0);
+			else if (agent != null && !agent.isEmpty()) {
+				// agents is null/empty but agent is provided, create a list from agent
+				this.agents = Collections.singletonList(agent);
 			}
-			// Ensure agents is never null
-			if (agents == null) {
-				agents = Collections.emptyList();
+			else {
+				// Both are null/empty, use empty list
+				this.agents = Collections.emptyList();
+			}
+			
+			// Determine the agent field
+			if (agent != null && !agent.isEmpty()) {
+				// agent is provided, use it
+				this.agent = agent;
+			}
+			else if (!this.agents.isEmpty()) {
+				// agent is null but agents is provided, use first agent for backward compatibility
+				this.agent = this.agents.get(0);
+			}
+			else {
+				// Both are null/empty
+				this.agent = null;
 			}
 		}
 
