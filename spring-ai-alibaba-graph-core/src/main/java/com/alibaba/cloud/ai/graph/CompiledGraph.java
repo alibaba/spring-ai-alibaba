@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.internal.node.ConditionalParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
@@ -148,7 +149,53 @@ public class CompiledGraph {
 		for (var e : processedData.edges().elements) {
 			var targets = e.targets();
 			if (targets.size() == 1) {
-				edges.put(e.sourceId(), targets.get(0));
+				var target = targets.get(0);
+				// Check if this is a conditional edge
+				if (target.value() != null) {
+					var edgeCondition = target.value();
+					// Check if this is a multi-command action (returns multiple nodes)
+					if (edgeCondition.isMultiCommand()) {
+						// Multi-command action - create ConditionalParallelNode for parallel execution
+						var conditionalParallelNode = new ConditionalParallelNode(
+								e.sourceId(),
+								edgeCondition,
+								nodeFactories,
+								keyStrategyMap,
+								compileConfig);
+
+						nodeFactories.put(conditionalParallelNode.id(), conditionalParallelNode.actionFactory());
+						edges.put(e.sourceId(), new EdgeValue(conditionalParallelNode.id()));
+
+						// Find parallel node targets from mappings
+						var mappedNodeIds = edgeCondition.mappings().values().stream()
+								.collect(Collectors.toSet());
+
+						// Validate that all mapped nodes exist in the graph
+						var missingNodeIds = mappedNodeIds.stream()
+								.filter(nodeId -> !nodeFactories.containsKey(nodeId))
+								.collect(Collectors.toSet());
+						if (!missingNodeIds.isEmpty()) {
+							throw new GraphStateException("Conditional multi-command mapping from node '"
+									+ e.sourceId() + "' references unknown target nodes: " + missingNodeIds);
+						}
+
+						var parallelNodeTargets = findParallelNodeTargets(mappedNodeIds);
+						if (!parallelNodeTargets.isEmpty()) {
+							// Set edge from ConditionalParallelNode to the next node
+							// All parallel nodes point to the same target, use that target
+							edges.put(conditionalParallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
+						} else {
+							throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), 0);
+						}
+						// The ConditionalParallelNode will handle parallel execution internally
+					} else {
+						// Single Command action - same as regular single target edge
+						edges.put(e.sourceId(), target);
+					}
+				} else {
+					// Regular single target edge (no condition)
+					edges.put(e.sourceId(), target);
+				}
 			} else {
 				Supplier<Stream<EdgeValue>> parallelNodeStream = () -> targets.stream()
 						.filter(target -> nodeFactories.containsKey(target.id()));
@@ -193,17 +240,17 @@ public class CompiledGraph {
 
 				var actionNodeIds = targetList.stream().map(EdgeValue::id).toList();
 
-				var parallelNode = new ParallelNode(e.sourceId(), actions, actionNodeIds, keyStrategyMap,
+				var targetNodeId = parallelNodeTargets.iterator().next();
+				var parallelNode = new ParallelNode(e.sourceId(), targetNodeId, actions, actionNodeIds, keyStrategyMap,
 						compileConfig);
 
 				nodeFactories.put(parallelNode.id(), parallelNode.actionFactory());
 
 				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
 
-				edges.put(parallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
+				edges.put(parallelNode.id(), new EdgeValue(targetNodeId));
 
 			}
-
 		}
 	}
 
@@ -297,6 +344,28 @@ public class CompiledGraph {
 		return updateState(config, values, null);
 	}
 
+	/**
+	 * Finds the target nodes for a set of source node IDs by looking up their edges.
+	 * This is used to determine where parallel nodes should route after execution.
+	 * Similar to the logic used for ParallelNode.
+	 * 
+	 * @param sourceNodeIds the set of source node IDs to find targets for
+	 * @return a set of target node IDs that the source nodes point to
+	 */
+	private Set<String> findParallelNodeTargets(Set<String> sourceNodeIds) {
+		var parallelNodeEdges = sourceNodeIds.stream()
+				.map(nodeId -> new Edge(nodeId))  // Create Edge object with nodeId as source
+				.filter(ee -> processedData.edges().elements.contains(ee))
+				.map(ee -> processedData.edges().elements.indexOf(ee))
+				.map(index -> processedData.edges().elements.get(index))
+				.toList();
+
+		return parallelNodeEdges.stream()
+				.map(ee -> ee.target().id())
+				.filter(Objects::nonNull)
+				.collect(Collectors.toSet());
+	}
+
 	private Command nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, RunnableConfig config)
 			throws Exception {
 
@@ -308,19 +377,27 @@ public class CompiledGraph {
 		}
 		if (route.value() != null) {
 			OverAllState derefState = stateGraph.getStateFactory().apply(state);
+			var edgeCondition = route.value();
 
-			var command = route.value().action().apply(derefState, config).get();
+			// Check if this is a multi-command action
+			if (edgeCondition.isMultiCommand()) {
+				// Multi-command action - route to ConditionalParallelNode
+				String conditionalParallelNodeId = ParallelNode.formatNodeId(nodeId);
+				return new Command(conditionalParallelNodeId, state);
+			} else {
+				// Single Command action
+				var singleAction = edgeCondition.singleAction();
+				var command = singleAction.apply(derefState, config).get();
 
-			var newRoute = command.gotoNode();
+				var newRoute = command.gotoNode();
+				String result = route.value().mappings().get(newRoute);
+				if (result == null) {
+					throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+				}
 
-			String result = route.value().mappings().get(newRoute);
-			if (result == null) {
-				throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+				var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
+				return new Command(result, currentState);
 			}
-
-			var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
-
-			return new Command(result, currentState);
 		}
 		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}
