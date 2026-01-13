@@ -321,7 +321,8 @@ public class PostgresSaver extends MemorySaver {
 		var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
 
 		Connection conn = null;
-		try (Connection ignored = conn = getConnection()) {
+		try {
+			conn = getConnection();
 			conn.setAutoCommit(false); // Start transaction
 
 			insertCheckpoint(conn, config, checkpoints, checkpoint);
@@ -334,6 +335,16 @@ public class PostgresSaver extends MemorySaver {
 			log.error("Error inserting checkpoint with id {} in thread {}", checkpoint.getId(), threadId, e);
 			rollback(conn, checkpoint, threadId);
 			throw e;
+		}
+		finally {
+			if (conn != null) {
+				try {
+					conn.close();
+				}
+				catch (SQLException e) {
+					log.error("Failed to close connection for checkpoint {} in thread {}", checkpoint.getId(), threadId, e);
+				}
+			}
 		}
 
 	}
@@ -352,7 +363,8 @@ public class PostgresSaver extends MemorySaver {
 
 		Connection conn = null;
 
-		try (Connection ignored = conn = getConnection()) {
+		try {
+			conn = getConnection();
 			conn.setAutoCommit(false); // Start transaction
 
 			if (config.checkPointId().isPresent()) {
@@ -386,6 +398,16 @@ public class PostgresSaver extends MemorySaver {
 					e);
 			rollback(conn, checkpoint, threadId);
 			throw e;
+		}
+		finally {
+			if (conn != null) {
+				try {
+					conn.close();
+				}
+				catch (SQLException e) {
+					log.error("Failed to close connection for checkpoint {} in thread {}", checkpoint.getId(), threadId, e);
+				}
+			}
 		}
 	}
 
@@ -532,8 +554,8 @@ public class PostgresSaver extends MemorySaver {
 				this.stateSerializer = StateGraph.DEFAULT_JACKSON_SERIALIZER;
 			}
 
-			if (port <= 0) {
-				throw new IllegalArgumentException("port must be greater than 0");
+			if (port == null || port <= 0) {
+				throw new IllegalArgumentException("port cannot be null and must be greater than 0");
 			}
 			var ds = new PGSimpleDataSource();
 			ds.setDatabaseName(requireNotBlank(database, "database"));
