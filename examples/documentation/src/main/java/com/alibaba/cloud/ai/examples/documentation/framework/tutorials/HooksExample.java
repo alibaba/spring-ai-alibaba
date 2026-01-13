@@ -292,7 +292,9 @@ public class HooksExample {
 				.name("smart_selector_agent")
 				.model(chatModel)
 				.tools(tool1, tool2)
-				.interceptors(ToolSelectionInterceptor.builder().build())
+				.interceptors(ToolSelectionInterceptor.builder()
+						.selectionModel(selectorModel)
+						.build())
 				.build();
 	}
 

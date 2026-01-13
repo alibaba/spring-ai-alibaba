@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.DefaultChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -38,8 +39,10 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 
+import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -77,6 +80,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private String systemPrompt;
 
+	private TemplateRenderer templateRenderer;
+
 	private String instruction;
 
 	private ToolCallingChatOptions chatOptions;
@@ -89,6 +94,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		this.outputSchema = builder.outputSchema;
 		this.systemPrompt = builder.systemPrompt;
 		this.instruction = builder.instruction;
+		this.templateRenderer = builder.templateRenderer;
 		if (builder.advisors != null) {
 			this.advisors = builder.advisors;
 		}
@@ -155,7 +161,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		// Create ModelRequest
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
 				.messages(messages)
-				.options(chatOptions.copy())
+				.options(this.chatOptions != null ? this.chatOptions.copy() : null)
 				.context(config.metadata().orElse(new HashMap<>()));
 
         // Extract tool names and descriptions from toolCallbacks and pass them to ModelRequest
@@ -319,12 +325,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	 * @param toolCallbacks the tool callbacks to be included
 	 * @return merged ToolCallingChatOptions
 	 */
+	@Nullable
 	private ToolCallingChatOptions buildChatOptions(ChatOptions chatOptions, List<ToolCallback> toolCallbacks) {
 		if (chatOptions == null) {
-			return ToolCallingChatOptions.builder()
-					.toolCallbacks(toolCallbacks)
-					.internalToolExecutionEnabled(false)
-					.build();
+			return null;
 		}
 
 		if (chatOptions instanceof ToolCallingChatOptions builderToolCallingOptions) {
@@ -353,8 +357,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	}
 
 	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
-		PromptTemplate promptTemplate = new PromptTemplate(prompt);
-		return promptTemplate.render(params);
+		PromptTemplate.Builder builder = PromptTemplate.builder().template(prompt);
+		if (templateRenderer != null) {
+			builder.renderer(templateRenderer);
+		}
+		return builder.build().render(params);
 	}
 
 	public void augmentUserMessage(List<Message> messages, String outputSchema) {
@@ -457,21 +464,40 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
 		filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
 
-		ToolCallingChatOptions chatOptions = modelRequest.getOptions();
-		if (chatOptions == null) {
-			chatOptions = ToolCallingChatOptions.builder()
-					.toolCallbacks(filteredToolCallbacks)
-					.internalToolExecutionEnabled(false)
-					.build();
-		} else {
-			chatOptions.setToolCallbacks(filteredToolCallbacks);
-			chatOptions.setInternalToolExecutionEnabled(false);
-		}
+        var promptSpec = this.chatClient.prompt()
+                .messages(messages)
+                .advisors(this.advisors);
 
-		return chatClient.prompt()
-				.options(chatOptions)
-				.messages(messages)
-				.advisors(advisors);
+        ToolCallingChatOptions requestOptions = modelRequest.getOptions();
+
+        if (requestOptions != null) {
+            requestOptions.setToolCallbacks(filteredToolCallbacks);
+			// force disable internal tool execution to avoid conflict with Agent framework's tool execution management.
+            requestOptions.setInternalToolExecutionEnabled(false);
+            promptSpec.options(requestOptions);
+        } else {
+			// Check if user has set default options in ChatModel or ChatClient.
+			if (promptSpec instanceof DefaultChatClient.DefaultChatClientRequestSpec defaultChatClientRequestSpec) {
+				ChatOptions options = defaultChatClientRequestSpec.getChatOptions();
+				// If no default options set, create new ToolCallingChatOptions with filtered tool callbacks and toolExecution disabled.
+				if (options == null) {
+					options = ToolCallingChatOptions.builder()
+							.toolCallbacks(filteredToolCallbacks)
+							.internalToolExecutionEnabled(false)
+							.build();
+					defaultChatClientRequestSpec.options(options);
+				}
+				// If options is ToolCallingChatOptions, set filtered tool callbacks and toolExecution disabled.
+				else if (options instanceof ToolCallingChatOptions toolCallingChatOptions) {
+					toolCallingChatOptions.setToolCallbacks(filteredToolCallbacks);
+					toolCallingChatOptions.setInternalToolExecutionEnabled(false);
+				}
+			} else if (!filteredToolCallbacks.isEmpty()) {
+				promptSpec.tools(filteredToolCallbacks);
+			}
+        }
+
+        return promptSpec;
 	}
 
 	public String getName() {
@@ -486,6 +512,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		private String outputSchema;
 
 		private String systemPrompt;
+
+		private TemplateRenderer templateRenderer;
 
 		private ChatClient chatClient;
 
@@ -518,6 +546,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder systemPrompt(String systemPrompt) {
 			this.systemPrompt = systemPrompt;
+			return this;
+		}
+
+		public Builder templateRenderer(TemplateRenderer templateRenderer) {
+			this.templateRenderer = templateRenderer;
 			return this;
 		}
 

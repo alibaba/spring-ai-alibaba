@@ -15,7 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
@@ -27,10 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.http.HttpHeaders;
 
 import java.util.List;
 import java.util.Optional;
@@ -45,29 +42,10 @@ class SupervisorAgentTest {
 	@BeforeEach
 	void setUp() {
 		// Create DashScopeApi instance using the API key from environment variable
-//		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 
 		// Create DashScope ChatModel instance
-//		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
-
-		HttpHeaders httpHeaders = new HttpHeaders();
-		httpHeaders.add("X-PLATFORM", "dashscope");
-
-		OpenAiApi openAiApi = OpenAiApi.builder()
-				.apiKey("6607aa76b08245109a406ceac465356c")
-				.baseUrl("http://1688openai.alibaba-inc.com")
-				.headers(httpHeaders)
-				.build();
-
-		chatModel = OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
-				.defaultOptions(
-						OpenAiChatOptions.builder()
-								.model("qwen3-next-80b-a3b-instruct")
-								.reasoningEffort("high")      // 启用高强度推理思考
-								.build()
-				)
-				.build();
+		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
 	}
 
 	@Test
@@ -552,9 +530,8 @@ class SupervisorAgentTest {
 				.name("writer_agent")
 				.model(chatModel)
 				.description("擅长创作各类文章")
-				.instruction("你是一个知名的作家，擅长写诗，20字以内。请根据用户的提问进行回答")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答")
 				.outputKey("writer_output")
-				.enableLogging(false)
 				.build();
 
 		// Use HookFactory to create a LogAgentHook
@@ -573,7 +550,7 @@ class SupervisorAgentTest {
 					## 可用的子Agent及其职责
 					
 					### writer_agent
-					- **功能**: 你是一个知名的诗歌创作者。请根据用户的提问进行回答
+					- **功能**: 你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答
 					- **输出**: writer_output
 					
 					## 响应格式
@@ -585,13 +562,14 @@ class SupervisorAgentTest {
 			System.out.println("\n========== Starting SupervisorAgent with HookFactory Test ==========\n");
 
 			// Execute the agent
-			Optional<OverAllState> result = supervisorAgent.invoke("帮我写一篇关于春天的诗");
+			Optional<OverAllState> result = supervisorAgent.invoke("帮我写一篇关于春天的短文");
 
 			assertTrue(result.isPresent(), "Result should be present");
 			OverAllState state = result.get();
 
 			// Verify input is preserved
 			assertTrue(state.value("input").isPresent(), "Input should be present in state");
+			assertEquals("帮我写一篇关于春天的短文", state.value("input").get(), "Input should match the request");
 
 			// Verify at least one agent output exists
 			boolean hasWriterOutput = state.value("writer_output").isPresent();

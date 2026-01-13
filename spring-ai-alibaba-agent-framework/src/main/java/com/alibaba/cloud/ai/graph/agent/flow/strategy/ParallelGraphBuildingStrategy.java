@@ -22,7 +22,6 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.EnhancedParallelResultAggregator;
-import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import java.util.ArrayList;
@@ -41,10 +40,16 @@ public class ParallelGraphBuildingStrategy extends AbstractFlowGraphBuildingStra
 			throws GraphStateException {
 		validateParallelConfig(config);
 
-		ParallelAgent parallelRootAgent = (ParallelAgent) getRootAgent();
+		ParallelAgent parallelRootAgent = (ParallelAgent) this.rootAgent;
+
+		// Add beforeModel hooks
+		String parallelStartNode = this.rootAgent.name();
+		if (!this.beforeModelHooks.isEmpty()) {
+			parallelStartNode = addBeforeModelHookNodesToGraph(this.graph, this.rootAgent.name(), this.beforeModelHooks);
+		}
 
 		// Determine which aggregator to use based on available configuration
-		String aggregatorNodeName = getRootAgent().name() + "_aggregator";
+		String aggregatorNodeName = this.rootAgent.name() + "_aggregator";
 
 		// Check if we have parallel-specific configuration (merge strategy, concurrency)
 		Object mergeStrategy = config.getCustomProperty("mergeStrategy");
@@ -58,24 +63,11 @@ public class ParallelGraphBuildingStrategy extends AbstractFlowGraphBuildingStra
 		this.graph.addNode(aggregatorNodeName, node_async(new EnhancedParallelResultAggregator(parallelRootAgent.mergeOutputKey(),
 				baseAgentList, mergeStrategy, maxConcurrency)));
 
-		// Determine the start node for parallel execution
-		// If there are beforeModel hooks, they will be connected to rootAgent.name() by the template method
-		// Otherwise, rootAgent.name() will be the entry point
-		String parallelStartNode = getRootAgent().name();
-
-		// Add a transparent node as the parallel start point
-		this.graph.addNode(parallelStartNode, node_async(new TransparentNode()));
-
-		// Connect beforeModel hooks to the parallel start node if they exist
-		if (!this.beforeModelHooks.isEmpty()) {
-			connectBeforeModelHookEdges(this.graph, parallelStartNode, this.beforeModelHooks);
-		}
-
 		// Process sub-agents for parallel execution
 		for (Agent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
 			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, this.graph);
-			// Connect parallel start node to each sub-agent (fan-out)
+			// Connect root to each sub-agent (fan-out)
 			this.graph.addEdge(parallelStartNode, subAgent.name());
 			// Connect each sub-agent to aggregator (gather)
 			this.graph.addEdge(subAgent.name(), aggregatorNodeName);
@@ -84,7 +76,7 @@ public class ParallelGraphBuildingStrategy extends AbstractFlowGraphBuildingStra
 		// Add afterModel hooks if present
 		String finalNode = aggregatorNodeName;
 		if (!this.afterModelHooks.isEmpty()) {
-			finalNode = connectAfterModelHookEdges(this.graph, aggregatorNodeName, this.afterModelHooks);
+			finalNode = addAfterModelHookNodesToGraph(this.graph, aggregatorNodeName, this.afterModelHooks);
 		}
 
 		// Connect final node to exit node

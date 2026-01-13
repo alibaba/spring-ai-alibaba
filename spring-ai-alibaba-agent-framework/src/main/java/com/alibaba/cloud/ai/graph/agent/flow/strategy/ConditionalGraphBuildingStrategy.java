@@ -24,7 +24,6 @@ import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.ConditionEvaluator;
 import com.alibaba.cloud.ai.graph.agent.flow.node.ConditionEvaluatorAction;
-import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
@@ -41,28 +40,21 @@ public class ConditionalGraphBuildingStrategy extends AbstractFlowGraphBuildingS
 			throws GraphStateException {
 		validateConditionalConfig(config);
 
-		// Determine the start node for conditional execution
-		// If there are beforeModel hooks, they will be connected to rootAgent.name() by the template method
-		// Otherwise, rootAgent.name() will be the entry point
-		String conditionalStartNode = getRootAgent().name();
-
-		// Add a transparent node as the conditional start point
-		this.graph.addNode(conditionalStartNode, node_async(new TransparentNode()));
-
-		// Connect beforeModel hooks to the conditional start node if they exist
+		// Add beforeModel hooks
+		String conditionSourceNode = this.rootAgent.name();
 		if (!this.beforeModelHooks.isEmpty()) {
-			connectBeforeModelHookEdges(this.graph, conditionalStartNode, this.beforeModelHooks);
+			conditionSourceNode = addBeforeModelHookNodesToGraph(this.graph, this.rootAgent.name(), this.beforeModelHooks);
 		}
 
 		// Add condition evaluator node
-		String conditionNodeName = getRootAgent().name() + "_condition";
+		String conditionNodeName = this.rootAgent.name() + "_condition";
 		this.graph.addNode(conditionNodeName, node_async(new ConditionEvaluator()));
-		this.graph.addEdge(conditionalStartNode, conditionNodeName);
+		this.graph.addEdge(conditionSourceNode, conditionNodeName);
 
 		// Add afterModel hooks if present for condition node
 		String routingSourceNode = conditionNodeName;
 		if (!this.afterModelHooks.isEmpty()) {
-			routingSourceNode = connectAfterModelHookEdges(this.graph, conditionNodeName, this.afterModelHooks);
+			routingSourceNode = addAfterModelHookNodesToGraph(this.graph, conditionNodeName, this.afterModelHooks);
 		}
 
 		// Process conditional agents

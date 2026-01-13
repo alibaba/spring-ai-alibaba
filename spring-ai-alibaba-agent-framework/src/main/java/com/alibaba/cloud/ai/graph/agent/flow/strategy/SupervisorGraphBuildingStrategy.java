@@ -17,18 +17,16 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.SupervisorAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.SupervisorEdgeAction;
-import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
-import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * Strategy for building supervisor-based routing graphs. In a supervisor graph, an LLM
@@ -43,10 +41,15 @@ public class SupervisorGraphBuildingStrategy extends AbstractFlowGraphBuildingSt
 			throws GraphStateException {
 		validateSupervisorConfig(config);
 
-		// Determine which agent to use as the supervisor node
-		Agent rootAgent = getRootAgent();
-		// Fallback to rootAgent with TransparentNode (already added by parent class)
-		this.graph.addNode(rootAgent.name(), node_async(new TransparentNode()));
+		SupervisorAgent supervisorRootAgent = (SupervisorAgent) this.rootAgent;
+
+		// Add and chain beforeModel hooks
+		if (!this.beforeModelHooks.isEmpty()) {
+			addBeforeModelHookNodesToGraph(this.graph, this.rootAgent.name(), this.beforeModelHooks);
+		}
+
+		// Add afterModel hook nodes and get the routing target
+		String afterModelNodeName = addAfterModelHookNodesToGraph(this.graph, this.rootAgent.name(), this.afterModelHooks);
 
 		// Process sub-agents for routing
 		Map<String, String> edgeRoutingMap = new HashMap<>();
@@ -61,11 +64,9 @@ public class SupervisorGraphBuildingStrategy extends AbstractFlowGraphBuildingSt
 		edgeRoutingMap.put(END, END);
 
 		// Connect supervisor to routing logic
-		// Note: afterModel hooks will be connected by parent class after buildCoreGraph() returns
-		String routingSourceNode = this.afterModelHooks.isEmpty() ? rootAgent.name()
-				: Hook.getFullHookName(this.afterModelHooks.get(this.afterModelHooks.size() - 1)) + ".afterModel";
+		String routingSourceNode = this.afterModelHooks.isEmpty() ? this.rootAgent.name() : afterModelNodeName;
 		this.graph.addConditionalEdges(routingSourceNode,
-				new SupervisorEdgeAction(config.getChatModel(), getRootAgent(), config.getSubAgents()), edgeRoutingMap);
+				new SupervisorEdgeAction(config.getChatModel(), supervisorRootAgent, config.getSubAgents()), edgeRoutingMap);
 	}
 
 	@Override

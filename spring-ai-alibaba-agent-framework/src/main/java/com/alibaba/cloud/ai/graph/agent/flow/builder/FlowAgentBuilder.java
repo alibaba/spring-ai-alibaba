@@ -24,6 +24,8 @@ import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -123,12 +125,38 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	}
 
 	/**
-	 * Sets the hooks for the agent.
-	 * @param hooks the list of hooks to use
+	 * Sets hooks for the agent. Hooks allow you to intercept and modify agent execution
+	 * at various points (before/after agent, before/after model calls).
+	 * <p>
+	 * Common use cases include:
+	 * <ul>
+	 *   <li>Message trimming to reduce token consumption</li>
+	 *   <li>Conversation summarization for long-running threads</li>
+	 *   <li>Logging and monitoring</li>
+	 *   <li>Content filtering and safety checks</li>
+	 * </ul>
+	 * @param hooks varargs of Hook instances
 	 * @return this builder instance for method chaining
 	 */
-	public B hooks(List<Hook> hooks) {
-		this.hooks = hooks;
+	public B hooks(Hook... hooks) {
+		if (this.hooks == null) {
+			this.hooks = new ArrayList<>();
+		}
+		this.hooks.addAll(Arrays.asList(hooks));
+		return self();
+	}
+
+	/**
+	 * Sets hooks for the agent from a list.
+	 * @param hooks list of Hook instances
+	 * @return this builder instance for method chaining
+	 * @see #hooks(Hook...)
+	 */
+	public B hooks(List<? extends Hook> hooks) {
+		if (this.hooks == null) {
+			this.hooks = new ArrayList<>();
+		}
+		this.hooks.addAll(hooks);
 		return self();
 	}
 
