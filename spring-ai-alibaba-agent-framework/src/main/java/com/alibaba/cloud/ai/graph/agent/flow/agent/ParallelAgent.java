@@ -62,7 +62,7 @@ public class ParallelAgent extends FlowAgent {
 	private final Integer maxConcurrency;
 
 	protected ParallelAgent(ParallelAgentBuilder builder) {
-		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor);
+		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor, builder.hooks);
 		this.mergeStrategy = builder.mergeStrategy != null ? builder.mergeStrategy : new DefaultMergeStrategy();
 		this.maxConcurrency = builder.maxConcurrency;
 		this.mergeOutputKey = builder.mergeOutputKey;

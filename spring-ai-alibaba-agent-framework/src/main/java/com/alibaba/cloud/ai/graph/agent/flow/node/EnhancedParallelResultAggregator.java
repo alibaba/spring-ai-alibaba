@@ -96,7 +96,10 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 			finalResult = new HashMap<>(subAgentResults);
 		}
 
-		result.put(outputKey, finalResult);
+		// Only put the merged result if outputKey is not null
+		if (outputKey != null) {
+			result.put(outputKey, finalResult);
+		}
 
 		Map<String, KeyStrategy> releaseStrategyResults = subAgentResults.entrySet().stream()
 				.collect(HashMap::new, 

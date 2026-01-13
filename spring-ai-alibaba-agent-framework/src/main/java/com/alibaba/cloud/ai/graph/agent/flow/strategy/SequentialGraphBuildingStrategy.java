@@ -19,8 +19,10 @@ import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
+import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * Strategy for building sequential execution graphs. In a sequential graph, agents are
@@ -34,14 +36,21 @@ public class SequentialGraphBuildingStrategy extends AbstractFlowGraphBuildingSt
 			throws GraphStateException {
 		validateSequentialConfig(config);
 
-		// Add beforeModel hooks
-		String currentNodeName = this.rootAgent.name();
+		// Determine the start node for sequential execution
+		// If there are beforeModel hooks, they will be connected to rootAgent.name() by the template method
+		// Otherwise, rootAgent.name() will be the entry point
+		String sequentialStartNode = getRootAgent().name();
+
+		// Add a transparent node as the sequential start point
+		this.graph.addNode(sequentialStartNode, node_async(new TransparentNode()));
+
+		// Connect beforeModel hooks to the sequential start node if they exist
 		if (!this.beforeModelHooks.isEmpty()) {
-			currentNodeName = addBeforeModelHookNodesToGraph(this.graph, this.rootAgent.name(), this.beforeModelHooks);
+			connectBeforeModelHookEdges(this.graph, sequentialStartNode, this.beforeModelHooks);
 		}
 
 		// Process sub-agents sequentially
-		Agent currentAgent = this.rootAgent;
+		Agent currentAgent = getRootAgent();
 		for (Agent subAgent : config.getSubAgents()) {
 			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, this.graph);
 			this.graph.addEdge(currentAgent.name(), subAgent.name());
@@ -49,15 +58,15 @@ public class SequentialGraphBuildingStrategy extends AbstractFlowGraphBuildingSt
 		}
 
 		// Add afterModel hooks if present
+		String finalNode;
 		if (!this.afterModelHooks.isEmpty()) {
-			String afterModelNodeName = addAfterModelHookNodesToGraph(this.graph, currentAgent.name(), this.afterModelHooks);
-			currentNodeName = afterModelNodeName;
+			finalNode = connectAfterModelHookEdges(this.graph, currentAgent.name(), this.afterModelHooks);
 		} else {
-			currentNodeName = currentAgent.name();
+			finalNode = currentAgent.name();
 		}
 
 		// Connect the last node to exit node
-		this.graph.addEdge(currentNodeName, this.exitNode);
+		this.graph.addEdge(finalNode, this.exitNode);
 	}
 
 	@Override
