@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.interceptor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Request object for tool calls.
@@ -28,12 +29,24 @@ public class ToolCallRequest {
 	private final String arguments;
 	private final String toolCallId;
 	private final Map<String, Object> context;
+	private final ToolCallExecutionContext executionContext;
 
-	public ToolCallRequest(String toolName, String arguments, String toolCallId, Map<String, Object> context) {
+	public ToolCallRequest(String toolName, String arguments, String toolCallId, Map<String, Object> context,
+			ToolCallExecutionContext executionContext) {
 		this.toolName = toolName;
 		this.arguments = arguments;
 		this.toolCallId = toolCallId;
 		this.context = context;
+		this.executionContext = executionContext;
+	}
+
+	/**
+	 * Backward-compatible constructor.
+	 * <p>
+	 * {@code executionContext} is optional and can be injected via {@link Builder}.
+	 */
+	public ToolCallRequest(String toolName, String arguments, String toolCallId, Map<String, Object> context) {
+		this(toolName, arguments, toolCallId, context, null);
 	}
 
 	public static Builder builder() {
@@ -64,11 +77,16 @@ public class ToolCallRequest {
 		return context;
 	}
 
+	public Optional<ToolCallExecutionContext> getExecutionContext() {
+		return Optional.ofNullable(executionContext);
+	}
+
 	public static class Builder {
 		private String toolName;
 		private String arguments;
 		private String toolCallId;
 		private Map<String, Object> context;
+		private ToolCallExecutionContext executionContext;
 
 		public Builder toolCall(AssistantMessage.ToolCall toolCall) {
 			this.toolName = toolCall.name();
@@ -97,8 +115,13 @@ public class ToolCallRequest {
 			return this;
 		}
 
+		public Builder executionContext(ToolCallExecutionContext executionContext) {
+			this.executionContext = executionContext;
+			return this;
+		}
+
 		public ToolCallRequest build() {
-			return new ToolCallRequest(toolName, arguments, toolCallId, context);
+			return new ToolCallRequest(toolName, arguments, toolCallId, context, executionContext);
 		}
 	}
 }
