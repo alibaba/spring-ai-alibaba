@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -242,7 +243,6 @@ public class ParallelNode extends Node {
 		return format("%s_%s", MAX_CONCURRENCY_KEY, requireNonNull(nodeId, "nodeId cannot be null!"));
 	}
 
-	public record AsyncParallelNodeAction(String nodeId, List<AsyncNodeActionWithConfig> actions,
 	/**
 	 * Formats the target node ID for aggregation strategy configuration.
 	 * This adds a prefix to distinguish target node IDs used for aggregation strategy lookup.
