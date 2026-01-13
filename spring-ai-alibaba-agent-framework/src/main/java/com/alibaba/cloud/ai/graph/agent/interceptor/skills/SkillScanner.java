@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook.skills;
+package com.alibaba.cloud.ai.graph.agent.interceptor.skills;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,13 +39,11 @@ public class SkillScanner {
 
 	private final Yaml yaml = new Yaml();
 
-	/**
-	 * Scan a directory for skills.
-	 * 
-	 * @param skillsDirectory the directory containing skill folders
-	 * @return list of discovered skill metadata
-	 */
 	public List<SkillMetadata> scan(String skillsDirectory) {
+		return scan(skillsDirectory, "user");
+	}
+
+	public List<SkillMetadata> scan(String skillsDirectory, String source) {
 		List<SkillMetadata> skills = new ArrayList<>();
 		Path skillsPath = Path.of(skillsDirectory);
 
@@ -63,7 +61,7 @@ public class SkillScanner {
 			paths.filter(Files::isDirectory)
 				.forEach(skillDir -> {
 					try {
-						SkillMetadata metadata = loadSkill(skillDir);
+						SkillMetadata metadata = loadSkill(skillDir, source);
 						if (metadata != null) {
 							skills.add(metadata);
 							logger.info("Loaded skill: {} from {}", metadata.getName(), skillDir);
@@ -80,13 +78,11 @@ public class SkillScanner {
 		return skills;
 	}
 
-	/**
-	 * Load a single skill from a directory.
-	 * 
-	 * @param skillDir the skill directory containing SKILL.md
-	 * @return the skill metadata, or null if the skill is invalid
-	 */
 	public SkillMetadata loadSkill(Path skillDir) {
+		return loadSkill(skillDir, "user");
+	}
+
+	public SkillMetadata loadSkill(Path skillDir, String source) {
 		Path skillFile = skillDir.resolve("SKILL.md");
 		
 		if (!Files.exists(skillFile)) {
@@ -119,26 +115,8 @@ public class SkillScanner {
 			SkillMetadata.Builder builder = SkillMetadata.builder()
 				.name(name)
 				.description(description)
-				.skillPath(skillDir.toString());
-
-			// Optional fields
-			if (frontmatter.containsKey("allowed-tools")) {
-				Object allowedTools = frontmatter.get("allowed-tools");
-				if (allowedTools instanceof List) {
-					@SuppressWarnings("unchecked")
-					List<String> tools = (List<String>) allowedTools;
-					builder.allowedTools(tools);
-				} else if (allowedTools instanceof String) {
-					// Handle comma-separated string
-					String toolsStr = (String) allowedTools;
-					List<String> tools = List.of(toolsStr.split("\\s*,\\s*"));
-					builder.allowedTools(tools);
-				}
-			}
-
-			if (frontmatter.containsKey("model")) {
-				builder.model((String) frontmatter.get("model"));
-			}
+				.skillPath(skillDir.toString())
+				.source(source);
 
 			return builder.build();
 
@@ -151,13 +129,6 @@ public class SkillScanner {
 		}
 	}
 
-	/**
-	 * Parse YAML frontmatter from skill content.
-	 * Frontmatter is delimited by --- at the start and end.
-	 * 
-	 * @param content the full content of SKILL.md
-	 * @return the parsed frontmatter as a map, or null if not found
-	 */
 	private Map<String, Object> parseFrontmatter(String content) {
 		if (!content.startsWith("---")) {
 			return null;

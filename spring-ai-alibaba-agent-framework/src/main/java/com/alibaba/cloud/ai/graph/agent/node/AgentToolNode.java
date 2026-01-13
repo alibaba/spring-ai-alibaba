@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallExecutionContext;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
@@ -194,6 +195,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		ToolCallRequest request = ToolCallRequest.builder()
 				.toolCall(toolCall)
 				.context(config.metadata().orElse(new HashMap<>()))
+				.executionContext(new ToolCallExecutionContext(config, state))
 				.build();
 
 		// Create base handler that actually executes the tool
