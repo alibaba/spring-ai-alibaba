@@ -36,7 +36,6 @@ public class FlowAgentHookTest {
 
 	@BeforeEach
 	public void setUp() {
-		// Create DashScopeApi instance using the API key from environment variable
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 				.build();
