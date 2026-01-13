@@ -114,7 +114,7 @@ public class ParallelAgent extends FlowAgent {
 		// If maxConcurrency is set, add it to the config metadata
 		if (this.maxConcurrency != null) {
 			return RunnableConfig.builder(baseConfig)
-					.addMetadata(ParallelNode.formatMaxConcurrencyKey(this.name()), this.maxConcurrency)
+					.addMetadata(ParallelNode.formatMaxConcurrencyKey(ParallelNode.formatNodeId(this.name())), this.maxConcurrency)
 					.build();
 		}
 		
@@ -132,7 +132,7 @@ public class ParallelAgent extends FlowAgent {
 		// If maxConcurrency is set, add it to the config metadata
 		if (this.maxConcurrency != null) {
 			return RunnableConfig.builder(baseConfig)
-					.addMetadata(ParallelNode.formatMaxConcurrencyKey(this.name()), this.maxConcurrency)
+					.addMetadata(ParallelNode.formatMaxConcurrencyKey(ParallelNode.formatNodeId(this.name())), this.maxConcurrency)
 					.build();
 		}
 		
