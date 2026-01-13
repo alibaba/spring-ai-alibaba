@@ -283,6 +283,22 @@ public class StateGraph {
 	}
 
 	/**
+	 * Adds node that behave as parallel conditional edges.
+	 * This method allows routing to multiple nodes in parallel based on the multi-command action.
+	 * @param id the identifier of the node
+	 * @param action multi-command action to determine multiple target nodes for parallel execution
+	 * @param mappings the mappings of conditions to target nodes
+	 * @return this state graph instance
+	 * @throws GraphStateException if the node identifier is invalid, the mappings are
+	 * empty, or the node already exists
+	 */
+	public StateGraph addNode(String id, AsyncMultiCommandAction action, Map<String, String> mappings)
+			throws GraphStateException {
+		// SIMPLER IMPLEMENTATION
+		return addNode(id, (state, config) -> completedFuture(Map.of())).addParallelConditionalEdges(id, action, mappings);
+	}
+
+	/**
 	 * Adds a subgraph to the state graph by creating a node with the specified
 	 * identifier. This implies that the subgraph shares the same state with the parent
 	 * graph.
