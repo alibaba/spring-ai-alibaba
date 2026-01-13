@@ -664,7 +664,7 @@ public class WorkflowExample {
 		class PreprocessorNode implements NodeAction {
 			@Override
 			public Map<String, Object> apply(OverAllState state) throws Exception {
-				String input = state.value("input", "").toString();
+				String input = (String) state.value("input", "");
 				// 清理和标准化输入
 				String cleaned = input.trim();
 				System.out.println("预处理: " + cleaned);
