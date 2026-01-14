@@ -72,7 +72,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		//2.load prompt vo
 		PromptVO promptVO = getPromptByKey(nacosOptions, agentVO.getPromptKey());
 		agentVOHolder.setPromptVO(promptVO);
-		this.instruction = promptVO.getTemplate();
+		String systemPrompt = promptVO.getTemplate();
 
 		//3.load model vo
 		ModelVO modelVO = NacosModelInjector.getModelByAgentName(nacosOptions);
@@ -96,7 +96,6 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		}
 
 		clientBuilder.defaultOptions(chatOptions);
-		clientBuilder.defaultSystem(instruction);
 		chatClient = clientBuilder.build();
 
 		//6.load mcp servers
@@ -106,7 +105,9 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		this.tools = convert(nacosOptions, mcpServersVO);
 
 		//7. build tools
-		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder().chatClient(chatClient);
+		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
+				.chatClient(chatClient)
+				.systemPrompt(systemPrompt);
 		if (outputKey != null && !outputKey.isEmpty()) {
 			llmNodeBuilder.outputKey(outputKey);
 		}
@@ -304,7 +305,7 @@ class PromptListener extends AbstractListener {
 		if (promptVO != null && promptVO.getTemplate() != null) {
 			nacosContextHolder.getObservationMetadataAwareOptions().getObservationMetadata()
 					.putAll(getMetadata(promptVO));
-			reactAgent.setInstruction(promptVO.getTemplate());
+			reactAgent.setSystemPrompt(promptVO.getTemplate());
 		}
 
 	}
@@ -341,7 +342,7 @@ class AgentBaseListener extends AbstractListener {
 			PromptVO newPromptVO = getPromptByKey(nacosOptions, newPromptKey);
 			nacosContextHolder.getObservationMetadataAwareOptions().getObservationMetadata()
 					.putAll(getMetadata(newPromptVO));
-			nacosContextHolder.getReactAgent().setInstruction(newPromptVO.getTemplate());
+			nacosContextHolder.getReactAgent().setSystemPrompt(newPromptVO.getTemplate());
 
 			NacosReactAgentBuilder.registerPromptListener(nacosOptions, nacosContextHolder, newPromptKey, nacosContextHolder.getReactAgent());
 		}
