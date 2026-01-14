@@ -96,7 +96,13 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 			finalResult = new HashMap<>(subAgentResults);
 		}
 
-		result.put(outputKey, finalResult);
+		// Only add the merged result if outputKey is not null
+		if (outputKey != null && !outputKey.trim().isEmpty()) {
+			result.put(outputKey, finalResult);
+			logger.debug("Enhanced result aggregation completed. Final result stored under key: {}", outputKey);
+		} else {
+			logger.debug("Enhanced result aggregation completed. No outputKey specified, skipping merged result storage.");
+		}
 
 		Map<String, KeyStrategy> releaseStrategyResults = subAgentResults.entrySet().stream()
 				.collect(HashMap::new, 
@@ -106,8 +112,6 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 		state.updateStateWithKeyStrategies(subAgentResults, releaseStrategyResults);
 
 		result.putAll(subAgentResults);
-
-		logger.debug("Enhanced result aggregation completed. Final result stored under key: {}", outputKey);
 
 		return result;
 	}

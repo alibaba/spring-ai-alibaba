@@ -33,7 +33,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -49,6 +58,8 @@ public class ParallelNode extends Node {
 
 	public static final String PARALLEL_PREFIX = "__PARALLEL__";
 	public static final String PARALLEL_TARGET_PREFIX = "__PARALLEL_TARGET__";
+
+	public static final String MAX_CONCURRENCY_KEY = "__MAX_CONCURRENCY__";
 
 	static {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -86,7 +97,7 @@ public class ParallelNode extends Node {
 	 * Gets the aggregation strategy for a parallel node from the configuration.
 	 * First checks for node-specific strategy using formatted targetNodeId (the node right after parallel branches),
 	 * then falls back to default strategy. If no strategy is configured, defaults to ALL_OF.
-	 * 
+	 *
 	 * @param config the RunnableConfig containing the strategy configuration
 	 * @param targetNodeId the ID of the target node that follows the parallel node
 	 * @return the NodeAggregationStrategy to use
@@ -228,10 +239,14 @@ public class ParallelNode extends Node {
 		return format("%s(%s)", PARALLEL_PREFIX, requireNonNull(nodeId, "nodeId cannot be null!"));
 	}
 
+	public static String formatMaxConcurrencyKey(String nodeId) {
+		return format("%s_%s", MAX_CONCURRENCY_KEY, requireNonNull(nodeId, "nodeId cannot be null!"));
+	}
+
 	/**
 	 * Formats the target node ID for aggregation strategy configuration.
 	 * This adds a prefix to distinguish target node IDs used for aggregation strategy lookup.
-	 * 
+	 *
 	 * @param targetNodeId the ID of the target node that follows the parallel node
 	 * @return formatted target node ID with prefix
 	 */
@@ -242,7 +257,7 @@ public class ParallelNode extends Node {
 	/**
 	 * Represents an asynchronous parallel node action that executes multiple branches concurrently.
 	 * This record encapsulates all the information needed to execute parallel branches and aggregate their results.
-	 * 
+	 *
 	 * @param nodeId the formatted identifier of the parallel node (with {@link #PARALLEL_PREFIX} prefix).
 	 *               This is used for logging and executor lookup in RunnableConfig.
 	 * @param targetNodeId the ID of the target node that follows the parallel branches (the merge node).
@@ -269,7 +284,7 @@ public class ParallelNode extends Node {
 			implements AsyncNodeActionWithConfig {
 
 		private CompletableFuture<Map<String, Object>> evalNodeActionSync(AsyncNodeActionWithConfig action,
-				String actualNodeId, OverAllState state, RunnableConfig config) {
+																		  String actualNodeId, OverAllState state, RunnableConfig config) {
 			LifeListenerUtil.processListenersLIFO(actualNodeId,
 					new LinkedBlockingDeque<>(compileConfig.lifecycleListeners()), state.data(), config, NODE_BEFORE,
 					null);
@@ -361,8 +376,74 @@ public class ParallelNode extends Node {
 			return result;
 		}
 
+		/**
+		 * Executes a node action asynchronously with semaphore-based concurrency control.
+		 * This method ensures that the number of concurrently executing tasks does not exceed
+		 * the specified limit by using a semaphore to acquire permits before execution.
+		 *
+		 * @param action the node action to execute
+		 * @param actualNodeId the ID of the node being executed
+		 * @param state the state snapshot for this execution
+		 * @param config the runnable configuration
+		 * @param executor the executor to use for async execution
+		 * @param semaphore the semaphore used to control concurrency
+		 * @return a CompletableFuture containing the execution results
+		 */
+		private CompletableFuture<Map<String, Object>> evalNodeActionWithSemaphore(
+				AsyncNodeActionWithConfig action,
+				String actualNodeId,
+				OverAllState state,
+				RunnableConfig config,
+				Executor executor,
+				Semaphore semaphore) {
+
+			return CompletableFuture.supplyAsync(() -> {
+				try {
+					// Acquire semaphore permit (blocks if max concurrency reached)
+					logger.debug("Node {} waiting for semaphore permit. Available permits: {}",
+							actualNodeId, semaphore.availablePermits());
+					semaphore.acquire();
+					logger.debug("Node {} acquired semaphore permit. Remaining permits: {}",
+							actualNodeId, semaphore.availablePermits());
+
+					try {
+						logger.debug("Executing task for node {} in thread {} with concurrency control",
+								actualNodeId, Thread.currentThread().getName());
+						return evalNodeActionSync(action, actualNodeId, state, config).join();
+					} finally {
+						// Always release the semaphore permit
+						semaphore.release();
+						logger.debug("Node {} released semaphore permit. Available permits: {}",
+								actualNodeId, semaphore.availablePermits());
+					}
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					logger.error("Node {} was interrupted while waiting for semaphore", actualNodeId, e);
+					throw new RuntimeException("Interrupted while waiting for execution slot", e);
+				} catch (Exception e) {
+					logger.error("Error executing task for node {}", actualNodeId, e);
+					throw new RuntimeException(e);
+				}
+			}, executor);
+		}
+
 		@Override
 		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+			// Get maxConcurrency from config metadata
+			Integer maxConcurrency = config.metadata(formatMaxConcurrencyKey(nodeId))
+					.filter(value -> value instanceof Integer)
+					.map(Integer.class::cast)
+					.orElse(null);
+
+			// Create semaphore for concurrency control if maxConcurrency is set
+			Semaphore semaphore = maxConcurrency != null ? new Semaphore(maxConcurrency) : null;
+
+			if (semaphore != null) {
+				logger.info("Parallel node {} will execute with max concurrency: {}", nodeId, maxConcurrency);
+			} else {
+				logger.debug("Parallel node {} will execute without concurrency limit", nodeId);
+			}
+
 			List<CompletableFuture<Map<String, Object>>> futures = new ArrayList<>();
 			for (int i = 0; i < actions.size(); i++) {
 				AsyncNodeActionWithConfig action = actions.get(i);
@@ -375,7 +456,13 @@ public class ParallelNode extends Node {
 				// First try to get node-specific executor, then default executor, finally use DEFAULT_EXECUTOR
 				Executor executor = getExecutor(config, nodeId);
 
-				CompletableFuture<Map<String, Object>> future = evalNodeActionAsync(action, actualNodeId, stateSnapshot, config, executor);
+				// Use semaphore-controlled execution if maxConcurrency is set
+				CompletableFuture<Map<String, Object>> future;
+				if (semaphore != null) {
+					future = evalNodeActionWithSemaphore(action, actualNodeId, stateSnapshot, config, executor, semaphore);
+				} else {
+					future = evalNodeActionAsync(action, actualNodeId, stateSnapshot, config, executor);
+				}
 
 				futures.add(future);
 			}
@@ -506,7 +593,7 @@ public class ParallelNode extends Node {
 
 	/**
 	 * Constructs a new ParallelNode instance.
-	 * 
+	 *
 	 * @param id the identifier of the parallel node (will be formatted with {@link #PARALLEL_PREFIX})
 	 * @param targetNodeId the ID of the target node that follows the parallel branches (the merge node).
 	 *                     This is used to look up the aggregation strategy configuration (ANY_OF or ALL_OF)
