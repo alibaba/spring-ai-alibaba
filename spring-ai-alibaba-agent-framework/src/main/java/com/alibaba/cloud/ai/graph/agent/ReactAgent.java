@@ -796,6 +796,10 @@ public class ReactAgent extends BaseAgent {
 		llmNode.setInstruction(instruction);
 	}
 
+	public void setSystemPrompt(String systemPrompt) {
+		llmNode.setSystemPrompt(systemPrompt);
+	}
+
 	public Map<String, Object> getThreadState(String threadId) {
 		return threadIdStateMap.get(threadId);
 	}
