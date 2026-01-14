@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Test class for FlowAgent subclasses with Hook functionality.
  * Tests all FlowAgent implementations with LogAgentHook and prints Mermaid graph representation.
  *
- * @author haojunpan.phj (Jackie)
+ * @author haojun.phj (Jackie)
  * @since 2025/01/13
  */
 public class FlowAgentHookTest {

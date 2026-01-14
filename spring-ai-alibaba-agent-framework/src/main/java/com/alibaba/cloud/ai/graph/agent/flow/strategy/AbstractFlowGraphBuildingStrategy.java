@@ -47,7 +47,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * their specific graph structure.
  * </p>
  *
- * @author haojunpan.phj (Jackie)
+ * @author haojun.phj (Jackie)
  * @since 2025-01-07
  */
 public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuildingStrategy {
