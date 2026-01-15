@@ -969,5 +969,45 @@ class ReactAgentTest {
 		assertTrue(response.getText().length() > 0, "响应应该有内容");
 	}
 
-}
 
+	@Test
+	public void testDynamicSystemPromptUpdate() throws Exception {
+		String initialSystemPrompt = "你是一个专业的技术助手，回答要简洁明了。";
+		String updatedSystemPrompt = "你是一个诗歌创作专家，用优美的语言回答问题。";
+		String finalSystemPrompt = "你是一个数学专家，用精确的数字回答问题。";
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("dynamic_system_prompt_agent")
+				.model(chatModel)
+				.systemPrompt(initialSystemPrompt)
+				.saver(new MemorySaver())
+				.enableLogging(true)
+				.build();
+
+		assertNotNull(agent, "Agent 不应为空");
+
+		AssistantMessage response1 = agent.call("什么是 Java？");
+		assertNotNull(response1, "第一次响应不应为空");
+		assertFalse(response1.getText().isEmpty(), "第一次响应不应为空字符串");
+		System.out.println(response1.getText());
+
+		agent.setSystemPrompt(updatedSystemPrompt);
+
+		AssistantMessage response2 = agent.call("什么是 Spring？");
+		assertNotNull(response2, "第二次响应不应为空");
+		assertFalse(response2.getText().isEmpty(), "第二次响应不应为空字符串");
+		System.out.println(response2.getText());
+
+		agent.setSystemPrompt(finalSystemPrompt);
+
+		AssistantMessage response3 = agent.call("1+1等于多少？");
+		assertNotNull(response3, "第三次响应不应为空");
+		assertFalse(response3.getText().isEmpty(), "第三次响应不应为空字符串");
+		System.out.println(response3.getText());
+
+		assertTrue(response1.getText().length() > 0, "第一次响应应该有内容");
+		assertTrue(response2.getText().length() > 0, "第二次响应应该有内容");
+		assertTrue(response3.getText().length() > 0, "第三次响应应该有内容");
+	}
+
+}
