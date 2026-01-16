@@ -121,7 +121,7 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 					.addDeserializer(AssistantMessage.class, ai)
 					.addDeserializer(Document.class, document)
 					.addDeserializer(AgentInstructionMessage.class, templatedUser)
-				    .addDeserializer(StreamingOutput.class, streamingOutput)
+				.addDeserializer(StreamingOutput.class, streamingOutput)
 					.addDeserializer(DeepSeekAssistantMessage.class, new DeepSeekAssistantMessageHandler.Deserializer());
 		}
 
@@ -167,7 +167,7 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 					.addSerializer(Document.class, document)
 					.addSerializer(AgentInstructionMessage.class, templatedUser)
 					.addSerializer(NodeOutput.class, output)
-				    .addSerializer(StreamingOutput.class, streamingOutput)
+				.addSerializer(StreamingOutput.class, streamingOutput)
 					.addSerializer(DeepSeekAssistantMessage.class, new DeepSeekAssistantMessageHandler.Serializer());
 		}
 
