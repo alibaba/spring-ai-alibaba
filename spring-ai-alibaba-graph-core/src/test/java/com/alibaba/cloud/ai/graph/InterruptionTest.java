@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
@@ -492,6 +493,121 @@ public class InterruptionTest {
 					.addMetadata("reason", "streaming_interrupted_after")
 					.build());
 			}
+			return Optional.empty();
+		}
+	}
+
+	@Test
+	public void asyncNodeActionWithInterruptableActionShouldWork() throws Exception {
+		var saver = MemorySaver.builder().build();
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+			.defaultStrategy(KeyStrategy.REPLACE)
+			.addStrategy("messages")
+			.build();
+
+		var interruptableAsyncNode = new AsyncNodeActionWithInterruptable();
+
+		var workflow = new StateGraph(keyStrategyFactory)
+			.addNode("A", _nodeAction("A"))
+			.addNode("B", interruptableAsyncNode)
+			.addNode("C", _nodeAction("C"))
+			.addEdge(START, "A")
+			.addEdge("A", "B")
+			.addEdge("B", "C")
+			.addEdge("C", END)
+			.compile(CompileConfig.builder()
+				.saverConfig(SaverConfig.builder().register(saver).build())
+				.build());
+
+		var runnableConfig = RunnableConfig.builder().build();
+		AtomicReference<NodeOutput> lastOutputRef = new AtomicReference<>();
+
+		var results = workflow.stream(Map.of("trigger_interrupt_after", true), runnableConfig)
+			.doOnNext(output -> {
+				System.out.println("Output: " + output);
+				lastOutputRef.set(output);
+			})
+			.map(NodeOutput::node)
+			.collectList()
+			.block();
+
+		assertIterableEquals(List.of(START, "A", "B"), results);
+		assertInstanceOf(InterruptionMetadata.class, lastOutputRef.get());
+
+		InterruptionMetadata metadata = (InterruptionMetadata) lastOutputRef.get();
+		assertTrue(metadata.metadata().isPresent());
+		assertEquals("async_node_interrupted_after", metadata.metadata().get().get("reason"));
+
+		RunnableConfig resumeConfig = RunnableConfig.builder()
+			.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "continue")
+			.build();
+
+		results = workflow.stream(null, resumeConfig)
+			.doOnNext(output -> System.out.println("Resume output: " + output))
+			.map(NodeOutput::node)
+			.collectList()
+			.block();
+
+		assertIterableEquals(List.of("C", END), results);
+	}
+
+	@Test
+	public void asyncNodeActionWithInterruptableActionNoInterruptWhenNotTriggered() throws Exception {
+		var saver = MemorySaver.builder().build();
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+			.defaultStrategy(KeyStrategy.REPLACE)
+			.addStrategy("messages")
+			.build();
+
+		var interruptableAsyncNode = new AsyncNodeActionWithInterruptable();
+
+		var workflow = new StateGraph(keyStrategyFactory)
+			.addNode("A", _nodeAction("A"))
+			.addNode("B", interruptableAsyncNode)
+			.addNode("C", _nodeAction("C"))
+			.addEdge(START, "A")
+			.addEdge("A", "B")
+			.addEdge("B", "C")
+			.addEdge("C", END)
+			.compile(CompileConfig.builder()
+				.saverConfig(SaverConfig.builder().register(saver).build())
+				.build());
+
+		var runnableConfig = RunnableConfig.builder().build();
+
+		var results = workflow.stream(Map.of("trigger_interrupt_after", false), runnableConfig)
+			.doOnNext(output -> System.out.println("Output: " + output))
+			.map(NodeOutput::node)
+			.collectList()
+			.block();
+
+		assertIterableEquals(List.of(START, "A", "B", "C", END), results);
+	}
+
+	static class AsyncNodeActionWithInterruptable implements AsyncNodeAction, InterruptableAction {
+
+		@Override
+		public CompletableFuture<Map<String, Object>> apply(OverAllState state) {
+			return CompletableFuture.completedFuture(Map.of("messages", "B"));
+		}
+
+		@Override
+		public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+			return Optional.empty();
+		}
+
+		@Override
+		public Optional<InterruptionMetadata> interruptAfter(String nodeId, OverAllState state,
+				Map<String, Object> actionResult, RunnableConfig config) {
+			Boolean shouldInterrupt = (Boolean) state.value("trigger_interrupt_after").orElse(false);
+
+			if (Boolean.TRUE.equals(shouldInterrupt)) {
+				return Optional.of(InterruptionMetadata.builder(nodeId, state)
+					.addMetadata("reason", "async_node_interrupted_after")
+					.addMetadata("action_result", actionResult)
+					.build());
+			}
+
 			return Optional.empty();
 		}
 	}
