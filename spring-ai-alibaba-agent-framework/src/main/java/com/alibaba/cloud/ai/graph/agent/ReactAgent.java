@@ -54,6 +54,7 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonS
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -92,6 +93,9 @@ import static java.lang.String.format;
 
 public class ReactAgent extends BaseAgent {
 	Logger logger = LoggerFactory.getLogger(ReactAgent.class);
+
+	private static final String WRAPPED_RESPONSE_HANDLER = AGENT_TOOL_NAME + "_WRAPPED_RESPONSE_HANDLER_";
+	private static final String WRAPPED_RESPONSE_CLEANUP = AGENT_TOOL_NAME + "_WRAPPED_RESPONSE_CLEANUP_";
 
 	private final ConcurrentMap<String, Map<String, Object>> threadIdStateMap;
 
@@ -223,13 +227,26 @@ public class ReactAgent extends BaseAgent {
 					.orElseThrow(() -> new IllegalStateException("Output key " + outputKey + " not found in agent state") );
 		}
 
-        // Add a validation instance when performing message conversion to
-        // avoid potential type conversion exceptions.
-        return state.flatMap(s -> s.value("messages"))
-                .stream()
-                .flatMap(messageList -> ((List<?>) messageList).stream()
-                        .filter(msg -> msg instanceof AssistantMessage)
-                        .map(msg -> (AssistantMessage) msg))
+		// Check for wrapped response content first (handled by cleanupWrappedResponse)
+		if (state.isPresent() && state.get().data().containsKey("_wrapped_response_content")) {
+			String wrappedContent = (String) state.get().data().get("_wrapped_response_content");
+			if (StringUtils.hasText(wrappedContent)) {
+				return AssistantMessage.builder().content(wrappedContent).build();
+			}
+		}
+
+		// Add a validation instance when performing message conversion to
+		// avoid potential type conversion exceptions.
+		List<AssistantMessage> assistantMessages = state.flatMap(s -> s.value("messages"))
+				.stream()
+				.flatMap(messageList -> ((List<?>) messageList).stream()
+						.filter(msg -> msg instanceof AssistantMessage)
+						.map(msg -> (AssistantMessage) msg))
+				.toList();
+
+        // 直接返回最后一条 AssistantMessage
+        // handleWrappedResponse 已经确保没有重复的消息和 isWrappedResponse 标记
+        return assistantMessages.stream()
                 .reduce((first, second) -> second)
                 .orElseThrow(() -> new AgentException("No AssistantMessage found in 'messages' state"));
 	}
@@ -275,6 +292,10 @@ public class ReactAgent extends BaseAgent {
 		graph.addNode(AGENT_MODEL_NAME, node_async(this.llmNode));
 		if (hasTools) {
 			graph.addNode(AGENT_TOOL_NAME, node_async(this.toolNode));
+			// 添加 wrapped response 处理器节点
+			graph.addNode(WRAPPED_RESPONSE_HANDLER, node_async(this::handleWrappedResponse));
+			// 添加 cleanup 节点，用于在持久化前清理 mock 数据
+			graph.addNode(WRAPPED_RESPONSE_CLEANUP, node_async(this::cleanupWrappedResponse));
 		}
 
 		// some hooks may need tools so they can do some initialization/cleanup on start/end of agent loop
@@ -340,6 +361,12 @@ public class ReactAgent extends BaseAgent {
 		graph.addEdge(START, entryNode);
 		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
 				entryNode, loopEntryNode, loopExitNode, exitNode, this);
+
+		// 为 wrapped response handler 添加到结束节点的边（必须在 setupHookEdges 之后，因为它可能会添加 WRAPPED_RESPONSE_HANDLER 节点）
+		if (hasTools) {
+			graph.addEdge(WRAPPED_RESPONSE_HANDLER, WRAPPED_RESPONSE_CLEANUP);
+			graph.addEdge(WRAPPED_RESPONSE_CLEANUP, exitNode);
+		}
 		return graph;
 	}
 
@@ -659,10 +686,20 @@ public class ReactAgent extends BaseAgent {
 			ReactAgent agentInstance) throws GraphStateException {
 
 		// Model to tools routing
-		graph.addConditionalEdges(loopExitNode, edge_async(agentInstance.makeModelToTools(loopEntryNode, exitNode)), Map.of(AGENT_TOOL_NAME, AGENT_TOOL_NAME, exitNode, exitNode, loopEntryNode, loopEntryNode));
+		Map<String, String> modelToToolsDestinations = new HashMap<>(Map.of(AGENT_TOOL_NAME, AGENT_TOOL_NAME, exitNode, exitNode, loopEntryNode, loopEntryNode));
+		// 添加 wrapped response 处理器的路由
+		if (agentInstance.hasTools) {
+			modelToToolsDestinations.put(WRAPPED_RESPONSE_HANDLER, WRAPPED_RESPONSE_HANDLER);
+		}
+		graph.addConditionalEdges(loopExitNode, edge_async(agentInstance.makeModelToTools(loopEntryNode, exitNode)), modelToToolsDestinations);
 
 		// Tools to model routing
-		graph.addConditionalEdges(AGENT_TOOL_NAME, edge_async(agentInstance.makeToolsToModelEdge(loopEntryNode, exitNode)), Map.of(loopEntryNode, loopEntryNode, exitNode, exitNode));
+		Map<String, String> toolsToModelDestinations = new HashMap<>(Map.of(loopEntryNode, loopEntryNode, exitNode, exitNode));
+		// 添加 wrapped response 处理器的路由
+		if (agentInstance.hasTools) {
+			toolsToModelDestinations.put(WRAPPED_RESPONSE_HANDLER, WRAPPED_RESPONSE_HANDLER);
+		}
+		graph.addConditionalEdges(AGENT_TOOL_NAME, edge_async(agentInstance.makeToolsToModelEdge(loopEntryNode, exitNode)), toolsToModelDestinations);
 	}
 
 	private static String resolveJump(JumpTo jumpTo, String modelDestination, String endDestination, String defaultDestination) {
@@ -758,10 +795,13 @@ public class ReactAgent extends BaseAgent {
 			if (toolResponseMessage != null && !toolResponseMessage.getResponses().isEmpty()) {
 				boolean allReturnDirect = toolResponseMessage.getResponses().stream().allMatch(toolResponse -> {
 					String toolName = toolResponse.name();
-					return false; // FIXME
+					// 从 toolNode 中查找工具回调并检查 returnDirect 属性
+					return toolNode.getToolCallbacks().stream()
+							.anyMatch(callback -> callback.getToolDefinition().name().equals(toolName)
+									&& callback.getToolMetadata().returnDirect());
 				});
 				if (allReturnDirect) {
-					return endDestination;
+					return WRAPPED_RESPONSE_HANDLER;
 				}
 			}
 
@@ -770,6 +810,83 @@ public class ReactAgent extends BaseAgent {
 			//    so it can process the tool results and decide the next action.
 			return modelDestination;
 		};
+	}
+
+	/**
+	 * 处理 wrapped response 的专用方法
+	 * 当所有工具都有 returnDirect=true 时，这个方法会：
+	 * 1. 创建包装好的 AssistantMessage
+	 * 2. 将消息追加到 history (供流式输出使用)
+	 * 3. 这里的改动不会持久化污染，因为后面会有 cleanupWrappedResponse 清理
+	 */
+	private Map<String, Object> handleWrappedResponse(OverAllState state, RunnableConfig config) throws Exception {
+		ToolResponseMessage toolResponseMessage = fetchLastToolResponseMessage(state);
+		String wrappedContent = "";
+
+		if (toolResponseMessage != null && !toolResponseMessage.getResponses().isEmpty()) {
+			wrappedContent = toolResponseMessage.getResponses().stream()
+					.map(ToolResponseMessage.ToolResponse::responseData)
+					.map(this::unwrapResponseData)
+					.collect(Collectors.joining("\n\n"));
+		}
+
+		if (StringUtils.hasText(wrappedContent)) {
+			// 创建新的 AssistantMessage
+			AssistantMessage wrappedMessage = AssistantMessage.builder()
+				.content(wrappedContent)
+				.build();
+
+			// 返回包含新消息的 map，AppendStrategy 会将其追加到 messages 列表
+			// 这会触发流式输出
+			// 同时保存 _wrapped_response_content 供 cleanup 和 return 使用
+			Map<String, Object> result = new HashMap<>();
+			result.put("messages", List.of(wrappedMessage));
+			result.put("_wrapped_response_content", wrappedContent);
+			return result;
+		}
+
+		return Map.of();
+	}
+
+	private String unwrapResponseData(String responseData) {
+		if (!StringUtils.hasText(responseData)) {
+			return responseData;
+		}
+		try {
+			// Basic check to avoid overhead for obviously non-string-json
+			// e.g. "some string" -> some string
+			if (responseData.startsWith("\"") && responseData.endsWith("\"")) {
+				// Use ObjectMapper to handle escaping correctly
+				return new ObjectMapper().readTree(responseData).asText();
+			}
+		} catch (Exception e) {
+			// ignore and return original data if parsing fails
+		}
+		return responseData;
+	}
+
+	/**
+	 * 清理 wrapped response 的方法
+	 * 为了防止 mock 的 AssistantMessage 污染持久化状态，这个方法会将其从 messages 中移除
+	 * 但保留 _wrapped_response_content 供 doMessageInvoke 使用
+	 */
+	private Map<String, Object> cleanupWrappedResponse(OverAllState state, RunnableConfig config) {
+		if (state.data().containsKey("_wrapped_response_content")) {
+			// 直接操作状态中的列表进行清理
+			Object messagesObj = state.data().get("messages");
+			if (messagesObj instanceof List) {
+				List<?> messages = (List<?>) messagesObj;
+				if (!messages.isEmpty()) {
+					try {
+						// 移除最后一条消息 (即 handleWrappedResponse 添加的 mock 消息)
+						messages.remove(messages.size() - 1);
+					} catch (UnsupportedOperationException e) {
+						logger.warn("Could not cleanup wrapped response: messages list is immutable", e);
+					}
+				}
+			}
+		}
+		return Map.of();
 	}
 
 	private ToolResponseMessage fetchLastToolResponseMessage(OverAllState state) {
