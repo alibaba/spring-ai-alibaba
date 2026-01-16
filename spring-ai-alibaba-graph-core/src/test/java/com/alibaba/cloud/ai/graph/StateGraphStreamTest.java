@@ -183,7 +183,7 @@ public class StateGraphStreamTest {
 	 */
 	@NonNull
 	private static AsyncEdgeAction getAsyncEdgeAction() {
-		return (t, config) -> {
+		return (t) -> {
 			if (t.value("messages").isEmpty())
 				return completedFuture("result");
 			List collectedMessages = (List) t.value("messages").get();
