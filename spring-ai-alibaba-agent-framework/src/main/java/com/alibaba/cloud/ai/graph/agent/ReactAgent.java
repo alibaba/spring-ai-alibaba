@@ -63,6 +63,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
@@ -756,9 +757,28 @@ public class ReactAgent extends BaseAgent {
 			ToolResponseMessage toolResponseMessage = fetchLastToolResponseMessage(state);
 			// 2. Exit condition: All executed tools have return_direct=True
 			if (toolResponseMessage != null && !toolResponseMessage.getResponses().isEmpty()) {
+				List<ToolCallback> toolCallbacks = toolNode.getToolCallbacks();
 				boolean allReturnDirect = toolResponseMessage.getResponses().stream().allMatch(toolResponse -> {
 					String toolName = toolResponse.name();
-					return false; // FIXME
+					if (toolCallbacks == null) {
+						return false;
+					}
+
+					// Find the matching ToolCallback by tool name
+					ToolCallback matchedCallback = toolCallbacks.stream()
+						.filter(tc -> tc.getToolDefinition().name().equals(toolName))
+						.findFirst()
+						.orElse(null);
+
+					// Check the returnDirect property
+					if (matchedCallback != null) {
+						ToolMetadata metadata = matchedCallback.getToolMetadata();
+						if (metadata != null) {
+							return metadata.returnDirect();
+						}
+					}
+
+					return false;
 				});
 				if (allReturnDirect) {
 					return endDestination;
