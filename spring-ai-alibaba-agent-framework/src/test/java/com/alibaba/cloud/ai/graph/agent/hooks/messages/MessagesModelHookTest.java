@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -37,6 +38,11 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -509,6 +515,152 @@ public class MessagesModelHookTest {
 			System.out.println("TestModelHook.afterModel called");
 			return CompletableFuture.completedFuture(Map.of());
 		}
+	}
+
+	/**
+	 * Test 7: Verify JumpTo.end works in afterModel hook when agent has tools
+	 * This test addresses the bug where JumpTo in afterModel was ignored when tools were configured
+	 */
+	@Test
+	public void testJumpToEndInAfterModelWithTools() throws Exception {
+		AtomicInteger afterModelCallCount = new AtomicInteger(0);
+		AtomicInteger toolCallCount = new AtomicInteger(0);
+
+		// Hook that only overrides afterModel and uses JumpTo.end
+		@HookPositions({HookPosition.AFTER_MODEL})
+		class AfterModelOnlyJumpHook extends MessagesModelHook {
+			@Override
+			public String getName() {
+				return "after_model_jump_hook";
+			}
+
+			@Override
+			public List<JumpTo> canJumpTo() {
+				return List.of(JumpTo.end);
+			}
+
+			@Override
+			public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
+				afterModelCallCount.incrementAndGet();
+				System.out.println("AfterModelOnlyJumpHook.afterModel called - jumping to end");
+				// Return JumpTo.end to skip tool execution and end immediately
+				return new AgentCommand(JumpTo.end, previousMessages);
+			}
+		}
+
+		AfterModelOnlyJumpHook hook = new AfterModelOnlyJumpHook();
+
+		// Create a simple test tool
+		ToolCallback testTool = FunctionToolCallback.builder("test_tool", args -> {
+					toolCallCount.incrementAndGet();
+					System.out.println("Test tool called - this should NOT happen!");
+					return "Tool executed";
+				})
+				.description("A test tool")
+				.inputType(String.class)
+				.build();
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("test-agent-after-model-jump-with-tools")
+				.model(chatModel)
+				.tools(List.of(testTool))
+				.hooks(List.of(hook))
+				.saver(new MemorySaver())
+				.build();
+
+		System.out.println("\n=== 测试 afterModel 中的 JumpTo.end（配置了工具）===");
+
+		List<Message> messages = new ArrayList<>();
+		messages.add(new UserMessage("你好，请简单介绍一下自己。"));
+
+		Optional<OverAllState> result = agent.invoke(messages);
+
+		assertTrue(result.isPresent(), "结果应该存在");
+		assertTrue(afterModelCallCount.get() > 0, "afterModel 应该被调用");
+		
+		// Key verification: tool should NOT be called because JumpTo.end should skip it
+		assertEquals(0, toolCallCount.get(), "工具不应该被调用（因为 JumpTo.end 直接结束了）");
+
+		System.out.println("afterModel 调用次数: " + afterModelCallCount.get());
+		System.out.println("工具调用次数: " + toolCallCount.get());
+		System.out.println("成功验证 afterModel 中的 JumpTo.end 在有工具配置时正常工作");
+	}
+
+	/**
+	 * Test 8: Verify JumpTo.model works in afterModel hook when agent has tools
+	 */
+	@Test
+	public void testJumpToModelInAfterModelWithTools() throws Exception {
+		AtomicInteger afterModelCallCount = new AtomicInteger(0);
+		AtomicInteger modelCallCount = new AtomicInteger(0);
+
+		// Hook that only overrides afterModel and uses JumpTo.model on first call
+		@HookPositions({HookPosition.AFTER_MODEL})
+		class AfterModelJumpToModelHook extends MessagesModelHook {
+			@Override
+			public String getName() {
+				return "after_model_jump_to_model_hook";
+			}
+
+			@Override
+			public List<JumpTo> canJumpTo() {
+				return List.of(JumpTo.model, JumpTo.end);
+			}
+
+			@Override
+			public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
+				afterModelCallCount.incrementAndGet();
+				System.out.println("AfterModelJumpToModelHook.afterModel called, count: " + afterModelCallCount.get());
+				
+				// On first call, jump back to model; on second call, end
+				if (afterModelCallCount.get() == 1) {
+					System.out.println("First call - jumping back to model");
+					return new AgentCommand(JumpTo.model, previousMessages);
+				} else {
+					System.out.println("Second call - ending");
+					return new AgentCommand(JumpTo.end, previousMessages);
+				}
+			}
+		}
+
+		AfterModelJumpToModelHook hook = new AfterModelJumpToModelHook();
+
+		// Track model calls
+		ChatModel trackingChatModel = new ChatModel() {
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				modelCallCount.incrementAndGet();
+				System.out.println("Model called, count: " + modelCallCount.get());
+				return chatModel.call(prompt);
+			}
+
+			@Override
+			public ChatOptions getDefaultOptions() {
+				return chatModel.getDefaultOptions();
+			}
+		};
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("test-agent-after-model-jump-to-model")
+				.model(trackingChatModel)
+				.hooks(List.of(hook))
+				.saver(new MemorySaver())
+				.build();
+
+		System.out.println("\n=== 测试 afterModel 中的 JumpTo.model ===");
+
+		List<Message> messages = new ArrayList<>();
+		messages.add(new UserMessage("你好"));
+
+		Optional<OverAllState> result = agent.invoke(messages);
+
+		assertTrue(result.isPresent(), "结果应该存在");
+		assertEquals(2, afterModelCallCount.get(), "afterModel 应该被调用 2 次（第一次跳回模型，第二次结束）");
+		assertEquals(2, modelCallCount.get(), "模型应该被调用 2 次（第一次正常，第二次因为 JumpTo.model）");
+
+		System.out.println("afterModel 调用次数: " + afterModelCallCount.get());
+		System.out.println("模型调用次数: " + modelCallCount.get());
+		System.out.println("成功验证 afterModel 中的 JumpTo.model 正常工作");
 	}
 }
 
