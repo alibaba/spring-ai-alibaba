@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.metadata.Usage;
 
 import java.io.IOException;
 
@@ -51,11 +52,17 @@ public class StreamingOutputSerializer extends StdSerializer<StreamingOutput> {
         typeSer.writeTypeSuffix(gen, typeIdDef);
     }
 
+    @SuppressWarnings("deprecation")
     private void serializeFields(StreamingOutput value, JsonGenerator gen, SerializerProvider provider) throws IOException {
         gen.writeStringField("node", value.node());
         gen.writeStringField("agent", value.agent());
         gen.writeObjectField("state", value.state());
         gen.writeBooleanField("subGraph", value.isSubGraph());
+
+		Usage tokenUsage = value.tokenUsage();
+		if (tokenUsage != null) {
+			gen.writeObjectField("tokenUsage", tokenUsage);
+		}
 
         // Serialize message if present
         Message message = value.message();
