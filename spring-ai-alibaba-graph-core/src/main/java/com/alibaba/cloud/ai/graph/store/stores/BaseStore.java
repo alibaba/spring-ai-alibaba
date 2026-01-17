@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.store.*;
 
 import java.util.*;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -114,7 +115,7 @@ public abstract class BaseStore implements Store {
 	 */
 	protected String createStoreKey(List<String> namespace, String key) {
 		try {
-			Map<String, Object> keyData = new HashMap<>();
+			Map<String, Object> keyData = new LinkedHashMap<>();
 			keyData.put("namespace", namespace);
 			keyData.put("key", key);
 			return Base64.getEncoder().encodeToString(new ObjectMapper().writeValueAsBytes(keyData));
