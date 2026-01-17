@@ -701,6 +701,28 @@ public class ReactAgent extends BaseAgent {
 
 	private EdgeAction makeModelToTools(String modelDestination, String endDestination) {
 		return state -> {
+			// Priority 1: Check for jump_to instruction from hooks
+			// This allows afterModel hooks to control workflow execution
+			Object jumpToValue = state.value("jump_to").orElse(null);
+			if (jumpToValue != null) {
+				JumpTo jumpTo = null;
+				if (jumpToValue instanceof JumpTo) {
+					jumpTo = (JumpTo) jumpToValue;
+				} else if (jumpToValue instanceof String) {
+					jumpTo = JumpTo.fromStringOrNull((String) jumpToValue);
+				}
+				
+				// If a valid jump_to instruction exists, execute it immediately
+				if (jumpTo != null) {
+					return switch (jumpTo) {
+						case model -> modelDestination;
+						case end -> endDestination;
+						case tool -> AGENT_TOOL_NAME;
+					};
+				}
+			}
+			
+			// Priority 2: Check message content for tool calls
 			List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 			if (messages.isEmpty()) {
 				logger.warn("No messages found in state when routing from model to tools");
