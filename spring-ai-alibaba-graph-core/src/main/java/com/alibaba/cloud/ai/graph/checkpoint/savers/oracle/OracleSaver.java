@@ -193,6 +193,9 @@ public class OracleSaver extends MemorySaver {
 	private final CreateOption createOption;
 	private final StateSerializer stateSerializer;
 
+
+	private final boolean overwriteMode;
+
 	/**
 	 * Private constructor used by the builder to create a new instance of
 	 * OracleSaver.
@@ -200,11 +203,13 @@ public class OracleSaver extends MemorySaver {
 	 * @param dataSource      the data source
 	 * @param createOption    the create options
 	 * @param stateSerializer the state serializer
+	 * @param overwriteMode   only keeps the latest checkpoint
 	 */
-	private OracleSaver(DataSource dataSource, CreateOption createOption, StateSerializer stateSerializer) {
+	private OracleSaver(DataSource dataSource, CreateOption createOption, StateSerializer stateSerializer, boolean overwriteMode) {
 		this.dataSource = dataSource;
 		this.createOption = createOption;
 		this.stateSerializer = Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
+		this.overwriteMode = overwriteMode;
 		initTables();
 	}
 
@@ -392,29 +397,50 @@ public class OracleSaver extends MemorySaver {
 		try (Connection ignored = conn = dataSource.getConnection()) {
 			conn.setAutoCommit(false); // Start transaction
 
+			// Only the latest checkpoint will be retained.
+			if (overwriteMode && !checkpoints.isEmpty()) {
+				String deleteSql = """
+						DELETE FROM GRAPH_CHECKPOINT
+						WHERE thread_id = (
+						    SELECT thread_id FROM GRAPH_THREAD
+						    WHERE thread_name = ? AND is_released = FALSE
+						)
+						""";
+				try (PreparedStatement deleteStatement = conn.prepareStatement(deleteSql)) {
+					deleteStatement.setString(1, threadName);
+					deleteStatement.execute();
+				}
+				// clear
+				checkpoints.clear();
+			}
 			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);
-				 PreparedStatement insertCheckpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
+				 PreparedStatement checkpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
 
 				upsertStatement.setString(1, UUID.randomUUID().toString());
 				upsertStatement.setString(2, threadName);
 				upsertStatement.execute();
 
 				String encodedState = encodeState(checkpoint.getState());
-				insertCheckpointStatement.setString(1, checkpoint.getId());
-				insertCheckpointStatement.setString(2, checkpoint.getNodeId());
-				insertCheckpointStatement.setString(3, checkpoint.getNextNodeId());
-				insertCheckpointStatement.setObject(4, encodedState, OracleType.JSON);
-				insertCheckpointStatement.setString(5, stateSerializer.contentType());
-				insertCheckpointStatement.setString(6, threadName);
+				checkpointStatement.setString(1, checkpoint.getId());
+				checkpointStatement.setString(2, checkpoint.getNodeId());
+				checkpointStatement.setString(3, checkpoint.getNextNodeId());
+				checkpointStatement.setObject(4, encodedState, OracleType.JSON);
+				checkpointStatement.setString(5, stateSerializer.contentType());
+				checkpointStatement.setString(6, threadName);
 
-				insertCheckpointStatement.execute();
+				checkpointStatement.execute();
 			}
 
 			conn.commit();
-			log.debug("Checkpoint {} for thread {} inserted successfully.", checkpoint.getId(), threadName);
+			log.debug("Checkpoint {} for thread {} inserted successfully.",
+					checkpoint.getId(),
+					threadName);
 		}
 		catch (SQLException | IOException e) {
-			log.error("Error inserting checkpoint with id {} in thread {}", checkpoint.getId(), threadName, e);
+			log.error("Error inserting checkpoint with id {} in thread {}",
+					checkpoint.getId(),
+					threadName,
+					e);
 			rollback(conn, checkpoint, threadName);
 			throw new Exception("Unable to insert checkpoint", e);
 		}
@@ -553,6 +579,7 @@ public class OracleSaver extends MemorySaver {
 		private DataSource dataSource;
 		private CreateOption createOption = CreateOption.CREATE_IF_NOT_EXISTS;
 		private StateSerializer stateSerializer;
+		private boolean overwriteMode = false;
 
 		/**
 		 * Sets the datasource
@@ -588,6 +615,17 @@ public class OracleSaver extends MemorySaver {
 		}
 
 		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode only keeps the latest checkpoint
+		 * @return this builder
+		 */
+		public Builder overwriteMode(boolean overwriteMode) {
+			this.overwriteMode = overwriteMode;
+			return this;
+		}
+
+		/**
 		 * Creates a new instance of OracleSaver
 		 *
 		 * @return the new instance of OracleSaver.
@@ -597,7 +635,7 @@ public class OracleSaver extends MemorySaver {
             if (stateSerializer == null) {
                 this.stateSerializer = StateGraph.DEFAULT_JACKSON_SERIALIZER;
             }
-            return new OracleSaver(dataSource, createOption, stateSerializer);
+            return new OracleSaver(dataSource, createOption, stateSerializer, overwriteMode);
 		}
 	}
 }
