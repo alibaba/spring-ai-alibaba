@@ -35,12 +35,14 @@ import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -58,6 +60,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -905,10 +908,10 @@ class ReactAgentTest {
 			// Verify executor is set and passed to RunnableConfig using reflection
 			RunnableConfig config = buildNonStreamConfig(agent, null);
 			assertNotNull(config, "RunnableConfig should not be null");
-			
+
 			assertTrue(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
 				"Default parallel executor should be present in metadata");
-			assertEquals(customExecutor, 
+			assertEquals(customExecutor,
 				config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
 				"Executor in metadata should match configured executor");
 		} finally {
@@ -932,7 +935,7 @@ class ReactAgentTest {
 		// Verify no executor in metadata when not configured
 		RunnableConfig config = buildNonStreamConfig(agent, null);
 		assertNotNull(config, "RunnableConfig should not be null");
-		
+
 		assertFalse(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
 			"Default parallel executor should not be present when not configured");
 	}
@@ -1010,4 +1013,135 @@ class ReactAgentTest {
 		assertTrue(response3.getText().length() > 0, "第三次响应应该有内容");
 	}
 
+
+	@Test
+	public void testFunctionCallingDirectly() throws Exception {
+		ModelHook streamingModelHook = new ModelHook() {
+			@Override
+			public String getName() {
+				return "streaming_test_hook";
+			}
+
+			@Override
+			public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+				return CompletableFuture.completedFuture(Map.of(
+						"hook_type", "before_model",
+						"custom_data", "streaming_hook_data",
+						"timestamp", System.currentTimeMillis()
+				));
+			}
+
+			@Override
+			public HookPosition[] getHookPositions() {
+				return new HookPosition[]{HookPosition.BEFORE_MODEL};
+			}
+		};
+		var saver = new MemorySaver();
+		var reactAgent = ReactAgent.builder()
+				.name("demoReactAgent")
+				.model(chatModel)
+				.instruction("地点为: {target_topic}")
+				.tools(ToolCallbacks.from(new TestDirectTools()))
+				.systemPrompt("你是一个天气预报助手，调用getWeatherByCity函数帮我查看指定地点的天气预报")
+				.hooks(List.of(streamingModelHook))
+				.chatOptions(OpenAiChatOptions.builder()
+						.model("aiplat/MiniMax-M2")
+						.build())
+				.saver(saver)
+				.build();
+
+		AtomicBoolean hasAgentModelStreaming = new AtomicBoolean(false);
+		AtomicBoolean hasAgentModelFinished = new AtomicBoolean(false);
+		AtomicBoolean hasAgentToolFinished = new AtomicBoolean(false);
+		AtomicBoolean hasAgentHookFinished = new AtomicBoolean(false);
+
+		Flux<NodeOutput> flux = reactAgent.stream("上海,北京");
+		AtomicReference<String> lastChunk = new AtomicReference<>("");
+		NodeOutput finalOutput = flux.doOnNext(output -> {
+			// START
+			if (output instanceof StreamingOutput<?> streamingOutput) {
+				System.out.println("ReactAgent Streaming Output Chunk: " + streamingOutput.getOutputType());
+				System.out.println("ReactAgent Streaming Output Chunk: " + streamingOutput.message());
+				if(streamingOutput.message() instanceof AssistantMessage assistantMessage) {
+					System.out.println("ReactAgent Streaming Output Chunk: " + assistantMessage.getText());
+				}
+				// Check for expected output types
+				if (streamingOutput.getOutputType() == OutputType.AGENT_MODEL_STREAMING) {
+					hasAgentModelStreaming.set(true);
+				}
+				if (streamingOutput.getOutputType() == OutputType.AGENT_MODEL_FINISHED) {
+					hasAgentModelFinished.set(true);
+				}
+				if (streamingOutput.getOutputType() == OutputType.AGENT_TOOL_FINISHED) {
+					hasAgentToolFinished.set(true);
+				}
+				if (streamingOutput.getOutputType() == OutputType.AGENT_HOOK_FINISHED) {
+					hasAgentHookFinished.set(true);
+				}
+				if (streamingOutput.message() instanceof AssistantMessage assistantMessage) {
+					lastChunk.set(assistantMessage.getText());
+				}
+			}
+			// END
+		}).blockLast();
+		if (finalOutput == null) {
+			fail("ReactAgent stream completed without emitting any NodeOutput");
+		}
+		System.out.println("ReactAgent Final Output: " + finalOutput.state());
+		List<Message> messages = ((List<Message>) finalOutput.state().data().get("messages"));
+		String output = lastChunk.get();
+		assertTrue(testHasTools(reactAgent), "Tools should have been set");
+		// Verify that all expected output types were received
+		assertTrue(hasAgentModelStreaming.get(), "Should have received AGENT_MODEL_STREAMING output");
+		assertTrue(hasAgentModelFinished.get(), "Should have received AGENT_MODEL_FINISHED output");
+		assertTrue(hasAgentToolFinished.get(), "Should have received AGENT_TOOL_FINISHED output");
+		assertTrue(hasAgentHookFinished.get(), "Should have received AGENT_HOOK_FINISHED output");
+		// 校验是否由工具直接返回
+		assertTrue(output.contains("上海天气不错"), "Output should contain weather info for Shanghai");
+		assertTrue(output.contains("北京天气不错"), "Output should contain weather info for Beijing");
+		assertTrue(output.replace("上海天气不错","").replace("北京天气不错", "").isEmpty(), "Output should not contain other info");
+	}
+
+	@Test
+	public void testReactAgentDirectly() throws GraphRunnerException, NoSuchFieldException, IllegalAccessException {
+		var saver = new MemorySaver();
+		var react = ReactAgent.builder()
+				.name("demoReactAgent")
+				.model(chatModel)
+				.saver(saver)
+				.instruction("地点为: {target_topic}")
+				.tools(ToolCallbacks.from(new TestDirectTools()))
+				.chatOptions(OpenAiChatOptions.builder()
+						.model("aiplat/MiniMax-M2")
+						.build())
+				.systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
+				.build();
+
+		String output = react.call("上海,北京").getText();
+		System.out.println("ReactAgent Output: " + output);
+
+		assertNotNull(output);
+		assertFalse(output.isEmpty(), "Output should not be empty");
+
+		// 校验 hasTools 以检查是否包含工具定义
+		assertTrue(testHasTools(react ), "Tools should have been set");
+		// 校验是否由工具直接返回
+		assertTrue(output.contains("上海天气不错"), "Output should contain weather info for Shanghai");
+		assertTrue(output.contains("北京天气不错"), "Output should contain weather info for Beijing");
+		assertTrue(output.replace("上海天气不错","").replace("北京天气不错", "").isEmpty(), "Output should not contain other info");
+
+	}
+
+	static class TestDirectTools {
+
+		@Tool(name = "getWeatherByCity", description = "Get weather information by city name", returnDirect = true)
+		public String getWeatherByCity(@ToolParam(description = "城市地址列表，用中文") List<String> cityNameList) {
+			StringBuilder builder = new StringBuilder();
+			for (String cityName : cityNameList) {
+				builder.append(cityName).append("天气不错");
+			}
+
+			return builder.toString();
+		}
+	}
 }
