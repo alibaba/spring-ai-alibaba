@@ -593,6 +593,7 @@ public class MessagesModelHookTest {
 	public void testJumpToModelInAfterModelWithTools() throws Exception {
 		AtomicInteger afterModelCallCount = new AtomicInteger(0);
 		AtomicInteger modelCallCount = new AtomicInteger(0);
+		AtomicInteger toolCallCount = new AtomicInteger(0);
 
 		// Hook that only overrides afterModel and uses JumpTo.model on first call
 		@HookPositions({HookPosition.AFTER_MODEL})
@@ -625,6 +626,16 @@ public class MessagesModelHookTest {
 
 		AfterModelJumpToModelHook hook = new AfterModelJumpToModelHook();
 
+		// Create a test tool (required to trigger makeModelToTools routing)
+		ToolCallback testTool = FunctionToolCallback.builder("test_tool", args -> {
+					toolCallCount.incrementAndGet();
+					System.out.println("Test tool called");
+					return "Tool executed";
+				})
+				.description("A test tool")
+				.inputType(String.class)
+				.build();
+
 		// Track model calls
 		ChatModel trackingChatModel = new ChatModel() {
 			@Override
@@ -643,6 +654,7 @@ public class MessagesModelHookTest {
 		ReactAgent agent = ReactAgent.builder()
 				.name("test-agent-after-model-jump-to-model")
 				.model(trackingChatModel)
+				.tools(List.of(testTool))
 				.hooks(List.of(hook))
 				.saver(new MemorySaver())
 				.build();
@@ -657,10 +669,13 @@ public class MessagesModelHookTest {
 		assertTrue(result.isPresent(), "结果应该存在");
 		assertEquals(2, afterModelCallCount.get(), "afterModel 应该被调用 2 次（第一次跳回模型，第二次结束）");
 		assertEquals(2, modelCallCount.get(), "模型应该被调用 2 次（第一次正常，第二次因为 JumpTo.model）");
+		// Tools should not be called because JumpTo redirects flow before tool execution
+		assertEquals(0, toolCallCount.get(), "工具不应该被调用（因为 JumpTo 直接跳转了）");
 
 		System.out.println("afterModel 调用次数: " + afterModelCallCount.get());
 		System.out.println("模型调用次数: " + modelCallCount.get());
-		System.out.println("成功验证 afterModel 中的 JumpTo.model 正常工作");
+		System.out.println("工具调用次数: " + toolCallCount.get());
+		System.out.println("成功验证 afterModel 中的 JumpTo.model 在有工具配置时正常工作");
 	}
 }
 
