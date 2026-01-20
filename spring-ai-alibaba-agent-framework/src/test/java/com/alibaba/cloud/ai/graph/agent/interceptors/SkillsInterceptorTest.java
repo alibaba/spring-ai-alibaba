@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.skills.registry.FileSystemSkillRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
@@ -57,9 +58,11 @@ class SkillsInterceptorTest {
 		Files.writeString(skillDir.resolve("SKILL.md"),
 			"---\nname: test-skill\ndescription: Test\n---\n# Test");
 
-		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
 			.userSkillsDirectory(tempDir.toString())
-			.autoScan(true)
+			.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+			.skillRegistry(registry)
 			.build();
 
 		assertEquals(1, interceptor.getSkillCount());
@@ -73,9 +76,12 @@ class SkillsInterceptorTest {
 		Files.writeString(skillDir.resolve("SKILL.md"),
 			"---\nname: test-skill\ndescription: Test\n---\n# Test");
 
-		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
 			.userSkillsDirectory(tempDir.toString())
-			.autoScan(false)
+			.autoLoad(false)
+			.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+			.skillRegistry(registry)
 			.build();
 
 		assertEquals(0, interceptor.getSkillCount());
@@ -113,10 +119,12 @@ class SkillsInterceptorTest {
 		Files.writeString(projectSkill.resolve("SKILL.md"),
 			"---\nname: test-skill\ndescription: Project skill\n---\n# Project");
 
-		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
 			.userSkillsDirectory(userDir.toString())
 			.projectSkillsDirectory(projectDir.toString())
-			.autoScan(true)
+			.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+			.skillRegistry(registry)
 			.build();
 
 		assertEquals(1, interceptor.getSkillCount());
@@ -130,9 +138,11 @@ class SkillsInterceptorTest {
 		Files.writeString(skillDir.resolve("SKILL.md"),
 			"---\nname: test-skill\ndescription: Test skill\n---\n# Test");
 
-		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
 			.userSkillsDirectory(tempDir.toString())
-			.autoScan(true)
+			.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+			.skillRegistry(registry)
 			.build();
 
 		ModelRequest request = ModelRequest.builder()
@@ -161,9 +171,11 @@ class SkillsInterceptorTest {
 		Files.writeString(skillDir.resolve("SKILL.md"),
 			"---\nname: test-skill\ndescription: Test\n---\n# Test");
 
-		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
 			.userSkillsDirectory(tempDir.toString())
-			.autoScan(true)
+			.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+			.skillRegistry(registry)
 			.build();
 
 		ModelRequest request = ModelRequest.builder()
@@ -189,9 +201,11 @@ class SkillsInterceptorTest {
 		Files.writeString(skillDir.resolve("SKILL.md"),
 			"---\nname: test-skill\ndescription: Original\n---\n# Test");
 
-		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
 			.userSkillsDirectory(tempDir.toString())
-			.autoScan(true)
+			.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+			.skillRegistry(registry)
 			.build();
 
 		assertEquals(1, interceptor.getSkillCount());
@@ -214,9 +228,12 @@ class SkillsInterceptorTest {
 
 	@Test
 	void testLoadSkillWithInvalidDirectory(@TempDir Path tempDir) {
-		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
 			.userSkillsDirectory(tempDir.toString())
-			.autoScan(false)
+			.autoLoad(false)
+			.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+			.skillRegistry(registry)
 			.build();
 
 		// Test null directory
@@ -242,9 +259,11 @@ class SkillsInterceptorTest {
 		Files.writeString(skillDir.resolve("SKILL.md"),
 			"---\nname: test-skill\ndescription: Test\n---\n# Test");
 
-		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
 			.userSkillsDirectory(tempDir.toString())
-			.autoScan(true)
+			.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+			.skillRegistry(registry)
 			.build();
 
 		// Test null skill name
@@ -273,9 +292,11 @@ class SkillsInterceptorTest {
 			.dashScopeApi(dashScopeApi)
 			.build();
 
-		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
 			.userSkillsDirectory(TEST_SKILLS_DIR)
-			.autoScan(true)
+			.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+			.skillRegistry(registry)
 			.build();
 
 		assertEquals(1, interceptor.getSkillCount());
@@ -310,16 +331,16 @@ class SkillsInterceptorTest {
 		@SuppressWarnings("unchecked")
 		List<Message> finalMessages = (List<Message>) result.get().value("messages").get();
 		assertNotNull(finalMessages);
-		
+
 		// Verify that the agent used read_file tool
 		boolean hasToolResponse = finalMessages.stream()
 			.anyMatch(m -> m instanceof ToolResponseMessage);
 		assertTrue(hasToolResponse, "Agent should have used read_file tool");
-		
+
 		// Verify final response mentions the file content
 		Message lastMessage = finalMessages.get(finalMessages.size() - 1);
 		assertTrue(lastMessage instanceof AssistantMessage);
-		assertTrue(lastMessage.getText().toLowerCase().contains("test file"), 
+		assertTrue(lastMessage.getText().toLowerCase().contains("test file"),
 			"Response should mention the file content");
 	}
 }

@@ -21,9 +21,10 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
+import java.util.Arrays;
 import java.util.function.BiFunction;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -33,6 +34,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
  * Tool for reading file contents with pagination support.
  */
 public class ReadFileTool implements BiFunction<ReadFileTool.ReadFileRequest, ToolContext, String> {
+
+	private static final String EMPTY_CONTENT_WARNING = "System reminder: File exists but has empty contents";
+	private static final int MAX_LINE_LENGTH = 10000;
+	private static final int LINE_NUMBER_WIDTH = 6;
 
 	public static final String DESCRIPTION = """
 Reads a file from the filesystem. You can access any file directly by using this tool.
@@ -60,30 +65,104 @@ Usage:
 	public String apply(ReadFileRequest request, ToolContext toolContext) {
 		try {
 			Path path = Paths.get(request.filePath);
-			List<String> allLines = Files.readAllLines(path);
-
-			// Apply pagination
-			int start = request.offset != null ? request.offset : 0;
-			int limit = request.limit != null ? request.limit : 500;
-			int end = Math.min(start + limit, allLines.size());
-
-			if (start >= allLines.size()) {
-				return "Error: Offset " + start + " is beyond file length " + allLines.size();
-			}
-
-			List<String> lines = allLines.subList(start, end);
-
-			// Add line numbers (cat -n format)
-			StringBuilder result = new StringBuilder();
-			for (int i = 0; i < lines.size(); i++) {
-				result.append(String.format("%6d\t%s\n", start + i + 1, lines.get(i)));
-			}
-
-			return result.toString();
+			return readFileContent(path, request.offset, request.limit, true);
 		}
-		catch (IOException e) {
+		catch (Exception e) {
 			return "Error reading file: " + e.getMessage();
 		}
+	}
+
+	/**
+	 * Core logic for reading file content with pagination.
+	 * This method can be reused by other classes like FileSystemTools.
+	 *
+	 * @param filePath The path to the file to read
+	 * @param offset Line offset to start reading from (null means 0)
+	 * @param limit Maximum number of lines to read (null means 500)
+	 * @param checkEmpty Whether to check for empty content and return warning
+	 * @return Formatted file content with line numbers, or error message
+	 */
+	public static String readFileContent(Path filePath, Integer offset, Integer limit, boolean checkEmpty) {
+		try {
+			if (!Files.exists(filePath) || !Files.isRegularFile(filePath, LinkOption.NOFOLLOW_LINKS)) {
+				return "Error: File '" + filePath + "' not found";
+			}
+
+			String content = Files.readString(filePath);
+
+			if (checkEmpty) {
+				String emptyMsg = checkEmptyContent(content);
+				if (emptyMsg != null) {
+					return emptyMsg;
+				}
+			}
+
+			String[] lines = content.split("\n", -1);
+			// Remove trailing empty line if present
+			if (lines.length > 0 && lines[lines.length - 1].isEmpty()) {
+				lines = Arrays.copyOf(lines, lines.length - 1);
+			}
+
+			int startIdx = offset != null ? offset : 0;
+			int endIdx = Math.min(startIdx + (limit != null ? limit : 500), lines.length);
+
+			if (startIdx >= lines.length) {
+				return "Error: Line offset " + startIdx + " exceeds file length (" + lines.length + " lines)";
+			}
+
+			String[] selectedLines = Arrays.copyOfRange(lines, startIdx, endIdx);
+			return formatContentWithLineNumbers(selectedLines, startIdx + 1);
+		}
+		catch (IOException e) {
+			return "Error reading file '" + filePath + "': " + e.getMessage();
+		}
+	}
+
+	/**
+	 * Check if content is empty and return warning message if so.
+	 */
+	private static String checkEmptyContent(String content) {
+		if (content == null || content.trim().isEmpty()) {
+			return EMPTY_CONTENT_WARNING;
+		}
+		return null;
+	}
+
+	/**
+	 * Format lines with line numbers (cat -n format).
+	 * Handles long lines by splitting them into chunks.
+	 */
+	private static String formatContentWithLineNumbers(String[] lines, int startLine) {
+		StringBuilder result = new StringBuilder();
+		for (int i = 0; i < lines.length; i++) {
+			String line = lines[i];
+			int lineNum = i + startLine;
+
+			if (line.length() <= MAX_LINE_LENGTH) {
+				result.append(String.format("%" + LINE_NUMBER_WIDTH + "d\t%s\n", lineNum, line));
+			}
+			else {
+				// Split long line into chunks with continuation markers
+				int numChunks = (line.length() + MAX_LINE_LENGTH - 1) / MAX_LINE_LENGTH;
+				for (int chunkIdx = 0; chunkIdx < numChunks; chunkIdx++) {
+					int start = chunkIdx * MAX_LINE_LENGTH;
+					int end = Math.min(start + MAX_LINE_LENGTH, line.length());
+					String chunk = line.substring(start, end);
+					if (chunkIdx == 0) {
+						result.append(String.format("%" + LINE_NUMBER_WIDTH + "d\t%s\n", lineNum, chunk));
+					}
+					else {
+						String continuationMarker = lineNum + "." + chunkIdx;
+						result.append(String.format("%" + LINE_NUMBER_WIDTH + "s\t%s\n", continuationMarker, chunk));
+					}
+				}
+			}
+		}
+		// Remove trailing newline
+		if (!result.isEmpty() && result.charAt(result.length() - 1) == '\n') {
+			result.setLength(result.length() - 1);
+		}
+		return result.toString();
 	}
 
 	public static ToolCallback createReadFileToolCallback(String description) {

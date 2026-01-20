@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.interceptor.skills;
+package com.alibaba.cloud.ai.graph.skills;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -32,10 +33,21 @@ import java.util.stream.Stream;
  * 
  * Scans a directory for skill folders, each containing a SKILL.md file with
  * YAML frontmatter defining the skill's metadata.
+ * 
+ * Validates skills according to Agent Skills spec (https://agentskills.io/specification):
+ * - Skill name: max 64 chars, lowercase alphanumeric with single hyphens only
+ * - Skill description: max 1024 chars (truncated if exceeded)
  */
 public class SkillScanner {
 
 	private static final Logger logger = LoggerFactory.getLogger(SkillScanner.class);
+
+	// Agent Skills spec constraints (https://agentskills.io/specification)
+	private static final int MAX_SKILL_NAME_LENGTH = 64;
+	private static final int MAX_SKILL_DESCRIPTION_LENGTH = 1024;
+
+	// Pattern: lowercase alphanumeric, single hyphens between segments, no start/end hyphen
+	private static final Pattern SKILL_NAME_PATTERN = Pattern.compile("^[a-z0-9]+(-[a-z0-9]+)*$");
 
 	private final Yaml yaml = new Yaml();
 
@@ -112,9 +124,24 @@ public class SkillScanner {
 				return null;
 			}
 
+			// Validate name format per Agent Skills spec (warn but still load for backwards compatibility)
+			String directoryName = skillDir.getFileName().toString();
+			validateSkillName(name, directoryName, skillFile);
+
+			// Validate and truncate description length (spec: max 1024 chars)
+			String descriptionStr = String.valueOf(description);
+			if (descriptionStr.length() > MAX_SKILL_DESCRIPTION_LENGTH) {
+				logger.warn(
+					"Description exceeds {} chars in {}, truncating",
+					MAX_SKILL_DESCRIPTION_LENGTH,
+					skillFile
+				);
+				descriptionStr = descriptionStr.substring(0, MAX_SKILL_DESCRIPTION_LENGTH);
+			}
+
 			SkillMetadata.Builder builder = SkillMetadata.builder()
 				.name(name)
-				.description(description)
+				.description(descriptionStr)
 				.skillPath(skillDir.toString())
 				.source(source);
 
@@ -126,6 +153,57 @@ public class SkillScanner {
 		} catch (Exception e) {
 			logger.error("Failed to parse skill file {}: {}", skillFile, e.getMessage(), e);
 			return null;
+		}
+	}
+
+	/**
+	 * Validate skill name per Agent Skills spec.
+	 * 
+	 * Requirements:
+	 * - Max 64 characters
+	 * - Lowercase alphanumeric and hyphens only (a-z, 0-9, -)
+	 * - Cannot start or end with hyphen
+	 * - No consecutive hyphens
+	 * - Must match parent directory name
+	 * 
+	 * If validation fails, logs a warning but still allows loading for backwards compatibility.
+	 * 
+	 * @param name the skill name from YAML frontmatter
+	 * @param directoryName the parent directory name
+	 * @param skillFile the path to the SKILL.md file (for logging)
+	 */
+	private void validateSkillName(String name, String directoryName, Path skillFile) {
+		if (name.length() > MAX_SKILL_NAME_LENGTH) {
+			logger.warn(
+				"Skill '{}' in {} does not follow Agent Skills spec: name exceeds {} characters. " +
+				"Consider renaming to be spec-compliant.",
+				name,
+				skillFile,
+				MAX_SKILL_NAME_LENGTH
+			);
+			return;
+		}
+
+		if (!SKILL_NAME_PATTERN.matcher(name).matches()) {
+			logger.warn(
+				"Skill '{}' in {} does not follow Agent Skills spec: name must be lowercase " +
+				"alphanumeric with single hyphens only (cannot start or end with hyphen). " +
+				"Consider renaming to be spec-compliant.",
+				name,
+				skillFile
+			);
+			return;
+		}
+
+		if (!name.equals(directoryName)) {
+			logger.warn(
+				"Skill '{}' in {} does not follow Agent Skills spec: name '{}' must match " +
+				"directory name '{}'. Consider renaming to be spec-compliant.",
+				name,
+				skillFile,
+				name,
+				directoryName
+			);
 		}
 	}
 
