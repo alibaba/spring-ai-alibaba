@@ -19,13 +19,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.action.AsyncMultiCommandAction;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingNode;
+import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingEdgeAction;
+import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**

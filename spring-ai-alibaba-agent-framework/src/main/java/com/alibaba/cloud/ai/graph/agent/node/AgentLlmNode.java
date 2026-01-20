@@ -125,6 +125,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		this.instruction = instruction;
 	}
 
+	public void setSystemPrompt(String systemPrompt) {
+		this.systemPrompt = systemPrompt;
+	}
+
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
 		if (enableReasoningLog && logger.isDebugEnabled()) {
