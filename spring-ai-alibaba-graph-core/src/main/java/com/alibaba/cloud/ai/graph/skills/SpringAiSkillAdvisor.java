@@ -48,7 +48,7 @@ import static com.alibaba.cloud.ai.graph.skills.SkillPrompt.SKILLS_SYSTEM_PROMPT
  * 
  * This advisor injects skills metadata into system prompt, following progressive disclosure pattern:
  * - Injects lightweight skills list (name + description + path)
- * - LLM reads full SKILL.md content when needed using read_file tool
+ * - LLM reads full SKILL.md content when needed using read_skill tool
  * 
  * Skills are loaded from configured directories during advisor initialization.
  *
