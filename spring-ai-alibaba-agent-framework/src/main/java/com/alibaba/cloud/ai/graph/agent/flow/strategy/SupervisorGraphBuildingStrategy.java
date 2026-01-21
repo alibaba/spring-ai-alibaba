@@ -57,7 +57,7 @@ public class SupervisorGraphBuildingStrategy extends AbstractFlowGraphBuildingSt
 		}
 
 		// Add END as a possible routing destination
-		edgeRoutingMap.put(END, END);
+		edgeRoutingMap.put(END, this.exitNode);
 
 		// Connect supervisor to routing logic
 		// Note: afterModel hooks will be connected by parent class after buildCoreGraph() returns
