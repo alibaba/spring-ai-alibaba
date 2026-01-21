@@ -364,6 +364,13 @@ public interface JacksonDeserializer<T> {
 		if (valueNode.size() == 2 && valueNode.get(0).isTextual()) {
 			String className = valueNode.get(0).asText();
 			JsonNode payload = valueNode.get(1);
+
+			if (!payload.isArray()) {
+				if (className.startsWith("java.lang.") || className.startsWith("java.math.")) {
+					return convertPrimitiveWrapperType(className, payload);
+				}
+			}
+
 			if (payload.isArray()) {
 				if (className.startsWith("[") || className.endsWith("[]")) {
 					return instantiateArray(className, payload, objectMapper, typeMapper);
@@ -382,6 +389,37 @@ public interface JacksonDeserializer<T> {
 			list.add(valueFromNode(element, objectMapper, typeMapper));
 		}
 		return list;
+	}
+
+	/**
+	 * Convert a JsonNode to a specified Java primitive type wrapper class
+	 */
+	private static Object convertPrimitiveWrapperType(String className, JsonNode valueNode) {
+		return switch (className) {
+			case "java.lang.Long" -> valueNode.asLong();
+			case "java.lang.Integer" -> valueNode.asInt();
+			case "java.lang.Double" -> valueNode.asDouble();
+			case "java.lang.Float" -> (float) valueNode.asDouble();
+			case "java.lang.Short" -> (short) valueNode.asInt();
+			case "java.lang.Byte" -> (byte) valueNode.asInt();
+			case "java.lang.Boolean" -> valueNode.asBoolean();
+			case "java.lang.Character" -> {
+				String text = valueNode.asText();
+				yield text.isEmpty() ? '\0' : text.charAt(0);
+			}
+			case "java.lang.String" -> valueNode.asText();
+			case "java.math.BigInteger" -> valueNode.bigIntegerValue();
+			case "java.math.BigDecimal" -> valueNode.decimalValue();
+			default -> {
+				if (valueNode.isTextual()) {
+					yield valueNode.asText();
+				}
+				if (valueNode.isNumber()) {
+					yield valueNode.numberValue();
+				}
+				yield valueNode;
+			}
+		};
 	}
 
 	private static Object instantiateArray(String className, JsonNode payload, ObjectMapper objectMapper,
