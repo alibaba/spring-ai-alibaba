@@ -1,4 +1,5 @@
 package com.alibaba.cloud.ai.graph.agent;
+
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
@@ -10,10 +11,6 @@ import com.alibaba.cloud.ai.graph.agent.utils.HookFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.http.HttpHeaders;
 
 import java.util.List;
 import java.util.Optional;
