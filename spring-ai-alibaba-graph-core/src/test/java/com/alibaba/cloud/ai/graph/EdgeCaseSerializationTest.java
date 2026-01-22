@@ -120,7 +120,6 @@ public class EdgeCaseSerializationTest {
 		assertNotNull(restoredValue);
 		assertTrue(restoredValue instanceof GraphResponse, "Outer GraphResponse should be preserved");
 	}
-}
 
 	@Test
 	void testWrapperArrayLongDeserialization() throws Exception {
