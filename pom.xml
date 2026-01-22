@@ -157,6 +157,8 @@
         <module>community/memories/spring-ai-alibaba-starter-memory-tablestore</module>
         <module>community/memories/spring-ai-alibaba-starter-memory-memcached</module>
 
+        <module>community/rag/spring-ai-alibaba-starter-rag-bailian</module>
+
         <module>auto-configurations/spring-ai-alibaba-autoconfigure-memory</module>
 
         <!-- Spring AI Alibaba ARMS Extension -->
