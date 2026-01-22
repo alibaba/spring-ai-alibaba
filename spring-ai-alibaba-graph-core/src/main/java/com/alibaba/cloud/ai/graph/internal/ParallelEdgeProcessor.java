@@ -148,11 +148,14 @@ public class ParallelEdgeProcessor {
 		}
 
 		// Check for conditional edges
-		boolean hasConditionalEdges = validTargets.stream()
-				.anyMatch(target -> target.value() != null);
-		if (hasConditionalEdges) {
+		List<String> conditionalEdgeTargets = validTargets.stream()
+				.filter(target -> target.value() != null)
+				.map(EdgeValue::id)
+				.filter(Objects::nonNull)
+				.toList();
+		if (!conditionalEdgeTargets.isEmpty()) {
 			throw Errors.unsupportedConditionalEdgeOnParallelNode.exception(sourceNodeId,
-					List.of(sourceNodeId));
+					conditionalEdgeTargets);
 		}
 
 		// Get start node IDs for parallel branches
