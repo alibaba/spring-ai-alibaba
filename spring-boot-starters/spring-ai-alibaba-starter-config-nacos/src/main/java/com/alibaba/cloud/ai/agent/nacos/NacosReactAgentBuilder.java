@@ -109,7 +109,9 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		this.localTools = gatherLocalTools();
 		List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO);
 		allTools.addAll(localTools);
-		allTools.addAll(mcpTools);
+		if (mcpTools != null) {
+			allTools.addAll(mcpTools);
+		}
 		
 		//7. build tools
 		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
@@ -136,7 +138,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 			builder.toolCallbackResolver(resolver);
 		}
 		if (CollectionUtils.isNotEmpty(allTools)) {
-			builder.toolCallbacks(allTools).build();
+			builder.toolCallbacks(allTools);
 		}
 		toolNode = builder.build();
 		
