@@ -275,7 +275,9 @@ public class ParallelEdgeProcessor {
 		// Initialize: mark each start node as reachable from itself
 		for (String startNode : startNodeIds) {
 			reachableFrom.put(startNode, new HashSet<>(Set.of(startNode)));
-			queue.offer(startNode);
+			if (!queue.offer(startNode)) {
+				throw new IllegalStateException("Failed to add start node to queue: " + startNode);
+			}
 		}
 
 		while (!queue.isEmpty()) {
@@ -310,15 +312,19 @@ public class ParallelEdgeProcessor {
 					if (nestedConvergence != null) {
 						// Update reachability: all sources that reached current also reach nested convergence
 						Set<String> nestedSources = reachableFrom.computeIfAbsent(nestedConvergence, k -> new HashSet<>());
+						int sizeBefore = nestedSources.size();
 						nestedSources.addAll(sources);
+						boolean sourcesChanged = nestedSources.size() > sizeBefore;
 
 						if (nestedSources.size() == startNodeIds.size()) {
 							return nestedConvergence;
 						}
 
-						if (!reachableFrom.containsKey(nestedConvergence) ||
-								reachableFrom.get(nestedConvergence).size() < startNodeIds.size()) {
-							queue.offer(nestedConvergence);
+						// Only queue if sources actually changed (prevents infinite loops in cycles)
+						if (sourcesChanged && nestedSources.size() < startNodeIds.size()) {
+							if (!queue.offer(nestedConvergence)) {
+								throw new IllegalStateException("Failed to add nested convergence node to queue: " + nestedConvergence);
+							}
 						}
 					}
 				}
@@ -335,17 +341,20 @@ public class ParallelEdgeProcessor {
 
 			// Update reachability: all sources that reached current also reach nextNode
 			Set<String> nextSources = reachableFrom.computeIfAbsent(nextNode, k -> new HashSet<>());
+			int sizeBefore = nextSources.size();
 			nextSources.addAll(sources);
+			boolean sourcesChanged = nextSources.size() > sizeBefore;
 
 			// If this node is reachable from all start nodes, it's the convergence point
 			if (nextSources.size() == startNodeIds.size()) {
 				return nextNode;
 			}
 
-			// Continue BFS if we haven't fully explored this node yet
-			if (!reachableFrom.containsKey(nextNode) ||
-					reachableFrom.get(nextNode).size() < startNodeIds.size()) {
-				queue.offer(nextNode);
+			// Only queue if sources actually changed (prevents infinite loops in cycles)
+			if (sourcesChanged && nextSources.size() < startNodeIds.size()) {
+				if (!queue.offer(nextNode)) {
+					throw new IllegalStateException("Failed to add next node to queue: " + nextNode);
+				}
 			}
 		}
 
