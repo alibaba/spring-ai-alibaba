@@ -481,7 +481,8 @@ public class ParallelEdgeProcessor {
 		// Convergence node should not be in subgraph - it's the merge point in the main graph
 		Set<String> allNodes = path.uniqueNodes();
 		allNodes.add(path.startNodeId);
-		// Do NOT add convergenceNodeId - it belongs to the main graph, not the subgraph
+		// Explicitly remove convergenceNodeId - it belongs to the main graph, not the subgraph
+		allNodes.remove(path.convergenceNodeId);
 
 		// Add all nodes to subgraph by copying from original nodes
 		for (String nodeId : allNodes) {
