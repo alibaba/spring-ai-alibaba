@@ -57,7 +57,7 @@ class CancellableAsyncToolCallbackTest {
 		@DisplayName("should extend AsyncToolCallback")
 		void shouldExtendAsyncToolCallback() {
 			CancellableAsyncToolCallback callback = createSimpleCancellableCallback();
-			assertTrue(callback instanceof AsyncToolCallback);
+			assertTrue(AsyncToolCallback.class.isAssignableFrom(CancellableAsyncToolCallback.class));
 		}
 
 		@Test
