@@ -1690,6 +1690,99 @@ public class StateGraphTest {
 	}
 
 	/**
+	 * Tests a simple A->B->C graph flow with Long type value in overall state.
+	 * NodeA increments the counter by 100, NodeB multiplies it by 2.
+	 * NodeC implements InterruptableAction to check if result exceeds threshold.
+	 */
+	@Test
+	public void testSimpleABFlowWithLongValue() throws Exception {
+		// Define an InterruptableAction node that checks result threshold
+		class ResultCheckerAction implements AsyncNodeActionWithConfig, com.alibaba.cloud.ai.graph.action.InterruptableAction {
+			private final Long resultThreshold;
+
+			public ResultCheckerAction(Long resultThreshold) {
+				this.resultThreshold = resultThreshold;
+			}
+
+			@Override
+			public java.util.concurrent.CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+				Long result = state.value("result", Long.class).orElse(0L);
+				log.info("nodeC (InterruptableAction) - Checking result: {}", result);
+				return java.util.concurrent.CompletableFuture.completedFuture(Map.of("status", "checked"));
+			}
+
+			@Override
+			public Optional<com.alibaba.cloud.ai.graph.action.InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+				Long result = state.value("result", Long.class).orElse(0L);
+				if (result > resultThreshold) {
+					log.info("nodeC - Interrupting: result {} exceeds threshold {}", result, resultThreshold);
+					return Optional.of(com.alibaba.cloud.ai.graph.action.InterruptionMetadata.builder(nodeId, state)
+							.addMetadata("reason", "result_threshold_exceeded")
+							.addMetadata("result", result)
+							.addMetadata("threshold", resultThreshold)
+							.build());
+				}
+				log.info("nodeC - No interruption: result {} is within threshold {}", result, resultThreshold);
+				return Optional.empty();
+			}
+		}
+
+		// Create workflow with key strategies for counter, result, and status
+		StateGraph workflow = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("counter", (o, o2) -> o2);  // Replace strategy
+			keyStrategyHashMap.put("result", (o, o2) -> o2);   // Replace strategy
+			keyStrategyHashMap.put("status", (o, o2) -> o2);   // Replace strategy
+			return keyStrategyHashMap;
+		})
+		.addEdge(START, "nodeA")
+		.addNode("nodeA", node_async(state -> {
+			log.info("nodeA - Processing state: {}", state);
+			// Get counter value, default to 0L if not present
+			Long counter = state.value("counter", Long.class).orElse(0L);
+			Long incrementedCounter = counter + 100L;
+			log.info("nodeA - Counter incremented from {} to {}", counter, incrementedCounter);
+			return Map.of("counter", incrementedCounter);
+		}))
+		.addEdge("nodeA", "nodeB")
+		.addNode("nodeB", node_async(state -> {
+			log.info("nodeB - Processing state: {}", state);
+			// Get counter value from state
+			Long counter = state.value("counter", Long.class).orElse(0L);
+			Long finalResult = counter * 2L;
+			log.info("nodeB - Counter multiplied from {} to {}", counter, finalResult);
+			return Map.of("result", finalResult);
+		}))
+		.addEdge("nodeB", "nodeC")
+		.addNode("nodeC", new ResultCheckerAction(250L))  // Threshold set to 250L
+		.addEdge("nodeC", END);
+
+		CompiledGraph app = workflow.compile();
+
+		// Test with initial counter value of 50L
+		// nodeA: 50 + 100 = 150
+		// nodeB: 150 * 2 = 300
+		// nodeC: 300 > 250, should interrupt before execution
+		Optional<OverAllState> result = app.invoke(Map.of("counter", 50L));
+		log.info("Final result: {}", result);
+		assertTrue(result.isPresent());
+
+		// Verify the results
+		assertEquals(150L, result.get().value("counter", Long.class).get());
+		assertEquals(300L, result.get().value("result", Long.class).get());
+
+		// Since nodeC interrupts before execution, status should not be set
+		assertFalse(result.get().value("status", String.class).isPresent());
+
+		log.info("Test completed - counter: {}, result: {}, interrupted: {}",
+				result.get().value("counter", Long.class).get(),
+				result.get().value("result", Long.class).get(),
+				!result.get().value("status", String.class).isPresent());
+
+		result = app.invoke(Map.of());
+	}
+
+	/**
 	 * Used to provide test data for the testWithSubSerialize method
 	 *
 	 * @param name
