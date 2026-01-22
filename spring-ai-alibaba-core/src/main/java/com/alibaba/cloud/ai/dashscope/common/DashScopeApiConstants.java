@@ -71,4 +71,6 @@ public final class DashScopeApiConstants {
 
 	public static String RETRIEVED_DOCUMENTS = "question_answer_context";
 
+	public static String REFERENCED_DOCUMENTS = "question_answer_referenced";
+
 }

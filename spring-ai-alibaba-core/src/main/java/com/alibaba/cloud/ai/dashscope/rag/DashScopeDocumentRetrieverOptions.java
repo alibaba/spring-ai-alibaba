@@ -37,11 +37,11 @@ public class DashScopeDocumentRetrieverOptions {
 
 	private @JsonProperty("enable_rewrite") boolean enableRewrite = false;
 
-	private @JsonProperty("model_name") String rewriteModelName = "conv-rewrite-qwen-1.8b";
+	private @JsonProperty("rewrite_model_name") String rewriteModelName = "conv-rewrite-qwen-1.8b";
 
 	private @JsonProperty("enable_reranking") boolean enableReranking = true;
 
-	private @JsonProperty("model_name") String rerankModelName = "gte-rerank-hybrid";
+	private @JsonProperty("rerank_model_name") String rerankModelName = "gte-rerank-hybrid";
 
 	private @JsonProperty("rerank_min_score") float rerankMinScore = 0.01f;
 

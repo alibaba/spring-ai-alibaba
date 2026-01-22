@@ -198,6 +198,7 @@ public class BailianDocumentRetrievalAdvisor implements BaseAdvisor {
 							}
 						}
 					}
+					chatResponseBuilder.metadata(DashScopeApiConstants.REFERENCED_DOCUMENTS, referencedDocuments);
 				}
 			}
 		}
