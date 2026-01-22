@@ -63,8 +63,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.tool.method.MethodToolCallback;
 
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
