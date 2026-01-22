@@ -33,6 +33,8 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * Higress签名拦截器，在HTTP请求发出前添加HMAC签名
+ *
+ * https://higress.cn/docs/latest/plugins/authentication/hmac-auth
  */
 public class HigressSigningInterceptor implements ClientHttpRequestInterceptor {
 
