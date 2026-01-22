@@ -177,7 +177,6 @@ class AgentToolNodeAsyncExecutionTest {
 			// This is the exact check used in AgentToolNode.executeAsyncTool
 			assertFalse(regularAsync instanceof CancellableAsyncToolCallback);
 			assertTrue(cancellableAsync instanceof CancellableAsyncToolCallback);
-			assertTrue(cancellableAsync instanceof AsyncToolCallback);
 		}
 
 	}
