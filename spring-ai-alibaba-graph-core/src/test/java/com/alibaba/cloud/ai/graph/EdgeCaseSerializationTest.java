@@ -16,8 +16,11 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -119,3 +122,22 @@ public class EdgeCaseSerializationTest {
 	}
 }
 
+	@Test
+	void testWrapperArrayLongDeserialization() throws Exception {
+		String json = "{\"result\":[\"java.lang.Long\",300]}";
+		byte[] payload;
+		try (ByteArrayOutputStream stream = new ByteArrayOutputStream();
+				ObjectOutputStream out = new ObjectOutputStream(stream)) {
+			Serializer.writeUTF(json, out);
+			out.flush();
+			payload = stream.toByteArray();
+		}
+
+		SpringAIJacksonStateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
+		Map<String, Object> restored = serializer.dataFromBytes(payload);
+
+		Object result = restored.get("result");
+		assertInstanceOf(Long.class, result, "Wrapper array Long should deserialize as Long");
+		assertEquals(300L, result, "Wrapper array Long value should be preserved");
+	}
+}
