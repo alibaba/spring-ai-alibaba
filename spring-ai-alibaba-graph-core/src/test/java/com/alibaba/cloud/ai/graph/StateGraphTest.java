@@ -1778,8 +1778,6 @@ public class StateGraphTest {
 				result.get().value("counter", Long.class).get(),
 				result.get().value("result", Long.class).get(),
 				!result.get().value("status", String.class).isPresent());
-
-		result = app.invoke(Map.of());
 	}
 
 	/**
