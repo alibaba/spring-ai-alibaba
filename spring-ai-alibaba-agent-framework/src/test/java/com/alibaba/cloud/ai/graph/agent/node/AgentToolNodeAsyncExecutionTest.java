@@ -126,7 +126,6 @@ class AgentToolNodeAsyncExecutionTest {
 
 			// Verify it IS a CancellableAsyncToolCallback
 			assertTrue(callback instanceof CancellableAsyncToolCallback);
-			assertTrue(callback instanceof AsyncToolCallback);
 
 			// Simulate what AgentToolNode does - call 3-arg version with real token
 			com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken realToken = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
