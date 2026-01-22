@@ -20,6 +20,7 @@ import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -58,6 +59,20 @@ public interface JacksonDeserializer<T> {
 	 * This limit is reasonable for most applications.
 	 */
 	int MAX_CACHE_SIZE = 1000;
+
+	Set<String> PRIMITIVE_WRAPPER_TYPES = Set.of(
+			"java.lang.Long",
+			"java.lang.Integer",
+			"java.lang.Double",
+			"java.lang.Float",
+			"java.lang.Short",
+			"java.lang.Byte",
+			"java.lang.Boolean",
+			"java.lang.Character",
+			"java.lang.String",
+			"java.math.BigInteger",
+			"java.math.BigDecimal"
+	);
 
 	/**
 	 * Deserialization strategies in order of preference and capability
@@ -366,7 +381,7 @@ public interface JacksonDeserializer<T> {
 			JsonNode payload = valueNode.get(1);
 
 			if (!payload.isArray()) {
-				if (className.startsWith("java.lang.") || className.startsWith("java.math.")) {
+				if (PRIMITIVE_WRAPPER_TYPES.contains(className)) {
 					return convertPrimitiveWrapperType(className, payload);
 				}
 			}
@@ -395,6 +410,9 @@ public interface JacksonDeserializer<T> {
 	 * Convert a JsonNode to a specified Java primitive type wrapper class
 	 */
 	private static Object convertPrimitiveWrapperType(String className, JsonNode valueNode) {
+		if (valueNode == null || valueNode.isNull() || valueNode.isMissingNode()) {
+			return null;
+		}
 		return switch (className) {
 			case "java.lang.Long" -> valueNode.asLong();
 			case "java.lang.Integer" -> valueNode.asInt();
