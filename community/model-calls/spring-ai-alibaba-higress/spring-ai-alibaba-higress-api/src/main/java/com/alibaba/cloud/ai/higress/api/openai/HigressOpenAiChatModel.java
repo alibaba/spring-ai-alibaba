@@ -174,7 +174,6 @@ public class HigressOpenAiChatModel implements ChatModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-
 				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate.execute(
 						ctx -> this.higressOpenAiApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
 
@@ -385,6 +384,10 @@ public class HigressOpenAiChatModel implements ChatModel {
 		if (prompt.getOptions() != null && prompt.getOptions() instanceof HigressOpenAiChatOptions chatOptions) {
 			headers.putAll(chatOptions.getHttpHeaders());
 		}
+
+		// 从 headers 中，生成签名串
+		// 根据签名串，调用签名
+
 		return CollectionUtils.toMultiValueMap(
 				headers.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> List.of(e.getValue()))));
 	}
