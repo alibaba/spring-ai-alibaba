@@ -243,11 +243,12 @@ public class SpringAiSkillAdvisor implements BaseAdvisor {
 		}
 
 		StringBuilder skillList = new StringBuilder();
-		if (!userSkills.isEmpty()) {
+		if (!userSkills.isEmpty())
+		{
 			skillList.append("**User Skills:**\n");
 			for (SkillMetadata skill : userSkills) {
 				skillList.append(String.format("- **%s**: %s", skill.getName(), skill.getDescription()));
-				skillList.append("  → MUST use `read_skill` tool to read `SKILL.md` first to learn how to use this skill \n");
+				skillList.append(String.format("  → MUST use `read_skill` tool to read `%s/SKILL.md` first to learn how to use this skill \n", skill.getSkillPath()));
 			}
 			skillList.append("\n");
 		}
@@ -256,7 +257,7 @@ public class SpringAiSkillAdvisor implements BaseAdvisor {
 			skillList.append("**Project Skills:**\n");
 			for (SkillMetadata skill : projectSkills) {
 				skillList.append(String.format("- **%s**: %s", skill.getName(), skill.getDescription()));
-				skillList.append("  → MUST use `read_skill` tool to read `SKILL.md` first to learn how to use this skill\n");
+				skillList.append(String.format("  → MUST use `read_skill` tool to read `%s/SKILL.md` first to learn how to use this skill\n", skill.getSkillPath()));
 			}
 			skillList.append("\n");
 		}

@@ -467,9 +467,9 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 		/**
 		 * Sets a custom system prompt template for skills.
 		 * <p><b>Optional</b>: If not set, uses the default template for FileSystemSkillRegistry.
-		 * <p>The template should support the following variables:
+		 *
+		 * <p>The following variables are supported in the template (optional):
 		 * <ul>
-		 *   <li><b>{skills_registry}</b>: The registry type name</li>
 		 *   <li><b>{skills_list}</b>: The formatted list of available skills</li>
 		 *   <li><b>{skills_load_instructions}</b>: Instructions on how skills are loaded</li>
 		 * </ul>
@@ -485,9 +485,9 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 		/**
 		 * Sets a custom system prompt template from a template string.
 		 * <p><b>Optional</b>: If not set, uses the default template for FileSystemSkillRegistry.
-		 * <p>The template should support the following variables:
+		 *
+		 * <p>The following variables are supported in the template (optional):
 		 * <ul>
-		 *   <li><b>{skills_registry}</b>: The registry type name</li>
 		 *   <li><b>{skills_list}</b>: The formatted list of available skills</li>
 		 *   <li><b>{skills_load_instructions}</b>: Instructions on how skills are loaded</li>
 		 * </ul>

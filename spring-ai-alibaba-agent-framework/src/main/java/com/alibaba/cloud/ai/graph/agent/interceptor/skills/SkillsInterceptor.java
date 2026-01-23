@@ -29,7 +29,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 
 import java.util.List;
 
-import static com.alibaba.cloud.ai.graph.skills.SkillPrompt.buildSkillsPrompt;
+import static com.alibaba.cloud.ai.graph.skills.SpringAiSkillAdvisor.buildSkillsPrompt;
 
 /**
  * Interceptor for integrating Claude-style Skills into ReactAgent.

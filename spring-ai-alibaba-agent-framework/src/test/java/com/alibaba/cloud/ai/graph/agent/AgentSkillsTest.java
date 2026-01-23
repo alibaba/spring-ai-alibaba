@@ -330,12 +330,10 @@ class AgentSkillsTest {
 
 	@Test
 	public void testReactAgentSkillsIntegration() throws Exception {
-		SkillRegistry registry = FileSystemSkillRegistry.builder().build();
-		// Use default path
-		SkillsAgentHook hook = SkillsAgentHook.builder()
-			.skillRegistry(registry)
-			// Not specifying projectSkillsDirectory, uses default classpath:skills
+		SkillsAgentHook skillsHook = SkillsAgentHook.builder()
+			.skillRegistry(FileSystemSkillRegistry.builder().build())
 			.build();
+
 		ShellToolAgentHook shellHook = ShellToolAgentHook.builder()
 				.shellTool2(ShellTool2.builder(System.getProperty("user.dir")).build())
 				.build();
@@ -345,7 +343,7 @@ class AgentSkillsTest {
 			.model(chatModel)
 			.saver(new MemorySaver())
 			.tools(PythonTool.createPythonToolCallback(PythonTool.DESCRIPTION))
-			.hooks(List.of(hook, shellHook))
+			.hooks(List.of(skillsHook, shellHook))
 			.enableLogging(true)
 			.build();
 
