@@ -153,18 +153,18 @@ public class HigressOpenAiApi {
             h.addAll(headers);
         };
         
-        // 如果提供了 HmacSigner，则添加签名拦截器
+        // If an HmacSigner is provided, add a signing interceptor
         RestClient.Builder clientBuilder = restClientBuilder.clone();
         if (hmacSigner != null) {
-            // 获取或创建 ClientHttpRequestFactory
+            // Get or create the ClientHttpRequestFactory
             ClientHttpRequestFactory requestFactory = getOrCreateRequestFactory(clientBuilder);
             
-            // 创建签名拦截器
+            // Create the signing interceptor
             HigressSigningInterceptor signingInterceptor = new HigressSigningInterceptor(hmacSigner);
             List<org.springframework.http.client.ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
             interceptors.add(signingInterceptor);
             
-            // 使用 InterceptingClientHttpRequestFactory 包装现有的 factory
+            // Wrap the existing factory with an InterceptingClientHttpRequestFactory
             InterceptingClientHttpRequestFactory interceptingFactory = 
                     new InterceptingClientHttpRequestFactory(requestFactory, interceptors);
             
