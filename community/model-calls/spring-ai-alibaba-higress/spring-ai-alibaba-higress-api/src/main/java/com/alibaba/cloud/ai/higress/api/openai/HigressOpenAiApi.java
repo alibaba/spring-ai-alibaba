@@ -184,11 +184,14 @@ public class HigressOpenAiApi {
 	}
 
 	/**
-	 * 获取或创建 ClientHttpRequestFactory
-	 * 如果 restClientBuilder 已经配置了 requestFactory，则使用它；否则创建默认的
-	 * 
-	 * 注意：由于 RestClient.Builder 没有提供获取当前 requestFactory 的公共方法，
-	 * 这里使用反射来获取。如果反射失败，将使用默认的 SimpleClientHttpRequestFactory。
+	 * Obtain or create a {@link ClientHttpRequestFactory}.
+	 * If the provided {@link RestClient.Builder} already has a {@code requestFactory}
+	 * configured, this factory is reused; otherwise, a default implementation is created.
+	 *
+	 * Note: since {@link RestClient.Builder} does not expose the current
+	 * {@code requestFactory} via a public accessor, reflection is used to retrieve it.
+	 * If reflection fails for any reason, a {@link SimpleClientHttpRequestFactory}
+	 * is returned as the default.
 	 */
 	private ClientHttpRequestFactory getOrCreateRequestFactory(RestClient.Builder restClientBuilder) {
 		// 尝试通过反射获取已设置的 requestFactory
