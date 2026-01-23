@@ -30,12 +30,16 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.InterceptingClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -112,6 +116,26 @@ public class HigressOpenAiApi {
 	public HigressOpenAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
 			String completionsPath, String embeddingsPath, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, apiKey, headers, completionsPath, embeddingsPath, restClientBuilder,
+				webClientBuilder, responseErrorHandler, null);
+	}
+
+	/**
+	 * Create a new chat completion api with HMAC signing support.
+	 * @param baseUrl api base URL.
+	 * @param apiKey OpenAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param completionsPath the path to the chat completions endpoint.
+	 * @param embeddingsPath the path to the embeddings endpoint.
+	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 * @param hmacSigner HMAC signer for request signing, can be null to disable signing.
+	 */
+	public HigressOpenAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
+			String completionsPath, String embeddingsPath, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler,
+			HmacSigner hmacSigner) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.headers = headers;
@@ -128,7 +152,26 @@ public class HigressOpenAiApi {
             h.setContentType(MediaType.APPLICATION_JSON);
             h.addAll(headers);
         };
-        this.restClient = restClientBuilder.clone()
+        
+        // If an HmacSigner is provided, add a signing interceptor
+        RestClient.Builder clientBuilder = restClientBuilder.clone();
+        if (hmacSigner != null) {
+            // Get or create the ClientHttpRequestFactory
+            ClientHttpRequestFactory requestFactory = getOrCreateRequestFactory(clientBuilder);
+            
+            // Create the signing interceptor
+            HigressSigningInterceptor signingInterceptor = new HigressSigningInterceptor(hmacSigner);
+            List<org.springframework.http.client.ClientHttpRequestInterceptor> interceptors = new ArrayList<>();
+            interceptors.add(signingInterceptor);
+            
+            // Wrap the existing factory with an InterceptingClientHttpRequestFactory
+            InterceptingClientHttpRequestFactory interceptingFactory = 
+                    new InterceptingClientHttpRequestFactory(requestFactory, interceptors);
+            
+            clientBuilder.requestFactory(interceptingFactory);
+        }
+        
+        this.restClient = clientBuilder
                 .baseUrl(baseUrl)
                 .defaultHeaders(finalHeaders)
                 .defaultStatusHandler(responseErrorHandler)
@@ -138,6 +181,41 @@ public class HigressOpenAiApi {
                 .baseUrl(baseUrl)
                 .defaultHeaders(finalHeaders)
                 .build(); // @formatter:on
+	}
+
+	/**
+	 * Obtain or create a {@link ClientHttpRequestFactory}.
+	 * If the provided {@link RestClient.Builder} already has a {@code requestFactory}
+	 * configured, this factory is reused; otherwise, a default implementation is created.
+	 *
+	 * Note: since {@link RestClient.Builder} does not expose the current
+	 * {@code requestFactory} via a public accessor, reflection is used to retrieve it.
+	 * If reflection fails for any reason, a {@link SimpleClientHttpRequestFactory}
+	 * is returned as the default.
+	 */
+	private ClientHttpRequestFactory getOrCreateRequestFactory(RestClient.Builder restClientBuilder) {
+		// 尝试通过反射获取已设置的 requestFactory
+		try {
+			java.lang.reflect.Field field = restClientBuilder.getClass().getDeclaredField("requestFactory");
+			field.setAccessible(true);
+			Object factory = field.get(restClientBuilder);
+			if (factory instanceof ClientHttpRequestFactory) {
+				// 如果已经是 InterceptingClientHttpRequestFactory，需要特殊处理
+				// 这里我们直接使用它，因为 InterceptingClientHttpRequestFactory 可以嵌套
+				return (ClientHttpRequestFactory) factory;
+			}
+		}
+		catch (NoSuchFieldException e) {
+			// 字段不存在，使用默认 factory
+		}
+		catch (IllegalAccessException e) {
+			// 无法访问字段，使用默认 factory
+		}
+		catch (Exception e) {
+			// 其他异常，使用默认 factory
+		}
+		// 如果没有找到或获取失败，返回默认的 SimpleClientHttpRequestFactory
+		return new SimpleClientHttpRequestFactory();
 	}
 
 	/**
@@ -1946,6 +2024,8 @@ public class HigressOpenAiApi {
 
 		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
 
+		private HmacSigner hmacSigner;
+
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
 			this.baseUrl = baseUrl;
@@ -1999,10 +2079,36 @@ public class HigressOpenAiApi {
 			return this;
 		}
 
+		/**
+		 * 设置HMAC签名器，用于对HTTP请求进行签名
+		 * @param hmacSigner HMAC签名器，如果为null则禁用签名
+		 * @return Builder实例
+		 */
+		public Builder hmacSigner(HmacSigner hmacSigner) {
+			this.hmacSigner = hmacSigner;
+			return this;
+		}
+
+		/**
+		 * 设置HMAC签名密钥，自动创建HmacSigner
+		 * @param secretKey HMAC签名密钥
+		 * @return Builder实例
+		 */
+		public Builder hmacSecretKey(String secretKey) {
+			if (secretKey != null && !secretKey.isEmpty()) {
+				this.hmacSigner = new HmacSigner(secretKey);
+			}
+			else {
+				this.hmacSigner = null;
+			}
+			return this;
+		}
+
 		public HigressOpenAiApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
 			return new HigressOpenAiApi(this.baseUrl, this.apiKey, this.headers, this.completionsPath,
-					this.embeddingsPath, this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
+					this.embeddingsPath, this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler,
+					this.hmacSigner);
 		}
 
 	}
