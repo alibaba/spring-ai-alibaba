@@ -612,4 +612,111 @@ public class InterruptionTest {
 		}
 	}
 
+
+	@Test
+	public void testLongTypePreservationInWorkflow() throws Exception {
+		class ResultCheckerAction implements AsyncNodeActionWithConfig, InterruptableAction {
+			private final Long resultThreshold;
+
+			public ResultCheckerAction(Long resultThreshold) {
+				this.resultThreshold = resultThreshold;
+			}
+
+			@Override
+			public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+				Long result = state.value("result", Long.class).orElse(0L);
+				return CompletableFuture.completedFuture(Map.of("status", "checked"));
+			}
+
+			@Override
+			public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+				Long result = state.value("result", Long.class).orElse(0L);
+				if (result > resultThreshold) {
+					return Optional.of(InterruptionMetadata.builder(nodeId, state)
+							.addMetadata("reason", "result_threshold_exceeded")
+							.addMetadata("result", result)
+							.addMetadata("threshold", resultThreshold)
+							.build());
+				}
+				return Optional.empty();
+			}
+		}
+
+		StateGraph workflow = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("counter", (o, o2) -> o2);
+			keyStrategyHashMap.put("result", (o, o2) -> o2);
+			keyStrategyHashMap.put("status", (o, o2) -> o2);
+			return keyStrategyHashMap;
+		})
+		.addEdge(START, "nodeA")
+		.addNode("nodeA", node_async((state, config) -> {
+			Long counter = state.value("counter", Long.class).orElse(0L);
+			Long incrementedCounter = counter + 100L;
+			return Map.of("counter", incrementedCounter);
+		}))
+		.addEdge("nodeA", "nodeB")
+		.addNode("nodeB", node_async((state, config) -> {
+			Long counter = state.value("counter", Long.class).orElse(0L);
+			Long finalResult = counter * 2L;
+			return Map.of("result", finalResult);
+		}))
+		.addEdge("nodeB", "nodeC")
+		.addNode("nodeC", new ResultCheckerAction(250L))
+		.addEdge("nodeC", END);
+
+		CompiledGraph app = workflow.compile();
+
+		Optional<OverAllState> result = app.invoke(Map.of("counter", 50L));
+		assertTrue(result.isPresent());
+
+		assertEquals(150L, result.get().value("counter", Long.class).get(),
+			"Counter should be 150L");
+		assertEquals(300L, result.get().value("result", Long.class).get(),
+			"Result should be 300L");
+
+		Object counterValue = result.get().value("counter").orElse(null);
+		Object resultValue = result.get().value("result").orElse(null);
+
+		assertInstanceOf(Long.class, counterValue,
+			"Counter should be Long type, not Integer");
+		assertInstanceOf(Long.class, resultValue,
+			"Result should be Long type, not Integer");
+
+		assertFalse(result.get().value("status", String.class).isPresent(),
+			"Status should not be set when interrupted");
+
+		StateGraph workflow2 = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("counter", (o, o2) -> o2);
+			keyStrategyHashMap.put("result", (o, o2) -> o2);
+			keyStrategyHashMap.put("status", (o, o2) -> o2);
+			return keyStrategyHashMap;
+		})
+		.addEdge(START, "nodeA")
+		.addNode("nodeA", node_async((state, config) -> {
+			Long counter = state.value("counter", Long.class).orElse(0L);
+			Long incrementedCounter = counter + 100L;
+			return Map.of("counter", incrementedCounter);
+		}))
+		.addEdge("nodeA", "nodeB")
+		.addNode("nodeB", node_async((state, config) -> {
+			Long counter = state.value("counter", Long.class).orElse(0L);
+			Long finalResult = counter * 2L;
+			return Map.of("result", finalResult);
+		}))
+		.addEdge("nodeB", "nodeC")
+		.addNode("nodeC", new ResultCheckerAction(250L))
+		.addEdge("nodeC", END);
+
+		CompiledGraph app2 = workflow2.compile();
+		result = app2.invoke(Map.of());
+		assertTrue(result.isPresent(), "Result should be present with empty initial state");
+
+		assertEquals(100L, result.get().value("counter", Long.class).get());
+		assertEquals(200L, result.get().value("result", Long.class).get());
+		assertEquals("checked", result.get().value("status", String.class).get(),
+			"Status should be 'checked' when not interrupted");
+	}
+
 }
