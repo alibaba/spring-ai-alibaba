@@ -70,6 +70,18 @@ public class SequentialGraphBuildingStrategy extends AbstractFlowGraphBuildingSt
 	}
 
 	@Override
+	protected void connectBeforeModelHooks() throws GraphStateException {
+		// Sequential strategy already handles hook connections in buildCoreGraph
+		// Override with empty implementation to avoid duplicate connections
+	}
+
+	@Override
+	protected void connectAfterModelHooks() throws GraphStateException {
+		// Sequential strategy already handles hook connections in buildCoreGraph
+		// Override with empty implementation to avoid duplicate connections
+	}
+
+	@Override
 	public String getStrategyType() {
 		return FlowAgentEnum.SEQUENTIAL.getType();
 	}

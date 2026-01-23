@@ -92,6 +92,18 @@ public class ParallelGraphBuildingStrategy extends AbstractFlowGraphBuildingStra
 	}
 
 	@Override
+	protected void connectBeforeModelHooks() throws GraphStateException {
+		// Parallel strategy already handles hook connections in buildCoreGraph
+		// Override with empty implementation to avoid duplicate connections
+	}
+
+	@Override
+	protected void connectAfterModelHooks() throws GraphStateException {
+		// Parallel strategy already handles hook connections in buildCoreGraph
+		// Override with empty implementation to avoid duplicate connections
+	}
+
+	@Override
 	public String getStrategyType() {
 		return FlowAgentEnum.PARALLEL.getType();
 	}

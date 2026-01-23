@@ -128,24 +128,19 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 		// 5. Build core graph structure (subclass-specific logic)
 		buildCoreGraph(config);
 
-		// 6. Connect beforeModel and afterModel hook edges
-		if (!this.beforeModelHooks.isEmpty()) {
-			connectBeforeModelHookEdges(this.graph, getRootAgent().name(), this.beforeModelHooks);
-		}
-		if (!this.afterModelHooks.isEmpty()) {
-			connectAfterModelHookEdges(this.graph, getRootAgent().name(), this.afterModelHooks);
-		}
+		// 6. Connect beforeModel hooks (can be overridden by subclasses)
+		// These must be connected before beforeAgent/afterAgent hooks because
+		// beforeAgent hooks may need to connect to beforeModel hooks
+		connectBeforeModelHooks();
 
-		// 7. Chain beforeAgent and afterAgent hooks
-		if (!this.beforeAgentHooks.isEmpty()) {
-			String nextNode = !this.beforeModelHooks.isEmpty() ?
-					Hook.getFullHookName(this.beforeModelHooks.get(0)) + ".beforeModel"
-					: getRootAgent().name();
-			chainBeforeAgentHooks(this.graph, this.beforeAgentHooks, nextNode);
-		}
-		if (!this.afterAgentHooks.isEmpty()) {
-			chainAfterAgentHooks(this.graph, this.afterAgentHooks);
-		}
+		// 7. Connect afterModel hooks (can be overridden by subclasses)
+		connectAfterModelHooks();
+
+		// 8. Connect beforeAgent hooks (rarely needs to be overridden)
+		connectBeforeAgentHooks();
+
+		// 9. Connect afterAgent hooks (rarely needs to be overridden)
+		connectAfterAgentHooks();
 
 		return this.graph;
 	}
@@ -160,12 +155,91 @@ public abstract class AbstractFlowGraphBuildingStrategy implements FlowGraphBuil
 	 * Subclasses can directly access protected fields: graph, rootAgent, beforeModelHooks,
 	 * afterModelHooks, entryNode, exitNode.
 	 *
+	 * <p>
+	 * Note: Subclasses should NOT call connectBeforeModelHookEdges() or connectAfterModelHookEdges()
+	 * in this method. Instead, override the hook methods (connectBeforeModelHooks(), connectAfterModelHooks())
+	 * if custom hook connection logic is needed.
+	 * </p>
+	 *
 	 * @param config the flow graph configuration
 	 * @throws GraphStateException if graph construction fails
 	 */
 	protected void buildCoreGraph(FlowGraphBuilder.FlowGraphConfig config)
 			throws GraphStateException {
 		this.graph.addNode(getRootAgent().name(), node_async(new TransparentNode()));
+	}
+
+	/**
+	 * Connects beforeModel hook edges. Subclasses can override to customize behavior.
+	 * Default implementation connects hooks in sequence to rootAgent.name().
+	 *
+	 * <p>
+	 * This method is called after buildCoreGraph() and before connectAfterModelHooks().
+	 * Subclasses that handle hook connections in buildCoreGraph() should override this
+	 * method with an empty implementation to avoid duplicate edge connections.
+	 * </p>
+	 *
+	 * @throws GraphStateException if graph construction fails
+	 */
+	protected void connectBeforeModelHooks() throws GraphStateException {
+		if (!this.beforeModelHooks.isEmpty()) {
+			connectBeforeModelHookEdges(this.graph, getRootAgent().name(), this.beforeModelHooks);
+		}
+	}
+
+	/**
+	 * Connects afterModel hook edges. Subclasses can override to customize behavior.
+	 * Default implementation connects hooks in sequence from rootAgent.name().
+	 *
+	 * <p>
+	 * This method is called after connectBeforeModelHooks() and before connectBeforeAgentHooks().
+	 * Subclasses that handle hook connections in buildCoreGraph() should override this
+	 * method with an empty implementation to avoid duplicate edge connections.
+	 * </p>
+	 *
+	 * @throws GraphStateException if graph construction fails
+	 */
+	protected void connectAfterModelHooks() throws GraphStateException {
+		if (!this.afterModelHooks.isEmpty()) {
+			connectAfterModelHookEdges(this.graph, getRootAgent().name(), this.afterModelHooks);
+		}
+	}
+
+	/**
+	 * Connects beforeAgent hook edges. Subclasses rarely need to override this.
+	 * Default implementation chains beforeAgent hooks and connects to the next node
+	 * (either the first beforeModel hook or rootAgent).
+	 *
+	 * <p>
+	 * This method is called after connectAfterModelHooks() and before connectAfterAgentHooks().
+	 * </p>
+	 *
+	 * @throws GraphStateException if graph construction fails
+	 */
+	protected void connectBeforeAgentHooks() throws GraphStateException {
+		if (!this.beforeAgentHooks.isEmpty()) {
+			String nextNode = !this.beforeModelHooks.isEmpty() ?
+					Hook.getFullHookName(this.beforeModelHooks.get(0)) + ".beforeModel"
+					: getRootAgent().name();
+			chainBeforeAgentHooks(this.graph, this.beforeAgentHooks, nextNode);
+		}
+	}
+
+	/**
+	 * Connects afterAgent hook edges. Subclasses rarely need to override this.
+	 * Default implementation chains afterAgent hooks and connects to END.
+	 *
+	 * <p>
+	 * This method is called after connectBeforeAgentHooks() as the final step
+	 * of hook connection.
+	 * </p>
+	 *
+	 * @throws GraphStateException if graph construction fails
+	 */
+	protected void connectAfterAgentHooks() throws GraphStateException {
+		if (!this.afterAgentHooks.isEmpty()) {
+			chainAfterAgentHooks(this.graph, this.afterAgentHooks);
+		}
 	}
 
 	/**

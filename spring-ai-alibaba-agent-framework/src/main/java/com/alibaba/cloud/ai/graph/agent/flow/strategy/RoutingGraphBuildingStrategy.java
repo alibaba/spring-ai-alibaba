@@ -91,6 +91,18 @@ public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrat
 	}
 
 	@Override
+	protected void connectBeforeModelHooks() throws GraphStateException {
+		// Routing strategy already handles hook connections in buildCoreGraph
+		// Override with empty implementation to avoid duplicate connections
+	}
+
+	@Override
+	protected void connectAfterModelHooks() throws GraphStateException {
+		// Routing strategy already handles hook connections in buildCoreGraph
+		// Override with empty implementation to avoid duplicate connections
+	}
+
+	@Override
 	public String getStrategyType() {
 		return FlowAgentEnum.ROUTING.getType();
 	}
