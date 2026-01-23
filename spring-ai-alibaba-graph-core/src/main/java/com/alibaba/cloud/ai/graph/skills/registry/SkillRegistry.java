@@ -16,6 +16,9 @@
 package com.alibaba.cloud.ai.graph.skills.registry;
 
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
+import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
+
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 
 import java.io.IOException;
 import java.util.List;
@@ -63,22 +66,6 @@ public interface SkillRegistry {
 	int size();
 
 	/**
-	 * Get the project skills directory path.
-	 * This may return null if not applicable for the implementation.
-	 * 
-	 * @return the project skills directory path, or null if not set
-	 */
-	String getProjectSkillsDirectory();
-
-	/**
-	 * Get the user skills directory path.
-	 * This may return null if not applicable for the implementation.
-	 * 
-	 * @return the user skills directory path, or null if not set
-	 */
-	String getUserSkillsDirectory();
-
-	/**
 	 * Reloads all skills from the underlying source.
 	 * 
 	 * This method clears existing skills and reloads them from the configured source
@@ -91,18 +78,52 @@ public interface SkillRegistry {
 	void reload();
 
 	/**
-	 * Reads the full content of a skill by name and path.
+	 * Reads the full content of a skill by name.
 	 * 
 	 * This method retrieves the complete content of a skill file (e.g., SKILL.md)
-	 * based on the skill name and path. The path is used to locate the skill file,
-	 * while the name is used for validation.
+	 * based on the skill name. The skill path is obtained from the SkillMetadata
+	 * associated with the skill name.
 	 * 
 	 * @param name the skill name (must not be null)
-	 * @param skillPath the path to the skill directory or file (must not be null)
 	 * @return the full content of the skill file
 	 * @throws IOException if the skill file cannot be read
-	 * @throws IllegalArgumentException if name or skillPath is null
-	 * @throws IllegalStateException if the skill is not found or path is invalid
+	 * @throws IllegalArgumentException if name is null or empty
+	 * @throws IllegalStateException if the skill is not found
 	 */
-	String readSkillContent(String name, String skillPath) throws IOException;
+	String readSkillContent(String name) throws IOException;
+
+	/**
+	 * Gets the skill load instructions for the system prompt.
+	 * 
+	 * This method provides instructions on how skills are loaded and organized,
+	 * including information about skill locations, paths, and loading order.
+	 * The format and content depend on the specific implementation.
+	 * 
+	 * @return the skill load instructions as a formatted string (may be empty, never null)
+	 */
+	String getSkillLoadInstructions();
+
+	/**
+	 * Gets the registry type name.
+	 * 
+	 * This method returns a human-readable name for the registry type (e.g., "FileSystem", "Database").
+	 * This is used in system prompts to inform the model about the type of skill registry being used.
+	 * 
+	 * @return the registry type name (never null)
+	 */
+	String getRegistryType();
+
+	/**
+	 * Gets the system prompt template for skills.
+	 * 
+	 * This method returns a SystemPromptTemplate that defines how skills are presented
+	 * in the system prompt. Each implementation can provide its own template format.
+	 * The template should support the following variables:
+	 * - {skills_registry}: The registry type name
+	 * - {skills_list}: The formatted list of available skills
+	 * - {skills_load_instructions}: Instructions on how skills are loaded
+	 * 
+	 * @return the SystemPromptTemplate for skills (never null)
+	 */
+	SystemPromptTemplate getSystemPromptTemplate();
 }

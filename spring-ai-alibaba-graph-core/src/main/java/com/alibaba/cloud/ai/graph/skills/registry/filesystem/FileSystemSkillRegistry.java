@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.skills.registry;
+package com.alibaba.cloud.ai.graph.skills.registry.filesystem;
 
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
-import com.alibaba.cloud.ai.graph.skills.SkillScanner;
+import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.core.io.Resource;
 
 import java.io.File;
@@ -64,10 +65,76 @@ public class FileSystemSkillRegistry implements SkillRegistry {
 
 	private static final Logger logger = LoggerFactory.getLogger(FileSystemSkillRegistry.class);
 
+	/**
+	 * Default system prompt template for FileSystemSkillRegistry.
+	 * This template defines how skills are presented in the system prompt.
+	 * It supports the following variables:
+	 * - {skills_registry}: The registry type name
+	 * - {skills_list}: The formatted list of available skills
+	 * - {skills_load_instructions}: Instructions on how skills are loaded
+	 */
+	public static final String DEFAULT_SYSTEM_PROMPT_TEMPLATE = """
+
+## Skills System
+
+You have access to a skills library that provides specialized capabilities and domain knowledge. All skills are stored in a Skill Registry with a {skills_registry} based storage.
+
+### Available Skills
+
+{skills_list}
+
+### How to Use Skills (Progressive Disclosure)
+
+Skills follow a **progressive disclosure** pattern - you know they exist (name + description above), but you only read the full instructions when needed:
+
+1. **Recognize when a skill applies**: Check if the user's task matches any skill's description
+2. **Read the skill's full instructions**: The skill list above shows the exact path to use with `read_skill`
+3. **Follow the skill's instructions**: SKILL.md contains step-by-step workflows, best practices, and examples
+4. **Access supporting files**: Skills may include Python scripts, configs, or reference docs - use absolute paths
+
+#### How to Read The Full Skill Instruction
+
+You are currently using the {skills_registry} Skill Registry. Please follow the skill loading guidelines below:
+
+{skills_load_instructions}
+
+**Important:**
+
+  - **For SKILL.md files (skill instructions)**: Always use `read_skill` to read skill instructions. Do not attempt to access SKILL.md files through other methods.
+  - **For other supporting files that skill uses (scripts, configs, etc.)**: You may use other appropriate tools to read or access these files as needed.
+
+#### When to Use Skills
+
+  - When the user's request matches a skill's domain (e.g., "research X" → web-research skill)
+  - When you need specialized knowledge or structured workflows
+  - When a skill provides proven patterns for complex tasks
+
+#### Skills are Self-Documenting
+
+  - Each SKILL.md tells you exactly what the skill does and how to use it
+  - The skill list above shows the full path for each skill's SKILL.md file
+
+#### Executing Skill Scripts
+
+Skills may contain Python scripts or other executable files. Always use absolute paths from the skill list.
+
+### Example Workflow
+
+User: "Can you research the latest developments in quantum computing?"
+
+1. Check available skills above → See "web-research" skill with its full path
+2. Read the skill using the path shown in the list
+3. Follow the skill's research workflow (search → organize → synthesize)
+4. Use any helper scripts with absolute paths
+
+Remember: Skills are tools to make you more capable and consistent. When in doubt, check if a skill exists for the task!
+""";
+
 	private volatile Map<String, SkillMetadata> skills = new HashMap<>();
 	private final String userSkillsDirectory;
 	private final String projectSkillsDirectory;
 	private final SkillScanner scanner = new SkillScanner();
+	private final SystemPromptTemplate systemPromptTemplate;
 
 	private FileSystemSkillRegistry(Builder builder) {
 		// Set default userSkillsDirectory to ~/saa/skills if not provided
@@ -84,11 +151,21 @@ public class FileSystemSkillRegistry implements SkillRegistry {
 			this.projectSkillsDirectory = builder.projectSkillsDirectory;
 		}
 
+		// Set system prompt template - use provided or default
+		if (builder.systemPromptTemplate != null) {
+			this.systemPromptTemplate = builder.systemPromptTemplate;
+		} else {
+			this.systemPromptTemplate = SystemPromptTemplate.builder()
+				.template(DEFAULT_SYSTEM_PROMPT_TEMPLATE)
+				.build();
+		}
+
 		// Load skills during initialization if auto-load is enabled (default: true)
 		if (builder.autoLoad) {
 			loadSkillsToRegistry();
 		}
 	}
+
 
 	/**
 	 * Resolves the default project skills directory.
@@ -172,40 +249,85 @@ public class FileSystemSkillRegistry implements SkillRegistry {
 		return skills.size();
 	}
 
-	@Override
+	/**
+	 * Get the project skills directory path.
+	 * This is an implementation-specific method, not part of the SkillRegistry interface.
+	 * 
+	 * @return the project skills directory path
+	 */
 	public String getProjectSkillsDirectory() {
 		return projectSkillsDirectory;
 	}
 
-	@Override
+	/**
+	 * Get the user skills directory path.
+	 * This is an implementation-specific method, not part of the SkillRegistry interface.
+	 * 
+	 * @return the user skills directory path
+	 */
 	public String getUserSkillsDirectory() {
 		return userSkillsDirectory;
 	}
 
+
+
 	@Override
-	public String readSkillContent(String name, String skillPath) throws IOException {
+	public String readSkillContent(String name) throws IOException {
 		if (name == null || name.isEmpty()) {
 			throw new IllegalArgumentException("Skill name cannot be null or empty");
 		}
-		if (skillPath == null || skillPath.isEmpty()) {
-			throw new IllegalArgumentException("Skill path cannot be null or empty");
-		}
 
-		// First verify the skill exists and matches the name
+		// Get the skill by name
 		Optional<SkillMetadata> skillOpt = get(name);
 		if (skillOpt.isEmpty()) {
 			throw new IllegalStateException("Skill not found: " + name);
 		}
 
 		SkillMetadata skill = skillOpt.get();
-		// Verify the path matches
-		if (!skillPath.equals(skill.getSkillPath())) {
-			throw new IllegalStateException(
-				String.format("Skill path mismatch: expected '%s', got '%s'", skill.getSkillPath(), skillPath));
+		// Load and return the full content using the skill's path
+		return skill.loadFullContent();
+	}
+
+	@Override
+	public String getSkillLoadInstructions() {
+		List<SkillMetadata> skills = listAll();
+		List<SkillMetadata> userSkills = new ArrayList<>();
+		List<SkillMetadata> projectSkills = new ArrayList<>();
+		for (SkillMetadata skill : skills) {
+			if ("project".equals(skill.getSource())) {
+				projectSkills.add(skill);
+			} else {
+				userSkills.add(skill);
+			}
 		}
 
-		// Load and return the full content
-		return skill.loadFullContent();
+		StringBuilder instructions = new StringBuilder();
+		if (!userSkills.isEmpty() || !projectSkills.isEmpty()) {
+			instructions.append("**Skill Locations:**\n");
+			if (!userSkills.isEmpty()) {
+				instructions.append(String.format("- **User Skills**: `%s`\n", getUserSkillsDirectory()));
+			}
+			if (!projectSkills.isEmpty()) {
+				instructions.append(String.format("- **Project Skills**: `%s` (override user skills with same name)\n", getProjectSkillsDirectory()));
+			}
+			instructions.append("\n");
+		}
+
+		instructions.append("**Skill Path Format:**\n");
+		instructions.append("Each skill has a unique path shown in the skill list above. ");
+		instructions.append("Use the exact path shown when calling `read_skill` to read the SKILL.md file.\n");
+
+		return instructions.toString();
+	}
+
+	@Override
+	public String getRegistryType() {
+		return "FileSystem";
+	}
+
+	@Override
+	public SystemPromptTemplate getSystemPromptTemplate() {
+		return systemPromptTemplate;
 	}
 
 	/**
@@ -258,6 +380,7 @@ public class FileSystemSkillRegistry implements SkillRegistry {
 		private String userSkillsDirectory;
 		private String projectSkillsDirectory;
 		private boolean autoLoad = true;
+		private SystemPromptTemplate systemPromptTemplate;
 
 		/**
 		 * Sets the user skills directory path.
@@ -338,6 +461,44 @@ public class FileSystemSkillRegistry implements SkillRegistry {
 		 */
 		public Builder autoLoad(boolean autoLoad) {
 			this.autoLoad = autoLoad;
+			return this;
+		}
+
+		/**
+		 * Sets a custom system prompt template for skills.
+		 * <p><b>Optional</b>: If not set, uses the default template for FileSystemSkillRegistry.
+		 * <p>The template should support the following variables:
+		 * <ul>
+		 *   <li><b>{skills_registry}</b>: The registry type name</li>
+		 *   <li><b>{skills_list}</b>: The formatted list of available skills</li>
+		 *   <li><b>{skills_load_instructions}</b>: Instructions on how skills are loaded</li>
+		 * </ul>
+		 *
+		 * @param systemPromptTemplate the custom SystemPromptTemplate to use
+		 * @return this builder
+		 */
+		public Builder systemPromptTemplate(SystemPromptTemplate systemPromptTemplate) {
+			this.systemPromptTemplate = systemPromptTemplate;
+			return this;
+		}
+
+		/**
+		 * Sets a custom system prompt template from a template string.
+		 * <p><b>Optional</b>: If not set, uses the default template for FileSystemSkillRegistry.
+		 * <p>The template should support the following variables:
+		 * <ul>
+		 *   <li><b>{skills_registry}</b>: The registry type name</li>
+		 *   <li><b>{skills_list}</b>: The formatted list of available skills</li>
+		 *   <li><b>{skills_load_instructions}</b>: Instructions on how skills are loaded</li>
+		 * </ul>
+		 *
+		 * @param template the template string
+		 * @return this builder
+		 */
+		public Builder systemPromptTemplate(String template) {
+			this.systemPromptTemplate = SystemPromptTemplate.builder()
+				.template(template)
+				.build();
 			return this;
 		}
 

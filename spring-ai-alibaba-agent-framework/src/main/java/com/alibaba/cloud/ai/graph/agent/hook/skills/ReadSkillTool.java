@@ -52,16 +52,15 @@ public class ReadSkillTool implements BiFunction<ReadSkillTool.ReadSkillRequest,
 
 	public static final String DESCRIPTION = """
 Reads the full content of a skill from the SkillRegistry.
-You can use this tool to read the complete content of any skill by providing its name and path.
+You can use this tool to read the complete content of any skill by providing its name.
 
 Usage:
 - The skill_name parameter must match the name of the skill as registered in the registry
-- The skill_path parameter must be the exact path to the skill directory (as stored in skill metadata)
 - The tool returns the full content of the skill file (e.g., SKILL.md) without frontmatter
-- If the skill is not found or path doesn't match, an error will be returned
+- If the skill is not found, an error will be returned
 
 Example:
-- read_skill("pdf-extractor", "/path/to/skills/pdf-extractor")
+- read_skill("pdf-extractor")
 		""";
 
 	@Override
@@ -70,11 +69,8 @@ Example:
 			if (request.skillName == null || request.skillName.isEmpty()) {
 				return "Error: skill_name is required";
 			}
-			if (request.skillPath == null || request.skillPath.isEmpty()) {
-				return "Error: skill_path is required";
-			}
 
-			String content = skillRegistry.readSkillContent(request.skillName, request.skillPath);
+			String content = skillRegistry.readSkillContent(request.skillName);
 			return content;
 		}
 		catch (IllegalArgumentException e) {
@@ -82,7 +78,7 @@ Example:
 			return "Error: " + e.getMessage();
 		}
 		catch (IllegalStateException e) {
-			logger.warn("Skill not found or path mismatch: {}", e.getMessage());
+			logger.warn("Skill not found: {}", e.getMessage());
 			return "Error: " + e.getMessage();
 		}
 		catch (IOException e) {
@@ -114,16 +110,11 @@ Example:
 		@JsonPropertyDescription("The name of the skill to read, must match one of the names in the Available Skills list")
 		public String skillName;
 
-		@JsonProperty(required = true, value = "skill_path")
-		@JsonPropertyDescription("The path to the skill directory, must be one of the value in the Skill Locations, use absolute path")
-		public String skillPath;
-
 		public ReadSkillRequest() {
 		}
 
-		public ReadSkillRequest(String skillName, String skillPath) {
+		public ReadSkillRequest(String skillName) {
 			this.skillName = skillName;
-			this.skillPath = skillPath;
 		}
 	}
 }

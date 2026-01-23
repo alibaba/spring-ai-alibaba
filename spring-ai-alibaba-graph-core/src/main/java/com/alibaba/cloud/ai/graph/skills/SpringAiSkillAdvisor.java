@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.skills;
 
-import com.alibaba.cloud.ai.graph.skills.registry.FileSystemSkillRegistry;
+import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -40,7 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.alibaba.cloud.ai.graph.skills.SkillPrompt.SKILLS_SYSTEM_PROMPT_TEMPLATE;
 
 /**
  * Advisor for integrating Claude-style Skills into Spring AI ChatClient.
@@ -57,7 +56,6 @@ public class SpringAiSkillAdvisor implements BaseAdvisor {
 	private static final Logger logger = LoggerFactory.getLogger(SpringAiSkillAdvisor.class);
 
 	private final SkillRegistry skillRegistry;
-	private final SystemPromptTemplate systemPromptTemplate;
 	private final int order;
 	private final Scheduler scheduler;
 	private final String userSkillsDirectory;
@@ -89,14 +87,15 @@ public class SpringAiSkillAdvisor implements BaseAdvisor {
 			this.skillRegistry = registryBuilder.build();
 		}
 		
-		// Get directories from registry (for display purposes)
-		this.userSkillsDirectory = skillRegistry.getUserSkillsDirectory();
-		this.projectSkillsDirectory = skillRegistry.getProjectSkillsDirectory();
-		
-		// Initialize system prompt template
-		this.systemPromptTemplate = SystemPromptTemplate.builder()
-			.template(SKILLS_SYSTEM_PROMPT_TEMPLATE)
-			.build();
+		// Get directories from registry if it's a FileSystemSkillRegistry (for display purposes)
+		if (skillRegistry instanceof FileSystemSkillRegistry) {
+			FileSystemSkillRegistry fsRegistry = (FileSystemSkillRegistry) skillRegistry;
+			this.userSkillsDirectory = fsRegistry.getUserSkillsDirectory();
+			this.projectSkillsDirectory = fsRegistry.getProjectSkillsDirectory();
+		} else {
+			this.userSkillsDirectory = null;
+			this.projectSkillsDirectory = null;
+		}
 		
 		// Set order and scheduler
 		this.order = builder.order != null ? builder.order : Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
@@ -131,7 +130,7 @@ public class SpringAiSkillAdvisor implements BaseAdvisor {
 		}
 		
 		// Build skills prompt
-		String skillsPrompt = buildSkillsPrompt(skills);
+		String skillsPrompt = buildSkillsPrompt(skills, skillRegistry, skillRegistry.getSystemPromptTemplate());
 		
 		// Enhance system message
 		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
@@ -153,62 +152,6 @@ public class SpringAiSkillAdvisor implements BaseAdvisor {
 		return chatClientResponse;
 	}
 
-	/**
-	 * Builds the skills prompt string from the list of skills.
-	 * 
-	 * @param skills the list of skills
-	 * @return the formatted skills prompt string
-	 */
-	private String buildSkillsPrompt(List<SkillMetadata> skills) {
-		List<SkillMetadata> userSkills = new ArrayList<>();
-		List<SkillMetadata> projectSkills = new ArrayList<>();
-		
-		for (SkillMetadata skill : skills) {
-			if ("project".equals(skill.getSource())) {
-				projectSkills.add(skill);
-			} else {
-				userSkills.add(skill);
-			}
-		}
-
-		StringBuilder skillLocations = new StringBuilder();
-		if (!userSkills.isEmpty() || !projectSkills.isEmpty()) {
-			if (!userSkills.isEmpty()) {
-				skillLocations.append(String.format("- **User Skills**: `%s`\n", 
-					skillRegistry.getUserSkillsDirectory()));
-			}
-			if (!projectSkills.isEmpty()) {
-				skillLocations.append(String.format("- **Project Skills**: `%s` (override user skills with same name)\n", 
-					skillRegistry.getProjectSkillsDirectory()));
-			}
-			skillLocations.append("\n");
-		}
-
-		StringBuilder skillList = new StringBuilder();
-		if (!userSkills.isEmpty()) {
-			skillList.append("**User Skills:**\n");
-			for (SkillMetadata skill : userSkills) {
-				skillList.append(String.format("- **%s**: %s", skill.getName(), skill.getDescription()));
-				skillList.append(String.format("  → MUST use `read_skill` tool to read `%s/SKILL.md` first to learn how to use this skill \n", skill.getSkillPath()));
-			}
-			skillList.append("\n");
-		}
-
-		if (!projectSkills.isEmpty()) {
-			skillList.append("**Project Skills:**\n");
-			for (SkillMetadata skill : projectSkills) {
-				skillList.append(String.format("- **%s**: %s", skill.getName(), skill.getDescription()));
-				skillList.append(String.format("  → MUST use `read_skill` tool to read `%s/SKILL.md` first to learn how to use this skill\n", skill.getSkillPath()));
-			}
-			skillList.append("\n");
-		}
-
-		Map<String, Object> context = new HashMap<>();
-		context.put("skills_locations", skillLocations.toString());
-		context.put("skills_list", skillList.toString());
-		
-		return systemPromptTemplate.render(context);
-	}
 
 	/**
 	 * Enhances the system message with skills prompt.
@@ -274,6 +217,55 @@ public class SpringAiSkillAdvisor implements BaseAdvisor {
 	 */
 	public List<SkillMetadata> listSkills() {
 		return skillRegistry.listAll();
+	}
+
+	/**
+	 * Builds the skills prompt string from the list of skills.
+	 *
+	 * This method processes the skills list, separates user skills from project skills,
+	 * formats them into a skills list, and renders the system prompt template with
+	 * the appropriate context variables.
+	 *
+	 * @param skills the list of skills to include in the prompt
+	 * @param skillRegistry the SkillRegistry instance to get registry type and load instructions
+	 * @param systemPromptTemplate the SystemPromptTemplate to render the prompt
+	 * @return the formatted skills prompt string
+	 */
+	public static String buildSkillsPrompt(List<SkillMetadata> skills, SkillRegistry skillRegistry, SystemPromptTemplate systemPromptTemplate) {
+		List<SkillMetadata> userSkills = new ArrayList<>();
+		List<SkillMetadata> projectSkills = new ArrayList<>();
+		for (SkillMetadata skill : skills) {
+			if ("project".equals(skill.getSource())) {
+				projectSkills.add(skill);
+			} else {
+				userSkills.add(skill);
+			}
+		}
+
+		StringBuilder skillList = new StringBuilder();
+		if (!userSkills.isEmpty()) {
+			skillList.append("**User Skills:**\n");
+			for (SkillMetadata skill : userSkills) {
+				skillList.append(String.format("- **%s**: %s", skill.getName(), skill.getDescription()));
+				skillList.append("  → MUST use `read_skill` tool to read `SKILL.md` first to learn how to use this skill \n");
+			}
+			skillList.append("\n");
+		}
+
+		if (!projectSkills.isEmpty()) {
+			skillList.append("**Project Skills:**\n");
+			for (SkillMetadata skill : projectSkills) {
+				skillList.append(String.format("- **%s**: %s", skill.getName(), skill.getDescription()));
+				skillList.append("  → MUST use `read_skill` tool to read `SKILL.md` first to learn how to use this skill\n");
+			}
+			skillList.append("\n");
+		}
+
+		Map<String, Object> context = new HashMap<>();
+		context.put("skills_registry", skillRegistry.getRegistryType());
+		context.put("skills_list", skillList.toString());
+		context.put("skills_load_instructions", skillRegistry.getSkillLoadInstructions());
+		return systemPromptTemplate.render(context);
 	}
 
 	/**

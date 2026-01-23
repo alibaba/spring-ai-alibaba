@@ -26,7 +26,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.skills.registry.FileSystemSkillRegistry;
+import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
@@ -65,8 +65,8 @@ class SkillsInterceptorTest {
 			.skillRegistry(registry)
 			.build();
 
-		assertEquals(1, interceptor.getSkillCount());
-		assertTrue(interceptor.hasSkill("test-skill"));
+		assertEquals(1, registry.size());
+		assertTrue(registry.contains("test-skill"));
 	}
 
 	@Test
@@ -84,7 +84,7 @@ class SkillsInterceptorTest {
 			.skillRegistry(registry)
 			.build();
 
-		assertEquals(0, interceptor.getSkillCount());
+		assertEquals(0, registry.size());
 
 		ModelRequest request = ModelRequest.builder()
 			.messages(List.of())
@@ -99,7 +99,7 @@ class SkillsInterceptorTest {
 
 		interceptor.interceptModel(request, handler);
 
-		assertEquals(1, interceptor.getSkillCount());
+		assertEquals(1, registry.size());
 	}
 
 	@Test
@@ -127,8 +127,8 @@ class SkillsInterceptorTest {
 			.skillRegistry(registry)
 			.build();
 
-		assertEquals(1, interceptor.getSkillCount());
-		assertEquals("Project skill", interceptor.listSkills().get(0).getDescription());
+		assertEquals(1, registry.size());
+		assertEquals("Project skill", registry.listAll().get(0).getDescription());
 	}
 
 	@Test
@@ -208,79 +208,16 @@ class SkillsInterceptorTest {
 			.skillRegistry(registry)
 			.build();
 
-		assertEquals(1, interceptor.getSkillCount());
-
-		// Test unload
-		interceptor.unloadSkill("test-skill");
-		assertEquals(0, interceptor.getSkillCount());
-
-		// Test load
-		interceptor.loadSkill(skillDir.toString());
-		assertEquals(1, interceptor.getSkillCount());
+		assertEquals(1, registry.size());
 
 		// Test reload with updated content
 		Files.writeString(skillDir.resolve("SKILL.md"),
 			"---\nname: test-skill\ndescription: Updated\n---\n# Test");
 
-		interceptor.reloadSkills();
-		assertEquals("Updated", interceptor.listSkills().get(0).getDescription());
+		registry.reload();
+		assertEquals("Updated", registry.listAll().get(0).getDescription());
 	}
 
-	@Test
-	void testLoadSkillWithInvalidDirectory(@TempDir Path tempDir) {
-		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
-			.userSkillsDirectory(tempDir.toString())
-			.autoLoad(false)
-			.build();
-		SkillsInterceptor interceptor = SkillsInterceptor.builder()
-			.skillRegistry(registry)
-			.build();
-
-		// Test null directory
-		assertThrows(IllegalArgumentException.class, () -> {
-			interceptor.loadSkill(null);
-		});
-
-		// Test empty directory
-		assertThrows(IllegalArgumentException.class, () -> {
-			interceptor.loadSkill("");
-		});
-
-		// Test non-existent directory
-		assertThrows(RuntimeException.class, () -> {
-			interceptor.loadSkill(tempDir.resolve("non-existent").toString());
-		});
-	}
-
-	@Test
-	void testUnloadSkillWithInvalidName(@TempDir Path tempDir) throws Exception {
-		Path skillDir = tempDir.resolve("test-skill");
-		Files.createDirectories(skillDir);
-		Files.writeString(skillDir.resolve("SKILL.md"),
-			"---\nname: test-skill\ndescription: Test\n---\n# Test");
-
-		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
-			.userSkillsDirectory(tempDir.toString())
-			.build();
-		SkillsInterceptor interceptor = SkillsInterceptor.builder()
-			.skillRegistry(registry)
-			.build();
-
-		// Test null skill name
-		assertThrows(IllegalArgumentException.class, () -> {
-			interceptor.unloadSkill(null);
-		});
-
-		// Test empty skill name
-		assertThrows(IllegalArgumentException.class, () -> {
-			interceptor.unloadSkill("");
-		});
-
-		// Test non-existent skill
-		assertThrows(IllegalStateException.class, () -> {
-			interceptor.unloadSkill("non-existent-skill");
-		});
-	}
 
 	@Test
 	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
@@ -299,8 +236,8 @@ class SkillsInterceptorTest {
 			.skillRegistry(registry)
 			.build();
 
-		assertEquals(1, interceptor.getSkillCount());
-		assertTrue(interceptor.hasSkill("pdf-extractor"));
+		assertEquals(1, registry.size());
+		assertTrue(registry.contains("pdf-extractor"));
 
 		// Create a simple test file
 		Path testFile = tempDir.resolve("test.txt");

@@ -36,10 +36,17 @@ import java.util.concurrent.CompletableFuture;
 /**
  * AgentHook for integrating Skills with ReactAgent.
  * 
- * This hook wraps a SkillRegistry and provides it to SkillsInterceptor.
+ * This hook provides a complete Skills integration solution:
+ * - Manages skill loading and reloading from the SkillRegistry
+ * - Provides the `read_skill` tool for LLM to read SKILL.md files
+ * - Automatically creates and configures SkillsInterceptor to inject skills into system prompts
+ * 
+ * The hook wraps a SkillRegistry instance and shares it with SkillsInterceptor.
  * The SkillRegistry must be provided explicitly - it will not be created automatically.
  * 
- * The hook can optionally reload skills in beforeAgent if auto-reload is enabled.
+ * Skills can be optionally reloaded in beforeAgent if auto-reload is enabled.
+ * The hook uses the SkillRegistry's generic interface methods, making it compatible
+ * with any SkillRegistry implementation (FileSystemSkillRegistry, DatabaseSkillRegistry, etc.).
  * 
  * <p><b>Example Usage:</b>
  * <pre>{@code

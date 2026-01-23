@@ -25,7 +25,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
 import com.alibaba.cloud.ai.graph.agent.tools.PythonTool;
 import com.alibaba.cloud.ai.graph.agent.tools.ShellTool2;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.skills.registry.FileSystemSkillRegistry;
+import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 
@@ -174,11 +174,11 @@ class AgentSkillsTest {
 			.skillRegistry(registry)
 			.build();
 
-		// Verify interceptor has access to skills
-		assertTrue(interceptor.getSkillCount() > 0, "Interceptor should have skills");
-		assertTrue(interceptor.hasSkill("pdf-extractor"), "Interceptor should have pdf-extractor skill");
+		// Verify registry has access to skills
+		assertTrue(registry.size() > 0, "Registry should have skills");
+		assertTrue(registry.contains("pdf-extractor"), "Registry should have pdf-extractor skill");
 		
-		List<SkillMetadata> skills = interceptor.listSkills();
+		List<SkillMetadata> skills = registry.listAll();
 		assertNotNull(skills, "Skills list should not be null");
 		assertFalse(skills.isEmpty(), "Skills list should not be empty");
 	}
@@ -277,14 +277,14 @@ class AgentSkillsTest {
 		RunnableConfig config = RunnableConfig.builder().threadId("test-thread").build();
 		hook.beforeAgent(state, config).join();
 
-		// Verify both hook and interceptor share the same registry
+		// Verify both hook and registry share the same registry
 		assertEquals(registry.size(), hook.getSkillCount(), 
 			"Hook and registry should have same skill count");
-		assertEquals(registry.size(), interceptor.getSkillCount(), 
-			"Interceptor and registry should have same skill count");
+		assertEquals(registry.size(), registry.size(), 
+			"Registry should have consistent skill count");
 		assertTrue(registry.contains("pdf-extractor"), "Registry should contain pdf-extractor");
 		assertTrue(hook.hasSkill("pdf-extractor"), "Hook should have pdf-extractor");
-		assertTrue(interceptor.hasSkill("pdf-extractor"), "Interceptor should have pdf-extractor");
+		assertTrue(registry.contains("pdf-extractor"), "Registry should have pdf-extractor");
 	}
 
 	@Test

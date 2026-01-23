@@ -37,6 +37,8 @@ public class SkillMetadata {
 
 	private String fullContent;
 
+
+
 	public SkillMetadata() {
 	}
 
