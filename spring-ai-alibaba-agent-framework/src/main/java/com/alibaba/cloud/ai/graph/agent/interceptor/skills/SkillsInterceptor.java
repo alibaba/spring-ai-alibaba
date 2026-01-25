@@ -23,22 +23,23 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.SystemMessage;
 
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.alibaba.cloud.ai.graph.skills.SpringAiSkillAdvisor.buildSkillsPrompt;
 
 /**
  * Interceptor for integrating Claude-style Skills into ReactAgent.
- * 
+ *
  * This interceptor injects skills metadata into system prompt, following progressive disclosure pattern:
  * - Injects lightweight skills list (name + description + path)
  * - Injects registry type and skill load instructions from the SkillRegistry
  * - LLM reads full SKILL.md content when needed using `read_skill` tool
- * 
+ *
  * <p><b>Registration:</b>
  * <ul>
  *   <li><b>Recommended:</b> Usually registered automatically via {@link SkillsAgentHook}, which creates
@@ -46,14 +47,14 @@ import static com.alibaba.cloud.ai.graph.skills.SpringAiSkillAdvisor.buildSkills
  *   <li><b>Manual:</b> Can also be manually created and registered if you need more control over
  *       the interceptor configuration.</li>
  * </ul>
- * 
+ *
  * Skills loading is handled by SkillsAgentHook in beforeAgent (if using SkillsAgentHook).
  * This interceptor reads from a shared SkillRegistry to inject skills into the system prompt.
  * The interceptor uses the SkillRegistry's generic methods (getRegistryType(), getSkillLoadInstructions())
  * to build the prompt, making it compatible with any SkillRegistry implementation.
- * 
+ *
  * <p><b>Usage Examples:</b>
- * 
+ *
  * <p><b>Automatic registration via SkillsAgentHook (recommended):</b>
  * <pre>
  * FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder().build();
@@ -63,7 +64,7 @@ import static com.alibaba.cloud.ai.graph.skills.SpringAiSkillAdvisor.buildSkills
  *     .build();
  * // SkillsInterceptor is automatically created and registered by the hook
  * </pre>
- * 
+ *
  * <p><b>Manual registration:</b>
  * <pre>
  * FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder().build();
@@ -106,8 +107,8 @@ public class SkillsInterceptor extends ModelInterceptor {
 		}
 
 		ModelRequest modified = ModelRequest.builder(request)
-			.systemMessage(enhanced)
-			.build();
+				.systemMessage(enhanced)
+				.build();
 
 		return handler.call(modified);
 	}
@@ -131,7 +132,7 @@ public class SkillsInterceptor extends ModelInterceptor {
 		/**
 		 * Set a shared SkillRegistry instance.
 		 * This must be the same instance used by SkillsAgentHook to share skills data.
-		 * 
+		 *
 		 * @param skillRegistry the SkillRegistry to use (must not be null)
 		 * @return this builder
 		 */

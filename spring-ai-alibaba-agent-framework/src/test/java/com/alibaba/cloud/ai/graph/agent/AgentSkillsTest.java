@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
 import com.alibaba.cloud.ai.graph.agent.tools.PythonTool;
 import com.alibaba.cloud.ai.graph.agent.tools.ShellTool2;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.skills.registry.classpath.ClasspathSkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
@@ -395,5 +396,49 @@ class AgentSkillsTest {
 		assertNotNull(pdfSkill.getDescription(), "Skill description should not be null");
 		assertNotNull(pdfSkill.getSkillPath(), "Skill path should not be null");
 		assertEquals("pdf-extractor", pdfSkill.getName(), "Skill name should match");
+	}
+
+	@Test
+	public void testClasspathSkillRegistryIntegration() throws Exception {
+		// Test ClasspathSkillRegistry with ReactAgent integration
+		ClasspathSkillRegistry registry = ClasspathSkillRegistry.builder()
+			.classpathPath("skills")
+			.build();
+		
+		SkillsAgentHook skillsHook = SkillsAgentHook.builder()
+			.skillRegistry(registry)
+			.build();
+
+		ShellToolAgentHook shellHook = ShellToolAgentHook.builder()
+			.shellTool2(ShellTool2.builder(System.getProperty("user.dir")).build())
+			.build();
+
+		ReactAgent agent = ReactAgent.builder()
+			.name("classpath-skills-integration-agent")
+			.model(chatModel)
+			.saver(new MemorySaver())
+			.tools(PythonTool.createPythonToolCallback(PythonTool.DESCRIPTION))
+			.hooks(List.of(skillsHook, shellHook))
+			.enableLogging(true)
+			.build();
+
+//		// Test that agent can be invoked with skills loaded
+//		Optional<OverAllState> result = agent.invoke(
+//			new UserMessage("请告诉我有哪些可用的技能？"));
+//
+//		assertTrue(result.isPresent(), "Result should be present");
+//
+//		// Verify skills are available
+//		assertTrue(registry.size() > 0, "Skills should be loaded");
+
+		// Get the response
+		String path = getTestSkillsDirectory() + "/pdf-extractor/sca-roadmap.pdf";
+		AssistantMessage response = agent.call(String.format("请从 %s 文件中提取关键信息。", path));
+		assertNotNull(response, "Response should not be null");
+		assertNotNull(response.getText(), "Response text should not be null");
+		
+		// Verify registry is working
+		assertNotNull(registry, "Registry should not be null");
+		assertEquals("Classpath", registry.getRegistryType(), "Registry type should be Classpath");
 	}
 }

@@ -17,8 +17,6 @@ package com.alibaba.cloud.ai.graph.agent.hook.skills;
 
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -28,19 +26,31 @@ import java.util.function.BiFunction;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tool for reading skill content from SkillRegistry.
- * 
+ *
  * This tool allows the agent to read the full content of a skill by providing
  * the skill name and path. It works with any SkillRegistry implementation.
  */
 public class ReadSkillTool implements BiFunction<ReadSkillTool.ReadSkillRequest, ToolContext, String> {
 
 	public static final String READ_SKILL = "read_skill";
-
+	public static final String DESCRIPTION = """
+			Reads the full content of a skill from the SkillRegistry.
+			You can use this tool to read the complete content of any skill by providing its name.
+			
+			Usage:
+			- The skill_name parameter must match the name of the skill as registered in the registry
+			- The tool returns the full content of the skill file (e.g., SKILL.md) without frontmatter
+			- If the skill is not found, an error will be returned
+			
+			Example:
+			- read_skill("pdf-extractor")
+			""";
 	private static final Logger logger = LoggerFactory.getLogger(ReadSkillTool.class);
-
 	private final SkillRegistry skillRegistry;
 
 	public ReadSkillTool(SkillRegistry skillRegistry) {
@@ -50,18 +60,15 @@ public class ReadSkillTool implements BiFunction<ReadSkillTool.ReadSkillRequest,
 		this.skillRegistry = skillRegistry;
 	}
 
-	public static final String DESCRIPTION = """
-Reads the full content of a skill from the SkillRegistry.
-You can use this tool to read the complete content of any skill by providing its name.
-
-Usage:
-- The skill_name parameter must match the name of the skill as registered in the registry
-- The tool returns the full content of the skill file (e.g., SKILL.md) without frontmatter
-- If the skill is not found, an error will be returned
-
-Example:
-- read_skill("pdf-extractor")
-		""";
+	/**
+	 * Create a ToolCallback for the read skill tool.
+	 */
+	public static ToolCallback createReadSkillToolCallback(SkillRegistry skillRegistry, String description) {
+		return FunctionToolCallback.builder(READ_SKILL, new ReadSkillTool(skillRegistry))
+				.description(description != null ? description : DESCRIPTION)
+				.inputType(ReadSkillRequest.class)
+				.build();
+	}
 
 	@Override
 	public String apply(ReadSkillRequest request, ToolContext toolContext) {
@@ -89,16 +96,6 @@ Example:
 			logger.error("Unexpected error reading skill: {}", e.getMessage(), e);
 			return "Error: " + e.getMessage();
 		}
-	}
-
-	/**
-	 * Create a ToolCallback for the read skill tool.
-	 */
-	public static ToolCallback createReadSkillToolCallback(SkillRegistry skillRegistry, String description) {
-		return FunctionToolCallback.builder(READ_SKILL, new ReadSkillTool(skillRegistry))
-				.description(description != null ? description : DESCRIPTION)
-				.inputType(ReadSkillRequest.class)
-				.build();
 	}
 
 	/**

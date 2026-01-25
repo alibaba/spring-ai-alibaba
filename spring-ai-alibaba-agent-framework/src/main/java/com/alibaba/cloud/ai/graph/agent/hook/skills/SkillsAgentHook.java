@@ -25,29 +25,30 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * AgentHook for integrating Skills with ReactAgent.
- * 
+ *
  * This hook provides a complete Skills integration solution:
  * - Manages skill loading and reloading from the SkillRegistry
  * - Provides the `read_skill` tool for LLM to read SKILL.md files
  * - Automatically creates and configures SkillsInterceptor to inject skills into system prompts
- * 
+ *
  * The hook wraps a SkillRegistry instance and shares it with SkillsInterceptor.
  * The SkillRegistry must be provided explicitly - it will not be created automatically.
- * 
+ *
  * Skills can be optionally reloaded in beforeAgent if auto-reload is enabled.
  * The hook uses the SkillRegistry's generic interface methods, making it compatible
  * with any SkillRegistry implementation (FileSystemSkillRegistry, DatabaseSkillRegistry, etc.).
- * 
+ *
  * <p><b>Example Usage:</b>
  * <pre>{@code
  * // Create a FileSystemSkillRegistry first
@@ -55,7 +56,7 @@ import java.util.concurrent.CompletableFuture;
  *     .userSkillsDirectory("~/saa/skills")
  *     .projectSkillsDirectory("./skills")
  *     .build();
- * 
+ *
  * // Then create the hook with the registry
  * SkillsAgentHook hook = SkillsAgentHook.builder()
  *     .skillRegistry(registry)
@@ -94,7 +95,8 @@ public class SkillsAgentHook extends AgentHook {
 		if (autoReload) {
 			try {
 				skillRegistry.reload();
-			} catch (UnsupportedOperationException e) {
+			}
+			catch (UnsupportedOperationException e) {
 				logger.debug("Reload not supported for registry type: {}", skillRegistry.getClass().getName());
 			}
 		}
@@ -104,7 +106,7 @@ public class SkillsAgentHook extends AgentHook {
 	/**
 	 * Get the SkillRegistry instance used by this hook.
 	 * This allows sharing the registry with SkillsInterceptor.
-	 * 
+	 *
 	 * @return the SkillRegistry instance
 	 */
 	public SkillRegistry getSkillRegistry() {
@@ -208,7 +210,7 @@ public class SkillsAgentHook extends AgentHook {
 
 		/**
 		 * Builds the SkillsAgentHook instance with the configured parameters.
-		 * 
+		 *
 		 * @return a new SkillsAgentHook instance
 		 * @throws IllegalArgumentException if skillRegistry is not provided
 		 */

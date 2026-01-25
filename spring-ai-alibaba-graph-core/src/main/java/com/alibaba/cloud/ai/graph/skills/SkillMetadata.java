@@ -21,7 +21,7 @@ import java.nio.file.Path;
 
 /**
  * Metadata for a Claude-style Skill.
- * 
+ *
  * A Skill is a reusable package of instructions and context that extends the LLM's capabilities.
  * Skills are automatically discovered and used by the LLM when relevant to the user's request.
  */
@@ -38,6 +38,10 @@ public class SkillMetadata {
 	private String fullContent;
 
 	public SkillMetadata() {
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public String getName() {
@@ -72,13 +76,17 @@ public class SkillMetadata {
 		this.source = source;
 	}
 
+	public String getFullContent() {
+		return fullContent;
+	}
+
 	public String loadFullContent() throws IOException {
 		if (fullContent == null) {
 			Path skillFile = Path.of(skillPath, "SKILL.md");
 			if (!Files.exists(skillFile)) {
 				throw new IOException("SKILL.md not found at: " + skillFile);
 			}
-			
+
 			String rawContent = Files.readString(skillFile);
 			fullContent = removeFrontmatter(rawContent);
 		}
@@ -89,17 +97,23 @@ public class SkillMetadata {
 		if (!content.startsWith("---")) {
 			return content;
 		}
-		
+
 		int endIndex = content.indexOf("---", 3);
 		if (endIndex == -1) {
 			return content;
 		}
-		
+
 		return content.substring(endIndex + 3).trim();
 	}
 
-	public static Builder builder() {
-		return new Builder();
+	@Override
+	public String toString() {
+		return "SkillMetadata{" +
+				"name='" + name + '\'' +
+				", description='" + description + '\'' +
+				", skillPath='" + skillPath + '\'' +
+				", source='" + source + '\'' +
+				'}';
 	}
 
 	public static class Builder {
@@ -125,6 +139,11 @@ public class SkillMetadata {
 			return this;
 		}
 
+		public Builder fullContent(String fullContent) {
+			metadata.fullContent = fullContent;
+			return this;
+		}
+
 		public SkillMetadata build() {
 			if (metadata.name == null || metadata.name.isEmpty()) {
 				throw new IllegalStateException("Skill name is required");
@@ -137,15 +156,5 @@ public class SkillMetadata {
 			}
 			return metadata;
 		}
-	}
-
-	@Override
-	public String toString() {
-		return "SkillMetadata{" +
-				"name='" + name + '\'' +
-				", description='" + description + '\'' +
-				", skillPath='" + skillPath + '\'' +
-				", source='" + source + '\'' +
-				'}';
 	}
 }

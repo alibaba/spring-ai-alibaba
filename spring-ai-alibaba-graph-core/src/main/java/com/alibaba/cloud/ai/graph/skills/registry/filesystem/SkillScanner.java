@@ -17,10 +17,6 @@ package com.alibaba.cloud.ai.graph.skills.registry.filesystem;
 
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,12 +26,16 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
+
 /**
  * Scanner for discovering and loading Skills from the filesystem.
- * 
+ *
  * Scans a directory for skill folders, each containing a SKILL.md file with
  * YAML frontmatter defining the skill's metadata.
- * 
+ *
  * Validates skills according to Agent Skills spec (https://agentskills.io/specification):
  * - Skill name: max 64 chars, lowercase alphanumeric with single hyphens only
  * - Skill description: max 1024 chars (truncated if exceeded)
@@ -73,18 +73,20 @@ public class SkillScanner {
 
 		try (Stream<Path> paths = Files.list(skillsPath)) {
 			paths.filter(Files::isDirectory)
-				.forEach(skillDir -> {
-					try {
-						SkillMetadata metadata = loadSkill(skillDir, source);
-						if (metadata != null) {
-							skills.add(metadata);
-							logger.info("Loaded skill: {} from {}", metadata.getName(), skillDir);
+					.forEach(skillDir -> {
+						try {
+							SkillMetadata metadata = loadSkill(skillDir, source);
+							if (metadata != null) {
+								skills.add(metadata);
+								logger.info("Loaded skill: {} from {}", metadata.getName(), skillDir);
+							}
 						}
-					} catch (Exception e) {
-						logger.error("Failed to load skill from {}: {}", skillDir, e.getMessage(), e);
-					}
-				});
-		} catch (IOException e) {
+						catch (Exception e) {
+							logger.error("Failed to load skill from {}: {}", skillDir, e.getMessage(), e);
+						}
+					});
+		}
+		catch (IOException e) {
 			logger.error("Failed to scan skills directory {}: {}", skillsDirectory, e.getMessage(), e);
 		}
 
@@ -98,7 +100,7 @@ public class SkillScanner {
 
 	public SkillMetadata loadSkill(Path skillDir, String source) {
 		Path skillFile = skillDir.resolve("SKILL.md");
-		
+
 		if (!Files.exists(skillFile)) {
 			logger.warn("SKILL.md not found in {}", skillDir);
 			return null;
@@ -134,25 +136,31 @@ public class SkillScanner {
 			String descriptionStr = String.valueOf(description);
 			if (descriptionStr.length() > MAX_SKILL_DESCRIPTION_LENGTH) {
 				logger.warn(
-					"Description exceeds {} chars in {}, truncating",
-					MAX_SKILL_DESCRIPTION_LENGTH,
-					skillFile
+						"Description exceeds {} chars in {}, truncating",
+						MAX_SKILL_DESCRIPTION_LENGTH,
+						skillFile
 				);
 				descriptionStr = descriptionStr.substring(0, MAX_SKILL_DESCRIPTION_LENGTH);
 			}
 
+			// Remove frontmatter from content to get fullContent
+			String fullContent = removeFrontmatter(content);
+
 			SkillMetadata.Builder builder = SkillMetadata.builder()
-				.name(name)
-				.description(descriptionStr)
-				.skillPath(skillDir.toString())
-				.source(source);
+					.name(name)
+					.description(descriptionStr)
+					.skillPath(skillDir.toString())
+					.source(source)
+					.fullContent(fullContent);
 
 			return builder.build();
 
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			logger.error("Failed to read skill file {}: {}", skillFile, e.getMessage(), e);
 			return null;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Failed to parse skill file {}: {}", skillFile, e.getMessage(), e);
 			return null;
 		}
@@ -160,16 +168,16 @@ public class SkillScanner {
 
 	/**
 	 * Validate skill name per Agent Skills spec.
-	 * 
+	 *
 	 * Requirements:
 	 * - Max 64 characters
 	 * - Lowercase alphanumeric and hyphens only (a-z, 0-9, -)
 	 * - Cannot start or end with hyphen
 	 * - No consecutive hyphens
 	 * - Must match parent directory name
-	 * 
+	 *
 	 * If validation fails, logs a warning but still allows loading for backwards compatibility.
-	 * 
+	 *
 	 * @param name the skill name from YAML frontmatter
 	 * @param directoryName the parent directory name
 	 * @param skillFile the path to the SKILL.md file (for logging)
@@ -177,34 +185,34 @@ public class SkillScanner {
 	private void validateSkillName(String name, String directoryName, Path skillFile) {
 		if (name.length() > MAX_SKILL_NAME_LENGTH) {
 			logger.warn(
-				"Skill '{}' in {} does not follow Agent Skills spec: name exceeds {} characters. " +
-				"Consider renaming to be spec-compliant.",
-				name,
-				skillFile,
-				MAX_SKILL_NAME_LENGTH
+					"Skill '{}' in {} does not follow Agent Skills spec: name exceeds {} characters. " +
+							"Consider renaming to be spec-compliant.",
+					name,
+					skillFile,
+					MAX_SKILL_NAME_LENGTH
 			);
 			return;
 		}
 
 		if (!SKILL_NAME_PATTERN.matcher(name).matches()) {
 			logger.warn(
-				"Skill '{}' in {} does not follow Agent Skills spec: name must be lowercase " +
-				"alphanumeric with single hyphens only (cannot start or end with hyphen). " +
-				"Consider renaming to be spec-compliant.",
-				name,
-				skillFile
+					"Skill '{}' in {} does not follow Agent Skills spec: name must be lowercase " +
+							"alphanumeric with single hyphens only (cannot start or end with hyphen). " +
+							"Consider renaming to be spec-compliant.",
+					name,
+					skillFile
 			);
 			return;
 		}
 
 		if (!name.equals(directoryName)) {
 			logger.warn(
-				"Skill '{}' in {} does not follow Agent Skills spec: name '{}' must match " +
-				"directory name '{}'. Consider renaming to be spec-compliant.",
-				name,
-				skillFile,
-				name,
-				directoryName
+					"Skill '{}' in {} does not follow Agent Skills spec: name '{}' must match " +
+							"directory name '{}'. Consider renaming to be spec-compliant.",
+					name,
+					skillFile,
+					name,
+					directoryName
 			);
 		}
 	}
@@ -220,14 +228,28 @@ public class SkillScanner {
 		}
 
 		String frontmatterStr = content.substring(3, endIndex).trim();
-		
+
 		try {
 			@SuppressWarnings("unchecked")
 			Map<String, Object> frontmatter = yaml.load(frontmatterStr);
 			return frontmatter;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Failed to parse YAML frontmatter: {}", e.getMessage(), e);
 			return null;
 		}
+	}
+
+	private String removeFrontmatter(String content) {
+		if (!content.startsWith("---")) {
+			return content;
+		}
+
+		int endIndex = content.indexOf("---", 3);
+		if (endIndex == -1) {
+			return content;
+		}
+
+		return content.substring(endIndex + 3).trim();
 	}
 }

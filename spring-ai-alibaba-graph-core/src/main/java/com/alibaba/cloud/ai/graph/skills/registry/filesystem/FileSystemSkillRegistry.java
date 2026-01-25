@@ -16,16 +16,14 @@
 package com.alibaba.cloud.ai.graph.skills.registry.filesystem;
 
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
-import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
+import com.alibaba.cloud.ai.graph.skills.registry.AbstractSkillRegistry;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+
 import org.springframework.core.io.Resource;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -34,19 +32,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * FileSystem-based implementation of SkillRegistry.
- * 
+ *
  * This implementation loads skills from the filesystem:
  * - User-level: ~/saa/skills/ (global skills)
- * - Project-level: classpath:resources/skills/ (project-specific skills, higher priority)
- * 
+ * - Project-level: current working directory/skills/ (project-specific skills, higher priority)
+ *
  * Skills are automatically loaded during initialization. The registry can be reloaded
  * manually using {@link #reload()}.
- * 
+ *
  * <p><b>Example Usage:</b>
  * <pre>{@code
- * // Use all defaults
+ * // Use all defaults (project directory: ./skills)
  * FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder().build();
  *
  * // Override user skills directory only
@@ -61,9 +62,7 @@ import java.util.Optional;
  *     .build();
  * }</pre>
  */
-public class FileSystemSkillRegistry implements SkillRegistry {
-
-	private static final Logger logger = LoggerFactory.getLogger(FileSystemSkillRegistry.class);
+public class FileSystemSkillRegistry extends AbstractSkillRegistry {
 
 	/**
 	 * Default system prompt template for FileSystemSkillRegistry.
@@ -74,90 +73,93 @@ public class FileSystemSkillRegistry implements SkillRegistry {
 	 * - {skills_load_instructions}: Instructions on how skills are loaded
 	 */
 	public static final String DEFAULT_SYSTEM_PROMPT_TEMPLATE = """
-
-## Skills System
-
-You have access to a skills library that provides specialized capabilities and domain knowledge. All skills are stored in a Skill Registry with a {skills_registry} based storage.
-
-### Available Skills
-
-{skills_list}
-
-### How to Use Skills (Progressive Disclosure)
-
-Skills follow a **progressive disclosure** pattern - you know they exist (name + description above), but you only read the full instructions when needed:
-
-1. **Recognize when a skill applies**: Check if the user's task matches any skill's description
-2. **Read the skill's full instructions**: The skill list above shows the exact path to use with `read_skill`
-3. **Follow the skill's instructions**: SKILL.md contains step-by-step workflows, best practices, and examples
-4. **Access supporting files**: Skills may include Python scripts, configs, or reference docs - use absolute paths
-
-#### How to Read The Full Skill Instruction
-
-You are currently using the {skills_registry} Skill Registry. Please follow the skill loading guidelines below:
-
-{skills_load_instructions}
-
-**Important:**
-
-  - **For SKILL.md files (skill instructions)**: Always use `read_skill` to read skill instructions. Do not attempt to access SKILL.md files through other methods.
-  - **For other supporting files that skill uses (scripts, configs, etc.)**: You may use other appropriate tools to read or access these files as needed.
-
-#### When to Use Skills
-
-  - When the user's request matches a skill's domain (e.g., "research X" → web-research skill)
-  - When you need specialized knowledge or structured workflows
-  - When a skill provides proven patterns for complex tasks
-
-#### Skills are Self-Documenting
-
-  - Each SKILL.md tells you exactly what the skill does and how to use it
-  - The skill list above shows the full path for each skill's SKILL.md file
-
-#### Executing Skill Scripts
-
-Skills may contain Python scripts or other executable files. Always use absolute paths from the skill list.
-
-### Example Workflow
-
-User: "Can you research the latest developments in quantum computing?"
-
-1. Check available skills above → See "web-research" skill with its full path
-2. Read the skill using the path shown in the list
-3. Follow the skill's research workflow (search → organize → synthesize)
-4. Use any helper scripts with absolute paths
-
-Remember: Skills are tools to make you more capable and consistent. When in doubt, check if a skill exists for the task!
-""";
-
-	private volatile Map<String, SkillMetadata> skills = new HashMap<>();
+			
+			## Skills System
+			
+			You have access to a skills library that provides specialized capabilities and domain knowledge. All skills are stored in a Skill Registry with a file system based storage.
+			
+			### Available Skills
+			
+			{skills_list}
+			
+			### How to Use Skills (Progressive Disclosure)
+			
+			Skills follow a **progressive disclosure** pattern - you know they exist (name + description above), but you only read the full instructions when needed:
+			
+			1. **Recognize when a skill applies**: Check if the user's task matches any skill's description
+			2. **Read the skill's full instructions**: The skill list above shows the exact skill id to use with `read_skill`
+			3. **Follow the skill's instructions**: SKILL.md contains step-by-step workflows, best practices, and examples
+			4. **Access supporting files**: Skills may include Python scripts, configs, or reference docs - use absolute paths
+			
+			#### How to Read The Full Skill Instruction
+			
+			You are currently using the file system based Skill Registry. Please follow the skill loading guidelines below:
+			
+			{skills_load_instructions}
+			
+			**Important:**
+			
+			  - **For SKILL.md files (skill instructions)**: Always use `read_skill` to read skill instructions. Do not attempt to access SKILL.md files through other methods.
+			  - **For other supporting files that skill uses (scripts, references, etc.)**: You may use other appropriate tools to read or access these files as needed, always use absolute paths from the skill list.
+			
+			#### When to Use Skills
+			
+			  - When the user's request matches a skill's domain (e.g., "research X" → web-research skill)
+			  - When you need specialized knowledge or structured workflows
+			  - When a skill provides proven patterns for complex tasks
+			
+			#### Skills are Self-Documenting
+			
+			  - Each SKILL.md tells you exactly what the skill does and how to use it
+			  - The skill list above shows the full path for each skill's SKILL.md file
+			
+			#### Executing Skill Scripts
+			
+			Skills may contain Python scripts or other executable files. Always use absolute paths from the skill list.
+			
+			### Example Workflow
+			
+			User: "Can you research the latest developments in quantum computing?"
+			
+			1. Check available skills above → See "web-research" skill with its skill id
+			2. Read the skill using the id shown in the list
+			3. Follow the skill's research workflow (search → organize → synthesize)
+			4. Use any helper scripts with absolute paths
+			
+			Remember: Skills are tools to make you more capable and consistent. When in doubt, check if a skill exists for the task!
+			""";
+	private static final Logger logger = LoggerFactory.getLogger(FileSystemSkillRegistry.class);
 	private final String userSkillsDirectory;
 	private final String projectSkillsDirectory;
 	private final SkillScanner scanner = new SkillScanner();
 	private final SystemPromptTemplate systemPromptTemplate;
+	private volatile Map<String, SkillMetadata> skills = new HashMap<>();
 
 	private FileSystemSkillRegistry(Builder builder) {
 		// Set default userSkillsDirectory to ~/saa/skills if not provided
 		if (builder.userSkillsDirectory == null || builder.userSkillsDirectory.isEmpty()) {
 			this.userSkillsDirectory = System.getProperty("user.home") + "/saa/skills";
-		} else {
+		}
+		else {
 			this.userSkillsDirectory = builder.userSkillsDirectory;
 		}
 
-		// Set default projectSkillsDirectory using ClassPathResource if not provided
+		// Set default projectSkillsDirectory to current working directory if not provided
 		if (builder.projectSkillsDirectory == null || builder.projectSkillsDirectory.isEmpty()) {
-			this.projectSkillsDirectory = resolveDefaultProjectSkillsDirectory();
-		} else {
+			this.projectSkillsDirectory = Path.of("").toAbsolutePath().resolve("skills").toString();
+		}
+		else {
 			this.projectSkillsDirectory = builder.projectSkillsDirectory;
 		}
 
 		// Set system prompt template - use provided or default
 		if (builder.systemPromptTemplate != null) {
 			this.systemPromptTemplate = builder.systemPromptTemplate;
-		} else {
+		}
+		else {
 			this.systemPromptTemplate = SystemPromptTemplate.builder()
-				.template(DEFAULT_SYSTEM_PROMPT_TEMPLATE)
-				.build();
+					.template(DEFAULT_SYSTEM_PROMPT_TEMPLATE)
+					.build();
 		}
 
 		// Load skills during initialization if auto-load is enabled (default: true)
@@ -166,37 +168,16 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 		}
 	}
 
-
-	/**
-	 * Resolves the default project skills directory.
-	 * First tries to load from classpath (skills folder in resources),
-	 * then falls back to current working directory if not found or not accessible.
-	 *
-	 * @return the resolved project skills directory path
-	 */
-	private String resolveDefaultProjectSkillsDirectory() {
-		String path = null;
-		try {
-			// Try to load from classpath (e.g., src/main/resources/skills in dev, or packaged in jar)
-			URL resource = getClass().getClassLoader().getResource("skills");
-			if (resource != null && "file".equals(resource.getProtocol())) {
-				return Path.of(resource.toURI()).toString();
-			}
-		} catch (Exception e) {
-			// Resource might be inside a jar and cannot be converted to File
-			logger.debug("Cannot access skills directory from classpath as file system path: {}", e.getMessage());
-		}
-
-		path = Path.of("").toAbsolutePath().resolve("skills").toString();
-
-		return path;
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
 	 * Loads skills from configured directories into the registry.
 	 * Uses Map to merge skills, ensuring project skills override user skills with the same name.
 	 */
-	private void loadSkillsToRegistry() {
+	@Override
+	protected void loadSkillsToRegistry() {
 		// Use Map to merge skills, ensuring project skills override user skills with the same name
 		Map<String, SkillMetadata> mergedSkills = new HashMap<>();
 
@@ -223,36 +204,16 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 			}
 		}
 
-		// Register all merged skills to registry (will update existing or add new ones)
+		// Register all merged skills to registry
 		int totalCount = mergedSkills.size();
 		logger.info("Skills reloaded: {} total skills", totalCount);
 		this.skills = mergedSkills;
 	}
 
-	@Override
-	public Optional<SkillMetadata> get(String name) {
-		return Optional.ofNullable(skills.get(name));
-	}
-
-	@Override
-	public List<SkillMetadata> listAll() {
-		return new ArrayList<>(skills.values());
-	}
-
-	@Override
-	public boolean contains(String name) {
-		return skills.containsKey(name);
-	}
-
-	@Override
-	public int size() {
-		return skills.size();
-	}
-
 	/**
 	 * Get the project skills directory path.
 	 * This is an implementation-specific method, not part of the SkillRegistry interface.
-	 * 
+	 *
 	 * @return the project skills directory path
 	 */
 	public String getProjectSkillsDirectory() {
@@ -262,14 +223,12 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 	/**
 	 * Get the user skills directory path.
 	 * This is an implementation-specific method, not part of the SkillRegistry interface.
-	 * 
+	 *
 	 * @return the user skills directory path
 	 */
 	public String getUserSkillsDirectory() {
 		return userSkillsDirectory;
 	}
-
-
 
 	@Override
 	public String readSkillContent(String name) throws IOException {
@@ -284,7 +243,8 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 		}
 
 		SkillMetadata skill = skillOpt.get();
-		// Load and return the full content using the skill's path
+
+		// Use the normal loadFullContent method for filesystem skills
 		return skill.loadFullContent();
 	}
 
@@ -296,7 +256,8 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 		for (SkillMetadata skill : skills) {
 			if ("project".equals(skill.getSource())) {
 				projectSkills.add(skill);
-			} else {
+			}
+			else {
 				userSkills.add(skill);
 			}
 		}
@@ -331,26 +292,12 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 	}
 
 	/**
-	 * Reloads all skills from configured directories.
-	 * Clears existing skills and rescans the directories.
-	 */
-	@Override
-	public synchronized void reload() {
-		logger.info("Reloading skills...");
-		loadSkillsToRegistry();
-	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	/**
 	 * Builder for creating FileSystemSkillRegistry instances.
 	 *
 	 * <p>All configuration parameters are optional and have sensible defaults:
 	 * <ul>
 	 *   <li><b>userSkillsDirectory</b>: defaults to <code>~/saa/skills</code> - global skills available across all projects</li>
-	 *   <li><b>projectSkillsDirectory</b>: defaults to <code>classpath:skills</code> (e.g., src/main/resources/skills) - project-specific skills</li>
+	 *   <li><b>projectSkillsDirectory</b>: defaults to <code>./skills</code> (current working directory) - project-specific skills</li>
 	 *   <li><b>autoLoad</b>: defaults to <code>true</code> - automatically load skills during initialization</li>
 	 * </ul>
 	 *
@@ -410,7 +357,8 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 					File file = resource.getFile();
 					this.userSkillsDirectory = file.getAbsolutePath();
 				}
-			} catch (IOException e) {
+			}
+			catch (IOException e) {
 				throw new IllegalArgumentException("Cannot convert resource to file system path: " + resource, e);
 			}
 			return this;
@@ -418,9 +366,8 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 
 		/**
 		 * Sets the project skills directory path.
-		 * <p><b>Optional</b>: If not set, defaults to <code>classpath:skills</code>
-		 * (e.g., src/main/resources/skills in development, or packaged in jar for production).
-		 * Falls back to <code>./skills</code> if classpath resource is not accessible.
+		 * <p><b>Optional</b>: If not set, defaults to <code>./skills</code>
+		 * (current working directory with "skills" subdirectory).
 		 *
 		 * @param directory the directory path for project-level skills
 		 * @return this builder
@@ -432,7 +379,7 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 
 		/**
 		 * Sets the project skills directory from a Spring Resource.
-		 * <p><b>Optional</b>: If not set, defaults to <code>classpath:skills</code>
+		 * <p><b>Optional</b>: If not set, defaults to <code>./skills</code> (current working directory)
 		 * <p>The Resource will be converted to a file system path. If the resource cannot be
 		 * resolved to a file (e.g., it's inside a JAR), an IllegalArgumentException will be thrown.
 		 *
@@ -446,7 +393,8 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 					File file = resource.getFile();
 					this.projectSkillsDirectory = file.getAbsolutePath();
 				}
-			} catch (IOException e) {
+			}
+			catch (IOException e) {
 				throw new IllegalArgumentException("Cannot convert resource to file system path: " + resource, e);
 			}
 			return this;
@@ -467,9 +415,9 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 		/**
 		 * Sets a custom system prompt template for skills.
 		 * <p><b>Optional</b>: If not set, uses the default template for FileSystemSkillRegistry.
-		 *
-		 * <p>The following variables are supported in the template (optional):
+		 * <p>The template should support the following variables:
 		 * <ul>
+		 *   <li><b>{skills_registry}</b>: The registry type name</li>
 		 *   <li><b>{skills_list}</b>: The formatted list of available skills</li>
 		 *   <li><b>{skills_load_instructions}</b>: Instructions on how skills are loaded</li>
 		 * </ul>
@@ -485,9 +433,9 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 		/**
 		 * Sets a custom system prompt template from a template string.
 		 * <p><b>Optional</b>: If not set, uses the default template for FileSystemSkillRegistry.
-		 *
-		 * <p>The following variables are supported in the template (optional):
+		 * <p>The template should support the following variables:
 		 * <ul>
+		 *   <li><b>{skills_registry}</b>: The registry type name</li>
 		 *   <li><b>{skills_list}</b>: The formatted list of available skills</li>
 		 *   <li><b>{skills_load_instructions}</b>: Instructions on how skills are loaded</li>
 		 * </ul>
@@ -497,8 +445,8 @@ Remember: Skills are tools to make you more capable and consistent. When in doub
 		 */
 		public Builder systemPromptTemplate(String template) {
 			this.systemPromptTemplate = SystemPromptTemplate.builder()
-				.template(template)
-				.build();
+					.template(template)
+					.build();
 			return this;
 		}
 
