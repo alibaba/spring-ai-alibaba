@@ -332,6 +332,12 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	@Nullable
 	private ToolCallingChatOptions buildChatOptions(ChatOptions chatOptions, List<ToolCallback> toolCallbacks) {
 		if (chatOptions == null) {
+			if (toolCallbacks != null && !toolCallbacks.isEmpty()) {
+				return ToolCallingChatOptions.builder()
+						.toolCallbacks(toolCallbacks)
+						.internalToolExecutionEnabled(false)
+						.build();
+			}
 			return null;
 		}
 
