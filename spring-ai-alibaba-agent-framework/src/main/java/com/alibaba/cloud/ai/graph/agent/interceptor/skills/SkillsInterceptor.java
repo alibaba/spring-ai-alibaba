@@ -30,7 +30,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.alibaba.cloud.ai.graph.skills.SpringAiSkillAdvisor.buildSkillsPrompt;
+import static com.alibaba.cloud.ai.graph.skills.SkillPromptConstants.buildSkillsPrompt;
 
 /**
  * Interceptor for integrating Claude-style Skills into ReactAgent.

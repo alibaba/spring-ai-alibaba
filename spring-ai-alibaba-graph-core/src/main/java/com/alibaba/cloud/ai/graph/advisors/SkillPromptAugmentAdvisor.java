@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.skills;
+package com.alibaba.cloud.ai.graph.advisors;
 
+import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
 
@@ -24,21 +25,19 @@ import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.scheduler.Scheduler;
+
+import static com.alibaba.cloud.ai.graph.skills.SkillPromptConstants.buildSkillsPrompt;
 
 
 /**
@@ -51,9 +50,9 @@ import reactor.core.scheduler.Scheduler;
  * Skills are loaded from configured directories during advisor initialization.
  *
  */
-public class SpringAiSkillAdvisor implements BaseAdvisor {
+public class SkillPromptAugmentAdvisor implements BaseAdvisor {
 
-	private static final Logger logger = LoggerFactory.getLogger(SpringAiSkillAdvisor.class);
+	private static final Logger logger = LoggerFactory.getLogger(SkillPromptAugmentAdvisor.class);
 
 	private final SkillRegistry skillRegistry;
 	private final int order;
@@ -62,7 +61,7 @@ public class SpringAiSkillAdvisor implements BaseAdvisor {
 	private final String projectSkillsDirectory;
 	private final boolean lazyLoad;
 
-	private SpringAiSkillAdvisor(Builder builder) {
+	private SkillPromptAugmentAdvisor(Builder builder) {
 		// Initialize SkillRegistry - use provided or create FileSystemSkillRegistry
 		if (builder.skillRegistry != null) {
 			this.skillRegistry = builder.skillRegistry;
@@ -103,55 +102,6 @@ public class SpringAiSkillAdvisor implements BaseAdvisor {
 		this.order = builder.order != null ? builder.order : Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
 		this.scheduler = builder.scheduler != null ? builder.scheduler : BaseAdvisor.DEFAULT_SCHEDULER;
 		this.lazyLoad = builder.lazyLoad;
-	}
-
-	/**
-	 * Builds the skills prompt string from the list of skills.
-	 *
-	 * This method processes the skills list, separates user skills from project skills,
-	 * formats them into a skills list, and renders the system prompt template with
-	 * the appropriate context variables.
-	 *
-	 * @param skills the list of skills to include in the prompt
-	 * @param skillRegistry the SkillRegistry instance to get registry type and load instructions
-	 * @param systemPromptTemplate the SystemPromptTemplate to render the prompt
-	 * @return the formatted skills prompt string
-	 */
-	public static String buildSkillsPrompt(List<SkillMetadata> skills, SkillRegistry skillRegistry, SystemPromptTemplate systemPromptTemplate) {
-		List<SkillMetadata> userSkills = new ArrayList<>();
-		List<SkillMetadata> projectSkills = new ArrayList<>();
-		for (SkillMetadata skill : skills) {
-			if ("project".equals(skill.getSource())) {
-				projectSkills.add(skill);
-			}
-			else {
-				userSkills.add(skill);
-			}
-		}
-
-		StringBuilder skillList = new StringBuilder();
-		if (!userSkills.isEmpty()) {
-			skillList.append("**User Skills:**\n");
-			for (SkillMetadata skill : userSkills) {
-				skillList.append(String.format("- **%s**: %s", skill.getName(), skill.getDescription()));
-				skillList.append(String.format("  → Supporting files that skill uses (scripts, references, etc.) are located at directory `%s`, use this path to form the absolute path when reading supporting files. \n", skill.getSkillPath()));
-			}
-			skillList.append("\n");
-		}
-
-		if (!projectSkills.isEmpty()) {
-			skillList.append("**Project Skills:**\n");
-			for (SkillMetadata skill : projectSkills) {
-				skillList.append(String.format("- **%s**: %s", skill.getName(), skill.getDescription()));
-				skillList.append(String.format("  → Supporting files that skill uses (scripts, references, etc.) are located at directory `%s`, use this path to form the absolute path when reading supporting files.\n", skill.getSkillPath()));
-			}
-			skillList.append("\n");
-		}
-
-		Map<String, Object> context = new HashMap<>();
-		context.put("skills_list", skillList.toString());
-		context.put("skills_load_instructions", skillRegistry.getSkillLoadInstructions());
-		return systemPromptTemplate.render(context);
 	}
 
 	/**
@@ -425,8 +375,8 @@ public class SpringAiSkillAdvisor implements BaseAdvisor {
 		 *
 		 * @return the configured SpringAiSkillAdvisor
 		 */
-		public SpringAiSkillAdvisor build() {
-			return new SpringAiSkillAdvisor(this);
+		public SkillPromptAugmentAdvisor build() {
+			return new SkillPromptAugmentAdvisor(this);
 		}
 	}
 }
