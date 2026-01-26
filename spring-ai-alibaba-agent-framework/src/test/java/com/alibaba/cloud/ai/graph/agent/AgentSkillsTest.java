@@ -332,7 +332,7 @@ class AgentSkillsTest {
 	@Test
 	public void testReactAgentSkillsIntegration() throws Exception {
 		SkillsAgentHook skillsHook = SkillsAgentHook.builder()
-			.skillRegistry(FileSystemSkillRegistry.builder().build())
+			.skillRegistry(FileSystemSkillRegistry.builder().projectSkillsDirectory(getTestSkillsDirectory()).build())
 			.build();
 
 		ShellToolAgentHook shellHook = ShellToolAgentHook.builder()
@@ -358,7 +358,7 @@ class AgentSkillsTest {
 //		assertTrue(registry.size() > 0, "Skills should be loaded");
 //
 		// Get the response
-		String path = getTestSkillsDirectory() + "/pdf-extractor/sca-roadmap.pdf";
+		String path = getTestSkillsDirectory() + "/pdf-extractor/saa-roadmap.pdf";
 		AssistantMessage response = agent.call(String.format("请从 %s 文件中提取关键信息。", path));
 		assertNotNull(response, "Response should not be null");
 		assertNotNull(response.getText(), "Response text should not be null");

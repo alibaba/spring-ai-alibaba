@@ -133,7 +133,6 @@ public class FileSystemSkillRegistry extends AbstractSkillRegistry {
 	private final String projectSkillsDirectory;
 	private final SkillScanner scanner = new SkillScanner();
 	private final SystemPromptTemplate systemPromptTemplate;
-	private volatile Map<String, SkillMetadata> skills = new HashMap<>();
 
 	private FileSystemSkillRegistry(Builder builder) {
 		// Set default userSkillsDirectory to ~/saa/skills if not provided
