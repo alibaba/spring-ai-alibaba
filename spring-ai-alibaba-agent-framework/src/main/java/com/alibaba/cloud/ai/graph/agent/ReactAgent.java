@@ -63,6 +63,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
+
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
@@ -136,11 +137,15 @@ public class ReactAgent extends BaseAgent {
 		this.executor = builder.executor;
 
 		// Set interceptors to nodes
-		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
-			this.llmNode.setModelInterceptors(this.modelInterceptors);
+		// Collect interceptors from hooks and merge with current interceptors
+		List<ModelInterceptor> mergedModelInterceptors = collectAndMergeModelInterceptors();
+		List<ToolInterceptor> mergedToolInterceptors = collectAndMergeToolInterceptors();
+
+		if (mergedModelInterceptors != null && !mergedModelInterceptors.isEmpty()) {
+			this.llmNode.setModelInterceptors(mergedModelInterceptors);
 		}
-		if (this.toolInterceptors != null && !this.toolInterceptors.isEmpty()) {
-			this.toolNode.setToolInterceptors(this.toolInterceptors);
+		if (mergedToolInterceptors != null && !mergedToolInterceptors.isEmpty()) {
+			this.toolNode.setToolInterceptors(mergedToolInterceptors);
 		}
 
         // Set tools flag if tool interceptors are present.
@@ -807,6 +812,90 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		return toolResponseMessage;
+	}
+
+	/**
+	 * Collects model interceptors from hooks (ModelHook and AgentHook) and merges them
+	 * with the current model interceptors.
+	 * <p>
+	 * If interceptors with the same name exist, the ones from ReactAgent configuration
+	 * take priority over those from hooks.
+	 *
+	 * @return merged list of model interceptors, or null if no interceptors exist
+	 */
+	private List<ModelInterceptor> collectAndMergeModelInterceptors() {
+		List<ModelInterceptor> result = new ArrayList<>();
+		Set<String> addedNames = new HashSet<>();
+
+		// Add current model interceptors if they exist (higher priority)
+		if (this.modelInterceptors != null && !this.modelInterceptors.isEmpty()) {
+			for (ModelInterceptor interceptor : this.modelInterceptors) {
+				result.add(interceptor);
+				addedNames.add(interceptor.getName());
+			}
+		}
+
+		// Collect interceptors from hooks (skip if name already exists)
+		if (this.hooks != null && !this.hooks.isEmpty()) {
+			for (Hook hook : this.hooks) {
+				List<ModelInterceptor> hookInterceptors = hook.getModelInterceptors();
+				if (hookInterceptors != null && !hookInterceptors.isEmpty()) {
+					for (ModelInterceptor interceptor : hookInterceptors) {
+						String name = interceptor.getName();
+						if (!addedNames.contains(name)) {
+							result.add(interceptor);
+							addedNames.add(name);
+						} else {
+							logger.info("Skipping model interceptor '{}' from hook '{}' because an interceptor with the same name already exists in ReactAgent configuration", name, hook.getName());
+						}
+					}
+				}
+			}
+		}
+
+		return result.isEmpty() ? null : result;
+	}
+
+	/**
+	 * Collects tool interceptors from hooks (ModelHook and AgentHook) and merges them
+	 * with the current tool interceptors.
+	 * <p>
+	 * If interceptors with the same name exist, the ones from ReactAgent configuration
+	 * take priority over those from hooks.
+	 *
+	 * @return merged list of tool interceptors, or null if no interceptors exist
+	 */
+	private List<ToolInterceptor> collectAndMergeToolInterceptors() {
+		List<ToolInterceptor> result = new ArrayList<>();
+		Set<String> addedNames = new HashSet<>();
+
+		// Add current tool interceptors if they exist (higher priority)
+		if (this.toolInterceptors != null && !this.toolInterceptors.isEmpty()) {
+			for (ToolInterceptor interceptor : this.toolInterceptors) {
+				result.add(interceptor);
+				addedNames.add(interceptor.getName());
+			}
+		}
+
+		// Collect interceptors from hooks (skip if name already exists)
+		if (this.hooks != null && !this.hooks.isEmpty()) {
+			for (Hook hook : this.hooks) {
+				List<ToolInterceptor> hookInterceptors = hook.getToolInterceptors();
+				if (hookInterceptors != null && !hookInterceptors.isEmpty()) {
+					for (ToolInterceptor interceptor : hookInterceptors) {
+						String name = interceptor.getName();
+						if (!addedNames.contains(name)) {
+							result.add(interceptor);
+							addedNames.add(name);
+						} else {
+							logger.info("Skipping tool interceptor '{}' from hook '{}' because an interceptor with the same name already exists in ReactAgent configuration", name, hook.getName());
+						}
+					}
+				}
+			}
+		}
+
+		return result.isEmpty() ? null : result;
 	}
 
 	public String instruction() {
