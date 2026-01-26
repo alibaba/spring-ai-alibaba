@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 
+
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -54,5 +55,9 @@ public abstract class ModelHook implements Hook {
         this.reactAgent = agent;
     }
 
+    @Override
+    public int getOrder() {
+        return 0;
+    }
 }
 
