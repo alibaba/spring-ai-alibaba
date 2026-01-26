@@ -115,6 +115,8 @@ public class ReactAgent extends BaseAgent {
 
     private final Boolean hasTools;
 
+	private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
 		this.threadIdStateMap = new ConcurrentHashMap<>();
@@ -857,7 +859,7 @@ public class ReactAgent extends BaseAgent {
 			// e.g. "some string" -> some string
 			if (responseData.startsWith("\"") && responseData.endsWith("\"")) {
 				// Use ObjectMapper to handle escaping correctly
-				return new ObjectMapper().readTree(responseData).asText();
+				return OBJECT_MAPPER.readTree(responseData).asText();
 			}
 		} catch (Exception e) {
 			// ignore and return original data if parsing fails

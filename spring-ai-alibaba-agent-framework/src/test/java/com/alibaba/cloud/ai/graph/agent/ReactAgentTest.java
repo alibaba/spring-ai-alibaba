@@ -1054,8 +1054,10 @@ class ReactAgentTest {
 		AtomicBoolean hasAgentModelFinished = new AtomicBoolean(false);
 		AtomicBoolean hasAgentToolFinished = new AtomicBoolean(false);
 		AtomicBoolean hasAgentHookFinished = new AtomicBoolean(false);
-
-		Flux<NodeOutput> flux = reactAgent.stream("上海,北京");
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("test")
+				.build();
+		Flux<NodeOutput> flux = reactAgent.stream("上海,北京", config);
 		AtomicReference<String> lastChunk = new AtomicReference<>("");
 		NodeOutput finalOutput = flux.doOnNext(output -> {
 			// START
@@ -1088,7 +1090,10 @@ class ReactAgentTest {
 			fail("ReactAgent stream completed without emitting any NodeOutput");
 		}
 		System.out.println("ReactAgent Final Output: " + finalOutput.state());
-		List<Message> messages = ((List<Message>) finalOutput.state().data().get("messages"));
+		var checkpoint = saver.get(config).get();
+		List<Message> saverMessages = ((List<Message>)checkpoint.getState().get("messages"));
+		Message lastMessage = saverMessages.get(saverMessages.size() - 1);
+		assertTrue(lastMessage.getMessageType().getValue().equals("tool"), "Last message should be a tool message");
 		String output = lastChunk.get();
 		assertTrue(testHasTools(reactAgent), "Tools should have been set");
 		// Verify that all expected output types were received
@@ -1116,10 +1121,15 @@ class ReactAgentTest {
 						.build())
 				.systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
 				.build();
-
-		String output = react.call("上海,北京").getText();
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("test")
+				.build();
+		String output = react.call("上海,北京", config).getText();
 		System.out.println("ReactAgent Output: " + output);
-
+		var checkpoint = saver.get(config).get();
+		List<Message> saverMessages = ((List<Message>)checkpoint.getState().get("messages"));
+		Message lastMessage = saverMessages.get(saverMessages.size() - 1);
+		assertTrue(lastMessage.getMessageType().getValue().equals("tool"), "Last message should be a tool message");
 		assertNotNull(output);
 		assertFalse(output.isEmpty(), "Output should not be empty");
 
