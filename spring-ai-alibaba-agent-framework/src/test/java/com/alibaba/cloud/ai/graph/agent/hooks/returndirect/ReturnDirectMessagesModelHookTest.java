@@ -47,13 +47,14 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Test cases for FinishReasonCheckMessagesModelHook.
- * This hook checks for FINISH_REASON in ToolResponseMessage metadata and jumps to END if found.
+ * Test cases for ReturnDirectModelHook.
+ * This hook checks for finishReason in ToolResponseMessage metadata and jumps to END if found.
  */
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 public class ReturnDirectMessagesModelHookTest {
@@ -74,8 +75,8 @@ public class ReturnDirectMessagesModelHookTest {
 	}
 
 	/**
-	 * Test that FinishReasonCheckMessagesModelHook correctly handles returnDirect tools
-	 * and jumps to END node when FINISH_REASON is found in ToolResponseMessage metadata.
+	 * Test that ReturnDirectModelHook correctly handles returnDirect tools
+	 * and jumps to END node when finishReason is found in ToolResponseMessage metadata.
 	 */
 	@Test
 	public void testFinishReasonCheckWithReturnDirectTools() throws GraphRunnerException {
@@ -92,7 +93,7 @@ public class ReturnDirectMessagesModelHookTest {
 				.systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
 				.build();
 
-		System.out.println("\n=== 测试 FinishReasonCheckMessagesModelHook 与 returnDirect 工具 ===");
+		System.out.println("\n=== 测试 ReturnDirectModelHook 与 returnDirect 工具 ===");
 
 		String output = react.call("上海,北京").getText();
 		System.out.println("ReactAgent Output: " + output);
@@ -109,11 +110,11 @@ public class ReturnDirectMessagesModelHookTest {
 		assertTrue(cleanedOutput.trim().isEmpty() || cleanedOutput.trim().length() < 10,
 				"Output should primarily contain tool response without additional model processing");
 
-		System.out.println("✓ Test passed: FinishReasonCheckMessagesModelHook correctly handled returnDirect tools");
+		System.out.println("✓ Test passed: ReturnDirectModelHook correctly handled returnDirect tools");
 	}
 
 	/**
-	 * Test that FinishReasonCheckMessagesModelHook works with multiple returnDirect tools
+	 * Test that ReturnDirectModelHook works with multiple returnDirect tools
 	 * and generates JSON array for multiple responses.
 	 */
 	@Test
@@ -130,7 +131,7 @@ public class ReturnDirectMessagesModelHookTest {
 				.systemPrompt("你是一个工具调用助手，可以同时调用多个工具")
 				.build();
 
-		System.out.println("\n=== 测试 FinishReasonCheckMessagesModelHook 与多个 returnDirect 工具 ===");
+		System.out.println("\n=== 测试 ReturnDirectModelHook 与多个 returnDirect 工具 ===");
 
 		String output = react.call("请调用getCity1和getCity2工具").getText();
 		System.out.println("ReactAgent Output: " + output);
@@ -138,16 +139,39 @@ public class ReturnDirectMessagesModelHookTest {
 		assertNotNull(output, "Output should not be null");
 		assertFalse(output.isEmpty(), "Output should not be empty");
 
-		// Verify that output contains responses from both tools
-		// The output should be a JSON array or contain both tool responses
-		assertTrue(output.contains("City1") || output.contains("City2") || output.startsWith("["),
-				"Output should contain responses from multiple tools");
+		String trimmedOutput = output.trim();
 
-		System.out.println("✓ Test passed: FinishReasonCheckMessagesModelHook correctly handled multiple returnDirect tools");
+		// Verify that output contains responses from BOTH tools (not just one)
+		assertTrue(trimmedOutput.contains("City1"), 
+				"Output should contain response from getCity1 tool. Actual: " + trimmedOutput);
+		assertTrue(trimmedOutput.contains("City2"), 
+				"Output should contain response from getCity2 tool. Actual: " + trimmedOutput);
+
+		// Verify that output is a valid JSON array when multiple responses occur
+		assertTrue(trimmedOutput.startsWith("["), 
+				"Output should start with '[' for JSON array format. Actual: " + trimmedOutput);
+		assertTrue(trimmedOutput.endsWith("]"), 
+				"Output should end with ']' for JSON array format. Actual: " + trimmedOutput);
+
+		// Validate JSON array structure: verify both tool responses are present
+		// The format should be either ["City1","City2"] or ["City2","City1"]
+		String arrayContent = trimmedOutput.substring(1, trimmedOutput.length() - 1).trim();
+		
+		// Verify both values are present in the array content
+		assertTrue(arrayContent.contains("City1") && arrayContent.contains("City2"),
+				"JSON array should contain both City1 and City2. Actual array content: " + arrayContent);
+		
+		// Verify proper JSON array structure: should have comma-separated values
+		// Check that there's a comma (indicating multiple elements) or both values are present
+		assertTrue(arrayContent.contains(",") || 
+				(arrayContent.contains("City1") && arrayContent.contains("City2")),
+				"JSON array should have proper structure with multiple elements. Actual: " + arrayContent);
+
+		System.out.println("✓ Test passed: ReturnDirectModelHook correctly handled multiple returnDirect tools");
 	}
 
 	/**
-	 * Test that FinishReasonCheckMessagesModelHook does not interfere with normal tool execution
+	 * Test that ReturnDirectModelHook does not interfere with normal tool execution
 	 * when returnDirect is false.
 	 */
 	@Test
@@ -155,16 +179,31 @@ public class ReturnDirectMessagesModelHookTest {
 		var saver = new MemorySaver();
 		var hook = new ReturnDirectModelHook();
 
+		// Track model calls to verify model processes tool response
+		AtomicInteger modelCallCount = new AtomicInteger(0);
+		ChatModel trackingChatModel = new ChatModel() {
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				modelCallCount.incrementAndGet();
+				return chatModel.call(prompt);
+			}
+
+			@Override
+			public ChatOptions getDefaultOptions() {
+				return chatModel.getDefaultOptions();
+			}
+		};
+
 		var react = ReactAgent.builder()
 				.name("testFinishReasonNormalAgent")
-				.model(chatModel)
+				.model(trackingChatModel)
 				.saver(saver)
 				.tools(ToolCallbacks.from(new TestNormalTools()))
 				.hooks(List.of(hook))
 				.systemPrompt("你是一个助手，可以调用工具获取信息")
 				.build();
 
-		System.out.println("\n=== 测试 FinishReasonCheckMessagesModelHook 与普通工具（returnDirect=false）===");
+		System.out.println("\n=== 测试 ReturnDirectModelHook 与普通工具（returnDirect=false）===");
 
 		String output = react.call("请调用getInfo工具获取信息").getText();
 		System.out.println("ReactAgent Output: " + output);
@@ -173,12 +212,28 @@ public class ReturnDirectMessagesModelHookTest {
 		assertFalse(output.isEmpty(), "Output should not be empty");
 
 		// With normal tools (returnDirect=false), the model should process the tool response
-		// So the output should contain processed content, not just the raw tool response
-		System.out.println("✓ Test passed: FinishReasonCheckMessagesModelHook does not interfere with normal tools");
+		// Verify that model was called at least twice:
+		// 1. First call: to generate AssistantMessage with tool calls
+		// 2. Second call: to process the tool response and generate final answer
+		int actualModelCallCount = modelCallCount.get();
+		System.out.println("Model 调用次数: " + actualModelCallCount);
+		assertTrue(actualModelCallCount >= 2,
+				"Model should be called at least twice: once to generate tool calls, " +
+				"and once to process tool response (returnDirect=false means model processes the result)");
+
+		// Verify that output is NOT exactly the raw tool result
+		// The raw tool result would be "Information: 请调用getInfo工具获取信息"
+		// Model should process this and generate a more natural response
+		String rawToolResult = "Information: 请调用getInfo工具获取信息";
+		assertNotEquals(rawToolResult, output.trim(),
+				"Output should be processed by model, not be the raw tool result. " +
+				"Expected model-generated content, but got raw tool result: " + rawToolResult);
+
+		System.out.println("✓ Test passed: ReturnDirectModelHook does not interfere with normal tools");
 	}
 
 	/**
-	 * Test that FinishReasonCheckMessagesModelHook executes first among all hooks
+	 * Test that ReturnDirectModelHook executes first among all hooks
 	 * and jumps to END when returnDirect is true, preventing subsequent hooks and model calls.
 	 */
 	@Test
@@ -214,7 +269,7 @@ public class ReturnDirectMessagesModelHookTest {
 				.systemPrompt("你是一个天气预报助手")
 				.build();
 
-		System.out.println("\n=== 测试 FinishReasonCheckMessagesModelHook 执行顺序 ===");
+		System.out.println("\n=== 测试 ReturnDirectModelHook 执行顺序 ===");
 
 		Optional<OverAllState> stateOpt = react.invoke("上海");
 
@@ -226,28 +281,28 @@ public class ReturnDirectMessagesModelHookTest {
 		String output = messages.get(messages.size() - 1).getText();
 		System.out.println("ReactAgent Output: " + output);
 
-		// Verify that FinishReasonCheckMessagesModelHook executed (hook should have processed the request)
+		// Verify that ReturnDirectModelHook executed (hook should have processed the request)
 		assertNotNull(output, "Output should not be null");
 		assertTrue(output.contains("上海天气不错"), "Output should contain direct tool response");
 
-		// Verify that when returnDirect is true and FinishReasonCheckMessagesModelHook jumps to END,
+		// Verify that when returnDirect is true and ReturnDirectModelHook jumps to END,
 		// the subsequent hook's beforeModel should NOT be called (or called only before the jump)
-		// Since FinishReasonCheckMessagesModelHook has order Integer.MIN_VALUE, it executes first
+		// Since ReturnDirectModelHook has order Integer.MIN_VALUE, it executes first
 		// and jumps to END, preventing testHook from being called in the beforeModel phase
 		int testHookBeforeModelCount = testHook.getBeforeModelCount();
 		System.out.println("TestHook beforeModel 调用次数: " + testHookBeforeModelCount);
 
 		// Verify model call count: model should be called exactly once
 		// - First call: to generate AssistantMessage with tool calls
-		// - When returnDirect=true, after tool execution, FinishReasonCheckMessagesModelHook
+		// - When returnDirect=true, after tool execution, ReturnDirectModelHook
 		//   jumps to END, so model is NOT called again to process tool response
 		int actualModelCallCount = modelCallCount.get();
 		System.out.println("Model 调用次数: " + actualModelCallCount);
 		assertEquals(1, actualModelCallCount,
 				"Model should be called exactly once: first call to generate tool calls, " +
-				"then FinishReasonCheckMessagesModelHook jumps to END without second model call");
+				"then ReturnDirectModelHook jumps to END without second model call");
 
-		// Note: testHook's beforeModel might be called 0 times if FinishReasonCheckMessagesModelHook
+		// Note: testHook's beforeModel might be called 0 times if ReturnDirectModelHook
 		// successfully jumps to END before other hooks execute, or it might be called once before
 		// the tool execution if hooks are executed in sequence before tool node
 		// The key verification is that model is called only once (not twice), confirming returnDirect

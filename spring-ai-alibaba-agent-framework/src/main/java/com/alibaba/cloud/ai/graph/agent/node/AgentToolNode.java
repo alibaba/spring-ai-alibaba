@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_TOOL_NAME;
 import static com.alibaba.cloud.ai.graph.agent.DefaultBuilder.POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING;
+import static com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectConstants.FINISH_REASON_METADATA_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY;
@@ -125,7 +126,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			ToolResponseMessage.Builder builder = ToolResponseMessage.builder()
 					.responses(toolResponses);
 			if (returnDirect != null && returnDirect) {
-				builder.metadata(Map.of("finishReason", FINISH_REASON));
+				builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
 			}
 			ToolResponseMessage toolResponseMessage = builder.build();
 
@@ -173,7 +174,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			ToolResponseMessage.Builder builder = ToolResponseMessage.builder()
 					.responses(allResponses);
 			if (returnDirect != null && returnDirect) {
-				builder.metadata(Map.of("finishReason", FINISH_REASON));
+				builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
 			}
 			ToolResponseMessage newToolResponseMessage = builder.build();
 

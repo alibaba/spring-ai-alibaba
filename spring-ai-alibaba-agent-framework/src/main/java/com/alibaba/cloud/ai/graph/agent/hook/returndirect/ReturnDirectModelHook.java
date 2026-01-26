@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.hook.returndirect;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.Prioritized;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectConstants.FINISH_REASON_METADATA_KEY;
 import static org.springframework.ai.model.tool.ToolExecutionResult.FINISH_REASON;
 
 /**
@@ -47,8 +49,7 @@ public class ReturnDirectModelHook extends MessagesModelHook {
 
 	@Override
 	public int getOrder() {
-		// Return Integer.MIN_VALUE to ensure this hook executes first
-		return Integer.MIN_VALUE;
+		return Prioritized.HIGHEST_PRECEDENCE;
 	}
 
 	@Override
@@ -73,8 +74,8 @@ public class ReturnDirectModelHook extends MessagesModelHook {
 		// FINISH_REASON is set in ToolResponseMessage metadata by AgentToolNode when returnDirect=true
 		boolean returnDirect = false;
 		Map<String, Object> metadata = toolResponseMessage.getMetadata();
-		if (metadata.containsKey("finishReason")) {
-			Object finishReason = metadata.get("finishReason");
+		if (metadata.containsKey(FINISH_REASON_METADATA_KEY)) {
+			Object finishReason = metadata.get(FINISH_REASON_METADATA_KEY);
 			if (FINISH_REASON.equals(finishReason)) {
 				returnDirect = true;
 			}
@@ -110,7 +111,9 @@ public class ReturnDirectModelHook extends MessagesModelHook {
 			return "";
 		} else if (responses.size() == 1) {
 			// If there's only one response, use responseData directly
-			return responses.get(0).responseData();
+			String responseData = responses.get(0).responseData();
+			// Handle null responseData: return empty string for single response
+			return responseData != null ? responseData : "";
 		} else {
 			// If there are multiple responses, generate a JSON array
 			StringBuilder jsonArray = new StringBuilder("[");
@@ -119,12 +122,18 @@ public class ReturnDirectModelHook extends MessagesModelHook {
 					jsonArray.append(",");
 				}
 				String responseData = responses.get(i).responseData();
-				// If responseData is already in JSON format, add it directly; otherwise add it as a string
-				if (responseData.trim().startsWith("{") || responseData.trim().startsWith("[")) {
-					jsonArray.append(responseData);
+				// Handle null responseData: treat as JSON null
+				if (responseData == null) {
+					jsonArray.append("null");
 				} else {
-					// Escape JSON string
-					jsonArray.append("\"").append(escapeJsonString(responseData)).append("\"");
+					String trimmed = responseData.trim();
+					// If responseData is already in JSON format, add it directly; otherwise add it as a string
+					if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+						jsonArray.append(responseData);
+					} else {
+						// Escape JSON string
+						jsonArray.append("\"").append(escapeJsonString(responseData)).append("\"");
+					}
 				}
 			}
 			jsonArray.append("]");
