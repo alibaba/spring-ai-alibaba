@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -173,11 +174,12 @@ public class DefaultBuilder extends Builder {
 	 *   <li>Tools resolved by name via {@code toolNames}</li>
 	 *   <li>Tools extracted from {@code resolver} (if no regular tools collected yet)</li>
 	 *   <li>Tools from interceptors ({@code modelInterceptors})</li>
+	 *   <li>Tools from hooks ({@code hooks})</li>
 	 * </ol>
 	 * <p>
-	 * The final combined list prioritizes interceptor tools first, followed by regular tools.
+	 * The final combined list prioritizes hook tools first, then interceptor tools, followed by regular tools.
 	 *
-	 * @return a combined list of all tools from interceptors and user-provided sources
+	 * @return a combined list of all tools from hooks, interceptors and user-provided sources
 	 */
 	protected List<ToolCallback> gatherLocalTools() {
 		// Collect tools from interceptors
@@ -263,12 +265,27 @@ public class DefaultBuilder extends Builder {
 			interceptorTools = modelInterceptors.stream().flatMap(interceptor -> interceptor.getTools().stream())
 					.toList();
 		}
-		
-		// Combine all tools: interceptorTools + regularTools
+
+		// Extract tools from hooks
+		List<ToolCallback> hookTools = new ArrayList<>();
+		if (CollectionUtils.isNotEmpty(hooks)) {
+			for (Hook hook : hooks) {
+				List<ToolCallback> toolsFromHook = hook.getTools();
+				if (CollectionUtils.isNotEmpty(toolsFromHook)) {
+					hookTools.addAll(toolsFromHook);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Collected {} tools from hook '{}'", toolsFromHook.size(), hook.getName());
+					}
+				}
+			}
+		}
+
+		// Combine all tools: hookTools + interceptorTools + regularTools
 		List<ToolCallback> allTools = new ArrayList<>();
+		allTools.addAll(hookTools);
 		allTools.addAll(interceptorTools);
 		allTools.addAll(regularTools);
-		
+
 		return allTools;
 	}
 
