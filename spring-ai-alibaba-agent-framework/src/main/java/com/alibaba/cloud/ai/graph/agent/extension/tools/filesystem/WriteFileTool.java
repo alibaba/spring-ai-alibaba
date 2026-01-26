@@ -20,9 +20,11 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.function.BiFunction;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -50,25 +52,43 @@ public class WriteFileTool implements BiFunction<WriteFileTool.WriteFileRequest,
 	public String apply(WriteFileRequest request, ToolContext toolContext) {
 		try {
 			Path path = Paths.get(request.filePath);
+			return writeFileContent(path, request.content);
+		}
+		catch (Exception e) {
+			return "Error writing file: " + e.getMessage();
+		}
+	}
 
+	/**
+	 * Core logic for writing content to a new file.
+	 * This method can be reused by other classes like FileSystemTools.
+	 *
+	 * @param filePath The path to the file to write
+	 * @param content The content to write to the file (null will write empty content)
+	 * @return Success message or error message
+	 */
+	public static String writeFileContent(Path filePath, String content) {
+		try {
 			// Check if file already exists
-			if (Files.exists(path)) {
-				return "Error: File already exists: " + request.filePath + ". Use edit_file to modify existing files.";
+			if (Files.exists(filePath)) {
+				return "Error: Cannot write to " + filePath + " because it already exists. Read and then make an edit, or write to a new path.";
 			}
 
 			// Create parent directories if needed
-			Path parent = path.getParent();
-			if (parent != null && !Files.exists(parent)) {
+			Path parent = filePath.getParent();
+			if (parent != null) {
 				Files.createDirectories(parent);
 			}
 
 			// Write content to file
-			Files.writeString(path, request.content);
+			Files.write(filePath, content != null ? content.getBytes(StandardCharsets.UTF_8) : new byte[0],
+				StandardOpenOption.CREATE_NEW,
+				StandardOpenOption.WRITE);
 
-			return "Successfully created file: " + request.filePath;
+			return "Successfully created file: " + filePath;
 		}
 		catch (IOException e) {
-			return "Error writing file: " + e.getMessage();
+			return "Error writing file '" + filePath + "': " + e.getMessage();
 		}
 	}
 

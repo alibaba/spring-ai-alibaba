@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
@@ -494,6 +495,228 @@ public class InterruptionTest {
 			}
 			return Optional.empty();
 		}
+	}
+
+	@Test
+	public void asyncNodeActionWithInterruptableActionShouldWork() throws Exception {
+		var saver = MemorySaver.builder().build();
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+			.defaultStrategy(KeyStrategy.REPLACE)
+			.addStrategy("messages")
+			.build();
+
+		var interruptableAsyncNode = new AsyncNodeActionWithInterruptable();
+
+		var workflow = new StateGraph(keyStrategyFactory)
+			.addNode("A", _nodeAction("A"))
+			.addNode("B", interruptableAsyncNode)
+			.addNode("C", _nodeAction("C"))
+			.addEdge(START, "A")
+			.addEdge("A", "B")
+			.addEdge("B", "C")
+			.addEdge("C", END)
+			.compile(CompileConfig.builder()
+				.saverConfig(SaverConfig.builder().register(saver).build())
+				.build());
+
+		var runnableConfig = RunnableConfig.builder().build();
+		AtomicReference<NodeOutput> lastOutputRef = new AtomicReference<>();
+
+		var results = workflow.stream(Map.of("trigger_interrupt_after", true), runnableConfig)
+			.doOnNext(output -> {
+				System.out.println("Output: " + output);
+				lastOutputRef.set(output);
+			})
+			.map(NodeOutput::node)
+			.collectList()
+			.block();
+
+		assertIterableEquals(List.of(START, "A", "B"), results);
+		assertInstanceOf(InterruptionMetadata.class, lastOutputRef.get());
+
+		InterruptionMetadata metadata = (InterruptionMetadata) lastOutputRef.get();
+		assertTrue(metadata.metadata().isPresent());
+		assertEquals("async_node_interrupted_after", metadata.metadata().get().get("reason"));
+
+		RunnableConfig resumeConfig = RunnableConfig.builder()
+			.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "continue")
+			.build();
+
+		results = workflow.stream(null, resumeConfig)
+			.doOnNext(output -> System.out.println("Resume output: " + output))
+			.map(NodeOutput::node)
+			.collectList()
+			.block();
+
+		assertIterableEquals(List.of("C", END), results);
+	}
+
+	@Test
+	public void asyncNodeActionWithInterruptableActionNoInterruptWhenNotTriggered() throws Exception {
+		var saver = MemorySaver.builder().build();
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+			.defaultStrategy(KeyStrategy.REPLACE)
+			.addStrategy("messages")
+			.build();
+
+		var interruptableAsyncNode = new AsyncNodeActionWithInterruptable();
+
+		var workflow = new StateGraph(keyStrategyFactory)
+			.addNode("A", _nodeAction("A"))
+			.addNode("B", interruptableAsyncNode)
+			.addNode("C", _nodeAction("C"))
+			.addEdge(START, "A")
+			.addEdge("A", "B")
+			.addEdge("B", "C")
+			.addEdge("C", END)
+			.compile(CompileConfig.builder()
+				.saverConfig(SaverConfig.builder().register(saver).build())
+				.build());
+
+		var runnableConfig = RunnableConfig.builder().build();
+
+		var results = workflow.stream(Map.of("trigger_interrupt_after", false), runnableConfig)
+			.doOnNext(output -> System.out.println("Output: " + output))
+			.map(NodeOutput::node)
+			.collectList()
+			.block();
+
+		assertIterableEquals(List.of(START, "A", "B", "C", END), results);
+	}
+
+	static class AsyncNodeActionWithInterruptable implements AsyncNodeAction, InterruptableAction {
+
+		@Override
+		public CompletableFuture<Map<String, Object>> apply(OverAllState state) {
+			return CompletableFuture.completedFuture(Map.of("messages", "B"));
+		}
+
+		@Override
+		public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+			return Optional.empty();
+		}
+
+		@Override
+		public Optional<InterruptionMetadata> interruptAfter(String nodeId, OverAllState state,
+				Map<String, Object> actionResult, RunnableConfig config) {
+			Boolean shouldInterrupt = (Boolean) state.value("trigger_interrupt_after").orElse(false);
+
+			if (Boolean.TRUE.equals(shouldInterrupt)) {
+				return Optional.of(InterruptionMetadata.builder(nodeId, state)
+					.addMetadata("reason", "async_node_interrupted_after")
+					.addMetadata("action_result", actionResult)
+					.build());
+			}
+
+			return Optional.empty();
+		}
+	}
+
+
+	@Test
+	public void testLongTypePreservationInWorkflow() throws Exception {
+		class ResultCheckerAction implements AsyncNodeActionWithConfig, InterruptableAction {
+			private final Long resultThreshold;
+
+			public ResultCheckerAction(Long resultThreshold) {
+				this.resultThreshold = resultThreshold;
+			}
+
+			@Override
+			public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+				Long result = state.value("result", Long.class).orElse(0L);
+				return CompletableFuture.completedFuture(Map.of("status", "checked"));
+			}
+
+			@Override
+			public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+				Long result = state.value("result", Long.class).orElse(0L);
+				if (result > resultThreshold) {
+					return Optional.of(InterruptionMetadata.builder(nodeId, state)
+							.addMetadata("reason", "result_threshold_exceeded")
+							.addMetadata("result", result)
+							.addMetadata("threshold", resultThreshold)
+							.build());
+				}
+				return Optional.empty();
+			}
+		}
+
+		StateGraph workflow = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("counter", (o, o2) -> o2);
+			keyStrategyHashMap.put("result", (o, o2) -> o2);
+			keyStrategyHashMap.put("status", (o, o2) -> o2);
+			return keyStrategyHashMap;
+		})
+		.addEdge(START, "nodeA")
+		.addNode("nodeA", node_async((state, config) -> {
+			Long counter = state.value("counter", Long.class).orElse(0L);
+			Long incrementedCounter = counter + 100L;
+			return Map.of("counter", incrementedCounter);
+		}))
+		.addEdge("nodeA", "nodeB")
+		.addNode("nodeB", node_async((state, config) -> {
+			Long counter = state.value("counter", Long.class).orElse(0L);
+			Long finalResult = counter * 2L;
+			return Map.of("result", finalResult);
+		}))
+		.addEdge("nodeB", "nodeC")
+		.addNode("nodeC", new ResultCheckerAction(250L))
+		.addEdge("nodeC", END);
+
+		CompiledGraph app = workflow.compile();
+
+		Optional<OverAllState> result = app.invoke(Map.of("counter", 50L));
+		assertTrue(result.isPresent());
+
+		assertEquals(150L, result.get().value("counter", Long.class).get(),
+			"Counter should be 150L");
+		assertEquals(300L, result.get().value("result", Long.class).get(),
+			"Result should be 300L");
+
+		Object counterValue = result.get().value("counter").orElse(null);
+		Object resultValue = result.get().value("result").orElse(null);
+
+		assertInstanceOf(Long.class, counterValue,
+			"Counter should be Long type, not Integer");
+		assertInstanceOf(Long.class, resultValue,
+			"Result should be Long type, not Integer");
+
+		assertFalse(result.get().value("status", String.class).isPresent(),
+			"Status should not be set when interrupted");
+
+		StateGraph workflow2 = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("counter", (o, o2) -> o2);
+			keyStrategyHashMap.put("result", (o, o2) -> o2);
+			keyStrategyHashMap.put("status", (o, o2) -> o2);
+			return keyStrategyHashMap;
+		})
+		.addEdge(START, "nodeA")
+		.addNode("nodeA", node_async((state, config) -> {
+			Long counter = state.value("counter", Long.class).orElse(0L);
+			Long incrementedCounter = counter + 100L;
+			return Map.of("counter", incrementedCounter);
+		}))
+		.addEdge("nodeA", "nodeB")
+		.addNode("nodeB", node_async((state, config) -> {
+			Long counter = state.value("counter", Long.class).orElse(0L);
+			Long finalResult = counter * 2L;
+			return Map.of("result", finalResult);
+		}))
+		.addEdge("nodeB", "nodeC")
+		.addNode("nodeC", new ResultCheckerAction(250L))
+		.addEdge("nodeC", END);
+
+		CompiledGraph app2 = workflow2.compile();
+		result = app2.invoke(Map.of());
+		assertTrue(result.isPresent(), "Result should be present with empty initial state");
+
+		assertEquals(100L, result.get().value("counter", Long.class).get());
+		assertEquals(200L, result.get().value("result", Long.class).get());
+		assertEquals("checked", result.get().value("status", String.class).get(),
+			"Status should be 'checked' when not interrupted");
 	}
 
 }
