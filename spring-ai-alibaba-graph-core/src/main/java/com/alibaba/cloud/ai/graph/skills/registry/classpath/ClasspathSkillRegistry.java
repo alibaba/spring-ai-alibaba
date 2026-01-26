@@ -78,7 +78,6 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	// Map to cache fullContent for skills loaded from JAR (skill name -> fullContent)
 	// This is needed because JAR paths cannot be accessed via Path.of() with default filesystem
 	private final Map<String, String> jarSkillContentCache = new HashMap<>();
-	private volatile Map<String, SkillMetadata> skills = new HashMap<>();
 	// JAR FileSystem for classpath resources (only created if resource is in JAR)
 	private FileSystem jarFileSystem;
 
