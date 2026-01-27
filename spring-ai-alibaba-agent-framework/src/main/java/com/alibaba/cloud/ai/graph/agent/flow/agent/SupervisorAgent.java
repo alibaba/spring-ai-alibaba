@@ -30,7 +30,7 @@ public class SupervisorAgent extends FlowAgent {
 	private final String instruction;
 
 	protected SupervisorAgent(SupervisorAgentBuilder builder) {
-		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor);
+		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor, builder.hooks);
 		this.chatModel = builder.chatModel;
 		this.systemPrompt = builder.systemPrompt;
 		this.instruction = builder.instruction;

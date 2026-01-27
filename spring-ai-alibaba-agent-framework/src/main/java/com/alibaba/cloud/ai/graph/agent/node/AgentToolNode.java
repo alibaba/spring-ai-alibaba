@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallExecutionContext;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
@@ -491,9 +492,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		// Create ToolCallRequest
 		ToolCallRequest request = ToolCallRequest.builder()
-			.toolCall(toolCall)
-			.context(config.metadata().orElse(new HashMap<>()))
-			.build();
+				.toolCall(toolCall)
+				.context(config.metadata().orElse(new HashMap<>()))
+				.executionContext(new ToolCallExecutionContext(config, state))
+				.build();
 
 		// Create base handler that actually executes the tool
 		ToolCallHandler baseHandler = req -> {

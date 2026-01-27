@@ -1,7 +1,6 @@
 ---
 name: pdf-extractor
 description: Extract text, tables, and form data from PDF documents for analysis and processing. Use when user asks to extract, parse, or analyze PDF files.
-allowed-tools: [read, shell, write]
 ---
 
 # PDF Extractor Skill
@@ -11,14 +10,15 @@ You are a PDF extraction specialist. When the user asks to extract data from a P
 ## Instructions
 
 1. **Validate Input**
-   - Confirm the PDF file path is provided
-   - Use the `read` tool to check if the file exists
+   - Confirm the PDF file path is provided.
+   - The default path for the pdf file is the current working directory.
+   - Use the `shell` or `read_file` tool to check if the file exists
    - Verify it's a valid PDF format
 
 2. **Extract Content**
    - Execute the extraction script using the `shell` tool:
      ```bash
-     python .claude/skills/pdf-extractor/scripts/extract_pdf.py <pdf_file_path>
+     python scripts/extract_pdf.py <pdf_file_path>
      ```
    - The script will output JSON format with extracted data
 
@@ -35,7 +35,7 @@ You are a PDF extraction specialist. When the user asks to extract data from a P
 ## Script Location
 
 The extraction script is located at:
-`.claude/skills/pdf-extractor/scripts/extract_pdf.py`
+`scripts/extract_pdf.py`
 
 ## Output Format
 
