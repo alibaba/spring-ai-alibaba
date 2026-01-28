@@ -111,9 +111,8 @@ public class ReturnDirectModelHook extends MessagesModelHook {
 			return "";
 		} else if (responses.size() == 1) {
 			// If there's only one response, use responseData directly
-			String responseData = responses.get(0).responseData();
 			// Handle null responseData: return empty string for single response
-			return responseData != null ? responseData : "";
+			return responses.get(0).responseData();
 		} else {
 			// If there are multiple responses, generate a JSON array
 			StringBuilder jsonArray = new StringBuilder("[");
