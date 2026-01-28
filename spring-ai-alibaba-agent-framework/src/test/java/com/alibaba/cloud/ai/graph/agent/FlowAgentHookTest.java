@@ -26,6 +26,8 @@ import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.utils.HookFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.chat.model.ChatModel;
 
 import java.util.List;
@@ -39,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author haojun.phj (Jackie)
  * @since 2025/01/13
  */
+@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 public class FlowAgentHookTest {
 
 	private ChatModel chatModel;
