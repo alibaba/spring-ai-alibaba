@@ -58,6 +58,7 @@
         <module>spring-boot-starters/spring-ai-alibaba-starter-config-nacos</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-builtin-nodes</module>
+        <module>spring-ai-alibaba-sandbox-tool</module>
     </modules>
 
     <scm>
@@ -183,6 +184,8 @@
         <spotless.version>2.44.5</spotless.version>
 
         <central.publishing.maven.version>0.7.0</central.publishing.maven.version>
+
+        <slf4j.version>2.0.17</slf4j.version>
     </properties>
 
     <dependencyManagement>
