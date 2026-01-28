@@ -29,12 +29,14 @@ import org.springframework.ai.converter.BeanOutputConverter;
 
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Deprecated
 public class RoutingEdgeAction implements AsyncEdgeAction {
 	private static final Logger logger = LoggerFactory.getLogger(RoutingEdgeAction.class);
 
@@ -84,7 +86,8 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 	public CompletableFuture<String> apply(OverAllState state) {
 		CompletableFuture<String> result = new CompletableFuture<>();
 		try {
-			List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
+			@SuppressWarnings("unchecked")
+			List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 			
 			// Prepare messages with instruction if available
 			List<Message> messagesWithInstruction = prepareMessagesWithInstruction(messages);
@@ -119,7 +122,7 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 	 * @return messages list with instruction added
 	 */
 	private List<Message> prepareMessagesWithInstruction(List<Message> messages) {
-		java.util.ArrayList<Message> messagesWithInstruction = new java.util.ArrayList<>(messages);
+		List<Message> messagesWithInstruction = new ArrayList<>(messages);
 		
 		// Check if rootAgent is LlmRoutingAgent and has instruction
 		if (rootAgent instanceof LlmRoutingAgent llmRoutingAgent) {
