@@ -637,7 +637,7 @@ public class StateGraphTest {
 	 */
 	@Test
 	void testWithParallelBranchWithErrors() throws Exception {
-		var complexParallelPaths = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
+		var onlyOneTarget = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
 				.addNode("A1", makeNode("A1"))
 				.addNode("A2", makeNode("A2"))
 				.addNode("A3", makeNode("A3"))
@@ -653,10 +653,9 @@ public class StateGraphTest {
 				.addEdge(START, "A")
 				.addEdge("C", END);
 
-		var compiledGraph = complexParallelPaths.compile();
-		assertNotNull(compiledGraph, "Complex parallel paths should compile with subgraph feature");
-
-		GraphStateException exception;
+		var exception = assertThrows(GraphStateException.class, onlyOneTarget::compile);
+		assertEquals("parallel node [A] must have only one target, but [B, C] have been found!",
+				exception.getMessage());
 
 		var noConditionalEdge = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
 				.addNode("A1", makeNode("A1"))
@@ -688,13 +687,15 @@ public class StateGraphTest {
 				.addEdge("A", "A3")
 				.addEdge("A1", "B")
 				.addEdge("A2", "B")
-				.addEdge("A3", "B")
+				.addConditionalEdges("A3", edge_async(state -> "next"), Map.of("next", "B"))
 				.addEdge("B", "C")
 				.addEdge(START, "A")
 				.addEdge("C", END);
 
-		var compiledGraphWithParallelPaths = noConditionalEdgeOnBranch.compile();
-		assertNotNull(compiledGraphWithParallelPaths, "Parallel paths should compile with subgraph feature");
+		exception = assertThrows(GraphStateException.class, noConditionalEdgeOnBranch::compile);
+		assertEquals(
+				"parallel node doesn't support conditional branch, but on [A] a conditional branch on [A3] have been found!",
+				exception.getMessage());
 
 		var noDuplicateTarget = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
 				.addNode("A1", makeNode("A1"))
