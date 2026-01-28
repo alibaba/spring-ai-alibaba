@@ -37,7 +37,7 @@ public class StreamingOutput<T> extends NodeOutput {
 	@JsonIgnore
 	private final T originData;
 
-	private OutputType outputType;
+	// outputType is stored in NodeOutput base class to unify Graph/Agent output contract.
 
 	public StreamingOutput(T originData, String node, OverAllState state) {
 		super(node, state);
@@ -184,7 +184,7 @@ public class StreamingOutput<T> extends NodeOutput {
 	}
 
 	public OutputType getOutputType() {
-		return outputType;
+		return this.outputType;
 	}
 
 	@Override

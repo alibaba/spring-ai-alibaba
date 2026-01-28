@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.springframework.ai.chat.metadata.Usage;
 
 import java.util.Objects;
@@ -44,6 +46,14 @@ public class NodeOutput {
 	protected String agent;
 
 	protected Usage tokenUsage;
+
+	/**
+	 * Unified output type for Graph/Agent nodes.
+	 * <p>
+	 * Null for backward compatibility when deserializing older payloads.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	protected OutputType outputType;
 	/**
 	 * The state associated with the node.
 	 */
@@ -80,6 +90,19 @@ public class NodeOutput {
 
 	public void setTokenUsage(Usage tokenUsage) {
 		this.tokenUsage = tokenUsage;
+	}
+
+	public OutputType outputType() {
+		return outputType;
+	}
+
+	public OutputType getOutputType() {
+		return outputType;
+	}
+
+	public NodeOutput setOutputType(OutputType outputType) {
+		this.outputType = outputType;
+		return this;
 	}
 
 	public String node() {
