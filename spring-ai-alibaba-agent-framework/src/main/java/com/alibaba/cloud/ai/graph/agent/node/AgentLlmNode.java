@@ -447,14 +447,12 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<ToolCallback> toolCallbacks = new ArrayList<>();
 		if (modelRequest == null) {
 			toolCallbacks.addAll(this.toolCallbacks);
-		} else if (modelRequest.getOptions() != null && modelRequest.getOptions().getToolCallbacks() != null) {
-			toolCallbacks.addAll(modelRequest.getOptions().getToolCallbacks());
-		}
-
-
-
-		if (modelRequest == null || modelRequest.getTools() == null || modelRequest.getTools().isEmpty()) {
 			return toolCallbacks;
+		}
+		if (modelRequest.getOptions() != null && modelRequest.getOptions().getToolCallbacks() != null) {
+			toolCallbacks.addAll(modelRequest.getOptions().getToolCallbacks());
+		} else {
+			toolCallbacks.addAll(this.toolCallbacks);
 		}
 
 		List<String> requestedTools = modelRequest.getTools();
