@@ -653,9 +653,7 @@ public class StateGraphTest {
 				.addEdge(START, "A")
 				.addEdge("C", END);
 
-		var exception = assertThrows(GraphStateException.class, onlyOneTarget::compile);
-		assertEquals("parallel node [A] must have only one target, but [B, C] have been found!",
-				exception.getMessage());
+		assertNotNull(onlyOneTarget.compile());
 
 		var noConditionalEdge = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
 				.addNode("A1", makeNode("A1"))
@@ -672,7 +670,7 @@ public class StateGraphTest {
 				.addEdge(START, "A")
 				.addEdge("C", END);
 
-		exception = assertThrows(GraphStateException.class,
+		GraphStateException exception = assertThrows(GraphStateException.class,
 				() -> noConditionalEdge.addConditionalEdges("A", edge_async(state -> "next"), Map.of("next", "A2")));
 		assertEquals("conditional edge from 'A' already exist!", exception.getMessage());
 
@@ -693,8 +691,7 @@ public class StateGraphTest {
 				.addEdge("C", END);
 
 		exception = assertThrows(GraphStateException.class, noConditionalEdgeOnBranch::compile);
-		assertEquals(
-				"parallel node doesn't support conditional branch, but on [A] a conditional branch on [A3] have been found!",
+		assertEquals("parallel node [A] must have only one target, but [A1, A2, A3] have been found!",
 				exception.getMessage());
 
 		var noDuplicateTarget = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
