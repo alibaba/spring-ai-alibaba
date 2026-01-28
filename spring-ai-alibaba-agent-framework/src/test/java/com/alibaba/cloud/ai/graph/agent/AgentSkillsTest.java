@@ -186,7 +186,9 @@ class AgentSkillsTest {
 
 	@Test
 	public void testReactAgentWithSkillsHook() throws Exception {
-		SkillRegistry registry = FileSystemSkillRegistry.builder().build();
+		SkillRegistry registry = FileSystemSkillRegistry.builder()
+				.projectSkillsDirectory(getTestSkillsDirectory())
+				.build();
 		// Use default path (classpath:skills)
 		SkillsAgentHook hook = SkillsAgentHook.builder()
 			.skillRegistry(registry)

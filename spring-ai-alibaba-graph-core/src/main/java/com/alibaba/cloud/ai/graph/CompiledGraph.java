@@ -27,7 +27,6 @@ import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ConditionalParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
-import com.alibaba.cloud.ai.graph.internal.ParallelEdgeProcessor;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
@@ -40,7 +39,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -192,12 +193,59 @@ public class CompiledGraph {
 					edges.put(e.sourceId(), target);
 				}
 			} else {
-				// Advanced parallel edge processing: handles both simple (A->B->Z) 
-				// and complex (A->B->B1->Z) cases with nested parallelism
-				ParallelEdgeProcessor processor = new ParallelEdgeProcessor(
-						processedData, nodeFactories, compileConfig, keyStrategyMap, stateGraph);
-				processor.processAdvancedParallelEdges(e.sourceId(), targets,
-						edges::put, nodeFactories::put);
+				Supplier<Stream<EdgeValue>> parallelNodeStream = () -> targets.stream()
+						.filter(target -> nodeFactories.containsKey(target.id()));
+
+				var parallelNodeEdges = parallelNodeStream.get()
+						.map(target -> new Edge(target.id()))
+						.filter(ee -> processedData.edges().elements.contains(ee))
+						.map(ee -> processedData.edges().elements.indexOf(ee))
+						.map(index -> processedData.edges().elements.get(index))
+						.toList();
+
+				var parallelNodeTargets = parallelNodeEdges.stream()
+						.map(ee -> ee.target().id())
+						.collect(Collectors.toSet());
+
+				if (parallelNodeTargets.size() > 1) {
+
+					// find the first defer node
+
+					var conditionalEdges = parallelNodeEdges.stream()
+							.filter(ee -> ee.target().value() != null)
+							.toList();
+					if (!conditionalEdges.isEmpty()) {
+						throw Errors.unsupportedConditionalEdgeOnParallelNode.exception(e.sourceId(),
+								conditionalEdges.stream().map(Edge::sourceId).toList());
+					}
+					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), parallelNodeTargets);
+				}
+
+				var targetList = parallelNodeStream.get().toList();
+
+				var actions = targetList.stream()
+						.map(target -> {
+							try {
+								return nodeFactories.get(target.id()).apply(compileConfig);
+							} catch (GraphStateException ex) {
+								throw new RuntimeException("Failed to create parallel node action for target: "
+										+ target.id() + ". Cause: " + ex.getMessage(), ex);
+							}
+						})
+						.toList();
+
+				var actionNodeIds = targetList.stream().map(EdgeValue::id).toList();
+
+				var targetNodeId = parallelNodeTargets.iterator().next();
+				var parallelNode = new ParallelNode(e.sourceId(), targetNodeId, actions, actionNodeIds, keyStrategyMap,
+						compileConfig);
+
+				nodeFactories.put(parallelNode.id(), parallelNode.actionFactory());
+
+				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
+
+				edges.put(parallelNode.id(), new EdgeValue(targetNodeId));
+
 			}
 		}
 	}

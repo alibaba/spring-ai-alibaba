@@ -69,7 +69,7 @@ public class HumanInTheLoopTest {
 		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右散文");
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右现代诗");
 
 		InterruptionMetadata feedbackMetadata = buildRejectionFeedback(interruptionMetadata);
 
@@ -91,7 +91,7 @@ public class HumanInTheLoopTest {
 		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右散文");
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右现代诗");
 
 		InterruptionMetadata feedbackMetadata = buildApprovalFeedback(interruptionMetadata);
 
@@ -113,7 +113,7 @@ public class HumanInTheLoopTest {
 		Assertions.assertTrue(runnableConfig.threadId().isPresent(), "Thread ID should be present");
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右散文");
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "帮我写一篇100字左右现代诗");
 
 		InterruptionMetadata feedbackMetadata = buildEditedFeedback(interruptionMetadata);
 
@@ -171,7 +171,7 @@ public class HumanInTheLoopTest {
 		Assertions.assertEquals(threadId, runnableConfig.threadId().get(), "Thread ID should match");
 
 		// First invocation - should interrupt for first tool (poem)
-		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "第一次先调用工具帮我写一篇100字左右散文，然后第二次再调用工具查询写作当天北京天气情况。");
+		InterruptionMetadata interruptionMetadata = performFirstInvocation(agent, runnableConfig, "我正在做多次工具调用的测试，你需要分两次推理过程调用工具，不要一次返回两个工具调用。第一次先调用工具帮我写一篇100字左右现代诗，然后第二次再调用工具查询写作当天北京天气情况。");
 
 		// Approve first tool
 		InterruptionMetadata feedbackMetadata = buildApprovalFeedback(interruptionMetadata);
