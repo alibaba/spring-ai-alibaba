@@ -101,12 +101,6 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 
 			var fluxStream = subGraph.graphResponseStream(state, subGraphRunnableConfig);
 
-			fluxStream.doOnNext(item -> {
-				if (item.isDone()) {
-					System.out.println("SubCompiledGraphNodeAction output: " + item.resultValue());
-				}
-			}).blockLast();
-
 			future.complete(Map.of(outputKeyToParent(nodeId), fluxStream));
 
 		}
