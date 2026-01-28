@@ -43,7 +43,7 @@ import org.elasticsearch.client.RestClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchAiSearchFilterExpressionConverter;
@@ -240,7 +240,7 @@ public class ElasticSearchVectorStoreService implements VectorStoreService {
 			BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
 			List<Document> documents = chunks.stream().map(DocumentChunkConverter::toDocument).toList();
-			List<float[]> embeddings = embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+			List<float[]> embeddings = embeddingModel.embed(documents,  EmbeddingOptions.builder().build(),
 					new DefaultBatchingStrategy());
 
 			for (Document document : documents) {

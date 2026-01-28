@@ -8,6 +8,7 @@ import io.micrometer.observation.ObservationRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -105,11 +106,13 @@ public class ChatClientFactoryDelegate {
         Map<String, Object> mergedParameters = mergeParameters(config, userParameters);
         ChatOptions options = factory.buildChatOptions(config, mergedParameters, observationMetadata);
         if (advisors != null) {
-            return ChatClient.builder(chatModel,observationRegistry,customObservationConvention).defaultOptions(options).defaultAdvisors(advisors)
+            return ChatClient.builder(chatModel,observationRegistry,customObservationConvention,
+                            new DefaultAdvisorObservationConvention()).defaultOptions(options).defaultAdvisors(advisors)
                     .build();
         } else {
-            return ChatClient.builder(chatModel,observationRegistry,customObservationConvention).defaultOptions(options).defaultAdvisors()
-                    .build();
+            return ChatClient.builder(chatModel,observationRegistry,customObservationConvention
+                    ,new DefaultAdvisorObservationConvention()).defaultOptions(options).defaultAdvisors().build();
+
         }
     }
     

@@ -331,31 +331,34 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	 */
 	@Nullable
 	private ToolCallingChatOptions buildChatOptions(ChatOptions chatOptions, List<ToolCallback> toolCallbacks) {
-		if (chatOptions == null) {
+		if (chatOptions == null && (toolCallbacks == null || toolCallbacks.isEmpty())) {
 			return null;
 		}
 
-		if (chatOptions instanceof ToolCallingChatOptions builderToolCallingOptions) {
-			ToolCallingChatOptions copiedOptions = builderToolCallingOptions.copy();
+		if (chatOptions != null) {
+			if (chatOptions instanceof ToolCallingChatOptions builderToolCallingOptions) {
+				ToolCallingChatOptions copiedOptions = builderToolCallingOptions.copy();
 
-			List<ToolCallback> mergedToolCallbacks = new ArrayList<>(toolCallbacks);
-			// Add callbacks from chatOptions that are not already present (toolCallbacks takes precedence)
-			for (ToolCallback callback : builderToolCallingOptions.getToolCallbacks()) {
-				boolean exists = mergedToolCallbacks.stream()
-						.anyMatch(tc -> tc.getToolDefinition().name().equals(callback.getToolDefinition().name()));
-				if (!exists) {
-					mergedToolCallbacks.add(callback);
+				List<ToolCallback> mergedToolCallbacks = new ArrayList<>(toolCallbacks);
+				// Add callbacks from chatOptions that are not already present (toolCallbacks takes precedence)
+				for (ToolCallback callback : builderToolCallingOptions.getToolCallbacks()) {
+					boolean exists = mergedToolCallbacks.stream()
+							.anyMatch(tc -> tc.getToolDefinition().name().equals(callback.getToolDefinition().name()));
+					if (!exists) {
+						mergedToolCallbacks.add(callback);
+					}
 				}
-			}
 
-			copiedOptions.setToolCallbacks(mergedToolCallbacks);
-			copiedOptions.setInternalToolExecutionEnabled(false);
-			return copiedOptions;
+				copiedOptions.setToolCallbacks(mergedToolCallbacks);
+				copiedOptions.setInternalToolExecutionEnabled(false);
+				return copiedOptions;
+			} else {
+				logger.warn("The provided chatOptions is not of type ToolCallingChatOptions (actual type: {}). " +
+								"It will not take effect. Creating a new ToolCallingChatOptions with toolCallbacks instead.",
+						chatOptions.getClass().getName());
+			}
 		}
 
-		logger.warn("The provided chatOptions is not of type ToolCallingChatOptions (actual type: {}). " +
-				"It will not take effect. Creating a new ToolCallingChatOptions with toolCallbacks instead.",
-				chatOptions.getClass().getName());
 		return ToolCallingChatOptions.builder()
 				.toolCallbacks(toolCallbacks)
 				.internalToolExecutionEnabled(false)
@@ -449,6 +452,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		} else if (modelRequest.getOptions() != null && modelRequest.getOptions().getToolCallbacks() != null) {
 			toolCallbacks.addAll(modelRequest.getOptions().getToolCallbacks());
 		}
+
+
 
 		if (modelRequest == null || modelRequest.getTools() == null || modelRequest.getTools().isEmpty()) {
 			return toolCallbacks;

@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.utils;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import org.springframework.ai.chat.messages.AssistantMessage;
 
 import java.util.Map;
@@ -76,6 +77,46 @@ public class HookFactory {
                         });
                 System.out.println("╚════════════════════════════════════════════════════════════════╝");
                 return CompletableFuture.completedFuture(java.util.Map.of());
+            }
+        };
+    }
+
+    /**
+     * Create a LogModelHook that logs model execution before and after
+     * @return a ModelHook that logs model execution
+     */
+    public static ModelHook createLogModelHook() {
+        return new ModelHook() {
+            @Override
+            public String getName() {
+                return "log_model_hook";
+            }
+
+            @Override
+            public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+                System.out.println("╔════════════════════════════════════════════════════════════════╗");
+                System.out.println("║  [LOG HOOK] BEFORE MODEL EXECUTION                             ║");
+                System.out.println("╠════════════════════════════════════════════════════════════════╣");
+                System.out.println("║  Agent Name: " + (getAgentName() != null ? getAgentName() : "N/A"));
+                if (state.value("input").isPresent()) {
+                    String input = state.value("input").get().toString();
+                    if (input.length() > 50) {
+                        input = input.substring(0, 50) + "...";
+                    }
+                    System.out.println("║  Input: " + input);
+                }
+                System.out.println("╚════════════════════════════════════════════════════════════════╝");
+                return CompletableFuture.completedFuture(Map.of());
+            }
+
+            @Override
+            public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+                System.out.println("╔════════════════════════════════════════════════════════════════╗");
+                System.out.println("║  [LOG HOOK] AFTER MODEL EXECUTION                              ║");
+                System.out.println("╠════════════════════════════════════════════════════════════════╣");
+                System.out.println("║  Agent Name: " + (getAgentName() != null ? getAgentName() : "N/A"));
+                System.out.println("╚════════════════════════════════════════════════════════════════╝");
+                return CompletableFuture.completedFuture(Map.of());
             }
         };
     }
