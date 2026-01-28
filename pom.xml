@@ -146,6 +146,8 @@
         <opentelemetry.version>1.38.0</opentelemetry.version>
         <a2a-sdk.version>0.2.5.Beta2</a2a-sdk.version>
 
+        <graalvm.polyglot.version>24.2.1</graalvm.polyglot.version>
+
         <!-- CheckStyle Plugin -->
         <disable.checks>false</disable.checks>
         <testcontainers.version>1.21.3</testcontainers.version>

@@ -238,6 +238,7 @@ export default memo(function ApiPanel({
               .type === 'form-data' ? (
             <CustomInputsControl
               disabled={disabled}
+              variableList={variableList}
               onChange={(val) =>
                 changeNodeParam({
                   body: {
