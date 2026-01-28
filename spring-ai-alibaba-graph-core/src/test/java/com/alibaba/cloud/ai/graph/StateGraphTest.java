@@ -637,7 +637,7 @@ public class StateGraphTest {
 	 */
 	@Test
 	void testWithParallelBranchWithErrors() throws Exception {
-		var onlyOneTarget = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
+		var complexParallelPaths = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
 				.addNode("A1", makeNode("A1"))
 				.addNode("A2", makeNode("A2"))
 				.addNode("A3", makeNode("A3"))
@@ -653,9 +653,10 @@ public class StateGraphTest {
 				.addEdge(START, "A")
 				.addEdge("C", END);
 
-		var exception = assertThrows(GraphStateException.class, onlyOneTarget::compile);
-		assertEquals("parallel node [A] must have only one target, but [B, C] have been found!",
-				exception.getMessage());
+		var compiledGraph = complexParallelPaths.compile();
+		assertNotNull(compiledGraph, "Complex parallel paths should compile with subgraph feature");
+
+		GraphStateException exception;
 
 		var noConditionalEdge = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
 				.addNode("A1", makeNode("A1"))
