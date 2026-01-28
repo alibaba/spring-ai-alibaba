@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.agent.nacos;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +55,8 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 
 	NacosContextHolder agentVOHolder = new NacosContextHolder();
 	private NacosOptions nacosOptions;
+	
+	private List<ToolCallback> localTools = new ArrayList<>();
 
 	public NacosReactAgentBuilder nacosOptions(NacosOptions nacosOptions) {
 		this.nacosOptions = nacosOptions;
@@ -101,9 +104,15 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		//6.load mcp servers
 		McpServersVO mcpServersVO = NacosMcpToolsInjector.getMcpServersVO(nacosOptions);
 		agentVOHolder.setMcpServersVO(mcpServersVO);
-
-		this.tools = convert(nacosOptions, mcpServersVO);
-
+		
+		List<ToolCallback> allTools = new ArrayList<>();
+		this.localTools = gatherLocalTools();
+		List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO);
+		allTools.addAll(localTools);
+		if (mcpTools != null) {
+			allTools.addAll(mcpTools);
+		}
+		
 		//7. build tools
 		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
 				.chatClient(chatClient)
@@ -111,8 +120,8 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		if (outputKey != null && !outputKey.isEmpty()) {
 			llmNodeBuilder.outputKey(outputKey);
 		}
-		if (CollectionUtils.isNotEmpty(tools)) {
-			llmNodeBuilder.toolCallbacks(tools);
+		if (CollectionUtils.isNotEmpty(allTools)) {
+			llmNodeBuilder.toolCallbacks(allTools);
 		}
 		AgentLlmNode llmNode = llmNodeBuilder.build();
 
@@ -126,15 +135,13 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		}
 		AgentToolNode toolNode;
 		if (resolver != null) {
-			toolNode = builder.toolCallbackResolver(resolver).build();
+			builder.toolCallbackResolver(resolver);
 		}
-		else if (tools != null) {
-			toolNode = builder.toolCallbacks(tools).build();
+		if (CollectionUtils.isNotEmpty(allTools)) {
+			builder.toolCallbacks(allTools);
 		}
-		else {
-			toolNode = builder.build();
-		}
-
+		toolNode = builder.build();
+		
 		// register listeners.
 
 		//register model  listener
@@ -159,10 +166,13 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 						@Override
 						public void receiveConfigInfo(String configInfo) {
 							McpServersVO mcpServersVO = JSON.parseObject(configInfo, McpServersVO.class);
-							List<ToolCallback> toolCallbacks = convert(nacosOptions, mcpServersVO);
-							if (toolCallbacks != null) {
-								toolNode.setToolCallbacks(toolCallbacks);
-								llmNode.setToolCallbacks(toolCallbacks);
+							List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO);
+							if (mcpTools != null) {
+								List<ToolCallback> allTools = new ArrayList<>();
+								allTools.addAll(localTools);
+								allTools.addAll(mcpTools);
+								toolNode.setToolCallbacks(allTools);
+								llmNode.setToolCallbacks(allTools);
 							}
 
 						}
