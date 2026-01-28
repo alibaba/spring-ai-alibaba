@@ -688,15 +688,13 @@ public class StateGraphTest {
 				.addEdge("A", "A3")
 				.addEdge("A1", "B")
 				.addEdge("A2", "B")
-				.addConditionalEdges("A3", edge_async(state -> "next"), Map.of("next", "B"))
+				.addEdge("A3", "B")
 				.addEdge("B", "C")
 				.addEdge(START, "A")
 				.addEdge("C", END);
 
-		exception = assertThrows(GraphStateException.class, noConditionalEdgeOnBranch::compile);
-		assertEquals(
-				"parallel node doesn't support conditional branch, but on [A] a conditional branch on [A3] have been found!",
-				exception.getMessage());
+		var compiledGraphWithParallelPaths = noConditionalEdgeOnBranch.compile();
+		assertNotNull(compiledGraphWithParallelPaths, "Parallel paths should compile with subgraph feature");
 
 		var noDuplicateTarget = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))
 				.addNode("A1", makeNode("A1"))
