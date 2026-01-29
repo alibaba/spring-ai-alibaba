@@ -45,15 +45,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_TOOL_NAME;
 import static com.alibaba.cloud.ai.graph.agent.DefaultBuilder.POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING;
+import static com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectConstants.FINISH_REASON_METADATA_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_ID_DEFAULT;
+import static org.springframework.ai.model.tool.ToolExecutionResult.FINISH_REASON;
 
 public class AgentToolNode implements NodeActionWithConfig {
 	private static final Logger logger = LoggerFactory.getLogger(AgentToolNode.class);
@@ -112,16 +115,21 @@ public class AgentToolNode implements NodeActionWithConfig {
 				logger.info("[ThreadId {}] Agent {} acting with {} tools.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, assistantMessage.getToolCalls().size());
 			}
 
+			Boolean returnDirect = null;
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				// Execute tool call with interceptor chain
 				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall);
 				toolResponses.add(response.toToolResponse());
+				returnDirect = shouldReturnDirect(toolCall, returnDirect);
 			}
 
-			ToolResponseMessage toolResponseMessage =
-					ToolResponseMessage.builder()
-							.responses(toolResponses)
-							.build();
+			ToolResponseMessage.Builder builder = ToolResponseMessage.builder()
+					.responses(toolResponses);
+			if (returnDirect != null && returnDirect) {
+				builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+			}
+			ToolResponseMessage toolResponseMessage = builder.build();
+
 			if (enableActingLog) {
 				logger.info("[ThreadId {}] Agent {} acting returned: {}", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, toolResponseMessage);
 			}
@@ -147,19 +155,29 @@ public class AgentToolNode implements NodeActionWithConfig {
 				logger.info("[ThreadId {}] Agent {} acting with {} tools ({} tools provided results).", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, assistantMessage.getToolCalls().size(), existingResponses.size());
 			}
 
+			Boolean returnDirect = null;
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				if (executedToolIds.contains(toolCall.id())) {
+					// For already executed tools, check their returnDirect status
+					returnDirect = shouldReturnDirect(toolCall, returnDirect);
 					continue;
 				}
 
 				// Execute tool call with interceptor chain
 				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall);
 				allResponses.add(response.toToolResponse());
+				returnDirect = shouldReturnDirect(toolCall, returnDirect);
 			}
 
 			List<Object> newMessages = new ArrayList<>();
-			ToolResponseMessage newToolResponseMessage =
-					ToolResponseMessage.builder().responses(allResponses).build();
+
+			ToolResponseMessage.Builder builder = ToolResponseMessage.builder()
+					.responses(allResponses);
+			if (returnDirect != null && returnDirect) {
+				builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+			}
+			ToolResponseMessage newToolResponseMessage = builder.build();
+
 			newMessages.add(newToolResponseMessage);
 			newMessages.add(new RemoveByHash<>(toolResponseMessage));
 			updatedState.put("messages", newMessages);
@@ -180,6 +198,23 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Merge extra state from tool calls
 		updatedState.putAll(extraStateFromToolCall);
 		return updatedState;
+	}
+
+	@NotNull
+	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect) {
+		String toolName = toolCall.name();
+		ToolCallback toolCallback = toolCallbacks.stream()
+				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
+				.findFirst()
+				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
+
+		if (returnDirect == null) {
+			returnDirect = toolCallback.getToolMetadata().returnDirect();
+		}
+		else {
+			returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
+		}
+		return returnDirect;
 	}
 
 	/**
