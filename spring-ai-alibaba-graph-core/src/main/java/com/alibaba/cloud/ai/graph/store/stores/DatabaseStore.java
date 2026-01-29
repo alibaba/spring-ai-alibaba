@@ -77,20 +77,24 @@ public class DatabaseStore extends BaseStore {
 			String namespaceJson = objectMapper.writeValueAsString(item.getNamespace());
 			String valueJson = objectMapper.writeValueAsString(item.getValue());
 
-			// Use MERGE for H2 compatibility instead of ON DUPLICATE KEY UPDATE
-			String sql = "MERGE INTO " + tableName + " (id, namespace, key_name, value_json, created_at, updated_at) "
-					+ "KEY(id) VALUES (?, ?, ?, ?, ?, ?)";
+			try (Connection conn = dataSource.getConnection()) {
+				String deleteSql = "DELETE FROM " + tableName + " WHERE id = ?";
+				try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+					deleteStmt.setString(1, itemId);
+					deleteStmt.executeUpdate();
+				}
 
-			try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-				stmt.setString(1, itemId);
-				stmt.setString(2, namespaceJson);
-				stmt.setString(3, item.getKey());
-				stmt.setString(4, valueJson);
-				stmt.setTimestamp(5, new Timestamp(item.getCreatedAt()));
-				stmt.setTimestamp(6, new Timestamp(item.getUpdatedAt()));
-
-				stmt.executeUpdate();
+				String insertSql = "INSERT INTO " + tableName
+						+ " (id, namespace, key_name, value_json, created_at, updated_at) " + "VALUES (?, ?, ?, ?, ?, ?)";
+				try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+					insertStmt.setString(1, itemId);
+					insertStmt.setString(2, namespaceJson);
+					insertStmt.setString(3, item.getKey());
+					insertStmt.setString(4, valueJson);
+					insertStmt.setTimestamp(5, new Timestamp(item.getCreatedAt()));
+					insertStmt.setTimestamp(6, new Timestamp(item.getUpdatedAt()));
+					insertStmt.executeUpdate();
+				}
 			}
 		}
 		catch (Exception e) {
@@ -276,19 +280,19 @@ public class DatabaseStore extends BaseStore {
 	/**
 	 * Initialize database table.
 	 */
-    private void initializeTable() {
-        // Create table with database-agnostic SQL
-        String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + "id TEXT PRIMARY KEY, "
-                + "namespace TEXT, " + "key_name VARCHAR(500), " + "value_json TEXT, " + "created_at TIMESTAMP, "
-                + "updated_at TIMESTAMP" + ")";
+	private void initializeTable() {
+		// Create table with database-agnostic SQL
+		String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + "id VARCHAR(500) PRIMARY KEY, "
+				+ "namespace TEXT, " + "key_name VARCHAR(500), " + "value_json TEXT, " + "created_at TIMESTAMP, "
+				+ "updated_at TIMESTAMP" + ")";
 
-        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
-        }
-        catch (SQLException e) {
-            throw new RuntimeException("Failed to initialize table", e);
-        }
-    }
+		try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
+			stmt.executeUpdate(sql);
+		}
+		catch (SQLException e) {
+			throw new RuntimeException("Failed to initialize table", e);
+		}
+	}
 
 	/**
 	 * Create item ID from namespace and key.
