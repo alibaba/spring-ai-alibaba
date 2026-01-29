@@ -27,6 +27,11 @@ package com.alibaba.cloud.ai.graph.agent;
  * @since 1.0.0
  */
 public interface Prioritized {
+
+	int HIGHEST_PRECEDENCE = Integer.MIN_VALUE;
+
+	int LOWEST_PRECEDENCE = Integer.MAX_VALUE;
+
 	/**
 	 * Returns the order value for this object.
 	 * <p>

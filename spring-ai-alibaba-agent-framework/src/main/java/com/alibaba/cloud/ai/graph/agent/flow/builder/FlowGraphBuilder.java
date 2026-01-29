@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2026 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class FlowGraphBuilder {
 	 * @throws GraphStateException if graph construction fails
 	 */
 	public static StateGraph buildGraph(String strategyType, FlowGraphConfig config) throws GraphStateException {
-		FlowGraphBuildingStrategy strategy = FlowGraphBuildingStrategyRegistry.getInstance().getStrategy(strategyType);
+		FlowGraphBuildingStrategy strategy = FlowGraphBuildingStrategyRegistry.getInstance().createStrategy(strategyType);
 		strategy.validateConfig(config);
 		return strategy.buildGraph(config);
 	}

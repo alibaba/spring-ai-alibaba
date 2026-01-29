@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook.skills;
+package com.alibaba.cloud.ai.graph.skills;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Metadata for a Claude-style Skill.
- * 
+ *
  * A Skill is a reusable package of instructions and context that extends the LLM's capabilities.
  * Skills are automatically discovered and used by the LLM when relevant to the user's request.
  */
@@ -35,15 +33,15 @@ public class SkillMetadata {
 
 	private String skillPath;
 
-	private List<String> allowedTools;
+	private String source;
 
-	private String model;
-
-	// Lazy-loaded full content
 	private String fullContent;
 
 	public SkillMetadata() {
-		this.allowedTools = new ArrayList<>();
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public String getName() {
@@ -70,61 +68,52 @@ public class SkillMetadata {
 		this.skillPath = skillPath;
 	}
 
-	public List<String> getAllowedTools() {
-		return allowedTools;
+	public String getSource() {
+		return source;
 	}
 
-	public void setAllowedTools(List<String> allowedTools) {
-		this.allowedTools = allowedTools != null ? allowedTools : new ArrayList<>();
+	public void setSource(String source) {
+		this.source = source;
 	}
 
-	public String getModel() {
-		return model;
+	public String getFullContent() {
+		return fullContent;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	/**
-	 * Load the full content of the SKILL.md file.
-	 * The content is cached after the first load (lazy loading).
-	 * 
-	 * @return the full content of SKILL.md (without frontmatter)
-	 * @throws IOException if the skill file cannot be read
-	 */
 	public String loadFullContent() throws IOException {
 		if (fullContent == null) {
 			Path skillFile = Path.of(skillPath, "SKILL.md");
 			if (!Files.exists(skillFile)) {
 				throw new IOException("SKILL.md not found at: " + skillFile);
 			}
-			
+
 			String rawContent = Files.readString(skillFile);
 			fullContent = removeFrontmatter(rawContent);
 		}
 		return fullContent;
 	}
 
-	/**
-	 * Remove YAML frontmatter from the skill content.
-	 * Frontmatter is delimited by --- at the start and end.
-	 */
 	private String removeFrontmatter(String content) {
 		if (!content.startsWith("---")) {
 			return content;
 		}
-		
+
 		int endIndex = content.indexOf("---", 3);
 		if (endIndex == -1) {
 			return content;
 		}
-		
+
 		return content.substring(endIndex + 3).trim();
 	}
 
-	public static Builder builder() {
-		return new Builder();
+	@Override
+	public String toString() {
+		return "SkillMetadata{" +
+				"name='" + name + '\'' +
+				", description='" + description + '\'' +
+				", skillPath='" + skillPath + '\'' +
+				", source='" + source + '\'' +
+				'}';
 	}
 
 	public static class Builder {
@@ -145,13 +134,13 @@ public class SkillMetadata {
 			return this;
 		}
 
-		public Builder allowedTools(List<String> allowedTools) {
-			metadata.allowedTools = allowedTools != null ? new ArrayList<>(allowedTools) : new ArrayList<>();
+		public Builder source(String source) {
+			metadata.source = source;
 			return this;
 		}
 
-		public Builder model(String model) {
-			metadata.model = model;
+		public Builder fullContent(String fullContent) {
+			metadata.fullContent = fullContent;
 			return this;
 		}
 
@@ -167,16 +156,5 @@ public class SkillMetadata {
 			}
 			return metadata;
 		}
-	}
-
-	@Override
-	public String toString() {
-		return "SkillMetadata{" +
-				"name='" + name + '\'' +
-				", description='" + description + '\'' +
-				", skillPath='" + skillPath + '\'' +
-				", allowedTools=" + allowedTools +
-				", model='" + model + '\'' +
-				'}';
 	}
 }

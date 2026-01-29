@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallExecutionContext;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.ToolStreamingOutput;
@@ -28,6 +29,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
+import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallbackAdapter;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellableAsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
@@ -62,6 +64,7 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -78,10 +81,12 @@ import reactor.core.scheduler.Schedulers;
 
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_TOOL_NAME;
 import static com.alibaba.cloud.ai.graph.agent.DefaultBuilder.POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING;
+import static com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectConstants.FINISH_REASON_METADATA_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_ID_DEFAULT;
+import static org.springframework.ai.model.tool.ToolExecutionResult.FINISH_REASON;
 
 /**
  * Node that executes tool calls from assistant messages.
@@ -115,6 +120,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private final Duration toolExecutionTimeout;
 
+	private final boolean wrapSyncToolsAsAsync;
+
 	private List<ToolCallback> toolCallbacks;
 
 	private Map<String, Object> toolContext;
@@ -142,6 +149,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		this.parallelToolExecution = builder.parallelToolExecution;
 		this.maxParallelTools = builder.maxParallelTools;
 		this.toolExecutionTimeout = builder.toolExecutionTimeout;
+		this.wrapSyncToolsAsAsync = builder.wrapSyncToolsAsAsync;
 	}
 
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
@@ -191,21 +199,66 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	/**
 	 * Sequential execution of tool calls (original behavior).
+	 *
+	 * <p>
+	 * Each tool gets its own isolated state update map. This prevents a subsequent tool's
+	 * timeout from clearing state updates from previously successful tools. The isolation
+	 * is achieved by:
+	 * <ol>
+	 * <li>Creating a new {@code ConcurrentHashMap} for each tool execution</li>
+	 * <li>Immediately merging successful updates into {@code mergedUpdates}</li>
+	 * <li>If a tool times out, only its isolated map is cleared (line 549), not the
+	 * already-merged data</li>
+	 * </ol>
+	 * </p>
+	 *
+	 * <p>
+	 * This behavior is now consistent with parallel execution mode, which uses
+	 * {@link ToolStateCollector} for per-tool state isolation.
+	 * </p>
+	 *
+	 * <h3>State Merge Semantics</h3>
+	 * <p>
+	 * Sequential mode uses <b>last-write-wins</b> semantics for state updates. When
+	 * multiple tools write to the same key, the last tool's value overwrites previous
+	 * values. This preserves the original behavior from before parallel execution was
+	 * introduced.
+	 * </p>
+	 * <p>
+	 * Note: This differs from parallel execution mode, which respects
+	 * {@link com.alibaba.cloud.ai.graph.KeyStrategy} for merge operations. If you
+	 * need deterministic merge behavior (e.g., APPEND for lists), use parallel execution
+	 * mode instead.
+	 * </p>
+	 *
+	 * @see #executeToolCallsParallel(List, OverAllState, RunnableConfig)
 	 */
 	private Map<String, Object> executeToolCallsSequential(List<AssistantMessage.ToolCall> toolCalls,
 			OverAllState state, RunnableConfig config) {
 
 		Map<String, Object> updatedState = new HashMap<>();
-		Map<String, Object> extraStateFromToolCall = new HashMap<>();
+		Map<String, Object> mergedUpdates = new HashMap<>(); // Accumulated results from successful tools
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 
+		Boolean returnDirect = null;
 		for (AssistantMessage.ToolCall toolCall : toolCalls) {
-			ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config,
-					extraStateFromToolCall);
+			// Each tool gets its own isolated update map
+			// If this tool times out, clear() only affects this map, not mergedUpdates
+			Map<String, Object> toolSpecificUpdate = new ConcurrentHashMap<>();
+			ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, toolSpecificUpdate,
+					false);
 			toolResponses.add(response.toToolResponse());
+			returnDirect = shouldReturnDirect(toolCall, returnDirect);
+			// Merge immediately - subsequent timeout clear() won't affect already-merged data
+			mergedUpdates.putAll(toolSpecificUpdate);
 		}
 
-		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder().responses(toolResponses).build();
+		ToolResponseMessage.Builder builder = ToolResponseMessage.builder()
+				.responses(toolResponses);
+		if (returnDirect != null && returnDirect) {
+			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+		}
+		ToolResponseMessage toolResponseMessage = builder.build();
 
 		if (enableActingLog) {
 			logger.info("[ThreadId {}] Agent {} acting returned: {}", config.threadId().orElse(THREAD_ID_DEFAULT),
@@ -213,7 +266,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		}
 
 		updatedState.put("messages", toolResponseMessage);
-		updatedState.putAll(extraStateFromToolCall);
+		updatedState.putAll(mergedUpdates);
 		return updatedState;
 	}
 
@@ -226,13 +279,42 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * should NOT directly modify collections retrieved from the state. Use the
 	 * {@code extraStateFromToolCall} map to write updates.
 	 * </p>
+	 *
+	 * <h3>State Merge Semantics</h3>
+	 * <p>
+	 * Parallel mode uses {@link ToolStateCollector} which respects the
+	 * {@link com.alibaba.cloud.ai.graph.KeyStrategy} configured for each state key.
+	 * This provides deterministic merge behavior even when multiple tools write to the
+	 * same key concurrently:
+	 * <ul>
+	 * <li>Keys with {@code APPEND} strategy: values from all tools are appended</li>
+	 * <li>Keys with {@code REPLACE} strategy: last value wins (non-deterministic order)</li>
+	 * </ul>
+	 * </p>
+	 * <p>
+	 * Note: This differs from sequential execution mode, which uses simple last-write-wins
+	 * semantics via {@code Map.putAll()}. The difference is intentional - parallel mode
+	 * was designed with KeyStrategy support from the start, while sequential mode preserves
+	 * the original behavior for backward compatibility.
+	 * </p>
+	 *
 	 * @param toolCalls the tool calls to execute
 	 * @param state the current state (will be snapshot for thread safety)
 	 * @param config the runtime configuration
 	 * @return the merged state updates from all tool executions
+	 * @see ToolStateCollector
+	 * @see #executeToolCallsSequential(List, OverAllState, RunnableConfig)
 	 */
 	private Map<String, Object> executeToolCallsParallel(List<AssistantMessage.ToolCall> toolCalls, OverAllState state,
 			RunnableConfig config) {
+
+		// Log debug message when wrapSyncToolsAsAsync is enabled but ignored in parallel
+		// mode
+		if (wrapSyncToolsAsAsync && logger.isDebugEnabled()) {
+			logger.debug(
+					"Parallel execution mode: wrapSyncToolsAsAsync is ignored to avoid executor starvation. "
+							+ "Sync tools will execute directly within the parallel runAsync context.");
+		}
 
 		Executor executor = getToolExecutor(config);
 
@@ -248,6 +330,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 		AtomicReferenceArray<ToolCallResponse> orderedResponses = new AtomicReferenceArray<>(toolCalls.size());
 		List<Throwable> failures = java.util.Collections.synchronizedList(new ArrayList<>());
 
+		// Pre-create cancellation tokens for cancellable tools so they can be accessed
+		// from the exceptionally handler when outer timeout triggers
+		Map<Integer, DefaultCancellationToken> cancellationTokens = new ConcurrentHashMap<>();
+
 		// Use Semaphore to limit concurrency
 		Semaphore semaphore = new Semaphore(maxParallelTools);
 
@@ -261,7 +347,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 					semaphore.acquire();
 					try {
 						ToolCallResponse response = executeToolCallWithInterceptors(toolCall, stateSnapshot, config,
-								toolSpecificUpdate);
+								toolSpecificUpdate, true, cancellationTokens, index);
 						// CAS: only set if still null (not already timed out)
 						orderedResponses.compareAndSet(index, null, response);
 					}
@@ -286,6 +372,13 @@ public class AgentToolNode implements NodeActionWithConfig {
 					if (orderedResponses.compareAndSet(index, null, errorResponse)) {
 						if (cause instanceof TimeoutException) {
 							stateCollector.discardToolUpdateMap(index);
+							// Cancel the tool's cancellation token to notify it to stop gracefully
+							DefaultCancellationToken token = cancellationTokens.get(index);
+							if (token != null) {
+								token.cancel();
+								logger.debug("Cancelled tool {} at index {} due to outer timeout",
+										toolCall.name(), index);
+							}
 						}
 						failures.add(ex);
 					}
@@ -299,6 +392,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Build result - collect responses from AtomicReferenceArray
 		Map<String, Object> updatedState = new HashMap<>();
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
+		Boolean returnDirect = null;
 		for (int i = 0; i < orderedResponses.length(); i++) {
 			ToolCallResponse response = orderedResponses.get(i);
 			if (response == null) {
@@ -309,9 +403,14 @@ public class AgentToolNode implements NodeActionWithConfig {
 				logger.warn("Tool {} at index {} has null response, using error fallback", toolCall.name(), i);
 			}
 			toolResponses.add(response.toToolResponse());
+			returnDirect = shouldReturnDirect(toolCalls.get(i), returnDirect);
 		}
 
-		updatedState.put("messages", ToolResponseMessage.builder().responses(toolResponses).build());
+		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(toolResponses);
+		if (returnDirect != null && returnDirect) {
+			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+		}
+		updatedState.put("messages", builder.build());
 		updatedState.putAll(stateCollector.mergeAll());
 
 		if (enableActingLog) {
@@ -375,10 +474,20 @@ public class AgentToolNode implements NodeActionWithConfig {
 		List<ToolResponseMessage.ToolResponse> allResponses = new ArrayList<>(existingResponses);
 		allResponses.addAll(newToolResponseMessage.getResponses());
 
+		// Compute returnDirect from all tool calls (existing + remaining)
+		Boolean returnDirect = null;
+		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+			returnDirect = shouldReturnDirect(toolCall, returnDirect);
+		}
+
 		// Build final result
 		Map<String, Object> updatedState = new HashMap<>(newResults);
 		List<Object> newMessages = new ArrayList<>();
-		newMessages.add(ToolResponseMessage.builder().responses(allResponses).build());
+		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(allResponses);
+		if (returnDirect != null && returnDirect) {
+			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+		}
+		newMessages.add(builder.build());
 		newMessages.add(new RemoveByHash<>(toolResponseMessage));
 		updatedState.put("messages", newMessages);
 
@@ -390,18 +499,64 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return updatedState;
 	}
 
+	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect) {
+		String toolName = toolCall.name();
+		ToolCallback toolCallback = toolCallbacks.stream()
+				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
+				.findFirst()
+				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
+
+		if (returnDirect == null) {
+			returnDirect = toolCallback.getToolMetadata().returnDirect();
+		}
+		else {
+			returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
+		}
+		return returnDirect;
+	}
+
 	/**
 	 * Execute a tool call with interceptor chain support. Supports both sync and async
 	 * tool callbacks.
+	 * @param toolCall the tool call to execute
+	 * @param state the current state
+	 * @param config the runtime configuration
+	 * @param extraStateFromToolCall map to collect state updates from tool execution
+	 * @param inParallelExecution true if called from parallel execution context, false
+	 * for sequential
+	 * @return the tool call response
 	 */
 	private ToolCallResponse executeToolCallWithInterceptors(AssistantMessage.ToolCall toolCall, OverAllState state,
-			RunnableConfig config, Map<String, Object> extraStateFromToolCall) {
+			RunnableConfig config, Map<String, Object> extraStateFromToolCall, boolean inParallelExecution) {
+		return executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall, inParallelExecution,
+				null, -1);
+	}
+
+	/**
+	 * Execute a tool call with interceptor chain support, with optional cancellation
+	 * token tracking for parallel execution.
+	 * @param toolCall the tool call to execute
+	 * @param state the current state
+	 * @param config the runtime configuration
+	 * @param extraStateFromToolCall map to collect state updates from tool execution
+	 * @param inParallelExecution true if called from parallel execution context, false
+	 * for sequential
+	 * @param cancellationTokens optional map to store cancellation tokens for parallel
+	 * execution (may be null)
+	 * @param toolIndex the index of this tool in the parallel execution (used as key in
+	 * cancellationTokens)
+	 * @return the tool call response
+	 */
+	private ToolCallResponse executeToolCallWithInterceptors(AssistantMessage.ToolCall toolCall, OverAllState state,
+			RunnableConfig config, Map<String, Object> extraStateFromToolCall, boolean inParallelExecution,
+			Map<Integer, DefaultCancellationToken> cancellationTokens, int toolIndex) {
 
 		// Create ToolCallRequest
 		ToolCallRequest request = ToolCallRequest.builder()
-			.toolCall(toolCall)
-			.context(config.metadata().orElse(new HashMap<>()))
-			.build();
+				.toolCall(toolCall)
+				.context(config.metadata().orElse(new HashMap<>()))
+				.executionContext(new ToolCallExecutionContext(config, state))
+				.build();
 
 		// Create base handler that actually executes the tool
 		ToolCallHandler baseHandler = req -> {
@@ -431,7 +586,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 			}
 
 			// Route to async or sync execution based on callback type
-			return executeToolByType(toolCallback, req, toolContextMap, config, extraStateFromToolCall);
+			return executeToolByType(toolCallback, req, toolContextMap, config, extraStateFromToolCall,
+					inParallelExecution, cancellationTokens, toolIndex);
 		};
 
 		// Chain interceptors if any
@@ -443,17 +599,76 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	/**
 	 * Routes tool execution based on callback type.
-	 * Streaming tools take priority over async tools.
+	 *
+	 * <p>
+	 * Streaming tools take priority over async tools. When {@code wrapSyncToolsAsAsync}
+	 * is enabled and we are NOT in parallel execution mode, synchronous tools are
+	 * automatically wrapped using {@link AsyncToolCallbackAdapter} to enable async
+	 * execution. This allows all tools (including {@code @Tool} annotated methods,
+	 * {@code FunctionToolCallback}, {@code MethodToolCallback}, and MCP tools) to
+	 * benefit from the async execution infrastructure without requiring user code
+	 * changes.
+	 * </p>
+	 *
+	 * <p>
+	 * <b>Important:</b> In parallel execution mode ({@code inParallelExecution=true}),
+	 * the {@code wrapSyncToolsAsAsync} option is ignored. This is because the outer
+	 * {@code runAsync} in {@code executeToolCallsParallel} already provides concurrency,
+	 * and wrapping sync tools would cause executor starvation - the outer task occupies
+	 * a thread while waiting for the inner wrapped task to complete, which needs the
+	 * same thread pool.
+	 * </p>
+	 * @param toolCallback the tool callback to execute
+	 * @param request the tool call request
+	 * @param toolContextMap the tool context
+	 * @param config the runtime configuration
+	 * @param extraStateFromToolCall map to collect state updates
+	 * @param inParallelExecution true if called from parallel execution context
+	 * @return the tool call response
 	 */
 	private ToolCallResponse executeToolByType(ToolCallback toolCallback, ToolCallRequest request,
-			Map<String, Object> toolContextMap, RunnableConfig config, Map<String, Object> extraStateFromToolCall) {
+			Map<String, Object> toolContextMap, RunnableConfig config, Map<String, Object> extraStateFromToolCall,
+			boolean inParallelExecution) {
+		return executeToolByType(toolCallback, request, toolContextMap, config, extraStateFromToolCall,
+				inParallelExecution, null, -1);
+	}
+
+	/**
+	 * Routes tool execution based on callback type, with optional cancellation token
+	 * tracking.
+	 * @param toolCallback the tool callback to execute
+	 * @param request the tool call request
+	 * @param toolContextMap the tool context
+	 * @param config the runtime configuration
+	 * @param extraStateFromToolCall map to collect state updates
+	 * @param inParallelExecution true if called from parallel execution context
+	 * @param cancellationTokens optional map to store cancellation tokens for parallel
+	 * execution
+	 * @param toolIndex the index of this tool in the parallel execution
+	 * @return the tool call response
+	 */
+	private ToolCallResponse executeToolByType(ToolCallback toolCallback, ToolCallRequest request,
+			Map<String, Object> toolContextMap, RunnableConfig config, Map<String, Object> extraStateFromToolCall,
+			boolean inParallelExecution, Map<Integer, DefaultCancellationToken> cancellationTokens, int toolIndex) {
 
 		// Streaming tools take priority (they also implement AsyncToolCallback)
 		if (toolCallback instanceof StreamingToolCallback streaming) {
 			return executeStreamingToolBlocking(streaming, request, toolContextMap, config);
 		}
 		else if (toolCallback instanceof AsyncToolCallback async) {
-			return executeAsyncTool(async, request, toolContextMap, config, extraStateFromToolCall);
+			return executeAsyncTool(async, request, toolContextMap, config, extraStateFromToolCall, cancellationTokens,
+					toolIndex);
+		}
+		else if (wrapSyncToolsAsAsync && !inParallelExecution) {
+			// Wrap sync tool as async for unified async execution
+			// Only in sequential mode - parallel mode already has concurrency from outer
+			// runAsync
+			// Wrapping in parallel mode would cause executor starvation (deadlock)
+			Executor executor = getToolExecutor(config);
+			AsyncToolCallback wrappedAsync = AsyncToolCallbackAdapter.wrapIfNeeded(toolCallback, executor,
+					toolExecutionTimeout);
+			return executeAsyncTool(wrappedAsync, request, toolContextMap, config, extraStateFromToolCall,
+					cancellationTokens, toolIndex);
 		}
 		else {
 			return executeSyncTool(toolCallback, request, toolContextMap, config);
@@ -471,6 +686,38 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 */
 	private ToolCallResponse executeAsyncTool(AsyncToolCallback callback, ToolCallRequest request,
 			Map<String, Object> toolContextMap, RunnableConfig config, Map<String, Object> extraStateFromToolCall) {
+		return executeAsyncTool(callback, request, toolContextMap, config, extraStateFromToolCall, null, -1);
+	}
+
+	/**
+	 * Execute an async tool with timeout handling and optional external cancellation
+	 * token tracking.
+	 *
+	 * <p>
+	 * Supports {@link CancellableAsyncToolCallback} for cooperative cancellation. When a
+	 * tool implements this interface, a real cancellation token is created and passed to
+	 * the tool. On timeout, the token is cancelled to allow the tool to stop gracefully.
+	 * </p>
+	 *
+	 * <p>
+	 * When called from parallel execution context, the cancellation token is also stored
+	 * in the provided {@code cancellationTokens} map so that the outer timeout handler
+	 * can cancel it if needed.
+	 * </p>
+	 * @param callback the async tool callback to execute
+	 * @param request the tool call request
+	 * @param toolContextMap the tool context
+	 * @param config the runtime configuration
+	 * @param extraStateFromToolCall map to collect state updates from tool execution
+	 * @param cancellationTokens optional map to store cancellation tokens for parallel
+	 * execution (may be null)
+	 * @param toolIndex the index of this tool in the parallel execution (used as key in
+	 * cancellationTokens)
+	 * @return the tool call response
+	 */
+	private ToolCallResponse executeAsyncTool(AsyncToolCallback callback, ToolCallRequest request,
+			Map<String, Object> toolContextMap, RunnableConfig config, Map<String, Object> extraStateFromToolCall,
+			Map<Integer, DefaultCancellationToken> cancellationTokens, int toolIndex) {
 
 		ToolContext context = new ToolContext(toolContextMap);
 
@@ -483,6 +730,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 			// Route based on callback type - use real token for cancellable tools
 			if (callback instanceof CancellableAsyncToolCallback cancellable) {
 				cancellationToken = new DefaultCancellationToken();
+				// Store the token in the external map so outer timeout handler can cancel it
+				if (cancellationTokens != null && toolIndex >= 0) {
+					cancellationTokens.put(toolIndex, cancellationToken);
+				}
 				future = cancellable.callAsync(request.getArguments(), context, cancellationToken);
 			}
 			else {
@@ -517,20 +768,21 @@ public class AgentToolNode implements NodeActionWithConfig {
 				}
 				extraStateFromToolCall.clear();
 				logger.warn("Async tool {} timed out, discarding any state updates", request.getToolName());
+				return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(cause));
 			}
-
-			if (cause instanceof ToolExecutionException toolExecutionException) {
+			else if (cause instanceof ToolExecutionException toolExecutionException) {
 				logger.error("Async tool {} execution failed, handling with processor: {}", request.getToolName(),
 						toolExecutionExceptionProcessor.getClass().getName(), toolExecutionException);
 				String result = toolExecutionExceptionProcessor.process(toolExecutionException);
 				return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), result);
 			}
-
-			logger.error("Async tool {} execution failed: {}", request.getToolName(), cause.getMessage(), cause);
-			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(cause));
+			else {
+				logger.error("Async tool {} execution failed: {}", request.getToolName(), cause.getMessage(), cause);
+				return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(cause));
+			}
 		}
 		catch (CancellationException e) {
-			logger.error("Async tool {} execution was cancelled", request.getToolName(), e);
+			logger.warn("Async tool {} execution was cancelled", request.getToolName(), e);
 			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(e));
 		}
 		catch (Exception e) {
@@ -813,6 +1065,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * Extract a user-friendly error message from an exception.
 	 */
 	private String extractErrorMessage(Throwable error) {
+		if (error == null) {
+			return "Unknown error";
+		}
 		if (error instanceof TimeoutException) {
 			return "Tool execution timed out";
 		}
@@ -862,6 +1117,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 		private int maxParallelTools = 5;
 
 		private Duration toolExecutionTimeout = Duration.ofMinutes(5);
+
+		private boolean wrapSyncToolsAsAsync = false;
 
 		private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
@@ -917,6 +1174,30 @@ public class AgentToolNode implements NodeActionWithConfig {
 		 */
 		public Builder toolExecutionTimeout(Duration timeout) {
 			this.toolExecutionTimeout = timeout;
+			return this;
+		}
+
+		/**
+		 * Enable automatic wrapping of synchronous tools as async.
+		 *
+		 * <p>
+		 * When enabled, synchronous tools (such as {@code @Tool} annotated methods,
+		 * {@code FunctionToolCallback}, {@code MethodToolCallback}, and MCP tools) are
+		 * automatically wrapped using {@link AsyncToolCallbackAdapter} to enable async
+		 * execution. This allows all tools to benefit from the async execution
+		 * infrastructure without requiring user code changes.
+		 * </p>
+		 *
+		 * <p>
+		 * This is especially useful when combined with {@link #parallelToolExecution(boolean)}
+		 * to enable parallel execution of multiple tool calls.
+		 * </p>
+		 * @param wrap true to enable automatic wrapping (default: false)
+		 * @return this builder
+		 * @see AsyncToolCallbackAdapter
+		 */
+		public Builder wrapSyncToolsAsAsync(boolean wrap) {
+			this.wrapSyncToolsAsAsync = wrap;
 			return this;
 		}
 

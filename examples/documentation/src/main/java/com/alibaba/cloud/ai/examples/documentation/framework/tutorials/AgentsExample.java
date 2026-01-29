@@ -46,6 +46,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.template.StringTemplateRenderer;
+import org.springframework.ai.template.TemplateRenderer;
+import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -183,6 +186,76 @@ public class AgentsExample {
 
 	// ==================== System Prompt ====================
 
+	/**
+	 * 示例6.5：使用自定义 TemplateRenderer 定制占位符分隔符
+	 *
+	 * 展示如何使用 StringTemplateRenderer.builder() 来定制占位符的起始和结束分隔符。
+	 * 默认使用 {variable}，这里演示使用 {{variable}} 作为占位符。
+	 */
+	public static void customTemplateRendererExample() throws GraphRunnerException {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		// 使用 StringTemplateRenderer.builder() 创建自定义分隔符的 TemplateRenderer
+		// 使用 {{ 和 }} 作为占位符分隔符
+		TemplateRenderer customRenderer = StringTemplateRenderer.builder()
+				.startDelimiterToken("{{")
+				.endDelimiterToken("}}")
+				.build();
+
+		// 使用自定义分隔符的 systemPrompt
+		String systemPrompt = """
+				你是一个专业的{{role}}助手。
+				你的专业领域是{{domain}}。
+				请用{{language}}语言回答用户的问题。
+				""";
+
+		// 使用自定义分隔符的 instruction
+		String instruction = """
+				用户询问的主题是：{{topic}}
+				请根据以下要求回答：
+				1. 保持专业性
+				2. 提供具体示例
+				3. 语言要{{style}}
+				""";
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("custom_template_agent")
+				.model(chatModel)
+				.systemPrompt(systemPrompt)
+				.instruction(instruction)
+				.templateRenderer(customRenderer)
+				.build();
+
+		// 使用时，状态中的变量会自动替换 {{ }} 包裹的占位符
+		Map<String, Object> inputs = Map.of(
+				"input", "请介绍一下Spring框架的核心特性",
+				"role", "技术专家",
+				"domain", "Java企业级开发",
+				"language", "中文",
+				"topic", "Spring框架",
+				"style", "简洁易懂"
+		);
+
+		Optional<OverAllState> result = agent.invoke(inputs);
+		if (result.isPresent()) {
+			List<Message> messages = (List<Message>) result.get().value("messages").orElse(List.of());
+			for (Message message : messages) {
+				if (message instanceof AssistantMessage) {
+					System.out.println("Agent回复: " + ((AssistantMessage) message).getText());
+				}
+			}
+		}
+	}
+
+	/**
+	 * 示例7：动态 System Prompt
+	 */
 	public static void dynamicSystemPrompt() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
 				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))

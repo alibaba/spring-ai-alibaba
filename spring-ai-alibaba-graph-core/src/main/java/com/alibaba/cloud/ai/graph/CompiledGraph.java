@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.internal.node.ConditionalParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
@@ -38,7 +39,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,9 +48,6 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.Edges;
-import static com.alibaba.cloud.ai.graph.StateGraph.Nodes;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
@@ -148,7 +145,53 @@ public class CompiledGraph {
 		for (var e : processedData.edges().elements) {
 			var targets = e.targets();
 			if (targets.size() == 1) {
-				edges.put(e.sourceId(), targets.get(0));
+				var target = targets.get(0);
+				// Check if this is a conditional edge
+				if (target.value() != null) {
+					var edgeCondition = target.value();
+					// Check if this is a multi-command action (returns multiple nodes)
+					if (edgeCondition.isMultiCommand()) {
+						// Multi-command action - create ConditionalParallelNode for parallel execution
+						var conditionalParallelNode = new ConditionalParallelNode(
+								e.sourceId(),
+								edgeCondition,
+								nodeFactories,
+								keyStrategyMap,
+								compileConfig);
+
+						nodeFactories.put(conditionalParallelNode.id(), conditionalParallelNode.actionFactory());
+						edges.put(e.sourceId(), new EdgeValue(conditionalParallelNode.id()));
+
+						// Find parallel node targets from mappings
+						var mappedNodeIds = edgeCondition.mappings().values().stream()
+								.collect(Collectors.toSet());
+
+						// Validate that all mapped nodes exist in the graph
+						var missingNodeIds = mappedNodeIds.stream()
+								.filter(nodeId -> !nodeFactories.containsKey(nodeId))
+								.collect(Collectors.toSet());
+						if (!missingNodeIds.isEmpty()) {
+							throw new GraphStateException("Conditional multi-command mapping from node '"
+									+ e.sourceId() + "' references unknown target nodes: " + missingNodeIds);
+						}
+
+						var parallelNodeTargets = findParallelNodeTargets(mappedNodeIds);
+						if (!parallelNodeTargets.isEmpty()) {
+							// Set edge from ConditionalParallelNode to the next node
+							// All parallel nodes point to the same target, use that target
+							edges.put(conditionalParallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
+						} else {
+							throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), 0);
+						}
+						// The ConditionalParallelNode will handle parallel execution internally
+					} else {
+						// Single Command action - same as regular single target edge
+						edges.put(e.sourceId(), target);
+					}
+				} else {
+					// Regular single target edge (no condition)
+					edges.put(e.sourceId(), target);
+				}
 			} else {
 				Supplier<Stream<EdgeValue>> parallelNodeStream = () -> targets.stream()
 						.filter(target -> nodeFactories.containsKey(target.id()));
@@ -193,17 +236,17 @@ public class CompiledGraph {
 
 				var actionNodeIds = targetList.stream().map(EdgeValue::id).toList();
 
-				var parallelNode = new ParallelNode(e.sourceId(), actions, actionNodeIds, keyStrategyMap,
+				var targetNodeId = parallelNodeTargets.iterator().next();
+				var parallelNode = new ParallelNode(e.sourceId(), targetNodeId, actions, actionNodeIds, keyStrategyMap,
 						compileConfig);
 
 				nodeFactories.put(parallelNode.id(), parallelNode.actionFactory());
 
 				edges.put(e.sourceId(), new EdgeValue(parallelNode.id()));
 
-				edges.put(parallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
+				edges.put(parallelNode.id(), new EdgeValue(targetNodeId));
 
 			}
-
 		}
 	}
 
@@ -297,6 +340,29 @@ public class CompiledGraph {
 		return updateState(config, values, null);
 	}
 
+	/**
+	 * Finds the target nodes for a set of source node IDs by looking up their edges.
+	 * This is used to determine where parallel nodes should route after execution.
+	 * Similar to the logic used for ParallelNode.
+	 * 
+	 * @param sourceNodeIds the set of source node IDs to find targets for
+	 * @return a set of target node IDs that the source nodes point to
+	 */
+	private Set<String> findParallelNodeTargets(Set<String> sourceNodeIds) {
+		var parallelNodeEdges = sourceNodeIds.stream()
+				.map(nodeId -> new Edge(nodeId))  // Create Edge object with nodeId as source
+				.filter(ee -> processedData.edges().elements.contains(ee))
+				.map(ee -> processedData.edges().elements.indexOf(ee))
+				.map(index -> processedData.edges().elements.get(index))
+				.toList();
+
+		return parallelNodeEdges.stream()
+				.map(ee -> ee.target().id())
+				.filter(Objects::nonNull)
+				.collect(Collectors.toSet());
+	}
+
+
 	private Command nextNodeId(EdgeValue route, Map<String, Object> state, String nodeId, RunnableConfig config)
 			throws Exception {
 
@@ -308,19 +374,27 @@ public class CompiledGraph {
 		}
 		if (route.value() != null) {
 			OverAllState derefState = stateGraph.getStateFactory().apply(state);
+			var edgeCondition = route.value();
 
-			var command = route.value().action().apply(derefState, config).get();
+			// Check if this is a multi-command action
+			if (edgeCondition.isMultiCommand()) {
+				// Multi-command action - route to ConditionalParallelNode
+				String conditionalParallelNodeId = ParallelNode.formatNodeId(nodeId);
+				return new Command(conditionalParallelNodeId, state);
+			} else {
+				// Single Command action
+				var singleAction = edgeCondition.singleAction();
+				var command = singleAction.apply(derefState, config).get();
 
-			var newRoute = command.gotoNode();
+				var newRoute = command.gotoNode();
+				String result = route.value().mappings().get(newRoute);
+				if (result == null) {
+					throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+				}
 
-			String result = route.value().mappings().get(newRoute);
-			if (result == null) {
-				throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+				var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
+				return new Command(result, currentState);
 			}
-
-			var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
-
-			return new Command(result, currentState);
 		}
 		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}
@@ -701,145 +775,3 @@ public class CompiledGraph {
 
 }
 
-/**
- * The type Processed nodes edges and config.
- */
-record ProcessedNodesEdgesAndConfig(Nodes nodes, Edges edges, Set<String> interruptsBefore,
-		Set<String> interruptsAfter, Map<String, KeyStrategy> keyStrategyMap) {
-
-	/**
-	 * Instantiates a new Processed nodes edges and config.
-	 * 
-	 * @param stateGraph the state graph
-	 * @param config     the config
-	 */
-	ProcessedNodesEdgesAndConfig(StateGraph stateGraph, CompileConfig config) {
-		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter(), Map.of());
-	}
-
-	/**
-	 * Process processed nodes edges and config.
-	 * 
-	 * @param stateGraph the state graph
-	 * @param config     the config
-	 * @return the processed nodes edges and config
-	 * @throws GraphStateException the graph state exception
-	 */
-	static ProcessedNodesEdgesAndConfig process(StateGraph stateGraph, CompileConfig config)
-			throws GraphStateException {
-
-		var subgraphNodes = stateGraph.nodes.onlySubStateGraphNodes();
-
-		if (subgraphNodes.isEmpty()) {
-			return new ProcessedNodesEdgesAndConfig(stateGraph, config);
-		}
-
-		var interruptsBefore = config.interruptsBefore();
-		var interruptsAfter = config.interruptsAfter();
-		var nodes = new Nodes(stateGraph.nodes.exceptSubStateGraphNodes());
-		var edges = new Edges(stateGraph.edges.elements);
-
-		Map<String, KeyStrategy> keyStrategyMap = new LinkedHashMap<>();
-
-		for (var subgraphNode : subgraphNodes) {
-
-			var sgWorkflow = subgraphNode.subGraph();
-
-            // Merges keyStrategies of this subgraph.
-            subgraphNode.keyStrategies().forEach(keyStrategyMap::putIfAbsent);
-            // Merges the keyStrategyMap aggregated from recursive subgraphs.
-            ProcessedNodesEdgesAndConfig processedSubGraph = process(sgWorkflow, config);
-            processedSubGraph.keyStrategyMap().forEach(keyStrategyMap::putIfAbsent);
-
-			Nodes processedSubGraphNodes = processedSubGraph.nodes;
-			Edges processedSubGraphEdges = processedSubGraph.edges;
-
-			//
-			// Process START Node
-			//
-			var sgEdgeStart = processedSubGraphEdges.edgeBySourceId(START).orElseThrow();
-
-			if (sgEdgeStart.isParallel()) {
-				throw new GraphStateException("subgraph not support start with parallel branches yet!");
-			}
-
-			var sgEdgeStartTarget = sgEdgeStart.target();
-
-			if (sgEdgeStartTarget.id() == null) {
-				throw new GraphStateException(format("the target for node '%s' is null!", subgraphNode.id()));
-			}
-
-			var sgEdgeStartRealTargetId = subgraphNode.formatId(sgEdgeStartTarget.id());
-
-			// Process Interruption (Before) Subgraph(s)
-			interruptsBefore = interruptsBefore.stream()
-					.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId
-							: interrupt)
-					.collect(Collectors.toUnmodifiableSet());
-
-			var edgesWithSubgraphTargetId = edges.edgesByTargetId(subgraphNode.id());
-
-			if (edgesWithSubgraphTargetId.isEmpty()) {
-				throw new GraphStateException(
-						format("the node '%s' is not present as target in graph!", subgraphNode.id()));
-			}
-
-			for (var edgeWithSubgraphTargetId : edgesWithSubgraphTargetId) {
-
-				var newEdge = edgeWithSubgraphTargetId.withSourceAndTargetIdsUpdated(subgraphNode, Function.identity(),
-						id -> new EdgeValue((Objects.equals(id, subgraphNode.id())
-								? subgraphNode.formatId(sgEdgeStartTarget.id())
-								: id)));
-				edges.elements.remove(edgeWithSubgraphTargetId);
-				edges.elements.add(newEdge);
-			}
-			//
-			// Process END Nodes
-			//
-			var sgEdgesEnd = processedSubGraphEdges.edgesByTargetId(END);
-
-			var edgeWithSubgraphSourceId = edges.edgeBySourceId(subgraphNode.id()).orElseThrow();
-
-			if (edgeWithSubgraphSourceId.isParallel()) {
-				throw new GraphStateException("subgraph not support routes to parallel branches yet!");
-			}
-
-			// Process Interruption (After) Subgraph(s)
-			if (interruptsAfter.contains(subgraphNode.id())) {
-
-				var exceptionMessage = (edgeWithSubgraphSourceId.target()
-						.id() == null) ? "'interruption after' on subgraph is not supported yet!"
-								: format(
-										"'interruption after' on subgraph is not supported yet! consider to use 'interruption before' node: '%s'",
-										edgeWithSubgraphSourceId.target().id());
-				throw new GraphStateException(exceptionMessage);
-			}
-
-			sgEdgesEnd.stream()
-					.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-							id -> (Objects.equals(id, END) ? edgeWithSubgraphSourceId.target()
-									: new EdgeValue(subgraphNode.formatId(id)))))
-					.forEach(edges.elements::add);
-			edges.elements.remove(edgeWithSubgraphSourceId);
-
-			//
-			// Process edges
-			//
-			processedSubGraphEdges.elements.stream()
-					.filter(e -> !Objects.equals(e.sourceId(), START))
-					.filter(e -> !e.anyMatchByTargetId(END))
-					.map(e -> e.withSourceAndTargetIdsUpdated(subgraphNode, subgraphNode::formatId,
-							id -> new EdgeValue(subgraphNode.formatId(id))))
-					.forEach(edges.elements::add);
-
-			//
-			// Process nodes
-			//
-			processedSubGraphNodes.elements.stream().map(n -> {
-				return n.withIdUpdated(subgraphNode::formatId);
-			}).forEach(nodes.elements::add);
-		}
-
-		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter, keyStrategyMap);
-	}
-}
