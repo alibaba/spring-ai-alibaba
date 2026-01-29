@@ -59,6 +59,11 @@ public abstract class MessagesModelHook implements Hook {
 		this.agent = agent;
 	}
 
+	@Override
+	public int getOrder() {
+		return 0;
+	}
+
 	/**
 	 * Creates a BeforeModelAction instance for the given MessagesModelHook.
 	 * @param hook the MessagesModelHook instance to proxy

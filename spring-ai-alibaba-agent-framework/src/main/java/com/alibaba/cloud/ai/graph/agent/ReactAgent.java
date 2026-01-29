@@ -69,6 +69,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -445,9 +446,7 @@ public class ReactAgent extends BaseAgent {
 		}
 		
 		// Sort prioritized hooks by their order
-		prioritizedHooks.sort((h1, h2) -> Integer.compare(
-				((Prioritized) h1).getOrder(),
-				((Prioritized) h2).getOrder()));
+		prioritizedHooks.sort(Comparator.comparingInt(h -> ((Prioritized) h).getOrder()));
 		
 		// Combine: prioritized hooks first (sorted), then non-prioritized hooks (original order)
 		List<Hook> result = new ArrayList<>(prioritizedHooks);
