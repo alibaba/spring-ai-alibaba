@@ -237,7 +237,12 @@ public class DefaultBuilder extends Builder {
 
 		// Setup tool node with all available tools
 		AgentToolNode toolNode;
-		AgentToolNode.Builder toolBuilder = AgentToolNode.builder().agentName(this.name);
+		AgentToolNode.Builder toolBuilder = AgentToolNode.builder()
+				.agentName(this.name)
+				.parallelToolExecution(this.parallelToolExecution)
+				.maxParallelTools(this.maxParallelTools)
+				.toolExecutionTimeout(this.toolExecutionTimeout)
+				.wrapSyncToolsAsAsync(this.wrapSyncToolsAsAsync);
 
 		if (resolver != null) {
 			toolBuilder.toolCallbackResolver(resolver);

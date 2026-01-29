@@ -60,6 +60,7 @@ public class ModelRequest {
 
 	public static Builder builder(ModelRequest request) {
 		return new Builder()
+				.systemMessage(request.systemMessage)
 				.messages(request.messages)
 				.options(request.options)
 				.tools(request.tools)

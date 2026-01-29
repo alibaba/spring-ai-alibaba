@@ -180,6 +180,10 @@ public class ShellToolAgentHook extends AgentHook implements ToolInjection {
 
 	@Override
 	public List<ToolCallback> getTools() {
+		if (shellTool2 == null) {
+			log.info("No ShellTool2 instance injected, creating default instance");
+			this.shellTool2 = ShellTool2.builder(System.getProperty("user.dir")).build();
+		}
 		return Arrays.asList(ToolCallbacks.from(shellTool2));
 	}
 
