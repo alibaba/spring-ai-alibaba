@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -59,6 +60,20 @@ public interface JacksonDeserializer<T> {
 	 */
 	int MAX_CACHE_SIZE = 1000;
 
+	Set<String> PRIMITIVE_WRAPPER_TYPES = Set.of(
+			"java.lang.Long",
+			"java.lang.Integer",
+			"java.lang.Double",
+			"java.lang.Float",
+			"java.lang.Short",
+			"java.lang.Byte",
+			"java.lang.Boolean",
+			"java.lang.Character",
+			"java.lang.String",
+			"java.math.BigInteger",
+			"java.math.BigDecimal"
+	);
+
 	/**
 	 * Deserialization strategies in order of preference and capability
 	 */
@@ -97,7 +112,11 @@ public interface JacksonDeserializer<T> {
 		var fields = node.fields();
 		while (fields.hasNext()) {
 			var entry = fields.next();
-			result.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
+			String key = entry.getKey();
+			if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
+				continue;
+			}
+			result.put(key, valueFromNode(entry.getValue(), objectMapper, typeMapper));
 		}
 		return result;
 	}
@@ -315,7 +334,11 @@ public interface JacksonDeserializer<T> {
 				var fields = valueNode.fields();
 				while (fields.hasNext()) {
 					var entry = fields.next();
-					result.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
+					String key = entry.getKey();
+					if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
+						continue;
+					}
+					result.put(key, valueFromNode(entry.getValue(), objectMapper, typeMapper));
 				}
 				yield result;
 			}
@@ -356,6 +379,13 @@ public interface JacksonDeserializer<T> {
 		if (valueNode.size() == 2 && valueNode.get(0).isTextual()) {
 			String className = valueNode.get(0).asText();
 			JsonNode payload = valueNode.get(1);
+
+			if (!payload.isArray()) {
+				if (PRIMITIVE_WRAPPER_TYPES.contains(className)) {
+					return convertPrimitiveWrapperType(className, payload);
+				}
+			}
+
 			if (payload.isArray()) {
 				if (className.startsWith("[") || className.endsWith("[]")) {
 					return instantiateArray(className, payload, objectMapper, typeMapper);
@@ -374,6 +404,40 @@ public interface JacksonDeserializer<T> {
 			list.add(valueFromNode(element, objectMapper, typeMapper));
 		}
 		return list;
+	}
+
+	/**
+	 * Convert a JsonNode to a specified Java primitive type wrapper class
+	 */
+	private static Object convertPrimitiveWrapperType(String className, JsonNode valueNode) {
+		if (valueNode == null || valueNode.isNull() || valueNode.isMissingNode()) {
+			return null;
+		}
+		return switch (className) {
+			case "java.lang.Long" -> valueNode.asLong();
+			case "java.lang.Integer" -> valueNode.asInt();
+			case "java.lang.Double" -> valueNode.asDouble();
+			case "java.lang.Float" -> (float) valueNode.asDouble();
+			case "java.lang.Short" -> (short) valueNode.asInt();
+			case "java.lang.Byte" -> (byte) valueNode.asInt();
+			case "java.lang.Boolean" -> valueNode.asBoolean();
+			case "java.lang.Character" -> {
+				String text = valueNode.asText();
+				yield text.isEmpty() ? '\0' : text.charAt(0);
+			}
+			case "java.lang.String" -> valueNode.asText();
+			case "java.math.BigInteger" -> valueNode.bigIntegerValue();
+			case "java.math.BigDecimal" -> valueNode.decimalValue();
+			default -> {
+				if (valueNode.isTextual()) {
+					yield valueNode.asText();
+				}
+				if (valueNode.isNumber()) {
+					yield valueNode.numberValue();
+				}
+				yield valueNode;
+			}
+		};
 	}
 
 	private static Object instantiateArray(String className, JsonNode payload, ObjectMapper objectMapper,
@@ -460,7 +524,11 @@ public interface JacksonDeserializer<T> {
 				var fields = metadataNode.fields();
 				while (fields.hasNext()) {
 					var entry = fields.next();
-					metadata.put(entry.getKey(), valueFromNode(entry.getValue(), objectMapper, typeMapper));
+					String key = entry.getKey();
+					if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
+						continue;
+					}
+					metadata.put(key, valueFromNode(entry.getValue(), objectMapper, typeMapper));
 				}
 			}
 		}

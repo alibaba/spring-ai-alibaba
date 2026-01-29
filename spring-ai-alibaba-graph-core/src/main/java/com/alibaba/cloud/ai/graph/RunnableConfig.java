@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 	public static final String STATE_UPDATE_METADATA_KEY = "STATE_UPDATE";
 	public static final String DEFAULT_PARALLEL_EXECUTOR_KEY = "_DEFAULT_PARALLEL_EXECUTOR_";
+	public static final String DEFAULT_PARALLEL_AGGREGATION_STRATEGY_KEY = "_DEFAULT_PARALLEL_AGGREGATION_STRATEGY_";
 
 	private final String threadId;
 
@@ -356,7 +357,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 * When a parallel node is executed, it will look for an executor in the
 		 * {@link RunnableConfig} metadata. If found, it will be used to run the parallel
 		 * branches concurrently.
-		 * @param nodeId the ID of the parallel node.
+		 * @param nodeId the ID of the parallel starting node.
 		 * @param executor the {@link Executor} to use for the parallel node.
 		 * @return this {@code Builder} instance for method chaining.
 		 */
@@ -374,6 +375,35 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 */
 		public Builder defaultParallelExecutor(Executor executor) {
 			return addMetadata(DEFAULT_PARALLEL_EXECUTOR_KEY, requireNonNull(executor, "executor cannot be null!"));
+		}
+
+		/**
+		 * Adds an aggregation strategy for a specific parallel node's target node.
+		 * <p>
+		 * This allows you to control how parallel branches are aggregated. When a parallel node
+		 * executes, it will look for an aggregation strategy using the target node ID (the node
+		 * that follows the parallel node). If found, it will use the specified strategy to determine
+		 * whether to wait for all branches (ALL_OF) or proceed with the first completed branch (ANY_OF).
+		 * @param targetNodeId the ID of the merge node (the single node that aggregates results from all parallel branches) that follows the parallel branch nodes.
+		 * @param strategy the {@link NodeAggregationStrategy} to use for aggregation.
+		 * @return this {@code Builder} instance for method chaining.
+		 */
+		public Builder addParallelNodeAggregationStrategy(String targetNodeId, NodeAggregationStrategy strategy) {
+			return addMetadata(ParallelNode.formatTargetNodeId(targetNodeId), 
+					requireNonNull(strategy, "strategy cannot be null!"));
+		}
+
+		/**
+		 * Sets a default aggregation strategy for all parallel nodes.
+		 * <p>
+		 * This strategy will be used for parallel nodes that don't have a specific strategy
+		 * configured via {@link #addParallelNodeAggregationStrategy(String, NodeAggregationStrategy)}.
+		 * @param strategy the {@link NodeAggregationStrategy} to use as the default.
+		 * @return this {@code Builder} instance for method chaining.
+		 */
+		public Builder defaultParallelAggregationStrategy(NodeAggregationStrategy strategy) {
+			return addMetadata(DEFAULT_PARALLEL_AGGREGATION_STRATEGY_KEY, 
+					requireNonNull(strategy, "strategy cannot be null!"));
 		}
 
 		public Builder clearContext() {

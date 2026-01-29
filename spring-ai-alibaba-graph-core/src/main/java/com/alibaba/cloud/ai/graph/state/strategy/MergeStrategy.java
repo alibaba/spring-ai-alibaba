@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,43 +28,35 @@ public class MergeStrategy implements KeyStrategy {
 
 	@Override
 	public Object apply(Object oldValue, Object newValue) {
-		if (newValue == null) {
-			return oldValue;
-		}
-
 		if (oldValue instanceof Optional<?> oldValueOptional) {
 			oldValue = oldValueOptional.orElse(null);
 		}
 
-		// If both values are maps, merge them
+		if (newValue instanceof Optional<?> newValueOptional) {
+			newValue = newValueOptional.orElse(null);
+		}
+
+		if (newValue == null) {
+			return oldValue;
+		}
+
+		if (oldValue == null) {
+			return newValue;
+		}
+
 		if (oldValue instanceof Map && newValue instanceof Map) {
 			Map<Object, Object> mergedMap = new HashMap<>((Map<?, ?>) oldValue);
 			mergedMap.putAll((Map<?, ?>) newValue);
 			return mergedMap;
 		}
 
-		// If old value is null, return new value
-		if (oldValue == null) {
-			return newValue;
+		if (oldValue.getClass() != newValue.getClass()) {
+			throw new IllegalArgumentException(
+					     "Cannot merge incompatible types: " +
+					     oldValue.getClass().getName() + " and " + newValue.getClass().getName()
+			);
 		}
 
-		// If new value is a map but old value is not, create a new map with old value as
-		// a key
-		if (newValue instanceof Map && !(oldValue instanceof Map)) {
-			Map<Object, Object> mergedMap = new HashMap<>();
-			mergedMap.put("original", oldValue);
-			mergedMap.putAll((Map<?, ?>) newValue);
-			return mergedMap;
-		}
-
-		// If old value is a map but new value is not, add new value to the map
-		if (oldValue instanceof Map && !(newValue instanceof Map)) {
-			Map<Object, Object> mergedMap = new HashMap<>((Map<?, ?>) oldValue);
-			mergedMap.put("additional", newValue);
-			return mergedMap;
-		}
-
-		// For other cases, return new value (similar to replace strategy)
 		return newValue;
 	}
 

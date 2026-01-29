@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,11 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -117,5 +120,23 @@ public class EdgeCaseSerializationTest {
 		assertNotNull(restoredValue);
 		assertTrue(restoredValue instanceof GraphResponse, "Outer GraphResponse should be preserved");
 	}
-}
 
+	@Test
+	void testWrapperArrayLongDeserialization() throws Exception {
+		String json = "{\"result\":[\"java.lang.Long\",300]}";
+		byte[] payload;
+		try (ByteArrayOutputStream stream = new ByteArrayOutputStream();
+				ObjectOutputStream out = new ObjectOutputStream(stream)) {
+			Serializer.writeUTF(json, out);
+			out.flush();
+			payload = stream.toByteArray();
+		}
+
+		SpringAIJacksonStateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
+		Map<String, Object> restored = serializer.dataFromBytes(payload);
+
+		Object result = restored.get("result");
+		assertInstanceOf(Long.class, result, "Wrapper array Long should deserialize as Long");
+		assertEquals(300L, result, "Wrapper array Long value should be preserved");
+	}
+}

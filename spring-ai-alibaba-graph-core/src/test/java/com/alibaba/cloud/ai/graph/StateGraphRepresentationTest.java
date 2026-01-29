@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,12 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
-import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -44,7 +45,7 @@ public class StateGraphRepresentationTest {
 	}
 
 	// Dummy condition function that always returns an empty string
-	CompletableFuture<String> dummyCondition(OverAllState state,RunnableConfig runnableConfig) {
+	CompletableFuture<String> dummyCondition(OverAllState state) {
 		return CompletableFuture.completedFuture("");
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.function.BiFunction;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -51,46 +53,57 @@ public class EditFileTool implements BiFunction<EditFileTool.EditFileRequest, To
 	public String apply(EditFileRequest request, ToolContext toolContext) {
 		try {
 			Path path = Paths.get(request.filePath);
+			return editFileContent(path, request.oldString, request.newString, request.replaceAll);
+		}
+		catch (Exception e) {
+			return "Error editing file: " + e.getMessage();
+		}
+	}
 
-			if (!Files.exists(path)) {
-				return "Error: File not found: " + request.filePath;
+	/**
+	 * Core logic for editing file content by replacing string occurrences.
+	 * This method can be reused by other classes like FileSystemTools.
+	 *
+	 * @param filePath The path to the file to edit
+	 * @param oldString The text to replace
+	 * @param newString The text to replace it with
+	 * @param replaceAll Whether to replace all occurrences (true) or only if unique (false)
+	 * @return Success message with count of replacements, or error message
+	 */
+	public static String editFileContent(Path filePath, String oldString, String newString, boolean replaceAll) {
+		try {
+			if (!Files.exists(filePath) || !Files.isRegularFile(filePath, LinkOption.NOFOLLOW_LINKS)) {
+				return "Error: File '" + filePath + "' not found";
 			}
 
-			String content = Files.readString(path);
-
-			// Check if old_string exists
-			if (!content.contains(request.oldString)) {
-				return "Error: String not found in file: " + request.oldString;
-			}
+			String content = Files.readString(filePath);
 
 			// Count occurrences
-			int count = 0;
-			String temp = content;
-			int index = 0;
-			while ((index = temp.indexOf(request.oldString, index)) != -1) {
-				count++;
-				index += request.oldString.length();
+			int occurrences = countOccurrences(content, oldString);
+
+			if (occurrences == 0) {
+				return "Error: String not found in file: '" + oldString + "'";
 			}
 
 			// Check for uniqueness if not replace_all
-			if (!request.replaceAll && count > 1) {
-				return "Error: String appears " + count + " times in file. " +
-						"Please provide more context or use replace_all=true";
+			if (!replaceAll && occurrences > 1) {
+				return "Error: String '" + oldString + "' appears " + occurrences +
+					" times in file. Use replaceAll=true to replace all instances, or provide a more specific string with surrounding context.";
 			}
 
 			// Perform replacement
 			String newContent;
-			if (request.replaceAll) {
-				newContent = content.replace(request.oldString, request.newString);
+			if (replaceAll) {
+				newContent = content.replace(oldString, newString);
 			}
 			else {
 				// Replace only the first occurrence using literal string matching
 				// Note: replaceFirst() treats the first argument as a regex, which can cause issues
 				// with special characters. We use indexOf() + substring() for literal matching.
-				int replaceIndex = content.indexOf(request.oldString);
+				int replaceIndex = content.indexOf(oldString);
 				if (replaceIndex != -1) {
-					newContent = content.substring(0, replaceIndex) + request.newString
-							+ content.substring(replaceIndex + request.oldString.length());
+					newContent = content.substring(0, replaceIndex) + newString
+						+ content.substring(replaceIndex + oldString.length());
 				}
 				else {
 					// Should not reach here as we already checked for existence
@@ -99,13 +112,28 @@ public class EditFileTool implements BiFunction<EditFileTool.EditFileRequest, To
 			}
 
 			// Write the modified content back
-			Files.writeString(path, newContent);
+			Files.writeString(filePath, newContent,
+				StandardOpenOption.TRUNCATE_EXISTING,
+				StandardOpenOption.WRITE);
 
-			return "Successfully replaced " + (request.replaceAll ? count : 1) + " occurrence(s) in " + request.filePath;
+			return String.format("Successfully edited file: %s (replaced %d occurrence(s))", filePath, occurrences);
 		}
 		catch (IOException e) {
-			return "Error editing file: " + e.getMessage();
+			return "Error editing file '" + filePath + "': " + e.getMessage();
 		}
+	}
+
+	/**
+	 * Count occurrences of a substring in content.
+	 */
+	private static int countOccurrences(String content, String search) {
+		int count = 0;
+		int index = 0;
+		while ((index = content.indexOf(search, index)) != -1) {
+			count++;
+			index += search.length();
+		}
+		return count;
 	}
 
 	public static ToolCallback createEditFileToolCallback(String description) {

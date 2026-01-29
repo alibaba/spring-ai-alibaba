@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConve
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
@@ -58,6 +59,10 @@ public abstract class Builder {
 	protected String instruction;
 
 	protected String systemPrompt;
+
+	// Provide customized template renderer instance, for example
+	// SaaStTemplateRenderer.builder().startDelimiterToken("{{").endDelimiterToken("}}").build()
+	protected TemplateRenderer templateRenderer;
 
 	protected ChatModel model;
 
@@ -216,6 +221,11 @@ public abstract class Builder {
 
 	public Builder systemPrompt(String systemPrompt) {
 		this.systemPrompt = systemPrompt;
+		return this;
+	}
+
+	public Builder templateRenderer(TemplateRenderer templateRenderer) {
+		this.templateRenderer = templateRenderer;
 		return this;
 	}
 

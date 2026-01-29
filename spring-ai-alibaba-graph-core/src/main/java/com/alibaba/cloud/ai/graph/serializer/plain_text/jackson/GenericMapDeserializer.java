@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,8 +53,14 @@ class GenericMapDeserializer extends StdDeserializer<Map<String, Object>> {
 
 		while (fields.hasNext()) {
 			final var entry = fields.next();
+			String key = entry.getKey();
 
-			result.put(entry.getKey(), JacksonDeserializer.valueFromNode(entry.getValue(), mapper, typeMapper));
+
+			if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
+				continue;
+			}
+
+			result.put(key, JacksonDeserializer.valueFromNode(entry.getValue(), mapper, typeMapper));
 		}
 
 		return result;

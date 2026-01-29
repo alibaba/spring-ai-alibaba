@@ -6,7 +6,7 @@ Spring AI Alibaba 从开源建设以来，受到了很多社区同学的关注�
 
 我们真心地感谢为这个项目提出过 Issue 和 PR 的开发者。我们希望有更多社区的开发者加入进来，一起把项目做好。
 
-## 如何贡献
+## 贡献流程
 
 在贡献代码之前，请您稍微花一些时间了解为 Spring AI Alibaba 贡献代码的流程。
 
@@ -23,7 +23,7 @@ Spring AI Alibaba 从开源建设以来，受到了很多社区同学的关注�
 ### Fork 仓库，并将其 Clone 到本地
 
 - 点击 [本项目](https://github.com/alibaba/spring-ai-alibaba) 右上角的 `Fork` 图标 将 alibaba/spring-ai-alibaba  fork 到自己的空间。
-- 将自己账号下的 spring-ai-alibaba 仓库 clone 到本地，例如我的账号的 `chickenlj`，那就是执行 `git clone https://github.com/chickenlj/spring-ai-alibaba.git` 进行 clone 操作。
+- 将自己账号下的 spring-ai-alibaba 仓库 clone 到本地，例如我的账号是 `chickenlj`，那就是执行 `git clone https://github.com/chickenlj/spring-ai-alibaba.git` 进行 clone 操作。
 
 ### 配置 Github 信息
 
@@ -34,11 +34,11 @@ Spring AI Alibaba 从开源建设以来，受到了很多社区同学的关注�
 
 ### Merge 最新代码
 
-fork 出来的代码后，原仓库 main 分支可能出现了新的提交，这时候为了避免提交的 PR 和 Master 中的提交出现冲突，需要及时 merge main 分支。
+fork 出来的代码后，原仓库 main 分支可能出现了新的提交，这时候为了避免提交的 PR 和 Main 中的提交出现冲突，需要及时 merge main 分支。
 
-- 在你本机的 spring-ai-alibaba 目录下，执行 `git remote add upstream https://github.com/alibaba/spring-ai-alibaba` 将原始仓库地址添加到 remote stream 中。
-- 在你本机的 spring-ai-alibaba 目录下，执行 `git fetch upstream` 将 remote stream fetch 到本地。
-- 在你本机的 spring-ai-alibaba 目录下，执行 `git checkout main` 切换到 master 分支。
+- 在你本机的 spring-ai-alibaba 目录下，执行 `git remote add upstream https://github.com/alibaba/spring-ai-alibaba` 将原始仓库地址配置为 upstream。
+- 在你本机的 spring-ai-alibaba 目录下，执行 `git fetch upstream` 从 upstream 拉取更新。
+- 在你本机的 spring-ai-alibaba 目录下，执行 `git checkout main` 切换到 main 分支。
 - 在你本机的 spring-ai-alibaba 目录下，执行 `git rebase upstream/main` rebase 最新代码。
 
 ### 配置 Spring AI 标准的代码格式
@@ -47,11 +47,11 @@ Spring AI Alibaba 作为 Spring AI 的实现之一，在代码规范方面直接
 
 ### 开发
 
-开发自己的功能，**开发完毕后建议使用 `mvn clean package` 命令确保能修改后的代码能在本地编译通过。执行该命令的同时还能以 spring 的方式自动格式化代码**。然后再提交代码，提交代码之前请注意创建一个新的有关本特性的分支，用该分支进行代码提交。
+开发自己的功能，**开发完毕后建议使用 `mvn clean package` 命令确保修改后的代码能在本地编译通过。执行该命令的同时还能以 spring 的方式自动格式化代码**。然后再提交代码，提交代码之前请注意创建一个新的有关本特性的分支，用该分支进行代码提交。
 
 ### 本地CI
 
-本地 boe 环境开发完成后，强烈建议在提交 PR 之前执行项目`tools\make`提供的 `make` 命令进行本地持续集成（CI）检查，以确保代码符合项目的标准和规范。如果对于本地CI有任何疑问，可以在控制台输入 `make help` 了解具体信息。
+本地开发完成后，强烈建议在提交 PR 之前执行项目`tools\make`提供的 `make` 命令进行本地持续集成（CI）检查，以确保代码符合项目的标准和规范。如果对于本地CI有任何疑问，可以在控制台输入 `make help` 了解具体信息。
 
 ### 本地Checkstyle
 

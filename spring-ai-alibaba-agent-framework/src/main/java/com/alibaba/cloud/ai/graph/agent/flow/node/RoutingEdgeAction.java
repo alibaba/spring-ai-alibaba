@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,27 @@
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.converter.BeanOutputConverter;
+
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@Deprecated
 public class RoutingEdgeAction implements AsyncEdgeAction {
 	private static final Logger logger = LoggerFactory.getLogger(RoutingEdgeAction.class);
 
@@ -79,10 +83,11 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 	}
 
 	@Override
-	public CompletableFuture<String> apply(OverAllState state, RunnableConfig runnableConfig) {
+	public CompletableFuture<String> apply(OverAllState state) {
 		CompletableFuture<String> result = new CompletableFuture<>();
 		try {
-			List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
+			@SuppressWarnings("unchecked")
+			List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 			
 			// Prepare messages with instruction if available
 			List<Message> messagesWithInstruction = prepareMessagesWithInstruction(messages);
@@ -117,7 +122,7 @@ public class RoutingEdgeAction implements AsyncEdgeAction {
 	 * @return messages list with instruction added
 	 */
 	private List<Message> prepareMessagesWithInstruction(List<Message> messages) {
-		java.util.ArrayList<Message> messagesWithInstruction = new java.util.ArrayList<>(messages);
+		List<Message> messagesWithInstruction = new ArrayList<>(messages);
 		
 		// Check if rootAgent is LlmRoutingAgent and has instruction
 		if (rootAgent instanceof LlmRoutingAgent llmRoutingAgent) {

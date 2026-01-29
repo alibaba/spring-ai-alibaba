@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ public class LlmRoutingAgent extends FlowAgent {
 	private final String instruction;
 
 	protected LlmRoutingAgent(LlmRoutingAgentBuilder builder) {
-		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor);
+		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor, builder.hooks);
 		this.chatModel = builder.chatModel;
 		this.fallbackAgent = builder.fallbackAgent;
 		this.systemPrompt = builder.systemPrompt;

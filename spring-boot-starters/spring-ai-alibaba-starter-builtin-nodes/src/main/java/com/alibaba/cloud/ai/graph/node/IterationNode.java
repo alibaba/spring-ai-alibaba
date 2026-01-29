@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -477,12 +477,12 @@ public class IterationNode {
 				.addEdge(StateGraph.START, "iteration_start")
 				.addConditionalEdges("iteration_start",
 						edge_async(
-								(state, config) -> state.value(this.tempStartFlagKey, Boolean.class).orElse(false)
+								(OverAllState state) -> state.value(this.tempStartFlagKey, Boolean.class).orElse(false)
 										? "true" : "false"),
 						Map.of("true", "iteration", "false", "iteration_end"))
 				.addEdge("iteration", "iteration_end")
 				.addConditionalEdges("iteration_end",
-						edge_async((state, config) -> state.value(this.tempEndFlagKey, Boolean.class).orElse(false)
+						edge_async((OverAllState state) -> state.value(this.tempEndFlagKey, Boolean.class).orElse(false)
 								? "true" : "false"),
 						Map.of("true", "iteration_start", "false", StateGraph.END));
 		}
@@ -525,12 +525,12 @@ public class IterationNode {
 				.addNode(iterationOutName, node_async((OverAllState state) -> Map.of()))
 				.addConditionalEdges(iterationName,
 						edge_async(
-								(state, config) -> state.value(this.tempStartFlagKey, Boolean.class).orElse(false)
+								(OverAllState state) -> state.value(this.tempStartFlagKey, Boolean.class).orElse(false)
 										? "true" : "false"),
 						Map.of("true", this.subGraphStartNodeName, "false", iterationName + "iteration_end"))
 				.addEdge(this.subGraphEndNodeName, iterationName + "iteration_end")
 				.addConditionalEdges(iterationName + "iteration_end",
-						edge_async((state, config) -> state.value(this.tempEndFlagKey, Boolean.class).orElse(false)
+						edge_async((OverAllState state) -> state.value(this.tempEndFlagKey, Boolean.class).orElse(false)
 								? "true" : "false"),
 						Map.of("true", iterationName, "false", iterationOutName));
 		}

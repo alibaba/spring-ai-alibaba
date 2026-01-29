@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph;
 
-import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
-import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-
 import com.alibaba.cloud.ai.graph.exception.Errors;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
@@ -37,16 +33,7 @@ import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.LinkedHashSet;
+import java.util.*;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -296,6 +283,22 @@ public class StateGraph {
 	}
 
 	/**
+	 * Adds node that behave as parallel conditional edges.
+	 * This method allows routing to multiple nodes in parallel based on the multi-command action.
+	 * @param id the identifier of the node
+	 * @param action multi-command action to determine multiple target nodes for parallel execution
+	 * @param mappings the mappings of conditions to target nodes
+	 * @return this state graph instance
+	 * @throws GraphStateException if the node identifier is invalid, the mappings are
+	 * empty, or the node already exists
+	 */
+	public StateGraph addNode(String id, AsyncMultiCommandAction action, Map<String, String> mappings)
+			throws GraphStateException {
+		// SIMPLER IMPLEMENTATION
+		return addNode(id, (state, config) -> completedFuture(Map.of())).addParallelConditionalEdges(id, action, mappings);
+	}
+
+	/**
 	 * Adds a subgraph to the state graph by creating a node with the specified
 	 * identifier. This implies that the subgraph shares the same state with the parent
 	 * graph.
@@ -376,6 +379,26 @@ public class StateGraph {
 		return this;
 	}
 
+	public StateGraph addEdge(List<String> sourceIds, String targetId) throws GraphStateException {
+		if (sourceIds == null || sourceIds.isEmpty()) {
+			throw Errors.emptySourceNodeByEdge.exception(targetId);
+		}
+		for (String sourceId : sourceIds) {
+			addEdge(sourceId, targetId);
+		}
+		return this;
+	}
+
+	public StateGraph addEdge(String sourceId, List<String> targetIds) throws GraphStateException {
+		if (targetIds == null || targetIds.isEmpty()) {
+			throw Errors.emptyTargetNodeByEdge.exception(sourceId);
+		}
+		for (String targetId : targetIds) {
+			addEdge(sourceId, targetId);
+		}
+		return this;
+	}
+
 	/**
 	 * Adds conditional edges to the graph based on the provided condition and mappings.
 	 * @param sourceId the identifier of the source node
@@ -394,7 +417,7 @@ public class StateGraph {
 			throw Errors.edgeMappingIsEmpty.exception(sourceId);
 		}
 
-		var newEdge = new Edge(sourceId, new EdgeValue(new EdgeCondition(condition, mappings)));
+		var newEdge = new Edge(sourceId, new EdgeValue(EdgeCondition.single(condition, mappings)));
 
 		if (edges.elements.contains(newEdge)) {
 			throw Errors.duplicateConditionalEdgeError.exception(sourceId);
@@ -418,6 +441,53 @@ public class StateGraph {
 	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeAction condition, Map<String, String> mappings)
 			throws GraphStateException {
 		return addConditionalEdges(sourceId, AsyncCommandAction.of(condition), mappings);
+	}
+
+
+	/**
+	 * Adds conditional edges to the graph based on the provided edge action with configuration and mappings.
+	 * @param sourceId the identifier of the source node
+	 * @param asyncEdgeActionWithConfig the edge action with configuration used to determine the target node
+	 * @param mappings the mappings of conditions to target nodes
+	 * @return this state graph instance
+	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
+	 * empty, or the edge already exists
+	 */
+	public StateGraph addConditionalEdges(String sourceId, AsyncEdgeActionWithConfig asyncEdgeActionWithConfig, Map<String, String> mappings)
+			throws GraphStateException {
+		return addConditionalEdges(sourceId, AsyncCommandAction.of(asyncEdgeActionWithConfig), mappings);
+	}
+
+	/**
+	 * Adds conditional edges to the graph that can route to multiple nodes in parallel.
+	 * This method is used when the condition action can return multiple target nodes
+	 * that should be executed in parallel.
+	 *
+	 * @param sourceId the identifier of the source node
+	 * @param condition the multi-command action used to determine multiple target nodes
+	 * @param mappings the mappings of conditions to target nodes
+	 * @return this state graph instance
+	 * @throws GraphStateException if the edge identifier is invalid, the mappings are
+	 * empty, or the edge already exists
+	 */
+	public StateGraph addParallelConditionalEdges(String sourceId, AsyncMultiCommandAction condition, Map<String, String> mappings)
+			throws GraphStateException {
+		if (Objects.equals(sourceId, END)) {
+			throw Errors.invalidEdgeIdentifier.exception(END);
+		}
+		if (mappings == null || mappings.isEmpty()) {
+			throw Errors.edgeMappingIsEmpty.exception(sourceId);
+		}
+
+		var newEdge = new Edge(sourceId, new EdgeValue(EdgeCondition.multi(condition, mappings)));
+
+		if (edges.elements.contains(newEdge)) {
+			throw Errors.duplicateConditionalEdgeError.exception(sourceId);
+		}
+		else {
+			edges.elements.add(newEdge);
+		}
+		return this;
 	}
 
 	/**

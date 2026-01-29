@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![CI Status](https://github.com/alibaba/spring-ai-alibaba/workflows/%F0%9F%9B%A0%EF%B8%8F%20Build%20and%20Test/badge.svg)](https://github.com/alibaba/spring-ai-alibaba/actions?query=workflow%3A%22%F0%9F%9B%A0%EF%B8%8F+Build+and+Test%22)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
-[![Maven central](https://maven-badges.herokuapp.com/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.alibaba.cloud.ai/spring-ai-alibaba)
+[![Maven central](https://img.shields.io/maven-central/v/com.alibaba.cloud.ai/spring-ai-alibaba.svg)](https://img.shields.io/maven-central/v/com.alibaba.cloud.ai/spring-ai-alibaba)
 <img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
 
 <html>
@@ -63,7 +63,7 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 
 	```shell
 	git clone --depth=1 https://github.com/alibaba/spring-ai-alibaba.git
-	cd examples/chatbot
+	cd spring-ai-alibaba/examples/chatbot
 	```
 
 2. Start the ChatBot.
@@ -95,13 +95,13 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 	  <dependency>
 	    <groupId>com.alibaba.cloud.ai</groupId>
 	    <artifactId>spring-ai-alibaba-agent-framework</artifactId>
-	    <version>1.1.0.0-RC2</version>
+	    <version>1.1.0.0</version>
 	  </dependency>
 	  <!-- Assume you are going to use DashScope Model. Refer to docs for how to choose model.-->
 	  <dependency>
 	    <groupId>com.alibaba.cloud.ai</groupId>
 	    <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
-	    <version>1.1.0.0-RC2</version>
+	    <version>1.1.0.0</version>
 	  </dependency>
 	</dependencies>
 	```
@@ -143,7 +143,7 @@ This project consists of several core components:
 * Dingtalk Group (钉钉群), search `130240015687` and join.
 * WeChat Group (微信公众号), scan the QR code below and follow us.
 
-<img src="./docs/imgs/wechat-account.jpg" style="max-width: 260px; height: auto"/>
+<img src="./docs/imgs/wechat-account.jpg" style="width: 260px; height: auto"/>
 
 ## Resources
 * [AI-Native Application Architecture White Paper](https://developer.aliyun.com/ebook/8479)：Co-authored by 40 frontline engineers and endorsed by 15 industry experts, this 200,000+ word white paper is the first comprehensive guide dedicated to the full DevOps lifecycle of AI-native applications. It systematically breaks down core concepts and key challenges, offering practical problem-solving approaches and architectural insights.

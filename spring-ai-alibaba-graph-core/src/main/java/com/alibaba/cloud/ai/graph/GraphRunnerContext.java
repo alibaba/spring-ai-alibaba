@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
-import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
+import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
@@ -31,12 +32,24 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.Usage;
+
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
+import static com.alibaba.cloud.ai.graph.StateGraph.NODE_BEFORE;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.StateGraph.ERROR;
 import static java.lang.String.format;
 import static java.util.Optional.ofNullable;
 
@@ -190,7 +203,7 @@ public class GraphRunnerContext {
 	}
 
 	private Command nextNodeId(EdgeValue route, Map<String, Object> state,
-							   String nodeId) throws Exception {
+			String nodeId) throws Exception {
 		if (route == null) {
 			throw RunnableErrors.missingEdge.exception(nodeId);
 		}
@@ -198,14 +211,30 @@ public class GraphRunnerContext {
 			return new Command(route.id(), state);
 		}
 		if (route.value() != null) {
-			var command = route.value().action().apply(this.overallState, config).get();
-			var newRoute = command.gotoNode();
-			String result = route.value().mappings().get(newRoute);
-			if (result == null) {
-				throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+			var edgeCondition = route.value();
+			
+			// Check if this is a multi-command action
+			if (edgeCondition.isMultiCommand()) {
+				// Multi-command action - route to ConditionalParallelNode
+				// The ConditionalParallelNode is dynamically created in CompiledGraph
+				String conditionalParallelNodeId = ParallelNode.formatNodeId(nodeId);
+				// Return Command pointing to ConditionalParallelNode
+				// The ConditionalParallelNode will handle the MultiCommand internally
+				return new Command(conditionalParallelNodeId, state);
+			} else {
+				// Single Command action
+				var singleAction = edgeCondition.singleAction();
+				var command = singleAction.apply(this.overallState, config).get();
+				
+				// Single Command case
+				var newRoute = command.gotoNode();
+				String result = route.value().mappings().get(newRoute);
+				if (result == null) {
+					throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
+				}
+				this.mergeIntoCurrentState(command.update());
+				return new Command(result, state);
 			}
-			this.mergeIntoCurrentState(command.update());
-			return new Command(result, state);
 		}
 		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
 	}

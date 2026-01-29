@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
+
+import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 
 /**
  * 记忆管理（Memory）示例
@@ -118,7 +120,7 @@ public class MemoryExample {
 		// 创建获取用户信息的工具
 		BiFunction<GetMemoryRequest, ToolContext, MemoryResponse> getUserInfoFunction =
 				(request, context) -> {
-					RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get("config");
+					RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get(AGENT_CONFIG_CONTEXT_KEY);
 					Store store = runnableConfig.store();
 					Optional<StoreItem> itemOpt = store.getItem(request.namespace(), request.key());
 					if (itemOpt.isPresent()) {
@@ -171,7 +173,7 @@ public class MemoryExample {
 		// 创建保存用户信息的工具
 		BiFunction<SaveMemoryRequest, ToolContext, MemoryResponse> saveUserInfoFunction =
 				(request, context) -> {
-					RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get("config");
+					RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get(AGENT_CONFIG_CONTEXT_KEY);
 					Store store = runnableConfig.store();
 					StoreItem item = StoreItem.of(request.namespace(), request.key(), request.value());
 					store.putItem(item);
@@ -477,7 +479,7 @@ public class MemoryExample {
 		ToolCallback saveMemoryTool = FunctionToolCallback.builder("saveMemory",
 						(BiFunction<SaveMemoryRequest, ToolContext, MemoryResponse>) (request, context) -> {
 							StoreItem item = StoreItem.of(request.namespace(), request.key(), request.value());
-							RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get("config");
+							RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get(AGENT_CONFIG_CONTEXT_KEY);
 							Store memoryStore = runnableConfig.store();
 							memoryStore.putItem(item);
 							return new MemoryResponse("已保存", request.value());
@@ -488,7 +490,7 @@ public class MemoryExample {
 
 		ToolCallback getMemoryTool = FunctionToolCallback.builder("getMemory",
 						(BiFunction<GetMemoryRequest, ToolContext, MemoryResponse>) (request, context) -> {
-							RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get("config");
+							RunnableConfig runnableConfig = (RunnableConfig) context.getContext().get(AGENT_CONFIG_CONTEXT_KEY);
 							Store memoryStore = runnableConfig.store();
 							Optional<StoreItem> itemOpt = memoryStore.getItem(request.namespace(), request.key());
 							return new MemoryResponse(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,57 +18,88 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.AsyncMultiCommandAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
-import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingEdgeAction;
+import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingNode;
 import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * Strategy for building LLM-based routing graphs. In a routing graph, an LLM decides
  * which sub-agent should handle the task based on the input content and agent
  * capabilities.
+ * 
+ * <p>This strategy extends AbstractFlowGraphBuildingStrategy and customizes hook handling:
+ * beforeModel/afterModel hooks wrap around the RoutingNode instead of the root agent.</p>
  */
-public class RoutingGraphBuildingStrategy implements FlowGraphBuildingStrategy {
+public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrategy {
+
 
 	@Override
-	public StateGraph buildGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
-		validateConfig(config);
+	protected void buildCoreGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		validateRoutingConfig(config);
 
-		StateGraph graph = config.getStateSerializer() != null
-				? new StateGraph(config.getName(), config.getKeyStrategyFactory(), config.getStateSerializer())
-				: new StateGraph(config.getName(), config.getKeyStrategyFactory());
-		Agent rootAgent = config.getRootAgent();
-
-		// Add root transparent node
+		// Step 0: Add root agent node (transparent node)
 		graph.addNode(rootAgent.name(), node_async(new TransparentNode()));
 
-		// Add starting edge
-		graph.addEdge(START, rootAgent.name());
+		// Step 1: Add routing node (where LLM makes routing decision)
+		String routingNodeName = rootAgent.name() + "_routing";
+		graph.addNode(routingNodeName, node_async((state) -> {
+			// This is a transparent node that just passes through
+			// The actual routing logic is handled by the parallel conditional edges
+			return Map.of();
+		}));
 
-		// Process sub-agents for routing
+		// Step 2: Connect beforeModel hooks to routing node (if any)
+		// The hook nodes are already added by parent class, we just need to connect edges
+		String firstBeforeModelNode = routingNodeName;
+		if (!beforeModelHooks.isEmpty()) {
+			firstBeforeModelNode = connectBeforeModelHookEdges(graph, routingNodeName, beforeModelHooks);
+		}
+		graph.addEdge(rootAgent.name(), firstBeforeModelNode);
+
+		// Step 3: Connect afterModel hooks after routing node (if any)
+		// The hook nodes are already added by parent class, we just need to connect edges
+		String routingExitNode = routingNodeName;
+		if (!afterModelHooks.isEmpty()) {
+			routingExitNode = connectAfterModelHookEdges(graph, routingNodeName, afterModelHooks);
+		}
+
+		// Step 4: Process sub-agents for routing
 		Map<String, String> edgeRoutingMap = new HashMap<>();
 		for (Agent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
 			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, graph);
 			edgeRoutingMap.put(subAgent.name(), subAgent.name());
-			// Connect sub-agents to END
-			graph.addEdge(subAgent.name(), END);
+			// Connect sub-agents to exitNode (afterAgent hooks or END)
+			graph.addEdge(subAgent.name(), this.exitNode);
 		}
 
-		// Connect parent to sub-agents via conditional routing
-		graph.addConditionalEdges(rootAgent.name(),
-				new RoutingEdgeAction(config.getChatModel(), rootAgent, config.getSubAgents()), edgeRoutingMap);
+		// Step 5: Add parallel conditional edges for routing
+		// This allows routing to one or multiple sub-agents in parallel
+		RoutingNode routingNode = new RoutingNode(config.getChatModel(), rootAgent, config.getSubAgents());
+		graph.addParallelConditionalEdges(
+				routingExitNode,
+				AsyncMultiCommandAction.node_async(routingNode),
+				edgeRoutingMap
+		);
+	}
 
-		return graph;
+	@Override
+	protected void connectBeforeModelHooks() throws GraphStateException {
+		// Routing strategy already handles hook connections in buildCoreGraph
+		// Override with empty implementation to avoid duplicate connections
+	}
+
+	@Override
+	protected void connectAfterModelHooks() throws GraphStateException {
+		// Routing strategy already handles hook connections in buildCoreGraph
+		// Override with empty implementation to avoid duplicate connections
 	}
 
 	@Override
@@ -78,7 +109,7 @@ public class RoutingGraphBuildingStrategy implements FlowGraphBuildingStrategy {
 
 	@Override
 	public void validateConfig(FlowGraphBuilder.FlowGraphConfig config) {
-		FlowGraphBuildingStrategy.super.validateConfig(config);
+		super.validateConfig(config);
 		validateRoutingConfig(config);
 	}
 

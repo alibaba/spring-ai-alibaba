@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint.savers;
 
-import com.alibaba.cloud.ai.graph.CompileConfig;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.postgresql.PostgresSaver;
@@ -47,6 +42,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledIfDockerAvailable
@@ -231,5 +227,207 @@ public class PostgresSaverTest {
         saver.release( runnableConfig );
 
     }
+
+
+	@Test
+	public void testPostgresSaverMultipleRoundTrips() throws Exception {
+
+		var saver = buildPostgresSaver()
+			.dropTablesFirst(true)
+			.build();
+
+		KeyStrategyFactory keyStrategyFactory = () -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("counter", (o, o2) -> o2);
+			keyStrategyMap.put("graphResponse", (o, o2) -> o2);
+			return keyStrategyMap;
+		};
+
+		StateGraph workflow = new StateGraph(keyStrategyFactory)
+			.addEdge(START, "node1")
+			.addNode("node1", node_async(state -> {
+				int counter = (int) state.value("counter").orElse(0);
+				counter++;
+
+				Map<String, Object> metadata = Map.of(
+					"iteration", counter,
+					"nodeId", "node1",
+					"timestamp", System.currentTimeMillis()
+				);
+				GraphResponse<?> response =
+					GraphResponse.of("Result " + counter, metadata);
+
+				return Map.of(
+					"counter", counter,
+					"graphResponse", response
+				);
+			}))
+			.addEdge("node1", END);
+
+		CompileConfig compileConfig = CompileConfig.builder()
+			.saverConfig(SaverConfig.builder()
+				.register(saver)
+				.build())
+			.build();
+
+		CompiledGraph app = workflow.compile(compileConfig);
+
+		String threadId = "bug3895-postgres-thread";
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+
+		try {
+			for (int i = 0; i < 5; i++) {
+
+				var stateOpt = app.invoke(Map.of(), config);
+
+
+				assertTrue(stateOpt.isPresent(), "State should be present");
+				var result = stateOpt.get();
+				assertEquals(i + 1, result.data().get("counter"), "Counter should be " + (i + 1));
+
+				Object graphResponseObj = result.data().get("graphResponse");
+				assertNotNull(graphResponseObj, "GraphResponse should not be null");
+				assertTrue(graphResponseObj instanceof GraphResponse,
+					"Should be GraphResponse instance");
+
+				@SuppressWarnings("unchecked")
+				GraphResponse<Object> graphResponse =
+					(GraphResponse<Object>) graphResponseObj;
+
+				Map<String, Object> metadata = graphResponse.getAllMetadata();
+				assertFalse(metadata.containsKey("@class"),
+					"Iteration " + (i + 1) + ": metadata should NOT contain @class field (Bug #3895)");
+				assertFalse(metadata.containsKey("@type"),
+					"Iteration " + (i + 1) + ": metadata should NOT contain @type field");
+				assertFalse(metadata.containsKey("@typeHint"),
+					"Iteration " + (i + 1) + ": metadata should NOT contain @typeHint field");
+
+				assertEquals(3, metadata.size(),
+					"Iteration " + (i + 1) + ": metadata should have exactly 3 fields (no accumulated type markers)");
+
+				assertEquals(i + 1, metadata.get("iteration"),
+					"Iteration metadata should match");
+				assertEquals("node1", metadata.get("nodeId"),
+					"NodeId should be preserved");
+				assertNotNull(metadata.get("timestamp"),
+					"Timestamp should be preserved");
+
+
+				var snapshot = app.getState(config);
+				assertNotNull(snapshot, "Snapshot should not be null");
+
+				var snapshotState = snapshot.state();
+				assertNotNull(snapshotState, "Snapshot state should not be null");
+				assertEquals(i + 1, snapshotState.data().get("counter"),
+					"Snapshot counter should match");
+
+			}
+
+
+		} finally {
+			saver.release(config);
+		}
+	}
+
+	@Test
+	public void testUserScenarioWithoutExplicitMetadata() throws Exception {
+
+		var saver = buildPostgresSaver()
+			.dropTablesFirst(true)
+			.build();
+
+		KeyStrategyFactory keyStrategyFactory = () -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", (o, o2) -> o2);
+			keyStrategyMap.put("lastResponse", (o, o2) -> o2);
+			return keyStrategyMap;
+		};
+
+		StateGraph workflow = new StateGraph(keyStrategyFactory)
+			.addEdge(START, "processNode")
+			.addNode("processNode", node_async(state -> {
+				@SuppressWarnings("unchecked")
+				var messages = (java.util.List<String>) state.value("messages").orElse(new java.util.ArrayList<String>());
+				var newMessages = new java.util.ArrayList<>(messages);
+				newMessages.add("Message " + (messages.size() + 1));
+
+				GraphResponse<?> response =
+					GraphResponse.of(
+						"Processed message " + newMessages.size()
+					);
+
+
+				return Map.of(
+					"messages", newMessages,
+					"lastResponse", response
+				);
+			}))
+			.addEdge("processNode", END);
+
+		CompileConfig compileConfig = CompileConfig.builder()
+			.saverConfig(SaverConfig.builder()
+				.register(saver)
+				.build())
+			.build();
+
+		CompiledGraph app = workflow.compile(compileConfig);
+		String threadId = "bug3895-user-scenario-postgres";
+		RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+
+		try {
+			for (int round = 0; round < 5; round++) {
+
+				var stateOpt = app.invoke(Map.of(), config);
+				assertTrue(stateOpt.isPresent(), "State should be present");
+
+				var result = stateOpt.get();
+				var messages = (java.util.List<?>) result.data().get("messages");
+				assertNotNull(messages, "Messages should not be null");
+				assertEquals(round + 1, messages.size(),
+					"Round " + (round + 1) + ": Should have " + (round + 1) + " messages");
+
+				Object lastResponseObj = result.data().get("lastResponse");
+				assertNotNull(lastResponseObj, "LastResponse should not be null");
+				assertTrue(lastResponseObj instanceof GraphResponse,
+					"LastResponse should be GraphResponse instance");
+
+				@SuppressWarnings("unchecked")
+				GraphResponse<Object> lastResponse =
+					(GraphResponse<Object>) lastResponseObj;
+
+				Map<String, Object> metadata = lastResponse.getAllMetadata();
+
+				assertFalse(metadata.containsKey("@class"),
+					"Round " + (round + 1) + ": metadata should NOT contain @class field");
+				assertFalse(metadata.containsKey("@type"),
+					"Round " + (round + 1) + ": metadata should NOT contain @type field");
+				assertFalse(metadata.containsKey("@typeHint"),
+					"Round " + (round + 1) + ": metadata should NOT contain @typeHint field");
+
+
+				var snapshot = app.getState(config);
+				assertNotNull(snapshot, "Snapshot should not be null");
+
+				var snapshotState = snapshot.state();
+				assertNotNull(snapshotState, "Snapshot state should not be null");
+
+				Object restoredResponseObj = snapshotState.data().get("lastResponse");
+				if (restoredResponseObj instanceof GraphResponse) {
+					@SuppressWarnings("unchecked")
+					GraphResponse<Object> restoredResponse =
+						(GraphResponse<Object>) restoredResponseObj;
+					Map<String, Object> restoredMetadata = restoredResponse.getAllMetadata();
+
+					assertFalse(restoredMetadata.containsKey("@class"),
+						"Round " + (round + 1) + ": Restored metadata should NOT contain @class");
+
+				}
+			}
+
+
+		} finally {
+			saver.release(config);
+		}
+	}
 
 }

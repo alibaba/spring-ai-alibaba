@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,14 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -55,6 +57,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -616,6 +619,83 @@ class ReactAgentTest {
         assertTrue(testHasTools(react ), "Tools should have been set");
     }
 
+	@Test
+	public void testReactAgentStreamingWithTools() throws GraphRunnerException {
+
+		// Define a simple ModelHook that returns custom data
+		ModelHook streamingModelHook = new ModelHook() {
+			@Override
+			public String getName() {
+				return "streaming_test_hook";
+			}
+
+			@Override
+			public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+				return CompletableFuture.completedFuture(Map.of(
+					"hook_type", "before_model",
+					"custom_data", "streaming_hook_data",
+					"timestamp", System.currentTimeMillis()
+				));
+			}
+
+			@Override
+			public HookPosition[] getHookPositions() {
+				return new HookPosition[]{HookPosition.BEFORE_MODEL};
+			}
+		};
+
+		var react = ReactAgent.builder()
+				.name("demoReactAgent")
+				.model(chatModel)
+				.instruction("地点为: {target_topic}")
+				.tools(ToolCallbacks.from(new TestTools()))
+				.hooks(List.of(streamingModelHook))
+				.systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
+				.outputKey("final_answer")
+				.build();
+
+		// Track whether we've seen each expected output type
+		AtomicBoolean hasAgentModelStreaming = new AtomicBoolean(false);
+		AtomicBoolean hasAgentModelFinished = new AtomicBoolean(false);
+		AtomicBoolean hasAgentToolFinished = new AtomicBoolean(false);
+		AtomicBoolean hasAgentHookFinished = new AtomicBoolean(false);
+
+		Flux<NodeOutput> flux = react.stream("上海,北京");
+		NodeOutput finalOutput = flux.doOnNext(output -> {
+			// START
+			if (output instanceof StreamingOutput<?> streamingOutput) {
+				System.out.println("ReactAgent Streaming Output Chunk: " + streamingOutput.getOutputType());
+				System.out.println("ReactAgent Streaming Output Chunk: " + streamingOutput.message());
+
+				// Check for expected output types
+				if (streamingOutput.getOutputType() == OutputType.AGENT_MODEL_STREAMING) {
+					hasAgentModelStreaming.set(true);
+				}
+				if (streamingOutput.getOutputType() == OutputType.AGENT_MODEL_FINISHED) {
+					hasAgentModelFinished.set(true);
+				}
+				if (streamingOutput.getOutputType() == OutputType.AGENT_TOOL_FINISHED) {
+					hasAgentToolFinished.set(true);
+				}
+				if (streamingOutput.getOutputType() == OutputType.AGENT_HOOK_FINISHED) {
+					hasAgentHookFinished.set(true);
+				}
+			}
+			// END
+		}).blockLast();
+
+		if (finalOutput == null) {
+			fail("ReactAgent stream completed without emitting any NodeOutput");
+		}
+		System.out.println("ReactAgent Final Output: " + finalOutput.state());
+
+		// Verify that all expected output types were received
+		assertTrue(hasAgentModelStreaming.get(), "Should have received AGENT_MODEL_STREAMING output");
+		assertTrue(hasAgentModelFinished.get(), "Should have received AGENT_MODEL_FINISHED output");
+		assertTrue(hasAgentToolFinished.get(), "Should have received AGENT_TOOL_FINISHED output");
+		assertTrue(hasAgentHookFinished.get(), "Should have received AGENT_HOOK_FINISHED output");
+	}
+
     @Test
     public void testReactAgentWithMultiple() throws GraphRunnerException, NoSuchFieldException, IllegalAccessException {
 
@@ -864,6 +944,70 @@ class ReactAgentTest {
 		Method method = Agent.class.getDeclaredMethod("buildNonStreamConfig", RunnableConfig.class);
 		method.setAccessible(true);
 		return (RunnableConfig) method.invoke(agent, config);
+	}
+
+	@Test
+	public void testInstructionSentToLLM() throws Exception {
+		String systemPromptText = "你是一个专业的技术问答助手，擅长用简洁明了的语言解释复杂的技术概念。";
+		String instructionText = "请用不超过100字简洁地回答用户的问题，重点突出核心要点。";
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("instruction_test_agent")
+				.model(chatModel)
+				.systemPrompt(systemPromptText)
+				.instruction(instructionText)
+				.saver(new MemorySaver())
+				.enableLogging(true)
+				.build();
+
+		assertNotNull(agent, "Agent 不应为空");
+
+		AssistantMessage response = agent.call("什么是 RESTful API?");
+		assertNotNull(response, "响应不应为空");
+		assertNotNull(response.getText(), "响应文本不应为空");
+		assertFalse(response.getText().isEmpty(), "响应文本不应为空字符串");
+		assertTrue(response.getText().length() > 0, "响应应该有内容");
+	}
+
+
+	@Test
+	public void testDynamicSystemPromptUpdate() throws Exception {
+		String initialSystemPrompt = "你是一个专业的技术助手，回答要简洁明了。";
+		String updatedSystemPrompt = "你是一个诗歌创作专家，用优美的语言回答问题。";
+		String finalSystemPrompt = "你是一个数学专家，用精确的数字回答问题。";
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("dynamic_system_prompt_agent")
+				.model(chatModel)
+				.systemPrompt(initialSystemPrompt)
+				.saver(new MemorySaver())
+				.enableLogging(true)
+				.build();
+
+		assertNotNull(agent, "Agent 不应为空");
+
+		AssistantMessage response1 = agent.call("什么是 Java？");
+		assertNotNull(response1, "第一次响应不应为空");
+		assertFalse(response1.getText().isEmpty(), "第一次响应不应为空字符串");
+		System.out.println(response1.getText());
+
+		agent.setSystemPrompt(updatedSystemPrompt);
+
+		AssistantMessage response2 = agent.call("什么是 Spring？");
+		assertNotNull(response2, "第二次响应不应为空");
+		assertFalse(response2.getText().isEmpty(), "第二次响应不应为空字符串");
+		System.out.println(response2.getText());
+
+		agent.setSystemPrompt(finalSystemPrompt);
+
+		AssistantMessage response3 = agent.call("1+1等于多少？");
+		assertNotNull(response3, "第三次响应不应为空");
+		assertFalse(response3.getText().isEmpty(), "第三次响应不应为空字符串");
+		System.out.println(response3.getText());
+
+		assertTrue(response1.getText().length() > 0, "第一次响应应该有内容");
+		assertTrue(response2.getText().length() > 0, "第二次响应应该有内容");
+		assertTrue(response3.getText().length() > 0, "第三次响应应该有内容");
 	}
 
 }

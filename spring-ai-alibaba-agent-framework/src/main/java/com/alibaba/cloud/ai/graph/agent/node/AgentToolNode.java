@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallExecutionContext;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
@@ -44,15 +45,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_TOOL_NAME;
 import static com.alibaba.cloud.ai.graph.agent.DefaultBuilder.POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING;
+import static com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectConstants.FINISH_REASON_METADATA_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_ID_DEFAULT;
+import static org.springframework.ai.model.tool.ToolExecutionResult.FINISH_REASON;
 
 public class AgentToolNode implements NodeActionWithConfig {
 	private static final Logger logger = LoggerFactory.getLogger(AgentToolNode.class);
@@ -111,16 +115,21 @@ public class AgentToolNode implements NodeActionWithConfig {
 				logger.info("[ThreadId {}] Agent {} acting with {} tools.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, assistantMessage.getToolCalls().size());
 			}
 
+			Boolean returnDirect = null;
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				// Execute tool call with interceptor chain
 				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall);
 				toolResponses.add(response.toToolResponse());
+				returnDirect = shouldReturnDirect(toolCall, returnDirect);
 			}
 
-			ToolResponseMessage toolResponseMessage =
-					ToolResponseMessage.builder()
-							.responses(toolResponses)
-							.build();
+			ToolResponseMessage.Builder builder = ToolResponseMessage.builder()
+					.responses(toolResponses);
+			if (returnDirect != null && returnDirect) {
+				builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+			}
+			ToolResponseMessage toolResponseMessage = builder.build();
+
 			if (enableActingLog) {
 				logger.info("[ThreadId {}] Agent {} acting returned: {}", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, toolResponseMessage);
 			}
@@ -146,19 +155,29 @@ public class AgentToolNode implements NodeActionWithConfig {
 				logger.info("[ThreadId {}] Agent {} acting with {} tools ({} tools provided results).", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, assistantMessage.getToolCalls().size(), existingResponses.size());
 			}
 
+			Boolean returnDirect = null;
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 				if (executedToolIds.contains(toolCall.id())) {
+					// For already executed tools, check their returnDirect status
+					returnDirect = shouldReturnDirect(toolCall, returnDirect);
 					continue;
 				}
 
 				// Execute tool call with interceptor chain
 				ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall);
 				allResponses.add(response.toToolResponse());
+				returnDirect = shouldReturnDirect(toolCall, returnDirect);
 			}
 
 			List<Object> newMessages = new ArrayList<>();
-			ToolResponseMessage newToolResponseMessage =
-					ToolResponseMessage.builder().responses(allResponses).build();
+
+			ToolResponseMessage.Builder builder = ToolResponseMessage.builder()
+					.responses(allResponses);
+			if (returnDirect != null && returnDirect) {
+				builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+			}
+			ToolResponseMessage newToolResponseMessage = builder.build();
+
 			newMessages.add(newToolResponseMessage);
 			newMessages.add(new RemoveByHash<>(toolResponseMessage));
 			updatedState.put("messages", newMessages);
@@ -181,6 +200,23 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return updatedState;
 	}
 
+	@NotNull
+	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect) {
+		String toolName = toolCall.name();
+		ToolCallback toolCallback = toolCallbacks.stream()
+				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
+				.findFirst()
+				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
+
+		if (returnDirect == null) {
+			returnDirect = toolCallback.getToolMetadata().returnDirect();
+		}
+		else {
+			returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
+		}
+		return returnDirect;
+	}
+
 	/**
 	 * Execute a tool call with interceptor chain support.
 	 */
@@ -194,6 +230,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		ToolCallRequest request = ToolCallRequest.builder()
 				.toolCall(toolCall)
 				.context(config.metadata().orElse(new HashMap<>()))
+				.executionContext(new ToolCallExecutionContext(config, state))
 				.build();
 
 		// Create base handler that actually executes the tool
@@ -211,14 +248,16 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 			String result;
 			try {
+				Map<String, Object> toolContextMap = new HashMap<>(toolContext);
+				toolContextMap.putAll(req.getContext());
 				// Handle FunctionToolCallback and MethodToolCallback, which support passing state and config in ToolContext.
 				if (toolCallback instanceof FunctionToolCallback<?, ?> || toolCallback instanceof MethodToolCallback) {
-					Map<String, Object> toolContextMap = new HashMap<>(toolContext);
 					toolContextMap.putAll(Map.of(AGENT_STATE_CONTEXT_KEY, state, AGENT_CONFIG_CONTEXT_KEY, config, AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraStateFromToolCall));
 					result = toolCallback.call(req.getArguments(), new ToolContext(toolContextMap));
 				} else {
-					// FIXME, currently MCP Tool does not support State and RunnableConfig transmission in ToolContext.
-					result = toolCallback.call(req.getArguments(), new ToolContext(toolContext));
+					// MCP tools receive the merged request/context map but do not receive agent state or RunnableConfig keys in ToolContext.
+
+					result = toolCallback.call(req.getArguments(), new ToolContext(toolContextMap));
 				}
 
 				if (enableActingLog) {

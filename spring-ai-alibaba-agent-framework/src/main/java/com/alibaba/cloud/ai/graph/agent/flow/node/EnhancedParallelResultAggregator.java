@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,13 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 			finalResult = new HashMap<>(subAgentResults);
 		}
 
-		result.put(outputKey, finalResult);
+		// Only add the merged result if outputKey is not null
+		if (outputKey != null && !outputKey.trim().isEmpty()) {
+			result.put(outputKey, finalResult);
+			logger.debug("Enhanced result aggregation completed. Final result stored under key: {}", outputKey);
+		} else {
+			logger.debug("Enhanced result aggregation completed. No outputKey specified, skipping merged result storage.");
+		}
 
 		Map<String, KeyStrategy> releaseStrategyResults = subAgentResults.entrySet().stream()
 				.collect(HashMap::new, 
@@ -106,8 +112,6 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 		state.updateStateWithKeyStrategies(subAgentResults, releaseStrategyResults);
 
 		result.putAll(subAgentResults);
-
-		logger.debug("Enhanced result aggregation completed. Final result stored under key: {}", outputKey);
 
 		return result;
 	}

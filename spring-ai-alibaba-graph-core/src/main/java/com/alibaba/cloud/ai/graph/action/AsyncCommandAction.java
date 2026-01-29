@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,11 @@ public interface AsyncCommandAction extends BiFunction<OverAllState, RunnableCon
 	}
 
 	static AsyncCommandAction of(AsyncEdgeAction action) {
-		return (state, config) -> action.apply(state,config).thenApply(Command::new);
+		return (state, config) -> action.apply(state).thenApply(Command::new);
 	}
 
+
+	static AsyncCommandAction of(AsyncEdgeActionWithConfig action) {
+		return (state, config) -> action.apply(state,config).thenApply(Command::new);
+	}
 }

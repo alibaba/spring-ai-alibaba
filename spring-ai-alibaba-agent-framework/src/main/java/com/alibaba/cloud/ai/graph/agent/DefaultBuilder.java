@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -82,6 +83,14 @@ public class DefaultBuilder extends Builder {
 
 		if (systemPrompt != null) {
 			llmNodeBuilder.systemPrompt(systemPrompt);
+		}
+
+		if (templateRenderer != null) {
+			llmNodeBuilder.templateRenderer(templateRenderer);
+    }
+    
+		if (instruction != null) {
+			llmNodeBuilder.instruction(instruction);
 		}
 
 		String outputSchema = null;
@@ -195,8 +204,23 @@ public class DefaultBuilder extends Builder {
 				.toList();
 		}
 
-		// Combine all tools: interceptorTools + regularTools
+		// Extract tools from hooks
+		List<ToolCallback> hookTools = new ArrayList<>();
+		if (CollectionUtils.isNotEmpty(hooks)) {
+			for (Hook hook : hooks) {
+				List<ToolCallback> toolsFromHook = hook.getTools();
+				if (CollectionUtils.isNotEmpty(toolsFromHook)) {
+					hookTools.addAll(toolsFromHook);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Collected {} tools from hook '{}'", toolsFromHook.size(), hook.getName());
+					}
+				}
+			}
+		}
+
+		// Combine all tools: hookTools + interceptorTools + regularTools
 		List<ToolCallback> allTools = new ArrayList<>();
+		allTools.addAll(hookTools);
 		allTools.addAll(interceptorTools);
 		allTools.addAll(regularTools);
 
@@ -243,4 +267,3 @@ public class DefaultBuilder extends Builder {
 	}
 
 }
-

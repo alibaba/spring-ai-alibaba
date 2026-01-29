@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,15 +29,6 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.stream.LLmNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +39,16 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -183,7 +184,7 @@ public class StateGraphStreamTest {
 	 */
 	@NotNull
 	private static AsyncEdgeAction getAsyncEdgeAction() {
-		return (t, config) -> {
+		return t -> {
 			if (t.value("messages").isEmpty())
 				return completedFuture("result");
 			List collectedMessages = (List) t.value("messages").get();
@@ -442,6 +443,7 @@ public class StateGraphStreamTest {
 			.addEdge(START, "result")
 			.addEdge("llmNode", "toolNode")
 			.addEdge("llmNode2", "toolNode")
+			.addEdge("result", END)
 			.addEdge("toolNode", END);
 
 		CompiledGraph compile = stateGraph.compile();

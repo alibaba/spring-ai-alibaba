@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2024-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
@@ -29,64 +28,79 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * Strategy for building parallel execution graphs. In a parallel graph, all sub-agents
  * execute concurrently and their results are aggregated using a specified merge strategy.
  */
-public class ParallelGraphBuildingStrategy implements FlowGraphBuildingStrategy {
+public class ParallelGraphBuildingStrategy extends AbstractFlowGraphBuildingStrategy {
 
 	@Override
-	public StateGraph buildGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
-		validateConfig(config);
+	protected void buildCoreGraph(FlowGraphBuilder.FlowGraphConfig config)
+			throws GraphStateException {
 		validateParallelConfig(config);
 
-		StateGraph graph = config.getStateSerializer() != null
-				? new StateGraph(config.getName(), config.getKeyStrategyFactory(), config.getStateSerializer())
-				: new StateGraph(config.getName(), config.getKeyStrategyFactory());
-		ParallelAgent rootAgent = (ParallelAgent) config.getRootAgent();
-
-		// Add root transparent node
-		graph.addNode(rootAgent.name(),
-				node_async(new TransparentNode()));
-
-		// Add starting edge
-		graph.addEdge(START, rootAgent.name());
+		ParallelAgent parallelRootAgent = (ParallelAgent) getRootAgent();
 
 		// Determine which aggregator to use based on available configuration
-		String aggregatorNodeName = rootAgent.name() + "_aggregator";
+		String aggregatorNodeName = getRootAgent().name() + "_aggregator";
 
-		// Check if we have parallel-specific configuration (merge strategy,
-		// concurrency)
+		// Check if we have parallel-specific configuration (merge strategy, concurrency)
 		Object mergeStrategy = config.getCustomProperty("mergeStrategy");
 		Integer maxConcurrency = (Integer) config.getCustomProperty("maxConcurrency");
 
-		List<BaseAgent> baseAgentList = new ArrayList<>(config.getSubAgents().size());;
+		List<BaseAgent> baseAgentList = new ArrayList<>(config.getSubAgents().size());
 		for (Agent subAgent : config.getSubAgents()) {
 			baseAgentList.add((BaseAgent) subAgent);
 		}
 
-
-		graph.addNode(aggregatorNodeName, node_async(new EnhancedParallelResultAggregator(rootAgent.mergeOutputKey(),
+		this.graph.addNode(aggregatorNodeName, node_async(new EnhancedParallelResultAggregator(parallelRootAgent.mergeOutputKey(),
 				baseAgentList, mergeStrategy, maxConcurrency)));
+
+		// Determine the start node for parallel execution
+		// If there are beforeModel hooks, they will be connected to rootAgent.name() by the template method
+		// Otherwise, rootAgent.name() will be the entry point
+		String parallelStartNode = getRootAgent().name();
+
+		// Add a transparent node as the parallel start point
+		this.graph.addNode(parallelStartNode, node_async(new TransparentNode()));
+
+		// Connect beforeModel hooks to the parallel start node if they exist
+		if (!this.beforeModelHooks.isEmpty()) {
+			connectBeforeModelHookEdges(this.graph, parallelStartNode, this.beforeModelHooks);
+		}
 
 		// Process sub-agents for parallel execution
 		for (Agent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
-			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, graph);
-			// Connect root to each sub-agent (fan-out)
-			graph.addEdge(rootAgent.name(), subAgent.name());
+			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, this.graph);
+			// Connect parallel start node to each sub-agent (fan-out)
+			this.graph.addEdge(parallelStartNode, subAgent.name());
 			// Connect each sub-agent to aggregator (gather)
-			graph.addEdge(subAgent.name(), aggregatorNodeName);
+			this.graph.addEdge(subAgent.name(), aggregatorNodeName);
 		}
 
-		// Connect aggregator to END
-		graph.addEdge(aggregatorNodeName, END);
+		// Add afterModel hooks if present
+		String finalNode = aggregatorNodeName;
+		if (!this.afterModelHooks.isEmpty()) {
+			finalNode = connectAfterModelHookEdges(this.graph, aggregatorNodeName, this.afterModelHooks);
+		}
 
-		return graph;
+		// Connect final node to exit node
+		this.graph.addEdge(finalNode, this.exitNode);
+	}
+
+	@Override
+	protected void connectBeforeModelHooks() throws GraphStateException {
+		// Parallel strategy already handles hook connections in buildCoreGraph
+		// Override with empty implementation to avoid duplicate connections
+	}
+
+	@Override
+	protected void connectAfterModelHooks() throws GraphStateException {
+		// Parallel strategy already handles hook connections in buildCoreGraph
+		// Override with empty implementation to avoid duplicate connections
 	}
 
 	@Override
@@ -96,7 +110,7 @@ public class ParallelGraphBuildingStrategy implements FlowGraphBuildingStrategy 
 
 	@Override
 	public void validateConfig(FlowGraphBuilder.FlowGraphConfig config) {
-		FlowGraphBuildingStrategy.super.validateConfig(config);
+		super.validateConfig(config);
 		validateParallelConfig(config);
 	}
 
