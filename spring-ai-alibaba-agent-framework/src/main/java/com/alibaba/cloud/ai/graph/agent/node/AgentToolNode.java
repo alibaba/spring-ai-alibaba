@@ -68,10 +68,12 @@ import java.util.stream.IntStream;
 
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_TOOL_NAME;
 import static com.alibaba.cloud.ai.graph.agent.DefaultBuilder.POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING;
+import static com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectConstants.FINISH_REASON_METADATA_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_ID_DEFAULT;
+import static org.springframework.ai.model.tool.ToolExecutionResult.FINISH_REASON;
 
 /**
  * Node that executes tool calls from assistant messages.
@@ -218,6 +220,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		Map<String, Object> mergedUpdates = new HashMap<>(); // Accumulated results from successful tools
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 
+		Boolean returnDirect = null;
 		for (AssistantMessage.ToolCall toolCall : toolCalls) {
 			// Each tool gets its own isolated update map
 			// If this tool times out, clear() only affects this map, not mergedUpdates
@@ -225,11 +228,17 @@ public class AgentToolNode implements NodeActionWithConfig {
 			ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, toolSpecificUpdate,
 					false);
 			toolResponses.add(response.toToolResponse());
+			returnDirect = shouldReturnDirect(toolCall, returnDirect);
 			// Merge immediately - subsequent timeout clear() won't affect already-merged data
 			mergedUpdates.putAll(toolSpecificUpdate);
 		}
 
-		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder().responses(toolResponses).build();
+		ToolResponseMessage.Builder builder = ToolResponseMessage.builder()
+				.responses(toolResponses);
+		if (returnDirect != null && returnDirect) {
+			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+		}
+		ToolResponseMessage toolResponseMessage = builder.build();
 
 		if (enableActingLog) {
 			logger.info("[ThreadId {}] Agent {} acting returned: {}", config.threadId().orElse(THREAD_ID_DEFAULT),
@@ -425,6 +434,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 					existingResponses.size());
 		}
 
+		Boolean returnDirect = Boolean.FALSE;
 		// Execute remaining tools (supports parallel)
 		Map<String, Object> newResults;
 		if (parallelToolExecution && remainingToolCalls.size() > 1) {
@@ -452,6 +462,23 @@ public class AgentToolNode implements NodeActionWithConfig {
 		}
 
 		return updatedState;
+	}
+
+	@NotNull
+	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect) {
+		String toolName = toolCall.name();
+		ToolCallback toolCallback = toolCallbacks.stream()
+				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
+				.findFirst()
+				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
+
+		if (returnDirect == null) {
+			returnDirect = toolCallback.getToolMetadata().returnDirect();
+		}
+		else {
+			returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
+		}
+		return returnDirect;
 	}
 
 	/**

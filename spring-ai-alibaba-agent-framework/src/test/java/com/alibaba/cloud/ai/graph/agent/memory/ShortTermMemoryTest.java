@@ -21,8 +21,10 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
-import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
-import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
 import com.alibaba.cloud.ai.graph.agent.tools.WeatherTool;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
@@ -33,9 +35,7 @@ import org.springframework.ai.tool.ToolCallback;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -160,64 +160,12 @@ class ShortTermMemoryTest {
 	}
 
 	/**
-	 * Test 3: Message trimming - keep context window manageable
+	 * Test 3: Message trimming - keep context window manageable using MessagesModelHook.
+	 * Before each model call, keeps the first message (e.g. system) and the last 4 messages when over threshold.
 	 */
 	@Test
 	void testMessageTrimming() throws Exception {
-		// Create a hook that trims messages to keep only the first and last 3 messages
-		ModelHook messageTrimmingHook = new ModelHook() {
-			private static final int MAX_MESSAGES = 5;
-
-			@Override
-			public String getName() {
-				return "message_trimming";
-			}
-
-			@Override
-			public List<JumpTo> canJumpTo() {
-				return List.of();
-			}
-
-			@Override
-			public HookPosition[] getHookPositions() {
-				return new HookPosition[]{HookPosition.BEFORE_MODEL};
-			}
-
-			@Override
-			public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-				Optional<Object> messagesOpt = state.value("messages");
-				if (messagesOpt.isEmpty()) {
-					return CompletableFuture.completedFuture(Map.of());
-				}
-
-				List<Message> messages = (List<Message>) messagesOpt.get();
-				System.out.println("Current message count: " + messages.size());
-
-				if (messages.size() <= MAX_MESSAGES) {
-					return CompletableFuture.completedFuture(Map.of()); // No need to trim
-				}
-
-				// Keep the first message (system message) and the last few messages
-				Message firstMsg = messages.get(0);
-				int keepCount = 4; // Keep last 4 messages
-				List<Message> recentMessages = messages.subList(
-						messages.size() - keepCount,
-						messages.size()
-				);
-
-				List<Message> newMessages = new ArrayList<>();
-				newMessages.add(firstMsg);
-				newMessages.addAll(recentMessages);
-
-				System.out.println("Trimmed message count: " + newMessages.size());
-				return CompletableFuture.completedFuture(Map.of("messages", newMessages));
-			}
-
-			@Override
-			public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-				return CompletableFuture.completedFuture(Map.of());
-			}
-		};
+		MessageTrimmingMessagesHook messageTrimmingHook = new MessageTrimmingMessagesHook();
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("trimming_agent")
@@ -248,55 +196,12 @@ class ShortTermMemoryTest {
 	}
 
 	/**
-	 * Test 4: Message deletion - clear old messages
+	 * Test 4: Message deletion - clear old messages using MessagesModelHook.
+	 * After each model response, the hook keeps only the last 4 messages (REPLACE policy).
 	 */
 	@Test
 	void testMessageDeletion() throws Exception {
-		// Create a hook that deletes old messages after model response
-		ModelHook messageDeletionHook = new ModelHook() {
-			@Override
-			public String getName() {
-				return "message_deletion";
-			}
-
-			@Override
-			public List<JumpTo> canJumpTo() {
-				return List.of();
-			}
-
-			@Override
-			public HookPosition[] getHookPositions() {
-				return new HookPosition[]{HookPosition.AFTER_MODEL};
-			}
-
-			@Override
-			public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
-				return CompletableFuture.completedFuture(Map.of());
-			}
-
-			@Override
-			public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
-				Optional<Object> messagesOpt = state.value("messages");
-				if (messagesOpt.isEmpty()) {
-					return CompletableFuture.completedFuture(Map.of());
-				}
-
-				List<Message> messages = (List<Message>) messagesOpt.get();
-				System.out.println("Message count before deletion: " + messages.size());
-
-				if (messages.size() > 4) {
-					// Keep only the last 4 messages
-					List<Message> recentMessages = messages.subList(
-							messages.size() - 4,
-							messages.size()
-					);
-					System.out.println("Message count after deletion: " + recentMessages.size());
-					return CompletableFuture.completedFuture(Map.of("messages", recentMessages));
-				}
-
-				return CompletableFuture.completedFuture(Map.of());
-			}
-		};
+		MessageDeletionMessagesHook messageDeletionHook = new MessageDeletionMessagesHook();
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("deletion_agent")
@@ -324,6 +229,71 @@ class ShortTermMemoryTest {
 		// Due to message deletion, the agent should not remember the password
 		assertFalse(response.getText().contains("12345"),
 				"Old messages should be deleted");
+	}
+
+	/**
+	 * MessagesModelHook that deletes old messages after each model response:
+	 * keeps only the last 4 messages when there are more than 4.
+	 */
+	@HookPositions(HookPosition.AFTER_MODEL)
+	private static class MessageDeletionMessagesHook extends MessagesModelHook {
+		private static final int KEEP_LAST = 4;
+
+		@Override
+		public String getName() {
+			return "message_deletion";
+		}
+
+		@Override
+		public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
+			System.out.println("Message count before deletion: " + previousMessages.size());
+
+			if (previousMessages.size() > KEEP_LAST) {
+				List<Message> recentMessages = new ArrayList<>(previousMessages.subList(
+						previousMessages.size() - KEEP_LAST,
+						previousMessages.size()));
+				System.out.println("Message count after deletion: " + recentMessages.size());
+				return new AgentCommand(recentMessages, UpdatePolicy.REPLACE);
+			}
+
+			return new AgentCommand(previousMessages);
+		}
+	}
+
+	/**
+	 * MessagesModelHook that trims messages before each model call: keeps the first message
+	 * (e.g. system) and the last 4 messages when total count exceeds MAX_MESSAGES.
+	 */
+	@HookPositions(HookPosition.BEFORE_MODEL)
+	private static class MessageTrimmingMessagesHook extends MessagesModelHook {
+		private static final int MAX_MESSAGES = 5;
+		private static final int KEEP_LAST = 4;
+
+		@Override
+		public String getName() {
+			return "message_trimming";
+		}
+
+		@Override
+		public AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
+			System.out.println("Current message count: " + previousMessages.size());
+
+			if (previousMessages.size() <= MAX_MESSAGES) {
+				return new AgentCommand(previousMessages);
+			}
+
+			Message firstMsg = previousMessages.get(0);
+			List<Message> recentMessages = previousMessages.subList(
+					previousMessages.size() - KEEP_LAST,
+					previousMessages.size());
+
+			List<Message> newMessages = new ArrayList<>();
+			newMessages.add(firstMsg);
+			newMessages.addAll(recentMessages);
+
+			System.out.println("Trimmed message count: " + newMessages.size());
+			return new AgentCommand(newMessages, UpdatePolicy.REPLACE);
+		}
 	}
 
 	/**

@@ -220,7 +220,7 @@ public class GraphRunnerContext {
 				// The ConditionalParallelNode will handle the MultiCommand internally
 				return new Command(conditionalParallelNodeId, state);
 			} else {
-				// Single Command action (original logic)
+				// Single Command action
 				var singleAction = edgeCondition.singleAction();
 				var command = singleAction.apply(this.overallState, config).get();
 				

@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.hook;
 
 
 import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.agent.Prioritized;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -44,7 +45,7 @@ import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_HOOK_NAME_PREFIX;
  * @see ModelHook
  * @see HookPosition
  */
-public interface Hook {
+public interface Hook extends Prioritized {
 	/**
 	 * Gets the unique name of this hook.
 	 * The name is used to identify the hook in the execution graph.
