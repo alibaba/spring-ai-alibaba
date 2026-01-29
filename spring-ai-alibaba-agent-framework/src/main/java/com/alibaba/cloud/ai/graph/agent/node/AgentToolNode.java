@@ -372,6 +372,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Build result - collect responses from AtomicReferenceArray
 		Map<String, Object> updatedState = new HashMap<>();
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
+		Boolean returnDirect = null;
 		for (int i = 0; i < orderedResponses.length(); i++) {
 			ToolCallResponse response = orderedResponses.get(i);
 			if (response == null) {
@@ -382,9 +383,14 @@ public class AgentToolNode implements NodeActionWithConfig {
 				logger.warn("Tool {} at index {} has null response, using error fallback", toolCall.name(), i);
 			}
 			toolResponses.add(response.toToolResponse());
+			returnDirect = shouldReturnDirect(toolCalls.get(i), returnDirect);
 		}
 
-		updatedState.put("messages", ToolResponseMessage.builder().responses(toolResponses).build());
+		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(toolResponses);
+		if (returnDirect != null && returnDirect) {
+			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+		}
+		updatedState.put("messages", builder.build());
 		updatedState.putAll(stateCollector.mergeAll());
 
 		if (enableActingLog) {
@@ -434,7 +440,6 @@ public class AgentToolNode implements NodeActionWithConfig {
 					existingResponses.size());
 		}
 
-		Boolean returnDirect = Boolean.FALSE;
 		// Execute remaining tools (supports parallel)
 		Map<String, Object> newResults;
 		if (parallelToolExecution && remainingToolCalls.size() > 1) {
@@ -449,10 +454,20 @@ public class AgentToolNode implements NodeActionWithConfig {
 		List<ToolResponseMessage.ToolResponse> allResponses = new ArrayList<>(existingResponses);
 		allResponses.addAll(newToolResponseMessage.getResponses());
 
+		// Compute returnDirect from all tool calls (existing + remaining)
+		Boolean returnDirect = null;
+		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+			returnDirect = shouldReturnDirect(toolCall, returnDirect);
+		}
+
 		// Build final result
 		Map<String, Object> updatedState = new HashMap<>(newResults);
 		List<Object> newMessages = new ArrayList<>();
-		newMessages.add(ToolResponseMessage.builder().responses(allResponses).build());
+		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(allResponses);
+		if (returnDirect != null && returnDirect) {
+			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+		}
+		newMessages.add(builder.build());
 		newMessages.add(new RemoveByHash<>(toolResponseMessage));
 		updatedState.put("messages", newMessages);
 
