@@ -206,7 +206,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * </p>
 	 * <p>
 	 * Note: This differs from parallel execution mode, which respects
-	 * {@link com.alibaba.cloud.ai.graph.state.KeyStrategy} for merge operations. If you
+	 * {@link com.alibaba.cloud.ai.graph.KeyStrategy} for merge operations. If you
 	 * need deterministic merge behavior (e.g., APPEND for lists), use parallel execution
 	 * mode instead.
 	 * </p>
@@ -263,7 +263,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * <h3>State Merge Semantics</h3>
 	 * <p>
 	 * Parallel mode uses {@link ToolStateCollector} which respects the
-	 * {@link com.alibaba.cloud.ai.graph.state.KeyStrategy} configured for each state key.
+	 * {@link com.alibaba.cloud.ai.graph.KeyStrategy} configured for each state key.
 	 * This provides deterministic merge behavior even when multiple tools write to the
 	 * same key concurrently:
 	 * <ul>
@@ -464,7 +464,6 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return updatedState;
 	}
 
-	@NotNull
 	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect) {
 		String toolName = toolCall.name();
 		ToolCallback toolCallback = toolCallbacks.stream()
