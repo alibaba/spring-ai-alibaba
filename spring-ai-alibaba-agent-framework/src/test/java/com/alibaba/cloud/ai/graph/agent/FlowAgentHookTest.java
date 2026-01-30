@@ -1,19 +1,25 @@
 package com.alibaba.cloud.ai.graph.agent;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.*;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.CountLoopStrategy;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.utils.HookFactory;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.http.HttpHeaders;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,13 +40,34 @@ public class FlowAgentHookTest {
 
 	@BeforeEach
 	public void setUp() {
-		DashScopeApi dashScopeApi = DashScopeApi.builder()
-				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+//		DashScopeApi dashScopeApi = DashScopeApi.builder()
+//				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+//				.build();
+//
+//		// Create DashScope ChatModel instance
+//		this.chatModel = DashScopeChatModel.builder()
+//				.dashScopeApi(dashScopeApi)
+//				.build();
+
+
+
+		HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.add("X-PLATFORM", "dashscope");
+
+// 这里可以使用不同的配置，比如预发环境的特殊配置
+		OpenAiApi openAiApi = OpenAiApi.builder()
+				.apiKey("6607aa76b08245109a406ceac465356c")
+				.baseUrl("http://1688openai.alibaba-inc.com")
+				.headers(httpHeaders)
 				.build();
 
-		// Create DashScope ChatModel instance
-		this.chatModel = DashScopeChatModel.builder()
-				.dashScopeApi(dashScopeApi)
+		chatModel =  OpenAiChatModel.builder()
+				.openAiApi(openAiApi)
+				.defaultOptions(
+						OpenAiChatOptions.builder()
+								.model("qwen3-next-80b-a3b-instruct")
+								.build()
+				)
 				.build();
 
 		// Create hooks using HookFactory
@@ -386,6 +413,75 @@ public class FlowAgentHookTest {
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("ParallelAgent with both beforeAgent and beforeModel hooks execution failed: " + e.getMessage());
+		}
+	}
+
+	@Test
+	public void testConditionalFlowWithHook() throws Exception {
+		System.out.println("\n========== Testing Conditional Flow with Hook ==========\n");
+
+		// Create sub-agents
+		ReactAgent writerAgent = ReactAgent.builder()
+				.name("writer_agent")
+				.model(chatModel)
+				.description("擅长写作")
+				.instruction("你是一个知名的作家，20字以内。")
+				.outputKey("writer_output")
+				.enableLogging(false)
+				.build();
+
+		ReactAgent translatorAgent = ReactAgent.builder()
+				.name("translator_agent")
+				.model(chatModel)
+				.description("擅长翻译")
+				.instruction("你是一个专业的翻译家，20字以内。")
+				.outputKey("translator_output")
+				.enableLogging(false)
+				.build();
+
+		ReactAgent reviewerAgent = ReactAgent.builder()
+				.name("reviewer_agent")
+				.model(chatModel)
+				.description("擅长评审")
+				.instruction("你是一个知名的评论家，20字以内。")
+				.outputKey("reviewer_output")
+				.enableLogging(false)
+				.build();
+
+		// Create conditional flow agent with hook
+		FlowAgent conditionalAgent = new FlowAgent("CONDITIONAL", "条件路由工作流",
+				null, List.of(writerAgent, translatorAgent, reviewerAgent), null, null,
+				List.of(logAgentHook, logModelHook)) {
+			@Override
+			protected StateGraph buildSpecificGraph(com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder.FlowGraphConfig config)
+					throws GraphStateException {
+				Map<String, Agent> conditionalAgents = new HashMap<>();
+				conditionalAgents.put("write", writerAgent);
+				conditionalAgents.put("translate", translatorAgent);
+				conditionalAgents.put("review", reviewerAgent);
+				config.conditionalAgents(conditionalAgents);
+				return com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder.buildGraph(config.getName(), config);
+			}
+		};
+
+		try {
+			// Execute the agent
+			Optional<OverAllState> result = conditionalAgent.invoke("写一首诗");
+
+			assertTrue(result.isPresent(), "Result should be present");
+			System.out.println("result=" + result.get());
+
+			// Print Mermaid graph representation
+			GraphRepresentation mermaidGraph = conditionalAgent.getGraph()
+					.getGraph(GraphRepresentation.Type.MERMAID);
+			assertNotNull(mermaidGraph, "Mermaid graph should not be null");
+			System.out.println("\n=== Conditional Flow Mermaid Graph ===");
+			System.out.println(mermaidGraph.content());
+			System.out.println("=======================================\n");
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Conditional flow with hook execution failed: " + e.getMessage());
 		}
 	}
 }
