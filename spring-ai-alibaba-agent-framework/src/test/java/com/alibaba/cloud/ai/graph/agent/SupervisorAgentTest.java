@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SupervisorAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
@@ -530,35 +531,74 @@ class SupervisorAgentTest {
 				.name("writer_agent")
 				.model(chatModel)
 				.description("擅长创作各类文章")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答: {}")
 				.outputKey("writer_output")
+				.build();
+
+		ReactAgent reviewAgent = ReactAgent.builder()
+				.name("review_agent")
+				.model(chatModel)
+				.description("对文章内容进行评论")
+				.instruction("你是一个知名的作家，擅长写作和创作。请对用户文章进行评论: {writer_output}")
+				.outputKey("review_output")
 				.build();
 
 		// Use HookFactory to create a LogAgentHook
 		AgentHook logHook = HookFactory.createLogAgentHook();
+
+		final String SUPERVISOR_SYSTEM_PROMPT = """
+				你是一个智能的内容处理监督者，负责协调协作和评审任务。
+
+				## 可用的子Agent及其职责
+
+				### writer_agent
+				- **功能**: 擅长各种文章与诗歌的写作
+				- **适用场景**: 当有写作需求时
+				- **输出**: writer_output
+
+				### review_agent
+				- **功能**: 擅长对文章进行评审和修改
+				- **适用场景**: 当文章需要评审、改进或优化时
+				- **输出**: review_output
+
+				## 决策规则
+
+				1. **根据当前要完成的任务判断**:
+				   - 如果需要写文章或者诗词时，选择 writer_agent
+				   - 如果文章需要评审、改进或优化，选择 review_agent
+
+				2. **任务完成判断**:
+				   - 当所有任务完成时，返回 FINISH
+				   
+				3. **注意**:
+				   - 如果需要选择一个子Agent来处理当前任务
+
+				## 响应格式
+				只返回Agent名称（writer_agent、review_agent）或 FINISH，不要包含其他解释。
+				""";
 
 		// Create SupervisorAgent with the hook
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
 				.description("内容管理监督者，负责协调写作")
 				.model(chatModel)
-				.subAgents(List.of(writerAgent))
+//				.mainAgent(ReactAgent.builder()
+//						.name("main_agent")
+//						.model(chatModel)
+//						.description("监督者主Agent，负责路由决策")
+//						.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
+//						.instruction("用户的写作需求是: {input}")
+//						.outputKey("supervisor_next")
+//						.outputType()
+//						.build())
+				.subAgents(List.of(writerAgent, reviewAgent))
 				.hooks(List.of(logHook))
-				.systemPrompt("""
-					你是一个智能的内容处理监督者，负责协调写作任务。
-					
-					## 可用的子Agent及其职责
-					
-					### writer_agent
-					- **功能**: 你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答
-					- **输出**: writer_output
-					
-					## 响应格式
-					只返回Agent名称（translator_agent、reviewer_agent）或FINISH，不要包含其他解释。
-					""")
 				.build();
 
 		try {
+
+			printGraphRepresentation(supervisorAgent.asStateGraph());
+
 			System.out.println("\n========== Starting SupervisorAgent with HookFactory Test ==========\n");
 
 			// Execute the agent
@@ -584,6 +624,11 @@ class SupervisorAgentTest {
 			e.printStackTrace();
 			fail("SupervisorAgent with HookFactory execution failed: " + e.getMessage());
 		}
+	}
+
+	private void printGraphRepresentation(StateGraph graph) {
+		GraphRepresentation representation = graph.getGraph(GraphRepresentation.Type.PLANTUML);
+		System.out.println(representation.content());
 	}
 }
 
