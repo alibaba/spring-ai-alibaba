@@ -52,16 +52,6 @@ import static com.alibaba.cloud.ai.studio.core.base.manager.AppComponentManager.
 @Component
 public class SandboxManager {
 
-	/** Nashorn engine name constant */
-	private static final String ENGINE_NAME_NASHORN = "nashorn";
-
-	/** Script engine manager */
-	@Resource
-	private ScriptEngineManager engineManager;
-
-	/** Cache for ScriptEngine instances to avoid repeated creation */
-	private final Map<String, ScriptEngine> engineCache = new ConcurrentHashMap<>();
-
 	/**
 	 * Executes a script
 	 * @param scriptContent Script content
@@ -70,57 +60,7 @@ public class SandboxManager {
 	 * @return Execution result
 	 */
 	public Result<String> executeScript(String scriptContent, Map<String, Object> localVariableMap, String requestId) {
-		// Validate parameters
-		if (StringUtils.isBlank(scriptContent)) {
-			log.error("Script content cannot be empty");
-			return Result.error(requestId, ErrorCode.INVALID_PARAMS);
-		}
-
-		try {
-			// Get or create script engine
-			ScriptEngine engine = getScriptEngine(ENGINE_NAME_NASHORN);
-			if (engine == null) {
-				return Result.error(requestId, ErrorCode.SYSTEM_ERROR);
-			}
-
-			// Create context
-			ScriptContext context = new SimpleScriptContext();
-
-			// Inject variables
-			Bindings bindings = engine.createBindings();
-			if (localVariableMap != null) {
-				bindings.putAll(localVariableMap);
-			}
-			context.setBindings(bindings, ScriptContext.ENGINE_SCOPE);
-
-			// Execute script
-			Object result;
-			try {
-				result = engine.eval(scriptContent, context);
-			}
-			catch (ScriptException e) {
-				log.error("Script execution error: {}", e.getMessage());
-				Map<String, Object> errorResult = Maps.newHashMap();
-				errorResult.put("success", false);
-				errorResult.put("message", e.getMessage());
-				errorResult.put("code", "SCRIPT_ERROR");
-				return Result.success(requestId, JsonUtils.toJson(errorResult));
-			}
-
-			// Build result map
-			Map<String, Object> resultMap = Maps.newHashMap();
-			resultMap.put("success", true);
-			resultMap.put("data", result);
-
-			// Convert to JSON and return
-			return Result.success(requestId, JsonUtils.toJson(resultMap));
-		}
-		catch (Exception e) {
-			log.error("Script execution exception", e);
-			StringWriter sw = new StringWriter();
-			e.printStackTrace(new PrintWriter(sw));
-			return Result.error(requestId, ErrorCode.SYSTEM_ERROR);
-		}
+		return executeScriptWithLanguage(scriptContent, localVariableMap, "js", requestId);
 	}
 
 	/**
@@ -131,24 +71,51 @@ public class SandboxManager {
 	 * @return Execution result
 	 */
 	public Result<String> executePython3Script(String scriptContent, Map<String, Object> variables, String requestId) {
+		return executeScriptWithLanguage(scriptContent, variables, "python", requestId);
+	}
+
+	/**
+	 * Executes script with specified language using GraalVM
+	 * @param scriptContent Script content
+	 * @param variables Script variable mapping
+	 * @param language Language identifier ("js", "python", etc.)
+	 * @param requestId Request ID
+	 * @return Execution result
+	 */
+	public Result<String> executeScriptWithLanguage(String scriptContent, Map<String, Object> variables, String language, String requestId) {
+		// Validate parameters
+		if (StringUtils.isBlank(scriptContent)) {
+			log.error("Script content cannot be empty");
+			return Result.error(requestId, ErrorCode.INVALID_PARAMS);
+		}
+
 		try {
-			// Use GraalVM Python API to execute Python script directly
-			Context.Builder contextBuilder = Context.newBuilder("python")
-				.allowAllAccess(true)
-				.option("python.ForceImportSite", "true");
+			Context.Builder contextBuilder;
+
+			if ("python".equals(language)) {
+				// For Python, enable site module import
+				contextBuilder = Context.newBuilder(language)
+						.allowAllAccess(true)
+						.option("python.ForceImportSite", "true");
+			} else {
+				// For other languages (like JS), use default configuration without additional options
+				// that might not be supported by all language implementations
+				contextBuilder = Context.newBuilder(language)
+						.allowAllAccess(true);
+			}
 
 			// Create isolated execution environment
 			try (Context context = contextBuilder.build()) {
 
-				// Inject variables into Python environment
+				// Inject variables into script environment
 				if (variables != null && !variables.isEmpty()) {
 					for (Map.Entry<String, Object> entry : variables.entrySet()) {
-						context.getBindings("python").putMember(entry.getKey(), entry.getValue());
+						context.getBindings(language).putMember(entry.getKey(), entry.getValue());
 					}
 				}
 
 				// Execute script and capture result
-				Value result = context.eval("python", scriptContent);
+				Value result = context.eval(language, scriptContent);
 
 				// Build result map
 				Map<String, Object> resultMap = Maps.newHashMap();
@@ -184,46 +151,11 @@ public class SandboxManager {
 			}
 		}
 		catch (Exception e) {
-			log.error("GraalVM Python script execution exception", e);
+			log.error("GraalVM {} script execution exception", language, e);
 			StringWriter sw = new StringWriter();
 			e.printStackTrace(new PrintWriter(sw));
 			return Result.error(requestId, ErrorCode.SYSTEM_ERROR);
 		}
-	}
-
-	/**
-	 * Gets or creates a script engine instance
-	 * @param engineName Name of the script engine
-	 * @return ScriptEngine instance
-	 */
-	private synchronized ScriptEngine getScriptEngine(String engineName) {
-		ScriptEngine engine = engineCache.get(engineName);
-		if (engine == null) {
-			// For Nashorn engine, use ES6 configuration
-			if (ENGINE_NAME_NASHORN.equals(engineName)) {
-				try {
-					engine = new NashornScriptEngineFactory().getScriptEngine("--language=es6");
-					log.info("Successfully created Nashorn script engine (ES6 mode): {}", engine.getClass().getName());
-				}
-				catch (Exception e) {
-					log.error("Failed to create Nashorn engine, trying standard engine", e);
-					engine = engineManager.getEngineByName(engineName);
-				}
-			}
-			else {
-				engine = engineManager.getEngineByName(engineName);
-			}
-
-			if (engine != null) {
-				engineCache.put(engineName, engine);
-				log.info("Successfully created script engine: {}, implementation class: {}", engineName,
-						engine.getClass().getName());
-			}
-			else {
-				log.error("Unsupported script engine: {}", engineName);
-			}
-		}
-		return engine;
 	}
 
 }

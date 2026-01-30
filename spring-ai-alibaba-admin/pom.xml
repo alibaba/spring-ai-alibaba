@@ -104,7 +104,7 @@
         <asm.version>9.5</asm.version>
 
         <!-- GraalVM -->
-        <graalvm-js.version>22.3.1</graalvm-js.version>
+        <graalvm-js.version>24.2.2</graalvm-js.version>
         <graalvm-python.version>24.2.1</graalvm-python.version>
         <graalvm-truffle.version>24.2.1</graalvm-truffle.version>
         <graalvm-sdk.version>24.2.1</graalvm-sdk.version>
