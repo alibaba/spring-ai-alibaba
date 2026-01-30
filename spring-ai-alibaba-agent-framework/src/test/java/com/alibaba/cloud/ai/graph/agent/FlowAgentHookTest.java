@@ -58,34 +58,13 @@ public class FlowAgentHookTest {
 
 	@BeforeEach
 	public void setUp() {
-//		DashScopeApi dashScopeApi = DashScopeApi.builder()
-//				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-//				.build();
-//
-//		// Create DashScope ChatModel instance
-//		this.chatModel = DashScopeChatModel.builder()
-//				.dashScopeApi(dashScopeApi)
-//				.build();
-
-
-
-		HttpHeaders httpHeaders = new HttpHeaders();
-		httpHeaders.add("X-PLATFORM", "dashscope");
-
-// 这里可以使用不同的配置，比如预发环境的特殊配置
-		OpenAiApi openAiApi = OpenAiApi.builder()
-				.apiKey("6607aa76b08245109a406ceac465356c")
-				.baseUrl("http://1688openai.alibaba-inc.com")
-				.headers(httpHeaders)
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 				.build();
 
-		chatModel =  OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
-				.defaultOptions(
-						OpenAiChatOptions.builder()
-								.model("qwen3-next-80b-a3b-instruct")
-								.build()
-				)
+		// Create DashScope ChatModel instance
+		this.chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
 				.build();
 
 		// Create hooks using HookFactory
