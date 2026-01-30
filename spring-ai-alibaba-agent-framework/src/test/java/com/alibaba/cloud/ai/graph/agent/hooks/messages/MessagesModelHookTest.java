@@ -122,7 +122,7 @@ public class MessagesModelHookTest {
 			boolean foundSystemMessage = false;
 			boolean foundOriginalMessage1 = false;
 			boolean foundOriginalMessage2 = false;
-			
+
 			for (Message message : resultMessages) {
 				if (message instanceof SystemMessage) {
 					String content = message.getText();
@@ -139,7 +139,7 @@ public class MessagesModelHookTest {
 					}
 				}
 			}
-			
+
 			assertTrue(foundSystemMessage, "应该找到替换后的系统消息");
 			assertTrue(foundOriginalMessage2, "应该找到最后一条用户原始消息2");
 			assertFalse(foundOriginalMessage1, "不应该找到第一条用户原始消息1");
@@ -230,11 +230,11 @@ public class MessagesModelHookTest {
 		Optional<OverAllState> result = agent.invoke(messages);
 
 		assertTrue(result.isPresent(), "结果应该存在");
-		
+
 		// First hook should be called
 		assertTrue(firstHookBeforeCount.get() > 0, "第一个 hook 的 beforeModel 应该被调用");
 		assertTrue(firstHookAfterCount.get() == 0, "第一个 hook 的 afterModel 不应该被调用（因为跳转到 end）");
-		
+
 		// Second and third hooks should be skipped
 		assertEquals(0, secondHookBeforeCount.get(), "第二个 hook 的 beforeModel 不应该被调用（被跳过）");
 		assertEquals(0, secondHookAfterCount.get(), "第二个 hook 的 afterModel 不应该被调用（被跳过）");
@@ -287,15 +287,15 @@ public class MessagesModelHookTest {
 		Optional<OverAllState> result = agent.invoke(messages);
 
 		assertTrue(result.isPresent(), "结果应该存在");
-		
+
 		// First MessagesModelHook should be called
 		assertTrue(messagesHookBeforeCount.get() > 0, "第一个 MessagesModelHook 的 beforeModel 应该被调用");
 		assertEquals(0, messagesHookAfterCount.get(), "第一个 MessagesModelHook 的 afterModel 不应该被调用");
-		
+
 		// ModelHook should be skipped
 		assertEquals(0, modelHookBeforeCount.get(), "ModelHook 的 beforeModel 不应该被调用（被跳过）");
 		assertEquals(0, modelHookAfterCount.get(), "ModelHook 的 afterModel 不应该被调用（被跳过）");
-		
+
 		// Second MessagesModelHook should be skipped
 		assertEquals(0, secondMessagesHookBeforeCount.get(), "第二个 MessagesModelHook 的 beforeModel 不应该被调用（被跳过）");
 		assertEquals(0, secondMessagesHookAfterCount.get(), "第二个 MessagesModelHook 的 afterModel 不应该被调用（被跳过）");
@@ -576,7 +576,7 @@ public class MessagesModelHookTest {
 
 		assertTrue(result.isPresent(), "结果应该存在");
 		assertTrue(afterModelCallCount.get() > 0, "afterModel 应该被调用");
-		
+
 		// Key verification: tool should NOT be called because JumpTo.end should skip it
 		assertEquals(0, toolCallCount.get(), "工具不应该被调用（因为 JumpTo.end 直接结束了）");
 
@@ -611,7 +611,7 @@ public class MessagesModelHookTest {
 			public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
 				afterModelCallCount.incrementAndGet();
 				System.out.println("AfterModelJumpToModelHook.afterModel called, count: " + afterModelCallCount.get());
-				
+
 				// On first call, jump back to model; on second call, end
 				if (afterModelCallCount.get() == 1) {
 					System.out.println("First call - jumping back to model");
@@ -677,4 +677,3 @@ public class MessagesModelHookTest {
 		System.out.println("成功验证 afterModel 中的 JumpTo.model 在有工具配置时正常工作");
 	}
 }
-

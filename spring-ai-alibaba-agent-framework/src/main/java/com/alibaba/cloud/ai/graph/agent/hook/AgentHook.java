@@ -55,5 +55,10 @@ public abstract class AgentHook implements Hook {
         this.reactAgent = agent;
     }
 
+    @Override
+    public int getOrder() {
+        return 0;
+    }
+
 }
 

@@ -58,6 +58,7 @@
         <module>spring-boot-starters/spring-ai-alibaba-starter-config-nacos</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-builtin-nodes</module>
+        <module>spring-ai-alibaba-sandbox-tool</module>
     </modules>
 
     <scm>
@@ -146,6 +147,8 @@
         <opentelemetry.version>1.38.0</opentelemetry.version>
         <a2a-sdk.version>0.2.5.Beta2</a2a-sdk.version>
 
+        <graalvm.polyglot.version>24.2.1</graalvm.polyglot.version>
+
         <!-- CheckStyle Plugin -->
         <disable.checks>false</disable.checks>
         <testcontainers.version>1.21.3</testcontainers.version>
@@ -181,6 +184,8 @@
         <spotless.version>2.44.5</spotless.version>
 
         <central.publishing.maven.version>0.7.0</central.publishing.maven.version>
+
+        <slf4j.version>2.0.17</slf4j.version>
     </properties>
 
     <dependencyManagement>
