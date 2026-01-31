@@ -51,7 +51,7 @@ public class SupervisorGraphBuildingStrategy extends AbstractFlowGraphBuildingSt
 		Agent mainAgent = config.getMainAgent();
 		// First node is mainAgent via MainAgentNodeAction (proxy), no asNode()
 		if (mainAgent instanceof ReactAgent reactAgent) {
-			this.graph.addNode(rootAgent.name(), AsyncNodeActionWithConfig.node_async(new MainAgentNodeAction(reactAgent)));
+			this.graph.addNode(rootAgent.name(), AsyncNodeActionWithConfig.node_async(new MainAgentNodeAction(reactAgent, config.getSubAgents())));
 		}
 		else {
 			throw new IllegalArgumentException("Supervisor mainAgent must be a ReactAgent, got: " + (mainAgent != null ? mainAgent.getClass().getName() : "null"));
@@ -92,7 +92,7 @@ public class SupervisorGraphBuildingStrategy extends AbstractFlowGraphBuildingSt
 		this.graph.addConditionalEdges(mainAgentNodeName, mainAgentToSupervisor, mainAgentEdgeMap);
 
 		// 2.2 Conditional edges from SupervisorNode to subAgents (MultiCommand from mainAgent output)
-		SupervisorNodeFromState supervisorNodeFromState = new SupervisorNodeFromState(routingKey, config.getSubAgents());
+		SupervisorNodeFromState supervisorNodeFromState = new SupervisorNodeFromState(routingKey, config.getSubAgents(), this.entryNode);
 		this.graph.addParallelConditionalEdges(supervisorNodeName,
 				AsyncMultiCommandAction.node_async(supervisorNodeFromState),
 				edgeRoutingMap);

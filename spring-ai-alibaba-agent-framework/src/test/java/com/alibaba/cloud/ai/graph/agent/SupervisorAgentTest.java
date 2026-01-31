@@ -531,13 +531,17 @@ class SupervisorAgentTest {
 				.name("writer_agent")
 				.model(chatModel)
 				.description("擅长创作各类文章")
-				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答: {}")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答: {input}")
+				.includeContents(false)
+				.returnReasoningContents(false)
 				.outputKey("writer_output")
 				.build();
 
 		ReactAgent reviewAgent = ReactAgent.builder()
 				.name("review_agent")
 				.model(chatModel)
+				.includeContents(false)
+				.returnReasoningContents(false)
 				.description("对文章内容进行评论")
 				.instruction("你是一个知名的作家，擅长写作和创作。请对用户文章进行评论: {writer_output}")
 				.outputKey("review_output")
@@ -568,29 +572,32 @@ class SupervisorAgentTest {
 				   - 如果文章需要评审、改进或优化，选择 review_agent
 
 				2. **任务完成判断**:
-				   - 当所有任务完成时，返回 FINISH
-				   
+				   - 当所有任务完成时，返回空数组或 FINISH
+				
 				3. **注意**:
-				   - 如果需要选择一个子Agent来处理当前任务
+				   - 如果需要的话，可以同时选择多个子Agent来并行的处理任务
 
-				## 响应格式
-				只返回Agent名称（writer_agent、review_agent）或 FINISH，不要包含其他解释。
+				## 路由决策输出格式（仅在选择子Agent时适用）
+				当且仅当需要做出路由决策（选择下一个要调用的子Agent或结束任务）时，请以 JSON 数组格式输出，供系统解析路由；此格式仅用于本次路由，不影响你在其他场景下的主要任务输出格式。
+				- 选择单个子Agent 时输出: ["writer_agent"] 或 ["review_agent"]
+				- 选择多个子Agent 并行时输出: ["writer_agent", "review_agent"]
+				- 任务全部完成时输出: [] 或 ["FINISH"]
+				合法元素仅限: writer_agent、review_agent、FINISH。做路由决策时只输出上述 JSON 数组，不要包含其他解释。
 				""";
 
-		// Create SupervisorAgent with the hook
+		// Create SupervisorAgent with the hook (mainAgent is assembled from systemPrompt, instruction, model, hooks)
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
 				.description("内容管理监督者，负责协调写作")
 				.model(chatModel)
-//				.mainAgent(ReactAgent.builder()
-//						.name("main_agent")
-//						.model(chatModel)
-//						.description("监督者主Agent，负责路由决策")
-//						.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
-//						.instruction("用户的写作需求是: {input}")
-//						.outputKey("supervisor_next")
-//						.outputType()
-//						.build())
+				.mainAgent(ReactAgent.builder()
+						.name("main_agent")
+						.model(chatModel)
+						.description("监督者主Agent，负责路由决策")
+						.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
+						.instruction("用户的写作需求是: {input}")
+						.outputKey("final_output")
+						.build())
 				.subAgents(List.of(writerAgent, reviewAgent))
 				.hooks(List.of(logHook))
 				.build();
@@ -603,6 +610,8 @@ class SupervisorAgentTest {
 
 			// Execute the agent
 			Optional<OverAllState> result = supervisorAgent.invoke("帮我写一篇关于春天的短文");
+
+			result = supervisorAgent.invoke("帮我写一篇关于春天的短文");
 
 			assertTrue(result.isPresent(), "Result should be present");
 			OverAllState state = result.get();

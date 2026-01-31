@@ -96,7 +96,7 @@ public interface FlowGraphBuildingStrategy {
 				}
 			}
 
-			keyStrategyMap.put("messages", new AppendStrategy());
+			keyStrategyMap.put("messages", new AppendStrategy(false));
 
 			return keyStrategyMap;
 		};
