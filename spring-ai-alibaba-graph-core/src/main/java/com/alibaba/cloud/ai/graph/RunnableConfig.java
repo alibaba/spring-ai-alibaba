@@ -50,6 +50,13 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	public static final String DEFAULT_PARALLEL_EXECUTOR_KEY = "_DEFAULT_PARALLEL_EXECUTOR_";
 	public static final String DEFAULT_PARALLEL_AGGREGATION_STRATEGY_KEY = "_DEFAULT_PARALLEL_AGGREGATION_STRATEGY_";
 
+	/**
+	 * Metadata key for dynamic tool callbacks ({@code List<org.springframework.ai.tool.ToolCallback>}).
+	 * Used internally by AgentLlmNode and AgentToolNode during ReactAgent inference (e.g. when
+	 * ModelInterceptor adds tools via dynamicToolCallbacks). Not part of the public API.
+	 */
+	public static final String DYNAMIC_TOOL_CALLBACKS_METADATA_KEY = "_DYNAMIC_TOOL_CALLBACKS_";
+
 	private final String threadId;
 
 	private final String checkPointId;
@@ -67,7 +74,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 */
 	private final Map<String, Object> context;
 
-	private Store store;
+	private final Store store;
 
 	private final Map<String, Object> interruptedNodes;
 

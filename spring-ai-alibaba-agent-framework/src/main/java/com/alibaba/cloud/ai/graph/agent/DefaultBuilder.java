@@ -33,6 +33,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
+
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;

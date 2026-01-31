@@ -228,7 +228,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, toolSpecificUpdate,
 					false);
 			toolResponses.add(response.toToolResponse());
-			returnDirect = shouldReturnDirect(toolCall, returnDirect);
+			returnDirect = shouldReturnDirect(toolCall, returnDirect, config);
 			// Merge immediately - subsequent timeout clear() won't affect already-merged data
 			mergedUpdates.putAll(toolSpecificUpdate);
 		}
@@ -383,7 +383,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				logger.warn("Tool {} at index {} has null response, using error fallback", toolCall.name(), i);
 			}
 			toolResponses.add(response.toToolResponse());
-			returnDirect = shouldReturnDirect(toolCalls.get(i), returnDirect);
+			returnDirect = shouldReturnDirect(toolCalls.get(i), returnDirect, config);
 		}
 
 		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(toolResponses);
@@ -457,7 +457,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Compute returnDirect from all tool calls (existing + remaining)
 		Boolean returnDirect = null;
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-			returnDirect = shouldReturnDirect(toolCall, returnDirect);
+			returnDirect = shouldReturnDirect(toolCall, returnDirect, config);
 		}
 
 		// Build final result
@@ -479,13 +479,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return updatedState;
 	}
 
-	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect) {
-		String toolName = toolCall.name();
-		ToolCallback toolCallback = toolCallbacks.stream()
-				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
-				.findFirst()
-				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
-
+	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect, RunnableConfig config) {
+		ToolCallback toolCallback = resolve(toolCall.name(), config);
+		if (toolCallback == null) {
+			return returnDirect;
+		}
 		if (returnDirect == null) {
 			returnDirect = toolCallback.getToolMetadata().returnDirect();
 		}
@@ -540,7 +538,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		// Create base handler that actually executes the tool
 		ToolCallHandler baseHandler = req -> {
-			ToolCallback toolCallback = resolve(req.getToolName());
+			ToolCallback toolCallback = resolve(req.getToolName(), config);
 
 			if (toolCallback == null) {
 				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, req.getToolName());
@@ -829,11 +827,32 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return ParallelNode.getExecutor(config, AGENT_TOOL_NAME);
 	}
 
-	private ToolCallback resolve(String toolName) {
-		return toolCallbacks.stream()
-			.filter(callback -> callback.getToolDefinition().name().equals(toolName))
-			.findFirst()
-			.orElseGet(() -> toolCallbackResolver == null ? null : toolCallbackResolver.resolve(toolName));
+	private ToolCallback resolve(String toolName, RunnableConfig config) {
+		if (toolCallbacks != null) {
+			var fromNode = toolCallbacks.stream()
+				.filter(callback -> callback.getToolDefinition().name().equals(toolName))
+				.findFirst();
+			if (fromNode.isPresent()) {
+				return fromNode.get();
+			}
+		}
+		// dynamic tool callbacks from config metadata (set by AgentLlmNode / ModelInterceptor)
+		ToolCallback fromDynamic = resolveFromConfigMetadata(toolName, config);
+		if (fromDynamic != null) {
+			return fromDynamic;
+		}
+		return toolCallbackResolver == null ? null : toolCallbackResolver.resolve(toolName);
+	}
+
+	@SuppressWarnings("unchecked")
+	private ToolCallback resolveFromConfigMetadata(String toolName, RunnableConfig config) {
+		return config.metadata(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY)
+			.filter(v -> v instanceof List)
+			.map(v -> (List<ToolCallback>) v)
+			.flatMap(list -> list.stream()
+				.filter(tc -> tc != null && toolName.equals(tc.getToolDefinition().name()))
+				.findFirst())
+			.orElse(null);
 	}
 
 	public String getName() {

@@ -43,6 +43,7 @@ import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 
 import org.springframework.lang.Nullable;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -210,7 +211,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 									.orElse(THREAD_ID_DEFAULT), agentName, systemPrompt);
 						}
 					}
-					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request).stream().chatResponse();
+					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, config).stream().chatResponse();
 					if (enableReasoningLog) {
 						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
 							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
@@ -249,7 +250,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 						logger.info("[ThreadId {}] Agent {} reasoning round {} with system prompt: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), systemPrompt);
 					}
 
-					ChatResponse response = buildChatClientRequestSpec(request).call().chatResponse();
+					ChatResponse response = buildChatClientRequestSpec(request, config).call().chatResponse();
 
 					AssistantMessage responseMessage = new AssistantMessage("Empty response from model for unknown reason");
 					if (response != null && response.getResult() != null) {
@@ -466,14 +467,20 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.toList());
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest) {
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest, RunnableConfig config) {
 		List<Message> messages = appendSystemPromptIfNeeded(modelRequest);
 
 		// NOTICE! If both tools(ToolSelectionInterceptor) and options are customized in ModelRequest, tools will override toolcall setting in options.
 		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
-		filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
 
-        var promptSpec = this.chatClient.prompt()
+		if (!CollectionUtils.isEmpty(modelRequest.getDynamicToolCallbacks())) {
+			filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
+			// pass dynamic tool callbacks to tool node via config metadata (internal use)
+			config.metadata().ifPresent(m -> m.put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY,
+					modelRequest.getDynamicToolCallbacks()));
+		}
+
+		var promptSpec = this.chatClient.prompt()
                 .messages(messages)
                 .advisors(this.advisors);
 
