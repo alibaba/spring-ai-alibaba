@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
@@ -25,12 +27,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.http.HttpHeaders;
 
 import java.util.HashMap;
 import java.util.List;
@@ -52,32 +49,13 @@ public class FlowAgentHookTest {
 
 	@BeforeEach
 	public void setUp() {
-//		DashScopeApi dashScopeApi = DashScopeApi.builder()
-//				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-//				.build();
-
-		// Create DashScope ChatModel instance
-//		this.chatModel = DashScopeChatModel.builder()
-//				.dashScopeApi(dashScopeApi)
-//				.build();
-
-		HttpHeaders httpHeaders = new HttpHeaders();
-		httpHeaders.add("X-PLATFORM", "dashscope");
-
-		// 这里可以使用不同的配置，比如预发环境的特殊配置
-		OpenAiApi openAiApi = OpenAiApi.builder()
-				.apiKey("6607aa76b08245109a406ceac465356c")
-				.baseUrl("http://1688openai.alibaba-inc.com")
-				.headers(httpHeaders)
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 				.build();
 
-		chatModel =  OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
-				.defaultOptions(
-						OpenAiChatOptions.builder()
-								.model("qwen3-next-80b-a3b-instruct")
-								.build()
-				)
+		// Create DashScope ChatModel instance
+		this.chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
 				.build();
 	}
 
