@@ -20,8 +20,6 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.*;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.CountLoopStrategy;
-import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
-import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.utils.HookFactory;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,24 +50,35 @@ public class FlowAgentHookTest {
 
 	private ChatModel chatModel;
 
-	private AgentHook logAgentHook;
-
-	private ModelHook logModelHook;
-
 	@BeforeEach
 	public void setUp() {
-		DashScopeApi dashScopeApi = DashScopeApi.builder()
-				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-				.build();
+//		DashScopeApi dashScopeApi = DashScopeApi.builder()
+//				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+//				.build();
 
 		// Create DashScope ChatModel instance
-		this.chatModel = DashScopeChatModel.builder()
-				.dashScopeApi(dashScopeApi)
+//		this.chatModel = DashScopeChatModel.builder()
+//				.dashScopeApi(dashScopeApi)
+//				.build();
+
+		HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.add("X-PLATFORM", "dashscope");
+
+		// 这里可以使用不同的配置，比如预发环境的特殊配置
+		OpenAiApi openAiApi = OpenAiApi.builder()
+				.apiKey("6607aa76b08245109a406ceac465356c")
+				.baseUrl("http://1688openai.alibaba-inc.com")
+				.headers(httpHeaders)
 				.build();
 
-		// Create hooks using HookFactory
-		logAgentHook = HookFactory.createLogAgentHook();
-		logModelHook = HookFactory.createLogModelHook();
+		chatModel =  OpenAiChatModel.builder()
+				.openAiApi(openAiApi)
+				.defaultOptions(
+						OpenAiChatOptions.builder()
+								.model("qwen3-next-80b-a3b-instruct")
+								.build()
+				)
+				.build();
 	}
 
 	@Test
@@ -95,13 +104,13 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create SupervisorAgent with hook
+		// Create SupervisorAgent with dynamically created hooks
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
 				.description("内容管理监督者")
 				.model(chatModel)
 				.subAgents(List.of(writerAgent, translatorAgent))
-				.hooks(List.of(logAgentHook, logModelHook))
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))
 				.systemPrompt("""
 					你是一个智能的内容处理监督者。
 					可用的子Agent：writer_agent（写作）、translator_agent（翻译）
@@ -152,12 +161,12 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create SequentialAgent with hook
+		// Create SequentialAgent with dynamically created hooks
 		SequentialAgent sequentialAgent = SequentialAgent.builder()
 				.name("writing_workflow")
 				.description("写作工作流：先写诗，然后评审")
 				.subAgents(List.of(writerAgent, reviewerAgent))
-				.hooks(List.of(logAgentHook, logModelHook))
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))
 				.build();
 
 		try {
@@ -196,12 +205,12 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create LoopAgent with hook
+		// Create LoopAgent with dynamically created hooks
 		LoopAgent loopAgent = LoopAgent.builder()
 				.name("loop_processor")
 				.description("循环处理工作流")
 				.subAgent(processorAgent)
-				.hooks(List.of(logAgentHook, logModelHook))
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))
 				.loopStrategy(new CountLoopStrategy(2))
 				.build();
 
@@ -258,12 +267,12 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create ParallelAgent with hook
+		// Create ParallelAgent with dynamically created hooks
 		ParallelAgent parallelAgent = ParallelAgent.builder()
 				.name("parallel_processor")
 				.description("并行处理工作流")
 				.subAgents(List.of(agent1, agent2, agent3))
-				.hooks(List.of(logAgentHook, logModelHook))
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))
 				.maxConcurrency(3)
 				.build();
 
@@ -320,13 +329,13 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create LlmRoutingAgent with hook
+		// Create LlmRoutingAgent with dynamically created hooks
 		LlmRoutingAgent llmRoutingAgent = LlmRoutingAgent.builder()
 				.name("llm_router")
 				.description("智能路由Agent")
 				.model(chatModel)
 				.subAgents(List.of(writerAgent, translatorAgent, reviewerAgent))
-				.hooks(List.of(logAgentHook, logModelHook))
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))
 				.fallbackAgent("writer_agent")
 				.systemPrompt("""
 					你是一个智能路由器。
@@ -382,12 +391,12 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create ParallelAgent with BOTH beforeAgent and beforeModel hooks
+		// Create ParallelAgent with BOTH beforeAgent and beforeModel hooks (dynamically created)
 		ParallelAgent parallelAgent = ParallelAgent.builder()
 				.name("parallel_processor")
 				.description("并行处理工作流")
 				.subAgents(List.of(agent1, agent2))
-				.hooks(List.of(logAgentHook, logModelHook))  // Both hooks present!
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))  // Both hooks present!
 				.maxConcurrency(2)
 				.build();
 
@@ -445,10 +454,10 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create conditional flow agent with hook
+		// Create conditional flow agent with dynamically created hooks
 		FlowAgent conditionalAgent = new FlowAgent("CONDITIONAL", "条件路由工作流",
 				null, List.of(writerAgent, translatorAgent, reviewerAgent), null, null,
-				List.of(logAgentHook, logModelHook)) {
+				List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook())) {
 			@Override
 			protected StateGraph buildSpecificGraph(com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder.FlowGraphConfig config)
 					throws GraphStateException {
