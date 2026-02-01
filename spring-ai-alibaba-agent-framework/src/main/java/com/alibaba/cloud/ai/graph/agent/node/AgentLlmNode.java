@@ -450,10 +450,14 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			toolCallbacks.addAll(this.toolCallbacks);
 			return toolCallbacks;
 		}
+
 		if (modelRequest.getOptions() != null && modelRequest.getOptions().getToolCallbacks() != null) {
 			toolCallbacks.addAll(modelRequest.getOptions().getToolCallbacks());
 		} else {
-			toolCallbacks.addAll(this.toolCallbacks);
+			// do nothing
+
+			// by default, buildChatOptions() makes sure 'modelRequest.getOptions().getToolCallbacks()' is always set.
+			// this leaves room for users to disable all tools by setting empty toolCallbacks in options.
 		}
 
 		List<String> requestedTools = modelRequest.getTools();
