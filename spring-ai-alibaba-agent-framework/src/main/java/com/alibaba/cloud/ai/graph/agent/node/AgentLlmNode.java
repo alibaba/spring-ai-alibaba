@@ -475,7 +475,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		if (!CollectionUtils.isEmpty(modelRequest.getDynamicToolCallbacks())) {
 			filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
-			// pass dynamic tool callbacks to tool node via config metadata (internal use)
+			// FIXME, use RunnableConig to pass dynamic tool callbacks to tool node via config metadata (internal use)
 			config.metadata().ifPresent(m -> m.put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY,
 					modelRequest.getDynamicToolCallbacks()));
 		}

@@ -49,7 +49,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.NamedExecutable;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -636,10 +635,9 @@ public class StateGraphTest {
 	/**
 	 * Tests that parallel branches support multiple target nodes, conditional edges,
 	 * conditional branches on parallel nodes, and duplicate targets.
-	 * All these patterns are now supported and should work correctly.
+	 * All these patterns are now supported in 1.1.2.0 and should work correctly.
 	 */
 	@Test
-	@Disabled
 	void testWithParallelBranchWithErrors() throws Exception {
 		// Test 1: Parallel node with multiple target nodes (B and C)
 		var multipleTargets = new StateGraph(createKeyStrategyFactory()).addNode("A", makeNode("A"))

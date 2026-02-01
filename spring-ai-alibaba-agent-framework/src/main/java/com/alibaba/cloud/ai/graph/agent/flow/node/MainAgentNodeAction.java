@@ -15,11 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -29,7 +24,13 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.util.json.JsonParser;
+
 import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +53,36 @@ public class MainAgentNodeAction implements NodeActionWithConfig {
 	public MainAgentNodeAction(ReactAgent mainAgent, List<Agent> subAgents) {
 		this.mainAgent = mainAgent;
 		this.subAgents = subAgents != null ? subAgents : List.of();
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<String> parseJsonArrayOfStrings(String text) {
+		if (!StringUtils.hasText(text)) {
+			return List.of();
+		}
+		try {
+			Object parsed = JsonParser.fromJson(text, List.class);
+			if (parsed == null || !(parsed instanceof List<?> list)) {
+				return null;
+			}
+			List<String> result = new ArrayList<>();
+			for (Object e : list) {
+				if (e == null) {
+					continue;
+				}
+				String s = String.valueOf(e).trim();
+				if ("FINISH".equalsIgnoreCase(s)) {
+					result.add(s);
+					continue;
+				}
+				result.add(s);
+			}
+			return result;
+		}
+		catch (Exception e) {
+			logger.warn("Failed to parse JSON array strings from returned sub agent list of Main Agent output text: {}", text, e);
+			return null;
+		}
 	}
 
 	@Override
@@ -85,8 +116,6 @@ public class MainAgentNodeAction implements NodeActionWithConfig {
 		return out;
 	}
 
-	private record RoutingExtract(Object routingValue, AssistantMessage routingMessage) {}
-
 	/**
 	 * Checks mainStateData "messages", gets the last message; if it is an AssistantMessage
 	 * and its text is a JSON array of strings that are all valid sub-agent names (or
@@ -104,55 +133,33 @@ public class MainAgentNodeAction implements NodeActionWithConfig {
 		}
 		String text = assistantMessage.getText();
 		if (!StringUtils.hasText(text)) {
-			return null;
+			logger.info("Empty text in last AssistantMessage, routing to FINISH");
+			return new RoutingExtract(new ArrayList<>(List.of("FINISH")), assistantMessage);
 		}
 		List<String> agentNames = parseJsonArrayOfStrings(text.trim());
 		if (agentNames == null) {
-			return null;
+			logger.info("Failed to parse sub-agent names from last AssistantMessage text, routing to FINISH");
+			return new RoutingExtract(new ArrayList<>(List.of("FINISH")), assistantMessage);
 		}
 		List<String> validNames = agentNames.stream()
 				.filter(name -> subAgents.stream().anyMatch(a -> a.name().equals(name)))
 				.toList();
-		boolean allValid = validNames.size() == agentNames.size() && !agentNames.stream()
-				.anyMatch(s -> "FINISH".equalsIgnoreCase(s));
+		boolean allValid = validNames.size() == agentNames.size() && agentNames.stream()
+				.noneMatch("FINISH"::equalsIgnoreCase);
 		if (allValid && !validNames.isEmpty()) {
-			logger.debug("MainAgentNodeAction: {} from last AssistantMessage = {}", SupervisorNodeFromState.SUPERVISOR_NEXT_KEY, validNames);
+			logger.info("MainAgentNodeAction: {} from last AssistantMessage = {}", SupervisorNodeFromState.SUPERVISOR_NEXT_KEY, validNames);
 			return new RoutingExtract(new ArrayList<>(validNames), assistantMessage);
 		}
-		boolean emptyOrFinish = agentNames.isEmpty() || agentNames.stream().allMatch(s -> "FINISH".equalsIgnoreCase(s.trim()));
+		boolean emptyOrFinish = agentNames.isEmpty() || agentNames.stream()
+				.allMatch(s -> "FINISH".equalsIgnoreCase(s.trim()));
 		if (emptyOrFinish) {
-			logger.debug("MainAgentNodeAction: {} = FINISH from last AssistantMessage", SupervisorNodeFromState.SUPERVISOR_NEXT_KEY);
+			logger.info("MainAgentNodeAction: {} = FINISH from last AssistantMessage", SupervisorNodeFromState.SUPERVISOR_NEXT_KEY);
 			return new RoutingExtract(new ArrayList<>(List.of("FINISH")), assistantMessage);
 		}
-		return null;
+
+		logger.info("No valid sub-agent names found in last AssistantMessage, routing to FINISH");
+		return new RoutingExtract(new ArrayList<>(List.of("FINISH")), assistantMessage);
 	}
 
-	@SuppressWarnings("unchecked")
-	private static List<String> parseJsonArrayOfStrings(String text) {
-		if (!StringUtils.hasText(text)) {
-			return List.of();
-		}
-		try {
-			Object parsed = JsonParser.fromJson(text, List.class);
-			if (parsed == null || !(parsed instanceof List<?> list)) {
-				return null;
-			}
-			List<String> result = new ArrayList<>();
-			for (Object e : list) {
-				if (e == null) {
-					continue;
-				}
-				String s = String.valueOf(e).trim();
-				if ("FINISH".equalsIgnoreCase(s)) {
-					result.add(s);
-					continue;
-				}
-				result.add(s);
-			}
-			return result;
-		}
-		catch (Exception e) {
-			return null;
-		}
-	}
+	private record RoutingExtract(Object routingValue, AssistantMessage routingMessage) { }
 }

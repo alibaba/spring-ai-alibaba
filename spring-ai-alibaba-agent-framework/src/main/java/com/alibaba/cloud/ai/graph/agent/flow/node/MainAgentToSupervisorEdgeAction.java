@@ -15,15 +15,19 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.AsyncEdgeAction;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.util.json.JsonParser;
+
 import org.springframework.util.StringUtils;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 
@@ -34,6 +38,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
  * or a custom routing key.
  */
 public class MainAgentToSupervisorEdgeAction implements AsyncEdgeAction {
+	public static final Logger logger = LoggerFactory.getLogger(MainAgentToSupervisorEdgeAction.class);
 
 	private final String routingKey;
 	private final String supervisorNodeName;
@@ -45,15 +50,6 @@ public class MainAgentToSupervisorEdgeAction implements AsyncEdgeAction {
 
 	public MainAgentToSupervisorEdgeAction(String supervisorNodeName) {
 		this(SupervisorNodeFromState.SUPERVISOR_NEXT_KEY, supervisorNodeName);
-	}
-
-	@Override
-	public CompletableFuture<String> apply(OverAllState state) {
-		Object value = state.value(routingKey).orElse(null);
-		if (isFinishOrEmpty(value)) {
-			return CompletableFuture.completedFuture(END);
-		}
-		return CompletableFuture.completedFuture(supervisorNodeName);
 	}
 
 	private static boolean isFinishOrEmpty(Object value) {
@@ -87,5 +83,16 @@ public class MainAgentToSupervisorEdgeAction implements AsyncEdgeAction {
 		catch (Exception e) {
 			return false;
 		}
+	}
+
+	@Override
+	public CompletableFuture<String> apply(OverAllState state) {
+		Object value = state.value(routingKey).orElse(null);
+		if (isFinishOrEmpty(value)) {
+			logger.info("MainAgentToSupervisorEdgeAction: routing to END as value for key '{}' is finish or empty: {}",
+					routingKey, value);
+			return CompletableFuture.completedFuture(END);
+		}
+		return CompletableFuture.completedFuture(supervisorNodeName);
 	}
 }

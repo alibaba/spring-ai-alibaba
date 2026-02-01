@@ -15,15 +15,15 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.MultiCommand;
 import com.alibaba.cloud.ai.graph.action.MultiCommandAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +56,23 @@ public class SupervisorNodeFromState implements MultiCommandAction {
 		this(SUPERVISOR_NEXT_KEY, subAgents, "");
 	}
 
+	/**
+	 * Reads agent names from the state value. The value is set by MainAgentNodeAction as
+	 * a List of sub-agent names; only List is expected, no AssistantMessage/JSON parsing.
+	 */
+	private static List<String> toAgentNames(Object value) {
+		if (value == null) {
+			return List.of();
+		}
+		if (value instanceof List<?> list) {
+			return list.stream()
+					.filter(e -> e != null && !"FINISH".equalsIgnoreCase(String.valueOf(e).trim()))
+					.map(e -> String.valueOf(e).trim())
+					.collect(Collectors.toList());
+		}
+		return List.of();
+	}
+
 	@Override
 	public MultiCommand apply(OverAllState state, RunnableConfig config) throws Exception {
 		Object value = state.value(routingKey).orElse(null);
@@ -72,22 +89,5 @@ public class SupervisorNodeFromState implements MultiCommandAction {
 			return new MultiCommand(List.of(entryNode), Map.of());
 		}
 		return new MultiCommand(validNames, Map.of());
-	}
-
-	/**
-	 * Reads agent names from the state value. The value is set by MainAgentNodeAction as
-	 * a List of sub-agent names; only List is expected, no AssistantMessage/JSON parsing.
-	 */
-	private static List<String> toAgentNames(Object value) {
-		if (value == null) {
-			return List.of();
-		}
-		if (value instanceof List<?> list) {
-			return list.stream()
-					.filter(e -> e != null && !"FINISH".equalsIgnoreCase(String.valueOf(e).trim()))
-					.map(e -> String.valueOf(e).trim())
-					.collect(Collectors.toList());
-		}
-		return List.of();
 	}
 }

@@ -41,6 +41,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -975,6 +976,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		public Builder toolExecutionExceptionProcessor(
 				ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
+			if (toolExecutionExceptionProcessor == null) {
+				toolExecutionExceptionProcessor = DefaultToolExecutionExceptionProcessor.builder()
+						.alwaysThrow(false)
+						.build();			}
 			this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
 			return this;
 		}

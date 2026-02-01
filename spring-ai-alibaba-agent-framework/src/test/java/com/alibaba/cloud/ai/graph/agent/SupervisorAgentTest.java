@@ -68,11 +68,29 @@ class SupervisorAgentTest {
 				.outputKey("translator_output")
 				.build();
 
-		// Create SupervisorAgent
+		// Create SupervisorAgent (mainAgent is required)
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
 				.description("内容管理监督者，负责协调写作、翻译等任务")
 				.model(chatModel)
+				.mainAgent(ReactAgent.builder()
+						.name("main_agent")
+						.model(chatModel)
+						.description("监督者主Agent，负责路由决策")
+						.systemPrompt("""
+							你是一个智能的内容处理监督者。
+							可用的子Agent：writer_agent（写作）、translator_agent（翻译）
+
+							## 路由决策输出格式（仅在选择子Agent时适用）
+							当且仅当需要做出路由决策（选择下一个要调用的子Agent或结束任务）时，请以 JSON 数组格式输出，供系统解析路由；此格式仅用于本次路由，不影响你在其他场景下的主要任务输出格式。
+							- 选择单个子Agent 时输出: ["writer_agent"] 或 ["translator_agent"]
+							- 选择多个子Agent 并行时输出: ["writer_agent", "translator_agent"]
+							- 任务全部完成时输出: [] 或 ["FINISH"]
+							合法元素仅限: writer_agent、translator_agent、FINISH。做路由决策时只输出上述 JSON 数组，不要包含其他解释。
+							""")
+						.instruction("用户的请求是: {input}")
+						.outputKey("final_output")
+						.build())
 				.subAgents(List.of(writerAgent, translatorAgent))
 				.build();
 
@@ -191,16 +209,27 @@ class SupervisorAgentTest {
 				   - 当用户的所有需求都已满足时，返回FINISH
 				   - 如果还有未完成的任务，继续路由到相应的Agent
 
-				## 响应格式
-				只返回Agent名称（writer_agent、writing_workflow_agent）或FINISH，不要包含其他解释。
+				## 路由决策输出格式（仅在选择子Agent时适用）
+				当且仅当需要做出路由决策（选择下一个要调用的子Agent或结束任务）时，请以 JSON 数组格式输出，供系统解析路由；此格式仅用于本次路由，不影响你在其他场景下的主要任务输出格式。
+				- 选择单个子Agent 时输出: ["writer_agent"] 或 ["writing_workflow_agent"]
+				- 选择多个子Agent 并行时输出: ["writer_agent", "writing_workflow_agent"]
+				- 任务全部完成时输出: [] 或 ["FINISH"]
+				合法元素仅限: writer_agent、writing_workflow_agent、FINISH。做路由决策时只输出上述 JSON 数组，不要包含其他解释。
 				""";
 
-		// Create SupervisorAgent with nested SequentialAgent
+		// Create SupervisorAgent with nested SequentialAgent (mainAgent is required)
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
 				.description("内容管理监督者，负责协调写作和完整写作工作流等任务")
 				.model(chatModel)
-				.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
+				.mainAgent(ReactAgent.builder()
+						.name("main_agent")
+						.model(chatModel)
+						.description("监督者主Agent，负责路由决策")
+						.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
+						.instruction("用户的请求是: {input}")
+						.outputKey("final_output")
+						.build())
 				.subAgents(List.of(writerAgent, writingWorkflowAgent))
 				.build();
 
@@ -252,11 +281,29 @@ class SupervisorAgentTest {
 				.outputKey("translator_output")
 				.build();
 
-		// Create SupervisorAgent
+		// Create SupervisorAgent (mainAgent is required)
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
 				.description("内容管理监督者")
 				.model(chatModel)
+				.mainAgent(ReactAgent.builder()
+						.name("main_agent")
+						.model(chatModel)
+						.description("监督者主Agent，负责路由决策")
+						.systemPrompt("""
+							你是一个智能的内容处理监督者。
+							可用的子Agent：writer_agent（写作）、translator_agent（翻译）
+
+							## 路由决策输出格式（仅在选择子Agent时适用）
+							当且仅当需要做出路由决策（选择下一个要调用的子Agent或结束任务）时，请以 JSON 数组格式输出，供系统解析路由；此格式仅用于本次路由，不影响你在其他场景下的主要任务输出格式。
+							- 选择单个子Agent 时输出: ["writer_agent"] 或 ["translator_agent"]
+							- 选择多个子Agent 并行时输出: ["writer_agent", "translator_agent"]
+							- 任务全部完成时输出: [] 或 ["FINISH"]
+							合法元素仅限: writer_agent、translator_agent、FINISH。做路由决策时只输出上述 JSON 数组，不要包含其他解释。
+							""")
+						.instruction("用户的请求是: {input}")
+						.outputKey("final_output")
+						.build())
 				.subAgents(List.of(writerAgent, translatorAgent))
 				.build();
 
@@ -327,16 +374,27 @@ class SupervisorAgentTest {
 				2. **任务完成判断**:
 				   - 当用户的所有需求都已满足时，返回FINISH
 				
-				## 响应格式
-				只返回Agent名称（writer_agent、translator_agent）或FINISH，不要包含其他解释。
+				## 路由决策输出格式（仅在选择子Agent时适用）
+				当且仅当需要做出路由决策（选择下一个要调用的子Agent或结束任务）时，请以 JSON 数组格式输出，供系统解析路由；此格式仅用于本次路由，不影响你在其他场景下的主要任务输出格式。
+				- 选择单个子Agent 时输出: ["writer_agent"] 或 ["translator_agent"]
+				- 选择多个子Agent 并行时输出: ["writer_agent", "translator_agent"]
+				- 任务全部完成时输出: [] 或 ["FINISH"]
+				合法元素仅限: writer_agent、translator_agent、FINISH。做路由决策时只输出上述 JSON 数组，不要包含其他解释。
 				""";
 
-		// Create SupervisorAgent
+		// Create SupervisorAgent (mainAgent is required)
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
 				.description("内容管理监督者，负责协调写作和翻译任务")
 				.model(chatModel)
-				.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
+				.mainAgent(ReactAgent.builder()
+						.name("main_agent")
+						.model(chatModel)
+						.description("监督者主Agent，负责路由决策")
+						.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
+						.instruction("用户的请求是: {input}")
+						.outputKey("final_output")
+						.build())
 				.subAgents(List.of(writerAgent, translatorAgent))
 				.build();
 
@@ -453,17 +511,27 @@ class SupervisorAgentTest {
 				2. **任务完成判断**:
 				   - 当所有任务完成时，返回 FINISH
 
-				## 响应格式
-				只返回Agent名称（translator_agent、reviewer_agent）或FINISH，不要包含其他解释。
+				## 路由决策输出格式（仅在选择子Agent时适用）
+				当且仅当需要做出路由决策（选择下一个要调用的子Agent或结束任务）时，请以 JSON 数组格式输出，供系统解析路由；此格式仅用于本次路由，不影响你在其他场景下的主要任务输出格式。
+				- 选择单个子Agent 时输出: ["translator_agent"] 或 ["reviewer_agent"]
+				- 选择多个子Agent 并行时输出: ["translator_agent", "reviewer_agent"]
+				- 任务全部完成时输出: [] 或 ["FINISH"]
+				合法元素仅限: translator_agent、reviewer_agent、FINISH。做路由决策时只输出上述 JSON 数组，不要包含其他解释。
 				""";
 
-		// Create SupervisorAgent with instruction that uses placeholder
+		// Create SupervisorAgent with instruction that uses placeholder (mainAgent is required)
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
 				.description("内容处理监督者，根据前序Agent的输出决定翻译或评审")
 				.model(chatModel)
-				.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
-				.instruction(SUPERVISOR_INSTRUCTION) // This instruction contains {article_content} placeholder
+				.mainAgent(ReactAgent.builder()
+						.name("main_agent")
+						.model(chatModel)
+						.description("监督者主Agent，负责路由决策")
+						.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
+						.instruction(SUPERVISOR_INSTRUCTION) // This instruction contains {article_content} placeholder
+						.outputKey("final_output")
+						.build())
 				.subAgents(List.of(translatorAgent, reviewerAgent))
 				.build();
 

@@ -89,18 +89,25 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create SupervisorAgent with hook
+		// Create SupervisorAgent with hook (mainAgent is required)
 		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
 				.name("content_supervisor")
 				.description("内容管理监督者")
 				.model(chatModel)
+				.mainAgent(ReactAgent.builder()
+						.name("main_agent")
+						.model(chatModel)
+						.description("监督者主Agent，负责路由决策")
+						.systemPrompt("""
+							你是一个智能的内容处理监督者。
+							可用的子Agent：writer_agent（写作）、translator_agent（翻译）
+							只返回Agent名称或FINISH，不要包含其他解释。
+							""")
+						.instruction("用户的请求是: {input}")
+						.outputKey("final_output")
+						.build())
 				.subAgents(List.of(writerAgent, translatorAgent))
 				.hooks(List.of(logAgentHook, logModelHook))
-				.systemPrompt("""
-					你是一个智能的内容处理监督者。
-					可用的子Agent：writer_agent（写作）、translator_agent（翻译）
-					只返回Agent名称或FINISH，不要包含其他解释。
-					""")
 				.build();
 
 		try {
