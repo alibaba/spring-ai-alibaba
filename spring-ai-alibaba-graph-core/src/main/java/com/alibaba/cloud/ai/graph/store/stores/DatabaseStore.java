@@ -46,6 +46,8 @@ public class DatabaseStore extends BaseStore {
 
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
+	private final DatabaseType databaseType;
+
 	/**
 	 * Constructor with default table name.
 	 * @param dataSource database data source
@@ -64,6 +66,7 @@ public class DatabaseStore extends BaseStore {
 		this.tableName = tableName;
 		this.objectMapper = new ObjectMapper();
 		this.objectMapper.findAndRegisterModules();
+		this.databaseType = detectDatabaseType();
 		initializeTable();
 	}
 
@@ -78,22 +81,74 @@ public class DatabaseStore extends BaseStore {
 			String valueJson = objectMapper.writeValueAsString(item.getValue());
 
 			try (Connection conn = dataSource.getConnection()) {
-				String deleteSql = "DELETE FROM " + tableName + " WHERE id = ?";
-				try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
-					deleteStmt.setString(1, itemId);
-					deleteStmt.executeUpdate();
-				}
+				String upsertSql = buildUpsertSql();
+				try (PreparedStatement stmt = conn.prepareStatement(upsertSql)) {
+					switch (databaseType) {
+						case MYSQL:
+							stmt.setString(1, itemId);
+							stmt.setString(2, namespaceJson);
+							stmt.setString(3, item.getKey());
+							stmt.setString(4, valueJson);
+							stmt.setTimestamp(5, new Timestamp(item.getCreatedAt()));
+							stmt.setTimestamp(6, new Timestamp(item.getUpdatedAt()));
+							stmt.setString(7, namespaceJson);
+							stmt.setString(8, item.getKey());
+							stmt.setString(9, valueJson);
+							stmt.setTimestamp(10, new Timestamp(item.getUpdatedAt()));
+							break;
+						case POSTGRESQL:
+							stmt.setString(1, itemId);
+							stmt.setString(2, namespaceJson);
+							stmt.setString(3, item.getKey());
+							stmt.setString(4, valueJson);
+							stmt.setTimestamp(5, new Timestamp(item.getCreatedAt()));
+							stmt.setTimestamp(6, new Timestamp(item.getUpdatedAt()));
+							stmt.setString(7, namespaceJson);
+							stmt.setString(8, item.getKey());
+							stmt.setString(9, valueJson);
+							stmt.setTimestamp(10, new Timestamp(item.getUpdatedAt()));
+							break;
+						case H2:
+							stmt.setString(1, itemId);
+							stmt.setString(2, namespaceJson);
+							stmt.setString(3, item.getKey());
+							stmt.setString(4, valueJson);
+							stmt.setTimestamp(5, new Timestamp(item.getCreatedAt()));
+							stmt.setTimestamp(6, new Timestamp(item.getUpdatedAt()));
+							break;
+						default:
+							conn.setAutoCommit(false);
+							try {
+								String deleteSql = "DELETE FROM " + tableName + " WHERE id = ?";
+								try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+									deleteStmt.setString(1, itemId);
+									deleteStmt.executeUpdate();
+								}
 
-				String insertSql = "INSERT INTO " + tableName
-						+ " (id, namespace, key_name, value_json, created_at, updated_at) " + "VALUES (?, ?, ?, ?, ?, ?)";
-				try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
-					insertStmt.setString(1, itemId);
-					insertStmt.setString(2, namespaceJson);
-					insertStmt.setString(3, item.getKey());
-					insertStmt.setString(4, valueJson);
-					insertStmt.setTimestamp(5, new Timestamp(item.getCreatedAt()));
-					insertStmt.setTimestamp(6, new Timestamp(item.getUpdatedAt()));
-					insertStmt.executeUpdate();
+								String insertSql = "INSERT INTO " + tableName
+										+ " (id, namespace, key_name, value_json, created_at, updated_at) "
+										+ "VALUES (?, ?, ?, ?, ?, ?)";
+								try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+									insertStmt.setString(1, itemId);
+									insertStmt.setString(2, namespaceJson);
+									insertStmt.setString(3, item.getKey());
+									insertStmt.setString(4, valueJson);
+									insertStmt.setTimestamp(5, new Timestamp(item.getCreatedAt()));
+									insertStmt.setTimestamp(6, new Timestamp(item.getUpdatedAt()));
+									insertStmt.executeUpdate();
+								}
+								conn.commit();
+							}
+							catch (SQLException e) {
+								conn.rollback();
+								throw e;
+							}
+							finally {
+								conn.setAutoCommit(true);
+							}
+							return;
+					}
+					stmt.executeUpdate();
 				}
 			}
 		}
@@ -350,6 +405,48 @@ public class DatabaseStore extends BaseStore {
 		Map<String, Object> value = objectMapper.readValue(valueJson, Map.class);
 
 		return new StoreItem(namespace, key, value, createdAt.getTime(), updatedAt.getTime());
+	}
+
+	private DatabaseType detectDatabaseType() {
+		try (Connection conn = dataSource.getConnection()) {
+			String productName = conn.getMetaData().getDatabaseProductName().toLowerCase();
+			if (productName.contains("mysql")) {
+				return DatabaseType.MYSQL;
+			}
+			else if (productName.contains("postgresql")) {
+				return DatabaseType.POSTGRESQL;
+			}
+			else if (productName.contains("h2")) {
+				return DatabaseType.H2;
+			}
+			else {
+				return DatabaseType.UNKNOWN;
+			}
+		}
+		catch (SQLException e) {
+			throw new RuntimeException("Failed to detect database type", e);
+		}
+	}
+
+	private String buildUpsertSql() {
+		return switch (databaseType) {
+			case MYSQL -> "INSERT INTO " + tableName
+					+ " (id, namespace, key_name, value_json, created_at, updated_at) " + "VALUES (?, ?, ?, ?, ?, ?) "
+					+ "ON DUPLICATE KEY UPDATE " + "namespace = ?, key_name = ?, value_json = ?, updated_at = ?";
+			case POSTGRESQL -> "INSERT INTO " + tableName
+					+ " (id, namespace, key_name, value_json, created_at, updated_at) " + "VALUES (?, ?, ?, ?, ?, ?) "
+					+ "ON CONFLICT (id) DO UPDATE SET " + "namespace = ?, key_name = ?, value_json = ?, updated_at = ?";
+			case H2 -> "MERGE INTO " + tableName + " (id, namespace, key_name, value_json, created_at, updated_at) "
+					+ "KEY(id) VALUES (?, ?, ?, ?, ?, ?)";
+			default -> throw new UnsupportedOperationException(
+					"Unsupported database type: " + databaseType + ". Use explicit transaction instead.");
+		};
+	}
+
+	private enum DatabaseType {
+
+		MYSQL, POSTGRESQL, H2, UNKNOWN
+
 	}
 
 }
