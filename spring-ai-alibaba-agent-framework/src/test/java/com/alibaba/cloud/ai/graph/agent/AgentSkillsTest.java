@@ -25,6 +25,9 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
 import com.alibaba.cloud.ai.graph.agent.tools.PythonTool;
 import com.alibaba.cloud.ai.graph.agent.tools.ShellTool2;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.alibaba.cloud.ai.graph.skills.registry.classpath.ClasspathSkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
@@ -38,12 +41,18 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.core.io.Resource;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -442,5 +451,71 @@ class AgentSkillsTest {
 		// Verify registry is working
 		assertNotNull(registry, "Registry should not be null");
 		assertEquals("Classpath", registry.getRegistryType(), "Registry type should be Classpath");
+	}
+
+	/**
+	 * Verifies that groupedTools are passed to SkillsInterceptor and that tools for a skill
+	 * are added to dynamicToolCallbacks when the agent calls read_skill for that skill.
+	 * Uses a dedicated skill "grouped-tools-test" and a record_result tool that captures
+	 * invocations; asserts the tool was called after the agent reads the skill.
+	 */
+	@Test
+	public void testGroupedToolsActivationAndToolUsage() throws Exception {
+		// 1. Create test tool that records invocations
+		List<String> recordedValues = Collections.synchronizedList(new ArrayList<>());
+		ToolCallback recordResultTool = FunctionToolCallback
+				.builder("record_result",
+						(RecordResultRequest req, ToolContext ctx) -> {
+							if (req != null && req.value != null) {
+								recordedValues.add(req.value.trim());
+							}
+							return "recorded";
+						})
+				.description("Records a result value (parameter: value). Use this when the user asks to record a value.")
+				.inputType(RecordResultRequest.class)
+				.build();
+
+		// 2. Register groupedTools: skill name "grouped-tools-test" -> list of tools
+		Map<String, List<ToolCallback>> groupedTools = Map.of("grouped-tools-test", List.of(recordResultTool));
+
+		// 3. Skill registry loading from test resources (includes grouped-tools-test)
+		SkillRegistry registry = FileSystemSkillRegistry.builder()
+				.projectSkillsDirectory(getTestSkillsDirectory())
+				.build();
+		SkillsAgentHook hook = SkillsAgentHook.builder()
+				.skillRegistry(registry)
+				.groupedTools(groupedTools)
+				.build();
+
+		// 4. Build agent with hook (hook provides read_skill + SkillsInterceptor with groupedTools)
+		ReactAgent agent = ReactAgent.builder()
+				.name("grouped-tools-test-agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.hooks(List.of(hook))
+				.enableLogging(true)
+				.build();
+
+		// 5. Prompt: ask to read the skill then follow it to record a value
+		String valueToRecord = "hello-grouped-tools";
+		String prompt = String.format(
+				"请先用 read_skill 读取 grouped-tools-test 技能，然后按该技能要求用 record_result 工具记录：%s",
+				valueToRecord);
+
+		AssistantMessage response = agent.call(prompt);
+
+		assertNotNull(response, "Response should not be null");
+		assertFalse(recordedValues.isEmpty(),
+				"record_result tool from groupedTools should have been invoked after read_skill; recorded: " + recordedValues);
+		assertTrue(recordedValues.stream().anyMatch(v -> v.contains(valueToRecord) || valueToRecord.contains(v)),
+				"Recorded values should contain the requested value; recorded: " + recordedValues);
+	}
+
+	/** Request type for the record_result test tool. */
+	private static class RecordResultRequest {
+
+		@JsonProperty("value")
+		@JsonPropertyDescription("The value to record")
+		public String value;
 	}
 }

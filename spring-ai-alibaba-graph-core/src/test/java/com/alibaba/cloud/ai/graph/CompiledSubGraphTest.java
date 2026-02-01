@@ -68,9 +68,7 @@ public class CompiledSubGraphTest {
 		return node_async(state -> {
 			RunnableConfig resumeConfig = null;
 			if (state.value("resume_subgraph", Boolean.class).orElse(false)) {
-				resumeConfig = RunnableConfig.builder(runnableConfig)
-						.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-						.build();
+				resumeConfig = runnableConfig.withResume();
 			}
 
 			var output = subGraph.streamFromInitialNode(state, resumeConfig != null ? resumeConfig : runnableConfig)
@@ -168,9 +166,7 @@ public class CompiledSubGraphTest {
 					// RESUME
 					var nodeBeforeSubgraph = "NODE2";
 					runnableConfig = parentGraph.updateState(runnableConfig, interruptionState, nodeBeforeSubgraph);
-					resumeConfig = RunnableConfig.builder(runnableConfig)
-							.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-							.build();
+					resumeConfig = runnableConfig.withResume();
 					input = null;
 
 					System.out.println("RESUME GRAPH FROM END OF NODE: " + nodeBeforeSubgraph);
@@ -229,9 +225,7 @@ public class CompiledSubGraphTest {
 
 		input = null;
 
-		RunnableConfig resumeConfig = RunnableConfig.builder(runnableConfig)
-				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-				.build();
+		RunnableConfig resumeConfig = runnableConfig.withResume();
 
 		results = parentGraph.stream(input, resumeConfig).collectList().block();
 		output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
@@ -290,9 +284,7 @@ public class CompiledSubGraphTest {
 
 		input = null;
 
-		RunnableConfig resumeConfig = RunnableConfig.builder(runnableConfig)
-				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-				.build();
+		RunnableConfig resumeConfig = runnableConfig.withResume();
 		results = parentGraph.stream(input, resumeConfig).collectList().block();
 		output = results.stream().peek(out -> System.out.println("output: " + out)).reduce((a, b) -> b);
 
