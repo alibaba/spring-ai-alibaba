@@ -332,9 +332,9 @@ public class DatabaseStore extends BaseStore {
 		switch (databaseType) {
 			case "mysql":
 				// MySQL doesn't allow TEXT columns as PRIMARY KEY without key length
-				// Use VARCHAR with sufficient length (max 767 bytes for utf8mb4 in older
-				// versions)
-				// Base64 encoded keys are typically much shorter, 500 should be safe
+				// Use VARCHAR with sufficient length for Base64-encoded keys
+				// Base64 is ASCII (1 byte per character), so VARCHAR(500) = 500 bytes,
+				// well under the 767-byte limit for utf8mb4 in older MySQL versions
 				idType = "VARCHAR(500)";
 				namespaceType = "TEXT";
 				valueType = "TEXT";
