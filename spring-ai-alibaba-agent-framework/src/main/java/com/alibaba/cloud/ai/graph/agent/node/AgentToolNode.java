@@ -54,6 +54,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -847,7 +848,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	@SuppressWarnings("unchecked")
 	private ToolCallback resolveFromConfigMetadata(String toolName, RunnableConfig config) {
-		return config.metadata(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY)
+		return Optional.ofNullable(config.context().get(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY))
 			.filter(v -> v instanceof List)
 			.map(v -> (List<ToolCallback>) v)
 			.flatMap(list -> list.stream()

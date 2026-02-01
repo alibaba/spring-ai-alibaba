@@ -88,13 +88,13 @@ public class MainAgentNodeAction implements NodeActionWithConfig {
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
 		RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config)
-				.clearContext()
 				.threadId(config.threadId()
 						.map(threadId -> format("%s_%s", threadId, subGraphId(mainAgent.name())))
 						.orElseGet(() -> subGraphId(mainAgent.name())))
 				.nextNode(null)
 				.checkPointId(null)
 				.build();
+		subGraphRunnableConfig.clearContext();
 
 		logger.info("Invoking mainAgent '{}' compiled graph with threadId: {}",
 				mainAgent.name(), subGraphRunnableConfig.threadId());
