@@ -19,18 +19,19 @@ import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.*;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.CountLoopStrategy;
-import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
-import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.utils.HookFactory;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.chat.model.ChatModel;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,10 +47,6 @@ public class FlowAgentHookTest {
 
 	private ChatModel chatModel;
 
-	private AgentHook logAgentHook;
-
-	private ModelHook logModelHook;
-
 	@BeforeEach
 	public void setUp() {
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
@@ -60,10 +57,6 @@ public class FlowAgentHookTest {
 		this.chatModel = DashScopeChatModel.builder()
 				.dashScopeApi(dashScopeApi)
 				.build();
-
-		// Create hooks using HookFactory
-		logAgentHook = HookFactory.createLogAgentHook();
-		logModelHook = HookFactory.createLogModelHook();
 	}
 
 	@Test
@@ -107,7 +100,12 @@ public class FlowAgentHookTest {
 						.outputKey("final_output")
 						.build())
 				.subAgents(List.of(writerAgent, translatorAgent))
-				.hooks(List.of(logAgentHook, logModelHook))
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))
+				.systemPrompt("""
+					你是一个智能的内容处理监督者。
+					可用的子Agent：writer_agent（写作）、translator_agent（翻译）
+					只返回Agent名称或FINISH，不要包含其他解释。
+					""")
 				.build();
 
 		try {
@@ -153,12 +151,12 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create SequentialAgent with hook
+		// Create SequentialAgent with dynamically created hooks
 		SequentialAgent sequentialAgent = SequentialAgent.builder()
 				.name("writing_workflow")
 				.description("写作工作流：先写诗，然后评审")
 				.subAgents(List.of(writerAgent, reviewerAgent))
-				.hooks(List.of(logAgentHook, logModelHook))
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))
 				.build();
 
 		try {
@@ -197,12 +195,12 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create LoopAgent with hook
+		// Create LoopAgent with dynamically created hooks
 		LoopAgent loopAgent = LoopAgent.builder()
 				.name("loop_processor")
 				.description("循环处理工作流")
 				.subAgent(processorAgent)
-				.hooks(List.of(logAgentHook, logModelHook))
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))
 				.loopStrategy(new CountLoopStrategy(2))
 				.build();
 
@@ -259,12 +257,12 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create ParallelAgent with hook
+		// Create ParallelAgent with dynamically created hooks
 		ParallelAgent parallelAgent = ParallelAgent.builder()
 				.name("parallel_processor")
 				.description("并行处理工作流")
 				.subAgents(List.of(agent1, agent2, agent3))
-				.hooks(List.of(logAgentHook, logModelHook))
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))
 				.maxConcurrency(3)
 				.build();
 
@@ -321,13 +319,13 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create LlmRoutingAgent with hook
+		// Create LlmRoutingAgent with dynamically created hooks
 		LlmRoutingAgent llmRoutingAgent = LlmRoutingAgent.builder()
 				.name("llm_router")
 				.description("智能路由Agent")
 				.model(chatModel)
 				.subAgents(List.of(writerAgent, translatorAgent, reviewerAgent))
-				.hooks(List.of(logAgentHook, logModelHook))
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))
 				.fallbackAgent("writer_agent")
 				.systemPrompt("""
 					你是一个智能路由器。
@@ -383,12 +381,12 @@ public class FlowAgentHookTest {
 				.enableLogging(false)
 				.build();
 
-		// Create ParallelAgent with BOTH beforeAgent and beforeModel hooks
+		// Create ParallelAgent with BOTH beforeAgent and beforeModel hooks (dynamically created)
 		ParallelAgent parallelAgent = ParallelAgent.builder()
 				.name("parallel_processor")
 				.description("并行处理工作流")
 				.subAgents(List.of(agent1, agent2))
-				.hooks(List.of(logAgentHook, logModelHook))  // Both hooks present!
+				.hooks(List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook()))  // Both hooks present!
 				.maxConcurrency(2)
 				.build();
 
@@ -411,6 +409,75 @@ public class FlowAgentHookTest {
 		} catch (Exception e) {
 			e.printStackTrace();
 			fail("ParallelAgent with both beforeAgent and beforeModel hooks execution failed: " + e.getMessage());
+		}
+	}
+
+	@Test
+	public void testConditionalFlowWithHook() throws Exception {
+		System.out.println("\n========== Testing Conditional Flow with Hook ==========\n");
+
+		// Create sub-agents
+		ReactAgent writerAgent = ReactAgent.builder()
+				.name("writer_agent")
+				.model(chatModel)
+				.description("擅长写作")
+				.instruction("你是一个知名的作家，20字以内。")
+				.outputKey("writer_output")
+				.enableLogging(false)
+				.build();
+
+		ReactAgent translatorAgent = ReactAgent.builder()
+				.name("translator_agent")
+				.model(chatModel)
+				.description("擅长翻译")
+				.instruction("你是一个专业的翻译家，20字以内。")
+				.outputKey("translator_output")
+				.enableLogging(false)
+				.build();
+
+		ReactAgent reviewerAgent = ReactAgent.builder()
+				.name("reviewer_agent")
+				.model(chatModel)
+				.description("擅长评审")
+				.instruction("你是一个知名的评论家，20字以内。")
+				.outputKey("reviewer_output")
+				.enableLogging(false)
+				.build();
+
+		// Create conditional flow agent with dynamically created hooks
+		FlowAgent conditionalAgent = new FlowAgent("CONDITIONAL", "条件路由工作流",
+				null, List.of(writerAgent, translatorAgent, reviewerAgent), null, null,
+				List.of(HookFactory.createLogAgentHook(), HookFactory.createLogModelHook())) {
+			@Override
+			protected StateGraph buildSpecificGraph(com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder.FlowGraphConfig config)
+					throws GraphStateException {
+				Map<String, Agent> conditionalAgents = new HashMap<>();
+				conditionalAgents.put("write", writerAgent);
+				conditionalAgents.put("translate", translatorAgent);
+				conditionalAgents.put("review", reviewerAgent);
+				config.conditionalAgents(conditionalAgents);
+				return com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder.buildGraph(config.getName(), config);
+			}
+		};
+
+		try {
+			// Execute the agent
+			Optional<OverAllState> result = conditionalAgent.invoke("写一首诗");
+
+			assertTrue(result.isPresent(), "Result should be present");
+			System.out.println("result=" + result.get());
+
+			// Print Mermaid graph representation
+			GraphRepresentation mermaidGraph = conditionalAgent.getGraph()
+					.getGraph(GraphRepresentation.Type.MERMAID);
+			assertNotNull(mermaidGraph, "Mermaid graph should not be null");
+			System.out.println("\n=== Conditional Flow Mermaid Graph ===");
+			System.out.println(mermaidGraph.content());
+			System.out.println("=======================================\n");
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			fail("Conditional flow with hook execution failed: " + e.getMessage());
 		}
 	}
 }
