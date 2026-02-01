@@ -50,6 +50,13 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	public static final String DEFAULT_PARALLEL_EXECUTOR_KEY = "_DEFAULT_PARALLEL_EXECUTOR_";
 	public static final String DEFAULT_PARALLEL_AGGREGATION_STRATEGY_KEY = "_DEFAULT_PARALLEL_AGGREGATION_STRATEGY_";
 
+	/**
+	 * Metadata key for dynamic tool callbacks ({@code List<org.springframework.ai.tool.ToolCallback>}).
+	 * Used internally by AgentLlmNode and AgentToolNode during ReactAgent inference (e.g. when
+	 * ModelInterceptor adds tools via dynamicToolCallbacks). Not part of the public API.
+	 */
+	public static final String DYNAMIC_TOOL_CALLBACKS_METADATA_KEY = "_DYNAMIC_TOOL_CALLBACKS_";
+
 	private final String threadId;
 
 	private final String checkPointId;
@@ -67,7 +74,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 */
 	private final Map<String, Object> context;
 
-	private Store store;
+	private final Store store;
 
 	private final Map<String, Object> interruptedNodes;
 
@@ -194,6 +201,19 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		}
 		return RunnableConfig.builder(this).checkPointId(checkPointId).build();
 
+	}
+
+	/**
+	 * Returns a new RunnableConfig that copies this config and adds
+	 * {@link #HUMAN_FEEDBACK_METADATA_KEY} with value {@code "placeholder"} to metadata.
+	 * Used when building a config for resuming a run (e.g. after human feedback is
+	 * collected and the graph is continued).
+	 * @return a new RunnableConfig with human feedback placeholder metadata
+	 */
+	public RunnableConfig withResume() {
+		return RunnableConfig.builder(this)
+				.addMetadata(HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
 	}
 
 	/**
@@ -344,6 +364,17 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 		public Builder addHumanFeedback(InterruptionMetadata humanFeedback) {
 			return addMetadata(HUMAN_FEEDBACK_METADATA_KEY, humanFeedback);
+		}
+
+		/**
+		 * Adds resume metadata ({@link #HUMAN_FEEDBACK_METADATA_KEY} with value
+		 * {@code "placeholder"}) so the built config is suitable for resuming a run
+		 * (e.g. after human feedback). Equivalent to building and then calling
+		 * {@link RunnableConfig#withResume()}, but allows fluent builder usage.
+		 * @return this builder for chaining
+		 */
+		public Builder resume() {
+			return addMetadata(HUMAN_FEEDBACK_METADATA_KEY, "placeholder");
 		}
 
 		public Builder addStateUpdate(Map<String, Object> stateUpdate) {

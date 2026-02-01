@@ -75,10 +75,17 @@
         <url>https://github.com/alibaba/spring-ai-alibaba/actions</url>
     </ciManagement>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <url>http://mvnrepo.alibaba-inc.com/mvn/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.1.2.0-SNAPSHOT</revision>
+        <revision>1.1.2.0-parallel-tool-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
