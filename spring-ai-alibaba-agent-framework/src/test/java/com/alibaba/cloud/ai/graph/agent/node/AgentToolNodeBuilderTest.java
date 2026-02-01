@@ -60,8 +60,7 @@ class AgentToolNodeBuilderTest {
 	void build_throwsNPE_whenToolExecutionExceptionProcessorIsNull() {
 		AgentToolNode.Builder builder = AgentToolNode.builder()
 			.agentName("test-agent")
-			.toolExecutionTimeout(Duration.ofMinutes(5))
-			.toolExecutionExceptionProcessor(null);
+			.toolExecutionTimeout(Duration.ofMinutes(5));
 
 		NullPointerException ex = assertThrows(NullPointerException.class, builder::build);
 		assertEquals("toolExecutionExceptionProcessor must not be null", ex.getMessage());

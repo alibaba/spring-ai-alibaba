@@ -47,6 +47,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -247,7 +248,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, toolSpecificUpdate,
 					false);
 			toolResponses.add(response.toToolResponse());
-			returnDirect = shouldReturnDirect(toolCall, returnDirect);
+			returnDirect = shouldReturnDirect(toolCall, returnDirect, config);
 			// Merge immediately - subsequent timeout clear() won't affect already-merged data
 			mergedUpdates.putAll(toolSpecificUpdate);
 		}
@@ -403,7 +404,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				logger.warn("Tool {} at index {} has null response, using error fallback", toolCall.name(), i);
 			}
 			toolResponses.add(response.toToolResponse());
-			returnDirect = shouldReturnDirect(toolCalls.get(i), returnDirect);
+			returnDirect = shouldReturnDirect(toolCalls.get(i), returnDirect, config);
 		}
 
 		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(toolResponses);
@@ -477,7 +478,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Compute returnDirect from all tool calls (existing + remaining)
 		Boolean returnDirect = null;
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-			returnDirect = shouldReturnDirect(toolCall, returnDirect);
+			returnDirect = shouldReturnDirect(toolCall, returnDirect, config);
 		}
 
 		// Build final result
@@ -499,10 +500,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return updatedState;
 	}
 
-	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect) {
+	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect, RunnableConfig config) {
 		String toolName = toolCall.name();
-		// Use existing resolve() method which safely handles null toolCallbackResolver
-		ToolCallback toolCallback = resolve(toolName);
+		// Use resolve() method which safely handles null toolCallbackResolver
+		ToolCallback toolCallback = resolve(toolName, config);
 
 		// If tool callback is not found, use fail-closed logic: return false to prevent
 		// early termination with potentially incomplete/error results from unknown tools
@@ -565,7 +566,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		// Create base handler that actually executes the tool
 		ToolCallHandler baseHandler = req -> {
-			ToolCallback toolCallback = resolve(req.getToolName());
+			ToolCallback toolCallback = resolve(req.getToolName(), config);
 
 			if (toolCallback == null) {
 				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, req.getToolName());
@@ -917,7 +918,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		List<Flux<Object>> perToolFluxes = IntStream.range(0, toolCalls.size()).mapToObj(index -> {
 			AssistantMessage.ToolCall toolCall = toolCalls.get(index);
 			Map<String, Object> toolUpdateMap = stateCollector.createToolUpdateMap(index);
-			ToolCallback callback = resolve(toolCall.name());
+			ToolCallback callback = resolve(toolCall.name(), config);
 
 			if (callback == null) {
 				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolCall.name());
@@ -1049,7 +1050,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		// Critical: emit done event at stream end
 		return merged.concatWith(Mono.fromSupplier(() -> {
-			Map<String, Object> doneMap = buildToolDoneMap(orderedResponses, toolCalls, stateCollector);
+			Map<String, Object> doneMap = buildToolDoneMap(orderedResponses, toolCalls, stateCollector, config);
 			return GraphResponse.done(doneMap);
 		}).flux());
 	}
@@ -1131,10 +1132,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * @param responses the ordered tool call responses (thread-safe array)
 	 * @param toolCalls the original tool calls (used to compute returnDirect metadata)
 	 * @param stateCollector the state collector with merged state updates
+	 * @param config the runtime configuration
 	 * @return the done map containing messages and state updates
 	 */
 	private Map<String, Object> buildToolDoneMap(AtomicReferenceArray<ToolCallResponse> responses,
-			List<AssistantMessage.ToolCall> toolCalls, ToolStateCollector stateCollector) {
+			List<AssistantMessage.ToolCall> toolCalls, ToolStateCollector stateCollector, RunnableConfig config) {
 		Map<String, Object> doneMap = new HashMap<>();
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = IntStream.range(0, responses.length())
@@ -1146,7 +1148,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Compute returnDirect from all tool calls
 		Boolean returnDirect = null;
 		for (AssistantMessage.ToolCall toolCall : toolCalls) {
-			returnDirect = shouldReturnDirect(toolCall, returnDirect);
+			returnDirect = shouldReturnDirect(toolCall, returnDirect, config);
 		}
 
 		// Build message with metadata if returnDirect
@@ -1208,11 +1210,32 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return ParallelNode.getExecutor(config, AGENT_TOOL_NAME);
 	}
 
-	private ToolCallback resolve(String toolName) {
-		return toolCallbacks.stream()
-			.filter(callback -> callback.getToolDefinition().name().equals(toolName))
-			.findFirst()
-			.orElseGet(() -> toolCallbackResolver == null ? null : toolCallbackResolver.resolve(toolName));
+	private ToolCallback resolve(String toolName, RunnableConfig config) {
+		if (toolCallbacks != null) {
+			var fromNode = toolCallbacks.stream()
+				.filter(callback -> callback.getToolDefinition().name().equals(toolName))
+				.findFirst();
+			if (fromNode.isPresent()) {
+				return fromNode.get();
+			}
+		}
+		// dynamic tool callbacks from config metadata (set by AgentLlmNode / ModelInterceptor)
+		ToolCallback fromDynamic = resolveFromConfigMetadata(toolName, config);
+		if (fromDynamic != null) {
+			return fromDynamic;
+		}
+		return toolCallbackResolver == null ? null : toolCallbackResolver.resolve(toolName);
+	}
+
+	@SuppressWarnings("unchecked")
+	private ToolCallback resolveFromConfigMetadata(String toolName, RunnableConfig config) {
+		return config.metadata(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY)
+			.filter(v -> v instanceof List)
+			.map(v -> (List<ToolCallback>) v)
+			.flatMap(list -> list.stream()
+				.filter(tc -> tc != null && toolName.equals(tc.getToolDefinition().name()))
+				.findFirst())
+			.orElse(null);
 	}
 
 	public String getName() {
@@ -1335,6 +1358,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		public Builder toolExecutionExceptionProcessor(
 				ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
+			if (toolExecutionExceptionProcessor == null) {
+				toolExecutionExceptionProcessor = DefaultToolExecutionExceptionProcessor.builder()
+						.alwaysThrow(false)
+						.build();			}
 			this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
 			return this;
 		}

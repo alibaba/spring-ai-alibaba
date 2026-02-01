@@ -58,6 +58,7 @@
         <module>spring-boot-starters/spring-ai-alibaba-starter-config-nacos</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-builtin-nodes</module>
+        <module>spring-ai-alibaba-sandbox-tool</module>
     </modules>
 
     <scm>
@@ -74,10 +75,17 @@
         <url>https://github.com/alibaba/spring-ai-alibaba/actions</url>
     </ciManagement>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <url>http://mvnrepo.alibaba-inc.com/mvn/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.1.2.0-SNAPSHOT</revision>
+        <revision>1.1.2.0-parallel-tool-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -183,6 +191,8 @@
         <spotless.version>2.44.5</spotless.version>
 
         <central.publishing.maven.version>0.7.0</central.publishing.maven.version>
+
+        <slf4j.version>2.0.17</slf4j.version>
     </properties>
 
     <dependencyManagement>
