@@ -8,7 +8,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>spring-ai-alibaba-sandbox-tool</artifactId>
+    <artifactId>spring-ai-alibaba-sandbox</artifactId>
 
     <properties>
         <agentscope-runtime.version>1.0.2</agentscope-runtime.version>

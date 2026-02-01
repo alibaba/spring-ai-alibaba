@@ -124,6 +124,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-sandbox</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
         </dependencies>
 
     </dependencyManagement>
