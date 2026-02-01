@@ -319,6 +319,159 @@ class ToolStreamingOutputTest {
 
 	}
 
+	/**
+	 * Tests for JSON validation fix (P2 bug).
+	 * Verifies that brace-delimited non-JSON strings are correctly escaped
+	 * instead of being inlined as raw JSON.
+	 */
+	@Nested
+	@DisplayName("JSON Validation Tests (P2 Bug Fix)")
+	class JsonValidationTests {
+
+		@Test
+		@DisplayName("should escape brace-delimited non-JSON string {username}")
+		void chunk_shouldEscapeBraceDelimitedNonJson_username() {
+			ToolStreamingOutput<String> output = createTestOutput("call_123", "tool",
+					OutputType.AGENT_TOOL_STREAMING, "{username}");
+
+			String chunk = output.chunk();
+
+			assertNotNull(chunk);
+			// Should be escaped as a string, not inlined as JSON
+			assertTrue(chunk.contains("\"data\":\"{username}\""),
+					"Expected {username} to be escaped as string but got: " + chunk);
+		}
+
+		@Test
+		@DisplayName("should escape unquoted key-value {foo: bar}")
+		void chunk_shouldEscapeUnquotedKeyValue() {
+			ToolStreamingOutput<String> output = createTestOutput("call_123", "tool",
+					OutputType.AGENT_TOOL_STREAMING, "{foo: bar}");
+
+			String chunk = output.chunk();
+
+			assertNotNull(chunk);
+			// Should be escaped as a string since it's not valid JSON
+			assertTrue(chunk.contains("\"data\":\"{foo: bar}\""),
+					"Expected {foo: bar} to be escaped as string but got: " + chunk);
+		}
+
+		@Test
+		@DisplayName("should escape array-like non-JSON [a, b, c]")
+		void chunk_shouldEscapeArrayLikeNonJson() {
+			ToolStreamingOutput<String> output = createTestOutput("call_123", "tool",
+					OutputType.AGENT_TOOL_STREAMING, "[a, b, c]");
+
+			String chunk = output.chunk();
+
+			assertNotNull(chunk);
+			// Should be escaped as a string since it's not valid JSON array
+			assertTrue(chunk.contains("\"data\":\"[a, b, c]\""),
+					"Expected [a, b, c] to be escaped as string but got: " + chunk);
+		}
+
+		@Test
+		@DisplayName("should escape brace string with nested content {user {name}}")
+		void chunk_shouldEscapeNestedBraceContent() {
+			ToolStreamingOutput<String> output = createTestOutput("call_123", "tool",
+					OutputType.AGENT_TOOL_STREAMING, "{user {name}}");
+
+			String chunk = output.chunk();
+
+			assertNotNull(chunk);
+			// Should be escaped as a string
+			assertTrue(chunk.contains("\"data\":\"{user {name}}\""),
+					"Expected {user {name}} to be escaped as string but got: " + chunk);
+		}
+
+		@Test
+		@DisplayName("should escape partial JSON-like content")
+		void chunk_shouldEscapePartialJsonContent() {
+			ToolStreamingOutput<String> output = createTestOutput("call_123", "tool",
+					OutputType.AGENT_TOOL_STREAMING, "{\"name\":}");
+
+			String chunk = output.chunk();
+
+			assertNotNull(chunk);
+			// Invalid JSON (missing value) should be escaped
+			assertTrue(chunk.contains("\"data\":\"{\\\"name\\\":}\""),
+					"Expected incomplete JSON to be escaped as string but got: " + chunk);
+		}
+
+		@Test
+		@DisplayName("should preserve valid empty JSON object")
+		void chunk_shouldPreserveValidEmptyJsonObject() {
+			ToolStreamingOutput<String> output = createTestOutput("call_123", "tool",
+					OutputType.AGENT_TOOL_STREAMING, "{}");
+
+			String chunk = output.chunk();
+
+			assertNotNull(chunk);
+			// Valid empty JSON should be inlined
+			assertTrue(chunk.contains("\"data\":{}"),
+					"Expected {} to be inlined as JSON but got: " + chunk);
+		}
+
+		@Test
+		@DisplayName("should preserve valid empty JSON array")
+		void chunk_shouldPreserveValidEmptyJsonArray() {
+			ToolStreamingOutput<String> output = createTestOutput("call_123", "tool",
+					OutputType.AGENT_TOOL_STREAMING, "[]");
+
+			String chunk = output.chunk();
+
+			assertNotNull(chunk);
+			// Valid empty array should be inlined
+			assertTrue(chunk.contains("\"data\":[]"),
+					"Expected [] to be inlined as JSON but got: " + chunk);
+		}
+
+		@Test
+		@DisplayName("should preserve valid nested JSON")
+		void chunk_shouldPreserveValidNestedJson() {
+			String validJson = "{\"user\":{\"name\":\"John\",\"age\":30},\"active\":true}";
+			ToolStreamingOutput<String> output = createTestOutput("call_123", "tool",
+					OutputType.AGENT_TOOL_STREAMING, validJson);
+
+			String chunk = output.chunk();
+
+			assertNotNull(chunk);
+			// Valid JSON should be inlined without extra quotes
+			assertTrue(chunk.contains("\"data\":{\"user\":{\"name\":\"John\",\"age\":30},\"active\":true}"),
+					"Expected valid nested JSON to be inlined but got: " + chunk);
+		}
+
+		@Test
+		@DisplayName("should preserve valid JSON array with objects")
+		void chunk_shouldPreserveValidJsonArrayWithObjects() {
+			String validJsonArray = "[{\"id\":1},{\"id\":2}]";
+			ToolStreamingOutput<String> output = createTestOutput("call_123", "tool",
+					OutputType.AGENT_TOOL_STREAMING, validJsonArray);
+
+			String chunk = output.chunk();
+
+			assertNotNull(chunk);
+			// Valid JSON array should be inlined
+			assertTrue(chunk.contains("\"data\":[{\"id\":1},{\"id\":2}]"),
+					"Expected valid JSON array to be inlined but got: " + chunk);
+		}
+
+		@Test
+		@DisplayName("should escape template variable style string")
+		void chunk_shouldEscapeTemplateVariableStyle() {
+			ToolStreamingOutput<String> output = createTestOutput("call_123", "tool",
+					OutputType.AGENT_TOOL_STREAMING, "Hello {name}, welcome!");
+
+			String chunk = output.chunk();
+
+			assertNotNull(chunk);
+			// Not JSON (doesn't start with { or [), should be plain string
+			assertTrue(chunk.contains("\"data\":\"Hello {name}, welcome!\""),
+					"Expected template string to be escaped as string but got: " + chunk);
+		}
+
+	}
+
 	@Nested
 	@DisplayName("ToolResult Reflection Tests")
 	class ToolResultReflectionTests {

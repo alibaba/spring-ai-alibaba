@@ -426,10 +426,10 @@ public final class ToolResult {
 	}
 
 	private static Media dtoToMedia(MediaDto dto) {
-		MimeType mimeType = MimeType.valueOf(dto.mimeType);
+		MimeType mimeType = dto.mimeType != null ? MimeType.valueOf(dto.mimeType) : null;
 		if (dto.dataBase64 != null) {
 			byte[] data = Base64.getDecoder().decode(dto.dataBase64);
-			return new Media(mimeType, new ByteArrayResource(data));
+			return Media.builder().mimeType(mimeType).data(new ByteArrayResource(data)).build();
 		}
 		else if (dto.dataUrl != null) {
 			// Data URIs (e.g., data:image/png;base64,...) cannot be converted to URL

@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.graph.streaming;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.lang.reflect.Method;
 
@@ -49,6 +51,8 @@ import java.lang.reflect.Method;
  * @since 1.0.0
  */
 public class ToolStreamingOutput<T> extends StreamingOutput<T> {
+
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	private final String toolCallId;
 
@@ -130,18 +134,43 @@ public class ToolStreamingOutput<T> extends StreamingOutput<T> {
 		// Use reflection to avoid circular dependency with agent-framework module
 		String content = tryGetToolResultContent(data);
 		if (content != null) {
-			if (content.startsWith("{") || content.startsWith("[")) {
+			if (isValidJson(content)) {
 				return content;
 			}
 			return "\"" + escapeJson(content) + "\"";
 		}
 		String dataStr = data.toString();
-		// Check if it looks like JSON (starts with { or [)
-		if (dataStr.startsWith("{") || dataStr.startsWith("[")) {
+		// Only inline as JSON if it's actually valid JSON, not just starting with { or [
+		if (isValidJson(dataStr)) {
 			return dataStr;
 		}
 		// Otherwise wrap as JSON string
 		return "\"" + escapeJson(dataStr) + "\"";
+	}
+
+	/**
+	 * Validates if a string is valid JSON (object or array).
+	 * Uses Jackson ObjectMapper for proper JSON validation.
+	 * This prevents strings like "{username} logged in" or "[INFO] message"
+	 * from being incorrectly inlined as JSON.
+	 * @param str the string to validate
+	 * @return true if the string is valid JSON, false otherwise
+	 */
+	private boolean isValidJson(String str) {
+		if (str == null || str.isEmpty()) {
+			return false;
+		}
+		// Quick check: must start with { or [ for JSON object/array
+		if (!str.startsWith("{") && !str.startsWith("[")) {
+			return false;
+		}
+		try {
+			OBJECT_MAPPER.readTree(str);
+			return true;
+		}
+		catch (JsonProcessingException e) {
+			return false;
+		}
 	}
 
 	/**
