@@ -282,7 +282,7 @@ public class DatabaseStore extends BaseStore {
 	 */
 	private void initializeTable() {
 		// Create table with database-agnostic SQL
-		String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + "id VARCHAR(500) PRIMARY KEY, "
+		String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + "id VARCHAR(2000) PRIMARY KEY, "
 				+ "namespace TEXT, " + "key_name VARCHAR(500), " + "value_json TEXT, " + "created_at TIMESTAMP, "
 				+ "updated_at TIMESTAMP" + ")";
 
