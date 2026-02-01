@@ -27,9 +27,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
 import java.lang.reflect.Method;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,21 +68,19 @@ class A2aNodeActionWithConfigTests {
 
 		Flux<GraphResponse<NodeOutput>> flux = invokeToFlux(generator);
 
-		List<GraphResponse<NodeOutput>> responses = flux.collectList().block(Duration.ofSeconds(1));
-
-		assertNotNull(responses);
-		assertEquals(2, responses.size());
-
-		GraphResponse<NodeOutput> first = responses.get(0);
-		assertFalse(first.isDone());
-		NodeOutput output = first.getOutput().getNow(null);
-		assertNotNull(output);
-		assertEquals("node-1", output.node());
-
-		GraphResponse<NodeOutput> second = responses.get(1);
-		assertTrue(second.isDone());
-		Map<?, ?> resultValue = (Map<?, ?>) second.resultValue().orElseThrow();
-		assertEquals("ok", resultValue.get("result"));
+		StepVerifier.create(flux)
+			.assertNext(first -> {
+				assertFalse(first.isDone());
+				NodeOutput output = first.getOutput().getNow(null);
+				assertNotNull(output);
+				assertEquals("node-1", output.node());
+			})
+			.assertNext(second -> {
+				assertTrue(second.isDone());
+				Map<?, ?> resultValue = (Map<?, ?>) second.resultValue().orElseThrow();
+				assertEquals("ok", resultValue.get("result"));
+			})
+			.verifyComplete();
 	}
 
 	@Test
@@ -104,9 +102,9 @@ class A2aNodeActionWithConfigTests {
 
 		Flux<GraphResponse<NodeOutput>> flux = invokeToFlux(generator);
 
-		IllegalStateException exception = assertThrows(IllegalStateException.class,
-				() -> flux.collectList().block(Duration.ofSeconds(1)));
-		assertEquals("boom", exception.getMessage());
+		StepVerifier.create(flux)
+			.expectErrorMatches(e -> e instanceof IllegalStateException && "boom".equals(e.getMessage()))
+			.verify();
 	}
 
 	@SuppressWarnings("unchecked")
