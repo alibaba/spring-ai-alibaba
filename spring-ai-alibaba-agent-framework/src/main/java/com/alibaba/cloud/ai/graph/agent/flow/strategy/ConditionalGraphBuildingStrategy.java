@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
@@ -26,10 +25,9 @@ import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.ConditionEvaluator;
 import com.alibaba.cloud.ai.graph.agent.flow.node.ConditionEvaluatorAction;
 import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
+import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
-import static com.alibaba.cloud.ai.graph.StateGraph.END;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
@@ -37,51 +35,86 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  * execution path is determined by evaluating conditions based on the current state, and
  * different agents are selected accordingly.
  */
-public class ConditionalGraphBuildingStrategy implements FlowGraphBuildingStrategy {
+public class ConditionalGraphBuildingStrategy extends AbstractFlowGraphBuildingStrategy {
 
 	@Override
-	public StateGraph buildGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
-		validateConfig(config);
+	protected void buildCoreGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		validateConditionalConfig(config);
 
-		StateGraph graph = config.getStateSerializer() != null
-				? new StateGraph(config.getName(), config.getKeyStrategyFactory(), config.getStateSerializer())
-				: new StateGraph(config.getName(), config.getKeyStrategyFactory());
-		Agent rootAgent = config.getRootAgent();
+		Agent rootAgent = getRootAgent();
 
-		// Add root transparent node
-		graph.addNode(rootAgent.name(),
-				node_async(new TransparentNode()));
+		// Add root transparent node as the conditional start point
+		String conditionalStartNode = rootAgent.name();
+		this.graph.addNode(conditionalStartNode, node_async(new TransparentNode()));
 
-		// Add starting edge
-		graph.addEdge(START, rootAgent.name());
+		// Connect beforeModel hooks to the conditional start node if they exist
+		if (!this.beforeModelHooks.isEmpty()) {
+			connectBeforeModelHookEdges(this.graph, conditionalStartNode, this.beforeModelHooks);
+		}
 
 		// Add condition evaluator node
 		String conditionNodeName = rootAgent.name() + "_condition";
-		graph.addNode(conditionNodeName, node_async(new ConditionEvaluator()));
-		graph.addEdge(rootAgent.name(), conditionNodeName);
+		this.graph.addNode(conditionNodeName, node_async(new ConditionEvaluator()));
+		this.graph.addEdge(rootAgent.name(), conditionNodeName);
 
-		// Process conditional agents
+		// Build condition routing map for all branches
 		Map<String, String> conditionRoutingMap = new HashMap<>();
+		
+		// Add all sub-agent nodes and register them in routing map
 		for (Map.Entry<String, Agent> entry : config.getConditionalAgents().entrySet()) {
 			String condition = entry.getKey();
 			Agent subAgent = entry.getValue();
-
-			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, graph);
-
+			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, this.graph);
 			conditionRoutingMap.put(condition, subAgent.name());
-
-			// Connect agent to END
-			graph.addEdge(subAgent.name(), END);
+		}
+		
+		// IMPORTANT: Handle afterModel hooks here in buildCoreGraph instead of connectAfterModelHooks()
+		// Reason: Conditional routing requires knowing the convergence point when setting up the routing map.
+		// All branches must converge to the same point (first afterModel hook or exitNode) to ensure
+		// hooks execute only once regardless of which branch is taken.
+		String convergencePoint;
+		if (!this.afterModelHooks.isEmpty()) {
+			// Use the first afterModel hook as convergence point
+			convergencePoint = Hook.getFullHookName(this.afterModelHooks.get(0)) + ".afterModel";
+			
+			// Chain afterModel hooks in sequence (only once for all branches)
+			String prevHook = convergencePoint;
+			for (int i = 1; i < this.afterModelHooks.size(); i++) {
+				String currentHook = Hook.getFullHookName(this.afterModelHooks.get(i)) + ".afterModel";
+				this.graph.addEdge(prevHook, currentHook);
+				prevHook = currentHook;
+			}
+			
+			// Connect last hook to exit node
+			this.graph.addEdge(prevHook, this.exitNode);
+		} else {
+			convergencePoint = this.exitNode;
+		}
+		
+		// Connect all branches to the convergence point
+		for (Agent subAgent : config.getConditionalAgents().values()) {
+			this.graph.addEdge(subAgent.name(), convergencePoint);
 		}
 
-		// Add default END condition if no conditions match
-		conditionRoutingMap.put("default", END);
+		// Add default exit condition if no conditions match
+		conditionRoutingMap.put("default", this.exitNode);
 
 		// Connect condition node to agents via conditional routing
-		graph.addConditionalEdges(conditionNodeName, new ConditionEvaluatorAction(), conditionRoutingMap);
+		this.graph.addConditionalEdges(conditionNodeName, new ConditionEvaluatorAction(), conditionRoutingMap);
+	}
 
-		return graph;
+	@Override
+	protected void connectBeforeModelHooks() throws GraphStateException {
+		// Empty override: beforeModel hooks are already connected in buildCoreGraph
+		// to ensure proper integration with conditional routing logic
+	}
+
+	@Override
+	protected void connectAfterModelHooks() throws GraphStateException {
+		// Empty override: afterModel hooks must be handled in buildCoreGraph because:
+		// 1. Conditional routing needs to know the convergence point when setting up routes
+		// 2. All branches must converge to the same hook chain (not separate chains per branch)
+		// 3. Hooks should execute only once, not once per branch
 	}
 
 	@Override
@@ -91,7 +124,7 @@ public class ConditionalGraphBuildingStrategy implements FlowGraphBuildingStrate
 
 	@Override
 	public void validateConfig(FlowGraphBuilder.FlowGraphConfig config) {
-		FlowGraphBuildingStrategy.super.validateConfig(config);
+		super.validateConfig(config);
 		validateConditionalConfig(config);
 	}
 

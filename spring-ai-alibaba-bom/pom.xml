@@ -20,7 +20,7 @@
 
     <groupId>com.alibaba.cloud.ai</groupId>
     <artifactId>spring-ai-alibaba-bom</artifactId>
-    <version>1.1.2.0-SNAPSHOT</version>
+    <version>1.1.2.0-parallel-tool-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
@@ -524,5 +524,12 @@
             </snapshots>
         </repository>
     </repositories>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <url>http://mvnrepo.alibaba-inc.com/mvn/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 
 </project>
