@@ -368,16 +368,14 @@ public class DatabaseStore extends BaseStore {
 						+ " (id, namespace, key_name, value_json, created_at, updated_at) "
 						+ "VALUES (?, ?, ?, ?, ?, ?) " + "ON DUPLICATE KEY UPDATE "
 						+ "namespace = VALUES(namespace), " + "key_name = VALUES(key_name), "
-						+ "value_json = VALUES(value_json), " + "created_at = VALUES(created_at), "
-						+ "updated_at = VALUES(updated_at)";
+						+ "value_json = VALUES(value_json), " + "updated_at = VALUES(updated_at)";
 			case "postgresql":
 				// PostgreSQL uses INSERT ... ON CONFLICT ... DO UPDATE
 				return "INSERT INTO " + tableName
 						+ " (id, namespace, key_name, value_json, created_at, updated_at) "
 						+ "VALUES (?, ?, ?, ?, ?, ?) " + "ON CONFLICT (id) DO UPDATE SET "
 						+ "namespace = EXCLUDED.namespace, " + "key_name = EXCLUDED.key_name, "
-						+ "value_json = EXCLUDED.value_json, " + "created_at = EXCLUDED.created_at, "
-						+ "updated_at = EXCLUDED.updated_at";
+						+ "value_json = EXCLUDED.value_json, " + "updated_at = EXCLUDED.updated_at";
 			case "h2":
 			case "oracle":
 			default:
