@@ -52,13 +52,13 @@
         <module>spring-ai-alibaba-graph-core</module>
         <module>spring-ai-alibaba-agent-framework</module>
         <module>spring-ai-alibaba-studio</module>
-<!--        <module>spring-ai-alibaba-admin</module>-->
+        <module>spring-ai-alibaba-sandbox</module>
+
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-boot-starters/spring-ai-alibaba-starter-a2a-nacos</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-config-nacos</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-builtin-nodes</module>
-        <module>spring-ai-alibaba-sandbox-tool</module>
     </modules>
 
     <scm>
@@ -75,10 +75,17 @@
         <url>https://github.com/alibaba/spring-ai-alibaba/actions</url>
     </ciManagement>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <url>http://mvnrepo.alibaba-inc.com/mvn/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.1.2.0-SNAPSHOT</revision>
+        <revision>1.1.3.0-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -89,7 +96,7 @@
 
         <!-- Spring version -->
         <spring-ai.version>1.1.2</spring-ai.version>
-        <spring-ai-alibaba-extensions.version>1.1.2.0</spring-ai-alibaba-extensions.version>
+        <spring-ai-alibaba-extensions.version>1.1.2.1</spring-ai-alibaba-extensions.version>
         <spring-boot.version>3.5.8</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 

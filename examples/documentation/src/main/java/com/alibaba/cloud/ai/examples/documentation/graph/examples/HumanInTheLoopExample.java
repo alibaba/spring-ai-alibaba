@@ -300,9 +300,7 @@ public class HumanInTheLoopExample {
 	 */
 	public static void continueExecutionWithInterruptBefore(CompiledGraph graph, RunnableConfig updateConfig) {
 		// 添加恢复执行的元数据标记
-		RunnableConfig resumeConfig = RunnableConfig.builder(updateConfig)
-				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-				.build();
+		RunnableConfig resumeConfig = updateConfig.withResume();
 
 		// 继续执行 Graph（input 为 null，使用之前的状态）
 		graph.stream(null, resumeConfig)
@@ -334,9 +332,7 @@ public class HumanInTheLoopExample {
 	 */
 	public static void continueExecutionUntilComplete(CompiledGraph graph, RunnableConfig updateConfig) {
 		// 添加恢复执行的元数据标记
-		RunnableConfig resumeConfig = RunnableConfig.builder(updateConfig)
-				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-				.build();
+		RunnableConfig resumeConfig = updateConfig.withResume();
 
 		// 继续执行 Graph
 		graph.stream(null, resumeConfig)
