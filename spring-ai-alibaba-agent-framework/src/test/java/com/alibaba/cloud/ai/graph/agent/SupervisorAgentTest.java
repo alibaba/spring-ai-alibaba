@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
@@ -29,7 +30,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -679,8 +682,6 @@ class SupervisorAgentTest {
 			// Execute the agent
 			Optional<OverAllState> result = supervisorAgent.invoke("帮我写一篇关于春天的短文");
 
-			result = supervisorAgent.invoke("帮我写一篇关于春天的短文");
-
 			assertTrue(result.isPresent(), "Result should be present");
 			OverAllState state = result.get();
 
@@ -700,6 +701,115 @@ class SupervisorAgentTest {
 		catch (Exception e) {
 			e.printStackTrace();
 			fail("SupervisorAgent with HookFactory execution failed: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Stream test for the same SupervisorAgent setup as testSupervisorAgentWithHookFactory.
+	 * Prints each NodeOutput with agent name and node name to verify streaming output from
+	 * main agent and sub-agents.
+	 */
+	@Test
+	public void testSupervisorAgentWithHookFactoryStream() throws Exception {
+		ReactAgent writerAgent = ReactAgent.builder()
+				.name("writer_agent")
+				.model(chatModel)
+				.description("擅长创作各类文章")
+				.instruction("你是一个知名的作家，擅长写作和创作。请根据用户的提问进行回答: {input}")
+				.includeContents(false)
+				.returnReasoningContents(false)
+				.outputKey("writer_output")
+				.build();
+
+		ReactAgent reviewAgent = ReactAgent.builder()
+				.name("review_agent")
+				.model(chatModel)
+				.includeContents(false)
+				.returnReasoningContents(false)
+				.description("对文章内容进行评论")
+				.instruction("你是一个知名的作家，擅长写作和创作。请对用户文章进行评论: {writer_output}")
+				.outputKey("review_output")
+				.build();
+
+		AgentHook logHook = HookFactory.createLogAgentHook();
+
+		final String SUPERVISOR_SYSTEM_PROMPT = """
+				你是一个智能的内容处理监督者，负责协调协作和评审任务。
+
+				## 可用的子Agent及其职责
+
+				### writer_agent
+				- **功能**: 擅长各种文章与诗歌的写作
+				- **适用场景**: 当有写作需求时
+				- **输出**: writer_output
+
+				### review_agent
+				- **功能**: 擅长对文章进行评审和修改
+				- **适用场景**: 当文章需要评审、改进或优化时
+				- **输出**: review_output
+
+				## 决策规则
+
+				1. **根据当前要完成的任务判断**:
+				   - 如果需要写文章或者诗词时，选择 writer_agent
+				   - 如果文章需要评审、改进或优化，选择 review_agent
+
+				2. **任务完成判断**:
+				   - 当所有任务完成时，返回空数组或 FINISH
+
+				3. **注意**:
+				   - 如果需要的话，可以同时选择多个子Agent来并行的处理任务
+
+				## 路由决策输出格式（仅在选择子Agent时适用）
+				当且仅当需要做出路由决策（选择下一个要调用的子Agent或结束任务）时，请以 JSON 数组格式输出，供系统解析路由；此格式仅用于本次路由，不影响你在其他场景下的主要任务输出格式。
+				- 选择单个子Agent 时输出: ["writer_agent"] 或 ["review_agent"]
+				- 选择多个子Agent 并行时输出: ["writer_agent", "review_agent"]
+				- 任务全部完成时输出: [] 或 ["FINISH"]
+				合法元素仅限: writer_agent、review_agent、FINISH。做路由决策时只输出上述 JSON 数组，不要包含其他解释。
+				""";
+
+		SupervisorAgent supervisorAgent = SupervisorAgent.builder()
+				.name("content_supervisor")
+				.description("内容管理监督者，负责协调写作")
+				.model(chatModel)
+				.mainAgent(ReactAgent.builder()
+						.name("main_agent")
+						.model(chatModel)
+						.description("监督者主Agent，负责路由决策")
+						.systemPrompt(SUPERVISOR_SYSTEM_PROMPT)
+						.instruction("用户的写作需求是: {input}")
+						.outputKey("final_output")
+						.build())
+				.subAgents(List.of(writerAgent, reviewAgent))
+				.hooks(List.of(logHook))
+				.build();
+
+		try {
+			printGraphRepresentation(supervisorAgent.asStateGraph());
+			System.out.println("\n========== SupervisorAgent with HookFactory Stream Test ==========\n");
+
+			List<NodeOutput> outputs = new ArrayList<>();
+			Flux<NodeOutput> stream = supervisorAgent.stream("帮我写一篇关于春天的短文");
+
+			stream.doOnNext(output -> {
+				String agentName = output.agent() != null ? output.agent() : "(no agent)";
+				String nodeName = output.node() != null ? output.node() : "(no node)";
+				System.out.println("[agent=" + agentName + "] [node=" + nodeName + "] " + output);
+				outputs.add(output);
+			}).blockLast();
+
+			System.out.println("\n--- Stream completed. Total outputs: " + outputs.size() + " ---\n");
+
+			assertFalse(outputs.isEmpty(), "Stream should emit at least one NodeOutput");
+			NodeOutput last = outputs.get(outputs.size() - 1);
+			assertTrue(last.state() != null && last.state().value("input").isPresent(),
+					"Final state should contain input");
+
+			System.out.println("========== SupervisorAgent with HookFactory Stream Test Completed ==========\n");
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			fail("SupervisorAgent with HookFactory stream execution failed: " + e.getMessage());
 		}
 	}
 

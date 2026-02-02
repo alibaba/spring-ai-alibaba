@@ -10,6 +10,15 @@
 
     <artifactId>spring-ai-alibaba-sandbox</artifactId>
 
+    <name>Spring AI Alibaba Sandbox</name>
+    <description>Built in sandbox tools for Spring AI Alibaba</description>
+    <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    <scm>
+        <connection>git://github.com/alibaba/spring-ai-alibaba.git</connection>
+        <developerConnection>git@github.com:alibaba/spring-ai-alibaba.git</developerConnection>
+        <url>https://github.com/alibaba/spring-ai-alibaba</url>
+    </scm>
+
     <properties>
         <agentscope-runtime.version>1.0.2</agentscope-runtime.version>
     </properties>

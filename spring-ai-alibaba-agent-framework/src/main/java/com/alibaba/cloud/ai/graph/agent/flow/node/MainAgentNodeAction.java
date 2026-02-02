@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
@@ -26,6 +28,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.util.json.JsonParser;
 
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -100,20 +103,57 @@ public class MainAgentNodeAction implements NodeActionWithConfig {
 				mainAgent.name(), subGraphRunnableConfig.threadId());
 
 		CompiledGraph graph = mainAgent.getAndCompileGraph();
-		Map<String, Object> mainStateData = graph.invoke(state, subGraphRunnableConfig)
-				.map(result -> new HashMap<>(result.data()))
-				.orElse(new HashMap<>());
+		Flux<GraphResponse<NodeOutput>> subGraphResult = graph.graphResponseStream(state, subGraphRunnableConfig);
+		Flux<GraphResponse<NodeOutput>> graphResponseFlux = getGraphResponseFlux(subGraphResult);
 
-		RoutingExtract result = extractRoutingFromMessages(mainStateData);
-		if (result == null) {
-			return Map.of();
+		Map<String, Object> result = new HashMap<>();
+		result.put("messages", graphResponseFlux);
+		return result;
+	}
+
+	/**
+	 * Same flux processing as ReactAgent.AgentToSubCompiledGraphNodeAdapter#getGraphResponseFlux:
+	 * buffer(2, 1) sliding windows; for the last window (1 element), process the last response
+	 * (inject routing only, no parent state message filtering).
+	 */
+	private Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(
+			Flux<GraphResponse<NodeOutput>> subGraphResult) {
+		return subGraphResult
+				.buffer(2, 1)
+				.flatMap(window -> {
+					if (window.size() == 1) {
+						return Flux.just(processLastResponse(window.get(0)));
+					}
+					else {
+						return Flux.just(window.get(0));
+					}
+				}, 1); // Concurrency of 1 to maintain order
+	}
+
+	/**
+	 * Process the last response: inject SUPERVISOR_NEXT_KEY and optional "messages" from
+	 * extractRoutingFromMessages. No comparison with parent OverAllState messages.
+	 */
+	@SuppressWarnings("unchecked")
+	private GraphResponse<NodeOutput> processLastResponse(GraphResponse<NodeOutput> lastResponse) {
+		if (lastResponse == null || lastResponse.resultValue().isEmpty()) {
+			return lastResponse;
 		}
-		Map<String, Object> out = new HashMap<>();
-		out.put(SupervisorNodeFromState.SUPERVISOR_NEXT_KEY, result.routingValue());
-		if (result.routingMessage() != null && !"FINISH".equals(result.routingValue())) {
-			out.put("messages", result.routingMessage());
+		Object resultValue = lastResponse.resultValue().get();
+		if (!(resultValue instanceof Map<?, ?> resultMap)) {
+			return lastResponse;
 		}
-		return out;
+		Map<String, Object> mainStateData = new HashMap<>((Map<String, Object>) resultMap);
+		RoutingExtract routing = extractRoutingFromMessages(mainStateData);
+		if (routing == null) {
+			return lastResponse;
+		}
+		Map<String, Object> newResultMap = new HashMap<>(mainStateData);
+		newResultMap.put(SupervisorNodeFromState.SUPERVISOR_NEXT_KEY, routing.routingValue());
+		if (routing.routingMessage() != null && !"FINISH".equals(routing.routingValue())) {
+			newResultMap.put("messages", routing.routingMessage());
+		}
+		return GraphResponse.done(newResultMap);
 	}
 
 	/**
