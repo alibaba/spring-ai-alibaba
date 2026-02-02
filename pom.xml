@@ -85,7 +85,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.1.2.0</revision>
+        <revision>1.1.3.0-SNAPSHOT</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
