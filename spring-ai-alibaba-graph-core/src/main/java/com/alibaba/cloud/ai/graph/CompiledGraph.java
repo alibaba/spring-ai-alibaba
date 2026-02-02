@@ -24,24 +24,31 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.edge.Edge;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
-import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.internal.node.ConditionalParallelNode;
+import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import com.alibaba.cloud.ai.graph.internal.node.ConditionalParallelNode;
-
-import static com.alibaba.cloud.ai.graph.StateGraph.*;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
@@ -83,7 +90,7 @@ public class CompiledGraph {
 
 	/**
 	 * Constructs a CompiledGraph with the given StateGraph.
-	 * 
+	 *
 	 * @param stateGraph    the StateGraph to be used in this CompiledGraph
 	 * @param compileConfig the compile config
 	 * @throws GraphStateException the graph state exception
@@ -257,7 +264,7 @@ public class CompiledGraph {
 	 * Same of {@link #stateOf(RunnableConfig)} but throws an IllegalStateException
 	 * if
 	 * checkpoint is not found.
-	 * 
+	 *
 	 * @param config the RunnableConfig
 	 * @return the StateSnapshot of the given RunnableConfig
 	 * @throws IllegalStateException if the saver is not defined, or no checkpoint
@@ -270,7 +277,7 @@ public class CompiledGraph {
 
 	/**
 	 * Get the StateSnapshot of the given RunnableConfig.
-	 * 
+	 *
 	 * @param config the RunnableConfig
 	 * @return an Optional of StateSnapshot of the given RunnableConfig
 	 * @throws IllegalStateException if the saver is not defined
@@ -289,7 +296,7 @@ public class CompiledGraph {
 	 * will be
 	 * used to determine the next node to run. If not given, the next node will be
 	 * determined by the state graph.
-	 * 
+	 *
 	 * @param config the RunnableConfig containing the graph state
 	 * @param values the values to be updated
 	 * @param asNode the node id to be used for the next node. can be null
@@ -323,7 +330,7 @@ public class CompiledGraph {
 
 	/***
 	 * Update the state of the graph with the given values.
-	 * 
+	 *
 	 * @param config the RunnableConfig containing the graph state
 	 * @param values the values to be updated
 	 * @return the updated RunnableConfig
@@ -337,7 +344,7 @@ public class CompiledGraph {
 	 * Finds the target nodes for a set of source node IDs by looking up their edges.
 	 * This is used to determine where parallel nodes should route after execution.
 	 * Similar to the logic used for ParallelNode.
-	 * 
+	 *
 	 * @param sourceNodeIds the set of source node IDs to find targets for
 	 * @return a set of target node IDs that the source nodes point to
 	 */
@@ -394,7 +401,7 @@ public class CompiledGraph {
 
 	/**
 	 * Determines the next node ID based on the current node ID and state.
-	 * 
+	 *
 	 * @param nodeId the current node ID
 	 * @param state  the current state
 	 * @return the next node command
@@ -427,7 +434,7 @@ public class CompiledGraph {
 	}
 
 	private Optional<Checkpoint> addCheckpoint(RunnableConfig config, String nodeId, Map<String, Object> state,
-			String nextNodeId, OverAllState overAllState) throws Exception {
+											   String nextNodeId, OverAllState overAllState) throws Exception {
 		if (compileConfig.checkpointSaver().isPresent()) {
 			var cp = Checkpoint.builder()
 					.nodeId(nodeId)
@@ -443,7 +450,7 @@ public class CompiledGraph {
 
 	/**
 	 * Gets initial state.
-	 * 
+	 *
 	 * @param inputs the inputs
 	 * @param config the config
 	 * @return the initial state
@@ -458,7 +465,7 @@ public class CompiledGraph {
 
 	/**
 	 * Clone state over all state.
-	 * 
+	 *
 	 * @param data the data
 	 * @return the over all state
 	 */
@@ -470,7 +477,7 @@ public class CompiledGraph {
 
 	/**
 	 * Clone state over all state.
-	 * 
+	 *
 	 * @param data the data
 	 * @return the over all state
 	 */
@@ -552,7 +559,7 @@ public class CompiledGraph {
 	/**
 	 * Creates a Flux stream of NodeOutput based on the provided inputs. This is the
 	 * modern reactive approach using Project Reactor.
-	 * 
+	 *
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return a Flux stream of NodeOutput
@@ -563,7 +570,7 @@ public class CompiledGraph {
 
 	/**
 	 * Creates a Flux stream from an initial state.
-	 * 
+	 *
 	 * @param overAllState the initial state
 	 * @param config       the configuration
 	 * @return a Flux stream of NodeOutput
@@ -593,7 +600,7 @@ public class CompiledGraph {
 
 	/**
 	 * Creates a Flux stream of NodeOutput based on the provided inputs.
-	 * 
+	 *
 	 * @param inputs the input map
 	 * @return a Flux stream of NodeOutput
 	 */
@@ -603,7 +610,7 @@ public class CompiledGraph {
 
 	/**
 	 * Creates a Flux stream with empty inputs.
-	 * 
+	 *
 	 * @return a Flux stream of NodeOutput
 	 */
 	public Flux<NodeOutput> stream() {
@@ -612,7 +619,7 @@ public class CompiledGraph {
 
 	/**
 	 * Creates a Flux stream for snapshots based on the provided inputs.
-	 * 
+	 *
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return a Flux stream of NodeOutput containing snapshots
@@ -624,7 +631,7 @@ public class CompiledGraph {
 
 	/**
 	 * Calls the graph execution and returns the final state.
-	 * 
+	 *
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return an Optional containing the final state
@@ -635,7 +642,7 @@ public class CompiledGraph {
 
 	/**
 	 * Calls the graph execution from initial state and returns the final state.
-	 * 
+	 *
 	 * @param overAllState the initial state
 	 * @param config       the configuration
 	 * @return an Optional containing the final state
@@ -647,7 +654,7 @@ public class CompiledGraph {
 
 	/**
 	 * Calls the graph execution and returns the final state.
-	 * 
+	 *
 	 * @param inputs the input map
 	 * @return an Optional containing the final state
 	 */
@@ -669,7 +676,7 @@ public class CompiledGraph {
 
 	/**
 	 * Schedule the graph execution with enhanced configuration options.
-	 * 
+	 *
 	 * @param scheduleConfig the schedule configuration
 	 * @return a ScheduledGraphExecution instance for managing the scheduled task
 	 */
@@ -701,7 +708,7 @@ public class CompiledGraph {
 
 	/**
 	 * Get the last StateSnapshot of the given RunnableConfig.
-	 * 
+	 *
 	 * @param config - the RunnableConfig
 	 * @return the last StateSnapshot of the given RunnableConfig if any
 	 */
@@ -711,7 +718,7 @@ public class CompiledGraph {
 
 	/**
 	 * Generates a drawable graph representation of the state graph.
-	 * 
+	 *
 	 * @param type                  the type of graph representation to generate
 	 * @param title                 the title of the graph
 	 * @param printConditionalEdges whether to print conditional edges
@@ -727,7 +734,7 @@ public class CompiledGraph {
 
 	/**
 	 * Generates a drawable graph representation of the state graph.
-	 * 
+	 *
 	 * @param type  the type of graph representation to generate
 	 * @param title the title of the graph
 	 * @return a diagram code of the state graph
@@ -742,7 +749,7 @@ public class CompiledGraph {
 	/**
 	 * Generates a drawable graph representation of the state graph with default
 	 * title.
-	 * 
+	 *
 	 * @param type the type of graph representation to generate
 	 * @return a diagram code of the state graph
 	 */
@@ -767,4 +774,3 @@ public class CompiledGraph {
 	}
 
 }
-

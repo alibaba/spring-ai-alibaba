@@ -131,7 +131,7 @@ public class SerializeTest {
 
 		// Create OverAllState with a non-serializable element
 		OverAllState state = stateSerializer
-			.stateOf(mapOf("a", "b", "f", new NonSerializableElement("I'M NOT SERIALIZABLE"), "c", "d"));
+				.stateOf(mapOf("a", "b", "f", new NonSerializableElement("I'M NOT SERIALIZABLE"), "c", "d"));
 
 		// Expect NotSerializableException when attempting to serialize
 		assertThrows(NotSerializableException.class, () -> {
@@ -160,7 +160,7 @@ public class SerializeTest {
 
 		// Create OverAllState with custom serialized type included
 		OverAllState state = stateSerializer
-			.stateOf(mapOf("a", "b", "x", new NonSerializableElement("I'M NOT SERIALIZABLE"), "f", "H", "c", "d"));
+				.stateOf(mapOf("a", "b", "x", new NonSerializableElement("I'M NOT SERIALIZABLE"), "f", "H", "c", "d"));
 
 		System.out.println(state);
 
@@ -191,12 +191,12 @@ public class SerializeTest {
 
 		String json = mapper.writeValueAsString(output);
 
-		assertEquals("{\"agent\":\"agent\",\"allNextNodes\":[],\"end\":false,\"nextNode\":null,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":true,\"tokenUsage\":{\"completionTokens\":0,\"nativeUsage\":{},\"promptTokens\":0,\"totalTokens\":0}}", json);
+		assertEquals("{\"agent\":\"agent\",\"end\":false,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":true,\"tokenUsage\":{\"completionTokens\":0,\"nativeUsage\":{},\"promptTokens\":0,\"totalTokens\":0}}", json);
 
 		output.setSubGraph(false);
 		json = mapper.writeValueAsString(output);
 
-		assertEquals("{\"agent\":\"agent\",\"allNextNodes\":[],\"end\":false,\"nextNode\":null,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":false,\"tokenUsage\":{\"completionTokens\":0,\"nativeUsage\":{},\"promptTokens\":0,\"totalTokens\":0}}", json);
+		assertEquals("{\"agent\":\"agent\",\"end\":false,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":false,\"tokenUsage\":{\"completionTokens\":0,\"nativeUsage\":{},\"promptTokens\":0,\"totalTokens\":0}}", json);
 	}
 
 	// Test class containing a nullable field for serialization tests
