@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import reactor.core.publisher.Flux;
@@ -161,7 +162,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 
 		augmentUserMessage(messages, outputSchema);
-		renderTemplatedUserMessage(messages, state.data());
+		renderTemplatedUserMessage(messages, state.data(), config.metadata());
 
 		// Create ModelRequest
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
@@ -401,7 +402,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 	}
 
-	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params) {
+	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params, Optional<Map<String, Object>> metadata) {
 		// Process params to create a new Map
 		Map<String, Object> processedParams = new HashMap<>();
 		if (params != null) {
@@ -477,9 +478,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		if (!CollectionUtils.isEmpty(modelRequest.getDynamicToolCallbacks())) {
 			filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
-			// FIXME, use RunnableConig to pass dynamic tool callbacks to tool node via config metadata (internal use)
-			config.metadata().ifPresent(m -> m.put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY,
-					modelRequest.getDynamicToolCallbacks()));
+			// FIXME, use RunnableConfig to pass dynamic tool callbacks to tool node via config context (internal use)
+			config.context().put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY, modelRequest.getDynamicToolCallbacks());
 		}
 
 		var promptSpec = this.chatClient.prompt()

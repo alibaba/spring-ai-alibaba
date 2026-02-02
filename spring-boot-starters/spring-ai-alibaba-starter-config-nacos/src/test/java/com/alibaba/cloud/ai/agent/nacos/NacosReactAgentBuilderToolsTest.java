@@ -162,6 +162,11 @@ class NacosReactAgentBuilderToolsTest {
 		public List<ToolCallback> getTools() {
 			return tools;
 		}
+
+		@Override
+		public int getOrder() {
+			return 0;
+		}
 	}
 
 	/**

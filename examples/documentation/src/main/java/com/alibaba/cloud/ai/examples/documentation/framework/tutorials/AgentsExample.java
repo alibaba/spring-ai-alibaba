@@ -36,6 +36,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
+import com.alibaba.cloud.ai.graph.agent.renderer.SaaStTemplateRenderer;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
@@ -46,9 +47,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.template.StringTemplateRenderer;
 import org.springframework.ai.template.TemplateRenderer;
-import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -203,9 +202,9 @@ public class AgentsExample {
 
 		// 使用 StringTemplateRenderer.builder() 创建自定义分隔符的 TemplateRenderer
 		// 使用 {{ 和 }} 作为占位符分隔符
-		TemplateRenderer customRenderer = StringTemplateRenderer.builder()
-				.startDelimiterToken("{{")
-				.endDelimiterToken("}}")
+		TemplateRenderer customRenderer = SaaStTemplateRenderer.builder()
+				.startDelimiter("{{")
+				.endDelimiter("}}")
 				.build();
 
 		// 使用自定义分隔符的 systemPrompt
