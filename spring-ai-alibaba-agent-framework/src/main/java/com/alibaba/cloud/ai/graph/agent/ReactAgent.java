@@ -77,6 +77,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -111,7 +112,7 @@ public class ReactAgent extends BaseAgent {
 
 	private StateSerializer stateSerializer;
 
-    private final Boolean hasTools;
+	private final Boolean hasTools;
 
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
@@ -131,8 +132,8 @@ public class ReactAgent extends BaseAgent {
 		this.outputType = builder.outputType;
 
 		// Set state serializer from builder, or use default
-        // Default to Jackson serializer for better compatibility and features
-        this.stateSerializer = Objects.requireNonNullElseGet(builder.stateSerializer, () -> new SpringAIJacksonStateSerializer(OverAllState::new));
+		// Default to Jackson serializer for better compatibility and features
+		this.stateSerializer = Objects.requireNonNullElseGet(builder.stateSerializer, () -> new SpringAIJacksonStateSerializer(OverAllState::new));
 
 		// Set executor configuration from builder
 		this.executor = builder.executor;
@@ -149,8 +150,8 @@ public class ReactAgent extends BaseAgent {
 			this.toolNode.setToolInterceptors(mergedToolInterceptors);
 		}
 
-        // Set tools flag if tool interceptors are present.
-        hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
+		// Set tools flag if tool interceptors are present.
+		hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
 	}
 
 	public static Builder builder() {
@@ -185,43 +186,6 @@ public class ReactAgent extends BaseAgent {
 		return doMessageInvoke(messages, config);
 	}
 
-	/**
-	 * Calls the agent with the given inputs map and returns the assistant message.
-	 * <p>
-	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
-	 * use this overload.
-	 * <p>
-	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
-	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
-	 * placeholders or any other state values.
-	 *
-	 * @param inputs the input map (reserved: messages, input; other keys as state)
-	 * @return the assistant message response
-	 * @throws GraphRunnerException if the graph execution fails
-	 */
-	public AssistantMessage call(Map<String, Object> inputs) throws GraphRunnerException {
-		return doMessageInvoke(inputs, null);
-	}
-
-	/**
-	 * Calls the agent with the given inputs map and runtime config, returns the assistant message.
-	 * <p>
-	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
-	 * use this overload.
-	 * <p>
-	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
-	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
-	 * placeholders or any other state values.
-	 *
-	 * @param inputs the input map (reserved: messages, input; other keys as state)
-	 * @param config runtime configuration controlling execution behavior
-	 * @return the assistant message response
-	 * @throws GraphRunnerException if the graph execution fails
-	 */
-	public AssistantMessage call(Map<String, Object> inputs, RunnableConfig config) throws GraphRunnerException {
-		return doMessageInvoke(inputs, config);
-	}
-
 	public void interrupt(RunnableConfig config) {
 		updateAgentState(List.of(), config);
 	}
@@ -237,12 +201,12 @@ public class ReactAgent extends BaseAgent {
 	/**
 	 * Updates the agent thread state with interruption feedback.
 	 * This method is thread-safe and can be called concurrently with apply() in InterruptionHook.
-	 * 
+	 *
 	 * Thread-safety guarantees:
 	 * - threadIdStateMap is a ConcurrentHashMap, ensuring thread-safe access
 	 * - computeIfAbsent ensures atomic creation of the inner map if it doesn't exist
 	 * - The inner map is always a ConcurrentHashMap, ensuring thread-safe put() operations
-	 * 
+	 *
 	 * Concurrency behavior:
 	 * - If called before apply() processes feedback: the new value will be processed
 	 * - If called after apply() removes feedback: the new value will be set for next iteration
@@ -257,19 +221,13 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	private AssistantMessage doMessageInvoke(Object message, RunnableConfig config) throws GraphRunnerException {
-		Map<String, Object> inputs = buildMessageInput(message);
-		return extractAssistantMessage(doInvoke(inputs, config));
-	}
+		Map<String, Object> inputs= buildMessageInput(message);
+		Optional<OverAllState> state = doInvoke(inputs, config);
 
-	private AssistantMessage doMessageInvoke(Map<String, Object> inputs, RunnableConfig config) throws GraphRunnerException {
-		return extractAssistantMessage(doInvoke(inputs, config));
-	}
-
-	private AssistantMessage extractAssistantMessage(Optional<OverAllState> state) {
 		if (StringUtils.hasLength(outputKey)) {
 			return state.flatMap(s -> s.value(outputKey))
 					.map(msg -> (AssistantMessage) msg)
-					.orElseThrow(() -> new IllegalStateException("Output key " + outputKey + " not found in agent state"));
+					.orElseThrow(() -> new IllegalStateException("Output key " + outputKey + " not found in agent state") );
 		}
 
 		// Add a validation instance when performing message conversion to
@@ -346,10 +304,16 @@ public class ReactAgent extends BaseAgent {
 
 		// Add hook nodes for afterAgent hooks
 		for (Hook hook : afterAgentHooks) {
+			boolean canJump = hook.canJumpTo() != null && !hook.canJumpTo().isEmpty();
+
 			if (hook instanceof AgentHook agentHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".after", agentHook::afterAgent);
+				var wrappedAction = wrapAsyncHookWithJumpToCleanup(agentHook::afterAgent, canJump);
+				graph.addNode(Hook.getFullHookName(hook) + ".after",
+						(state, config) -> wrappedAction.apply(state, config));
 			} else if (hook instanceof MessagesAgentHook messagesAgentHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".after", MessagesAgentHook.afterAgentAction(messagesAgentHook));
+				// MessagesAgentHook.afterAgentAction returns an action, we need to check its type
+				graph.addNode(Hook.getFullHookName(hook) + ".after",
+						MessagesAgentHook.afterAgentAction(messagesAgentHook));
 			}
 		}
 
@@ -368,14 +332,20 @@ public class ReactAgent extends BaseAgent {
 
 		// Add hook nodes for afterModel hooks
 		for (Hook hook : afterModelHooks) {
+			boolean canJump = hook.canJumpTo() != null && !hook.canJumpTo().isEmpty();
+
 			if (hook instanceof ModelHook modelHook) {
 				if (hook instanceof HumanInTheLoopHook humanInTheLoopHook) {
 					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", humanInTheLoopHook);
 				} else {
-					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", modelHook::afterModel);
+					var wrappedAction = wrapAsyncHookWithJumpToCleanup(modelHook::afterModel, canJump);
+					graph.addNode(Hook.getFullHookName(hook) + ".afterModel",
+							(state, config) -> wrappedAction.apply(state, config));
 				}
 			} else if (hook instanceof MessagesModelHook messagesModelHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".afterModel", MessagesModelHook.afterModelAction(messagesModelHook));
+				// MessagesModelHook.afterModelAction returns an action, we need to check its type
+				graph.addNode(Hook.getFullHookName(hook) + ".afterModel",
+						MessagesModelHook.afterModelAction(messagesModelHook));
 			}
 		}
 
@@ -390,6 +360,42 @@ public class ReactAgent extends BaseAgent {
 		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
 				entryNode, loopEntryNode, loopExitNode, exitNode, this);
 		return graph;
+	}
+
+	/**
+	 * Wraps an async Hook action (returning CompletableFuture) to automatically clean up jump_to state.
+	 * When a Hook doesn't explicitly set jump_to in its result, this wrapper adds jump_to=null
+	 * to clear any old jump_to value from previous executions.
+	 *
+	 * @param originalAction the original async Hook action that returns CompletableFuture
+	 * @param canJump whether this Hook supports jump_to functionality
+	 * @return wrapped action that handles jump_to cleanup
+	 */
+	private static java.util.function.BiFunction<OverAllState, RunnableConfig, CompletableFuture<Map<String, Object>>>
+	wrapAsyncHookWithJumpToCleanup(
+			java.util.function.BiFunction<OverAllState, RunnableConfig, CompletableFuture<Map<String, Object>>> originalAction,
+			boolean canJump) {
+		if (!canJump) {
+			return originalAction;  // If the Hook doesn't support jumping, no cleanup needed
+		}
+
+		return (state, config) -> {
+			return originalAction.apply(state, config).thenApply(result -> {
+				// If Hook returns null, convert to empty map
+				if (result == null) {
+					result = new HashMap<>();
+				}
+
+				// If the Hook didn't set jump_to, explicitly set it to null to clear old values
+				if (!result.containsKey("jump_to")) {
+					Map<String, Object> newResult = new HashMap<>(result);
+					newResult.put("jump_to", null);
+					return newResult;
+				}
+
+				return result;
+			});
+		};
 	}
 
 	/**
@@ -411,7 +417,7 @@ public class ReactAgent extends BaseAgent {
 
 		for (Hook hook : hooks) {
 			if (hook instanceof ToolInjection toolInjection) {
-                ToolCallback toolToInject = findToolForHook(toolInjection, availableTools);
+				ToolCallback toolToInject = findToolForHook(toolInjection, availableTools);
 				if (toolToInject != null) {
 					toolInjection.injectTool(toolToInject);
 				}
@@ -475,11 +481,11 @@ public class ReactAgent extends BaseAgent {
 					return Arrays.asList(positions).contains(position);
 				})
 				.collect(Collectors.toList());
-		
+
 		// Separate hooks that implement Prioritized from those that don't
 		List<Hook> prioritizedHooks = new ArrayList<>();
 		List<Hook> nonPrioritizedHooks = new ArrayList<>();
-		
+
 		for (Hook hook : filtered) {
 			if (hook instanceof Prioritized) {
 				prioritizedHooks.add(hook);
@@ -487,14 +493,14 @@ public class ReactAgent extends BaseAgent {
 				nonPrioritizedHooks.add(hook);
 			}
 		}
-		
+
 		// Sort prioritized hooks by their order
 		prioritizedHooks.sort(Comparator.comparingInt(h -> ((Prioritized) h).getOrder()));
-		
+
 		// Combine: prioritized hooks first (sorted), then non-prioritized hooks (original order)
 		List<Hook> result = new ArrayList<>(prioritizedHooks);
 		result.addAll(nonPrioritizedHooks);
-		
+
 		return result;
 	}
 
@@ -758,7 +764,7 @@ public class ReactAgent extends BaseAgent {
 				} else if (jumpToValue instanceof String) {
 					jumpTo = JumpTo.fromStringOrNull((String) jumpToValue);
 				}
-				
+
 				// If a valid jump_to instruction exists, execute it immediately
 				if (jumpTo != null) {
 					return switch (jumpTo) {
@@ -768,7 +774,7 @@ public class ReactAgent extends BaseAgent {
 					};
 				}
 			}
-			
+
 			// Priority 2: Check message content for tool calls
 			List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 			if (messages.isEmpty()) {
@@ -972,7 +978,7 @@ public class ReactAgent extends BaseAgent {
 		private CompileConfig parentCompileConfig;
 
 		public AgentToSubCompiledGraphNodeAdapter(String nodeId, boolean includeContents, boolean returnReasoningContents,
-				CompiledGraph childGraph, String instruction, CompileConfig parentCompileConfig) {
+												  CompiledGraph childGraph, String instruction, CompileConfig parentCompileConfig) {
 			this.nodeId = nodeId;
 			this.includeContents = includeContents;
 			this.returnReasoningContents = returnReasoningContents;
@@ -1061,7 +1067,7 @@ public class ReactAgent extends BaseAgent {
 			if (lastResponse == null) {
 				return lastResponse;
 			}
-			
+
 			if (lastResponse.resultValue().isPresent()) {
 				Object resultValue = lastResponse.resultValue().get();
 				if (resultValue instanceof Map) {
@@ -1107,10 +1113,10 @@ public class ReactAgent extends BaseAgent {
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
 			RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config)
 					.checkPointId(null)
+					.clearContext()
 					.nextNode(null)
 					.addMetadata("_AGENT_", subGraphId(nodeId)) // subGraphId is the same as the name of the agent that created it
 					.build();
-			subGraphRunnableConfig.clearContext();
 			var parentSaver = parentCompileConfig.checkpointSaver();
 			var subGraphSaver = childGraph.compileConfig.checkpointSaver();
 
@@ -1127,13 +1133,14 @@ public class ReactAgent extends BaseAgent {
 									.orElseGet(() -> subGraphId(nodeId)))
 							.nextNode(null)
 							.checkPointId(null)
+							.clearContext()
 							.addMetadata("_AGENT_", subGraphId(nodeId)) // subGraphId is the same as the name of the agent that created it
 							.build();
-					subGraphRunnableConfig.clearContext();
 				}
 			}
 			return subGraphRunnableConfig;
 		}
+
 	}
 
 	/**
