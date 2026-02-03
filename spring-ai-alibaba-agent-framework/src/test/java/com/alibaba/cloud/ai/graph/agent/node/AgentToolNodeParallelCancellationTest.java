@@ -160,9 +160,10 @@ class AgentToolNodeParallelCancellationTest {
 							tokenCancelledLatch.countDown();
 						});
 
-						return CompletableFuture.supplyAsync(() -> {
-							slowToolStarted.countDown();
+						// Signal that slow tool has started BEFORE the async work
+						slowToolStarted.countDown();
 
+						return CompletableFuture.supplyAsync(() -> {
 							// Simulate long-running work
 							try {
 								Thread.sleep(10000); // 10 seconds - longer than outer timeout
