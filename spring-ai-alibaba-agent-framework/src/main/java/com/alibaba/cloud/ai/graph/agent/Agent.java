@@ -190,6 +190,43 @@ public abstract class Agent {
 		return doInvoke(inputs, config);
 	}
 
+	/**
+	 * Invokes the agent with the given inputs map.
+	 * <p>
+	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
+	 * use this overload.
+	 * <p>
+	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
+	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
+	 * placeholders or any other state values.
+	 *
+	 * @param inputs the input map (reserved: messages, input; other keys as state)
+	 * @return the resulting overall state, or empty if none
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Optional<OverAllState> invoke(Map<String, Object> inputs) throws GraphRunnerException {
+		return doInvoke(inputs, null);
+	}
+
+	/**
+	 * Invokes the agent with the given inputs map and runtime config.
+	 * <p>
+	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
+	 * use this overload.
+	 * <p>
+	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
+	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
+	 * placeholders or any other state values.
+	 *
+	 * @param inputs the input map (reserved: messages, input; other keys as state)
+	 * @param config runtime configuration controlling execution behavior
+	 * @return the resulting overall state, or empty if none
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Optional<OverAllState> invoke(Map<String, Object> inputs, RunnableConfig config) throws GraphRunnerException {
+		return doInvoke(inputs, config);
+	}
+
 	// ------------------- Invoke  methods with Output as return value -------------------
 
 	public Optional<NodeOutput> invokeAndGetOutput(String message) throws GraphRunnerException {
@@ -219,6 +256,43 @@ public abstract class Agent {
 
 	public Optional<NodeOutput> invokeAndGetOutput(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
 		Map<String, Object> inputs = buildMessageInput(messages);
+		return doInvokeAndGetOutput(inputs, config);
+	}
+
+	/**
+	 * Invokes the agent with the given inputs map and returns the node output.
+	 * <p>
+	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
+	 * use this overload.
+	 * <p>
+	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
+	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
+	 * placeholders or any other state values.
+	 *
+	 * @param inputs the input map (reserved: messages, input; other keys as state)
+	 * @return the node output, or empty if none
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Optional<NodeOutput> invokeAndGetOutput(Map<String, Object> inputs) throws GraphRunnerException {
+		return doInvokeAndGetOutput(inputs, null);
+	}
+
+	/**
+	 * Invokes the agent with the given inputs map and runtime config, returns the node output.
+	 * <p>
+	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
+	 * use this overload.
+	 * <p>
+	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
+	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
+	 * placeholders or any other state values.
+	 *
+	 * @param inputs the input map (reserved: messages, input; other keys as state)
+	 * @param config runtime configuration controlling execution behavior
+	 * @return the node output, or empty if none
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Optional<NodeOutput> invokeAndGetOutput(Map<String, Object> inputs, RunnableConfig config) throws GraphRunnerException {
 		return doInvokeAndGetOutput(inputs, config);
 	}
 
@@ -312,6 +386,45 @@ public abstract class Agent {
 			.transform(this::extractMessages);
     }
 
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects using an
+	 * inputs map.
+	 * <p>
+	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
+	 * use this overload.
+	 * <p>
+	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
+	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
+	 * placeholders or any other state values.
+	 *
+	 * @param inputs the input map (reserved: messages, input; other keys as state)
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Flux<Message> streamMessages(Map<String, Object> inputs) throws GraphRunnerException {
+		return stream(inputs).transform(this::extractMessages);
+	}
+
+	/**
+	 * Streams the execution result as a {@link Flux} of {@link Message} objects using an
+	 * inputs map and a custom {@link RunnableConfig}.
+	 * <p>
+	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
+	 * use this overload.
+	 * <p>
+	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
+	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
+	 * placeholders or any other state values.
+	 *
+	 * @param inputs the input map (reserved: messages, input; other keys as state)
+	 * @param config runtime configuration controlling execution behavior
+	 * @return a {@link Flux} emitting {@link Message} objects as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Flux<Message> streamMessages(Map<String, Object> inputs, RunnableConfig config) throws GraphRunnerException {
+		return stream(inputs, config).transform(this::extractMessages);
+	}
+
 	// ------------------- Stream methods -------------------
 
 	public Flux<NodeOutput> stream(String message) throws GraphRunnerException {
@@ -341,6 +454,43 @@ public abstract class Agent {
 
 	public Flux<NodeOutput> stream(List<Message> messages, RunnableConfig config) throws GraphRunnerException {
 		Map<String, Object> inputs = buildMessageInput(messages);
+		return doStream(inputs, config);
+	}
+
+	/**
+	 * Streams the graph execution with the given inputs map.
+	 * <p>
+	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
+	 * use this overload.
+	 * <p>
+	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
+	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
+	 * placeholders or any other state values.
+	 *
+	 * @param inputs the input map (reserved: messages, input; other keys as state)
+	 * @return a {@link Flux} emitting {@link NodeOutput} as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Flux<NodeOutput> stream(Map<String, Object> inputs) throws GraphRunnerException {
+		return doStream(inputs, buildStreamConfig(null));
+	}
+
+	/**
+	 * Streams the graph execution with the given inputs map and runtime config.
+	 * <p>
+	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
+	 * use this overload.
+	 * <p>
+	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
+	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
+	 * placeholders or any other state values.
+	 *
+	 * @param inputs the input map (reserved: messages, input; other keys as state)
+	 * @param config runtime configuration controlling execution behavior
+	 * @return a {@link Flux} emitting {@link NodeOutput} as they are produced
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public Flux<NodeOutput> stream(Map<String, Object> inputs, RunnableConfig config) throws GraphRunnerException {
 		return doStream(inputs, config);
 	}
 

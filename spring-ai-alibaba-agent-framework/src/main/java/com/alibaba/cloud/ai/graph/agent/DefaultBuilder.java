@@ -33,6 +33,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
@@ -119,111 +120,9 @@ public class DefaultBuilder extends Builder {
 				}
 			}
 		}
-
-		// Collect tools from interceptors
-		// - regularTools: user-provided tools
-		// - interceptorTools: tools from interceptors
-		List<ToolCallback> regularTools = new ArrayList<>();
-
-		// Extract regular tools from user-provided tools
-		if (CollectionUtils.isNotEmpty(tools)) {
-			regularTools.addAll(tools);
-		}
-
-		if (CollectionUtils.isNotEmpty(toolCallbackProviders)) {
-			for (var provider : toolCallbackProviders) {
-				regularTools.addAll(List.of(provider.getToolCallbacks()));
-			}
-		}
-
-		if (CollectionUtils.isNotEmpty(toolNames)) {
-			for (String toolName : toolNames) {
-				// Skip the tool if it is already present in the request toolCallbacks.
-				// That might happen if a tool is defined in the options
-				// both as a ToolCallback and as a tool name.
-				if (regularTools.stream().anyMatch(tool -> tool.getToolDefinition().name().equals(toolName))) {
-					continue;
-				}
-
-				if (this.resolver == null) {
-					throw new IllegalStateException("ToolCallbackResolver is null; cannot resolve tool name: " + toolName);
-				}
-				ToolCallback toolCallback = this.resolver.resolve(toolName);
-				if (toolCallback == null) {
-					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
-					throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
-				}
-				regularTools.add(toolCallback);
-			}
-		}
-
-		// If regularTools is empty and resolver is provided, try to extract tools from resolver
-		if (regularTools.isEmpty() && this.resolver != null) {
-			// Check if resolver also implements ToolCallbackProvider
-			if (this.resolver instanceof ToolCallbackProvider provider) {
-				ToolCallback[] resolverTools = provider.getToolCallbacks();
-				if (resolverTools != null && resolverTools.length > 0) {
-					regularTools.addAll(List.of(resolverTools));
-					if (logger.isDebugEnabled()) {
-						logger.debug("Extracted {} tools from ToolCallbackResolver (ToolCallbackProvider)", resolverTools.length);
-					}
-				}
-			}
-			else {
-				// This is a fallback for resolvers that don't implement ToolCallbackProvider
-				try {
-					Field toolsField = this.resolver.getClass().getDeclaredField("tools");
-					toolsField.setAccessible(true);
-					Object toolsObj = toolsField.get(this.resolver);
-					if (toolsObj instanceof java.util.Map) {
-						@SuppressWarnings("unchecked")
-						java.util.Map<String, ToolCallback> toolsMap = (java.util.Map<String, ToolCallback>) toolsObj;
-						if (!toolsMap.isEmpty()) {
-							regularTools.addAll(toolsMap.values());
-							if (logger.isDebugEnabled()) {
-								logger.debug("Extracted {} tools from ToolCallbackResolver via reflection", toolsMap.size());
-							}
-						}
-					}
-				}
-				catch (NoSuchFieldException | IllegalAccessException | ClassCastException e) {
-					// Reflection failed, resolver doesn't have accessible tools field
-					// This is expected for some resolver implementations
-					if (logger.isTraceEnabled()) {
-						logger.trace("Could not extract tools from resolver via reflection: {}", e.getMessage());
-					}
-				}
-			}
-		}
-
-		// Extract interceptor tools
-		List<ToolCallback> interceptorTools = new ArrayList<>();
-		if (CollectionUtils.isNotEmpty(modelInterceptors)) {
-			interceptorTools = modelInterceptors.stream()
-				.flatMap(interceptor -> interceptor.getTools().stream())
-				.toList();
-		}
-
-		// Extract tools from hooks
-		List<ToolCallback> hookTools = new ArrayList<>();
-		if (CollectionUtils.isNotEmpty(hooks)) {
-			for (Hook hook : hooks) {
-				List<ToolCallback> toolsFromHook = hook.getTools();
-				if (CollectionUtils.isNotEmpty(toolsFromHook)) {
-					hookTools.addAll(toolsFromHook);
-					if (logger.isDebugEnabled()) {
-						logger.debug("Collected {} tools from hook '{}'", toolsFromHook.size(), hook.getName());
-					}
-				}
-			}
-		}
-
-		// Combine all tools: hookTools + interceptorTools + regularTools
-		List<ToolCallback> allTools = new ArrayList<>();
-		allTools.addAll(hookTools);
-		allTools.addAll(interceptorTools);
-		allTools.addAll(regularTools);
-
+		
+		List<ToolCallback> allTools = gatherLocalTools();
+		
 		// Set combined tools to LLM node
 		if (CollectionUtils.isNotEmpty(allTools)) {
 			llmNodeBuilder.toolCallbacks(Collections.unmodifiableList(allTools));
@@ -237,7 +136,12 @@ public class DefaultBuilder extends Builder {
 
 		// Setup tool node with all available tools
 		AgentToolNode toolNode;
-		AgentToolNode.Builder toolBuilder = AgentToolNode.builder().agentName(this.name);
+		AgentToolNode.Builder toolBuilder = AgentToolNode.builder()
+				.agentName(this.name)
+				.parallelToolExecution(this.parallelToolExecution)
+				.maxParallelTools(this.maxParallelTools)
+				.toolExecutionTimeout(this.toolExecutionTimeout)
+				.wrapSyncToolsAsAsync(this.wrapSyncToolsAsAsync);
 
 		if (resolver != null) {
 			toolBuilder.toolCallbackResolver(resolver);
@@ -264,6 +168,131 @@ public class DefaultBuilder extends Builder {
 		toolNode = toolBuilder.build();
 
 		return new ReactAgent(llmNode, toolNode, buildConfig(), this);
+	}
+	
+	/**
+	 * Collect all tools from various sources.
+	 * <p>
+	 * This method gathers tools from multiple sources in the following order:
+	 * <ol>
+	 *   <li>Direct tools provided via {@code tools}</li>
+	 *   <li>Tools from {@code toolCallbackProviders}</li>
+	 *   <li>Tools resolved by name via {@code toolNames}</li>
+	 *   <li>Tools extracted from {@code resolver} (if no regular tools collected yet)</li>
+	 *   <li>Tools from interceptors ({@code modelInterceptors})</li>
+	 *   <li>Tools from hooks ({@code hooks})</li>
+	 * </ol>
+	 * <p>
+	 * The final combined list prioritizes hook tools first, then interceptor tools, followed by regular tools.
+	 *
+	 * @return a combined list of all tools from hooks, interceptors and user-provided sources
+	 */
+	protected List<ToolCallback> gatherLocalTools() {
+		// Collect tools from interceptors
+		// - regularTools: user-provided tools
+		// - interceptorTools: tools from interceptors
+		List<ToolCallback> regularTools = new ArrayList<>();
+		
+		// Extract regular tools from user-provided tools
+		if (CollectionUtils.isNotEmpty(tools)) {
+			regularTools.addAll(tools);
+		}
+		
+		if (CollectionUtils.isNotEmpty(toolCallbackProviders)) {
+			for (var provider : toolCallbackProviders) {
+				regularTools.addAll(List.of(provider.getToolCallbacks()));
+			}
+		}
+		
+		if (CollectionUtils.isNotEmpty(toolNames)) {
+			for (String toolName : toolNames) {
+				// Skip the tool if it is already present in the request toolCallbacks.
+				// That might happen if a tool is defined in the options
+				// both as a ToolCallback and as a tool name.
+				if (regularTools.stream().anyMatch(tool -> tool.getToolDefinition().name().equals(toolName))) {
+					continue;
+				}
+				
+				if (this.resolver == null) {
+					throw new IllegalStateException(
+							"ToolCallbackResolver is null; cannot resolve tool name: " + toolName);
+				}
+				ToolCallback toolCallback = this.resolver.resolve(toolName);
+				if (toolCallback == null) {
+					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
+					throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
+				}
+				regularTools.add(toolCallback);
+			}
+		}
+		
+		// If regularTools is empty and resolver is provided, try to extract tools from resolver
+		if (regularTools.isEmpty() && this.resolver != null) {
+			// Check if resolver also implements ToolCallbackProvider
+			if (this.resolver instanceof ToolCallbackProvider provider) {
+				ToolCallback[] resolverTools = provider.getToolCallbacks();
+				if (resolverTools != null && resolverTools.length > 0) {
+					regularTools.addAll(List.of(resolverTools));
+					if (logger.isDebugEnabled()) {
+						logger.debug("Extracted {} tools from ToolCallbackResolver (ToolCallbackProvider)",
+								resolverTools.length);
+					}
+				}
+			} else {
+				// This is a fallback for resolvers that don't implement ToolCallbackProvider
+				try {
+					Field toolsField = this.resolver.getClass().getDeclaredField("tools");
+					toolsField.setAccessible(true);
+					Object toolsObj = toolsField.get(this.resolver);
+					if (toolsObj instanceof java.util.Map) {
+						@SuppressWarnings("unchecked") java.util.Map<String, ToolCallback> toolsMap =
+								(java.util.Map<String, ToolCallback>) toolsObj;
+						if (!toolsMap.isEmpty()) {
+							regularTools.addAll(toolsMap.values());
+							if (logger.isDebugEnabled()) {
+								logger.debug("Extracted {} tools from ToolCallbackResolver via reflection",
+										toolsMap.size());
+							}
+						}
+					}
+				} catch (NoSuchFieldException | IllegalAccessException | ClassCastException e) {
+					// Reflection failed, resolver doesn't have accessible tools field
+					// This is expected for some resolver implementations
+					if (logger.isTraceEnabled()) {
+						logger.trace("Could not extract tools from resolver via reflection: {}", e.getMessage());
+					}
+				}
+			}
+		}
+		
+		// Extract interceptor tools
+		List<ToolCallback> interceptorTools = new ArrayList<>();
+		if (CollectionUtils.isNotEmpty(modelInterceptors)) {
+			interceptorTools = modelInterceptors.stream().flatMap(interceptor -> interceptor.getTools().stream())
+					.toList();
+		}
+
+		// Extract tools from hooks
+		List<ToolCallback> hookTools = new ArrayList<>();
+		if (CollectionUtils.isNotEmpty(hooks)) {
+			for (Hook hook : hooks) {
+				List<ToolCallback> toolsFromHook = hook.getTools();
+				if (CollectionUtils.isNotEmpty(toolsFromHook)) {
+					hookTools.addAll(toolsFromHook);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Collected {} tools from hook '{}'", toolsFromHook.size(), hook.getName());
+					}
+				}
+			}
+		}
+
+		// Combine all tools: hookTools + interceptorTools + regularTools
+		List<ToolCallback> allTools = new ArrayList<>();
+		allTools.addAll(hookTools);
+		allTools.addAll(interceptorTools);
+		allTools.addAll(regularTools);
+
+		return allTools;
 	}
 
 }

@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.interceptor;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -36,7 +37,8 @@ public class ToolCallRequest {
 		this.toolName = toolName;
 		this.arguments = arguments;
 		this.toolCallId = toolCallId;
-		this.context = context;
+		// Defensive copy to prevent external modification
+		this.context = context != null ? new HashMap<>(context) : new HashMap<>();
 		this.executionContext = executionContext;
 	}
 
@@ -51,6 +53,15 @@ public class ToolCallRequest {
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	/**
+	 * Creates a ToolCallRequest from an AssistantMessage.ToolCall.
+	 * @param toolCall the tool call from the assistant message
+	 * @return a new ToolCallRequest with empty context
+	 */
+	public static ToolCallRequest from(AssistantMessage.ToolCall toolCall) {
+		return builder().toolCall(toolCall).context(new HashMap<>()).build();
 	}
 
 	public static Builder builder(ToolCallRequest request) {

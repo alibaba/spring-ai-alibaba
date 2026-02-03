@@ -16,11 +16,13 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import java.lang.reflect.Type;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
@@ -115,8 +117,14 @@ public abstract class Builder {
 	protected boolean enableLogging;
 
 	protected StateSerializer stateSerializer;
-	
+
 	protected Executor executor;
+
+	// Async tool execution configuration
+	protected boolean parallelToolExecution = false;
+	protected int maxParallelTools = 5;
+	protected Duration toolExecutionTimeout = Duration.ofMinutes(5);
+	protected boolean wrapSyncToolsAsAsync = false;
 
 	public Builder name(String name) {
 		this.name = name;
@@ -352,6 +360,66 @@ public abstract class Builder {
 	public Builder executor(Executor executor) {
 		Assert.notNull(executor, "executor cannot be null");
 		this.executor = executor;
+		return this;
+	}
+
+	/**
+	 * Enables or disables parallel tool execution.
+	 * <p>
+	 * When enabled, multiple tool calls in a single response will be executed
+	 * concurrently rather than sequentially. This can significantly improve
+	 * performance when tools are I/O-bound or have long execution times.
+	 * @param parallel true to enable parallel execution, false for sequential
+	 * @return this builder instance
+	 */
+	public Builder parallelToolExecution(boolean parallel) {
+		this.parallelToolExecution = parallel;
+		return this;
+	}
+
+	/**
+	 * Sets the maximum number of tools that can execute in parallel.
+	 * <p>
+	 * This limit helps prevent resource exhaustion when many tools are
+	 * called simultaneously. The default is 5.
+	 * @param max the maximum number of parallel tool executions (must be at least 1)
+	 * @return this builder instance
+	 * @throws IllegalArgumentException if max is less than 1
+	 */
+	public Builder maxParallelTools(int max) {
+		if (max < 1) {
+			throw new IllegalArgumentException("maxParallelTools must be at least 1");
+		}
+		this.maxParallelTools = max;
+		return this;
+	}
+
+	/**
+	 * Sets the timeout for individual tool executions.
+	 * <p>
+	 * If a tool execution exceeds this timeout, it will be cancelled and
+	 * an error will be returned. The default is 5 minutes.
+	 * @param timeout the maximum duration for a single tool execution
+	 * @return this builder instance
+	 * @throws NullPointerException if timeout is null
+	 */
+	public Builder toolExecutionTimeout(Duration timeout) {
+		this.toolExecutionTimeout = Objects.requireNonNull(timeout, "timeout cannot be null");
+		return this;
+	}
+
+	/**
+	 * Enables or disables automatic wrapping of synchronous tools as async.
+	 * <p>
+	 * When enabled, tools that implement only {@code ToolCallback} (synchronous)
+	 * will be automatically wrapped in an {@code AsyncToolCallbackAdapter} to
+	 * enable async execution. This allows parallel execution without requiring
+	 * tool implementations to be modified.
+	 * @param wrap true to wrap sync tools as async, false to leave them as-is
+	 * @return this builder instance
+	 */
+	public Builder wrapSyncToolsAsAsync(boolean wrap) {
+		this.wrapSyncToolsAsAsync = wrap;
 		return this;
 	}
 
