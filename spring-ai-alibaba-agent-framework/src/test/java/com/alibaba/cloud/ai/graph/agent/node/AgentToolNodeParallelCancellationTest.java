@@ -160,9 +160,10 @@ class AgentToolNodeParallelCancellationTest {
 							tokenCancelledLatch.countDown();
 						});
 
-						return CompletableFuture.supplyAsync(() -> {
-							slowToolStarted.countDown();
+						// Signal that slow tool has started BEFORE the async work
+						slowToolStarted.countDown();
 
+						return CompletableFuture.supplyAsync(() -> {
 							// Simulate long-running work
 							try {
 								Thread.sleep(10000); // 10 seconds - longer than outer timeout
@@ -355,6 +356,7 @@ class AgentToolNodeParallelCancellationTest {
 				AtomicReference<CancellationToken> quickToolToken = new AtomicReference<>();
 				AtomicReference<CancellationToken> slowToolToken = new AtomicReference<>();
 				CountDownLatch slowToolStarted = new CountDownLatch(1);
+				CountDownLatch tokenCancelledLatch = new CountDownLatch(1);
 
 				// Create a quick tool
 				CancellableAsyncToolCallback quickTool = new CancellableAsyncToolCallback() {
@@ -405,8 +407,11 @@ class AgentToolNodeParallelCancellationTest {
 					public CompletableFuture<String> callAsync(String arguments, ToolContext context,
 							CancellationToken cancellationToken) {
 						slowToolToken.set(cancellationToken);
+						// Signal that slow tool has started BEFORE the async work
+						slowToolStarted.countDown();
+						// Register callback to detect cancellation
+						cancellationToken.onCancel(tokenCancelledLatch::countDown);
 						return CompletableFuture.supplyAsync(() -> {
-							slowToolStarted.countDown();
 							try {
 								Thread.sleep(10000); // Long sleep
 							}
@@ -441,7 +446,7 @@ class AgentToolNodeParallelCancellationTest {
 
 				Map<String, Object> result = toolNode.apply(state, config);
 
-				// Wait for the slow tool to start
+				// Wait for the slow tool to start (should have happened before apply returns due to timeout)
 				assertThat(slowToolStarted.await(2, TimeUnit.SECONDS)).isTrue();
 
 				// Verify results
@@ -454,8 +459,10 @@ class AgentToolNodeParallelCancellationTest {
 				// Slow tool should timeout
 				assertThat(responseMessage.getResponses().get(1).responseData()).contains("Error:");
 
-				// Wait a bit more for the cancellation to propagate
-				Thread.sleep(200);
+				// Wait for the cancellation to propagate
+				assertThat(tokenCancelledLatch.await(2, TimeUnit.SECONDS))
+					.as("Cancellation token callback should be invoked when outer timeout fires")
+					.isTrue();
 
 				// Verify tokens: quick tool token should NOT be cancelled
 				assertThat(quickToolToken.get()).isNotNull();
