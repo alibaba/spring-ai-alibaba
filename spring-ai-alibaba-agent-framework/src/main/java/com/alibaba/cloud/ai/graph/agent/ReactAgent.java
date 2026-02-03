@@ -354,8 +354,7 @@ public class ReactAgent extends BaseAgent {
 				graph.addNode(Hook.getFullHookName(hook) + ".after",
 					(state, config) -> wrappedAction.apply(state, config));
 			} else if (hook instanceof MessagesAgentHook messagesAgentHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".after",
-					MessagesAgentHook.afterAgentAction(messagesAgentHook));
+				graph.addNode(Hook.getFullHookName(hook) + ".after", MessagesAgentHook.afterAgentAction(messagesAgentHook));
 			}
 		}
 
@@ -385,8 +384,7 @@ public class ReactAgent extends BaseAgent {
 						(state, config) -> wrappedAction.apply(state, config));
 				}
 			} else if (hook instanceof MessagesModelHook messagesModelHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".afterModel",
-					MessagesModelHook.afterModelAction(messagesModelHook));
+				graph.addNode(Hook.getFullHookName(hook) + ".afterModel", MessagesModelHook.afterModelAction(messagesModelHook));
 			}
 		}
 
