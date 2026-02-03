@@ -27,7 +27,9 @@ import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.Usage;
 
@@ -39,9 +41,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.NODE_AFTER;
@@ -267,19 +267,26 @@ public class GraphRunnerContext {
 	}
 
 	public StreamingOutput<?> buildStreamingOutput(Message message, Object originData, String nodeId, boolean streaming) {
+		// Calculate next nodes from the context
+		String nextNode = calculateNextNode(nodeId);
+		List<String> allNextNodes = calculateAllNextNodes(nodeId);
+
 		// Create StreamingOutput with chunk and originData
 		OutputType outputType = OutputType.from(streaming, nodeId);
 		StreamingOutput<?> output = new StreamingOutput<>(message, originData, nodeId,
-				(String) config.metadata("_AGENT_").orElse(""), this.overallState, outputType);
+				(String) config.metadata("_AGENT_").orElse(""), this.overallState, nextNode, allNextNodes, outputType);
 		output.setSubGraph(true);
 		return output;
 	}
 
 	public StreamingOutput<?> buildStreamingOutput(Object originData, String nodeId, boolean streaming) {
-		// Create StreamingOutput with chunk only
+		// Calculate next nodes from the context
+		String nextNode = calculateNextNode(nodeId);
+		List<String> allNextNodes = calculateAllNextNodes(nodeId);
+
 		OutputType outputType = OutputType.from(streaming, nodeId);
 		StreamingOutput<?> output = new StreamingOutput<>(originData, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-				this.overallState, outputType);
+				this.overallState, nextNode, allNextNodes, outputType);
 		output.setSubGraph(true);
 		return output;
 	}
@@ -287,11 +294,60 @@ public class GraphRunnerContext {
 	// Normal NodeOutput builders for nodes with normal message output.
 
 	public NodeOutput buildNodeOutput(String nodeId) throws Exception {
+		// Calculate next nodes from the context
+		String nextNode = calculateNextNode(nodeId);
+		List<String> allNextNodes = calculateAllNextNodes(nodeId);
+
+		// Extract tokenUsage from current state instead of using cached field
+		Usage tokenUsage = extractTokenUsageFromCurrentState();
+
 		return NodeOutput.of(
 				nodeId,
 				(String) config.metadata("_AGENT_").orElse(""),
 				cloneState(this.overallState.data()),
-				this.tokenUsage);
+				tokenUsage,
+				nextNode,
+				allNextNodes);
+	}
+
+	/**
+	 * Calculate the next execution node for the given current node.
+	 */
+	private String calculateNextNode(String nodeId) {
+		EdgeValue edgeValue = compiledGraph.getEdge(nodeId);
+		if (edgeValue == null) {
+			return null;
+		}
+
+		if (edgeValue.id() != null) {
+			// Direct edge
+			return edgeValue.id();
+		} else if (edgeValue.value() != null) {
+			// Conditional edge - return the first available target
+			return edgeValue.value().mappings().values().stream().findFirst().orElse(null);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get all possible next execution nodes for the given current node.
+	 */
+	private List<String> calculateAllNextNodes(String nodeId) {
+		EdgeValue edgeValue = compiledGraph.getEdge(nodeId);
+		if (edgeValue == null) {
+			return List.of();
+		}
+
+		if (edgeValue.id() != null) {
+			// Direct edge
+			return List.of(edgeValue.id());
+		} else if (edgeValue.value() != null) {
+			// Conditional edge
+			return new ArrayList<>(edgeValue.value().mappings().values());
+		}
+
+		return List.of();
 	}
 
 	public OverAllState cloneState(Map<String, Object> data) throws Exception {
@@ -357,6 +413,40 @@ public class GraphRunnerContext {
 			}
 		}
 		return filteredState;
+	}
+
+	/**
+	 * Extract tokenUsage from the latest AssistantMessage in the current state.
+	 * This method retrieves the most recent tokenUsage from messages instead of relying on cached context field.
+	 *
+	 * @return the Usage object from the latest AssistantMessage, or null if not present
+	 */
+	private Usage extractTokenUsageFromCurrentState() {
+		Map<String, Object> stateData = this.overallState.data();
+		if (stateData == null) {
+			return null;
+		}
+
+		// Get messages from state
+		Object messagesObj = stateData.get("messages");
+		if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
+			// Iterate from the end to find the latest AssistantMessage with tokenUsage
+			for (int i = messagesList.size() - 1; i >= 0; i--) {
+				Object msgObj = messagesList.get(i);
+				// Only check AssistantMessage since only AI-generated messages have token usage
+				if (msgObj instanceof AssistantMessage assistantMessage) {
+					var metadata = assistantMessage.getMetadata();
+					if (metadata != null) {
+						Object usageObj = metadata.get("usage");
+						if (usageObj instanceof Usage usage) {
+							return usage;
+						}
+					}
+				}
+			}
+		}
+
+		return null;
 	}
 
 	// ================================================================================================================
@@ -457,6 +547,13 @@ public class GraphRunnerContext {
 	}
 
 	public NodeOutput buildNodeOutput(String nodeId, Map<String, Object> updateStates, boolean streaming) throws Exception {
+		// Calculate next nodes from the context
+		String nextNode = calculateNextNode(nodeId);
+		List<String> allNextNodes = calculateAllNextNodes(nodeId);
+
+		// Extract tokenUsage from current state instead of using cached field
+		Usage tokenUsage = extractTokenUsageFromCurrentState();
+
 		Message message = null;
 
 		// Check if updateStates is not empty
@@ -480,10 +577,10 @@ public class GraphRunnerContext {
 
 		if (message != null) {
 			return new StreamingOutput<>(message, nodeId, (String) config.metadata("_AGENT_").orElse(""),
-					cloneState(this.overallState.data()), tokenUsage, outputType);
+					cloneState(this.overallState.data()), tokenUsage, nextNode, allNextNodes, outputType);
 		} else {
 			return new StreamingOutput<>(nodeId, (String) config.metadata("_AGENT_").orElse(""),
-					cloneState(this.overallState.data()), tokenUsage, outputType);
+					cloneState(this.overallState.data()), tokenUsage, nextNode, allNextNodes, outputType);
 		}
 	}
 

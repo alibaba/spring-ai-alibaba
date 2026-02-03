@@ -191,12 +191,12 @@ public class SerializeTest {
 
 		String json = mapper.writeValueAsString(output);
 
-		assertEquals("{\"agent\":\"agent\",\"end\":false,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":true,\"tokenUsage\":{\"completionTokens\":0,\"nativeUsage\":{},\"promptTokens\":0,\"totalTokens\":0}}", json);
+		assertEquals("{\"agent\":\"agent\",\"allNextNodes\":[],\"end\":false,\"nextNode\":null,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":true,\"tokenUsage\":{\"completionTokens\":0,\"nativeUsage\":{},\"promptTokens\":0,\"totalTokens\":0}}", json);
 
 		output.setSubGraph(false);
 		json = mapper.writeValueAsString(output);
 
-		assertEquals("{\"agent\":\"agent\",\"end\":false,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":false,\"tokenUsage\":{\"completionTokens\":0,\"nativeUsage\":{},\"promptTokens\":0,\"totalTokens\":0}}", json);
+		assertEquals("{\"agent\":\"agent\",\"allNextNodes\":[],\"end\":false,\"nextNode\":null,\"node\":\"node\",\"start\":false,\"state\":null,\"subGraph\":false,\"tokenUsage\":{\"completionTokens\":0,\"nativeUsage\":{},\"promptTokens\":0,\"totalTokens\":0}}", json);
 	}
 
 	// Test class containing a nullable field for serialization tests
