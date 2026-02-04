@@ -41,10 +41,6 @@ public class AppendStrategy implements KeyStrategy {
 
 	@Override
 	public Object apply(Object oldValue, Object newValue) {
-		if (newValue instanceof Optional<?> newValueOptional) {
-			newValue = newValueOptional.orElse(null);
-		}
-
 		if (newValue == null) {
 			return oldValue;
 		}
