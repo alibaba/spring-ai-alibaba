@@ -241,7 +241,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			// Execute the chained handler
 			ModelResponse modelResponse = chainedHandler.call(modelRequest);
-			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", modelResponse.getMessage());
+			Object filteredMessage = filterSystemMessage(modelResponse.getMessage());
+			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", filteredMessage);
 		} else {
 			// Create base handler that actually calls the model
 			ModelCallHandler baseHandler = request -> {
@@ -284,9 +285,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			Map<String, Object> updatedState = new HashMap<>();
 			updatedState.put("_TOKEN_USAGE_", tokenUsage);
-			updatedState.put("messages", modelResponse.getMessage());
+			Object filteredMessage = filterSystemMessage(modelResponse.getMessage());
+			updatedState.put("messages", filteredMessage);
 			if (StringUtils.hasLength(this.outputKey)) {
-				updatedState.put(this.outputKey, modelResponse.getMessage());
+				updatedState.put(this.outputKey, filteredMessage);
 			}
 
 			return updatedState;
@@ -295,6 +297,19 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	public void setAdvisors(List<Advisor> advisors) {
 		this.advisors = advisors;
+	}
+
+	private Object filterSystemMessage(Object message) {
+		if (message instanceof List<?>) {
+			List<?> messageList = (List<?>) message;
+			List<Message> filteredMessages = messageList.stream()
+					.filter(msg -> msg instanceof Message)
+					.map(msg -> (Message) msg)
+					.filter(msg -> !(msg instanceof SystemMessage))
+					.collect(java.util.stream.Collectors.toList());
+			return filteredMessages;
+		}
+		return message;
 	}
 
 	private List<Message> appendSystemPromptIfNeeded(ModelRequest modelRequest) {
