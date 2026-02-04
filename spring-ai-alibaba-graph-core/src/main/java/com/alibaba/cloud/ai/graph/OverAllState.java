@@ -219,8 +219,24 @@ public final class OverAllState implements Serializable {
 		}
 
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
-		input.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
+		input.keySet().stream().filter(keyStrategies::containsKey).forEach(key -> {
 			this.data.put(key, keyStrategies.get(key).apply(value(key, null), input.get(key)));
+		});
+		return this;
+	}
+
+	public OverAllState mergeWithCheckpointState(Map<String, Object> checkpointState) {
+		if (checkpointState == null) {
+			return this;
+		}
+
+		if (CollectionUtils.isEmpty(checkpointState)){
+			return this;
+		}
+
+		Map<String, KeyStrategy> keyStrategies = keyStrategies();
+		checkpointState.keySet().stream().filter(keyStrategies::containsKey).forEach(key -> {
+			this.data.put(key, keyStrategies.get(key).apply(checkpointState.get(key), value(key, null)));
 		});
 		return this;
 	}
