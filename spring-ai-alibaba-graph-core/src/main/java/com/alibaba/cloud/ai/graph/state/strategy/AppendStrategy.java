@@ -53,6 +53,10 @@ public class AppendStrategy implements KeyStrategy {
 			oldValue = oldValueOptional.orElse(null);
 		}
 
+		if (newValue instanceof Optional<?> newValueOptional) {
+			newValue = newValueOptional.orElse(null);
+		}
+
 		boolean oldValueIsList = oldValue instanceof List<?>;
 
 		if (oldValueIsList && newValue instanceof AppenderChannel.RemoveIdentifier<?>) {
