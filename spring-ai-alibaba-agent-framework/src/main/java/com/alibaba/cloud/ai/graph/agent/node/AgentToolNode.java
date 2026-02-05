@@ -41,6 +41,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
@@ -113,6 +114,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private List<ToolCallback> toolCallbacks;
 
+	private List<ToolCallbackProvider> toolCallbackProviders = new ArrayList<>();
+
 	private Map<String, Object> toolContext;
 
 	private List<ToolInterceptor> toolInterceptors = new ArrayList<>();
@@ -126,6 +129,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		this.enableActingLog = builder.enableActingLog;
 		this.toolCallbackResolver = builder.toolCallbackResolver;
 		this.toolCallbacks = builder.toolCallbacks;
+		this.toolCallbackProviders = builder.toolCallbackProviders != null ? builder.toolCallbackProviders : new ArrayList<>();
 		this.toolContext = builder.toolContext;
 		this.toolExecutionExceptionProcessor = builder.toolExecutionExceptionProcessor;
 		this.parallelToolExecution = builder.parallelToolExecution;
@@ -150,8 +154,15 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return toolCallbacks;
 	}
 
+	public List<ToolCallbackProvider> getToolCallbackProviders() {
+		return toolCallbackProviders;
+	}
+
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
+		// Dynamically resolve all tools (static + providers)
+		List<ToolCallback> currentTools = resolveAllTools();
+		
 		List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
 		Message lastMessage = messages.get(messages.size() - 1);
 
@@ -165,10 +176,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 			// Choose execution mode based on configuration
 			if (parallelToolExecution && toolCalls.size() > 1) {
-				return executeToolCallsParallel(toolCalls, state, config);
+				return executeToolCallsParallel(toolCalls, state, config, currentTools);
 			}
 			else {
-				return executeToolCallsSequential(toolCalls, state, config);
+				return executeToolCallsSequential(toolCalls, state, config, currentTools);
 			}
 		}
 		else if (lastMessage instanceof ToolResponseMessage toolResponseMessage) {
@@ -215,8 +226,28 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 *
 	 * @see #executeToolCallsParallel(List, OverAllState, RunnableConfig)
 	 */
+	/**
+	 * Dynamically resolve all tools from static toolCallbacks and toolCallbackProviders.
+	 * This method is called on each tool execution to support dynamic tool discovery (e.g., MCP).
+	 *
+	 * @return combined list of all available tools
+	 */
+	private List<ToolCallback> resolveAllTools() {
+		List<ToolCallback> allTools = new ArrayList<>(this.toolCallbacks);
+		
+		// Dynamically get tools from providers
+		for (ToolCallbackProvider provider : toolCallbackProviders) {
+			ToolCallback[] providerTools = provider.getToolCallbacks();
+			if (providerTools != null && providerTools.length > 0) {
+				allTools.addAll(List.of(providerTools));
+			}
+		}
+		
+		return allTools;
+	}
+
 	private Map<String, Object> executeToolCallsSequential(List<AssistantMessage.ToolCall> toolCalls,
-			OverAllState state, RunnableConfig config) {
+			OverAllState state, RunnableConfig config, List<ToolCallback> currentTools) {
 
 		Map<String, Object> updatedState = new HashMap<>();
 		Map<String, Object> mergedUpdates = new HashMap<>(); // Accumulated results from successful tools
@@ -228,9 +259,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 			// If this tool times out, clear() only affects this map, not mergedUpdates
 			Map<String, Object> toolSpecificUpdate = new ConcurrentHashMap<>();
 			ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, toolSpecificUpdate,
-					false);
+					false, null, -1, currentTools);
 			toolResponses.add(response.toToolResponse());
-			returnDirect = shouldReturnDirect(toolCall, returnDirect, config);
+			returnDirect = shouldReturnDirect(toolCall, returnDirect, config, currentTools);
 			// Merge immediately - subsequent timeout clear() won't affect already-merged data
 			mergedUpdates.putAll(toolSpecificUpdate);
 		}
@@ -288,7 +319,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * @see #executeToolCallsSequential(List, OverAllState, RunnableConfig)
 	 */
 	private Map<String, Object> executeToolCallsParallel(List<AssistantMessage.ToolCall> toolCalls, OverAllState state,
-			RunnableConfig config) {
+			RunnableConfig config, List<ToolCallback> currentTools) {
 
 		// Log debug message when wrapSyncToolsAsAsync is enabled but ignored in parallel
 		// mode
@@ -329,7 +360,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 					semaphore.acquire();
 					try {
 						ToolCallResponse response = executeToolCallWithInterceptors(toolCall, stateSnapshot, config,
-								toolSpecificUpdate, true, cancellationTokens, index);
+								toolSpecificUpdate, true, cancellationTokens, index, currentTools);
 						// CAS: only set if still null (not already timed out)
 						orderedResponses.compareAndSet(index, null, response);
 					}
@@ -385,7 +416,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				logger.warn("Tool {} at index {} has null response, using error fallback", toolCall.name(), i);
 			}
 			toolResponses.add(response.toToolResponse());
-			returnDirect = shouldReturnDirect(toolCalls.get(i), returnDirect, config);
+			returnDirect = shouldReturnDirect(toolCalls.get(i), returnDirect, config, currentTools);
 		}
 
 		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(toolResponses);
@@ -444,11 +475,14 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		// Execute remaining tools (supports parallel)
 		Map<String, Object> newResults;
+		// Dynamically resolve all tools for partial response handling
+		List<ToolCallback> currentTools = resolveAllTools();
+		
 		if (parallelToolExecution && remainingToolCalls.size() > 1) {
-			newResults = executeToolCallsParallel(remainingToolCalls, state, config);
+			newResults = executeToolCallsParallel(remainingToolCalls, state, config, currentTools);
 		}
 		else {
-			newResults = executeToolCallsSequential(remainingToolCalls, state, config);
+			newResults = executeToolCallsSequential(remainingToolCalls, state, config, currentTools);
 		}
 
 		// Merge existing responses with new responses
@@ -459,7 +493,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Compute returnDirect from all tool calls (existing + remaining)
 		Boolean returnDirect = null;
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-			returnDirect = shouldReturnDirect(toolCall, returnDirect, config);
+			returnDirect = shouldReturnDirect(toolCall, returnDirect, config, currentTools);
 		}
 
 		// Build final result
@@ -481,8 +515,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return updatedState;
 	}
 
-	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect, RunnableConfig config) {
-		ToolCallback toolCallback = resolve(toolCall.name(), config);
+	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect, RunnableConfig config, List<ToolCallback> currentTools) {
+		ToolCallback toolCallback = resolve(toolCall.name(), config, currentTools);
 		if (toolCallback == null) {
 			return returnDirect;
 		}
@@ -509,7 +543,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 	private ToolCallResponse executeToolCallWithInterceptors(AssistantMessage.ToolCall toolCall, OverAllState state,
 			RunnableConfig config, Map<String, Object> extraStateFromToolCall, boolean inParallelExecution) {
 		return executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall, inParallelExecution,
-				null, -1);
+				null, -1, resolveAllTools());
 	}
 
 	/**
@@ -525,11 +559,12 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * execution (may be null)
 	 * @param toolIndex the index of this tool in the parallel execution (used as key in
 	 * cancellationTokens)
+	 * @param currentTools the dynamically resolved tools to use
 	 * @return the tool call response
 	 */
 	private ToolCallResponse executeToolCallWithInterceptors(AssistantMessage.ToolCall toolCall, OverAllState state,
 			RunnableConfig config, Map<String, Object> extraStateFromToolCall, boolean inParallelExecution,
-			Map<Integer, DefaultCancellationToken> cancellationTokens, int toolIndex) {
+			Map<Integer, DefaultCancellationToken> cancellationTokens, int toolIndex, List<ToolCallback> currentTools) {
 
 		// Create ToolCallRequest
 		ToolCallRequest request = ToolCallRequest.builder()
@@ -540,7 +575,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		// Create base handler that actually executes the tool
 		ToolCallHandler baseHandler = req -> {
-			ToolCallback toolCallback = resolve(req.getToolName(), config);
+			ToolCallback toolCallback = resolve(req.getToolName(), config, currentTools);
 
 			if (toolCallback == null) {
 				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, req.getToolName());
@@ -829,9 +864,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return ParallelNode.getExecutor(config, AGENT_TOOL_NAME);
 	}
 
-	private ToolCallback resolve(String toolName, RunnableConfig config) {
-		if (toolCallbacks != null) {
-			var fromNode = toolCallbacks.stream()
+	private ToolCallback resolve(String toolName, RunnableConfig config, List<ToolCallback> currentTools) {
+		if (currentTools != null) {
+			Optional<ToolCallback> fromNode = currentTools.stream()
 				.filter(callback -> callback.getToolDefinition().name().equals(toolName))
 				.findFirst();
 			if (fromNode.isPresent()) {
@@ -880,6 +915,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 		private boolean wrapSyncToolsAsAsync = false;
 
 		private List<ToolCallback> toolCallbacks = new ArrayList<>();
+		
+		private List<ToolCallbackProvider> toolCallbackProviders;
 
 		private Map<String, Object> toolContext = new HashMap<>();
 
@@ -962,6 +999,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.toolCallbacks = toolCallbacks;
+			return this;
+		}
+		
+		public Builder toolCallbackProviders(List<ToolCallbackProvider> toolCallbackProviders) {
+			this.toolCallbackProviders = toolCallbackProviders;
 			return this;
 		}
 

@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.context.ApplicationEventPublisher;
 
 public class NacosMcpGatewayToolsInitializer {
 
@@ -39,11 +40,16 @@ public class NacosMcpGatewayToolsInitializer {
 
 	private final NacosMcpOperationService nacosMcpOperationService;
 
+	private final ApplicationEventPublisher eventPublisher;
+
 	private List<McpServersVO.McpServerVO> mcpServers;
 
-	public NacosMcpGatewayToolsInitializer(NacosMcpOperationService nacosMcpOperationService, List<McpServersVO.McpServerVO> mcpServers) {
+	public NacosMcpGatewayToolsInitializer(NacosMcpOperationService nacosMcpOperationService,
+			List<McpServersVO.McpServerVO> mcpServers,
+			ApplicationEventPublisher eventPublisher) {
 		this.nacosMcpOperationService = nacosMcpOperationService;
 		this.mcpServers = mcpServers;
+		this.eventPublisher = eventPublisher;
 	}
 
 	public List<ToolCallback> initializeTools() {
@@ -122,7 +128,7 @@ public class NacosMcpGatewayToolsInitializer {
 							.remoteServerConfig(mcpServerRemoteServiceConfig)
 							.toolsMeta(metaInfo)
 							.build();
-					toolCallbacks.add(new NacosMcpGatewayToolCallback(toolDefinition, nacosMcpOperationService, serverVO));
+					toolCallbacks.add(new NacosMcpGatewayToolCallback(toolDefinition, nacosMcpOperationService, serverVO, eventPublisher));
 				}
 			}
 			return toolCallbacks;
