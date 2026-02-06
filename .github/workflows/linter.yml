@@ -18,9 +18,11 @@ on:
   push:
     branches:
       - main
+      - 2.x
   pull_request:
     branches:
       - main
+      - 2.x
 permissions:
   contents: read
 jobs:

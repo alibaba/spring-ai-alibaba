@@ -18,11 +18,13 @@ on:
   push:
     branches:
       - main
+      - 2.x
     paths-ignore:
       - '**.md'
   pull_request:
     branches:
       - main
+      - 2.x
     paths-ignore:
       - '**.md'
 env:
