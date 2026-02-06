@@ -33,7 +33,7 @@ public abstract class CachingToolCallbackProvider
 
 	private volatile boolean invalidateCache = true;
 
-	private ToolCallback[] cachedToolCallbacks;
+	private volatile ToolCallback[] cachedToolCallbacks;
 
 	@Override
 	public final ToolCallback[] getToolCallbacks() {
