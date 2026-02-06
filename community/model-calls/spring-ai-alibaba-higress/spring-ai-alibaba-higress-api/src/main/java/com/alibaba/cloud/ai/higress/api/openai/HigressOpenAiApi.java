@@ -47,6 +47,7 @@ import reactor.core.publisher.Mono;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -254,7 +255,7 @@ public class HigressOpenAiApi {
                 .headers(headers -> {
                         if (Objects.isNull(apiKey) && Objects.nonNull(higressHmac)) {
                              // HMAC 签名已在 createHmacHeader 中处理
-                            createHmacHeader(higressHmac, chatRequest, additionalHttpHeader, this.completionsPath);
+                            createHmacHeader(higressHmac, chatRequest, additionalHttpHeader,this.baseUrl,this.completionsPath);
                         }
                         addDefaultHeadersIfMissing(headers);
                         headers.addAll(additionalHttpHeader);
@@ -2133,26 +2134,40 @@ public class HigressOpenAiApi {
 		return Base64.getEncoder().encodeToString(hmacBytes);
 	}
 
+	// 自定义常量（建议放在单独的常量类中）
+	public static final String X_CA_KEY = "X-Ca-Key";
+
+	public static final String X_CA_SIGNATURE_METHOD = "X-Ca-Signature-Method";
+
+	public static final String X_CA_NONCE = "X-Ca-Nonce";
+
+	public static final String X_CA_TIMESTAMP = "X-Ca-Timestamp";
+
+	public static final String X_CA_SIGNATURE_HEADERS = "X-Ca-Signature-Headers";
+
+	public static final String X_CA_SIGNATURE_HEADERS_VALUE = "x-ca-timestamp,x-ca-key,x-ca-signature-method";
+
+	public static final String X_CA_SIGNATURE = "X-Ca-Signature";
+
+	public static final String CONTENT_MD5 = "Content-MD5";
+
+	public static final String ALGORITHM_NAME = "HmacSHA256";
+
 	/**
 	 * 创建 HMAC 签名并返回序列化后的请求体
 	 * @return 序列化后的 JSON 请求体字符串
 	 */
 	private static void createHmacHeader(HigressHmac higressHmac, ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader, String completionsPath) {
+			MultiValueMap<String, String> additionalHttpHeader, String baseUrl, String completionsPath) {
 		try {
 			// 创建与 WebClient 默认编码器配置一致的 ObjectMapper
 			ObjectMapper objectMapper = new ObjectMapper().setSerializationInclusion(Include.NON_NULL)
 				.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 			String jsonBody = objectMapper.writeValueAsString(chatRequest);
-			String lineBreak = "\n";
+			final String lineBreak = "\n";
+			final String colon = ":";
 			// 以下签名串的内容及顺序要严格按照规定拼接，否则会导致签名验证失败,生成的签名串格式如下:
-			// HTTPMethod
-			// Accept
-			// Content-MD5
-			// Content-Type
-			// Date
-			// Headers
-			// PathAndParameters
+			// HTTPMethod\nAccept\nContent-MD5\nContent-Type\nDate\nHeaders\nPathAndParameters
 			java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
 			String contentMd5 = Base64.getEncoder()
 				.encodeToString(md.digest(jsonBody.getBytes(StandardCharsets.UTF_8)));
@@ -2160,26 +2175,20 @@ public class HigressOpenAiApi {
 			// x-ca-nonce（或标准写法 X-Ca-Nonce）是阿里云API网关在HMAC签名认证机制中用于防止重放攻击（Replay Attack）
 			// 的关键请求头字段。
 			String nonce = UUID.randomUUID().toString();
-			String algorithmName = "HmacSHA256";
-			// 签名头顺序必须与 X-Ca-Signature-Headers 中声明的顺序一致
-			// HTTPMethod
-			// Accept
-			// Content-MD5
-			// Content-Type
-			// Date
-			// Headers
-			// PathAndParameters
+			// 签名头顺序必须与 X-Ca-Signature-Headers 中声明的顺序一致:
+			// HTTPMethod\nAccept\nContent-MD5\nContent-Type\nDate\nHeaders\nPathAndParameters
 			String signString = HttpMethod.POST + lineBreak + MediaType.APPLICATION_JSON_VALUE + lineBreak + contentMd5
-					+ lineBreak + MediaType.APPLICATION_JSON_VALUE + lineBreak + lineBreak + "x-ca-key:"
-					+ higressHmac.getAccessKeyValue() + lineBreak + "x-ca-signature-method:" + algorithmName + lineBreak
-					+ "x-ca-timestamp:" + timestamp + lineBreak + "/compatible-mode-aksk" + completionsPath;
+					+ lineBreak + MediaType.APPLICATION_JSON_VALUE + lineBreak + lineBreak + X_CA_KEY.toLowerCase()
+					+ colon + higressHmac.getAccessKeyValue() + lineBreak + X_CA_SIGNATURE_METHOD.toLowerCase() + colon
+					+ ALGORITHM_NAME + lineBreak + X_CA_TIMESTAMP.toLowerCase() + colon + timestamp + lineBreak
+					+ getPathAndQuery(baseUrl) + completionsPath;
 			logger.info("HmacLog Client Side Hmac Signature:{}", signString.replaceAll("\n", "#"));
-			String signature = generateHmac(signString, higressHmac.getSecretKeyValue(), algorithmName);
-			additionalHttpHeader.addAll(MultiValueMap.fromSingleValue(Map.of("Accept", MediaType.APPLICATION_JSON_VALUE,
-					"Content-Type", MediaType.APPLICATION_JSON_VALUE, "X-Ca-Key", higressHmac.getAccessKeyValue(),
-					"X-Ca-Signature-Method", algorithmName, "X-Ca-Nonce", nonce, "X-Ca-Timestamp", timestamp,
-					"X-Ca-Signature-Headers", "x-ca-timestamp,x-ca-key,x-ca-signature-method", "X-Ca-Signature",
-					signature, "Content-MD5", contentMd5)));
+			String signature = generateHmac(signString, higressHmac.getSecretKeyValue(), ALGORITHM_NAME);
+			additionalHttpHeader.addAll(MultiValueMap.fromSingleValue(Map.of(HttpHeaders.ACCEPT,
+					MediaType.APPLICATION_JSON_VALUE, HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE,
+					X_CA_KEY, higressHmac.getAccessKeyValue(), X_CA_SIGNATURE_METHOD, ALGORITHM_NAME, X_CA_NONCE, nonce,
+					X_CA_TIMESTAMP, timestamp, X_CA_SIGNATURE_HEADERS, X_CA_SIGNATURE_HEADERS_VALUE, X_CA_SIGNATURE,
+					signature, CONTENT_MD5, contentMd5)));
 		}
 		catch (Exception e) {
 			logger.error("build Hmac signature error,turn to api key call");
@@ -2201,14 +2210,31 @@ public class HigressOpenAiApi {
 			// jsonString.set(JSON.toJSONString(request.headers()));
 			return Mono.just(request);
 		}).andThen(ExchangeFilterFunction.ofResponseProcessor(response -> {
-			logger.debug("customized-webClient请求结束:{}方法,请求Url:{},  响应状态:[{}],耗时:{}ms", method.get(), url.get(),
-					response.statusCode(), System.currentTimeMillis() - start);
 			if (response.statusCode().is4xxClientError()) {
 				logger.error("HmacLog Server Side Hmac Signature:{}",
 						response.headers().header("X-Ca-Error-Message").get(0));
 			}
 			return Mono.just(response);
 		}));
+	}
+
+	/**
+	 * 获取出了域名以外的其他部分path
+	 * @param baseUrl
+	 */
+	public static String getPathAndQuery(String baseUrl) {
+		try {
+			URL url = new URL(baseUrl);
+			String path = url.getPath();
+			String query = url.getQuery();
+			if (query != null) {
+				return path + "?" + query;
+			}
+			return path;
+		}
+		catch (Exception e) {
+			return "";
+		}
 	}
 
 }
