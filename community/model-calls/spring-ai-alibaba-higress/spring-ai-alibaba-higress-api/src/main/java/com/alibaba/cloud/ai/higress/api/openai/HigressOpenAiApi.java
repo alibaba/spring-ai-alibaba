@@ -16,14 +16,21 @@
 
 package com.alibaba.cloud.ai.higress.api.openai;
 
+import com.alibaba.cloud.ai.higress.model.HigressHmac;
+import com.alibaba.cloud.ai.higress.model.SimpleHigressHmac;
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.*;
 import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -32,13 +39,18 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Map;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -64,6 +76,8 @@ import java.util.stream.Collectors;
 
 public class HigressOpenAiApi {
 
+	private static final Logger logger = LoggerFactory.getLogger(HigressOpenAiApi.class);
+
 	/**
 	 * Returns a builder pre-populated with the current configuration for mutation.
 	 */
@@ -85,6 +99,8 @@ public class HigressOpenAiApi {
 	private final String baseUrl;
 
 	private final ApiKey apiKey;
+
+	private final HigressHmac higressHmac;
 
 	private final MultiValueMap<String, String> headers;
 
@@ -109,11 +125,13 @@ public class HigressOpenAiApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public HigressOpenAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
-			String completionsPath, String embeddingsPath, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+	public HigressOpenAiApi(String baseUrl, ApiKey apiKey, HigressHmac higressHmac,
+			MultiValueMap<String, String> headers, String completionsPath, String embeddingsPath,
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
+		this.higressHmac = higressHmac;
 		this.headers = headers;
 		this.completionsPath = completionsPath;
 		this.embeddingsPath = embeddingsPath;
@@ -136,6 +154,7 @@ public class HigressOpenAiApi {
 
         this.webClient = webClientBuilder.clone()
                 .baseUrl(baseUrl)
+                .filter(hmacLogFilter())
                 .defaultHeaders(finalHeaders)
                 .build(); // @formatter:on
 	}
@@ -229,20 +248,29 @@ public class HigressOpenAiApi {
 				incrementalOutput);
 
 		// @formatter:off
-        return this.webClient.post()
+        return this.webClient
+                .post()
                 .uri(this.completionsPath)
                 .headers(headers -> {
-                    headers.addAll(additionalHttpHeader);
-                    addDefaultHeadersIfMissing(headers);
+                        if (Objects.isNull(apiKey) && Objects.nonNull(higressHmac)) {
+                             // HMAC 签名已在 createHmacHeader 中处理
+                            createHmacHeader(higressHmac, chatRequest, additionalHttpHeader, this.completionsPath);
+                        }
+                        addDefaultHeadersIfMissing(headers);
+                        headers.addAll(additionalHttpHeader);
                 }) // @formatter:on
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
+
 			.bodyToFlux(String.class)
 			// cancels the flux stream after the "[DONE]" is received.
 			.takeUntil(SSE_DONE_PREDICATE)
 			// filters out the "[DONE]" message.
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.map(content -> {
+				System.out.println(content);
+				return ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class);
+			})
 			// Detect is the chunk is part of a streaming function call.
 			.map(chunk -> {
 				if (chunkMerger.isStreamingToolFunctionCall(chunk)) {
@@ -316,7 +344,8 @@ public class HigressOpenAiApi {
 	}
 
 	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
-		if (!headers.containsKey(HttpHeaders.AUTHORIZATION) && !(this.apiKey instanceof NoopApiKey)) {
+		if (!headers.containsValue("X-Ca") && this.higressHmac == null
+				&& !headers.containsKey(HttpHeaders.AUTHORIZATION) && !(this.apiKey instanceof NoopApiKey)) {
 			headers.setBearerAuth(this.apiKey.getValue());
 		}
 	}
@@ -328,6 +357,10 @@ public class HigressOpenAiApi {
 
 	ApiKey getApiKey() {
 		return this.apiKey;
+	}
+
+	HigressHmac getHigressHmac() {
+		return this.higressHmac;
 	}
 
 	MultiValueMap<String, String> getHeaders() {
@@ -1922,6 +1955,7 @@ public class HigressOpenAiApi {
 		public Builder(HigressOpenAiApi api) {
 			this.baseUrl = api.getBaseUrl();
 			this.apiKey = api.getApiKey();
+			this.higressHmac = api.getHigressHmac();
 			this.headers = new LinkedMultiValueMap<>(api.getHeaders());
 			this.completionsPath = api.getCompletionsPath();
 			this.embeddingsPath = api.getEmbeddingsPath();
@@ -1933,6 +1967,8 @@ public class HigressOpenAiApi {
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 
 		private ApiKey apiKey;
+
+		private HigressHmac higressHmac;
 
 		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
 
@@ -1953,13 +1989,24 @@ public class HigressOpenAiApi {
 		}
 
 		public Builder apiKey(ApiKey apiKey) {
-			Assert.notNull(apiKey, "apiKey cannot be null");
+			Assert.isTrue(this.apiKey != null || this.higressHmac != null, "apiKey or higressHmac must be set");
 			this.apiKey = apiKey;
 			return this;
 		}
 
 		public Builder apiKey(String simpleApiKey) {
 			this.apiKey = new SimpleApiKey(simpleApiKey);
+			return this;
+		}
+
+		public Builder higressHmac(HigressHmac higressHmac) {
+			Assert.isTrue(this.apiKey != null || this.higressHmac != null, "apiKey or higressHmac must be set");
+			this.higressHmac = higressHmac;
+			return this;
+		}
+
+		public Builder higressHmac(String accessKey, String secretKey) {
+			this.higressHmac = new SimpleHigressHmac(accessKey, secretKey);
 			return this;
 		}
 
@@ -2000,8 +2047,8 @@ public class HigressOpenAiApi {
 		}
 
 		public HigressOpenAiApi build() {
-			Assert.notNull(this.apiKey, "apiKey must be set");
-			return new HigressOpenAiApi(this.baseUrl, this.apiKey, this.headers, this.completionsPath,
+			Assert.isTrue(this.apiKey != null || this.higressHmac != null, "apiKey or higressHmac must be set");
+			return new HigressOpenAiApi(this.baseUrl, this.apiKey, this.higressHmac, this.headers, this.completionsPath,
 					this.embeddingsPath, this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
 		}
 
@@ -2064,6 +2111,104 @@ public class HigressOpenAiApi {
 			}
 
 		}
+	}
+
+	/**
+	 * 生成HMAC签名
+	 * @param data 要签名的数据
+	 * @param key 密钥
+	 * @param algorithm HMAC算法（如HmacSHA256, HmacSHA1, HmacSHA512等）
+	 * @return Base64编码的签名
+	 */
+	private static String generateHmac(String data, String key, String algorithm) throws Exception {
+		// 创建Mac实例
+		Mac mac = Mac.getInstance(algorithm);
+		// 创建密钥
+		SecretKeySpec secretKey = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), algorithm);
+		// 初始化Mac
+		mac.init(secretKey);
+		// 计算HMAC
+		byte[] hmacBytes = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+		// Base64编码
+		return Base64.getEncoder().encodeToString(hmacBytes);
+	}
+
+	/**
+	 * 创建 HMAC 签名并返回序列化后的请求体
+	 * @return 序列化后的 JSON 请求体字符串
+	 */
+	private static void createHmacHeader(HigressHmac higressHmac, ChatCompletionRequest chatRequest,
+			MultiValueMap<String, String> additionalHttpHeader, String completionsPath) {
+		try {
+			// 创建与 WebClient 默认编码器配置一致的 ObjectMapper
+			ObjectMapper objectMapper = new ObjectMapper().setSerializationInclusion(Include.NON_NULL)
+				.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+			String jsonBody = objectMapper.writeValueAsString(chatRequest);
+			String lineBreak = "\n";
+			// 以下签名串的内容及顺序要严格按照规定拼接，否则会导致签名验证失败,生成的签名串格式如下:
+			// HTTPMethod
+			// Accept
+			// Content-MD5
+			// Content-Type
+			// Date
+			// Headers
+			// PathAndParameters
+			java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+			String contentMd5 = Base64.getEncoder()
+				.encodeToString(md.digest(jsonBody.getBytes(StandardCharsets.UTF_8)));
+			String timestamp = String.valueOf(System.currentTimeMillis());
+			// x-ca-nonce（或标准写法 X-Ca-Nonce）是阿里云API网关在HMAC签名认证机制中用于防止重放攻击（Replay Attack）
+			// 的关键请求头字段。
+			String nonce = UUID.randomUUID().toString();
+			String algorithmName = "HmacSHA256";
+			// 签名头顺序必须与 X-Ca-Signature-Headers 中声明的顺序一致
+			// HTTPMethod
+			// Accept
+			// Content-MD5
+			// Content-Type
+			// Date
+			// Headers
+			// PathAndParameters
+			String signString = HttpMethod.POST + lineBreak + MediaType.APPLICATION_JSON_VALUE + lineBreak + contentMd5
+					+ lineBreak + MediaType.APPLICATION_JSON_VALUE + lineBreak + lineBreak + "x-ca-key:"
+					+ higressHmac.getAccessKeyValue() + lineBreak + "x-ca-signature-method:" + algorithmName + lineBreak
+					+ "x-ca-timestamp:" + timestamp + lineBreak + "/compatible-mode-aksk" + completionsPath;
+			logger.info("HmacLog Client Side Hmac Signature:{}", signString.replaceAll("\n", "#"));
+			String signature = generateHmac(signString, higressHmac.getSecretKeyValue(), algorithmName);
+			additionalHttpHeader.addAll(MultiValueMap.fromSingleValue(Map.of("Accept", MediaType.APPLICATION_JSON_VALUE,
+					"Content-Type", MediaType.APPLICATION_JSON_VALUE, "X-Ca-Key", higressHmac.getAccessKeyValue(),
+					"X-Ca-Signature-Method", algorithmName, "X-Ca-Nonce", nonce, "X-Ca-Timestamp", timestamp,
+					"X-Ca-Signature-Headers", "x-ca-timestamp,x-ca-key,x-ca-signature-method", "X-Ca-Signature",
+					signature, "Content-MD5", contentMd5)));
+		}
+		catch (Exception e) {
+			logger.error("build Hmac signature error,turn to api key call");
+		}
+	}
+
+	/**
+	 * 记录服务端Hmac的计算签名值
+	 * @return
+	 */
+	private static ExchangeFilterFunction hmacLogFilter() {
+		long start = System.currentTimeMillis();
+		AtomicReference<HttpMethod> method = new AtomicReference<>();
+		AtomicReference<URI> url = new AtomicReference<>();
+		// AtomicReference<String> jsonString = new AtomicReference<>();
+		return ExchangeFilterFunction.ofRequestProcessor(request -> {
+			method.set(request.method());
+			url.set(request.url());
+			// jsonString.set(JSON.toJSONString(request.headers()));
+			return Mono.just(request);
+		}).andThen(ExchangeFilterFunction.ofResponseProcessor(response -> {
+			logger.debug("customized-webClient请求结束:{}方法,请求Url:{},  响应状态:[{}],耗时:{}ms", method.get(), url.get(),
+					response.statusCode(), System.currentTimeMillis() - start);
+			if (response.statusCode().is4xxClientError()) {
+				logger.error("HmacLog Server Side Hmac Signature:{}",
+						response.headers().header("X-Ca-Error-Message").get(0));
+			}
+			return Mono.just(response);
+		}));
 	}
 
 }
