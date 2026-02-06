@@ -47,7 +47,31 @@ public class HigressTest {
 																								// Key
 
 	@Test
-	public void testHigressByHmac() {
+	public void testHigressByHmacWithCall() {
+		String jobDescription = "你是一个智能问答助手";
+		String question = "给我讲个笑话";
+
+		HigressOpenAiApi openAiApi = HigressOpenAiApi.builder()
+			.higressHmac(ACCESS_KEY, SECRET_KEY)
+			.baseUrl(AKSK_BASE_URL)
+			.build();
+		HigressOpenAiChatOptions openAiChatOptions = HigressOpenAiChatOptions.builder().model("qwen-plus").build();
+		HigressOpenAiChatModel higressOpenAiChatModel = HigressOpenAiChatModel.builder()
+			.higressOpenAiApi(openAiApi)
+			.defaultOptions(openAiChatOptions)
+			.build();
+		ChatClient client = ChatClient.builder(higressOpenAiChatModel).build();
+		// CallResponse是一个Spring Ai通用的返回模型
+		ChatClient.ChatClientRequestSpec doChat = client.prompt(question).system(systemSpec -> {
+			// 设置系统角色
+			systemSpec.text(jobDescription);
+		});
+		System.out.println(doChat.call().content());
+		;
+	}
+
+	@Test
+	public void testHigressByHmacWithStream() {
 		String jobDescription = "你是一个智能问答助手";
 		String question = "给我讲个笑话";
 

@@ -205,6 +205,10 @@ public class HigressOpenAiApi {
         return this.restClient.post()
                 .uri(this.completionsPath)
                 .headers(headers -> {
+                    if (Objects.isNull(apiKey) && Objects.nonNull(higressHmac)) {
+                        // HMAC 签名已在 createHmacHeader 中处理
+                        createHmacHeader(higressHmac, chatRequest, additionalHttpHeader,this.baseUrl,this.completionsPath);
+                    }
                     headers.addAll(additionalHttpHeader);
                     addDefaultHeadersIfMissing(headers);
                 })
