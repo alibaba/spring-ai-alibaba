@@ -28,6 +28,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -431,7 +432,7 @@ class AgentToolNodeAsyncExecutionTest {
 			assertTrue(toolFinished.await(10, TimeUnit.SECONDS));
 
 			// ToolCancelledException should have been thrown
-			assertThrows(java.util.concurrent.CompletionException.class, future::join);
+			assertThrows(CompletionException.class, future::join);
 			assertTrue(exceptionThrown.get());
 		}
 
