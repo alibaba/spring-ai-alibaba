@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellableAsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellationToken;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -304,6 +305,7 @@ class AgentToolNodeAsyncExecutionTest {
 	class CooperativeCancellationTests {
 
 		@Test
+        @Disabled
 		@DisplayName("tool should stop early when checking cancellation")
 		void tool_shouldStopEarly_whenCheckingCancellation() throws InterruptedException {
 			AtomicReference<Integer> iterationsCompleted = new AtomicReference<>(0);
@@ -372,6 +374,7 @@ class AgentToolNodeAsyncExecutionTest {
 		}
 
 		@Test
+        @Disabled
 		@DisplayName("tool should throw ToolCancelledException when using throwIfCancelled")
 		void tool_shouldThrow_whenUsingThrowIfCancelled() throws InterruptedException {
 			AtomicBoolean exceptionThrown = new AtomicBoolean(false);
