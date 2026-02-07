@@ -126,7 +126,6 @@ services:
   rmq_namesrv:
     image: apache/rocketmq:5.3.2
     container_name: rmq_namesrv
-    user: "${UID}:${GID}"
     restart: always
     env_file:
       - ./.env
@@ -147,7 +146,6 @@ services:
     image: apache/rocketmq:5.3.2
     container_name: rmq_broker
     restart: always
-    user: "${UID}:${GID}"
     env_file:
       - ./.env
     environment:
@@ -173,7 +171,6 @@ services:
     image: apache/rocketmq:5.3.2
     container_name: rmq_proxy
     restart: always
-    user: "${UID}:${GID}"
     volumes:
       - ${MIDDLEWARE_HOME:-.}/conf/rocketmq:/home/rocketmq/conf
     env_file:
