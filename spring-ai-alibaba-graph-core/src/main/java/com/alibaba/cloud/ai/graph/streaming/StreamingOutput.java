@@ -171,6 +171,14 @@ public class StreamingOutput<T> extends NodeOutput {
 
 	@Deprecated
 	public String chunk() {
+		// 如果是完成类型（AGENT_MODEL_FINISHED等），则返回null而不是chunk内容
+		if (outputType != null &&
+			(outputType == OutputType.AGENT_MODEL_FINISHED ||
+			 outputType == OutputType.AGENT_TOOL_FINISHED ||
+			 outputType == OutputType.AGENT_HOOK_FINISHED ||
+			 outputType == OutputType.GRAPH_NODE_FINISHED)) {
+			return null;
+		}
 		return chunk;
 	}
 
