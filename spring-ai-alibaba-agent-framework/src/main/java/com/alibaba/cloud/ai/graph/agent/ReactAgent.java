@@ -40,7 +40,6 @@ import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
-import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
@@ -152,53 +151,6 @@ public class ReactAgent extends BaseAgent {
 
         // Set tools flag if tool interceptors are present.
         hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
- }
-
-	/**
-	 * Re-inject tools provided by {@link SkillsAgentHook} into {@link AgentToolNode}
-	 * after a resume (e.g., HITL approval). Only skills tools are considered to
-	 * avoid mutating user-supplied tool lists.
-	 */
-	public void reinjectSkillsTools() {
-		if (toolNode == null || hooks == null || hooks.isEmpty()) {
-			logger.debug("reinjectSkillsTools skipped: toolNode or hooks unavailable");
-			return;
-		}
-
-		List<ToolCallback> skillTools = hooks.stream()
-			.filter(SkillsAgentHook.class::isInstance)
-			.map(SkillsAgentHook.class::cast)
-			.map(SkillsAgentHook::getTools)
-			.filter(list -> list != null && !list.isEmpty())
-			.flatMap(List::stream)
-			.toList();
-
-		if (skillTools.isEmpty()) {
-			logger.info("reinjectSkillsTools skipped: no skills tools found in hooks");
-			return;
-		}
-
-		List<ToolCallback> currentTools = Optional.ofNullable(toolNode.getToolCallbacks())
-			.map(ArrayList::new)
-			.orElseGet(ArrayList::new);
-
-		Set<String> existingNames = currentTools.stream()
-			.map(tool -> tool.getToolDefinition().name())
-			.collect(Collectors.toSet());
-
-		List<ToolCallback> missingTools = skillTools.stream()
-			.filter(tool -> !existingNames.contains(tool.getToolDefinition().name()))
-			.toList();
-
-		if (missingTools.isEmpty()) {
-			logger.info("reinjectSkillsTools skipped: all skills tools already present: {}", existingNames);
-			return;
-		}
-
-		currentTools.addAll(missingTools);
-		toolNode.setToolCallbacks(currentTools);
-		setupToolsForHooks(hooks, toolNode);
-		logger.info("Re-injected skills tools: {}", missingTools.stream().map(t -> t.getToolDefinition().name()).toList());
 	}
 
 	public static Builder builder() {
