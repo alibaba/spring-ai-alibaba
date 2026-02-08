@@ -12,6 +12,21 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
+# Parse arguments
+FRONTEND_IMAGE=${FRONTEND_IMAGE:-spring-ai-admin-frontend}
+BACKEND_IMAGE=${BACKEND_IMAGE:-spring-ai-admin-server}
+IMAGE_TAG=${IMAGE_TAG:-latest}
+IMAGE_PULL_POLICY=${IMAGE_PULL_POLICY:-IfNotPresent}
+
+echo -e "${GREEN}Deployment Configuration:${NC}"
+echo -e "  Frontend Image: ${FRONTEND_IMAGE}:${IMAGE_TAG}"
+echo -e "  Backend Image: ${BACKEND_IMAGE}:${IMAGE_TAG}"
+echo -e "  Image Pull Policy: ${IMAGE_PULL_POLICY}"
+echo ""
+
+# Export variables for envsubst
+export FRONTEND_IMAGE BACKEND_IMAGE IMAGE_TAG IMAGE_PULL_POLICY
+
 echo -e "${GREEN}Starting deployment to Kubernetes...${NC}"
 
 # Step 1: Create namespace
@@ -71,10 +86,10 @@ kubectl wait --for=condition=ready pod -l app=elasticsearch -n spring-ai-admin -
 # Step 5: Deploy applications
 echo -e "${YELLOW}Step 5: Deploying application services...${NC}"
 echo "  - Deploying backend..."
-kubectl apply -f "$SCRIPT_DIR/backend/"
+envsubst < "$SCRIPT_DIR/backend/backend-deployment.yaml" | kubectl apply -f -
 
 echo "  - Deploying frontend..."
-kubectl apply -f "$SCRIPT_DIR/frontend/"
+envsubst < "$SCRIPT_DIR/frontend/frontend-deployment.yaml" | kubectl apply -f -
 
 # Step 6: Deploy Ingress
 echo -e "${YELLOW}Step 6: Deploying Ingress...${NC}"
@@ -94,4 +109,3 @@ echo ""
 echo -e "${GREEN}To view logs, use:${NC}"
 echo "  kubectl logs -f deployment/spring-ai-admin-server -n spring-ai-admin"
 echo "  kubectl logs -f deployment/frontend -n spring-ai-admin"
-

@@ -204,6 +204,7 @@ services:
     entrypoint: >
       sh -c "
 
+
         echo 'Waiting for RocketMQ to be ready...' &&
         sleep 60 &&
         until sh mqadmin clusterList -n rmq_namesrv:9876; do
