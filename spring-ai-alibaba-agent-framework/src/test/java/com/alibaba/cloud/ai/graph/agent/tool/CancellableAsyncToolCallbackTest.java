@@ -25,6 +25,8 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -110,6 +112,8 @@ class CancellableAsyncToolCallbackTest {
 	@DisplayName("Cancellation Behavior Tests")
 	class CancellationBehaviorTests {
 
+		private final ExecutorService executor = Executors.newCachedThreadPool();
+
 		@Test
 		@DisplayName("tool should be able to check cancellation status")
 		void tool_shouldCheckCancellationStatus() throws InterruptedException {
@@ -139,7 +143,7 @@ class CancellableAsyncToolCallbackTest {
 						cancellationChecked.countDown();
 
 						return "result";
-					});
+					}, executor);
 				}
 			};
 
@@ -147,13 +151,13 @@ class CancellableAsyncToolCallbackTest {
 			CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
 
 			// Wait for tool to start
-			assertTrue(toolStarted.await(1, TimeUnit.SECONDS));
+			assertTrue(toolStarted.await(2, TimeUnit.SECONDS));
 
 			// Cancel the token
 			token.cancel();
 
 			// Wait for tool to check cancellation
-			assertTrue(cancellationChecked.await(1, TimeUnit.SECONDS));
+			assertTrue(cancellationChecked.await(2, TimeUnit.SECONDS));
 
 			// Tool should have seen the cancellation
 			assertTrue(sawCancellation.get());
@@ -218,7 +222,7 @@ class CancellableAsyncToolCallbackTest {
 							Thread.currentThread().interrupt();
 						}
 						return "result";
-					});
+					}, executor);
 				}
 			};
 
@@ -229,7 +233,7 @@ class CancellableAsyncToolCallbackTest {
 			token.cancel();
 
 			// Callback should be invoked
-			assertTrue(callbackLatch.await(1, TimeUnit.SECONDS));
+			assertTrue(callbackLatch.await(2, TimeUnit.SECONDS));
 			assertTrue(callbackInvoked.get());
 		}
 
@@ -344,6 +348,8 @@ class CancellableAsyncToolCallbackTest {
 	@DisplayName("Timeout Scenario Tests")
 	class TimeoutScenarioTests {
 
+		private final ExecutorService executor = Executors.newCachedThreadPool();
+
 		@Test
 		@DisplayName("simulated timeout should trigger cancellation callback")
 		void simulatedTimeout_shouldTriggerCancellationCallback() throws InterruptedException {
@@ -377,7 +383,7 @@ class CancellableAsyncToolCallbackTest {
 							}
 						}
 						return "completed";
-					});
+					}, executor);
 				}
 
 				@Override
@@ -399,7 +405,7 @@ class CancellableAsyncToolCallbackTest {
 			}
 
 			// Cleanup should be performed
-			assertTrue(cleanupLatch.await(1, TimeUnit.SECONDS));
+			assertTrue(cleanupLatch.await(2, TimeUnit.SECONDS));
 			assertTrue(cleanupPerformed.get());
 		}
 
@@ -407,6 +413,7 @@ class CancellableAsyncToolCallbackTest {
 		@DisplayName("tool should stop gracefully when checking cancellation")
 		void tool_shouldStopGracefully_whenCheckingCancellation() throws InterruptedException {
 			AtomicReference<Integer> iterationsCompleted = new AtomicReference<>(0);
+			CountDownLatch toolStarted = new CountDownLatch(1);
 			CountDownLatch toolFinished = new CountDownLatch(1);
 
 			DefaultCancellationToken token = new DefaultCancellationToken();
@@ -418,6 +425,9 @@ class CancellableAsyncToolCallbackTest {
 					return CompletableFuture.supplyAsync(() -> {
 						try {
 							for (int i = 0; i < 1000; i++) {
+								if (i == 0) {
+									toolStarted.countDown();
+								}
 								if (cancellationToken.isCancelled()) {
 									return "stopped-at-" + i;
 								}
@@ -433,21 +443,21 @@ class CancellableAsyncToolCallbackTest {
 						finally {
 							toolFinished.countDown();
 						}
-					});
+					}, executor);
 				}
 			};
 
 			// Start the tool
 			CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
 
-			// Let it run for a bit
-			Thread.sleep(50);
+			// Wait for tool to actually start
+			assertTrue(toolStarted.await(2, TimeUnit.SECONDS));
 
 			// Cancel
 			token.cancel();
 
 			// Wait for tool to finish
-			assertTrue(toolFinished.await(1, TimeUnit.SECONDS));
+			assertTrue(toolFinished.await(2, TimeUnit.SECONDS));
 
 			// Tool should have stopped early (not completed all 1000 iterations)
 			assertTrue(iterationsCompleted.get() < 100, "Tool should have stopped early, but completed " + iterationsCompleted.get() + " iterations");
