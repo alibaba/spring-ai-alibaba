@@ -1,31 +1,25 @@
 # Docker Compose deployment configuration
 # Most configurations are overridden by environment variables in docker-compose-service.yaml
-
 spring:
   profiles:
     active: docker
-  
   # Datasource configuration (overridden by environment variables)
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
-  
   # Redis configuration (overridden by environment variables)
   data:
     redis:
       host: ${SPRING_REDIS_HOST}
       port: ${SPRING_REDIS_PORT}
       database: ${SPRING_REDIS_DATABASE:0}
-  
   # Elasticsearch configuration (overridden by environment variables)
   elasticsearch:
     uris: ${SPRING_ELASTICSEARCH_URIS}
-
 # Nacos configuration (overridden by environment variables)
 nacos:
   server-addr: ${NACOS_SERVER_ADDR}
-
 # RocketMQ configuration (overridden by environment variables)
 rocketmq:
   endpoints: ${ROCKETMQ_ENDPOINTS}
@@ -35,7 +29,6 @@ rocketmq:
       document-index: ${ROCKETMQ_DOCUMENT_INDEX_TOPIC}
   consumer:
     group: ${ROCKETMQ_DOCUMENT_INDEX_GROUP}
-
 # OpenTelemetry tracing configuration (overridden by environment variables)
 management:
   otlp:
@@ -49,7 +42,6 @@ management:
   endpoint:
     health:
       show-details: always
-
 # Server configuration
 server:
   port: 8080
