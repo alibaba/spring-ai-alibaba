@@ -76,4 +76,3 @@ NEXT_PUBLIC_API_URL=http://localhost:8080
 NEXT_PUBLIC_APP_NAME=research_agent
 NEXT_PUBLIC_USER_ID=user-001
 ```
-

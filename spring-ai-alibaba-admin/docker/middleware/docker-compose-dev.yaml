@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  mysql:
+    container_name: mysql
+    restart: always
+    image: sca-registry.cn-hangzhou.cr.aliyuncs.com/dubbo/mysql:8.0.35
+    user: "${UID}:${GID}"
+    env_file:
+      - ./mysql.env
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ${MIDDLEWARE_HOME:-.}/mysql/data:/var/lib/mysql
+      - ${MIDDLEWARE_HOME:-.}/mysql/log:/var/log
+      - ${MIDDLEWARE_HOME:-.}/conf/mysql:/etc/mysql/conf.d
+      - ${MIDDLEWARE_HOME:-.}/init/mysql:/docker-entrypoint-initdb.d/
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+  
