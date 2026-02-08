@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
@@ -72,6 +73,9 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 			log.debug("No human feedback found in the runnable config metadata, no tool to execute or none needs feedback.");
 			return CompletableFuture.completedFuture(Map.of());
 		}
+
+		// Skills tools may be missing after checkpoint resume; re-inject them before continuing.
+		Optional.ofNullable(getAgent()).ifPresent(ReactAgent::reinjectSkillsTools);
 
 		AssistantMessage assistantMessage = getLastAssistantMessage(state);
 
