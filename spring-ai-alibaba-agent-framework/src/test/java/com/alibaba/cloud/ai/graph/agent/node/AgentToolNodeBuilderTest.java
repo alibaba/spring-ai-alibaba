@@ -17,23 +17,15 @@ package com.alibaba.cloud.ai.graph.agent.node;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for AgentToolNode.Builder validation.
@@ -172,27 +164,5 @@ class AgentToolNodeBuilderTest {
 		assertEquals("_AGENT_TOOL_", node.getName());
 	}
 
-
-	@Test
-	@DisplayName("SystemMessage should be filtered from message list to prevent checkpoint accumulation")
-	void testSystemMessageFilterLogic() {
-		List<Message> messages = new ArrayList<>();
-		messages.add(new SystemMessage("System prompt"));
-		messages.add(new UserMessage("User message"));
-		messages.add(new AssistantMessage("Assistant message"));
-
-		List<Message> filteredMessages = messages.stream()
-				.filter(msg -> !(msg instanceof SystemMessage))
-				.collect(Collectors.toList());
-
-		assertEquals(2, filteredMessages.size(), "Filtered messages should only contain UserMessage and AssistantMessage");
-
-		for (Message msg : filteredMessages) {
-			assertFalse(msg instanceof SystemMessage, "Filtered messages should not contain any SystemMessage");
-		}
-
-		assertTrue(filteredMessages.get(0) instanceof UserMessage, "First message should be UserMessage");
-		assertTrue(filteredMessages.get(1) instanceof AssistantMessage, "Second message should be AssistantMessage");
-	}
 
 }

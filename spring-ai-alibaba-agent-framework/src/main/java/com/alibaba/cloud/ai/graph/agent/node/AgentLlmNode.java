@@ -158,7 +158,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
 			}
 		} else {
-			messages = (List<Message>) state.value("messages").get();
+			messages = new ArrayList<>((List<Message>) state.value("messages").get());
 		}
 
 		augmentUserMessage(messages, outputSchema);
@@ -241,8 +241,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			// Execute the chained handler
 			ModelResponse modelResponse = chainedHandler.call(modelRequest);
-			Object filteredMessage = filterSystemMessage(modelResponse.getMessage());
-			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", filteredMessage);
+			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", modelResponse.getMessage());
 		} else {
 			// Create base handler that actually calls the model
 			ModelCallHandler baseHandler = request -> {
@@ -285,10 +284,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			Map<String, Object> updatedState = new HashMap<>();
 			updatedState.put("_TOKEN_USAGE_", tokenUsage);
-			Object filteredMessage = filterSystemMessage(modelResponse.getMessage());
-			updatedState.put("messages", filteredMessage);
+			updatedState.put("messages", modelResponse.getMessage());
 			if (StringUtils.hasLength(this.outputKey)) {
-				updatedState.put(this.outputKey, filteredMessage);
+				updatedState.put(this.outputKey, modelResponse.getMessage());
 			}
 
 			return updatedState;
@@ -297,19 +295,6 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	public void setAdvisors(List<Advisor> advisors) {
 		this.advisors = advisors;
-	}
-
-	private Object filterSystemMessage(Object message) {
-		if (message instanceof List<?>) {
-			List<?> messageList = (List<?>) message;
-			List<Message> filteredMessages = messageList.stream()
-					.filter(msg -> msg instanceof Message)
-					.map(msg -> (Message) msg)
-					.filter(msg -> !(msg instanceof SystemMessage))
-					.collect(java.util.stream.Collectors.toList());
-			return filteredMessages;
-		}
-		return message;
 	}
 
 	private List<Message> appendSystemPromptIfNeeded(ModelRequest modelRequest) {
