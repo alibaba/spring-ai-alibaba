@@ -354,6 +354,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		if (chatOptions != null) {
 			if (chatOptions instanceof ToolCallingChatOptions builderToolCallingOptions) {
+				ToolCallingChatOptions copiedOptions = builderToolCallingOptions.copy();
+
 				List<ToolCallback> mergedToolCallbacks = new ArrayList<>(toolCallbacks);
 				// Add callbacks from chatOptions that are not already present (toolCallbacks takes precedence)
 				for (ToolCallback callback : builderToolCallingOptions.getToolCallbacks()) {
@@ -364,9 +366,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					}
 				}
 
-				builderToolCallingOptions.setToolCallbacks(mergedToolCallbacks);
-				builderToolCallingOptions.setInternalToolExecutionEnabled(false);
-				return builderToolCallingOptions;
+				copiedOptions.setToolCallbacks(mergedToolCallbacks);
+				copiedOptions.setInternalToolExecutionEnabled(false);
+				return copiedOptions;
 			} else {
 				logger.warn("The provided chatOptions is not of type ToolCallingChatOptions (actual type: {}). " +
 								"It will not take effect. Creating a new ToolCallingChatOptions with toolCallbacks instead.",
@@ -504,10 +506,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
         ToolCallingChatOptions requestOptions = modelRequest.getOptions();
 
         if (requestOptions != null) {
-            requestOptions.setToolCallbacks(filteredToolCallbacks);
+			ToolCallingChatOptions copiedOptions = requestOptions.copy();
+            copiedOptions.setToolCallbacks(filteredToolCallbacks);
 			// force disable internal tool execution to avoid conflict with Agent framework's tool execution management.
-            requestOptions.setInternalToolExecutionEnabled(false);
-            promptSpec.options(requestOptions);
+            copiedOptions.setInternalToolExecutionEnabled(false);
+            promptSpec.options(copiedOptions);
         } else {
 			// Check if user has set default options in ChatModel or ChatClient.
 			if (promptSpec instanceof DefaultChatClient.DefaultChatClientRequestSpec defaultChatClientRequestSpec) {
@@ -522,8 +525,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				}
 				// If options is ToolCallingChatOptions, set filtered tool callbacks and toolExecution disabled.
 				else if (options instanceof ToolCallingChatOptions toolCallingChatOptions) {
-					toolCallingChatOptions.setToolCallbacks(filteredToolCallbacks);
-					toolCallingChatOptions.setInternalToolExecutionEnabled(false);
+					ToolCallingChatOptions copiedOptions = toolCallingChatOptions.copy();
+					copiedOptions.setToolCallbacks(filteredToolCallbacks);
+					copiedOptions.setInternalToolExecutionEnabled(false);
+					defaultChatClientRequestSpec.options(copiedOptions);
 				}
 			} else if (!filteredToolCallbacks.isEmpty()) {
 				promptSpec.tools(filteredToolCallbacks);

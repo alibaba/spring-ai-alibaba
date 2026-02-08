@@ -367,7 +367,7 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, PluginEntity> i
 			// convert to swagger yaml
 			String yaml = OpenApiUtils.buildOpenAPIYaml(plugin, tool);
 
-			if (StringUtils.isBlank(yaml) || CollectionUtils.isEmpty(OpenApiUtils.parseOpenAPIObject(yaml))) {
+			if (StringUtils.isBlank(yaml) || !CollectionUtils.isEmpty(OpenApiUtils.parseOpenAPIObject(yaml))) {
 				throw new BizException(ErrorCode.BUILD_TOOL_SCHEMA_ERROR.toError());
 			}
 
