@@ -27,12 +27,15 @@ import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.FormatProvider;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
+
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.StringUtils;
 
@@ -90,7 +93,7 @@ public class DefaultBuilder extends Builder {
 		if (templateRenderer != null) {
 			llmNodeBuilder.templateRenderer(templateRenderer);
     }
-    
+
 		if (instruction != null) {
 			llmNodeBuilder.instruction(instruction);
 		}
@@ -106,9 +109,11 @@ public class DefaultBuilder extends Builder {
 		if (StringUtils.hasLength(outputSchema)) {
 			llmNodeBuilder.outputSchema(outputSchema);
 		}
+
 		separateInterceptorsByType();
 
 		List<ToolCallback> allTools = gatherLocalTools();
+
 		// Set combined tools to LLM node
 		if (CollectionUtils.isNotEmpty(allTools)) {
 			llmNodeBuilder.toolCallbacks(Collections.unmodifiableList(allTools));
@@ -129,9 +134,12 @@ public class DefaultBuilder extends Builder {
 				.toolExecutionTimeout(this.toolExecutionTimeout)
 				.wrapSyncToolsAsAsync(this.wrapSyncToolsAsAsync);
 
-		ToolCallbackResolver toolCallbackResolver = resolveToolCallbackResolver();
-		if (toolCallbackResolver != null) {
-			toolBuilder.toolCallbackResolver(toolCallbackResolver);
+		ToolCallbackResolver resolver = resolveToolCallbackResolver();
+		if (resolver != null && resolver != this.resolver) {
+			this.resolver = resolver;
+		}
+		if (this.resolver != null) {
+			toolBuilder.toolCallbackResolver(this.resolver);
 		}
 		if (CollectionUtils.isNotEmpty(allTools)) {
 			toolBuilder.toolCallbacks(allTools);
@@ -156,7 +164,7 @@ public class DefaultBuilder extends Builder {
 
 		return new ReactAgent(llmNode, toolNode, buildConfig(), this);
 	}
-	
+
 	/**
 	 * Separate unified interceptors by type into modelInterceptors and toolInterceptors.
 	 */
@@ -164,7 +172,7 @@ public class DefaultBuilder extends Builder {
 		if (CollectionUtils.isNotEmpty(interceptors)) {
 			modelInterceptors = new ArrayList<>();
 			toolInterceptors = new ArrayList<>();
-			
+
 			for (Interceptor interceptor : interceptors) {
 				if (interceptor instanceof ModelInterceptor) {
 					modelInterceptors.add((ModelInterceptor) interceptor);
@@ -194,24 +202,26 @@ public class DefaultBuilder extends Builder {
 	 * @return a combined list of all tools from hooks, interceptors and user-provided sources
 	 */
 	protected List<ToolCallback> gatherLocalTools() {
-		ToolCallbackResolver toolCallbackResolver = resolveToolCallbackResolver();
-
 		// Collect tools from interceptors
 		// - regularTools: user-provided tools
 		// - interceptorTools: tools from interceptors
+		ToolCallbackResolver resolver = resolveToolCallbackResolver();
+		if (resolver != null && resolver != this.resolver) {
+			this.resolver = resolver;
+		}
 		List<ToolCallback> regularTools = new ArrayList<>();
-		
+
 		// Extract regular tools from user-provided tools
 		if (CollectionUtils.isNotEmpty(tools)) {
 			regularTools.addAll(tools);
 		}
-		
+
 		if (CollectionUtils.isNotEmpty(toolCallbackProviders)) {
 			for (var provider : toolCallbackProviders) {
 				regularTools.addAll(List.of(provider.getToolCallbacks()));
 			}
 		}
-		
+
 		if (CollectionUtils.isNotEmpty(toolNames)) {
 			for (String toolName : toolNames) {
 				// Skip the tool if it is already present in the request toolCallbacks.
@@ -220,12 +230,12 @@ public class DefaultBuilder extends Builder {
 				if (regularTools.stream().anyMatch(tool -> tool.getToolDefinition().name().equals(toolName))) {
 					continue;
 				}
-				
-				if (toolCallbackResolver == null) {
+
+				if (this.resolver == null) {
 					throw new IllegalStateException(
 							"ToolCallbackResolver is null; cannot resolve tool name: " + toolName);
 				}
-				ToolCallback toolCallback = toolCallbackResolver.resolve(toolName);
+				ToolCallback toolCallback = this.resolver.resolve(toolName);
 				if (toolCallback == null) {
 					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
 					throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
@@ -233,11 +243,11 @@ public class DefaultBuilder extends Builder {
 				regularTools.add(toolCallback);
 			}
 		}
-		
+
 		// If regularTools is empty and resolver is provided, try to extract tools from resolver
-		if (regularTools.isEmpty() && toolCallbackResolver != null) {
+		if (regularTools.isEmpty() && this.resolver != null) {
 			// Check if resolver also implements ToolCallbackProvider
-			if (toolCallbackResolver instanceof ToolCallbackProvider provider) {
+			if (this.resolver instanceof ToolCallbackProvider provider) {
 				ToolCallback[] resolverTools = provider.getToolCallbacks();
 				if (resolverTools != null && resolverTools.length > 0) {
 					regularTools.addAll(List.of(resolverTools));
@@ -249,9 +259,9 @@ public class DefaultBuilder extends Builder {
 			} else {
 				// This is a fallback for resolvers that don't implement ToolCallbackProvider
 				try {
-					Field toolsField = toolCallbackResolver.getClass().getDeclaredField("tools");
+					Field toolsField = this.resolver.getClass().getDeclaredField("tools");
 					toolsField.setAccessible(true);
-					Object toolsObj = toolsField.get(toolCallbackResolver);
+					Object toolsObj = toolsField.get(this.resolver);
 					if (toolsObj instanceof java.util.Map) {
 						@SuppressWarnings("unchecked") java.util.Map<String, ToolCallback> toolsMap =
 								(java.util.Map<String, ToolCallback>) toolsObj;
@@ -272,7 +282,7 @@ public class DefaultBuilder extends Builder {
 				}
 			}
 		}
-		
+
 		// Extract interceptor tools
 		List<ToolCallback> interceptorTools = new ArrayList<>();
 		if (CollectionUtils.isNotEmpty(modelInterceptors)) {
