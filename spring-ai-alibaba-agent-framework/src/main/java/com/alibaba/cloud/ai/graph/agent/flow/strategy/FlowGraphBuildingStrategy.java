@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
@@ -96,7 +97,7 @@ public interface FlowGraphBuildingStrategy {
 				}
 			}
 
-			keyStrategyMap.put("messages", new AppendStrategy());
+			keyStrategyMap.put("messages", new AppendStrategy(false));
 
 			return keyStrategyMap;
 		};
@@ -141,7 +142,7 @@ public interface FlowGraphBuildingStrategy {
 
 	static void addSubAgentNode(Agent subAgent, StateGraph newGraph) throws GraphStateException {
 		if (subAgent instanceof FlowAgent flowAgent) {
-			newGraph.addNode(flowAgent.name(), flowAgent.asStateGraph());
+			newGraph.addNode(flowAgent.name(), new SubCompiledGraphNode(flowAgent.name(), flowAgent.getAndCompileGraph()));
 		} else if (subAgent instanceof BaseAgent baseAgent) {
 			newGraph.addNode(baseAgent.name(), baseAgent.asNode(baseAgent.isIncludeContents(), baseAgent.isReturnReasoningContents()));
 		} else {

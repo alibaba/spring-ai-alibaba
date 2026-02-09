@@ -54,7 +54,7 @@ class ToolExecutionContextPropagationTest {
         CapturingToolInterceptor interceptor = new CapturingToolInterceptor();
 
         // Configure AgentToolNode with a dummy tool resolver (we won't reach tool execution).
-        AgentToolNode node = AgentToolNode.builder().agentName("test").enableActingLog(false).build();
+        AgentToolNode node = AgentToolNode.builder().agentName("test").toolExecutionExceptionProcessor(null).enableActingLog(false).build();
         node.setToolCallbacks(List.of());
         node.setToolInterceptors(List.of(interceptor));
 

@@ -198,5 +198,3 @@ This project is open source under the Apache License 2.0 license.
 ## Contributing
 
 We welcome submitting Issues and Pull Requests to help improve the project.
-
- 

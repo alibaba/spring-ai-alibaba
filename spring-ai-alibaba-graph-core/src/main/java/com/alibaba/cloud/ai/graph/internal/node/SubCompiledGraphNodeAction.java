@@ -68,7 +68,8 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 		final boolean resumeSubgraph = config.metadata(resumeSubGraphId(nodeId), new TypeRef<Boolean>() {
 		}).orElse(false);
 
-		RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config).clearContext().checkPointId(null).nextNode(null).build();
+		RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config).checkPointId(null).nextNode(null).build();
+		subGraphRunnableConfig.clearContext();
 
 		var parentSaver = parentCompileConfig.checkpointSaver();
 		var subGraphSaver = subGraph.compileConfig.checkpointSaver();
@@ -82,13 +83,13 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 			// Check saver are the same instance
 			if (parentSaver.get() == subGraphSaver.get()) {
 				subGraphRunnableConfig = RunnableConfig.builder(config)
-					.clearContext()
 					.threadId(config.threadId()
 						.map(threadId -> format("%s_%s", threadId, subGraphId(nodeId)))
 						.orElseGet(() -> subGraphId(nodeId)))
 					.nextNode(null)
 					.checkPointId(null)
 					.build();
+				subGraphRunnableConfig.clearContext();
 			}
 		}
 
