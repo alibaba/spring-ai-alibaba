@@ -161,9 +161,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			messages = (List<Message>) state.value("messages").get();
 		}
 
-		Map<String, Object> processedTemplateParams = processTemplateParams(state.data());
 		augmentUserMessage(messages, outputSchema);
-		renderTemplatedUserMessage(messages, processedTemplateParams, config.metadata());
+		renderTemplatedUserMessage(messages, state.data(), config.metadata());
 
 		// Create ModelRequest
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
@@ -193,8 +192,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		if (StringUtils.hasLength(this.instruction)) {
 			List<Message> messagesWithInstruction = new ArrayList<>();
-			String renderedInstruction = renderInstructionTemplate(this.instruction, processedTemplateParams);
-			messagesWithInstruction.add(new UserMessage(renderedInstruction));
+			messagesWithInstruction.add(new UserMessage(this.instruction));
 			messagesWithInstruction.addAll(messages);
 			requestBuilder.messages(messagesWithInstruction);
 		}
@@ -375,18 +373,6 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			builder.renderer(templateRenderer);
 		}
 		return builder.build().render(params);
-	}
-
-	private String renderInstructionTemplate(String instruction, Map<String, Object> params) {
-		try {
-			return renderPromptTemplate(instruction, params);
-		}
-		catch (Exception ex) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Failed to render instruction template for agent '{}', fallback to raw instruction", agentName, ex);
-			}
-			return instruction;
-		}
 	}
 
 	public void augmentUserMessage(List<Message> messages, String outputSchema) {
