@@ -35,6 +35,7 @@ import org.springframework.ai.document.Document;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
+import org.springframework.ai.zhipuai.ZhiPuAiAssistantMessage;
 
 import java.util.Collection;
 import java.util.Map;
@@ -59,7 +60,8 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 		}).register(new TypeMapper.Reference<Document>("DOCUMENT") {
 		}).register(new TypeMapper.Reference<AgentInstructionMessage>("TEMPLATED_USER") {
 		}).register(new TypeMapper.Reference<DeepSeekAssistantMessage>("DEEPSEEK_ASSISTANT") {
-		});
+		}).register(new TypeMapper.Reference<ZhiPuAiAssistantMessage>("ZHI_PU_AI_ASSISTANT") {
+        });
 
 		objectMapper.registerModule(module);
 
@@ -122,8 +124,10 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 					.addDeserializer(Document.class, document)
 					.addDeserializer(AgentInstructionMessage.class, templatedUser)
 					.addDeserializer(StreamingOutput.class, streamingOutput)
-					.addDeserializer(DeepSeekAssistantMessage.class, new DeepSeekAssistantMessageHandler.Deserializer());
-		}
+					.addDeserializer(DeepSeekAssistantMessage.class, new DeepSeekAssistantMessageHandler.Deserializer())
+                    .addDeserializer(ZhiPuAiAssistantMessage.class, new ZhiPuAIAssistantMessageHandler.Deserializer());
+
+        }
 
 	}
 
@@ -168,8 +172,10 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 					.addSerializer(AgentInstructionMessage.class, templatedUser)
 					.addSerializer(NodeOutput.class, output)
 					.addSerializer(StreamingOutput.class, streamingOutput)
-					.addSerializer(DeepSeekAssistantMessage.class, new DeepSeekAssistantMessageHandler.Serializer());
-		}
+					.addSerializer(DeepSeekAssistantMessage.class, new DeepSeekAssistantMessageHandler.Serializer())
+                    .addSerializer(ZhiPuAiAssistantMessage.class, new ZhiPuAIAssistantMessageHandler.Serializer());
+
+        }
 
 	}
 
