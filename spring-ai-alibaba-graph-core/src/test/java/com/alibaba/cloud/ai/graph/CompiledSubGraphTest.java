@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -294,6 +295,38 @@ public class CompiledSubGraphTest {
 		assertIterableEquals(List.of("[NODE1]", "[NODE2]", "[NODE3.1]", "[NODE3.2]", "[NODE3.3]",
 				"[NODE3.4<myNewValue>]", "[NODE4<myNewValue>]", "[NODE5]"),
 				output.get().state().value("messages", List.class).get());
+	}
+
+	@Test
+	public void testCompiledSubGraphShouldInheritRunnableContext() throws Exception {
+
+		var strategyFactory = KeyStrategy.builder().addStrategy("messages", new AppendStrategy(false)).build();
+
+		var subGraph = new StateGraph(strategyFactory)
+			.addNode("SUB_NODE", AsyncNodeActionWithConfig.node_async((state, config) -> Map.of("messages",
+					format("[SUB:%s]", config.context().get("trace_id")))))
+			.addEdge(START, "SUB_NODE")
+			.addEdge("SUB_NODE", END)
+			.compile();
+
+		var parentGraph = new StateGraph(strategyFactory)
+			.addNode("SET_CONTEXT", AsyncNodeActionWithConfig.node_async((state, config) -> {
+				config.context().put("trace_id", "ctx-123");
+				return Map.of("messages", "[PARENT]");
+			}))
+			.addNode("SUB_GRAPH", subGraph)
+			.addEdge(START, "SET_CONTEXT")
+			.addEdge("SET_CONTEXT", "SUB_GRAPH")
+			.addEdge("SUB_GRAPH", END)
+			.compile();
+
+		var output = parentGraph.stream(Map.of(), RunnableConfig.builder().build())
+			.reduce((a, b) -> b)
+			.blockOptional();
+
+		assertTrue(output.isPresent());
+		assertTrue(output.get().isEND());
+		assertIterableEquals(List.of("[PARENT]", "[SUB:ctx-123]"), output.get().state().value("messages", List.class).get());
 	}
 
 	@Test
