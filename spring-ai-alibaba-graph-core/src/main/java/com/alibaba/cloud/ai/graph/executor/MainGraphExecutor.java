@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 import reactor.core.publisher.Flux;
 
@@ -127,7 +128,7 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 			context.setNextNodeId(nextCommand.gotoNode());
 
 			Optional<Checkpoint> cp = context.addCheckpoint(START, context.getNextNodeId());
-			NodeOutput output = context.buildOutput(START, cp);
+			NodeOutput output = context.buildOutput(START, cp).setOutputType(OutputType.GRAPH_START);
 
 			context.setCurrentNodeId(context.getNextNodeId());
 			// Recursively call the main execution handler
@@ -149,7 +150,7 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 			AtomicReference<Object> resultValue) {
 		try {
 			context.doListeners(END, null);
-			NodeOutput output = context.buildNodeOutput(END);
+			NodeOutput output = context.buildNodeOutput(END).setOutputType(OutputType.GRAPH_END);
 			return Flux.just(GraphResponse.of(output))
 				.concatWith(Flux.defer(() -> handleCompletion(context, resultValue)));
 		}

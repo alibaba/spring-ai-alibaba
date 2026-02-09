@@ -18,11 +18,13 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import org.springframework.ai.chat.metadata.Usage;
 
 import java.io.IOException;
 
@@ -46,9 +48,29 @@ public class JacksonNodeOutputDeserializer extends StdDeserializer<NodeOutput> {
         OverAllState overAllState = treeNode.has("state") && !treeNode.get("state").isNull() ?
             objectMapper.readValue(objectMapper.treeAsTokens(treeNode.get("state")), OverAllState.class) : null;
         boolean subGraph = treeNode.has("subGraph") && treeNode.get("subGraph").asBoolean(false);
+
+        OutputType outputType = null;
+        if (treeNode.has("outputType") && !treeNode.get("outputType").isNull()) {
+            String outputTypeStr = treeNode.get("outputType").asText();
+            try {
+                outputType = OutputType.valueOf(outputTypeStr);
+            } catch (IllegalArgumentException ignored) {
+                // keep null for unknown/older enum values
+            }
+        }
+
+        Usage tokenUsage = null;
+        if (treeNode.has("tokenUsage") && !treeNode.get("tokenUsage").isNull()) {
+            try {
+                tokenUsage = objectMapper.readValue(objectMapper.treeAsTokens(treeNode.get("tokenUsage")), Usage.class);
+            } catch (Exception ignored) {
+                // tolerate unknown tokenUsage structure
+            }
+        }
         
-        NodeOutput nodeOutput = NodeOutput.of(node, agent, overAllState, null);
+        NodeOutput nodeOutput = NodeOutput.of(node, agent, overAllState, tokenUsage);
         nodeOutput.setSubGraph(subGraph);
+        nodeOutput.setOutputType(outputType);
         return nodeOutput;
     }
 }

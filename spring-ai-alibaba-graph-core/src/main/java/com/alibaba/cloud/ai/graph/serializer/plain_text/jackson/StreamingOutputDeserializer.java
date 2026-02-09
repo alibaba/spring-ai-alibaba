@@ -23,7 +23,9 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.metadata.Usage;
 
 import java.io.IOException;
 
@@ -34,7 +36,7 @@ import java.io.IOException;
 public class StreamingOutputDeserializer extends StdDeserializer<StreamingOutput> {
 
     public StreamingOutputDeserializer() {
-        super(StreamingOutput.class);
+		super(StreamingOutput.class);
     }
 
     @Override
@@ -69,15 +71,38 @@ public class StreamingOutputDeserializer extends StdDeserializer<StreamingOutput
             }
         }
 
+		Usage tokenUsage = null;
+		if (node.has("tokenUsage") && !node.get("tokenUsage").isNull()) {
+			try {
+				tokenUsage = objectMapper.readValue(objectMapper.treeAsTokens(node.get("tokenUsage")), Usage.class);
+			} catch (Exception ignored) {
+				// tolerate unknown tokenUsage structure
+			}
+		}
+
         // Create StreamingOutput with all available fields
         // Prefer constructor with message if message is present
         if (message != null) {
             // Use constructor with message
-            StreamingOutput<?> output = new StreamingOutput<>(message, nodeName, agentName, state, outputType);
+            StreamingOutput<?> output;
+            if (tokenUsage != null) {
+                output = new StreamingOutput<>(message, nodeName, agentName, state, tokenUsage, outputType);
+            } else {
+                output = new StreamingOutput<>(message, nodeName, agentName, state, outputType);
+            }
             return output;
         } else {
-            // Fallback to deprecated constructor with chunk (for backward compatibility)
-            return new StreamingOutput<>(chunk, nodeName, agentName, state);
+			// Backward compatibility: older payloads only have `chunk`.
+			// Avoid the deprecated chunk-based constructor by rebuilding an AssistantMessage.
+			Message chunkMessage = (chunk != null ? new AssistantMessage(chunk) : null);
+			StreamingOutput<?> output;
+			if (tokenUsage != null) {
+				output = new StreamingOutput<>(chunkMessage, nodeName, agentName, state, tokenUsage, outputType);
+			}
+			else {
+				output = new StreamingOutput<>(chunkMessage, nodeName, agentName, state, outputType);
+			}
+			return output;
         }
     }
 }

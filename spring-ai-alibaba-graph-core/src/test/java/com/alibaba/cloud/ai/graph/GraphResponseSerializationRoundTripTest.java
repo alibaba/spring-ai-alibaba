@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -28,6 +29,22 @@ import static org.junit.jupiter.api.Assertions.*;
  * while preserving their type and data.
  */
 public class GraphResponseSerializationRoundTripTest {
+
+	@Test
+	void nodeOutputShouldPreserveOutputTypeAfterSerialization() throws Exception {
+		OverAllState originalState = new OverAllState();
+		NodeOutput nodeOutput = NodeOutput.of("n1", "agentA", new OverAllState(), null)
+				.setOutputType(OutputType.GRAPH_NODE_FINISHED);
+		originalState.updateState(Map.of("node_output", nodeOutput));
+
+		SpringAIJacksonStateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
+		OverAllState restoredState = serializer.cloneObject(originalState);
+
+		Object restoredValue = restoredState.value("node_output").orElse(null);
+		assertNotNull(restoredValue);
+		assertTrue(restoredValue instanceof NodeOutput);
+		assertEquals(OutputType.GRAPH_NODE_FINISHED, ((NodeOutput) restoredValue).getOutputType());
+	}
 
 	@Test
 	void graphResponseErrorShouldPreserveTypeAfterSerialization() throws Exception {
