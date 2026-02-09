@@ -161,8 +161,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			messages = (List<Message>) state.value("messages").get();
 		}
 
+		Map<String, Object> processedTemplateParams = processTemplateParams(state.data());
 		augmentUserMessage(messages, outputSchema);
-		renderTemplatedUserMessage(messages, state.data(), config.metadata());
+		renderTemplatedUserMessage(messages, processedTemplateParams, config.metadata());
 
 		// Create ModelRequest
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
@@ -192,7 +193,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		if (StringUtils.hasLength(this.instruction)) {
 			List<Message> messagesWithInstruction = new ArrayList<>();
-			messagesWithInstruction.add(new UserMessage(this.instruction));
+			String renderedInstruction = renderInstructionTemplate(this.instruction, processedTemplateParams);
+			messagesWithInstruction.add(new UserMessage(renderedInstruction));
 			messagesWithInstruction.addAll(messages);
 			requestBuilder.messages(messagesWithInstruction);
 		}
@@ -375,6 +377,18 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		return builder.build().render(params);
 	}
 
+	private String renderInstructionTemplate(String instruction, Map<String, Object> params) {
+		try {
+			return renderPromptTemplate(instruction, params);
+		}
+		catch (Exception ex) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Failed to render instruction template for agent '{}', fallback to raw instruction", agentName, ex);
+			}
+			return instruction;
+		}
+	}
+
 	public void augmentUserMessage(List<Message> messages, String outputSchema) {
 		if (!StringUtils.hasText(outputSchema)) {
 			return;
@@ -404,7 +418,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 	}
 
-	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params, Optional<Map<String, Object>> metadata) {
+	private Map<String, Object> processTemplateParams(Map<String, Object> params) {
 		// Process params to create a new Map
 		Map<String, Object> processedParams = new HashMap<>();
 		if (params != null) {
@@ -431,6 +445,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				}
 			}
 		}
+		return processedParams;
+	}
+
+	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params, Optional<Map<String, Object>> metadata) {
+		Map<String, Object> processedParams = processTemplateParams(params);
 
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
