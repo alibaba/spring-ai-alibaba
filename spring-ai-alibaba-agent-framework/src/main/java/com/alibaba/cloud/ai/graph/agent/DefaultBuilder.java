@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
+import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillToolCallbackResolver;
+import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -25,20 +27,20 @@ import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.FormatProvider;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
-
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class DefaultBuilder extends Builder {
 
@@ -116,6 +118,23 @@ public class DefaultBuilder extends Builder {
 				}
 				if (interceptor instanceof ToolInterceptor) {
 					toolInterceptors.add((ToolInterceptor) interceptor);
+				}
+			}
+		}
+
+		// Configure ToolCallbackResolver for AgentToolNode / toolNames resolution.
+		// If SkillsAgentHook is present, chain in SkillToolCallbackResolver so that skill tools
+		// (e.g. read_skill) can be resolved by name after checkpoint/HITL resume.
+		ToolCallbackResolver finalResolver = resolver;
+		if (CollectionUtils.isNotEmpty(hooks)) {
+			for (Hook hook : hooks) {
+				if (hook instanceof SkillsAgentHook skillsAgentHook) {
+					ToolCallbackResolver skillResolver = new SkillToolCallbackResolver(skillsAgentHook.getSkillRegistry());
+					finalResolver = chainResolvers(finalResolver, skillResolver);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Configured SkillToolCallbackResolver for SkillsAgentHook");
+					}
+					break;
 				}
 			}
 		}
@@ -264,6 +283,20 @@ public class DefaultBuilder extends Builder {
 		toolNode = toolBuilder.build();
 
 		return new ReactAgent(llmNode, toolNode, buildConfig(), this);
+	}
+
+	private static ToolCallbackResolver chainResolvers(ToolCallbackResolver primary, ToolCallbackResolver fallback) {
+		if (primary == null) {
+			return Objects.requireNonNull(fallback, "fallback");
+		}
+		if (fallback == null) {
+			return primary;
+		}
+
+		return toolName -> {
+			ToolCallback tool = primary.resolve(toolName);
+			return tool != null ? tool : fallback.resolve(toolName);
+		};
 	}
 
 }
