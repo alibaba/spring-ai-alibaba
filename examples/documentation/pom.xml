@@ -49,6 +49,7 @@
 		<spring-ai-alibaba-extensions.version>1.1.2.1</spring-ai-alibaba-extensions.version>
 
 		<redisson.version>3.22.0</redisson.version>
+		<graalvm.polyglot.version>24.2.1</graalvm.polyglot.version>
 	</properties>
 
 	<dependencyManagement>
@@ -128,6 +129,19 @@
 			<groupId>org.redisson</groupId>
 			<artifactId>redisson</artifactId>
 			<version>${redisson.version}</version>
+		</dependency>
+
+		<!-- GraalVM Polyglot for Python execution -->
+		<dependency>
+			<groupId>org.graalvm.polyglot</groupId>
+			<artifactId>polyglot</artifactId>
+			<version>${graalvm.polyglot.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.graalvm.polyglot</groupId>
+			<artifactId>python-community</artifactId>
+			<version>${graalvm.polyglot.version}</version>
+			<type>pom</type>
 		</dependency>
 	</dependencies>
 
