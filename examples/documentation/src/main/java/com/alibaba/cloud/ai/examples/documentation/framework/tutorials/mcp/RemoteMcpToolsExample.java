@@ -118,11 +118,11 @@ public class RemoteMcpToolsExample {
     public void remoteMcpToolsReactWithoutSpringBootExample() throws GraphRunnerException {
         ChatModel chatModel = getChatModel();
 
-        // Step 1: Get Remote MCP Server Endpoint Configuration
+        // Get Remote MCP Server Endpoint Configuration
         String modelScope12306BaseUrlSse = System.getenv("MODEL_SCOPE_12306_BASE_URL");
         String modelScopeAmapBaseUrlSse = System.getenv("MODEL_SCOPE_AMAP_BASE_URL");
 
-        // Step 2: Create HTTP Client Builder (Reusable)
+        // Create HTTP Client Builder (Reusable)
         HttpClient.Builder httpBuilder = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(60));
@@ -131,7 +131,7 @@ public class RemoteMcpToolsExample {
         List<McpSyncClient> clientsToClose = new ArrayList<>();
 
         try {
-            // Step 3: get MCP Tools
+            // get MCP Tools
             List<ToolCallback> tools12306 = fetchMcpTools(
                     modelScope12306BaseUrlSse,
                     "sse",
@@ -155,7 +155,7 @@ public class RemoteMcpToolsExample {
                             Found %d Tools From MCP Servers
                             """,
                     toolCallbacks.size());
-            // Step 6: Build React Agent With MCP Tools
+            // Build React Agent With MCP Tools
             executeAgent(chatModel, "You are a helpful assistant with travel route planning, train ticket search, and map services.", "travel_planning_session_no_spring", """
                     I plan to travel from Shanghai to Beijing tomorrow.
                     1. Please check at which stations I can alight (i.e., the available arrival/drop-off stations) for my journey.
