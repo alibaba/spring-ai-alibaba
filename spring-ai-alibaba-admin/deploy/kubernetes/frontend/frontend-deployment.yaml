@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: spring-ai-admin-frontend:latest
-          imagePullPolicy: IfNotPresent
+          image: ${FRONTEND_IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: ${IMAGE_PULL_POLICY}
           ports:
             - containerPort: 80
               name: http

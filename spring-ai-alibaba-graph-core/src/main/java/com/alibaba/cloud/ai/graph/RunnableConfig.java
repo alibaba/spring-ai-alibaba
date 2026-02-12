@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
 import static java.lang.String.format;
@@ -72,7 +73,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 * Comparing to metadata, context is mutable during execution. It passes information between nodes.
 	 * Different from OverAllState, context is specific to a run, it will not be persisted.
 	 */
-	private final Map<String, Object> context;
+	private final ConcurrentMap<String, Object> context;
 
 	private final Store store;
 
@@ -240,6 +241,10 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		return context;
 	}
 
+	public void clearContext() {
+		this.context.clear();
+	}
+
 	/**
 	 * return metadata value for key
 	 * @param key given metadata key
@@ -292,7 +297,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 		private Store store;
 
-		private Map<String, Object> context;
+		private ConcurrentMap<String, Object> context;
 
 		private CompiledGraph.StreamMode streamMode = CompiledGraph.StreamMode.VALUES;
 
@@ -437,13 +442,13 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 					requireNonNull(strategy, "strategy cannot be null!"));
 		}
 
-		public Builder clearContext() {
-			this.context.clear();
+		public Builder store(Store store) {
+			this.store = store;
 			return this;
 		}
 
-		public Builder store(Store store) {
-			this.store = store;
+		public Builder clearContext() {
+			this.context.clear();
 			return this;
 		}
 

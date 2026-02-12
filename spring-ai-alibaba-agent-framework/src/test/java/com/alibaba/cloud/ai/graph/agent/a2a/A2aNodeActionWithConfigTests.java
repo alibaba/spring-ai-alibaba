@@ -56,8 +56,9 @@ class A2aNodeActionWithConfigTests {
 			public Data<NodeOutput> next() {
 				int step = index.getAndIncrement();
 				if (step == 0) {
+					// Use completedFuture to avoid timing issues with async execution
 					return Data.of(
-							CompletableFuture.supplyAsync(() -> NodeOutput.of("node-1", "", new OverAllState(), new EmptyUsage())));
+							CompletableFuture.completedFuture(NodeOutput.of("node-1", "", new OverAllState(), new EmptyUsage())));
 				}
 				if (step == 1) {
 					return Data.done(Map.of("result", "ok"));
@@ -92,9 +93,10 @@ class A2aNodeActionWithConfigTests {
 			public Data<NodeOutput> next() {
 				int step = index.getAndIncrement();
 				if (step == 0) {
-					return Data.of(CompletableFuture.supplyAsync(() -> {
-						throw new IllegalStateException("boom");
-					}));
+					// Use a completed exceptionally future to avoid timing issues
+					CompletableFuture<NodeOutput> failedFuture = new CompletableFuture<>();
+					failedFuture.completeExceptionally(new IllegalStateException("boom"));
+					return Data.of(failedFuture);
 				}
 				return Data.done();
 			}

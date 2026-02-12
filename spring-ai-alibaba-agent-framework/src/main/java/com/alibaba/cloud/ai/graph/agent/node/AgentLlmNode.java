@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import reactor.core.publisher.Flux;
@@ -161,7 +162,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 
 		augmentUserMessage(messages, outputSchema);
-		renderTemplatedUserMessage(messages, state.data());
+		renderTemplatedUserMessage(messages, state.data(), config.metadata());
 
 		// Create ModelRequest
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
@@ -338,6 +339,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		if (chatOptions != null) {
 			if (chatOptions instanceof ToolCallingChatOptions builderToolCallingOptions) {
+				ToolCallingChatOptions copiedOptions = builderToolCallingOptions.copy();
+
 				List<ToolCallback> mergedToolCallbacks = new ArrayList<>(toolCallbacks);
 				// Add callbacks from chatOptions that are not already present (toolCallbacks takes precedence)
 				for (ToolCallback callback : builderToolCallingOptions.getToolCallbacks()) {
@@ -348,9 +351,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					}
 				}
 
-				builderToolCallingOptions.setToolCallbacks(mergedToolCallbacks);
-				builderToolCallingOptions.setInternalToolExecutionEnabled(false);
-				return builderToolCallingOptions;
+				copiedOptions.setToolCallbacks(mergedToolCallbacks);
+				copiedOptions.setInternalToolExecutionEnabled(false);
+				return copiedOptions;
 			} else {
 				logger.warn("The provided chatOptions is not of type ToolCallingChatOptions (actual type: {}). " +
 								"It will not take effect. Creating a new ToolCallingChatOptions with toolCallbacks instead.",
@@ -401,7 +404,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 	}
 
-	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params) {
+	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params, Optional<Map<String, Object>> metadata) {
 		// Process params to create a new Map
 		Map<String, Object> processedParams = new HashMap<>();
 		if (params != null) {
@@ -477,9 +480,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		if (!CollectionUtils.isEmpty(modelRequest.getDynamicToolCallbacks())) {
 			filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
-			// FIXME, use RunnableConig to pass dynamic tool callbacks to tool node via config metadata (internal use)
-			config.metadata().ifPresent(m -> m.put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY,
-					modelRequest.getDynamicToolCallbacks()));
+			// FIXME, use RunnableConfig to pass dynamic tool callbacks to tool node via config context (internal use)
+			config.context().put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY, modelRequest.getDynamicToolCallbacks());
 		}
 
 		var promptSpec = this.chatClient.prompt()
@@ -489,10 +491,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
         ToolCallingChatOptions requestOptions = modelRequest.getOptions();
 
         if (requestOptions != null) {
-            requestOptions.setToolCallbacks(filteredToolCallbacks);
+			ToolCallingChatOptions copiedOptions = requestOptions.copy();
+            copiedOptions.setToolCallbacks(filteredToolCallbacks);
 			// force disable internal tool execution to avoid conflict with Agent framework's tool execution management.
-            requestOptions.setInternalToolExecutionEnabled(false);
-            promptSpec.options(requestOptions);
+            copiedOptions.setInternalToolExecutionEnabled(false);
+            promptSpec.options(copiedOptions);
         } else {
 			// Check if user has set default options in ChatModel or ChatClient.
 			if (promptSpec instanceof DefaultChatClient.DefaultChatClientRequestSpec defaultChatClientRequestSpec) {
@@ -507,8 +510,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				}
 				// If options is ToolCallingChatOptions, set filtered tool callbacks and toolExecution disabled.
 				else if (options instanceof ToolCallingChatOptions toolCallingChatOptions) {
-					toolCallingChatOptions.setToolCallbacks(filteredToolCallbacks);
-					toolCallingChatOptions.setInternalToolExecutionEnabled(false);
+					ToolCallingChatOptions copiedOptions = toolCallingChatOptions.copy();
+					copiedOptions.setToolCallbacks(filteredToolCallbacks);
+					copiedOptions.setInternalToolExecutionEnabled(false);
+					defaultChatClientRequestSpec.options(copiedOptions);
 				}
 			} else if (!filteredToolCallbacks.isEmpty()) {
 				promptSpec.tools(filteredToolCallbacks);
