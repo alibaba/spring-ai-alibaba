@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.action.InterruptableAction;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallExecutionContext;
@@ -32,7 +34,10 @@ import com.alibaba.cloud.ai.graph.agent.tool.CancellableAsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCancelledException;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolOutputEnvelope;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolStateCollector;
+import com.alibaba.cloud.ai.graph.agent.hook.hip.HitlMetadataKeys;
+import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +100,7 @@ import static org.springframework.ai.model.tool.ToolExecutionResult.FINISH_REASO
  * @see AsyncToolCallback
  * @see ToolStateCollector
  */
-public class AgentToolNode implements NodeActionWithConfig {
+public class AgentToolNode implements NodeActionWithConfig, InterruptableAction {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentToolNode.class);
 
@@ -157,6 +162,21 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		if (lastMessage instanceof AssistantMessage assistantMessage) {
 			List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
+			Optional<InterruptionMetadata> feedback = config.getMetadataAndRemove(
+					RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, new TypeRef<InterruptionMetadata>() { });
+			FeedbackApplicationResult feedbackResult = applyHumanFeedback(toolCalls, feedback.orElse(null));
+			toolCalls = feedbackResult.updatedToolCalls();
+
+			if (toolCalls == null || toolCalls.isEmpty()) {
+				if (!feedbackResult.rejectedResponses().isEmpty()) {
+					Map<String, Object> updates = new HashMap<>();
+					updates.put("messages", buildToolResponseMessage(feedbackResult.rejectedResponses(),
+							feedbackResult.rejectedEnvelopes()));
+					clearPendingHitl(updates);
+					return updates;
+				}
+				return Map.of();
+			}
 
 			if (enableActingLog) {
 				logger.info("[ThreadId {}] Agent {} acting with {} tools.", config.threadId().orElse(THREAD_ID_DEFAULT),
@@ -164,12 +184,22 @@ public class AgentToolNode implements NodeActionWithConfig {
 			}
 
 			// Choose execution mode based on configuration
+			Map<String, Object> updateState;
 			if (parallelToolExecution && toolCalls.size() > 1) {
-				return executeToolCallsParallel(toolCalls, state, config);
+				updateState = executeToolCallsParallel(toolCalls, state, config);
 			}
 			else {
-				return executeToolCallsSequential(toolCalls, state, config);
+				updateState = executeToolCallsSequential(toolCalls, state, config);
 			}
+
+			if (!feedbackResult.rejectedResponses().isEmpty()) {
+				updateState = mergeToolResponses(updateState, feedbackResult.rejectedResponses(),
+						feedbackResult.rejectedEnvelopes());
+			}
+			if (feedback.isPresent()) {
+				clearPendingHitl(updateState);
+			}
+			return updateState;
 		}
 		else if (lastMessage instanceof ToolResponseMessage toolResponseMessage) {
 			return handlePartialToolResponses(toolResponseMessage, messages, state, config);
@@ -221,6 +251,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 		Map<String, Object> updatedState = new HashMap<>();
 		Map<String, Object> mergedUpdates = new HashMap<>(); // Accumulated results from successful tools
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
+		List<Map<String, Object>> toolEnvelopes = new ArrayList<>();
+		List<InterruptionMetadata.ToolFeedback> pendingFeedbacks = new ArrayList<>();
+		List<String> pendingToolCallIds = new ArrayList<>();
 
 		Boolean returnDirect = null;
 		for (AssistantMessage.ToolCall toolCall : toolCalls) {
@@ -229,25 +262,51 @@ public class AgentToolNode implements NodeActionWithConfig {
 			Map<String, Object> toolSpecificUpdate = new ConcurrentHashMap<>();
 			ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, toolSpecificUpdate,
 					false);
+			ToolOutputEnvelope envelope = extractEnvelopeFromResponse(response);
+			if (envelope != null) {
+				toolEnvelopes.add(envelope.toMap());
+			}
+			if (envelope != null && envelope.isRequiresApproval()) {
+				pendingFeedbacks.add(buildToolFeedback(toolCall, envelope));
+				pendingToolCallIds.add(toolCall.id());
+				toolSpecificUpdate.clear();
+				break;
+			}
 			toolResponses.add(response.toToolResponse());
 			returnDirect = shouldReturnDirect(toolCall, returnDirect, config);
 			// Merge immediately - subsequent timeout clear() won't affect already-merged data
 			mergedUpdates.putAll(toolSpecificUpdate);
 		}
 
-		ToolResponseMessage.Builder builder = ToolResponseMessage.builder()
-				.responses(toolResponses);
-		if (returnDirect != null && returnDirect) {
-			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+		ToolResponseMessage toolResponseMessage = null;
+		if (!toolResponses.isEmpty() || !toolEnvelopes.isEmpty()) {
+			ToolResponseMessage.Builder builder = ToolResponseMessage.builder()
+					.responses(toolResponses);
+			Map<String, Object> metadata = new HashMap<>();
+			if (returnDirect != null && returnDirect) {
+				metadata.put(FINISH_REASON_METADATA_KEY, FINISH_REASON);
+			}
+			if (!toolEnvelopes.isEmpty()) {
+				metadata.put(HitlMetadataKeys.TOOL_OUTPUT_ENVELOPES_METADATA_KEY, toolEnvelopes);
+			}
+			if (!metadata.isEmpty()) {
+				builder.metadata(metadata);
+			}
+			toolResponseMessage = builder.build();
 		}
-		ToolResponseMessage toolResponseMessage = builder.build();
 
 		if (enableActingLog) {
 			logger.info("[ThreadId {}] Agent {} acting returned: {}", config.threadId().orElse(THREAD_ID_DEFAULT),
 					agentName, toolResponseMessage);
 		}
 
-		updatedState.put("messages", toolResponseMessage);
+		if (toolResponseMessage != null) {
+			updatedState.put("messages", toolResponseMessage);
+		}
+		if (!pendingFeedbacks.isEmpty()) {
+			updatedState.put(HitlMetadataKeys.HITL_PENDING_TOOL_CALL_IDS_KEY, pendingToolCallIds);
+			updatedState.put(HitlMetadataKeys.HITL_PENDING_TOOL_FEEDBACKS_KEY, pendingFeedbacks);
+		}
 		updatedState.putAll(mergedUpdates);
 		return updatedState;
 	}
@@ -374,6 +433,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Build result - collect responses from AtomicReferenceArray
 		Map<String, Object> updatedState = new HashMap<>();
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
+		List<Map<String, Object>> toolEnvelopes = new ArrayList<>();
+		List<InterruptionMetadata.ToolFeedback> pendingFeedbacks = new ArrayList<>();
+		List<String> pendingToolCallIds = new ArrayList<>();
+		List<Integer> pendingIndexes = new ArrayList<>();
 		Boolean returnDirect = null;
 		for (int i = 0; i < orderedResponses.length(); i++) {
 			ToolCallResponse response = orderedResponses.get(i);
@@ -384,15 +447,40 @@ public class AgentToolNode implements NodeActionWithConfig {
 						"Tool execution did not produce a response");
 				logger.warn("Tool {} at index {} has null response, using error fallback", toolCall.name(), i);
 			}
+			ToolOutputEnvelope envelope = extractEnvelopeFromResponse(response);
+			if (envelope != null) {
+				toolEnvelopes.add(envelope.toMap());
+			}
+			if (envelope != null && envelope.isRequiresApproval()) {
+				pendingFeedbacks.add(buildToolFeedback(toolCalls.get(i), envelope));
+				pendingToolCallIds.add(toolCalls.get(i).id());
+				pendingIndexes.add(i);
+				continue;
+			}
 			toolResponses.add(response.toToolResponse());
 			returnDirect = shouldReturnDirect(toolCalls.get(i), returnDirect, config);
 		}
 
+		for (Integer pendingIndex : pendingIndexes) {
+			stateCollector.discardToolUpdateMap(pendingIndex);
+		}
+
 		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(toolResponses);
+		Map<String, Object> metadata = new HashMap<>();
 		if (returnDirect != null && returnDirect) {
-			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+			metadata.put(FINISH_REASON_METADATA_KEY, FINISH_REASON);
+		}
+		if (!toolEnvelopes.isEmpty()) {
+			metadata.put(HitlMetadataKeys.TOOL_OUTPUT_ENVELOPES_METADATA_KEY, toolEnvelopes);
+		}
+		if (!metadata.isEmpty()) {
+			builder.metadata(metadata);
 		}
 		updatedState.put("messages", builder.build());
+		if (!pendingFeedbacks.isEmpty()) {
+			updatedState.put(HitlMetadataKeys.HITL_PENDING_TOOL_CALL_IDS_KEY, pendingToolCallIds);
+			updatedState.put(HitlMetadataKeys.HITL_PENDING_TOOL_FEEDBACKS_KEY, pendingFeedbacks);
+		}
 		updatedState.putAll(stateCollector.mergeAll());
 
 		if (enableActingLog) {
@@ -455,6 +543,25 @@ public class AgentToolNode implements NodeActionWithConfig {
 		ToolResponseMessage newToolResponseMessage = (ToolResponseMessage) newResults.get("messages");
 		List<ToolResponseMessage.ToolResponse> allResponses = new ArrayList<>(existingResponses);
 		allResponses.addAll(newToolResponseMessage.getResponses());
+		List<Map<String, Object>> allEnvelopes = new ArrayList<>();
+		Object existingEnvelopes = toolResponseMessage.getMetadata()
+				.get(HitlMetadataKeys.TOOL_OUTPUT_ENVELOPES_METADATA_KEY);
+		if (existingEnvelopes instanceof List<?> list) {
+			for (Object item : list) {
+				if (item instanceof Map<?, ?> map) {
+					allEnvelopes.add(castToStringObjectMap(map));
+				}
+			}
+		}
+		Object newEnvelopes = newToolResponseMessage.getMetadata()
+				.get(HitlMetadataKeys.TOOL_OUTPUT_ENVELOPES_METADATA_KEY);
+		if (newEnvelopes instanceof List<?> list) {
+			for (Object item : list) {
+				if (item instanceof Map<?, ?> map) {
+					allEnvelopes.add(castToStringObjectMap(map));
+				}
+			}
+		}
 
 		// Compute returnDirect from all tool calls (existing + remaining)
 		Boolean returnDirect = null;
@@ -466,8 +573,15 @@ public class AgentToolNode implements NodeActionWithConfig {
 		Map<String, Object> updatedState = new HashMap<>(newResults);
 		List<Object> newMessages = new ArrayList<>();
 		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(allResponses);
+		Map<String, Object> metadata = new HashMap<>();
 		if (returnDirect != null && returnDirect) {
-			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
+			metadata.put(FINISH_REASON_METADATA_KEY, FINISH_REASON);
+		}
+		if (!allEnvelopes.isEmpty()) {
+			metadata.put(HitlMetadataKeys.TOOL_OUTPUT_ENVELOPES_METADATA_KEY, allEnvelopes);
+		}
+		if (!metadata.isEmpty()) {
+			builder.metadata(metadata);
 		}
 		newMessages.add(builder.build());
 		newMessages.add(new RemoveByHash<>(toolResponseMessage));
@@ -479,6 +593,47 @@ public class AgentToolNode implements NodeActionWithConfig {
 		}
 
 		return updatedState;
+	}
+
+	@Override
+	public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+		List<InterruptionMetadata.ToolFeedback> pendingFeedbacks = getPendingFeedbacks(state);
+		if (pendingFeedbacks.isEmpty()) {
+			return Optional.empty();
+		}
+
+		Optional<InterruptionMetadata> feedback = config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY,
+				new TypeRef<InterruptionMetadata>() { });
+		if (feedback.isPresent() && validateFeedback(feedback.get(), pendingFeedbacks)) {
+			return Optional.empty();
+		}
+
+		InterruptionMetadata metadata = InterruptionMetadata.builder(nodeId, state)
+				.toolFeedbacks(pendingFeedbacks)
+				.build();
+		return Optional.of(metadata);
+	}
+
+	@Override
+	public Optional<InterruptionMetadata> interruptAfter(String nodeId, OverAllState state,
+			Map<String, Object> actionResult, RunnableConfig config) {
+		Object pending = actionResult.get(HitlMetadataKeys.HITL_PENDING_TOOL_FEEDBACKS_KEY);
+		if (!(pending instanceof List<?> list) || list.isEmpty()) {
+			return Optional.empty();
+		}
+		List<InterruptionMetadata.ToolFeedback> pendingFeedbacks = new ArrayList<>();
+		for (Object item : list) {
+			if (item instanceof InterruptionMetadata.ToolFeedback feedback) {
+				pendingFeedbacks.add(feedback);
+			}
+		}
+		if (pendingFeedbacks.isEmpty()) {
+			return Optional.empty();
+		}
+		InterruptionMetadata metadata = InterruptionMetadata.builder(nodeId, state)
+				.toolFeedbacks(pendingFeedbacks)
+				.build();
+		return Optional.of(metadata);
 	}
 
 	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect, RunnableConfig config) {
@@ -493,6 +648,199 @@ public class AgentToolNode implements NodeActionWithConfig {
 			returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
 		}
 		return returnDirect;
+	}
+
+	private FeedbackApplicationResult applyHumanFeedback(List<AssistantMessage.ToolCall> toolCalls,
+			InterruptionMetadata feedback) {
+		if (feedback == null || toolCalls == null || toolCalls.isEmpty()) {
+			return new FeedbackApplicationResult(toolCalls, List.of(), List.of());
+		}
+
+		List<AssistantMessage.ToolCall> updatedToolCalls = new ArrayList<>();
+		List<ToolResponseMessage.ToolResponse> rejectedResponses = new ArrayList<>();
+		List<Map<String, Object>> rejectedEnvelopes = new ArrayList<>();
+
+		for (AssistantMessage.ToolCall toolCall : toolCalls) {
+			Optional<InterruptionMetadata.ToolFeedback> toolFeedbackOpt = feedback.toolFeedbacks().stream()
+					.filter(tf -> tf.getId().equals(toolCall.id()))
+					.findFirst();
+
+			if (toolFeedbackOpt.isPresent()) {
+				InterruptionMetadata.ToolFeedback toolFeedback = toolFeedbackOpt.get();
+				InterruptionMetadata.ToolFeedback.FeedbackResult result = toolFeedback.getResult();
+
+				if (result == InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED) {
+					updatedToolCalls.add(toolCall);
+				}
+				else if (result == InterruptionMetadata.ToolFeedback.FeedbackResult.EDITED) {
+					AssistantMessage.ToolCall editedToolCall = new AssistantMessage.ToolCall(
+							toolCall.id(), toolCall.type(), toolCall.name(), toolFeedback.getArguments());
+					updatedToolCalls.add(editedToolCall);
+				}
+				else if (result == InterruptionMetadata.ToolFeedback.FeedbackResult.REJECTED) {
+					ToolResponseMessage.ToolResponse response = new ToolResponseMessage.ToolResponse(
+							toolCall.id(), toolCall.name(),
+							String.format("Tool call request for %s has been rejected by human. The reason for why this tool is rejected and the suggestion for next possible tool choose is listed as below:\n %s.",
+									toolFeedback.getName(), toolFeedback.getDescription()));
+					rejectedResponses.add(response);
+					rejectedEnvelopes.add(buildRejectionEnvelope(toolCall, toolFeedback));
+				}
+			}
+			else {
+				updatedToolCalls.add(toolCall);
+			}
+		}
+
+		return new FeedbackApplicationResult(updatedToolCalls, rejectedResponses, rejectedEnvelopes);
+	}
+
+	private Map<String, Object> buildRejectionEnvelope(AssistantMessage.ToolCall toolCall,
+			InterruptionMetadata.ToolFeedback toolFeedback) {
+		Map<String, Object> error = new HashMap<>();
+		error.put("reason", "rejected");
+		error.put("message", toolFeedback.getDescription());
+		return ToolOutputEnvelope.builder()
+				.status(ToolOutputEnvelope.STATUS_ERROR)
+				.toolCallId(toolCall.id())
+				.toolName(toolCall.name())
+				.error(error)
+				.build()
+				.toMap();
+	}
+
+	private Map<String, Object> mergeToolResponses(Map<String, Object> updateState,
+			List<ToolResponseMessage.ToolResponse> extraResponses, List<Map<String, Object>> extraEnvelopes) {
+		Map<String, Object> merged = new HashMap<>(updateState);
+		List<ToolResponseMessage.ToolResponse> responses = new ArrayList<>();
+		List<Map<String, Object>> envelopes = new ArrayList<>();
+
+		Object messagesObj = updateState.get("messages");
+		ToolResponseMessage existingMessage = null;
+		if (messagesObj instanceof ToolResponseMessage toolResponseMessage) {
+			existingMessage = toolResponseMessage;
+		}
+		if (messagesObj instanceof List<?> list) {
+			for (Object item : list) {
+				if (item instanceof ToolResponseMessage toolResponseMessage) {
+					existingMessage = toolResponseMessage;
+					break;
+				}
+			}
+		}
+
+		Object finishReason = null;
+		if (existingMessage != null) {
+			responses.addAll(existingMessage.getResponses());
+			finishReason = existingMessage.getMetadata().get(FINISH_REASON_METADATA_KEY);
+			Object rawEnvelopes = existingMessage.getMetadata().get(HitlMetadataKeys.TOOL_OUTPUT_ENVELOPES_METADATA_KEY);
+			if (rawEnvelopes instanceof List<?> list) {
+				for (Object item : list) {
+					if (item instanceof Map<?, ?> map) {
+						envelopes.add(castToStringObjectMap(map));
+					}
+				}
+			}
+		}
+		responses.addAll(extraResponses);
+		envelopes.addAll(extraEnvelopes);
+
+		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(responses);
+		Map<String, Object> metadata = new HashMap<>();
+		if (finishReason != null) {
+			metadata.put(FINISH_REASON_METADATA_KEY, finishReason);
+		}
+		if (!envelopes.isEmpty()) {
+			metadata.put(HitlMetadataKeys.TOOL_OUTPUT_ENVELOPES_METADATA_KEY, envelopes);
+		}
+		if (!metadata.isEmpty()) {
+			builder.metadata(metadata);
+		}
+		merged.put("messages", builder.build());
+		return merged;
+	}
+
+	private ToolResponseMessage buildToolResponseMessage(List<ToolResponseMessage.ToolResponse> responses,
+			List<Map<String, Object>> envelopes) {
+		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(responses);
+		if (envelopes != null && !envelopes.isEmpty()) {
+			builder.metadata(Map.of(HitlMetadataKeys.TOOL_OUTPUT_ENVELOPES_METADATA_KEY, envelopes));
+		}
+		return builder.build();
+	}
+
+	private void clearPendingHitl(Map<String, Object> updates) {
+		updates.put(HitlMetadataKeys.HITL_PENDING_TOOL_CALL_IDS_KEY, List.of());
+		updates.put(HitlMetadataKeys.HITL_PENDING_TOOL_FEEDBACKS_KEY, List.of());
+	}
+
+	private List<InterruptionMetadata.ToolFeedback> getPendingFeedbacks(OverAllState state) {
+		Object pending = state.value(HitlMetadataKeys.HITL_PENDING_TOOL_FEEDBACKS_KEY).orElse(null);
+		if (!(pending instanceof List<?> list) || list.isEmpty()) {
+			return List.of();
+		}
+		List<InterruptionMetadata.ToolFeedback> feedbacks = new ArrayList<>();
+		for (Object item : list) {
+			if (item instanceof InterruptionMetadata.ToolFeedback feedback) {
+				feedbacks.add(feedback);
+			}
+		}
+		return feedbacks;
+	}
+
+	private boolean validateFeedback(InterruptionMetadata feedback,
+			List<InterruptionMetadata.ToolFeedback> pendingFeedbacks) {
+		if (feedback == null || feedback.toolFeedbacks() == null || feedback.toolFeedbacks().isEmpty()) {
+			return false;
+		}
+		for (InterruptionMetadata.ToolFeedback pending : pendingFeedbacks) {
+			InterruptionMetadata.ToolFeedback matched = feedback.toolFeedbacks().stream()
+					.filter(tf -> pending.getId().equals(tf.getId()) && pending.getName().equals(tf.getName()))
+					.findFirst()
+					.orElse(null);
+			if (matched == null || matched.getResult() == null) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private InterruptionMetadata.ToolFeedback buildToolFeedback(AssistantMessage.ToolCall toolCall,
+			ToolOutputEnvelope envelope) {
+		String description = envelope.getApprovalDescription();
+		String content = description != null ? description :
+				("Tool " + toolCall.name() + " requires human approval before continuation.");
+		return InterruptionMetadata.ToolFeedback.builder()
+				.id(toolCall.id())
+				.name(toolCall.name())
+				.arguments(toolCall.arguments())
+				.description(content)
+				.build();
+	}
+
+	private static class FeedbackApplicationResult {
+		private final List<AssistantMessage.ToolCall> updatedToolCalls;
+		private final List<ToolResponseMessage.ToolResponse> rejectedResponses;
+		private final List<Map<String, Object>> rejectedEnvelopes;
+
+		private FeedbackApplicationResult(List<AssistantMessage.ToolCall> updatedToolCalls,
+				List<ToolResponseMessage.ToolResponse> rejectedResponses,
+				List<Map<String, Object>> rejectedEnvelopes) {
+			this.updatedToolCalls = updatedToolCalls;
+			this.rejectedResponses = rejectedResponses;
+			this.rejectedEnvelopes = rejectedEnvelopes;
+		}
+
+		public List<AssistantMessage.ToolCall> updatedToolCalls() {
+			return updatedToolCalls;
+		}
+
+		public List<ToolResponseMessage.ToolResponse> rejectedResponses() {
+			return rejectedResponses;
+		}
+
+		public List<Map<String, Object>> rejectedEnvelopes() {
+			return rejectedEnvelopes;
+		}
 	}
 
 	/**
@@ -574,7 +922,90 @@ public class AgentToolNode implements NodeActionWithConfig {
 		ToolCallHandler chainedHandler = InterceptorChain.chainToolInterceptors(toolInterceptors, baseHandler);
 
 		// Execute the chained handler
-		return chainedHandler.call(request);
+		ToolCallResponse response = chainedHandler.call(request);
+		return enrichToolResponse(response, request, extraStateFromToolCall);
+	}
+
+	private ToolCallResponse enrichToolResponse(ToolCallResponse response, ToolCallRequest request,
+			Map<String, Object> extraStateFromToolCall) {
+		ToolOutputEnvelope envelope = extractEnvelopeFromState(extraStateFromToolCall);
+		if (envelope == null) {
+			envelope = buildDefaultEnvelope(request, response);
+		}
+		envelope = ensureEnvelopeIdentity(envelope, request);
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put(ToolOutputEnvelope.METADATA_KEY, envelope.toMap());
+		return response.withMetadata(metadata);
+	}
+
+	private ToolOutputEnvelope extractEnvelopeFromState(Map<String, Object> extraStateFromToolCall) {
+		if (extraStateFromToolCall == null || extraStateFromToolCall.isEmpty()) {
+			return null;
+		}
+		Object raw = extraStateFromToolCall.remove(ToolOutputEnvelope.CONTEXT_KEY);
+		if (raw instanceof ToolOutputEnvelope envelope) {
+			return envelope;
+		}
+		if (raw instanceof Map<?, ?> rawMap) {
+			return ToolOutputEnvelope.fromMap(castToStringObjectMap(rawMap));
+		}
+		return null;
+	}
+
+	private ToolOutputEnvelope extractEnvelopeFromResponse(ToolCallResponse response) {
+		if (response == null) {
+			return null;
+		}
+		Object raw = response.getMetadata().get(ToolOutputEnvelope.METADATA_KEY);
+		if (raw instanceof ToolOutputEnvelope envelope) {
+			return envelope;
+		}
+		if (raw instanceof Map<?, ?> rawMap) {
+			return ToolOutputEnvelope.fromMap(castToStringObjectMap(rawMap));
+		}
+		return null;
+	}
+
+	private ToolOutputEnvelope buildDefaultEnvelope(ToolCallRequest request, ToolCallResponse response) {
+		ToolOutputEnvelope.Builder builder = ToolOutputEnvelope.builder()
+				.status(response != null && response.isError() ? ToolOutputEnvelope.STATUS_ERROR : ToolOutputEnvelope.STATUS_OK)
+				.toolCallId(request.getToolCallId())
+				.toolName(request.getToolName())
+				.payload(response != null ? response.getResult() : null);
+		if (response != null && response.isError()) {
+			Map<String, Object> error = new HashMap<>();
+			error.put("message", response.getResult());
+			builder.error(error);
+		}
+		return builder.build();
+	}
+
+	private ToolOutputEnvelope ensureEnvelopeIdentity(ToolOutputEnvelope envelope, ToolCallRequest request) {
+		ToolOutputEnvelope.Builder builder = ToolOutputEnvelope.builder()
+				.status(envelope.getStatus())
+				.toolCallId(envelope.getToolCallId() != null ? envelope.getToolCallId() : request.getToolCallId())
+				.toolName(envelope.getToolName() != null ? envelope.getToolName() : request.getToolName())
+				.payload(envelope.getPayload())
+				.resumeHint(envelope.getResumeHint())
+				.requiresApproval(envelope.isRequiresApproval())
+				.approvalDescription(envelope.getApprovalDescription());
+		if (envelope.getArtifacts() != null) {
+			builder.artifacts(envelope.getArtifacts());
+		}
+		if (envelope.getError() != null) {
+			builder.error(envelope.getError());
+		}
+		return builder.build();
+	}
+
+	private Map<String, Object> castToStringObjectMap(Map<?, ?> source) {
+		Map<String, Object> result = new HashMap<>();
+		for (Map.Entry<?, ?> entry : source.entrySet()) {
+			if (entry.getKey() != null) {
+				result.put(entry.getKey().toString(), entry.getValue());
+			}
+		}
+		return result;
 	}
 
 	/**

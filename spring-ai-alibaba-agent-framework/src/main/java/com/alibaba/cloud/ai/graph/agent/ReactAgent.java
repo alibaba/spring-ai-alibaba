@@ -821,6 +821,11 @@ public class ReactAgent extends BaseAgent {
 
 	private EdgeAction makeToolsToModelEdge(String modelDestination, String endDestination) {
 		return state -> {
+			Object pendingToolCalls = state.value(com.alibaba.cloud.ai.graph.agent.hook.hip.HitlMetadataKeys.HITL_PENDING_TOOL_CALL_IDS_KEY)
+					.orElse(null);
+			if (pendingToolCalls instanceof List<?> list && !list.isEmpty()) {
+				return AGENT_TOOL_NAME;
+			}
 			// 1. Extract last AI message and corresponding tool messages
 			ToolResponseMessage toolResponseMessage = fetchLastToolResponseMessage(state);
 			// 2. Exit condition: All executed tools have return_direct=True
