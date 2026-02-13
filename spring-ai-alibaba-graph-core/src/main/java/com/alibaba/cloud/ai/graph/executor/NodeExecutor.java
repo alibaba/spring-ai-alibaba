@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 
@@ -334,9 +335,15 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.empty();
 				} else {
 					ChatResponse lastChatResponse = lastChatResponseRef.get();
-					// First emit a GraphResponse containing the aggregated ChatResponse
+					// For completion status with AGENT_MODEL_NAME, create a StreamingOutput with null message to avoid chunk content
+					// This ensures that completion events don't carry the full text content in the chunk field
+					Message messageForCompletion = lastChatResponse.getResult().getOutput();
+					if (nodeId.startsWith(RunnableConfig.AGENT_MODEL_NAME)) {
+						// For agent model completion, use null message to prevent chunk content
+						messageForCompletion = null;
+					}
 					GraphResponse<NodeOutput> aggregatedResponse = GraphResponse
-						.of(context.buildStreamingOutput(lastChatResponse.getResult().getOutput(), lastChatResponse, nodeId, false));
+						.of(context.buildStreamingOutput(messageForCompletion, lastChatResponse, nodeId, false));
 					// Then emit the completion response
 					Map<String, Object> completionResult = new HashMap<>();
 					completionResult.put(key, lastChatResponse.getResult().getOutput());
