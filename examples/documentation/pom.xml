@@ -142,6 +142,7 @@
 			<artifactId>python-community</artifactId>
 			<version>${graalvm.polyglot.version}</version>
 			<type>pom</type>
+			<scope>runtime</scope>
 		</dependency>
 	</dependencies>
 
