@@ -77,6 +77,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -346,8 +347,11 @@ public class ReactAgent extends BaseAgent {
 
 		// Add hook nodes for afterAgent hooks
 		for (Hook hook : afterAgentHooks) {
+			boolean canJump = hook.canJumpTo() != null && !hook.canJumpTo().isEmpty();
+
 			if (hook instanceof AgentHook agentHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".after", agentHook::afterAgent);
+				var wrappedAction = wrapAsyncHookWithJumpToCleanup(agentHook::afterAgent, canJump);
+				graph.addNode(Hook.getFullHookName(hook) + ".after", (state, config) -> wrappedAction.apply(state, config));
 			} else if (hook instanceof MessagesAgentHook messagesAgentHook) {
 				graph.addNode(Hook.getFullHookName(hook) + ".after", MessagesAgentHook.afterAgentAction(messagesAgentHook));
 			}
@@ -368,11 +372,14 @@ public class ReactAgent extends BaseAgent {
 
 		// Add hook nodes for afterModel hooks
 		for (Hook hook : afterModelHooks) {
+			boolean canJump = hook.canJumpTo() != null && !hook.canJumpTo().isEmpty();
+
 			if (hook instanceof ModelHook modelHook) {
 				if (hook instanceof HumanInTheLoopHook humanInTheLoopHook) {
 					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", humanInTheLoopHook);
 				} else {
-					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", modelHook::afterModel);
+					var wrappedAction = wrapAsyncHookWithJumpToCleanup(modelHook::afterModel, canJump);
+					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", (state, config) -> wrappedAction.apply(state, config));
 				}
 			} else if (hook instanceof MessagesModelHook messagesModelHook) {
 				graph.addNode(Hook.getFullHookName(hook) + ".afterModel", MessagesModelHook.afterModelAction(messagesModelHook));
@@ -390,6 +397,43 @@ public class ReactAgent extends BaseAgent {
 		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
 				entryNode, loopEntryNode, loopExitNode, exitNode, this);
 		return graph;
+	}
+
+	/**
+	 * Wraps an async Hook action (returning CompletableFuture) to automatically clean up jump_to state.
+	 * When a Hook doesn't explicitly set jump_to in its result, this wrapper adds jump_to=null
+	 * to clear any old jump_to value from previous executions.
+	 *
+	 * @param originalAction the original async Hook action that returns CompletableFuture
+	 * @param canJump whether this Hook supports jump_to functionality
+	 * @return wrapped action that handles jump_to cleanup
+	 */
+	private static java.util.function.BiFunction<OverAllState, RunnableConfig, CompletableFuture<Map<String, Object>>>
+			wrapAsyncHookWithJumpToCleanup(
+					java.util.function.BiFunction<OverAllState, RunnableConfig, CompletableFuture<Map<String, Object>>> originalAction,
+					boolean canJump) {
+
+		if (!canJump) {
+			return originalAction;  // If the Hook doesn't support jumping, no cleanup needed
+		}
+
+		return (state, config) -> {
+			return originalAction.apply(state, config).thenApply(result -> {
+				// If Hook returns null, convert to empty map
+				if (result == null) {
+					result = new HashMap<>();
+				}
+
+				// If the Hook didn't set jump_to, explicitly set it to null to clear old values
+				if (!result.containsKey("jump_to")) {
+					Map<String, Object> newResult = new HashMap<>(result);
+					newResult.put("jump_to", null);
+					return newResult;
+				}
+
+				return result;
+			});
+		};
 	}
 
 	/**
