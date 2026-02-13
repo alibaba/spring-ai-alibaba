@@ -135,7 +135,7 @@ public class SkillExample {
                 .autoReload(true) // 每次执行 Agent 前调用 registry.reload()
                 .build();
 
-        System.out.println("Hook configured with auto-reload: " + hook);
+        System.out.println("Hook configured with auto-reload: " + hook.getClass().getSimpleName());
         return hook;
     }
 
