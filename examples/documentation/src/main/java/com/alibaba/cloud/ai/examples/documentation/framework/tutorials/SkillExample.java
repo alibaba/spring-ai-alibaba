@@ -41,6 +41,7 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -250,13 +251,15 @@ public class SkillExample {
         } catch (Exception e) {
             System.err.println("Error executing example: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            System.out.println("Cleaning up resources...");
         }
     }
 
     /**
      * 基于 GraalVM Polyglot 实现的 Python 工具
      */
-    public static class PythonTool implements BiFunction<PythonTool.PythonRequest, ToolContext, String> {
+    public static class PythonTool implements BiFunction<PythonTool.PythonRequest, ToolContext, String>, AutoCloseable {
 
         public static final String DESCRIPTION = """
             Executes Python code or a local Python script file.
@@ -266,7 +269,9 @@ public class SkillExample {
             - To run code snippet: Provide 'code'.
             
             The tool will execute the logic and return the result (printed output or return value).
-            Security: Execution is sandboxed, but script files are read by the host system.
+            Security:
+                - Python code has IO access (to read/write files) but no access to Java host environment.
+                - Only pre-provided scripts in skill folder are allowed to execute.
             """;
 
         private static final Logger log = LoggerFactory.getLogger(PythonTool.class);
@@ -277,6 +282,7 @@ public class SkillExample {
             this.engine = Engine.newBuilder()
                     .option("engine.WarnInterpreterOnly", "false")
                     .build();
+            Runtime.getRuntime().addShutdownHook(new Thread(this::close));
         }
 
         /**
@@ -303,10 +309,7 @@ public class SkillExample {
 
             try {
                 if (request.scriptPath != null && !request.scriptPath.isBlank()) {
-                    scriptFile = new File(request.scriptPath);
-                    if (!scriptFile.exists()) {
-                        return "Error: Script file not found at: " + request.scriptPath;
-                    }
+                    scriptFile = getSafeScriptFile(request.scriptPath);
                     log.info("Loading python script from: {}", scriptFile.getAbsolutePath());
                     source = Source.newBuilder("python", scriptFile).build();
                 } else {
@@ -373,6 +376,14 @@ public class SkillExample {
             return result.toString();
         }
 
+        @Override
+        public void close() {
+            if (this.engine != null) {
+                log.info("Closing GraalVM Python Engine...");
+                this.engine.close();
+            }
+        }
+
         /**
          * Request structure for the Python tool.
          */
@@ -387,6 +398,18 @@ public class SkillExample {
             public String scriptPath;
 
             public PythonRequest() {}
+        }
+
+        private File getSafeScriptFile(String scriptPath) throws IOException {
+            File baseDir = new File("/tmp/skills").getCanonicalFile();
+            File targetFile = new File(scriptPath).getCanonicalFile();
+            if (!targetFile.getPath().startsWith(baseDir.getPath())) {
+                throw new SecurityException("Access denied: Script path is outside the allowed directory.");
+            }
+            if (!targetFile.exists() || !targetFile.isFile()) {
+                throw new FileNotFoundException("Script not found: " + scriptPath);
+            }
+            return targetFile;
         }
     }
 }
