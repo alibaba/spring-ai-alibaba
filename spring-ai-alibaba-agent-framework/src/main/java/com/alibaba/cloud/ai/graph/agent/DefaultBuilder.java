@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
+import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillToolCallbackResolver;
+import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -34,12 +36,14 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class DefaultBuilder extends Builder {
 
@@ -89,7 +93,7 @@ public class DefaultBuilder extends Builder {
 		if (templateRenderer != null) {
 			llmNodeBuilder.templateRenderer(templateRenderer);
     }
-    
+
 		if (instruction != null) {
 			llmNodeBuilder.instruction(instruction);
 		}
@@ -105,11 +109,15 @@ public class DefaultBuilder extends Builder {
 		if (StringUtils.hasLength(outputSchema)) {
 			llmNodeBuilder.outputSchema(outputSchema);
 		}
-		
+
 		separateInterceptorsByType();
-		
+
+		ToolCallbackResolver resolver = resolveToolCallbackResolver();
+		if (resolver != null && resolver != this.resolver) {
+			this.resolver = resolver;
+		}
 		List<ToolCallback> allTools = gatherLocalTools();
-		
+
 		// Set combined tools to LLM node
 		if (CollectionUtils.isNotEmpty(allTools)) {
 			llmNodeBuilder.toolCallbacks(Collections.unmodifiableList(allTools));
@@ -130,8 +138,8 @@ public class DefaultBuilder extends Builder {
 				.toolExecutionTimeout(this.toolExecutionTimeout)
 				.wrapSyncToolsAsAsync(this.wrapSyncToolsAsAsync);
 
-		if (resolver != null) {
-			toolBuilder.toolCallbackResolver(resolver);
+		if (this.resolver != null) {
+			toolBuilder.toolCallbackResolver(this.resolver);
 		}
 		if (CollectionUtils.isNotEmpty(allTools)) {
 			toolBuilder.toolCallbacks(allTools);
@@ -156,7 +164,7 @@ public class DefaultBuilder extends Builder {
 
 		return new ReactAgent(llmNode, toolNode, buildConfig(), this);
 	}
-	
+
 	/**
 	 * Separate unified interceptors by type into modelInterceptors and toolInterceptors.
 	 */
@@ -164,7 +172,7 @@ public class DefaultBuilder extends Builder {
 		if (CollectionUtils.isNotEmpty(interceptors)) {
 			modelInterceptors = new ArrayList<>();
 			toolInterceptors = new ArrayList<>();
-			
+
 			for (Interceptor interceptor : interceptors) {
 				if (interceptor instanceof ModelInterceptor) {
 					modelInterceptors.add((ModelInterceptor) interceptor);
@@ -198,18 +206,18 @@ public class DefaultBuilder extends Builder {
 		// - regularTools: user-provided tools
 		// - interceptorTools: tools from interceptors
 		List<ToolCallback> regularTools = new ArrayList<>();
-		
+
 		// Extract regular tools from user-provided tools
 		if (CollectionUtils.isNotEmpty(tools)) {
 			regularTools.addAll(tools);
 		}
-		
+
 		if (CollectionUtils.isNotEmpty(toolCallbackProviders)) {
 			for (var provider : toolCallbackProviders) {
 				regularTools.addAll(List.of(provider.getToolCallbacks()));
 			}
 		}
-		
+
 		if (CollectionUtils.isNotEmpty(toolNames)) {
 			for (String toolName : toolNames) {
 				// Skip the tool if it is already present in the request toolCallbacks.
@@ -218,7 +226,7 @@ public class DefaultBuilder extends Builder {
 				if (regularTools.stream().anyMatch(tool -> tool.getToolDefinition().name().equals(toolName))) {
 					continue;
 				}
-				
+
 				if (this.resolver == null) {
 					throw new IllegalStateException(
 							"ToolCallbackResolver is null; cannot resolve tool name: " + toolName);
@@ -231,7 +239,7 @@ public class DefaultBuilder extends Builder {
 				regularTools.add(toolCallback);
 			}
 		}
-		
+
 		// If regularTools is empty and resolver is provided, try to extract tools from resolver
 		if (regularTools.isEmpty() && this.resolver != null) {
 			// Check if resolver also implements ToolCallbackProvider
@@ -270,7 +278,7 @@ public class DefaultBuilder extends Builder {
 				}
 			}
 		}
-		
+
 		// Extract interceptor tools
 		List<ToolCallback> interceptorTools = new ArrayList<>();
 		if (CollectionUtils.isNotEmpty(modelInterceptors)) {
@@ -299,6 +307,38 @@ public class DefaultBuilder extends Builder {
 		allTools.addAll(regularTools);
 
 		return allTools;
+	}
+
+	protected ToolCallbackResolver resolveToolCallbackResolver() {
+		ToolCallbackResolver finalResolver = resolver;
+		if (CollectionUtils.isNotEmpty(hooks)) {
+			for (Hook hook : hooks) {
+				if (hook instanceof SkillsAgentHook skillsAgentHook) {
+					ToolCallbackResolver skillResolver = new SkillToolCallbackResolver(
+							skillsAgentHook.getSkillRegistry());
+					finalResolver = chainResolvers(finalResolver, skillResolver);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Configured SkillToolCallbackResolver for SkillsAgentHook");
+					}
+				}
+			}
+		}
+
+		return finalResolver;
+	}
+
+	private static ToolCallbackResolver chainResolvers(ToolCallbackResolver primary, ToolCallbackResolver fallback) {
+		if (primary == null) {
+			return Objects.requireNonNull(fallback, "fallback");
+		}
+		if (fallback == null) {
+			return primary;
+		}
+
+		return toolName -> {
+			ToolCallback tool = primary.resolve(toolName);
+			return tool != null ? tool : fallback.resolve(toolName);
+		};
 	}
 
 }
