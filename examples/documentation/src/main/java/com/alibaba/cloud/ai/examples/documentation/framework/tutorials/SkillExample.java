@@ -320,7 +320,7 @@ public class SkillExample {
                         .allowIO(true)
                         .out(stdoutStream)
                         .err(stderrStream)
-                        .allowHostAccess(true);
+                        .allowHostAccess(HostAccess.NONE);
 
                 if (scriptFile != null) {
                     String scriptDir = scriptFile.getParent();
