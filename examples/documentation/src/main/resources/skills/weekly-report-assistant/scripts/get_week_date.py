@@ -10,6 +10,6 @@ def get_current_week_range():
 
 if __name__ == "__main__":
     result = get_current_week_range()
-    print(f"Start Date: {result.split(' ~ ')[0]}")
-    print(f"End Date: {result.split(' ~ ')[1]}")
+    # Print a single, structured range string for easy parsing by tools.
+    print(result)
 
