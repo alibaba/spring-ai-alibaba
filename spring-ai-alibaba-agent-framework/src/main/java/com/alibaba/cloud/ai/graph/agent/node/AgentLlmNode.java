@@ -41,6 +41,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
@@ -72,6 +73,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	// FIXME: toolCallbacks should be managed in chatOptions only. Currently it's guaranteed immutable with unmodifiableList.
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
+	private List<ToolCallbackProvider> toolCallbackProviders = new ArrayList<>();
+
 	private List<ModelInterceptor> modelInterceptors = new ArrayList<>();
 
 	private String outputKey;
@@ -102,6 +105,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 		if (builder.toolCallbacks != null) {
 			this.toolCallbacks = builder.toolCallbacks;
+		}
+		if (builder.toolCallbackProviders != null) {
+			this.toolCallbackProviders = builder.toolCallbackProviders;
 		}
 		if (builder.modelInterceptors != null) {
 			this.modelInterceptors = builder.modelInterceptors;
@@ -164,27 +170,30 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		augmentUserMessage(messages, outputSchema);
 		renderTemplatedUserMessage(messages, state.data(), config.metadata());
 
+		// Dynamically resolve all tools (static + providers)
+		List<ToolCallback> currentTools = resolveAllTools();
+
 		// Create ModelRequest
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
 				.messages(messages)
 				.options(this.chatOptions != null ? this.chatOptions.copy() : null)
 				.context(config.metadata().orElse(new HashMap<>()));
 
-        // Extract tool names and descriptions from toolCallbacks and pass them to ModelRequest
-        if (toolCallbacks != null && !toolCallbacks.isEmpty()) {
-            List<String> toolNames = new ArrayList<>();
-            Map<String, String> toolDescriptions = new HashMap<>();
-            for (ToolCallback callback : toolCallbacks) {
-                String name = callback.getToolDefinition().name();
-                String description = callback.getToolDefinition().description();
-                toolNames.add(name);
-                if (description != null && !description.isEmpty()) {
-                    toolDescriptions.put(name, description);
-                }
-            }
-            requestBuilder.tools(toolNames);
-            requestBuilder.toolDescriptions(toolDescriptions);
-        }
+	       // Extract tool names and descriptions from currentTools and pass them to ModelRequest
+	       if (currentTools != null && !currentTools.isEmpty()) {
+	           List<String> toolNames = new ArrayList<>();
+	           Map<String, String> toolDescriptions = new HashMap<>();
+	           for (ToolCallback callback : currentTools) {
+	               String name = callback.getToolDefinition().name();
+	               String description = callback.getToolDefinition().description();
+	               toolNames.add(name);
+	               if (description != null && !description.isEmpty()) {
+	                   toolDescriptions.put(name, description);
+	               }
+	           }
+	           requestBuilder.tools(toolNames);
+	           requestBuilder.toolDescriptions(toolDescriptions);
+	       }
 
 		if (StringUtils.hasLength(this.systemPrompt)) {
 			requestBuilder.systemMessage(new SystemMessage(this.systemPrompt));
@@ -212,7 +221,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 									.orElse(THREAD_ID_DEFAULT), agentName, systemPrompt);
 						}
 					}
-					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, config).stream().chatResponse();
+					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, config, currentTools).stream().chatResponse();
 					if (enableReasoningLog) {
 						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
 							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
@@ -251,7 +260,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 						logger.info("[ThreadId {}] Agent {} reasoning round {} with system prompt: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), systemPrompt);
 					}
 
-					ChatResponse response = buildChatClientRequestSpec(request, config).call().chatResponse();
+					ChatResponse response = buildChatClientRequestSpec(request, config, currentTools).call().chatResponse();
 
 					AssistantMessage responseMessage = new AssistantMessage("Empty response from model for unknown reason");
 					if (response != null && response.getResult() != null) {
@@ -295,6 +304,26 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	public void setAdvisors(List<Advisor> advisors) {
 		this.advisors = advisors;
+	}
+
+	/**
+	 * Dynamically resolve all tools from static toolCallbacks and toolCallbackProviders.
+	 * This method is called on each LLM invocation to support dynamic tool discovery (e.g., MCP).
+	 *
+	 * @return combined list of all available tools
+	 */
+	private List<ToolCallback> resolveAllTools() {
+		List<ToolCallback> allTools = new ArrayList<>(this.toolCallbacks);
+		
+		// Dynamically get tools from providers
+		for (ToolCallbackProvider provider : toolCallbackProviders) {
+			ToolCallback[] providerTools = provider.getToolCallbacks();
+			if (providerTools != null && providerTools.length > 0) {
+				allTools.addAll(List.of(providerTools));
+			}
+		}
+		
+		return allTools;
 	}
 
 	private List<Message> appendSystemPromptIfNeeded(ModelRequest modelRequest) {
@@ -445,12 +474,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	/**
 	 * Filter tool callbacks based on the tools specified in ModelRequest.
 	 * @param modelRequest the model request containing the list of tool names to filter by
+	 * @param currentTools the dynamically resolved tools to filter from
 	 * @return filtered list of tool callbacks matching the requested tools
 	 */
-	private List<ToolCallback> filterToolCallbacks(ModelRequest modelRequest) {
+	private List<ToolCallback> filterToolCallbacks(ModelRequest modelRequest, List<ToolCallback> currentTools) {
 		List<ToolCallback> toolCallbacks = new ArrayList<>();
 		if (modelRequest == null) {
-			toolCallbacks.addAll(this.toolCallbacks);
+			toolCallbacks.addAll(currentTools);
 			return toolCallbacks;
 		}
 
@@ -472,11 +502,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.toList());
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest, RunnableConfig config) {
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest, RunnableConfig config, List<ToolCallback> currentTools) {
 		List<Message> messages = appendSystemPromptIfNeeded(modelRequest);
 
 		// NOTICE! If both tools(ToolSelectionInterceptor) and options are customized in ModelRequest, tools will override toolcall setting in options.
-		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
+		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest, currentTools);
 
 		if (!CollectionUtils.isEmpty(modelRequest.getDynamicToolCallbacks())) {
 			filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
@@ -544,6 +574,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private List<ToolCallback> toolCallbacks;
 
+		private List<ToolCallbackProvider> toolCallbackProviders;
+
 		private List<ModelInterceptor> modelInterceptors;
 
 		private String instruction;
@@ -584,6 +616,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.toolCallbacks = toolCallbacks;
+			return this;
+		}
+
+		public Builder toolCallbackProviders(List<ToolCallbackProvider> toolCallbackProviders) {
+			this.toolCallbackProviders = toolCallbackProviders;
 			return this;
 		}
 

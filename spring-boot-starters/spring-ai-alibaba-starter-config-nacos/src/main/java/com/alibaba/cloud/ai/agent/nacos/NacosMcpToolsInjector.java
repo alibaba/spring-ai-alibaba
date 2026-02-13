@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.context.ApplicationEventPublisher;
 
 public class NacosMcpToolsInjector {
 
@@ -44,10 +45,11 @@ public class NacosMcpToolsInjector {
 		}
 	}
 
-	public static List<ToolCallback> convert(NacosOptions nacosOptions, McpServersVO mcpServersVO) {
+	public static List<ToolCallback> convert(NacosOptions nacosOptions, McpServersVO mcpServersVO,
+			ApplicationEventPublisher eventPublisher) {
 
 		NacosMcpGatewayToolsInitializer nacosMcpGatewayToolsInitializer = new NacosMcpGatewayToolsInitializer(
-				nacosOptions.mcpOperationService, mcpServersVO.getMcpServers());
+				nacosOptions.mcpOperationService, mcpServersVO.getMcpServers(), eventPublisher);
 		return Collections.unmodifiableList(nacosMcpGatewayToolsInitializer.initializeTools());
 	}
 

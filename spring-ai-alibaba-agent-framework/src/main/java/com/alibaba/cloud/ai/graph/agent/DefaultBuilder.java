@@ -114,6 +114,11 @@ public class DefaultBuilder extends Builder {
 		if (CollectionUtils.isNotEmpty(allTools)) {
 			llmNodeBuilder.toolCallbacks(Collections.unmodifiableList(allTools));
 		}
+		
+		// Pass providers to LLM node for dynamic tool resolution
+		if (CollectionUtils.isNotEmpty(toolCallbackProviders)) {
+			llmNodeBuilder.toolCallbackProviders(toolCallbackProviders);
+		}
 
 		if (enableLogging) {
 			llmNodeBuilder.enableReasoningLog(true);
@@ -135,6 +140,11 @@ public class DefaultBuilder extends Builder {
 		}
 		if (CollectionUtils.isNotEmpty(allTools)) {
 			toolBuilder.toolCallbacks(allTools);
+		}
+		
+		// Pass providers to tool node for dynamic tool resolution only when no concrete tools are present
+		if (CollectionUtils.isEmpty(allTools) && CollectionUtils.isNotEmpty(toolCallbackProviders)) {
+			toolBuilder.toolCallbackProviders(toolCallbackProviders);
 		}
 
 		if (enableLogging) {
