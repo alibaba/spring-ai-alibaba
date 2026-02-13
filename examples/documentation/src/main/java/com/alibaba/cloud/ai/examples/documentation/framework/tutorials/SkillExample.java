@@ -89,8 +89,8 @@ public class SkillExample {
     /**
      * 示例3：多级目录配置
      * 用户级 userSkillsDirectory: 全局技能库，所有项目共享
-     * 目级 projectSkillsDirectory: 项目专属技能，仅当前项目使用
-     * 当两个目录中存在同名技能时，项目级技能会覆盖用户级技能:
+     * 项目级 projectSkillsDirectory: 项目专属技能，仅当前项目使用
+     * 当两个目录中存在同名技能时，项目级技能会覆盖用户级技能。
      */
     public static SkillRegistry multiLevelDirectory() {
         // 配置用户级和项目级目录
