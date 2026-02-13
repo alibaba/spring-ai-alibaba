@@ -15,13 +15,17 @@
  */
 package com.alibaba.cloud.ai.examples.documentation.graph.examples;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import reactor.core.publisher.Flux;
 
@@ -35,6 +39,7 @@ public class LlmStreamingSpringAiExample {
 	 * 使用流式 ChatClient
 	 */
 	public static void useStreamingChatClient(ChatClient chatClient) {
+		CountDownLatch latch = new CountDownLatch(1);
 		// 使用流式输出
 		Flux<ChatResponse> flux = chatClient.prompt()
 				.user("tell me a joke")
@@ -48,8 +53,17 @@ public class LlmStreamingSpringAiExample {
 					System.out.print(content);
 				},
 				error -> System.err.println("Error: " + error.getMessage()),
-				() -> System.out.println("\nStream completed")
+				() -> {
+					System.out.println("\nStream completed");
+					latch.countDown();
+				}
 		);
+
+		try {
+			latch.await(); //等待流式结束
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
@@ -70,21 +84,29 @@ public class LlmStreamingSpringAiExample {
 	public static void main(String[] args) {
 		System.out.println("=== Spring AI Alibaba LLM 流式集成示例 ===\n");
 
+		// ChatClient 配置
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		DashScopeChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModel).build();
+
 		try {
 			// 示例 1: 使用流式 ChatClient（需要 ChatClient）
 			System.out.println("示例 1: 使用流式 ChatClient");
-			System.out.println("注意: 此示例需要 ChatClient，跳过执行");
-			// useStreamingChatClient(chatClient);
+			useStreamingChatClient(chatClient);
 			System.out.println();
 
 			// 示例 2: 使用 Reactor 的阻塞式处理（需要 ChatClient）
 			System.out.println("示例 2: 使用 Reactor 的阻塞式处理");
-			System.out.println("注意: 此示例需要 ChatClient，跳过执行");
-			// useBlockingStreaming(chatClient);
+			useBlockingStreaming(chatClient);
 			System.out.println();
 
 			System.out.println("所有示例执行完成");
-			System.out.println("提示: 请配置 ChatClient 后运行完整示例");
 		}
 		catch (Exception e) {
 			System.err.println("执行示例时出错: " + e.getMessage());
