@@ -69,7 +69,6 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 		}).orElse(false);
 
 		RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config).checkPointId(null).nextNode(null).build();
-		subGraphRunnableConfig.clearContext();
 
 		var parentSaver = parentCompileConfig.checkpointSaver();
 		var subGraphSaver = subGraph.compileConfig.checkpointSaver();
@@ -89,7 +88,6 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 					.nextNode(null)
 					.checkPointId(null)
 					.build();
-				subGraphRunnableConfig.clearContext();
 			}
 		}
 
