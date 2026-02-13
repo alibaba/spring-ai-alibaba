@@ -49,7 +49,7 @@ public class SkillToolCallbackResolver implements ToolCallbackResolver {
 	/**
 	 * The name of the read_skill tool.
 	 */
-	public static final String READ_SKILL_TOOL_NAME = "read_skill";
+	public static final String READ_SKILL_TOOL_NAME = ReadSkillTool.READ_SKILL;
 
 	private final SkillRegistry skillRegistry;
 

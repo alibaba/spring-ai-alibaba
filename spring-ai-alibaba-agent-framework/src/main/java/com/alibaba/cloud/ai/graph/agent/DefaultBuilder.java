@@ -112,6 +112,10 @@ public class DefaultBuilder extends Builder {
 
 		separateInterceptorsByType();
 
+		ToolCallbackResolver resolver = resolveToolCallbackResolver();
+		if (resolver != null && resolver != this.resolver) {
+			this.resolver = resolver;
+		}
 		List<ToolCallback> allTools = gatherLocalTools();
 
 		// Set combined tools to LLM node
@@ -134,10 +138,6 @@ public class DefaultBuilder extends Builder {
 				.toolExecutionTimeout(this.toolExecutionTimeout)
 				.wrapSyncToolsAsAsync(this.wrapSyncToolsAsAsync);
 
-		ToolCallbackResolver resolver = resolveToolCallbackResolver();
-		if (resolver != null && resolver != this.resolver) {
-			this.resolver = resolver;
-		}
 		if (this.resolver != null) {
 			toolBuilder.toolCallbackResolver(this.resolver);
 		}
@@ -205,10 +205,6 @@ public class DefaultBuilder extends Builder {
 		// Collect tools from interceptors
 		// - regularTools: user-provided tools
 		// - interceptorTools: tools from interceptors
-		ToolCallbackResolver resolver = resolveToolCallbackResolver();
-		if (resolver != null && resolver != this.resolver) {
-			this.resolver = resolver;
-		}
 		List<ToolCallback> regularTools = new ArrayList<>();
 
 		// Extract regular tools from user-provided tools
@@ -324,7 +320,6 @@ public class DefaultBuilder extends Builder {
 					if (logger.isDebugEnabled()) {
 						logger.debug("Configured SkillToolCallbackResolver for SkillsAgentHook");
 					}
-					break;
 				}
 			}
 		}
