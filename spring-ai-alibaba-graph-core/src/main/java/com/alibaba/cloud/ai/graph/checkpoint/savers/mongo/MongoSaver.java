@@ -76,20 +76,25 @@ public class MongoSaver implements BaseCheckpointSaver {
 	private MongoDatabase database;
 	private TransactionOptions txnOptions;
 
+
+	private final boolean overwriteMode;
+
 	/**
 	 * Protected constructor for MongoSaver.
 	 * Use {@link #builder()} to create instances.
 	 *
 	 * @param client the client
 	 * @param stateSerializer the state serializer
+	 * @param overwriteMode whether to enable overwrite mode (only keeps the latest checkpoint)
 	 */
-	protected MongoSaver(MongoClient client, StateSerializer stateSerializer) {
+	protected MongoSaver(MongoClient client, StateSerializer stateSerializer, boolean overwriteMode) {
 		Objects.requireNonNull(client, "client cannot be null");
 		Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
 		this.client = client;
 		this.database = client.getDatabase(DB_NAME);
 		this.txnOptions = TransactionOptions.builder().writeConcern(WriteConcern.MAJORITY).build();
 		this.checkpointSerializer = new CheckPointSerializer(stateSerializer);
+		this.overwriteMode = overwriteMode;
 		Runtime.getRuntime().addShutdownHook(new Thread(client::close));
 	}
 
@@ -414,7 +419,11 @@ public class MongoSaver implements BaseCheckpointSaver {
 				collection.insertOne(clientSession, tempDocument);
 			}
 			else {
-				checkpointLinkedList.push(checkpoint); // Add Checkpoint
+				// Only the latest checkpoint will be retained.
+				if (overwriteMode && !checkpointLinkedList.isEmpty()) {
+					checkpointLinkedList.clear();
+				}
+				checkpointLinkedList.push(checkpoint);
 				Document tempDocument = new Document().append("_id", checkpointDocId)
 						.append(DOCUMENT_CONTENT_KEY, serializeCheckpoints(checkpointLinkedList));
 				ReplaceOptions opts = new ReplaceOptions().upsert(true);
@@ -510,14 +519,38 @@ public class MongoSaver implements BaseCheckpointSaver {
 	public static class Builder {
 		private MongoClient client;
 		private StateSerializer stateSerializer;
+		private boolean overwriteMode = false;
 
+		/**
+		 * Sets the mongo client.
+		 *
+		 * @param client the mongo client
+		 * @return this builder
+		 */
 		public Builder client(MongoClient client) {
 			this.client = client;
 			return this;
 		}
 
+		/**
+		 * Sets the state serializer.
+		 *
+		 * @param stateSerializer the state serializer
+		 * @return this builder
+		 */
 		public Builder stateSerializer(StateSerializer stateSerializer) {
 			this.stateSerializer = stateSerializer;
+			return this;
+		}
+
+		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode only keeps the latest checkpoint
+		 * @return this builder
+		 */
+		public Builder overwriteMode(boolean overwriteMode) {
+			this.overwriteMode = overwriteMode;
 			return this;
 		}
 
@@ -533,7 +566,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 			if (stateSerializer == null) {
 				this.stateSerializer = StateGraph.DEFAULT_JACKSON_SERIALIZER;
 			}
-			return new MongoSaver(client, stateSerializer);
+			return new MongoSaver(client, stateSerializer, overwriteMode);
 		}
 	}
 

@@ -52,9 +52,12 @@ public class PostgresSaver extends MemorySaver {
 
 	private final StateSerializer stateSerializer;
 
+	private final boolean overwriteMode;
+
 	protected PostgresSaver(Builder builder) throws SQLException {
 		this.datasource = builder.datasource;
 		this.stateSerializer = builder.stateSerializer;
+		this.overwriteMode = builder.overwriteMode;
 		initTable(builder.dropTablesFirst, builder.createTables);
 	}
 
@@ -247,6 +250,7 @@ public class PostgresSaver extends MemorySaver {
 				state_content_type)
 				VALUES (?, ?, ?, ?, ?, ?::jsonb, ?)
 				""";
+
 		UUID threadUUID = null;
 
 		// 1. Upsert thread information
@@ -265,8 +269,21 @@ public class PostgresSaver extends MemorySaver {
 			}
 		}
 
+		// Only the latest checkpoint will be retained.
+		if (overwriteMode && !checkpoints.isEmpty()) {
+			String deleteSql = """
+					DELETE FROM GraphCheckpoint
+					WHERE thread_id = ?
+					""";
+			try (PreparedStatement deleteStatement = conn.prepareStatement(deleteSql)) {
+				deleteStatement.setObject(1, threadUUID, Types.OTHER);
+				deleteStatement.execute();
+			}
+			// clear
+			checkpoints.clear();
+		}
 
-		// 2. Insert checkpoint data
+		// 3. Insert checkpoint data
 		try (PreparedStatement ps = conn.prepareStatement(insertCheckpointSql)) {
 			var field = 0;
 			// checkpoint_id
@@ -304,7 +321,8 @@ public class PostgresSaver extends MemorySaver {
 		var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
 
 		Connection conn = null;
-		try (Connection ignored = conn = getConnection()) {
+		try {
+			conn = getConnection();
 			conn.setAutoCommit(false); // Start transaction
 
 			insertCheckpoint(conn, config, checkpoints, checkpoint);
@@ -317,6 +335,16 @@ public class PostgresSaver extends MemorySaver {
 			log.error("Error inserting checkpoint with id {} in thread {}", checkpoint.getId(), threadId, e);
 			rollback(conn, checkpoint, threadId);
 			throw e;
+		}
+		finally {
+			if (conn != null) {
+				try {
+					conn.close();
+				}
+				catch (SQLException e) {
+					log.error("Failed to close connection for checkpoint {} in thread {}", checkpoint.getId(), threadId, e);
+				}
+			}
 		}
 
 	}
@@ -335,7 +363,8 @@ public class PostgresSaver extends MemorySaver {
 
 		Connection conn = null;
 
-		try (Connection ignored = conn = getConnection()) {
+		try {
+			conn = getConnection();
 			conn.setAutoCommit(false); // Start transaction
 
 			if (config.checkPointId().isPresent()) {
@@ -369,6 +398,16 @@ public class PostgresSaver extends MemorySaver {
 					e);
 			rollback(conn, checkpoint, threadId);
 			throw e;
+		}
+		finally {
+			if (conn != null) {
+				try {
+					conn.close();
+				}
+				catch (SQLException e) {
+					log.error("Failed to close connection for checkpoint {} in thread {}", checkpoint.getId(), threadId, e);
+				}
+			}
 		}
 	}
 
@@ -443,6 +482,7 @@ public class PostgresSaver extends MemorySaver {
 		private boolean createTables;
 		private boolean dropTablesFirst;
 		private DataSource datasource;
+		private boolean overwriteMode = false;
 
 		public Builder stateSerializer(StateSerializer stateSerializer) {
 			this.stateSerializer = stateSerializer;
@@ -479,8 +519,25 @@ public class PostgresSaver extends MemorySaver {
 			return this;
 		}
 
+		/**
+		 * Sets whether to drop tables first.
+		 *
+		 * @param dropTablesFirst whether to drop tables first
+		 * @return this builder
+		 */
 		public Builder dropTablesFirst(boolean dropTablesFirst) {
 			this.dropTablesFirst = dropTablesFirst;
+			return this;
+		}
+
+		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode only keeps the latest checkpoint
+		 * @return this builder
+		 */
+		public Builder overwriteMode(boolean overwriteMode) {
+			this.overwriteMode = overwriteMode;
 			return this;
 		}
 
@@ -497,8 +554,8 @@ public class PostgresSaver extends MemorySaver {
 				this.stateSerializer = StateGraph.DEFAULT_JACKSON_SERIALIZER;
 			}
 
-			if (port <= 0) {
-				throw new IllegalArgumentException("port must be greater than 0");
+			if (port == null || port <= 0) {
+				throw new IllegalArgumentException("port cannot be null and must be greater than 0");
 			}
 			var ds = new PGSimpleDataSource();
 			ds.setDatabaseName(requireNotBlank(database, "database"));
