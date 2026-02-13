@@ -62,7 +62,7 @@ public class SkillExample {
      */
     public static SkillRegistry fileSystemSkillRegistry() {
         // 配置从当前项目的 skills 目录加载
-        // 目录结构示例: ./skills/my-skill.md
+        // 目录结构示例: ./skills/my-skill/SKILL.md （每个技能是一个文件夹，且必须包含 SKILL.md）
         SkillRegistry registry = FileSystemSkillRegistry.builder()
                 .projectSkillsDirectory(System.getProperty("user.dir") + "/src/main/resources/skills")
                 .build();
