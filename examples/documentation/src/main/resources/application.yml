@@ -32,6 +32,25 @@ spring:
               url: https://sca.aliyun.com/ai/
               contact:
                 email: dev@alibabacloud.com
+
+    mcp: # 结合Spring AI使用MCP的必须配置
+      client: # 注入Spring AI MCP Client
+        enabled: true
+        name: saa-mcp-client
+        toolcallback:
+          enabled: true
+        type: async
+        streamable-http: # 定义streamableHttp的MCP工具
+          connections:
+            amap-maps:
+              url: ${MODEL_SCOPE_AMAP_BASE_URL} # 从魔搭社区获取调用url，移除尾部endpoint,例如: https://mcp.api-inference.modelscope.net/?????????/
+              endpoint: mcp
+        sse: # 定义基于sse的MCP工具
+          connections:
+            12306-mcp:
+              url: ${MODEL_SCOPE_12306_BASE_URL}  # 从魔搭社区获取调用url，移除尾部endpoint,例如: https://mcp.api-inference.modelscope.net/?????????/
+              sse-endpoint: sse
+
 # 日志配置
 logging:
   level:
