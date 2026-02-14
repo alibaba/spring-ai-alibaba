@@ -588,6 +588,35 @@ public class SubGraphTest {
 	}
 
 	@Test
+	public void testNestedSubgraphAppendNoDuplication() throws Exception {
+		var workflowChildChild = new StateGraph(createKeyStrategyFactory())
+				.addNode("step_c", _makeNode("c"))
+				.addEdge(START, "step_c")
+				.addEdge("step_c", END);
+
+		var workflowChild = new StateGraph(createKeyStrategyFactory())
+				.addNode("step_b", _makeNode("b"))
+				.addNode("subsubgraph", workflowChildChild)
+				.addEdge(START, "step_b")
+				.addEdge("step_b", "subsubgraph")
+				.addEdge("subsubgraph", END);
+
+		var workflowParent = new StateGraph(createKeyStrategyFactory())
+				.addNode("step_a", _makeNode("a"))
+				.addNode("subgraph", workflowChild)
+				.addNode("step_d", _makeNode("d"))
+				.addEdge(START, "step_a")
+				.addEdge("step_a", "subgraph")
+				.addEdge("subgraph", "step_d")
+				.addEdge("step_d", END)
+				.compile();
+
+		OverAllState result = workflowParent.invoke(Map.of()).orElseThrow();
+		List<?> messages = (List<?>) result.data().get("messages");
+		assertEquals(List.of("a", "b", "c", "d"), messages);
+	}
+
+	@Test
 	public void testParallelSubgraph() throws Exception {
 
 		SaverConfig saver = SaverConfig.builder().register(MemorySaver.builder().build()).build();
