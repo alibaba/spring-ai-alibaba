@@ -198,7 +198,7 @@ public final class ToolResult {
 			mergedType = ContentType.TEXT;
 		}
 
-		// Take the most recent final flag
+		// Use sticky-final semantics: once any result is final, merged result stays final
 		boolean mergedFinal = other.isFinal || this.isFinal;
 
 		return new ToolResult(mergedType, mergedText, mergedMedia, false, mergedFinal);
