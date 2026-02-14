@@ -11,6 +11,9 @@ Spring AI Alibaba Agent Framework is created for Java developers to quickly and 
 * **Human In The Loop**
 * **A2A**
 * **Rich Model, Tool and MCP Support**
+* **Async Tool Execution** - AsyncToolCallback with parallel execution and cancellation support
+* **Streaming Tool Execution** - StreamingToolCallback for incremental result delivery via Flux<ToolResult>
+* **Multimodal Tool Results** - ToolResult supporting text, images, audio, video, and files
 
 ## Related Projects
 Spring AI Alibaba Agent Framework depends on the following projects:

@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.interceptors;
 
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolResult;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -268,6 +269,97 @@ class ToolCallResponseTest {
 
 			assertNotNull(response.getMetadata());
 			assertTrue(response.getMetadata().isEmpty());
+		}
+
+	}
+
+	@Nested
+	@DisplayName("ofRich() Factory Method Tests")
+	class OfRichFactoryTests {
+
+		@Test
+		@DisplayName("ofRich() should create response with rich ToolResult")
+		void ofRich_createsResponse_withRichToolResult() {
+			ToolResult toolResult = ToolResult.text("rich content");
+
+			ToolCallResponse response = ToolCallResponse.ofRich("call-rich", "richTool", toolResult);
+
+			assertNotNull(response);
+			assertEquals("call-rich", response.getToolCallId());
+			assertEquals("richTool", response.getToolName());
+			assertTrue(response.hasRichResult());
+			assertEquals(toolResult, response.getRichResult());
+		}
+
+		@Test
+		@DisplayName("ofRich() should auto-generate string result from ToolResult")
+		void ofRich_autoGeneratesStringResult_fromToolResult() {
+			ToolResult toolResult = ToolResult.text("generated content");
+
+			ToolCallResponse response = ToolCallResponse.ofRich("call-id", "tool", toolResult);
+
+			// String result should be generated from ToolResult.toStringResult()
+			assertEquals(toolResult.toStringResult(), response.getResult());
+		}
+
+		@Test
+		@DisplayName("ofRich() should set status to success")
+		void ofRich_setsStatus_toSuccess() {
+			ToolResult toolResult = ToolResult.text("test");
+
+			ToolCallResponse response = ToolCallResponse.ofRich("call-id", "tool", toolResult);
+
+			assertEquals("success", response.getStatus());
+			assertFalse(response.isError());
+		}
+
+		@Test
+		@DisplayName("hasRichResult() should return true when rich result present")
+		void hasRichResult_returnsTrue_whenRichResultPresent() {
+			ToolResult toolResult = ToolResult.text("test");
+			ToolCallResponse response = ToolCallResponse.ofRich("call-id", "tool", toolResult);
+
+			assertTrue(response.hasRichResult());
+		}
+
+		@Test
+		@DisplayName("hasRichResult() should return false for regular responses")
+		void hasRichResult_returnsFalse_forRegularResponses() {
+			ToolCallResponse response = ToolCallResponse.of("call-id", "tool", "result");
+
+			assertFalse(response.hasRichResult());
+		}
+
+		@Test
+		@DisplayName("getRichResult() should return ToolResult")
+		void getRichResult_returnsToolResult() {
+			ToolResult toolResult = ToolResult.text("content");
+			ToolCallResponse response = ToolCallResponse.ofRich("call-id", "tool", toolResult);
+
+			assertEquals(toolResult, response.getRichResult());
+		}
+
+		@Test
+		@DisplayName("getRichResult() should return null for regular responses")
+		void getRichResult_returnsNull_forRegularResponses() {
+			ToolCallResponse response = ToolCallResponse.of("call-id", "tool", "result");
+
+			assertEquals(null, response.getRichResult());
+		}
+
+		@Test
+		@DisplayName("builder richResult() should set content automatically")
+		void builder_richResult_setsContentAutomatically() {
+			ToolResult toolResult = ToolResult.text("builder content");
+
+			ToolCallResponse response = ToolCallResponse.builder()
+				.toolCallId("call-id")
+				.toolName("tool")
+				.richResult(toolResult)
+				.build();
+
+			assertEquals(toolResult.toStringResult(), response.getResult());
+			assertTrue(response.hasRichResult());
 		}
 
 	}

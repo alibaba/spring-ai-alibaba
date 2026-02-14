@@ -134,6 +134,11 @@ class NacosReactAgentBuilderToolsTest {
 		}
 
 		@Override
+		public int getOrder() {
+			return 0;
+		}
+
+		@Override
 		public String getName() {
 			return name;
 		}
@@ -161,11 +166,6 @@ class NacosReactAgentBuilderToolsTest {
 		@Override
 		public List<ToolCallback> getTools() {
 			return tools;
-		}
-
-		@Override
-		public int getOrder() {
-			return 0;
 		}
 	}
 
