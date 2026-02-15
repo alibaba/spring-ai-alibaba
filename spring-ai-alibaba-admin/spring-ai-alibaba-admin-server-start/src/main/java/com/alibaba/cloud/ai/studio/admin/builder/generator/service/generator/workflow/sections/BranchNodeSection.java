@@ -18,9 +18,7 @@ package com.alibaba.cloud.ai.studio.admin.builder.generator.service.generator.wo
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.alibaba.cloud.ai.studio.admin.builder.generator.model.VariableType;
 import com.alibaba.cloud.ai.studio.admin.builder.generator.model.workflow.Case;
@@ -61,17 +59,14 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 		StringBuilder sb = new StringBuilder();
 		List<Case> cases = branchNodeData.getCases();
 
-		// 维护一个caseId到caseName的映射
-		AtomicInteger count = new AtomicInteger(1);
-		Map<String, String> caseIdToName = cases.stream()
-			.map(Case::getId)
-			.collect(Collectors.toUnmodifiableMap(id -> id, id -> {
-				// 如果一些节点的caseId本身就有含义，直接使用
-				if (id.equalsIgnoreCase("default") || id.equalsIgnoreCase("true") || id.equalsIgnoreCase("false")) {
-					return id;
-				}
-				return "case_" + (count.getAndIncrement());
-			}));
+		// 分组处理：Handle -> List<Target>
+		Map<String, List<String>> handleToTargetsMap = edges.stream()
+				.collect(Collectors.groupingBy(
+						Edge::getSourceHandle,
+						Collectors.mapping(Edge::getTarget, Collectors.toList())
+				));
+
+		boolean isParallel = handleToTargetsMap.values().stream().anyMatch(list -> list.size() > 1);
 
 		// 构造EdgeAction.apply函数
 		StringBuilder conditionsBuffer = new StringBuilder();
@@ -92,30 +87,56 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 			// 组合复合条件
 			conditionsBuffer.append(String.join(logicalOperator, expressions));
 			conditionsBuffer.append(") {\n");
-			conditionsBuffer.append(String.format("return \"%s\";", caseIdToName.get(c.getId())));
+
+			List<String> targets = handleToTargetsMap.getOrDefault(c.getId(), List.of());
+			if (isParallel) {
+				String listStr = targets.isEmpty() ? "List.of()" :
+						"List.of(" + targets.stream().map(t -> "\"" + t + "\"").collect(Collectors.joining(", ")) + ")";
+				conditionsBuffer.append("return completedFuture(").append(listStr).append(");\n");
+			} else {
+				String target = targets.isEmpty() ? "StateGraph.END" : targets.get(0);
+				conditionsBuffer.append("return \"").append(target).append("\";\n");
+			}
 			conditionsBuffer.append("}\n");
 		}
+
 		// 最后需要加上else的结果
-		conditionsBuffer.append(String.format("return \"%s\";", branchNodeData.getDefaultCase()));
+		List<String> defaultTargets = handleToTargetsMap.getOrDefault(branchNodeData.getDefaultCase(), List.of());
+		if (isParallel) {
+			String listStr = defaultTargets.isEmpty() ? "List.of()" :
+					"List.of(" + defaultTargets.stream().map(t -> "\"" + t + "\"").collect(Collectors.joining(", ")) + ")";
+			conditionsBuffer.append("return completedFuture(").append(listStr).append(");");
+		} else {
+			String target = defaultTargets.isEmpty() ? "StateGraph.END" : defaultTargets.get(0);
+			conditionsBuffer.append("return \"").append(target).append("\";");
+		}
 
 		// 构建Map
-		Map<String, String> edgeCaseMap = edges.stream()
-			.collect(Collectors.toMap(e -> caseIdToName.getOrDefault(e.getSourceHandle(), e.getSourceHandle()),
-					Edge::getTarget));
-		String edgeCaseMapStr = "Map.of(" + edgeCaseMap.entrySet()
-			.stream()
-			.flatMap(e -> Stream.of(e.getKey(), e.getValue()))
-			.map(v -> String.format("\"%s\"", v))
-			.collect(Collectors.joining(", ")) + ")";
+		String mapEntries = handleToTargetsMap.values().stream()
+				.flatMap(List::stream)
+				.distinct()
+				.map(targetId -> String.format("Map.entry(\"%s\", \"%s\")", targetId, targetId))
+				.collect(Collectors.joining(", "));
+		String edgeCaseMapStr = mapEntries.isEmpty() ? "Map.of()" : "Map.ofEntries(" + mapEntries + ")";
 
 		// 构建最终代码
-		sb.append("stateGraph.addConditionalEdges(\"")
-			.append(srcVar)
-			.append("\", edge_async(state -> {\n")
-			.append(conditionsBuffer)
-			.append("}), ")
-			.append(edgeCaseMapStr)
-			.append(");\n\n");
+		if (isParallel) {
+			sb.append("stateGraph.addParallelConditionalEdges(\"")
+					.append(srcVar)
+					.append("\", AsyncMultiCommandAction.of((state, config) -> {\n")
+					.append(conditionsBuffer)
+					.append("\n}, ")
+					.append(edgeCaseMapStr)
+					.append(");\n\n");
+		} else {
+			sb.append("stateGraph.addConditionalEdges(\"")
+					.append(srcVar)
+					.append("\", edge_async(state -> {\n")
+					.append(conditionsBuffer)
+					.append("}), ")
+					.append(edgeCaseMapStr)
+					.append(");\n\n");
+		}
 
 		return sb.toString();
 	}
@@ -130,7 +151,7 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 				VariableSelector selector = condition.getTargetSelector();
 				boolean accessExtension = selector != null
 						&& (selector.getLabel() != null && selector.getLabel().contains("extension")
-								|| selector.getName() != null && selector.getName().contains("extension"));
+						|| selector.getName() != null && selector.getName().contains("extension"));
 
 				if (accessExtension) {
 					// 如果是访问扩展名属性，直接访问扩展名字段
@@ -176,7 +197,11 @@ public class BranchNodeSection implements NodeSection<BranchNodeData> {
 
 	@Override
 	public List<String> getImports() {
-		return List.of("static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async");
+		return List.of(
+				"static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async",
+				"com.alibaba.cloud.ai.graph.action.AsyncMultiCommandAction",
+				"java.util.concurrent.CompletableFuture"
+		);
 	}
 
 }
