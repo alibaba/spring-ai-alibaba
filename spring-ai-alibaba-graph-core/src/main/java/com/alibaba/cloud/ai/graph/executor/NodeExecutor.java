@@ -17,27 +17,22 @@ package com.alibaba.cloud.ai.graph.executor;
 
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.GraphRunnerContext;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateDeltaHelper;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
-import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.Objects;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -494,77 +489,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 	}
 
 	private Map<String, Object> buildSubgraphDelta(GraphRunnerContext context, Map<String, Object> updateState) {
-		Map<String, Object> currentState = context.getCurrentStateData();
-		Map<String, KeyStrategy> keyStrategyMap = context.getKeyStrategyMap();
-		Map<String, Object> adjusted = new HashMap<>();
-
-		for (var entry : updateState.entrySet()) {
-			String key = entry.getKey();
-			Object newValue = entry.getValue();
-			KeyStrategy strategy = keyStrategyMap != null ? keyStrategyMap.get(key) : null;
-			if (strategy instanceof AppendStrategy) {
-				Object oldValue = currentState.get(key);
-				Object delta = computeAppendDelta(oldValue, newValue);
-				if (delta != null) {
-					adjusted.put(key, delta);
-				}
-			}
-			else {
-				adjusted.put(key, newValue);
-			}
-		}
-
-		return adjusted;
-	}
-
-	@SuppressWarnings("unchecked")
-	private Object computeAppendDelta(Object oldValue, Object newValue) {
-		if (newValue == null) {
-			return null;
-		}
-		if (newValue instanceof ReplaceAllWith<?>) {
-			return newValue;
-		}
-
-		if (oldValue instanceof Optional<?> oldOptional) {
-			oldValue = oldOptional.orElse(null);
-		}
-
-		List<?> newList = asList(newValue);
-		if (oldValue instanceof List<?> oldList && newList != null) {
-			if (newList.size() < oldList.size()) {
-				return ReplaceAllWith.of((List<Object>) newList);
-			}
-			boolean isPrefix = true;
-			for (int i = 0; i < oldList.size(); i++) {
-				if (!Objects.equals(oldList.get(i), newList.get(i))) {
-					isPrefix = false;
-					break;
-				}
-			}
-			if (isPrefix) {
-				if (newList.size() == oldList.size()) {
-					return null;
-				}
-				return new ArrayList<>(newList.subList(oldList.size(), newList.size()));
-			}
-			return ReplaceAllWith.of((List<Object>) newList);
-		}
-
-		return newValue;
-	}
-
-	private List<?> asList(Object value) {
-		if (value instanceof List<?> list) {
-			return list;
-		}
-		if (value instanceof Collection<?> collection) {
-			return new ArrayList<>(collection);
-		}
-		if (value != null && value.getClass().isArray()) {
-			return Arrays.asList((Object[]) value);
-		}
-		return null;
+		return StateDeltaHelper.normalizeWithDeltaStrategies(context.getCurrentStateData(), updateState,
+				context.getKeyStrategyMap(), true);
 	}
 
 	/**
