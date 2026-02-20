@@ -20,11 +20,13 @@ import com.alibaba.cloud.ai.graph.GraphRunnerContext;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateDeltaHelper;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
+import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -66,6 +68,9 @@ import static com.alibaba.cloud.ai.graph.internal.node.ParallelNode.getExecutor;
 public class NodeExecutor extends BaseGraphExecutor {
 
 	private static final Logger log = LoggerFactory.getLogger(NodeExecutor.class);
+
+	private record EmbeddedFlux(String key, Flux<GraphResponse<NodeOutput>> flux) {
+	}
 
 	private final MainGraphExecutor mainGraphExecutor;
 
@@ -148,7 +153,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 		try {
 
 			// Check for Flux
-			Optional<Flux<GraphResponse<NodeOutput>>> embedFlux = getEmbedFlux(context, updateState);
+			Optional<EmbeddedFlux> embedFlux = getEmbedFlux(context, updateState);
 			if (embedFlux.isPresent()) {
 				return handleEmbeddedFlux(mainGraphExecutor, context, embedFlux.get(), updateState, resultValue);
 			}
@@ -395,7 +400,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	private Flux<GraphResponse<NodeOutput>> processGraphResponseFlux(
 			MainGraphExecutor mainGraphExecutor, GraphRunnerContext context,
 			Flux<GraphResponse<NodeOutput>> embedFlux, Map<String, Object> partialState,
-			AtomicReference<Object> resultValue) {
+			AtomicReference<Object> resultValue, String embedKey) {
 		AtomicReference<GraphResponse<NodeOutput>> lastData = new AtomicReference<>();
 
 		Flux<GraphResponse<NodeOutput>> processedFlux = embedFlux.map(data -> {
@@ -450,6 +455,10 @@ public class NodeExecutor extends BaseGraphExecutor {
 				}
 			}
 
+			if (isSubgraphOutputKey(embedKey)) {
+				updateState = buildSubgraphDelta(context, updateState);
+			}
+
 			Map<String, Object> combinedUpdateState = new HashMap<>(partialStateWithoutFlux);
 			combinedUpdateState.putAll(updateState);
 			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfterForStreaming(context, combinedUpdateState);
@@ -475,17 +484,27 @@ public class NodeExecutor extends BaseGraphExecutor {
 			.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
 	}
 
+	private boolean isSubgraphOutputKey(String key) {
+		return key != null && key.endsWith(ResumableSubGraphAction.OUTPUT_KEY_TO_PARENT_SUFFIX);
+	}
+
+	private Map<String, Object> buildSubgraphDelta(GraphRunnerContext context, Map<String, Object> updateState) {
+		return StateDeltaHelper.normalizeWithDeltaStrategies(context.getCurrentStateData(), updateState,
+				context.getKeyStrategyMap(), true);
+	}
+
 	/**
 	 * Gets embed flux from partial state.
 	 * @param context the graph runner context
 	 * @param partialState the partial state containing flux instances
 	 * @return an Optional containing Data with the flux if found, empty otherwise
 	 */
-	public Optional<Flux<GraphResponse<NodeOutput>>> getEmbedFlux(GraphRunnerContext context,
+	public Optional<EmbeddedFlux> getEmbedFlux(GraphRunnerContext context,
 			Map<String, Object> partialState) {
 		return partialState.entrySet().stream().filter(e -> e.getValue() instanceof Flux<?>).findFirst().map(e -> {
 			var chatFlux = (Flux<?>) e.getValue();
-			return transformFluxToGraphResponse(context, chatFlux, e.getKey(), context.getCurrentNodeId());
+			return new EmbeddedFlux(e.getKey(),
+					transformFluxToGraphResponse(context, chatFlux, e.getKey(), context.getCurrentNodeId()));
 		});
 	}
 
@@ -497,10 +516,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 * @param resultValue the atomic reference to store the result value
 	 * @return Flux of GraphResponse with embedded flux handling result
 	 */
-	public Flux<GraphResponse<NodeOutput>> handleEmbeddedFlux(MainGraphExecutor mainGraphExecutor, GraphRunnerContext context,
-			Flux<GraphResponse<NodeOutput>> embedFlux, Map<String, Object> partialState,
+	public Flux<GraphResponse<NodeOutput>> handleEmbeddedFlux(MainGraphExecutor mainGraphExecutor,
+			GraphRunnerContext context, EmbeddedFlux embedFlux, Map<String, Object> partialState,
 			AtomicReference<Object> resultValue) {
-		return processGraphResponseFlux(mainGraphExecutor, context, embedFlux, partialState, resultValue);
+		return processGraphResponseFlux(mainGraphExecutor, context, embedFlux.flux(), partialState, resultValue,
+				embedFlux.key());
 	}
 
 	/**
