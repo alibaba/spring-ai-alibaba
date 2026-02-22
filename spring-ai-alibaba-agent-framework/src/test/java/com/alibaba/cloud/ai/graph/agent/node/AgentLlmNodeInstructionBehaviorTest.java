@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -28,11 +29,14 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AgentLlmNodeInstructionBehaviorTest {
 
@@ -50,6 +54,22 @@ class AgentLlmNodeInstructionBehaviorTest {
 		List<Message> messages = chatModel.lastPrompt().getInstructions();
 		UserMessage instruction = assertInstanceOf(UserMessage.class, messages.get(0));
 		assertEquals("route by {input}", instruction.getText());
+	}
+
+	@Test
+	void renderTemplatedUserMessageShouldRenderMainAgentInstructionTemplate() {
+		AgentLlmNode node = AgentLlmNode.builder()
+				.agentName("main-agent")
+				.build();
+
+		List<Message> messages = new ArrayList<>();
+		messages.add(AgentInstructionMessage.builder().text("route by {input}").build());
+
+		node.renderTemplatedUserMessage(messages, Map.of("input", "hello"), Optional.empty());
+
+		AgentInstructionMessage rendered = assertInstanceOf(AgentInstructionMessage.class, messages.get(0));
+		assertEquals("route by hello", rendered.getText());
+		assertTrue(rendered.isRendered());
 	}
 
 	private static final class PromptCapturingChatModel implements ChatModel {
