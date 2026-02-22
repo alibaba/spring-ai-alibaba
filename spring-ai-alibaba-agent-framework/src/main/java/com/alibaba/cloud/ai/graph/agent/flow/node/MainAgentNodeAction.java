@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.util.json.JsonParser;
@@ -102,8 +103,22 @@ public class MainAgentNodeAction implements NodeActionWithConfig {
 		logger.info("Invoking mainAgent '{}' compiled graph with threadId: {}",
 				mainAgent.name(), subGraphRunnableConfig.threadId());
 
+		Map<String, Object> stateForChild = new HashMap<>(state.data());
+		if (StringUtils.hasLength(mainAgent.instruction())) {
+			AgentInstructionMessage instructionMessage = AgentInstructionMessage.builder()
+					.text(mainAgent.instruction())
+					.build();
+			List<Object> messages = new ArrayList<>();
+			Object existingMessages = stateForChild.remove("messages");
+			if (existingMessages instanceof List<?> existingList) {
+				messages.addAll(existingList);
+			}
+			messages.add(instructionMessage);
+			stateForChild.put("messages", messages);
+		}
+
 		CompiledGraph graph = mainAgent.getAndCompileGraph();
-		Flux<GraphResponse<NodeOutput>> subGraphResult = graph.graphResponseStream(state, subGraphRunnableConfig);
+		Flux<GraphResponse<NodeOutput>> subGraphResult = graph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 		Flux<GraphResponse<NodeOutput>> graphResponseFlux = getGraphResponseFlux(subGraphResult);
 
 		Map<String, Object> result = new HashMap<>();

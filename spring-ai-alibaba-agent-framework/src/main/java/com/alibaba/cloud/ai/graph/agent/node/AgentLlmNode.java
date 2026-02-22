@@ -404,7 +404,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 	}
 
-	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params, Optional<Map<String, Object>> metadata) {
+	private Map<String, Object> processTemplateParams(Map<String, Object> params) {
 		// Process params to create a new Map
 		Map<String, Object> processedParams = new HashMap<>();
 		if (params != null) {
@@ -431,6 +431,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				}
 			}
 		}
+		return processedParams;
+	}
+
+	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params, Optional<Map<String, Object>> metadata) {
+		Map<String, Object> processedParams = processTemplateParams(params);
 
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
