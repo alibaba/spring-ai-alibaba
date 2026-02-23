@@ -27,15 +27,11 @@ import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.util.json.JsonParser;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -99,6 +95,12 @@ public class SkillsInterceptor extends ModelInterceptor {
 
 	private final Map<String, List<ToolCallback>> groupedTools;
 
+	/**
+	 * Threshold for triggering the infinite loop circuit breaker:
+	 * reading the same skill more than 2 times in a single conversational turn.
+	 */
+	private static final int LOOP_THRESHOLD = 2;
+
 	private SkillsInterceptor(Builder builder) {
 		if (builder.skillRegistry == null) {
 			throw new IllegalArgumentException("SkillRegistry must be provided. Use SkillsAgentHook to load skills.");
@@ -121,13 +123,13 @@ public class SkillsInterceptor extends ModelInterceptor {
 			return handler.call(request);
 		}
 
-		// 1. Extract skill names from AssistantMessage with read_skill tool calls
-		Set<String> readSkillNames = extractReadSkillNames(request.getMessages());
+		// 1. Extract skill data: collect all historical skills and count current turn reads
+		SkillExtractionResult extractionResult = extractSkillData(request.getMessages());
 
 		// 2. Collect tools from getGroupedTools for those skill names
 		List<ToolCallback> skillTools = new ArrayList<>(request.getDynamicToolCallbacks());
 		Map<String, List<ToolCallback>> grouped = getGroupedTools();
-		for (String skillName : readSkillNames) {
+		for (String skillName : extractionResult.allHistoricalSkills) {
 			List<ToolCallback> toolsForSkill = grouped.get(skillName);
 			if (toolsForSkill != null && !toolsForSkill.isEmpty()) {
 				skillTools.addAll(toolsForSkill);
@@ -138,7 +140,32 @@ public class SkillsInterceptor extends ModelInterceptor {
 			}
 		}
 
+		// 3. Identify skills that exceed the loop threshold in the current turn (which indicates an infinite loop scenario)
+		List<String> loopingSkills = extractionResult.currentTurnCounts.entrySet().stream()
+				.filter(entry -> entry.getValue() > LOOP_THRESHOLD)
+				.map(Map.Entry::getKey)
+				.toList();
+
 		String skillsPrompt = buildSkillsPrompt(skills, skillRegistry, skillRegistry.getSystemPromptTemplate());
+
+		// 4. If infinite loop detected, inject circuit breaker instructions
+		if (!loopingSkills.isEmpty()) {
+			skillsPrompt += "\n\n## ⚠️ Runtime Safety Instructions\n" +
+					"**[CRITICAL]** The system has detected that you are in an abnormal state. " +
+					"You have repeatedly called `read_skill` to read the following skill(s) multiple times in this turn: [" +
+					String.join(", ", loopingSkills) + "].\n\n" +
+					"**Mandatory Actions:**\n" +
+					"1. **ABSOLUTELY FORBIDDEN** to call `read_skill` again for the above skill(s) in this response.\n" +
+					"2. **Exception Handling Guidelines:**\n" +
+					"   - **Case A (Missing Execution Tools)**: If you find that completing the skill task requires executing code or reading files, " +
+					"but you lack the necessary tools, immediately respond: \"I have loaded the skill, but cannot proceed because the system " +
+					"has not provided the required execution tools (such as Python/Shell).\"\n" +
+					"   - **Case B (Any Other Reason)**: If you cannot continue for any other reason (such as lack of context, inability to understand " +
+					"the skill requirements, etc.), directly explain to the user the specific difficulty you encountered and proactively end this task.";
+
+			logger.warn("SkillsInterceptor Circuit Breaker triggered for looping skills: {}", loopingSkills);
+		}
+
 		SystemMessage enhanced = enhanceSystemMessage(request.getSystemMessage(), skillsPrompt);
 
 		if (logger.isDebugEnabled()) {
@@ -154,29 +181,72 @@ public class SkillsInterceptor extends ModelInterceptor {
 	}
 
 	/**
-	 * Scan messages for AssistantMessage with tool calls named {@value ReadSkillTool#READ_SKILL},
-	 * parse each call's arguments for <i>skill_name</i>, and return the set of skill names.
+	 * Extracts skill data from message history in a single backward traversal.
+	 * This method performs two tasks simultaneously:
+	 * 1. Collects all skills that have been read in the entire conversation history
+	 *    (for tool injection purposes)
+	 * 2. Counts how many times each skill has been read in the current turn
+	 *    (for infinite loop detection)
+	 * The traversal goes backward from the most recent message. When a UserMessage
+	 * is encountered, it marks the boundary between the current turn and historical turns.
+	 *
+	 * @param messages the message history to analyze
+	 * @return SkillExtractionResult containing both historical skills and current turn counts
 	 */
-	private Set<String> extractReadSkillNames(List<Message> messages) {
+	private SkillExtractionResult extractSkillData(List<Message> messages) {
+		SkillExtractionResult result = new SkillExtractionResult();
 		if (messages == null || messages.isEmpty()) {
-			return Set.of();
+			return result;
 		}
-		Set<String> names = new LinkedHashSet<>();
-		for (Message message : messages) {
-			if (!(message instanceof AssistantMessage assistantMessage) || !assistantMessage.hasToolCalls()) {
+		// Flag indicating whether we're still in the current turn
+		boolean inCurrentTurn = true;
+
+		// Traverse messages backward from most recent to oldest
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			Message message = messages.get(i);
+
+			// When we encounter a UserMessage, we've crossed into historical turns
+			if (message instanceof UserMessage) {
+				inCurrentTurn = false;
 				continue;
 			}
-			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-				if (!ReadSkillTool.READ_SKILL.equals(toolCall.name())) {
-					continue;
-				}
-				String skillName = parseSkillNameFromArguments(toolCall.arguments());
-				if (skillName != null && !skillName.isEmpty()) {
-					names.add(skillName);
-				}
+
+			// Process AssistantMessage with tool calls
+			if (message instanceof AssistantMessage assistantMessage && assistantMessage.hasToolCalls()) {
+				processToolCalls(assistantMessage.getToolCalls(), result, inCurrentTurn);
 			}
 		}
-		return names;
+		return result;
+	}
+
+	/**
+	 * Processes tool calls to extract read_skill invocations.
+	 *
+	 * @param toolCalls the list of tool calls to process
+	 * @param result the result object to populate
+	 * @param inCurrentTurn whether we're still in the current conversation turn
+	 */
+	private void processToolCalls(List<AssistantMessage.ToolCall> toolCalls,
+								  SkillExtractionResult result,
+								  boolean inCurrentTurn) {
+		for (AssistantMessage.ToolCall toolCall : toolCalls) {
+			if (!ReadSkillTool.READ_SKILL.equals(toolCall.name())) {
+				continue;
+			}
+
+			String skillName = parseSkillNameFromArguments(toolCall.arguments());
+			if (skillName == null || skillName.isEmpty()) {
+				continue;
+			}
+
+			// Always add to historical skills set (for tool injection)
+			result.allHistoricalSkills.add(skillName);
+
+			// If still in current turn, increment loop detection counter
+			if (inCurrentTurn) {
+				result.currentTurnCounts.merge(skillName, 1, Integer::sum);
+			}
+		}
 	}
 
 	private static String parseSkillNameFromArguments(String arguments) {
@@ -253,5 +323,21 @@ public class SkillsInterceptor extends ModelInterceptor {
 		public SkillsInterceptor build() {
 			return new SkillsInterceptor(this);
 		}
+	}
+
+	/**
+	 * Container for skill extraction results.
+	 * This class holds two pieces of information:
+	 * 1. allHistoricalSkills: All skills that have been read across all conversation turns
+	 *    (used for dynamic tool injection)
+	 * 2. currentTurnCounts: Count of how many times each skill has been read in the current turn
+	 *    (used for infinite loop detection and circuit breaking)
+	 */
+	private static class SkillExtractionResult {
+		/** All skills read in the entire conversation history (for tool injection) */
+		final Set<String> allHistoricalSkills = new LinkedHashSet<>();
+
+		/** Count of skill reads in the current turn only (for loop detection) */
+		final Map<String, Integer> currentTurnCounts = new LinkedHashMap<>();
 	}
 }
