@@ -97,7 +97,7 @@ public class SkillsInterceptor extends ModelInterceptor {
 
 	/**
 	 * Threshold for triggering the infinite loop circuit breaker:
-	 * reading the same skill more than 2 times in a single conversational turn.
+	 * reading the same skill more than the configured threshold in a single conversational turn.
 	 */
 	private static final int LOOP_THRESHOLD = 2;
 
