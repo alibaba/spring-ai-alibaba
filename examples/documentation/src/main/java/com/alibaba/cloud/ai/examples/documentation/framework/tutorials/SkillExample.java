@@ -44,6 +44,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -55,6 +56,11 @@ import java.util.function.BiFunction;
  * @author zlt
  */
 public class SkillExample {
+    private static final String PROJECT_SKILLS_PATH =
+            Paths.get(System.getProperty("user.dir"),
+                    "examples", "documentation", "src", "main", "resources", "skills")
+                    .toString();
+
     // ==================== 基础注册表使用 ====================
 
     /**
@@ -65,7 +71,7 @@ public class SkillExample {
         // 配置从当前项目的 skills 目录加载
         // 目录结构示例: ./skills/my-skill/SKILL.md （每个技能是一个文件夹，且必须包含 SKILL.md）
         SkillRegistry registry = FileSystemSkillRegistry.builder()
-                .projectSkillsDirectory(System.getProperty("user.dir") + "/src/main/resources/skills")
+                .projectSkillsDirectory(PROJECT_SKILLS_PATH)
                 .build();
 
         System.out.println("Registry created with file system");
@@ -97,7 +103,7 @@ public class SkillExample {
         // 配置用户级和项目级目录
         SkillRegistry registry = FileSystemSkillRegistry.builder()
                 .userSkillsDirectory(System.getProperty("user.home") + "/saa/skills")
-                .projectSkillsDirectory(System.getProperty("user.dir") + "/src/main/resources/skills")
+                .projectSkillsDirectory(PROJECT_SKILLS_PATH)
                 .build();
 
         System.out.println("Registry created with multi-level directories");
@@ -149,8 +155,23 @@ public class SkillExample {
         // 需与 SKILL.md 元数据里的 name 一致
         String skillName = "weekly-report-assistant";
 
+        String basePath;
+        if (registry instanceof ClasspathSkillRegistry) {
+            // ClasspathSkillRegistry 将技能复制到 /tmp/skills
+            basePath = "/tmp/skills";
+        } else if (registry instanceof FileSystemSkillRegistry fsRegistry) {
+            basePath = fsRegistry.getProjectSkillsDirectory() != null
+                    ? fsRegistry.getProjectSkillsDirectory()
+                    : fsRegistry.getUserSkillsDirectory();
+        } else {
+            throw new IllegalArgumentException("Unsupported registry type: " + registry.getClass());
+        }
+
         // 定义一个特定技能才需要的工具，例如 weekly-report-assistant 使用 pythonTool 来运行 skill 里面的 python 脚本
-        ToolCallback pythonTool = PythonTool.createPythonToolCallback(PythonTool.DESCRIPTION);
+        ToolCallback pythonTool = PythonTool.createPythonToolCallback(
+                PythonTool.DESCRIPTION,
+                basePath
+        );
 
         // 将工具与技能名称绑定 (key 必须与 .md 文件中的 name 字段一致)
         Map<String, List<ToolCallback>> groupedTools = Map.of(
@@ -164,7 +185,7 @@ public class SkillExample {
                 .groupedTools(groupedTools) // 注入工具绑定关系
                 .build();
 
-        System.out.println("Hook configured with progressive tool disclosure");
+        System.out.println("Hook configured with progressive tool disclosure (base path: " + basePath + ")");
         return hook;
     }
 
@@ -281,20 +302,27 @@ public class SkillExample {
 
         private static final Logger log = LoggerFactory.getLogger(PythonTool.class);
         private final Engine engine;
+        private final File allowedBasePath;
 
-        public PythonTool() {
+        public PythonTool(String allowedBasePath) {
             // Create a shared engine for better performance
             this.engine = Engine.newBuilder()
                     .option("engine.WarnInterpreterOnly", "false")
                     .build();
+            try {
+                this.allowedBasePath = new File(allowedBasePath).getCanonicalFile();
+                log.info("PythonTool initialized with allowed base path: {}", this.allowedBasePath);
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Invalid base path: " + allowedBasePath, e);
+            }
             Runtime.getRuntime().addShutdownHook(new Thread(this::close));
         }
 
         /**
          * Create a ToolCallback for the Python tool.
          */
-        public static ToolCallback createPythonToolCallback(String description) {
-            return FunctionToolCallback.builder("python_tool", new PythonTool())
+        public static ToolCallback createPythonToolCallback(String description, String allowedBasePath) {
+            return FunctionToolCallback.builder("python_tool", new PythonTool(allowedBasePath))
                     .description(description)
                     .inputType(PythonRequest.class)
                     .build();
@@ -406,10 +434,12 @@ public class SkillExample {
         }
 
         private File getSafeScriptFile(String scriptPath) throws IOException {
-            File baseDir = new File("/tmp/skills").getCanonicalFile();
             File targetFile = new File(scriptPath).getCanonicalFile();
-            if (!targetFile.getPath().startsWith(baseDir.getPath())) {
-                throw new SecurityException("Access denied: Script path is outside the allowed directory.");
+            if (!targetFile.getPath().startsWith(allowedBasePath.getPath())) {
+                throw new SecurityException(
+                        String.format("Access denied: Script path '%s' is outside the allowed directory '%s'.",
+                                targetFile.getPath(), allowedBasePath.getPath())
+                );
             }
             if (!targetFile.exists() || !targetFile.isFile()) {
                 throw new FileNotFoundException("Script not found: " + scriptPath);
