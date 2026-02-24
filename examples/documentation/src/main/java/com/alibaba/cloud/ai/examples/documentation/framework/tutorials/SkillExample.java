@@ -252,7 +252,12 @@ public class SkillExample {
             System.err.println("Error executing example: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            System.out.println("Cleaning up resources...");
+            // Note: PythonTool instances created inside progressiveToolDisclosure(...)
+            // register a JVM shutdown hook that closes the underlying GraalVM context.
+            // In this tutorial main method we do not keep a direct reference to those
+            // tools, so there is no explicit close() call here; the shutdown hook
+            // performs the required cleanup when the JVM terminates.
+            System.out.println("Cleaning up resources (PythonTool will be closed by its shutdown hook)...");
         }
     }
 
