@@ -5,6 +5,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,7 @@ import java.net.URL;
 
 @Configuration
 @EnableConfigurationProperties(ElasticsearchProperties.class)
+@ConditionalOnProperty(prefix = "spring.elasticsearch", name = "uris")
 public class ElasticsearchConfig {
 
     @Bean

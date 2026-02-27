@@ -16,39 +16,31 @@
 
 package com.alibaba.cloud.ai.studio.core.rag.impl;
 
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.CreateDocumentRequest;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.DeleteChunkRequest;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.DeleteDocumentRequest;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.Document;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.DocumentChunk;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.DocumentQuery;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.IndexDocumentRequest;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.KnowledgeBase;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.UpdateChunkRequest;
-import com.alibaba.cloud.ai.studio.runtime.exception.BizException;
-import com.alibaba.cloud.ai.studio.runtime.enums.CommonStatus;
-import com.alibaba.cloud.ai.studio.runtime.enums.DocumentIndexStatus;
-import com.alibaba.cloud.ai.studio.runtime.enums.ErrorCode;
-import com.alibaba.cloud.ai.studio.runtime.domain.BaseQuery;
-import com.alibaba.cloud.ai.studio.runtime.domain.PagingList;
-import com.alibaba.cloud.ai.studio.runtime.domain.RequestContext;
-import com.alibaba.cloud.ai.studio.runtime.domain.file.UploadPolicy;
-import com.alibaba.cloud.ai.studio.runtime.utils.JsonUtils;
-import com.alibaba.cloud.ai.studio.core.context.RequestContextHolder;
 import com.alibaba.cloud.ai.studio.core.base.entity.DocumentEntity;
 import com.alibaba.cloud.ai.studio.core.base.mapper.DocumentMapper;
 import com.alibaba.cloud.ai.studio.core.base.mq.MqMessage;
 import com.alibaba.cloud.ai.studio.core.base.mq.MqProducerManager;
 import com.alibaba.cloud.ai.studio.core.config.MqConfigProperties;
+import com.alibaba.cloud.ai.studio.core.context.RequestContextHolder;
+import com.alibaba.cloud.ai.studio.core.rag.DocumentChunkConverter;
 import com.alibaba.cloud.ai.studio.core.rag.DocumentService;
 import com.alibaba.cloud.ai.studio.core.rag.KnowledgeBaseService;
 import com.alibaba.cloud.ai.studio.core.rag.RagConstants;
 import com.alibaba.cloud.ai.studio.core.rag.indices.IndexPipeline;
 import com.alibaba.cloud.ai.studio.core.rag.vectorstore.VectorStoreFactory;
-import com.alibaba.cloud.ai.studio.core.utils.common.BeanCopierUtils;
-import com.alibaba.cloud.ai.studio.core.rag.DocumentChunkConverter;
-import com.alibaba.cloud.ai.studio.core.utils.common.IdGenerator;
 import com.alibaba.cloud.ai.studio.core.utils.LogUtils;
+import com.alibaba.cloud.ai.studio.core.utils.common.BeanCopierUtils;
+import com.alibaba.cloud.ai.studio.core.utils.common.IdGenerator;
+import com.alibaba.cloud.ai.studio.runtime.domain.BaseQuery;
+import com.alibaba.cloud.ai.studio.runtime.domain.PagingList;
+import com.alibaba.cloud.ai.studio.runtime.domain.RequestContext;
+import com.alibaba.cloud.ai.studio.runtime.domain.file.UploadPolicy;
+import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.*;
+import com.alibaba.cloud.ai.studio.runtime.enums.CommonStatus;
+import com.alibaba.cloud.ai.studio.runtime.enums.DocumentIndexStatus;
+import com.alibaba.cloud.ai.studio.runtime.enums.ErrorCode;
+import com.alibaba.cloud.ai.studio.runtime.exception.BizException;
+import com.alibaba.cloud.ai.studio.runtime.utils.JsonUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -60,6 +52,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -96,19 +89,23 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentEnt
 	/** Pipeline for processing and indexing documents */
 	private final IndexPipeline knowledgeBaseIndexPipeline;
 
-	/** Producer for document indexing messages */
+	/** Producer for document indexing messages (optional) */
 	@Qualifier("documentIndexProducer")
-	private final Producer documentIndexProducer;
+	private Producer documentIndexProducer;
 
 	public DocumentServiceImpl(MqProducerManager mqProducerManager, MqConfigProperties mqConfigProperties,
-			KnowledgeBaseService knowledgeBaseService, VectorStoreFactory vectorStoreFactory,
-			IndexPipeline knowledgeBaseIndexPipeline,
-			@Qualifier("documentIndexProducer") Producer documentIndexProducer) {
+                               KnowledgeBaseService knowledgeBaseService, VectorStoreFactory vectorStoreFactory,
+                               IndexPipeline knowledgeBaseIndexPipeline) {
 		this.mqProducerManager = mqProducerManager;
 		this.mqConfigProperties = mqConfigProperties;
 		this.knowledgeBaseService = knowledgeBaseService;
 		this.vectorStoreFactory = vectorStoreFactory;
 		this.knowledgeBaseIndexPipeline = knowledgeBaseIndexPipeline;
+	}
+
+	@Autowired(required = false)
+	@Qualifier("documentIndexProducer")
+	public void setDocumentIndexProducer(Producer documentIndexProducer) {
 		this.documentIndexProducer = documentIndexProducer;
 	}
 
@@ -163,20 +160,22 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentEnt
 		knowledgeBase.setTotalDocs(knowledgeBase.getTotalDocs() + entities.size());
 		knowledgeBaseService.updateKnowledgeBase(knowledgeBase);
 
-		// send mq message for doc index
-		List<MqMessage> messages = new ArrayList<>();
-		for (Document document : documents) {
-			messages.add(MqMessage.builder()
-				.topic(mqConfigProperties.getDocumentIndexTopic())
-				.tag("doc")
-				.keys(List.of(document.getDocId()))
-				.body(JsonUtils.toJson(document))
-				.build());
-		}
+		// send mq message for doc index (only if producer is available)
+		if (documentIndexProducer != null) {
+			List<MqMessage> messages = new ArrayList<>();
+			for (Document document : documents) {
+				messages.add(MqMessage.builder()
+					.topic(mqConfigProperties.getDocumentIndexTopic())
+					.tag("doc")
+					.keys(List.of(document.getDocId()))
+					.body(JsonUtils.toJson(document))
+					.build());
+			}
 
-		mqProducerManager.sendAsync(documentIndexProducer, messages,
-				sendResult -> LogUtils.info("send document mq message, messageId: {}", sendResult.getMessageId()),
-				e -> LogUtils.error("Failed to send document mq message", e));
+			mqProducerManager.sendAsync(documentIndexProducer, messages,
+					sendResult -> LogUtils.info("send document mq message, messageId: {}", sendResult.getMessageId()),
+					e -> LogUtils.error("Failed to send document mq message", e));
+		}
 
 		return docIds;
 	}
@@ -494,18 +493,20 @@ public class DocumentServiceImpl extends ServiceImpl<DocumentMapper, DocumentEnt
 		}
 		this.updateById(entity);
 
-		// send mq message for doc index
-		Document document = toDocumentDTO(entity);
-		List<MqMessage> messages = List.of(MqMessage.builder()
-			.topic(mqConfigProperties.getDocumentIndexTopic())
-			.tag("doc")
-			.keys(List.of(document.getDocId()))
-			.body(JsonUtils.toJson(document))
-			.build());
+		// send mq message for doc index (only if producer is available)
+		if (documentIndexProducer != null) {
+			Document document = toDocumentDTO(entity);
+			List<MqMessage> messages = List.of(MqMessage.builder()
+				.topic(mqConfigProperties.getDocumentIndexTopic())
+				.tag("doc")
+				.keys(List.of(document.getDocId()))
+				.body(JsonUtils.toJson(document))
+				.build());
 
-		mqProducerManager.sendAsync(documentIndexProducer, messages,
-				sendResult -> LogUtils.info("send document mq message, messageId: {}", sendResult.getMessageId()),
-				e -> LogUtils.error("Failed to send document mq message", e));
+			mqProducerManager.sendAsync(documentIndexProducer, messages,
+					sendResult -> LogUtils.info("send document mq message, messageId: {}", sendResult.getMessageId()),
+					e -> LogUtils.error("Failed to send document mq message", e));
+		}
 	}
 
 	/**

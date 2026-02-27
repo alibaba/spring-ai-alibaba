@@ -9,6 +9,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -20,18 +21,18 @@ import java.util.Map;
  */
 @Component
 public class OpenAiChatClientFactory implements ChatClientFactory {
-    
+
     public static final String OPEN_AI_PROVIDER = "openai";
-    
+
     private final ObservationRegistry observationRegistry;
-    
+
     private final ToolCallingManager toolCallingManager;
-    
-    private final ChatModelObservationConvention customChatModelObservationConvention;
-    
+
+    private ChatModelObservationConvention customChatModelObservationConvention;
+
     public OpenAiChatClientFactory(ObservationRegistry observationRegistry,
             ToolCallingManager toolCallingManager,
-            ChatModelObservationConvention customChatModelObservationConvention) {
+            @Autowired(required = false) ChatModelObservationConvention customChatModelObservationConvention) {
         this.observationRegistry = observationRegistry;
         this.toolCallingManager = toolCallingManager;
         this.customChatModelObservationConvention = customChatModelObservationConvention;
@@ -50,7 +51,9 @@ public class OpenAiChatClientFactory implements ChatClientFactory {
                 .toolCallingManager(toolCallingManager)
                 .observationRegistry(observationRegistry)
                 .build();
-        model.setObservationConvention(customChatModelObservationConvention);
+        if (customChatModelObservationConvention != null) {
+            model.setObservationConvention(customChatModelObservationConvention);
+        }
         return model;
     }
     
@@ -109,12 +112,12 @@ public class OpenAiChatClientFactory implements ChatClientFactory {
                     break;
             }
         }
-        OpenAiChatOptions chatOptions = builder.build();
-        OpenAiObservationMetadataChatOptions options = OpenAiObservationMetadataChatOptions.fromOpenAiOptions(chatOptions);
-        if (observationMetadata != null) {
-            options.setObservationMetadata(observationMetadata);
-        }
-        return options;
+        return builder.build();
+//        OpenAiObservationMetadataChatOptions options = OpenAiObservationMetadataChatOptions.fromOpenAiOptions(chatOptions);
+//        if (observationMetadata != null) {
+//            options.setObservationMetadata(observationMetadata);
+//        }
+
     }
     
     
