@@ -22,9 +22,14 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.modelretry.ModelRetryInterceptor;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import reactor.core.publisher.Flux;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.awt.SystemColor.text;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ModelRetryInterceptorTest {
@@ -269,6 +274,159 @@ class ModelRetryInterceptorTest {
 		assertEquals(3, attemptCount.get());
 		assertTrue(duration < 100, "零延迟应该快速重试");
 	}
+
+
+
+	@Test
+	void testStreamFirstSuccess() {
+
+		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
+				.maxAttempts(3)
+				.initialDelay(0)
+				.build();
+
+		ModelCallHandler handler = request ->
+				ModelResponse.of(
+						Flux.just(
+								ChatResponse.builder()
+										.generations(List.of(new Generation(AssistantMessage.builder().content("msg1").build())))
+										.build(),
+								ChatResponse.builder()
+										.generations(List.of(new Generation(AssistantMessage.builder().content("msg2").build())))
+										.build()
+						)
+				);
+
+		ModelResponse response = interceptor.interceptModel(
+				ModelRequest.builder().build(),
+				handler
+		);
+
+		Flux<ChatResponse> flux = (Flux<ChatResponse>) response.getMessage();
+		flux.doOnNext(i-> System.out.println(i.toString()))
+				.subscribe();
+
+	}
+
+	/**
+	 * 在流式输出之前发生错误，应该重试
+	 */
+	@Test
+	void testStreamRetryBeforeOutput() throws InterruptedException {
+
+		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
+				.maxAttempts(5)
+				.initialDelay(0)
+				.build();
+
+		AtomicInteger attemptCount = new AtomicInteger(0);
+
+		ModelCallHandler handler = request -> {
+			int attempt = attemptCount.incrementAndGet();
+
+			if (attempt < 3) {
+				// 前两次次调用直接失败
+				return ModelResponse.of(Flux.error(new RuntimeException("network error")));
+			}
+
+			// 第三次调用成功
+			return ModelResponse.of(
+					Flux.just(
+							ChatResponse.builder()
+									.generations(List.of(new Generation(AssistantMessage.builder().content("ok").build())))
+									.build()
+					)
+			);
+		};
+
+		ModelResponse response = interceptor.interceptModel(ModelRequest.builder().build(), handler);
+		Flux<ChatResponse> flux = (Flux<ChatResponse>) response.getMessage();
+
+		flux.doOnNext(i-> System.out.println(i.toString()))
+				.subscribe();
+
+		Thread.sleep(3000l);
+
+		assertEquals(3, attemptCount.get(), "流输出之前的异常，应该重试");
+	}
+
+	/**
+	 * 流式中途发生失败后，不应该重试
+	 */
+	@Test
+	void testPartialOutputThenFail() throws InterruptedException {
+
+		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
+				.maxAttempts(3)
+				.initialDelay(0)
+				.build();
+
+		AtomicInteger attemptCount = new AtomicInteger(0);
+
+		ModelCallHandler handler = request -> {
+			attemptCount.incrementAndGet();
+
+			return ModelResponse.of(
+					Flux.concat(
+							Flux.just(ChatResponse.builder()
+									.generations(List.of(new Generation(AssistantMessage.builder().content("ok").build())))
+									.build()),
+							Flux.error(new RuntimeException("network error after output"))
+					)
+			);
+		};
+
+		ModelResponse response = interceptor.interceptModel(
+				ModelRequest.builder().build(),
+				handler
+		);
+
+		Flux<ChatResponse> flux = (Flux<ChatResponse>) response.getMessage();
+
+		flux.doOnNext(i-> System.out.println(i.toString()))
+				.subscribe();
+
+
+		Thread.sleep(3000l);
+
+		assertEquals(1, attemptCount.get(), "流中途异常，不应该发生重试");
+	}
+
+
+
+	/**
+	 * 流式输出持续发生失败，应该一直重试直到最大次数
+	 */
+	@Test
+	void testAlwaysFailReachMaxAttempts() throws InterruptedException {
+
+		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
+				.maxAttempts(3)
+				.initialDelay(0)
+				.build();
+
+		AtomicInteger attemptCount = new AtomicInteger(0);
+
+		ModelCallHandler handler = request -> {
+			attemptCount.incrementAndGet();
+			return ModelResponse.of(Flux.error(new RuntimeException("network down")));
+		};
+
+		ModelResponse response = interceptor.interceptModel(
+				ModelRequest.builder().build(),
+				handler
+		);
+
+		Flux<ChatResponse> flux = (Flux<ChatResponse>) response.getMessage();
+
+		flux.doOnNext(i-> System.out.println(i.toString()))
+				.subscribe();
+
+		Thread.sleep(3000l);
+		assertEquals(3, attemptCount.get(), "应该重试到最大尝试次数");
+
+	}
+
 
 	@Test
 	void testBuilderValidation() {
