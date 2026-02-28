@@ -1,25 +1,25 @@
 package com.alibaba.cloud.ai.studio.admin.repository.impl;
 
-import com.alibaba.cloud.ai.studio.admin.dto.request.OverviewQueryRequest;
-import com.alibaba.cloud.ai.studio.admin.dto.request.ServicesQueryRequest;
-import com.alibaba.cloud.ai.studio.admin.dto.request.TracesQueryRequest;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import com.alibaba.cloud.ai.studio.admin.dto.request.OverviewQueryRequest;
+import com.alibaba.cloud.ai.studio.admin.dto.request.ServicesQueryRequest;
+import com.alibaba.cloud.ai.studio.admin.dto.request.TracesQueryRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
+@ConditionalOnBean(ElasticsearchClientWrapper.class)
 public class TracingQueryBuilder {
 
     private static final String TRACES_INDEX = "loongsuite_traces";

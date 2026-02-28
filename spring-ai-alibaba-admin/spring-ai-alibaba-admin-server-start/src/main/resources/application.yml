@@ -3,9 +3,10 @@ server:
     enabled: true
     mime-types: text/html,text/xml,text/plain,text/css,text/javascript
     min-response-size: 2048
-nacos:
-  # 支持通过环境变量 NACOS_SERVER_ADDR 覆盖，默认值在各个 profile 中定义
-  server-addr: ${NACOS_SERVER_ADDR}
+# Nacos 配置（可选，不配置则不启用）
+# nacos:
+#   server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+
 management:
   tracing:
     sampling:
@@ -13,9 +14,9 @@ management:
   otlp:
     tracing:
       export:
-        enabled: true
+        enabled: false
       # 支持通过环境变量 MANAGEMENT_OTLP_TRACING_EXPORT_ENDPOINT 覆盖，默认值在各个 profile 中定义
-      endpoint: ${MANAGEMENT_OTLP_TRACING_EXPORT_ENDPOINT}
+      # endpoint: ${MANAGEMENT_OTLP_TRACING_EXPORT_ENDPOINT:http://localhost:4318}
     metrics:
       export:
         enabled: false
@@ -64,10 +65,15 @@ spring:
       enabled: true
   application:
     name: saa-studio
+  profiles:
+    # 可选: test, dev, local, minimal
+    # minimal: 仅需 MySQL，无需其他中间件
+    active: minimal
   config:
     import:
       - classpath:initializr.yml
-      - classpath:elasticsearch.yml
+      # Elasticsearch 配置（可选，如需启用请取消注释）
+      # - classpath:elasticsearch.yml
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -90,13 +96,12 @@ spring:
           enabled: true
           statement-executable-sql-log-enable: true
           statement-log-error-enabled: true
-  data:
-    redis:
-      # 支持通过环境变量覆盖，默认值在各个 profile 中定义
-      # SPRING_REDIS_HOST, SPRING_REDIS_PORT, SPRING_REDIS_DATABASE
-      host: ${SPRING_REDIS_HOST}
-      port: ${SPRING_REDIS_PORT}
-      database: ${SPRING_REDIS_DATABASE:0}
+  # Redis 配置（可选，不配置则不启用）
+  # data:
+  #   redis:
+  #     host: ${SPRING_REDIS_HOST:localhost}
+  #     port: ${SPRING_REDIS_PORT:6379}
+  #     database: ${SPRING_REDIS_DATABASE:0}
   freemarker:
     cache: false
     charset: UTF-8
@@ -104,11 +109,9 @@ spring:
     enabled: true
     content-type: text/html
     template-loader-path: classpath:/templates/
-  elasticsearch:
-    # Spring Boot 默认 Elasticsearch 配置（如果使用 Spring Data Elasticsearch）
-    # 注意：自定义 ElasticsearchClient 的配置在 elasticsearch.yml 中
-    # 支持通过环境变量 SPRING_ELASTICSEARCH_URIS 覆盖，默认值在各个 profile 中定义
-    uris: ${SPRING_ELASTICSEARCH_URIS}
+  # Elasticsearch 配置（可选，不配置则不启用）
+  # elasticsearch:
+  #   uris: ${SPRING_ELASTICSEARCH_URIS:http://localhost:9200}
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
@@ -131,12 +134,11 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-rocketmq:
-  # 支持通过环境变量覆盖，默认值在各个 profile 中定义
-  # ROCKETMQ_ENDPOINTS, ROCKETMQ_DOCUMENT_INDEX_TOPIC, ROCKETMQ_DOCUMENT_INDEX_GROUP
-  endpoints: ${ROCKETMQ_ENDPOINTS}
-  document-index-topic: ${ROCKETMQ_DOCUMENT_INDEX_TOPIC:topic_saa_studio_document_index}
-  document_index_group: ${ROCKETMQ_DOCUMENT_INDEX_GROUP:group_saa_studio_document_index}
+# RocketMQ 配置（可选，不配置则不启用）
+# rocketmq:
+#   endpoints: ${ROCKETMQ_ENDPOINTS:localhost:8081}
+#   document-index-topic: ${ROCKETMQ_DOCUMENT_INDEX_TOPIC:topic_saa_studio_document_index}
+#   document_index_group: ${ROCKETMQ_DOCUMENT_INDEX_GROUP:group_saa_studio_document_index}
 initializr:
   web:
     enabled: false

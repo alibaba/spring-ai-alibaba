@@ -9,6 +9,7 @@ import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -23,14 +24,14 @@ public class DeepSeekChatClientFactory implements ChatClientFactory{
     private static final String DEEPSEEK_PROVIDER = "deepseek";
     
     private final ObservationRegistry observationRegistry;
-    
+
     private final ToolCallingManager toolCallingManager;
-    
-    private final ChatModelObservationConvention customChatModelObservationConvention;
-    
+
+    private ChatModelObservationConvention customChatModelObservationConvention;
+
     public DeepSeekChatClientFactory(ObservationRegistry observationRegistry,
             ToolCallingManager toolCallingManager,
-            ChatModelObservationConvention customChatModelObservationConvention) {
+            @Autowired(required = false) ChatModelObservationConvention customChatModelObservationConvention) {
         this.observationRegistry = observationRegistry;
         this.toolCallingManager = toolCallingManager;
         this.customChatModelObservationConvention = customChatModelObservationConvention;

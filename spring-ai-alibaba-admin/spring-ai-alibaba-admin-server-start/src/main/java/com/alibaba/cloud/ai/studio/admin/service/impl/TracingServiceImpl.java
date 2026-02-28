@@ -1,7 +1,10 @@
 package com.alibaba.cloud.ai.studio.admin.service.impl;
 
 import com.alibaba.cloud.ai.studio.admin.common.PageResult;
-import com.alibaba.cloud.ai.studio.admin.dto.*;
+import com.alibaba.cloud.ai.studio.admin.dto.OverviewStatsDTO;
+import com.alibaba.cloud.ai.studio.admin.dto.ServicesResponseDTO;
+import com.alibaba.cloud.ai.studio.admin.dto.TraceDetailDTO;
+import com.alibaba.cloud.ai.studio.admin.dto.TraceSpanDTO;
 import com.alibaba.cloud.ai.studio.admin.dto.request.OverviewQueryRequest;
 import com.alibaba.cloud.ai.studio.admin.dto.request.ServicesQueryRequest;
 import com.alibaba.cloud.ai.studio.admin.dto.request.TracesQueryRequest;
@@ -9,11 +12,13 @@ import com.alibaba.cloud.ai.studio.admin.repository.TracingRepository;
 import com.alibaba.cloud.ai.studio.admin.service.TracingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@ConditionalOnBean(TracingRepository.class)
 public class TracingServiceImpl implements TracingService {
 
     private final TracingRepository tracingRepository;

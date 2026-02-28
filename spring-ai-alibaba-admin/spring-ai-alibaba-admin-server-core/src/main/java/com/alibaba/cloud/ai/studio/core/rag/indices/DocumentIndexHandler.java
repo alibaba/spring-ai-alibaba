@@ -16,11 +16,6 @@
 
 package com.alibaba.cloud.ai.studio.core.rag.indices;
 
-import com.alibaba.cloud.ai.studio.runtime.enums.DocumentIndexStatus;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.Document;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.KnowledgeBase;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.ProcessConfig;
-import com.alibaba.cloud.ai.studio.runtime.utils.JsonUtils;
 import com.alibaba.cloud.ai.studio.core.base.mq.MqConsumerHandler;
 import com.alibaba.cloud.ai.studio.core.base.mq.MqConsumerManager;
 import com.alibaba.cloud.ai.studio.core.base.mq.MqMessage;
@@ -28,9 +23,15 @@ import com.alibaba.cloud.ai.studio.core.config.MqConfigProperties;
 import com.alibaba.cloud.ai.studio.core.rag.DocumentService;
 import com.alibaba.cloud.ai.studio.core.rag.KnowledgeBaseService;
 import com.alibaba.cloud.ai.studio.core.utils.LogUtils;
+import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.Document;
+import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.KnowledgeBase;
+import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.ProcessConfig;
+import com.alibaba.cloud.ai.studio.runtime.enums.DocumentIndexStatus;
+import com.alibaba.cloud.ai.studio.runtime.utils.JsonUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -49,6 +50,7 @@ import static com.alibaba.cloud.ai.studio.core.utils.LogUtils.SUCCESS;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnBean(MqConsumerManager.class)
 public class DocumentIndexHandler implements MqConsumerHandler<MqMessage> {
 
 	/** Message queue configuration properties */

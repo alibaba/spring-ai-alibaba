@@ -6,8 +6,8 @@ import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.indices.ExistsRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -16,11 +16,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
+@ConditionalOnBean(ElasticsearchClient.class)
 public class ElasticsearchClientWrapper {
 
     private final ElasticsearchClient elasticsearchClient;
+
+    public ElasticsearchClientWrapper(ElasticsearchClient elasticsearchClient) {
+        this.elasticsearchClient = elasticsearchClient;
+    }
 
     /**
      * 执行搜索查询
