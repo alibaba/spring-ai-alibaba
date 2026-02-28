@@ -85,18 +85,94 @@ nacos:
 ```
 
 ### 4. Start SAA Admin
-#### 4.1 Start Middleware Services
-Navigate to the `docker/middleware` directory in the project root and execute the startup script to launch the required middleware services (MySQL, Elasticsearch, Nacos, Redis, RocketMQ):
+
+Choose one of the following two startup modes based on your environment requirements:
+
+#### Mode 1: Minimal Startup Mode (Recommended for Development and Testing)
+
+Only MySQL is required to start, no other middleware services needed.
+
+**4.1.1 Start MySQL**
+
+Recommended: Use Docker to quickly start MySQL (no local installation required):
+
+```bash
+# Run from project root to start dev mode (MySQL only)
+make env-start MODE=dev
+
+# Or run from docker/middleware directory
+sh docker/middleware/run.sh dev
+```
+
+> For more details, refer to [docker/middleware/README.md](docker/middleware/README.md).
+
+If using local MySQL, ensure MySQL 8.0+ is installed and create the database:
+
+```sql
+CREATE DATABASE IF NOT EXISTS saa_admin DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+**4.1.2 Configure Database Connection (Optional)**
+
+To modify database configuration, edit `spring-ai-alibaba-admin-server-start/src/main/resources/application-minimal.yml`:
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:saa_admin}
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:your_password}
+```
+
+**4.1.3 Start Backend Service**
+
+Navigate to the `spring-ai-alibaba-admin-server-start` directory and start the application (minimal configuration is used by default):
+
+```bash
+cd spring-ai-alibaba-admin-server-start
+mvn spring-boot:run
+```
+
+> **Note**: The following features are unavailable in minimal mode:
+
+> | Feature | Reason | Impact |
+> |---------|--------|--------|
+> | **Distributed Tracing** | Requires Elasticsearch | Cannot view service call chains, performance analysis, and troubleshooting |
+> | **Observability Dashboard** | Requires Elasticsearch | Cannot use Trace analysis, service monitoring, and statistics charts |
+> | **Async Document Indexing** | Requires RocketMQ | Documents are processed synchronously, large files may block requests |
+> | **Distributed Locks** | Requires Redis | Concurrent issues may occur in multi-instance deployments (no impact for single instance) |
+> | **Caching Service** | Requires Redis | Uses local memory cache, data is lost after restart |
+> | **Prompt Dynamic Updates** | Requires Nacos | Cannot push Prompt changes to applications in real-time via Nacos |
+> | **Agent Application Integration** | Requires Nacos | Cannot connect external Agent applications for observation and management |
+> | **Configuration Center** | Requires Nacos | Cannot use externalized configuration and dynamic configuration refresh |
+
+> 
+> **Applicable Scenarios**: Local development, feature testing, demo environments
+> **Not Applicable Scenarios**: Production environments, multi-instance deployments, scenarios requiring full observability
+
+#### Mode 2: Full Startup Mode (Recommended for Production)
+
+All middleware services are required (MySQL, Elasticsearch, Nacos, Redis, RocketMQ).
+
+**4.2.1 Start Middleware Services**
+
+Navigate to the `docker/middleware` directory in the project root and execute the startup script:
 
 ```bash
 cd docker/middleware
 sh run.sh
 ```
-#### 4.2 Start Backend Service
-Navigate to the `spring-ai-alibaba-admin-server-start` directory and start the application:
+
+**4.2.2 Start Backend Service**
+
+Navigate to the `spring-ai-alibaba-admin-server-start` directory and start with full configuration:
+
 ```bash
-mvn spring-boot:run
+cd spring-ai-alibaba-admin-server-start
+mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=local"
 ```
+
+Or modify `spring.profiles.active` to `local`, `dev`, or `test` in `application.yml`.
 #### 4.3 Start Frontend Service
 Navigate to the `frontend` directory in the project root, read the corresponding README to install dependencies and configure the environment, then start the service:
 ```bash
