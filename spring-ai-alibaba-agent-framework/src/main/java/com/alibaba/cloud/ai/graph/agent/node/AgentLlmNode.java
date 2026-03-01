@@ -213,6 +213,30 @@ public class AgentLlmNode implements NodeActionWithConfig {
 						}
 					}
 					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, config).stream().chatResponse();
+					// When any tool has returnDirect=true, buffer the stream and suppress
+					// text-only chunks that the model outputs before a tool call. This prevents
+					// model "thinking" text from leaking into the streaming output when the
+					// tool result is meant to be returned directly to the caller.
+					boolean hasReturnDirectTool = filterToolCallbacks(request).stream()
+							.anyMatch(tc -> tc.getToolMetadata() != null && tc.getToolMetadata().returnDirect());
+					if (hasReturnDirectTool) {
+						chatResponseFlux = chatResponseFlux
+								.collectList()
+								.flatMapMany(responses -> {
+									boolean hasToolCall = responses.stream()
+											.anyMatch(r -> r.getResult() != null
+													&& r.getResult().getOutput() != null
+													&& r.getResult().getOutput().hasToolCalls());
+									if (hasToolCall) {
+										return Flux.fromIterable(responses)
+												.filter(r -> r.getResult() != null
+														&& r.getResult().getOutput() != null
+														&& (r.getResult().getOutput().hasToolCalls()
+																|| !StringUtils.hasText(r.getResult().getOutput().getText())));
+									}
+									return Flux.fromIterable(responses);
+								});
+					}
 					if (enableReasoningLog) {
 						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
 							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
