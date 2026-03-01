@@ -213,10 +213,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 						}
 					}
 					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, config).stream().chatResponse();
-					// When any tool has returnDirect=true, buffer the stream and suppress
-					// text-only chunks that the model outputs before a tool call. This prevents
-					// model "thinking" text from leaking into the streaming output when the
-					// tool result is meant to be returned directly to the caller.
+					// When any tool has returnDirect=true, buffer the entire model response
+					// before emitting. This is intentional: with returnDirect=true the caller
+					// only wants the tool result, not any model text streamed before the tool
+					// call. Buffering lets us inspect the complete response and suppress
+					// text-only chunks that precede the tool call.
 					boolean hasReturnDirectTool = filterToolCallbacks(request).stream()
 							.anyMatch(tc -> tc.getToolMetadata() != null && tc.getToolMetadata().returnDirect());
 					if (hasReturnDirectTool) {
@@ -228,6 +229,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 													&& r.getResult().getOutput() != null
 													&& r.getResult().getOutput().hasToolCalls());
 									if (hasToolCall) {
+										// Keep only chunks that carry tool-call information or have
+										// no text content (e.g. the stream's final finish chunk).
+										// Text-only chunks are the model's preamble before the tool
+										// call and must be suppressed.
 										return Flux.fromIterable(responses)
 												.filter(r -> r.getResult() != null
 														&& r.getResult().getOutput() != null
