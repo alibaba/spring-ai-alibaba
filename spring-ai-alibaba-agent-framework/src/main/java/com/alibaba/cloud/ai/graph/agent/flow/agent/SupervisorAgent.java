@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.model.ChatModel;
 
+@Deprecated
 public class SupervisorAgent extends FlowAgent {
 
 	private final ChatModel chatModel;

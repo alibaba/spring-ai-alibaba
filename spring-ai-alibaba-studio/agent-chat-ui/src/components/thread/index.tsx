@@ -110,6 +110,44 @@ function OpenGitHubRepo() {
   );
 }
 
+function AgentSelector({
+  agentList,
+  selectedAgent,
+  setSelectedAgent,
+  isAgentsLoading,
+}: {
+  agentList: string[];
+  selectedAgent: string;
+  setSelectedAgent: (agent: string) => void;
+  isAgentsLoading: boolean;
+}) {
+  if (isAgentsLoading) {
+    return (
+      <span className="text-sm text-muted-foreground">Loading agents...</span>
+    );
+  }
+  if (agentList.length === 0) {
+    return (
+      <span className="text-sm text-muted-foreground">No agents available</span>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <Label htmlFor="agent-select" className="text-sm whitespace-nowrap">Agent</Label>
+      <select
+        id="agent-select"
+        value={selectedAgent}
+        onChange={(e) => setSelectedAgent(e.target.value)}
+        className="rounded-md border border-input bg-background px-3 py-1.5 text-sm min-w-[140px] max-w-[200px]"
+      >
+        {agentList.map((name) => (
+          <option key={name} value={name}>{name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 export function Thread() {
   const [artifactContext, setArtifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
@@ -142,7 +180,7 @@ export function Thread() {
   const isLoading = stream.isStreaming;
 
   // Import thread context to synchronize with query state
-  const { setCurrentThreadId } = useThreads();
+  const { setCurrentThreadId, agentList, selectedAgent, setSelectedAgent, isAgentsLoading } = useThreads();
 
   // Sync threadId query state with ThreadProvider's currentThreadId
   // This handles cases where threadId changes from outside (e.g., from history)
@@ -295,7 +333,13 @@ export function Thread() {
                   </Button>
                 )}
               </div>
-              <div className="absolute top-2 right-4 flex items-center">
+              <div className="absolute top-2 right-4 flex items-center gap-3">
+                <AgentSelector
+                  agentList={agentList}
+                  selectedAgent={selectedAgent}
+                  setSelectedAgent={setSelectedAgent}
+                  isAgentsLoading={isAgentsLoading}
+                />
                 <OpenGitHubRepo />
               </div>
             </div>
@@ -341,6 +385,12 @@ export function Thread() {
               </div>
 
               <div className="flex items-center gap-4">
+                <AgentSelector
+                  agentList={agentList}
+                  selectedAgent={selectedAgent}
+                  setSelectedAgent={setSelectedAgent}
+                  isAgentsLoading={isAgentsLoading}
+                />
                 <div className="flex items-center">
                   <OpenGitHubRepo />
                 </div>

@@ -9,10 +9,12 @@ spring:
         enabled: true
         toolcallback:
           enabled: true
-        sse:
+        streamable-http:
           connections:
             jina:
-              url: "https://mcp.jina.ai" # Spring AI will append /sse suffix to the url automatically
+              # 官方地址：https://mcp.jina.ai 本地部署：http://127.0.0.1:8787
+              url: "https://mcp.jina.ai"
+              endpoint: "/sse"
         request-timeout: 60000
 mybatis-plus:
   configuration:

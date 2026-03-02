@@ -42,9 +42,15 @@
         <httpclient.version>4.5.14</httpclient.version>
         <community.components.version>1.0.0.3</community.components.version>
         <jackson.version>2.18.4</jackson.version>
+        <agentscope.version>1.0.9-SNAPSHOT</agentscope.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-core</artifactId>
+            <version>${agentscope.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.modelcontextprotocol.sdk</groupId>
             <artifactId>mcp</artifactId>
@@ -63,6 +69,11 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.vladsch.flexmark</groupId>
+            <artifactId>flexmark-html2md-converter</artifactId>
+            <version>0.64.8</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>

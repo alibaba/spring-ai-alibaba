@@ -166,11 +166,7 @@ class SpringAIApiClient {
   }
 
   // 获取单个会话
-  async getSession(sessionId: string): Promise<Session> {
-    // Extract appName and userId from env or use defaults
-    const appName = process.env.NEXT_PUBLIC_APP_NAME || 'research_agent';
-    const userId = process.env.NEXT_PUBLIC_USER_ID || 'user-001';
-
+  async getSession(appName: string, userId: string, sessionId: string): Promise<Session> {
     const response = await fetch(
       `${this.baseUrl}/apps/${appName}/users/${userId}/threads/${sessionId}`
     );
@@ -259,13 +255,12 @@ class SpringAIApiClient {
 
   // 执行Agent(流式SSE)
   async *runAgentStream(
+    appName: string,
+    userId: string,
     threadId: string,
     message: UserMessage,
     signal?: AbortSignal
   ): AsyncGenerator<AgentRunResponse, void, unknown> {
-    const appName = process.env.NEXT_PUBLIC_APP_NAME || 'research_agent';
-    const userId = process.env.NEXT_PUBLIC_USER_ID || 'user-001';
-
     const request: AgentRunRequest = {
       appName,
       userId,
@@ -298,13 +293,12 @@ class SpringAIApiClient {
 
   // Resume Agent execution with tool feedback (Human-in-the-Loop)
   async *resumeAgentStream(
+    appName: string,
+    userId: string,
     threadId: string,
     toolFeedbacks: ToolFeedbackDTO[],
     signal?: AbortSignal
   ): AsyncGenerator<AgentRunResponse, void, unknown> {
-    const appName = process.env.NEXT_PUBLIC_APP_NAME || 'research_agent';
-    const userId = process.env.NEXT_PUBLIC_USER_ID || 'user-001';
-
     const request: AgentResumeRequest = {
       appName,
       userId,

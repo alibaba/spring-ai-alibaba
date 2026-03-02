@@ -56,28 +56,18 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const { currentThreadId, createThread, isNewlyCreatedThread } = useThreads();
+  const { currentThreadId, createThread, isNewlyCreatedThread, appName, userId } = useThreads();
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Load messages when thread changes
-  useEffect(() => {
-    if (currentThreadId) {
-      loadThreadMessages(currentThreadId);
-    } else {
-      setMessages([]);
-    }
-  }, [currentThreadId]);
-
-
-
   const loadThreadMessages = async (threadId: string) => {
+    if (!appName) return;
     setIsLoadingMessages(true);
     try {
       console.log('[Stream] Loading thread messages for threadId:', threadId);
 
       // Call backend API to get thread details
       const apiClient = createApiClient();
-      const session = await apiClient.getSession(threadId);
+      const session = await apiClient.getSession(appName, userId, threadId);
 
       console.log('[Stream] Loaded session:', session);
 
@@ -119,9 +109,22 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
     }
   };
 
+  // Load messages when thread or selected agent changes
+  useEffect(() => {
+    if (currentThreadId && appName) {
+      loadThreadMessages(currentThreadId);
+    } else if (!currentThreadId) {
+      setMessages([]);
+    }
+  }, [currentThreadId, appName]);
+
   const sendMessage = useCallback(
     async (content: string) => {
       if (!content.trim()) {
+        return;
+      }
+      if (!appName) {
+        toast.error("No agent selected. Please select an agent from the list.");
         return;
       }
 
@@ -166,6 +169,8 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         };
 
         const stream = apiClient.runAgentStream(
+          appName,
+          userId,
           activeThreadId,
           userMessageForApi,
           abortControllerRef.current.signal
@@ -310,7 +315,7 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         abortControllerRef.current = null;
       }
     },
-    [currentThreadId, createThread]
+    [currentThreadId, createThread, appName, userId]
   );
 
   const clearMessages = useCallback(() => {
@@ -327,6 +332,10 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         toast.error("No active thread");
         return;
       }
+      if (!appName) {
+        toast.error("No agent selected.");
+        return;
+      }
 
       setIsStreaming(true);
 
@@ -338,6 +347,8 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
 
         // Start streaming with feedback
         const stream = apiClient.resumeAgentStream(
+          appName,
+          userId,
           currentThreadId,
           toolFeedbacks,
           abortControllerRef.current.signal
@@ -447,7 +458,7 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         abortControllerRef.current = null;
       }
     },
-    [currentThreadId]
+    [currentThreadId, appName, userId]
   );
 
   // Cleanup on unmount
@@ -481,7 +492,7 @@ export const StreamConfigurationView = () => {
   });
 
   const [appName, setAppName] = useQueryState("appName", {
-    defaultValue: process.env.NEXT_PUBLIC_APP_NAME || "research_agent",
+    defaultValue: process.env.NEXT_PUBLIC_APP_NAME || "",
   });
 
   const [userId, setUserId] = useQueryState("userId", {
@@ -511,7 +522,7 @@ export const StreamConfigurationView = () => {
             id="appName"
             value={appName || ""}
             onChange={(e) => setAppName(e.target.value)}
-            placeholder="research_agent"
+            placeholder="e.g. sales_agent"
           />
         </div>
       </div>

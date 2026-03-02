@@ -164,11 +164,16 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		augmentUserMessage(messages, outputSchema);
 		renderTemplatedUserMessage(messages, state.data(), config.metadata());
 
-		// Create ModelRequest
+		// Create ModelRequest; include state in context so interceptors (e.g. handoffs step-config) can read it
+		Map<String, Object> contextMap = new HashMap<>(state.data());
+		Map<String, Object> metadata = config.metadata().orElse(new HashMap<>());
+		if (!metadata.isEmpty()) {
+			contextMap.putAll(metadata);
+		}
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
 				.messages(messages)
 				.options(this.chatOptions != null ? this.chatOptions.copy() : null)
-				.context(config.metadata().orElse(new HashMap<>()));
+				.context(contextMap);
 
         // Extract tool names and descriptions from toolCallbacks and pass them to ModelRequest
         if (toolCallbacks != null && !toolCallbacks.isEmpty()) {

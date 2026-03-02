@@ -251,18 +251,21 @@ public class NodeExecutor extends BaseGraphExecutor {
 					if (lastResponse == null) {
 						lastChatResponseRef.set(response);
 					} else {
+						var lastOutput = lastResponse.getResult().getOutput();
 						var lastMessageText = "";
-						if (lastResponse.getResult().getOutput().getText() != null) {
-							lastMessageText = lastResponse.getResult().getOutput().getText();
+						if (lastOutput.getText() != null) {
+							lastMessageText = lastOutput.getText();
 						}
 
 						final var currentMessageText = currentMessage.getText();
 
+						Map<String, Object> mergedMetadata = mergeMetadataWithReasoningContent(
+								lastOutput.getMetadata(), currentMessage.getMetadata());
+
 						var newMessage = AssistantMessage.builder()
 								.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
-								.properties(currentMessage.getMetadata()) // TODO, reasoningContent in metadata is not aggregated
-								.toolCalls(mergeToolCalls(lastResponse.getResult().getOutput().getToolCalls(),
-										currentMessage.getToolCalls()))
+								.properties(mergedMetadata)
+								.toolCalls(mergeToolCalls(lastOutput.getToolCalls(), currentMessage.getToolCalls()))
 								.media(currentMessage.getMedia())
 								.build();
 
@@ -347,6 +350,33 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.just(aggregatedResponse, doneResponse);
 				}
 			}));
+	}
+
+	/**
+	 * Merges metadata from last and current streaming chunks, aggregating
+	 * {@code reasoningContent} by concatenation (each chunk carries partial content).
+	 * Other metadata keys are taken from current; fallback to last when absent.
+	 */
+	private static Map<String, Object> mergeMetadataWithReasoningContent(
+			Map<String, Object> lastMetadata, Map<String, Object> currentMetadata) {
+		Map<String, Object> merged = new LinkedHashMap<>();
+		if (lastMetadata != null) {
+			merged.putAll(lastMetadata);
+		}
+		if (currentMetadata != null) {
+			merged.putAll(currentMetadata);
+		}
+		// Aggregate reasoningContent: concatenate last + current (streaming chunks are incremental)
+		String key = "reasoningContent";
+		String last = (lastMetadata != null && lastMetadata.containsKey(key))
+				? String.valueOf(lastMetadata.get(key)) : "";
+		String current = (currentMetadata != null && currentMetadata.containsKey(key))
+				? String.valueOf(currentMetadata.get(key)) : "";
+		if (!last.isEmpty() || !current.isEmpty()) {
+			String aggregated = last.isEmpty() ? current : (current.isEmpty() ? last : last + current);
+			merged.put(key, aggregated);
+		}
+		return merged;
 	}
 
   /**

@@ -19,7 +19,13 @@ interface ThreadContextType {
   deleteThread: (threadId: string) => Promise<void>;
   appName: string;
   userId: string;
+  /** List of available agent names from backend (list-apps). */
+  agentList: string[];
+  /** Currently selected agent (appName). Defaults to first in agentList. */
+  selectedAgent: string;
+  setSelectedAgent: (agent: string) => void;
   isLoading: boolean;
+  isAgentsLoading: boolean;
   isNewlyCreatedThread: (threadId: string) => boolean;
 }
 
@@ -42,15 +48,52 @@ export function ThreadProvider({ children }: ThreadProviderProps) {
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [newlyCreatedThreadIds, setNewlyCreatedThreadIds] = useState<Set<string>>(new Set());
+  const [agentList, setAgentList] = useState<string[]>([]);
+  const [selectedAgent, setSelectedAgentState] = useState<string>('');
+  const [isAgentsLoading, setIsAgentsLoading] = useState(true);
 
-  const appName = process.env.NEXT_PUBLIC_APP_NAME || 'research_agent';
   const userId = process.env.NEXT_PUBLIC_USER_ID || 'user-001';
+  const appName = selectedAgent || '';
+
+  // Fetch available agents on mount and default to first
+  useEffect(() => {
+    let cancelled = false;
+    setIsAgentsLoading(true);
+    createApiClient()
+      .listApps()
+      .then((names) => {
+        if (cancelled) return;
+        const sorted = [...names].sort();
+        setAgentList(sorted);
+        setSelectedAgentState((prev) => {
+          if (sorted.length === 0) return prev;
+          if (!prev || !sorted.includes(prev)) return sorted[0];
+          return prev;
+        });
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error('Failed to fetch agent list:', err);
+          setAgentList([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsAgentsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const setSelectedAgent = useCallback((agent: string) => {
+    setSelectedAgentState(agent);
+    setCurrentThreadId(null);
+  }, []);
 
   const isNewlyCreatedThread = useCallback((threadId: string) => {
     return newlyCreatedThreadIds.has(threadId);
   }, [newlyCreatedThreadIds]);
 
   const loadThreads = useCallback(async () => {
+    if (!appName) return;
     setIsLoading(true);
     try {
       const apiClient = createApiClient();
@@ -117,8 +160,13 @@ export function ThreadProvider({ children }: ThreadProviderProps) {
     }
   }, [appName, userId, currentThreadId]);
 
-  // Note: Threads are loaded on-demand when chat history is opened or when a threadId exists
-  // See components/thread/history/index.tsx for the loading logic
+  // When selected agent changes, clear current thread and reload threads for the new agent
+  useEffect(() => {
+    if (selectedAgent) {
+      setCurrentThreadId(null);
+      loadThreads();
+    }
+  }, [selectedAgent, loadThreads]);
 
   const contextValue = useMemo(() => ({
     threads,
@@ -129,9 +177,13 @@ export function ThreadProvider({ children }: ThreadProviderProps) {
     deleteThread,
     appName,
     userId,
+    agentList,
+    selectedAgent,
+    setSelectedAgent,
     isLoading,
+    isAgentsLoading,
     isNewlyCreatedThread,
-  }), [threads, currentThreadId, setCurrentThreadId, loadThreads, createThread, deleteThread, appName, userId, isLoading, isNewlyCreatedThread]);
+  }), [threads, currentThreadId, setCurrentThreadId, loadThreads, createThread, deleteThread, appName, userId, agentList, selectedAgent, setSelectedAgent, isLoading, isAgentsLoading, isNewlyCreatedThread]);
 
   return (
     <ThreadContext.Provider value={contextValue}>

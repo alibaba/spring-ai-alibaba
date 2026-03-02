@@ -22,33 +22,36 @@ import java.util.List;
 import jakarta.annotation.Nonnull;
 
 /**
- * Interface for loading agents.
+ * Interface for loading agents used by Spring AI Alibaba Studio.
  *
- * <p>Users implement this interface to register their agents.
+ * <p><strong>Default behavior:</strong> If you do not define an {@code AgentLoader} bean,
+ * Studio automatically uses {@link ContextScanningAgentLoader}, which discovers all
+ * {@link Agent} beans from the Spring {@link org.springframework.context.ApplicationContext}
+ * and exposes them by their {@link Agent#name()}. You can therefore use Studio without
+ * implementing this interface: just define your agents as {@code @Bean}s (e.g.
+ * {@link com.alibaba.cloud.ai.graph.agent.ReactAgent}) and they will appear in Studio.
  *
- * <p><strong>Thread Safety:</strong> Implementation must be thread-safe as it will be used as
- * Spring singleton beans and accessed concurrently by multiple HTTP requests.
+ * <p><strong>Custom loader:</strong> To control which agents are visible or how they are
+ * named, define your own {@code AgentLoader} bean. You can extend {@link AbstractAgentLoader}
+ * and override {@link AbstractAgentLoader#discoverAgents(org.springframework.context.ApplicationContext)}
+ * for custom discovery, or implement this interface directly.
  *
- * <p>Example usage:
+ * <p><strong>Thread safety:</strong> Implementations must be thread-safe; they are used as
+ * singleton beans and accessed concurrently by multiple HTTP requests.
+ *
+ * <p>Example – custom loader (manual map or context scan):
  *
  * <pre>{@code
- * public class MyAgentLoader implements AgentLoader {
+ * @Component
+ * public class MyAgentLoader extends AbstractAgentLoader {
+ *   private final Agent myAgent;
+ *   public MyAgentLoader(@Qualifier("myAgent") Agent myAgent) { this.myAgent = myAgent; }
  *   @Override
- *   public ImmutableList<String> listAgents() {
- *     return ImmutableList.of("chat_bot", "code_assistant");
- *   }
- *
- *   @Override
- *   public BaseAgent loadAgent(String name) {
- *     switch (name) {
- *       case "chat_bot": return createChatBot();
- *       case "code_assistant": return createCodeAssistant();
- *       default: throw new java.util.NoSuchElementException("Agent not found: " + name);
- *     }
+ *   protected Map<String, Agent> loadAgentMap() {
+ *     return Map.of("my_agent", myAgent);
  *   }
  * }
  * }</pre>
- *
  */
 public interface AgentLoader {
 
