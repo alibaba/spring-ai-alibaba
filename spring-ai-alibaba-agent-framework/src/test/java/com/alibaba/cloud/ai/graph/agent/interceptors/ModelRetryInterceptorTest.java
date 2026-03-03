@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.graph.agent.interceptors;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
-
 import com.alibaba.cloud.ai.graph.agent.interceptor.modelretry.ModelRetryInterceptor;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -29,7 +28,6 @@ import reactor.core.publisher.Flux;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static java.awt.SystemColor.text;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ModelRetryInterceptorTest {
