@@ -126,7 +126,7 @@ public class HigressOpenAiChatOptions implements ToolCallingChatOptions {
 	/**
 	 * Options for streaming response. Included in the API only if streaming-mode completion is requested.
 	 */
-	private @JsonProperty("stream_options") HigressOpenAiApi.ChatCompletionRequest.StreamOptions streamOptions;
+	private @JsonProperty("stream_options") StreamOptions streamOptions;
 	/**
 	 * This feature is in Beta. If specified, our system will make a best effort to sample
 	 * deterministically, such that repeated requests with the same seed and parameters should return the same result.
