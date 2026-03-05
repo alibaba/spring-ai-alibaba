@@ -18,17 +18,18 @@ package com.alibaba.cloud.ai.rag.bailian;
 /**
  * Query history entry for multi-turn conversation rewrite.
  *
- * <p>This class represents a single message in the conversation history, used for
- * multi-turn dialogue rewriting to improve retrieval effectiveness.
+ * <p>
+ * This class represents a single message in the conversation history, used for multi-turn
+ * dialogue rewriting to improve retrieval effectiveness.
  */
 public class QueryHistoryEntry {
 
 	private final String role;
+
 	private final String content;
 
 	/**
 	 * Creates a new QueryHistoryEntry.
-	 *
 	 * @param role the role (user or assistant)
 	 * @param content the message content
 	 */
@@ -42,7 +43,6 @@ public class QueryHistoryEntry {
 
 	/**
 	 * Creates a user message entry.
-	 *
 	 * @param content the user's message
 	 * @return a new QueryHistoryEntry with role "user"
 	 */
@@ -52,7 +52,6 @@ public class QueryHistoryEntry {
 
 	/**
 	 * Creates an assistant message entry.
-	 *
 	 * @param content the assistant's response
 	 * @return a new QueryHistoryEntry with role "assistant"
 	 */
@@ -62,7 +61,6 @@ public class QueryHistoryEntry {
 
 	/**
 	 * Gets the role of this message.
-	 *
 	 * @return the role (user or assistant)
 	 */
 	public String getRole() {
@@ -71,10 +69,10 @@ public class QueryHistoryEntry {
 
 	/**
 	 * Gets the content of this message.
-	 *
 	 * @return the message content
 	 */
 	public String getContent() {
 		return content;
 	}
+
 }

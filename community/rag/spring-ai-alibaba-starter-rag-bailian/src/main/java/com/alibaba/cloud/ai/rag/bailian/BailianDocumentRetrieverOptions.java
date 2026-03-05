@@ -21,10 +21,10 @@ import java.util.Map;
 /**
  * Options for Bailian document retrieval.
  *
- * <p>This class provides configuration options for document retrieval using
- * Bailian knowledge base. Most retrieval parameters are configured via
- * BailianConfig, but this class provides additional options specific to
- * the retrieval operation.
+ * <p>
+ * This class provides configuration options for document retrieval using Bailian
+ * knowledge base. Most retrieval parameters are configured via BailianConfig, but this
+ * class provides additional options specific to the retrieval operation.
  *
  */
 public class BailianDocumentRetrieverOptions {
@@ -89,5 +89,7 @@ public class BailianDocumentRetrieverOptions {
 		public BailianDocumentRetrieverOptions build() {
 			return this.options;
 		}
+
 	}
+
 }

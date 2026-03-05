@@ -43,8 +43,9 @@ import java.util.stream.Collectors;
  * Title Document retrieval advisor for Bailian.<br>
  * Description Document retrieval advisor using Bailian knowledge base.<br>
  *
- * <p>This advisor implements the same interface as DashScopeDocumentRetrievalAdvisor
- * but uses BailianKnowledge for document retrieval instead of DashScopeApi.
+ * <p>
+ * This advisor implements the same interface as DashScopeDocumentRetrievalAdvisor but
+ * uses BailianKnowledge for document retrieval instead of DashScopeApi.
  *
  * @author yuanci.ytb
  * @since 2024/8/16 11:29
@@ -206,4 +207,5 @@ public class BailianDocumentRetrievalAdvisor implements BaseAdvisor {
 				response.context().get(DashScopeApiConstants.RETRIEVED_DOCUMENTS));
 		return ChatClientResponse.builder().chatResponse(chatResponseBuilder.build()).context(context).build();
 	}
+
 }

@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.rag.bailian;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,9 +28,9 @@ import org.springframework.ai.document.Document;
 /**
  * Converter for transforming Bailian API responses to Spring AI Document objects.
  *
- * <p>This class handles the conversion between Bailian's retrieve response format
- * and Spring AI's Document format, ensuring seamless integration with Spring AI RAG
- * capabilities.
+ * <p>
+ * This class handles the conversion between Bailian's retrieve response format and Spring
+ * AI's Document format, ensuring seamless integration with Spring AI RAG capabilities.
  */
 public class BailianSpringAiDocumentConverter {
 
@@ -41,7 +40,6 @@ public class BailianSpringAiDocumentConverter {
 
 	/**
 	 * Converts Bailian retrieve response to a list of Spring AI Documents.
-	 *
 	 * @param response the Bailian retrieve response
 	 * @return a list of Spring AI Document objects
 	 */
@@ -55,7 +53,9 @@ public class BailianSpringAiDocumentConverter {
 			return List.of();
 		}
 
-		return body.getData().getNodes().stream()
+		return body.getData()
+			.getNodes()
+			.stream()
 			.map(BailianSpringAiDocumentConverter::fromBailianNode)
 			.filter(Objects::nonNull)
 			.collect(Collectors.toList());
@@ -63,7 +63,6 @@ public class BailianSpringAiDocumentConverter {
 
 	/**
 	 * Converts a single Bailian node to a Spring AI Document.
-	 *
 	 * @param node the Bailian node from retrieve response
 	 * @return a Spring AI Document object, or null if conversion fails
 	 */
@@ -136,7 +135,6 @@ public class BailianSpringAiDocumentConverter {
 
 	/**
 	 * Safely extracts a string value from metadata map.
-	 *
 	 * @param metadata the metadata map
 	 * @param key the key to extract
 	 * @return the string value, or null if not found or not a string
@@ -153,4 +151,5 @@ public class BailianSpringAiDocumentConverter {
 
 		return value != null ? value.toString() : null;
 	}
+
 }

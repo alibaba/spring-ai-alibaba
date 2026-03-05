@@ -18,8 +18,9 @@ package com.alibaba.cloud.ai.rag.bailian;
 /**
  * Rewrite configuration for multi-turn conversation in Bailian knowledge base retrieval.
  *
- * <p>Query rewriting improves retrieval effectiveness by automatically adjusting the
- * user's query based on conversation context.
+ * <p>
+ * Query rewriting improves retrieval effectiveness by automatically adjusting the user's
+ * query based on conversation context.
  */
 public class RewriteConfig {
 
@@ -31,7 +32,6 @@ public class RewriteConfig {
 
 	/**
 	 * Creates a new builder.
-	 *
 	 * @return a new Builder instance
 	 */
 	public static Builder builder() {
@@ -40,7 +40,6 @@ public class RewriteConfig {
 
 	/**
 	 * Gets the rewrite model name.
-	 *
 	 * @return the model name
 	 */
 	public String getModelName() {
@@ -51,6 +50,7 @@ public class RewriteConfig {
 	 * Builder for RewriteConfig.
 	 */
 	public static class Builder {
+
 		private String modelName = "conv-rewrite-qwen-1.8b";
 
 		private Builder() {
@@ -59,11 +59,11 @@ public class RewriteConfig {
 		/**
 		 * Sets the rewrite model name.
 		 *
-		 * <p>Currently only supports:
+		 * <p>
+		 * Currently only supports:
 		 * <ul>
-		 *   <li>conv-rewrite-qwen-1.8b (default)
+		 * <li>conv-rewrite-qwen-1.8b (default)
 		 * </ul>
-		 *
 		 * @param modelName the model name
 		 * @return this builder
 		 */
@@ -74,11 +74,12 @@ public class RewriteConfig {
 
 		/**
 		 * Builds a new RewriteConfig.
-		 *
 		 * @return a new RewriteConfig instance
 		 */
 		public RewriteConfig build() {
 			return new RewriteConfig(this);
 		}
+
 	}
+
 }

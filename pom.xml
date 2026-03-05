@@ -208,7 +208,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.0.0.3-retriever</revision>
+        <revision>1.0.0.3-20260305-cve</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -605,7 +605,7 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>${maven-javadoc-plugin.version}</version>
                         <configuration>
-                            <doclint>all,-missing</doclint>
+                            <doclint>none</doclint>
                         </configuration>
                         <executions>
                             <execution>

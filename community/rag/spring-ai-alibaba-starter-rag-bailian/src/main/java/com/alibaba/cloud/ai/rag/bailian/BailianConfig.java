@@ -22,12 +22,13 @@ import java.util.Map;
 /**
  * Configuration for Alibaba Cloud Bailian Knowledge Base.
  *
- * <p>This class contains all the necessary configuration parameters to connect
- * to and interact with Alibaba Cloud Bailian Knowledge Base service, including
- * connection settings and retrieval parameters.
+ * <p>
+ * This class contains all the necessary configuration parameters to connect to and
+ * interact with Alibaba Cloud Bailian Knowledge Base service, including connection
+ * settings and retrieval parameters.
  *
- * <p>Example usage:
- * <pre>{@code
+ * <p>
+ * Example usage: <pre>{@code
  * BailianConfig config = BailianConfig.builder()
  *     .accessKeyId(System.getenv("ALIBABA_CLOUD_ACCESS_KEY_ID"))
  *     .accessKeySecret(System.getenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET"))
@@ -53,19 +54,30 @@ public class BailianConfig {
 
 	// Connection configuration
 	private final String accessKeyId;
+
 	private final String accessKeySecret;
+
 	private final String workspaceId;
+
 	private final String indexId;
+
 	private final String endpoint;
 
 	// Retrieval configuration (knowledge base defaults)
 	private final Integer denseSimilarityTopK;
+
 	private final Integer sparseSimilarityTopK;
+
 	private final Boolean enableReranking;
+
 	private final RerankConfig rerankConfig;
+
 	private final Boolean enableRewrite;
+
 	private final RewriteConfig rewriteConfig;
+
 	private final List<Map<String, String>> searchFilters;
+
 	private final Boolean saveRetrieverHistory;
 
 	private BailianConfig(Builder builder) {
@@ -93,22 +105,19 @@ public class BailianConfig {
 		this.rerankConfig = builder.rerankConfig;
 		this.enableRewrite = builder.enableRewrite;
 		this.rewriteConfig = builder.rewriteConfig;
-		this.searchFilters =
-				builder.searchFilters != null ? new ArrayList<>(builder.searchFilters) : null;
+		this.searchFilters = builder.searchFilters != null ? new ArrayList<>(builder.searchFilters) : null;
 		this.saveRetrieverHistory = builder.saveRetrieverHistory;
 
 		// Validate denseSimilarityTopK + sparseSimilarityTopK <= 200
 		if (denseSimilarityTopK != null && sparseSimilarityTopK != null) {
 			if (denseSimilarityTopK + sparseSimilarityTopK > 200) {
-				throw new IllegalArgumentException(
-						"denseSimilarityTopK + sparseSimilarityTopK must be <= 200");
+				throw new IllegalArgumentException("denseSimilarityTopK + sparseSimilarityTopK must be <= 200");
 			}
 		}
 	}
 
 	/**
 	 * Creates a new builder for BailianConfig.
-	 *
 	 * @return a new Builder instance
 	 */
 	public static Builder builder() {
@@ -117,7 +126,6 @@ public class BailianConfig {
 
 	/**
 	 * Gets the Alibaba Cloud Access Key ID.
-	 *
 	 * @return the access key ID
 	 */
 	public String getAccessKeyId() {
@@ -126,7 +134,6 @@ public class BailianConfig {
 
 	/**
 	 * Gets the Alibaba Cloud Access Key Secret.
-	 *
 	 * @return the access key secret
 	 */
 	public String getAccessKeySecret() {
@@ -135,7 +142,6 @@ public class BailianConfig {
 
 	/**
 	 * Gets the Bailian workspace ID.
-	 *
 	 * @return the workspace ID
 	 */
 	public String getWorkspaceId() {
@@ -144,7 +150,6 @@ public class BailianConfig {
 
 	/**
 	 * Gets the knowledge base index ID.
-	 *
 	 * @return the index ID, or null if not set
 	 */
 	public String getIndexId() {
@@ -153,7 +158,6 @@ public class BailianConfig {
 
 	/**
 	 * Gets the Bailian API endpoint.
-	 *
 	 * @return the API endpoint
 	 */
 	public String getEndpoint() {
@@ -162,7 +166,6 @@ public class BailianConfig {
 
 	/**
 	 * Gets the dense similarity top K value.
-	 *
 	 * @return the dense similarity top K (0-100), or null if not set
 	 */
 	public Integer getDenseSimilarityTopK() {
@@ -171,7 +174,6 @@ public class BailianConfig {
 
 	/**
 	 * Gets the sparse similarity top K value.
-	 *
 	 * @return the sparse similarity top K (0-100), or null if not set
 	 */
 	public Integer getSparseSimilarityTopK() {
@@ -180,7 +182,6 @@ public class BailianConfig {
 
 	/**
 	 * Checks if reranking is enabled.
-	 *
 	 * @return true if reranking is enabled, null if not configured
 	 */
 	public Boolean getEnableReranking() {
@@ -189,7 +190,6 @@ public class BailianConfig {
 
 	/**
 	 * Gets the rerank configuration.
-	 *
 	 * @return the rerank config, or null if not set
 	 */
 	public RerankConfig getRerankConfig() {
@@ -198,7 +198,6 @@ public class BailianConfig {
 
 	/**
 	 * Checks if query rewrite is enabled.
-	 *
 	 * @return true if rewrite is enabled, null if not configured
 	 */
 	public Boolean getEnableRewrite() {
@@ -207,7 +206,6 @@ public class BailianConfig {
 
 	/**
 	 * Gets the rewrite configuration.
-	 *
 	 * @return the rewrite config, or null if not set
 	 */
 	public RewriteConfig getRewriteConfig() {
@@ -216,7 +214,6 @@ public class BailianConfig {
 
 	/**
 	 * Gets the search filters.
-	 *
 	 * @return the search filters list, or null if not set
 	 */
 	public List<Map<String, String>> getSearchFilters() {
@@ -225,7 +222,6 @@ public class BailianConfig {
 
 	/**
 	 * Checks if retriever history should be saved.
-	 *
 	 * @return true if history should be saved, null if not configured
 	 */
 	public Boolean getSaveRetrieverHistory() {
@@ -236,21 +232,33 @@ public class BailianConfig {
 	 * Builder for BailianConfig.
 	 */
 	public static class Builder {
+
 		// Connection configuration
 		private String accessKeyId;
+
 		private String accessKeySecret;
+
 		private String workspaceId;
+
 		private String indexId;
+
 		private String endpoint;
 
 		// Retrieval configuration
 		private Integer denseSimilarityTopK;
+
 		private Integer sparseSimilarityTopK;
+
 		private Boolean enableReranking;
+
 		private RerankConfig rerankConfig;
+
 		private Boolean enableRewrite;
+
 		private RewriteConfig rewriteConfig;
+
 		private List<Map<String, String>> searchFilters;
+
 		private Boolean saveRetrieverHistory;
 
 		private Builder() {
@@ -258,7 +266,6 @@ public class BailianConfig {
 
 		/**
 		 * Sets the Alibaba Cloud Access Key ID.
-		 *
 		 * @param accessKeyId the access key ID
 		 * @return this builder for method chaining
 		 */
@@ -269,7 +276,6 @@ public class BailianConfig {
 
 		/**
 		 * Sets the Alibaba Cloud Access Key Secret.
-		 *
 		 * @param accessKeySecret the access key secret
 		 * @return this builder for method chaining
 		 */
@@ -280,7 +286,6 @@ public class BailianConfig {
 
 		/**
 		 * Sets the Bailian workspace ID.
-		 *
 		 * @param workspaceId the workspace ID
 		 * @return this builder for method chaining
 		 */
@@ -292,8 +297,8 @@ public class BailianConfig {
 		/**
 		 * Sets the knowledge base index ID.
 		 *
-		 * <p>This is optional for configuration, but required when calling retrieve().
-		 *
+		 * <p>
+		 * This is optional for configuration, but required when calling retrieve().
 		 * @param indexId the index ID
 		 * @return this builder for method chaining
 		 */
@@ -305,16 +310,17 @@ public class BailianConfig {
 		/**
 		 * Sets the Bailian API endpoint.
 		 *
-		 * <p>If not set, defaults to "bailian.cn-beijing.aliyuncs.com".
+		 * <p>
+		 * If not set, defaults to "bailian.cn-beijing.aliyuncs.com".
 		 *
-		 * <p>Available endpoints:
+		 * <p>
+		 * Available endpoints:
 		 * <ul>
-		 *   <li>Public Cloud: bailian.cn-beijing.aliyuncs.com
-		 *   <li>Finance Cloud: bailian.cn-shanghai-finance-1.aliyuncs.com
-		 *   <li>VPC (Beijing): bailian-vpc.cn-beijing.aliyuncs.com
-		 *   <li>VPC (Shanghai Finance): bailian-vpc.cn-shanghai-finance-1.aliyuncs.com
+		 * <li>Public Cloud: bailian.cn-beijing.aliyuncs.com
+		 * <li>Finance Cloud: bailian.cn-shanghai-finance-1.aliyuncs.com
+		 * <li>VPC (Beijing): bailian-vpc.cn-beijing.aliyuncs.com
+		 * <li>VPC (Shanghai Finance): bailian-vpc.cn-shanghai-finance-1.aliyuncs.com
 		 * </ul>
-		 *
 		 * @param endpoint the API endpoint
 		 * @return this builder for method chaining
 		 */
@@ -326,15 +332,14 @@ public class BailianConfig {
 		/**
 		 * Sets the dense similarity top K.
 		 *
-		 * <p>Vector retrieval top K. Range: [0-100], default: 100.
-		 * Note: denseSimilarityTopK + sparseSimilarityTopK must be smaller than 200.
-		 *
+		 * <p>
+		 * Vector retrieval top K. Range: [0-100], default: 100. Note: denseSimilarityTopK
+		 * + sparseSimilarityTopK must be smaller than 200.
 		 * @param denseSimilarityTopK the top K value
 		 * @return this builder
 		 */
 		public Builder denseSimilarityTopK(Integer denseSimilarityTopK) {
-			if (denseSimilarityTopK != null
-					&& (denseSimilarityTopK < 0 || denseSimilarityTopK > 100)) {
+			if (denseSimilarityTopK != null && (denseSimilarityTopK < 0 || denseSimilarityTopK > 100)) {
 				throw new IllegalArgumentException("denseSimilarityTopK must be between 0 and 100");
 			}
 			this.denseSimilarityTopK = denseSimilarityTopK;
@@ -344,17 +349,15 @@ public class BailianConfig {
 		/**
 		 * Sets the sparse similarity top K.
 		 *
-		 * <p>Keyword retrieval top K. Range: [0-100], default: 100.
-		 * Note: denseSimilarityTopK + sparseSimilarityTopK must be smaller than 200.
-		 *
+		 * <p>
+		 * Keyword retrieval top K. Range: [0-100], default: 100. Note:
+		 * denseSimilarityTopK + sparseSimilarityTopK must be smaller than 200.
 		 * @param sparseSimilarityTopK the top K value
 		 * @return this builder
 		 */
 		public Builder sparseSimilarityTopK(Integer sparseSimilarityTopK) {
-			if (sparseSimilarityTopK != null
-					&& (sparseSimilarityTopK < 0 || sparseSimilarityTopK > 100)) {
-				throw new IllegalArgumentException(
-						"sparseSimilarityTopK must be between 0 and 100");
+			if (sparseSimilarityTopK != null && (sparseSimilarityTopK < 0 || sparseSimilarityTopK > 100)) {
+				throw new IllegalArgumentException("sparseSimilarityTopK must be between 0 and 100");
 			}
 			this.sparseSimilarityTopK = sparseSimilarityTopK;
 			return this;
@@ -363,8 +366,8 @@ public class BailianConfig {
 		/**
 		 * Sets whether to enable reranking.
 		 *
-		 * <p>Default: true (enabled)
-		 *
+		 * <p>
+		 * Default: true (enabled)
 		 * @param enableReranking true to enable reranking
 		 * @return this builder
 		 */
@@ -375,7 +378,6 @@ public class BailianConfig {
 
 		/**
 		 * Sets the rerank configuration.
-		 *
 		 * @param rerankConfig the rerank config
 		 * @return this builder
 		 */
@@ -387,8 +389,8 @@ public class BailianConfig {
 		/**
 		 * Sets whether to enable multi-turn conversation rewrite.
 		 *
-		 * <p>Default: false (disabled)
-		 *
+		 * <p>
+		 * Default: false (disabled)
 		 * @param enableRewrite true to enable rewrite
 		 * @return this builder
 		 */
@@ -399,7 +401,6 @@ public class BailianConfig {
 
 		/**
 		 * Sets the rewrite configuration.
-		 *
 		 * @param rewriteConfig the rewrite config
 		 * @return this builder
 		 */
@@ -411,9 +412,9 @@ public class BailianConfig {
 		/**
 		 * Sets search filters for personalized retrieval.
 		 *
-		 * <p>Filters can be used to exclude irrelevant information based on tags
-		 * and other metadata.
-		 *
+		 * <p>
+		 * Filters can be used to exclude irrelevant information based on tags and other
+		 * metadata.
 		 * @param searchFilters the search filters
 		 * @return this builder
 		 */
@@ -425,8 +426,8 @@ public class BailianConfig {
 		/**
 		 * Sets whether to save retriever history.
 		 *
-		 * <p>Default: false
-		 *
+		 * <p>
+		 * Default: false
 		 * @param saveRetrieverHistory true to save history
 		 * @return this builder
 		 */
@@ -437,12 +438,13 @@ public class BailianConfig {
 
 		/**
 		 * Builds a new BailianConfig instance.
-		 *
 		 * @return a new BailianConfig instance
 		 * @throws IllegalArgumentException if required parameters are missing
 		 */
 		public BailianConfig build() {
 			return new BailianConfig(this);
 		}
+
 	}
+
 }

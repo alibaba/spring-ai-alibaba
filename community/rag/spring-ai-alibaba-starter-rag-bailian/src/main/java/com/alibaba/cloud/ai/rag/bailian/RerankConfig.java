@@ -18,13 +18,16 @@ package com.alibaba.cloud.ai.rag.bailian;
 /**
  * Rerank configuration for Bailian knowledge base retrieval.
  *
- * <p>Reranking can improve the relevance of retrieved documents by re-scoring them
- * using a specialized ranking model.
+ * <p>
+ * Reranking can improve the relevance of retrieved documents by re-scoring them using a
+ * specialized ranking model.
  */
 public class RerankConfig {
 
 	private final String modelName;
+
 	private final Float rerankMinScore;
+
 	private final Integer rerankTopN;
 
 	private RerankConfig(Builder builder) {
@@ -35,7 +38,6 @@ public class RerankConfig {
 
 	/**
 	 * Creates a new builder.
-	 *
 	 * @return a new Builder instance
 	 */
 	public static Builder builder() {
@@ -44,7 +46,6 @@ public class RerankConfig {
 
 	/**
 	 * Gets the rerank model name.
-	 *
 	 * @return the model name
 	 */
 	public String getModelName() {
@@ -53,7 +54,6 @@ public class RerankConfig {
 
 	/**
 	 * Gets the minimum score threshold for reranking.
-	 *
 	 * @return the minimum score (0.01-1.00)
 	 */
 	public Float getRerankMinScore() {
@@ -62,7 +62,6 @@ public class RerankConfig {
 
 	/**
 	 * Gets the top N results after reranking.
-	 *
 	 * @return the top N value (1-20)
 	 */
 	public Integer getRerankTopN() {
@@ -73,8 +72,11 @@ public class RerankConfig {
 	 * Builder for RerankConfig.
 	 */
 	public static class Builder {
+
 		private String modelName = "gte-rerank-hybrid";
+
 		private Float rerankMinScore;
+
 		private Integer rerankTopN;
 
 		private Builder() {
@@ -83,12 +85,12 @@ public class RerankConfig {
 		/**
 		 * Sets the rerank model name.
 		 *
-		 * <p>Supported models:
+		 * <p>
+		 * Supported models:
 		 * <ul>
-		 *   <li>gte-rerank-hybrid (default)
-		 *   <li>gte-rerank
+		 * <li>gte-rerank-hybrid (default)
+		 * <li>gte-rerank
 		 * </ul>
-		 *
 		 * @param modelName the model name
 		 * @return this builder
 		 */
@@ -100,9 +102,9 @@ public class RerankConfig {
 		/**
 		 * Sets the minimum score threshold.
 		 *
-		 * <p>Only documents with scores above this threshold will be returned.
-		 * Range: [0.01-1.00]
-		 *
+		 * <p>
+		 * Only documents with scores above this threshold will be returned. Range:
+		 * [0.01-1.00]
 		 * @param rerankMinScore the minimum score
 		 * @return this builder
 		 */
@@ -117,8 +119,8 @@ public class RerankConfig {
 		/**
 		 * Sets the top N results after reranking.
 		 *
-		 * <p>Range: [1-20], default: 5
-		 *
+		 * <p>
+		 * Range: [1-20], default: 5
 		 * @param rerankTopN the top N value
 		 * @return this builder
 		 */
@@ -132,11 +134,12 @@ public class RerankConfig {
 
 		/**
 		 * Builds a new RerankConfig.
-		 *
 		 * @return a new RerankConfig instance
 		 */
 		public RerankConfig build() {
 			return new RerankConfig(this);
 		}
+
 	}
+
 }

@@ -32,9 +32,9 @@ import com.aliyun.bailian20231229.models.RetrieveResponse;
 /**
  * Document retriever implementation using Bailian knowledge base.
  *
- * <p>This class implements the Spring AI DocumentRetriever interface,
- * using BailianClient to retrieve documents from Alibaba Cloud Bailian
- * knowledge base.
+ * <p>
+ * This class implements the Spring AI DocumentRetriever interface, using BailianClient to
+ * retrieve documents from Alibaba Cloud Bailian knowledge base.
  */
 public class BailianDocumentRetriever implements DocumentRetriever {
 
@@ -46,7 +46,6 @@ public class BailianDocumentRetriever implements DocumentRetriever {
 
 	/**
 	 * Creates a BailianDocumentRetriever using BailianClient.
-	 *
 	 * @param bailianClient the BailianClient instance
 	 * @param indexId the knowledge base index ID
 	 * @param options the retrieval options
@@ -76,10 +75,8 @@ public class BailianDocumentRetriever implements DocumentRetriever {
 			for (Message message : query.history()) {
 				// Only convert USER and ASSISTANT messages, skip others
 				MessageType messageType = message.getMessageType();
-				if (messageType == MessageType.USER
-						|| messageType == MessageType.ASSISTANT) {
-					String role = messageType == MessageType.USER ? "user"
-							: "assistant";
+				if (messageType == MessageType.USER || messageType == MessageType.ASSISTANT) {
+					String role = messageType == MessageType.USER ? "user" : "assistant";
 					QueryHistoryEntry entry = new QueryHistoryEntry(role, message.getText());
 					conversationHistory.add(entry);
 				}
@@ -87,9 +84,7 @@ public class BailianDocumentRetriever implements DocumentRetriever {
 		}
 
 		// Retrieve documents using BailianClient
-		RetrieveResponse response = bailianClient
-			.retrieve(indexId, query.text(), limit, conversationHistory)
-			.block();
+		RetrieveResponse response = bailianClient.retrieve(indexId, query.text(), limit, conversationHistory).block();
 
 		// Convert Bailian response to Spring AI Documents
 		List<Document> documents = BailianSpringAiDocumentConverter.fromBailianResponse(response);
@@ -97,29 +92,25 @@ public class BailianDocumentRetriever implements DocumentRetriever {
 		// Apply score threshold filtering if specified
 		Double scoreThreshold = options.getScoreThreshold();
 		if (scoreThreshold != null && scoreThreshold > 0) {
-			documents = documents.stream()
-				.filter(doc -> {
-					Object scoreObj = doc.getMetadata().get("score");
-					if (scoreObj instanceof Number) {
-						return ((Number) scoreObj).doubleValue() >= scoreThreshold;
-					}
-					return true; // If no score, include the document
-				})
-				.collect(Collectors.toList());
+			documents = documents.stream().filter(doc -> {
+				Object scoreObj = doc.getMetadata().get("score");
+				if (scoreObj instanceof Number) {
+					return ((Number) scoreObj).doubleValue() >= scoreThreshold;
+				}
+				return true; // If no score, include the document
+			}).collect(Collectors.toList());
 		}
 
 		// Sort by score (descending) and limit
-		documents = documents.stream()
-			.sorted(Comparator.comparing((Document doc) -> {
-				Object scoreObj = doc.getMetadata().get("score");
-				if (scoreObj instanceof Number) {
-					return ((Number) scoreObj).doubleValue();
-				}
-				return 0.0;
-			}, Comparator.reverseOrder()))
-			.limit(limit)
-			.collect(Collectors.toList());
+		documents = documents.stream().sorted(Comparator.comparing((Document doc) -> {
+			Object scoreObj = doc.getMetadata().get("score");
+			if (scoreObj instanceof Number) {
+				return ((Number) scoreObj).doubleValue();
+			}
+			return 0.0;
+		}, Comparator.reverseOrder())).limit(limit).collect(Collectors.toList());
 
 		return documents;
 	}
+
 }
