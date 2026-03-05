@@ -29,12 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.http.HttpHeaders;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 import java.util.List;
 import java.util.Map;
@@ -81,20 +77,6 @@ class ParallelToolContextLossReproductionTest {
 		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
 	}
 
-	private OpenAiApi createConfiguredOpenAiApi(HttpHeaders headers) {
-		// 将 HttpHeaders 转换为 MultiValueMap
-		MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
-		headers.forEach((key, values) -> headerMap.put(key, values));
-
-		// 使用 OpenAiApi.builder() 并传入自定义的 RestClient.Builder
-		return OpenAiApi.builder()
-				.baseUrl("http://1688openai.alibaba-inc.com")
-				.apiKey("6607aa76b08245109a406ceac465356c")
-				.headers(headerMap)
-				.build();
-	}
-
-
 	// ==================== 商品查询工具 ====================
 
 	/**
@@ -112,7 +94,7 @@ class ParallelToolContextLossReproductionTest {
 				updateMap.put("product_1_extra", "苹果手机");
 				System.out.println("[Tool query_product_1] 已写入 product_1_extra=苹果手机 到 ToolContext");
 			} else {
-				System.out.println("[Tool query_product_1] ⚠️ updateMap 为 null，无法写入额外数据");
+				System.out.println("[Tool query_product_1] updateMap 为 null，无法写入额外数据");
 			}
 			return "商品1: id=1, name=苹果";
 		}
@@ -144,7 +126,7 @@ class ParallelToolContextLossReproductionTest {
 				updateMap.put("product_2_extra", "华为平板");
 				System.out.println("[Tool query_product_2] 已写入 product_2_extra=华为平板 到 ToolContext");
 			} else {
-				System.out.println("[Tool query_product_2] ⚠️ updateMap 为 null，无法写入额外数据");
+				System.out.println("[Tool query_product_2] updateMap 为 null，无法写入额外数据");
 			}
 			return "商品2: id=2, name=香蕉";
 		}
@@ -183,8 +165,8 @@ class ParallelToolContextLossReproductionTest {
 			Optional<Object> extra1 = state.value("product_1_extra");
 			Optional<Object> extra2 = state.value("product_2_extra");
 
-			System.out.println("║  product_1_extra: " + (extra1.isPresent() ? extra1.get() : "❌ 缺失"));
-			System.out.println("║  product_2_extra: " + (extra2.isPresent() ? extra2.get() : "❌ 缺失"));
+			System.out.println("║  product_1_extra: " + (extra1.isPresent() ? extra1.get() : "缺失"));
+			System.out.println("║  product_2_extra: " + (extra2.isPresent() ? extra2.get() : "缺失"));
 
 			// 记录到静态 map，供断言使用
 			HOOK_CAPTURED_DATA.put("product_1_extra_present", extra1.isPresent());
