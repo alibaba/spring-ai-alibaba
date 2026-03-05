@@ -40,7 +40,7 @@ public class RoutingConfig {
 	 * use {@link LlmRoutingAgent.LlmRoutingAgentBuilder#systemPrompt(String)} or
 	 * {@link LlmRoutingAgent.LlmRoutingAgentBuilder#instruction(String)} when building the router agent.
 	 */
-	private static final String GITHUB_INSTRUCTION = """
+	private static final String GITHUB_PROMPT = """
 			You are a GitHub expert. Answer questions about code, API references, and implementation \
 			details by searching repositories, issues, and pull requests.
 			Please respond to the following request: {github_input}
@@ -64,7 +64,7 @@ public class RoutingConfig {
 	public ReactAgent githubAgent(ChatModel chatModel, GitHubStubTools githubStubTools) {
 		return ReactAgent.builder()
 				.name("github")
-				.instruction(GITHUB_INSTRUCTION)
+				.systemPrompt(GITHUB_PROMPT)
 				.model(chatModel)
 				.methodTools(githubStubTools)
 				.outputKey("github_key")

@@ -35,7 +35,7 @@ import org.yaml.snakeyaml.Yaml;
 /**
  * Loads agent specs from Markdown files with YAML front matter.
  * <p>
- * File format (compatible with spring-ai-agent-utils):
+ * File format (compatible with spring ai):
  *
  * <pre>
  * ---

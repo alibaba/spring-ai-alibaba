@@ -28,7 +28,6 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -105,77 +104,61 @@ public class SubagentConfig {
 		return TodoListInterceptor.builder().build();
 	}
 
+	/**
+	 * Single bean holding default tools, task tools, and the dependency-analyzer agent.
+	 * Wrapping avoids registering {@code List<ToolCallback>} as beans and prevents
+	 * conflict with Spring AI's ToolCallingAutoConfiguration.
+	 */
 	@Bean
-	public List<ToolCallback> defaultTools(ChatModel chatModel,
-			@Value("${subagent.workspace-path:${user.dir}}") String workspacePath) {
+	public SubagentTools subagentTools(ChatModel chatModel,
+			@Value("${subagent.workspace-path:${user.dir}}") String workspacePath)
+			throws Exception {
 
 		ChatClient chatClient = ChatClient.builder(chatModel).build();
-
 		ToolCallback globSearch = new GlobSearchTool.Builder(workspacePath).build();
 		ToolCallback grepSearch = new GrepSearchTool.Builder(workspacePath).build();
 		ToolCallback webFetch = WebFetchTool.builder(chatClient).build();
+		List<ToolCallback> defaultTools = List.of(globSearch, grepSearch, webFetch);
 
-		return List.of(globSearch, grepSearch, webFetch);
-	}
-
-	/**
-	 * Programmatically defined sub-agent: dependency analyzer.
-	 * Uses only glob_search and grep_search for focused dependency analysis.
-	 */
-	@Bean("dependencyAnalyzerAgent")
-	public ReactAgent dependencyAnalyzerAgent(ChatModel chatModel, List<ToolCallback> defaultTools) {
-		ToolCallback globSearch = defaultTools.stream()
-			.filter(t -> "glob_search".equals(t.getToolDefinition().name()))
-			.findFirst()
-			.orElseThrow();
-		ToolCallback grepSearch = defaultTools.stream()
-			.filter(t -> "grep_search".equals(t.getToolDefinition().name()))
-			.findFirst()
-			.orElseThrow();
-
-		return ReactAgent.builder()
+		ReactAgent dependencyAnalyzerAgent = ReactAgent.builder()
 			.name("dependency-analyzer")
 			.description("Analyzes project dependencies (pom.xml, package.json, etc.). Use for version conflicts, outdated libs, security vulnerabilities.")
 			.model(chatModel)
 			.systemPrompt(DEPENDENCY_ANALYZER_SYSTEM_PROMPT)
 			.tools(globSearch, grepSearch)
 			.build();
-	}
-
-	@Bean
-	public List<ToolCallback> taskTools(ChatModel chatModel, List<ToolCallback> defaultTools,
-			@Qualifier("dependencyAnalyzerAgent") ReactAgent dependencyAnalyzerAgent)
-			throws Exception {
 
 		PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 		Resource[] resources = resolver.getResources("classpath:agents/*.md");
-
 		TaskToolsBuilder builder = TaskToolsBuilder.builder()
 			.chatModel(chatModel)
 			.defaultTools(defaultTools.toArray(new ToolCallback[0]))
-			// API-defined sub-agent (programmatic ReactAgent)
 			.subAgent("dependency-analyzer", dependencyAnalyzerAgent);
-
 		for (Resource resource : resources) {
 			builder.addAgentResource(resource);
 		}
+		List<ToolCallback> taskTools = builder.build();
 
-		return builder.build();
+		return new SubagentTools(defaultTools, taskTools, dependencyAnalyzerAgent);
+	}
+
+	@Bean("dependencyAnalyzerAgent")
+	public ReactAgent dependencyAnalyzerAgent(SubagentTools subagentTools) {
+		return subagentTools.dependencyAnalyzerAgent();
 	}
 
 	@Bean("orchestratorAgent")
 	public ReactAgent orchestratorAgent(ChatModel chatModel, TodoListInterceptor todoListInterceptor,
-			List<ToolCallback> taskTools, List<ToolCallback> defaultTools) {
+			SubagentTools subagentTools) {
 
-		// Main agent has: task tools (Task, TaskOutput), todo interceptor tools (write_todos), and direct tools
 		return ReactAgent.builder()
 			.name("tech-due-diligence-assistant")
 			.description("Orchestrates technical due diligence by delegating to codebase-explorer, web-researcher, and general-purpose sub-agents")
 			.model(chatModel)
 			.systemPrompt(ORCHESTRATOR_SYSTEM_PROMPT)
 			.interceptors(todoListInterceptor)
-			.tools(taskTools)
-			.tools(defaultTools)
+			.tools(subagentTools.taskTools())
+			.tools(subagentTools.defaultTools())
 			.saver(new MemorySaver())
 			.build();
 	}

@@ -20,7 +20,7 @@ import java.util.function.Supplier;
 /**
  * Repository for managing background tasks.
  * <p>
- * Inspired by spring-ai-agent-utils TaskRepository, enables the main agent to
+ * Inspired by spring ai TaskRepository, enables the main agent to
  * launch sub-agents in the background and retrieve results later via TaskOutputTool.
  *
  * @author Spring AI Alibaba

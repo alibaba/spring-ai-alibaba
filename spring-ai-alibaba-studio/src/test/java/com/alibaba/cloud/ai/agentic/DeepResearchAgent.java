@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph;
+package com.alibaba.cloud.ai.agentic;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
@@ -38,9 +38,9 @@ import org.springframework.ai.tool.ToolCallback;
 
 import java.util.List;
 
-import static com.alibaba.cloud.ai.graph.Prompts.researchInstructions;
-import static com.alibaba.cloud.ai.graph.Prompts.subCritiquePrompt;
-import static com.alibaba.cloud.ai.graph.Prompts.subResearchPrompt;
+import static com.alibaba.cloud.ai.agentic.Prompts.researchInstructions;
+import static com.alibaba.cloud.ai.agentic.Prompts.subCritiquePrompt;
+import static com.alibaba.cloud.ai.agentic.Prompts.subResearchPrompt;
 
 public class DeepResearchAgent {
 	private static final String BASE_AGENT_PROMPT =

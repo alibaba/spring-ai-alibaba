@@ -259,12 +259,14 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 						final var currentMessageText = currentMessage.getText();
 
-						Map<String, Object> mergedMetadata = mergeMetadataWithReasoningContent(
-								lastOutput.getMetadata(), currentMessage.getMetadata());
+						boolean mergeReasoningContent = context.getConfig().mergeReasoningContent();
+						Map<String, Object> messageMetadata = mergeReasoningContent
+								? mergeMetadataWithReasoningContent(lastOutput.getMetadata(), currentMessage.getMetadata())
+								: currentMessage.getMetadata();
 
 						var newMessage = AssistantMessage.builder()
 								.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
-								.properties(mergedMetadata)
+								.properties(messageMetadata)
 								.toolCalls(mergeToolCalls(lastOutput.getToolCalls(), currentMessage.getToolCalls()))
 								.media(currentMessage.getMedia())
 								.build();

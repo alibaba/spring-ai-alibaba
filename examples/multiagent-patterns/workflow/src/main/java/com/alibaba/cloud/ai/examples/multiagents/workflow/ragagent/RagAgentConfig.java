@@ -100,7 +100,7 @@ public class RagAgentConfig {
 		return ReactAgent.builder()
 				.name("rag_agent")
 				.model(chatModel)
-				.instruction("You are a WNBA stats assistant. Answer questions using the context provided.")
+				.systemPrompt("You are a WNBA stats assistant. Answer questions using the context provided.")
 				.methodTools(new RagAgentTools())
 				.inputType(String.class)
 				.build();

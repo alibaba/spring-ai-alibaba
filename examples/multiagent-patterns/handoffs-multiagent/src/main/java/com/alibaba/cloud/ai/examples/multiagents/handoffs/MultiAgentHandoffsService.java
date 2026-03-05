@@ -40,7 +40,7 @@ public class MultiAgentHandoffsService {
 	 * Run the multi-agent handoffs pipeline with the given user message.
 	 */
 	public MultiAgentHandoffsResult run(String userMessage) throws GraphRunnerException {
-		Map<String, Object> inputs = Map.of("messages", List.of(new UserMessage(userMessage)));
+		Map<String, Object> inputs = Map.of("input", userMessage);
 		Optional<OverAllState> resultOpt = graph.invoke(inputs);
 
 		if (resultOpt.isEmpty()) {

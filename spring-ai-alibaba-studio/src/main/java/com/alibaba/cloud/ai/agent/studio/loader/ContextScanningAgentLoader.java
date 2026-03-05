@@ -26,9 +26,14 @@ import org.springframework.context.ApplicationContext;
  * Spring {@link ApplicationContext} and exposes them by their {@link Agent#name()}.
  *
  * <p>This loader is registered automatically when no other {@link AgentLoader} bean
- * is defined. You can therefore use Studio without implementing {@link AgentLoader}:
- * define your agents as Spring beans (e.g. {@link com.alibaba.cloud.ai.graph.agent.ReactAgent}
- * from {@code @Bean} methods), and they will appear in Studio under their agent name.
+ * is defined. All {@link Agent} subtypes are supported, including
+ * {@link com.alibaba.cloud.ai.graph.agent.ReactAgent},
+ * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent},
+ * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.SupervisorAgent},
+ * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent},
+ * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent}, and
+ * {@link com.alibaba.cloud.ai.graph.agent.agentscope.AgentScopeAgent}. Define your agents as
+ * Spring beans and they will appear in Studio under their agent name.
  *
  * <p>To take precedence over this default, define your own {@link AgentLoader} bean
  * (e.g. by extending {@link AbstractAgentLoader} or implementing {@link AgentLoader} directly).

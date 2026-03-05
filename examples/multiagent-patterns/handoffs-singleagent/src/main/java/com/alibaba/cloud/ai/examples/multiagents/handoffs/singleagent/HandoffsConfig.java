@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.examples.multiagents.handoffs.singleagent.tools.Supp
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.tool.ToolCallback;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -40,7 +42,7 @@ public class HandoffsConfig {
 
 	@Bean
 	public ReactAgent supportAgent(ChatModel chatModel, MemorySaver memorySaver) {
-		List<org.springframework.ai.tool.ToolCallback> allTools = List.of(
+		List<ToolCallback> allTools = List.of(
 				SupportTools.recordWarrantyStatusTool(),
 				SupportTools.recordIssueTypeTool(),
 				SupportTools.provideSolutionTool(),

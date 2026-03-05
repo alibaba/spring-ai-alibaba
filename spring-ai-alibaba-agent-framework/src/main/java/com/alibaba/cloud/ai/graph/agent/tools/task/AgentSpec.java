@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Specification for a sub-agent, parsed from Markdown files with YAML front matter.
  * <p>
- * Compatible with spring-ai-agent-utils agent spec format. The markdown body becomes
+ * Compatible with spring ai agent spec format. The markdown body becomes
  * the system prompt; front matter defines name, description, and optional tool filtering.
  *
  * @author Spring AI Alibaba

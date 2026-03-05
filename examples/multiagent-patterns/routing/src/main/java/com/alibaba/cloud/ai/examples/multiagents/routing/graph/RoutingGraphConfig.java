@@ -48,19 +48,19 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 @Configuration
 public class RoutingGraphConfig {
 
-	private static final String GITHUB_INSTRUCTION = """
+	private static final String GITHUB_PROMPT = """
 			You are a GitHub expert. Answer questions about code, API references, and implementation \
 			details by searching repositories, issues, and pull requests.
 			Please respond to the following request: {github_input}
 			""";
 
-	private static final String NOTION_INSTRUCTION = """
+	private static final String NOTION_PROMPT = """
 			You are a Notion expert. Answer questions about internal processes, policies, and team \
 			documentation by searching the organization's Notion workspace.
 			Please respond to the following request: {notion_input}
 			""";
 
-	private static final String SLACK_INSTRUCTION = """
+	private static final String SLACK_PROMPT = """
 			You are a Slack expert. Answer questions by searching relevant threads and discussions \
 			where team members have shared knowledge and solutions.
 			Please respond to the following request: {slack_input}
@@ -70,7 +70,7 @@ public class RoutingGraphConfig {
 	public ReactAgent githubAgent(ChatModel chatModel, GitHubStubTools githubStubTools) {
 		return ReactAgent.builder()
 				.name("github")
-				.instruction(GITHUB_INSTRUCTION)
+				.instruction(GITHUB_PROMPT)
 				.model(chatModel)
 				.methodTools(githubStubTools)
 				.outputKey("github_key")
@@ -82,7 +82,7 @@ public class RoutingGraphConfig {
 	public ReactAgent notionAgent(ChatModel chatModel, NotionStubTools notionStubTools) {
 		return ReactAgent.builder()
 				.name("notion")
-				.instruction(NOTION_INSTRUCTION)
+				.systemPrompt(NOTION_PROMPT)
 				.model(chatModel)
 				.methodTools(notionStubTools)
 				.outputKey("notion_key")
@@ -94,7 +94,7 @@ public class RoutingGraphConfig {
 	public ReactAgent slackAgent(ChatModel chatModel, SlackStubTools slackStubTools) {
 		return ReactAgent.builder()
 				.name("slack")
-				.instruction(SLACK_INSTRUCTION)
+				.systemPrompt(SLACK_PROMPT)
 				.model(chatModel)
 				.methodTools(slackStubTools)
 				.outputKey("slack_key")

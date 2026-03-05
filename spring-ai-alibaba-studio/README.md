@@ -8,7 +8,8 @@ Agent Chat UI provides a visualized way for developers to chat with any Spring A
 
 1. Start backend agent
 
-Go to the `src/test/java` directory, start the backend agent by running `StudioApplication`
+Go to the `src/test/java` directory, start the backend agent by running `StudioApplication`.
+The unified application supports both **Graph** (e.g. `simple_workflow`) and **Agent** (e.g. `single_agent`, `research_agent`) APIs.
 
 2. Then, start the chat ui
 

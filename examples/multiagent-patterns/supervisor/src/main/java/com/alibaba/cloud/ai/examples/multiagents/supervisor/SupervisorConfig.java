@@ -19,6 +19,8 @@ import com.alibaba.cloud.ai.examples.multiagents.supervisor.tools.CalendarStubTo
 import com.alibaba.cloud.ai.examples.multiagents.supervisor.tools.EmailStubTools;
 import com.alibaba.cloud.ai.graph.agent.AgentTool;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,7 +33,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SupervisorConfig {
 
-	private static final String CALENDAR_AGENT_INSTRUCTION = """
+	private static final String CALENDAR_AGENT_PROMPT = """
 			You are a calendar scheduling assistant. \
 			Parse natural language scheduling requests (e.g., 'next Tuesday at 2pm') \
 			into proper ISO datetime formats. \
@@ -40,7 +42,7 @@ public class SupervisorConfig {
 			Always confirm what was scheduled in your final response.
 			""";
 
-	private static final String EMAIL_AGENT_INSTRUCTION = """
+	private static final String EMAIL_AGENT_PROMPT = """
 			You are an email assistant. \
 			Compose professional emails based on natural language requests. \
 			Extract recipient information and craft appropriate subject lines and body text. \
@@ -48,7 +50,7 @@ public class SupervisorConfig {
 			Always confirm what was sent in your final response.
 			""";
 
-	private static final String SUPERVISOR_INSTRUCTION = """
+	private static final String SUPERVISOR_PROMPT = """
 			You are a helpful personal assistant. \
 			You can schedule calendar events and send emails. \
 			Break down user requests into appropriate tool calls and coordinate the results. \
@@ -70,6 +72,11 @@ public class SupervisorConfig {
 			""";
 
 	@Bean
+	public MemorySaver memorySaver() {
+		return new MemorySaver();
+	}
+
+	@Bean
 	public CalendarStubTools calendarStubTools() {
 		return new CalendarStubTools();
 	}
@@ -84,7 +91,7 @@ public class SupervisorConfig {
 		return ReactAgent.builder()
 				.name("schedule_event")
 				.description(SCHEDULE_EVENT_DESCRIPTION)
-				.instruction(CALENDAR_AGENT_INSTRUCTION)
+				.systemPrompt(CALENDAR_AGENT_PROMPT)
 				.model(chatModel)
 				.methodTools(calendarStubTools)
 				.inputType(String.class)
@@ -96,7 +103,7 @@ public class SupervisorConfig {
 		return ReactAgent.builder()
 				.name("manage_email")
 				.description(MANAGE_EMAIL_DESCRIPTION)
-				.instruction(EMAIL_AGENT_INSTRUCTION)
+				.systemPrompt(EMAIL_AGENT_PROMPT)
 				.model(chatModel)
 				.methodTools(emailStubTools)
 				.inputType(String.class)
@@ -104,11 +111,12 @@ public class SupervisorConfig {
 	}
 
 	@Bean
-	public ReactAgent supervisorAgent(ChatModel chatModel, ReactAgent calendarAgent, ReactAgent emailAgent) {
+	public ReactAgent supervisorAgent(ChatModel chatModel, ReactAgent calendarAgent, ReactAgent emailAgent, MemorySaver memorySaver) {
 		return ReactAgent.builder()
 				.name("personal_assistant")
-				.instruction(SUPERVISOR_INSTRUCTION)
+				.systemPrompt(SUPERVISOR_PROMPT)
 				.model(chatModel)
+				.saver(memorySaver)
 				.tools(
 						AgentTool.getFunctionToolCallback(calendarAgent),
 						AgentTool.getFunctionToolCallback(emailAgent))

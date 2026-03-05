@@ -56,7 +56,7 @@ public class SqlAgentConfig {
 	private static final String DIALECT = "H2";
 	private static final int TOP_K = 5;
 
-	private static final String GENERATE_QUERY_INSTRUCTION = """
+	private static final String GENERATE_QUERY_PROMPT = """
 			You are an agent designed to interact with a SQL database.
 			Given an input question, create a syntactically correct %s query to run,
 			then look at the results of the query and return the answer. Unless the user
@@ -81,7 +81,7 @@ public class SqlAgentConfig {
 		return ReactAgent.builder()
 				.name("generate_query")
 				.model(chatModel)
-				.instruction(GENERATE_QUERY_INSTRUCTION)
+				.systemPrompt(GENERATE_QUERY_PROMPT)
 				.tools(tools)
 				.inputType(String.class)
 				.build();

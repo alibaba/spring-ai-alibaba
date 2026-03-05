@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.graph;
+package com.alibaba.cloud.ai;
+
+import com.alibaba.cloud.ai.agentic.AgentStaticLoader;
+import com.alibaba.cloud.ai.graph.GraphTestConfig;
+import com.alibaba.cloud.ai.graph.SimpleGraphConfig;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -26,7 +31,15 @@ import java.net.http.HttpRequest;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.common.McpTransportContext;
 
+/**
+ * Unified Studio application that supports both Graph and Agent APIs.
+ * <ul>
+ * <li><b>Graph</b>: Loads {@link SimpleGraphConfig} (simple_workflow) via {@link GraphTestConfig}.</li>
+ * <li><b>Agent</b>: Loads {@link AgentStaticLoader} (single_agent, research_agent).</li>
+ * </ul>
+ */
 @SpringBootApplication(scanBasePackages = "com.alibaba.cloud.ai")
+@Import({ GraphTestConfig.class, SimpleGraphConfig.class })
 public class StudioApplication {
 
 	public static void main(String[] args) {

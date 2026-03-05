@@ -61,9 +61,12 @@ public class MultiAgentHandoffsConfig {
 		return ReactAgent.builder()
 				.name(MultiAgentStateConstants.SALES_AGENT)
 				.model(chatModel)
-				.instruction(SALES_PROMPT)
+				.systemPrompt(SALES_PROMPT)
+				.instruction("Here's the user query or current issue status: {input}.")
 				.methodTools(TransferToSupportTool.INSTANCE)
 				.inputType(String.class)
+				.includeContents(true)
+				.returnReasoningContents(true)
 				.build();
 	}
 
@@ -72,9 +75,12 @@ public class MultiAgentHandoffsConfig {
 		return ReactAgent.builder()
 				.name(MultiAgentStateConstants.SUPPORT_AGENT)
 				.model(chatModel)
-				.instruction(SUPPORT_PROMPT)
+				.systemPrompt(SUPPORT_PROMPT)
+				.instruction("Here's the user query or current issue status:\n {input}.")
 				.methodTools(TransferToSalesTool.INSTANCE)
 				.inputType(String.class)
+				.includeContents(true)
+				.returnReasoningContents(true)
 				.build();
 	}
 
@@ -89,8 +95,8 @@ public class MultiAgentHandoffsConfig {
 			return strategies;
 		});
 
-		graph.addNode(MultiAgentStateConstants.SALES_AGENT, multiAgentSalesAgent.asNode(false, false));
-		graph.addNode(MultiAgentStateConstants.SUPPORT_AGENT, multiAgentSupportAgent.asNode(false, false));
+		graph.addNode(MultiAgentStateConstants.SALES_AGENT, multiAgentSalesAgent.asNode());
+		graph.addNode(MultiAgentStateConstants.SUPPORT_AGENT, multiAgentSupportAgent.asNode());
 
 		// route_initial: default to sales_agent
 		graph.addConditionalEdges(START, new RouteInitialAction(), Map.of(

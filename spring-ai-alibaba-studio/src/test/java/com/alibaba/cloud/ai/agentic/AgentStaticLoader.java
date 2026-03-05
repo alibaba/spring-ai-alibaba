@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.alibaba.cloud.ai.graph;
+package com.alibaba.cloud.ai.agentic;
 
 import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -27,9 +28,11 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -45,17 +48,16 @@ import jakarta.annotation.Nonnull;
  * through the AgentLoader interface. Perfect for cases where you already have agent instances and
  * just need a convenient way to wrap them in an AgentLoader.
  *
- * <p>This class is not a Spring component by itself - instances are created programmatically and
- * then registered as beans via factory methods.
+ * <p>Works with or without MCP: when {@link ToolCallbackProvider} is absent (e.g. graph-only profile),
+ * only {@code single_agent} (with PoetTool) is registered; when present, both {@code single_agent}
+ * and {@code research_agent} are available.
  */
 @Component
-class AgentStaticLoader implements AgentLoader {
+public class AgentStaticLoader implements AgentLoader {
 
-	private Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
+	private final Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
 
-//	public AgentStaticLoader(){}
-
-	public AgentStaticLoader(ToolCallbackProvider toolCallbackProvider) {
+	public AgentStaticLoader(@Autowired(required = false) ToolCallbackProvider toolCallbackProvider) {
 		// Create DashScopeApi instance using the API key from environment variable
 		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
 		// Create DashScope ChatModel instance
@@ -68,17 +70,17 @@ class AgentStaticLoader implements AgentLoader {
 				.tools(PoetTool.createPoetToolCallback())
 				.build();
 
-		List<ToolCallback> toolCallbacks = Arrays.asList(toolCallbackProvider.getToolCallbacks());
-
-		System.out.println("Loaded MCP tool callbacks: " + toolCallbacks.size());
-
-		ReactAgent researchAgent = new DeepResearchAgent().getResearchAgent(toolCallbacks);
-		GraphRepresentation representation = researchAgent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
-
-		System.out.println(representation.content());
-
 		this.agents.put("single_agent", agent);
-		this.agents.put("research_agent", researchAgent);
+
+		List<ToolCallback> toolCallbacks = toolCallbackProvider != null
+				? new ArrayList<>(List.of(toolCallbackProvider.getToolCallbacks()))
+				: Collections.emptyList();
+
+		if (!toolCallbacks.isEmpty()) {
+			ReactAgent researchAgent = new DeepResearchAgent().getResearchAgent(toolCallbacks);
+			GraphRepresentation representation = researchAgent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+			this.agents.put("research_agent", researchAgent);
+		}
 	}
 
 	@Override

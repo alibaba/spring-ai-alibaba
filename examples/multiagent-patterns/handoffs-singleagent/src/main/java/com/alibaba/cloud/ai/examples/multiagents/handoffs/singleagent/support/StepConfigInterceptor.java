@@ -65,7 +65,7 @@ public class StepConfigInterceptor extends ModelInterceptor {
 		ModelRequest overridden = ModelRequest.builder(request)
 				.systemMessage(new SystemMessage(systemPrompt))
 				.tools(toolNames)
-				.dynamicToolCallbacks(new ArrayList<>(stepConfig.tools()))
+//				.dynamicToolCallbacks(new ArrayList<>(stepConfig.tools()))
 				.build();
 
 		return handler.call(overridden);

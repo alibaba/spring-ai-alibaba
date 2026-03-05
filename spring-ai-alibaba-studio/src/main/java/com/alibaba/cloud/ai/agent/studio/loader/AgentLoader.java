@@ -28,13 +28,19 @@ import jakarta.annotation.Nonnull;
  * Studio automatically uses {@link ContextScanningAgentLoader}, which discovers all
  * {@link Agent} beans from the Spring {@link org.springframework.context.ApplicationContext}
  * and exposes them by their {@link Agent#name()}. You can therefore use Studio without
- * implementing this interface: just define your agents as {@code @Bean}s (e.g.
- * {@link com.alibaba.cloud.ai.graph.agent.ReactAgent}) and they will appear in Studio.
+ * implementing this interface: just define your agents as {@code @Bean}s. All {@link Agent}
+ * subtypes are supported, including {@link com.alibaba.cloud.ai.graph.agent.ReactAgent},
+ * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent},
+ * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.SupervisorAgent},
+ * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent},
+ * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent}, and
+ * {@link com.alibaba.cloud.ai.graph.agent.agentscope.AgentScopeAgent}.
  *
  * <p><strong>Custom loader:</strong> To control which agents are visible or how they are
  * named, define your own {@code AgentLoader} bean. You can extend {@link AbstractAgentLoader}
- * and override {@link AbstractAgentLoader#discoverAgents(org.springframework.context.ApplicationContext)}
- * for custom discovery, or implement this interface directly.
+ * and override {@link AbstractAgentLoader#loadAgentMap()} for custom discovery (e.g. using
+ * {@link AbstractAgentLoader#discoverFromContext(org.springframework.context.ApplicationContext)}),
+ * or implement this interface directly.
  *
  * <p><strong>Thread safety:</strong> Implementations must be thread-safe; they are used as
  * singleton beans and accessed concurrently by multiple HTTP requests.
@@ -65,10 +71,10 @@ public interface AgentLoader {
 	List<String> listAgents();
 
 	/**
-	 * Loads the BaseAgent instance for the specified agent name.
+	 * Loads the Agent instance for the specified agent name.
 	 *
 	 * @param name the name of the agent to load
-	 * @return BaseAgent instance for the given name
+	 * @return Agent instance for the given name (any subtype: ReactAgent, SequentialAgent, etc.)
 	 * @throws java.util.NoSuchElementException if the agent doesn't exist
 	 * @throws IllegalStateException if the agent exists but fails to load
 	 */

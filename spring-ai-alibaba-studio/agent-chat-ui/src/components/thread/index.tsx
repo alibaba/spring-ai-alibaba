@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
-import { useThreads } from "@/providers/Thread";
+import { useThreads, type Mode } from "@/providers/Thread";
 import { useState, FormEvent } from "react";
 import { Button } from "../ui/button";
 import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
@@ -13,8 +13,10 @@ import { ToolRequestConfirmMessage } from "./messages/tool-request-confirm";
 import { DO_NOT_RENDER_ID_PREFIX } from "@/lib/ensure-tool-responses";
 import { SAALogoSVG } from "../icons/saa-logo";
 import { TooltipIconButton } from "./tooltip-icon-button";
+import Link from "next/link";
 import {
   ArrowDown,
+  ArrowLeft,
   LoaderCircle,
   PanelRightOpen,
   PanelRightClose,
@@ -44,6 +46,7 @@ import {
   ArtifactTitle,
   useArtifactContext,
 } from "./artifact";
+import { GraphVisualization } from "./GraphVisualization";
 
 function StickyToBottomContent(props: {
   content: ReactNode;
@@ -110,6 +113,32 @@ function OpenGitHubRepo() {
   );
 }
 
+function ModeSelector({
+  mode,
+  setMode,
+  graphList,
+  isGraphsLoading,
+}: {
+  mode: Mode;
+  setMode: (m: Mode) => void;
+  graphList: string[];
+  isGraphsLoading: boolean;
+}) {
+  const canUseGraph = !isGraphsLoading && graphList.length > 0;
+  return (
+    <div className="flex items-center gap-2">
+      <Label className="text-sm whitespace-nowrap text-muted-foreground">Agent</Label>
+      <Switch
+        checked={mode === "graph"}
+        onCheckedChange={(checked) => setMode(checked ? "graph" : "agent")}
+        disabled={!canUseGraph}
+        aria-label="Switch between Agent and Graph mode"
+      />
+      <Label className="text-sm whitespace-nowrap text-muted-foreground">Graph</Label>
+    </div>
+  );
+}
+
 function AgentSelector({
   agentList,
   selectedAgent,
@@ -141,6 +170,44 @@ function AgentSelector({
         className="rounded-md border border-input bg-background px-3 py-1.5 text-sm min-w-[140px] max-w-[200px]"
       >
         {agentList.map((name) => (
+          <option key={name} value={name}>{name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function GraphSelector({
+  graphList,
+  selectedGraph,
+  setSelectedGraph,
+  isGraphsLoading,
+}: {
+  graphList: string[];
+  selectedGraph: string;
+  setSelectedGraph: (graph: string) => void;
+  isGraphsLoading: boolean;
+}) {
+  if (isGraphsLoading) {
+    return (
+      <span className="text-sm text-muted-foreground">Loading graphs...</span>
+    );
+  }
+  if (graphList.length === 0) {
+    return (
+      <span className="text-sm text-muted-foreground">No graphs available</span>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <Label htmlFor="graph-select" className="text-sm whitespace-nowrap">Graph</Label>
+      <select
+        id="graph-select"
+        value={selectedGraph}
+        onChange={(e) => setSelectedGraph(e.target.value)}
+        className="rounded-md border border-input bg-background px-3 py-1.5 text-sm min-w-[140px] max-w-[200px]"
+      >
+        {graphList.map((name) => (
           <option key={name} value={name}>{name}</option>
         ))}
       </select>
@@ -180,7 +247,20 @@ export function Thread() {
   const isLoading = stream.isStreaming;
 
   // Import thread context to synchronize with query state
-  const { setCurrentThreadId, agentList, selectedAgent, setSelectedAgent, isAgentsLoading } = useThreads();
+  const {
+    setCurrentThreadId,
+    agentList,
+    selectedAgent,
+    setSelectedAgent,
+    isAgentsLoading,
+    mode,
+    setMode,
+    graphList,
+    selectedGraph,
+    setSelectedGraph,
+    isGraphsLoading,
+    isLocked,
+  } = useThreads();
 
   // Sync threadId query state with ThreadProvider's currentThreadId
   // This handles cases where threadId changes from outside (e.g., from history)
@@ -316,6 +396,11 @@ export function Thread() {
               : { duration: 0 }
           }
         >
+          {!chatStarted && mode === "graph" && selectedGraph && !isLocked && (
+            <div className="absolute top-14 left-4 right-4 z-0">
+              <GraphVisualization graphName={selectedGraph} className="max-h-48" />
+            </div>
+          )}
           {!chatStarted && (
             <div className="absolute top-0 left-0 z-10 flex w-full items-center justify-between gap-3 p-2 pl-4">
               <div>
@@ -334,12 +419,39 @@ export function Thread() {
                 )}
               </div>
               <div className="absolute top-2 right-4 flex items-center gap-3">
-                <AgentSelector
-                  agentList={agentList}
-                  selectedAgent={selectedAgent}
-                  setSelectedAgent={setSelectedAgent}
-                  isAgentsLoading={isAgentsLoading}
-                />
+                {isLocked ? (
+                  <Link href="/index.html">
+                    <Button variant="ghost" size="sm">
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <ModeSelector
+                      mode={mode}
+                      setMode={setMode}
+                      graphList={graphList}
+                      isGraphsLoading={isGraphsLoading}
+                    />
+                    {mode === "agent" && (
+                      <AgentSelector
+                        agentList={agentList}
+                        selectedAgent={selectedAgent}
+                        setSelectedAgent={setSelectedAgent}
+                        isAgentsLoading={isAgentsLoading}
+                      />
+                    )}
+                    {mode === "graph" && (
+                      <GraphSelector
+                        graphList={graphList}
+                        selectedGraph={selectedGraph}
+                        setSelectedGraph={setSelectedGraph}
+                        isGraphsLoading={isGraphsLoading}
+                      />
+                    )}
+                  </>
+                )}
                 <OpenGitHubRepo />
               </div>
             </div>
@@ -362,47 +474,79 @@ export function Thread() {
                     </Button>
                   )}
                 </div>
-                <motion.button
-                  className="flex cursor-pointer items-center gap-2"
-                  onClick={() => setThreadId(null)}
-                  animate={{
-                    marginLeft: !chatHistoryOpen ? 48 : 0,
-                  }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30,
-                  }}
-                >
-                  {/*<SAALogoSVG*/}
-                  {/*  width={32}*/}
-                  {/*  height={32}*/}
-                  {/*/>*/}
-                  <span className="text-xl font-semibold tracking-tight">
-                    <span className="text-green-600">Spring AI Alibaba</span> Agent Chat
-                  </span>
-                </motion.button>
+                {isLocked ? (
+                  <Link href="/index.html" className="flex items-center gap-2">
+                    <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-xl font-semibold tracking-tight">
+                      <span className="text-green-600">Spring AI Alibaba</span> · {selectedAgent}
+                    </span>
+                  </Link>
+                ) : (
+                  <motion.button
+                    className="flex cursor-pointer items-center gap-2"
+                    onClick={() => setThreadId(null)}
+                    animate={{
+                      marginLeft: !chatHistoryOpen ? 48 : 0,
+                    }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 30,
+                    }}
+                  >
+                    <span className="text-xl font-semibold tracking-tight">
+                      <span className="text-green-600">Spring AI Alibaba</span> Agent Chat
+                    </span>
+                  </motion.button>
+                )}
               </div>
 
               <div className="flex items-center gap-4">
-                <AgentSelector
-                  agentList={agentList}
-                  selectedAgent={selectedAgent}
-                  setSelectedAgent={setSelectedAgent}
-                  isAgentsLoading={isAgentsLoading}
-                />
+                {isLocked ? (
+                  <Link href="/index.html">
+                    <Button variant="ghost" size="sm">
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <ModeSelector
+                      mode={mode}
+                      setMode={setMode}
+                      graphList={graphList}
+                      isGraphsLoading={isGraphsLoading}
+                    />
+                    {mode === "agent" && (
+                      <AgentSelector
+                        agentList={agentList}
+                        selectedAgent={selectedAgent}
+                        setSelectedAgent={setSelectedAgent}
+                        isAgentsLoading={isAgentsLoading}
+                      />
+                    )}
+                    {mode === "graph" && (
+                      <GraphSelector
+                        graphList={graphList}
+                        selectedGraph={selectedGraph}
+                        setSelectedGraph={setSelectedGraph}
+                        isGraphsLoading={isGraphsLoading}
+                      />
+                    )}
+                  </>
+                )}
                 <div className="flex items-center">
                   <OpenGitHubRepo />
                 </div>
-                  <TooltipIconButton
-                    size="lg"
-                    className="p-4"
-                    tooltip="New thread"
-                    variant="ghost"
-                    onClick={() => {
-                      setThreadId(null);
-                    }}
-                  >
+                <TooltipIconButton
+                  size="lg"
+                  className="p-4"
+                  tooltip={isLocked ? "New thread" : "New thread"}
+                  variant="ghost"
+                  onClick={() => {
+                    setThreadId(null);
+                  }}
+                >
                     <Plus className="size-5" />
                   </TooltipIconButton>
               </div>

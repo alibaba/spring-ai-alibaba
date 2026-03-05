@@ -21,10 +21,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Registers a default {@link AgentLoader} when none is defined by the application.
- * The default implementation ({@link ContextScanningAgentLoader}) discovers all
- * {@link com.alibaba.cloud.ai.graph.agent.Agent} beans from the Spring context
- * and exposes them in Studio by their agent name.
+ * Registers default loaders when none are defined by the application.
+ * <ul>
+ * <li>{@link AgentLoader}: discovers all {@link com.alibaba.cloud.ai.graph.agent.Agent} beans.</li>
+ * <li>{@link GraphLoader}: discovers all {@link CompiledGraph} beans (when graph-core is on classpath).</li>
+ * </ul>
  */
 @Configuration
 public class StudioLoaderAutoConfiguration {
@@ -33,5 +34,11 @@ public class StudioLoaderAutoConfiguration {
 	@ConditionalOnMissingBean(AgentLoader.class)
 	public AgentLoader contextScanningAgentLoader(ApplicationContext applicationContext) {
 		return new ContextScanningAgentLoader(applicationContext);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(GraphLoader.class)
+	public GraphLoader contextScanningGraphLoader(ApplicationContext applicationContext) {
+		return new ContextScanningGraphLoader(applicationContext);
 	}
 }

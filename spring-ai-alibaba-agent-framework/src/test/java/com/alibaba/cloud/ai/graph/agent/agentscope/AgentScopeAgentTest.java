@@ -18,8 +18,10 @@ package com.alibaba.cloud.ai.graph.agent.agentscope;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -28,7 +30,10 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
@@ -37,16 +42,19 @@ import io.agentscope.core.agent.Event;
 import io.agentscope.core.agent.EventType;
 import io.agentscope.core.agent.StreamOptions;
 import io.agentscope.core.memory.InMemoryMemory;
+import io.agentscope.core.session.InMemorySession;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
 import io.agentscope.core.message.TextBlock;
 import io.agentscope.core.model.Model;
+import io.agentscope.core.tool.Toolkit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import reactor.core.publisher.Flux;
@@ -77,6 +85,8 @@ class AgentScopeAgentTest {
 
 	private ReActAgent mockReActAgent;
 
+	private ReActAgent.Builder mockReActAgentBuilder;
+
 	@BeforeEach
 	void setUp() {
 		mockReActAgent = mock(ReActAgent.class);
@@ -90,6 +100,10 @@ class AgentScopeAgentTest {
 		Event agentResultEvent = new Event(EventType.AGENT_RESULT, resultMsg, true);
 		when(mockReActAgent.stream(any(List.class), any(StreamOptions.class)))
 				.thenReturn(Flux.just(agentResultEvent));
+
+		mockReActAgentBuilder = mock(ReActAgent.Builder.class);
+		when(mockReActAgentBuilder.build()).thenReturn(mockReActAgent);
+		when(mockReActAgentBuilder.toolExecutionContext(any())).thenReturn(mockReActAgentBuilder);
 	}
 
 	@Nested
@@ -99,7 +113,7 @@ class AgentScopeAgentTest {
 		@Test
 		@DisplayName("invoke returns state with messages containing assistant response")
 		void invoke_returnsStateWithMessages() throws GraphRunnerException {
-			AgentScopeAgent agent = AgentScopeAgent.fromAgent(mockReActAgent)
+			AgentScopeAgent agent = AgentScopeAgent.fromBuilder(mockReActAgentBuilder)
 					.name("testAgent")
 					.build();
 
@@ -120,7 +134,7 @@ class AgentScopeAgentTest {
 		@Test
 		@DisplayName("call returns AssistantMessage with expected text")
 		void call_returnsAssistantMessage() throws GraphRunnerException {
-			AgentScopeAgent agent = AgentScopeAgent.fromAgent(mockReActAgent)
+			AgentScopeAgent agent = AgentScopeAgent.fromBuilder(mockReActAgentBuilder)
 					.name("testAgent")
 					.build();
 
@@ -134,7 +148,7 @@ class AgentScopeAgentTest {
 		@Test
 		@DisplayName("call with List<Message> delegates to ReActAgent and returns assistant response")
 		void callWithMessages_returnsAssistantMessage() throws GraphRunnerException {
-			AgentScopeAgent agent = AgentScopeAgent.fromAgent(mockReActAgent)
+			AgentScopeAgent agent = AgentScopeAgent.fromBuilder(mockReActAgentBuilder)
 					.name("testAgent")
 					.build();
 
@@ -148,7 +162,7 @@ class AgentScopeAgentTest {
 		@Test
 		@DisplayName("stream emits NodeOutput and completes")
 		void stream_emitsAndCompletes() throws GraphRunnerException {
-			AgentScopeAgent agent = AgentScopeAgent.fromAgent(mockReActAgent)
+			AgentScopeAgent agent = AgentScopeAgent.fromBuilder(mockReActAgentBuilder)
 					.name("testAgent")
 					.build();
 
@@ -176,7 +190,7 @@ class AgentScopeAgentTest {
 		@Test
 		@DisplayName("asNode returns non-null node with correct id")
 		void asNode_returnsNodeWithCorrectId() throws GraphStateException {
-			AgentScopeAgent agent = AgentScopeAgent.fromAgent(mockReActAgent)
+			AgentScopeAgent agent = AgentScopeAgent.fromBuilder(mockReActAgentBuilder)
 					.name("subAgent")
 					.build();
 
@@ -189,16 +203,15 @@ class AgentScopeAgentTest {
 		@Test
 		@DisplayName("agent as subgraph node in parent graph runs and returns result")
 		void agentAsNode_inParentGraph_returnsResult() throws GraphStateException, GraphRunnerException {
-			AgentScopeAgent agent = AgentScopeAgent.fromAgent(mockReActAgent)
+			AgentScopeAgent agent = AgentScopeAgent.fromBuilder(mockReActAgentBuilder)
 					.name("subAgent")
 					.build();
 
 			// Build a parent graph: START -> subAgent (as node) -> END
-			StateSerializer serializer = new SpringAIJacksonStateSerializer(OverAllState::new);
-			Map<String, com.alibaba.cloud.ai.graph.KeyStrategy> keyMap = new HashMap<>();
+			Map<String, KeyStrategy> keyMap = new HashMap<>();
 			keyMap.put("messages", new AppendStrategy());
-			keyMap.put("output", new com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy());
-			StateGraph graph = new StateGraph("parent", () -> keyMap, serializer);
+			keyMap.put("output", new ReplaceStrategy());
+			StateGraph graph = new StateGraph("parent", () -> keyMap);
 
 			CompiledGraph agentCompiled = agent.getAndCompileGraph();
 			graph.addNode(agent.name(), agentCompiled);
@@ -225,7 +238,7 @@ class AgentScopeAgentTest {
 		@Test
 		@DisplayName("agent as node streams GraphResponse and completes with done")
 		void agentAsNode_streamCompletesWithDone() throws GraphStateException {
-			AgentScopeAgent agent = AgentScopeAgent.fromAgent(mockReActAgent)
+			AgentScopeAgent agent = AgentScopeAgent.fromBuilder(mockReActAgentBuilder)
 					.name("subAgent")
 					.build();
 
@@ -282,20 +295,19 @@ class AgentScopeAgentTest {
 					.outputKey("first_output")
 					.build();
 
-			// Real ReActAgent (AgentScope) with DashScope model
+			// Real ReActAgent (AgentScope) with DashScope model - pass Builder for per-invocation instantiation
 			Model scopeModel = io.agentscope.core.model.DashScopeChatModel.builder()
 					.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 					.modelName("qwen-plus")
 					.build();
-			ReActAgent scopeReAct = ReActAgent.builder()
+			ReActAgent.Builder scopeReActBuilder = ReActAgent.builder()
 					.name("second_agent")
 					.description("第二步：基于前序结果做补充结论")
 					.sysPrompt("你基于前序分析做简短补充结论，一两句话即可。")
 					.model(scopeModel)
-					.memory(new InMemoryMemory())
-					.build();
+					.memory(new InMemoryMemory());
 
-			AgentScopeAgent secondAgent = AgentScopeAgent.fromAgent(scopeReAct)
+			AgentScopeAgent secondAgent = AgentScopeAgent.fromBuilder(scopeReActBuilder)
 					.name("second_agent")
 					.description("第二步：基于前序结果做补充结论")
 					.instruction("你基于前序分析做补充结论。前序结果： {first_output}。")
@@ -350,6 +362,216 @@ class AgentScopeAgentTest {
 				assertTrue(out.state().value("first_output").isPresent(), "Stream final state should contain first_output");
 				assertTrue(out.state().value("second_output").isPresent(), "Stream final state should contain second_output");
 			});
+		}
+	}
+
+	/**
+	 * Graph + AgentScopeAgent example with a tool that uses ToolContext to read graph state
+	 * and update extraState. Verifies:
+	 * 1. Tool can read graph state via ToolContextHelper.getState()
+	 * 2. Graph result contains extraState updated by the tool
+	 */
+	@Nested
+	@DisplayName("Graph + AgentScopeAgent with ToolContext tool")
+	@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
+	class GraphAgentScopeToolContextTests {
+
+		@Test
+		@DisplayName("AgentScopeAgent tool reads state and updates extraState; Graph result contains it")
+		void graphWithAgentScopeAgent_toolUpdatesExtraState_resultContainsExtraState() throws Exception {
+			Toolkit toolkit = new Toolkit();
+			toolkit.registerTool(new UpdateExtraStateTool());
+
+			Model scopeModel = io.agentscope.core.model.DashScopeChatModel.builder()
+					.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+					.modelName("qwen-plus")
+					.build();
+
+			ReActAgent.Builder scopeReActBuilder = ReActAgent.builder()
+					.name("tool_context_agent")
+					.description("Agent that uses update_extra_state tool to record observations")
+					.sysPrompt("You must call the update_extra_state tool with a string describing what you observe. Call it immediately.")
+					.model(scopeModel)
+					.toolkit(toolkit)
+					.memory(new InMemoryMemory());
+
+			AgentScopeAgent agentScopeAgent = AgentScopeAgent.fromBuilder(scopeReActBuilder)
+					.name("tool_context_agent")
+					.instruction("Call update_extra_state with observation: 'user asked about ToolContext'")
+					.outputKey("messages")
+					.build();
+
+			Map<String, KeyStrategy> keyMap = new HashMap<>();
+			keyMap.put("messages", new AppendStrategy());
+			keyMap.put("extraState", new ReplaceStrategy());
+
+			StateGraph graph = new StateGraph("tool_context_graph", () -> keyMap);
+			graph.addNode(agentScopeAgent.name(), agentScopeAgent.asNode(false, false));
+			graph.addEdge(START, agentScopeAgent.name());
+			graph.addEdge(agentScopeAgent.name(), END);
+
+			CompiledGraph compiledGraph = graph.compile();
+			Map<String, Object> inputs = Map.of(
+					"messages", List.of(new UserMessage("Please use the update_extra_state tool to record your observation.")));
+
+			Optional<OverAllState> result = compiledGraph.invoke(inputs, RunnableConfig.builder().build());
+
+			assertTrue(result.isPresent(), "Graph result should be present");
+			OverAllState state = result.get();
+
+			// 1. Verify tool could read graph state (stateSummary in extraState reflects keys)
+			assertTrue(state.value("extraState").isPresent(),
+					"extraState should be present after tool execution (updated via ToolContext)");
+			Object extraStateObj = state.value("extraState").get();
+			assertTrue(extraStateObj instanceof Map, "extraState should be a Map");
+
+			@SuppressWarnings("unchecked")
+			Map<String, Object> extraState = (Map<String, Object>) extraStateObj;
+			assertTrue((Boolean) extraState.getOrDefault("updatedByTool", false),
+					"extraState should be updated by tool");
+
+			Object stateSummary = extraState.get("stateSummary");
+			assertNotNull(stateSummary, "stateSummary should be present (tool read graph state)");
+			assertTrue(stateSummary.toString().contains("keys=") || stateSummary.toString().contains("empty"),
+					"stateSummary should reflect tool read graph state");
+
+			// 2. Verify Graph result contains the tool's extraState update
+			assertNotNull(extraState.get("observation"), "observation from tool should be in extraState");
+		}
+
+		@Test
+		@DisplayName("graph.stream() emits NodeOutput and completes")
+		void graphStream_emitsAndCompletes() throws Exception {
+			Toolkit toolkit = new Toolkit();
+			toolkit.registerTool(new UpdateExtraStateTool());
+
+			Model scopeModel = io.agentscope.core.model.DashScopeChatModel.builder()
+					.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+					.modelName("qwen-plus")
+					.build();
+
+			ReActAgent.Builder scopeReActBuilder = ReActAgent.builder()
+					.name("tool_context_agent")
+					.description("Agent that uses update_extra_state tool")
+					.sysPrompt("You must call the update_extra_state tool with a string describing what you observe.")
+					.model(scopeModel)
+					.toolkit(toolkit)
+					.memory(new InMemoryMemory());
+
+			AgentScopeAgent agentScopeAgent = AgentScopeAgent.fromBuilder(scopeReActBuilder)
+					.name("tool_context_agent")
+					.instruction("User asked to respond to {input}. Call update_extra_state with observation: 'stream test.'")
+					.outputKey("messages")
+					.build();
+
+			Map<String, KeyStrategy> keyMap = new HashMap<>();
+			keyMap.put("messages", new AppendStrategy());
+			keyMap.put("extraState", new ReplaceStrategy());
+
+			StateGraph graph = new StateGraph("tool_context_graph", () -> keyMap);
+			graph.addNode(agentScopeAgent.name(), agentScopeAgent.asNode(false, true));
+			graph.addEdge(START, agentScopeAgent.name());
+			graph.addEdge(agentScopeAgent.name(), END);
+
+			CompiledGraph compiledGraph = graph.compile();
+			Map<String, Object> inputs = Map.of("input", "Please use update_extra_state tool to record: stream works.");
+
+			List<NodeOutput> collected = compiledGraph.stream(inputs, RunnableConfig.builder().build())
+					.collectList()
+					.block();
+
+			assertNotNull(collected, "Stream output should not be null");
+			assertFalse(collected.isEmpty(), "Stream should emit at least one NodeOutput");
+			Optional<NodeOutput> last = collected.stream().reduce((a, b) -> b);
+			assertTrue(last.isPresent(), "Should have last output");
+			last.ifPresent(out -> {
+				assertNotNull(out.state(), "Last output should carry state");
+				assertTrue(out.state().value("messages").isPresent(), "Final state should contain messages");
+			});
+		}
+
+		@Test
+		@DisplayName("Second stream call with same threadId verifies checkpointSaver and ReActAgent Session")
+		void graphStream_secondCallWithSameThreadId_checkpointMemoryEffective() throws Exception {
+			Toolkit toolkit = new Toolkit();
+			toolkit.registerTool(new UpdateExtraStateTool());
+
+			Model scopeModel = io.agentscope.core.model.DashScopeChatModel.builder()
+					.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+					.modelName("qwen-plus")
+					.build();
+
+			ReActAgent.Builder scopeReActBuilder = ReActAgent.builder()
+					.name("tool_context_agent")
+					.description("Agent that uses update_extra_state tool")
+					.sysPrompt("You must call the update_extra_state tool with a string describing what you observe.")
+					.model(scopeModel)
+					.toolkit(toolkit)
+					.memory(new InMemoryMemory());
+
+			// InMemorySession persists ReActAgent state (memory, etc.) per sessionId (derived from threadId + agentName)
+			InMemorySession reactSession = new InMemorySession();
+
+			AgentScopeAgent agentScopeAgent = AgentScopeAgent.fromBuilder(scopeReActBuilder)
+					.name("tool_context_agent")
+					.session(reactSession)
+					.instruction("User asked to respond to {input}.")
+					.outputKey("agentscope_output_key")
+					.build();
+
+			Map<String, KeyStrategy> keyMap = new HashMap<>();
+			keyMap.put("messages", new AppendStrategy());
+			keyMap.put("agentscope_output_key", new ReplaceStrategy());
+			keyMap.put("extraState", new ReplaceStrategy());
+
+			StateGraph graph = new StateGraph("tool_context_graph", () -> keyMap);
+			graph.addNode(agentScopeAgent.name(), agentScopeAgent.asNode(false, false));
+			graph.addEdge(START, agentScopeAgent.name());
+			graph.addEdge(agentScopeAgent.name(), END);
+
+			SaverConfig saverConfig = SaverConfig.builder().register(MemorySaver.builder().build()).build();
+			CompiledGraph compiledGraph = graph.compile(CompileConfig.builder().saverConfig(saverConfig).build());
+
+			String threadId = "checkpoint_memory_thread";
+			RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
+
+			// First stream: user introduces name
+			Map<String, Object> inputs1 = Map.of(
+					   "input", "你好！我叫李四。请用 update_extra_state 记录一下。",
+					"messages", List.of(new UserMessage("你好！我叫李四。请用 update_extra_state 记录一下。")));
+			List<NodeOutput> outputs1 = compiledGraph.stream(inputs1, config).collectList().block();
+
+			assertNotNull(outputs1, "First stream outputs should not be null");
+			assertFalse(outputs1.isEmpty(), "First stream should emit at least one output");
+
+			// ReActAgent Session persists agent state (sessionId = threadId + "_" + agentName)
+			var sessionKeys = reactSession.listSessionKeys();
+			assertFalse(sessionKeys.isEmpty(),
+					"ReActAgent Session should have saved state after first stream; keys: " + sessionKeys);
+			assertTrue(sessionKeys.stream().anyMatch(k -> k.toString().contains(threadId)),
+					"Session should contain key for threadId " + threadId + "; keys: " + sessionKeys);
+
+			// Second stream: same instance, same threadId - MemorySaver restores messages, Session restores agent state
+			Map<String, Object> inputs2 = Map.of(
+					"messages", List.of(new UserMessage("我叫什么名字？")));
+			List<NodeOutput> outputs2 = compiledGraph.stream(inputs2, config).collectList().block();
+			assertNotNull(outputs2, "Second stream outputs should not be null");
+			assertFalse(outputs2.isEmpty(), "Second stream should emit at least one output");
+
+			// Verify MemorySaver checkpoint + ReActAgent Session: final state has conversation from both turns
+			// MemorySaver restores graph messages; Session restores ReActAgent memory. Without either, second
+			// call would only have [user2, assistant2] = 2 messages. With both: [user1, asst1, user2, asst2] = 4+.
+			Optional<NodeOutput> lastOutput = outputs2.stream().reduce((a, b) -> b);
+			assertTrue(lastOutput.isPresent(), "Should have last output from second stream");
+			OverAllState finalState = lastOutput.get().state();
+			assertNotNull(finalState, "Final state should not be null");
+
+			assertTrue(finalState.value("messages").isPresent(), "Final state should contain messages");
+			@SuppressWarnings("unchecked")
+			List<Message> messages = (List<Message>) finalState.value("messages").get();
+			assertTrue(messages.size() >= 4,
+					"Checkpoint should restore first turn; expect >=4 messages (user1, asst1, user2, asst2), got: "
+							+ messages.size());
 		}
 	}
 }

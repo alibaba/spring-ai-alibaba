@@ -37,7 +37,7 @@ import java.util.function.BiFunction;
 /**
  * Tool that enables invoking sub-agents to handle complex, isolated tasks.
  * <p>
- * Inspired by spring-ai-agent-utils TaskTool, this allows the main agent to delegate
+ * Inspired by spring ai TaskTool, this allows the main agent to delegate
  * work to specialized sub-agents, each with their own context and capabilities.
  * Supports both synchronous and background execution.
  */
