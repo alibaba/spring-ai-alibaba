@@ -105,6 +105,8 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		McpServersVO mcpServersVO = NacosMcpToolsInjector.getMcpServersVO(nacosOptions);
 		agentVOHolder.setMcpServersVO(mcpServersVO);
 		
+		separateInterceptorsByType();
+		
 		List<ToolCallback> allTools = new ArrayList<>();
 		this.localTools = gatherLocalTools();
 		List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO);

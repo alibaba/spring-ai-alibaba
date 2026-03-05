@@ -115,21 +115,8 @@ public class DefaultBuilder extends Builder {
 		if (StringUtils.hasLength(outputSchema)) {
 			llmNodeBuilder.outputSchema(outputSchema);
 		}
-
-		// Separate unified interceptors by type
-		if (CollectionUtils.isNotEmpty(interceptors)) {
-			modelInterceptors = new ArrayList<>();
-			toolInterceptors = new ArrayList<>();
-
-			for (Interceptor interceptor : interceptors) {
-				if (interceptor instanceof ModelInterceptor) {
-					modelInterceptors.add((ModelInterceptor) interceptor);
-				}
-				if (interceptor instanceof ToolInterceptor) {
-					toolInterceptors.add((ToolInterceptor) interceptor);
-				}
-			}
-		}
+		
+		separateInterceptorsByType();
 		
 		List<ToolCallback> allTools = gatherLocalTools();
 		
@@ -180,6 +167,25 @@ public class DefaultBuilder extends Builder {
 		return new ReactAgent(llmNode, toolNode, buildConfig(), this);
 	}
 	
+	/**
+	 * Separate unified interceptors by type into modelInterceptors and toolInterceptors.
+	 */
+	protected void separateInterceptorsByType() {
+		if (CollectionUtils.isNotEmpty(interceptors)) {
+			modelInterceptors = new ArrayList<>();
+			toolInterceptors = new ArrayList<>();
+			
+			for (Interceptor interceptor : interceptors) {
+				if (interceptor instanceof ModelInterceptor) {
+					modelInterceptors.add((ModelInterceptor) interceptor);
+				}
+				if (interceptor instanceof ToolInterceptor) {
+					toolInterceptors.add((ToolInterceptor) interceptor);
+				}
+			}
+		}
+	}
+
 	/**
 	 * Collect all tools from various sources.
 	 * <p>

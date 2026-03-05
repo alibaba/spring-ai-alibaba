@@ -49,7 +49,9 @@ public class SpringAIStateSerializer extends ObjectStreamStateSerializer {
 
 		// Conditionally register DeepSeekAssistantMessage serializer if available
 		registerDeepSeekSupportIfAvailable();
-	}
+        registerZhiPuAIStateSupportIfAvailable();
+
+    }
 
 	/**
 	 * Conditionally registers DeepSeekAssistantMessage support if the class is available on the classpath.
@@ -67,5 +69,15 @@ public class SpringAIStateSerializer extends ObjectStreamStateSerializer {
 			// IllegalStateException may be thrown if the class is found but constructor fails
 		}
 	}
+
+    private void registerZhiPuAIStateSupportIfAvailable() {
+        try {
+            Class<?> zhiPuAIClass = Class.forName("org.springframework.ai.zhipuai.ZhiPuAiAssistantMessage");
+            ZhiPuAIAssistantMessageSerializer serializer = new ZhiPuAIAssistantMessageSerializer();
+            mapper().register(zhiPuAIClass, serializer);
+        } catch (ClassNotFoundException | IllegalStateException e) {
+
+        }
+    }
 
 }

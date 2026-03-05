@@ -50,4 +50,3 @@ else
 fi
 
 echo -e "${GREEN}Undeployment completed!${NC}"
-

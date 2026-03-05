@@ -17,8 +17,8 @@ spec:
     spec:
       containers:
         - name: spring-ai-admin-server
-          image: spring-ai-admin-server:latest
-          imagePullPolicy: IfNotPresent
+          image: ${BACKEND_IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: ${IMAGE_PULL_POLICY}
           ports:
             - containerPort: 8080
               name: http

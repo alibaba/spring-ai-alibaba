@@ -295,6 +295,7 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 		// Add tool callbacks
 		ToolCallback[] toolCallbacks = toolCallbackProvider.getToolCallbacks();
 		if (!ArrayUtils.isEmpty(toolCallbacks)) {
+			chatOptions = chatOptions.copy();
 			chatOptions.setToolCallbacks(Arrays.stream(toolCallbacks).toList());
 		}
 
