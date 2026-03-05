@@ -15,12 +15,15 @@
  */
 package com.alibaba.cloud.ai.agent.studio.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@ConditionalOnProperty(prefix = "spring.ai.alibaba.agent.studio.web.cors", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
 public class WebConfig implements WebMvcConfigurer {
 
 	public WebConfig() {

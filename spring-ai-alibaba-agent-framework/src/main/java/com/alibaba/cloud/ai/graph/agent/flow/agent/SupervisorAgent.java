@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
@@ -28,12 +29,14 @@ public class SupervisorAgent extends FlowAgent {
 	private final ChatModel chatModel;
 	private final String systemPrompt;
 	private final String instruction;
+	private final ReactAgent mainAgent;
 
 	protected SupervisorAgent(SupervisorAgentBuilder builder) {
 		super(builder.name, builder.description, builder.compileConfig, builder.subAgents, builder.stateSerializer, builder.executor, builder.hooks);
 		this.chatModel = builder.chatModel;
 		this.systemPrompt = builder.systemPrompt;
 		this.instruction = builder.instruction;
+		this.mainAgent = builder.mainAgent;
 	}
 
 	public static SupervisorAgentBuilder builder() {
@@ -43,6 +46,7 @@ public class SupervisorAgent extends FlowAgent {
 	@Override
 	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		config.setChatModel(this.chatModel);
+		config.setMainAgent(this.mainAgent);
 		return FlowGraphBuilder.buildGraph(FlowAgentEnum.SUPERVISOR.getType(), config);
 	}
 
@@ -55,6 +59,15 @@ public class SupervisorAgent extends FlowAgent {
 	}
 
 	/**
+	 * Returns the main agent (ReactAgent) that produces routing decisions. The supervisor
+	 * uses this agent's output to decide which sub-agents to invoke or to finish.
+	 * @return the main agent instance
+	 */
+	public ReactAgent getMainAgent() {
+		return mainAgent;
+	}
+
+	/**
 	 * Builder for creating SupervisorAgent instances. Extends the common FlowAgentBuilder
 	 * and adds LLM-specific configuration.
 	 */
@@ -63,9 +76,11 @@ public class SupervisorAgent extends FlowAgent {
 		private ChatModel chatModel;
 		private String systemPrompt;
 		private String instruction;
+		private ReactAgent mainAgent;
 
 		/**
-		 * Sets the ChatModel for LLM-based supervisor routing decisions.
+		 * Sets the ChatModel for LLM-based supervisor routing decisions (used when
+		 * mainAgent is not set).
 		 * @param chatModel the chat model to use for routing
 		 * @return this builder instance for method chaining
 		 */
@@ -74,11 +89,25 @@ public class SupervisorAgent extends FlowAgent {
 			return this;
 		}
 
+		/**
+		 * Sets the main agent (ReactAgent) that produces routing decisions. Required. The
+		 * supervisor uses this agent's output (state key {@code supervisor_next}) to
+		 * decide which sub-agents to invoke or to finish.
+		 * @param mainAgent the ReactAgent instance to use as main agent
+		 * @return this builder instance for method chaining
+		 */
+		public SupervisorAgentBuilder mainAgent(ReactAgent mainAgent) {
+			this.mainAgent = mainAgent;
+			return this;
+		}
+
+		@Deprecated
 		public SupervisorAgentBuilder systemPrompt(String systemPrompt) {
 			this.systemPrompt = systemPrompt;
 			return this;
 		}
 
+		@Deprecated
 		public SupervisorAgentBuilder instruction(String instruction) {
 			this.instruction = instruction;
 			return this;
@@ -92,8 +121,8 @@ public class SupervisorAgent extends FlowAgent {
 		@Override
 		protected void validate() {
 			super.validate();
-			if (chatModel == null) {
-				throw new IllegalArgumentException("ChatModel must be provided for supervisor agent");
+			if (mainAgent == null) {
+				throw new IllegalArgumentException("mainAgent (ReactAgent) must be provided for supervisor agent");
 			}
 		}
 

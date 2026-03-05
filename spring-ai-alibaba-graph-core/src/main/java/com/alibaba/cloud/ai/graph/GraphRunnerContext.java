@@ -103,10 +103,10 @@ public class GraphRunnerContext {
 			// RESUME FORM SUBGRAPH DETECTED
 			this.config = RunnableConfig.builder(config)
 					.checkPointId(null) // Reset checkpoint id
-					.clearContext()
 					.addMetadata(resumableAction.getResumeSubGraphId(), true) // add metadata for
 					// sub graph
 					.build();
+			this.config.clearContext();
 		} else {
 			// Reset checkpoint id
 			this.config = config.withCheckPointId(null);

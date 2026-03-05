@@ -306,10 +306,7 @@ public class StateGraphMemorySaverTest {
 			log.info("SNAPSHOT HISTORY:\n{}\n", s);
 		}
 
-		RunnableConfig resumeConfig = RunnableConfig.builder()
-				.threadId("thread_1")
-			.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-			.build();
+		RunnableConfig resumeConfig = RunnableConfig.builder().threadId("thread_1").resume().build();
 		results = app.stream(null, resumeConfig).collectList().block();
 
 		assertNotNull(results);
@@ -329,10 +326,7 @@ public class StateGraphMemorySaverTest {
 		var toReplay = firstSnapshot.get().config();
 
 		toReplay = app.updateState(toReplay, Map.of("messages", "i'm bartolo"));
-		RunnableConfig toReplayResumeConfig = RunnableConfig.builder(toReplay)
-				.threadId("thread_1")
-			.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-			.build();
+		RunnableConfig toReplayResumeConfig = toReplay.withResume();
 		results = app.stream(null, toReplayResumeConfig).collectList().block();
 
 		assertNotNull(results);
@@ -385,9 +379,7 @@ public class StateGraphMemorySaverTest {
 		assertEquals("tools", state.next());
 
 		log.info("RESUME CALL");
-		RunnableConfig resumeConfig = RunnableConfig.builder(runnableConfig)
-			.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-			.build();
+		RunnableConfig resumeConfig = runnableConfig.withResume();
 		results = app.stream(null, resumeConfig).doOnNext(n -> log.info("{}", n)).collectList().block();
 
 		assertNotNull(results);

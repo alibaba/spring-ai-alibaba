@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
 import static java.lang.String.format;
@@ -50,6 +51,13 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	public static final String DEFAULT_PARALLEL_EXECUTOR_KEY = "_DEFAULT_PARALLEL_EXECUTOR_";
 	public static final String DEFAULT_PARALLEL_AGGREGATION_STRATEGY_KEY = "_DEFAULT_PARALLEL_AGGREGATION_STRATEGY_";
 
+	/**
+	 * Metadata key for dynamic tool callbacks ({@code List<org.springframework.ai.tool.ToolCallback>}).
+	 * Used internally by AgentLlmNode and AgentToolNode during ReactAgent inference (e.g. when
+	 * ModelInterceptor adds tools via dynamicToolCallbacks). Not part of the public API.
+	 */
+	public static final String DYNAMIC_TOOL_CALLBACKS_METADATA_KEY = "_DYNAMIC_TOOL_CALLBACKS_";
+
 	private final String threadId;
 
 	private final String checkPointId;
@@ -65,9 +73,9 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 * Comparing to metadata, context is mutable during execution. It passes information between nodes.
 	 * Different from OverAllState, context is specific to a run, it will not be persisted.
 	 */
-	private final Map<String, Object> context;
+	private final ConcurrentMap<String, Object> context;
 
-	private Store store;
+	private final Store store;
 
 	private final Map<String, Object> interruptedNodes;
 
@@ -197,6 +205,19 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	}
 
 	/**
+	 * Returns a new RunnableConfig that copies this config and adds
+	 * {@link #HUMAN_FEEDBACK_METADATA_KEY} with value {@code "placeholder"} to metadata.
+	 * Used when building a config for resuming a run (e.g. after human feedback is
+	 * collected and the graph is continued).
+	 * @return a new RunnableConfig with human feedback placeholder metadata
+	 */
+	public RunnableConfig withResume() {
+		return RunnableConfig.builder(this)
+				.addMetadata(HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
+				.build();
+	}
+
+	/**
 	 * Retrieves interrupt data associated with the specified key.
 	 * @param key the key for which to retrieve interrupt data; may be null
 	 * @return an Optional containing the interrupt data if present, or an empty Optional
@@ -218,6 +239,10 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 	public Map<String, Object> context() {
 		return context;
+	}
+
+	public void clearContext() {
+		this.context.clear();
 	}
 
 	/**
@@ -272,7 +297,7 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 
 		private Store store;
 
-		private Map<String, Object> context;
+		private ConcurrentMap<String, Object> context;
 
 		private CompiledGraph.StreamMode streamMode = CompiledGraph.StreamMode.VALUES;
 
@@ -346,6 +371,17 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 			return addMetadata(HUMAN_FEEDBACK_METADATA_KEY, humanFeedback);
 		}
 
+		/**
+		 * Adds resume metadata ({@link #HUMAN_FEEDBACK_METADATA_KEY} with value
+		 * {@code "placeholder"}) so the built config is suitable for resuming a run
+		 * (e.g. after human feedback). Equivalent to building and then calling
+		 * {@link RunnableConfig#withResume()}, but allows fluent builder usage.
+		 * @return this builder for chaining
+		 */
+		public Builder resume() {
+			return addMetadata(HUMAN_FEEDBACK_METADATA_KEY, "placeholder");
+		}
+
 		public Builder addStateUpdate(Map<String, Object> stateUpdate) {
 			return addMetadata(STATE_UPDATE_METADATA_KEY, stateUpdate);
 		}
@@ -406,13 +442,13 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 					requireNonNull(strategy, "strategy cannot be null!"));
 		}
 
-		public Builder clearContext() {
-			this.context.clear();
+		public Builder store(Store store) {
+			this.store = store;
 			return this;
 		}
 
-		public Builder store(Store store) {
-			this.store = store;
+		public Builder clearContext() {
+			this.context.clear();
 			return this;
 		}
 

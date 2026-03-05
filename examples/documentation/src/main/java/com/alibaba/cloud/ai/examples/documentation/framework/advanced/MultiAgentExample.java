@@ -27,12 +27,12 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SupervisorAgent;
+import com.alibaba.cloud.ai.graph.agent.renderer.SaaStTemplateRenderer;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.template.StringTemplateRenderer;
 import org.springframework.ai.template.TemplateRenderer;
 
 import java.util.List;
@@ -404,9 +404,9 @@ public class MultiAgentExample {
 	public void example5_5_customTemplateRenderer() throws Exception {
 		// 使用 StringTemplateRenderer.builder() 创建自定义分隔符的 TemplateRenderer
 		// 使用 [[ 和 ]] 作为占位符分隔符
-		TemplateRenderer customRenderer = StringTemplateRenderer.builder()
-				.startDelimiterToken("[[")
-				.endDelimiterToken("]]")
+		TemplateRenderer customRenderer = SaaStTemplateRenderer.builder()
+				.startDelimiter("[[")
+				.endDelimiter("]]")
 				.build();
 
 		// 创建专业化的子Agent - 注意 instruction 中使用 [[variable]] 格式

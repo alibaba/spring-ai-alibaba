@@ -37,6 +37,8 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.HashMap;
@@ -449,24 +451,13 @@ public class HumanInTheLoopExample {
 	 * 示例5：处理多个工具调用
 	 *
 	 * 一次性处理多个需要审批的工具调用
+	 * 使用 {@code @Tool} 注解方式定义工具
 	 */
 	public void example5_multipleTools() throws Exception {
 		MemorySaver memorySaver = new MemorySaver();
 
-		ToolCallback tool1 = FunctionToolCallback.builder("tool1", (args) -> "工具1结果")
-				.description("工具1")
-				.inputType(String.class)
-				.build();
-
-		ToolCallback tool2 = FunctionToolCallback.builder("tool2", (args) -> "工具2结果")
-				.description("工具2")
-				.inputType(String.class)
-				.build();
-
-		ToolCallback tool3 = FunctionToolCallback.builder("tool3", (args) -> "工具3结果")
-				.description("工具3")
-				.inputType(String.class)
-				.build();
+		// 使用 @Tool 注解方式定义多个工具
+		MultiTools multiTools = new MultiTools();
 
 		HumanInTheLoopHook humanInTheLoopHook = HumanInTheLoopHook.builder()
 				.approvalOn("tool1", ToolConfig.builder().description("工具1需要审批").build())
@@ -477,7 +468,7 @@ public class HumanInTheLoopExample {
 		ReactAgent agent = ReactAgent.builder()
 				.name("multi_tool_agent")
 				.model(chatModel)
-				.tools(tool1, tool2, tool3)
+				.methodTools(multiTools)
 				.hooks(List.of(humanInTheLoopHook))
 				.saver(memorySaver)
 				.build();
@@ -709,25 +700,25 @@ public class HumanInTheLoopExample {
 		System.out.println("=== 人工介入（Human-in-the-Loop）示例 ===\n");
 
 		try {
-//			System.out.println("示例1: 配置中断和基本使用");
-//			example1_basicConfiguration();
-//			System.out.println();
-//
-//			System.out.println("示例2: 批准（approve）决策");
-//			example2_approveDecision();
-//			System.out.println();
-//
-//			System.out.println("示例3: 编辑（edit）决策");
-//			example3_editDecision();
-//			System.out.println();
-//
-//			System.out.println("示例4: 拒绝（reject）决策");
-//			example4_rejectDecision();
-//			System.out.println();
-//
-//			System.out.println("示例5: 处理多个工具调用决策");
-//			example5_multipleTools();
-//			System.out.println();
+			System.out.println("示例1: 配置中断和基本使用");
+			example1_basicConfiguration();
+			System.out.println();
+
+			System.out.println("示例2: 批准（approve）决策");
+			example2_approveDecision();
+			System.out.println();
+
+			System.out.println("示例3: 编辑（edit）决策");
+			example3_editDecision();
+			System.out.println();
+
+			System.out.println("示例4: 拒绝（reject）决策");
+			example4_rejectDecision();
+			System.out.println();
+
+			System.out.println("示例5: 处理多个工具调用决策");
+			example5_multipleTools();
+			System.out.println();
 
 			System.out.println("示例6: Workflow中嵌套ReactAgent的人工中断");
 			example6_workflowWithHumanInTheLoop();
@@ -737,6 +728,27 @@ public class HumanInTheLoopExample {
 		catch (Exception e) {
 			System.err.println("执行示例时出错: " + e.getMessage());
 			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 使用 @Tool 注解定义的多工具类，用于示例5
+	 */
+	static class MultiTools {
+
+		@Tool(name = "tool1", description = "工具1")
+		public String tool1(@ToolParam(description = "输入工具1模拟审批内容") String content) {
+			return "工具1结果";
+		}
+
+		@Tool(name = "tool2", description = "工具2")
+		public String tool2(@ToolParam(description = "输入工具2模拟审批内容") String content) {
+			return "工具2结果";
+		}
+
+		@Tool(name = "tool3", description = "工具3")
+		public String tool3(@ToolParam(description = "输入工具3模拟审批内容") String content) {
+			return "工具3结果";
 		}
 	}
 }

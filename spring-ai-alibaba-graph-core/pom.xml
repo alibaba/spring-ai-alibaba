@@ -117,6 +117,10 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-deepseek</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-zhipuai</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>

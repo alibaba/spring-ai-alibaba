@@ -8,12 +8,9 @@
 
 [English](./README.md) | 中文
 
-
-
 ## 项目背景
 
 Spring AI Alibaba Admin 是一个基于 Spring AI Alibaba 的 AI Agent 开发与评估平台，旨在为开发者和企业提供完整的 AI Agent 生命周期管理解决方案。平台支持从 Prompt 工程、数据集管理、评估器配置到实验执行和结果分析的完整工作流，帮助用户快速构建、测试和优化 AI Agent 应用。
-
 
 ## 核心功能
 
@@ -63,8 +60,6 @@ Spring AI Alibaba Admin 是一个基于 Spring AI Alibaba 的 AI Agent 开发与
 - 🐳 **Docker** (用于容器化部署) + **Docker Compose**: 2.0+
 - ☕ **Java 17+** (用于源码运行) + **Maven**: 3.8+
 - 🌐 **AI 模型提供商 API 密钥**，支持OpenAI、DashScope、DeepSeek
-
-
 
 ### 从源码运行
 
@@ -206,6 +201,3 @@ npm run dev
 ## 贡献指南
 
 欢迎提交Issue和Pull Request来帮助改进项目。
-
- 
- 

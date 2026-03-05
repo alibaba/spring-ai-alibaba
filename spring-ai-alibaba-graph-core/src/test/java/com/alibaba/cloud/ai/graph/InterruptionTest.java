@@ -90,9 +90,7 @@ public class InterruptionTest {
 		assertInstanceOf(InterruptionMetadata.class, lastOutputRef.get());
 
 
-		RunnableConfig resumeConfig = RunnableConfig.builder()
-				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-				.build();
+		RunnableConfig resumeConfig = RunnableConfig.builder().resume().build();
 		results = workflow.stream(null, resumeConfig)
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
@@ -108,9 +106,7 @@ public class InterruptionTest {
 
 		// FIXME
 		runnableConfig = workflow.updateState(snapshotForNodeB.config(), Map.of("messages", "C"));
-		resumeConfig = RunnableConfig.builder(runnableConfig)
-				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-				.build();
+		resumeConfig = runnableConfig.withResume();
 		results = workflow.stream(null, resumeConfig)
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)
@@ -157,9 +153,7 @@ public class InterruptionTest {
 
 		runnableConfig = workflow.updateState(runnableConfig, Map.of("messages", "C"));
 		// FIXME
-		RunnableConfig resumeConfig = RunnableConfig.builder(runnableConfig)
-				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-				.build();
+		RunnableConfig resumeConfig = runnableConfig.withResume();
 		results = workflow.stream(null, resumeConfig)
 			.doOnNext(System.out::println)
 			.map(NodeOutput::node)

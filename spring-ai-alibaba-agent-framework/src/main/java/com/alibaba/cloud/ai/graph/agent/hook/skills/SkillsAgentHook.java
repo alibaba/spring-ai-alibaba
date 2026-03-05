@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 
 import org.springframework.ai.tool.ToolCallback;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -62,6 +63,13 @@ import org.slf4j.LoggerFactory;
  *     .skillRegistry(registry)
  *     .autoReload(true)
  *     .build();
+ *
+ * // With grouped tools (skill name → tools for dynamic injection when LLM calls read_skill)
+ * Map<String, List<ToolCallback>> groupedTools = Map.of("my-skill", List.of(myTool));
+ * SkillsAgentHook hookWithTools = SkillsAgentHook.builder()
+ *     .skillRegistry(registry)
+ *     .groupedTools(groupedTools)
+ *     .build();
  * }</pre>
  */
 @HookPositions(HookPosition.BEFORE_AGENT)
@@ -71,6 +79,7 @@ public class SkillsAgentHook extends AgentHook {
 
 	private final SkillRegistry skillRegistry;
 	private final boolean autoReload;
+	private final Map<String, List<ToolCallback>> groupedTools;
 	private final ToolCallback readSkillTool;
 
 	private SkillsAgentHook(Builder builder) {
@@ -79,6 +88,7 @@ public class SkillsAgentHook extends AgentHook {
 		}
 		this.skillRegistry = builder.skillRegistry;
 		this.autoReload = builder.autoReload;
+		this.groupedTools = builder.groupedTools != null ? builder.groupedTools : Collections.emptyMap();
 		this.readSkillTool = ReadSkillTool.createReadSkillToolCallback(
 				this.skillRegistry,
 				ReadSkillTool.DESCRIPTION
@@ -115,7 +125,11 @@ public class SkillsAgentHook extends AgentHook {
 
 	@Override
 	public List<ModelInterceptor> getModelInterceptors() {
-		return List.of(SkillsInterceptor.builder().skillRegistry(this.skillRegistry).build());
+		SkillsInterceptor.Builder interceptorBuilder = SkillsInterceptor.builder().skillRegistry(this.skillRegistry);
+		if (!this.groupedTools.isEmpty()) {
+			interceptorBuilder.groupedTools(this.groupedTools);
+		}
+		return List.of(interceptorBuilder.build());
 	}
 
 	@Override
@@ -151,6 +165,8 @@ public class SkillsAgentHook extends AgentHook {
 	 * <p><b>Optional:</b>
 	 * <ul>
 	 *   <li><b>autoReload</b>: defaults to <code>false</code> - skills are loaded once during initialization</li>
+	 *   <li><b>groupedTools</b>: map from skill name to list of tools; passed to SkillsInterceptor so that when the
+	 *       LLM calls <code>read_skill</code> for a skill, those tools are added to the request's dynamicToolCallbacks</li>
 	 * </ul>
 	 *
 	 * <p><b>Example Usage:</b>
@@ -180,6 +196,7 @@ public class SkillsAgentHook extends AgentHook {
 	public static class Builder {
 		private SkillRegistry skillRegistry;
 		private boolean autoReload = false;
+		private Map<String, List<ToolCallback>> groupedTools;
 
 		/**
 		 * Sets the SkillRegistry instance.
@@ -205,6 +222,20 @@ public class SkillsAgentHook extends AgentHook {
 		 */
 		public Builder autoReload(boolean autoReload) {
 			this.autoReload = autoReload;
+			return this;
+		}
+
+		/**
+		 * Sets grouped tools: map from skill name to list of tools for that skill.
+		 * <p><b>Optional</b>: When set, this map is passed to SkillsInterceptor. When the LLM calls
+		 * <code>read_skill</code> with a given skill_name, the corresponding tools are added to the
+		 * request's dynamicToolCallbacks.
+		 *
+		 * @param groupedTools map from skill name to list of ToolCallbacks (can be null or empty)
+		 * @return this builder
+		 */
+		public Builder groupedTools(Map<String, List<ToolCallback>> groupedTools) {
+			this.groupedTools = groupedTools;
 			return this;
 		}
 

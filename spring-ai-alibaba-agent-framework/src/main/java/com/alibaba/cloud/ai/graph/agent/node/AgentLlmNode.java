@@ -43,6 +43,7 @@ import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 
 import org.springframework.lang.Nullable;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import org.slf4j.Logger;
@@ -52,6 +53,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import reactor.core.publisher.Flux;
@@ -160,7 +162,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 
 		augmentUserMessage(messages, outputSchema);
-		renderTemplatedUserMessage(messages, state.data());
+		renderTemplatedUserMessage(messages, state.data(), config.metadata());
 
 		// Create ModelRequest
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
@@ -210,7 +212,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 									.orElse(THREAD_ID_DEFAULT), agentName, systemPrompt);
 						}
 					}
-					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request).stream().chatResponse();
+					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, config).stream().chatResponse();
 					if (enableReasoningLog) {
 						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
 							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
@@ -249,7 +251,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 						logger.info("[ThreadId {}] Agent {} reasoning round {} with system prompt: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), systemPrompt);
 					}
 
-					ChatResponse response = buildChatClientRequestSpec(request).call().chatResponse();
+					ChatResponse response = buildChatClientRequestSpec(request, config).call().chatResponse();
 
 					AssistantMessage responseMessage = new AssistantMessage("Empty response from model for unknown reason");
 					if (response != null && response.getResult() != null) {
@@ -337,6 +339,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		if (chatOptions != null) {
 			if (chatOptions instanceof ToolCallingChatOptions builderToolCallingOptions) {
+				ToolCallingChatOptions copiedOptions = builderToolCallingOptions.copy();
+
 				List<ToolCallback> mergedToolCallbacks = new ArrayList<>(toolCallbacks);
 				// Add callbacks from chatOptions that are not already present (toolCallbacks takes precedence)
 				for (ToolCallback callback : builderToolCallingOptions.getToolCallbacks()) {
@@ -347,9 +351,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					}
 				}
 
-				builderToolCallingOptions.setToolCallbacks(mergedToolCallbacks);
-				builderToolCallingOptions.setInternalToolExecutionEnabled(false);
-				return builderToolCallingOptions;
+				copiedOptions.setToolCallbacks(mergedToolCallbacks);
+				copiedOptions.setInternalToolExecutionEnabled(false);
+				return copiedOptions;
 			} else {
 				logger.warn("The provided chatOptions is not of type ToolCallingChatOptions (actual type: {}). " +
 								"It will not take effect. Creating a new ToolCallingChatOptions with toolCallbacks instead.",
@@ -400,7 +404,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 	}
 
-	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params) {
+	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params, Optional<Map<String, Object>> metadata) {
 		// Process params to create a new Map
 		Map<String, Object> processedParams = new HashMap<>();
 		if (params != null) {
@@ -447,14 +451,16 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<ToolCallback> toolCallbacks = new ArrayList<>();
 		if (modelRequest == null) {
 			toolCallbacks.addAll(this.toolCallbacks);
-		} else if (modelRequest.getOptions() != null && modelRequest.getOptions().getToolCallbacks() != null) {
-			toolCallbacks.addAll(modelRequest.getOptions().getToolCallbacks());
+			return toolCallbacks;
 		}
 
+		if (modelRequest.getOptions() != null && modelRequest.getOptions().getToolCallbacks() != null) {
+			toolCallbacks.addAll(modelRequest.getOptions().getToolCallbacks());
+		} else {
+			// do nothing
 
-
-		if (modelRequest == null || modelRequest.getTools() == null || modelRequest.getTools().isEmpty()) {
-			return toolCallbacks;
+			// by default, buildChatOptions() makes sure 'modelRequest.getOptions().getToolCallbacks()' is always set.
+			// this leaves room for users to disable all tools by setting empty toolCallbacks in options.
 		}
 
 		List<String> requestedTools = modelRequest.getTools();
@@ -466,24 +472,30 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.toList());
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest) {
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest, RunnableConfig config) {
 		List<Message> messages = appendSystemPromptIfNeeded(modelRequest);
 
 		// NOTICE! If both tools(ToolSelectionInterceptor) and options are customized in ModelRequest, tools will override toolcall setting in options.
 		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
-		filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
 
-        var promptSpec = this.chatClient.prompt()
+		if (!CollectionUtils.isEmpty(modelRequest.getDynamicToolCallbacks())) {
+			filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
+			// FIXME, use RunnableConfig to pass dynamic tool callbacks to tool node via config context (internal use)
+			config.context().put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY, modelRequest.getDynamicToolCallbacks());
+		}
+
+		var promptSpec = this.chatClient.prompt()
                 .messages(messages)
                 .advisors(this.advisors);
 
         ToolCallingChatOptions requestOptions = modelRequest.getOptions();
 
         if (requestOptions != null) {
-            requestOptions.setToolCallbacks(filteredToolCallbacks);
+			ToolCallingChatOptions copiedOptions = requestOptions.copy();
+            copiedOptions.setToolCallbacks(filteredToolCallbacks);
 			// force disable internal tool execution to avoid conflict with Agent framework's tool execution management.
-            requestOptions.setInternalToolExecutionEnabled(false);
-            promptSpec.options(requestOptions);
+            copiedOptions.setInternalToolExecutionEnabled(false);
+            promptSpec.options(copiedOptions);
         } else {
 			// Check if user has set default options in ChatModel or ChatClient.
 			if (promptSpec instanceof DefaultChatClient.DefaultChatClientRequestSpec defaultChatClientRequestSpec) {
@@ -498,8 +510,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				}
 				// If options is ToolCallingChatOptions, set filtered tool callbacks and toolExecution disabled.
 				else if (options instanceof ToolCallingChatOptions toolCallingChatOptions) {
-					toolCallingChatOptions.setToolCallbacks(filteredToolCallbacks);
-					toolCallingChatOptions.setInternalToolExecutionEnabled(false);
+					ToolCallingChatOptions copiedOptions = toolCallingChatOptions.copy();
+					copiedOptions.setToolCallbacks(filteredToolCallbacks);
+					copiedOptions.setInternalToolExecutionEnabled(false);
+					defaultChatClientRequestSpec.options(copiedOptions);
 				}
 			} else if (!filteredToolCallbacks.isEmpty()) {
 				promptSpec.tools(filteredToolCallbacks);

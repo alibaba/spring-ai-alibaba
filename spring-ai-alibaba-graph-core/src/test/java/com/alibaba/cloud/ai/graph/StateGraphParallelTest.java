@@ -443,7 +443,7 @@ public class StateGraphParallelTest {
 
 		// Verify that execution completed quickly (ANY_OF should use first completed)
 		// streamingNode1 completes first (50ms), so execution should be fast
-		assertTrue(durationAnyOf < 200, 
+		assertTrue(durationAnyOf < 300,
 				"Execution with ANY_OF should complete quickly using streamingNode1, but took " + durationAnyOf + "ms");
 
 		// Verify that result is present

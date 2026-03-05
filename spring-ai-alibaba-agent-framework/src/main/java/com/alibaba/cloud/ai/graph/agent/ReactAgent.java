@@ -185,6 +185,43 @@ public class ReactAgent extends BaseAgent {
 		return doMessageInvoke(messages, config);
 	}
 
+	/**
+	 * Calls the agent with the given inputs map and returns the assistant message.
+	 * <p>
+	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
+	 * use this overload.
+	 * <p>
+	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
+	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
+	 * placeholders or any other state values.
+	 *
+	 * @param inputs the input map (reserved: messages, input; other keys as state)
+	 * @return the assistant message response
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public AssistantMessage call(Map<String, Object> inputs) throws GraphRunnerException {
+		return doMessageInvoke(inputs, null);
+	}
+
+	/**
+	 * Calls the agent with the given inputs map and runtime config, returns the assistant message.
+	 * <p>
+	 * When you need to pass additional parameters beyond {@code messages} and {@code input},
+	 * use this overload.
+	 * <p>
+	 * Reserved keys: {@code messages} and {@code input} are used as question/input for the
+	 * agent. Other keys can be arbitrary and are passed as graph state, e.g. for prompt
+	 * placeholders or any other state values.
+	 *
+	 * @param inputs the input map (reserved: messages, input; other keys as state)
+	 * @param config runtime configuration controlling execution behavior
+	 * @return the assistant message response
+	 * @throws GraphRunnerException if the graph execution fails
+	 */
+	public AssistantMessage call(Map<String, Object> inputs, RunnableConfig config) throws GraphRunnerException {
+		return doMessageInvoke(inputs, config);
+	}
+
 	public void interrupt(RunnableConfig config) {
 		updateAgentState(List.of(), config);
 	}
@@ -220,24 +257,30 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	private AssistantMessage doMessageInvoke(Object message, RunnableConfig config) throws GraphRunnerException {
-		Map<String, Object> inputs= buildMessageInput(message);
-		Optional<OverAllState> state = doInvoke(inputs, config);
+		Map<String, Object> inputs = buildMessageInput(message);
+		return extractAssistantMessage(doInvoke(inputs, config));
+	}
 
+	private AssistantMessage doMessageInvoke(Map<String, Object> inputs, RunnableConfig config) throws GraphRunnerException {
+		return extractAssistantMessage(doInvoke(inputs, config));
+	}
+
+	private AssistantMessage extractAssistantMessage(Optional<OverAllState> state) {
 		if (StringUtils.hasLength(outputKey)) {
 			return state.flatMap(s -> s.value(outputKey))
 					.map(msg -> (AssistantMessage) msg)
-					.orElseThrow(() -> new IllegalStateException("Output key " + outputKey + " not found in agent state") );
+					.orElseThrow(() -> new IllegalStateException("Output key " + outputKey + " not found in agent state"));
 		}
 
-        // Add a validation instance when performing message conversion to
-        // avoid potential type conversion exceptions.
-        return state.flatMap(s -> s.value("messages"))
-                .stream()
-                .flatMap(messageList -> ((List<?>) messageList).stream()
-                        .filter(msg -> msg instanceof AssistantMessage)
-                        .map(msg -> (AssistantMessage) msg))
-                .reduce((first, second) -> second)
-                .orElseThrow(() -> new AgentException("No AssistantMessage found in 'messages' state"));
+		// Add a validation instance when performing message conversion to
+		// avoid potential type conversion exceptions.
+		return state.flatMap(s -> s.value("messages"))
+				.stream()
+				.flatMap(messageList -> ((List<?>) messageList).stream()
+						.filter(msg -> msg instanceof AssistantMessage)
+						.map(msg -> (AssistantMessage) msg))
+				.reduce((first, second) -> second)
+				.orElseThrow(() -> new AgentException("No AssistantMessage found in 'messages' state"));
 	}
 
 	public StateGraph getStateGraph() {
@@ -1064,10 +1107,10 @@ public class ReactAgent extends BaseAgent {
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
 			RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config)
 					.checkPointId(null)
-					.clearContext()
 					.nextNode(null)
 					.addMetadata("_AGENT_", subGraphId(nodeId)) // subGraphId is the same as the name of the agent that created it
 					.build();
+			subGraphRunnableConfig.clearContext();
 			var parentSaver = parentCompileConfig.checkpointSaver();
 			var subGraphSaver = childGraph.compileConfig.checkpointSaver();
 
@@ -1084,14 +1127,13 @@ public class ReactAgent extends BaseAgent {
 									.orElseGet(() -> subGraphId(nodeId)))
 							.nextNode(null)
 							.checkPointId(null)
-							.clearContext()
 							.addMetadata("_AGENT_", subGraphId(nodeId)) // subGraphId is the same as the name of the agent that created it
 							.build();
+					subGraphRunnableConfig.clearContext();
 				}
 			}
 			return subGraphRunnableConfig;
 		}
-
 	}
 
 	/**

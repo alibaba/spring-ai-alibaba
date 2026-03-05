@@ -636,7 +636,7 @@ public class StateGraphTest {
 	/**
 	 * Tests that parallel branches support multiple target nodes, conditional edges,
 	 * conditional branches on parallel nodes, and duplicate targets.
-	 * All these patterns are now supported and should work correctly.
+	 * All these patterns are now supported in 1.1.2.0 and should work correctly.
 	 */
 	@Test
 	@Disabled

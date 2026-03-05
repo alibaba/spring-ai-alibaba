@@ -103,8 +103,7 @@ public class SubGraphTest {
 	}
 
 	private List<String> _resume(CompiledGraph workflow, Map<String, Object> input) throws Exception {
-		RunnableConfig resumeConfig = RunnableConfig.builder().threadId("SubGraphTest")
-				.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "placeholder").build();
+		RunnableConfig resumeConfig = RunnableConfig.builder().threadId("SubGraphTest").resume().build();
 		return workflow.stream(input, resumeConfig)
 				.doOnNext(System.out::println)
 				.map(NodeOutput::node)
