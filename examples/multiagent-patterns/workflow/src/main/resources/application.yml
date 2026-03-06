@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: multi-agent-workflow
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY:}
+
+  datasource:
+    url: jdbc:h2:mem:chinook;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-chinook.sql
+
+# Enable RAG agent example (ragagent package)
+workflow.rag.enabled: false
+
+# Enable SQL agent example (sqlagent package)
+workflow.sql.enabled: false
+
+# Run demo on startup (set one of workflow.rag.enabled or workflow.sql.enabled to true first)
+workflow.runner.enabled: false

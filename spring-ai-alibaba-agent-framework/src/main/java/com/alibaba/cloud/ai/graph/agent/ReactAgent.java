@@ -1027,9 +1027,6 @@ public class ReactAgent extends BaseAgent {
 
 			String outputKeyToParent = StringUtils.hasLength(ReactAgent.this.outputKey) ? ReactAgent.this.outputKey : "messages";
 			result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult, instructionMessage));
-			if (parentMessages != null) {
-				result.put("messages", parentMessages);
-			}
 			return result;
 		}
 
