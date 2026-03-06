@@ -440,7 +440,15 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
 			if (message instanceof AgentInstructionMessage instructionMessage && !instructionMessage.isRendered()) {
-				AgentInstructionMessage newMessage = instructionMessage.mutate().text(renderPromptTemplate(instructionMessage.getText(), processedParams)).rendered(true).build();
+				String renderedText = instructionMessage.getText();
+				try {
+					renderedText = renderPromptTemplate(instructionMessage.getText(), processedParams);
+				} catch (Exception e) {
+					// Fallback: if template rendering fails (e.g., instructions containing JSON/braces),
+					// keep the original instruction text unchanged
+					logger.debug("Failed to render instruction template, keeping original text", e);
+				}
+				AgentInstructionMessage newMessage = instructionMessage.mutate().text(renderedText).rendered(true).build();
 				messages.set(i, newMessage);
 				break;
 			}

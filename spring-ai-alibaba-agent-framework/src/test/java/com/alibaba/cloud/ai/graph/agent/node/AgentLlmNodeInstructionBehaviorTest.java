@@ -72,6 +72,32 @@ class AgentLlmNodeInstructionBehaviorTest {
 		assertTrue(rendered.isRendered());
 	}
 
+	@Test
+	void renderTemplatedUserMessageShouldFallbackToRawInstructionWhenTemplateRenderingFails() {
+		AgentLlmNode node = AgentLlmNode.builder()
+				.agentName("main-agent")
+				.build();
+
+		// Instruction with JSON/braces that might cause template rendering to fail
+		String jsonInstruction = """
+			{
+			  "system_prompt": "You are a helper",
+			  "config": {"key": "value"}
+			}
+			""";
+
+		List<Message> messages = new ArrayList<>();
+		messages.add(AgentInstructionMessage.builder().text(jsonInstruction).build());
+
+		// Should not throw exception and should keep the original text
+		node.renderTemplatedUserMessage(messages, Map.of("input", "hello"), Optional.empty());
+
+		AgentInstructionMessage rendered = assertInstanceOf(AgentInstructionMessage.class, messages.get(0));
+		// The text should be unchanged if template rendering failed
+		assertEquals(jsonInstruction, rendered.getText());
+		assertTrue(rendered.isRendered());
+	}
+
 	private static final class PromptCapturingChatModel implements ChatModel {
 
 		private volatile Prompt lastPrompt;
