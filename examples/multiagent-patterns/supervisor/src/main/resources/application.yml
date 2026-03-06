@@ -8,4 +8,4 @@ spring:
 # Set to true to run the two demo scenarios on startup (single-domain and multi-domain).
 # Default: false (app starts without calling the model).
 supervisor:
- run-examples: false
+  run-examples: false
