@@ -155,9 +155,6 @@ StateGraph stateGraph = new StateGraph("Consumer Service Workflow Demo", stateFa
 多智能体（Multi-agent）
 复杂任务拆解的另一种解决方案是多智能体，相比于工作流，多智能体虽也遵循特定的流程，但是在整个决策、执行流程上具备更多的自主性和灵活性。多个子智能体间通过通信协作完成，最终完成任务解答，在业界，有多种常见的多智能体通信模型，如下图是几个典型示例：
 
-multi-agent
-图片出自 Langchain 官方博客
-
 Spring AI Alibaba Graph 可用来开发各种多智能体模式。官方社区目前发布了几款基于 Spring AI Alibaba Graph 开发的智能体产品，包括通用智能体 JManus、DeepResearch 智能体、AgentScope 等。
 
 打造下一代通用智能体平台
