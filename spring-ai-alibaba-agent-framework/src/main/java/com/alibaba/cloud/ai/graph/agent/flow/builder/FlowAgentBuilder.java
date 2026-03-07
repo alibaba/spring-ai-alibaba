@@ -22,7 +22,9 @@ import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.observation.GraphObservationSupport;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import io.micrometer.observation.ObservationRegistry;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,6 +56,8 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	public Executor executor;
 
 	public List<Hook> hooks;
+
+	public ObservationRegistry observationRegistry;
 
 	/**
 	 * Sets the agent name.
@@ -161,6 +165,16 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 	}
 
 	/**
+	 * Sets the observation registry used by the underlying graph execution.
+	 * @param observationRegistry the observation registry
+	 * @return this builder instance for method chaining
+	 */
+	public B observationRegistry(ObservationRegistry observationRegistry) {
+		this.observationRegistry = observationRegistry;
+		return self();
+	}
+
+	/**
 	 * Returns the concrete builder instance. This method enables fluent interface support
 	 * in subclasses.
 	 * @return this builder instance
@@ -194,9 +208,15 @@ public abstract class FlowAgentBuilder<T extends FlowAgent, B extends FlowAgentB
 			}
 			this.compileConfig = CompileConfig.builder(compileConfig).saverConfig(SaverConfig.builder().register(saver).build()).build();
 		}
+		this.compileConfig = GraphObservationSupport.enhance(this.compileConfig, this.observationRegistry);
 		return doBuild();
 	};
 
+	/**
+	 * Creates the concrete FlowAgent instance after common builder processing has
+	 * completed.
+	 * @return the built FlowAgent instance
+	 */
 	public abstract T doBuild();
 
 }
