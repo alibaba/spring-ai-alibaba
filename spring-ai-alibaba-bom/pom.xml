@@ -104,7 +104,11 @@
                 <artifactId>spring-ai-alibaba-starter-graph-observation</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-builtin-nodes</artifactId>
+                <version>>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-agent-framework</artifactId>
