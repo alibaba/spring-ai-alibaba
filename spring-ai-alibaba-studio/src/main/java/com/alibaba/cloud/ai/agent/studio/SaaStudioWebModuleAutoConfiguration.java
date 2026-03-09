@@ -19,7 +19,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ComponentScan("com.alibaba.cloud.ai.agent.studio")
+@ComponentScan(basePackages = "com.alibaba.cloud.ai.agent.studio")
 public class SaaStudioWebModuleAutoConfiguration {
 	public SaaStudioWebModuleAutoConfiguration() {
 		System.out.println("✅ Spring AI Alibaba Studio module loaded!");
