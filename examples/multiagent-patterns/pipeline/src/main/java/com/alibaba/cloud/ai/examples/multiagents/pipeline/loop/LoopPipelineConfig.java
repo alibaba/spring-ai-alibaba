@@ -67,7 +67,7 @@ public class LoopPipelineConfig {
 				.description("Converts natural language to MySQL SQL")
 				.systemPrompt(SQL_GENERATOR_PROMPT)
 				.outputKey("sql")
-				.includeContents(false)
+				.instruction("{input}")
 				.returnReasoningContents(false)
 				.build();
 
