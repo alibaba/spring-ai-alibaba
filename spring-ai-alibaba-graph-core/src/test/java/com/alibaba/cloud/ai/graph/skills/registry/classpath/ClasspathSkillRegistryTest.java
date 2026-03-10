@@ -15,8 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph.skills.registry.classpath;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.mockito.Answers;
 import org.mockito.MockedStatic;
 
@@ -37,6 +41,7 @@ import java.util.jar.JarOutputStream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.ai.chat.model.ChatModel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,7 +51,23 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 
+@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class ClasspathSkillRegistryTest {
+
+	private ChatModel chatModel;
+
+	@BeforeEach
+	void setUp() {
+		// Create DashScopeApi instance using the API key from environment variable
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.build();
+
+		// Create DashScope ChatModel instance
+		this.chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.build();
+	}
 
 	@Test
 	public void testClasspathSkillRegistryLoadsSkills() throws Exception {
