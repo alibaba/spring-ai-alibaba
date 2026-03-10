@@ -70,6 +70,7 @@ public class RoutingGraphConfig {
 	public ReactAgent githubAgent(ChatModel chatModel, GitHubStubTools githubStubTools) {
 		return ReactAgent.builder()
 				.name("github")
+				.description("Searches GitHub for code, issues, and pull requests; answers questions about APIs and implementation.")
 				.instruction(GITHUB_PROMPT)
 				.model(chatModel)
 				.methodTools(githubStubTools)
@@ -82,6 +83,7 @@ public class RoutingGraphConfig {
 	public ReactAgent notionAgent(ChatModel chatModel, NotionStubTools notionStubTools) {
 		return ReactAgent.builder()
 				.name("notion")
+				.description("Searches Notion for internal documentation, processes, and team policies.")
 				.systemPrompt(NOTION_PROMPT)
 				.model(chatModel)
 				.methodTools(notionStubTools)
@@ -94,6 +96,7 @@ public class RoutingGraphConfig {
 	public ReactAgent slackAgent(ChatModel chatModel, SlackStubTools slackStubTools) {
 		return ReactAgent.builder()
 				.name("slack")
+				.description("Searches Slack threads and discussions for team-shared knowledge and solutions.")
 				.systemPrompt(SLACK_PROMPT)
 				.model(chatModel)
 				.methodTools(slackStubTools)

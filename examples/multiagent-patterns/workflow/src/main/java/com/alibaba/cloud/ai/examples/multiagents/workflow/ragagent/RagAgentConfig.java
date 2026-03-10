@@ -102,6 +102,13 @@ public class RagAgentConfig {
 				.model(chatModel)
 				.systemPrompt("You are a WNBA stats assistant. Answer questions using the context provided.")
 				.methodTools(new RagAgentTools())
+				.outputKey("final_answer")
+				// set includeContents to false, because we have included context in the instruction {input}.
+				.instruction("Answer based on the context and question below.\n\n{input}")
+				.includeContents(false)
+				// set includeContents to true to include 'messages' as context for the agent, which contains the prompt with question and retrieved docs. The agent can refer to this when generating the answer.
+				// .includeContents(true)
+				.returnReasoningContents(false)
 				.inputType(String.class)
 				.build();
 	}
@@ -115,6 +122,7 @@ public class RagAgentConfig {
 			strategies.put("question", new ReplaceStrategy());
 			strategies.put("rewritten_query", new ReplaceStrategy());
 			strategies.put("documents", new ReplaceStrategy());
+			strategies.put("final_answer", new ReplaceStrategy());
 			strategies.put("messages", new AppendStrategy(false));
 			return strategies;
 		});
@@ -126,12 +134,12 @@ public class RagAgentConfig {
 		graph.addNode("rewrite", node_async(rewriteNode))
 				.addNode("retrieve", node_async(retrieveNode))
 				.addNode("prepare_agent", node_async(prepareAgentNode))
-				.addNode("agent", ragAgent.asNode(false, false))
+				.addNode("rag_agent", ragAgent.asNode())
 				.addEdge(START, "rewrite")
 				.addEdge("rewrite", "retrieve")
 				.addEdge("retrieve", "prepare_agent")
-				.addEdge("prepare_agent", "agent")
-				.addEdge("agent", END);
+				.addEdge("prepare_agent", "rag_agent")
+				.addEdge("rag_agent", END);
 
 		return graph.compile();
 	}

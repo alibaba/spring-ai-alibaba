@@ -33,6 +33,7 @@ import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
+import com.alibaba.cloud.ai.graph.agent.hook.InstructionAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.InterruptionHook;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
@@ -306,9 +307,14 @@ public class ReactAgent extends BaseAgent {
 			hooks = new ArrayList<>();
 		}
 
+		// Always inject default InstructionAgentHook so instruction is handled in beforeAgent
+		List<Hook> effectiveHooks = new ArrayList<>();
+		effectiveHooks.add(InstructionAgentHook.create());
+		effectiveHooks.addAll(hooks);
+
 		// Validate hook uniqueness
 		Set<String> hookNames = new HashSet<>();
-		for (Hook hook : hooks) {
+		for (Hook hook : effectiveHooks) {
 			if (!hookNames.add(Hook.getFullHookName(hook))) {
 				throw new IllegalArgumentException("Duplicate hook instances found");
 			}
@@ -319,7 +325,7 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		// Create graph with state serializer
-		StateGraph graph = new StateGraph(name, buildMessagesKeyStrategyFactory(hooks), stateSerializer);
+		StateGraph graph = new StateGraph(name, buildMessagesKeyStrategyFactory(effectiveHooks), stateSerializer);
 
 		graph.addNode(AGENT_MODEL_NAME, node_async(this.llmNode));
 		if (hasTools) {
@@ -327,13 +333,13 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		// some hooks may need tools so they can do some initialization/cleanup on start/end of agent loop
-		setupToolsForHooks(hooks, toolNode);
+		setupToolsForHooks(effectiveHooks, toolNode);
 
 		// Categorize hooks by position
-		List<Hook> beforeAgentHooks = filterHooksByPosition(hooks, HookPosition.BEFORE_AGENT);
-		List<Hook> afterAgentHooks = filterHooksByPosition(hooks, HookPosition.AFTER_AGENT);
-		List<Hook> beforeModelHooks = filterHooksByPosition(hooks, HookPosition.BEFORE_MODEL);
-		List<Hook> afterModelHooks = filterHooksByPosition(hooks, HookPosition.AFTER_MODEL);
+		List<Hook> beforeAgentHooks = filterHooksByPosition(effectiveHooks, HookPosition.BEFORE_AGENT);
+		List<Hook> afterAgentHooks = filterHooksByPosition(effectiveHooks, HookPosition.AFTER_AGENT);
+		List<Hook> beforeModelHooks = filterHooksByPosition(effectiveHooks, HookPosition.BEFORE_MODEL);
+		List<Hook> afterModelHooks = filterHooksByPosition(effectiveHooks, HookPosition.AFTER_MODEL);
 
 		// Add hook nodes for beforeAgent hooks
 		for (Hook hook : beforeAgentHooks) {
@@ -994,10 +1000,7 @@ public class ReactAgent extends BaseAgent {
 			Flux<GraphResponse<NodeOutput>> subGraphResult;
 			Object parentMessages = null;
 
-			AgentInstructionMessage instructionMessage = null;
-			if (StringUtils.hasLength(instruction)) {
-				instructionMessage = AgentInstructionMessage.builder().text(instruction).build();
-			}
+			// Instruction is always injected by InstructionAgentHook in beforeAgent; do not add here
 			if (includeContents) {
 				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
 				List<Object> newMessages;
@@ -1006,27 +1009,18 @@ public class ReactAgent extends BaseAgent {
 				} else {
 					newMessages = new ArrayList<>();
 				}
-				// by default, includeContents is true, we pass down the messages from the parent state
-				if (StringUtils.hasLength(instruction)) {
-					// instruction will be added as a special UserMessage to the child graph.
-					newMessages.add(instructionMessage);
-				}
 				stateForChild.put("messages", newMessages);
 				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			} else {
 				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
 				parentMessages = stateForChild.remove("messages");
-				if (StringUtils.hasLength(instruction)) {
-					// instruction will be added as a special UserMessage to the child graph.
-					stateForChild.put("messages", instructionMessage);
-				}
 				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			}
 
 			Map<String, Object> result = new HashMap<>();
 
 			String outputKeyToParent = StringUtils.hasLength(ReactAgent.this.outputKey) ? ReactAgent.this.outputKey : "messages";
-			result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult, instructionMessage));
+			result.put(outputKeyToParent, getGraphResponseFlux(parentState, subGraphResult, null));
 			return result;
 		}
 
