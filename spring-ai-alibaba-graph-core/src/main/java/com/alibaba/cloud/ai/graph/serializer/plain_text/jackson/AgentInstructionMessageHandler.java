@@ -38,7 +38,8 @@ public interface AgentInstructionMessageHandler {
 
 	enum Field {
 
-		TEXT("text");
+		TEXT("text"),
+		RENDERED("rendered");
 
 		final String name;
 
@@ -70,6 +71,7 @@ public interface AgentInstructionMessageHandler {
 
 		private void serializeFields(AgentInstructionMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
 			gen.writeStringField(Field.TEXT.name, msg.getText());
+			gen.writeBooleanField(Field.RENDERED.name, msg.isRendered());
 			serializeMetadata(gen, msg.getMetadata());
 		}
 	}
@@ -87,8 +89,10 @@ public interface AgentInstructionMessageHandler {
 
 			var text = node.findValue(Field.TEXT.name).asText();
 			var metadata = deserializeMetadata(mapper, node);
+			var renderedNode = node.findValue(Field.RENDERED.name);
+			var rendered = renderedNode != null && renderedNode.asBoolean();
 
-			return AgentInstructionMessage.builder().text(text).metadata(metadata).build();
+			return AgentInstructionMessage.builder().text(text).metadata(metadata).rendered(rendered).build();
 
 		}
 
