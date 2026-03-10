@@ -15,44 +15,38 @@
  */
 package com.alibaba.cloud.ai.graph.skills.registry.classpath;
 
-import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
-import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 
-import org.springframework.ai.chat.model.ChatModel;
+import org.mockito.Answers;
+import org.mockito.MockedStatic;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLStreamHandler;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mockStatic;
 
-@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class ClasspathSkillRegistryTest {
-
-	private ChatModel chatModel;
-
-	@BeforeEach
-	void setUp() {
-		// Create DashScopeApi instance using the API key from environment variable
-		DashScopeApi dashScopeApi = DashScopeApi.builder()
-				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
-				.build();
-
-		// Create DashScope ChatModel instance
-		this.chatModel = DashScopeChatModel.builder()
-				.dashScopeApi(dashScopeApi)
-				.build();
-	}
 
 	@Test
 	public void testClasspathSkillRegistryLoadsSkills() throws Exception {
@@ -195,4 +189,80 @@ class ClasspathSkillRegistryTest {
 					"Retrieved skill name should match");
 		}
 	}
+
+	@Test
+	public void testNestedJarCompatibility(@TempDir Path tempDir) throws Exception {
+		// 1. Create a dummy JAR file with a skill
+		Path jarPath = tempDir.resolve("test-app.jar");
+		createTestJar(jarPath);
+
+		// 2. Simulate a nested JAR URI:
+		// nested:file:/path/to/test-app.jar!/BOOT-INF/classes!/skills
+		String nestedUriStr = "nested:file:" + jarPath.toAbsolutePath() + "!/BOOT-INF/classes!/skills";
+		URL mockResource = new URL(null, nestedUriStr, new URLStreamHandler() {
+			@Override
+			protected java.net.URLConnection openConnection(URL u) {
+				return null;
+			}
+		});
+
+		// 3. Mock FileSystems to return a real JAR filesystem when the "nested" URI is
+		// used
+		try (MockedStatic<FileSystems> mockedFileSystems = mockStatic(FileSystems.class, Answers.CALLS_REAL_METHODS)) {
+			// Real JAR filesystem for our dummy JAR
+			URI realJarUri = URI.create("jar:file:" + jarPath.toAbsolutePath() + "!/");
+			FileSystem realJarFs = FileSystems.newFileSystem(realJarUri, Collections.emptyMap());
+
+			// The expected fsUri derived from nestedUriStr in loadSkillsToRegistry logic:
+			// jarUri will be "nested:file:/path/to/test-app.jar!/BOOT-INF/classes"
+			// fsUri will be "nested:file:/path/to/test-app.jar!/BOOT-INF/classes!/"
+			URI expectedFsUri = URI.create("nested:file:" + jarPath.toAbsolutePath() + "!/BOOT-INF/classes!/");
+
+			mockedFileSystems.when(() -> FileSystems.newFileSystem(eq(expectedFsUri), any())).thenReturn(realJarFs);
+			mockedFileSystems.when(() -> FileSystems.getFileSystem(eq(expectedFsUri))).thenReturn(realJarFs);
+
+			// 4. Create and trigger ClasspathSkillRegistry with mock resource
+			TestClasspathSkillRegistry registry = new TestClasspathSkillRegistry("skills",
+					tempDir.resolve("base").toString(), mockResource);
+
+			// 5. Verify skills are loaded
+			List<SkillMetadata> skills = registry.listAll();
+			assertNotNull(skills);
+			assertEquals(1, skills.size(), "Should load 1 skill from simulated nested JAR");
+			assertEquals("test-skill", skills.get(0).getName());
+
+			// Cleanup
+			realJarFs.close();
+		}
+	}
+
+	private void createTestJar(Path jarPath) throws IOException {
+		try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(jarPath.toFile()))) {
+			// Add a skill directory and SKILL.md under /skills
+			JarEntry entry = new JarEntry("skills/test-skill/SKILL.md");
+			jos.putNextEntry(entry);
+			String content = "---\n" + "name: test-skill\n" + "description: A test skill\n" + "---\n" + "Test content";
+			jos.write(content.getBytes());
+			jos.closeEntry();
+		}
+	}
+
+	// Subclass to override resource lookup for testing
+	private static class TestClasspathSkillRegistry extends ClasspathSkillRegistry {
+
+		private final URL mockResource;
+
+		public TestClasspathSkillRegistry(String classpathPath, String basePath, URL mockResource) {
+			super(ClasspathSkillRegistry.builder().classpathPath(classpathPath).basePath(basePath).autoLoad(false));
+			this.mockResource = mockResource;
+			loadSkillsToRegistry();
+		}
+
+		@Override
+		protected URL getResource(String path) {
+			return mockResource;
+		}
+
+	}
+
 }
