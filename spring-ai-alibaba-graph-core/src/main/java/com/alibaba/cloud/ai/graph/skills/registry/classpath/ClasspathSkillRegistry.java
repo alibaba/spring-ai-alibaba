@@ -82,7 +82,7 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	// JAR FileSystem for classpath resources (only created if resource is in JAR)
 	private FileSystem jarFileSystem;
 
-	protected ClasspathSkillRegistry(Builder builder) {
+	private ClasspathSkillRegistry(Builder builder) {
 		this.classpathPath = builder.classpathPath != null && !builder.classpathPath.isEmpty()
 				? builder.classpathPath
 				: "skills";

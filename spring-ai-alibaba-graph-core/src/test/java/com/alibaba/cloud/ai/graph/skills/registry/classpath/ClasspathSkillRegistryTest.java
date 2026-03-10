@@ -43,8 +43,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.spy;
 
 class ClasspathSkillRegistryTest {
 
@@ -222,8 +225,13 @@ class ClasspathSkillRegistryTest {
 			mockedFileSystems.when(() -> FileSystems.getFileSystem(eq(expectedFsUri))).thenReturn(realJarFs);
 
 			// 4. Create and trigger ClasspathSkillRegistry with mock resource
-			TestClasspathSkillRegistry registry = new TestClasspathSkillRegistry("skills",
-					tempDir.resolve("base").toString(), mockResource);
+			ClasspathSkillRegistry registry = spy(ClasspathSkillRegistry.builder()
+					.classpathPath("skills")
+					.basePath(tempDir.resolve("base").toString())
+					.autoLoad(false)
+					.build());
+			doReturn(mockResource).when(registry).getResource(anyString());
+			registry.loadSkillsToRegistry();
 
 			// 5. Verify skills are loaded
 			List<SkillMetadata> skills = registry.listAll();
@@ -245,24 +253,6 @@ class ClasspathSkillRegistryTest {
 			jos.write(content.getBytes());
 			jos.closeEntry();
 		}
-	}
-
-	// Subclass to override resource lookup for testing
-	private static class TestClasspathSkillRegistry extends ClasspathSkillRegistry {
-
-		private final URL mockResource;
-
-		public TestClasspathSkillRegistry(String classpathPath, String basePath, URL mockResource) {
-			super(ClasspathSkillRegistry.builder().classpathPath(classpathPath).basePath(basePath).autoLoad(false));
-			this.mockResource = mockResource;
-			loadSkillsToRegistry();
-		}
-
-		@Override
-		protected URL getResource(String path) {
-			return mockResource;
-		}
-
 	}
 
 }
