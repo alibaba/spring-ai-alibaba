@@ -83,20 +83,6 @@
 			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
 
-		<!-- GraalVM Polyglot for Python execution -->
-		<dependency>
-			<groupId>org.graalvm.polyglot</groupId>
-			<artifactId>polyglot</artifactId>
-			<version>${graalvm.polyglot.version}</version>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.graalvm.polyglot</groupId>
-			<artifactId>python-community</artifactId>
-			<version>${graalvm.polyglot.version}</version>
-			<type>pom</type>
-			<optional>true</optional>
-		</dependency>
 	</dependencies>
 
 	<build>
