@@ -26,6 +26,7 @@ import java.util.Map;
  */
 public class ToolCallResponse {
 
+    public final static String SUCCESS_STATUS = "SUCCESS";
 	private final String result;
 	private final String toolName;
 	private final String toolCallId;
@@ -47,6 +48,19 @@ public class ToolCallResponse {
 	public static ToolCallResponse of(String toolCallId, String toolName, String result) {
 		return new ToolCallResponse(result, toolName, toolCallId);
 	}
+
+    /**
+     *  <p>
+     *   Rewrite the status field of the source code to SUCCESS, and then make a judgment in the tool interceptor
+     *  </p>
+     * @param toolCallId toolCallId
+     * @param toolName   toolName
+     * @param result     response
+     * @return
+     */
+    public static ToolCallResponse success(String toolCallId, String toolName, String result) {
+        return new ToolCallResponse(result, toolName, toolCallId, SUCCESS_STATUS, null);
+    }
 
 	/**
 	 * Creates an error response for a failed tool execution.
