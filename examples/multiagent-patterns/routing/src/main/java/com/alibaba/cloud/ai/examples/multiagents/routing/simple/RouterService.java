@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.examples.multiagents.routing.simple.state.AgentOutpu
 import com.alibaba.cloud.ai.examples.multiagents.routing.simple.state.Classification;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingMergeNode;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,11 +71,18 @@ public class RouterService {
 		}
 
 		OverAllState state = resultOpt.get();
+		String finalAnswer;
+
 		List<Classification> classifications = collectClassifications(state);
 		List<AgentOutput> results = collectAgentOutputs(state);
 		log.debug("Routed to {} sources: {}", classifications.size(), classifications);
 
-		String finalAnswer = synthesize(query, results);
+		Optional<Object> mergedOpt = state.value(RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY);
+		if (mergedOpt.isPresent()) {
+			finalAnswer = extractText(mergedOpt.get());
+		} else {
+			finalAnswer = synthesize(query, results);
+		}
 		return new RouterResult(query, classifications, results, finalAnswer);
 	}
 
@@ -99,7 +107,7 @@ public class RouterService {
 			Optional<Object> outputOpt = state.value(outputKey);
 			if (outputOpt.isPresent()) {
 				String agentName = outputKey.replace("_key", "");
-				String result = extractText(outputOpt.get());
+				String result = RoutingMergeNode.extractText(outputOpt.get(), outputKey);
 				list.add(new AgentOutput(agentName, result));
 			}
 		}

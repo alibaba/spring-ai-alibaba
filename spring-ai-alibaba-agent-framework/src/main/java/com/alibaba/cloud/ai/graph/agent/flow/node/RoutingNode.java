@@ -251,10 +251,23 @@ public class RoutingNode implements MultiCommandAction {
 	 * Response record for structured routing decision output.
 	 * Each agent has a targeted sub-question optimized for that agent's capabilities.
 	 */
-	public record RoutingDecision(List<AgentRouting> agents) {
+	public static class RoutingDecision {
+		private List<AgentRouting> agents;
 
-		public RoutingDecision {
-			agents = agents != null ? agents : Collections.emptyList();
+		public RoutingDecision() {
+			this.agents = new ArrayList<>();
+		}
+
+		public RoutingDecision(List<AgentRouting> agents) {
+			this.agents = agents != null ? agents : Collections.emptyList();
+		}
+
+		public List<AgentRouting> getAgents() {
+			return agents;
+		}
+
+		public void setAgents(List<AgentRouting> agents) {
+			this.agents = agents != null ? agents : new ArrayList<>();
 		}
 
 		/**

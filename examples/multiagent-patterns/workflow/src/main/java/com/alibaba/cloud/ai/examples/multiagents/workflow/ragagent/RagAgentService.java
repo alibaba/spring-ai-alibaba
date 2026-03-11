@@ -49,14 +49,9 @@ public class RagAgentService {
 
 		OverAllState state = resultOpt.get();
 		@SuppressWarnings("unchecked")
-		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-		String answer = messages.stream()
-				.filter(m -> m instanceof AssistantMessage)
-				.map(m -> m instanceof org.springframework.ai.chat.messages.AssistantMessage am ? am.getText() : "")
-				.reduce((a, b) -> b)
-				.orElse(null);
+		AssistantMessage finalAnswer = (AssistantMessage) state.value("final_answer").orElse(new AssistantMessage(""));
 
-		return new RagAgentResult(question, answer, state);
+		return new RagAgentResult(question, finalAnswer.getText(), state);
 	}
 
 	public record RagAgentResult(String question, String answer, OverAllState state) {

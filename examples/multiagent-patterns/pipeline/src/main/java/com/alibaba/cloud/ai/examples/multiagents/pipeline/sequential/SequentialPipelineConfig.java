@@ -56,7 +56,8 @@ public class SequentialPipelineConfig {
 				.description("Converts natural language to MySQL SQL")
 				.systemPrompt(SQL_GENERATOR_PROMPT)
 				.outputKey("sql")
-				.includeContents(false)
+				// Either set includeContents to true, or use instruction with {input} placeholder to pass the original user request to the agent, so it can generate relevant SQL.
+				.includeContents(true)
 				.returnReasoningContents(false)
 				.build();
 
@@ -65,9 +66,9 @@ public class SequentialPipelineConfig {
 				.model(chatModel)
 				.description("Scores SQL against user intent")
 				.systemPrompt(SQL_RATER_PROMPT)
+				.includeContents(false)
 				.instruction("Here's the generated SQL:\n {sql}.\n\n Here's the original user request:\n {input}.")
 				.outputKey("score")
-				.includeContents(false)
 				.returnReasoningContents(false)
 				.build();
 
