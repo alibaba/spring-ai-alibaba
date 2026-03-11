@@ -99,12 +99,8 @@ public class CompiledGraph {
 		this.maxIterations = compileConfig.recursionLimit();
 		this.stateGraph = stateGraph;
 
-		this.keyStrategyMap = stateGraph.getKeyStrategyFactory()
-				.apply()
-				.entrySet()
-				.stream()
-				.map(e -> Map.entry(e.getKey(), e.getValue()))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		// Defensive copy of key strategies to avoid sharing mutable maps from the factory
+		this.keyStrategyMap = new LinkedHashMap<>(stateGraph.getKeyStrategyFactory().apply());
 
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
 

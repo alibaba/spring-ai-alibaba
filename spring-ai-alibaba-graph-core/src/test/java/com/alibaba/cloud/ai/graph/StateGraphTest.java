@@ -187,6 +187,33 @@ public class StateGraphTest {
 
 	}
 
+	@Test
+	void testNullKeyStrategy() throws Exception {
+		StateGraph workflow = new StateGraph(null)
+				.addEdge(START, END);
+
+		assertThrows(NullPointerException.class, workflow::compile);
+
+		StateGraph workflow2 = new StateGraph(() -> null)
+				.addEdge(START, END);
+
+		assertThrows(NullPointerException.class, workflow2::compile);
+
+		StateGraph workflow3 = new StateGraph(() -> {
+			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
+			keyStrategyHashMap.put("prop1", null);
+			return keyStrategyHashMap;
+		}).addEdge(START, "agent_1").addNode("agent_1", node_async(state -> {
+			log.info("agent_1\n{}", state);
+			return Map.of("prop1", "test");
+		})).addEdge("agent_1", END);
+
+		// fallback to replace strategy for null key-strategy
+		CompiledGraph compiled = workflow3.compile();
+		OverAllState state = compiled.invoke(Map.of("prop1", "initial value")).orElseThrow(AssertionError::new);
+		assertEquals(state.value("prop1", ""), state.value("prop1", "test"));
+	}
+
 	/**
 	 * Tests a simple graph with one node that updates the state.
 	 */
