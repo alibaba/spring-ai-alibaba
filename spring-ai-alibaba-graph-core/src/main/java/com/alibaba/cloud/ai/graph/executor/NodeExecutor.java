@@ -227,10 +227,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 		var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
 
 		return rawFlux.filter(element -> {
-				// skip ChatResponse.getResult() == null
-				if (element instanceof ChatResponse response) {
-					return response.getResult() != null &&  response.getResult().getOutput() != null;
-				}
 				// Don't filter out Exception/Throwable - we need to handle them
 				return true;
 			})
@@ -246,6 +242,13 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return errorResponse;
 				}
 				if (element instanceof ChatResponse response) {
+					// Handle usage-only chunks (null result/output) without dropping usage metadata
+					if (response.getResult() == null || response.getResult().getOutput() == null) {
+						GraphResponse<NodeOutput> graphResponse = GraphResponse
+							.of(context.buildStreamingOutput(response, nodeId, true));
+						lastGraphResponseRef.set(graphResponse);
+						return graphResponse;
+					}
 					ChatResponse lastResponse = lastChatResponseRef.get();
 					final var currentMessage = response.getResult().getOutput();
 
