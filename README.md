@@ -63,7 +63,7 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 
 	```shell
 	git clone --depth=1 https://github.com/alibaba/spring-ai-alibaba.git
-	cd spring-ai-alibaba/examples/chatbot
+	cd spring-ai-alibaba
 	```
 
 2. Start the ChatBot.
@@ -75,7 +75,8 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 	```
 	
 	```shell
-	mvn spring-boot:run
+	# Maven installation is optional when using mvnw.
+	./mvnw -pl examples/chatbot spring-boot:run
 	```
 
 3. Chat with ChatBot.
