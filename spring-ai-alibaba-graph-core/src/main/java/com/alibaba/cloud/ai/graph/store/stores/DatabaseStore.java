@@ -77,20 +77,20 @@ public class DatabaseStore extends BaseStore {
 			String namespaceJson = objectMapper.writeValueAsString(item.getNamespace());
 			String valueJson = objectMapper.writeValueAsString(item.getValue());
 
-			// Use MERGE for H2 compatibility instead of ON DUPLICATE KEY UPDATE
-			String sql = "MERGE INTO " + tableName + " (id, namespace, key_name, value_json, created_at, updated_at) "
-					+ "KEY(id) VALUES (?, ?, ?, ?, ?, ?)";
+			try (Connection conn = dataSource.getConnection()) {
+				String databaseType = detectDatabaseType(conn);
+				String sql = generateUpsertSql(databaseType);
 
-			try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
+				try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+					stmt.setString(1, itemId);
+					stmt.setString(2, namespaceJson);
+					stmt.setString(3, item.getKey());
+					stmt.setString(4, valueJson);
+					stmt.setTimestamp(5, new Timestamp(item.getCreatedAt()));
+					stmt.setTimestamp(6, new Timestamp(item.getUpdatedAt()));
 
-				stmt.setString(1, itemId);
-				stmt.setString(2, namespaceJson);
-				stmt.setString(3, item.getKey());
-				stmt.setString(4, valueJson);
-				stmt.setTimestamp(5, new Timestamp(item.getCreatedAt()));
-				stmt.setTimestamp(6, new Timestamp(item.getUpdatedAt()));
-
-				stmt.executeUpdate();
+					stmt.executeUpdate();
+				}
 			}
 		}
 		catch (Exception e) {
@@ -276,19 +276,115 @@ public class DatabaseStore extends BaseStore {
 	/**
 	 * Initialize database table.
 	 */
-    private void initializeTable() {
-        // Create table with database-agnostic SQL
-        String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + "id TEXT PRIMARY KEY, "
-                + "namespace TEXT, " + "key_name VARCHAR(500), " + "value_json TEXT, " + "created_at TIMESTAMP, "
-                + "updated_at TIMESTAMP" + ")";
+	private void initializeTable() {
+		try (Connection conn = dataSource.getConnection()) {
+			String databaseType = detectDatabaseType(conn);
+			String sql = generateCreateTableSql(databaseType);
 
-        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
-        }
-        catch (SQLException e) {
-            throw new RuntimeException("Failed to initialize table", e);
-        }
-    }
+			try (Statement stmt = conn.createStatement()) {
+				stmt.executeUpdate(sql);
+			}
+		}
+		catch (SQLException e) {
+			throw new RuntimeException("Failed to initialize table", e);
+		}
+	}
+
+	/**
+	 * Detect database type from connection.
+	 * @param conn database connection
+	 * @return database type (mysql, postgresql, oracle, h2, or unknown)
+	 */
+	private String detectDatabaseType(Connection conn) {
+		try {
+			String productName = conn.getMetaData().getDatabaseProductName().toLowerCase();
+			if (productName.contains("mysql")) {
+				return "mysql";
+			}
+			else if (productName.contains("postgresql")) {
+				return "postgresql";
+			}
+			else if (productName.contains("oracle")) {
+				return "oracle";
+			}
+			else if (productName.contains("h2")) {
+				return "h2";
+			}
+			return "unknown";
+		}
+		catch (SQLException e) {
+			return "unknown";
+		}
+	}
+
+	/**
+	 * Generate CREATE TABLE SQL based on database type.
+	 * @param databaseType database type
+	 * @return CREATE TABLE SQL statement
+	 */
+	private String generateCreateTableSql(String databaseType) {
+		// For MySQL, use VARCHAR with specific length for PRIMARY KEY columns
+		// For other databases, TEXT is acceptable
+		String idType;
+		String namespaceType;
+		String valueType;
+
+		switch (databaseType) {
+			case "mysql":
+				// MySQL doesn't allow TEXT columns as PRIMARY KEY without key length
+				// Use VARCHAR with sufficient length for Base64-encoded keys
+				// Base64 is ASCII (1 byte per character), so VARCHAR(500) = 500 bytes,
+				// well under the 767-byte limit for utf8mb4 in older MySQL versions
+				idType = "VARCHAR(500)";
+				namespaceType = "TEXT";
+				valueType = "TEXT";
+				break;
+			case "postgresql":
+			case "h2":
+			case "oracle":
+			default:
+				// PostgreSQL, H2, and Oracle support TEXT as PRIMARY KEY
+				idType = "TEXT";
+				namespaceType = "TEXT";
+				valueType = "TEXT";
+				break;
+		}
+
+		return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + "id " + idType + " PRIMARY KEY, " + "namespace "
+				+ namespaceType + ", " + "key_name VARCHAR(500), " + "value_json " + valueType + ", "
+				+ "created_at TIMESTAMP, " + "updated_at TIMESTAMP" + ")";
+	}
+
+	/**
+	 * Generate UPSERT (INSERT or UPDATE) SQL based on database type.
+	 * @param databaseType database type
+	 * @return UPSERT SQL statement
+	 */
+	private String generateUpsertSql(String databaseType) {
+		switch (databaseType) {
+			case "mysql":
+				// MySQL uses INSERT ... ON DUPLICATE KEY UPDATE
+				return "INSERT INTO " + tableName
+						+ " (id, namespace, key_name, value_json, created_at, updated_at) "
+						+ "VALUES (?, ?, ?, ?, ?, ?) " + "ON DUPLICATE KEY UPDATE "
+						+ "namespace = VALUES(namespace), " + "key_name = VALUES(key_name), "
+						+ "value_json = VALUES(value_json), " + "updated_at = VALUES(updated_at)";
+			case "postgresql":
+				// PostgreSQL uses INSERT ... ON CONFLICT ... DO UPDATE
+				return "INSERT INTO " + tableName
+						+ " (id, namespace, key_name, value_json, created_at, updated_at) "
+						+ "VALUES (?, ?, ?, ?, ?, ?) " + "ON CONFLICT (id) DO UPDATE SET "
+						+ "namespace = EXCLUDED.namespace, " + "key_name = EXCLUDED.key_name, "
+						+ "value_json = EXCLUDED.value_json, " + "updated_at = EXCLUDED.updated_at";
+			case "h2":
+			case "oracle":
+			default:
+				// H2 and Oracle support MERGE
+				return "MERGE INTO " + tableName
+						+ " (id, namespace, key_name, value_json, created_at, updated_at) "
+						+ "KEY(id) VALUES (?, ?, ?, ?, ?, ?)";
+		}
+	}
 
 	/**
 	 * Create item ID from namespace and key.
