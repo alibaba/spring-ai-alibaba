@@ -25,6 +25,8 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
 import java.net.URI;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -71,12 +73,18 @@ public class SaaWebFetcher implements SandboxAwareTool<WebFetchToolRequest, WebF
         if (scheme == null || (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme))) {
             return failure("INVALID_URL", "only http/https URLs are supported", startedAt);
         }
+        if (targetUri.getHost() == null || targetUri.getHost().isBlank()) {
+            return failure("INVALID_URL", "url host is required", startedAt);
+        }
+        if (isPrivateNetworkHost(targetUri.getHost())) {
+            return failure("POLICY_BLOCKED", "target host resolves to private/internal network", startedAt);
+        }
 
         String format = normalizeFormat(request.format);
         int timeoutMs = normalizePositiveInt(request.timeoutMs, DEFAULT_TIMEOUT_MS);
         int maxBytes = normalizePositiveInt(request.maxBytes, DEFAULT_MAX_BYTES);
         boolean followRedirects = request.followRedirects != null && request.followRedirects;
-        int maxRedirects = normalizePositiveInt(request.maxRedirects, DEFAULT_MAX_REDIRECTS);
+        int maxRedirects = normalizeNonNegativeInt(request.maxRedirects, DEFAULT_MAX_REDIRECTS);
 
         HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(timeoutMs)).build();
 
@@ -110,6 +118,13 @@ public class SaaWebFetcher implements SandboxAwareTool<WebFetchToolRequest, WebF
                     }
 
                     currentUri = currentUri.resolve(location);
+                    if (currentUri.getHost() == null || currentUri.getHost().isBlank()) {
+                        return failure(statusCode, null, "INVALID_REDIRECT", "redirect target host is missing", startedAt);
+                    }
+                    if (isPrivateNetworkHost(currentUri.getHost())) {
+                        return failure(statusCode, currentUri.toString(), "POLICY_BLOCKED",
+                                "redirect target resolves to private/internal network", startedAt);
+                    }
                     redirectCount++;
                     continue;
                 }
@@ -161,6 +176,13 @@ public class SaaWebFetcher implements SandboxAwareTool<WebFetchToolRequest, WebF
         return value;
     }
 
+    private static int normalizeNonNegativeInt(Integer value, int defaultValue) {
+        if (value == null || value < 0) {
+            return defaultValue;
+        }
+        return value;
+    }
+
     private static String normalizeFormat(String format) {
         if (format == null || format.isBlank()) {
             return "text";
@@ -180,6 +202,21 @@ public class SaaWebFetcher implements SandboxAwareTool<WebFetchToolRequest, WebF
         String lower = contentType == null ? "" : contentType.toLowerCase(Locale.ROOT);
         return lower.startsWith("text/") || lower.contains("json") || lower.contains("xml")
                 || lower.contains("javascript") || lower.contains("x-www-form-urlencoded");
+    }
+
+    private static boolean isPrivateNetworkHost(String host) {
+        try {
+            InetAddress[] allByName = InetAddress.getAllByName(host);
+            for (InetAddress inetAddress : allByName) {
+                if (inetAddress.isLinkLocalAddress() || inetAddress.isSiteLocalAddress() || inetAddress.isMulticastAddress()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        catch (UnknownHostException ex) {
+            return false;
+        }
     }
 
     private static String transformContent(String body, String format) {
