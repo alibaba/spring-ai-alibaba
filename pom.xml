@@ -59,6 +59,7 @@
         <module>spring-boot-starters/spring-ai-alibaba-starter-config-nacos</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-builtin-nodes</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-agentscope</module>
     </modules>
 
     <scm>
@@ -85,7 +86,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>1.1.3.0-SNAPSHOT</revision>
+        <revision>1.1.2.2</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -96,7 +97,7 @@
 
         <!-- Spring version -->
         <spring-ai.version>1.1.2</spring-ai.version>
-        <spring-ai-alibaba-extensions.version>1.1.2.1</spring-ai-alibaba-extensions.version>
+        <spring-ai-alibaba-extensions.version>1.1.2.2</spring-ai-alibaba-extensions.version>
         <spring-boot.version>3.5.8</spring-boot.version>
         <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
 

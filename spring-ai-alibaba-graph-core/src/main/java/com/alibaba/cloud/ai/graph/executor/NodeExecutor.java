@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 
@@ -251,18 +252,23 @@ public class NodeExecutor extends BaseGraphExecutor {
 					if (lastResponse == null) {
 						lastChatResponseRef.set(response);
 					} else {
+						var lastOutput = lastResponse.getResult().getOutput();
 						var lastMessageText = "";
-						if (lastResponse.getResult().getOutput().getText() != null) {
-							lastMessageText = lastResponse.getResult().getOutput().getText();
+						if (lastOutput.getText() != null) {
+							lastMessageText = lastOutput.getText();
 						}
 
 						final var currentMessageText = currentMessage.getText();
 
+						boolean mergeReasoningContent = context.getConfig().mergeReasoningContent();
+						Map<String, Object> messageMetadata = mergeReasoningContent
+								? mergeMetadataWithReasoningContent(lastOutput.getMetadata(), currentMessage.getMetadata())
+								: currentMessage.getMetadata();
+
 						var newMessage = AssistantMessage.builder()
 								.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
-								.properties(currentMessage.getMetadata()) // TODO, reasoningContent in metadata is not aggregated
-								.toolCalls(mergeToolCalls(lastResponse.getResult().getOutput().getToolCalls(),
-										currentMessage.getToolCalls()))
+								.properties(messageMetadata)
+								.toolCalls(mergeToolCalls(lastOutput.getToolCalls(), currentMessage.getToolCalls()))
 								.media(currentMessage.getMedia())
 								.build();
 
@@ -334,9 +340,15 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.empty();
 				} else {
 					ChatResponse lastChatResponse = lastChatResponseRef.get();
-					// First emit a GraphResponse containing the aggregated ChatResponse
+					// For completion status with AGENT_MODEL_NAME, create a StreamingOutput with null message to avoid chunk content
+					// This ensures that completion events don't carry the full text content in the chunk field
+					Message messageForCompletion = lastChatResponse.getResult().getOutput();
+					if (nodeId.startsWith(RunnableConfig.AGENT_MODEL_NAME)) {
+						// For agent model completion, use null message to prevent chunk content
+						messageForCompletion = null;
+					}
 					GraphResponse<NodeOutput> aggregatedResponse = GraphResponse
-						.of(context.buildStreamingOutput(lastChatResponse.getResult().getOutput(), lastChatResponse, nodeId, false));
+						.of(context.buildStreamingOutput(messageForCompletion, lastChatResponse, nodeId, false));
 					// Then emit the completion response
 					Map<String, Object> completionResult = new HashMap<>();
 					completionResult.put(key, lastChatResponse.getResult().getOutput());
@@ -347,6 +359,33 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.just(aggregatedResponse, doneResponse);
 				}
 			}));
+	}
+
+	/**
+	 * Merges metadata from last and current streaming chunks, aggregating
+	 * {@code reasoningContent} by concatenation (each chunk carries partial content).
+	 * Other metadata keys are taken from current; fallback to last when absent.
+	 */
+	private static Map<String, Object> mergeMetadataWithReasoningContent(
+			Map<String, Object> lastMetadata, Map<String, Object> currentMetadata) {
+		Map<String, Object> merged = new LinkedHashMap<>();
+		if (lastMetadata != null) {
+			merged.putAll(lastMetadata);
+		}
+		if (currentMetadata != null) {
+			merged.putAll(currentMetadata);
+		}
+		// Aggregate reasoningContent: concatenate last + current (streaming chunks are incremental)
+		String key = "reasoningContent";
+		String last = (lastMetadata != null && lastMetadata.containsKey(key))
+				? String.valueOf(lastMetadata.get(key)) : "";
+		String current = (currentMetadata != null && currentMetadata.containsKey(key))
+				? String.valueOf(currentMetadata.get(key)) : "";
+		if (!last.isEmpty() || !current.isEmpty()) {
+			String aggregated = last.isEmpty() ? current : (current.isEmpty() ? last : last + current);
+			merged.put(key, aggregated);
+		}
+		return merged;
 	}
 
   /**
