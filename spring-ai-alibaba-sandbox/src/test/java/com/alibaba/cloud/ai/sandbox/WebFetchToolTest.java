@@ -45,6 +45,9 @@ class WebFetchToolTest {
 
     private HttpServer httpServer;
 
+    /**
+     * Stops the in-memory HTTP server started by a test case.
+     */
     @AfterEach
     void tearDown() {
         if (httpServer != null) {
@@ -52,6 +55,9 @@ class WebFetchToolTest {
         }
     }
 
+    /**
+     * Verifies that web_fetch can read local content and honor maxBytes truncation.
+     */
     @Test
     void shouldFetchAndTruncateContent() throws Exception {
         startServer("hello-web-fetch", false);
@@ -66,6 +72,9 @@ class WebFetchToolTest {
         assertTrue(output.contains("hello"), output);
     }
 
+    /**
+     * Uses a real external site to verify successful fetch and expected Baidu markers.
+     */
     @Test
     void shouldFetchRealContentFromBaidu() {
         ToolCallback toolCallback = ToolkitInit.WebFetchTool(createSandbox());
@@ -79,6 +88,9 @@ class WebFetchToolTest {
         assertTrue(lower.contains("baidu") || output.contains("百度"), output);
     }
 
+    /**
+     * Uses a real external site to verify successful fetch and expected Aliyun markers.
+     */
     @Test
     void shouldFetchRealContentFromAliyun() {
         ToolCallback toolCallback = ToolkitInit.WebFetchTool(createSandbox());
@@ -92,6 +104,9 @@ class WebFetchToolTest {
         assertTrue(lower.contains("aliyun") || output.contains("阿里云"), output);
     }
 
+    /**
+     * Verifies redirect requests are blocked when followRedirects is false.
+     */
     @Test
     void shouldReturnRedirectBlockedWhenFollowRedirectsDisabled() throws Exception {
         startServer("redirect-target", true);
@@ -104,6 +119,9 @@ class WebFetchToolTest {
         assertTrue(output.contains("REDIRECT_BLOCKED"), output);
     }
 
+    /**
+     * Verifies malformed URL input is rejected with INVALID_URL.
+     */
     @Test
     void shouldRejectInvalidUrl() {
         ToolCallback toolCallback = ToolkitInit.WebFetchTool(createSandbox());
@@ -112,6 +130,9 @@ class WebFetchToolTest {
         assertTrue(output.contains("INVALID_URL"), output);
     }
 
+    /**
+     * Verifies unsupported protocols are rejected by URL validation.
+     */
     @Test
     void shouldRejectUnsupportedScheme() {
         ToolCallback toolCallback = ToolkitInit.WebFetchTool(createSandbox());
@@ -120,6 +141,9 @@ class WebFetchToolTest {
         assertTrue(output.contains("INVALID_URL"), output);
     }
 
+    /**
+     * Verifies internal/private network targets are denied by policy.
+     */
     @Test
     void shouldBlockPrivateNetworkAddress() {
         ToolCallback toolCallback = ToolkitInit.WebFetchTool(createSandbox());
@@ -128,6 +152,9 @@ class WebFetchToolTest {
         assertTrue(output.contains("POLICY_BLOCKED"), output);
     }
 
+    /**
+     * Verifies timeout handling when upstream responses are slower than timeoutMs.
+     */
     @Test
     void shouldTimeoutWhenServerTooSlow() throws Exception {
         startServer("slow-content", false);
@@ -140,6 +167,9 @@ class WebFetchToolTest {
         assertTrue(output.contains("READ_TIMEOUT") || output.contains("FETCH_FAILED"), output);
     }
 
+    /**
+     * Verifies redirect hop limits are enforced when maxRedirects is exceeded.
+     */
     @Test
     void shouldFailWhenRedirectExceedsMaxLimit() throws Exception {
         startServer("redirect-target", true);
@@ -153,6 +183,9 @@ class WebFetchToolTest {
         assertTrue(output.contains("TOO_MANY_REDIRECTS"), output);
     }
 
+    /**
+     * Verifies non-text response content types are rejected.
+     */
     @Test
     void shouldRejectNonTextContentType() throws Exception {
         startServer("binary", false);
@@ -165,6 +198,10 @@ class WebFetchToolTest {
         assertTrue(output.contains("UNSUPPORTED_CONTENT_TYPE"), output);
     }
 
+    /**
+     * End-to-end integration test that checks the ReactAgent can call web_fetch and
+     * produce a final answer based on fetched Baidu hot-list content.
+     */
     @Test
     @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
     void shouldUseReactAgentToFetchAndAnalyzeBaiduHotList() throws Exception {
@@ -225,6 +262,9 @@ class WebFetchToolTest {
         }
     }
 
+    /**
+     * Extracts the latest assistant textContent fragment from serialized messages.
+     */
     private String extractFinalAssistantAnswer(String messagesText) {
         int textIndex = messagesText.lastIndexOf("textContent=");
         if (textIndex < 0) {
@@ -238,14 +278,23 @@ class WebFetchToolTest {
         return messagesText.substring(start, end).trim();
     }
 
+    /**
+     * Creates a minimal sandbox descriptor used by RuntimeFunctionToolCallback tests.
+     */
     private Sandbox createSandbox() {
         return new Sandbox("sandbox-web-fetch", "user", "session", "base", null, Map.of(), false);
     }
 
+    /**
+     * Builds a localhost URL for test server endpoints.
+     */
     private String localUrl(String path) {
         return "http://127.0.0.1:" + httpServer.getAddress().getPort() + path;
     }
 
+    /**
+     * Starts an in-memory HTTP server with content/slow/binary routes and optional redirect.
+     */
     private void startServer(String body, boolean withRedirect) throws IOException {
         httpServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         httpServer.createContext("/content", exchange -> {
