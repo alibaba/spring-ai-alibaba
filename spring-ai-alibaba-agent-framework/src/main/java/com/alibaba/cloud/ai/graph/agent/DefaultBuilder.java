@@ -29,7 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.converter.FormatProvider;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -40,6 +43,7 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -65,21 +69,27 @@ public class DefaultBuilder extends Builder {
 			throw new IllegalArgumentException("Either chatClient or model must be provided");
 		}
 
+		// Get source options from ChatClient (when provided) or from ChatModel (when building from model).
+		ChatOptions sourceOptions = (chatClient != null)
+				? getChatClientDefaultOptions(chatClient)
+				: getChatModelDefaultOptions(model);
+		ChatOptions effectiveOptions = mergeSourceOptionsWithAgentOptions(sourceOptions, this.chatOptions);
+
 		if (chatClient == null) {
-
-			ChatClient.Builder clientBuilder = ChatClient.builder(model, this.observationRegistry == null ? ObservationRegistry.NOOP : this.observationRegistry,
+			ChatClient.Builder clientBuilder = ChatClient.builder(model,
+					this.observationRegistry == null ? ObservationRegistry.NOOP : this.observationRegistry,
 					this.customObservationConvention, this.advisorObservationConvention);
-
-			if (chatOptions != null) {
-				clientBuilder.defaultOptions(chatOptions);
+			if (effectiveOptions != null) {
+				clientBuilder.defaultOptions(effectiveOptions);
 			}
-
 			chatClient = clientBuilder.build();
+		} else {
+			chatClient = chatClient.mutate().defaultOptions(effectiveOptions).build();
 		}
 
 		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
 				.agentName(this.name)
-				.chatOptions(chatOptions)
+				.chatOptions(effectiveOptions)
 				.chatClient(chatClient);
 
 		if (outputKey != null && !outputKey.isEmpty()) {
@@ -340,6 +350,81 @@ public class DefaultBuilder extends Builder {
 			ToolCallback tool = primary.resolve(toolName);
 			return tool != null ? tool : fallback.resolve(toolName);
 		};
+	}
+
+	/**
+	 * Merge source options (from ChatModel or ChatClient) with agent-level chatOptions.
+	 * Agent-level options take precedence. Uses ModelOptionsUtils.merge with the source
+	 * options type as the target.
+	 */
+	@SuppressWarnings("unchecked")
+	private static ChatOptions mergeSourceOptionsWithAgentOptions(ChatOptions sourceOptions,
+			ChatOptions agentOptions) {
+		if (sourceOptions == null) {
+			return agentOptions;
+		}
+		if (agentOptions == null) {
+			return sourceOptions;
+		}
+		Class<?> sourceOptionsClass = sourceOptions.getClass();
+		if (sourceOptionsClass == agentOptions.getClass()) {
+			logger.warn(
+					"chatOptions type ({}) should be consistent with the default options type ({}) from ChatModel/ChatClient for proper merging.",
+					agentOptions.getClass().getName(), sourceOptionsClass.getName());
+		}
+		return (ChatOptions) ModelOptionsUtils.merge(agentOptions, sourceOptions, sourceOptionsClass);
+	}
+
+	/**
+	 * Get the default ChatOptions from a ChatModel via reflection (e.g. {@code getDefaultOptions()}).
+	 * @param model the ChatModel instance (may be null)
+	 * @return the model's default options, or null if not set or reflection fails
+	 */
+	private static ChatOptions getChatModelDefaultOptions(ChatModel model) {
+		if (model == null) {
+			return null;
+		}
+		try {
+			Method m = model.getClass().getMethod("getDefaultOptions");
+			Object o = m.invoke(model);
+			return o instanceof ChatOptions ? (ChatOptions) o : null;
+		}
+		catch (ReflectiveOperationException e) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Could not read default options from ChatModel via reflection: {}", e.getMessage());
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * Get the default ChatOptions from a ChatClient via reflection (ChatClient does not expose
+	 * them publicly). Reads {@code defaultChatClientRequest.chatOptions} from the client.
+	 * The options obtained here are the same as (consistent with) the default options in the
+	 * ChatModel backing this ChatClient.
+	 * @param chatClient the ChatClient instance
+	 * @return the client's default options, or null if not set or reflection fails
+	 */
+	@SuppressWarnings("unchecked")
+	private static ChatOptions getChatClientDefaultOptions(ChatClient chatClient) {
+		try {
+			Field defaultRequestField = chatClient.getClass().getDeclaredField("defaultChatClientRequest");
+			defaultRequestField.setAccessible(true);
+			Object defaultChatClientRequest = defaultRequestField.get(chatClient);
+			if (defaultChatClientRequest == null) {
+				return null;
+			}
+			Field chatOptionsField = defaultChatClientRequest.getClass().getDeclaredField("chatOptions");
+			chatOptionsField.setAccessible(true);
+			Object options = chatOptionsField.get(defaultChatClientRequest);
+			return options instanceof ChatOptions ? (ChatOptions) options : null;
+		}
+		catch (NoSuchFieldException | IllegalAccessException e) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Could not read default options from ChatClient via reflection: {}", e.getMessage());
+			}
+			return null;
+		}
 	}
 
 }
