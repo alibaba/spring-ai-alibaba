@@ -46,6 +46,7 @@ import java.util.function.BiFunction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 @DisplayName("Skill tool resolver tests")
 class SkillToolCallbackResolverTest {
@@ -160,6 +161,37 @@ class SkillToolCallbackResolverTest {
 		assertEquals(ReadSkillTool.READ_SKILL, tool.getToolDefinition().name());
 	}
 
+	@Test
+	@DisplayName("DefaultBuilder uses effective resolver without mutating configured resolver")
+	void buildUsesEffectiveResolverWithoutMutatingConfiguredResolver() throws Exception {
+		String skillName = "skill-c";
+		FileSystemSkillRegistry registry = createRegistry(
+				skillName,
+				buildSkillMarkdown(skillName, "Skill C", "# Skill C\nContent")
+		);
+		SkillsAgentHook skillsHook = SkillsAgentHook.builder().skillRegistry(registry).build();
+
+		ToolCallback echoTool = FunctionToolCallback.builder("echo", new EchoTool())
+				.description("Echo input")
+				.inputType(String.class)
+				.build();
+		ToolCallbackResolver userResolver = toolName -> "echo".equals(toolName) ? echoTool : null;
+
+		TestableBuilder builder = new TestableBuilder();
+		builder.name("skill-agent")
+				.model(new MockChatModel())
+				.resolver(userResolver)
+				.hooks(skillsHook)
+				.toolNames("echo", ReadSkillTool.READ_SKILL);
+
+		ReactAgent agent = builder.build();
+		assertSame(userResolver, builder.rawResolver());
+
+		ToolCallbackResolver effectiveResolver = getToolCallbackResolver(getToolNode(agent));
+		assertNotNull(effectiveResolver.resolve("echo"));
+		assertNotNull(effectiveResolver.resolve(ReadSkillTool.READ_SKILL));
+	}
+
 	private AgentToolNode getToolNode(ReactAgent agent) throws Exception {
 		Field toolNodeField = ReactAgent.class.getDeclaredField("toolNode");
 		toolNodeField.setAccessible(true);
@@ -175,6 +207,10 @@ class SkillToolCallbackResolverTest {
 	private static class TestableBuilder extends DefaultBuilder {
 		ToolCallbackResolver resolveEffectiveResolver() {
 			return resolveToolCallbackResolver();
+		}
+
+		ToolCallbackResolver rawResolver() {
+			return this.resolver;
 		}
 	}
 

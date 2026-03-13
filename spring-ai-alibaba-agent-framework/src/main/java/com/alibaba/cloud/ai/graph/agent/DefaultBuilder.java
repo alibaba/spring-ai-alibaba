@@ -112,11 +112,8 @@ public class DefaultBuilder extends Builder {
 
 		separateInterceptorsByType();
 
-		ToolCallbackResolver resolver = resolveToolCallbackResolver();
-		if (resolver != null && resolver != this.resolver) {
-			this.resolver = resolver;
-		}
-		List<ToolCallback> allTools = gatherLocalTools();
+		ToolCallbackResolver effectiveResolver = resolveToolCallbackResolver();
+		List<ToolCallback> allTools = gatherLocalTools(effectiveResolver);
 
 		// Set combined tools to LLM node
 		if (CollectionUtils.isNotEmpty(allTools)) {
@@ -138,8 +135,8 @@ public class DefaultBuilder extends Builder {
 				.toolExecutionTimeout(this.toolExecutionTimeout)
 				.wrapSyncToolsAsAsync(this.wrapSyncToolsAsAsync);
 
-		if (this.resolver != null) {
-			toolBuilder.toolCallbackResolver(this.resolver);
+		if (effectiveResolver != null) {
+			toolBuilder.toolCallbackResolver(effectiveResolver);
 		}
 		if (CollectionUtils.isNotEmpty(allTools)) {
 			toolBuilder.toolCallbacks(allTools);
@@ -202,6 +199,10 @@ public class DefaultBuilder extends Builder {
 	 * @return a combined list of all tools from hooks, interceptors and user-provided sources
 	 */
 	protected List<ToolCallback> gatherLocalTools() {
+		return gatherLocalTools(this.resolver);
+	}
+
+	protected List<ToolCallback> gatherLocalTools(ToolCallbackResolver effectiveResolver) {
 		// Collect tools from interceptors
 		// - regularTools: user-provided tools
 		// - interceptorTools: tools from interceptors
@@ -227,11 +228,11 @@ public class DefaultBuilder extends Builder {
 					continue;
 				}
 
-				if (this.resolver == null) {
+				if (effectiveResolver == null) {
 					throw new IllegalStateException(
 							"ToolCallbackResolver is null; cannot resolve tool name: " + toolName);
 				}
-				ToolCallback toolCallback = this.resolver.resolve(toolName);
+				ToolCallback toolCallback = effectiveResolver.resolve(toolName);
 				if (toolCallback == null) {
 					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
 					throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
@@ -241,9 +242,9 @@ public class DefaultBuilder extends Builder {
 		}
 
 		// If regularTools is empty and resolver is provided, try to extract tools from resolver
-		if (regularTools.isEmpty() && this.resolver != null) {
+		if (regularTools.isEmpty() && effectiveResolver != null) {
 			// Check if resolver also implements ToolCallbackProvider
-			if (this.resolver instanceof ToolCallbackProvider provider) {
+			if (effectiveResolver instanceof ToolCallbackProvider provider) {
 				ToolCallback[] resolverTools = provider.getToolCallbacks();
 				if (resolverTools != null && resolverTools.length > 0) {
 					regularTools.addAll(List.of(resolverTools));
@@ -255,9 +256,9 @@ public class DefaultBuilder extends Builder {
 			} else {
 				// This is a fallback for resolvers that don't implement ToolCallbackProvider
 				try {
-					Field toolsField = this.resolver.getClass().getDeclaredField("tools");
+					Field toolsField = effectiveResolver.getClass().getDeclaredField("tools");
 					toolsField.setAccessible(true);
-					Object toolsObj = toolsField.get(this.resolver);
+					Object toolsObj = toolsField.get(effectiveResolver);
 					if (toolsObj instanceof java.util.Map) {
 						@SuppressWarnings("unchecked") java.util.Map<String, ToolCallback> toolsMap =
 								(java.util.Map<String, ToolCallback>) toolsObj;
