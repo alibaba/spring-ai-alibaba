@@ -33,6 +33,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.observation.GraphObservationSupport;
 
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
@@ -424,18 +425,19 @@ public abstract class Builder {
 	}
 
 	protected CompileConfig buildConfig() {
-		if (compileConfig != null) {
-			return compileConfig;
-		}
-
-		SaverConfig saverConfig = SaverConfig.builder()
-				.register(saver)
-				.build();
-		return CompileConfig.builder()
+		CompileConfig baseConfig = this.compileConfig;
+		if (baseConfig == null) {
+			SaverConfig saverConfig = SaverConfig.builder()
+					.register(saver)
+					.build();
+			baseConfig = CompileConfig.builder()
 				.saverConfig(saverConfig)
 				.recursionLimit(Integer.MAX_VALUE)
 				.releaseThread(releaseThread)
 				.build();
+		}
+
+		return GraphObservationSupport.enhance(baseConfig, this.observationRegistry);
 	}
 
 	public abstract ReactAgent build();
