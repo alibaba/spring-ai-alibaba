@@ -45,7 +45,8 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
 
-        <spring-ai-alibaba.version>1.0.0.3</spring-ai-alibaba.version>
+        <spring-ai-alibaba.version>1.1.2.1</spring-ai-alibaba.version>
+        <spring-ai-alibaba-extensions.version>1.1.2.1</spring-ai-alibaba-extensions.version>
         <spring-ai.version>1.1.2</spring-ai.version>
         <spring-boot.version>3.3.6</spring-boot.version>
 
@@ -207,8 +208,18 @@
 
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
-                <artifactId>spring-ai-alibaba-core</artifactId>
+                <artifactId>spring-ai-alibaba-extensions-bom</artifactId>
+                <version>${spring-ai-alibaba-extensions.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-bom</artifactId>
                 <version>${spring-ai-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- Nacos -->
