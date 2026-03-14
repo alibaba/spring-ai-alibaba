@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -588,6 +589,35 @@ public class SubGraphTest {
 	}
 
 	@Test
+	public void testNestedSubgraphAppendNoDuplication() throws Exception {
+		var workflowChildChild = new StateGraph(createKeyStrategyFactory())
+				.addNode("step_c", _makeNode("c"))
+				.addEdge(START, "step_c")
+				.addEdge("step_c", END);
+
+		var workflowChild = new StateGraph(createKeyStrategyFactory())
+				.addNode("step_b", _makeNode("b"))
+				.addNode("subsubgraph", workflowChildChild)
+				.addEdge(START, "step_b")
+				.addEdge("step_b", "subsubgraph")
+				.addEdge("subsubgraph", END);
+
+		var workflowParent = new StateGraph(createKeyStrategyFactory())
+				.addNode("step_a", _makeNode("a"))
+				.addNode("subgraph", workflowChild)
+				.addNode("step_d", _makeNode("d"))
+				.addEdge(START, "step_a")
+				.addEdge("step_a", "subgraph")
+				.addEdge("subgraph", "step_d")
+				.addEdge("step_d", END)
+				.compile();
+
+		OverAllState result = workflowParent.invoke(Map.of()).orElseThrow();
+		List<?> messages = (List<?>) result.data().get("messages");
+		assertEquals(List.of("a", "b", "c", "d"), messages);
+	}
+
+	@Test
 	public void testParallelSubgraph() throws Exception {
 
 		SaverConfig saver = SaverConfig.builder().register(MemorySaver.builder().build()).build();
@@ -640,6 +670,60 @@ public class SubGraphTest {
 				.reduce((a, b) -> b)
 				.map(NodeOutput::state)
 				.block();
+	}
+
+	@Test
+	public void testParallelSubgraphAdapterInvokeShouldUseDeltaMerge() throws Exception {
+		KeyStrategyFactory keyStrategyFactory = () -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			return keyStrategyMap;
+		};
+
+		StateGraph subgraphA1Builder = new StateGraph(keyStrategyFactory)
+				.addNode("A1.1", _makeNode("A1.1"))
+				.addNode("A1.2", _makeNode("A1.2"))
+				.addEdge(START, "A1.1")
+				.addEdge("A1.1", "A1.2")
+				.addEdge("A1.2", END);
+
+		StateGraph subgraphA3Builder = new StateGraph(keyStrategyFactory)
+				.addNode("A3.1", _makeNode("A3.1"))
+				.addNode("A3.2", _makeNode("A3.2"))
+				.addEdge(START, "A3.1")
+				.addEdge("A3.1", "A3.2")
+				.addEdge("A3.2", END);
+
+		CompiledGraph subgraphA1 = subgraphA1Builder.compile();
+		CompiledGraph subgraphA3 = subgraphA3Builder.compile();
+
+		StateGraph workflow = new StateGraph(keyStrategyFactory)
+				.addNode("A", _makeNode("A"))
+				.addNode("A1", node_async(state -> subgraphA1.invoke(state.data()).orElseThrow().data()))
+				.addNode("A2", _makeNode("A2"))
+				.addNode("A3", node_async(state -> subgraphA3.invoke(state.data()).orElseThrow().data()))
+				.addNode("B", _makeNode("B"))
+				.addEdge("A", "A1")
+				.addEdge("A", "A2")
+				.addEdge("A", "A3")
+				.addEdge("A1", "B")
+				.addEdge("A2", "B")
+				.addEdge("A3", "B")
+				.addEdge(START, "A")
+				.addEdge("B", END);
+
+		OverAllState finalState = workflow.compile().invoke(Map.of()).orElseThrow();
+		List<?> messages = (List<?>) finalState.data().get("messages");
+
+		assertNotNull(messages);
+		assertEquals(7, messages.size());
+		assertEquals(1, Collections.frequency(messages, "A"));
+		assertEquals(1, Collections.frequency(messages, "A1.1"));
+		assertEquals(1, Collections.frequency(messages, "A1.2"));
+		assertEquals(1, Collections.frequency(messages, "A2"));
+		assertEquals(1, Collections.frequency(messages, "A3.1"));
+		assertEquals(1, Collections.frequency(messages, "A3.2"));
+		assertEquals(1, Collections.frequency(messages, "B"));
 	}
 
     @Test

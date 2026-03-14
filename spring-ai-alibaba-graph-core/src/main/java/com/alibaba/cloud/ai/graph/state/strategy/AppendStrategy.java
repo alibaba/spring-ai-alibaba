@@ -15,7 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.state.strategy;
 
-import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.DeltaAwareKeyStrategy;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-public class AppendStrategy implements KeyStrategy {
+public class AppendStrategy implements DeltaAwareKeyStrategy {
 
 	private boolean allowDuplicate = true;
 
@@ -110,6 +110,35 @@ public class AppendStrategy implements KeyStrategy {
 		}
 	}
 
+	@Override
+	public Object computeDelta(Object currentValue, Object newValue) {
+		if (newValue == null) {
+			return null;
+		}
+
+		if (newValue instanceof ReplaceAllWith<?>) {
+			return newValue;
+		}
+
+		if (currentValue instanceof Optional<?> oldOptional) {
+			currentValue = oldOptional.orElse(null);
+		}
+
+		List<?> oldList = asList(currentValue);
+		List<?> newList = asList(newValue);
+		if (oldList != null && newList != null) {
+			if (!isPrefix(oldList, newList)) {
+				return newValue;
+			}
+			if (newList.size() == oldList.size()) {
+				return null;
+			}
+			return new ArrayList<>(newList.subList(oldList.size(), newList.size()));
+		}
+
+		return newValue;
+	}
+
 	private static void removeFromList(List<Object> result, AppenderChannel.RemoveIdentifier<Object> removeIdentifier) {
 		for (int i = 0; i < result.size(); i++) {
 			if (removeIdentifier.compareTo(result.get(i), i) == 0) {
@@ -131,6 +160,31 @@ public class AppendStrategy implements KeyStrategy {
 		});
 		return result;
 
+	}
+
+	private static List<?> asList(Object value) {
+		if (value instanceof List<?> list) {
+			return list;
+		}
+		if (value instanceof Collection<?> collection) {
+			return new ArrayList<>(collection);
+		}
+		if (value instanceof Object[] array) {
+			return Arrays.asList(array);
+		}
+		return null;
+	}
+
+	private static boolean isPrefix(List<?> oldList, List<?> newList) {
+		if (newList.size() < oldList.size()) {
+			return false;
+		}
+		for (int i = 0; i < oldList.size(); i++) {
+			if (!java.util.Objects.equals(oldList.get(i), newList.get(i))) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }
