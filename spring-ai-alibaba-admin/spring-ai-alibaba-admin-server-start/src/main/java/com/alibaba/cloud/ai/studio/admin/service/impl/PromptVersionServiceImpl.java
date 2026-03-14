@@ -19,8 +19,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,18 +29,30 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class PromptVersionServiceImpl implements PromptVersionService {
-    
+
     private final PromptVersionMapper promptVersionMapper;
-    
+
     private final PromptMapper promptMapper;
-    
+
     private final PromptService promptService;
-    
+
     private final ObjectMapper objectMapper;
-    
-    private final NacosClientService nacosClientService;
+
+    private NacosClientService nacosClientService;
+
+    public PromptVersionServiceImpl(PromptVersionMapper promptVersionMapper, PromptMapper promptMapper,
+            PromptService promptService, ObjectMapper objectMapper) {
+        this.promptVersionMapper = promptVersionMapper;
+        this.promptMapper = promptMapper;
+        this.promptService = promptService;
+        this.objectMapper = objectMapper;
+    }
+
+    @Autowired(required = false)
+    public void setNacosClientService(NacosClientService nacosClientService) {
+        this.nacosClientService = nacosClientService;
+    }
     
     @Override
     @Transactional
@@ -119,6 +131,10 @@ public class PromptVersionServiceImpl implements PromptVersionService {
     }
     
     public void publishPromptToNacos(PromptVersionCreateRequest request) {
+        if (nacosClientService == null) {
+            log.warn("Nacos is not configured, skip publishing prompt to Nacos");
+            return;
+        }
         try {
             ConfigService configService = nacosClientService.getConfigService();
             String dataId = "prompt-" + request.getPromptKey() + ".json";

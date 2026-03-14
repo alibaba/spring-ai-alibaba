@@ -9,6 +9,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -25,11 +26,11 @@ public class DashScopeChatClientFactory implements ChatClientFactory{
     
     private final ToolCallingManager toolCallingManager;
     
-    private final ChatModelObservationConvention customChatModelObservationConvention;
-    
+    private ChatModelObservationConvention customChatModelObservationConvention;
+
     public DashScopeChatClientFactory(ObservationRegistry observationRegistry,
             ToolCallingManager toolCallingManager,
-            ChatModelObservationConvention customChatModelObservationConvention) {
+            @Autowired(required = false) ChatModelObservationConvention customChatModelObservationConvention) {
         this.observationRegistry = observationRegistry;
         this.toolCallingManager = toolCallingManager;
         this.customChatModelObservationConvention = customChatModelObservationConvention;
@@ -50,7 +51,9 @@ public class DashScopeChatClientFactory implements ChatClientFactory{
                 .toolCallingManager(toolCallingManager)
                 .observationRegistry(observationRegistry)
                 .build();
-        chatModel.setObservationConvention(customChatModelObservationConvention);
+        if (customChatModelObservationConvention != null) {
+            chatModel.setObservationConvention(customChatModelObservationConvention);
+        }
         return chatModel;
     }
     

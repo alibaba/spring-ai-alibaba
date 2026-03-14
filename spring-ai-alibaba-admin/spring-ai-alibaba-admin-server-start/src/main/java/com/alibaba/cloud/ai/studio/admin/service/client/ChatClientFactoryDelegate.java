@@ -10,8 +10,10 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
+import org.springframework.ai.chat.client.observation.DefaultChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -35,11 +37,11 @@ public class ChatClientFactoryDelegate {
 
     private final ChatClientObservationConvention customObservationConvention;
     
-    public ChatClientFactoryDelegate(ModelConfigRepository modelConfigRepository, 
+    public ChatClientFactoryDelegate(ModelConfigRepository modelConfigRepository,
             ModelConfigBridgeService modelConfigBridgeService,
             ObjectMapper objectMapper,
             ObservationRegistry observationRegistry,
-            ChatClientObservationConvention customObservationConvention,
+            @Autowired(required = false) ChatClientObservationConvention customObservationConvention,
             OpenAiChatClientFactory openAiChatClientFactory,
             DashScopeChatClientFactory dashScopeChatClientFactory,
             DeepSeekChatClientFactory deepSeekChatClientFactory) {
@@ -48,7 +50,8 @@ public class ChatClientFactoryDelegate {
         this.objectMapper = objectMapper;
         this.chatClientFactories = new HashMap<>();
         this.observationRegistry = observationRegistry;
-        this.customObservationConvention = customObservationConvention;
+        this.customObservationConvention = customObservationConvention != null ? customObservationConvention
+                : new DefaultChatClientObservationConvention();
         register(openAiChatClientFactory);
         register(dashScopeChatClientFactory);
         register(deepSeekChatClientFactory);
@@ -105,9 +108,10 @@ public class ChatClientFactoryDelegate {
         ChatModel chatModel = factory.buildChatModel(config);
         Map<String, Object> mergedParameters = mergeParameters(config, userParameters);
         ChatOptions options = factory.buildChatOptions(config, mergedParameters, observationMetadata);
+
         if (advisors != null) {
             return ChatClient.builder(chatModel,observationRegistry,customObservationConvention,
-                            new DefaultAdvisorObservationConvention()).defaultOptions(options).defaultAdvisors(advisors)
+                            new  DefaultAdvisorObservationConvention()).defaultOptions(options).defaultAdvisors(advisors)
                     .build();
         } else {
             return ChatClient.builder(chatModel,observationRegistry,customObservationConvention

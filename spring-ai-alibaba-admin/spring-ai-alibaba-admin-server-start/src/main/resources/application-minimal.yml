@@ -1,0 +1,97 @@
+# 最小化配置文件 - 仅需 MySQL 即可启动
+# 使用方式：将 application.yml 中的 spring.profiles.active 设置为 minimal
+# 或启动时添加参数：--spring.profiles.active=minimal
+
+server:
+  port: 8080
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript
+    min-response-size: 2048
+
+spring:
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+  application:
+    name: saa-studio
+  sql:
+    init:
+      mode: never
+  datasource:
+
+    url: jdbc:mysql://localhost:13306/admin?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: admin
+    password: admin
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      filters: stat,wall,slf4j
+      filter:
+        stat:
+          log-slow-sql: true
+          slow-sql-millis: 1000
+          enabled: true
+  jpa:
+    properties:
+      jakarta:
+        persistence:
+          jdbc:
+            url: jdbc:mysql://localhost:13306/admin?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+            user: admin
+            password: admin
+            driver: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 500MB
+      enabled: true
+  freemarker:
+    cache: false
+    charset: UTF-8
+    suffix: .html
+    enabled: true
+    content-type: text/html
+    template-loader-path: classpath:/templates/
+  config:
+    import:
+      - classpath:initializr.yml
+      # 不加载 elasticsearch.yml
+
+
+# 禁用链路追踪
+management:
+  tracing:
+    sampling:
+      probability: 0
+  otlp:
+    tracing:
+      export:
+        enabled: false
+    metrics:
+      export:
+        enabled: false
+    logging:
+      export:
+        enabled: false
+  endpoints:
+    web:
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+  health:
+    elasticsearch:
+      enabled: false
+
+# AI 配置（根据你的需求配置）
+spring.ai:
+  alibaba:
+    arms:
+      enabled: false
+
+initializr:
+  web:
+    enabled: false
+
