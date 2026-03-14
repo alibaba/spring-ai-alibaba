@@ -28,15 +28,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class SandboxToolRegistry {
 
 	private final List<ToolCallback> tools;
 
-	private final ToolMatchStrategy toolMatchStrategy;
-
-	public SandboxToolRegistry(List<Sandbox> sandboxes, ToolMatchStrategy toolMatchStrategy) {
-		this.toolMatchStrategy = toolMatchStrategy;
+	public SandboxToolRegistry(List<Sandbox> sandboxes) {
 		this.tools = buildTools(sandboxes);
 	}
 
@@ -47,7 +45,7 @@ public class SandboxToolRegistry {
 		if (!hasGlob(pattern)) {
 			return this.tools.stream().filter(tool -> toolName(tool).equals(pattern)).toList();
 		}
-		return this.tools.stream().filter(tool -> this.toolMatchStrategy.matches(pattern, toolName(tool))).toList();
+		return this.tools.stream().filter(tool -> matches(pattern, toolName(tool))).toList();
 	}
 
 	public List<ToolCallback> getTools() {
@@ -102,6 +100,35 @@ public class SandboxToolRegistry {
 
 	private boolean hasGlob(String pattern) {
 		return pattern.contains("*") || pattern.contains("?");
+	}
+
+	private boolean matches(String pattern, String toolName) {
+		return Pattern.compile(toRegex(pattern)).matcher(toolName).matches();
+	}
+
+	private String toRegex(String pattern) {
+		StringBuilder regex = new StringBuilder("^");
+		for (char c : pattern.toCharArray()) {
+			if (c == '*') {
+				regex.append(".*");
+			}
+			else if (c == '?') {
+				regex.append('.');
+			}
+			else if (isRegexMetaChar(c)) {
+				regex.append('\\').append(c);
+			}
+			else {
+				regex.append(c);
+			}
+		}
+		regex.append('$');
+		return regex.toString();
+	}
+
+	private boolean isRegexMetaChar(char c) {
+		return c == '.' || c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' || c == '+'
+				|| c == '$' || c == '^' || c == '|' || c == '\\';
 	}
 
 }
