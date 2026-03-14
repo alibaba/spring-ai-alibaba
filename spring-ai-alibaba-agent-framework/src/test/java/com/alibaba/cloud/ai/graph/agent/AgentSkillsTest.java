@@ -20,7 +20,10 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.shelltool.ShellToolAgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.skills.ReadSkillTool;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
 import com.alibaba.cloud.ai.graph.agent.tools.PythonTool;
 import com.alibaba.cloud.ai.graph.agent.tools.ShellTool2;
@@ -33,13 +36,13 @@ import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegi
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 
+import org.springframework.ai.chat.messages.*;
 import org.springframework.core.io.ClassPathResource;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.core.io.Resource;
@@ -509,6 +512,88 @@ class AgentSkillsTest {
 				"record_result tool from groupedTools should have been invoked after read_skill; recorded: " + recordedValues);
 		assertTrue(recordedValues.stream().anyMatch(v -> v.contains(valueToRecord) || valueToRecord.contains(v)),
 				"Recorded values should contain the requested value; recorded: " + recordedValues);
+	}
+
+	/**
+	 * Verifies the circuit breaker behavior in the SkillsInterceptor.
+	 * This test simulates a scenario where an AI agent enters an infinite loop by calling
+	 * 'read_skill' three times (exceeding the LOOP_THRESHOLD of 2) within a single turn.
+	 * It asserts that the interceptor detects this loop and injects mandatory safety
+	 * instructions into the system prompt.
+	 */
+	@Test
+	public void testSkillsInterceptorCircuitBreakerTrigger() throws Exception {
+		// 1. Initialize Registry and Interceptor
+		Resource skillsResource = new ClassPathResource("skills");
+		SkillRegistry registry = FileSystemSkillRegistry.builder()
+				.projectSkillsDirectory(skillsResource)
+				.build();
+		registry.reload();
+
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+				.skillRegistry(registry)
+				.build();
+
+		// 2. Construct simulated conversation history:
+		// Trigger condition is > LOOP_THRESHOLD (2), so we need 3 calls in the current turn.
+		String skillName = "pdf-extractor";
+		String toolArguments = "{\"skill_name\": \"" + skillName + "\"}";
+
+		List<Message> messages = new ArrayList<>();
+		// Start of the current turn
+		messages.add(new UserMessage("请帮我处理这个PDF"));
+		for (int i = 0; i < 3; i++) {
+			// Mock AI requesting the tool
+			AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall(
+					"id_" + i,
+					"function",
+					ReadSkillTool.READ_SKILL,
+					toolArguments
+			);
+			AssistantMessage assistantMessage = AssistantMessage.builder()
+					.content("")
+					.toolCalls(List.of(toolCall))
+					.build();
+			messages.add(assistantMessage);
+
+			// Mock Tool response
+			ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+					.responses(List.of(new ToolResponseMessage.ToolResponse(
+							"id_" + i,
+							ReadSkillTool.READ_SKILL,
+							"content"
+					)))
+					.build();
+			messages.add(toolResponseMessage);
+		}
+
+		// 3. Construct the ModelRequest for the interceptor
+		ModelRequest request = ModelRequest.builder()
+				.systemMessage(new SystemMessage("You are a helpful assistant."))
+				.messages(messages)
+				.dynamicToolCallbacks(new ArrayList<>())
+				.build();
+
+		// Mock Handler to capture the modified request
+		final ModelRequest[] modifiedRequest = new ModelRequest[1];
+		ModelCallHandler handler = req -> {
+			modifiedRequest[0] = req;
+			return null;
+		};
+
+		// 4. Execute the interception
+		interceptor.interceptModel(request, handler);
+
+		// 5. Verification
+		assertNotNull(modifiedRequest[0], "拦截器应该处理请求");
+		String enhancedSystemPrompt = modifiedRequest[0].getSystemMessage().getText();
+
+		// Verify that the circuit breaker instructions were injected
+		assertTrue(enhancedSystemPrompt.contains("[CRITICAL]"),
+				"The system prompt should contain the [CRITICAL] alert marker");
+		assertTrue(enhancedSystemPrompt.contains(skillName),
+				"The system prompt should explicitly identify the looping skill name");
+
 	}
 
 	/** Request type for the record_result test tool. */
