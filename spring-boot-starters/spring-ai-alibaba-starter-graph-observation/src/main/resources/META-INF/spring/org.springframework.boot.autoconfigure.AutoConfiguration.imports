@@ -1,1 +1,2 @@
-com.alibaba.cloud.ai.autoconfigure.graph.GraphObservationAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.graph.health.LlmReadinessAutoConfiguration
+com.alibaba.cloud.ai.autoconfigure.graph.health.config.ObservabilityAutoConfiguration
