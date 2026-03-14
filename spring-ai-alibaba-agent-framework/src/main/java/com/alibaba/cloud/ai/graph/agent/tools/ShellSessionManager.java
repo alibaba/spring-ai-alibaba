@@ -354,83 +354,105 @@ public class ShellSessionManager {
 			}
 		}
 
-		private CommandResult collectOutput(String marker, long deadline, int maxOutputLines, Long maxOutputBytes) {
-			List<String> lines = new ArrayList<>();
-			int totalLines = 0;
-			long totalBytes = 0;
-			boolean truncatedByLines = false;
-			boolean truncatedByBytes = false;
-			Integer exitCode = null;
-			boolean timedOut = false;
+        private CommandResult collectOutput(String marker, long deadline, int maxOutputLines, Long maxOutputBytes) {
+            List<String> lines = new ArrayList<>();
+            int totalLines = 0;
+            long totalBytes = 0;
+            boolean truncatedByLines = false;
+            boolean truncatedByBytes = false;
+            Integer exitCode = null;
+            boolean timedOut = false;
 
-			while (true) {
-				long remaining = deadline - System.currentTimeMillis();
-				if (remaining <= 0) {
-					timedOut = true;
-					log.warn("Command timed out, restarting session");
-					restart();
-					break;
-				}
+            while (true) {
+                long remaining = deadline - System.currentTimeMillis();
+                if (remaining <= 0) {
+                    timedOut = true;
+                    log.warn("Command timed out, restarting session");
+                    restart();
+                    break;
+                }
 
-				try {
-					OutputLine outputLine = outputQueue.poll(remaining, TimeUnit.MILLISECONDS);
-					if (outputLine == null) {
-						timedOut = true;
-						restart();
-						break;
-					}
+                try {
+                    OutputLine outputLine = outputQueue.poll(remaining, TimeUnit.MILLISECONDS);
+                    if (outputLine == null) {
+                        timedOut = true;
+                        restart();
+                        break;
+                    }
 
-					// Skip EOF markers
-					if (outputLine.content == null) {
-						continue;
-					}
+                    // Skip EOF markers
+                    if (outputLine.content == null) {
+                        continue;
+                    }
 
-					String line = outputLine.content;
+                    String line = outputLine.content;
 
-					// Check for completion marker (only in stdout)
-					if ("stdout".equals(outputLine.source) && line.startsWith(marker)) {
-						String[] parts = line.split(" ", 2);
-						if (parts.length > 1) {
-							try {
-								exitCode = Integer.parseInt(parts[1].trim());
-							} catch (NumberFormatException e) {
-								// Ignore
-							}
-						}
-						break;
-					}
+                    // Check for completion marker (only in stdout)
+                    if ("stdout".equals(outputLine.source) && line.contains(marker)) {
+                        int markerIndex = line.indexOf(marker);
+                        String preMarker = line.substring(0, markerIndex);
+                        if (!preMarker.isEmpty()) {
+                            totalLines++;
+                            totalBytes += preMarker.getBytes().length + 1; // +1 for newline
+                            if (totalLines <= maxOutputLines) {
+                                if (maxOutputBytes == null || totalBytes <= maxOutputBytes) {
+                                    lines.add(preMarker);
+                                }
+                                else {
+                                    truncatedByBytes = true;
+                                }
+                            }
+                            else {
+                                truncatedByLines = true;
+                            }
+                        }
 
-					totalLines++;
+                        String markerPart = line.substring(markerIndex);
+                        String[] parts = markerPart.split(" ", 2);
+                        if (parts.length > 1) {
+                            try {
+                                exitCode = Integer.parseInt(parts[1].trim());
+                            }
+                            catch (NumberFormatException e) {
+                                // Ignore
+                            }
+                        }
+                        break;
+                    }
 
-					// Format line with stderr label if needed
-					String formattedLine = line;
-					if ("stderr".equals(outputLine.source)) {
-						formattedLine = "[stderr] " + line;
-					}
+                    totalLines++;
 
-					totalBytes += formattedLine.getBytes().length + 1; // +1 for newline
+                    // Format line with stderr label if needed
+                    String formattedLine = line;
+                    if ("stderr".equals(outputLine.source)) {
+                        formattedLine = "[stderr] " + line;
+                    }
 
-					if (totalLines <= maxOutputLines) {
-						if (maxOutputBytes == null || totalBytes <= maxOutputBytes) {
-							lines.add(formattedLine);
-						} else {
-							truncatedByBytes = true;
-						}
-					} else {
-						truncatedByLines = true;
-					}
+                    totalBytes += formattedLine.getBytes().length + 1; // +1 for newline
 
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					break;
-				}
-			}
+                    if (totalLines <= maxOutputLines) {
+                        if (maxOutputBytes == null || totalBytes <= maxOutputBytes) {
+                            lines.add(formattedLine);
+                        }
+                        else {
+                            truncatedByBytes = true;
+                        }
+                    }
+                    else {
+                        truncatedByLines = true;
+                    }
 
-			String output = String.join("\n", lines);
-			return new CommandResult(output, exitCode, timedOut, truncatedByLines,
-				truncatedByBytes, totalLines, totalBytes);
-		}
-	}
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+
+            String output = String.join("\n", lines);
+            return new CommandResult(output, exitCode, timedOut, truncatedByLines,
+                    truncatedByBytes, totalLines, totalBytes);
+        }
+    }
 
 	/**
 	 * Output line with source (stdout/stderr).
