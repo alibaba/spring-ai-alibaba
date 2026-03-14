@@ -101,8 +101,16 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 
 			// Process Interruption (Before) Subgraph(s)
 			interruptsBefore = interruptsBefore.stream()
-					.map(interrupt -> Objects.equals(subgraphNode.id(), interrupt) ? sgEdgeStartRealTargetId
-							: interrupt)
+					.map(interrupt -> {
+						if (Objects.equals(subgraphNode.id(), interrupt)) {
+							return sgEdgeStartRealTargetId;
+						}
+						if (!stateGraph.nodes.anyMatchById(interrupt)
+								&& processedSubGraphNodes.anyMatchById(interrupt)) {
+							return subgraphNode.formatId(interrupt);
+						}
+						return interrupt;
+					})
 					.collect(Collectors.toUnmodifiableSet());
 
 			var edgesWithSubgraphTargetId = edges.edgesByTargetId(subgraphNode.id());
