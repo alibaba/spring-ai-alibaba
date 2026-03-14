@@ -83,9 +83,16 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 		Exception lastException = null;
 		int attempt = 0;
 
-		while (attempt <= maxRetries) {
+		while (attempt < maxRetries) {
 			try {
-				return handler.call(request);
+                ToolCallResponse response = handler.call(request);
+                if (ToolCallResponse.SUCCESS_STATUS.equals(response.getStatus())) {
+                    return response;
+                }
+                else {
+                    //  fail, continue run in  while method
+                    throw new RuntimeException(response.getResult().toString());
+                }
 			}
 			catch (Exception e) {
 				lastException = e;

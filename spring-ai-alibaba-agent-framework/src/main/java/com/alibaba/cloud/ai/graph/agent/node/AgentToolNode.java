@@ -730,7 +730,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				}
 			}
 
-			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), result);
+			return ToolCallResponse.success(request.getToolCallId(), request.getToolName(), result);
 		}
 		catch (CompletionException e) {
 			Throwable cause = e.getCause() != null ? e.getCause() : e;
@@ -785,7 +785,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				}
 			}
 
-			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), result);
+			return ToolCallResponse.success(request.getToolCallId(), request.getToolName(), result);
 		}
 		catch (ToolExecutionException e) {
 			logger.error("Tool {} execution failed, handling with processor: {}", request.getToolName(),
