@@ -99,21 +99,9 @@ public class CompiledGraph {
 		this.maxIterations = compileConfig.recursionLimit();
 		this.stateGraph = stateGraph;
 
-		this.keyStrategyMap = stateGraph.getKeyStrategyFactory()
-				.apply()
-				.entrySet()
-				.stream()
-				.map(e -> Map.entry(e.getKey(), e.getValue()))
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
 		this.processedData = ProcessedNodesEdgesAndConfig.process(stateGraph, compileConfig);
 
-		// set extra Key and KeyStrategy defined from sub Graphs (StateGraph)
-		for (var entry : processedData.keyStrategyMap().entrySet()) {
-			if (!this.keyStrategyMap.containsKey(entry.getKey())) {
-				this.keyStrategyMap.put(entry.getKey(), entry.getValue());
-			}
-		}
+		this.keyStrategyMap = processedData.keyStrategyMap();
 
 		// CHECK INTERRUPTIONS
 		for (String interruption : processedData.interruptsBefore()) {

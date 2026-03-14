@@ -35,15 +35,6 @@ import static java.lang.String.format;
 public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Edges edges, Set<String> interruptsBefore,
 										   Set<String> interruptsAfter, Map<String, KeyStrategy> keyStrategyMap) {
 
-	/**
-	 * Instantiates a new Processed nodes edges and config.
-	 * 
-	 * @param stateGraph the state graph
-	 * @param config     the config
-	 */
-	ProcessedNodesEdgesAndConfig(StateGraph stateGraph, CompileConfig config) {
-		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter(), Map.of());
-	}
 
 	/**
 	 * Process processed nodes edges and config.
@@ -58,10 +49,6 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 
 		var subgraphNodes = stateGraph.nodes.onlySubStateGraphNodes();
 
-		if (subgraphNodes.isEmpty()) {
-			return new ProcessedNodesEdgesAndConfig(stateGraph, config);
-		}
-
 		var interruptsBefore = config.interruptsBefore();
 		var interruptsAfter = config.interruptsAfter();
 		var nodes = new StateGraph.Nodes(stateGraph.nodes.exceptSubStateGraphNodes());
@@ -69,12 +56,13 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 
 		Map<String, KeyStrategy> keyStrategyMap = new LinkedHashMap<>();
 
+		// Merges keyStrategies of the current graph.
+		stateGraph.getKeyStrategyFactory().apply().forEach(keyStrategyMap::putIfAbsent);
+
 		for (var subgraphNode : subgraphNodes) {
 
 			var sgWorkflow = subgraphNode.subGraph();
 
-            // Merges keyStrategies of this subgraph.
-            subgraphNode.keyStrategies().forEach(keyStrategyMap::putIfAbsent);
             // Merges the keyStrategyMap aggregated from recursive subgraphs.
             ProcessedNodesEdgesAndConfig processedSubGraph = process(sgWorkflow, config);
             processedSubGraph.keyStrategyMap().forEach(keyStrategyMap::putIfAbsent);
