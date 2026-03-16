@@ -107,9 +107,9 @@ public class OverAllStateDeltaDataTest {
 		OverAllState state = compiledGraph.invoke(Collections.emptyMap()).orElseThrow();
 		List<Object> output = state.value(KEY_OUTPUT, Collections.emptyList());
 
-		log.info("actual output size: {}, which suppose to be 6", output.size());
+		log.info("actual output size: {}, which is supposed to be 6", output.size());
 		log.info("actual output: {}", output);
-		log.info(", which suppose to be [a, a, b, c, c, d]");
+		log.info("expected output: [a, a, b, c, c, d]");
 
 		assertNotNull(output, "Output should not be null");
 		assertEquals(6, output.size(), "Output should contain 6 elements");
