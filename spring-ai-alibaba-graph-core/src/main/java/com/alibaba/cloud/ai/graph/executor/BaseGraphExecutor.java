@@ -61,7 +61,7 @@ public abstract class BaseGraphExecutor {
 						.release(context.getConfig());
 					resultValue.set(tag);
 				} else {
-					resultValue.set(new HashMap<>(context.getOverallState().data()));
+					resultValue.set(new HashMap<>(context.getOverallState().deltaData()));
 				}
 				return Flux.just(GraphResponse.done(resultValue.get()));
 			}
