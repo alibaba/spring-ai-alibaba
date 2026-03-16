@@ -219,7 +219,7 @@ public final class OverAllState implements Serializable {
 		this.data.putAll(overAllState.data());
 
 		if (overAllState.data == overAllState.deltaData) {
-			this.deltaData = this.data();
+			this.deltaData = this.data;
 		} else {
 			if (this.deltaData == this.data) {
 				this.deltaData = new HashMap<>();
