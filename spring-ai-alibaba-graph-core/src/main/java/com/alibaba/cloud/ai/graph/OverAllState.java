@@ -84,6 +84,12 @@ public final class OverAllState implements Serializable {
 	private final Map<String, Object> data;
 
 	/**
+	 * Internal map for tracking changes to the state. This can be used to store deltas or
+	 * changes that need to be applied to the main data map.
+	 */
+	private Map<String, Object> deltaData;
+
+	/**
 	 * Mapping of keys to their respective update strategies. Determines how values for
 	 * each key should be merged or updated.
 	 */
@@ -105,6 +111,7 @@ public final class OverAllState implements Serializable {
 	 */
 	public void reset() {
 		this.data.clear();
+		this.deltaData = this.data;
 	}
 
 	/**
@@ -122,6 +129,7 @@ public final class OverAllState implements Serializable {
 	 */
 	public OverAllState(Map<String, Object> data) {
 		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
+		this.deltaData = data != null ? new HashMap<>() : this.data;
 		this.keyStrategies = new HashMap<>();
 	}
 
@@ -132,6 +140,7 @@ public final class OverAllState implements Serializable {
 	 */
 	public OverAllState(Map<String, Object> data, Store store) {
 		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
+		this.deltaData = data != null ? new HashMap<>() : this.data;
 		this.keyStrategies = new HashMap<>();
 		this.store = store;
 	}
@@ -141,6 +150,7 @@ public final class OverAllState implements Serializable {
 	 */
 	public OverAllState() {
 		this.data = new HashMap<>();
+		this.deltaData = this.data;
 		this.keyStrategies = new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 	}
@@ -151,6 +161,7 @@ public final class OverAllState implements Serializable {
 	 */
 	public OverAllState(Store store) {
 		this.data = new HashMap<>();
+		this.deltaData = this.data;
 		this.keyStrategies = new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.store = store;
@@ -163,6 +174,7 @@ public final class OverAllState implements Serializable {
 	 */
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies) {
 		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
+		this.deltaData = data != null ? new HashMap<>() : this.data;
 		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 	}
@@ -176,6 +188,7 @@ public final class OverAllState implements Serializable {
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies,
 			Store store) {
 		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
+		this.deltaData = data != null ? new HashMap<>() : this.data;
 		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
 		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.store = store;
@@ -187,6 +200,9 @@ public final class OverAllState implements Serializable {
 	 */
 	public void clear() {
 		this.data.clear();
+		if (this.deltaData != this.data) {
+			this.deltaData = this.data;
+		}
 	}
 
 	/**
@@ -201,6 +217,17 @@ public final class OverAllState implements Serializable {
 		this.keyStrategies.putAll(overAllState.keyStrategies());
 		this.data.clear();
 		this.data.putAll(overAllState.data());
+
+		if (overAllState.data == overAllState.deltaData) {
+			this.deltaData = this.data();
+		} else {
+			if (this.deltaData == this.data) {
+				this.deltaData = new HashMap<>();
+			} else {
+				this.deltaData.clear();
+			}
+			this.deltaData.putAll(overAllState.deltaData);
+		}
 		this.store = overAllState.store;
 	}
 
@@ -221,6 +248,9 @@ public final class OverAllState implements Serializable {
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
 		input.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
 			this.data.put(key, keyStrategies.get(key).apply(value(key, null), input.get(key)));
+			if (this.data != this.deltaData) {
+				this.deltaData.put(key, keyStrategies.get(key).apply(deltaData.get(key), input.get(key)));
+			}
 		});
 		return this;
 	}
@@ -270,8 +300,14 @@ public final class OverAllState implements Serializable {
 			}
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
 				this.data.remove(key);
+				if (this.data != this.deltaData) {
+					this.deltaData.remove(key);
+				}
 			} else {
 				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
+				if (this.data != this.deltaData) {
+					this.deltaData.put(key, strategy.apply(deltaData.get(key), partialState.get(key)));
+				}
 			}
 		});
 		return data();
@@ -298,9 +334,15 @@ public final class OverAllState implements Serializable {
 			}
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
 				this.data.remove(key);
+				if (this.data != this.deltaData) {
+					this.deltaData.remove(key);
+				}
 			}
 			else {
 				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
+				if (this.data != this.deltaData) {
+					this.deltaData.put(key, strategy.apply(deltaData.get(key), partialState.get(key)));
+				}
 			}
 		});
 	}
@@ -473,6 +515,10 @@ public final class OverAllState implements Serializable {
 	 */
 	public final Map<String, Object> data() {
 		return data != null ? unmodifiableMap(data) : unmodifiableMap(new HashMap<>());
+	}
+
+	public final Map<String, Object> deltaData() {
+		return deltaData != null ? unmodifiableMap(deltaData) : unmodifiableMap(new HashMap<>());
 	}
 
 	/**
