@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * Unit tests for OverAllState serialization with subgraph execution.
+ * Unit tests for OverAllState behavior with append strategy and subgraph execution.
  */
 public class OverAllStateDeltaDataTest {
 
@@ -67,11 +67,10 @@ public class OverAllStateDeltaDataTest {
 	}
 
 	/**
-	 * Test serialization and execution of graph with multiple sub-graphs using append
-	 * strategy.
+	 * Test execution of graph with multiple sub-graphs using the append strategy.
 	 */
 	@Test
-	public void testMarkForRemovalSerialization() throws Exception {
+	public void testAppendStrategyWithSubGraphs() throws Exception {
 		KeyStrategyFactory keyStrategyFactory = createKeyStrategyFactory();
 
 		// Build sub graph A
