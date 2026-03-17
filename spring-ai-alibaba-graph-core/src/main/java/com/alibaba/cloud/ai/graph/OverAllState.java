@@ -123,7 +123,7 @@ public final class OverAllState implements Serializable {
 	}
 
 	public void resetDeltaData() {
-        this.data.remove(SYSTEM_DELTA_DATA_KEY);
+		this.data.remove(SYSTEM_DELTA_DATA_KEY);
 	}
 
 	/**
