@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.unknowntool.UnknownToolGuardConstants;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallExecutionContext;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
@@ -41,6 +42,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
@@ -56,6 +58,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -220,7 +223,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		Map<String, Object> updatedState = new HashMap<>();
 		Map<String, Object> mergedUpdates = new HashMap<>(); // Accumulated results from successful tools
-		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
+		List<ToolCallResponse> toolCallResponses = new ArrayList<>();
 
 		Boolean returnDirect = null;
 		for (AssistantMessage.ToolCall toolCall : toolCalls) {
@@ -229,18 +232,13 @@ public class AgentToolNode implements NodeActionWithConfig {
 			Map<String, Object> toolSpecificUpdate = new ConcurrentHashMap<>();
 			ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, toolSpecificUpdate,
 					false);
-			toolResponses.add(response.toToolResponse());
+			toolCallResponses.add(response);
 			returnDirect = shouldReturnDirect(toolCall, returnDirect, config);
 			// Merge immediately - subsequent timeout clear() won't affect already-merged data
 			mergedUpdates.putAll(toolSpecificUpdate);
 		}
 
-		ToolResponseMessage.Builder builder = ToolResponseMessage.builder()
-				.responses(toolResponses);
-		if (returnDirect != null && returnDirect) {
-			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
-		}
-		ToolResponseMessage toolResponseMessage = builder.build();
+		ToolResponseMessage toolResponseMessage = buildToolResponseMessage(toolCallResponses, returnDirect);
 
 		if (enableActingLog) {
 			logger.info("[ThreadId {}] Agent {} acting returned: {}", config.threadId().orElse(THREAD_ID_DEFAULT),
@@ -373,7 +371,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		// Build result - collect responses from AtomicReferenceArray
 		Map<String, Object> updatedState = new HashMap<>();
-		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
+		List<ToolCallResponse> toolCallResponses = new ArrayList<>();
 		Boolean returnDirect = null;
 		for (int i = 0; i < orderedResponses.length(); i++) {
 			ToolCallResponse response = orderedResponses.get(i);
@@ -384,15 +382,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 						"Tool execution did not produce a response");
 				logger.warn("Tool {} at index {} has null response, using error fallback", toolCall.name(), i);
 			}
-			toolResponses.add(response.toToolResponse());
+			toolCallResponses.add(response);
 			returnDirect = shouldReturnDirect(toolCalls.get(i), returnDirect, config);
 		}
 
-		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(toolResponses);
-		if (returnDirect != null && returnDirect) {
-			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
-		}
-		updatedState.put("messages", builder.build());
+		updatedState.put("messages", buildToolResponseMessage(toolCallResponses, returnDirect));
 		updatedState.putAll(stateCollector.mergeAll());
 
 		if (enableActingLog) {
@@ -465,11 +459,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Build final result
 		Map<String, Object> updatedState = new HashMap<>(newResults);
 		List<Object> newMessages = new ArrayList<>();
-		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(allResponses);
-		if (returnDirect != null && returnDirect) {
-			builder.metadata(Map.of(FINISH_REASON_METADATA_KEY, FINISH_REASON));
-		}
-		newMessages.add(builder.build());
+		newMessages.add(buildMergedToolResponseMessage(allResponses, toolResponseMessage, newToolResponseMessage, returnDirect));
 		newMessages.add(new RemoveByHash<>(toolResponseMessage));
 		updatedState.put("messages", newMessages);
 
@@ -543,8 +533,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			ToolCallback toolCallback = resolve(req.getToolName(), config);
 
 			if (toolCallback == null) {
-				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, req.getToolName());
-				throw new IllegalStateException("No ToolCallback found for tool name: " + req.getToolName());
+				return createUnknownToolResponse(req, config);
 			}
 
 			if (enableActingLog) {
@@ -575,6 +564,59 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		// Execute the chained handler
 		return chainedHandler.call(request);
+	}
+
+	private ToolCallResponse createUnknownToolResponse(ToolCallRequest request, RunnableConfig config) {
+		List<String> availableToolNames = collectAvailableToolNames(config);
+		String errorMessage = buildUnknownToolErrorMessage(request.getToolName(), availableToolNames);
+		logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, request.getToolName());
+		logger.warn("Unknown tool '{}' requested by agent '{}'. Available tools: {}", request.getToolName(),
+				agentName, availableToolNames);
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("error", true);
+		metadata.put("errorMessage", errorMessage);
+		metadata.put(UnknownToolGuardConstants.ERROR_TYPE_METADATA_KEY,
+				UnknownToolGuardConstants.UNKNOWN_TOOL_ERROR_TYPE);
+		metadata.put(UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, List.of(request.getToolName()));
+		metadata.put(UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, availableToolNames);
+		return ToolCallResponse.builder()
+				.toolCallId(request.getToolCallId())
+				.toolName(request.getToolName())
+				.content("Error: " + errorMessage)
+				.status("error")
+				.metadata(metadata)
+				.build();
+	}
+
+	private String buildUnknownToolErrorMessage(String requestedToolName, List<String> availableToolNames) {
+		String availableTools = availableToolNames.isEmpty() ? "[]" : availableToolNames.toString();
+		return "Unknown tool '" + requestedToolName + "'. Available tools: " + availableTools
+				+ ". Please choose an existing tool or answer directly without calling a tool.";
+	}
+
+	private List<String> collectAvailableToolNames(RunnableConfig config) {
+		Set<String> availableToolNames = new TreeSet<>();
+		if (toolCallbacks != null) {
+			toolCallbacks.stream()
+					.filter(Objects::nonNull)
+					.map(callback -> callback.getToolDefinition().name())
+					.forEach(availableToolNames::add);
+		}
+		List<ToolCallback> dynamicToolCallbacks = getDynamicToolCallbacks(config);
+		if (dynamicToolCallbacks != null) {
+			dynamicToolCallbacks.stream()
+					.filter(Objects::nonNull)
+					.map(callback -> callback.getToolDefinition().name())
+					.forEach(availableToolNames::add);
+		}
+		if (toolCallbackResolver instanceof ToolCallbackProvider provider) {
+			for (ToolCallback toolCallback : provider.getToolCallbacks()) {
+				if (toolCallback != null) {
+					availableToolNames.add(toolCallback.getToolDefinition().name());
+				}
+			}
+		}
+		return List.copyOf(availableToolNames);
 	}
 
 	/**
@@ -829,6 +871,121 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return ParallelNode.getExecutor(config, AGENT_TOOL_NAME);
 	}
 
+	private ToolResponseMessage buildToolResponseMessage(List<ToolCallResponse> responses, Boolean returnDirect) {
+		List<ToolResponseMessage.ToolResponse> toolResponses = responses.stream()
+				.map(ToolCallResponse::toToolResponse)
+				.toList();
+		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(toolResponses);
+		Map<String, Object> metadata = buildToolResponseMetadata(responses, returnDirect);
+		if (!metadata.isEmpty()) {
+			builder.metadata(metadata);
+		}
+		return builder.build();
+	}
+
+	private ToolResponseMessage buildMergedToolResponseMessage(List<ToolResponseMessage.ToolResponse> responses,
+			ToolResponseMessage existingResponseMessage, ToolResponseMessage newResponseMessage, Boolean returnDirect) {
+		Map<String, Object> metadata = mergeToolResponseMetadata(existingResponseMessage.getMetadata(),
+				newResponseMessage.getMetadata(), responses.size(), returnDirect);
+		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(responses);
+		if (!metadata.isEmpty()) {
+			builder.metadata(metadata);
+		}
+		return builder.build();
+	}
+
+	private Map<String, Object> buildToolResponseMetadata(List<ToolCallResponse> responses, Boolean returnDirect) {
+		Map<String, Object> metadata = new HashMap<>();
+		if (returnDirect != null && returnDirect) {
+			metadata.put(FINISH_REASON_METADATA_KEY, FINISH_REASON);
+		}
+		List<ToolCallResponse> unknownToolResponses = responses.stream()
+				.filter(this::isUnknownToolResponse)
+				.toList();
+		if (unknownToolResponses.isEmpty()) {
+			return metadata;
+		}
+		List<String> requestedToolNames = unknownToolResponses.stream()
+				.flatMap(response -> getMetadataStringList(response.getMetadata(),
+						UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY).stream())
+				.distinct()
+				.toList();
+		List<String> availableToolNames = unknownToolResponses.stream()
+				.flatMap(response -> getMetadataStringList(response.getMetadata(),
+						UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY).stream())
+				.distinct()
+				.sorted()
+				.toList();
+		metadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY, true);
+		metadata.put(UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, requestedToolNames);
+		metadata.put(UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, availableToolNames);
+		metadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY, unknownToolResponses.size());
+		metadata.put(UnknownToolGuardConstants.ALL_TOOL_CALLS_UNKNOWN_METADATA_KEY,
+				unknownToolResponses.size() == responses.size());
+		return metadata;
+	}
+
+	private Map<String, Object> mergeToolResponseMetadata(Map<String, Object> existingMetadata,
+			Map<String, Object> newMetadata, int totalResponseCount, Boolean returnDirect) {
+		Map<String, Object> mergedMetadata = new HashMap<>();
+		if (returnDirect != null && returnDirect) {
+			mergedMetadata.put(FINISH_REASON_METADATA_KEY, FINISH_REASON);
+		}
+		boolean hasUnknownTool = getBooleanMetadata(existingMetadata,
+				UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY)
+				|| getBooleanMetadata(newMetadata, UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY);
+		if (!hasUnknownTool) {
+			return mergedMetadata;
+		}
+		List<String> requestedToolNames = mergeStringListMetadata(existingMetadata, newMetadata,
+				UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, false);
+		List<String> availableToolNames = mergeStringListMetadata(existingMetadata, newMetadata,
+				UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, true);
+		int unknownToolCount = getIntMetadata(existingMetadata,
+				UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY)
+				+ getIntMetadata(newMetadata, UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY);
+		mergedMetadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY, true);
+		mergedMetadata.put(UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, requestedToolNames);
+		mergedMetadata.put(UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, availableToolNames);
+		mergedMetadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY, unknownToolCount);
+		mergedMetadata.put(UnknownToolGuardConstants.ALL_TOOL_CALLS_UNKNOWN_METADATA_KEY,
+				unknownToolCount == totalResponseCount);
+		return mergedMetadata;
+	}
+
+	private boolean isUnknownToolResponse(ToolCallResponse response) {
+		return UnknownToolGuardConstants.UNKNOWN_TOOL_ERROR_TYPE.equals(
+				response.getMetadata().get(UnknownToolGuardConstants.ERROR_TYPE_METADATA_KEY));
+	}
+
+	private boolean getBooleanMetadata(Map<String, Object> metadata, String key) {
+		return metadata.get(key) instanceof Boolean value && value;
+	}
+
+	private int getIntMetadata(Map<String, Object> metadata, String key) {
+		return metadata.get(key) instanceof Number number ? number.intValue() : 0;
+	}
+
+	private List<String> mergeStringListMetadata(Map<String, Object> existingMetadata,
+			Map<String, Object> newMetadata, String key, boolean sort) {
+		Set<String> values = new TreeSet<>();
+		values.addAll(getMetadataStringList(existingMetadata, key));
+		values.addAll(getMetadataStringList(newMetadata, key));
+		if (!sort) {
+			return new ArrayList<>(values);
+		}
+		return List.copyOf(values);
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<String> getMetadataStringList(Map<String, Object> metadata, String key) {
+		Object value = metadata.get(key);
+		if (value instanceof List<?> list) {
+			return list.stream().filter(String.class::isInstance).map(String.class::cast).toList();
+		}
+		return List.of();
+	}
+
 	private ToolCallback resolve(String toolName, RunnableConfig config) {
 		if (toolCallbacks != null) {
 			var fromNode = toolCallbacks.stream()
@@ -846,15 +1003,19 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return toolCallbackResolver == null ? null : toolCallbackResolver.resolve(toolName);
 	}
 
-	@SuppressWarnings("unchecked")
 	private ToolCallback resolveFromConfigMetadata(String toolName, RunnableConfig config) {
+		return getDynamicToolCallbacks(config).stream()
+			.filter(tc -> tc != null && toolName.equals(tc.getToolDefinition().name()))
+			.findFirst()
+			.orElse(null);
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<ToolCallback> getDynamicToolCallbacks(RunnableConfig config) {
 		return Optional.ofNullable(config.context().get(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY))
 			.filter(v -> v instanceof List)
 			.map(v -> (List<ToolCallback>) v)
-			.flatMap(list -> list.stream()
-				.filter(tc -> tc != null && toolName.equals(tc.getToolDefinition().name()))
-				.findFirst())
-			.orElse(null);
+			.orElse(List.of());
 	}
 
 	public String getName() {

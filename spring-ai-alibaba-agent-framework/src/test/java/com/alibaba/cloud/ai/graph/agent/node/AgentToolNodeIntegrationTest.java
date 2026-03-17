@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.unknowntool.UnknownToolGuardConstants;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
@@ -606,8 +607,8 @@ class AgentToolNodeIntegrationTest {
 		}
 
 		@Test
-		@DisplayName("should throw exception when tool not found anywhere")
-		void resolve_shouldThrow_whenToolNotFound() {
+		@DisplayName("should return error response when tool not found anywhere")
+		void resolve_shouldReturnErrorResponse_whenToolNotFound() throws Exception {
 			// Given
 			AgentToolNode node = baseBuilder.toolCallbacks(List.of()).toolCallbackResolver(null).build();
 
@@ -617,8 +618,17 @@ class AgentToolNodeIntegrationTest {
 			OverAllState state = createStateWithMessages(assistantMessage);
 			RunnableConfig config = RunnableConfig.builder().build();
 
-			// When/Then
-			assertThrows(IllegalStateException.class, () -> node.apply(state, config));
+			// When
+			Map<String, Object> result = node.apply(state, config);
+
+			// Then
+			ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
+			assertNotNull(responseMessage);
+			assertEquals(1, responseMessage.getResponses().size());
+			assertTrue(responseMessage.getResponses().get(0).responseData().contains("Unknown tool 'nonExistentTool'"));
+			assertEquals(true, responseMessage.getMetadata().get(UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY));
+			assertEquals(true, responseMessage.getMetadata().get(UnknownToolGuardConstants.ALL_TOOL_CALLS_UNKNOWN_METADATA_KEY));
+			assertEquals(List.of("nonExistentTool"), responseMessage.getMetadata().get(UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY));
 		}
 
 	}
