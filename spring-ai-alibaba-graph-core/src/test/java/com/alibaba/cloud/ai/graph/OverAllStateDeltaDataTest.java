@@ -16,6 +16,9 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.state.StateSnapshot;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -162,6 +165,73 @@ public class OverAllStateDeltaDataTest {
 		assertEquals(3, outPutDeltas.size(), "Delta data should contain 3 entries");
 		assertEquals(List.of("a", "b", "c"), outPutDeltas,
 				"Delta output should be [a, b, c]");
+	}
+
+	@Test
+	void testDeltaDataWithSnapshot() throws Exception {
+
+		final String threadId = "test-thread-1";
+
+		KeyStrategyFactory keyStrategyFactory = createKeyStrategyFactory();
+
+		// Build main graph
+		StateGraph mainGraph = new StateGraph(keyStrategyFactory);
+		mainGraph.addNode("a", makeNode("a"));
+		mainGraph.addNode("b", makeNode("b"));
+
+		mainGraph.addEdge(START, "a");
+		mainGraph.addEdge("a", "b");
+		mainGraph.addEdge("b", END);
+
+		CompiledGraph compiledGraph = mainGraph.compile(
+				CompileConfig.builder()
+						.interruptAfter("a")
+						.saverConfig(
+								SaverConfig.builder()
+										.register(new MemorySaver())
+										.build()
+						).build()
+		);
+
+		RunnableConfig runnableConfig = RunnableConfig.builder()
+				.threadId(threadId)
+				.build();
+
+		// First execution to capture snapshot after node "a"
+		OverAllState state = compiledGraph.invoke(Map.of(KEY_OUTPUT, "A"), runnableConfig).orElseThrow();
+		List<Object> output = state.value(KEY_OUTPUT, Collections.emptyList());
+		log.info("Output after first execution: {}", output);
+		assertNotNull(output, "Output should not be null");
+		assertEquals(2, output.size(), "Output should contain 2 elements");
+		assertEquals(List.of("A", "a"), output,
+				"Output should be [A, a]");
+
+		Map<String, Object> deltaData = state.deltaData();
+		assertNotNull(deltaData, "Delta data should not be null");
+		List<String> deltaOutput = (List<String>) deltaData.get(KEY_OUTPUT);
+		assertNotNull(deltaOutput, "Delta data should contain output key");
+		assertEquals(1, deltaOutput.size(), "Delta data should contain 1 entry");
+		assertEquals(List.of("a"), deltaOutput,
+				"Delta output should be [a]");
+
+		// Simulate resuming from snapshot
+		StateSnapshot stateSnapshot = compiledGraph.getState(runnableConfig);
+		OverAllState stateResumed = compiledGraph.invoke(Collections.emptyMap(), stateSnapshot.config()).orElseThrow();
+		List<Object> outputResumed = stateResumed.value(KEY_OUTPUT, Collections.emptyList());
+		log.info("Output after resuming from snapshot: {}", outputResumed);
+		assertNotNull(outputResumed, "Output should not be null");
+		assertEquals(3, outputResumed.size(), "Output should contain 3 elements");
+		assertEquals(List.of("A", "a", "b"), outputResumed,
+				"Output should be [A, a, b]");
+
+		Map<String, Object> deltaDataResumed = stateResumed.deltaData();
+		assertNotNull(deltaDataResumed, "Delta data should not be null");
+		List<String> deltaOutputResumed = (List<String>) deltaDataResumed.get(KEY_OUTPUT);
+		assertNotNull(deltaOutputResumed, "Delta data should contain output key");
+		assertEquals(2, deltaOutputResumed.size(), "Delta data should contain 2 entry");
+		assertEquals(List.of("a", "b"), deltaOutputResumed,
+				"Delta output should be [a, b]");
+
 	}
 
 }

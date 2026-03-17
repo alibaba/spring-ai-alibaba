@@ -123,7 +123,7 @@ public class GraphRunnerContext {
 	private void initializeFromStart(OverAllState initialState, RunnableConfig config) {
 		log.trace("START");
 
-		Map<String, Object> inputs = initialState.data();
+		Map<String, Object> inputs = initialState.dataWithoutDelta();
 		if (!CollectionUtils.isEmpty(inputs)) {
 			// Simple validation without accessing protected method
 			log.debug("Initializing with inputs: {}", inputs.keySet());
@@ -290,7 +290,7 @@ public class GraphRunnerContext {
 		return NodeOutput.of(
 				nodeId,
 				(String) config.metadata("_AGENT_").orElse(""),
-				compiledGraph.cloneState(this.overallState.data(), this.overallState.deltaData()),
+				cloneState(this.overallState.data()),
 				this.tokenUsage);
 	}
 
