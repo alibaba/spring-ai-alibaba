@@ -115,7 +115,7 @@ public class OverAllStateDeltaDataTest {
 		log.info("expected output: [A, a, a, b, c, c, d]");
 
 		assertNotNull(output, "Output should not be null");
-		assertEquals(7, output.size(), "Output should contain 6 elements");
+		assertEquals(7, output.size(), "Output should contain 7 elements");
 		assertEquals(List.of("A", "a", "a", "b", "c", "c", "d"), output,
 				"Output should be [A, a, a, b, c, c, d]");
 
