@@ -112,7 +112,12 @@ public final class OverAllState implements Serializable {
 	 */
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> mutableDeltaData() {
-		return (Map<String, Object>) this.data.computeIfAbsent(SYSTEM_DELTA_DATA_KEY, k -> new HashMap<String, Object>());
+		Object mutableDelta = this.data.computeIfAbsent(SYSTEM_DELTA_DATA_KEY, k -> new HashMap<String, Object>());
+		if (mutableDelta instanceof Map<?, ?> deltaMap) {
+			return (Map<String, Object>) deltaMap;
+		} else {
+			throw new IllegalStateException("Value for " + SYSTEM_DELTA_DATA_KEY + " is not a Map but " + mutableDelta.getClass());
+		}
 	}
 
 	/**
