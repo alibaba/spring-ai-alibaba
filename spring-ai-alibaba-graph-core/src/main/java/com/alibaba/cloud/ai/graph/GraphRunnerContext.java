@@ -290,7 +290,7 @@ public class GraphRunnerContext {
 		return NodeOutput.of(
 				nodeId,
 				(String) config.metadata("_AGENT_").orElse(""),
-				cloneState(this.overallState.data()),
+				compiledGraph.cloneState(this.overallState.data(), this.overallState.deltaData()),
 				this.tokenUsage);
 	}
 

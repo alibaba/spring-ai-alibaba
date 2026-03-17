@@ -486,6 +486,21 @@ public class CompiledGraph {
 	}
 
 	/**
+	 * Clone state over all state with delta data.
+	 *
+	 * @param data the data
+	 * @param deltaData the delta data
+	 * @return the over all state
+	 */
+	public OverAllState cloneState(Map<String, Object> data, Map<String, Object> deltaData) throws IOException, ClassNotFoundException {
+		return new OverAllState(
+				stateGraph.getStateSerializer().cloneObject(data).data(),
+				stateGraph.getStateSerializer().cloneObject(deltaData).data(),
+				getKeyStrategyMap()
+		);
+	}
+
+	/**
 	 * Package-private access to nodes for ReactiveNodeGenerator.
 	 */
 	public AsyncNodeActionWithConfig getNodeAction(String nodeId) {

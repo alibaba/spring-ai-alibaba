@@ -104,17 +104,64 @@ public class OverAllStateDeltaDataTest {
 		mainGraph.addEdge("subB", END);
 		CompiledGraph compiledGraph = mainGraph.compile();
 
-		OverAllState state = compiledGraph.invoke(Collections.emptyMap()).orElseThrow();
+		OverAllState state = compiledGraph.invoke(Map.of(KEY_OUTPUT, "A")).orElseThrow();
 		List<Object> output = state.value(KEY_OUTPUT, Collections.emptyList());
 
-		log.info("actual output size: {}, which is supposed to be 6", output.size());
+		log.info("actual output size: {}, which is supposed to be 7", output.size());
 		log.info("actual output: {}", output);
-		log.info("expected output: [a, a, b, c, c, d]");
+		log.info("expected output: [A, a, a, b, c, c, d]");
 
 		assertNotNull(output, "Output should not be null");
-		assertEquals(6, output.size(), "Output should contain 6 elements");
-		assertEquals(List.of("a", "a", "b", "c", "c", "d"), output,
-				"Output should be [a, a, b, c, c, d]");
+		assertEquals(7, output.size(), "Output should contain 6 elements");
+		assertEquals(List.of("A", "a", "a", "b", "c", "c", "d"), output,
+				"Output should be [A, a, a, b, c, c, d]");
+
+		Map<String, Object> deltaData = state.deltaData();
+		assertNotNull(deltaData, "Delta data should not be null");
+		List<String> deltaOutput = (List<String>) deltaData.get(KEY_OUTPUT);
+		assertNotNull(deltaOutput, "Delta data should contain output key");
+		assertEquals(6, deltaOutput.size(), "Delta data should contain 6 entries");
+		assertEquals(List.of("a", "a", "b", "c", "c", "d"), deltaOutput,
+				"Delta output should be [a, a, b, c, c, d]");
+	}
+
+	/**
+	 * Test execution of graph with parallel nodes using the append strategy.
+	 */
+	@Test
+	void testAppendStrategyWithParallelNodes() throws Exception {
+		KeyStrategyFactory keyStrategyFactory = createKeyStrategyFactory();
+
+		// Build main graph with parallel nodes
+		StateGraph mainGraph = new StateGraph(keyStrategyFactory);
+
+		mainGraph.addNode("a", makeNode("a"));
+		mainGraph.addNode("b", makeNode("b"));
+		mainGraph.addNode("c", makeNode("c"));
+
+		mainGraph.addEdge(START, "a");
+		mainGraph.addEdge(START, "b");
+		mainGraph.addEdge("a", "c");
+		mainGraph.addEdge("b", "c");
+		mainGraph.addEdge("c", END);
+
+		CompiledGraph compiledGraph = mainGraph.compile();
+
+		OverAllState state = compiledGraph.invoke(Map.of(KEY_OUTPUT, "A")).orElseThrow();
+		List<Object> output = state.value(KEY_OUTPUT, Collections.emptyList());
+
+		assertNotNull(output, "Output should not be null");
+		assertEquals(4, output.size(), "Output should contain 4 elements");
+		// parallel result processing ordered as Node Registration order, which is a, b, c
+		assertEquals(List.of("A", "a", "b", "c"), output,
+				"Output should be [A, a, b, c]");
+
+		assertNotNull(state.deltaData(), "Delta data should not be null");
+		List<String> outPutDeltas = (List<String>) state.deltaData().get(KEY_OUTPUT);
+		assertNotNull(outPutDeltas, "Delta data should contain output key");
+		assertEquals(3, outPutDeltas.size(), "Delta data should contain 3 entries");
+		assertEquals(List.of("a", "b", "c"), outPutDeltas,
+				"Delta output should be [a, b, c]");
 	}
 
 }

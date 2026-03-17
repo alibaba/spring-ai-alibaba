@@ -180,6 +180,19 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
+	 * Instantiates a new Over all state with delta data.
+	 * @param data the data
+	 * @param deltaData the delta data
+	 * @param keyStrategies the key strategies
+	 */
+	protected OverAllState(Map<String, Object> data, Map<String, Object> deltaData, Map<String, KeyStrategy> keyStrategies) {
+		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
+		this.deltaData = deltaData != null ? new HashMap<>(deltaData) : this.data;
+		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
+		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
+	}
+
+	/**
 	 * Instantiates a new Over all state with Store.
 	 * @param data the data
 	 * @param keyStrategies the key strategies
