@@ -825,17 +825,18 @@ public class ReactAgent extends BaseAgent {
 		};
 	}
 
+	private static final String FINISH_REASON_METADATA_KEY = "finish_reason";
+
 	private EdgeAction makeToolsToModelEdge(String modelDestination, String endDestination) {
 		return state -> {
 			// 1. Extract last AI message and corresponding tool messages
 			ToolResponseMessage toolResponseMessage = fetchLastToolResponseMessage(state);
 			// 2. Exit condition: All executed tools have return_direct=True
 			if (toolResponseMessage != null && !toolResponseMessage.getResponses().isEmpty()) {
-				boolean allReturnDirect = toolResponseMessage.getResponses().stream().allMatch(toolResponse -> {
-					String toolName = toolResponse.name();
-					return false; // FIXME
-				});
-				if (allReturnDirect) {
+				// Check if the tool response message has the finish_reason metadata
+				// This metadata is set when a tool has returnDirect=true
+				Map<String, Object> metadata = toolResponseMessage.getMetadata();
+				if (metadata != null && FINISH_REASON_METADATA_KEY.equals(metadata.get(FINISH_REASON_METADATA_KEY))) {
 					return endDestination;
 				}
 			}
