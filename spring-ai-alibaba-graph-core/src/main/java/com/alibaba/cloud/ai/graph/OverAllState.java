@@ -302,6 +302,7 @@ public final class OverAllState implements Serializable {
 	public Map<String, Object> updateState(Map<String, Object> partialState) {
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
 		partialState.keySet().forEach(key -> {
+			// If no specific strategy is found, use the default REPLACE strategy
 			final KeyStrategy strategy = Optional.ofNullable(keyStrategies.get(key))
 					.orElse(KeyStrategy.REPLACE);
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
@@ -331,6 +332,7 @@ public final class OverAllState implements Serializable {
 	public void updateStateWithKeyStrategies(Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategyMap) {
 		Optional<Map<String, KeyStrategy>> optionalKeyStrategies = ofNullable(keyStrategyMap);
 		partialState.keySet().forEach(key -> {
+			// If no specific strategy is found, use the default REPLACE strategy
 			final KeyStrategy strategy = optionalKeyStrategies
 					.map(map -> map.get(key))
 					.orElse(KeyStrategy.REPLACE);
