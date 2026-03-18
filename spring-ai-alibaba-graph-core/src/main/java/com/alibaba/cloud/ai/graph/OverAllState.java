@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.store.Store;
+import com.alibaba.cloud.ai.graph.utils.SerializationUtils;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.util.CollectionUtils;
 
@@ -101,10 +102,70 @@ public final class OverAllState implements Serializable {
 	public static final String DEFAULT_INPUT_KEY = "input";
 
 	/**
+	 * Internal key used to store delta data representing changes made to the state during
+	 * updates. This allows tracking of what has changed in the state since the last reset.
+	 */
+	public static final String SYSTEM_DELTA_DATA_KEY = "__SYSTEM_DELTA_DATA_KEY__";
+
+	/**
+	 * Set of keys that are protected from being modified or removed through the updateState
+	 * method. This includes internal keys like SYSTEM_DELTA_DATA_KEY that are essential for
+	 * the correct functioning of the state management and should not be altered by external
+	 * updates.
+	 */
+	private static final Set<String> PROTECTED_KEYS = Set.of(SYSTEM_DELTA_DATA_KEY);
+
+	/**
+	 * @return an Optional containing the mutable delta data map, or empty if tracking is not enabled
+	 * @apiNote only for internal use
+	 */
+	@SuppressWarnings("unchecked")
+	private Optional<Map<String, Object>> mutableDeltaData() {
+		if (!isDeltaTrackingEnabled()) {
+			return Optional.empty();
+		}
+		Object mutableDelta = this.data.get(SYSTEM_DELTA_DATA_KEY);
+		if (mutableDelta instanceof Map<?, ?> deltaMap) {
+			return Optional.of((Map<String, Object>) deltaMap);
+		}
+		return Optional.empty();
+	}
+
+	/**
 	 * Reset.
 	 */
 	public void reset() {
 		this.data.clear();
+	}
+
+	/**
+	 * Reset delta data, without affecting the state of delta tracking.
+	 */
+	public void resetDeltaData() {
+		mutableDeltaData().ifPresent(Map::clear);
+	}
+
+	/**
+	 * Disable delta tracking. This will remove any existing delta data and stop tracking changes.
+	 */
+	public void disableDeltaTracking() {
+		this.data.remove(SYSTEM_DELTA_DATA_KEY);
+	}
+
+	/**
+	 * Enable delta tracking. This will initialize the delta data map if it does not already exist.
+	 */
+	public void enableDeltaTracking() {
+		this.data.computeIfAbsent(SYSTEM_DELTA_DATA_KEY, k -> new HashMap<>());
+	}
+
+	/**
+	 * Checks if delta tracking is enabled by verifying the presence of the SYSTEM_DELTA_DATA_KEY in the data map.
+	 * @return true if delta tracking is enabled, false otherwise
+	 */
+	public boolean isDeltaTrackingEnabled() {
+		Object deltaValue = this.data.get(SYSTEM_DELTA_DATA_KEY);
+		return deltaValue instanceof Map<?, ?>;
 	}
 
 	/**
@@ -113,7 +174,7 @@ public final class OverAllState implements Serializable {
 	 */
 	public Optional<OverAllState> snapShot() {
 		return Optional
-			.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.store));
+			.of(new OverAllState(SerializationUtils.deepCopyMap(this.data), new HashMap<>(this.keyStrategies), this.store));
 	}
 
 	/**
@@ -218,8 +279,17 @@ public final class OverAllState implements Serializable {
 			return this;
 		}
 
+		if (input.containsKey(SYSTEM_DELTA_DATA_KEY)) {
+			// Retain existing delta data for Resume-From scenarios
+			Object deltaObject = input.get(SYSTEM_DELTA_DATA_KEY);
+			// ignore if delta data is not in expected format
+			if (deltaObject instanceof Map<?, ?> deltaMap) {
+				this.data.put(SYSTEM_DELTA_DATA_KEY, new HashMap<>(deltaMap));
+			}
+		}
+
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
-		input.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
+		input.keySet().stream().filter(key -> keyStrategies.containsKey(key) && !key.equals(SYSTEM_DELTA_DATA_KEY)).forEach(key -> {
 			this.data.put(key, keyStrategies.get(key).apply(value(key, null), input.get(key)));
 		});
 		return this;
@@ -263,15 +333,21 @@ public final class OverAllState implements Serializable {
 	public Map<String, Object> updateState(Map<String, Object> partialState) {
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
 		partialState.keySet().forEach(key -> {
-			KeyStrategy strategy = keyStrategies != null ? keyStrategies.get(key) : null;
-			// If no specific strategy is found, use the default REPLACE strategy
-			if (strategy == null) {
-				strategy = KeyStrategy.REPLACE;
+			if (PROTECTED_KEYS.contains(key)) {
+				// Skip protected keys
+				return;
 			}
+
+			// If no specific strategy is found, use the default REPLACE strategy
+			final KeyStrategy strategy = Optional.ofNullable(keyStrategies.get(key))
+					.orElse(KeyStrategy.REPLACE);
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
 				this.data.remove(key);
+				mutableDeltaData().ifPresent(delta -> delta.remove(key));
 			} else {
 				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
+				mutableDeltaData().ifPresent(delta -> 
+						delta.put(key, strategy.apply(delta.get(key), partialState.get(key))));
 			}
 		});
 		return data();
@@ -290,17 +366,25 @@ public final class OverAllState implements Serializable {
 	 * default REPLACE strategy is used
 	 */
 	public void updateStateWithKeyStrategies(Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategyMap) {
+		Optional<Map<String, KeyStrategy>> optionalKeyStrategies = ofNullable(keyStrategyMap);
 		partialState.keySet().forEach(key -> {
-			KeyStrategy strategy = keyStrategyMap != null ? keyStrategyMap.get(key) : null;
-			// If no specific strategy is found, use the default REPLACE strategy
-			if (strategy == null) {
-				strategy = KeyStrategy.REPLACE;
+			if (PROTECTED_KEYS.contains(key)) {
+				// Skip protected keys
+				return;
 			}
+
+			// If no specific strategy is found, use the default REPLACE strategy
+			final KeyStrategy strategy = optionalKeyStrategies
+					.map(map -> map.get(key))
+					.orElse(KeyStrategy.REPLACE);
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
 				this.data.remove(key);
+				mutableDeltaData().ifPresent(delta -> delta.remove(key));
 			}
 			else {
 				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
+				mutableDeltaData().ifPresent(delta -> 
+						delta.put(key, strategy.apply(delta.get(key), partialState.get(key))));
 			}
 		});
 	}
@@ -473,6 +557,33 @@ public final class OverAllState implements Serializable {
 	 */
 	public final Map<String, Object> data() {
 		return data != null ? unmodifiableMap(data) : unmodifiableMap(new HashMap<>());
+	}
+
+	/**
+	 * Data without delta map.
+	 * @return the map
+	 */
+	public final Map<String, Object> dataWithoutDelta() {
+		if (data == null) {
+			return Collections.emptyMap();
+		}
+		if (data.containsKey(SYSTEM_DELTA_DATA_KEY)) {
+			Map<String, Object> result = new HashMap<>(data);
+			result.remove(SYSTEM_DELTA_DATA_KEY);
+			return unmodifiableMap(result);
+		} else {
+			return unmodifiableMap(data);
+		}
+	}
+
+	/**
+	 * Delta data map which tracking the changes of state since last reset.
+	 * @return the delta data map, or an {@link Collections#emptyMap} if delta tracking is not enabled or no delta data is present
+	 */
+	public final Map<String, Object> deltaData() {
+		return mutableDeltaData()
+				.map(Collections::unmodifiableMap)
+				.orElse(Collections.emptyMap());
 	}
 
 	/**

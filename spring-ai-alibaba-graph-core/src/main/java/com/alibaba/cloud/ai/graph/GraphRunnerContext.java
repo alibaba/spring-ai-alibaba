@@ -123,7 +123,7 @@ public class GraphRunnerContext {
 	private void initializeFromStart(OverAllState initialState, RunnableConfig config) {
 		log.trace("START");
 
-		Map<String, Object> inputs = initialState.data();
+		Map<String, Object> inputs = initialState.dataWithoutDelta();
 		if (!CollectionUtils.isEmpty(inputs)) {
 			// Simple validation without accessing protected method
 			log.debug("Initializing with inputs: {}", inputs.keySet());
@@ -133,6 +133,10 @@ public class GraphRunnerContext {
 		this.overallState = stateCreate(compiledGraph.getInitialState(inputs, config), initialState);
 		this.currentNodeId = START;
 		this.nextNodeId = null;
+
+		if (compiledGraph.compileConfig.enableDeltaTracking() || initialState.isDeltaTrackingEnabled()) {
+			this.overallState.enableDeltaTracking();
+		}
 	}
 
 	// FIXME, duplicated method with CompiledGraph.stateCreate, need to have a
