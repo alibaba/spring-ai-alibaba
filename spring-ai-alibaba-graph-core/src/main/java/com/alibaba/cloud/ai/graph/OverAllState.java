@@ -107,17 +107,19 @@ public final class OverAllState implements Serializable {
 	public static final String SYSTEM_DELTA_DATA_KEY = "__SYSTEM_DELTA_DATA_KEY__";
 
 	/**
-	 * @return a mutable map representing the delta data
+	 * @return an Optional containing the mutable delta data map, or empty if tracking is not enabled
 	 * @apiNote only for internal use
 	 */
 	@SuppressWarnings("unchecked")
-	private Map<String, Object> mutableDeltaData() {
-		Object mutableDelta = this.data.computeIfAbsent(SYSTEM_DELTA_DATA_KEY, k -> new HashMap<String, Object>());
-		if (mutableDelta instanceof Map<?, ?> deltaMap) {
-			return (Map<String, Object>) deltaMap;
-		} else {
-			throw new IllegalStateException("Value for " + SYSTEM_DELTA_DATA_KEY + " is not a Map but " + mutableDelta.getClass());
+	private Optional<Map<String, Object>> mutableDeltaData() {
+		if (!isDeltaTrackingEnabled()) {
+			return Optional.empty();
 		}
+		Object mutableDelta = this.data.get(SYSTEM_DELTA_DATA_KEY);
+		if (mutableDelta instanceof Map<?, ?> deltaMap) {
+			return Optional.of((Map<String, Object>) deltaMap);
+		}
+		return Optional.empty();
 	}
 
 	/**
@@ -300,20 +302,15 @@ public final class OverAllState implements Serializable {
 	public Map<String, Object> updateState(Map<String, Object> partialState) {
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
 		partialState.keySet().forEach(key -> {
-			KeyStrategy strategy = keyStrategies != null ? keyStrategies.get(key) : null;
-			if (strategy == null) {
-				strategy = KeyStrategy.REPLACE;
-			}
+			final KeyStrategy strategy = Optional.ofNullable(keyStrategies.get(key))
+					.orElse(KeyStrategy.REPLACE);
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
 				this.data.remove(key);
-				if (isDeltaTrackingEnabled()) {
-					this.mutableDeltaData().remove(key);
-				}
+				mutableDeltaData().ifPresent(delta -> delta.remove(key));
 			} else {
 				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
-				if (isDeltaTrackingEnabled()) {
-					this.mutableDeltaData().put(key, strategy.apply(this.mutableDeltaData().get(key), partialState.get(key)));
-				}
+				mutableDeltaData().ifPresent(delta -> 
+						delta.put(key, strategy.apply(delta.get(key), partialState.get(key))));
 			}
 		});
 		return data();
@@ -332,22 +329,19 @@ public final class OverAllState implements Serializable {
 	 * default REPLACE strategy is used
 	 */
 	public void updateStateWithKeyStrategies(Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategyMap) {
+		Optional<Map<String, KeyStrategy>> optionalKeyStrategies = ofNullable(keyStrategyMap);
 		partialState.keySet().forEach(key -> {
-			KeyStrategy strategy = keyStrategyMap != null ? keyStrategyMap.get(key) : null;
-			if (strategy == null) {
-				strategy = KeyStrategy.REPLACE;
-			}
+			final KeyStrategy strategy = optionalKeyStrategies
+					.map(map -> map.get(key))
+					.orElse(KeyStrategy.REPLACE);
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
 				this.data.remove(key);
-				if (isDeltaTrackingEnabled()) {
-					this.mutableDeltaData().remove(key);
-				}
+				mutableDeltaData().ifPresent(delta -> delta.remove(key));
 			}
 			else {
 				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
-				if (isDeltaTrackingEnabled()) {
-					this.mutableDeltaData().put(key, strategy.apply(this.mutableDeltaData().get(key), partialState.get(key)));
-				}
+				mutableDeltaData().ifPresent(delta -> 
+						delta.put(key, strategy.apply(delta.get(key), partialState.get(key))));
 			}
 		});
 	}
@@ -544,10 +538,9 @@ public final class OverAllState implements Serializable {
 	 * @return the map
 	 */
 	public final Map<String, Object> deltaData() {
-		if (data == null || !data.containsKey(SYSTEM_DELTA_DATA_KEY)) {
-			return Collections.emptyMap();
-		}
-		return unmodifiableMap(mutableDeltaData());
+		return mutableDeltaData()
+				.map(Collections::unmodifiableMap)
+				.orElse(Collections.emptyMap());
 	}
 
 	/**
