@@ -108,6 +108,14 @@ public final class OverAllState implements Serializable {
 	public static final String SYSTEM_DELTA_DATA_KEY = "__SYSTEM_DELTA_DATA_KEY__";
 
 	/**
+	 * Set of keys that are protected from being modified or removed through the updateState
+	 * method. This includes internal keys like SYSTEM_DELTA_DATA_KEY that are essential for
+	 * the correct functioning of the state management and should not be altered by external
+	 * updates.
+	 */
+	private static final Set<String> PROTECTED_KEYS = Set.of(SYSTEM_DELTA_DATA_KEY);
+
+	/**
 	 * @return an Optional containing the mutable delta data map, or empty if tracking is not enabled
 	 * @apiNote only for internal use
 	 */
@@ -304,6 +312,11 @@ public final class OverAllState implements Serializable {
 	public Map<String, Object> updateState(Map<String, Object> partialState) {
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
 		partialState.keySet().forEach(key -> {
+			if (PROTECTED_KEYS.contains(key)) {
+				// Skip protected keys
+				return;
+			}
+
 			// If no specific strategy is found, use the default REPLACE strategy
 			final KeyStrategy strategy = Optional.ofNullable(keyStrategies.get(key))
 					.orElse(KeyStrategy.REPLACE);
@@ -334,6 +347,11 @@ public final class OverAllState implements Serializable {
 	public void updateStateWithKeyStrategies(Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategyMap) {
 		Optional<Map<String, KeyStrategy>> optionalKeyStrategies = ofNullable(keyStrategyMap);
 		partialState.keySet().forEach(key -> {
+			if (PROTECTED_KEYS.contains(key)) {
+				// Skip protected keys
+				return;
+			}
+
 			// If no specific strategy is found, use the default REPLACE strategy
 			final KeyStrategy strategy = optionalKeyStrategies
 					.map(map -> map.get(key))
