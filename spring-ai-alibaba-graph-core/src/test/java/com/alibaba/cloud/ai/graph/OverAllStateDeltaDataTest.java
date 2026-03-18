@@ -34,6 +34,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for OverAllState behavior with append strategy and subgraph execution.
@@ -105,7 +106,11 @@ public class OverAllStateDeltaDataTest {
 		mainGraph.addEdge("a", "subA");
 		mainGraph.addEdge("subA", "subB");
 		mainGraph.addEdge("subB", END);
-		CompiledGraph compiledGraph = mainGraph.compile();
+		CompiledGraph compiledGraph = mainGraph.compile(
+				CompileConfig.builder()
+						.enableDeltaTracking(true)
+						.build()
+		);
 
 		OverAllState state = compiledGraph.invoke(Map.of(KEY_OUTPUT, "A")).orElseThrow();
 		List<Object> output = state.value(KEY_OUTPUT, Collections.emptyList());
@@ -148,7 +153,11 @@ public class OverAllStateDeltaDataTest {
 		mainGraph.addEdge("b", "c");
 		mainGraph.addEdge("c", END);
 
-		CompiledGraph compiledGraph = mainGraph.compile();
+		CompiledGraph compiledGraph = mainGraph.compile(
+				CompileConfig.builder()
+						.enableDeltaTracking(true)
+						.build()
+		);
 
 		OverAllState state = compiledGraph.invoke(Map.of(KEY_OUTPUT, "A")).orElseThrow();
 		List<Object> output = state.value(KEY_OUTPUT, Collections.emptyList());
@@ -185,6 +194,7 @@ public class OverAllStateDeltaDataTest {
 
 		CompiledGraph compiledGraph = mainGraph.compile(
 				CompileConfig.builder()
+						.enableDeltaTracking(true)
 						.interruptAfter("a")
 						.saverConfig(
 								SaverConfig.builder()
@@ -232,6 +242,76 @@ public class OverAllStateDeltaDataTest {
 		assertEquals(List.of("a", "b"), deltaOutputResumed,
 				"Delta output should be [a, b]");
 
+	}
+
+	@Test
+	void testDeltaTrackingDisabledByDefault() throws Exception {
+		KeyStrategyFactory keyStrategyFactory = createKeyStrategyFactory();
+
+		// Build sub graph A
+		StateGraph subGraphA = new StateGraph(keyStrategyFactory);
+		subGraphA.addNode("b", makeNode("b"));
+		subGraphA.addEdge(START, "b");
+		subGraphA.addEdge("b", END);
+		CompiledGraph compiledGraphA = subGraphA.compile();
+
+		// Build main graph
+		StateGraph mainGraph = new StateGraph(keyStrategyFactory);
+		mainGraph.addNode("a", makeNode("a"));
+		mainGraph.addNode("subA", compiledGraphA);
+		mainGraph.addEdge(START, "a");
+		mainGraph.addEdge("a", "subA");
+		mainGraph.addEdge("subA", END);
+		// delta tracking DISABLED by default
+		CompiledGraph compiledGraph = mainGraph.compile();
+
+		OverAllState state = compiledGraph.invoke(Map.of(KEY_OUTPUT, "A")).orElseThrow();
+		List<Object> output = state.value(KEY_OUTPUT, Collections.emptyList());
+
+		assertNotNull(output, "Output should not be null");
+		assertEquals(5, output.size(), "Output should contain 5 elements without delta tracking");
+		assertEquals(List.of("A", "a", "A", "a", "b"), output, "Output should be [A, a, A, a, b] without delta tracking");
+
+		Map<String, Object> deltaData = state.deltaData();
+		assertNotNull(deltaData, "Delta data should not be null even if tracking is disabled");
+		assertTrue(deltaData.isEmpty(), "Delta data should be empty when tracking is disabled");
+
+	}
+
+	@Test
+	void testDeltaTrackingEnabledOnlyInSubGraph() throws Exception {
+		KeyStrategyFactory keyStrategyFactory = createKeyStrategyFactory();
+
+		// Build sub graph A with delta tracking enabled
+		StateGraph subGraphA = new StateGraph(keyStrategyFactory);
+		subGraphA.addNode("b", makeNode("b"));
+		subGraphA.addEdge(START, "b");
+		subGraphA.addEdge("b", END);
+		CompiledGraph compiledGraphA = subGraphA.compile(
+				CompileConfig.builder()
+						.enableDeltaTracking(true) // Enable delta tracking for subgraph A
+						.build()
+		);
+
+		// Build main graph with delta tracking disabled
+		StateGraph mainGraph = new StateGraph(keyStrategyFactory);
+		mainGraph.addNode("a", makeNode("a"));
+		mainGraph.addNode("subA", compiledGraphA);
+		mainGraph.addEdge(START, "a");
+		mainGraph.addEdge("a", "subA");
+		mainGraph.addEdge("subA", END);
+		CompiledGraph compiledGraph = mainGraph.compile();
+
+		OverAllState state = compiledGraph.invoke(Map.of(KEY_OUTPUT, "A")).orElseThrow();
+		List<Object> output = state.value(KEY_OUTPUT, Collections.emptyList());
+
+		assertNotNull(output, "Output should not be null");
+		assertEquals(3, output.size(), "Output should contain 3 elements");
+		assertEquals(List.of("A", "a", "b"), output, "Output should be [A, a, b]");
+
+		Map<String, Object> deltaData = state.deltaData();
+		assertNotNull(deltaData, "Delta data should not be null");
+		assertTrue(deltaData.isEmpty(), "Delta data should be empty when tracking is disabled");
 	}
 
 }

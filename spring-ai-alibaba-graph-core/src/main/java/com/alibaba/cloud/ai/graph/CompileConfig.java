@@ -56,12 +56,18 @@ public class CompileConfig {
 
 	private int recursionLimit = 100;
 
+	private boolean enableDeltaTracking = false;
+
 	// ================================================================================================================
 	// Getter Methods
 	// ================================================================================================================
 
 	public int recursionLimit() {
 		return recursionLimit;
+	}
+
+	public boolean enableDeltaTracking() {
+		return enableDeltaTracking;
 	}
 
 	/**
@@ -182,6 +188,11 @@ public class CompileConfig {
 				throw new IllegalArgumentException("recursionLimit must be > 0!");
 			}
 			this.config.recursionLimit = recursionLimit;
+			return this;
+		}
+
+		public Builder enableDeltaTracking(boolean enableDeltaTracking) {
+			this.config.enableDeltaTracking = enableDeltaTracking;
 			return this;
 		}
 
@@ -332,6 +343,7 @@ public class CompileConfig {
 		this.observationRegistry = config.observationRegistry;
 		this.interruptBeforeEdge = config.interruptBeforeEdge;
 		this.store = config.store;
+		this.enableDeltaTracking = config.enableDeltaTracking;
 	}
 
 }

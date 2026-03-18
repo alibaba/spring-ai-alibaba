@@ -60,8 +60,10 @@ public abstract class BaseGraphExecutor {
 						.get()
 						.release(context.getConfig());
 					resultValue.set(tag);
-				} else {
+				} else if (context.getOverallState().isDeltaTrackingEnabled()) {
 					resultValue.set(new HashMap<>(context.getOverallState().deltaData()));
+				} else {
+					resultValue.set(new HashMap<>(context.getOverallState().data()));
 				}
 				return Flux.just(GraphResponse.done(resultValue.get()));
 			}

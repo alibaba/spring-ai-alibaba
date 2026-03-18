@@ -131,6 +131,14 @@ public final class OverAllState implements Serializable {
 		this.data.remove(SYSTEM_DELTA_DATA_KEY);
 	}
 
+	public void enableDeltaTracking() {
+		this.data.computeIfAbsent(SYSTEM_DELTA_DATA_KEY, k -> new HashMap<>());
+	}
+
+	public boolean isDeltaTrackingEnabled() {
+		return this.data.containsKey(SYSTEM_DELTA_DATA_KEY);
+	}
+
 	/**
 	 * Snap shot optional.
 	 * @return the optional
@@ -248,7 +256,7 @@ public final class OverAllState implements Serializable {
 		}
 
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
-		input.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
+		input.keySet().stream().filter(key -> keyStrategies.containsKey(key) && !key.equals(SYSTEM_DELTA_DATA_KEY)).forEach(key -> {
 			this.data.put(key, keyStrategies.get(key).apply(value(key, null), input.get(key)));
 		});
 		return this;
@@ -293,16 +301,19 @@ public final class OverAllState implements Serializable {
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
 		partialState.keySet().forEach(key -> {
 			KeyStrategy strategy = keyStrategies != null ? keyStrategies.get(key) : null;
-			// If no specific strategy is found, use the default REPLACE strategy
 			if (strategy == null) {
 				strategy = KeyStrategy.REPLACE;
 			}
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
 				this.data.remove(key);
-				this.mutableDeltaData().remove(key);
+				if (isDeltaTrackingEnabled()) {
+					this.mutableDeltaData().remove(key);
+				}
 			} else {
 				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
-				this.mutableDeltaData().put(key, strategy.apply(this.mutableDeltaData().get(key), partialState.get(key)));
+				if (isDeltaTrackingEnabled()) {
+					this.mutableDeltaData().put(key, strategy.apply(this.mutableDeltaData().get(key), partialState.get(key)));
+				}
 			}
 		});
 		return data();
@@ -323,17 +334,20 @@ public final class OverAllState implements Serializable {
 	public void updateStateWithKeyStrategies(Map<String, Object> partialState, Map<String, KeyStrategy> keyStrategyMap) {
 		partialState.keySet().forEach(key -> {
 			KeyStrategy strategy = keyStrategyMap != null ? keyStrategyMap.get(key) : null;
-			// If no specific strategy is found, use the default REPLACE strategy
 			if (strategy == null) {
 				strategy = KeyStrategy.REPLACE;
 			}
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
 				this.data.remove(key);
-				this.mutableDeltaData().remove(key);
+				if (isDeltaTrackingEnabled()) {
+					this.mutableDeltaData().remove(key);
+				}
 			}
 			else {
 				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
-				this.mutableDeltaData().put(key, strategy.apply(this.mutableDeltaData().get(key), partialState.get(key)));
+				if (isDeltaTrackingEnabled()) {
+					this.mutableDeltaData().put(key, strategy.apply(this.mutableDeltaData().get(key), partialState.get(key)));
+				}
 			}
 		});
 	}

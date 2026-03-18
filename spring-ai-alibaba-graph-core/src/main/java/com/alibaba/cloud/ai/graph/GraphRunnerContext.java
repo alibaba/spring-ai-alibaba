@@ -133,6 +133,10 @@ public class GraphRunnerContext {
 		this.overallState = stateCreate(compiledGraph.getInitialState(inputs, config), initialState);
 		this.currentNodeId = START;
 		this.nextNodeId = null;
+
+		if (compiledGraph.compileConfig.enableDeltaTracking() || initialState.isDeltaTrackingEnabled()) {
+			this.overallState.enableDeltaTracking();
+		}
 	}
 
 	// FIXME, duplicated method with CompiledGraph.stateCreate, need to have a
