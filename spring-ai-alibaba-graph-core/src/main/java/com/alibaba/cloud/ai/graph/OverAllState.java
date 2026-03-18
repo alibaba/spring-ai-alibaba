@@ -577,8 +577,8 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
-	 * Delta data map.
-	 * @return the map
+	 * Delta data map which tracking the changes of state since last reset.
+	 * @return the delta data map, or an {@link Collections#emptyMap} if delta tracking is not enabled or no delta data is present
 	 */
 	public final Map<String, Object> deltaData() {
 		return mutableDeltaData()

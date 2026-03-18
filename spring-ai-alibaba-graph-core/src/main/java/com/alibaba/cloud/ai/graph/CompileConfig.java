@@ -191,6 +191,12 @@ public class CompileConfig {
 			return this;
 		}
 
+		/**
+		 * Enables or disables delta tracking for the graph execution.
+		 * @see OverAllState#deltaData()
+		 * @param enableDeltaTracking Flag indicating whether to enable delta tracking.
+		 * @return This builder instance for method chaining.
+		 */
 		public Builder enableDeltaTracking(boolean enableDeltaTracking) {
 			this.config.enableDeltaTracking = enableDeltaTracking;
 			return this;
