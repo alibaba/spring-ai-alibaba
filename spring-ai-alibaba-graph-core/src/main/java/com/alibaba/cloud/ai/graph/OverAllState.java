@@ -264,7 +264,11 @@ public final class OverAllState implements Serializable {
 
 		if (input.containsKey(SYSTEM_DELTA_DATA_KEY)) {
 			// Retain existing delta data for Resume-From scenarios
-			this.data.put(SYSTEM_DELTA_DATA_KEY, input.get(SYSTEM_DELTA_DATA_KEY));
+			Object deltaObject = input.get(SYSTEM_DELTA_DATA_KEY);
+			// ignore if delta data is not in expected format
+			if (deltaObject instanceof Map<?, ?> deltaMap) {
+				this.data.put(SYSTEM_DELTA_DATA_KEY, new HashMap<>(deltaMap));
+			}
 		}
 
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
