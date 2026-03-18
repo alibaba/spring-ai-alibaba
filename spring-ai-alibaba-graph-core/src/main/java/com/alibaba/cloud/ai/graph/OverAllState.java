@@ -138,7 +138,8 @@ public final class OverAllState implements Serializable {
 	}
 
 	public boolean isDeltaTrackingEnabled() {
-		return this.data.containsKey(SYSTEM_DELTA_DATA_KEY);
+		Object deltaValue = this.data.get(SYSTEM_DELTA_DATA_KEY);
+		return deltaValue instanceof Map<?, ?>;
 	}
 
 	/**
