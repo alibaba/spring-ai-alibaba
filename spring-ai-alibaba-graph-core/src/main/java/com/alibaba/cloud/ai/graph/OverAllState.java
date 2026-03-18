@@ -138,14 +138,31 @@ public final class OverAllState implements Serializable {
 		this.data.clear();
 	}
 
+	/**
+	 * Reset delta data, without affecting the state of delta tracking.
+	 */
 	public void resetDeltaData() {
+		mutableDeltaData().ifPresent(Map::clear);
+	}
+
+	/**
+	 * Disable delta tracking. This will remove any existing delta data and stop tracking changes.
+	 */
+	public void disableDeltaTracking() {
 		this.data.remove(SYSTEM_DELTA_DATA_KEY);
 	}
 
+	/**
+	 * Enable delta tracking. This will initialize the delta data map if it does not already exist.
+	 */
 	public void enableDeltaTracking() {
 		this.data.computeIfAbsent(SYSTEM_DELTA_DATA_KEY, k -> new HashMap<>());
 	}
 
+	/**
+	 * Checks if delta tracking is enabled by verifying the presence of the SYSTEM_DELTA_DATA_KEY in the data map.
+	 * @return true if delta tracking is enabled, false otherwise
+	 */
 	public boolean isDeltaTrackingEnabled() {
 		Object deltaValue = this.data.get(SYSTEM_DELTA_DATA_KEY);
 		return deltaValue instanceof Map<?, ?>;
