@@ -24,10 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -312,6 +309,44 @@ public class OverAllStateDeltaDataTest {
 		Map<String, Object> deltaData = state.deltaData();
 		assertNotNull(deltaData, "Delta data should not be null");
 		assertTrue(deltaData.isEmpty(), "Delta data should be empty when tracking is disabled");
+	}
+
+	@Test
+	void testDeltaTrackingWithStreamMethod() throws Exception {
+		KeyStrategyFactory keyStrategyFactory = createKeyStrategyFactory();
+
+		StateGraph mainGraph = new StateGraph(keyStrategyFactory);
+		mainGraph.addNode("a", makeNode("a"));
+		mainGraph.addNode("b", makeNode("b"));
+
+		mainGraph.addEdge(START, "a");
+		mainGraph.addEdge("a", "b");
+		mainGraph.addEdge("b", END);
+
+		CompiledGraph compiledGraph = mainGraph.compile(
+				CompileConfig.builder()
+						.enableDeltaTracking(true)
+						.build()
+		);
+
+		NodeOutput lastOutput = compiledGraph.stream(Map.of(KEY_OUTPUT, "A"))
+				.reduce((first, second) -> second)
+				.block();
+
+		assertNotNull(lastOutput, "Last output should not be null");
+		OverAllState state = lastOutput.state();
+		List<Object> output = state.value(KEY_OUTPUT, Collections.emptyList());
+
+		assertNotNull(output, "Output should not be null");
+		assertEquals(3, output.size(), "Output should contain 3 elements");
+		assertEquals(List.of("A", "a", "b"), output, "Output should be [A, a, b]");
+
+		Map<String, Object> deltaData = state.deltaData();
+		assertNotNull(deltaData, "Delta data should not be null");
+		List<String> deltaOutput = (List<String>) deltaData.get(KEY_OUTPUT);
+		assertNotNull(deltaOutput, "Delta data should contain output key");
+		assertEquals(2, deltaOutput.size(), "Delta data should contain 2 entries");
+		assertEquals(List.of("a", "b"), deltaOutput, "Delta output should be [a, b]");
 	}
 
 }
