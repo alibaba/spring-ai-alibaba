@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.store.Store;
+import com.alibaba.cloud.ai.graph.utils.SerializationUtils;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.util.CollectionUtils;
 
@@ -148,7 +149,7 @@ public final class OverAllState implements Serializable {
 	 */
 	public Optional<OverAllState> snapShot() {
 		return Optional
-			.of(new OverAllState(new HashMap<>(this.data), new HashMap<>(this.keyStrategies), this.store));
+			.of(new OverAllState(SerializationUtils.deepCopyMap(this.data), new HashMap<>(this.keyStrategies), this.store));
 	}
 
 	/**
