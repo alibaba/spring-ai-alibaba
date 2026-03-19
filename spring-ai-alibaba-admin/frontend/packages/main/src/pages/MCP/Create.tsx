@@ -46,6 +46,7 @@ export default function McpCreate() {
             const mcpData = res.data;
             setDeployStatus(mcpData.status);
             setInitialData(mcpData);
+            setInstallType(mcpData.install_type || installTypeOptions[0].value);
 
             // Set form values
             form.setFieldsValue({
@@ -95,10 +96,13 @@ export default function McpCreate() {
       let _deployConfig = formValues.deployConfig;
 
       // Validate deployConfig is a valid JSON
+      let deployConfig: any;
       try {
         if (typeof formValues.deployConfig === 'string') {
-          const deployConfig = JSON.parse(formValues.deployConfig);
+          deployConfig = JSON.parse(formValues.deployConfig);
           _deployConfig = JSON.stringify(deployConfig);
+        } else {
+          deployConfig = formValues.deployConfig;
         }
       } catch (error) {
         message.error(
@@ -108,6 +112,27 @@ export default function McpCreate() {
           }),
         );
         return;
+      }
+
+      // Validate type matches installType
+      const expectedType = installType.toLowerCase();
+      const mcpServers = deployConfig?.mcpServers;
+      if (mcpServers && typeof mcpServers === 'object') {
+        for (const serverName of Object.keys(mcpServers)) {
+          const serverConfig = mcpServers[serverName];
+          if (serverConfig?.type && serverConfig.type.toLowerCase() !== expectedType) {
+            message.error(
+              $i18n.get(
+                {
+                  id: 'main.pages.MCP.Create.typeMismatch',
+                  dm: '安装类型为{installType}，但配置中的type为{actualType}，两者不匹配',
+                },
+                { installType, actualType: serverConfig.type },
+              ),
+            );
+            return;
+          }
+        }
       }
 
       setSaveLoading(true);
@@ -336,16 +361,17 @@ export default function McpCreate() {
                   dm: '安装类型',
                 })}
               >
-                {installTypeOptions.map((item) => (
-                  <RadioItem
-                    className={styles['mcp-install-type-item']}
-                    onSelect={() => setInstallType(item.value)}
-                    isActive={installType === item.value}
-                    disabled={true}
-                    {...item}
-                    key={item.value}
-                  />
-                ))}
+                <Flex gap={8} wrap="nowrap">
+                  {installTypeOptions.map((item) => (
+                    <RadioItem
+                      className={styles['mcp-install-type-item']}
+                      onSelect={() => setInstallType(item.value)}
+                      isActive={installType === item.value}
+                      {...item}
+                      key={item.value}
+                    />
+                  ))}
+                </Flex>
               </Form.Item>
 
               <Form.Item

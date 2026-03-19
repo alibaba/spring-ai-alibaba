@@ -7,6 +7,11 @@ export const installTypeOptions: IRadioItemProps[] = [
     value: 'SSE',
     logo: 'spark-internet-line',
   },
+  {
+    label: 'STREAMABLE_HTTP',
+    value: 'STREAMABLE_HTTP',
+    logo: 'spark-internet-line',
+  },
 ];
 
 export const MCP_TIP_SECTIONS = [

@@ -942,6 +942,7 @@
   "main.pages.MCP.Create.mcpServiceConfigurationInvalidJsonFormat": "MCPサービスの設定が有効なJSON形式ではありません",
   "main.pages.MCP.Create.mcpServiceUpdatedSuccessfully": "MCPサービスの更新に成功しました",
   "main.pages.MCP.Create.mcpServiceCreatedSuccessfully": "MCPサービスの作成に成功しました",
+  "main.pages.MCP.Create.typeMismatch": "インストールタイプは{installType}ですが、設定内のtypeは{actualType}です。一致しません。",
   "main.pages.MCP.Create.confirmReturn": "戻ってもよろしいですか？",
   "main.pages.MCP.Create.returnWillNotSaveCurrentEditingContentConfirmReturn": "戻ると、現在編集中の内容は保存されません。戻ってもよろしいですか？",
   "main.pages.MCP.Create.saving": "保存中...",

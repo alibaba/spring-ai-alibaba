@@ -942,6 +942,7 @@
   "main.pages.MCP.Create.mcpServiceConfigurationInvalidJsonFormat": "MCP Server configuration is not valid JSON format",
   "main.pages.MCP.Create.mcpServiceUpdatedSuccessfully": "MCP Server updated successfully",
   "main.pages.MCP.Create.mcpServiceCreatedSuccessfully": "MCP Server created successfully",
+  "main.pages.MCP.Create.typeMismatch": "Install type is {installType}, but type in config is {actualType}. They do not match.",
   "main.pages.MCP.Create.confirmReturn": "Confirm return?",
   "main.pages.MCP.Create.returnWillNotSaveCurrentEditingContentConfirmReturn": "Returning will not save current editing content. Confirm return?",
   "main.pages.MCP.Create.saving": "Saving...",
