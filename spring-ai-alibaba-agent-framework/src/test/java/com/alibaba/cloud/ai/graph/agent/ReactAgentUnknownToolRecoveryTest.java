@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ReactAgentUnknownToolRecoveryTest {
 
@@ -67,12 +67,12 @@ public class ReactAgentUnknownToolRecoveryTest {
 	}
 
 	@Test
-	@DisplayName("should stop loop after two consecutive unknown tool rounds")
-	void shouldStopLoopAfterTwoConsecutiveUnknownToolRounds() throws Exception {
+	@DisplayName("should let model answer directly after two consecutive unknown tool rounds")
+	void shouldLetModelAnswerDirectlyAfterTwoConsecutiveUnknownToolRounds() throws Exception {
 		SequenceChatModel model = new SequenceChatModel(
 				assistantWithToolCall("call-1", "missing_tool_1"),
 				assistantWithToolCall("call-2", "missing_tool_2"),
-				new AssistantMessage("should not be reached"));
+				new AssistantMessage("final answer after unknown tool guard"));
 		ToolCallback echoTool = createSimpleTool("echo", args -> "echo: " + args);
 
 		ReactAgent agent = ReactAgent.builder()
@@ -85,8 +85,74 @@ public class ReactAgentUnknownToolRecoveryTest {
 		AssistantMessage response = agent.call("hello");
 
 		assertNotNull(response.getText());
-		assertTrue(response.getText().contains("tool calling has been stopped"));
-		assertEquals(2, model.getCallCount());
+		assertEquals("final answer after unknown tool guard", response.getText());
+		assertEquals(3, model.getCallCount());
+	}
+
+	@Test
+	@DisplayName("should retry direct answer without executing tools when model still emits tool calls in final-answer mode")
+	void shouldRetryDirectAnswerWithoutExecutingToolsWhenModelStillCallsTools() throws Exception {
+		AtomicInteger toolInvocations = new AtomicInteger();
+		SequenceChatModel model = new SequenceChatModel(
+				assistantWithToolCall("call-1", "missing_tool_1"),
+				assistantWithToolCall("call-2", "missing_tool_2"),
+				assistantWithToolCall("call-3", "echo"),
+				new AssistantMessage("final answer without any tool call"));
+		ToolCallback echoTool = createSimpleTool("echo", args -> {
+			toolInvocations.incrementAndGet();
+			return "echo: " + args;
+		});
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("unknown-tool-final-answer-retry-agent")
+				.model(model)
+				.tools(echoTool)
+				.saver(new MemorySaver())
+				.build();
+
+		AssistantMessage response = agent.call("hello");
+
+		assertNotNull(response.getText());
+		assertEquals("final answer without any tool call", response.getText());
+		assertEquals(4, model.getCallCount());
+		assertEquals(0, toolInvocations.get());
+	}
+
+	@Test
+	@DisplayName("should not leak unknown-tool final-answer state across runs in the same thread")
+	void shouldNotLeakUnknownToolFinalAnswerStateAcrossRunsInTheSameThread() throws Exception {
+		AtomicInteger toolInvocations = new AtomicInteger();
+		SequenceChatModel model = new SequenceChatModel(
+				assistantWithToolCall("call-1", "missing_tool_1"),
+				assistantWithToolCall("call-2", "missing_tool_2"),
+				new AssistantMessage("first run final answer after unknown tool guard"),
+				assistantWithToolCall("call-4", "echo"),
+				new AssistantMessage("second run final answer after normal tool call"));
+		ToolCallback echoTool = createSimpleTool("echo", args -> {
+			toolInvocations.incrementAndGet();
+			return "echo: " + args;
+		});
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("unknown-tool-thread-state-agent")
+				.model(model)
+				.tools(echoTool)
+				.saver(new MemorySaver())
+				.build();
+
+		RunnableConfig firstRunConfig = RunnableConfig.builder().threadId("unknown-tool-thread").build();
+		AssistantMessage firstRunResponse = agent.call("hello", firstRunConfig);
+		assertNotNull(firstRunResponse.getText());
+		assertEquals("first run final answer after unknown tool guard", firstRunResponse.getText());
+		assertEquals(3, model.getCallCount());
+		assertEquals(0, toolInvocations.get());
+
+		RunnableConfig secondRunConfig = RunnableConfig.builder().threadId("unknown-tool-thread").build();
+		AssistantMessage secondRunResponse = agent.call("hello again", secondRunConfig);
+		assertNotNull(secondRunResponse.getText());
+		assertEquals("second run final answer after normal tool call", secondRunResponse.getText());
+		assertEquals(5, model.getCallCount());
+		assertEquals(1, toolInvocations.get());
 	}
 
 	private static AssistantMessage assistantWithToolCall(String id, String toolName) {

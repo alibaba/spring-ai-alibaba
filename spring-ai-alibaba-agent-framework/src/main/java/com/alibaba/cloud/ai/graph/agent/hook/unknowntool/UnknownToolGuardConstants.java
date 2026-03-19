@@ -16,23 +16,57 @@
 package com.alibaba.cloud.ai.graph.agent.hook.unknowntool;
 
 /**
- * Metadata keys used to mark unknown tool responses and drive guard behavior.
+ * Constant keys used by the unknown-tool guard to exchange metadata between the tool
+ * node, hook and model interceptor.
  */
 public final class UnknownToolGuardConstants {
 
+	/**
+	 * Error type value attached to a tool response when the requested tool name cannot
+	 * be resolved from the current agent tool registry.
+	 */
 	public static final String UNKNOWN_TOOL_ERROR_TYPE = "unknown_tool";
 
+	/**
+	 * Generic metadata key used by tool responses to expose the concrete error type.
+	 */
 	public static final String ERROR_TYPE_METADATA_KEY = "errorType";
 
+	/**
+	 * Marks that the current {@code ToolResponseMessage} contains at least one unknown-tool
+	 * response entry.
+	 */
 	public static final String UNKNOWN_TOOL_RESPONSE_METADATA_KEY = "unknownToolResponse";
 
+	/**
+	 * Stores the tool names originally requested by the model but not found in the
+	 * current execution environment.
+	 */
 	public static final String REQUESTED_TOOL_NAMES_METADATA_KEY = "requestedToolNames";
 
+	/**
+	 * Stores the tool names that are actually available to the current agent turn so
+	 * the model can correct itself in the next round.
+	 */
 	public static final String AVAILABLE_TOOL_NAMES_METADATA_KEY = "availableToolNames";
 
+	/**
+	 * Counts how many tool-call results inside the current response batch are unknown-tool
+	 * failures.
+	 */
 	public static final String UNKNOWN_TOOL_COUNT_METADATA_KEY = "unknownToolCount";
 
+	/**
+	 * Indicates whether every tool call produced in the current assistant turn failed
+	 * because the tools were unknown.
+	 */
 	public static final String ALL_TOOL_CALLS_UNKNOWN_METADATA_KEY = "allToolCallsUnknown";
+
+	/**
+	 * Marks the synthetic {@code AgentInstructionMessage} injected by the guard to switch
+	 * the agent into final-answer mode.
+	 */
+	public static final String FINAL_ANSWER_INSTRUCTION_METADATA_KEY = "unknownToolFinalAnswerInstruction";
 
 	private UnknownToolGuardConstants() {
 	}

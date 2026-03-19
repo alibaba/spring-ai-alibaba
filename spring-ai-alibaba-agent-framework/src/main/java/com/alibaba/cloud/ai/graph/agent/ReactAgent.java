@@ -122,8 +122,9 @@ public class ReactAgent extends BaseAgent {
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
+		this.hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
 		this.compileConfig = compileConfig;
-		this.hooks = builder.hooks;
+		this.hooks = buildEffectiveHooks(builder.hooks);
 		this.modelInterceptors = builder.modelInterceptors;
 		this.toolInterceptors = builder.toolInterceptors;
 		this.includeContents = builder.includeContents;
@@ -151,8 +152,6 @@ public class ReactAgent extends BaseAgent {
 			this.toolNode.setToolInterceptors(mergedToolInterceptors);
 		}
 
-        // Set tools flag if tool interceptors are present.
-        hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
 	}
 
 	public static Builder builder() {
@@ -303,18 +302,7 @@ public class ReactAgent extends BaseAgent {
 
 	@Override
 	protected StateGraph initGraph() throws GraphStateException {
-
-		if (hooks == null) {
-			hooks = new ArrayList<>();
-		}
-
-		// Always inject default InstructionAgentHook so instruction is handled in beforeAgent
-		List<Hook> effectiveHooks = new ArrayList<>();
-		effectiveHooks.add(InstructionAgentHook.create());
-		if (hasTools && hooks.stream().noneMatch(UnknownToolGuardHook.class::isInstance)) {
-			effectiveHooks.add(UnknownToolGuardHook.create());
-		}
-		effectiveHooks.addAll(hooks);
+		List<Hook> effectiveHooks = hooks == null ? new ArrayList<>() : new ArrayList<>(hooks);
 
 		// Validate hook uniqueness
 		Set<String> hookNames = new HashSet<>();
@@ -400,6 +388,18 @@ public class ReactAgent extends BaseAgent {
 		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
 				entryNode, loopEntryNode, loopExitNode, exitNode, this);
 		return graph;
+	}
+
+	private List<Hook> buildEffectiveHooks(List<Hook> configuredHooks) {
+		List<Hook> effectiveHooks = new ArrayList<>();
+		effectiveHooks.add(InstructionAgentHook.create());
+		if (hasTools && (configuredHooks == null || configuredHooks.stream().noneMatch(UnknownToolGuardHook.class::isInstance))) {
+			effectiveHooks.add(UnknownToolGuardHook.create());
+		}
+		if (configuredHooks != null && !configuredHooks.isEmpty()) {
+			effectiveHooks.addAll(configuredHooks);
+		}
+		return effectiveHooks;
 	}
 
 	/**
