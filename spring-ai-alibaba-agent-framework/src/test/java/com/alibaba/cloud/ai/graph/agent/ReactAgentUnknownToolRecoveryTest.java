@@ -90,14 +90,13 @@ public class ReactAgentUnknownToolRecoveryTest {
 	}
 
 	@Test
-	@DisplayName("should retry direct answer without executing tools when model still emits tool calls in final-answer mode")
-	void shouldRetryDirectAnswerWithoutExecutingToolsWhenModelStillCallsTools() throws Exception {
+	@DisplayName("should terminate immediately without executing tools when model still emits tool calls in final-answer mode")
+	void shouldTerminateImmediatelyWithoutExecutingToolsWhenModelStillCallsTools() throws Exception {
 		AtomicInteger toolInvocations = new AtomicInteger();
 		SequenceChatModel model = new SequenceChatModel(
 				assistantWithToolCall("call-1", "missing_tool_1"),
 				assistantWithToolCall("call-2", "missing_tool_2"),
-				assistantWithToolCall("call-3", "echo"),
-				new AssistantMessage("final answer without any tool call"));
+				assistantWithToolCall("call-3", "echo"));
 		ToolCallback echoTool = createSimpleTool("echo", args -> {
 			toolInvocations.incrementAndGet();
 			return "echo: " + args;
@@ -113,8 +112,10 @@ public class ReactAgentUnknownToolRecoveryTest {
 		AssistantMessage response = agent.call("hello");
 
 		assertNotNull(response.getText());
-		assertEquals("final answer without any tool call", response.getText());
-		assertEquals(4, model.getCallCount());
+		assertEquals(
+				"I could not continue with tool calls because the requested tools were unavailable, and I was still unable to produce a direct answer without tools.",
+				response.getText());
+		assertEquals(3, model.getCallCount());
 		assertEquals(0, toolInvocations.get());
 	}
 

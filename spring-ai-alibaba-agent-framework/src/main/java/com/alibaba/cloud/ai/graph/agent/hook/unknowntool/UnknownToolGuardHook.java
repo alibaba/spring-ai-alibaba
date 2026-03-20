@@ -36,6 +36,21 @@ import java.util.Map;
 
 /**
  * Guards the ReAct loop when the model keeps requesting unknown tools.
+ *
+ * <p>
+ * The guard works in two phases:
+ * </p>
+ * <ol>
+ * <li>Allow the model to self-repair after receiving an unknown-tool error.</li>
+ * <li>If unknown-tool rounds keep happening, switch to a tool-disabled final-answer mode
+ * and ask the model to answer directly.</li>
+ * </ol>
+ *
+ * <p>
+ * Once final-answer mode is entered, the next model turn is expected to answer directly.
+ * If the model still insists on emitting tool calls, the guard terminates immediately with
+ * a fallback answer instead of spending extra tokens on another retry.
+ * </p>
  */
 @HookPositions({ HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL })
 public class UnknownToolGuardHook extends MessagesModelHook {
@@ -57,24 +72,11 @@ public class UnknownToolGuardHook extends MessagesModelHook {
 			"__unknown_tool_guard_final_answer_mode__";
 
 	/**
-	 * Context key for counting how many times the model still emitted tool calls after the
-	 * guard had already entered final-answer mode.
-	 */
-	private static final String FINAL_ANSWER_ATTEMPT_COUNT_CONTEXT_KEY =
-			"__unknown_tool_guard_final_answer_attempt_count__";
-
-	/**
 	 * Default threshold for entering final-answer mode. The model gets one chance to learn
 	 * from the unknown-tool feedback, and switches strategy after the second consecutive
 	 * unknown-tool round.
 	 */
 	private static final int DEFAULT_MAX_CONSECUTIVE_UNKNOWN_TOOL_CALLS = 2;
-
-	/**
-	 * Maximum number of consecutive "final-answer only" retries before the guard falls back
-	 * to scheme B and forcibly terminates the loop with a direct answer path.
-	 */
-	private static final int MAX_FINAL_ANSWER_ATTEMPTS = 2;
 
 	/**
 	 * Interceptor used only for final-answer mode. It strips tool exposure from the model
@@ -178,23 +180,15 @@ public class UnknownToolGuardHook extends MessagesModelHook {
 			return new AgentCommand(previousMessages);
 		}
 
-		if (assistantMessage.getToolCalls() == null || assistantMessage.getToolCalls().isEmpty()) {
+		if (!assistantMessage.hasToolCalls()) {
 			resetState(config);
 			return new AgentCommand(previousMessages);
 		}
 
-		int attemptCount = getFinalAnswerAttemptCount(config) + 1;
-		config.context().put(FINAL_ANSWER_ATTEMPT_COUNT_CONTEXT_KEY, attemptCount);
-		if (attemptCount >= MAX_FINAL_ANSWER_ATTEMPTS) {
-			List<Message> newMessages = new ArrayList<>(previousMessages.subList(0, previousMessages.size() - 1));
-			newMessages.add(new AssistantMessage(buildFallbackAnswerMessage()));
-			resetState(config);
-			return new AgentCommand(JumpTo.end, newMessages);
-		}
-
 		List<Message> newMessages = new ArrayList<>(previousMessages.subList(0, previousMessages.size() - 1));
-		newMessages.add(createFinalAnswerInstructionMessage(buildRetryFinalAnswerInstruction(attemptCount)));
-		return new AgentCommand(JumpTo.model, newMessages);
+		newMessages.add(new AssistantMessage(buildFallbackAnswerMessage()));
+		resetState(config);
+		return new AgentCommand(JumpTo.end, newMessages);
 	}
 
 	private boolean isAllToolCallsUnknown(Map<String, Object> metadata) {
@@ -207,25 +201,18 @@ public class UnknownToolGuardHook extends MessagesModelHook {
 		return value instanceof Number number ? number.intValue() : 0;
 	}
 
-	private int getFinalAnswerAttemptCount(RunnableConfig config) {
-		Object value = config.context().get(FINAL_ANSWER_ATTEMPT_COUNT_CONTEXT_KEY);
-		return value instanceof Number number ? number.intValue() : 0;
-	}
-
 	private boolean isFinalAnswerMode(RunnableConfig config) {
 		return Boolean.TRUE.equals(config.context().get(FINAL_ANSWER_MODE_CONTEXT_KEY));
 	}
 
 	private void enterFinalAnswerMode(RunnableConfig config) {
 		config.context().put(FINAL_ANSWER_MODE_CONTEXT_KEY, true);
-		config.context().put(FINAL_ANSWER_ATTEMPT_COUNT_CONTEXT_KEY, 0);
 		config.context().remove(CONSECUTIVE_UNKNOWN_TOOL_COUNT_CONTEXT_KEY);
 	}
 
 	private void resetState(RunnableConfig config) {
 		config.context().remove(CONSECUTIVE_UNKNOWN_TOOL_COUNT_CONTEXT_KEY);
 		config.context().remove(FINAL_ANSWER_MODE_CONTEXT_KEY);
-		config.context().remove(FINAL_ANSWER_ATTEMPT_COUNT_CONTEXT_KEY);
 	}
 
 	private AgentInstructionMessage createFinalAnswerInstructionMessage(String text) {
@@ -263,11 +250,6 @@ public class UnknownToolGuardHook extends MessagesModelHook {
 				+ "Answer the user directly with the current context, and briefly explain any limitation if necessary.";
 	}
 
-	private String buildRetryFinalAnswerInstruction(int attemptCount) {
-		return "Tool calling is already disabled because of repeated unknown tool requests. This is retry #"
-				+ attemptCount
-				+ ". Do not call any tool. Answer the user directly right now using the available conversation context only.";
-	}
 
 	private String buildFallbackAnswerMessage() {
 		if (StringUtils.hasText(terminationMessage)) {
