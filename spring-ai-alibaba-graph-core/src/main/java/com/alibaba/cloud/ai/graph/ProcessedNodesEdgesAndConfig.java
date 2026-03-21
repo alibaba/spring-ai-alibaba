@@ -163,9 +163,8 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 			//
 			// Process nodes
 			//
-			processedSubGraphNodes.elements.stream().map(n -> {
-				return n.withIdUpdated(subgraphNode::formatId);
-			}).forEach(nodes.elements::add);
+			processedSubGraphNodes.elements.stream().map(n -> n.withIdUpdated(subgraphNode::formatId))
+                    .forEach(nodes.elements::add);
 		}
 
 		return new ProcessedNodesEdgesAndConfig(nodes, edges, interruptsBefore, interruptsAfter, keyStrategyMap);
