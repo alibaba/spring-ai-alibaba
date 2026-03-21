@@ -146,6 +146,9 @@ This project consists of several core components:
 ## Contact Us
 
 * Dingtalk Group (钉钉群), search `94405033092` and join.
+
+<img src="./docs/imgs/dingding-group.jpg" style="width: 260px; height: auto"/>
+
 * WeChat Group (微信公众号), scan the QR code below and follow us.
 
 <img src="./docs/imgs/wechat-account.jpg" style="width: 260px; height: auto"/>
