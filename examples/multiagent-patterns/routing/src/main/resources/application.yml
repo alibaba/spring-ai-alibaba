@@ -6,4 +6,5 @@ spring:
       api-key: ${AI_DASHSCOPE_API_KEY:}
 
 # Set to true to run the routing (classify → parallel agents → synthesize) demo on startup.
-routing.runner.enabled: false
+routing.runner.enabled: true
+routing-graph.runner.enabled: true

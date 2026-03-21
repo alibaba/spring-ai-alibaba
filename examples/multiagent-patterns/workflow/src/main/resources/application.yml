@@ -16,10 +16,10 @@ spring:
       schema-locations: classpath:schema-chinook.sql
 
 # Enable RAG agent example (ragagent package)
-workflow.rag.enabled: false
+workflow.rag.enabled: true
 
 # Enable SQL agent example (sqlagent package)
 workflow.sql.enabled: false
 
 # Run demo on startup (set one of workflow.rag.enabled or workflow.sql.enabled to true first)
-workflow.runner.enabled: false
+workflow.runner.enabled: true

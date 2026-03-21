@@ -16,6 +16,9 @@
 
 package com.alibaba.cloud.ai.a2a.core.registry;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 
@@ -25,6 +28,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Agent registry service.
+ * <p>
+ * Supports registering both single agent and multiple agents to the registry.
  *
  * @author xiweng.yy
  */
@@ -34,15 +39,36 @@ public class AgentRegistryService {
 
 	private final AgentRegistry agentRegistry;
 
-	private final AgentCard agentCard;
+	private final List<AgentCard> agentCards;
 
+	/**
+	 * Constructor for single agent mode.
+	 * @param agentRegistry the agent registry
+	 * @param agentCard the single agent card
+	 */
 	public AgentRegistryService(AgentRegistry agentRegistry, AgentCard agentCard) {
 		this.agentRegistry = agentRegistry;
-		this.agentCard = agentCard;
+		this.agentCards = Collections.singletonList(agentCard);
+	}
+
+	/**
+	 * Constructor for multi-agent mode.
+	 * @param agentRegistry the agent registry
+	 * @param agentCards the list of agent cards
+	 */
+	public AgentRegistryService(AgentRegistry agentRegistry, List<AgentCard> agentCards) {
+		this.agentRegistry = agentRegistry;
+		this.agentCards = agentCards;
 	}
 
 	@EventListener(ApplicationReadyEvent.class)
 	public void register() {
+		for (AgentCard agentCard : agentCards) {
+			registerSingleAgent(agentCard);
+		}
+	}
+
+	private void registerSingleAgent(AgentCard agentCard) {
 		LOGGER.info("Auto register agent {} into Registry {}.", agentCard.name(), agentRegistry.registryName());
 		try {
 			agentRegistry.register(agentCard);
@@ -53,6 +79,14 @@ public class AgentRegistryService {
 			LOGGER.error("Auto register agent {} into Registry {} failed.", agentCard.name(),
 					agentRegistry.registryName(), e);
 		}
+	}
+
+	/**
+	 * Get the list of registered agent cards.
+	 * @return an unmodifiable list of agent cards
+	 */
+	public List<AgentCard> getAgentCards() {
+		return Collections.unmodifiableList(agentCards);
 	}
 
 }

@@ -31,10 +31,8 @@ import jakarta.annotation.Nonnull;
  * implementing this interface: just define your agents as {@code @Bean}s. All {@link Agent}
  * subtypes are supported, including {@link com.alibaba.cloud.ai.graph.agent.ReactAgent},
  * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent},
- * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.SupervisorAgent},
  * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent},
  * {@link com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent}, and
- * {@link com.alibaba.cloud.ai.graph.agent.agentscope.AgentScopeAgent}.
  *
  * <p><strong>Custom loader:</strong> To control which agents are visible or how they are
  * named, define your own {@code AgentLoader} bean. You can extend {@link AbstractAgentLoader}

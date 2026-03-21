@@ -28,7 +28,13 @@
       "name": "spring.ai.alibaba.a2a.server.card",
       "type": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties",
-      "description": "Configuration properties for A2A Agent Card."
+      "description": "Configuration properties for A2A Agent Card (single-agent mode)."
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.agents",
+      "type": "java.util.Map<java.lang.String, com.alibaba.cloud.ai.a2a.autoconfigure.A2aAgentCardProperties>",
+      "sourceType": "com.alibaba.cloud.ai.a2a.autoconfigure.A2aMultiAgentProperties",
+      "description": "Multi-agent configuration map (multi-agent mode). Key is the agent identifier used in URL path."
     }
   ],
   "properties": [
@@ -335,6 +341,12 @@
       "type": "java.util.List<io.a2a.spec.AgentInterface>",
       "description": "The additional interfaces of the agent.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
+    },
+    {
+      "name": "spring.ai.alibaba.a2a.server.agents",
+      "type": "java.util.Map<java.lang.String, com.alibaba.cloud.ai.a2a.autoconfigure.A2aAgentCardProperties>",
+      "description": "Multi-agent configuration map. Each key is an agent identifier (used in URL path like /a2a/{agentKey}), and value contains the agent card properties. Note: multi-agent mode (agents) and single-agent mode (card) are mutually exclusive.",
+      "sourceType": "com.alibaba.cloud.ai.a2a.autoconfigure.A2aMultiAgentProperties"
     }
   ],
   "hints": []

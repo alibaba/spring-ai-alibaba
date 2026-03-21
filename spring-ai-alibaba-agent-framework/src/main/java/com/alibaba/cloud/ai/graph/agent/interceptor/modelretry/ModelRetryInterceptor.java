@@ -19,17 +19,12 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+
+import org.springframework.ai.chat.messages.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.model.ChatResponse;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
+
 import java.util.function.Predicate;
 
 /**
@@ -54,7 +49,6 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 	private final long maxDelay;
 	private final double backoffMultiplier;
 	private final Predicate<Exception> retryableExceptionPredicate;
-	private final Predicate<Throwable> retryableThrowablePredicate;
 
 	private ModelRetryInterceptor(Builder builder) {
 		this.maxAttempts = builder.maxAttempts;
@@ -62,7 +56,6 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 		this.maxDelay = builder.maxDelay;
 		this.backoffMultiplier = builder.backoffMultiplier;
 		this.retryableExceptionPredicate = builder.retryableExceptionPredicate;
-		this.retryableThrowablePredicate = this::isRetryableException;
 	}
 
 	public static Builder builder() {
@@ -71,39 +64,17 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 
 	@Override
 	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
-
-		// 1. Initial attempt to call the model
-		ModelResponse response = handler.call(request);
-
-		// 2. Handle streaming calls (Flux)
-		if (response.getMessage() instanceof Flux<?>) {
-			return handleStreamRetry(request, handler, response);
-		}
-
-		// 3. Handle blocking calls
-		return handleBlockingRetry(request, handler, response);
-
-	}
-
-
-	/**
-	 * Retry logic for blocking (non-streaming) model calls.
-	 */
-	private ModelResponse handleBlockingRetry(ModelRequest request, ModelCallHandler handler, ModelResponse initialResponse) {
 		Exception lastException = null;
 		long currentDelay = initialDelay;
 
-		ModelResponse currentResponse = initialResponse;
-
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
-				// If it is not the first iteration (i.e., this is a retry attempt), re-invoke the handler.
 				if (attempt > 1) {
 					log.info("Retry model call, on the {}th attempt (out of {} attempts).", attempt, maxAttempts);
-					currentResponse = handler.call(request);
 				}
 
-				Message message = (Message) currentResponse.getMessage();
+				ModelResponse modelResponse = handler.call(request);
+				Message message = (Message) modelResponse.getMessage();
 
 				// Check if the response contains any exception information (exceptions captured from AgentLlmNode).
 				if (message != null && message.getText() != null && message.getText().startsWith("Exception:")) {
@@ -132,14 +103,14 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 					}
 
 					// For non-retryable exceptions, return immediately.
-					return currentResponse;
+					return modelResponse;
 				}
 
 				// Successful response
 				if (attempt > 1) {
 					log.info("The model call succeeded after the {}th attempt.", attempt);
 				}
-				return currentResponse;
+				return modelResponse;
 
 			} catch (Exception e) {
 				lastException = e;
@@ -177,69 +148,6 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 	}
 
 	/**
-	 * Streaming call retry logic using Reactor's retry mechanism.
-	 * Retries are only triggered for retryable exceptions and if no data has been emitted yet.
-	 */
-	private ModelResponse handleStreamRetry(ModelRequest request, ModelCallHandler handler, ModelResponse initialResponse) {
-		// Flag to track whether the stream has emitted any data
-		AtomicBoolean hasOutput = new AtomicBoolean(false);
-		AtomicBoolean isFirstAttempt = new AtomicBoolean(true);
-		AtomicLong currentDelay = new AtomicLong(initialDelay);
-
-		Flux<ChatResponse> retryableFlux = Flux.defer(() -> {
-					// Re-invoke the handler on each subscription (including retries)
-					if (isFirstAttempt.compareAndSet(true, false)) {
-						return (Flux<ChatResponse>) initialResponse.getMessage();
-					}
-					// Subsequent subscriptions (i.e., retries) will trigger a fresh handler.call
-					ModelResponse newResponse = handler.call(request);
-					return (Flux<ChatResponse>) newResponse.getMessage();
-				})
-				.doOnNext(data -> {
-					// Mark as output emitted once the first data chunk is received
-					if (!hasOutput.get()) {
-						hasOutput.set(true);
-					}
-				})
-				.retryWhen(Retry.from(signals ->
-						signals.flatMap(signal -> {
-							// 1. Get current retry count (starts from 0, so +1 represents the current attempt number)
-							long attempt = signal.totalRetries() + 1;
-							Throwable throwable = signal.failure();
-
-							// 2. Check if the maximum number of attempts has been reached
-							if (attempt >= maxAttempts) {
-								log.error("The maximum number of retries has been reached ({}), and the model call has failed.", maxAttempts);
-								return Mono.error(throwable);
-							}
-
-							// 3. Business logic: Check if any data has already been emitted
-							if (hasOutput.get()) {
-								log.error("Stream failed after partial output. Cannot retry to avoid data duplication.");
-								return Mono.error(throwable);
-							}
-
-							// 4. Business logic: Determine if the exception is retryable (aligned with blocking retryableExceptionPredicate)
-							if (!retryableThrowablePredicate.test(throwable)) {
-								log.warn("Exception is non-retryable and will be thrown immediately: {}", throwable.getMessage());
-								return Mono.error(throwable);
-							}
-
-							// 5. Calculate aligned backoff delay (consistent with blocking retry logic)
-							currentDelay.set(Math.min((long) (currentDelay.get() * backoffMultiplier), maxDelay));
-
-							log.info("Retrying model call, attempt {}/{}", attempt, maxAttempts);
-							log.info("Wait for {} ms before next retry", currentDelay.get());
-
-							// 6. Generate a delay signal to trigger the retry
-							return Mono.delay(Duration.ofMillis(currentDelay.get()));
-						})
-				));
-
-		return new ModelResponse(retryableFlux);
-	}
-
-	/**
 	 * Determine if the exception message indicates a retryable error.
 	 */
 	private boolean isRetryableExceptionMessage(String exceptionText) {
@@ -251,10 +159,6 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 				lowerText.contains("network") ||
 				lowerText.contains("handshake") ||
 				lowerText.contains("socket");
-	}
-
-	private boolean isRetryableException(Throwable e) {
-		return isRetryableExceptionMessage(e.getMessage());
 	}
 
 	@Override
@@ -343,17 +247,17 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 
 			// Network-related exceptions
 			if (lowerMessage.contains("i/o error") ||
-				lowerMessage.contains("remote host terminated") ||
-				lowerMessage.contains("connection") ||
-				lowerMessage.contains("timeout") ||
-				lowerMessage.contains("handshake") ||
-				lowerMessage.contains("socket")) {
+					lowerMessage.contains("remote host terminated") ||
+					lowerMessage.contains("connection") ||
+					lowerMessage.contains("timeout") ||
+					lowerMessage.contains("handshake") ||
+					lowerMessage.contains("socket")) {
 				return true;
 			}
 
 			// Spring WebClient related exceptions
 			if (e.getClass().getName().contains("ResourceAccessException") ||
-				e.getClass().getName().contains("WebClientRequestException")) {
+					e.getClass().getName().contains("WebClientRequestException")) {
 				return true;
 			}
 
@@ -362,10 +266,10 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 			while (cause != null) {
 				String causeClassName = cause.getClass().getName();
 				if (causeClassName.contains("IOException") ||
-					causeClassName.contains("SocketException") ||
-					causeClassName.contains("ConnectException") ||
-					causeClassName.contains("TimeoutException") ||
-					causeClassName.contains("SSLException")) {
+						causeClassName.contains("SocketException") ||
+						causeClassName.contains("ConnectException") ||
+						causeClassName.contains("TimeoutException") ||
+						causeClassName.contains("SSLException")) {
 					return true;
 				}
 				cause = cause.getCause();
