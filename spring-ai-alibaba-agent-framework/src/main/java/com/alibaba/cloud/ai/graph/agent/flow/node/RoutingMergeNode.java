@@ -80,7 +80,7 @@ public class RoutingMergeNode implements NodeAction {
 			}
 			Optional<Object> outputOpt = state.value(outputKey);
 			if (outputOpt.isPresent()) {
-				String text = extractText(outputOpt.get());
+				String text = extractText(outputOpt.get(), outputKey);
 				if (text != null && !text.isBlank()) {
 					String source = capitalize(subAgent.name());
 					formattedResults.add("**From " + source + ":**\n" + text);
@@ -119,7 +119,7 @@ public class RoutingMergeNode implements NodeAction {
 		return response.getResult().getOutput().getText();
 	}
 
-	private static String extractText(Object output) {
+	public static String extractText(Object output, String outputKey) {
 		if (output instanceof Message message) {
 			return message.getText();
 		}
@@ -127,6 +127,9 @@ public class RoutingMergeNode implements NodeAction {
 			Optional<?> val = gr.resultValue();
 			if (val.isPresent()) {
 				Object v = val.get();
+				if (v instanceof Map<?, ?> map) {
+					v = map.get(outputKey);
+				}
 				if (v instanceof Message m) {
 					return m.getText();
 				}

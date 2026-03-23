@@ -35,6 +35,6 @@ public class PrepareAgentNode implements NodeAction {
 		List<String> docs = (List<String>) state.value("documents").orElse(List.of());
 		String context = String.join("\n\n", docs);
 		String prompt = RagAgentConfig.buildAgentPrompt(context, question);
-		return Map.of("messages", List.of(new UserMessage(prompt)));
+		return Map.of("messages", List.of(new UserMessage(prompt)), "input", prompt);
 	}
 }

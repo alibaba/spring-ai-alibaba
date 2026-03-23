@@ -82,6 +82,8 @@ public class SqlAgentConfig {
 				.name("generate_query")
 				.model(chatModel)
 				.systemPrompt(GENERATE_QUERY_PROMPT)
+				// Either set includeContents to true, or use instruction with {input} placeholder to pass the original user request to the agent, so it can generate relevant SQL.
+				.includeContents(true)
 				.tools(tools)
 				.inputType(String.class)
 				.build();
@@ -109,7 +111,7 @@ public class SqlAgentConfig {
 		graph.addNode("list_tables", node_async(listTablesNode))
 				.addNode("call_get_schema", node_async(callGetSchemaNode))
 				.addNode("get_schema", node_async(getSchemaNode))
-				.addNode("generate_query", generateQueryAgent.asNode(false, false))
+				.addNode("generate_query", generateQueryAgent.asNode(true, false))
 				.addEdge(START, "list_tables")
 				.addEdge("list_tables", "call_get_schema")
 				.addEdge("call_get_schema", "get_schema")

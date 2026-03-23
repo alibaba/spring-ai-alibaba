@@ -42,16 +42,9 @@
         <httpclient.version>4.5.14</httpclient.version>
         <community.components.version>1.0.0.3</community.components.version>
         <jackson.version>2.18.4</jackson.version>
-        <agentscope.version>1.0.9</agentscope.version>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>io.agentscope</groupId>
-            <artifactId>agentscope-core</artifactId>
-            <version>${agentscope.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-graph-core</artifactId>
