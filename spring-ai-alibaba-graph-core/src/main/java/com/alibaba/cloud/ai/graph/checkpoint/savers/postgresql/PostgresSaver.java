@@ -45,17 +45,54 @@ import static java.util.Objects.requireNonNull;
 
 public class PostgresSaver extends MemorySaver {
 	private static final Logger log = LoggerFactory.getLogger(PostgresSaver.class);
+
+	private static final String sqlDropTables = """
+				DROP TABLE IF EXISTS GraphCheckpoint CASCADE;
+				DROP TABLE IF EXISTS GraphThread CASCADE;
+				""";
+
+	private static final String sqlCreateTables = """
+				CREATE TABLE IF NOT EXISTS GraphThread (
+				     thread_id UUID PRIMARY KEY,
+				     thread_name VARCHAR(255),
+				     is_released BOOLEAN DEFAULT FALSE NOT NULL
+				 );
+				
+				 CREATE TABLE IF NOT EXISTS GraphCheckpoint (
+				     checkpoint_id UUID PRIMARY KEY,
+				     parent_checkpoint_id UUID,
+				     thread_id UUID NOT NULL,
+				     node_id VARCHAR(255),
+				     next_node_id VARCHAR(255),
+				     state_data JSONB NOT NULL,
+				     state_content_type VARCHAR(100) NOT NULL, -- New field for content type
+				     saved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+				
+				     CONSTRAINT fk_thread
+				         FOREIGN KEY(thread_id)
+				         REFERENCES GraphThread(thread_id)
+				         ON DELETE CASCADE
+				 );
+				
+				 CREATE INDEX IF NOT EXISTS idx_lg4jcheckpoint_thread_id ON GraphCheckpoint(thread_id);
+				 CREATE INDEX IF NOT EXISTS idx_lg4jcheckpoint_thread_id_saved_at_desc ON GraphCheckpoint(thread_id, saved_at DESC);
+				 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_lg4jthread_thread_name_unreleased  ON GraphThread(thread_name) WHERE is_released = FALSE;
+				""";
+
 	/**
 	 * Datasource used to create the store
 	 */
 	protected final DataSource datasource;
+
+	protected final CreateOption createOption;
 
 	private final StateSerializer stateSerializer;
 
 	protected PostgresSaver(Builder builder) throws SQLException {
 		this.datasource = builder.datasource;
 		this.stateSerializer = builder.stateSerializer;
-		initTable(builder.dropTablesFirst, builder.createTables);
+		this.createOption = builder.createOption;
+		initTable(builder.createOption);
 	}
 
 	public static Builder builder() {
@@ -99,49 +136,16 @@ public class PostgresSaver extends MemorySaver {
 		return stateSerializer.dataFromBytes(bytes);
 	}
 
-	protected void initTable(boolean dropTablesFirst, boolean createTables) throws SQLException {
-		var sqlDropTables = """
-				DROP TABLE IF EXISTS GraphCheckpoint CASCADE;
-				DROP TABLE IF EXISTS GraphThread CASCADE;
-				""";
-
-		var sqlCreateTables = """
-				CREATE TABLE IF NOT EXISTS GraphThread (
-				     thread_id UUID PRIMARY KEY,
-				     thread_name VARCHAR(255),
-				     is_released BOOLEAN DEFAULT FALSE NOT NULL
-				 );
-				
-				 CREATE TABLE IF NOT EXISTS GraphCheckpoint (
-				     checkpoint_id UUID PRIMARY KEY,
-				     parent_checkpoint_id UUID,
-				     thread_id UUID NOT NULL,
-				     node_id VARCHAR(255),
-				     next_node_id VARCHAR(255),
-				     state_data JSONB NOT NULL,
-				     state_content_type VARCHAR(100) NOT NULL, -- New field for content type
-				     saved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-				
-				     CONSTRAINT fk_thread
-				         FOREIGN KEY(thread_id)
-				         REFERENCES GraphThread(thread_id)
-				         ON DELETE CASCADE
-				 );
-				
-				 CREATE INDEX idx_lg4jcheckpoint_thread_id ON GraphCheckpoint(thread_id);
-				 CREATE INDEX idx_lg4jcheckpoint_thread_id_saved_at_desc ON GraphCheckpoint(thread_id, saved_at DESC);
-				 CREATE UNIQUE INDEX idx_unique_lg4jthread_thread_name_unreleased  ON GraphThread(thread_name) WHERE is_released = FALSE;
-				""";
-
-
+	protected void initTable(CreateOption createOption) throws SQLException {
 		String sqlCommand = null;
 		try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
-			if (dropTablesFirst) {
+			if(createOption == CreateOption.CREATE_OR_REPLACE) {
 				log.trace("Executing drop tables:\n---\n{}---", sqlDropTables);
 				sqlCommand = sqlDropTables;
 				statement.executeUpdate(sqlCommand);
 			}
-			if (createTables) {
+			if(createOption == CreateOption.CREATE_IF_NOT_EXISTS
+					|| createOption == CreateOption.CREATE_OR_REPLACE) {
 				log.trace("Executing create tables:\n---\n{}---", sqlCreateTables);
 				sqlCommand = sqlCreateTables;
 				statement.executeUpdate(sqlCommand);
@@ -440,9 +444,8 @@ public class PostgresSaver extends MemorySaver {
 		private String user;
 		private String password;
 		private String database;
-		private boolean createTables;
-		private boolean dropTablesFirst;
 		private DataSource datasource;
+		private CreateOption createOption = CreateOption.CREATE_IF_NOT_EXISTS;
 
 		public Builder stateSerializer(StateSerializer stateSerializer) {
 			this.stateSerializer = stateSerializer;
@@ -474,13 +477,14 @@ public class PostgresSaver extends MemorySaver {
 			return this;
 		}
 
-		public Builder createTables(boolean createTables) {
-			this.createTables = createTables;
-			return this;
-		}
-
-		public Builder dropTablesFirst(boolean dropTablesFirst) {
-			this.dropTablesFirst = dropTablesFirst;
+		/**
+		 * Sets the create options (default {@link CreateOption#CREATE_IF_NOT_EXISTS}.
+		 *
+		 * @param createOption the create options
+		 * @return this builder
+		 */
+		public Builder createOption(CreateOption createOption) {
+			this.createOption = createOption;
 			return this;
 		}
 
@@ -508,7 +512,6 @@ public class PostgresSaver extends MemorySaver {
 			ds.setServerNames(new String[] {requireNotBlank(host, "host")});
 
 			datasource = ds;
-			createTables = createTables || dropTablesFirst;
 
 			try {
 				return new PostgresSaver(this);

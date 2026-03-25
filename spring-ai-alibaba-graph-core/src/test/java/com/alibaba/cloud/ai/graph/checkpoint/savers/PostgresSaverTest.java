@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.checkpoint.savers;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.postgresql.CreateOption;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.postgresql.PostgresSaver;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
@@ -109,8 +110,8 @@ public class PostgresSaverTest {
     public void testCheckpointWithReleasedThread() throws Exception {
 
         var saver = buildPostgresSaver()
-                        .dropTablesFirst(true)
-                        .build();
+				.createOption(CreateOption.CREATE_OR_REPLACE)
+				.build();
 
         NodeAction agent_1 = state -> {
             log.info( "agent_1");
@@ -147,8 +148,8 @@ public class PostgresSaverTest {
     @Test
     public void testCheckpointWithNotReleasedThread() throws Exception {
         var saver = buildPostgresSaver()
-                        .dropTablesFirst(true)
-                        .build();
+				.createOption(CreateOption.CREATE_OR_REPLACE)
+				.build();
 
 
         NodeAction agent_1 = state -> {
@@ -233,8 +234,8 @@ public class PostgresSaverTest {
 	public void testPostgresSaverMultipleRoundTrips() throws Exception {
 
 		var saver = buildPostgresSaver()
-			.dropTablesFirst(true)
-			.build();
+				.createOption(CreateOption.CREATE_OR_REPLACE)
+				.build();
 
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
@@ -333,8 +334,8 @@ public class PostgresSaverTest {
 	public void testUserScenarioWithoutExplicitMetadata() throws Exception {
 
 		var saver = buildPostgresSaver()
-			.dropTablesFirst(true)
-			.build();
+				.createOption(CreateOption.CREATE_OR_REPLACE)
+				.build();
 
 		KeyStrategyFactory keyStrategyFactory = () -> {
 			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
