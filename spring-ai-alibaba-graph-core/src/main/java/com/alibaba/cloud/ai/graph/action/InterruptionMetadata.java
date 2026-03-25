@@ -19,8 +19,10 @@ import com.alibaba.cloud.ai.graph.HasMetadata;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.utils.CollectionsUtils;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.metadata.Usage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +54,26 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 		} else {
 			this.toolsAutomaticallyApproved = new ArrayList<>();
 		}
+	}
+
+	/**
+	 * Jackson deserialization constructor.
+	 */
+	@JsonCreator
+	public InterruptionMetadata(
+			@JsonProperty("node") String node,
+			@JsonProperty("agent") String agent,
+			@JsonProperty("state") OverAllState state,
+			@JsonProperty("subGraph") boolean subGraph,
+			@JsonProperty("tokenUsage") Usage tokenUsage,
+			@JsonProperty("metadata") Map<String, Object> metadata,
+			@JsonProperty("toolFeedbacks") List<ToolFeedback> toolFeedbacks,
+			@JsonProperty("toolsAutomaticallyApproved") List<AssistantMessage.ToolCall> toolsAutomaticallyApproved) {
+		super(node, agent, tokenUsage, state);
+		this.setSubGraph(subGraph);
+		this.metadata = metadata != null ? metadata : Map.of();
+		this.toolFeedbacks = toolFeedbacks != null ? new ArrayList<>(toolFeedbacks) : new ArrayList<>();
+		this.toolsAutomaticallyApproved = toolsAutomaticallyApproved != null ? new ArrayList<>(toolsAutomaticallyApproved) : new ArrayList<>();
 	}
 
 	/**
@@ -199,7 +221,13 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 		FeedbackResult result;
 		String description;
 
-		public ToolFeedback(String id, String name, String arguments, FeedbackResult result, String description) {
+		@JsonCreator
+		public ToolFeedback(
+				@JsonProperty("id") String id,
+				@JsonProperty("name") String name,
+				@JsonProperty("arguments") String arguments,
+				@JsonProperty("result") FeedbackResult result,
+				@JsonProperty("description") String description) {
 			this.id = id;
 			this.name = name;
 			this.arguments = arguments;
