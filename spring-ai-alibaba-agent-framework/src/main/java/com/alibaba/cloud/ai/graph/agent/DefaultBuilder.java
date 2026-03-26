@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
+import com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectModelHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -163,6 +164,18 @@ public class DefaultBuilder extends Builder {
 		}
 
 		toolNode = toolBuilder.build();
+
+		if (this.hooks == null) {
+			this.hooks = List.of(new ReturnDirectModelHook());
+		} else {
+			boolean hasReturnDirect = this.hooks.stream()
+				.anyMatch(h -> h instanceof ReturnDirectModelHook);
+			if (!hasReturnDirect) {
+				List<Hook> newHooks = new ArrayList<>(this.hooks);
+				newHooks.add(0, new ReturnDirectModelHook());
+				this.hooks = newHooks;
+			}
+		}
 
 		return new ReactAgent(llmNode, toolNode, buildConfig(), this);
 	}
