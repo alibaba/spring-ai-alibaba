@@ -60,7 +60,7 @@ public final class InterruptionMetadata extends NodeOutput implements HasMetadat
 	 * Jackson deserialization constructor.
 	 */
 	@JsonCreator
-	public InterruptionMetadata(
+	InterruptionMetadata(
 			@JsonProperty("node") String node,
 			@JsonProperty("agent") String agent,
 			@JsonProperty("state") OverAllState state,
