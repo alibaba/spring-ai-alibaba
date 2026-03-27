@@ -1,5 +1,7 @@
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.advisors.SkillPromptAugmentAdvisor;
@@ -18,12 +20,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.http.HttpHeaders;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,27 +37,17 @@ import java.util.Optional;
  * @since 2026/3/9
  */
 public class ReactDumpMessageTest {
-
     private ChatModel chatModel;
 
     @BeforeEach
-    void setUp() {
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.add("X-PLATFORM", "dashscope");
-
-        OpenAiApi openAiApi = OpenAiApi.builder()
-                .apiKey("6607aa76b08245109a406ceac465356c")
-                .baseUrl("http://1688openai.alibaba-inc.com")
-                .headers(httpHeaders)
+    public void setUp() {
+        DashScopeApi dashScopeApi = DashScopeApi.builder()
+                .apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
                 .build();
 
-        chatModel = OpenAiChatModel.builder()
-                .openAiApi(openAiApi)
-                .defaultOptions(
-                        OpenAiChatOptions.builder()
-                                .model("qwen3-next-80b-a3b-instruct")
-                                .build()
-                )
+        // Create DashScope ChatModel instance
+        this.chatModel = DashScopeChatModel.builder()
+                .dashScopeApi(dashScopeApi)
                 .build();
     }
 
