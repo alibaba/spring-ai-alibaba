@@ -56,28 +56,20 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
-  const { currentThreadId, createThread, isNewlyCreatedThread } = useThreads();
+  const { currentThreadId, createThread, isNewlyCreatedThread, appName, userId, mode, selectedGraph } = useThreads();
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Load messages when thread changes
-  useEffect(() => {
-    if (currentThreadId) {
-      loadThreadMessages(currentThreadId);
-    } else {
-      setMessages([]);
-    }
-  }, [currentThreadId]);
-
-
-
   const loadThreadMessages = async (threadId: string) => {
+    if (mode === 'agent' && !appName) return;
+    if (mode === 'graph' && !selectedGraph) return;
     setIsLoadingMessages(true);
     try {
       console.log('[Stream] Loading thread messages for threadId:', threadId);
 
-      // Call backend API to get thread details
       const apiClient = createApiClient();
-      const session = await apiClient.getSession(threadId);
+      const session = mode === 'graph'
+        ? await apiClient.getGraphSession(selectedGraph, userId, threadId)
+        : await apiClient.getSession(appName, userId, threadId);
 
       console.log('[Stream] Loaded session:', session);
 
@@ -119,9 +111,26 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
     }
   };
 
+  // Load messages when thread or selected agent changes
+  useEffect(() => {
+    if (currentThreadId && appName) {
+      loadThreadMessages(currentThreadId);
+    } else if (!currentThreadId) {
+      setMessages([]);
+    }
+  }, [currentThreadId, appName, mode, selectedGraph, userId]);
+
   const sendMessage = useCallback(
     async (content: string) => {
       if (!content.trim()) {
+        return;
+      }
+      if (mode === 'agent' && !appName) {
+        toast.error("No agent selected. Please select an agent from the list.");
+        return;
+      }
+      if (mode === 'graph' && !selectedGraph) {
+        toast.error("No graph selected. Please select a graph from the list.");
         return;
       }
 
@@ -165,11 +174,21 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
           media: []
         };
 
-        const stream = apiClient.runAgentStream(
-          activeThreadId,
-          userMessageForApi,
-          abortControllerRef.current.signal
-        );
+        const stream = mode === 'graph'
+          ? apiClient.runGraphStream(
+              selectedGraph,
+              userId,
+              activeThreadId,
+              userMessageForApi,
+              abortControllerRef.current.signal
+            )
+          : apiClient.runAgentStream(
+              appName,
+              userId,
+              activeThreadId,
+              userMessageForApi,
+              abortControllerRef.current.signal
+            );
 
         let isFirstChunk = true;
         console.log('[Stream] Starting to process agent responses...');
@@ -310,7 +329,7 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         abortControllerRef.current = null;
       }
     },
-    [currentThreadId, createThread]
+    [currentThreadId, createThread, appName, userId, mode, selectedGraph]
   );
 
   const clearMessages = useCallback(() => {
@@ -327,21 +346,34 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         toast.error("No active thread");
         return;
       }
+      if (mode === 'agent' && !appName) {
+        toast.error("No agent selected.");
+        return;
+      }
+      if (mode === 'graph' && !selectedGraph) {
+        toast.error("No graph selected.");
+        return;
+      }
+
+      if (mode === 'graph') {
+        toast.info("Resume with tool feedback is not yet supported for graphs.");
+        return;
+      }
 
       setIsStreaming(true);
 
-      // Create new abort controller for this request
       abortControllerRef.current = new AbortController();
 
       try {
         const apiClient = createApiClient();
 
-        // Start streaming with feedback
         const stream = apiClient.resumeAgentStream(
-          currentThreadId,
-          toolFeedbacks,
-          abortControllerRef.current.signal
-        );
+              appName,
+              userId,
+              currentThreadId,
+              toolFeedbacks,
+              abortControllerRef.current.signal
+            );
 
         let isFirstChunk = true;
         console.log('[Stream] Starting to process resume agent responses...');
@@ -447,7 +479,7 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
         abortControllerRef.current = null;
       }
     },
-    [currentThreadId]
+    [currentThreadId, appName, userId, mode]
   );
 
   // Cleanup on unmount
@@ -481,7 +513,7 @@ export const StreamConfigurationView = () => {
   });
 
   const [appName, setAppName] = useQueryState("appName", {
-    defaultValue: process.env.NEXT_PUBLIC_APP_NAME || "research_agent",
+    defaultValue: process.env.NEXT_PUBLIC_APP_NAME || "",
   });
 
   const [userId, setUserId] = useQueryState("userId", {
@@ -511,7 +543,7 @@ export const StreamConfigurationView = () => {
             id="appName"
             value={appName || ""}
             onChange={(e) => setAppName(e.target.value)}
-            placeholder="research_agent"
+            placeholder="e.g. sales_agent"
           />
         </div>
       </div>

@@ -32,12 +32,12 @@ class ModelRetryInterceptorTest {
 	@Test
 	void testSuccessOnFirstAttempt() {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
-			.maxAttempts(3)
-			.initialDelay(100)
-			.build();
+				.maxAttempts(3)
+				.initialDelay(100)
+				.build();
 
 		AtomicInteger attemptCount = new AtomicInteger(0);
-		
+
 		ModelCallHandler handler = request -> {
 			attemptCount.incrementAndGet();
 			return ModelResponse.of(new AssistantMessage("Success"));
@@ -53,13 +53,13 @@ class ModelRetryInterceptorTest {
 	@Test
 	void testSuccessOnSecondAttempt() {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
-			.maxAttempts(3)
-			.initialDelay(100)
-			.backoffMultiplier(1.5)
-			.build();
+				.maxAttempts(3)
+				.initialDelay(100)
+				.backoffMultiplier(1.5)
+				.build();
 
 		AtomicInteger attemptCount = new AtomicInteger(0);
-		
+
 		ModelCallHandler handler = request -> {
 			int count = attemptCount.incrementAndGet();
 			if (count == 1) {
@@ -78,19 +78,19 @@ class ModelRetryInterceptorTest {
 	@Test
 	void testMaxAttemptsReached() {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
-			.maxAttempts(3)
-			.initialDelay(50)
-			.build();
+				.maxAttempts(3)
+				.initialDelay(50)
+				.build();
 
 		AtomicInteger attemptCount = new AtomicInteger(0);
-		
+
 		ModelCallHandler handler = request -> {
 			attemptCount.incrementAndGet();
 			throw new RuntimeException("I/O error: connection timeout");
 		};
 
 		ModelRequest request = ModelRequest.builder().build();
-		
+
 		RuntimeException exception = assertThrows(RuntimeException.class, () -> {
 			interceptor.interceptModel(request, handler);
 		});
@@ -102,19 +102,19 @@ class ModelRetryInterceptorTest {
 	@Test
 	void testNonRetryableException() {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
-			.maxAttempts(3)
-			.initialDelay(50)
-			.build();
+				.maxAttempts(3)
+				.initialDelay(50)
+				.build();
 
 		AtomicInteger attemptCount = new AtomicInteger(0);
-		
+
 		ModelCallHandler handler = request -> {
 			attemptCount.incrementAndGet();
 			throw new RuntimeException("Authentication failed");
 		};
 
 		ModelRequest request = ModelRequest.builder().build();
-		
+
 		RuntimeException exception = assertThrows(RuntimeException.class, () -> {
 			interceptor.interceptModel(request, handler);
 		});
@@ -126,12 +126,12 @@ class ModelRetryInterceptorTest {
 	@Test
 	void testExceptionMessageRetry() {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
-			.maxAttempts(3)
-			.initialDelay(50)
-			.build();
+				.maxAttempts(3)
+				.initialDelay(50)
+				.build();
 
 		AtomicInteger attemptCount = new AtomicInteger(0);
-		
+
 		ModelCallHandler handler = request -> {
 			int count = attemptCount.incrementAndGet();
 			if (count < 3) {
@@ -151,15 +151,15 @@ class ModelRetryInterceptorTest {
 	@Test
 	void testExponentialBackoff() {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
-			.maxAttempts(3)
-			.initialDelay(100)
-			.maxDelay(500)
-			.backoffMultiplier(2.0)
-			.build();
+				.maxAttempts(3)
+				.initialDelay(100)
+				.maxDelay(500)
+				.backoffMultiplier(2.0)
+				.build();
 
 		long startTime = System.currentTimeMillis();
 		AtomicInteger attemptCount = new AtomicInteger(0);
-		
+
 		ModelCallHandler handler = request -> {
 			int count = attemptCount.incrementAndGet();
 			if (count < 3) {
@@ -181,13 +181,13 @@ class ModelRetryInterceptorTest {
 	@Test
 	void testCustomRetryablePredicate() {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
-			.maxAttempts(3)
-			.initialDelay(50)
-			.retryableExceptionPredicate(e -> e.getMessage().contains("custom-retry"))
-			.build();
+				.maxAttempts(3)
+				.initialDelay(50)
+				.retryableExceptionPredicate(e -> e.getMessage().contains("custom-retry"))
+				.build();
 
 		AtomicInteger attemptCount = new AtomicInteger(0);
-		
+
 		// Test custom retryable exceptions
 		ModelCallHandler handler1 = req -> {
 			attemptCount.incrementAndGet();
@@ -195,7 +195,7 @@ class ModelRetryInterceptorTest {
 		};
 
 		ModelRequest request = ModelRequest.builder().build();
-		
+
 		assertThrows(RuntimeException.class, () -> {
 			interceptor.interceptModel(request, handler1);
 		});
@@ -217,15 +217,15 @@ class ModelRetryInterceptorTest {
 	@Test
 	void testMaxDelayLimit() {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
-			.maxAttempts(4)
-			.initialDelay(100)
-			.maxDelay(150)
-			.backoffMultiplier(3.0)
-			.build();
+				.maxAttempts(4)
+				.initialDelay(100)
+				.maxDelay(150)
+				.backoffMultiplier(3.0)
+				.build();
 
 		long startTime = System.currentTimeMillis();
 		AtomicInteger attemptCount = new AtomicInteger(0);
-		
+
 		ModelCallHandler handler = request -> {
 			int count = attemptCount.incrementAndGet();
 			if (count < 4) {
@@ -247,13 +247,13 @@ class ModelRetryInterceptorTest {
 	@Test
 	void testZeroDelay() {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
-			.maxAttempts(3)
-			.initialDelay(0)
-			.build();
+				.maxAttempts(3)
+				.initialDelay(0)
+				.build();
 
 		long startTime = System.currentTimeMillis();
 		AtomicInteger attemptCount = new AtomicInteger(0);
-		
+
 		ModelCallHandler handler = request -> {
 			int count = attemptCount.incrementAndGet();
 			if (count < 3) {

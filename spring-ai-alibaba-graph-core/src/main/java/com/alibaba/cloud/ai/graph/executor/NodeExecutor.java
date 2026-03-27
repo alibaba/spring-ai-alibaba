@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.graph.executor;
 
 import com.alibaba.cloud.ai.graph.GraphResponse;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 
@@ -251,18 +253,23 @@ public class NodeExecutor extends BaseGraphExecutor {
 					if (lastResponse == null) {
 						lastChatResponseRef.set(response);
 					} else {
+						var lastOutput = lastResponse.getResult().getOutput();
 						var lastMessageText = "";
-						if (lastResponse.getResult().getOutput().getText() != null) {
-							lastMessageText = lastResponse.getResult().getOutput().getText();
+						if (lastOutput.getText() != null) {
+							lastMessageText = lastOutput.getText();
 						}
 
 						final var currentMessageText = currentMessage.getText();
 
+						boolean mergeReasoningContent = context.getConfig().mergeReasoningContent();
+						Map<String, Object> messageMetadata = mergeReasoningContent
+								? mergeMetadataWithReasoningContent(lastOutput.getMetadata(), currentMessage.getMetadata())
+								: currentMessage.getMetadata();
+
 						var newMessage = AssistantMessage.builder()
 								.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
-								.properties(currentMessage.getMetadata()) // TODO, reasoningContent in metadata is not aggregated
-								.toolCalls(mergeToolCalls(lastResponse.getResult().getOutput().getToolCalls(),
-										currentMessage.getToolCalls()))
+								.properties(messageMetadata)
+								.toolCalls(mergeToolCalls(lastOutput.getToolCalls(), currentMessage.getToolCalls()))
 								.media(currentMessage.getMedia())
 								.build();
 
@@ -334,9 +341,15 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.empty();
 				} else {
 					ChatResponse lastChatResponse = lastChatResponseRef.get();
-					// First emit a GraphResponse containing the aggregated ChatResponse
+					// For completion status with AGENT_MODEL_NAME, create a StreamingOutput with null message to avoid chunk content
+					// This ensures that completion events don't carry the full text content in the chunk field
+					Message messageForCompletion = lastChatResponse.getResult().getOutput();
+					if (nodeId.startsWith(RunnableConfig.AGENT_MODEL_NAME)) {
+						// For agent model completion, use null message to prevent chunk content
+						messageForCompletion = null;
+					}
 					GraphResponse<NodeOutput> aggregatedResponse = GraphResponse
-						.of(context.buildStreamingOutput(lastChatResponse.getResult().getOutput(), lastChatResponse, nodeId, false));
+						.of(context.buildStreamingOutput(messageForCompletion, lastChatResponse, nodeId, false));
 					// Then emit the completion response
 					Map<String, Object> completionResult = new HashMap<>();
 					completionResult.put(key, lastChatResponse.getResult().getOutput());
@@ -349,38 +362,138 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}));
 	}
 
-  /**
-   * Merges tool calls from two messages.
-   * Tool calls with the same id will be merged.
-   *
-   * @return the merged list of tool calls
-   */
-  private List<ToolCall> mergeToolCalls(List<ToolCall> lastToolCalls, List<ToolCall> currentToolCalls) {
+	/**
+	 * Merges metadata from last and current streaming chunks, aggregating
+	 * {@code reasoningContent} by concatenation (each chunk carries partial content).
+	 * Other metadata keys are taken from current; fallback to last when absent.
+	 */
+	private static Map<String, Object> mergeMetadataWithReasoningContent(
+			Map<String, Object> lastMetadata, Map<String, Object> currentMetadata) {
+		Map<String, Object> merged = new LinkedHashMap<>();
+		if (lastMetadata != null) {
+			merged.putAll(lastMetadata);
+		}
+		if (currentMetadata != null) {
+			merged.putAll(currentMetadata);
+		}
+		// Aggregate reasoningContent: concatenate last + current (streaming chunks are incremental)
+		String key = "reasoningContent";
+		String last = (lastMetadata != null && lastMetadata.containsKey(key))
+				? String.valueOf(lastMetadata.get(key)) : "";
+		String current = (currentMetadata != null && currentMetadata.containsKey(key))
+				? String.valueOf(currentMetadata.get(key)) : "";
+		if (!last.isEmpty() || !current.isEmpty()) {
+			String aggregated = last.isEmpty() ? current : (current.isEmpty() ? last : last + current);
+			merged.put(key, aggregated);
+		}
+		return merged;
+	}
 
-	  if (lastToolCalls == null || lastToolCalls.isEmpty()) {
-		  return currentToolCalls != null ? currentToolCalls : List.of();
-	  }
-	  if (currentToolCalls == null || currentToolCalls.isEmpty()) {
-		  return lastToolCalls;
-	  }
+    /**
+     * Merges tool calls from two streamed assistant messages.
+     * <p>
+     * Streaming chunks from some providers may split tool-call fields across multiple chunks
+     * (for example: first chunk has name, later chunk has only arguments and even no id).
+     * We merge by id when possible, and fall back to positional merge to keep a single
+     * tool call record complete.
+     *
+     * @return the merged list of tool calls
+     */
+    private List<ToolCall> mergeToolCalls(List<ToolCall> lastToolCalls, List<ToolCall> currentToolCalls) {
+        if (lastToolCalls == null || lastToolCalls.isEmpty()) {
+            return currentToolCalls != null ? currentToolCalls : List.of();
+        }
+        if (currentToolCalls == null || currentToolCalls.isEmpty()) {
+            return lastToolCalls;
+        }
 
+        List<ToolCall> merged = new ArrayList<>(lastToolCalls);
+        for (int i = 0; i < currentToolCalls.size(); i++) {
+            ToolCall current = currentToolCalls.get(i);
+            if (current == null) {
+                continue;
+            }
+            int mergeIndex = findToolCallMergeIndex(merged, current, i);
+            if (mergeIndex >= 0) {
+                merged.set(mergeIndex, mergeToolCallFields(merged.get(mergeIndex), current));
+            }
+            else {
+                merged.add(current);
+            }
+        }
+        return merged;
+    }
 
-	  Map<String, ToolCall> toolCallMap = new LinkedHashMap<>();
+    private int findToolCallMergeIndex(List<ToolCall> mergedCalls, ToolCall currentToolCall, int currentIndex) {
+        String currentId = normalized(currentToolCall.id());
+        if (StringUtils.hasText(currentId)) {
+            for (int i = 0; i < mergedCalls.size(); i++) {
+                if (currentId.equals(normalized(mergedCalls.get(i).id()))) {
+                    return i;
+                }
+            }
+        }
 
-	  List<AssistantMessage.ToolCall> resultCalls = new ArrayList<>();
-	  currentToolCalls.forEach(tc -> toolCallMap.put(tc.id(), tc));
+        if (currentIndex < mergedCalls.size()) {
+            return currentIndex;
+        }
 
-	  // remove duplicate while keep order
-	  lastToolCalls.forEach(tc->{
-		  if( !toolCallMap.containsKey(tc.id()) ) {
-			  resultCalls.add(tc);
-		  }
-	  });
+        String currentName = normalized(currentToolCall.name());
+        if (StringUtils.hasText(currentName)) {
+            int matchedIndex = -1;
+            for (int i = 0; i < mergedCalls.size(); i++) {
+                if (currentName.equals(normalized(mergedCalls.get(i).name()))) {
+                    if (matchedIndex >= 0) {
+                        return -1;
+                    }
+                    matchedIndex = i;
+                }
+            }
+            if (matchedIndex >= 0) {
+                return matchedIndex;
+            }
+        }
 
-	  resultCalls.addAll(currentToolCalls);
+        return -1;
+    }
 
-	  return resultCalls;
-  }
+    private ToolCall mergeToolCallFields(ToolCall previous, ToolCall current) {
+        return new AssistantMessage.ToolCall(
+                firstNonBlank(current.id(), previous.id()),
+                firstNonBlank(current.type(), previous.type()),
+                firstNonBlank(current.name(), previous.name()),
+                mergeToolArguments(previous.arguments(), current.arguments()));
+    }
+
+    private static String mergeToolArguments(String previousArguments, String currentArguments) {
+        if (!StringUtils.hasText(previousArguments)) {
+            return currentArguments;
+        }
+        if (!StringUtils.hasText(currentArguments)) {
+            return previousArguments;
+        }
+
+        if (currentArguments.equals(previousArguments)) {
+            return currentArguments;
+        }
+        if (currentArguments.startsWith(previousArguments) || currentArguments.contains(previousArguments)) {
+            return currentArguments;
+        }
+        if (previousArguments.startsWith(currentArguments) || previousArguments.contains(currentArguments)) {
+            return previousArguments;
+        }
+
+        // Typical streaming delta case: append incremental argument fragment.
+        return previousArguments + currentArguments;
+    }
+
+    private static String firstNonBlank(String primary, String fallback) {
+        return StringUtils.hasText(primary) ? primary : fallback;
+    }
+
+    private static String normalized(String value) {
+        return StringUtils.hasText(value) ? value : null;
+    }
 
 	/**
 	 * Processes a Flux<GraphResponse<NodeOutput>> with embedded flux handling logic.
@@ -789,3 +902,4 @@ public class NodeExecutor extends BaseGraphExecutor {
 				.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
 	}
 }
+

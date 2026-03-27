@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.LoopMode;
+import com.alibaba.cloud.ai.graph.agent.utils.ChatClientTestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,6 +65,7 @@ class ExecutorConfigTest {
 	@BeforeEach
 	void setUp() {
 		MockitoAnnotations.openMocks(this);
+		ChatClientTestUtils.stubChatClientMutateChain(chatClient);
 		customExecutor = Executors.newFixedThreadPool(4);
 	}
 	

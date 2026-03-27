@@ -66,7 +66,7 @@ class LlmRoutingAgentTest {
 			.name("prose_writer_agent")
 			.model(chatModel)
 			.description("Can write prose articles.")
-			.instruction("You are a renowned writer skilled in writing prose. Please respond to user questions.")
+			.instruction("You are a renowned writer skilled in writing prose. Please respond to the following request: {prose_writer_agent_input}")
 			.outputKey("prose_article")
 			.build();
 
@@ -74,7 +74,7 @@ class LlmRoutingAgentTest {
 			.name("poem_writer_agent")
 			.model(chatModel)
 			.description("Can write modern poetry.")
-			.instruction("You are a famous poet skilled in modern poetry. Please use tools to respond to user questions.")
+			.instruction("You are a famous poet skilled in modern poetry. Please use tools to respond to the following request: {poem_writer_agent_input}")
 			.outputKey("poem_article")
 			.tools(List.of(createPoetToolCallback()))
 			.build();
@@ -135,11 +135,12 @@ class LlmRoutingAgentTest {
 		TrackableMessageTrimmingHook routingLevelHook = new TrackableMessageTrimmingHook(3);
 
 		// Create regular sub-agents (without hooks)
+		// Instruction uses placeholder {agentName_input} to receive targeted sub-question from routing
 		ReactAgent proseWriterAgent = ReactAgent.builder()
 			.name("prose_writer_agent")
 			.model(chatModel)
 			.description("Can write prose articles.")
-			.instruction("You are a renowned writer skilled in writing prose. Please respond to user questions.")
+			.instruction("You are a renowned writer skilled in writing prose. Please respond to the following request: {prose_writer_agent_input}")
 			.saver(new MemorySaver())
 			.outputKey("prose_article")
 			.build();
@@ -148,7 +149,7 @@ class LlmRoutingAgentTest {
 			.name("poem_writer_agent")
 			.model(chatModel)
 			.description("Can write modern poetry.")
-			.instruction("You are a famous poet skilled in modern poetry. Please respond to user questions.")
+			.instruction("You are a famous poet skilled in modern poetry. Please respond to the following request: {poem_writer_agent_input}")
 			.saver(new MemorySaver())
 			.outputKey("poem_article")
 			.build();
