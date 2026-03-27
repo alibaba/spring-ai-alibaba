@@ -26,11 +26,7 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.LoopStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Enhanced parallel result aggregator that supports custom merge strategies and
@@ -42,8 +38,16 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 	private static final Logger logger = LoggerFactory.getLogger(EnhancedParallelResultAggregator.class);
 
 	/**
+	 * Prefix for system/internal keys. Keys starting with this prefix are automatically
+	 * filtered out during extra state propagation, so new framework-internal keys only
+	 * need to follow this naming convention instead of being added to a hardcoded set.
+	 */
+	private static final String SYSTEM_KEY_PREFIX = "__";
+
+	/**
 	 * System keys from sub-graph state that should not be propagated to the parent state.
-	 * These are internal graph execution keys, not user data.
+	 * These are internal graph execution keys, not user data. Kept as a fallback for
+	 * legacy keys that do not follow the prefix convention.
 	 */
 	private static final Set<String> SYSTEM_STATE_KEYS = Set.of(
 			OverAllState.DEFAULT_INPUT_KEY,
@@ -59,12 +63,24 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 
 	private final Integer maxConcurrency;
 
+	/**
+	 * Key strategies from hooks, controlling how extra state values are merged
+	 * when the same key is written by multiple sub-agents.
+	 */
+	private final Map<String, KeyStrategy> keyStrategies;
+
 	public EnhancedParallelResultAggregator(String outputKey, List<BaseAgent> subAgents, Object mergeStrategy,
 											Integer maxConcurrency) {
+		this(outputKey, subAgents, mergeStrategy, maxConcurrency, Map.of());
+	}
+
+	public EnhancedParallelResultAggregator(String outputKey, List<BaseAgent> subAgents, Object mergeStrategy,
+											Integer maxConcurrency, Map<String, KeyStrategy> keyStrategies) {
 		this.outputKey = outputKey;
 		this.subAgents = subAgents;
 		this.mergeStrategy = mergeStrategy != null ? mergeStrategy : KeyStrategy.REPLACE;
 		this.maxConcurrency = maxConcurrency;
+		this.keyStrategies = keyStrategies != null ? keyStrategies : Map.of();
 	}
 
 	@Override
@@ -78,7 +94,7 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 		Map<String, Object> extraStateFromSubAgents = new HashMap<>();
 
 		// Collect all sub-agent output keys for filtering extra state
-		Set<String> allOutputKeys = new java.util.HashSet<>();
+		Set<String> allOutputKeys = new HashSet<>();
 		for (BaseAgent subAgent : subAgents) {
 			if (subAgent.getOutputKey() != null) {
 				allOutputKeys.add(subAgent.getOutputKey());
@@ -154,6 +170,12 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 	 * This captures data written by tools via ToolContext (e.g., AGENT_STATE_FOR_UPDATE_CONTEXT_KEY)
 	 * that would otherwise be lost during result aggregation.
 	 *
+	 * <p>System keys are filtered by both a prefix convention ({@value SYSTEM_KEY_PREFIX})
+	 * and a hardcoded fallback set ({@link #SYSTEM_STATE_KEYS}). When multiple sub-agents
+	 * write the same extra key, the configured {@link KeyStrategy} (from hooks) is used to
+	 * merge values; if no strategy is found, {@link KeyStrategy#REPLACE} is applied and a
+	 * warning is logged.</p>
+	 *
 	 * @param subGraphState the sub-graph's complete final state map
 	 * @param outputKeys all known sub-agent output keys to exclude
 	 * @param extraState the map to collect extra state entries into
@@ -163,12 +185,33 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 											   Map<String, Object> extraState) {
 		for (Map.Entry<String, Object> entry : subGraphState.entrySet()) {
 			String key = entry.getKey();
-			// Skip system keys and known output keys — only propagate user-defined extra data
-			if (!SYSTEM_STATE_KEYS.contains(key) && !outputKeys.contains(key)) {
+			if (isSystemKey(key) || outputKeys.contains(key)) {
+				continue;
+			}
+			if (extraState.containsKey(key)) {
+				Object oldValue = extraState.get(key);
+				Object newValue = entry.getValue();
+				KeyStrategy strategy = keyStrategies.getOrDefault(key, KeyStrategy.REPLACE);
+				Object mergedValue = strategy.apply(oldValue, newValue);
+				extraState.put(key, mergedValue);
+				logger.warn("Extra state key collision detected: key='{}', "
+						+ "oldValue='{}', newValue='{}', strategy={}, mergedValue='{}'",
+						key, oldValue, newValue, strategy.getClass().getSimpleName(), mergedValue);
+			}
+			else {
 				extraState.put(key, entry.getValue());
 				logger.debug("Extracted extra state from sub-graph: {} = {}", key, entry.getValue());
 			}
 		}
+	}
+
+	/**
+	 * Determines whether a key is a system/internal key that should not be propagated.
+	 * A key is considered internal if it starts with the system prefix ({@value SYSTEM_KEY_PREFIX})
+	 * or is present in the hardcoded {@link #SYSTEM_STATE_KEYS} fallback set.
+	 */
+	private static boolean isSystemKey(String key) {
+		return key.startsWith(SYSTEM_KEY_PREFIX) || SYSTEM_STATE_KEYS.contains(key);
 	}
 
 }
