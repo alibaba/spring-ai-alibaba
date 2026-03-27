@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
@@ -67,25 +69,14 @@ class ParallelToolContextLossReproductionTest {
 	private static final ConcurrentHashMap<String, Object> HOOK_CAPTURED_DATA = new ConcurrentHashMap<>();
 
 	@BeforeEach
-	void setUp() {
-		HOOK_CAPTURED_DATA.clear();
-
-		HttpHeaders httpHeaders = new HttpHeaders();
-		httpHeaders.add("X-PLATFORM", "dashscope");
-
-		OpenAiApi openAiApi = OpenAiApi.builder()
-				.apiKey("6607aa76b08245109a406ceac465356c")
-				.baseUrl("http://1688openai.alibaba-inc.com")
-				.headers(httpHeaders)
+	public void setUp() {
+		DashScopeApi dashScopeApi = DashScopeApi.builder()
+				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
 				.build();
 
-		this.chatModel = OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
-				.defaultOptions(
-						OpenAiChatOptions.builder()
-								.model("qwen3-next-80b-a3b-instruct")
-								.build()
-				)
+		// Create DashScope ChatModel instance
+		this.chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
 				.build();
 	}
 
