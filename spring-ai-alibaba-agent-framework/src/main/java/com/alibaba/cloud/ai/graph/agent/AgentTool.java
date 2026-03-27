@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -204,7 +206,23 @@ public class AgentTool {
 			}
 			messagesToAdd.add(new UserMessage(actualInput));
 
-			Optional<OverAllState> resultState = agent.getAndCompileGraph().invoke(Map.of("messages", messagesToAdd));
+			Optional<OverAllState> resultState;
+			Optional<RunnableConfig> parentConfigOpt = ToolContextHelper.getConfig(toolContext);
+			if (parentConfigOpt.isPresent()) {
+				RunnableConfig parentConfig = parentConfigOpt.get();
+				RunnableConfig subConfig = RunnableConfig.builder(parentConfig)
+						.threadId(parentConfig.threadId()
+								.map(id -> id + "_" + agent.name())
+								.orElseGet(agent::name))
+						.nextNode(null)
+						.checkPointId(null)
+						.build();
+				subConfig.clearContext();
+				resultState = agent.getAndCompileGraph().invoke(Map.of("messages", messagesToAdd), subConfig);
+			}
+			else {
+				resultState = agent.getAndCompileGraph().invoke(Map.of("messages", messagesToAdd));
+			}
 
 			Optional<List> messages = resultState.flatMap(overAllState -> overAllState.value("messages", List.class));
 			if (messages.isPresent()) {
@@ -258,4 +276,3 @@ public class AgentTool {
 		}
 	}
 }
-
