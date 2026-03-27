@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -57,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * <p>Expected: afterHook should be able to read product_1_extra and product_2_extra.
  * <p>Actual: These data are lost due to clearContext() during sub-graph execution.
  */
+@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class ParallelToolContextLossReproductionTest {
 
 	private ChatModel chatModel;

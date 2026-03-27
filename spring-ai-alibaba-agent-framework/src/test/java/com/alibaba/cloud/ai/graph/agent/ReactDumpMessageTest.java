@@ -31,6 +31,7 @@ import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.chat.model.ChatModel;
@@ -51,6 +52,7 @@ import java.util.Optional;
  * @author haojun.phj（ Jackie ）
  * @since 2026/3/9
  */
+@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 public class ReactDumpMessageTest {
     private ChatModel chatModel;
 

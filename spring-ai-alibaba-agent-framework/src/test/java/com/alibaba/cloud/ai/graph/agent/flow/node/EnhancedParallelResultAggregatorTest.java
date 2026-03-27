@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +42,7 @@ import static org.mockito.Mockito.when;
  *   <li>Backward compatibility with the legacy 4-arg constructor</li>
  * </ul>
  */
+@EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 class EnhancedParallelResultAggregatorTest {
 
 	/**
