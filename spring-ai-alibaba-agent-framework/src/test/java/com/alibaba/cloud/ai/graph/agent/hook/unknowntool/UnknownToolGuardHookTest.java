@@ -1,0 +1,146 @@
+/*
+ * Copyright 2024-2026 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.alibaba.cloud.ai.graph.agent.hook.unknowntool;
+
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
+import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
+import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class UnknownToolGuardHookTest {
+
+	@Test
+	void shouldOnlyAccumulateCountBeforeThreshold() {
+		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
+		RunnableConfig config = RunnableConfig.builder().build();
+
+		Map<String, Object> result = beforeModel(hook, config, List.of(unknownToolResponse("missing_tool", List.of("echo"))));
+		List<Message> messages = extractMessages(result);
+
+		assertEquals(1, messages.size());
+		assertInstanceOf(ToolResponseMessage.class, messages.get(0));
+		assertNull(result.get("jump_to"));
+
+		Map<String, Object> afterModelResult = afterModel(hook, config, List.of(assistantWithToolCall("call-1")));
+		assertNull(afterModelResult.get("jump_to"));
+	}
+
+	@Test
+	void shouldInjectFinalAnswerInstructionWhenThresholdIsReached() {
+		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
+		RunnableConfig config = RunnableConfig.builder().build();
+
+		beforeModel(hook, config, List.of(unknownToolResponse("missing_tool_1", List.of("echo"))));
+		Map<String, Object> result = beforeModel(hook, config,
+				List.of(unknownToolResponse("missing_tool_2", List.of("echo", "weather"))));
+		List<Message> messages = extractMessages(result);
+
+		assertEquals(2, messages.size());
+		AgentInstructionMessage instruction = assertInstanceOf(AgentInstructionMessage.class, messages.get(1));
+		assertNotNull(instruction.getText());
+		assertTrue(instruction.getText().contains("missing_tool_2"));
+		assertTrue(instruction.getText().contains("echo"));
+		assertEquals(Boolean.TRUE,
+				instruction.getMetadata().get(UnknownToolGuardConstants.FINAL_ANSWER_INSTRUCTION_METADATA_KEY));
+	}
+
+	@Test
+	void shouldTerminateWhenModelStillCallsToolsInFinalAnswerMode() {
+		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
+		RunnableConfig config = RunnableConfig.builder().build();
+
+		beforeModel(hook, config, List.of(unknownToolResponse("missing_tool_1", List.of("echo"))));
+		beforeModel(hook, config, List.of(unknownToolResponse("missing_tool_2", List.of("echo"))));
+		Map<String, Object> result = afterModel(hook, config, List.of(assistantWithToolCall("call-3")));
+		List<Message> messages = extractMessages(result);
+
+		assertEquals("end", result.get("jump_to"));
+		AssistantMessage finalMessage = assertInstanceOf(AssistantMessage.class, messages.get(0));
+		assertEquals(
+				"I could not continue with tool calls because the requested tools were unavailable, and I was still unable to produce a direct answer without tools.",
+				finalMessage.getText());
+	}
+
+	@Test
+	void shouldResetConsecutiveCountWhenLoopReturnsToNormalRound() {
+		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
+		RunnableConfig config = RunnableConfig.builder().build();
+
+		beforeModel(hook, config, List.of(unknownToolResponse("missing_tool_1", List.of("echo"))));
+		beforeModel(hook, config, List.of(new AssistantMessage("normal answer")));
+		Map<String, Object> result = beforeModel(hook, config,
+				List.of(unknownToolResponse("missing_tool_2", List.of("echo"))));
+		List<Message> messages = extractMessages(result);
+
+		assertEquals(1, messages.size());
+		assertFalse(messages.get(0) instanceof AgentInstructionMessage);
+		assertNull(result.get("jump_to"));
+	}
+
+	private static Map<String, Object> beforeModel(UnknownToolGuardHook hook, RunnableConfig config,
+			List<Message> messages) {
+		OverAllState state = new OverAllState(Map.of("messages", messages));
+		return MessagesModelHook.beforeModelAction(hook).apply(state, config).join();
+	}
+
+	private static Map<String, Object> afterModel(UnknownToolGuardHook hook, RunnableConfig config,
+			List<Message> messages) {
+		OverAllState state = new OverAllState(Map.of("messages", messages));
+		return MessagesModelHook.afterModelAction(hook).apply(state, config).join();
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<Message> extractMessages(Map<String, Object> result) {
+		ReplaceAllWith<Message> replaceAllWith = assertInstanceOf(ReplaceAllWith.class, result.get("messages"));
+		return replaceAllWith.newValues();
+	}
+
+	private static ToolResponseMessage unknownToolResponse(String requestedToolName, List<String> availableToolNames) {
+		return ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("call-1", requestedToolName,
+					"Unknown tool: " + requestedToolName)))
+			.metadata(Map.of(
+					UnknownToolGuardConstants.ALL_TOOL_CALLS_UNKNOWN_METADATA_KEY, true,
+					UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, List.of(requestedToolName),
+					UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, availableToolNames))
+			.build();
+	}
+
+	private static AssistantMessage assistantWithToolCall(String id) {
+		return AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall(id, "function", "echo", "{}")))
+			.build();
+	}
+
+}
+

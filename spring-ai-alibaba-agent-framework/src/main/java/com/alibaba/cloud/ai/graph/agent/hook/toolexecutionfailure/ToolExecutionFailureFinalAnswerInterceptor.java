@@ -13,25 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook.unknowntool;
+package com.alibaba.cloud.ai.graph.agent.hook.toolexecutionfailure;
 
 import com.alibaba.cloud.ai.graph.agent.hook.AbstractFinalAnswerInterceptor;
 
 /**
  * Disables tool exposure for the special final-answer turn triggered by
- * {@link UnknownToolGuardHook}.
+ * {@link ToolExecutionFailureGuardHook}.
  */
-public final class UnknownToolFinalAnswerInterceptor extends AbstractFinalAnswerInterceptor {
+public final class ToolExecutionFailureFinalAnswerInterceptor extends AbstractFinalAnswerInterceptor {
 
 	@Override
 	protected String finalAnswerInstructionMetadataKey() {
-		return UnknownToolGuardConstants.FINAL_ANSWER_INSTRUCTION_METADATA_KEY;
+		return ToolExecutionFailureGuardConstants.FINAL_ANSWER_INSTRUCTION_METADATA_KEY;
 	}
 
 	@Override
 	public String getName() {
-		return "UnknownToolFinalAnswerInterceptor";
+		return "ToolExecutionFailureFinalAnswerInterceptor";
 	}
-
 }
-
