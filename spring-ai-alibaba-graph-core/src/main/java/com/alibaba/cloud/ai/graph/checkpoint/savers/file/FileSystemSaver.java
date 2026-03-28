@@ -54,14 +54,18 @@ public class FileSystemSaver extends MemorySaver {
 
 	private final Serializer<Checkpoint> serializer;
 
+
+	private final boolean overwriteMode;
+
 	@SuppressWarnings("unchecked")
-	protected FileSystemSaver(Path targetFolder, StateSerializer stateSerializer) {
+	protected FileSystemSaver(Path targetFolder, StateSerializer stateSerializer, boolean overwriteMode) {
 		if(stateSerializer == null) {
 			this.serializer = new CheckPointSerializer(StateGraph.DEFAULT_JACKSON_SERIALIZER);
 		} else {
 			this.serializer = new CheckPointSerializer(stateSerializer);
 		}
 		this.targetFolder = Objects.requireNonNull(targetFolder, "targetFolder cannot be null");
+		this.overwriteMode = overwriteMode;
 
 		try {
 			if (Files.exists(targetFolder) && !Files.isDirectory(targetFolder)) {
@@ -135,6 +139,11 @@ public class FileSystemSaver extends MemorySaver {
 	@Override
 	protected void insertedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
 			throws Exception {
+		// Only the latest checkpoint will be retained
+		if (overwriteMode && !checkpoints.isEmpty()) {
+			checkpoints.subList(1, checkpoints.size()).clear();
+		}
+
 		File targetFile = getFile(config);
 		serialize(checkpoints, targetFile);
 	}
@@ -217,14 +226,38 @@ public class FileSystemSaver extends MemorySaver {
 	public static class Builder extends MemorySaver.Builder {
 		private Path targetFolder;
 		private StateSerializer stateSerializer;
+		private boolean overwriteMode = false;
 
+		/**
+		 * Sets the target folder.
+		 *
+		 * @param targetFolder the target folder
+		 * @return this builder
+		 */
 		public Builder targetFolder(Path targetFolder) {
 			this.targetFolder = targetFolder;
 			return this;
 		}
 
+		/**
+		 * Sets the state serializer.
+		 *
+		 * @param stateSerializer the state serializer
+		 * @return this builder
+		 */
 		public Builder stateSerializer(StateSerializer stateSerializer) {
 			this.stateSerializer = stateSerializer;
+			return this;
+		}
+
+		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode only keeps the latest checkpoint
+		 * @return this builder
+		 */
+		public Builder overwriteMode(boolean overwriteMode) {
+			this.overwriteMode = overwriteMode;
 			return this;
 		}
 
@@ -234,7 +267,7 @@ public class FileSystemSaver extends MemorySaver {
 		 * @throws IllegalArgumentException if targetFolder or stateSerializer is null
 		 */
 		public FileSystemSaver build() {
-			return new FileSystemSaver(targetFolder, stateSerializer);
+			return new FileSystemSaver(targetFolder, stateSerializer, overwriteMode);
 		}
 	}
 

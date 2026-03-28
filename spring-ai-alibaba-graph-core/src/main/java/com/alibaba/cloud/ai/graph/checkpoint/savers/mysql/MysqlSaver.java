@@ -131,7 +131,8 @@ public class MysqlSaver extends MemorySaver {
 	private static final String UPSERT_THREAD = """
 			INSERT INTO GRAPH_THREAD (thread_id, thread_name, is_released)
 			VALUES (?, ?, FALSE)
-			ON DUPLICATE KEY UPDATE thread_id = thread_id
+			ON DUPLICATE KEY UPDATE
+				thread_id = thread_id
 			""";
 
 	private static final String INSERT_CHECKPOINT = """
@@ -175,6 +176,7 @@ public class MysqlSaver extends MemorySaver {
 	private final DataSource dataSource;
 	private final CreateOption createOption;
 	private final StateSerializer stateSerializer;
+	private final boolean overwriteMode;
 
 	/**
 	 * Private constructor used by the builder to create a new instance of
@@ -186,6 +188,7 @@ public class MysqlSaver extends MemorySaver {
 		this.dataSource = builder.dataSource;
 		this.createOption = builder.createOption;
 		this.stateSerializer = builder.stateSerializer;
+		this.overwriteMode = builder.overwriteMode;
 		initTables();
 	}
 
@@ -316,27 +319,54 @@ public class MysqlSaver extends MemorySaver {
 		try (Connection ignored = conn = dataSource.getConnection()) {
 			conn.setAutoCommit(false); // Start transaction
 
-			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);
-				 PreparedStatement insertCheckpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
+			String cleanupReleasedSql = """
+					DELETE FROM GRAPH_THREAD
+					WHERE thread_name = ? AND is_released = TRUE
+					""";
+			try (PreparedStatement cleanupStatement = conn.prepareStatement(cleanupReleasedSql)) {
+				cleanupStatement.setString(1, threadName);
+				cleanupStatement.executeUpdate();
+			}
 
+			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD)) {
 				upsertStatement.setString(1, UUID.randomUUID().toString());
 				upsertStatement.setString(2, threadName);
 				upsertStatement.execute();
+			}
 
-				insertCheckpointStatement.setString(1, checkpoint.getId());
-				insertCheckpointStatement.setString(2, checkpoint.getNodeId());
-				insertCheckpointStatement.setString(3, checkpoint.getNextNodeId());
-				insertCheckpointStatement.setString(4, encodeState(checkpoint.getState()));
-				insertCheckpointStatement.setString(5, threadName);
-
-				insertCheckpointStatement.execute();
+			// Only the latest checkpoint will be retained.
+			if (overwriteMode && !checkpoints.isEmpty()) {
+				String deleteSql = """
+						DELETE FROM GRAPH_CHECKPOINT
+						WHERE thread_id = (
+						    SELECT thread_id FROM GRAPH_THREAD
+						    WHERE thread_name = ? AND is_released = FALSE
+						)
+						""";
+				try (PreparedStatement deleteStatement = conn.prepareStatement(deleteSql)) {
+					deleteStatement.setString(1, threadName);
+					deleteStatement.execute();
+				}
+				// clear
+				checkpoints.clear();
+			}
+			// insert
+			try (PreparedStatement checkpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
+				checkpointStatement.setString(1, checkpoint.getId());
+				checkpointStatement.setString(2, checkpoint.getNodeId());
+				checkpointStatement.setString(3, checkpoint.getNextNodeId());
+				checkpointStatement.setString(4, encodeState(checkpoint.getState()));
+				checkpointStatement.setString(5, threadName);
+				checkpointStatement.execute();
 			}
 
 			conn.commit();
-			log.debug("Checkpoint {} for thread {} inserted successfully.", checkpoint.getId(), threadName);
+			log.debug("Checkpoint {} for thread {} inserted successfully.",
+					checkpoint.getId(), threadName);
 		}
 		catch (SQLException | IOException e) {
-			log.error("Error inserting checkpoint with id {} in thread {}", checkpoint.getId(), threadName, e);
+			log.error("Error inserting checkpoint with id {} in thread {}",
+					checkpoint.getId(), threadName, e);
 			rollback(conn, checkpoint, threadName);
 			throw new Exception("Unable to insert checkpoint", e);
 		}
@@ -364,7 +394,7 @@ public class MysqlSaver extends MemorySaver {
 			try (PreparedStatement preparedStatement = conn.prepareStatement(RELEASE_THREAD)) {
 				preparedStatement.setString(1, threadName);
 				int rowsAffected = preparedStatement.executeUpdate();
-				
+
 				if (rowsAffected == 0) {
 					conn.rollback();
 					throw new IllegalStateException(
@@ -481,6 +511,7 @@ public class MysqlSaver extends MemorySaver {
 		private DataSource dataSource;
 		private CreateOption createOption = CreateOption.CREATE_IF_NOT_EXISTS;
 		private StateSerializer stateSerializer;
+		private boolean overwriteMode = false;
 
 		/**
 		 * Sets the state serializer
@@ -512,6 +543,17 @@ public class MysqlSaver extends MemorySaver {
 		 */
 		public Builder createOption(CreateOption createOption) {
 			this.createOption = createOption;
+			return this;
+		}
+
+		/**
+		 * Sets the overwrite mode.
+		 *
+		 * @param overwriteMode only keeps the latest checkpoint
+		 * @return this builder
+		 */
+		public Builder overwriteMode(boolean overwriteMode) {
+			this.overwriteMode = overwriteMode;
 			return this;
 		}
 

@@ -45,6 +45,7 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfDockerAvailable
 @EnabledIf(value = "isCI", disabledReason = "this test is designed to run only in the GitHub CI environment.")
@@ -231,6 +232,185 @@ public class MysqlSaverTest {
 
         saver.release(runnableConfig);
 
+    }
+
+
+    @Test
+    public void testInsertMode() throws Exception {
+        var saver = MysqlSaver.builder()
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .dataSource(DATA_SOURCE)
+                .overwriteMode(false)
+                .build();
+
+        NodeAction agent_1 = state -> Map.of("agent_1:prop1", "agent_1:test");
+
+        var graph = new StateGraph(keyStrategyFactory)
+                .addNode("agent_1", node_async(agent_1))
+                .addEdge(START, "agent_1")
+                .addEdge("agent_1", END);
+
+        var compileConfig = CompileConfig.builder()
+                .saverConfig(SaverConfig.builder().register(saver).build())
+                .releaseThread(false)
+                .build();
+
+        var runnableConfig = RunnableConfig.builder().build();
+        var workflow = graph.compile(compileConfig);
+
+        Map<String, Object> inputs1 = Map.of("input", "test1");
+        var result1 = workflow.invoke(inputs1, runnableConfig);
+        assertTrue(result1.isPresent());
+
+        Map<String, Object> inputs2 = Map.of("input", "test2");
+        var result2 = workflow.invoke(inputs2, runnableConfig);
+        assertTrue(result2.isPresent());
+
+        var history = workflow.getStateHistory(runnableConfig);
+        assertFalse(history.isEmpty());
+        assertEquals(4, history.size(), "插入模式应该保留所有历史记录");
+
+        saver.release(runnableConfig);
+    }
+
+
+    @Test
+    public void testOverwriteMode() throws Exception {
+
+        var saver = MysqlSaver.builder()
+                .dataSource(DATA_SOURCE)
+                .overwriteMode(true)
+                .build();
+
+        NodeAction agent_1 = state -> Map.of("agent_1:prop1", "agent_1:test_overwrite");
+
+        var graph = new StateGraph(keyStrategyFactory)
+                .addNode("agent_1", node_async(agent_1))
+                .addEdge(START, "agent_1")
+                .addEdge("agent_1", END);
+
+        var compileConfig = CompileConfig.builder()
+                .saverConfig(SaverConfig.builder().register(saver).build())
+                .releaseThread(false)
+                .build();
+
+        var runnableConfig = RunnableConfig.builder().build();
+        var workflow = graph.compile(compileConfig);
+
+        Map<String, Object> inputs1 = Map.of("input", "test1");
+        var result1 = workflow.invoke(inputs1, runnableConfig);
+        assertTrue(result1.isPresent());
+
+        Map<String, Object> inputs2 = Map.of("input", "test2");
+        var result2 = workflow.invoke(inputs2, runnableConfig);
+        assertTrue(result2.isPresent());
+
+        Map<String, Object> inputs3 = Map.of("input", "test3");
+        var result3 = workflow.invoke(inputs3, runnableConfig);
+        assertTrue(result3.isPresent());
+
+        var history = workflow.getStateHistory(runnableConfig);
+        assertFalse(history.isEmpty());
+        assertEquals(1, history.size(), "覆盖模式每次put都清空，只保留最新checkpoint");
+
+        var lastSnapshot = workflow.lastStateOf(runnableConfig);
+        assertTrue(lastSnapshot.isPresent());
+        assertEquals("agent_1", lastSnapshot.get().node());
+        assertEquals("agent_1:test_overwrite", lastSnapshot.get().state().value("agent_1:prop1").orElse(null));
+
+        saver.release(runnableConfig);
+    }
+
+
+    @Test
+    public void testOverwriteModeDataConsistency() throws Exception {
+
+        var saver = MysqlSaver.builder()
+                .dataSource(DATA_SOURCE)
+                .overwriteMode(true)
+                .build();
+
+        NodeAction agent_1 = state -> {
+            Object input = state.data().get("input");
+            return Map.of("agent_1:prop1", "processed_" + input);
+        };
+
+        var graph = new StateGraph(keyStrategyFactory)
+                .addNode("agent_1", node_async(agent_1))
+                .addEdge(START, "agent_1")
+                .addEdge("agent_1", END);
+
+        var compileConfig = CompileConfig.builder()
+                .saverConfig(SaverConfig.builder().register(saver).build())
+                .releaseThread(false)
+                .build();
+
+        var runnableConfig = RunnableConfig.builder().build();
+        var workflow = graph.compile(compileConfig);
+
+        String[] inputs = {"data1", "data2", "data3", "data4", "data5"};
+        for (String input : inputs) {
+            var result = workflow.invoke(Map.of("input", input), runnableConfig);
+            assertTrue(result.isPresent());
+
+            var lastSnapshot = workflow.lastStateOf(runnableConfig);
+            assertTrue(lastSnapshot.isPresent());
+            assertEquals("processed_" + input,
+                    lastSnapshot.get().state().value("agent_1:prop1").orElse(null),
+                    "应该能读取到最新覆盖的数据");
+        }
+
+        var history = workflow.getStateHistory(runnableConfig);
+        assertEquals(1, history.size(), "覆盖模式每次put都清空，只保留最新checkpoint");
+
+        saver.release(runnableConfig);
+    }
+
+    @Test
+    public void testThreadNotReactivatedAfterRelease() throws Exception {
+        var saver = MysqlSaver.builder()
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .dataSource(DATA_SOURCE)
+                .build();
+
+        NodeAction agent_1 = state -> Map.of("agent_1:prop1", "agent_1:test");
+
+        var graph = new StateGraph(keyStrategyFactory)
+                .addNode("agent_1", node_async(agent_1))
+                .addEdge(START, "agent_1")
+                .addEdge("agent_1", END);
+
+        var compileConfig = CompileConfig.builder()
+                .saverConfig(SaverConfig.builder().register(saver).build())
+                .releaseThread(false)
+                .build();
+
+        var runnableConfig = RunnableConfig.builder().threadId("test-release-thread").build();
+        var workflow = graph.compile(compileConfig);
+
+        try {
+            var result1 = workflow.invoke(Map.of("input", "test1"), runnableConfig);
+            assertTrue(result1.isPresent());
+
+            var history1 = workflow.getStateHistory(runnableConfig);
+            assertFalse(history1.isEmpty(), "应该有历史记录");
+
+            saver.release(runnableConfig);
+
+            var history2 = workflow.getStateHistory(runnableConfig);
+            assertTrue(history2.isEmpty(), "释放后历史记录应该为空");
+
+            var result3 = workflow.invoke(Map.of("input", "test2"), runnableConfig);
+            assertTrue(result3.isPresent());
+
+            var history3 = workflow.getStateHistory(runnableConfig);
+            assertFalse(history3.isEmpty(), "新线程应该有历史记录");
+            assertEquals(2, history3.size(), "新线程应该只有2个checkpoint（START和agent_1）");
+
+            saver.release(runnableConfig);
+        } catch (Exception e) {
+            fail("测试失败: " + e.getMessage());
+        }
     }
 
 }
