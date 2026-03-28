@@ -176,11 +176,18 @@ public class CompiledGraph {
 						}
 
 						var parallelNodeTargets = findParallelNodeTargets(mappedNodeIds);
-						if (!parallelNodeTargets.isEmpty()) {
+						if (parallelNodeTargets.size() > 1) {
+							// Multiple convergence targets found - this is ambiguous and not allowed
+							throw Errors.inconsistentConvergenceTargetsOnConditionalParallelEdge
+									.exception(e.sourceId(), parallelNodeTargets);
+						}
+						else if (!parallelNodeTargets.isEmpty()) {
 							// Set edge from ConditionalParallelNode to the next node
 							// All parallel nodes point to the same target, use that target
-							edges.put(conditionalParallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
-						} else {
+							edges.put(conditionalParallelNode.id(),
+									new EdgeValue(parallelNodeTargets.iterator().next()));
+						}
+						else {
 							throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), 0);
 						}
 						// The ConditionalParallelNode will handle parallel execution internally
