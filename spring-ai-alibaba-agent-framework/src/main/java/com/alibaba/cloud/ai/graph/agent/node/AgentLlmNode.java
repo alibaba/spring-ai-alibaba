@@ -158,7 +158,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
 			}
 		} else {
-			messages = (List<Message>) state.value("messages").get();
+			messages = new ArrayList<>((List<Message>) state.value("messages").get());
 		}
 
 		augmentUserMessage(messages, outputSchema);
