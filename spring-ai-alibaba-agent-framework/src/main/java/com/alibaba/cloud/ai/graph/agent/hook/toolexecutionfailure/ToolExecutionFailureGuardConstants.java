@@ -39,12 +39,6 @@ public final class ToolExecutionFailureGuardConstants {
 	public static final String FAILURE_TYPE_METADATA_KEY = "failureType";
 
 	/**
-	 * Failure type for a {@code ToolExecutionException} handled by the configured
-	 * {@code ToolExecutionExceptionProcessor}.
-	 */
-	public static final String TOOL_EXECUTION_EXCEPTION_FAILURE_TYPE = "tool_execution_exception";
-
-	/**
 	 * Failure type for ordinary runtime failures thrown while executing a tool.
 	 */
 	public static final String RUNTIME_EXCEPTION_FAILURE_TYPE = "runtime_exception";
@@ -53,21 +47,6 @@ public final class ToolExecutionFailureGuardConstants {
 	 * Failure type for tool execution timeout.
 	 */
 	public static final String TIMEOUT_FAILURE_TYPE = "timeout";
-
-	/**
-	 * Failure type for cancellation triggered by the runtime.
-	 */
-	public static final String CANCELLATION_FAILURE_TYPE = "cancellation";
-
-	/**
-	 * Failure type for interrupted execution.
-	 */
-	public static final String INTERRUPTED_FAILURE_TYPE = "interrupted";
-
-	/**
-	 * Failure type used when a tool call completes without producing any response.
-	 */
-	public static final String MISSING_RESPONSE_FAILURE_TYPE = "missing_response";
 
 	/**
 	 * Metadata key recording the retry attempts already consumed by the tool retry
@@ -82,28 +61,9 @@ public final class ToolExecutionFailureGuardConstants {
 	public static final String RETRY_EXHAUSTED_METADATA_KEY = "retryExhausted";
 
 	/**
-	 * Marks that the current {@code ToolResponseMessage} contains at least one structured
-	 * tool-execution failure.
-	 */
-	public static final String TOOL_EXECUTION_FAILURE_RESPONSE_METADATA_KEY =
-			"toolExecutionFailureResponse";
-
-	/**
 	 * Stores the names of tools whose execution failed in the current response batch.
 	 */
 	public static final String FAILED_TOOL_NAMES_METADATA_KEY = "failedToolNames";
-
-	/**
-	 * Stores the tool-call identifiers whose execution failed in the current response
-	 * batch.
-	 */
-	public static final String FAILED_TOOL_CALL_IDS_METADATA_KEY = "failedToolCallIds";
-
-	/**
-	 * Counts how many tool-call results inside the current response batch are execution
-	 * failures.
-	 */
-	public static final String FAILED_TOOL_COUNT_METADATA_KEY = "failedToolCount";
 
 	/**
 	 * Indicates whether every executed tool call in the current assistant turn failed at

@@ -41,6 +41,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
+import com.alibaba.cloud.ai.graph.agent.hook.toolexecutionfailure.ToolExecutionFailureGuardHook;
 import com.alibaba.cloud.ai.graph.agent.hook.unknowntool.UnknownToolGuardHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -395,6 +396,9 @@ public class ReactAgent extends BaseAgent {
 		effectiveHooks.add(InstructionAgentHook.create());
 		if (hasTools && (configuredHooks == null || configuredHooks.stream().noneMatch(UnknownToolGuardHook.class::isInstance))) {
 			effectiveHooks.add(UnknownToolGuardHook.create());
+		}
+		if (hasTools && (configuredHooks == null || configuredHooks.stream().noneMatch(ToolExecutionFailureGuardHook.class::isInstance))) {
+			effectiveHooks.add(ToolExecutionFailureGuardHook.create());
 		}
 		if (configuredHooks != null && !configuredHooks.isEmpty()) {
 			effectiveHooks.addAll(configuredHooks);
