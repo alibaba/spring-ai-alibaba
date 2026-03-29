@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 
 import java.util.Objects;
@@ -91,7 +92,7 @@ public class NodeOutput {
 	}
 
 	public Usage tokenUsage() {
-		return tokenUsage;
+		return tokenUsage != null ? tokenUsage : new EmptyUsage();
 	}
 
 	public OverAllState state() {
