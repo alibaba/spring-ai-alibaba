@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor;
 
+import com.alibaba.cloud.ai.graph.agent.tool.ToolResult;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 
 import java.util.Collections;
@@ -23,29 +24,55 @@ import java.util.Map;
 
 /**
  * Response object for tool calls.
+ * Supports both simple string results and rich {@link ToolResult} with multimodal content.
  */
 public class ToolCallResponse {
 
 	private final String result;
+
 	private final String toolName;
+
 	private final String toolCallId;
+
 	private final String status;
+
 	private final Map<String, Object> metadata;
 
+	private final ToolResult richResult;
+
 	public ToolCallResponse(String result, String toolName, String toolCallId) {
-		this(result, toolName, toolCallId, null, null);
+		this(result, toolName, toolCallId, null, null, null);
 	}
 
-	public ToolCallResponse(String result, String toolName, String toolCallId, String status, Map<String, Object> metadata) {
+	public ToolCallResponse(String result, String toolName, String toolCallId, String status,
+			Map<String, Object> metadata) {
+		this(result, toolName, toolCallId, status, metadata, null);
+	}
+
+	public ToolCallResponse(String result, String toolName, String toolCallId, String status,
+			Map<String, Object> metadata, ToolResult richResult) {
 		this.result = result;
 		this.toolName = toolName;
 		this.toolCallId = toolCallId;
 		this.status = status;
 		this.metadata = metadata != null ? new HashMap<>(metadata) : Collections.emptyMap();
+		this.richResult = richResult;
 	}
 
 	public static ToolCallResponse of(String toolCallId, String toolName, String result) {
 		return new ToolCallResponse(result, toolName, toolCallId);
+	}
+
+	/**
+	 * Creates a response with a rich ToolResult. The string result is automatically
+	 * generated from the ToolResult for backward compatibility.
+	 * @param toolCallId the tool call ID
+	 * @param toolName the tool name
+	 * @param result the rich result
+	 * @return a new ToolCallResponse with rich result support
+	 */
+	public static ToolCallResponse ofRich(String toolCallId, String toolName, ToolResult result) {
+		return new ToolCallResponse(result.toStringResult(), toolName, toolCallId, "success", null, result);
 	}
 
 	/**
@@ -98,6 +125,22 @@ public class ToolCallResponse {
 	}
 
 	/**
+	 * Gets the rich result if available.
+	 * @return the ToolResult or null if not a rich result
+	 */
+	public ToolResult getRichResult() {
+		return richResult;
+	}
+
+	/**
+	 * Checks if this response has a rich result.
+	 * @return true if rich result is available
+	 */
+	public boolean hasRichResult() {
+		return richResult != null;
+	}
+
+	/**
 	 * Checks if this response represents an error.
 	 * @return true if this is an error response
 	 */
@@ -110,11 +153,18 @@ public class ToolCallResponse {
 	}
 
 	public static class Builder {
+
 		private String content;
+
 		private String toolName;
+
 		private String toolCallId;
+
 		private String status;
+
 		private Map<String, Object> metadata;
+
+		private ToolResult richResult;
 
 		public Builder content(String content) {
 			this.content = content;
@@ -141,9 +191,23 @@ public class ToolCallResponse {
 			return this;
 		}
 
-		public ToolCallResponse build() {
-			return new ToolCallResponse(content, toolName, toolCallId, status, metadata);
+		/**
+		 * Sets the rich result. Also updates content with the serialized result.
+		 * @param result the rich result
+		 * @return this builder
+		 */
+		public Builder richResult(ToolResult result) {
+			this.richResult = result;
+			if (result != null) {
+				this.content = result.toStringResult();
+			}
+			return this;
 		}
+
+		public ToolCallResponse build() {
+			return new ToolCallResponse(content, toolName, toolCallId, status, metadata, richResult);
+		}
+
 	}
 }
 
