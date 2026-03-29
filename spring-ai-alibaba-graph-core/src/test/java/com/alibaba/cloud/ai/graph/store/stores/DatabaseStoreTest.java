@@ -187,6 +187,85 @@ class DatabaseStoreTest {
 		assertThat(databaseStore.size()).isEqualTo(1); // Should still be 1 item
 	}
 
+	@Test
+	void testResolveDialect() {
+		assertThat(DatabaseStore.resolveDialect("MySQL")).isEqualTo(DatabaseStore.DatabaseDialect.MYSQL);
+		assertThat(DatabaseStore.resolveDialect("MariaDB")).isEqualTo(DatabaseStore.DatabaseDialect.MARIADB);
+		assertThat(DatabaseStore.resolveDialect("PostgreSQL"))
+			.isEqualTo(DatabaseStore.DatabaseDialect.POSTGRESQL);
+		assertThat(DatabaseStore.resolveDialect("H2")).isEqualTo(DatabaseStore.DatabaseDialect.GENERIC);
+	}
+
+	@Test
+	void testBuildCreateTableSqlForMysql() {
+		String sql = DatabaseStore.buildCreateTableSql("spring_ai_store", DatabaseStore.DatabaseDialect.MYSQL);
+
+		assertThat(sql).contains("id CHAR(64) PRIMARY KEY");
+		assertThat(sql).contains("namespace LONGTEXT");
+		assertThat(sql).contains("value_json LONGTEXT");
+		assertThat(sql).doesNotContain("id TEXT PRIMARY KEY");
+	}
+
+	@Test
+	void testBuildCreateTableSqlForGenericDialect() {
+		String sql = DatabaseStore.buildCreateTableSql("spring_ai_store", DatabaseStore.DatabaseDialect.GENERIC);
+
+		assertThat(sql).contains("id TEXT PRIMARY KEY");
+		assertThat(sql).contains("namespace TEXT");
+		assertThat(sql).contains("value_json TEXT");
+	}
+
+	@Test
+	void testBuildUpsertSqlForMysql() {
+		String sql = DatabaseStore.buildUpsertSql("spring_ai_store", DatabaseStore.DatabaseDialect.MYSQL);
+
+		assertThat(sql).contains("INSERT INTO spring_ai_store");
+		assertThat(sql).contains("ON DUPLICATE KEY UPDATE");
+		assertThat(sql).doesNotContain("MERGE INTO");
+	}
+
+	@Test
+	void testBuildUpsertSqlForPostgresql() {
+		String sql = DatabaseStore.buildUpsertSql("spring_ai_store", DatabaseStore.DatabaseDialect.POSTGRESQL);
+
+		assertThat(sql).contains("INSERT INTO spring_ai_store");
+		assertThat(sql).contains("ON CONFLICT (id) DO UPDATE");
+		assertThat(sql).contains("EXCLUDED.namespace");
+	}
+
+	@Test
+	void testBuildUpsertSqlForGenericDialect() {
+		String sql = DatabaseStore.buildUpsertSql("spring_ai_store", DatabaseStore.DatabaseDialect.GENERIC);
+
+		assertThat(sql).contains("MERGE INTO spring_ai_store");
+		assertThat(sql).contains("KEY(id)");
+	}
+
+	@Test
+	void testBuildItemIdForMysqlUsesFixedLengthHash() {
+		String itemId = DatabaseStore.buildItemId(
+				List.of("users", "very-long-namespace", "preferences"),
+				"very-long-key",
+				DatabaseStore.DatabaseDialect.MYSQL);
+
+		assertThat(itemId).hasSize(64);
+		assertThat(itemId).matches("[0-9a-f]+");
+	}
+
+	@Test
+	void testBuildItemIdForGenericDialectKeepsOriginalStoreKeyBehavior() {
+		String itemId = DatabaseStore.buildItemId(
+				List.of("users", "very-long-namespace", "preferences"),
+				"very-long-key",
+				DatabaseStore.DatabaseDialect.GENERIC);
+
+		assertThat(itemId).isNotEmpty();
+		assertThat(itemId).isNotEqualTo(DatabaseStore.buildItemId(
+				List.of("users", "very-long-namespace", "preferences"),
+				"very-long-key",
+				DatabaseStore.DatabaseDialect.MYSQL));
+	}
+
 	private void setupTestData() {
 		// User admin data
 		databaseStore.putItem(
