@@ -40,6 +40,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
+import com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectMessageSupport;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -273,13 +274,24 @@ public class ReactAgent extends BaseAgent {
 					.orElseThrow(() -> new IllegalStateException("Output key " + outputKey + " not found in agent state"));
 		}
 
-		// Add a validation instance when performing message conversion to
-		// avoid potential type conversion exceptions.
-		return state.flatMap(s -> s.value("messages"))
-				.stream()
-				.flatMap(messageList -> ((List<?>) messageList).stream()
-						.filter(msg -> msg instanceof AssistantMessage)
-						.map(msg -> (AssistantMessage) msg))
+		List<Message> messages = state.flatMap(s -> s.value("messages"))
+				.map(messageList -> ((List<?>) messageList).stream()
+						.filter(Message.class::isInstance)
+						.map(Message.class::cast)
+						.toList())
+				.orElseThrow(() -> new AgentException("No 'messages' state found"));
+
+		if (!messages.isEmpty()) {
+			Message lastMessage = messages.get(messages.size() - 1);
+			if (lastMessage instanceof ToolResponseMessage toolResponseMessage
+					&& ReturnDirectMessageSupport.isReturnDirect(toolResponseMessage)) {
+				return ReturnDirectMessageSupport.toAssistantMessage(toolResponseMessage);
+			}
+		}
+
+		return messages.stream()
+				.filter(AssistantMessage.class::isInstance)
+				.map(AssistantMessage.class::cast)
 				.reduce((first, second) -> second)
 				.orElseThrow(() -> new AgentException("No AssistantMessage found in 'messages' state"));
 	}
@@ -827,22 +839,11 @@ public class ReactAgent extends BaseAgent {
 
 	private EdgeAction makeToolsToModelEdge(String modelDestination, String endDestination) {
 		return state -> {
-			// 1. Extract last AI message and corresponding tool messages
 			ToolResponseMessage toolResponseMessage = fetchLastToolResponseMessage(state);
-			// 2. Exit condition: All executed tools have return_direct=True
-			if (toolResponseMessage != null && !toolResponseMessage.getResponses().isEmpty()) {
-				boolean allReturnDirect = toolResponseMessage.getResponses().stream().allMatch(toolResponse -> {
-					String toolName = toolResponse.name();
-					return false; // FIXME
-				});
-				if (allReturnDirect) {
-					return endDestination;
-				}
+			if (ReturnDirectMessageSupport.isReturnDirect(toolResponseMessage)) {
+				return endDestination;
 			}
 
-			// 3. Default: Continue the loop
-			//    Tool execution completed successfully, route back to the model
-			//    so it can process the tool results and decide the next action.
 			return modelDestination;
 		};
 	}
