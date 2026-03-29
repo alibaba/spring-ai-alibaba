@@ -16,15 +16,19 @@
 
 package com.alibaba.cloud.ai.a2a.core.server;
 
-import org.springframework.web.servlet.function.ServerRequest;
-
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.Flow;
 import java.util.function.Function;
 
+import org.reactivestreams.FlowAdapters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.servlet.function.ServerRequest;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+
 import io.a2a.server.requesthandlers.JSONRPCHandler;
 import io.a2a.spec.AgentCard;
 import io.a2a.spec.CancelTaskRequest;
@@ -46,9 +50,6 @@ import io.a2a.spec.StreamingJSONRPCRequest;
 import io.a2a.spec.TaskResubscriptionRequest;
 import io.a2a.spec.UnsupportedOperationError;
 import io.a2a.util.Utils;
-import org.reactivestreams.FlowAdapters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 /**
