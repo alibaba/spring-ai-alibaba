@@ -181,8 +181,8 @@ String content = StringUtils.hasText(request.skillPath)
 
 ```java
 return matches.stream()
-    .map(skill -> "- %s | %s | %s | allowed_tools=%s".formatted(
-        skill.getName(), skill.getSource(), skill.getSkillPath(), skill.getAllowedTools()))
+    .map(skill -> "- name=%s | description=%s | skill_path=%s | source=%s | allowed_tools=%s".formatted(
+        skill.getName(), skill.getDescription(), skill.getSkillPath(), skill.getSource(), skill.getAllowedTools()))
     .collect(Collectors.joining("\n"));
 ```
 

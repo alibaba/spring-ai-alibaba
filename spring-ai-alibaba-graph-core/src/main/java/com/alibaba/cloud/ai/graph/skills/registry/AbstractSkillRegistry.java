@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.skills.registry;
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -121,6 +122,7 @@ public abstract class AbstractSkillRegistry implements SkillRegistry {
 		if (skillPath == null || skillPath.isBlank()) {
 			throw new IllegalArgumentException("Skill path cannot be null or empty");
 		}
+		requireNormalizedSkillPath(skillPath);
 		SkillMetadata skill = getByPath(skillPath)
 				.orElseThrow(() -> new IllegalStateException("Skill not found: " + skillPath));
 		return skill.loadFullContent();
@@ -129,16 +131,41 @@ public abstract class AbstractSkillRegistry implements SkillRegistry {
 	protected abstract void loadSkillsToRegistry();
 
 	protected static String normalizeSkillPath(String skillPath) {
-		return Path.of(skillPath).toAbsolutePath().normalize().toString();
+		try {
+			return Path.of(skillPath).toAbsolutePath().normalize().toString();
+		}
+		catch (InvalidPathException ex) {
+			throw new IllegalArgumentException("Invalid skill path: " + skillPath, ex);
+		}
+	}
+
+	protected static String requireNormalizedSkillPath(String skillPath) {
+		if (skillPath == null || skillPath.isBlank()) {
+			throw new IllegalArgumentException("Skill path cannot be null or empty");
+		}
+		return normalizeSkillPath(skillPath);
 	}
 
 	private Optional<SkillMetadata> findByPathInternal(String skillPath) {
 		if (skillPath == null || skillPath.isBlank()) {
 			return Optional.empty();
 		}
-		String normalized = normalizeSkillPath(skillPath);
+		final String normalized;
+		try {
+			normalized = normalizeSkillPath(skillPath);
+		}
+		catch (IllegalArgumentException ex) {
+			return Optional.empty();
+		}
 		return skills.values().stream()
-				.filter(skill -> normalized.equals(normalizeSkillPath(skill.getSkillPath())))
+				.filter(skill -> {
+					try {
+						return normalized.equals(normalizeSkillPath(skill.getSkillPath()));
+					}
+					catch (IllegalArgumentException ex) {
+						return false;
+					}
+				})
 				.findFirst();
 	}
 

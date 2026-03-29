@@ -25,6 +25,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.function.BiFunction;
 
 /**
@@ -67,12 +68,13 @@ public class SearchSkillsTool implements BiFunction<SearchSkillsTool.SearchSkill
 			return "No skills found.";
 		}
 		return skills.stream()
-				.map(skill -> "- %s: %s (path: %s)".formatted(
+				.map(skill -> "- name=%s | description=%s | skill_path=%s | source=%s | allowed_tools=%s".formatted(
 						skill.getName(),
 						skill.getDescription(),
-						skill.getSkillPath()))
-				.reduce((left, right) -> left + "\n" + right)
-				.orElse("No skills found.");
+						skill.getSkillPath(),
+						skill.getSource(),
+						skill.getAllowedTools()))
+				.collect(Collectors.joining("\n"));
 	}
 
 	public static class SearchSkillsRequest {

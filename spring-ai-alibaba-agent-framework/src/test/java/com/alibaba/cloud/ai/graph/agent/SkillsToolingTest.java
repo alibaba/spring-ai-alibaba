@@ -82,8 +82,10 @@ class SkillsToolingTest {
 		DisableSkillTool disableTool = new DisableSkillTool(registry);
 		ToolContext context = new ToolContext(Map.of());
 
-		assertTrue(searchTool.apply(new SearchSkillsTool.SearchSkillsRequest("allowed-tools"), context)
-				.contains("allowed-tools-test"));
+		String searchResult = searchTool.apply(new SearchSkillsTool.SearchSkillsRequest("allowed-tools"), context);
+		assertTrue(searchResult.contains("allowed-tools-test"));
+		assertTrue(searchResult.contains("source=project"));
+		assertTrue(searchResult.contains("allowed_tools=[record_result]"));
 
 		String disableResult = disableTool.apply(
 				new DisableSkillTool.DisableSkillRequest(null, skillDir.toString()), context);

@@ -21,7 +21,9 @@ import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegi
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -49,7 +51,9 @@ public interface SkillRegistry {
 	 * @param skillPath the absolute or relative skill directory path
 	 * @return Optional containing the skill metadata if found, empty otherwise
 	 */
-	Optional<SkillMetadata> getByPath(String skillPath);
+	default Optional<SkillMetadata> getByPath(String skillPath) {
+		return Optional.empty();
+	}
 
 	/**
 	 * List all registered skills.
@@ -72,7 +76,18 @@ public interface SkillRegistry {
 	 * @param query the search query
 	 * @return matching skills in ranked order
 	 */
-	List<SkillMetadata> search(String query);
+	default List<SkillMetadata> search(String query) {
+		if (query == null || query.isBlank()) {
+			return listAll();
+		}
+		String normalized = query.trim().toLowerCase(Locale.ROOT);
+		return listAll().stream()
+				.filter(skill -> containsIgnoreCase(skill.getName(), normalized)
+						|| containsIgnoreCase(skill.getDescription(), normalized)
+						|| containsIgnoreCase(skill.getSkillPath(), normalized))
+				.sorted(Comparator.comparing(SkillMetadata::getName))
+				.toList();
+	}
 
 	/**
 	 * Get the total number of registered skills.
@@ -87,7 +102,9 @@ public interface SkillRegistry {
 	 * @param name the skill name
 	 * @return true if the skill was disabled, false otherwise
 	 */
-	boolean disable(String name);
+	default boolean disable(String name) {
+		return false;
+	}
 
 	/**
 	 * Disable a skill in the current registry instance by path.
@@ -95,7 +112,12 @@ public interface SkillRegistry {
 	 * @param skillPath the skill path
 	 * @return true if the skill was disabled, false otherwise
 	 */
-	boolean disableByPath(String skillPath);
+	default boolean disableByPath(String skillPath) {
+		return getByPath(skillPath)
+				.map(SkillMetadata::getName)
+				.map(this::disable)
+				.orElse(false);
+	}
 
 	/**
 	 * Check whether a skill is disabled in the current registry instance.
@@ -103,7 +125,9 @@ public interface SkillRegistry {
 	 * @param name the skill name
 	 * @return true if disabled, false otherwise
 	 */
-	boolean isDisabled(String name);
+	default boolean isDisabled(String name) {
+		return false;
+	}
 
 	/**
 	 * Reloads all skills from the underlying source.
@@ -139,7 +163,14 @@ public interface SkillRegistry {
 	 * @return the full content of the skill file
 	 * @throws IOException if the skill file cannot be read
 	 */
-	String readSkillContentByPath(String skillPath) throws IOException;
+	default String readSkillContentByPath(String skillPath) throws IOException {
+		if (skillPath == null || skillPath.isBlank()) {
+			throw new IllegalArgumentException("Skill path cannot be null or empty");
+		}
+		SkillMetadata skill = getByPath(skillPath)
+				.orElseThrow(() -> new IllegalStateException("Skill not found: " + skillPath));
+		return skill.loadFullContent();
+	}
 
 	/**
 	 * Gets the skill load instructions for the system prompt.
@@ -175,4 +206,8 @@ public interface SkillRegistry {
 	 * @return the SystemPromptTemplate for skills (never null)
 	 */
 	SystemPromptTemplate getSystemPromptTemplate();
+
+	private static boolean containsIgnoreCase(String value, String normalizedQuery) {
+		return value != null && value.toLowerCase(Locale.ROOT).contains(normalizedQuery);
+	}
 }

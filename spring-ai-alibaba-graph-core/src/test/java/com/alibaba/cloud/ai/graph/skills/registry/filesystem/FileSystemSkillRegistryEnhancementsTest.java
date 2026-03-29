@@ -74,6 +74,29 @@ class FileSystemSkillRegistryEnhancementsTest {
 	}
 
 	@Test
+	void snakeCaseAllowedToolsTakesPrecedenceOverCamelCaseAlias() throws Exception {
+		Path skillDir = skillsDir.resolve("alias-precedence-skill");
+		Files.createDirectories(skillDir);
+		Files.writeString(skillDir.resolve("SKILL.md"), """
+				---
+				name: alias-precedence-skill
+				description: Skill fixture for alias precedence.
+				allowed_tools: []
+				allowedTools:
+				  - should_not_be_used
+				---
+				
+				# Alias precedence
+				""");
+
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
+				.projectSkillsDirectory(skillsDir.toString())
+				.build();
+
+		assertEquals(List.of(), registry.get("alias-precedence-skill").orElseThrow().getAllowedTools());
+	}
+
+	@Test
 	void disableHidesSkillFromReadsAndSearch() throws Exception {
 		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
 				.projectSkillsDirectory(skillsDir.toString())
@@ -88,6 +111,18 @@ class FileSystemSkillRegistryEnhancementsTest {
 		assertThrows(IllegalStateException.class, () -> registry.readSkillContent("allowed-tools-skill"));
 		assertThrows(IllegalStateException.class, () -> registry.readSkillContentByPath(allowedToolsSkillDir.toString()));
 		assertFalse(registry.isDisabled("copy-helper"));
+	}
+
+	@Test
+	void invalidSkillPathDoesNotThrowOnLookupOrDisable() throws Exception {
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
+				.projectSkillsDirectory(skillsDir.toString())
+				.build();
+
+		String invalidPath = "\0invalid";
+		assertTrue(registry.getByPath(invalidPath).isEmpty());
+		assertFalse(registry.disableByPath(invalidPath));
+		assertThrows(IllegalArgumentException.class, () -> registry.readSkillContentByPath(invalidPath));
 	}
 
 	private Path writeSkill(String name, String description, List<String> allowedTools) throws Exception {

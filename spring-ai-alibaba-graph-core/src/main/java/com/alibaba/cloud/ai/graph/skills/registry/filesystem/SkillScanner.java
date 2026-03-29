@@ -118,9 +118,15 @@ public class SkillScanner {
 
 			String name = (String) frontmatter.get("name");
 			String description = (String) frontmatter.get("description");
-			List<String> allowedTools = normalizeAllowedTools(frontmatter.get("allowed_tools"));
-			if (allowedTools.isEmpty()) {
+			List<String> allowedTools;
+			if (frontmatter.containsKey("allowed_tools")) {
+				allowedTools = normalizeAllowedTools(frontmatter.get("allowed_tools"));
+			}
+			else if (frontmatter.containsKey("allowedTools")) {
 				allowedTools = normalizeAllowedTools(frontmatter.get("allowedTools"));
+			}
+			else {
+				allowedTools = List.of();
 			}
 
 			if (name == null || name.isEmpty()) {
