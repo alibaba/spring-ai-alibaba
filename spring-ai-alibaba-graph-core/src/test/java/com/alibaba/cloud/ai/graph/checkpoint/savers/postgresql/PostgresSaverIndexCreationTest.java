@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint.savers.postgresql;
 
-import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,14 +22,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Test for Issue #4366: PostgresSaver index creation with IF NOT EXISTS.
