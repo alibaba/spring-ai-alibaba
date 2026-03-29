@@ -274,25 +274,27 @@ public class ReactAgent extends BaseAgent {
 					.orElseThrow(() -> new IllegalStateException("Output key " + outputKey + " not found in agent state"));
 		}
 
-		List<Message> messages = state.flatMap(s -> s.value("messages"))
-				.map(messageList -> ((List<?>) messageList).stream()
-						.filter(Message.class::isInstance)
-						.map(Message.class::cast)
-						.toList())
-				.orElseThrow(() -> new AgentException("No 'messages' state found"));
+		return state.flatMap(s -> s.value("messages"))
+				.map(messageList -> {
+					List<Message> messages = ((List<?>) messageList).stream()
+							.filter(Message.class::isInstance)
+							.map(Message.class::cast)
+							.toList();
 
-		if (!messages.isEmpty()) {
-			Message lastMessage = messages.get(messages.size() - 1);
-			if (lastMessage instanceof ToolResponseMessage toolResponseMessage
-					&& ReturnDirectMessageSupport.isReturnDirect(toolResponseMessage)) {
-				return ReturnDirectMessageSupport.toAssistantMessage(toolResponseMessage);
-			}
-		}
+					if (!messages.isEmpty()) {
+						Message lastMessage = messages.get(messages.size() - 1);
+						if (lastMessage instanceof ToolResponseMessage toolResponseMessage
+								&& ReturnDirectMessageSupport.isReturnDirect(toolResponseMessage)) {
+							return ReturnDirectMessageSupport.toAssistantMessage(toolResponseMessage);
+						}
+					}
 
-		return messages.stream()
-				.filter(AssistantMessage.class::isInstance)
-				.map(AssistantMessage.class::cast)
-				.reduce((first, second) -> second)
+					return messages.stream()
+							.filter(AssistantMessage.class::isInstance)
+							.map(AssistantMessage.class::cast)
+							.reduce((first, second) -> second)
+							.orElseThrow(() -> new AgentException("No AssistantMessage found in 'messages' state"));
+				})
 				.orElseThrow(() -> new AgentException("No AssistantMessage found in 'messages' state"));
 	}
 
