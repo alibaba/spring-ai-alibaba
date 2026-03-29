@@ -40,7 +40,6 @@ import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
-import com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectMessageSupport;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -65,6 +64,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.util.json.JsonParser;
 
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -89,9 +89,11 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_async;
 import static com.alibaba.cloud.ai.graph.agent.hook.InterruptionHook.INTERRUPTION_FEEDBACK_KEY;
+import static com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectConstants.FINISH_REASON_METADATA_KEY;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.resumeSubGraphId;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.subGraphId;
 import static java.lang.String.format;
+import static org.springframework.ai.model.tool.ToolExecutionResult.FINISH_REASON;
 
 
 public class ReactAgent extends BaseAgent {
@@ -284,8 +286,10 @@ public class ReactAgent extends BaseAgent {
 					if (!messages.isEmpty()) {
 						Message lastMessage = messages.get(messages.size() - 1);
 						if (lastMessage instanceof ToolResponseMessage toolResponseMessage
-								&& ReturnDirectMessageSupport.isReturnDirect(toolResponseMessage)) {
-							return ReturnDirectMessageSupport.toAssistantMessage(toolResponseMessage);
+								&& FINISH_REASON.equals(toolResponseMessage.getMetadata().get(FINISH_REASON_METADATA_KEY))) {
+							return AssistantMessage.builder()
+									.content(toReturnDirectAssistantText(toolResponseMessage))
+									.build();
 						}
 					}
 
@@ -296,6 +300,19 @@ public class ReactAgent extends BaseAgent {
 							.orElseThrow(() -> new AgentException("No AssistantMessage found in 'messages' state"));
 				})
 				.orElseThrow(() -> new AgentException("No AssistantMessage found in 'messages' state"));
+	}
+
+	private String toReturnDirectAssistantText(ToolResponseMessage toolResponseMessage) {
+		List<String> responses = toolResponseMessage.getResponses().stream()
+				.map(ToolResponseMessage.ToolResponse::responseData)
+				.toList();
+		if (responses.isEmpty()) {
+			return "";
+		}
+		if (responses.size() == 1) {
+			return Objects.requireNonNullElse(responses.get(0), "");
+		}
+		return JsonParser.toJson(responses);
 	}
 
 	public StateGraph getStateGraph() {
@@ -842,7 +859,8 @@ public class ReactAgent extends BaseAgent {
 	private EdgeAction makeToolsToModelEdge(String modelDestination, String endDestination) {
 		return state -> {
 			ToolResponseMessage toolResponseMessage = fetchLastToolResponseMessage(state);
-			if (ReturnDirectMessageSupport.isReturnDirect(toolResponseMessage)) {
+			if (toolResponseMessage != null
+					&& FINISH_REASON.equals(toolResponseMessage.getMetadata().get(FINISH_REASON_METADATA_KEY))) {
 				return endDestination;
 			}
 
