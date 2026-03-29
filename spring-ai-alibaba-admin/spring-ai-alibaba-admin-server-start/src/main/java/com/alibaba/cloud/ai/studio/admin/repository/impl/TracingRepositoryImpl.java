@@ -1,5 +1,9 @@
 package com.alibaba.cloud.ai.studio.admin.repository.impl;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.SumAggregate;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.alibaba.cloud.ai.studio.admin.common.PageResult;
 import com.alibaba.cloud.ai.studio.admin.dto.*;
 import com.alibaba.cloud.ai.studio.admin.dto.request.OverviewQueryRequest;
@@ -7,29 +11,31 @@ import com.alibaba.cloud.ai.studio.admin.dto.request.ServicesQueryRequest;
 import com.alibaba.cloud.ai.studio.admin.dto.request.TracesQueryRequest;
 import com.alibaba.cloud.ai.studio.admin.repository.TracingRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.CardinalityAggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.ValueCountAggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.SumAggregate;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
 @Slf4j
+@ConditionalOnBean(ElasticsearchClientWrapper.class)
 public class TracingRepositoryImpl implements TracingRepository {
 
     private static final String TRACES_INDEX = "loongsuite_traces";
-    
+
     private final ElasticsearchClientWrapper elasticsearchClient;
     private final TracingQueryBuilder queryBuilder;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public TracingRepositoryImpl(ElasticsearchClientWrapper elasticsearchClient, TracingQueryBuilder queryBuilder) {
+        this.elasticsearchClient = elasticsearchClient;
+        this.queryBuilder = queryBuilder;
+    }
 
     @Override
     public PageResult<TraceSpanDTO> queryTraces(TracesQueryRequest request) {
