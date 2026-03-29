@@ -66,8 +66,12 @@ public class ReturnDirectModelHook extends MessagesModelHook {
 			return new AgentCommand(previousMessages);
 		}
 
-		if (ReturnDirectMessageSupport.isReturnDirect(toolResponseMessage)) {
-			AssistantMessage newAssistantMessage = ReturnDirectMessageSupport.toAssistantMessage(toolResponseMessage);
+		boolean returnDirect = ReturnDirectMessageSupport.isReturnDirect(toolResponseMessage);
+		if (returnDirect) {
+			String generatedText = generateAssistantMessageText(toolResponseMessage);
+			AssistantMessage newAssistantMessage = AssistantMessage.builder()
+					.content(generatedText)
+					.build();
 
 			// Create new messages list with the generated AssistantMessage
 			List<Message> newMessages = new ArrayList<>(previousMessages);
@@ -79,5 +83,9 @@ public class ReturnDirectModelHook extends MessagesModelHook {
 
 		// No FINISH_REASON found, return normally
 		return new AgentCommand(previousMessages);
+	}
+
+	private String generateAssistantMessageText(ToolResponseMessage toolResponseMessage) {
+		return ReturnDirectMessageSupport.toAssistantText(toolResponseMessage);
 	}
 }
