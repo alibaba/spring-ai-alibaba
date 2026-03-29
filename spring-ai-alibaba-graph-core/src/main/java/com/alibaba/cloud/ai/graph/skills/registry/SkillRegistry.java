@@ -44,6 +44,14 @@ public interface SkillRegistry {
 	Optional<SkillMetadata> get(String name);
 
 	/**
+	 * Get a skill by its resolved skill path.
+	 *
+	 * @param skillPath the absolute or relative skill directory path
+	 * @return Optional containing the skill metadata if found, empty otherwise
+	 */
+	Optional<SkillMetadata> getByPath(String skillPath);
+
+	/**
 	 * List all registered skills.
 	 *
 	 * @return a list of all skill metadata (may be empty, never null)
@@ -59,11 +67,43 @@ public interface SkillRegistry {
 	boolean contains(String name);
 
 	/**
+	 * Search skills by name, description, or path.
+	 *
+	 * @param query the search query
+	 * @return matching skills in ranked order
+	 */
+	List<SkillMetadata> search(String query);
+
+	/**
 	 * Get the total number of registered skills.
 	 *
 	 * @return the number of skills
 	 */
 	int size();
+
+	/**
+	 * Disable a skill in the current registry instance.
+	 *
+	 * @param name the skill name
+	 * @return true if the skill was disabled, false otherwise
+	 */
+	boolean disable(String name);
+
+	/**
+	 * Disable a skill in the current registry instance by path.
+	 *
+	 * @param skillPath the skill path
+	 * @return true if the skill was disabled, false otherwise
+	 */
+	boolean disableByPath(String skillPath);
+
+	/**
+	 * Check whether a skill is disabled in the current registry instance.
+	 *
+	 * @param name the skill name
+	 * @return true if disabled, false otherwise
+	 */
+	boolean isDisabled(String name);
 
 	/**
 	 * Reloads all skills from the underlying source.
@@ -91,6 +131,15 @@ public interface SkillRegistry {
 	 * @throws IllegalStateException if the skill is not found
 	 */
 	String readSkillContent(String name) throws IOException;
+
+	/**
+	 * Reads the full content of a skill by path.
+	 *
+	 * @param skillPath the skill path
+	 * @return the full content of the skill file
+	 * @throws IOException if the skill file cannot be read
+	 */
+	String readSkillContentByPath(String skillPath) throws IOException;
 
 	/**
 	 * Gets the skill load instructions for the system prompt.

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -117,6 +118,10 @@ public class SkillScanner {
 
 			String name = (String) frontmatter.get("name");
 			String description = (String) frontmatter.get("description");
+			List<String> allowedTools = normalizeAllowedTools(frontmatter.get("allowed_tools"));
+			if (allowedTools.isEmpty()) {
+				allowedTools = normalizeAllowedTools(frontmatter.get("allowedTools"));
+			}
 
 			if (name == null || name.isEmpty()) {
 				logger.warn("Skill name is missing in {}", skillFile);
@@ -151,7 +156,8 @@ public class SkillScanner {
 					.description(descriptionStr)
 					.skillPath(skillDir.toString())
 					.source(source)
-					.fullContent(fullContent);
+					.fullContent(fullContent)
+					.allowedTools(allowedTools);
 
 			return builder.build();
 
@@ -251,5 +257,31 @@ public class SkillScanner {
 		}
 
 		return content.substring(endIndex + 3).trim();
+	}
+
+	private List<String> normalizeAllowedTools(Object allowedToolsValue) {
+		if (allowedToolsValue == null) {
+			return List.of();
+		}
+		List<String> normalized = new ArrayList<>();
+		if (allowedToolsValue instanceof String stringValue) {
+			String trimmed = stringValue.trim();
+			if (!trimmed.isEmpty()) {
+				normalized.add(trimmed);
+			}
+			return List.copyOf(normalized);
+		}
+		if (allowedToolsValue instanceof Collection<?> values) {
+			for (Object value : values) {
+				if (value == null) {
+					continue;
+				}
+				String trimmed = value.toString().trim();
+				if (!trimmed.isEmpty()) {
+					normalized.add(trimmed);
+				}
+			}
+		}
+		return List.copyOf(normalized);
 	}
 }
