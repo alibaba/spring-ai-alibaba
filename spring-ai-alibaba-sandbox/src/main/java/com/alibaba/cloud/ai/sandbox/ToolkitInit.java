@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.sandbox.tools.base.SaaBaseShellRunner;
 import com.alibaba.cloud.ai.sandbox.tools.browser.*;
 import com.alibaba.cloud.ai.sandbox.tools.fs.*;
 import com.alibaba.cloud.ai.sandbox.tools.mcp.SaaMCPTool;
+import com.alibaba.cloud.ai.sandbox.tools.web.SaaWebFetcher;
 import io.agentscope.runtime.sandbox.box.Sandbox;
 import io.agentscope.runtime.sandbox.manager.SandboxService;
 import io.agentscope.runtime.sandbox.tools.MCPTool;
@@ -42,6 +43,7 @@ public class ToolkitInit {
         return List.of(
                 RunPythonCodeTool(sandbox),
                 RunShellCommandTool(sandbox),
+                WebFetchTool(sandbox),
                 ReadFileTool(sandbox),
                 ReadMultipleFilesTool(sandbox),
                 WriteFileTool(sandbox),
@@ -90,6 +92,12 @@ public class ToolkitInit {
         SaaBaseShellRunner saaBaseShellRunner = new SaaBaseShellRunner();
         saaBaseShellRunner.setSandbox(sandbox);
         return saaBaseShellRunner.buildTool();
+    }
+
+    public static ToolCallback WebFetchTool(Sandbox sandbox) {
+        SaaWebFetcher saaWebFetcher = new SaaWebFetcher();
+        saaWebFetcher.setSandbox(sandbox);
+        return saaWebFetcher.buildTool();
     }
 
     // Browser tools
