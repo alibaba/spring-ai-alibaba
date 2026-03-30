@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.studio.core.base.service.impl;
 
+import com.alibaba.cloud.ai.studio.core.rag.KnowledgeBaseService;
+import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.KnowledgeBase;
 import com.alibaba.cloud.ai.studio.runtime.exception.BizException;
 import com.alibaba.cloud.ai.studio.runtime.enums.AppType;
 import com.alibaba.cloud.ai.studio.runtime.enums.ErrorCode;
@@ -64,6 +66,9 @@ public class AgentServiceImpl implements AgentService {
 	/** Service for managing application configurations */
 	private final AppService appService;
 
+	/** Service for managing knowledge base operations */
+	private final KnowledgeBaseService knowledgeBaseService;
+
 	/** Common configuration settings */
 	private final CommonConfig commonConfig;
 
@@ -73,10 +78,11 @@ public class AgentServiceImpl implements AgentService {
 	/** Executor for workflow agent type */
 	private final AgentExecutor workflowAgentExecutor;
 
-	public AgentServiceImpl(AppService appService, CommonConfig commonConfig,
+	public AgentServiceImpl(AppService appService, CommonConfig commonConfig,KnowledgeBaseService knowledgeBaseService,
 			@Qualifier("basicAgentExecutor") AgentExecutor basicAgentExecutor,
 			@Qualifier("workflowAgentExecutor") AgentExecutor workflowAgentExecutor) {
 		this.appService = appService;
+		this.knowledgeBaseService = knowledgeBaseService;
 		this.commonConfig = commonConfig;
 		this.workflowAgentExecutor = workflowAgentExecutor;
 		this.basicAgentExecutor = basicAgentExecutor;
@@ -177,6 +183,17 @@ public class AgentServiceImpl implements AgentService {
 
 			context.setAppType(app.getType());
 			context.setConfig(JsonUtils.fromJson(configStr, AgentConfig.class));
+
+			// set file search config
+			if(!CollectionUtils.isEmpty(context.getConfig().getFileSearch().getKbIds())) {
+				for (String kbId : context.getConfig().getFileSearch().getKbIds()) {
+					KnowledgeBase kb = knowledgeBaseService.getKnowledgeBase(kbId);
+					Integer topK = kb.getSearchConfig().getTopK();
+					Float similarityThreshold = kb.getSearchConfig().getSimilarityThreshold();
+					context.getConfig().getFileSearch().setTopK(topK);
+					context.getConfig().getFileSearch().setSimilarityThreshold(similarityThreshold);
+				}
+			}
 
 			boolean memoryEnabled = memoryEnabled(context, request);
 			context.setMemoryEnabled(memoryEnabled);
