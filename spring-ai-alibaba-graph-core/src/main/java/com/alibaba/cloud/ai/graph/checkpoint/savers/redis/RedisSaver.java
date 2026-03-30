@@ -42,6 +42,8 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -54,6 +56,8 @@ import static java.util.Objects.requireNonNull;
  */
 public class RedisSaver implements BaseCheckpointSaver {
 
+	private static final Logger log = LoggerFactory.getLogger(RedisSaver.class);
+
 	// Redis key prefixes
 	private static final String CHECKPOINT_PREFIX = "graph:checkpoint:content:";
 	private static final String THREAD_META_PREFIX = "graph:thread:meta:";
@@ -63,6 +67,25 @@ public class RedisSaver implements BaseCheckpointSaver {
 	private static final String FIELD_THREAD_ID = "thread_id";
 	private static final String FIELD_IS_RELEASED = "is_released";
 	private static final String FIELD_THREAD_NAME = "thread_name";
+
+	/**
+	 * Lease time for read lock operations (e.g., list, get).
+	 * Specifying leaseTime disables Redisson's lock watchdog, which avoids
+	 * the "EVAL command keys must in same slot" error in Redis Cluster.
+	 * NOTE: Once leaseTime expires, the lock is auto-released regardless of whether the business logic has completed.
+	 * Must be set large enough to cover the worst-case execution time.
+	 */
+	private static final long READ_LOCK_LEASE_TIME_MS = 10000;
+
+	/**
+	 * Lease time for write lock operations (e.g., put, release).
+	 * Specifying leaseTime disables Redisson's lock watchdog, which avoids
+	 * the "EVAL command keys must in same slot" error in Redis Cluster.
+	 * NOTE: Once leaseTime expires, the lock is auto-released regardless of whether the business logic has completed.
+	 * Must be set large enough to cover the worst-case execution time.
+	 */
+	private static final long WRITE_LOCK_LEASE_TIME_MS = 30000;
+
 	private final Serializer<Checkpoint> checkpointSerializer;
 	private RedissonClient redisson;
 
@@ -182,11 +205,12 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 		String threadName = threadNameOpt.get();
 		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
-		boolean tryLock = false;
+		boolean lockAcquired = false;
 		try {
-			// 500ms timeout for read operations (list)
-			tryLock = lock.tryLock(500, TimeUnit.MILLISECONDS);
-			if (!tryLock) {
+			// Specify leaseTime to disable Redisson lock watchdog, avoiding Redis Cluster cross-slot EVAL errors
+			lockAcquired = lock.tryLock(500, READ_LOCK_LEASE_TIME_MS, TimeUnit.MILLISECONDS);
+			if (!lockAcquired) {
+				log.warn("RedisSaver list failed to acquire lock due to timeout, threadName={}", threadName);
 				return List.of();
 			}
 
@@ -209,6 +233,10 @@ public class RedisSaver implements BaseCheckpointSaver {
 			throw new RuntimeException("Failed to deserialize checkpoints", e);
 		}
 		finally {
+			if (lockAcquired && !lock.isHeldByCurrentThread()) {
+				log.error("RedisSaver list lock auto-released due to leaseTime expiry, concurrent read risk exists, threadName={}, leaseTimeMs={}",
+						threadName, READ_LOCK_LEASE_TIME_MS);
+			}
 			if (lock.isHeldByCurrentThread()) {
 				lock.unlock();
 			}
@@ -224,11 +252,12 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 		String threadName = threadNameOpt.get();
 		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
-		boolean tryLock = false;
+		boolean lockAcquired = false;
 		try {
-			// 500ms timeout for read operations (get)
-			tryLock = lock.tryLock(500, TimeUnit.MILLISECONDS);
-			if (!tryLock) {
+			// Specify leaseTime to disable Redisson lock watchdog, avoiding Redis Cluster cross-slot EVAL errors
+			lockAcquired = lock.tryLock(500, READ_LOCK_LEASE_TIME_MS, TimeUnit.MILLISECONDS);
+			if (!lockAcquired) {
+				log.warn("RedisSaver get failed to acquire lock due to timeout, threadName={}", threadName);
 				return Optional.empty();
 			}
 
@@ -259,6 +288,10 @@ public class RedisSaver implements BaseCheckpointSaver {
 			throw new RuntimeException("Failed to deserialize checkpoints", e);
 		}
 		finally {
+			if (lockAcquired && !lock.isHeldByCurrentThread()) {
+				log.error("RedisSaver get lock auto-released due to leaseTime expiry, concurrent read risk exists, threadName={}, leaseTimeMs={}",
+						threadName, READ_LOCK_LEASE_TIME_MS);
+			}
 			if (lock.isHeldByCurrentThread()) {
 				lock.unlock();
 			}
@@ -274,11 +307,12 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 		String threadName = threadNameOpt.get();
 		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
-		boolean tryLock = false;
+		boolean lockAcquired = false;
 		try {
-			// 3 seconds timeout for write operations (put) - longer timeout for concurrent scenarios
-			tryLock = lock.tryLock(3, TimeUnit.SECONDS);
-			if (!tryLock) {
+			// Specify leaseTime to disable Redisson lock watchdog, avoiding Redis Cluster cross-slot EVAL errors
+			lockAcquired = lock.tryLock(3000, WRITE_LOCK_LEASE_TIME_MS, TimeUnit.MILLISECONDS);
+			if (!lockAcquired) {
+				log.warn("RedisSaver put failed to acquire lock due to timeout, threadName={}", threadName);
 				throw new RuntimeException("Failed to acquire lock for thread: " + threadName);
 			}
 
@@ -316,6 +350,10 @@ public class RedisSaver implements BaseCheckpointSaver {
 			throw new RuntimeException("Failed to serialize/deserialize checkpoints", e);
 		}
 		finally {
+			if (lockAcquired && !lock.isHeldByCurrentThread()) {
+				log.error("RedisSaver put lock auto-released due to leaseTime expiry, concurrent write risk may cause data inconsistency, threadName={}, leaseTimeMs={}",
+						threadName, WRITE_LOCK_LEASE_TIME_MS);
+			}
 			if (lock.isHeldByCurrentThread()) {
 				lock.unlock();
 			}
@@ -331,11 +369,12 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 		String threadName = threadNameOpt.get();
 		RLock lock = redisson.getLock(LOCK_PREFIX + threadName);
-		boolean tryLock = false;
+		boolean lockAcquired = false;
 		try {
-			// 3 seconds timeout for write operations (release) - longer timeout for concurrent scenarios
-			tryLock = lock.tryLock(3, TimeUnit.SECONDS);
-			if (!tryLock) {
+			// Specify leaseTime to disable Redisson lock watchdog, avoiding Redis Cluster cross-slot EVAL errors
+			lockAcquired = lock.tryLock(3000, WRITE_LOCK_LEASE_TIME_MS, TimeUnit.MILLISECONDS);
+			if (!lockAcquired) {
+				log.warn("RedisSaver release failed to acquire lock due to timeout, threadName={}", threadName);
 				throw new RuntimeException("Failed to acquire lock for thread: " + threadName);
 			}
 
@@ -373,6 +412,10 @@ public class RedisSaver implements BaseCheckpointSaver {
 			throw new RuntimeException("Failed to deserialize checkpoints", e);
 		}
 		finally {
+			if (lockAcquired && !lock.isHeldByCurrentThread()) {
+				log.error("RedisSaver release lock auto-released due to leaseTime expiry, concurrent write risk may cause data inconsistency, threadName={}, leaseTimeMs={}",
+						threadName, WRITE_LOCK_LEASE_TIME_MS);
+			}
 			if (lock.isHeldByCurrentThread()) {
 				lock.unlock();
 			}
