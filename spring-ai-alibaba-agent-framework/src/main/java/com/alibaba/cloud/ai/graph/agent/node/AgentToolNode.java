@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.graph.agent.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.ToolCallGuardConstants;
+import com.alibaba.cloud.ai.graph.agent.hook.toolexecutionfailure.ToolExecutionFailureGuardConstants;
 import com.alibaba.cloud.ai.graph.agent.hook.unknowntool.UnknownToolGuardConstants;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallExecutionContext;
@@ -575,7 +577,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("error", true);
 		metadata.put("errorMessage", errorMessage);
-		metadata.put(UnknownToolGuardConstants.ERROR_TYPE_METADATA_KEY,
+		metadata.put(ToolCallGuardConstants.ERROR_TYPE_METADATA_KEY,
 				UnknownToolGuardConstants.UNKNOWN_TOOL_ERROR_TYPE);
 		metadata.put(UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, List.of(request.getToolName()));
 		metadata.put(UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, availableToolNames);
@@ -592,6 +594,23 @@ public class AgentToolNode implements NodeActionWithConfig {
 		String availableTools = availableToolNames.isEmpty() ? "[]" : availableToolNames.toString();
 		return "Unknown tool '" + requestedToolName + "'. Available tools: " + availableTools
 				+ ". Please choose an existing tool or answer directly without calling a tool.";
+	}
+
+	private ToolCallResponse createToolExecutionFailureResponse(String toolCallId, String toolName,
+			String errorMessage, String failureType) {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("error", true);
+		metadata.put("errorMessage", errorMessage);
+		metadata.put(ToolCallGuardConstants.ERROR_TYPE_METADATA_KEY,
+				ToolExecutionFailureGuardConstants.TOOL_EXECUTION_FAILURE_ERROR_TYPE);
+		metadata.put(ToolExecutionFailureGuardConstants.FAILURE_TYPE_METADATA_KEY, failureType);
+		return ToolCallResponse.builder()
+				.toolCallId(toolCallId)
+				.toolName(toolName)
+				.content("Error: " + errorMessage)
+				.status("error")
+				.metadata(metadata)
+				.build();
 	}
 
 	private List<String> collectAvailableToolNames(RunnableConfig config) {
@@ -785,7 +804,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 				}
 				extraStateFromToolCall.clear();
 				logger.warn("Async tool {} timed out, discarding any state updates", request.getToolName());
-				return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(cause));
+				return createToolExecutionFailureResponse(request.getToolCallId(), request.getToolName(),
+						extractErrorMessage(cause), ToolExecutionFailureGuardConstants.TIMEOUT_FAILURE_TYPE);
 			}
 			else if (cause instanceof ToolExecutionException toolExecutionException) {
 				logger.error("Async tool {} execution failed, handling with processor: {}", request.getToolName(),
@@ -795,16 +815,19 @@ public class AgentToolNode implements NodeActionWithConfig {
 			}
 			else {
 				logger.error("Async tool {} execution failed: {}", request.getToolName(), cause.getMessage(), cause);
-				return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(cause));
+				return createToolExecutionFailureResponse(request.getToolCallId(), request.getToolName(),
+						extractErrorMessage(cause), ToolExecutionFailureGuardConstants.RUNTIME_EXCEPTION_FAILURE_TYPE);
 			}
 		}
 		catch (CancellationException e) {
 			logger.warn("Async tool {} execution was cancelled", request.getToolName(), e);
-			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(e));
+			return createToolExecutionFailureResponse(request.getToolCallId(), request.getToolName(),
+					extractErrorMessage(e), ToolExecutionFailureGuardConstants.RUNTIME_EXCEPTION_FAILURE_TYPE);
 		}
 		catch (Exception e) {
 			logger.error("Async tool {} execution failed: {}", request.getToolName(), e.getMessage(), e);
-			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(e));
+			return createToolExecutionFailureResponse(request.getToolCallId(), request.getToolName(),
+					extractErrorMessage(e), ToolExecutionFailureGuardConstants.RUNTIME_EXCEPTION_FAILURE_TYPE);
 		}
 	}
 
@@ -837,7 +860,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 		}
 		catch (Exception e) {
 			logger.error("Tool {} execution failed: {}", request.getToolName(), e.getMessage(), e);
-			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), e);
+			return createToolExecutionFailureResponse(request.getToolCallId(), request.getToolName(),
+					extractErrorMessage(e), ToolExecutionFailureGuardConstants.RUNTIME_EXCEPTION_FAILURE_TYPE);
 		}
 	}
 
@@ -899,29 +923,49 @@ public class AgentToolNode implements NodeActionWithConfig {
 		if (returnDirect != null && returnDirect) {
 			metadata.put(FINISH_REASON_METADATA_KEY, FINISH_REASON);
 		}
+		// Aggregate unknown tool metadata
 		List<ToolCallResponse> unknownToolResponses = responses.stream()
 				.filter(this::isUnknownToolResponse)
 				.toList();
-		if (unknownToolResponses.isEmpty()) {
-			return metadata;
+		if (!unknownToolResponses.isEmpty()) {
+			List<String> requestedToolNames = unknownToolResponses.stream()
+					.flatMap(response -> getMetadataStringList(response.getMetadata(),
+							UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY).stream())
+					.distinct()
+					.toList();
+			List<String> availableToolNames = unknownToolResponses.stream()
+					.flatMap(response -> getMetadataStringList(response.getMetadata(),
+							UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY).stream())
+					.distinct()
+					.sorted()
+					.toList();
+			metadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY, true);
+			metadata.put(UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, requestedToolNames);
+			metadata.put(UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, availableToolNames);
+			metadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY, unknownToolResponses.size());
+			metadata.put(UnknownToolGuardConstants.ALL_TOOL_CALLS_UNKNOWN_METADATA_KEY,
+					unknownToolResponses.size() == responses.size());
 		}
-		List<String> requestedToolNames = unknownToolResponses.stream()
-				.flatMap(response -> getMetadataStringList(response.getMetadata(),
-						UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY).stream())
-				.distinct()
+		// Aggregate tool execution failure metadata
+		List<ToolCallResponse> executionFailureResponses = responses.stream()
+				.filter(this::isToolExecutionFailureResponse)
 				.toList();
-		List<String> availableToolNames = unknownToolResponses.stream()
-				.flatMap(response -> getMetadataStringList(response.getMetadata(),
-						UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY).stream())
-				.distinct()
-				.sorted()
-				.toList();
-		metadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY, true);
-		metadata.put(UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, requestedToolNames);
-		metadata.put(UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, availableToolNames);
-		metadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY, unknownToolResponses.size());
-		metadata.put(UnknownToolGuardConstants.ALL_TOOL_CALLS_UNKNOWN_METADATA_KEY,
-				unknownToolResponses.size() == responses.size());
+		if (!executionFailureResponses.isEmpty()) {
+			List<String> failedToolNames = executionFailureResponses.stream()
+					.map(ToolCallResponse::getToolName)
+					.distinct()
+					.toList();
+			List<String> failureTypes = executionFailureResponses.stream()
+					.map(response -> (String) response.getMetadata()
+							.get(ToolExecutionFailureGuardConstants.FAILURE_TYPE_METADATA_KEY))
+					.filter(Objects::nonNull)
+					.distinct()
+					.toList();
+			metadata.put(ToolExecutionFailureGuardConstants.FAILED_TOOL_NAMES_METADATA_KEY, failedToolNames);
+			metadata.put(ToolExecutionFailureGuardConstants.FAILURE_TYPES_METADATA_KEY, failureTypes);
+			metadata.put(ToolExecutionFailureGuardConstants.ALL_TOOL_CALLS_FAILED_METADATA_KEY,
+					executionFailureResponses.size() == responses.size());
+		}
 		return metadata;
 	}
 
@@ -931,31 +975,57 @@ public class AgentToolNode implements NodeActionWithConfig {
 		if (returnDirect != null && returnDirect) {
 			mergedMetadata.put(FINISH_REASON_METADATA_KEY, FINISH_REASON);
 		}
+		// Merge unknown tool metadata
 		boolean hasUnknownTool = getBooleanMetadata(existingMetadata,
 				UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY)
 				|| getBooleanMetadata(newMetadata, UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY);
-		if (!hasUnknownTool) {
-			return mergedMetadata;
+		if (hasUnknownTool) {
+			List<String> requestedToolNames = mergeStringListMetadata(existingMetadata, newMetadata,
+					UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, false);
+			List<String> availableToolNames = mergeStringListMetadata(existingMetadata, newMetadata,
+					UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, true);
+			int unknownToolCount = getIntMetadata(existingMetadata,
+					UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY)
+					+ getIntMetadata(newMetadata, UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY);
+			mergedMetadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY, true);
+			mergedMetadata.put(UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, requestedToolNames);
+			mergedMetadata.put(UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, availableToolNames);
+			mergedMetadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY, unknownToolCount);
+			mergedMetadata.put(UnknownToolGuardConstants.ALL_TOOL_CALLS_UNKNOWN_METADATA_KEY,
+					unknownToolCount == totalResponseCount);
 		}
-		List<String> requestedToolNames = mergeStringListMetadata(existingMetadata, newMetadata,
-				UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, false);
-		List<String> availableToolNames = mergeStringListMetadata(existingMetadata, newMetadata,
-				UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, true);
-		int unknownToolCount = getIntMetadata(existingMetadata,
-				UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY)
-				+ getIntMetadata(newMetadata, UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY);
-		mergedMetadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY, true);
-		mergedMetadata.put(UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, requestedToolNames);
-		mergedMetadata.put(UnknownToolGuardConstants.AVAILABLE_TOOL_NAMES_METADATA_KEY, availableToolNames);
-		mergedMetadata.put(UnknownToolGuardConstants.UNKNOWN_TOOL_COUNT_METADATA_KEY, unknownToolCount);
-		mergedMetadata.put(UnknownToolGuardConstants.ALL_TOOL_CALLS_UNKNOWN_METADATA_KEY,
-				unknownToolCount == totalResponseCount);
+		// Merge tool execution failure metadata
+		boolean hasExecutionFailure = hasMetadataList(existingMetadata,
+				ToolExecutionFailureGuardConstants.FAILED_TOOL_NAMES_METADATA_KEY)
+				|| hasMetadataList(newMetadata, ToolExecutionFailureGuardConstants.FAILED_TOOL_NAMES_METADATA_KEY);
+		if (hasExecutionFailure) {
+			List<String> failedToolNames = mergeStringListMetadata(existingMetadata, newMetadata,
+					ToolExecutionFailureGuardConstants.FAILED_TOOL_NAMES_METADATA_KEY, false);
+			List<String> failureTypes = mergeStringListMetadata(existingMetadata, newMetadata,
+					ToolExecutionFailureGuardConstants.FAILURE_TYPES_METADATA_KEY, false);
+			boolean allFailed = getBooleanMetadata(existingMetadata,
+					ToolExecutionFailureGuardConstants.ALL_TOOL_CALLS_FAILED_METADATA_KEY)
+					&& getBooleanMetadata(newMetadata,
+							ToolExecutionFailureGuardConstants.ALL_TOOL_CALLS_FAILED_METADATA_KEY);
+			mergedMetadata.put(ToolExecutionFailureGuardConstants.FAILED_TOOL_NAMES_METADATA_KEY, failedToolNames);
+			mergedMetadata.put(ToolExecutionFailureGuardConstants.FAILURE_TYPES_METADATA_KEY, failureTypes);
+			mergedMetadata.put(ToolExecutionFailureGuardConstants.ALL_TOOL_CALLS_FAILED_METADATA_KEY, allFailed);
+		}
 		return mergedMetadata;
 	}
 
 	private boolean isUnknownToolResponse(ToolCallResponse response) {
 		return UnknownToolGuardConstants.UNKNOWN_TOOL_ERROR_TYPE.equals(
-				response.getMetadata().get(UnknownToolGuardConstants.ERROR_TYPE_METADATA_KEY));
+				response.getMetadata().get(ToolCallGuardConstants.ERROR_TYPE_METADATA_KEY));
+	}
+
+	private boolean isToolExecutionFailureResponse(ToolCallResponse response) {
+		return ToolExecutionFailureGuardConstants.TOOL_EXECUTION_FAILURE_ERROR_TYPE.equals(
+				response.getMetadata().get(ToolCallGuardConstants.ERROR_TYPE_METADATA_KEY));
+	}
+
+	private boolean hasMetadataList(Map<String, Object> metadata, String key) {
+		return metadata.get(key) instanceof List<?> list && !list.isEmpty();
 	}
 
 	private boolean getBooleanMetadata(Map<String, Object> metadata, String key) {
@@ -977,7 +1047,6 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return List.copyOf(values);
 	}
 
-	@SuppressWarnings("unchecked")
 	private List<String> getMetadataStringList(Map<String, Object> metadata, String key) {
 		Object value = metadata.get(key);
 		if (value instanceof List<?> list) {

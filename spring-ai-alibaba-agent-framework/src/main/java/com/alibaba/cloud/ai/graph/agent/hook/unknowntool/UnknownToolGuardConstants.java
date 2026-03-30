@@ -28,11 +28,6 @@ public final class UnknownToolGuardConstants {
 	public static final String UNKNOWN_TOOL_ERROR_TYPE = "unknown_tool";
 
 	/**
-	 * Generic metadata key used by tool responses to expose the concrete error type.
-	 */
-	public static final String ERROR_TYPE_METADATA_KEY = "errorType";
-
-	/**
 	 * Marks that the current {@code ToolResponseMessage} contains at least one unknown-tool
 	 * response entry.
 	 */

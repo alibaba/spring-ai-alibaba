@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.toolretry;
 
+import com.alibaba.cloud.ai.graph.agent.hook.ToolCallGuardConstants;
 import com.alibaba.cloud.ai.graph.agent.hook.toolexecutionfailure.ToolExecutionFailureGuardConstants;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
@@ -160,7 +161,7 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 		if (response == null || !response.isError()) {
 			return false;
 		}
-		Object errorType = response.getMetadata().get(ToolExecutionFailureGuardConstants.ERROR_TYPE_METADATA_KEY);
+		Object errorType = response.getMetadata().get(ToolCallGuardConstants.ERROR_TYPE_METADATA_KEY);
 		return ToolExecutionFailureGuardConstants.TOOL_EXECUTION_FAILURE_ERROR_TYPE.equals(errorType);
 	}
 

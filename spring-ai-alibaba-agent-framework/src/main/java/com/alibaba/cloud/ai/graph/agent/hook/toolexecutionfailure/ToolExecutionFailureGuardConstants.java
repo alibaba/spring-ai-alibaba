@@ -22,11 +22,6 @@ package com.alibaba.cloud.ai.graph.agent.hook.toolexecutionfailure;
 public final class ToolExecutionFailureGuardConstants {
 
 	/**
-	 * Generic metadata key used by tool responses to expose the concrete error type.
-	 */
-	public static final String ERROR_TYPE_METADATA_KEY = "errorType";
-
-	/**
 	 * Error type value attached to a tool response when the tool exists but its execution
 	 * fails.
 	 */

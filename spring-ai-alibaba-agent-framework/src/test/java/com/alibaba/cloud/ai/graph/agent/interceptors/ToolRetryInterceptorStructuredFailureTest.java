@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptors;
 
+import com.alibaba.cloud.ai.graph.agent.hook.ToolCallGuardConstants;
 import com.alibaba.cloud.ai.graph.agent.hook.toolexecutionfailure.ToolExecutionFailureGuardConstants;
 import com.alibaba.cloud.ai.graph.agent.hook.unknowntool.UnknownToolGuardConstants;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
@@ -58,7 +59,7 @@ class ToolRetryInterceptorStructuredFailureTest {
 						.metadata(Map.of(
 								"error", true,
 								"errorMessage", "boom",
-								ToolExecutionFailureGuardConstants.ERROR_TYPE_METADATA_KEY,
+								ToolCallGuardConstants.ERROR_TYPE_METADATA_KEY,
 								ToolExecutionFailureGuardConstants.TOOL_EXECUTION_FAILURE_ERROR_TYPE,
 								ToolExecutionFailureGuardConstants.FAILURE_TYPE_METADATA_KEY,
 								ToolExecutionFailureGuardConstants.RUNTIME_EXCEPTION_FAILURE_TYPE))
@@ -93,7 +94,7 @@ class ToolRetryInterceptorStructuredFailureTest {
 					.metadata(Map.of(
 							"error", true,
 							"errorMessage", "unknown",
-							UnknownToolGuardConstants.ERROR_TYPE_METADATA_KEY,
+							ToolCallGuardConstants.ERROR_TYPE_METADATA_KEY,
 							UnknownToolGuardConstants.UNKNOWN_TOOL_ERROR_TYPE))
 					.build();
 		};
@@ -123,7 +124,7 @@ class ToolRetryInterceptorStructuredFailureTest {
 					.metadata(Map.of(
 							"error", true,
 							"errorMessage", "boom",
-							ToolExecutionFailureGuardConstants.ERROR_TYPE_METADATA_KEY,
+							ToolCallGuardConstants.ERROR_TYPE_METADATA_KEY,
 							ToolExecutionFailureGuardConstants.TOOL_EXECUTION_FAILURE_ERROR_TYPE,
 							ToolExecutionFailureGuardConstants.FAILURE_TYPE_METADATA_KEY,
 							ToolExecutionFailureGuardConstants.RUNTIME_EXCEPTION_FAILURE_TYPE))
