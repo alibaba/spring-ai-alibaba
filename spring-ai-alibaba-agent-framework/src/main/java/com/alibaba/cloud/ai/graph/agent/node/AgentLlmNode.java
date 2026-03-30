@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.DefaultChatClient;
@@ -449,7 +450,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<ToolCallback> toolCallbacks = new ArrayList<>();
 		if (modelRequest == null) {
 			toolCallbacks.addAll(this.toolCallbacks);
-			return toolCallbacks;
+			return ToolCallbackUtils.deduplicateByName(toolCallbacks);
 		}
 
 		if (modelRequest.getOptions() != null && modelRequest.getOptions().getToolCallbacks() != null) {
@@ -463,11 +464,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		List<String> requestedTools = modelRequest.getTools();
 		if (requestedTools == null || requestedTools.isEmpty()) {
-			return toolCallbacks;
+			return ToolCallbackUtils.deduplicateByName(toolCallbacks);
 		}
-		return new ArrayList<>(toolCallbacks.stream()
+		return ToolCallbackUtils.deduplicateByName(new ArrayList<>(toolCallbacks.stream()
 				.filter(callback -> requestedTools.contains(callback.getToolDefinition().name()))
-				.toList());
+				.toList()));
 	}
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest, RunnableConfig config) {
@@ -476,10 +477,14 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		// NOTICE! If both tools(ToolSelectionInterceptor) and options are customized in ModelRequest, tools will override toolcall setting in options.
 		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest);
 
-		if (!CollectionUtils.isEmpty(modelRequest.getDynamicToolCallbacks())) {
-			filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
+		List<ToolCallback> dynamicToolCallbacks = ToolCallbackUtils.deduplicateByName(modelRequest.getDynamicToolCallbacks());
+		if (!CollectionUtils.isEmpty(dynamicToolCallbacks)) {
+			filteredToolCallbacks = ToolCallbackUtils.deduplicateByName(filteredToolCallbacks, dynamicToolCallbacks);
 			// FIXME, use RunnableConfig to pass dynamic tool callbacks to tool node via config context (internal use)
-			config.context().put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY, modelRequest.getDynamicToolCallbacks());
+			config.context().put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY, dynamicToolCallbacks);
+		}
+		else {
+			config.context().remove(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY);
 		}
 
 		var promptSpec = this.chatClient.prompt()
