@@ -91,6 +91,11 @@ public abstract class Builder {
 	protected CompileConfig compileConfig;
 
 	protected List<Hook> hooks = new ArrayList<>();
+
+	protected boolean disableDefaultUnknownToolGuard = false;
+
+	protected boolean disableDefaultToolExecutionFailureGuard = false;
+
 	protected List<Interceptor> interceptors = new ArrayList<>();
 	protected List<ModelInterceptor> modelInterceptors = new ArrayList<>();
 	protected List<ToolInterceptor> toolInterceptors = new ArrayList<>();
@@ -288,6 +293,40 @@ public abstract class Builder {
 		Assert.notNull(hooks, "hooks cannot be null");
 		Assert.noNullElements(hooks, "hooks cannot contain null elements");
 		this.hooks.addAll(List.of(hooks));
+		return this;
+	}
+
+	/**
+	 * Disables the default {@code UnknownToolGuardHook} that is automatically registered
+	 * when tools are present. Use this when you have a custom unknown-tool handling strategy
+	 * or want to rely solely on {@code maxIterations} for loop control.
+	 * @return this builder for chaining
+	 */
+	public Builder disableDefaultUnknownToolGuard() {
+		this.disableDefaultUnknownToolGuard = true;
+		return this;
+	}
+
+	/**
+	 * Disables the default {@code ToolExecutionFailureGuardHook} that is automatically
+	 * registered when tools are present. Use this when you have a custom failure handling
+	 * strategy or want to rely solely on {@code maxIterations} for loop control.
+	 * @return this builder for chaining
+	 */
+	public Builder disableDefaultToolExecutionFailureGuard() {
+		this.disableDefaultToolExecutionFailureGuard = true;
+		return this;
+	}
+
+	/**
+	 * Disables all default guard hooks ({@code UnknownToolGuardHook} and
+	 * {@code ToolExecutionFailureGuardHook}). Equivalent to calling both
+	 * {@link #disableDefaultUnknownToolGuard()} and {@link #disableDefaultToolExecutionFailureGuard()}.
+	 * @return this builder for chaining
+	 */
+	public Builder disableDefaultGuards() {
+		this.disableDefaultUnknownToolGuard = true;
+		this.disableDefaultToolExecutionFailureGuard = true;
 		return this;
 	}
 

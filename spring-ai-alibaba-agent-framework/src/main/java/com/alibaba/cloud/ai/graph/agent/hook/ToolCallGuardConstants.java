@@ -34,6 +34,15 @@ public final class ToolCallGuardConstants {
 	 */
 	public static final String ERROR_TYPE_METADATA_KEY = "errorType";
 
+	/**
+	 * Indicates whether every tool call in the current assistant turn resulted in an
+	 * error of any kind (unknown tool, execution failure, or a mix of both).
+	 * <p>This flag is set by {@code AgentToolNode} so that guard hooks can detect
+	 * mixed-failure scenarios where neither {@code allToolCallsUnknown} nor
+	 * {@code allToolCallsFailed} is {@code true} on its own.</p>
+	 */
+	public static final String ALL_TOOL_CALLS_ERRORED_METADATA_KEY = "allToolCallsErrored";
+
 	private ToolCallGuardConstants() {
 	}
 

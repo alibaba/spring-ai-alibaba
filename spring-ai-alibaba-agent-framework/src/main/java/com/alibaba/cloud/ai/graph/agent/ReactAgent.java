@@ -125,7 +125,7 @@ public class ReactAgent extends BaseAgent {
 		this.toolNode = toolNode;
 		this.hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
 		this.compileConfig = compileConfig;
-		this.hooks = buildEffectiveHooks(builder.hooks);
+		this.hooks = buildEffectiveHooks(builder.hooks, builder);
 		this.modelInterceptors = builder.modelInterceptors;
 		this.toolInterceptors = builder.toolInterceptors;
 		this.includeContents = builder.includeContents;
@@ -391,13 +391,18 @@ public class ReactAgent extends BaseAgent {
 		return graph;
 	}
 
-	private List<Hook> buildEffectiveHooks(List<Hook> configuredHooks) {
+	private List<Hook> buildEffectiveHooks(List<Hook> configuredHooks, Builder builder) {
 		List<Hook> effectiveHooks = new ArrayList<>();
 		effectiveHooks.add(InstructionAgentHook.create());
-		if (hasTools && (configuredHooks == null || configuredHooks.stream().noneMatch(UnknownToolGuardHook.class::isInstance))) {
+		// UnknownToolGuardHook is registered regardless of whether tools are configured,
+		// because models can hallucinate tool calls even when no tools are available.
+		// e.g, if the SKILL.md description requires calling a tool, the model may have a certain probability of calling the wrong tool.
+		if (!builder.disableDefaultUnknownToolGuard
+				&& (configuredHooks == null || configuredHooks.stream().noneMatch(UnknownToolGuardHook.class::isInstance))) {
 			effectiveHooks.add(UnknownToolGuardHook.create());
 		}
-		if (hasTools && (configuredHooks == null || configuredHooks.stream().noneMatch(ToolExecutionFailureGuardHook.class::isInstance))) {
+		if (hasTools && !builder.disableDefaultToolExecutionFailureGuard
+				&& (configuredHooks == null || configuredHooks.stream().noneMatch(ToolExecutionFailureGuardHook.class::isInstance))) {
 			effectiveHooks.add(ToolExecutionFailureGuardHook.create());
 		}
 		if (configuredHooks != null && !configuredHooks.isEmpty()) {

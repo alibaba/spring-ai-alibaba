@@ -966,6 +966,12 @@ public class AgentToolNode implements NodeActionWithConfig {
 			metadata.put(ToolExecutionFailureGuardConstants.ALL_TOOL_CALLS_FAILED_METADATA_KEY,
 					executionFailureResponses.size() == responses.size());
 		}
+		// Compute unified error flag covering mixed failure scenarios
+		int totalErrorCount = unknownToolResponses.size() + executionFailureResponses.size();
+		if (totalErrorCount > 0) {
+			metadata.put(ToolCallGuardConstants.ALL_TOOL_CALLS_ERRORED_METADATA_KEY,
+					totalErrorCount == responses.size());
+		}
 		return metadata;
 	}
 
@@ -1010,6 +1016,14 @@ public class AgentToolNode implements NodeActionWithConfig {
 			mergedMetadata.put(ToolExecutionFailureGuardConstants.FAILED_TOOL_NAMES_METADATA_KEY, failedToolNames);
 			mergedMetadata.put(ToolExecutionFailureGuardConstants.FAILURE_TYPES_METADATA_KEY, failureTypes);
 			mergedMetadata.put(ToolExecutionFailureGuardConstants.ALL_TOOL_CALLS_FAILED_METADATA_KEY, allFailed);
+		}
+		// Compute unified error flag covering mixed failure scenarios
+		boolean allErrored = getBooleanMetadata(existingMetadata,
+				ToolCallGuardConstants.ALL_TOOL_CALLS_ERRORED_METADATA_KEY)
+				&& getBooleanMetadata(newMetadata,
+						ToolCallGuardConstants.ALL_TOOL_CALLS_ERRORED_METADATA_KEY);
+		if (hasUnknownTool || hasExecutionFailure) {
+			mergedMetadata.put(ToolCallGuardConstants.ALL_TOOL_CALLS_ERRORED_METADATA_KEY, allErrored);
 		}
 		return mergedMetadata;
 	}

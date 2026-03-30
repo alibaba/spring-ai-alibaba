@@ -208,7 +208,30 @@ public abstract class AbstractToolCallGuardHook extends MessagesModelHook {
 	}
 
 	private boolean isAllToolCallsFailed(Map<String, Object> metadata) {
-		return metadata.get(getMetadataKeyForAllFailures()) instanceof Boolean value && value;
+		// Check guard-specific flag first (all failures are of this guard's type)
+		if (metadata.get(getMetadataKeyForAllFailures()) instanceof Boolean value && value) {
+			return true;
+		}
+		// Fall back to the unified flag that covers mixed-failure scenarios
+		// e.g. some unknown-tool + some execution-failure in the same batch.
+		// Only activate if this guard's error type is present in the batch.
+		if (metadata.get(ToolCallGuardConstants.ALL_TOOL_CALLS_ERRORED_METADATA_KEY) instanceof Boolean allErrored
+				&& allErrored) {
+			return hasOwnErrorTypePresent(metadata);
+		}
+		return false;
+	}
+
+	/**
+	 * Check whether failures of this guard's specific type are present in the metadata.
+	 * Subclasses can override this if the default metadata key check is insufficient.
+	 * @param metadata the metadata map from the ToolResponseMessage
+	 * @return true if this guard's error type is represented in the response batch
+	 */
+	protected boolean hasOwnErrorTypePresent(Map<String, Object> metadata) {
+		// Default: if the guard-specific "all" flag exists (even as false), there are
+		// failures of this type in the batch
+		return metadata.containsKey(getMetadataKeyForAllFailures());
 	}
 
 	private int getConsecutiveCount(RunnableConfig config) {
