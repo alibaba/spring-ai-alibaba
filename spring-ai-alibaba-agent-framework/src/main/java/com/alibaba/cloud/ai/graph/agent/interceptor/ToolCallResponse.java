@@ -97,6 +97,15 @@ public class ToolCallResponse {
 		return Collections.unmodifiableMap(metadata);
 	}
 
+	public ToolCallResponse withMetadata(Map<String, Object> extraMetadata) {
+		if (extraMetadata == null || extraMetadata.isEmpty()) {
+			return this;
+		}
+		Map<String, Object> merged = new HashMap<>(this.metadata);
+		merged.putAll(extraMetadata);
+		return new ToolCallResponse(this.result, this.toolName, this.toolCallId, this.status, merged);
+	}
+
 	/**
 	 * Checks if this response represents an error.
 	 * @return true if this is an error response
