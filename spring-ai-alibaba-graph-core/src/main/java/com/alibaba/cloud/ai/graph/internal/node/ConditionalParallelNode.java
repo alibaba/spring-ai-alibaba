@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateDeltaHelper;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.internal.edge.EdgeCondition;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
@@ -317,8 +318,13 @@ public class ConditionalParallelNode extends Node {
 						graphFluxList.add(graphFlux);
 					} else {
 						// Regular object - add to merged state
-						Map<String, Object> singleEntryMap = Map.of(entry.getKey(), value);
-						mergedState = OverAllState.updateState(mergedState, singleEntryMap, keyStrategyMap);
+						Map<String, Object> singleEntryMap = new HashMap<>();
+						singleEntryMap.put(entry.getKey(), value);
+						Map<String, Object> normalizedMap = StateDeltaHelper.normalizeWithDeltaStrategies(state.data(),
+								singleEntryMap, keyStrategyMap, false);
+						if (!normalizedMap.isEmpty()) {
+							mergedState = OverAllState.updateState(mergedState, normalizedMap, keyStrategyMap);
+						}
 					}
 				}
 			}
@@ -330,11 +336,8 @@ public class ConditionalParallelNode extends Node {
 				mergedState.put("__parallel_graph_flux__", parallelGraphFlux);
 				return mergedState;
 			} else {
-				// No streaming output, directly merge all results
-				Map<String, Object> initialState = new HashMap<>();
-				return results.stream()
-						.reduce(initialState,
-								(result, actionResult) -> OverAllState.updateState(result, actionResult, keyStrategyMap));
+				// No streaming output, directly return merged regular state accumulated above
+				return mergedState;
 			}
 		}
 
