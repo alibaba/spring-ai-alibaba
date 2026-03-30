@@ -32,9 +32,11 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.contextediting.ContextEditin
 import com.alibaba.cloud.ai.graph.agent.interceptor.todolist.TodoListInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolretry.ToolRetryInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -47,6 +49,7 @@ public class DeepResearchAgent {
 			"In order to complete the objective that the user asks of you, " +
 					"you have access to a number of standard tools.";
 
+	private final ObservationRegistry observationRegistry;
 	private String systemPrompt;
 	private ChatModel chatModel;
 
@@ -66,11 +69,19 @@ public class DeepResearchAgent {
 
 //	private ShellTool shellTool = ShellTool.builder().build();
 
-	public DeepResearchAgent() {
+	public DeepResearchAgent(ObservationRegistry observationRegistry) {
+		this.observationRegistry = observationRegistry;
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
+		if (!StringUtils.hasText(apiKey)) {
+			apiKey = "test-key-for-graph-integration-test";
+		}
 		// Create DashScopeApi instance using the API key from environment variable
-		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
 		// Create DashScope ChatModel instance
-		this.chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
+		this.chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.observationRegistry(observationRegistry)
+				.build();
 
 		this.systemPrompt = researchInstructions + "\n\n" + BASE_AGENT_PROMPT;
 
@@ -145,6 +156,7 @@ public class DeepResearchAgent {
 		return ReactAgent.builder()
 				.name("DeepResearchAgent")
 				.model(chatModel)
+				.observationRegistry(observationRegistry)
 				.tools(toolsFromMcp)
 				.systemPrompt(systemPrompt)
 				.enableLogging(true)
