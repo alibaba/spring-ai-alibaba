@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.skills;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * Metadata for a Claude-style Skill.
@@ -36,6 +37,8 @@ public class SkillMetadata {
 	private String source;
 
 	private String fullContent;
+
+	private List<String> allowedTools = List.of();
 
 	public SkillMetadata() {
 	}
@@ -80,6 +83,14 @@ public class SkillMetadata {
 		return fullContent;
 	}
 
+	public List<String> getAllowedTools() {
+		return allowedTools;
+	}
+
+	public void setAllowedTools(List<String> allowedTools) {
+		this.allowedTools = allowedTools == null ? List.of() : List.copyOf(allowedTools);
+	}
+
 	public String loadFullContent() throws IOException {
 		if (fullContent == null) {
 			Path skillFile = Path.of(skillPath, "SKILL.md");
@@ -113,6 +124,7 @@ public class SkillMetadata {
 				", description='" + description + '\'' +
 				", skillPath='" + skillPath + '\'' +
 				", source='" + source + '\'' +
+				", allowedTools=" + allowedTools +
 				'}';
 	}
 
@@ -144,6 +156,11 @@ public class SkillMetadata {
 			return this;
 		}
 
+		public Builder allowedTools(List<String> allowedTools) {
+			metadata.allowedTools = allowedTools == null ? List.of() : List.copyOf(allowedTools);
+			return this;
+		}
+
 		public SkillMetadata build() {
 			if (metadata.name == null || metadata.name.isEmpty()) {
 				throw new IllegalStateException("Skill name is required");
@@ -153,6 +170,9 @@ public class SkillMetadata {
 			}
 			if (metadata.skillPath == null || metadata.skillPath.isEmpty()) {
 				throw new IllegalStateException("Skill path is required");
+			}
+			if (metadata.allowedTools == null) {
+				metadata.allowedTools = List.of();
 			}
 			return metadata;
 		}
