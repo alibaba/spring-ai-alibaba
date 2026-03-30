@@ -1851,6 +1851,59 @@ public class StateGraphTest {
 	}
 
 	/**
+	 * Tests that addParallelConditionalEdges throws an exception when mapped nodes
+	 * have edges pointing to different convergence targets.
+	 * This validates the fix for inconsistent convergence targets issue.
+	 */
+	@Test
+	public void testAddParallelConditionalEdgesWithInconsistentConvergenceTargets() throws Exception {
+		StateGraph workflow = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			return keyStrategyMap;
+		});
+
+		// Setup nodes: node_a and node_b point to different targets
+		workflow.addNode("start", node_async(state -> Map.of("messages", "start")))
+				.addNode("conditional_node", node_async(state -> Map.of("messages", "processing")))
+				.addNode("node_a", node_async(state -> Map.of("messages", "node_a_result")))
+				.addNode("node_b", node_async(state -> Map.of("messages", "node_b_result")))
+				.addNode("convergence_a", node_async(state -> Map.of("messages", "convergence_a")))
+				.addNode("convergence_b", node_async(state -> Map.of("messages", "convergence_b")))
+				.addNode("end", node_async(state -> Map.of("messages", "end")));
+
+		// Add conditional edges with parallel routing
+		workflow.addParallelConditionalEdges(
+				"conditional_node",
+				AsyncMultiCommandAction.node_async((state, config) ->
+						new MultiCommand(List.of("route_a", "route_b"))
+				),
+				Map.of(
+						"route_a", "node_a",
+						"route_b", "node_b"
+				)
+		);
+
+		// Set up edges such that node_a and node_b point to DIFFERENT targets
+		// This should cause a GraphStateException during compilation
+		workflow.addEdge(START, "start")
+				.addEdge("start", "conditional_node")
+				.addEdge("node_a", "convergence_a")  // Points to convergence_a
+				.addEdge("node_b", "convergence_b")  // Points to convergence_b (different!)
+				.addEdge("convergence_a", "end")
+				.addEdge("convergence_b", "end")
+				.addEdge("end", END);
+
+		// Compilation should throw GraphStateException due to inconsistent convergence targets
+		GraphStateException exception = assertThrows(GraphStateException.class, workflow::compile);
+
+		// Verify the error message mentions the inconsistency
+		assertTrue(exception.getMessage().contains("conditional_node"));
+		assertTrue(exception.getMessage().contains("convergence"));
+		log.info("Expected exception thrown: {}", exception.getMessage());
+	}
+
+	/**
 	 * Used to provide test data for the testWithSubSerialize method
 	 *
 	 * @param name
