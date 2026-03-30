@@ -16,10 +16,6 @@
 
 package com.alibaba.cloud.ai.a2a.autoconfigure.server;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aAgentCardProperties;
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aMultiAgentProperties;
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerProperties;
@@ -37,19 +33,6 @@ import com.alibaba.cloud.ai.a2a.core.server.ServerTypeEnum;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
-
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.util.StringUtils;
-import org.springframework.web.servlet.function.RouterFunction;
-import org.springframework.web.servlet.function.ServerResponse;
-
 import io.a2a.server.agentexecution.AgentExecutor;
 import io.a2a.server.events.InMemoryQueueManager;
 import io.a2a.server.events.QueueManager;
@@ -67,6 +50,21 @@ import io.a2a.spec.AgentCard;
 import io.a2a.spec.AgentInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.servlet.function.RouterFunction;
+import org.springframework.web.servlet.function.ServerResponse;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Auto-configuration for multi-agent A2A server support.
@@ -184,7 +182,7 @@ public class A2aServerMultiAgentAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnBean(AgentRegistry.class)
+	@ConditionalOnClass(AgentRegistry.class)
 	public AgentRegistryService multiAgentRegistryService(List<AgentCard> multiAgentCards,
 			AgentRegistry agentRegistry) {
 		return new AgentRegistryService(agentRegistry, multiAgentCards);
