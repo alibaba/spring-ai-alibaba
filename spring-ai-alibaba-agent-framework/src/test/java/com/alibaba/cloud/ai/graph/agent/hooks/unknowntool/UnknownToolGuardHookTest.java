@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook.unknowntool;
+package com.alibaba.cloud.ai.graph.agent.hooks.unknowntool;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.unknowntool.UnknownToolGuardConstants;
+import com.alibaba.cloud.ai.graph.agent.hook.unknowntool.UnknownToolGuardHook;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
@@ -38,6 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UnknownToolGuardHookTest {
 
+	/**
+	 * Verifies that an unknown-tool round is counted but does not terminate before the threshold is reached.
+	 */
 	@Test
 	void shouldOnlyAccumulateCountBeforeThreshold() {
 		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
@@ -54,6 +59,9 @@ class UnknownToolGuardHookTest {
 		assertNull(afterModelResult.get("jump_to"));
 	}
 
+	/**
+	 * Verifies that the hook appends a final-answer instruction after consecutive unknown-tool rounds hit the limit.
+	 */
 	@Test
 	void shouldInjectFinalAnswerInstructionWhenThresholdIsReached() {
 		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
@@ -73,6 +81,9 @@ class UnknownToolGuardHookTest {
 				instruction.getMetadata().get(UnknownToolGuardConstants.FINAL_ANSWER_INSTRUCTION_METADATA_KEY));
 	}
 
+	/**
+	 * Verifies that the hook ends the loop when the model still tries to call tools in final-answer mode.
+	 */
 	@Test
 	void shouldTerminateWhenModelStillCallsToolsInFinalAnswerMode() {
 		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
@@ -90,6 +101,9 @@ class UnknownToolGuardHookTest {
 				finalMessage.getText());
 	}
 
+	/**
+	 * Verifies that a normal round clears the consecutive unknown-tool counter.
+	 */
 	@Test
 	void shouldResetConsecutiveCountWhenLoopReturnsToNormalRound() {
 		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
@@ -106,24 +120,36 @@ class UnknownToolGuardHookTest {
 		assertNull(result.get("jump_to"));
 	}
 
+	/**
+	 * Invokes the hook's before-model phase with the provided messages.
+	 */
 	private static Map<String, Object> beforeModel(UnknownToolGuardHook hook, RunnableConfig config,
 			List<Message> messages) {
 		OverAllState state = new OverAllState(Map.of("messages", messages));
 		return MessagesModelHook.beforeModelAction(hook).apply(state, config).join();
 	}
 
+	/**
+	 * Invokes the hook's after-model phase with the provided messages.
+	 */
 	private static Map<String, Object> afterModel(UnknownToolGuardHook hook, RunnableConfig config,
 			List<Message> messages) {
 		OverAllState state = new OverAllState(Map.of("messages", messages));
 		return MessagesModelHook.afterModelAction(hook).apply(state, config).join();
 	}
 
+	/**
+	 * Extracts the replacement message list produced by the hook result.
+	 */
 	@SuppressWarnings("unchecked")
 	private static List<Message> extractMessages(Map<String, Object> result) {
 		ReplaceAllWith<Message> replaceAllWith = assertInstanceOf(ReplaceAllWith.class, result.get("messages"));
 		return replaceAllWith.newValues();
 	}
 
+	/**
+	 * Creates a tool response that marks the requested tool as unavailable.
+	 */
 	private static ToolResponseMessage unknownToolResponse(String requestedToolName, List<String> availableToolNames) {
 		return ToolResponseMessage.builder()
 			.responses(List.of(new ToolResponseMessage.ToolResponse("call-1", requestedToolName,
@@ -135,6 +161,9 @@ class UnknownToolGuardHookTest {
 			.build();
 	}
 
+	/**
+	 * Creates an assistant message that attempts to call a tool again.
+	 */
 	private static AssistantMessage assistantWithToolCall(String id) {
 		return AssistantMessage.builder()
 			.content("")

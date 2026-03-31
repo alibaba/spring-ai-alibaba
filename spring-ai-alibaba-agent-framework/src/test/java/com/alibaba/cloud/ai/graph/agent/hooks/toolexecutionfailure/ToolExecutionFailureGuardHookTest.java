@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.alibaba.cloud.ai.graph.agent.hook.toolexecutionfailure;
+package com.alibaba.cloud.ai.graph.agent.hooks.toolexecutionfailure;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.toolexecutionfailure.ToolExecutionFailureGuardConstants;
+import com.alibaba.cloud.ai.graph.agent.hook.toolexecutionfailure.ToolExecutionFailureGuardHook;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 
@@ -37,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ToolExecutionFailureGuardHookTest {
 
+	/**
+	 * Verifies that a single failed tool round only increments the guard state and does not stop execution.
+	 */
 	@Test
 	void shouldOnlyAccumulateCountBeforeThreshold() {
 		ToolExecutionFailureGuardHook hook = ToolExecutionFailureGuardHook.builder()
@@ -53,6 +58,9 @@ class ToolExecutionFailureGuardHookTest {
 		assertNull(result.get("jump_to"));
 	}
 
+	/**
+	 * Verifies that reaching the configured failure threshold appends a final-answer instruction message.
+	 */
 	@Test
 	void shouldInjectFinalAnswerInstructionWhenThresholdIsReached() {
 		ToolExecutionFailureGuardHook hook = ToolExecutionFailureGuardHook.builder()
@@ -75,6 +83,9 @@ class ToolExecutionFailureGuardHookTest {
 				instruction.getMetadata().get(ToolExecutionFailureGuardConstants.FINAL_ANSWER_INSTRUCTION_METADATA_KEY));
 	}
 
+	/**
+	 * Verifies that the guard terminates the loop when the model still issues tool calls in final-answer mode.
+	 */
 	@Test
 	void shouldTerminateWhenModelStillCallsToolsInFinalAnswerMode() {
 		ToolExecutionFailureGuardHook hook = ToolExecutionFailureGuardHook.builder()
@@ -96,6 +107,9 @@ class ToolExecutionFailureGuardHookTest {
 				finalMessage.getText());
 	}
 
+	/**
+	 * Verifies that a custom termination message is reused for both the injected instruction and fallback reply.
+	 */
 	@Test
 	void shouldUseCustomTerminationMessageForInstructionAndFallback() {
 		String terminationMessage = "请停止继续调用工具，直接基于现有上下文回答用户。";
@@ -119,24 +133,36 @@ class ToolExecutionFailureGuardHookTest {
 		assertEquals(terminationMessage, finalMessage.getText());
 	}
 
+	/**
+	 * Invokes the hook's before-model phase with the provided messages.
+	 */
 	private static Map<String, Object> beforeModel(ToolExecutionFailureGuardHook hook, RunnableConfig config,
 			List<Message> messages) {
 		OverAllState state = new OverAllState(Map.of("messages", messages));
 		return MessagesModelHook.beforeModelAction(hook).apply(state, config).join();
 	}
 
+	/**
+	 * Invokes the hook's after-model phase with the provided messages.
+	 */
 	private static Map<String, Object> afterModel(ToolExecutionFailureGuardHook hook, RunnableConfig config,
 			List<Message> messages) {
 		OverAllState state = new OverAllState(Map.of("messages", messages));
 		return MessagesModelHook.afterModelAction(hook).apply(state, config).join();
 	}
 
+	/**
+	 * Extracts the replacement message list produced by the hook result.
+	 */
 	@SuppressWarnings("unchecked")
 	private static List<Message> extractMessages(Map<String, Object> result) {
 		ReplaceAllWith<Message> replaceAllWith = assertInstanceOf(ReplaceAllWith.class, result.get("messages"));
 		return replaceAllWith.newValues();
 	}
 
+	/**
+	 * Creates a tool response that simulates a fully failed execution round for a single tool.
+	 */
 	private static ToolResponseMessage failedToolResponse(String toolName, String failureType) {
 		return ToolResponseMessage.builder()
 			.responses(List.of(new ToolResponseMessage.ToolResponse("call-1", toolName,
@@ -148,6 +174,9 @@ class ToolExecutionFailureGuardHookTest {
 			.build();
 	}
 
+	/**
+	 * Creates an assistant message that requests another tool call.
+	 */
 	private static AssistantMessage assistantWithToolCall(String id, String toolName) {
 		return AssistantMessage.builder()
 			.content("")

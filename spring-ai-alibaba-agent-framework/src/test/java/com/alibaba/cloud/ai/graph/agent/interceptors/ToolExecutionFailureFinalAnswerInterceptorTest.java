@@ -45,6 +45,9 @@ class ToolExecutionFailureFinalAnswerInterceptorTest {
 	private final ToolExecutionFailureFinalAnswerInterceptor interceptor =
 			new ToolExecutionFailureFinalAnswerInterceptor();
 
+	/**
+	 * Verifies that final-answer turns caused by tool execution failures are sent to the model without tool exposure.
+	 */
 	@Test
 	void shouldDisableToolExposureForExecutionFailureFinalAnswerTurn() {
 		ToolCallback toolCallback = createEchoTool();
@@ -79,6 +82,9 @@ class ToolExecutionFailureFinalAnswerInterceptorTest {
 		assertEquals(Boolean.TRUE, options.getInternalToolExecutionEnabled());
 	}
 
+	/**
+	 * Verifies that non-final-answer turns pass through unchanged.
+	 */
 	@Test
 	void shouldPassThroughWhenLastMessageIsNotExecutionFailureFinalAnswerInstruction() {
 		ToolCallback toolCallback = createEchoTool();
@@ -103,6 +109,9 @@ class ToolExecutionFailureFinalAnswerInterceptorTest {
 		assertSame(request, actualRequest.get());
 	}
 
+	/**
+	 * Creates an instruction message marked as a final-answer-only turn.
+	 */
 	private static Message finalAnswerInstruction() {
 		return AgentInstructionMessage.builder()
 			.text("Answer directly")
@@ -110,6 +119,9 @@ class ToolExecutionFailureFinalAnswerInterceptorTest {
 			.build();
 	}
 
+	/**
+	 * Creates a minimal echo tool callback for tool exposure assertions.
+	 */
 	private static ToolCallback createEchoTool() {
 		return new ToolCallback() {
 			@Override
@@ -120,13 +132,13 @@ class ToolExecutionFailureFinalAnswerInterceptorTest {
 
 			@Override
 			@NonNull
-			public String call(String toolInput, ToolContext toolContext) {
+			public String call(@NonNull String toolInput, @NonNull ToolContext toolContext) {
 				return toolInput;
 			}
 
 			@Override
 			@NonNull
-			public String call(String toolInput) {
+			public String call(@NonNull String toolInput) {
 				return call(toolInput, new ToolContext(Map.of()));
 			}
 		};

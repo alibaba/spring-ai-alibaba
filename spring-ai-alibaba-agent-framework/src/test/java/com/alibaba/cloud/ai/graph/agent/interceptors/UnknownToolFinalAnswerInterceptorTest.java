@@ -44,6 +44,9 @@ class UnknownToolFinalAnswerInterceptorTest {
 
 	private final UnknownToolFinalAnswerInterceptor interceptor = new UnknownToolFinalAnswerInterceptor();
 
+	/**
+	 * Verifies that unknown-tool final-answer turns are forwarded without exposing tools to the model.
+	 */
 	@Test
 	void shouldDisableToolExposureForUnknownToolFinalAnswerTurn() {
 		ToolCallback toolCallback = createEchoTool();
@@ -78,6 +81,9 @@ class UnknownToolFinalAnswerInterceptorTest {
 		assertEquals(Boolean.TRUE, options.getInternalToolExecutionEnabled());
 	}
 
+	/**
+	 * Verifies that ordinary turns are passed through unchanged.
+	 */
 	@Test
 	void shouldPassThroughWhenLastMessageIsNotUnknownToolFinalAnswerInstruction() {
 		ToolCallback toolCallback = createEchoTool();
@@ -102,6 +108,9 @@ class UnknownToolFinalAnswerInterceptorTest {
 		assertSame(request, actualRequest.get());
 	}
 
+	/**
+	 * Creates an instruction message marked as an unknown-tool final-answer turn.
+	 */
 	private static Message finalAnswerInstruction() {
 		return AgentInstructionMessage.builder()
 			.text("Answer directly")
@@ -109,6 +118,9 @@ class UnknownToolFinalAnswerInterceptorTest {
 			.build();
 	}
 
+	/**
+	 * Creates a minimal echo tool callback for tool exposure assertions.
+	 */
 	private static ToolCallback createEchoTool() {
 		return new ToolCallback() {
 			@Override
@@ -119,13 +131,13 @@ class UnknownToolFinalAnswerInterceptorTest {
 
 			@Override
 			@NonNull
-			public String call(String toolInput, ToolContext toolContext) {
+			public String call(@NonNull String toolInput, ToolContext toolContext) {
 				return toolInput;
 			}
 
 			@Override
 			@NonNull
-			public String call(String toolInput) {
+			public String call(@NonNull String toolInput) {
 				return call(toolInput, new ToolContext(Map.of()));
 			}
 		};

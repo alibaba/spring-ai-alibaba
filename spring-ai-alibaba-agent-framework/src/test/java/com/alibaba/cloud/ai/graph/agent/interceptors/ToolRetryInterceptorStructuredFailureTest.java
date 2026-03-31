@@ -39,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ToolRetryInterceptorStructuredFailureTest {
 
+	/**
+	 * Verifies that structured execution failures are retried and can still succeed on a later attempt.
+	 */
 	@Test
 	@DisplayName("should retry structured execution failure responses and eventually succeed")
 	void shouldRetryStructuredExecutionFailureResponsesAndEventuallySucceed() {
@@ -74,6 +77,9 @@ class ToolRetryInterceptorStructuredFailureTest {
 		assertEquals(2, attempts.get());
 	}
 
+	/**
+	 * Verifies that unknown-tool errors are not treated as retryable failures.
+	 */
 	@Test
 	@DisplayName("should not retry unknown tool responses")
 	void shouldNotRetryUnknownToolResponses() {
@@ -104,6 +110,9 @@ class ToolRetryInterceptorStructuredFailureTest {
 		assertEquals(1, attempts.get());
 	}
 
+	/**
+	 * Verifies that retry exhaustion keeps the structured failure metadata needed by downstream guards.
+	 */
 	@Test
 	@DisplayName("should preserve structured error metadata when retries are exhausted")
 	void shouldPreserveStructuredErrorMetadataWhenRetriesAreExhausted() {
@@ -139,6 +148,9 @@ class ToolRetryInterceptorStructuredFailureTest {
 				response.getMetadata().get(ToolExecutionFailureGuardConstants.RETRY_EXHAUSTED_METADATA_KEY));
 	}
 
+	/**
+	 * Creates a minimal tool call request for the named tool.
+	 */
 	private ToolCallRequest createRequest(String toolName) {
 		return ToolCallRequest.builder()
 				.toolCall(new AssistantMessage.ToolCall("call-1", "function", toolName, "{}"))
