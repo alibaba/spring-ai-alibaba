@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.graph.executor;
 
 import com.alibaba.cloud.ai.graph.GraphResponse;
@@ -388,38 +389,111 @@ public class NodeExecutor extends BaseGraphExecutor {
 		return merged;
 	}
 
-  /**
-   * Merges tool calls from two messages.
-   * Tool calls with the same id will be merged.
-   *
-   * @return the merged list of tool calls
-   */
-  private List<ToolCall> mergeToolCalls(List<ToolCall> lastToolCalls, List<ToolCall> currentToolCalls) {
+    /**
+     * Merges tool calls from two streamed assistant messages.
+     * <p>
+     * Streaming chunks from some providers may split tool-call fields across multiple chunks
+     * (for example: first chunk has name, later chunk has only arguments and even no id).
+     * We merge by id when possible, and fall back to positional merge to keep a single
+     * tool call record complete.
+     *
+     * @return the merged list of tool calls
+     */
+    private List<ToolCall> mergeToolCalls(List<ToolCall> lastToolCalls, List<ToolCall> currentToolCalls) {
+        if (lastToolCalls == null || lastToolCalls.isEmpty()) {
+            return currentToolCalls != null ? currentToolCalls : List.of();
+        }
+        if (currentToolCalls == null || currentToolCalls.isEmpty()) {
+            return lastToolCalls;
+        }
 
-	  if (lastToolCalls == null || lastToolCalls.isEmpty()) {
-		  return currentToolCalls != null ? currentToolCalls : List.of();
-	  }
-	  if (currentToolCalls == null || currentToolCalls.isEmpty()) {
-		  return lastToolCalls;
-	  }
+        List<ToolCall> merged = new ArrayList<>(lastToolCalls);
+        for (int i = 0; i < currentToolCalls.size(); i++) {
+            ToolCall current = currentToolCalls.get(i);
+            if (current == null) {
+                continue;
+            }
+            int mergeIndex = findToolCallMergeIndex(merged, current, i);
+            if (mergeIndex >= 0) {
+                merged.set(mergeIndex, mergeToolCallFields(merged.get(mergeIndex), current));
+            }
+            else {
+                merged.add(current);
+            }
+        }
+        return merged;
+    }
 
+    private int findToolCallMergeIndex(List<ToolCall> mergedCalls, ToolCall currentToolCall, int currentIndex) {
+        String currentId = normalized(currentToolCall.id());
+        if (StringUtils.hasText(currentId)) {
+            for (int i = 0; i < mergedCalls.size(); i++) {
+                if (currentId.equals(normalized(mergedCalls.get(i).id()))) {
+                    return i;
+                }
+            }
+        }
 
-	  Map<String, ToolCall> toolCallMap = new LinkedHashMap<>();
+        if (currentIndex < mergedCalls.size()) {
+            return currentIndex;
+        }
 
-	  List<AssistantMessage.ToolCall> resultCalls = new ArrayList<>();
-	  currentToolCalls.forEach(tc -> toolCallMap.put(tc.id(), tc));
+        String currentName = normalized(currentToolCall.name());
+        if (StringUtils.hasText(currentName)) {
+            int matchedIndex = -1;
+            for (int i = 0; i < mergedCalls.size(); i++) {
+                if (currentName.equals(normalized(mergedCalls.get(i).name()))) {
+                    if (matchedIndex >= 0) {
+                        return -1;
+                    }
+                    matchedIndex = i;
+                }
+            }
+            if (matchedIndex >= 0) {
+                return matchedIndex;
+            }
+        }
 
-	  // remove duplicate while keep order
-	  lastToolCalls.forEach(tc->{
-		  if( !toolCallMap.containsKey(tc.id()) ) {
-			  resultCalls.add(tc);
-		  }
-	  });
+        return -1;
+    }
 
-	  resultCalls.addAll(currentToolCalls);
+    private ToolCall mergeToolCallFields(ToolCall previous, ToolCall current) {
+        return new AssistantMessage.ToolCall(
+                firstNonBlank(current.id(), previous.id()),
+                firstNonBlank(current.type(), previous.type()),
+                firstNonBlank(current.name(), previous.name()),
+                mergeToolArguments(previous.arguments(), current.arguments()));
+    }
 
-	  return resultCalls;
-  }
+    private static String mergeToolArguments(String previousArguments, String currentArguments) {
+        if (!StringUtils.hasText(previousArguments)) {
+            return currentArguments;
+        }
+        if (!StringUtils.hasText(currentArguments)) {
+            return previousArguments;
+        }
+
+        if (currentArguments.equals(previousArguments)) {
+            return currentArguments;
+        }
+        if (currentArguments.startsWith(previousArguments) || currentArguments.contains(previousArguments)) {
+            return currentArguments;
+        }
+        if (previousArguments.startsWith(currentArguments) || previousArguments.contains(currentArguments)) {
+            return previousArguments;
+        }
+
+        // Typical streaming delta case: append incremental argument fragment.
+        return previousArguments + currentArguments;
+    }
+
+    private static String firstNonBlank(String primary, String fallback) {
+        return StringUtils.hasText(primary) ? primary : fallback;
+    }
+
+    private static String normalized(String value) {
+        return StringUtils.hasText(value) ? value : null;
+    }
 
 	/**
 	 * Processes a Flux<GraphResponse<NodeOutput>> with embedded flux handling logic.
@@ -828,3 +902,4 @@ public class NodeExecutor extends BaseGraphExecutor {
 				.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
 	}
 }
+

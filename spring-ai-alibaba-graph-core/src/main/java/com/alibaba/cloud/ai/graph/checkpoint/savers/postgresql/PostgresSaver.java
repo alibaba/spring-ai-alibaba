@@ -52,10 +52,13 @@ public class PostgresSaver extends MemorySaver {
 
 	private final StateSerializer stateSerializer;
 
+	private final CreateOption createOption;
+
 	protected PostgresSaver(Builder builder) throws SQLException {
 		this.datasource = builder.datasource;
 		this.stateSerializer = builder.stateSerializer;
-		initTable(builder.dropTablesFirst, builder.createTables);
+		this.createOption = builder.createOption;
+		initTable(createOption);
 	}
 
 	public static Builder builder() {
@@ -99,7 +102,7 @@ public class PostgresSaver extends MemorySaver {
 		return stateSerializer.dataFromBytes(bytes);
 	}
 
-	protected void initTable(boolean dropTablesFirst, boolean createTables) throws SQLException {
+	protected void initTable(CreateOption createOption) throws SQLException {
 		var sqlDropTables = """
 				DROP TABLE IF EXISTS GraphCheckpoint CASCADE;
 				DROP TABLE IF EXISTS GraphThread CASCADE;
@@ -111,7 +114,7 @@ public class PostgresSaver extends MemorySaver {
 				     thread_name VARCHAR(255),
 				     is_released BOOLEAN DEFAULT FALSE NOT NULL
 				 );
-				
+
 				 CREATE TABLE IF NOT EXISTS GraphCheckpoint (
 				     checkpoint_id UUID PRIMARY KEY,
 				     parent_checkpoint_id UUID,
@@ -119,31 +122,38 @@ public class PostgresSaver extends MemorySaver {
 				     node_id VARCHAR(255),
 				     next_node_id VARCHAR(255),
 				     state_data JSONB NOT NULL,
-				     state_content_type VARCHAR(100) NOT NULL, -- New field for content type
+				     state_content_type VARCHAR(100) NOT NULL,
 				     saved_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-				
+
 				     CONSTRAINT fk_thread
 				         FOREIGN KEY(thread_id)
 				         REFERENCES GraphThread(thread_id)
 				         ON DELETE CASCADE
 				 );
-				
-				 CREATE INDEX idx_lg4jcheckpoint_thread_id ON GraphCheckpoint(thread_id);
-				 CREATE INDEX idx_lg4jcheckpoint_thread_id_saved_at_desc ON GraphCheckpoint(thread_id, saved_at DESC);
-				 CREATE UNIQUE INDEX idx_unique_lg4jthread_thread_name_unreleased  ON GraphThread(thread_name) WHERE is_released = FALSE;
+				""";
+
+		var sqlCreateIndexes = """
+				CREATE INDEX IF NOT EXISTS idx_lg4jcheckpoint_thread_id ON GraphCheckpoint(thread_id);
+				CREATE INDEX IF NOT EXISTS idx_lg4jcheckpoint_thread_id_saved_at_desc ON GraphCheckpoint(thread_id, saved_at DESC);
+				CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_lg4jthread_thread_name_unreleased ON GraphThread(thread_name) WHERE is_released = FALSE;
 				""";
 
 
 		String sqlCommand = null;
 		try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
-			if (dropTablesFirst) {
+			if (createOption == CreateOption.CREATE_OR_REPLACE) {
 				log.trace("Executing drop tables:\n---\n{}---", sqlDropTables);
 				sqlCommand = sqlDropTables;
 				statement.executeUpdate(sqlCommand);
 			}
-			if (createTables) {
+			if (createOption == CreateOption.CREATE_OR_REPLACE ||
+				createOption == CreateOption.CREATE_IF_NOT_EXISTS) {
 				log.trace("Executing create tables:\n---\n{}---", sqlCreateTables);
 				sqlCommand = sqlCreateTables;
+				statement.executeUpdate(sqlCommand);
+
+				log.trace("Executing create indexes:\n---\n{}---", sqlCreateIndexes);
+				sqlCommand = sqlCreateIndexes;
 				statement.executeUpdate(sqlCommand);
 			}
 		}
@@ -440,9 +450,14 @@ public class PostgresSaver extends MemorySaver {
 		private String user;
 		private String password;
 		private String database;
+		private DataSource datasource;
+
+		// New CreateOption field with default value
+		private CreateOption createOption = CreateOption.CREATE_IF_NOT_EXISTS;
+
+		// Legacy fields for backward compatibility
 		private boolean createTables;
 		private boolean dropTablesFirst;
-		private DataSource datasource;
 
 		public Builder stateSerializer(StateSerializer stateSerializer) {
 			this.stateSerializer = stateSerializer;
@@ -474,13 +489,56 @@ public class PostgresSaver extends MemorySaver {
 			return this;
 		}
 
-		public Builder createTables(boolean createTables) {
-			this.createTables = createTables;
+		/**
+		 * Sets the create option for table initialization.
+		 * @param createOption the create option (CREATE_NONE, CREATE_IF_NOT_EXISTS, CREATE_OR_REPLACE)
+		 * @return this builder
+		 */
+		public Builder createOption(CreateOption createOption) {
+			this.createOption = createOption;
 			return this;
 		}
 
+		/**
+		 * @deprecated Use {@link #createOption(CreateOption)} instead.
+		 * Sets whether to create tables on initialization.
+		 * @param createTables true to create tables
+		 * @return this builder
+		 */
+		@Deprecated
+		public Builder createTables(boolean createTables) {
+			this.createTables = createTables;
+			// Convert to CreateOption for backward compatibility
+			if (!createTables) {
+				this.createOption = CreateOption.CREATE_NONE;
+			}
+			return this;
+		}
+
+		/**
+		 * Sets the DataSource directly. This is useful for testing or when you want to
+		 * provide a pre-configured DataSource instead of building one from host/port/user/password.
+		 * @param datasource the DataSource to use
+		 * @return this builder
+		 */
+		public Builder datasource(DataSource datasource) {
+			this.datasource = datasource;
+			return this;
+		}
+
+		/**
+		 * @deprecated Use {@link #createOption(CreateOption)} instead.
+		 * Sets whether to drop tables before creating them.
+		 * @param dropTablesFirst true to drop tables first
+		 * @return this builder
+		 */
+		@Deprecated
 		public Builder dropTablesFirst(boolean dropTablesFirst) {
 			this.dropTablesFirst = dropTablesFirst;
+			// Convert to CreateOption for backward compatibility
+			if (dropTablesFirst && this.createOption != CreateOption.CREATE_NONE) {
+				this.createOption = CreateOption.CREATE_OR_REPLACE;
+			}
 			return this;
 		}
 
@@ -497,18 +555,19 @@ public class PostgresSaver extends MemorySaver {
 				this.stateSerializer = StateGraph.DEFAULT_JACKSON_SERIALIZER;
 			}
 
-			if (port <= 0) {
-				throw new IllegalArgumentException("port must be greater than 0");
+			// If datasource is already set (e.g., for testing), use it directly
+			if (datasource == null) {
+				if (port == null || port <= 0) {
+					throw new IllegalArgumentException("port must be greater than 0");
+				}
+				var ds = new PGSimpleDataSource();
+				ds.setDatabaseName(requireNotBlank(database, "database"));
+				ds.setUser(requireNotBlank(user, "user"));
+				ds.setPassword(requireNonNull(password, "password cannot be null"));
+				ds.setPortNumbers(new int[] {port});
+				ds.setServerNames(new String[] {requireNotBlank(host, "host")});
+				datasource = ds;
 			}
-			var ds = new PGSimpleDataSource();
-			ds.setDatabaseName(requireNotBlank(database, "database"));
-			ds.setUser(requireNotBlank(user, "user"));
-			ds.setPassword(requireNonNull(password, "password cannot be null"));
-			ds.setPortNumbers(new int[] {port});
-			ds.setServerNames(new String[] {requireNotBlank(host, "host")});
-
-			datasource = ds;
-			createTables = createTables || dropTablesFirst;
 
 			try {
 				return new PostgresSaver(this);
@@ -519,4 +578,3 @@ public class PostgresSaver extends MemorySaver {
 		}
 	}
 }
-
