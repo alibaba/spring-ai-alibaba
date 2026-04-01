@@ -30,6 +30,12 @@ import java.util.regex.Pattern;
 /**
  * Manages shell sessions and command execution.
  * Provides persistent shell execution capabilities with state preservation.
+ *
+ * <p>This class maintains a global registry of shell sessions keyed by {@code threadId},
+ * enabling session recovery after Human-in-the-Loop (HITL) interrupts. When a graph
+ * resumes with a fresh {@link RunnableConfig} (which has an empty context), the session
+ * can be looked up from the registry using the same threadId, preserving working directory,
+ * environment variables, and other shell state.</p>
  */
 public class ShellSessionManager {
 
@@ -37,6 +43,19 @@ public class ShellSessionManager {
 	private static final String DONE_MARKER_PREFIX = "__LC_SHELL_DONE__";
 	private static final String SESSION_INSTANCE_CONTEXT_KEY = "_SHELL_SESSION_";
 	private static final String SESSION_PATH_CONTEXT_KEY = "_SHELL_PATH_";
+
+	/**
+	 * Global registry of shell sessions, keyed by threadId.
+	 * This enables session recovery after HITL interrupts where the original
+	 * RunnableConfig.context is lost but the threadId is preserved.
+	 */
+	private static final ConcurrentHashMap<String, SessionEntry> SESSION_REGISTRY = new ConcurrentHashMap<>();
+
+	/**
+	 * Entry in the session registry, holding both the session and its workspace path.
+	 */
+	private record SessionEntry(ShellSession session, Path workspacePath) {
+	}
 
 	private final Path workspaceRoot;
 	private final boolean useTemporaryWorkspace;
@@ -72,6 +91,8 @@ public class ShellSessionManager {
 
 	/**
 	 * Initialize shell session.
+	 * The session is registered in the global registry using {@code threadId} as the key,
+	 * enabling recovery after HITL interrupts.
 	 */
 	public void initialize(RunnableConfig config) {
 		try {
@@ -85,9 +106,16 @@ public class ShellSessionManager {
 				Files.createDirectories(workspace);
 			}
 
-			ShellSession session = new ShellSession(workspace, shellCommand, environment);
+			ShellSession session = new ShellSession(workspace, shellCommand, environment, terminationTimeout);
 			session.start();
 			config.context().put(SESSION_INSTANCE_CONTEXT_KEY, session);
+
+			// Register in global registry for HITL recovery
+			final Path finalWorkspace = workspace;
+			config.threadId().ifPresent(threadId -> {
+				SESSION_REGISTRY.put(threadId, new SessionEntry(session, finalWorkspace));
+				log.debug("Registered shell session in global registry with threadId: {}", threadId);
+			});
 
 			log.info("Started shell session in workspace: {}", workspace);
 
@@ -106,10 +134,15 @@ public class ShellSessionManager {
 
 	/**
 	 * Clean up shell session.
+	 * This removes the session from both the context and the global registry.
 	 */
 	public void cleanup(RunnableConfig config) {
 		try {
+			// Try to get session from context first, then from registry
 			ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
+			if (session == null) {
+				session = getSessionFromRegistry(config);
+			}
 			if (session != null) {
 				// Run shutdown commands
 				for (String command : shutdownCommands) {
@@ -126,14 +159,30 @@ public class ShellSessionManager {
 	}
 
 	private void doCleanup(RunnableConfig config) {
+		// Try to get session from context first
 		ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
+		Path tempDir = (Path) config.context().get(SESSION_PATH_CONTEXT_KEY);
+
+		// If not in context, try to get from registry (HITL resume scenario)
+		SessionEntry registryEntry = null;
+		if (session == null && config.threadId().isPresent()) {
+			registryEntry = SESSION_REGISTRY.remove(config.threadId().get());
+			if (registryEntry != null) {
+				session = registryEntry.session();
+				tempDir = registryEntry.workspacePath();
+				log.debug("Removed shell session from global registry for threadId: {}", config.threadId().get());
+			}
+		} else if (session != null && config.threadId().isPresent()) {
+			// Also remove from registry if we found it in context
+			SESSION_REGISTRY.remove(config.threadId().get());
+		}
+
 		if (session != null) {
 			session.stop(terminationTimeout);
 			config.context().remove(SESSION_INSTANCE_CONTEXT_KEY);
 		}
 
-		Path tempDir = (Path) config.context().get(SESSION_PATH_CONTEXT_KEY);
-		if (tempDir != null) {
+		if (tempDir != null && useTemporaryWorkspace) {
 			try {
 				deleteDirectory(tempDir);
 			} catch (IOException e) {
@@ -144,12 +193,71 @@ public class ShellSessionManager {
 	}
 
 	/**
+	 * Attempt to recover a shell session from the global registry.
+	 * This is used during HITL resume when the original context is lost.
+	 *
+	 * @param config the runnable config containing threadId
+	 * @return the recovered session, or null if not found
+	 */
+	private ShellSession recoverSessionFromRegistry(RunnableConfig config) {
+		return config.threadId().map(threadId -> {
+			SessionEntry entry = SESSION_REGISTRY.get(threadId);
+			if (entry != null) {
+				log.info("Recovered shell session from global registry for threadId: {}. " +
+						"Shell state (working directory, environment) is preserved.", threadId);
+				// Put back into context for subsequent calls
+				config.context().put(SESSION_INSTANCE_CONTEXT_KEY, entry.session());
+				if (entry.workspacePath() != null) {
+					config.context().put(SESSION_PATH_CONTEXT_KEY, entry.workspacePath());
+				}
+				return entry.session();
+			}
+			return null;
+		}).orElse(null);
+	}
+
+	/**
+	 * Get session from registry without removing it.
+	 */
+	private ShellSession getSessionFromRegistry(RunnableConfig config) {
+		return config.threadId()
+				.map(threadId -> SESSION_REGISTRY.get(threadId))
+				.map(SessionEntry::session)
+				.orElse(null);
+	}
+
+	/**
 	 * Execute a command in the current shell session.
+	 * <p>If the session is missing from the context (e.g. after a Human-in-the-Loop resume
+	 * where a fresh {@link RunnableConfig} with an empty context is used), the method will:
+	 * <ol>
+	 *   <li>First attempt to recover the existing session from the global registry using threadId</li>
+	 *   <li>If not found in registry, create a new session as fallback</li>
+	 * </ol>
+	 * This ensures shell state (working directory, environment variables) is preserved across HITL interrupts.</p>
 	 */
 	public CommandResult executeCommand(String command, RunnableConfig config) {
 		ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
 		if (session == null) {
-			throw new IllegalStateException("Shell session not initialized. Call initialize() first, you might need to enable ShellToolAgentHook to enable shell session management.");
+			// Try to recover from global registry using threadId
+			session = recoverSessionFromRegistry(config);
+			if (session == null) {
+				// Only auto-initialize in the HITL recovery case (threadId present).
+				// For truly uninitialized usage (no threadId), preserve the previous
+				// behavior and fail fast rather than starting a new shell process
+				// without lifecycle management.
+				if (config.threadId().isPresent()) {
+					log.warn("Shell session not found in context or registry for threadId {}. " +
+							"Creating new session for HITL recovery.", config.threadId().get());
+					initialize(config);
+					session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
+				}
+				else {
+					throw new IllegalStateException(
+							"Shell session not initialized. Call initialize() before executeCommand() " +
+									"or ensure lifecycle management (e.g., ShellToolAgentHook) is installed.");
+				}
+			}
 		}
 
 		log.info("Executing shell command: {}", command);
@@ -175,11 +283,18 @@ public class ShellSessionManager {
 
 	/**
 	 * Restart the shell session.
+	 * <p>If the session is missing from the context (e.g. after HITL resume),
+	 * it will first attempt to recover from the global registry.</p>
 	 */
 	public void restartSession(RunnableConfig config) {
 		ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
 		if (session == null) {
-			throw new IllegalStateException("Shell session not initialized.");
+			// Try to recover from global registry (HITL resume scenario)
+			session = recoverSessionFromRegistry(config);
+		}
+		if (session == null) {
+			throw new IllegalStateException("Shell session not initialized. " +
+					"Cannot restart a session that does not exist.");
 		}
 
 		log.info("Restarting shell session");
@@ -193,6 +308,20 @@ public class ShellSessionManager {
 
 	public int getMaxOutputLines() {
 		return maxOutputLines;
+	}
+
+	/**
+	 * Clear the global session registry. Package-private for test isolation.
+	 */
+	static void clearSessionRegistry() {
+		SESSION_REGISTRY.clear();
+	}
+
+	/**
+	 * Check if a session is registered for the given threadId. Package-private for testing.
+	 */
+	static boolean isSessionInRegistry(String threadId) {
+		return SESSION_REGISTRY.containsKey(threadId);
 	}
 
 	public Long getMaxOutputBytes() {
@@ -216,11 +345,18 @@ public class ShellSessionManager {
 
 	/**
 	 * Persistent shell session that executes commands sequentially.
+	 * <p>This is a static nested class to avoid implicit reference to the outer
+	 * {@link ShellSessionManager} instance, which could cause memory leaks when
+	 * sessions are stored in the static {@link #SESSION_REGISTRY}.</p>
 	 */
-	private class ShellSession {
+	private static class ShellSession {
+		private static final Logger log = LoggerFactory.getLogger(ShellSession.class);
+		private static final String DONE_MARKER_PREFIX = "__LC_SHELL_DONE__";
+
 		private final Path workspace;
 		private final List<String> command;
 		private final Map<String, String> env;
+		private final long terminationTimeout;
 		private final boolean isWindows;
 		private final boolean isPowerShell;
 		private Process process;
@@ -228,10 +364,11 @@ public class ShellSessionManager {
 		private BlockingQueue<OutputLine> outputQueue;
 		private volatile boolean terminated;
 
-		ShellSession(Path workspace, List<String> command, Map<String, String> env) {
+		ShellSession(Path workspace, List<String> command, Map<String, String> env, long terminationTimeout) {
 			this.workspace = workspace;
 			this.command = command;
 			this.env = env;
+			this.terminationTimeout = terminationTimeout;
 			this.outputQueue = new LinkedBlockingQueue<>();
 			// Detect shell type
 			String shellCmd = command.isEmpty() ? "" : command.get(0).toLowerCase();
@@ -278,7 +415,7 @@ public class ShellSessionManager {
 		}
 
 		void restart() {
-			stop(terminationTimeout);
+			stop(this.terminationTimeout);
 			try {
 				start();
 			} catch (IOException e) {
