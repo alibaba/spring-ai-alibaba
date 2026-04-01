@@ -113,7 +113,10 @@ public class ReactAgentUnknownToolRecoveryTest {
 
 		assertNotNull(response.getText());
 		assertEquals(
-				"I could not continue with tool calls because the requested tools were unavailable, and I was still unable to produce a direct answer without tools.",
+				"I had to stop calling tools because the requested tools were unavailable, " +
+						"and I could not safely complete your request without them in this turn. " +
+						"Would you like me to continue with a best-effort answer based on the current context, " +
+						"or would you prefer to update the tool choice and try again?",
 				response.getText());
 		assertEquals(3, model.getCallCount());
 		assertEquals(0, toolInvocations.get());

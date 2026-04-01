@@ -40,12 +40,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ToolExecutionFailureGuardHookTest {
 
 	/**
-	 * Verifies that a single failed tool round only increments the guard state and does not stop execution.
+	 * Verifies that with one self-repair retry configured, the first failed tool round only
+	 * increments the guard state and does not stop execution.
 	 */
 	@Test
-	void shouldOnlyAccumulateCountBeforeThreshold() {
+	void shouldOnlyAccumulateCountBeforeSelfRepairRetriesAreExhausted() {
 		ToolExecutionFailureGuardHook hook = ToolExecutionFailureGuardHook.builder()
-			.maxConsecutiveExecutionFailureRounds(2)
+			.maxSelfRepairRetries(1)
 			.build();
 		RunnableConfig config = RunnableConfig.builder().build();
 
@@ -59,12 +60,13 @@ class ToolExecutionFailureGuardHookTest {
 	}
 
 	/**
-	 * Verifies that reaching the configured failure threshold appends a final-answer instruction message.
+	 * Verifies that after the configured self-repair retries are exhausted, the guard appends
+	 * a final-answer instruction message.
 	 */
 	@Test
-	void shouldInjectFinalAnswerInstructionWhenThresholdIsReached() {
+	void shouldInjectFinalAnswerInstructionWhenSelfRepairRetriesAreExhausted() {
 		ToolExecutionFailureGuardHook hook = ToolExecutionFailureGuardHook.builder()
-			.maxConsecutiveExecutionFailureRounds(2)
+			.maxSelfRepairRetries(1)
 			.build();
 		RunnableConfig config = RunnableConfig.builder().build();
 
@@ -89,7 +91,7 @@ class ToolExecutionFailureGuardHookTest {
 	@Test
 	void shouldTerminateWhenModelStillCallsToolsInFinalAnswerMode() {
 		ToolExecutionFailureGuardHook hook = ToolExecutionFailureGuardHook.builder()
-			.maxConsecutiveExecutionFailureRounds(2)
+			.maxSelfRepairRetries(1)
 			.build();
 		RunnableConfig config = RunnableConfig.builder().build();
 
@@ -103,19 +105,24 @@ class ToolExecutionFailureGuardHookTest {
 		assertEquals("end", result.get("jump_to"));
 		AssistantMessage finalMessage = assertInstanceOf(AssistantMessage.class, messages.get(0));
 		assertEquals(
-				"I could not continue with tool calls because tool execution kept failing, and I was still unable to produce a direct answer without tools.",
+				"I had to stop calling tools because tool execution kept failing repeatedly, " +
+						"and I could not safely complete your request without them in this turn. " +
+						"Would you like me to continue with a best-effort answer based on the current context, " +
+						"or would you prefer to adjust the tool setup and try again?",
 				finalMessage.getText());
 	}
 
 	/**
-	 * Verifies that a custom termination message is reused for both the injected instruction and fallback reply.
+	 * Verifies that custom instruction and fallback overrides are applied independently.
 	 */
 	@Test
-	void shouldUseCustomTerminationMessageForInstructionAndFallback() {
-		String terminationMessage = "请停止继续调用工具，直接基于现有上下文回答用户。";
+	void shouldUseCustomMessagesForInstructionAndFallback() {
+		String customInstruction = "Please stop calling tools and answer the user directly based on the current context.";
+		String customFallback = "Tool execution kept failing. Would you like me to continue with a best-effort answer based on the current context?";
 		ToolExecutionFailureGuardHook hook = ToolExecutionFailureGuardHook.builder()
-			.maxConsecutiveExecutionFailureRounds(1)
-			.terminationMessage(terminationMessage)
+			.maxSelfRepairRetries(0)
+			.customFinalAnswerInstruction(customInstruction)
+			.customFallbackAnswerMessage(customFallback)
 			.build();
 		RunnableConfig config = RunnableConfig.builder().build();
 
@@ -123,14 +130,59 @@ class ToolExecutionFailureGuardHookTest {
 				List.of(failedToolResponse("search", ToolExecutionFailureGuardConstants.TIMEOUT_FAILURE_TYPE)));
 		List<Message> beforeModelMessages = extractMessages(beforeModelResult);
 		AgentInstructionMessage instruction = assertInstanceOf(AgentInstructionMessage.class, beforeModelMessages.get(1));
-		assertEquals(terminationMessage, instruction.getText());
+		assertEquals(customInstruction, instruction.getText());
 
 		Map<String, Object> afterModelResult = afterModel(hook, config,
 				List.of(assistantWithToolCall("call-2", "search")));
 		List<Message> afterModelMessages = extractMessages(afterModelResult);
 		AssistantMessage finalMessage = assertInstanceOf(AssistantMessage.class, afterModelMessages.get(0));
 		assertEquals("end", afterModelResult.get("jump_to"));
-		assertEquals(terminationMessage, finalMessage.getText());
+		assertEquals(customFallback, finalMessage.getText());
+	}
+
+	/**
+	 * Verifies that zero self-repair retries enters final-answer mode on the first failed tool round.
+	 */
+	@Test
+	void shouldEnterFinalAnswerModeImmediatelyWhenSelfRepairRetriesIsZero() {
+		ToolExecutionFailureGuardHook hook = ToolExecutionFailureGuardHook.builder()
+			.maxSelfRepairRetries(0)
+			.build();
+		RunnableConfig config = RunnableConfig.builder().build();
+
+		Map<String, Object> result = beforeModel(hook, config,
+				List.of(failedToolResponse("search", ToolExecutionFailureGuardConstants.TIMEOUT_FAILURE_TYPE)));
+		List<Message> messages = extractMessages(result);
+
+		assertEquals(2, messages.size());
+		assertInstanceOf(AgentInstructionMessage.class, messages.get(1));
+	}
+
+	/**
+	 * Verifies that allowing two self-repair retries keeps the guard in accumulation mode
+	 * for the first two failed rounds and only enters final-answer mode on the third.
+	 */
+	@Test
+	void shouldEnterFinalAnswerModeAfterConfiguredSelfRepairRetriesAreExhausted() {
+		ToolExecutionFailureGuardHook hook = ToolExecutionFailureGuardHook.builder()
+			.maxSelfRepairRetries(2)
+			.build();
+		RunnableConfig config = RunnableConfig.builder().build();
+
+		Map<String, Object> firstRound = beforeModel(hook, config,
+				List.of(failedToolResponse("search", ToolExecutionFailureGuardConstants.TIMEOUT_FAILURE_TYPE)));
+		assertEquals(1, extractMessages(firstRound).size());
+
+		Map<String, Object> secondRound = beforeModel(hook, config,
+				List.of(failedToolResponse("weather", ToolExecutionFailureGuardConstants.RUNTIME_EXCEPTION_FAILURE_TYPE)));
+		assertEquals(1, extractMessages(secondRound).size());
+
+		Map<String, Object> thirdRound = beforeModel(hook, config,
+				List.of(failedToolResponse("calculator", ToolExecutionFailureGuardConstants.RUNTIME_EXCEPTION_FAILURE_TYPE)));
+		List<Message> messages = extractMessages(thirdRound);
+
+		assertEquals(2, messages.size());
+		assertInstanceOf(AgentInstructionMessage.class, messages.get(1));
 	}
 
 	/**

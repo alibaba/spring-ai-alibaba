@@ -116,7 +116,10 @@ class ReactAgentToolExecutionFailureRecoveryTest {
 		AssistantMessage response = agent.call("hello");
 		assertNotNull(response.getText());
 		assertEquals(
-				"I could not continue with tool calls because tool execution kept failing, and I was still unable to produce a direct answer without tools.",
+				"I had to stop calling tools because tool execution kept failing repeatedly, " +
+						"and I could not safely complete your request without them in this turn. " +
+						"Would you like me to continue with a best-effort answer based on the current context, " +
+						"or would you prefer to adjust the tool setup and try again?",
 				response.getText());
 		assertEquals(3, model.getCallCount());
 		assertEquals(0, echoInvocations.get());

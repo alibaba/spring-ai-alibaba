@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.Map;
 
 /**
  * Abstract base class for tool call guard hooks that prevent infinite loops when the
- * model repeatedly requests tools that fail.
+ * model repeatedly emits tool calls that cannot be completed successfully.
  *
  * <p>
  * Subclasses implement the specific detection logic and messaging for different types
@@ -46,25 +47,39 @@ import java.util.Map;
  * The guard works in two phases:
  * </p>
  * <ol>
- * <li>Allow the model to self-repair after receiving a failure response.</li>
- * <li>If consecutive rounds still fail, switch to a tool-disabled final-answer mode
+ * <li>Allow the model to self-repair after receiving a failure response. Subclasses
+ * decide how many additional retries are allowed through {@link #getMaxSelfRepairRetries()}.</li>
+ * <li>If consecutive rounds still fail after those retries are exhausted, switch to a tool-disabled final-answer mode
  * and ask the model to answer directly.</li>
  * </ol>
- *
- * <p>
- * Once final-answer mode is entered, the next model turn is expected to answer
- * directly. If the model still insists on emitting tool calls, the guard
- * terminates immediately with a fallback answer instead of spending extra tokens
- * on another retry.
- * </p>
  */
 public abstract class AbstractToolCallGuardHook extends MessagesModelHook {
 
+	/**
+	 * This hook can either continue to the next model turn or terminate the agent once a
+	 * fallback answer has been produced.
+	 * @return the jump targets supported by this guard hook
+	 */
 	@Override
 	public final List<JumpTo> canJumpTo() {
 		return List.of(JumpTo.model, JumpTo.end);
 	}
 
+	/**
+	 * Runs before each model invocation to evaluate the previous round.
+	 * <p>
+	 * The method only escalates when the last message is a {@link ToolResponseMessage} and that
+	 * response indicates this guard's failure type. In that case it increments the consecutive
+	 * failure counter and, once retries are exhausted, appends a synthetic final-answer instruction
+	 * that will be seen by the next model call.
+	 * </p>
+	 * <p>
+	 * Any non-failure round resets the guard state so future failures start from a clean counter.
+	 * </p>
+	 * @param previousMessages the messages accumulated so far, including the previous tool response
+	 * @param config the runnable config whose context stores the guard state
+	 * @return either the unchanged messages, or a new list with an injected final-answer instruction
+	 */
 	@Override
 	public final AgentCommand beforeModel(List<Message> previousMessages, RunnableConfig config) {
 		if (previousMessages.isEmpty()) {
@@ -89,7 +104,7 @@ public abstract class AbstractToolCallGuardHook extends MessagesModelHook {
 
 		int consecutiveCount = getConsecutiveCount(config) + 1;
 		config.context().put(getConsecutiveCountContextKey(), consecutiveCount);
-		if (consecutiveCount < getMaxConsecutiveFailures()) {
+		if (consecutiveCount <= getMaxSelfRepairRetries()) {
 			return new AgentCommand(previousMessages);
 		}
 
@@ -100,6 +115,18 @@ public abstract class AbstractToolCallGuardHook extends MessagesModelHook {
 		return new AgentCommand(newMessages);
 	}
 
+	/**
+	 * Runs after the model has produced the current turn.
+	 * <p>
+	 * This method only becomes active after {@link #beforeModel(List, RunnableConfig)} has entered
+	 * final-answer mode. At that point the model is expected to answer directly without any tool
+	 * calls. If the model complies, the guard state is cleared. If it still emits tool calls, the
+	 * hook replaces that output with a fallback answer and jumps to {@link JumpTo#end}.
+	 * </p>
+	 * @param previousMessages the current message list, including the latest assistant output
+	 * @param config the runnable config whose context stores the guard state
+	 * @return either the unchanged messages, or a terminating fallback answer
+	 */
 	@Override
 	public final AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
 		if (!isFinalAnswerMode(config) || previousMessages.isEmpty()) {
@@ -136,38 +163,49 @@ public abstract class AbstractToolCallGuardHook extends MessagesModelHook {
 	public abstract int getOrder();
 
 	/**
-	 * Return list of model interceptors for this hook.
+	 * Return model interceptors used by this hook.
+	 * <p>
+	 * Concrete guards typically provide an interceptor that recognizes the synthetic final-answer
+	 * instruction injected by {@link #beforeModel(List, RunnableConfig)} and disables tool exposure
+	 * for that specific model turn.
+	 * </p>
 	 * @return the model interceptors
 	 */
 	public abstract List<ModelInterceptor> getModelInterceptors();
 
 	/**
-	 * Get metadata key used in ToolResponseMessage to detect if all tool calls failed.
+	 * Get the metadata key used to detect that all tool calls in the previous tool round failed
+	 * for this guard's failure category.
 	 * @return the metadata key
 	 */
 	protected abstract String getMetadataKeyForAllFailures();
 
 	/**
-	 * Get metadata key used in AgentInstructionMessage to mark final-answer mode.
+	 * Get the metadata key used to mark the synthetic {@link AgentInstructionMessage} injected when
+	 * the hook enters final-answer mode.
 	 * @return the metadata key
 	 */
 	protected abstract String getFinalAnswerInstructionMetadataKey();
 
 	/**
-	 * Get context key for consecutive failure counter.
+	 * Get the runnable-context key that stores the consecutive failure counter for this guard.
 	 * @return the context key
 	 */
 	protected abstract String getConsecutiveCountContextKey();
 
 	/**
-	 * Get context key for final-answer mode flag.
+	 * Get the runnable-context key that stores whether the guard has entered final-answer mode.
 	 * @return the context key
 	 */
 	protected abstract String getFinalAnswerModeContextKey();
 
 	/**
-	 * Build instruction message when entering final-answer mode. Subclass extracts needed
-	 * metadata from ToolResponseMessage using protected utility methods.
+	 * Build the instruction appended when the retry budget has been exhausted.
+	 * <p>
+	 * This text is not sent to the user directly. Instead, it is injected as a synthetic
+	 * {@link AgentInstructionMessage} so the next model turn knows why tools have been disabled and
+	 * how it should answer.
+	 * </p>
 	 * @param consecutiveCount the number of consecutive failures
 	 * @param toolResponseMessage the tool response message containing failure metadata
 	 * @return the instruction message text
@@ -176,22 +214,73 @@ public abstract class AbstractToolCallGuardHook extends MessagesModelHook {
 			ToolResponseMessage toolResponseMessage);
 
 	/**
-	 * Build fallback answer when model still calls tools in final-answer mode.
+	 * Build the fallback answer returned to the user when the model still calls tools in
+	 * final-answer mode.
+	 * <p>
+	 * This message is only used as a last resort when the model ignored the synthetic final-answer
+	 * instruction and attempted another tool round anyway.
+	 * </p>
 	 * @return the fallback answer message
 	 */
 	protected abstract String buildFallbackAnswerMessage();
 
 	/**
-	 * Get threshold for entering final-answer mode.
-	 * @return the maximum consecutive failures allowed
+	 * Get how many additional self-repair retries are allowed after the first failed round
+	 * before entering final-answer mode.
+	 * <p>
+	 * Example: {@code 0} means the hook escalates immediately after the first failure round;
+	 * {@code 1} means one additional self-repair attempt is allowed before escalation.
+	 * </p>
+	 * @return the maximum self-repair retries allowed
 	 */
-	protected abstract int getMaxConsecutiveFailures();
+	protected abstract int getMaxSelfRepairRetries();
 
 	/**
-	 * Get optional custom termination message.
-	 * @return the custom termination message, or null if not set
+	 * Get an optional custom instruction injected into the synthetic final-answer turn.
+	 * @return the custom final-answer instruction, or null if not set
 	 */
-	protected abstract String getTerminationMessage();
+	protected abstract String getCustomFinalAnswerInstruction();
+
+	/**
+	 * Get an optional custom fallback reply returned to the user when the model still
+	 * emits tool calls in final-answer mode.
+	 * @return the custom fallback answer message, or null if not set
+	 */
+	protected abstract String getCustomFallbackAnswerMessage();
+
+	/**
+	 * Check whether a custom final-answer instruction is configured.
+	 * @return true when a non-blank custom instruction is present
+	 */
+	protected final boolean hasCustomFinalAnswerInstruction() {
+		return StringUtils.hasText(getCustomFinalAnswerInstruction());
+	}
+
+	/**
+	 * Resolve the final-answer instruction text, preferring a custom instruction when configured.
+	 * @param defaultMessage the built-in final-answer instruction
+	 * @return the custom instruction if configured, otherwise {@code defaultMessage}
+	 */
+	protected final String getCustomFinalAnswerInstructionOrDefault(String defaultMessage) {
+		return hasCustomFinalAnswerInstruction() ? getCustomFinalAnswerInstruction() : defaultMessage;
+	}
+
+	/**
+	 * Check whether a custom fallback answer message is configured.
+	 * @return true when a non-blank custom fallback answer message is present
+	 */
+	protected final boolean hasCustomFallbackAnswerMessage() {
+		return StringUtils.hasText(getCustomFallbackAnswerMessage());
+	}
+
+	/**
+	 * Resolve the fallback reply text, preferring a custom fallback answer when configured.
+	 * @param defaultMessage the built-in fallback reply
+	 * @return the custom fallback answer if configured, otherwise {@code defaultMessage}
+	 */
+	protected final String getCustomFallbackAnswerMessageOrDefault(String defaultMessage) {
+		return hasCustomFallbackAnswerMessage() ? getCustomFallbackAnswerMessage() : defaultMessage;
+	}
 
 	/**
 	 * Utility to extract String list from metadata with type safety.

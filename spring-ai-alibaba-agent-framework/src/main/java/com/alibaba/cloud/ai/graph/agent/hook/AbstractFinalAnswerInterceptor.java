@@ -28,11 +28,34 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Shared template for guard interceptors that enter a final-answer turn by disabling
+ * Shared template for guard interceptors that enforce a synthetic final-answer turn by disabling
  * all tool exposure for the model.
+ *
+ * <p>
+ * Guard hooks such as {@link AbstractToolCallGuardHook} inject an {@link AgentInstructionMessage}
+ * when they decide the model should stop calling tools and answer directly. This interceptor runs
+ * on the subsequent model call, detects that synthetic instruction via metadata, and strips tool
+ * callbacks, tool descriptions, and internal tool execution settings from the request.
+ * </p>
+ *
+ * <p>
+ * In other words, the hook decides <em>when</em> to enter final-answer mode, while this interceptor
+ * enforces <em>how</em> that next model turn is executed.
+ * </p>
  */
 public abstract class AbstractFinalAnswerInterceptor extends ModelInterceptor {
 
+	/**
+	 * Intercept the current model request.
+	 * <p>
+	 * If the last message is not the synthetic final-answer instruction, the request is passed through
+	 * unchanged. If the final-answer instruction is present, the request is cloned with tool exposure
+	 * removed so the model can only produce a direct answer for that turn.
+	 * </p>
+	 * @param request the current model request
+	 * @param handler the downstream model call handler
+	 * @return the downstream model response, using either the original or the tool-stripped request
+	 */
 	@Override
 	public final ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
 		if (!shouldDisableTools(request)) {
@@ -41,6 +64,15 @@ public abstract class AbstractFinalAnswerInterceptor extends ModelInterceptor {
 		return handler.call(disableToolExposure(request));
 	}
 
+	/**
+	 * Determine whether the current model turn is the synthetic final-answer turn created by a guard hook.
+	 * <p>
+	 * The default implementation only activates when the last message is an {@link AgentInstructionMessage}
+	 * whose metadata contains {@link #finalAnswerInstructionMetadataKey()} set to {@code true}.
+	 * </p>
+	 * @param request the current model request
+	 * @return {@code true} if tools should be disabled for this request
+	 */
 	protected boolean shouldDisableTools(ModelRequest request) {
 		List<Message> messages = request.getMessages();
 		if (messages == null || messages.isEmpty()) {
@@ -58,6 +90,10 @@ public abstract class AbstractFinalAnswerInterceptor extends ModelInterceptor {
 	/**
 	 * Metadata key that marks the synthetic final-answer instruction injected by a guard
 	 * hook.
+	 * <p>
+	 * Each guard type uses its own key so the matching interceptor only reacts to instructions
+	 * created by that specific guard.
+	 * </p>
 	 * @return the metadata key used to detect final-answer mode
 	 */
 	protected abstract String finalAnswerInstructionMetadataKey();

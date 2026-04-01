@@ -41,11 +41,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class UnknownToolGuardHookTest {
 
 	/**
-	 * Verifies that an unknown-tool round is counted but does not terminate before the threshold is reached.
+	 * Verifies that with one self-repair retry configured, the first unknown-tool round only
+	 * increments the guard state and does not terminate.
 	 */
 	@Test
-	void shouldOnlyAccumulateCountBeforeThreshold() {
-		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
+	void shouldOnlyAccumulateCountBeforeSelfRepairRetriesAreExhausted() {
+		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxSelfRepairRetries(1).build();
 		RunnableConfig config = RunnableConfig.builder().build();
 
 		Map<String, Object> result = beforeModel(hook, config, List.of(unknownToolResponse("missing_tool", List.of("echo"))));
@@ -60,11 +61,12 @@ class UnknownToolGuardHookTest {
 	}
 
 	/**
-	 * Verifies that the hook appends a final-answer instruction after consecutive unknown-tool rounds hit the limit.
+	 * Verifies that the hook appends a final-answer instruction after the configured
+	 * self-repair retries are exhausted.
 	 */
 	@Test
-	void shouldInjectFinalAnswerInstructionWhenThresholdIsReached() {
-		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
+	void shouldInjectFinalAnswerInstructionWhenSelfRepairRetriesAreExhausted() {
+		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxSelfRepairRetries(1).build();
 		RunnableConfig config = RunnableConfig.builder().build();
 
 		beforeModel(hook, config, List.of(unknownToolResponse("missing_tool_1", List.of("echo"))));
@@ -86,7 +88,7 @@ class UnknownToolGuardHookTest {
 	 */
 	@Test
 	void shouldTerminateWhenModelStillCallsToolsInFinalAnswerMode() {
-		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
+		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxSelfRepairRetries(1).build();
 		RunnableConfig config = RunnableConfig.builder().build();
 
 		beforeModel(hook, config, List.of(unknownToolResponse("missing_tool_1", List.of("echo"))));
@@ -97,8 +99,75 @@ class UnknownToolGuardHookTest {
 		assertEquals("end", result.get("jump_to"));
 		AssistantMessage finalMessage = assertInstanceOf(AssistantMessage.class, messages.get(0));
 		assertEquals(
-				"I could not continue with tool calls because the requested tools were unavailable, and I was still unable to produce a direct answer without tools.",
+				"I had to stop calling tools because the requested tools were unavailable, " +
+						"and I could not safely complete your request without them in this turn. " +
+						"Would you like me to continue with a best-effort answer based on the current context, " +
+						"or would you prefer to update the tool choice and try again?",
 				finalMessage.getText());
+	}
+
+	/**
+	 * Verifies that custom instruction and fallback overrides are applied independently.
+	 */
+	@Test
+	void shouldUseCustomMessagesForInstructionAndFallback() {
+		String customInstruction = "Please stop using the tool and answer the user directly based on the current context.";
+		String customFallback = "The requested tool is unavailable. Would you like me to continue without tools?";
+		UnknownToolGuardHook hook = UnknownToolGuardHook.builder()
+				.maxSelfRepairRetries(0)
+				.customFinalAnswerInstruction(customInstruction)
+				.customFallbackAnswerMessage(customFallback)
+				.build();
+		RunnableConfig config = RunnableConfig.builder().build();
+
+		Map<String, Object> beforeModelResult = beforeModel(hook, config,
+				List.of(unknownToolResponse("missing_tool", List.of("echo"))));
+		List<Message> beforeModelMessages = extractMessages(beforeModelResult);
+		AgentInstructionMessage instruction = assertInstanceOf(AgentInstructionMessage.class, beforeModelMessages.get(1));
+		assertEquals(customInstruction, instruction.getText());
+
+		Map<String, Object> afterModelResult = afterModel(hook, config, List.of(assistantWithToolCall("call-2")));
+		List<Message> afterModelMessages = extractMessages(afterModelResult);
+		AssistantMessage finalMessage = assertInstanceOf(AssistantMessage.class, afterModelMessages.get(0));
+		assertEquals("end", afterModelResult.get("jump_to"));
+		assertEquals(customFallback, finalMessage.getText());
+	}
+
+	/**
+	 * Verifies that zero self-repair retries enter final-answer mode on the first unknown-tool round.
+	 */
+	@Test
+	void shouldEnterFinalAnswerModeImmediatelyWhenSelfRepairRetriesIsZero() {
+		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxSelfRepairRetries(0).build();
+		RunnableConfig config = RunnableConfig.builder().build();
+
+		Map<String, Object> result = beforeModel(hook, config, List.of(unknownToolResponse("missing_tool", List.of("echo"))));
+		List<Message> messages = extractMessages(result);
+
+		assertEquals(2, messages.size());
+		assertInstanceOf(AgentInstructionMessage.class, messages.get(1));
+	}
+
+	/**
+	 * Verifies that allowing two self-repair retries keeps the guard in accumulation mode
+	 * for the first two unknown-tool rounds and only enters final-answer mode on the third.
+	 */
+	@Test
+	void shouldEnterFinalAnswerModeAfterConfiguredSelfRepairRetriesAreExhausted() {
+		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxSelfRepairRetries(2).build();
+		RunnableConfig config = RunnableConfig.builder().build();
+
+		Map<String, Object> firstRound = beforeModel(hook, config, List.of(unknownToolResponse("missing_tool_1", List.of("echo"))));
+		assertEquals(1, extractMessages(firstRound).size());
+
+		Map<String, Object> secondRound = beforeModel(hook, config, List.of(unknownToolResponse("missing_tool_2", List.of("echo", "weather"))));
+		assertEquals(1, extractMessages(secondRound).size());
+
+		Map<String, Object> thirdRound = beforeModel(hook, config, List.of(unknownToolResponse("missing_tool_3", List.of("echo", "weather"))));
+		List<Message> messages = extractMessages(thirdRound);
+
+		assertEquals(2, messages.size());
+		assertInstanceOf(AgentInstructionMessage.class, messages.get(1));
 	}
 
 	/**
@@ -106,7 +175,7 @@ class UnknownToolGuardHookTest {
 	 */
 	@Test
 	void shouldResetConsecutiveCountWhenLoopReturnsToNormalRound() {
-		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxConsecutiveUnknownToolCalls(2).build();
+		UnknownToolGuardHook hook = UnknownToolGuardHook.builder().maxSelfRepairRetries(1).build();
 		RunnableConfig config = RunnableConfig.builder().build();
 
 		beforeModel(hook, config, List.of(unknownToolResponse("missing_tool_1", List.of("echo"))));
