@@ -22,10 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,10 +34,6 @@ import static org.junit.jupiter.api.Assertions.*;
  * and later resumed, the original RunnableConfig.context is lost, but the threadId
  * is preserved. The Session Registry allows the shell session to be recovered using
  * the threadId, preserving working directory and environment variables.
- * </p>
- * <p>
- * Note: These tests focus on verifying the Registry mechanism. Shell command execution
- * tests are OS-dependent and may be skipped on some platforms due to shell compatibility.
  * </p>
  *
  * @author AI Assistant
@@ -66,58 +59,22 @@ class ShellSessionManagerTest {
 
 	@AfterEach
 	void tearDown() {
-		// Ensure cleanup after each test - must clean up before temp dir deletion
 		if (sessionManager != null && config != null) {
 			try {
 				sessionManager.cleanup(config);
-				// Give process time to terminate on Windows
-				Thread.sleep(1000);
 			} catch (Exception e) {
 				// Ignore cleanup errors in teardown
 			}
 		}
-		// Clear any leftover registry entries
-		clearSessionRegistry();
+		ShellSessionManager.clearSessionRegistry();
 	}
 
 	/**
-	 * Clear the static SESSION_REGISTRY using reflection.
-	 * This ensures test isolation.
+	 * Create a ShellSessionManager using the platform default shell.
 	 */
-	@SuppressWarnings("unchecked")
-	private void clearSessionRegistry() {
-		try {
-			Field registryField = ShellSessionManager.class.getDeclaredField("SESSION_REGISTRY");
-			registryField.setAccessible(true);
-			ConcurrentHashMap<String, ?> registry = (ConcurrentHashMap<String, ?>) registryField.get(null);
-			registry.clear();
-		} catch (Exception e) {
-			// Ignore - field may not exist or be accessible
-		}
-	}
-
-	/**
-	 * Check if session is registered in the global registry using reflection.
-	 */
-	@SuppressWarnings("unchecked")
-	private boolean isSessionInRegistry(String threadId) {
-		try {
-			Field registryField = ShellSessionManager.class.getDeclaredField("SESSION_REGISTRY");
-			registryField.setAccessible(true);
-			ConcurrentHashMap<String, ?> registry = (ConcurrentHashMap<String, ?>) registryField.get(null);
-			return registry.containsKey(threadId);
-		} catch (Exception e) {
-			return false;
-		}
-	}
-
-	/**
-	 * Create a ShellSessionManager for Unix-like systems.
-	 */
-	private ShellSessionManager createUnixSessionManager() {
+	private ShellSessionManager createSessionManager() {
 		return ShellSessionManager.builder()
 				.workspaceRoot(tempDir)
-				.shellCommand(Arrays.asList("/bin/bash"))
 				.commandTimeout(10000)
 				.startupTimeout(10000)
 				.terminationTimeout(5000)
@@ -125,43 +82,22 @@ class ShellSessionManagerTest {
 				.build();
 	}
 
-	/**
-	 * Create a ShellSessionManager for Windows systems using PowerShell.
-	 * PowerShell provides better marker detection than cmd.exe.
-	 */
-	private ShellSessionManager createWindowsSessionManager() {
-		return ShellSessionManager.builder()
-				.workspaceRoot(tempDir)
-				.shellCommand(Arrays.asList("powershell.exe", "-NoLogo", "-NoProfile"))
-				.commandTimeout(15000)
-				.startupTimeout(15000)
-				.terminationTimeout(5000)
-				.maxOutputLines(100)
-				.build();
-	}
-
 	// ==================== Registry-Focused Tests (All OS) ====================
-	// These tests verify the Session Registry mechanism without depending on shell execution
+	// These tests verify the Session Registry mechanism using the platform default shell
 
 	/**
 	 * Test that session is registered in global registry on initialize with threadId.
 	 */
 	@Test
 	void testSessionRegisteredOnInitialize() {
-		boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-		sessionManager = isWindows
-				? createWindowsSessionManager()
-				: createUnixSessionManager();
+		sessionManager = createSessionManager();
 
-		// Initialize session
 		sessionManager.initialize(config);
 
-		// Verify session is in context
 		assertNotNull(config.context().get(SESSION_INSTANCE_CONTEXT_KEY),
 				"Session should be stored in context after initialization");
 
-		// Verify session is registered in global registry
-		assertTrue(isSessionInRegistry(threadId),
+		assertTrue(ShellSessionManager.isSessionInRegistry(threadId),
 				"Session should be registered in global registry with threadId");
 	}
 
@@ -170,10 +106,7 @@ class ShellSessionManagerTest {
 	 */
 	@Test
 	void testSessionRecoveredFromRegistryOnEmptyContext() {
-		boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-		sessionManager = isWindows
-				? createWindowsSessionManager()
-				: createUnixSessionManager();
+		sessionManager = createSessionManager();
 
 		// Phase 1: Initialize session
 		sessionManager.initialize(config);
@@ -185,12 +118,11 @@ class ShellSessionManagerTest {
 				.threadId(threadId)
 				.build();
 
-		// Verify context is empty initially
 		assertNull(resumedConfig.context().get(SESSION_INSTANCE_CONTEXT_KEY),
 				"Resumed config should have empty context");
 
 		// Execute any command - this should trigger recovery from registry
-		// Note: Command may timeout, but recovery should still happen
+		boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
 		try {
 			String cmd = isWindows ? "Write-Output 'test'" : "echo test";
 			sessionManager.executeCommand(cmd, resumedConfig);
@@ -213,25 +145,16 @@ class ShellSessionManagerTest {
 	 */
 	@Test
 	void testCleanupRemovesFromRegistry() {
-		boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-		sessionManager = isWindows
-				? createWindowsSessionManager()
-				: createUnixSessionManager();
+		sessionManager = createSessionManager();
 
-		// Initialize session
 		sessionManager.initialize(config);
 
-		// Verify session is in registry before cleanup
-		assertTrue(isSessionInRegistry(threadId),
+		assertTrue(ShellSessionManager.isSessionInRegistry(threadId),
 				"Session should be in registry after initialization");
 
-		// Cleanup
 		sessionManager.cleanup(config);
-		// Give process time to terminate
-		try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 
-		// Verify session is removed from registry
-		assertFalse(isSessionInRegistry(threadId),
+		assertFalse(ShellSessionManager.isSessionInRegistry(threadId),
 				"Session should be removed from registry after cleanup");
 
 		config = null; // Prevent double cleanup in tearDown
@@ -242,24 +165,16 @@ class ShellSessionManagerTest {
 	 */
 	@Test
 	void testConfigWithoutThreadIdSkipsRegistry() {
-		boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-		sessionManager = isWindows
-				? createWindowsSessionManager()
-				: createUnixSessionManager();
+		sessionManager = createSessionManager();
 
-		// Config without threadId
 		RunnableConfig noThreadConfig = RunnableConfig.builder().build();
 
-		// Initialize - should work but not use registry
 		sessionManager.initialize(noThreadConfig);
 
-		// Verify session is in context
 		assertNotNull(noThreadConfig.context().get(SESSION_INSTANCE_CONTEXT_KEY),
 				"Session should be stored in context even without threadId");
 
-		// No way to check registry without threadId, but cleanup should still work
 		sessionManager.cleanup(noThreadConfig);
-		try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 
 		config = null; // Prevent tearDown cleanup
 	}
@@ -269,10 +184,7 @@ class ShellSessionManagerTest {
 	 */
 	@Test
 	void testMultipleThreadIdsAreIsolatedInRegistry() {
-		boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-		sessionManager = isWindows
-				? createWindowsSessionManager()
-				: createUnixSessionManager();
+		sessionManager = createSessionManager();
 
 		String threadId1 = "isolated-thread-1-" + UUID.randomUUID();
 		String threadId2 = "isolated-thread-2-" + UUID.randomUUID();
@@ -281,34 +193,23 @@ class ShellSessionManagerTest {
 		RunnableConfig config2 = RunnableConfig.builder().threadId(threadId2).build();
 
 		try {
-			// Initialize both sessions
 			sessionManager.initialize(config1);
 			sessionManager.initialize(config2);
 
-			// Verify both are registered
-			assertTrue(isSessionInRegistry(threadId1), "Session 1 should be in registry");
-			assertTrue(isSessionInRegistry(threadId2), "Session 2 should be in registry");
+			assertTrue(ShellSessionManager.isSessionInRegistry(threadId1), "Session 1 should be in registry");
+			assertTrue(ShellSessionManager.isSessionInRegistry(threadId2), "Session 2 should be in registry");
 
-			// Get original sessions
 			Object session1 = config1.context().get(SESSION_INSTANCE_CONTEXT_KEY);
 			Object session2 = config2.context().get(SESSION_INSTANCE_CONTEXT_KEY);
-
-			// Sessions should be different instances
 			assertNotSame(session1, session2, "Sessions for different threadIds should be different");
 
-			// Cleanup session 1 only
 			sessionManager.cleanup(config1);
-			try { Thread.sleep(500); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 
-			// Verify only session 1 is removed
-			assertFalse(isSessionInRegistry(threadId1), "Session 1 should be removed after cleanup");
-			assertTrue(isSessionInRegistry(threadId2), "Session 2 should still be in registry");
-
+			assertFalse(ShellSessionManager.isSessionInRegistry(threadId1), "Session 1 should be removed after cleanup");
+			assertTrue(ShellSessionManager.isSessionInRegistry(threadId2), "Session 2 should still be in registry");
 		} finally {
-			// Clean up session 2
 			try {
 				sessionManager.cleanup(config2);
-				Thread.sleep(500);
 			} catch (Exception e) {
 				// Ignore
 			}
@@ -323,14 +224,12 @@ class ShellSessionManagerTest {
 	 */
 	@Test
 	void testRecoveryDoesNotRemoveFromRegistry() {
-		boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-		sessionManager = isWindows
-				? createWindowsSessionManager()
-				: createUnixSessionManager();
+		sessionManager = createSessionManager();
 
-		// Initialize session
 		sessionManager.initialize(config);
 		Object originalSession = config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
+
+		boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
 
 		// Simulate 3 HITL resumes
 		for (int i = 0; i < 3; i++) {
@@ -338,11 +237,9 @@ class ShellSessionManagerTest {
 					.threadId(threadId)
 					.build();
 
-			// Verify session is still in registry before recovery
-			assertTrue(isSessionInRegistry(threadId),
+			assertTrue(ShellSessionManager.isSessionInRegistry(threadId),
 					"Session should still be in registry before recovery attempt " + (i + 1));
 
-			// Trigger recovery by executing command
 			try {
 				String cmd = isWindows ? "Write-Output 'recovery-" + i + "'" : "echo recovery-" + i;
 				sessionManager.executeCommand(cmd, resumedConfig);
@@ -355,8 +252,7 @@ class ShellSessionManagerTest {
 			assertSame(originalSession, recoveredSession,
 					"Same session should be recovered on attempt " + (i + 1));
 
-			// Verify session is still in registry after recovery
-			assertTrue(isSessionInRegistry(threadId),
+			assertTrue(ShellSessionManager.isSessionInRegistry(threadId),
 					"Session should remain in registry after recovery attempt " + (i + 1));
 
 			// Clear context to simulate next HITL
@@ -368,10 +264,7 @@ class ShellSessionManagerTest {
 	 */
 	@Test
 	void testFallbackCreatesNewSessionWhenNotInRegistry() {
-		boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-		sessionManager = isWindows
-				? createWindowsSessionManager()
-				: createUnixSessionManager();
+		sessionManager = createSessionManager();
 
 		String newThreadId = "fresh-thread-" + UUID.randomUUID();
 		RunnableConfig freshConfig = RunnableConfig.builder()
@@ -379,11 +272,10 @@ class ShellSessionManagerTest {
 				.build();
 
 		try {
-			// Verify not in registry initially
-			assertFalse(isSessionInRegistry(newThreadId),
+			assertFalse(ShellSessionManager.isSessionInRegistry(newThreadId),
 					"Fresh threadId should not be in registry");
 
-			// Execute command - should create new session as fallback
+			boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
 			try {
 				String cmd = isWindows ? "Write-Output 'fallback'" : "echo fallback";
 				sessionManager.executeCommand(cmd, freshConfig);
@@ -391,18 +283,36 @@ class ShellSessionManagerTest {
 				// Command may fail
 			}
 
-			// Verify new session was created
 			assertNotNull(freshConfig.context().get(SESSION_INSTANCE_CONTEXT_KEY),
 					"New session should be created as fallback");
 
-			// Verify new session is now registered
-			assertTrue(isSessionInRegistry(newThreadId),
+			assertTrue(ShellSessionManager.isSessionInRegistry(newThreadId),
 					"New session should be registered in registry");
-
 		} finally {
 			sessionManager.cleanup(freshConfig);
-			try { Thread.sleep(500); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
 		}
+
+		config = null; // Prevent tearDown cleanup
+	}
+
+	/**
+	 * Test that executeCommand throws IllegalStateException when called without
+	 * threadId and without prior initialization. This prevents orphaned shell
+	 * processes from being created when lifecycle management is not set up.
+	 */
+	@Test
+	void testExecuteCommandThrowsWithoutThreadIdAndNoSession() {
+		sessionManager = createSessionManager();
+
+		RunnableConfig noThreadConfig = RunnableConfig.builder().build();
+
+		// Attempting to execute command should throw IllegalStateException
+		IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+			sessionManager.executeCommand("echo test", noThreadConfig);
+		});
+
+		assertTrue(exception.getMessage().contains("Shell session not initialized"),
+				"Exception message should indicate uninitialized session");
 
 		config = null; // Prevent tearDown cleanup
 	}
