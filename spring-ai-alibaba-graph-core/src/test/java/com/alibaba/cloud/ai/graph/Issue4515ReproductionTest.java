@@ -60,6 +60,13 @@ class Issue4515ReproductionTest {
 		return (List) result.orElseThrow().value("output").orElseThrow();
 	}
 
+	/**
+	 * Scenario 01:
+	 * START -> B(subGraph1) -> C(subGraph2) -> END.
+	 *
+	 * Both subgraphs are distinct compiled instances. Each subgraph contributes one
+	 * "sub_graph_output", so final output size must be 2.
+	 */
 	@Test
 	void test01_twoDistinctSubGraphsInSerial() throws Exception {
 		CompiledGraph graph = new StateGraph(createKeyStrategyFactory())
@@ -75,6 +82,13 @@ class Issue4515ReproductionTest {
 		assertEquals(2, output.size());
 	}
 
+	/**
+	 * Scenario 02:
+	 * START -> B(subGraph) -> C(same subGraph instance) -> END.
+	 *
+	 * The same compiled subgraph instance is reused by two parent nodes. This case
+	 * verifies checkpoint/threadId isolation and ensures no cross-node state pollution.
+	 */
 	@Test
 	void test02_sameSubGraphInstanceRegisteredTwice() throws Exception {
 		CompiledGraph subGraph = makeSubGraph();
@@ -92,6 +106,13 @@ class Issue4515ReproductionTest {
 		assertEquals(2, output.size());
 	}
 
+	/**
+	 * Scenario 03:
+	 * START -> A(parent node) -> B(subGraph1) -> C(subGraph2) -> END.
+	 *
+	 * Parent node A contributes "parent_output" once, and the two serial subgraphs
+	 * contribute two "sub_graph_output" items. Final output size must be 3.
+	 */
 	@Test
 	void test03_parentNodePlusSerialSubGraphs() throws Exception {
 		CompiledGraph graph = new StateGraph(createKeyStrategyFactory())
