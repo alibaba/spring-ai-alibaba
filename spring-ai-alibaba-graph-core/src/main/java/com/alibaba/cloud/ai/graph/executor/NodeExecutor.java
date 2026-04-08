@@ -839,7 +839,26 @@ public class NodeExecutor extends BaseGraphExecutor {
 				String nodeId = graphFlux.getNodeId();
 				Object nodeData = nodeDataRefs.get(nodeId).get();
 
-				combinedResultMap.put(graphFlux.getKey(),nodeData);
+				// Extract actual result data from GraphResponse completion signals
+				// (e.g., from subgraph completion or streaming aggregation done events).
+				// Without this extraction, the raw GraphResponse object would be stored
+				// in the parent state, which serializes as empty '{}' and loses the
+				// subgraph's output data. This mirrors the extraction logic used in
+				// processGraphResponseFlux for non-parallel subgraph execution.
+				if (nodeData instanceof GraphResponse<?> graphResponse
+						&& graphResponse.resultValue().isPresent()) {
+					Object resultVal = graphResponse.resultValue().get();
+					if (resultVal instanceof Map<?, ?>) {
+						@SuppressWarnings("unchecked")
+						Map<String, Object> resultMap = (Map<String, Object>) resultVal;
+						combinedResultMap = OverAllState.updateState(
+								combinedResultMap, resultMap, context.getKeyStrategyMap());
+					} else {
+						combinedResultMap.put(graphFlux.getKey(), resultVal);
+					}
+				} else {
+					combinedResultMap.put(graphFlux.getKey(), nodeData);
+				}
 			}
 
 			// Merge non-ParallelGraphFlux state
