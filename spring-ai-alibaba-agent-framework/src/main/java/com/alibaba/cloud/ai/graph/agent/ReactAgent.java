@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.exception.AgentException;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
+import com.alibaba.cloud.ai.graph.agent.hook.AbstractInterruptableModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
@@ -369,7 +370,9 @@ public class ReactAgent extends BaseAgent {
 		// Add hook nodes for beforeModel hooks
 		for (Hook hook : beforeModelHooks) {
 			if (hook instanceof ModelHook modelHook) {
-				if (hook instanceof InterruptionHook interruptionHook) {
+                if (hook instanceof AbstractInterruptableModelHook nodeActionHook) {
+                    graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", nodeActionHook);
+                } else if (hook instanceof InterruptionHook interruptionHook) {
 					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", interruptionHook);
 				} else {
 					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", modelHook::beforeModel);
@@ -381,7 +384,9 @@ public class ReactAgent extends BaseAgent {
 
 		// Add hook nodes for afterModel hooks
 		for (Hook hook : afterModelHooks) {
-			if (hook instanceof ModelHook modelHook) {
+            if (hook instanceof AbstractInterruptableModelHook nodeActionHook) {
+                graph.addNode(Hook.getFullHookName(hook) + ".afterModel", nodeActionHook);
+            } else if (hook instanceof ModelHook modelHook) {
 				if (hook instanceof HumanInTheLoopHook humanInTheLoopHook) {
 					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", humanInTheLoopHook);
 				} else {
