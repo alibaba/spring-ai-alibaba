@@ -30,16 +30,9 @@ import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.exception.AgentException;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
 import com.alibaba.cloud.ai.graph.agent.factory.DefaultAgentBuilderFactory;
-import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
-import com.alibaba.cloud.ai.graph.agent.hook.Hook;
-import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
-import com.alibaba.cloud.ai.graph.agent.hook.InstructionAgentHook;
-import com.alibaba.cloud.ai.graph.agent.hook.InterruptionHook;
-import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
+import com.alibaba.cloud.ai.graph.agent.hook.*;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
-import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
-import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -362,7 +355,9 @@ public class ReactAgent extends BaseAgent {
 		// Add hook nodes for beforeModel hooks
 		for (Hook hook : beforeModelHooks) {
 			if (hook instanceof ModelHook modelHook) {
-				if (hook instanceof InterruptionHook interruptionHook) {
+                if (hook instanceof AbstractInterruptableModelHook nodeActionHook) {
+                    graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", nodeActionHook);
+                } else if (hook instanceof InterruptionHook interruptionHook) {
 					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", interruptionHook);
 				} else {
 					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", modelHook::beforeModel);
@@ -374,7 +369,9 @@ public class ReactAgent extends BaseAgent {
 
 		// Add hook nodes for afterModel hooks
 		for (Hook hook : afterModelHooks) {
-			if (hook instanceof ModelHook modelHook) {
+            if (hook instanceof AbstractInterruptableModelHook nodeActionHook) {
+                graph.addNode(Hook.getFullHookName(hook) + ".afterModel", nodeActionHook);
+            } else if (hook instanceof ModelHook modelHook) {
 				if (hook instanceof HumanInTheLoopHook humanInTheLoopHook) {
 					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", humanInTheLoopHook);
 				} else {
