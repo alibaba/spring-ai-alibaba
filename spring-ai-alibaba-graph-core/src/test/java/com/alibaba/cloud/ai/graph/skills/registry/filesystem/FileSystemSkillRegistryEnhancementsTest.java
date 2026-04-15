@@ -24,9 +24,11 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -123,6 +125,49 @@ class FileSystemSkillRegistryEnhancementsTest {
 		assertTrue(registry.getByPath(invalidPath).isEmpty());
 		assertFalse(registry.disableByPath(invalidPath));
 		assertThrows(IllegalArgumentException.class, () -> registry.readSkillContentByPath(invalidPath));
+	}
+
+	@Test
+	void parsesLicenseCompatibilityMetadataFromRegistry() throws Exception {
+		Path skillDir = skillsDir.resolve("rich-skill");
+		Files.createDirectories(skillDir);
+		Files.writeString(skillDir.resolve("SKILL.md"), """
+				---
+				name: rich-skill
+				description: A skill with all optional fields.
+				license: Apache-2.0
+				compatibility: Spring AI 1.0+
+				metadata:
+				  version: "1.0"
+				  category: testing
+				allowed_tools:
+				  - tool-a
+				---
+
+				# Rich Skill
+				""");
+
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
+				.projectSkillsDirectory(skillsDir.toString())
+				.build();
+
+		SkillMetadata skill = registry.get("rich-skill").orElseThrow();
+		assertEquals("Apache-2.0", skill.getLicense());
+		assertEquals("Spring AI 1.0+", skill.getCompatibility());
+		assertEquals(Map.of("version", "1.0", "category", "testing"), skill.getMetadata());
+		assertEquals(List.of("tool-a"), skill.getAllowedTools());
+	}
+
+	@Test
+	void optionalFieldsDefaultWhenAbsent() throws Exception {
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
+				.projectSkillsDirectory(skillsDir.toString())
+				.build();
+
+		SkillMetadata skill = registry.get("copy-helper").orElseThrow();
+		assertNull(skill.getLicense());
+		assertNull(skill.getCompatibility());
+		assertTrue(skill.getMetadata().isEmpty());
 	}
 
 	private Path writeSkill(String name, String description, List<String> allowedTools) throws Exception {

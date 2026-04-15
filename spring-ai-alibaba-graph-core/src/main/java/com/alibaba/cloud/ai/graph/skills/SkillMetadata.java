@@ -18,7 +18,9 @@ package com.alibaba.cloud.ai.graph.skills;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Metadata for a Claude-style Skill.
@@ -39,6 +41,12 @@ public class SkillMetadata {
 	private String fullContent;
 
 	private List<String> allowedTools = List.of();
+
+	private String license;
+
+	private String compatibility;
+
+	private Map<String, String> metadata = Collections.emptyMap();
 
 	public SkillMetadata() {
 	}
@@ -91,6 +99,30 @@ public class SkillMetadata {
 		this.allowedTools = allowedTools == null ? List.of() : List.copyOf(allowedTools);
 	}
 
+	public String getLicense() {
+		return license;
+	}
+
+	public void setLicense(String license) {
+		this.license = license;
+	}
+
+	public String getCompatibility() {
+		return compatibility;
+	}
+
+	public void setCompatibility(String compatibility) {
+		this.compatibility = compatibility;
+	}
+
+	public Map<String, String> getMetadata() {
+		return metadata;
+	}
+
+	public void setMetadata(Map<String, String> metadata) {
+		this.metadata = metadata == null ? Collections.emptyMap() : Collections.unmodifiableMap(metadata);
+	}
+
 	public String loadFullContent() throws IOException {
 		if (fullContent == null) {
 			Path skillFile = Path.of(skillPath, "SKILL.md");
@@ -125,6 +157,9 @@ public class SkillMetadata {
 				", skillPath='" + skillPath + '\'' +
 				", source='" + source + '\'' +
 				", allowedTools=" + allowedTools +
+				", license='" + license + '\'' +
+				", compatibility='" + compatibility + '\'' +
+				", metadata=" + metadata +
 				'}';
 	}
 
@@ -161,6 +196,21 @@ public class SkillMetadata {
 			return this;
 		}
 
+		public Builder license(String license) {
+			metadata.license = license;
+			return this;
+		}
+
+		public Builder compatibility(String compatibility) {
+			metadata.compatibility = compatibility;
+			return this;
+		}
+
+		public Builder metadata(Map<String, String> metadataMap) {
+			metadata.metadata = metadataMap == null ? Collections.emptyMap() : Collections.unmodifiableMap(metadataMap);
+			return this;
+		}
+
 		public SkillMetadata build() {
 			if (metadata.name == null || metadata.name.isEmpty()) {
 				throw new IllegalStateException("Skill name is required");
@@ -173,6 +223,9 @@ public class SkillMetadata {
 			}
 			if (metadata.allowedTools == null) {
 				metadata.allowedTools = List.of();
+			}
+			if (metadata.metadata == null) {
+				metadata.metadata = Collections.emptyMap();
 			}
 			return metadata;
 		}
