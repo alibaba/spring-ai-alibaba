@@ -83,7 +83,7 @@ class FileSystemSkillRegistryEnhancementsTest {
 				---
 				name: alias-precedence-skill
 				description: Skill fixture for alias precedence.
-				allowed_tools: []
+				allowed-tools: []
 				allowedTools:
 				  - should_not_be_used
 				---
@@ -140,7 +140,7 @@ class FileSystemSkillRegistryEnhancementsTest {
 				metadata:
 				  version: "1.0"
 				  category: testing
-				allowed_tools:
+				allowed-tools:
 				  - tool-a
 				---
 
@@ -154,7 +154,7 @@ class FileSystemSkillRegistryEnhancementsTest {
 		SkillMetadata skill = registry.get("rich-skill").orElseThrow();
 		assertEquals("Apache-2.0", skill.getLicense());
 		assertEquals("Spring AI 1.0+", skill.getCompatibility());
-		assertEquals(Map.of("version", "1.0", "category", "testing"), skill.getMetadata());
+		assertEquals(Map.of("version", "1.0", "category", "testing"), skill.getMetaData());
 		assertEquals(List.of("tool-a"), skill.getAllowedTools());
 	}
 
@@ -167,7 +167,7 @@ class FileSystemSkillRegistryEnhancementsTest {
 		SkillMetadata skill = registry.get("copy-helper").orElseThrow();
 		assertNull(skill.getLicense());
 		assertNull(skill.getCompatibility());
-		assertTrue(skill.getMetadata().isEmpty());
+		assertTrue(skill.getMetaData().isEmpty());
 	}
 
 	private Path writeSkill(String name, String description, List<String> allowedTools) throws Exception {
@@ -175,7 +175,7 @@ class FileSystemSkillRegistryEnhancementsTest {
 		Files.createDirectories(skillDir);
 		String allowedToolsBlock = allowedTools.isEmpty()
 				? ""
-				: "\nallowed_tools:\n" + allowedTools.stream().map(tool -> "  - " + tool).reduce("", (a, b) -> a + b + "\n");
+				: "\nallowed-tools:\n" + allowedTools.stream().map(tool -> "  - " + tool).reduce("", (a, b) -> a + b + "\n");
 		Files.writeString(skillDir.resolve("SKILL.md"), """
 				---
 				name: %s

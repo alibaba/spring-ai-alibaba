@@ -58,7 +58,7 @@ class SkillScannerTest {
 				metadata:
 				  version: "1.0"
 				  author: test-author
-				allowed_tools:
+				allowed-tools:
 				  - tool-a
 				  - tool-b
 				---
@@ -70,7 +70,7 @@ class SkillScannerTest {
 		assertNotNull(skill);
 		assertEquals("MIT", skill.getLicense());
 		assertEquals("Spring AI 1.0+", skill.getCompatibility());
-		assertEquals(Map.of("version", "1.0", "author", "test-author"), skill.getMetadata());
+		assertEquals(Map.of("version", "1.0", "author", "test-author"), skill.getMetaData());
 		assertEquals(List.of("tool-a", "tool-b"), skill.getAllowedTools());
 	}
 
@@ -121,7 +121,7 @@ class SkillScannerTest {
 				# Bad Meta
 				""");
 
-		assertEquals(Collections.emptyMap(), scanner.loadSkill(skillsDir.resolve("bad-meta-skill")).getMetadata());
+		assertEquals(Collections.emptyMap(), scanner.loadSkill(skillsDir.resolve("bad-meta-skill")).getMetaData());
 	}
 
 	@Test
@@ -138,7 +138,7 @@ class SkillScannerTest {
 				# Coerce
 				""");
 
-		Map<String, String> meta = scanner.loadSkill(skillsDir.resolve("coerce-skill")).getMetadata();
+		Map<String, String> meta = scanner.loadSkill(skillsDir.resolve("coerce-skill")).getMetaData();
 		assertEquals("42", meta.get("count"));
 		assertEquals("true", meta.get("active"));
 	}

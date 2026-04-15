@@ -63,7 +63,7 @@ class ClasspathSkillRegistryEnhancementsTest {
 		SkillMetadata skill = registry.get("sample-skill").orElseThrow();
 		assertEquals("MIT", skill.getLicense());
 		assertEquals("Spring AI 1.0+", skill.getCompatibility());
-		Map<String, String> metadata = skill.getMetadata();
+		Map<String, String> metadata = skill.getMetaData();
 		assertEquals(2, metadata.size());
 		assertEquals("1.0", metadata.get("version"));
 		assertEquals("test-author", metadata.get("author"));

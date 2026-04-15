@@ -46,7 +46,7 @@ public class SkillMetadata {
 
 	private String compatibility;
 
-	private Map<String, String> metadata = Collections.emptyMap();
+	private Map<String, String> metaData = Collections.emptyMap();
 
 	public SkillMetadata() {
 	}
@@ -115,12 +115,12 @@ public class SkillMetadata {
 		this.compatibility = compatibility;
 	}
 
-	public Map<String, String> getMetadata() {
-		return metadata;
+	public Map<String, String> getMetaData() {
+		return metaData;
 	}
 
-	public void setMetadata(Map<String, String> metadata) {
-		this.metadata = metadata == null ? Collections.emptyMap() : Collections.unmodifiableMap(metadata);
+	public void setMetaData(Map<String, String> metaData) {
+		this.metaData = metaData == null ? Collections.emptyMap() : Collections.unmodifiableMap(metaData);
 	}
 
 	public String loadFullContent() throws IOException {
@@ -159,7 +159,7 @@ public class SkillMetadata {
 				", allowedTools=" + allowedTools +
 				", license='" + license + '\'' +
 				", compatibility='" + compatibility + '\'' +
-				", metadata=" + metadata +
+				", metaData=" + metaData +
 				'}';
 	}
 
@@ -206,8 +206,8 @@ public class SkillMetadata {
 			return this;
 		}
 
-		public Builder metadata(Map<String, String> metadataMap) {
-			metadata.metadata = metadataMap == null ? Collections.emptyMap() : Collections.unmodifiableMap(metadataMap);
+		public Builder metaData(Map<String, String> metaDataMap) {
+			metadata.metaData = metaDataMap == null ? Collections.emptyMap() : Collections.unmodifiableMap(metaDataMap);
 			return this;
 		}
 
@@ -224,8 +224,8 @@ public class SkillMetadata {
 			if (metadata.allowedTools == null) {
 				metadata.allowedTools = List.of();
 			}
-			if (metadata.metadata == null) {
-				metadata.metadata = Collections.emptyMap();
+			if (metadata.metaData == null) {
+				metadata.metaData = Collections.emptyMap();
 			}
 			return metadata;
 		}

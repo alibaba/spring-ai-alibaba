@@ -125,7 +125,10 @@ public class SkillScanner {
 			String name = (String) frontmatter.get("name");
 			String description = (String) frontmatter.get("description");
 			List<String> allowedTools;
-			if (frontmatter.containsKey("allowed_tools")) {
+			if (frontmatter.containsKey("allowed-tools")) {
+				allowedTools = normalizeAllowedTools(frontmatter.get("allowed-tools"));
+			}
+			else if (frontmatter.containsKey("allowed_tools")) {
 				allowedTools = normalizeAllowedTools(frontmatter.get("allowed_tools"));
 			}
 			else if (frontmatter.containsKey("allowedTools")) {
@@ -189,7 +192,7 @@ public class SkillScanner {
 					.allowedTools(allowedTools)
 					.license(license)
 					.compatibility(compatibility)
-					.metadata(metadataMap)
+					.metaData(metadataMap)
 					.build();
 
 		}

@@ -1,7 +1,7 @@
 ---
 name: sample-skill
 description: Sample skill fixture for classpath registry enhancement tests.
-allowed_tools:
+allowed-tools:
   - lookup_docs
   - record_result
 license: MIT
