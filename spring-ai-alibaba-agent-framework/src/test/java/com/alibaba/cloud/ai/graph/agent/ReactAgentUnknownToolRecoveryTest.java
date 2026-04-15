@@ -90,6 +90,39 @@ public class ReactAgentUnknownToolRecoveryTest {
 	}
 
 	@Test
+	@DisplayName("should recover from hallucinated tool calls even when no tools are configured")
+	void shouldRecoverFromHallucinatedToolCallsWhenNoToolsAreConfigured() throws Exception {
+		SequenceChatModel model = new SequenceChatModel(
+				assistantWithToolCall("call-1", "missing_tool_1"),
+				assistantWithToolCall("call-2", "missing_tool_2"),
+				new AssistantMessage("final answer after hallucinated tool recovery"));
+		ReactAgent agent = ReactAgent.builder()
+				.name("unknown-tool-no-tools-agent")
+				.model(model)
+				.saver(new MemorySaver())
+				.build();
+		AssistantMessage response = agent.call("hello");
+		assertNotNull(response.getText());
+		assertEquals("final answer after hallucinated tool recovery", response.getText());
+		assertEquals(3, model.getCallCount());
+	}
+
+	@Test
+	@DisplayName("should not enable no-tools recovery when default unknown tool guard is disabled")
+	void shouldNotEnableNoToolsRecoveryWhenDefaultUnknownToolGuardIsDisabled() throws Exception {
+		SequenceChatModel model = new SequenceChatModel(assistantWithToolCall("call-1", "missing_tool_1"));
+		ReactAgent agent = ReactAgent.builder()
+				.name("unknown-tool-no-tools-guard-disabled-agent")
+				.model(model)
+				.saver(new MemorySaver())
+				.disableDefaultUnknownToolGuard()
+				.build();
+		AssistantMessage response = agent.call("hello");
+		assertEquals("", response.getText());
+		assertEquals(1, model.getCallCount());
+	}
+
+	@Test
 	@DisplayName("should terminate immediately without executing tools when model still emits tool calls in final-answer mode")
 	void shouldTerminateImmediatelyWithoutExecutingToolsWhenModelStillCallsTools() throws Exception {
 		AtomicInteger toolInvocations = new AtomicInteger();

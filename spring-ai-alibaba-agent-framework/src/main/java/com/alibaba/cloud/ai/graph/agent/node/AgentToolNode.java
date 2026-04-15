@@ -55,6 +55,7 @@ import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -967,10 +968,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 					executionFailureResponses.size() == responses.size());
 		}
 		// Compute unified error flag covering mixed failure scenarios
-		int totalErrorCount = unknownToolResponses.size() + executionFailureResponses.size();
-		if (totalErrorCount > 0) {
+		boolean hasErroredResponse = responses.stream().anyMatch(ToolCallResponse::isError);
+		if (hasErroredResponse) {
 			metadata.put(ToolCallGuardConstants.ALL_TOOL_CALLS_ERRORED_METADATA_KEY,
-					totalErrorCount == responses.size());
+					responses.stream().allMatch(ToolCallResponse::isError));
 		}
 		return metadata;
 	}
@@ -1022,7 +1023,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 				ToolCallGuardConstants.ALL_TOOL_CALLS_ERRORED_METADATA_KEY)
 				&& getBooleanMetadata(newMetadata,
 						ToolCallGuardConstants.ALL_TOOL_CALLS_ERRORED_METADATA_KEY);
-		if (hasUnknownTool || hasExecutionFailure) {
+		if (hasUnknownTool || hasExecutionFailure
+				|| hasBooleanMetadata(existingMetadata, ToolCallGuardConstants.ALL_TOOL_CALLS_ERRORED_METADATA_KEY)
+				|| hasBooleanMetadata(newMetadata, ToolCallGuardConstants.ALL_TOOL_CALLS_ERRORED_METADATA_KEY)) {
 			mergedMetadata.put(ToolCallGuardConstants.ALL_TOOL_CALLS_ERRORED_METADATA_KEY, allErrored);
 		}
 		return mergedMetadata;
@@ -1046,19 +1049,20 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return metadata.get(key) instanceof Boolean value && value;
 	}
 
+	private boolean hasBooleanMetadata(Map<String, Object> metadata, String key) {
+		return metadata.get(key) instanceof Boolean;
+	}
+
 	private int getIntMetadata(Map<String, Object> metadata, String key) {
 		return metadata.get(key) instanceof Number number ? number.intValue() : 0;
 	}
 
 	private List<String> mergeStringListMetadata(Map<String, Object> existingMetadata,
 			Map<String, Object> newMetadata, String key, boolean sort) {
-		Set<String> values = new TreeSet<>();
+		Set<String> values = sort ? new TreeSet<>() : new LinkedHashSet<>();
 		values.addAll(getMetadataStringList(existingMetadata, key));
 		values.addAll(getMetadataStringList(newMetadata, key));
-		if (!sort) {
-			return new ArrayList<>(values);
-		}
-		return List.copyOf(values);
+		return sort ? List.copyOf(values) : new ArrayList<>(values);
 	}
 
 	private List<String> getMetadataStringList(Map<String, Object> metadata, String key) {

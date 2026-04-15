@@ -298,7 +298,7 @@ public abstract class Builder {
 
 	/**
 	 * Disables the default {@code UnknownToolGuardHook} that is automatically registered
-	 * when tools are present. Use this when you have a custom unknown-tool handling strategy
+	 * Use this when you have a custom unknown-tool handling strategy
 	 * or want to rely solely on {@code maxIterations} for loop control.
 	 * @return this builder for chaining
 	 */

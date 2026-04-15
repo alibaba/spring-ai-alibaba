@@ -114,7 +114,9 @@ public class ReactAgent extends BaseAgent {
 
 	private StateSerializer stateSerializer;
 
-    private final Boolean hasTools;
+	private final boolean hasTools;
+
+	private final boolean toolRoutingEnabled;
 
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
@@ -126,6 +128,7 @@ public class ReactAgent extends BaseAgent {
 		this.hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
 		this.compileConfig = compileConfig;
 		this.hooks = buildEffectiveHooks(builder.hooks, builder);
+		this.toolRoutingEnabled = hasTools || containsHook(this.hooks, UnknownToolGuardHook.class);
 		this.modelInterceptors = builder.modelInterceptors;
 		this.toolInterceptors = builder.toolInterceptors;
 		this.includeContents = builder.includeContents;
@@ -321,7 +324,7 @@ public class ReactAgent extends BaseAgent {
 		StateGraph graph = new StateGraph(name, buildMessagesKeyStrategyFactory(effectiveHooks), stateSerializer);
 
 		graph.addNode(AGENT_MODEL_NAME, node_async(this.llmNode));
-		if (hasTools) {
+		if (toolRoutingEnabled) {
 			graph.addNode(AGENT_TOOL_NAME, node_async(this.toolNode));
 		}
 
@@ -409,6 +412,10 @@ public class ReactAgent extends BaseAgent {
 			effectiveHooks.addAll(configuredHooks);
 		}
 		return effectiveHooks;
+	}
+
+	private static boolean containsHook(List<? extends Hook> hooks, Class<? extends Hook> hookType) {
+		return hooks != null && hooks.stream().anyMatch(hookType::isInstance);
 	}
 
 	/**
@@ -588,8 +595,8 @@ public class ReactAgent extends BaseAgent {
 			chainAgentHookReverse(graph, afterAgentHooks, ".after", exitNode, loopEntryNode, exitNode);
 		}
 
-		// Add tool routing if tools exist
-		if (agentInstance.hasTools) {
+		// Add tool routing if tools exist or if unknown-tool recovery requires a tool-response turn.
+		if (agentInstance.toolRoutingEnabled) {
 			setupToolRouting(graph, loopExitNode, loopEntryNode, exitNode, agentInstance);
 		} else if (!loopExitNode.equals(AGENT_MODEL_NAME)) {
 			// No tools but have after_model - connect to exit
