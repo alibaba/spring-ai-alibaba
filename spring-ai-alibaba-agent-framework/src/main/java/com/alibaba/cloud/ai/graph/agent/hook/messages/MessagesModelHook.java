@@ -108,9 +108,10 @@ public abstract class MessagesModelHook implements Hook {
 					result.put("messages", command.getMessages());
 				}
 			}
-			if (command.getJumpTo() != null) {
-				result.put("jump_to", command.getJumpTo().name());
-			}
+			// Always update jump_to to prevent stale state from persisting across turns.
+			// When the hook doesn't specify a jump target, set to null to clear any
+			// previous value (e.g., from a returnDirect=true execution in a prior turn).
+			result.put("jump_to", command.getJumpTo() != null ? command.getJumpTo().name() : null);
 
 			return CompletableFuture.completedFuture(result);
 		}
@@ -142,9 +143,10 @@ public abstract class MessagesModelHook implements Hook {
 					result.put("messages", command.getMessages());
 				}
 			}
-			if (command.getJumpTo() != null) {
-				result.put("jump_to", command.getJumpTo().name());
-			}
+			// Always update jump_to to prevent stale state from persisting across turns.
+			// When the hook doesn't specify a jump target, set to null to clear any
+			// previous value (e.g., from a returnDirect=true execution in a prior turn).
+			result.put("jump_to", command.getJumpTo() != null ? command.getJumpTo().name() : null);
 
 
 			return CompletableFuture.completedFuture(result);
