@@ -78,8 +78,9 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	// Map to cache fullContent for skills loaded from JAR (skill name -> fullContent)
 	// This is needed because JAR paths cannot be accessed via Path.of() with default filesystem
 	private final Map<String, String> jarSkillContentCache = new HashMap<>();
-	// JAR FileSystem for classpath resources (only created if resource is in JAR)
-	private FileSystem jarFileSystem;
+	// JAR FileSystems for classpath resources, keyed by JAR file path (only created if resource is in JAR)
+	// Using a Map instead of a single FileSystem to support multiple JAR files or different paths
+	private final Map<String, FileSystem> jarFilesystems = new HashMap<>();
 
 	private ClasspathSkillRegistry(Builder builder) {
 		this.classpathPath = builder.classpathPath != null && !builder.classpathPath.isEmpty()
@@ -148,15 +149,19 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 				}
 				else if ("jar".equals(uri.getScheme())) {
 					// Resource is in a JAR file (production mode)
-					// Create or reuse JAR FileSystem
+					// Get or create the JAR FileSystem using the JAR file path as key
+					String jarPath = uri.getSchemeSpecificPart();
+					int separatorIndex = jarPath.indexOf('!');
+					// Extract the JAR file path (the part before '!')
+					String jarFilePath = separatorIndex != -1 ? jarPath.substring(0, separatorIndex) : jarPath;
+					FileSystem jarFileSystem = jarFilesystems.get(jarFilePath);
 					if (jarFileSystem == null) {
 						jarFileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+						jarFilesystems.put(jarFilePath, jarFileSystem);
 					}
 					// Get path within the JAR file system
 					// URI format: jar:file:/path/to.jar!/skills
 					// The path after ! is the path within the JAR
-					String jarPath = uri.getSchemeSpecificPart();
-					int separatorIndex = jarPath.indexOf('!');
 					if (separatorIndex != -1 && separatorIndex + 1 < jarPath.length()) {
 						String pathInJar = jarPath.substring(separatorIndex + 1);
 						// Ensure path starts with / for JAR filesystem
@@ -224,7 +229,7 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 			return skills;
 		}
 
-		boolean isJarPath = (jarFileSystem != null && skillsPath.getFileSystem() == jarFileSystem);
+		boolean isJarPath = jarFilesystems.containsValue(skillsPath.getFileSystem());
 
 		try (var stream = Files.list(skillsPath)) {
 			stream.filter(Files::isDirectory)
@@ -466,15 +471,15 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	 * Should be called when the registry is no longer needed.
 	 */
 	public void close() {
-		if (jarFileSystem != null) {
+		for (FileSystem fs : jarFilesystems.values()) {
 			try {
-				jarFileSystem.close();
+				fs.close();
 			}
 			catch (IOException e) {
 				logger.warn("Failed to close JAR filesystem: {}", e.getMessage());
 			}
-			jarFileSystem = null;
 		}
+		jarFilesystems.clear();
 	}
 
 	/**
