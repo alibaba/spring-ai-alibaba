@@ -35,6 +35,8 @@ public enum Errors {
 	unsupportedConditionalEdgeOnParallelNode(
 			"parallel node doesn't support conditional branch, but on [%s] a conditional branch on %s have been found!"),
 	illegalMultipleTargetsOnParallelNode("parallel node [%s] must have only one target, but %s have been found!"),
+	inconsistentConditionalParallelTargets(
+			"conditional multi-command mappings from node '%s' must converge to a single target, but found targets %s from mapped nodes %s!"),
 	interruptionNodeNotExist("node '%s' configured as interruption doesn't exist!"),
 	emptySourceNodeByEdge("Source nodeIds missing for addEdges(sourceIds, %s)!"),
 	emptyTargetNodeByEdge("Target nodeIds missing for addEdges(%s, targetIds)!");
