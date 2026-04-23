@@ -53,7 +53,6 @@
         <module>spring-ai-alibaba-agent-framework</module>
         <module>spring-ai-alibaba-studio</module>
         <module>spring-ai-alibaba-sandbox</module>
-
         <!-- Spring AI Alibaba Spring Boot Starters -->
         <module>spring-boot-starters/spring-ai-alibaba-starter-a2a-nacos</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-config-nacos</module>
