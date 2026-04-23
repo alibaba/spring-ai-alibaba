@@ -240,7 +240,21 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			// Execute the chained handler
 			ModelResponse modelResponse = chainedHandler.call(modelRequest);
-			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", modelResponse.getMessage());
+
+			Map<String, Object> updatedState = new HashMap<>();
+			updatedState.put("messages", modelResponse.getMessage());
+			if (StringUtils.hasLength(this.outputKey)) {
+				updatedState.put(this.outputKey, modelResponse.getMessage());
+			}
+			// 流式模式下 getChatResponse() 通常为 null（ModelResponse.of(Flux) 不持有 ChatResponse）。
+			// 实际 usage 由 NodeExecutor 的 latestUsageRef 捕获。
+			// 这里放入 EmptyUsage 占位，确保 _TOKEN_USAGE_ key 存在以触发下游累加逻辑。
+			Usage tokenUsage = modelResponse.getChatResponse() != null
+					? modelResponse.getChatResponse().getMetadata().getUsage()
+					: new EmptyUsage();
+			updatedState.put("_TOKEN_USAGE_", tokenUsage);
+
+			return updatedState;
 		} else {
 			// Create base handler that actually calls the model
 			ModelCallHandler baseHandler = request -> {

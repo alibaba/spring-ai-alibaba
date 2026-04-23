@@ -35,6 +35,7 @@ import java.util.LinkedHashMap;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 
@@ -226,8 +227,19 @@ public class NodeExecutor extends BaseGraphExecutor {
 			GraphRunnerContext context, Flux<?> rawFlux, String key, String nodeId) {
 		var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
 		var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
+		var latestUsageRef = new AtomicReference<Usage>(null);
 
-		return rawFlux.filter(element -> {
+		return rawFlux.doOnNext(element -> {
+				// 在 filter 之前捕获所有 ChatResponse chunk 的 usage，包括 result==null 的纯 usage chunk。
+				// 确保 DashScope streamUsage=true 最后一个 chunk 的 usage 数据不会被 filter 丢弃。
+				if (element instanceof ChatResponse response && response.getMetadata() != null) {
+					Usage usage = response.getMetadata().getUsage();
+					if (usage != null && usage.getTotalTokens() != null && usage.getTotalTokens() > 0) {
+						latestUsageRef.set(usage);
+					}
+				}
+			})
+			.filter(element -> {
 				// skip ChatResponse.getResult() == null
 				if (element instanceof ChatResponse response) {
 					return response.getResult() != null &&  response.getResult().getOutput() != null;
@@ -348,8 +360,16 @@ public class NodeExecutor extends BaseGraphExecutor {
 						// For agent model completion, use null message to prevent chunk content
 						messageForCompletion = null;
 					}
-					GraphResponse<NodeOutput> aggregatedResponse = GraphResponse
-						.of(context.buildStreamingOutput(messageForCompletion, lastChatResponse, nodeId, false));
+					StreamingOutput<?> completionOutput = context.buildStreamingOutput(messageForCompletion, lastChatResponse, nodeId, false);
+					// 将之前 doOnNext 捕获的 usage 应用到完成输出（仅当输出本身没有有效 usage 时）
+					Usage capturedUsage = latestUsageRef.get();
+					if (capturedUsage != null) {
+						Usage existingUsage = completionOutput.tokenUsage();
+						if (existingUsage == null || existingUsage.getTotalTokens() == null || existingUsage.getTotalTokens() == 0) {
+							completionOutput.setTokenUsage(capturedUsage);
+						}
+					}
+					GraphResponse<NodeOutput> aggregatedResponse = GraphResponse.of(completionOutput);
 					// Then emit the completion response
 					Map<String, Object> completionResult = new HashMap<>();
 					completionResult.put(key, lastChatResponse.getResult().getOutput());
