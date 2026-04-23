@@ -22,6 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -40,6 +42,7 @@ import org.yaml.snakeyaml.Yaml;
  * Validates skills according to Agent Skills spec (https://agentskills.io/specification):
  * - Skill name: max 64 chars, lowercase alphanumeric with single hyphens only
  * - Skill description: max 1024 chars (truncated if exceeded)
+ * - Compatibility: max 500 chars (truncated if exceeded)
  */
 public class SkillScanner {
 
@@ -47,7 +50,10 @@ public class SkillScanner {
 
 	// Agent Skills spec constraints (https://agentskills.io/specification)
 	private static final int MAX_SKILL_NAME_LENGTH = 64;
+
 	private static final int MAX_SKILL_DESCRIPTION_LENGTH = 1024;
+
+	private static final int MAX_SKILL_COMPATIBILITY_LENGTH = 500;
 
 	// Pattern: lowercase alphanumeric, single hyphens between segments, no start/end hyphen
 	private static final Pattern SKILL_NAME_PATTERN = Pattern.compile("^[a-z0-9]+(-[a-z0-9]+)*$");
@@ -119,7 +125,10 @@ public class SkillScanner {
 			String name = (String) frontmatter.get("name");
 			String description = (String) frontmatter.get("description");
 			List<String> allowedTools;
-			if (frontmatter.containsKey("allowed_tools")) {
+			if (frontmatter.containsKey("allowed-tools")) {
+				allowedTools = normalizeAllowedTools(frontmatter.get("allowed-tools"));
+			}
+			else if (frontmatter.containsKey("allowed_tools")) {
 				allowedTools = normalizeAllowedTools(frontmatter.get("allowed_tools"));
 			}
 			else if (frontmatter.containsKey("allowedTools")) {
@@ -154,18 +163,37 @@ public class SkillScanner {
 				descriptionStr = descriptionStr.substring(0, MAX_SKILL_DESCRIPTION_LENGTH);
 			}
 
+			// Parse license field (optional, nullable)
+			String license = parseNullableString(frontmatter.get("license"));
+
+			// Parse compatibility field (optional, nullable, max 500 chars)
+			String compatibility = parseNullableString(frontmatter.get("compatibility"));
+			if (compatibility != null && compatibility.length() > MAX_SKILL_COMPATIBILITY_LENGTH) {
+				logger.warn(
+						"Compatibility exceeds {} chars in {}, truncating",
+						MAX_SKILL_COMPATIBILITY_LENGTH,
+						skillFile
+				);
+				compatibility = compatibility.substring(0, MAX_SKILL_COMPATIBILITY_LENGTH);
+			}
+
+			// Parse metadata field (optional, must be a map with string keys/values)
+			Map<String, String> metadataMap = validateMetadata(frontmatter.get("metadata"), skillFile);
+
 			// Remove frontmatter from content to get fullContent
 			String fullContent = removeFrontmatter(content);
 
-			SkillMetadata.Builder builder = SkillMetadata.builder()
+			return SkillMetadata.builder()
 					.name(name)
 					.description(descriptionStr)
 					.skillPath(skillDir.toString())
 					.source(source)
 					.fullContent(fullContent)
-					.allowedTools(allowedTools);
-
-			return builder.build();
+					.allowedTools(allowedTools)
+					.license(license)
+					.compatibility(compatibility)
+					.metaData(metadataMap)
+					.build();
 
 		}
 		catch (IOException e) {
@@ -176,6 +204,51 @@ public class SkillScanner {
 			logger.error("Failed to parse skill file {}: {}", skillFile, e.getMessage(), e);
 			return null;
 		}
+	}
+
+	/**
+	 * Parse an optional string field from frontmatter.
+	 * Returns null if the value is missing, empty, or not a string.
+	 * @param value the raw value from YAML frontmatter
+	 * @return the trimmed string, or null if empty/missing
+	 */
+	String parseNullableString(Object value) {
+		if (value == null) {
+			return null;
+		}
+		String str = String.valueOf(value).trim();
+		return str.isEmpty() ? null : str;
+	}
+
+	/**
+	 * Validate and normalize the metadata field from YAML frontmatter.
+	 *
+	 * Ensures the result is always a {@code Map<String, String>} by converting
+	 * all keys and values to strings. Returns an empty map if the input is
+	 * not a map.
+	 * @param raw the raw value from frontmatter
+	 * @param skillFile the skill file path (for warning messages)
+	 * @return a validated map of string key-value pairs
+	 */
+	Map<String, String> validateMetadata(Object raw, Path skillFile) {
+		if (raw == null) {
+			return Collections.emptyMap();
+		}
+		if (!(raw instanceof Map<?, ?> rawMap)) {
+			logger.warn(
+					"Ignoring non-map metadata in {} (got {})",
+					skillFile,
+					raw.getClass().getSimpleName()
+			);
+			return Collections.emptyMap();
+		}
+		Map<String, String> result = new LinkedHashMap<>();
+		for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
+			String key = String.valueOf(entry.getKey());
+			String val = entry.getValue() != null ? String.valueOf(entry.getValue()) : "";
+			result.put(key, val);
+		}
+		return Collections.unmodifiableMap(result);
 	}
 
 	/**
