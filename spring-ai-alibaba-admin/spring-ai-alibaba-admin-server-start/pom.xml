@@ -44,7 +44,7 @@
         <maven-antrun.version>1.8</maven-antrun.version>
         <flatten-maven-plugin.version>1.2.7</flatten-maven-plugin.version>
         <spring-javaformat-maven-plugin.version>0.0.44</spring-javaformat-maven-plugin.version>
-        <json-schema-validator.version>1.0.87</json-schema-validator.version>
+        <json-schema-validator.version>2.0.0</json-schema-validator.version>
 
         <maven.deploy.skip>true</maven.deploy.skip>
 
