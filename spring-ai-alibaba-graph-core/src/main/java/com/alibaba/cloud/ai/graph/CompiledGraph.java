@@ -204,15 +204,28 @@ public class CompiledGraph {
 						.toList();
 
 				var parallelNodeTargets = parallelNodeEdges.stream()
+						.filter(ee -> !ee.isParallel())  // Skip nested parallel edges to avoid IllegalStateException
 						.map(ee -> ee.target().id())
 						.collect(Collectors.toSet());
+
+				// Validate parallelNodeTargets before proceeding
+				if (parallelNodeTargets.isEmpty()) {
+					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(),
+							"No valid target found for parallel node");
+				}
+				// Remove null values that could come from conditional edges
+				parallelNodeTargets.remove(null);
+				if (parallelNodeTargets.isEmpty()) {
+					throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(),
+							"All targets are conditional (null) for parallel node");
+				}
 
 				if (parallelNodeTargets.size() > 1) {
 
 					// find the first defer node
 
 					var conditionalEdges = parallelNodeEdges.stream()
-							.filter(ee -> ee.target().value() != null)
+							.filter(ee -> !ee.isParallel() && ee.target().value() != null)
 							.toList();
 					if (!conditionalEdges.isEmpty()) {
 						throw Errors.unsupportedConditionalEdgeOnParallelNode.exception(e.sourceId(),
@@ -357,6 +370,7 @@ public class CompiledGraph {
 				.toList();
 
 		return parallelNodeEdges.stream()
+				.filter(ee -> !ee.isParallel())  // Skip nested parallel edges to avoid IllegalStateException
 				.map(ee -> ee.target().id())
 				.filter(Objects::nonNull)
 				.collect(Collectors.toSet());
