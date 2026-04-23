@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
@@ -53,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -226,6 +228,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			GraphRunnerContext context, Flux<?> rawFlux, String key, String nodeId) {
 		var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
 		var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
+		var upstreamAlreadyEmittedCompletion = new AtomicBoolean(false);
 
 		return rawFlux.filter(element -> {
 				// skip ChatResponse.getResult() == null
@@ -287,6 +290,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 				}
 				else if (element instanceof GraphResponse) {
 					GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
+					if (graphResponse.isDone() || graphResponse.resultValue().isPresent()) {
+						upstreamAlreadyEmittedCompletion.set(true);
+					}
 					lastGraphResponseRef.set(graphResponse);
 					return graphResponse;
 				} else if (element instanceof NodeOutput nodeOutput) {
@@ -317,6 +323,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return Flux.just(errorResponse);
 			})
 			.concatWith(Flux.defer(() -> {
+				if (upstreamAlreadyEmittedCompletion.get()) {
+					return Flux.empty();
+				}
 				if (lastChatResponseRef.get() == null) {
 					GraphResponse<NodeOutput> lastGraphResponse = lastGraphResponseRef.get();
 					if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
@@ -557,6 +566,10 @@ public class NodeExecutor extends BaseGraphExecutor {
 				Object value = nodeResultValue.get();
 				if (value instanceof Map<?, ?>) {
 					updateState = (Map<String, Object>) value;
+				}
+				else if (value instanceof BaseCheckpointSaver.Tag) {
+					// When releaseThread=true, completion may return a Tag.
+					// Tag is a checkpoint-release receipt, not a state update, so skip merge here.
 				}
 				else {
 					throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
