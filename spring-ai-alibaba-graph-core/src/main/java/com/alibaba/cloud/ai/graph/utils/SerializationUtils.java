@@ -19,8 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Utility class for object serialization and deep copying operations.
@@ -97,9 +96,15 @@ public class SerializationUtils {
 		}
 
 		// Handle List
-		if (value instanceof java.util.List) {
-			java.util.List<Object> originalList = (java.util.List<Object>) value;
-			java.util.List<Object> copyList = new java.util.ArrayList<>();
+		if (value instanceof List<?> originalList) {
+			List<Object> copyList;
+			try {
+				copyList = originalList.getClass().getDeclaredConstructor().newInstance();
+			} catch (Exception e) {
+				// Fallback
+				copyList = new ArrayList<>();
+			}
+
 			for (Object item : originalList) {
 				copyList.add(deepCopyValue(item));
 			}
@@ -107,9 +112,15 @@ public class SerializationUtils {
 		}
 
 		// Handle Set
-		if (value instanceof java.util.Set) {
-			java.util.Set<Object> originalSet = (java.util.Set<Object>) value;
-			java.util.Set<Object> copySet = new java.util.HashSet<>();
+		if (value instanceof Set<?> originalSet) {
+			Set<Object> copySet;
+			try {
+				copySet = originalSet.getClass().getDeclaredConstructor().newInstance();
+			} catch (Exception e) {
+				// Fallback
+				copySet = new HashSet<>();
+			}
+
 			for (Object item : originalSet) {
 				copySet.add(deepCopyValue(item));
 			}
