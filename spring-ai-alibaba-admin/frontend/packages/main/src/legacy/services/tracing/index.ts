@@ -1,4 +1,4 @@
-import { request } from '../../utils/request';
+import { request } from '@/request';
 import { API_PATH } from '../const';
 
 // 获取Trace列表
@@ -53,10 +53,11 @@ import { API_PATH } from '../const';
 //   ]
 // }
 export async function getTraces(params: TracingAPI.GetTracesParams) {
-  return request<TracingAPI.GetTracesResult>(`${API_PATH}/observability/traces`, {
+  return request({
+    url: `${API_PATH}/observability/traces`,
     method: 'GET',
     params,
-  });
+  }).then(r => r.data);
 }
 
 // 获取单个Trace详情
@@ -106,9 +107,10 @@ export async function getTraces(params: TracingAPI.GetTracesParams) {
 //   ]
 // }
 export async function getTraceDetail(params: { traceId: string }) {
-  return request<TracingAPI.GetTraceDetailResult>(`${API_PATH}/observability/traces/${params.traceId}`, {
+  return request({
+    url: `${API_PATH}/observability/traces/${params.traceId}`,
     method: 'GET',
-  });
+  }).then(r => r.data);
 }
 
 // 获取服务列表
@@ -132,10 +134,11 @@ export async function getTraceDetail(params: { traceId: string }) {
 //   ]
 // }
 export async function getServices(params: {startTime: string; endTime: string}) {
-  return request<TracingAPI.GetServicesResult>(`${API_PATH}/observability/services`, {
+  return request({
+    url: `${API_PATH}/observability/services`,
     method: 'GET',
-    params
-  });
+    params,
+  }).then(r => r.data);
 }
 
 // 获取 Trace 概览
@@ -180,8 +183,9 @@ export async function getServices(params: {startTime: string; endTime: string}) 
 //   }
 // }
 export async function getOverview(params: TracingAPI.GetOverviewParams) {
-  return request<TracingAPI.GetOverviewResult>(`${API_PATH}/observability/overview`, {
+  return request({
+    url: `${API_PATH}/observability/overview`,
     method: 'GET',
     params,
-  });
+  }).then(r => r.data);
 }
