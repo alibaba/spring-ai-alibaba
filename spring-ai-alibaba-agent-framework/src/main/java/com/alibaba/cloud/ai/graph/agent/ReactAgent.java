@@ -41,6 +41,8 @@ import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
+import com.alibaba.cloud.ai.graph.agent.hook.toolexecutionfailure.ToolExecutionFailureGuardHook;
+import com.alibaba.cloud.ai.graph.agent.hook.unknowntool.UnknownToolGuardHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
@@ -112,7 +114,9 @@ public class ReactAgent extends BaseAgent {
 
 	private StateSerializer stateSerializer;
 
-    private final Boolean hasTools;
+	private final boolean hasTools;
+
+	private final boolean toolRoutingEnabled;
 
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
@@ -121,8 +125,10 @@ public class ReactAgent extends BaseAgent {
 		this.instruction = builder.instruction;
 		this.llmNode = llmNode;
 		this.toolNode = toolNode;
+		this.hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
 		this.compileConfig = compileConfig;
-		this.hooks = builder.hooks;
+		this.hooks = buildEffectiveHooks(builder.hooks, builder);
+		this.toolRoutingEnabled = hasTools || containsHook(this.hooks, UnknownToolGuardHook.class);
 		this.modelInterceptors = builder.modelInterceptors;
 		this.toolInterceptors = builder.toolInterceptors;
 		this.includeContents = builder.includeContents;
@@ -150,8 +156,6 @@ public class ReactAgent extends BaseAgent {
 			this.toolNode.setToolInterceptors(mergedToolInterceptors);
 		}
 
-        // Set tools flag if tool interceptors are present.
-        hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
 	}
 
 	public static Builder builder() {
@@ -302,15 +306,7 @@ public class ReactAgent extends BaseAgent {
 
 	@Override
 	protected StateGraph initGraph() throws GraphStateException {
-
-		if (hooks == null) {
-			hooks = new ArrayList<>();
-		}
-
-		// Always inject default InstructionAgentHook so instruction is handled in beforeAgent
-		List<Hook> effectiveHooks = new ArrayList<>();
-		effectiveHooks.add(InstructionAgentHook.create());
-		effectiveHooks.addAll(hooks);
+		List<Hook> effectiveHooks = hooks == null ? new ArrayList<>() : new ArrayList<>(hooks);
 
 		// Validate hook uniqueness
 		Set<String> hookNames = new HashSet<>();
@@ -328,7 +324,7 @@ public class ReactAgent extends BaseAgent {
 		StateGraph graph = new StateGraph(name, buildMessagesKeyStrategyFactory(effectiveHooks), stateSerializer);
 
 		graph.addNode(AGENT_MODEL_NAME, node_async(this.llmNode));
-		if (hasTools) {
+		if (toolRoutingEnabled) {
 			graph.addNode(AGENT_TOOL_NAME, node_async(this.toolNode));
 		}
 
@@ -396,6 +392,30 @@ public class ReactAgent extends BaseAgent {
 		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
 				entryNode, loopEntryNode, loopExitNode, exitNode, this);
 		return graph;
+	}
+
+	private List<Hook> buildEffectiveHooks(List<Hook> configuredHooks, Builder builder) {
+		List<Hook> effectiveHooks = new ArrayList<>();
+		effectiveHooks.add(InstructionAgentHook.create());
+		// UnknownToolGuardHook is registered regardless of whether tools are configured,
+		// because models can hallucinate tool calls even when no tools are available.
+		// e.g, if the SKILL.md description requires calling a tool, the model may have a certain probability of calling the wrong tool.
+		if (!builder.disableDefaultUnknownToolGuard
+				&& (configuredHooks == null || configuredHooks.stream().noneMatch(UnknownToolGuardHook.class::isInstance))) {
+			effectiveHooks.add(UnknownToolGuardHook.create());
+		}
+		if (hasTools && !builder.disableDefaultToolExecutionFailureGuard
+				&& (configuredHooks == null || configuredHooks.stream().noneMatch(ToolExecutionFailureGuardHook.class::isInstance))) {
+			effectiveHooks.add(ToolExecutionFailureGuardHook.create());
+		}
+		if (configuredHooks != null && !configuredHooks.isEmpty()) {
+			effectiveHooks.addAll(configuredHooks);
+		}
+		return effectiveHooks;
+	}
+
+	private static boolean containsHook(List<? extends Hook> hooks, Class<? extends Hook> hookType) {
+		return hooks != null && hooks.stream().anyMatch(hookType::isInstance);
 	}
 
 	/**
@@ -575,8 +595,8 @@ public class ReactAgent extends BaseAgent {
 			chainAgentHookReverse(graph, afterAgentHooks, ".after", exitNode, loopEntryNode, exitNode);
 		}
 
-		// Add tool routing if tools exist
-		if (agentInstance.hasTools) {
+		// Add tool routing if tools exist or if unknown-tool recovery requires a tool-response turn.
+		if (agentInstance.toolRoutingEnabled) {
 			setupToolRouting(graph, loopExitNode, loopEntryNode, exitNode, agentInstance);
 		} else if (!loopExitNode.equals(AGENT_MODEL_NAME)) {
 			// No tools but have after_model - connect to exit
