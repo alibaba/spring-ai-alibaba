@@ -26,17 +26,17 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.CreateIndexResponse;
 import co.elastic.clients.elasticsearch.indices.IndexSettings;
-import com.alibaba.cloud.ai.studio.runtime.exception.BizException;
-import com.alibaba.cloud.ai.studio.runtime.enums.ErrorCode;
-import com.alibaba.cloud.ai.studio.runtime.domain.PagingList;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.DocumentChunk;
-import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.IndexConfig;
 import com.alibaba.cloud.ai.studio.core.model.embedding.DefaultBatchingStrategy;
 import com.alibaba.cloud.ai.studio.core.model.embedding.EmbeddingModelDimension;
 import com.alibaba.cloud.ai.studio.core.model.llm.ModelFactory;
+import com.alibaba.cloud.ai.studio.core.rag.DocumentChunkConverter;
 import com.alibaba.cloud.ai.studio.core.rag.RagConstants;
 import com.alibaba.cloud.ai.studio.core.rag.vectorstore.VectorStoreService;
-import com.alibaba.cloud.ai.studio.core.rag.DocumentChunkConverter;
+import com.alibaba.cloud.ai.studio.runtime.domain.PagingList;
+import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.DocumentChunk;
+import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.IndexConfig;
+import com.alibaba.cloud.ai.studio.runtime.enums.ErrorCode;
+import com.alibaba.cloud.ai.studio.runtime.exception.BizException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.client.RestClient;
@@ -52,6 +52,7 @@ import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore
 import org.springframework.ai.vectorstore.elasticsearch.SimilarityFunction;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -68,6 +69,7 @@ import static com.alibaba.cloud.ai.studio.core.rag.RagConstants.*;
  * @since 1.0.0.3
  */
 @Service
+@ConditionalOnBean(RestClient.class)
 @Slf4j
 @Qualifier("elasticSearchVectorStoreService")
 public class ElasticSearchVectorStoreService implements VectorStoreService {
@@ -85,7 +87,7 @@ public class ElasticSearchVectorStoreService implements VectorStoreService {
 	private final FilterExpressionConverter filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
 
 	public ElasticSearchVectorStoreService(ModelFactory modelFactory, ElasticsearchClient elasticsearchClient,
-			RestClient restClient) {
+                                           RestClient restClient) {
 		this.modelFactory = modelFactory;
 		this.elasticsearchClient = elasticsearchClient;
 		this.restClient = restClient;
@@ -240,7 +242,7 @@ public class ElasticSearchVectorStoreService implements VectorStoreService {
 			BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
 			List<Document> documents = chunks.stream().map(DocumentChunkConverter::toDocument).toList();
-			List<float[]> embeddings = embeddingModel.embed(documents,  EmbeddingOptions.builder().build(),
+			List<float[]> embeddings = embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 					new DefaultBatchingStrategy());
 
 			for (Document document : documents) {

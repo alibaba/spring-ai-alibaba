@@ -32,6 +32,7 @@ import com.alibaba.cloud.ai.studio.core.utils.api.ApiUtils;
 
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.model.ChatModel;
@@ -71,7 +72,7 @@ public class ModelFactory {
 	@Resource
 	private ObservationRegistry observationRegistry;
 
-	@Resource
+	@Autowired(required = false)
 	private ChatModelObservationConvention customChatModelObservationConvention;
 
 	/**
@@ -89,7 +90,9 @@ public class ModelFactory {
 				.openAiApi(openAiApi)
 				.observationRegistry(observationRegistry)
 				.build();
-		openAiChatModel.setObservationConvention(customChatModelObservationConvention);
+		if (customChatModelObservationConvention != null) {
+			openAiChatModel.setObservationConvention(customChatModelObservationConvention);
+		}
 		return openAiChatModel;
 	}
 
