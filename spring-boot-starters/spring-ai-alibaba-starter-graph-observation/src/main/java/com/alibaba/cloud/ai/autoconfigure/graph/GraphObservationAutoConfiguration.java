@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.autoconfigure.graph;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.observation.GraphObservationLifecycleListener;
+import com.alibaba.cloud.ai.graph.observation.GraphObservationSupport;
 import com.alibaba.cloud.ai.graph.observation.edge.GraphEdgeObservationHandler;
 import com.alibaba.cloud.ai.graph.observation.graph.GraphObservationHandler;
 import com.alibaba.cloud.ai.graph.observation.node.GraphNodeObservationHandler;
@@ -116,13 +117,13 @@ public class GraphObservationAutoConfiguration {
 	@ConditionalOnMissingBean
 	public CompileConfig observationGraphCompileConfig(ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<GraphObservationLifecycleListener> graphObservationLifecycleListeners) {
-
-		CompileConfig.Builder builder = CompileConfig.builder()
-				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
-
-		graphObservationLifecycleListeners.ifUnique(builder::withLifecycleListener);
-
-		return builder.build();
+		ObservationRegistry registry = observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP);
+		CompileConfig compileConfig = CompileConfig.builder().observationRegistry(registry).build();
+		GraphObservationLifecycleListener listener = graphObservationLifecycleListeners.getIfUnique();
+		if (listener != null && !GraphObservationSupport.hasLifecycleListener(compileConfig, listener.getClass())) {
+			return CompileConfig.builder(compileConfig).withLifecycleListener(listener).build();
+		}
+		return GraphObservationSupport.enhance(compileConfig, registry);
 	}
 
 	/**
