@@ -1,18 +1,41 @@
 {
   "groups": [
     {
-      "name": "spring.ai.alibaba.graph.observation",
-      "type": "com.alibaba.cloud.ai.autoconfigure.graph.GraphObservationProperties",
-      "sourceType": "com.alibaba.cloud.ai.autoconfigure.graph.GraphObservationProperties",
-      "description": "Configuration properties for Graph observation functionality."
+      "name": "spring.ai.alibaba.observability",
+      "type": "com.alibaba.cloud.ai.autoconfigure.graph.health.config.ObservabilityProperties",
+      "description": "Configuration properties for Spring AI Alibaba observability."
     }
   ],
   "properties": [
     {
-      "name": "spring.ai.alibaba.graph.observation.enabled",
+      "name": "spring.ai.alibaba.observability.enabled",
       "type": "java.lang.Boolean",
       "defaultValue": true,
-      "description": "Whether to enable graph observation functionality."
+      "description": "Enable observability features (metrics collection)."
+    },
+    {
+      "name": "spring.ai.alibaba.observability.detailed-token-metrics",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "Enable detailed token usage metrics (input/output/total)."
+    },
+    {
+      "name": "spring.ai.alibaba.observability.enable-cost-estimation",
+      "type": "java.lang.Boolean",
+      "defaultValue": false,
+      "description": "Enable cost estimation based on token pricing."
+    },
+    {
+      "name": "spring.ai.alibaba.observability.pricing.input-token-cost-per-million",
+      "type": "java.lang.Double",
+      "defaultValue": 0.0,
+      "description": "Cost per 1M input tokens in USD."
+    },
+    {
+      "name": "spring.ai.alibaba.observability.pricing.output-token-cost-per-million",
+      "type": "java.lang.Double",
+      "defaultValue": 0.0,
+      "description": "Cost per 1M output tokens in USD."
     }
   ]
 }
