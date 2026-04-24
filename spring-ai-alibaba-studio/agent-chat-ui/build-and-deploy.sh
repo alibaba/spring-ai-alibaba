@@ -17,7 +17,7 @@ cd "$SCRIPT_DIR"
 
 # 定义路径
 OUT_DIR="$SCRIPT_DIR/out"
-TARGET_DIR="$SCRIPT_DIR/../spring-ai-alibaba-studio/src/main/resources/META-INF/resources/chatui"
+TARGET_DIR="$SCRIPT_DIR/../src/main/resources/META-INF/resources/chatui"
 
 echo -e "${GREEN}=== 开始构建和部署静态文件 ===${NC}"
 
@@ -38,6 +38,10 @@ if ! command -v pnpm &> /dev/null; then
   echo -e "${RED}错误: 未找到 pnpm 命令，请先安装 pnpm${NC}"
   exit 1
 fi
+
+# 清理构建缓存，避免 ENOENT pages-manifest.json 等缓存损坏问题
+echo "清理 .next 和 out 目录..."
+rm -rf .next out
 
 pnpm run build:static
 

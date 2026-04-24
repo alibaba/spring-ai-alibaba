@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: voice-agent-example
+
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY:}
+      # Realtime ASR: paraformer-realtime-v2 (streamRecognition)
+      # Realtime TTS: cosyvoice-v3-flash (stream with text input)

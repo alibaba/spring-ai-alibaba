@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: supervisor-personal-assistant
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY:}
+
+# Set to true to run the two demo scenarios on startup (single-domain and multi-domain).
+# Default: false (app starts without calling the model).
+supervisor:
+  run-examples: false

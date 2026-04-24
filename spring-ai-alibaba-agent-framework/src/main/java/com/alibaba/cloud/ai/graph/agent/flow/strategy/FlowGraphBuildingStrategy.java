@@ -113,6 +113,9 @@ public interface FlowGraphBuildingStrategy {
 		if (agent instanceof ReactAgent reactAgent) {
 			// ReactAgent: only handle outputKey
 			processOutputKey(reactAgent.getOutputKey(), reactAgent.getOutputKeyStrategy(), keyStrategyMap, defaultStrategy);
+		} else if (agent instanceof BaseAgent baseAgent) {
+			// BaseAgent (e.g. AgentScopeAgent): handle outputKey
+			processOutputKey(baseAgent.getOutputKey(), baseAgent.getOutputKeyStrategy(), keyStrategyMap, defaultStrategy);
 		} else if (agent instanceof FlowAgent flowAgent) {
 			// FlowAgent: recursively process sub-agents
 			if (flowAgent.subAgents() != null) {

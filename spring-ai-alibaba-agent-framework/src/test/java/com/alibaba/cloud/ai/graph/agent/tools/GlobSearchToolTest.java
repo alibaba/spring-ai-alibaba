@@ -68,6 +68,15 @@ class GlobSearchToolTest {
 	}
 
 	@Test
+	void testForbiddenBroadPatternMatchAll() {
+		GlobSearchTool.Request request = new GlobSearchTool.Request("**/*", "/");
+		String result = globSearchTool.apply(request, toolContext);
+		assertTrue(result.startsWith("Error:"));
+		assertTrue(result.contains("matches all files"));
+		assertTrue(result.contains("not allowed"));
+	}
+
+	@Test
 	void testPathTraversalAttack() {
 		GlobSearchTool.Request request = new GlobSearchTool.Request("*.txt", "/../etc");
 		String result = globSearchTool.apply(request, toolContext);

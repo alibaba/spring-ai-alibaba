@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.DefaultChatClient;
@@ -173,37 +174,36 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		// Dynamically resolve all tools (static + providers)
 		List<ToolCallback> currentTools = resolveAllTools();
 
-		// Create ModelRequest
+		// Create ModelRequest; include state in context so interceptors (e.g. handoffs step-config) can read it
+		Map<String, Object> contextMap = new HashMap<>(state.data());
+		Map<String, Object> metadata = config.metadata().orElse(new HashMap<>());
+		if (!metadata.isEmpty()) {
+			contextMap.putAll(metadata);
+		}
+
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
 				.messages(messages)
 				.options(this.chatOptions != null ? this.chatOptions.copy() : null)
-				.context(config.metadata().orElse(new HashMap<>()));
+				.context(contextMap);
 
-	       // Extract tool names and descriptions from currentTools and pass them to ModelRequest
-	       if (currentTools != null && !currentTools.isEmpty()) {
-	           List<String> toolNames = new ArrayList<>();
-	           Map<String, String> toolDescriptions = new HashMap<>();
-	           for (ToolCallback callback : currentTools) {
-	               String name = callback.getToolDefinition().name();
-	               String description = callback.getToolDefinition().description();
-	               toolNames.add(name);
-	               if (description != null && !description.isEmpty()) {
-	                   toolDescriptions.put(name, description);
-	               }
-	           }
-	           requestBuilder.tools(toolNames);
-	           requestBuilder.toolDescriptions(toolDescriptions);
-	       }
+		// Extract tool names and descriptions from currentTools and pass them to ModelRequest
+		if (currentTools != null && !currentTools.isEmpty()) {
+			List<String> toolNames = new ArrayList<>();
+			Map<String, String> toolDescriptions = new HashMap<>();
+			for (ToolCallback callback : currentTools) {
+				String name = callback.getToolDefinition().name();
+				String description = callback.getToolDefinition().description();
+				toolNames.add(name);
+				if (description != null && !description.isEmpty()) {
+					toolDescriptions.put(name, description);
+				}
+			}
+			requestBuilder.tools(toolNames);
+			requestBuilder.toolDescriptions(toolDescriptions);
+		}
 
 		if (StringUtils.hasLength(this.systemPrompt)) {
 			requestBuilder.systemMessage(new SystemMessage(this.systemPrompt));
-		}
-
-		if (StringUtils.hasLength(this.instruction)) {
-			List<Message> messagesWithInstruction = new ArrayList<>();
-			messagesWithInstruction.add(new UserMessage(this.instruction));
-			messagesWithInstruction.addAll(messages);
-			requestBuilder.messages(messagesWithInstruction);
 		}
 
 		ModelRequest modelRequest = requestBuilder.build();
@@ -481,7 +481,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<ToolCallback> toolCallbacks = new ArrayList<>();
 		if (modelRequest == null) {
 			toolCallbacks.addAll(currentTools);
-			return toolCallbacks;
+			return ToolCallbackUtils.deduplicateByName(toolCallbacks);
 		}
 
 		if (modelRequest.getOptions() != null && modelRequest.getOptions().getToolCallbacks() != null) {
@@ -495,11 +495,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		List<String> requestedTools = modelRequest.getTools();
 		if (requestedTools == null || requestedTools.isEmpty()) {
-			return toolCallbacks;
+			return ToolCallbackUtils.deduplicateByName(toolCallbacks);
 		}
-		return new ArrayList<>(toolCallbacks.stream()
+		return ToolCallbackUtils.deduplicateByName(new ArrayList<>(toolCallbacks.stream()
 				.filter(callback -> requestedTools.contains(callback.getToolDefinition().name()))
-				.toList());
+				.toList()));
 	}
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest, RunnableConfig config, List<ToolCallback> currentTools) {
@@ -508,10 +508,14 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		// NOTICE! If both tools(ToolSelectionInterceptor) and options are customized in ModelRequest, tools will override toolcall setting in options.
 		List<ToolCallback> filteredToolCallbacks = filterToolCallbacks(modelRequest, currentTools);
 
-		if (!CollectionUtils.isEmpty(modelRequest.getDynamicToolCallbacks())) {
-			filteredToolCallbacks.addAll(modelRequest.getDynamicToolCallbacks());
+		List<ToolCallback> dynamicToolCallbacks = ToolCallbackUtils.deduplicateByName(modelRequest.getDynamicToolCallbacks());
+		if (!CollectionUtils.isEmpty(dynamicToolCallbacks)) {
+			filteredToolCallbacks = ToolCallbackUtils.deduplicateByName(filteredToolCallbacks, dynamicToolCallbacks);
 			// FIXME, use RunnableConfig to pass dynamic tool callbacks to tool node via config context (internal use)
-			config.context().put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY, modelRequest.getDynamicToolCallbacks());
+			config.context().put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY, dynamicToolCallbacks);
+		}
+		else {
+			config.context().remove(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY);
 		}
 
 		var promptSpec = this.chatClient.prompt()

@@ -28,23 +28,13 @@ target/
 
 ### .env files contain local environment variables ###
 .env
+.envrc
 
 # Maven ignore
 .flattened-pom.xml
 
 # node_modules
 **/node_modules
-
-# Generated Files
-spring-ai-alibaba-examples/playground-flight-booking/frontend/generated/
-spring-ai-alibaba-examples/playground-flight-booking/src/main/bundles/
-/spring-ai-alibaba-examples/playground-flight-booking-example/
-**/spring-ai-alibaba-jmanus/extensions/*
-**/venv/*
-**/spring-ai-alibaba-jmanus/h2-data/*
-**/playwright/*
-spring-ai-alibaba-jmanus/ui-vue3/pnpm-lock.yaml
-
 
 # windows os
 /extensions/

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring AI Alibaba - 多模态示例</title>
+    <style>
+        :root {
+            --bg: #0f1419;
+            --surface: #1a2332;
+            --border: #2d3a4f;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+            --accent-hover: #79b8ff;
+            --success: #3fb950;
+            --error: #f85149;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle { color: var(--text-muted); margin-bottom: 2rem; }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0 0 1rem 0;
+            color: var(--accent);
+        }
+        .card p.desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        input[type="text"], input[type="url"], textarea {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+        }
+        textarea { min-height: 80px; resize: vertical; }
+        input::placeholder, textarea::placeholder { color: var(--text-muted); }
+        button {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        button:hover { background: var(--accent-hover); }
+        button:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .file-input-wrap {
+            margin-bottom: 0.75rem;
+        }
+        .file-input-wrap input[type="file"] {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .result.success { border-color: var(--success); }
+        .result.error { border-color: var(--error); color: var(--error); }
+        .loading { color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Spring AI Alibaba 多模态示例</h1>
+        <p class="subtitle">图像理解、视觉 Agent、创意生成、语音合成</p>
+
+        <!-- Scene 1: Image from URL -->
+        <div class="card">
+            <h2>1. runImageFromUrl - 图片 URL 理解</h2>
+            <p class="desc">通过公开图片 URL，使用 ChatModel 直接进行图像描述。</p>
+            <input type="url" id="url-imageUrl" placeholder="图片 URL，例如: https://example.com/image.png"
+                   value="https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg">
+            <input type="text" id="url-question" placeholder="问题，例如: 请描述这张图片的内容"
+                   value="Explain what do you see in this picture?">
+            <button onclick="runImageFromUrl()">提交</button>
+            <div id="url-result" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Scene 2: Image from Resource -->
+        <div class="card">
+            <h2>2. runImageFromResource - 本地/上传图片理解</h2>
+            <p class="desc">上传本地图片文件，或使用 classpath 资源路径（如 images/sample.png）。</p>
+            <div class="file-input-wrap">
+                <label>上传图片：</label>
+                <input type="file" id="resource-image" accept="image/*">
+            </div>
+            <input type="text" id="resource-question" placeholder="问题"
+                   value="Please describe the content of this image.">
+            <button onclick="runImageFromResource()">提交（上传文件）</button>
+            <hr style="border-color:var(--border);margin:1rem 0;">
+            <p class="desc">或使用 classpath 资源：</p>
+            <input type="text" id="resource-path" placeholder="资源路径，例如: images/sample.png"
+                   value="images/sample.png">
+            <button onclick="runImageFromClasspathResource()">提交（classpath 资源）</button>
+            <div id="resource-result" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Scene 3: Vision Agent -->
+        <div class="card">
+            <h2>3. runVisionAgent - 视觉 Agent</h2>
+            <p class="desc">使用 ReactAgent 进行多模态输入（图片 + 文本）理解。</p>
+            <input type="url" id="vision-imageUrl" placeholder="图片 URL"
+                   value="https://dashscope.oss-cn-beijing.aliyuncs.com/images/dog_and_girl.jpeg">
+            <input type="text" id="vision-question" placeholder="问题"
+                   value="What do you see in this image? Describe it briefly.">
+            <button onclick="runVisionAgent()">提交</button>
+            <div id="vision-result" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Scene 4: Creative Agent -->
+        <div class="card">
+            <h2>4. runCreativeAgent - 创意 Agent</h2>
+            <p class="desc">通过工具进行图像/音频生成（需配置 ImageModel 和 TTSModel）。</p>
+            <textarea id="creative-request" placeholder="创意请求，例如: Generate an image of a cute cat in a garden, watercolor style."
+                      >Generate an image of a cute cat in a garden, watercolor style.</textarea>
+            <button onclick="runCreativeAgent()">提交</button>
+            <div id="creative-result" class="result" style="display:none;"></div>
+        </div>
+
+        <!-- Scene 5: TTS -->
+        <div class="card">
+            <h2>5. TTS - 语音合成</h2>
+            <p class="desc">使用 DashScope 语音合成（需配置 DashScopeAudioSpeechModel）。输出格式 base64 可在页面直接播放，url 为服务器临时文件地址。</p>
+            <textarea id="tts-text" placeholder="要合成的文本" rows="3">Hello, this is a text to speech demo.</textarea>
+            <input type="text" id="tts-voice" placeholder="音色，如 longanyang、longanhuan" value="longanyang">
+            <label style="color:var(--text-muted);font-size:0.9rem;">输出格式：</label>
+            <select id="tts-outputFormat" style="width:100%;padding:0.6rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);margin-bottom:0.75rem;">
+                <option value="base64">base64（页面内播放）</option>
+                <option value="url">url（服务器文件地址）</option>
+            </select>
+            <button onclick="runTts()">合成</button>
+            <div id="tts-result" class="result" style="display:none;"></div>
+            <div id="tts-audio-wrap" style="margin-top:0.75rem;display:none;">
+                <audio id="tts-audio" controls style="width:100%;"></audio>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = '/api';
+
+        function showResult(id, text, isError) {
+            const el = document.getElementById(id);
+            el.style.display = 'block';
+            el.textContent = text;
+            el.className = 'result ' + (isError ? 'error' : 'success');
+        }
+
+        function setLoading(id, loading) {
+            const el = document.getElementById(id);
+            el.style.display = loading ? 'block' : 'none';
+            el.textContent = loading ? '请求中...' : '';
+            el.className = 'result loading';
+        }
+
+        async function parseResponse(res) {
+            const text = await res.text();
+            if (!text || !text.trim()) return {};
+            try {
+                return JSON.parse(text);
+            } catch (_) {
+                return { _raw: text };
+            }
+        }
+
+        function getErrorMessage(res, data) {
+            if (data.error) return data.error;
+            if (data.message) return data.message;
+            const status = res.status;
+            if (status === 413) return '上传文件过大 (413)，超过服务器限制。请缩小图片后重试。';
+            if (status === 400) return data._raw && !data._raw.startsWith('<') ? data._raw : '请求参数错误 (400)。';
+            if (status === 404) return '接口不存在 (404)。';
+            if (status >= 500) return data._raw && !data._raw.startsWith('<') ? data._raw : '服务器错误 (' + status + ')，请稍后重试。';
+            if (data._raw && typeof data._raw === 'string' && !data._raw.trim().startsWith('<')) return data._raw;
+            return '请求失败 (' + status + ')。';
+        }
+
+        async function runImageFromUrl() {
+            const imageUrl = document.getElementById('url-imageUrl').value.trim();
+            const question = document.getElementById('url-question').value.trim();
+            if (!imageUrl || !question) {
+                showResult('url-result', '请填写图片 URL 和问题', true);
+                return;
+            }
+            setLoading('url-result', true);
+            try {
+                const res = await fetch(API + '/image/from-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageUrl, question })
+                });
+                const data = await parseResponse(res);
+                if (!res.ok) showResult('url-result', getErrorMessage(res, data), true);
+                else showResult('url-result', data.answer != null ? data.answer : JSON.stringify(data));
+            } catch (e) {
+                showResult('url-result', '错误: ' + e.message, true);
+            }
+        }
+
+        async function runImageFromResource() {
+            const file = document.getElementById('resource-image').files[0];
+            const question = document.getElementById('resource-question').value.trim();
+            if (!file || !question) {
+                showResult('resource-result', '请选择图片文件并填写问题', true);
+                return;
+            }
+            setLoading('resource-result', true);
+            try {
+                const form = new FormData();
+                form.append('image', file);
+                form.append('question', question);
+                const res = await fetch(API + '/image/from-resource', {
+                    method: 'POST',
+                    body: form
+                });
+                const data = await parseResponse(res);
+                if (!res.ok) showResult('resource-result', getErrorMessage(res, data), true);
+                else showResult('resource-result', data.answer != null ? data.answer : JSON.stringify(data));
+            } catch (e) {
+                showResult('resource-result', '错误: ' + e.message, true);
+            }
+        }
+
+        async function runImageFromClasspathResource() {
+            const resourcePath = document.getElementById('resource-path').value.trim();
+            const question = document.getElementById('resource-question').value.trim();
+            if (!resourcePath || !question) {
+                showResult('resource-result', '请填写资源路径和问题', true);
+                return;
+            }
+            setLoading('resource-result', true);
+            try {
+                const res = await fetch(API + '/image/from-resource', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ resourcePath, question })
+                });
+                const data = await parseResponse(res);
+                if (!res.ok) showResult('resource-result', getErrorMessage(res, data), true);
+                else showResult('resource-result', data.answer != null ? data.answer : JSON.stringify(data));
+            } catch (e) {
+                showResult('resource-result', '错误: ' + e.message, true);
+            }
+        }
+
+        async function runVisionAgent() {
+            const imageUrl = document.getElementById('vision-imageUrl').value.trim();
+            const question = document.getElementById('vision-question').value.trim();
+            if (!imageUrl || !question) {
+                showResult('vision-result', '请填写图片 URL 和问题', true);
+                return;
+            }
+            setLoading('vision-result', true);
+            try {
+                const res = await fetch(API + '/vision/agent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageUrl, question })
+                });
+                const data = await parseResponse(res);
+                if (!res.ok) showResult('vision-result', getErrorMessage(res, data), true);
+                else showResult('vision-result', data.answer != null ? data.answer : JSON.stringify(data));
+            } catch (e) {
+                showResult('vision-result', '错误: ' + e.message, true);
+            }
+        }
+
+        async function runCreativeAgent() {
+            const userRequest = document.getElementById('creative-request').value.trim();
+            if (!userRequest) {
+                showResult('creative-result', '请填写创意请求', true);
+                return;
+            }
+            setLoading('creative-result', true);
+            try {
+                const res = await fetch(API + '/creative/agent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userRequest })
+                });
+                const data = await parseResponse(res);
+                if (!res.ok) showResult('creative-result', getErrorMessage(res, data), true);
+                else showResult('creative-result', data.answer != null ? data.answer : JSON.stringify(data));
+            } catch (e) {
+                showResult('creative-result', '错误: ' + e.message, true);
+            }
+        }
+
+        function dataUrlToBlobUrl(dataUrl) {
+            if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) return null;
+            try {
+                const i = dataUrl.indexOf(',');
+                if (i === -1) return null;
+                const mime = dataUrl.slice(0, i).match(/^data:([^;]+)/);
+                const type = (mime ? mime[1].trim() : 'audio/mpeg').split(';')[0];
+                let b64 = dataUrl.slice(i + 1).replace(/\s/g, '');
+                const bin = atob(b64);
+                const bytes = new Uint8Array(bin.length);
+                for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+                const blob = new Blob([bytes], { type: type || 'audio/mpeg' });
+                return URL.createObjectURL(blob);
+            } catch (e) {
+                console.warn('dataUrlToBlobUrl failed', e);
+                return null;
+            }
+        }
+
+        function mediaToPlayableUrl(media) {
+            if (!media) return null;
+            if (media.data && typeof media.data === 'string' && media.data.startsWith('data:')) {
+                return dataUrlToBlobUrl(media.data);
+            }
+            if (media.base64 && typeof media.base64 === 'string') {
+                const type = (media.mimeType || 'audio/mpeg').split(';')[0];
+                try {
+                    const b64 = media.base64.replace(/\s/g, '');
+                    const bin = atob(b64);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+                    const blob = new Blob([bytes], { type: type });
+                    return URL.createObjectURL(blob);
+                } catch (_) { return null; }
+            }
+            if (media.url && !media.url.startsWith('file:')) return media.url;
+            return null;
+        }
+
+        async function runTts() {
+            const text = document.getElementById('tts-text').value.trim();
+            const voice = document.getElementById('tts-voice').value.trim() || 'longanyang';
+            const outputFormat = document.getElementById('tts-outputFormat').value || 'base64';
+            if (!text) {
+                showResult('tts-result', '请填写要合成的文本', true);
+                document.getElementById('tts-audio-wrap').style.display = 'none';
+                return;
+            }
+            setLoading('tts-result', true);
+            document.getElementById('tts-audio-wrap').style.display = 'none';
+            const audioEl = document.getElementById('tts-audio');
+            const oldSrc = audioEl.src;
+            if (oldSrc && oldSrc.startsWith('blob:')) URL.revokeObjectURL(oldSrc);
+            audioEl.removeAttribute('src');
+            try {
+                const res = await fetch(API + '/audio/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice, outputFormat })
+                });
+                let data = await parseResponse(res);
+                if (typeof data === 'string' && data.trim().startsWith('{')) {
+                    try { data = JSON.parse(data); } catch (_) {}
+                }
+                if (!res.ok) {
+                    showResult('tts-result', getErrorMessage(res, data), true);
+                    return;
+                }
+                const msg = data.text != null ? data.text : (data._raw || JSON.stringify(data));
+                const media = data.media && data.media[0];
+                const src = mediaToPlayableUrl(media);
+                if (src) {
+                    audioEl.src = src;
+                    audioEl.load();
+                    document.getElementById('tts-audio-wrap').style.display = 'block';
+                    showResult('tts-result', msg, false);
+                } else if (media && media.data && typeof media.data === 'string' && media.data.startsWith('data:')) {
+                    audioEl.src = media.data;
+                    audioEl.load();
+                    document.getElementById('tts-audio-wrap').style.display = 'block';
+                    showResult('tts-result', msg + '\n\n（若无法播放，可能是数据过长或格式问题，请刷新后重试。）', false);
+                } else if (media && media.url && media.url.startsWith('file:')) {
+                    showResult('tts-result', msg + '\n\n音频地址：' + media.url + '\n\n（浏览器无法播放 file:// 地址，请选择「base64」输出格式以在页面内播放。）', false);
+                } else {
+                    showResult('tts-result', msg, false);
+                }
+            } catch (e) {
+                showResult('tts-result', '错误: ' + e.message, true);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -53,6 +53,13 @@
             <artifactId>spring-ai-starter-mcp-client</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Required by MCP client JSON schema validation (SpecVersion.VersionFlag); not always transitive in test -->
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>1.5.7</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>

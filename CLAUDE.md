@@ -69,7 +69,7 @@ make licenses-check
 
 ### Core Components
 
-- **Agent Framework**: Built-in agents like `SequentialAgent`, `ParallelAgent`, `RoutingAgent`, `LoopAgent`, `SupervisorAgent`.
+- **Agent Framework**: Built-in agents like `SequentialAgent`, `ParallelAgent`, `RoutingAgent`, `LoopAgent`.
 - **Graph Core**: Underlying engine for stateful agents, supporting persistence (PostgreSQL, MySQL, Oracle, MongoDB, Redis, File).
 - **A2A (Agent-to-Agent)**: Enables agents to seek and communicate with each other using Nacos as a registry.
 - **Admin & Studio**: Provides visual tools for developing and debugging agent workflows.

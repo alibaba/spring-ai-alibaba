@@ -15,17 +15,23 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.action.AsyncMultiCommandAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
+import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingMergeNode;
 import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingNode;
 import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
@@ -70,17 +76,29 @@ public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrat
 			routingExitNode = connectAfterModelHookEdges(graph, routingNodeName, afterModelHooks);
 		}
 
-		// Step 4: Process sub-agents for routing
+		// Step 4: Add merge node for result synthesis
+		String mergeNodeName = rootAgent.name() + "_merge";
+		List<BaseAgent> baseAgentList = new ArrayList<>(config.getSubAgents().size());
+		for (Agent subAgent : config.getSubAgents()) {
+			if (!(subAgent instanceof BaseAgent)) {
+				throw new IllegalArgumentException("Routing sub-agents must be BaseAgent for merge support");
+			}
+			baseAgentList.add((BaseAgent) subAgent);
+		}
+		graph.addNode(mergeNodeName, node_async(new RoutingMergeNode(config.getChatModel(), baseAgentList)));
+
+		// Step 5: Process sub-agents for routing
 		Map<String, String> edgeRoutingMap = new HashMap<>();
 		for (Agent subAgent : config.getSubAgents()) {
 			// Add the current sub-agent as a node
 			FlowGraphBuildingStrategy.addSubAgentNode(subAgent, graph);
 			edgeRoutingMap.put(subAgent.name(), subAgent.name());
-			// Connect sub-agents to exitNode (afterAgent hooks or END)
-			graph.addEdge(subAgent.name(), this.exitNode);
+			// Connect sub-agents to merge node (dedicated node for result merging)
+			graph.addEdge(subAgent.name(), mergeNodeName);
 		}
+		graph.addEdge(mergeNodeName, this.exitNode);
 
-		// Step 5: Add parallel conditional edges for routing
+		// Step 6: Add parallel conditional edges for routing
 		// This allows routing to one or multiple sub-agents in parallel
 		RoutingNode routingNode = new RoutingNode(config.getChatModel(), rootAgent, config.getSubAgents());
 		graph.addParallelConditionalEdges(
@@ -105,6 +123,16 @@ public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrat
 	@Override
 	public String getStrategyType() {
 		return FlowAgentEnum.ROUTING.getType();
+	}
+
+	@Override
+	public KeyStrategyFactory generateKeyStrategyFactory(FlowGraphBuilder.FlowGraphConfig config) {
+		KeyStrategyFactory parent = super.generateKeyStrategyFactory(config);
+		return () -> {
+			Map<String, com.alibaba.cloud.ai.graph.KeyStrategy> strategies = new HashMap<>(parent.apply());
+			strategies.put(RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY, new ReplaceStrategy());
+			return strategies;
+		};
 	}
 
 	@Override

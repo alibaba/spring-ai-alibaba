@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Agent Demo - Spring AI Alibaba</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <div class="header-left">
+        <span class="logo">🥪</span>
+        <h1>Voice Agent Demo</h1>
+      </div>
+      <div class="header-right">
+        <span id="elapsed" class="elapsed">0:00</span>
+        <span id="status-dot" class="status-dot status-ready"></span>
+      </div>
+    </header>
+
+    <div class="controls-card">
+      <div class="text-input-row">
+        <input id="text-input" type="text" placeholder="Or type a message and press Enter..." class="text-input">
+        <button id="btn-send-text" class="btn btn-send">Send</button>
+      </div>
+      <div class="button-row">
+        <button id="btn-start" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+          Start Session
+        </button>
+        <button id="btn-stop" class="btn btn-secondary" disabled>
+          End Session
+        </button>
+      </div>
+      <div class="status-bar">
+        <span id="status-dot-inline" class="status-dot status-ready"></span>
+        <span id="status-text" class="status-text">Ready</span>
+      </div>
+      <div id="session-hint" class="session-hint hidden">
+        💡 Session is active — just speak naturally. End session when you're done.
+      </div>
+    </div>
+
+    <div class="pipeline-card">
+      <div class="card-header">
+        <span class="card-title">Pipeline</span>
+        <span id="turn-badge" class="turn-badge turn-waiting">Waiting...</span>
+      </div>
+      <div class="pipeline-content">
+        <div class="pipeline-row">
+          <span class="pipeline-label">STT</span>
+          <span id="transcript" class="pipeline-value">—</span>
+        </div>
+        <div class="pipeline-row">
+          <span class="pipeline-label">Agent</span>
+          <span id="response" class="pipeline-value">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <div class="card-header">
+        <span class="card-title">Activity</span>
+        <button id="btn-clear-activity" class="btn-clear">Clear</button>
+      </div>
+      <div id="activity-list" class="activity-list">
+        <div class="activity-empty">No activity yet...</div>
+      </div>
+    </div>
+
+    <div class="console-card">
+      <div class="card-header">
+        <span class="card-title">Console</span>
+      </div>
+      <div id="log-list" class="log-list">
+        <div class="log-empty">Logs will appear here...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/voice.js"></script>
+</body>
+</html>

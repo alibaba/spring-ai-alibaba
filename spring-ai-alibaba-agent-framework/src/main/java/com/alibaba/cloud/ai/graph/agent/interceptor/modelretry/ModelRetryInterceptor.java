@@ -80,7 +80,7 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 				if (message != null && message.getText() != null && message.getText().startsWith("Exception:")) {
 					String exceptionText = message.getText();
 					log.warn("The model call returned an exception message: {}", exceptionText);
-					
+
 					// Extract anomaly information from the text and determine whether a retry is possible.
 					if (attempt < maxAttempts && isRetryableExceptionMessage(exceptionText)) {
 						lastException = new RuntimeException(exceptionText);
@@ -101,7 +101,7 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 						log.error("The maximum number of retries has been reached {}, and the model call has failed.", maxAttempts);
 						throw new RuntimeException("Model call failed, maximum number of retries reached:" + exceptionText);
 					}
-					
+
 					// For non-retryable exceptions, return immediately.
 					return modelResponse;
 				}
@@ -247,17 +247,17 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 
 			// Network-related exceptions
 			if (lowerMessage.contains("i/o error") ||
-				lowerMessage.contains("remote host terminated") ||
-				lowerMessage.contains("connection") ||
-				lowerMessage.contains("timeout") ||
-				lowerMessage.contains("handshake") ||
-				lowerMessage.contains("socket")) {
+					lowerMessage.contains("remote host terminated") ||
+					lowerMessage.contains("connection") ||
+					lowerMessage.contains("timeout") ||
+					lowerMessage.contains("handshake") ||
+					lowerMessage.contains("socket")) {
 				return true;
 			}
 
 			// Spring WebClient related exceptions
 			if (e.getClass().getName().contains("ResourceAccessException") ||
-				e.getClass().getName().contains("WebClientRequestException")) {
+					e.getClass().getName().contains("WebClientRequestException")) {
 				return true;
 			}
 
@@ -266,10 +266,10 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 			while (cause != null) {
 				String causeClassName = cause.getClass().getName();
 				if (causeClassName.contains("IOException") ||
-					causeClassName.contains("SocketException") ||
-					causeClassName.contains("ConnectException") ||
-					causeClassName.contains("TimeoutException") ||
-					causeClassName.contains("SSLException")) {
+						causeClassName.contains("SocketException") ||
+						causeClassName.contains("ConnectException") ||
+						causeClassName.contains("TimeoutException") ||
+						causeClassName.contains("SSLException")) {
 					return true;
 				}
 				cause = cause.getCause();

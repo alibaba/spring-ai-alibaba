@@ -18,24 +18,33 @@ package com.alibaba.cloud.ai.a2a.autoconfigure.server;
 
 import com.alibaba.cloud.ai.a2a.core.registry.AgentRegistry;
 import com.alibaba.cloud.ai.a2a.core.registry.AgentRegistryService;
+import com.alibaba.cloud.ai.a2a.core.route.MultiAgentRequestRouter;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
 import io.a2a.spec.AgentCard;
 
 /**
- * The AutoConfiguration for A2A server registry.
+ * The AutoConfiguration for A2A server registry in single-agent mode.
+ * <p>
+ * This configuration is skipped when multi-agent mode is active
+ * (when {@link MultiAgentRequestRouter} bean exists). In multi-agent mode,
+ * the registry service is created by {@link A2aServerMultiAgentAutoConfiguration}.
  *
  * @author xiweng.yy
  */
-@AutoConfiguration(after = { A2aServerAgentCardAutoConfiguration.class, A2aServerAutoConfiguration.class })
+@AutoConfiguration(after = { A2aServerAgentCardAutoConfiguration.class, A2aServerAutoConfiguration.class,
+		A2aServerMultiAgentAutoConfiguration.class })
 @ConditionalOnBean({ AgentCard.class })
+@ConditionalOnMissingBean(MultiAgentRequestRouter.class)
 public class A2aServerRegistryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnBean(AgentRegistry.class)
+	@ConditionalOnMissingBean(AgentRegistryService.class)
 	public AgentRegistryService agentRegistryService(AgentCard agentCard, AgentRegistry agentRegistry) {
 		return new AgentRegistryService(agentRegistry, agentCard);
 	}

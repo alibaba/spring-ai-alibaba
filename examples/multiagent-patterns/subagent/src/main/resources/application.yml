@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: subagent-tech-due-diligence
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY:}
+
+# Workspace path for codebase tools (glob_search, grep_search). Default: current working directory.
+subagent:
+  workspace-path: ${user.dir:.}
+  # Set to true to run interactive chat on startup.
+  run-interactive: false

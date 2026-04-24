@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: multimodal-example
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  ai:
+    model:
+      image: dashscope
+    dashscope:
+      image:
+        enabled: true
+      api-key: ${AI_DASHSCOPE_API_KEY:}
+      # Use vision model (qwen-vl-plus) for multimodal image understanding
+      chat:
+        options:
+          model: ${DASHSCOPE_VISION_MODEL:qwen-vl-plus}
+          multi-model: true # IMPORTANT: Enable multi-model to use vision capabilities

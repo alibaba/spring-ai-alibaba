@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -258,8 +259,12 @@ public class ExecutionController {
 			agentStream = agent.stream("", runnableConfig);
 		}
 
-		// Convert Flux<NodeOutput> to Flux<ServerSentEvent<String>>
-		return agentStream.map(nodeOutput -> {
+		// Skip AGENT_MODEL_FINISHED: it is the framework's aggregation of AGENT_MODEL_STREAMING
+		// chunks; sending it to the frontend would duplicate the final message.
+		return agentStream
+				.filter(nodeOutput -> !(nodeOutput instanceof StreamingOutput<?> so
+						&& so.getOutputType() == OutputType.AGENT_MODEL_FINISHED))
+				.map(nodeOutput -> {
 					String node = nodeOutput.node();
 					String agentName = nodeOutput.agent();
 					Usage tokenUsage = nodeOutput.tokenUsage();

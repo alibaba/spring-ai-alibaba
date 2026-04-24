@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
@@ -23,10 +24,13 @@ import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.EnhancedParallelResultAggregator;
 import com.alibaba.cloud.ai.graph.agent.flow.node.TransparentNode;
+import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
@@ -55,8 +59,11 @@ public class ParallelGraphBuildingStrategy extends AbstractFlowGraphBuildingStra
 			baseAgentList.add((BaseAgent) subAgent);
 		}
 
+		// Collect key strategies from hooks (same pattern as ReactAgent)
+		Map<String, KeyStrategy> hookKeyStrategies = collectKeyStrategiesFromHooks(parallelRootAgent);
+
 		this.graph.addNode(aggregatorNodeName, node_async(new EnhancedParallelResultAggregator(parallelRootAgent.mergeOutputKey(),
-				baseAgentList, mergeStrategy, maxConcurrency)));
+				baseAgentList, mergeStrategy, maxConcurrency, hookKeyStrategies)));
 
 		// Determine the start node for parallel execution
 		// If there are beforeModel hooks, they will be connected to rootAgent.name() by the template method
@@ -112,6 +119,28 @@ public class ParallelGraphBuildingStrategy extends AbstractFlowGraphBuildingStra
 	public void validateConfig(FlowGraphBuilder.FlowGraphConfig config) {
 		super.validateConfig(config);
 		validateParallelConfig(config);
+	}
+
+	/**
+	 * Collects key strategies from the agent's hooks, following the same pattern
+	 * used by {@code ReactAgent} to gather hook-defined key strategies.
+	 *
+	 * @param agent the flow agent whose hooks provide key strategies
+	 * @return aggregated key strategies from all hooks, empty map if no hooks
+	 */
+	private Map<String, KeyStrategy> collectKeyStrategiesFromHooks(FlowAgent agent) {
+		Map<String, KeyStrategy> strategies = new HashMap<>();
+		List<Hook> hooks = agent.hooks();
+		if (hooks == null || hooks.isEmpty()) {
+			return strategies;
+		}
+		for (Hook hook : hooks) {
+			Map<String, KeyStrategy> hookStrategies = hook.getKeyStrategys();
+			if (hookStrategies != null && !hookStrategies.isEmpty()) {
+				strategies.putAll(hookStrategies);
+			}
+		}
+		return strategies;
 	}
 
 	/**

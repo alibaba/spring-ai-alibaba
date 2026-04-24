@@ -29,6 +29,8 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import static com.alibaba.cloud.ai.graph.agent.tools.WriteTodosTool.DEFAULT_TOOL_DESCRIPTION;
@@ -73,13 +75,13 @@ public class TodoListInterceptor extends ModelInterceptor {
 	private final String toolDescription;
 
 	private TodoListInterceptor(Builder builder) {
-		// Create the write_todos tool with the custom description
-		this.tools = Collections.singletonList(
-				WriteTodosTool.builder().
-						withName("write_todos")
-						.withDescription(builder.toolDescription)
-						.build()
-		);
+		var toolBuilder = WriteTodosTool.builder()
+				.withName("write_todos")
+				.withDescription(builder.toolDescription);
+		if (builder.todoEventHandler != null) {
+			toolBuilder.todoEventHandler(builder.todoEventHandler);
+		}
+		this.tools = Collections.singletonList(toolBuilder.build());
 		this.systemPrompt = builder.systemPrompt;
 		this.toolDescription = builder.toolDescription;
 	}
@@ -164,17 +166,38 @@ public class TodoListInterceptor extends ModelInterceptor {
 
 	/**
 	 * Represents a single todo item.
+	 * <p>
+	 * Task descriptions must have two forms:
+	 * <ul>
+	 * <li><b>content</b>: The imperative form describing what needs to be done (e.g., "Run tests", "Build the project")</li>
+	 * <li><b>activeForm</b>: The present continuous form shown during execution (e.g., "Running tests", "Building the project").
+	 * When null or blank, content is used as fallback for backward compatibility.</li>
+	 * </ul>
 	 */
 	public static class Todo {
+		@JsonProperty(value = "content", required = true)
+		@JsonPropertyDescription("Imperative form describing what needs to be done (e.g., 'Run tests', 'Build the project')")
 		private String content;
+
+		@JsonProperty(value = "status", required = true)
+		@JsonPropertyDescription("Task status: pending, in_progress, or completed")
 		private TodoStatus status;
+
+		@JsonProperty("activeForm")
+		@JsonPropertyDescription("Present continuous form shown during execution (e.g., 'Running tests', 'Building the project'). Optional; defaults to content if not provided.")
+		private String activeForm;
 
 		public Todo() {
 		}
 
 		public Todo(String content, TodoStatus status) {
+			this(content, status, null);
+		}
+
+		public Todo(String content, TodoStatus status, String activeForm) {
 			this.content = content;
 			this.status = status;
+			this.activeForm = (activeForm != null && !activeForm.isBlank()) ? activeForm : content;
 		}
 
 		public String getContent() {
@@ -193,15 +216,28 @@ public class TodoListInterceptor extends ModelInterceptor {
 			this.status = status;
 		}
 
+		/**
+		 * The present continuous form shown during execution (e.g., "Running tests").
+		 * When null or blank, content is used as fallback.
+		 */
+		public String getActiveForm() {
+			return (activeForm != null && !activeForm.isBlank()) ? activeForm : content;
+		}
+
+		public void setActiveForm(String activeForm) {
+			this.activeForm = activeForm;
+		}
+
 		@Override
 		public String toString() {
-			return String.format("Todo{content='%s', status=%s}", content, status);
+			return String.format("Todo{content='%s', status=%s, activeForm='%s'}", content, status, getActiveForm());
 		}
 	}
 
 	public static class Builder {
 		private String systemPrompt = DEFAULT_SYSTEM_PROMPT;
 		private String toolDescription = DEFAULT_TOOL_DESCRIPTION;
+		private WriteTodosTool.TodoEventHandler todoEventHandler;
 
 		/**
 		 * Set a custom system prompt for guiding todo usage.
@@ -216,6 +252,15 @@ public class TodoListInterceptor extends ModelInterceptor {
 		 */
 		public Builder toolDescription(String toolDescription) {
 			this.toolDescription = toolDescription;
+			return this;
+		}
+
+		/**
+		 * Set handler invoked when todos are updated. Use for persistence, UI
+		 * notification, or custom logic.
+		 */
+		public Builder todoEventHandler(WriteTodosTool.TodoEventHandler todoEventHandler) {
+			this.todoEventHandler = todoEventHandler;
 			return this;
 		}
 

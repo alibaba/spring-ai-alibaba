@@ -37,10 +37,23 @@ import java.util.stream.Collectors;
  */
 public class GlobSearchTool implements BiFunction<GlobSearchTool.Request, ToolContext, String> {
 
+	private static final int DEFAULT_MAX_RESULTS = 2000;
+
+	private static final Set<String> FORBIDDEN_BROAD_PATTERNS = Set.of(
+			"**/*", "**/**", "*", "**"
+	);
+
 	private final Path rootPath;
 
+	private final int maxResults;
+
 	public GlobSearchTool(String rootPath) {
+		this(rootPath, DEFAULT_MAX_RESULTS);
+	}
+
+	public GlobSearchTool(String rootPath, int maxResults) {
 		this.rootPath = Paths.get(rootPath).toAbsolutePath().normalize();
+		this.maxResults = maxResults > 0 ? maxResults : DEFAULT_MAX_RESULTS;
 	}
 
 	public record Request(
@@ -62,6 +75,15 @@ public class GlobSearchTool implements BiFunction<GlobSearchTool.Request, ToolCo
 	@Override
 	public String apply(Request request, ToolContext toolContext) {
 		try {
+			String pattern = request.pattern() != null ? request.pattern().trim() : "";
+			if (pattern.isEmpty()) {
+				return "Error: Pattern is required";
+			}
+			if (FORBIDDEN_BROAD_PATTERNS.contains(pattern)) {
+				return "Error: Pattern '" + pattern + "' matches all files and is not allowed (would return too many results). "
+						+ "Use a more specific pattern, e.g. **/*.java, src/**/*.ts, or **/pom.xml.";
+			}
+
 			Path basePath = validateAndResolvePath(request.path());
 
 			if (!Files.exists(basePath) || !Files.isDirectory(basePath)) {
@@ -69,12 +91,17 @@ public class GlobSearchTool implements BiFunction<GlobSearchTool.Request, ToolCo
 			}
 
 			// Use PathMatcher for glob pattern matching
-			PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + request.pattern());
-			List<FileInfo> matchingFiles = new ArrayList<>();
+			PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
+			List<FileInfo> matchingFiles = new ArrayList<>(maxResults + 1);
+			final boolean[] truncated = { false };
 
 			Files.walkFileTree(basePath, new SimpleFileVisitor<>() {
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+					if (matchingFiles.size() >= maxResults) {
+						truncated[0] = true;
+						return FileVisitResult.TERMINATE;
+					}
 					Path relativePath = basePath.relativize(file);
 					if (matcher.matches(relativePath)) {
 						try {
@@ -102,9 +129,13 @@ public class GlobSearchTool implements BiFunction<GlobSearchTool.Request, ToolCo
 			// Sort by modification time (most recent first)
 			matchingFiles.sort(Comparator.comparing(FileInfo::modifiedTime).reversed());
 
-			return matchingFiles.stream()
+			String result = matchingFiles.stream()
 					.map(FileInfo::path)
 					.collect(Collectors.joining("\n"));
+			if (truncated[0]) {
+				result += "\n(Truncated at " + maxResults + " results; use a more specific pattern to reduce matches.)";
+			}
+			return result;
 
 		} catch (PatternSyntaxException e) {
 			return "Error: Invalid glob pattern syntax - " + e.getDescription();
@@ -154,8 +185,10 @@ public class GlobSearchTool implements BiFunction<GlobSearchTool.Request, ToolCo
 
 		private String description = "Fast file pattern matching tool that works with any codebase size. "
 				+ "Supports glob patterns like **/*.js or src/**/*.ts. "
-				+ "Returns matching file paths sorted by modification time. "
-				+ "Use this tool when you need to find files by name patterns.";
+				+ "Returns matching file paths sorted by modification time (max " + DEFAULT_MAX_RESULTS + " results). "
+				+ "Use a specific pattern; **/* is not allowed. Use this tool when you need to find files by name patterns.";
+
+		private int maxResults = DEFAULT_MAX_RESULTS;
 
 		public Builder(String rootPath) {
 			this.rootPath = rootPath;
@@ -171,8 +204,17 @@ public class GlobSearchTool implements BiFunction<GlobSearchTool.Request, ToolCo
 			return this;
 		}
 
+		/**
+		 * Maximum number of file paths to return (default {@value #DEFAULT_MAX_RESULTS}).
+		 * Prevents huge results that can break JSON serialization or memory.
+		 */
+		public Builder maxResults(int maxResults) {
+			this.maxResults = maxResults > 0 ? maxResults : DEFAULT_MAX_RESULTS;
+			return this;
+		}
+
 		public ToolCallback build() {
-			return FunctionToolCallback.builder(name, new GlobSearchTool(rootPath))
+			return FunctionToolCallback.builder(name, new GlobSearchTool(rootPath, maxResults))
 				.description(description)
 				.inputType(Request.class)
 				.build();
