@@ -24,6 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
+import com.alibaba.cloud.ai.graph.agent.event.McpToolsChangedEvent;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
 import com.alibaba.nacos.api.ai.model.mcp.McpEndpointInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerRemoteServiceConfig;
@@ -50,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.lang.NonNull;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -82,16 +84,22 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 
 	private final HashMap<String, String> nacosConfigContent = new HashMap<>();
 
+	private final ApplicationEventPublisher eventPublisher;
+
 	McpServersVO.McpServerVO mcpServerVO;
 
 	/**
 	 * Instantiates a new Nacos mcp gateway tool callback.
 	 * @param toolDefinition the tool definition
 	 */
-	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition, NacosMcpOperationService nacosMcpOperationService, McpServersVO.McpServerVO mcpServersVO) {
+	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition,
+			NacosMcpOperationService nacosMcpOperationService,
+			McpServersVO.McpServerVO mcpServersVO,
+			ApplicationEventPublisher eventPublisher) {
 		this.toolDefinition = (NacosMcpGatewayToolDefinition) toolDefinition;
 		this.nacosMcpOperationService = nacosMcpOperationService;
 		this.mcpServerVO = mcpServersVO;
+		this.eventPublisher = eventPublisher;
 	}
 
 	/**
@@ -181,6 +189,9 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				@Override
 				public void receiveConfigInfo(String configInfo) {
 					nacosConfigContent.put(cacheKey, configInfo);
+					if (eventPublisher != null) {
+						eventPublisher.publishEvent(new McpToolsChangedEvent(this, "nacos-mcp:" + cacheKey));
+					}
 				}
 			};
 			AbstractListener oldListener = nacosConfigListeners.putIfAbsent(cacheKey, listener);

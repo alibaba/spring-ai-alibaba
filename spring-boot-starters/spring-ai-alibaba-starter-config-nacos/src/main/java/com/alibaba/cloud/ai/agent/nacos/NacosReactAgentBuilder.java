@@ -62,6 +62,13 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		this.nacosOptions = nacosOptions;
 		return this;
 	}
+	
+	private org.springframework.context.ApplicationEventPublisher eventPublisher;
+	
+	public NacosReactAgentBuilder eventPublisher(org.springframework.context.ApplicationEventPublisher eventPublisher) {
+		this.eventPublisher = eventPublisher;
+		return this;
+	}
 
 	@Override
 	public ReactAgent build() {
@@ -109,7 +116,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		
 		List<ToolCallback> allTools = new ArrayList<>();
 		this.localTools = gatherLocalTools();
-		List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO);
+		List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO, eventPublisher);
 		allTools.addAll(localTools);
 		if (mcpTools != null) {
 			allTools.addAll(mcpTools);
@@ -168,7 +175,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 						@Override
 						public void receiveConfigInfo(String configInfo) {
 							McpServersVO mcpServersVO = JSON.parseObject(configInfo, McpServersVO.class);
-							List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO);
+							List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO, eventPublisher);
 							if (mcpTools != null) {
 								List<ToolCallback> allTools = new ArrayList<>();
 								allTools.addAll(localTools);
