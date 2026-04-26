@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.agent.studio.dto.messages;
 
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -63,6 +64,13 @@ public interface MessageDTO {
 		 */
 		public static MessageDTO fromMessage(Message message) {
 			if (message == null) {
+				return null;
+			}
+
+			// AgentInstructionMessage carries an agent's instruction (a system-prompt-like
+			// directive injected by InstructionAgentHook). It's intended for the LLM, not
+			// the UI, so we hide it from the rendered transcript by returning null here.
+			if (message instanceof AgentInstructionMessage) {
 				return null;
 			}
 
