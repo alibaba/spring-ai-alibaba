@@ -28,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Method;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
@@ -93,7 +94,7 @@ public class MongoSaver implements BaseCheckpointSaver {
 		Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
 		this.client = client;
 		try {
-			java.lang.reflect.Method appendMetadata = client.getClass().getMethod("appendMetadata", MongoDriverInformation.class);
+			Method appendMetadata = client.getClass().getMethod("appendMetadata", MongoDriverInformation.class);
 			appendMetadata.invoke(client, DRIVER_INFO);
 		}
 		catch (Exception ignored) {
