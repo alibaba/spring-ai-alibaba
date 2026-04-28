@@ -73,7 +73,7 @@ DeepResearch implements an agentic architecture that goes beyond simple tool-cal
 - `Hook`: Event hooks for human approval, summarization, tool call limits
 - `MemorySaver`: In-memory state management with conversation history
 
-**Builtin Interceptors**
+**Built-in Interceptors**
 - `TodoListInterceptor`: Task list management and tracking
 - `FilesystemInterceptor`: File system access control with sandboxing
 - `SubAgentInterceptor`: Subagent spawning and coordination
@@ -81,7 +81,7 @@ DeepResearch implements an agentic architecture that goes beyond simple tool-cal
 - `LargeResultEvictionInterceptor`: Auto-dump large results to files
 - `ToolRetryInterceptor`: Retry logic for failed tool calls
 
-**Builtin Hooks**
+**Built-in Hooks**
 - `SummarizationHook`: Conversation history summarization (triggers at 120K tokens)
 - `HumanInTheLoopHook`: Human approval for critical operations
 - `ToolCallLimitHook`: Limit tool calls per run (default: 25)
