@@ -17,16 +17,14 @@ package com.alibaba.cloud.ai.graph.agent.hook.hip;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata.ToolFeedback.FeedbackResult;
+import com.alibaba.cloud.ai.graph.agent.hook.AbstractInterruptableModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
-import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
@@ -45,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @HookPositions(HookPosition.AFTER_MODEL)
-public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWithConfig, InterruptableAction {
+public class HumanInTheLoopHook extends AbstractInterruptableModelHook {
 	private static final Logger log = LoggerFactory.getLogger(HumanInTheLoopHook.class);
     public static final String HITL_NODE_NAME = "HITL";
 	private Map<String, ToolConfig> approvalOn;
