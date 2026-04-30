@@ -942,6 +942,7 @@
   "main.pages.MCP.Create.mcpServiceConfigurationInvalidJsonFormat": "MCP服务配置不是有效的JSON格式",
   "main.pages.MCP.Create.mcpServiceUpdatedSuccessfully": "MCP服务更新成功",
   "main.pages.MCP.Create.mcpServiceCreatedSuccessfully": "MCP服务创建成功",
+  "main.pages.MCP.Create.typeMismatch": "安装类型为{installType}，但配置中的type为{actualType}，两者不匹配",
   "main.pages.MCP.Create.confirmReturn": "确认返回吗",
   "main.pages.MCP.Create.returnWillNotSaveCurrentEditingContentConfirmReturn": "返回将不会保存当前编辑的内容，确认返回吗？",
   "main.pages.MCP.Create.saving": "保存中...",
