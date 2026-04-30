@@ -219,8 +219,14 @@ public final class OverAllState implements Serializable {
 		}
 
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
-		input.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
-			this.data.put(key, keyStrategies.get(key).apply(value(key, null), input.get(key)));
+		input.keySet().forEach(key -> {
+			KeyStrategy strategy = keyStrategies.get(key);
+			// If no specific strategy is found, use the default REPLACE strategy
+			// This ensures all checkpoint state data is properly restored during resume
+			if (strategy == null) {
+				strategy = KeyStrategy.REPLACE;
+			}
+			this.data.put(key, strategy.apply(value(key, null), input.get(key)));
 		});
 		return this;
 	}
