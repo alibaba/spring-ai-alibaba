@@ -29,6 +29,7 @@ import com.alibaba.cloud.ai.graph.utils.SystemClock;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 
 import org.springframework.util.CollectionUtils;
@@ -341,22 +342,47 @@ public class GraphRunnerContext {
 	}
 
 	/**
-	 * FIXME, this method is a temporary fix to separate Usage from state updates.
-	 * works together with AgentLlmNode non-stream node.
+	 * 从状态更新中分离 Usage 对象，并跨多轮模型调用累加 token 用量。
+	 * 与 AgentLlmNode 的流式/非流式分支配合使用。
 	 */
 	private Map<String, Object> findTokenUsageInDeltaState(Map<String, Object> updateState) {
 		Map<String, Object> filteredState = new HashMap<>();
 		for (Map.Entry<String, Object> entry : updateState.entrySet()) {
 			Object value = entry.getValue();
 			if (value instanceof Usage && entry.getKey().equals("_TOKEN_USAGE_")) {
-				// Assign ChatResponse to this.chatResponse
-				this.tokenUsage = (Usage) value;
+				accumulateTokenUsage((Usage) value);
 			} else {
-				// Add non-ChatResponse entries to the filtered map
+				// 非 Usage 条目正常放入过滤后的 state
 				filteredState.put(entry.getKey(), value);
 			}
 		}
 		return filteredState;
+	}
+
+	/**
+	 * 累加多轮模型调用的 token 用量，而非覆盖。
+	 * 在多轮 Agent 场景（如工具调用）中，每轮消耗的 token 都应被统计。
+	 */
+	private void accumulateTokenUsage(Usage newUsage) {
+		if (newUsage == null || (newUsage.getTotalTokens() != null && newUsage.getTotalTokens() == 0
+				&& (newUsage.getPromptTokens() == null || newUsage.getPromptTokens() == 0)
+				&& (newUsage.getCompletionTokens() == null || newUsage.getCompletionTokens() == 0))) {
+			return;
+		}
+		if (this.tokenUsage == null
+				|| (this.tokenUsage.getTotalTokens() != null && this.tokenUsage.getTotalTokens() == 0
+						&& (this.tokenUsage.getPromptTokens() == null || this.tokenUsage.getPromptTokens() == 0))) {
+			this.tokenUsage = newUsage;
+		} else {
+			int accPrompt = safeAdd(this.tokenUsage.getPromptTokens(), newUsage.getPromptTokens());
+			int accCompletion = safeAdd(this.tokenUsage.getCompletionTokens(), newUsage.getCompletionTokens());
+			int accTotal = safeAdd(this.tokenUsage.getTotalTokens(), newUsage.getTotalTokens());
+			this.tokenUsage = new DefaultUsage(accPrompt, accCompletion, accTotal);
+		}
+	}
+
+	private static int safeAdd(Integer a, Integer b) {
+		return (a != null ? a : 0) + (b != null ? b : 0);
 	}
 
 	// ================================================================================================================
