@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.studio.core.agent.tool;
 
+import com.alibaba.cloud.ai.graph.agent.tool.CachingToolCallbackProvider;
 import com.alibaba.cloud.ai.studio.runtime.enums.AppComponentTypeEnum;
 import com.alibaba.cloud.ai.studio.runtime.domain.app.AgentConfig;
 import com.alibaba.cloud.ai.studio.runtime.domain.mcp.McpQuery;
@@ -28,12 +29,9 @@ import com.alibaba.cloud.ai.studio.core.base.service.PluginService;
 import com.alibaba.cloud.ai.studio.core.base.service.ToolExecutionService;
 import com.alibaba.cloud.ai.studio.core.base.manager.AppComponentManager;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -47,8 +45,7 @@ import java.util.stream.Collectors;
  * @since 1.0.0.3
  */
 @Slf4j
-@RequiredArgsConstructor
-public class CompositeToolCallbackProvider implements ToolCallbackProvider {
+public class CompositeToolCallbackProvider extends CachingToolCallbackProvider {
 
 	/** Configuration for the agent */
 	private final AgentConfig agentConfig;
@@ -69,17 +66,20 @@ public class CompositeToolCallbackProvider implements ToolCallbackProvider {
 	@Getter
 	private final Map<String, Object> extraParams;
 
-	private List<ToolCallback> toolCallbacks;
+	public CompositeToolCallbackProvider(AgentConfig agentConfig, PluginService pluginService,
+			ToolExecutionService toolExecutionService, McpServerService mcpServerService,
+			AppComponentManager appComponentManager, Map<String, Object> extraParams) {
+		this.agentConfig = agentConfig;
+		this.pluginService = pluginService;
+		this.toolExecutionService = toolExecutionService;
+		this.mcpServerService = mcpServerService;
+		this.appComponentManager = appComponentManager;
+		this.extraParams = extraParams;
+	}
 
-	@NotNull
 	@Override
-	public ToolCallback[] getToolCallbacks() {
-		// cache tool callbacks info for performance issue.
-		if (toolCallbacks != null) {
-			return toolCallbacks.toArray(new ToolCallback[0]);
-		}
-
-		toolCallbacks = new ArrayList<>();
+	protected ToolCallback[] loadToolCallbacks() {
+		List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 		// build plugin tools
 		List<AgentConfig.Tool> pluginTools = agentConfig.getTools();
@@ -111,7 +111,9 @@ public class CompositeToolCallbackProvider implements ToolCallbackProvider {
 			addToolCallbacks(toolCallbacks, workflowComponentCallbacks);
 		}
 
-		return toolCallbacks.toArray(new ToolCallback[0]);
+		ToolCallback[] callbacks = toolCallbacks.toArray(new ToolCallback[0]);
+		validateToolCallbacks(callbacks);
+		return callbacks;
 	}
 
 	/**

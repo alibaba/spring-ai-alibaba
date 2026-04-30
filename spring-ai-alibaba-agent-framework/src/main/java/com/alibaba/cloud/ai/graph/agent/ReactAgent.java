@@ -150,8 +150,9 @@ public class ReactAgent extends BaseAgent {
 			this.toolNode.setToolInterceptors(mergedToolInterceptors);
 		}
 
-        // Set tools flag if tool interceptors are present.
-        hasTools = toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty();
+        // Set tools flag if tool callbacks or providers are present.
+        hasTools = (toolNode.getToolCallbacks() != null && !toolNode.getToolCallbacks().isEmpty()) ||
+                   (toolNode.getToolCallbackProviders() != null && !toolNode.getToolCallbackProviders().isEmpty());
 	}
 
 	public static Builder builder() {
