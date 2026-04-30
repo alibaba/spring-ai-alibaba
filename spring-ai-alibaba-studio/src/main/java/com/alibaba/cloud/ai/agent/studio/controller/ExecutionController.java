@@ -178,7 +178,7 @@ public class ExecutionController {
 					.addMetadata("user_id", request.userId)
 					.build();
 
-			return executeAgent(request.newMessage.toUserMessage(), agent, runnableConfig);
+			return executeAgent(request.newMessage.toUserMessage(), agent, runnableConfig).cache();
 		}
 		catch (Exception e) {
 			log.error("Error during agent run for session {}", request.threadId, e);
@@ -239,7 +239,7 @@ public class ExecutionController {
 					.addHumanFeedback(metadataBuilder.build())
 					.build();
 
-			return executeAgent(null, agent, runnableConfig);
+			return executeAgent(null, agent, runnableConfig).cache();
 		}
 		catch (Exception e) {
 			log.error("Error during agent run for session {}", request.threadId, e);
@@ -281,8 +281,14 @@ public class ExecutionController {
 									.build();
 						}
 						if (message instanceof AssistantMessage assistantMessage) {
+							String finishReason = message.getMetadata().get("finishReason").toString();
 							if (assistantMessage.hasToolCalls()) {
 								agentResponse = new AgentRunResponse(node, agentName, assistantMessage, tokenUsage, "");
+							}
+							else if ("STOP".equals(finishReason)) {
+								return ServerSentEvent.<String>builder()
+										.data("{}")
+										.build();
 							}
 							else {
 //						chunkBuilder.append(assistantMessage.getText());
