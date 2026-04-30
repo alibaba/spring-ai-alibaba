@@ -19,7 +19,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -128,6 +134,9 @@ public class SerializationUtils {
 
 		// For other complex objects, try using Jackson serialization
 		// If it fails, return the original object (shallow copy)
+		if (value instanceof Message) {
+			return deepCopyMessage((Message) value);
+		}
 		try {
 			String json = objectMapper.writeValueAsString(value);
 			return objectMapper.readValue(json, value.getClass());
@@ -136,6 +145,53 @@ public class SerializationUtils {
 			log.debug("Could not deep copy object of type " +
 				value.getClass().getName() + ", using shallow copy instead: " + e.getMessage());
 			return value;
+		}
+	}
+
+	/**
+	 * Deep copy a Spring AI Message by extracting its content and reconstructing it.
+	 * Jackson serialization of Spring AI Message subtypes often fails because
+	 * they lack proper deserialization creators. Instead of falling back to shallow copy
+	 * (which shares the internal list references and causes state corruption), we
+	 * manually reconstruct a new instance with copied content.
+	 */
+	@SuppressWarnings("unchecked")
+	private static Object deepCopyMessage(Message message) {
+		if (message instanceof UserMessage userMessage) {
+			return new UserMessage(userMessage.getText(),
+				userMessage.getMetadata() != null ? new HashMap<>(userMessage.getMetadata()) : null);
+		}
+		if (message instanceof AssistantMessage assistantMessage) {
+			List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
+			List<AssistantMessage.ToolCall> copiedToolCalls = null;
+			if (toolCalls != null) {
+				copiedToolCalls = toolCalls.stream()
+					.map(tc -> AssistantMessage.ToolCall.builder()
+						.id(tc.id())
+						.name(tc.name())
+						.arguments(tc.arguments())
+						.build())
+					.toList();
+			}
+			return AssistantMessage.builder()
+				.content(assistantMessage.getText())
+				.properties(assistantMessage.getMetadata() != null
+					? new HashMap<>(assistantMessage.getMetadata()) : null)
+				.toolCalls(copiedToolCalls)
+				.build();
+		}
+		if (message instanceof SystemMessage systemMessage) {
+			return new SystemMessage(systemMessage.getText(),
+				systemMessage.getMetadata() != null ? new HashMap<>(systemMessage.getMetadata()) : null);
+		}
+		// For other Message subtypes, fall back to Jackson serialization
+		try {
+			String json = objectMapper.writeValueAsString(message);
+			return objectMapper.readValue(json, message.getClass());
+		} catch (Exception e) {
+			log.debug("Could not deep copy message of type {}, using shallow copy: {}",
+				message.getClass().getName(), e.getMessage());
+			return message;
 		}
 	}
 }
