@@ -27,7 +27,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
-import com.alibaba.cloud.ai.graph.state.RemoveByHash;
+import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -36,9 +36,11 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
@@ -49,9 +51,11 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 	private static final Logger log = LoggerFactory.getLogger(HumanInTheLoopHook.class);
     public static final String HITL_NODE_NAME = "HITL";
 	private Map<String, ToolConfig> approvalOn;
+	private ToolApprovalDecider approvalDecider;
 
 	private HumanInTheLoopHook(Builder builder) {
 		this.approvalOn = new HashMap<>(builder.approvalOn);
+		this.approvalDecider = builder.approvalDecider;
 	}
 
 	public static Builder builder() {
@@ -126,7 +130,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 					.toolCalls(newToolCalls)
 					.media(assistantMessage.getMedia())
 					.build());
-				newMessages.add(new RemoveByHash<>(assistantMessage));
+				newMessages.add(new RemoveByHashLocal<>(assistantMessage));
 			}
 
 			// ToolResponseMessages must be added after AssistantMessage
@@ -158,23 +162,25 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 				throw new IllegalArgumentException("Human feedback metadata must be of type InterruptionMetadata.");
 			}
 
-			if (!validateFeedback((InterruptionMetadata) feedback.get(), lastMessage.getToolCalls())) {
-				return buildInterruptionMetadata(state, lastMessage);
+			if (!validateFeedback((InterruptionMetadata) feedback.get(), lastMessage.getToolCalls(), config)) {
+				return buildInterruptionMetadata(state, lastMessage, config);
 			}
 			return Optional.empty();
 		}
 
 		// 2. If last message is AssistantMessage
-		return buildInterruptionMetadata(state, lastMessage);
+		return buildInterruptionMetadata(state, lastMessage, config);
 	}
 
 	private static AssistantMessage getLastAssistantMessage(OverAllState state) {
+		@SuppressWarnings("unchecked")
 		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
 
 		AssistantMessage lastMessage = null;
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message msg = messages.get(i);
-			if (msg instanceof AssistantMessage assistantMessage) {
+			if (msg instanceof AssistantMessage) {
+				AssistantMessage assistantMessage = (AssistantMessage) msg;
 				// If the next element (i+1) is a ToolResponseMessage, return empty(tools already executed)
 				if (i + 1 < messages.size() && messages.get(i + 1) instanceof ToolResponseMessage) {
 					break;
@@ -187,13 +193,32 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		return lastMessage;
 	}
 
-	private Optional<InterruptionMetadata> buildInterruptionMetadata(OverAllState state, AssistantMessage lastMessage) {
+	private Optional<InterruptionMetadata> buildInterruptionMetadata(OverAllState state, AssistantMessage lastMessage,
+			RunnableConfig config) {
 		boolean needsInterruption = false;
 		InterruptionMetadata.Builder builder = InterruptionMetadata.builder(Hook.getFullHookName(this), state);
+		Set<String> dynamicToolNames = new HashSet<>(getDynamicApprovalToolNames(config));
+		Set<String> dynamicToolCallIds = new HashSet<>(getDynamicApprovalToolCallIds(config));
+		Map<String, String> descriptionOverrides = new HashMap<>();
+		if (approvalDecider != null) {
+			ApprovalDecision decision = approvalDecider.decide(state, config, lastMessage);
+			if (decision != null) {
+				if (decision.toolNames() != null) {
+					dynamicToolNames.addAll(decision.toolNames());
+				}
+				if (decision.toolCallIds() != null) {
+					dynamicToolCallIds.addAll(decision.toolCallIds());
+				}
+				if (decision.descriptionByToolName() != null) {
+					descriptionOverrides.putAll(decision.descriptionByToolName());
+				}
+			}
+		}
 		for (AssistantMessage.ToolCall toolCall : lastMessage.getToolCalls()) {
-			if (approvalOn.containsKey(toolCall.name())) {
+			if (approvalOn.containsKey(toolCall.name()) || dynamicToolNames.contains(toolCall.name())
+					|| dynamicToolCallIds.contains(toolCall.id())) {
 				ToolConfig toolConfig = approvalOn.get(toolCall.name());
-				String description = toolConfig.getDescription();
+				String description = toolConfig != null ? toolConfig.getDescription() : descriptionOverrides.get(toolCall.name());
 				String content = "The AI is requesting to use the tool: " + toolCall.name() + ".\n"
 						+ (description != null ? ("Description: " + description + "\n") : "")
 						+ "With the following arguments: " + toolCall.arguments() + "\n"
@@ -210,67 +235,74 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 		return needsInterruption ? Optional.of(builder.build()) : Optional.empty();
 	}
 
-    private boolean validateFeedback(InterruptionMetadata feedback, List<AssistantMessage.ToolCall> toolCalls) {
-        if (feedback == null || feedback.toolFeedbacks() == null || feedback.toolFeedbacks().isEmpty()) {
-            return false;
-        }
+	private boolean validateFeedback(InterruptionMetadata feedback, List<AssistantMessage.ToolCall> toolCalls,
+			RunnableConfig config) {
+		if (feedback == null || feedback.toolFeedbacks() == null || feedback.toolFeedbacks().isEmpty()) {
+			return false;
+		}
 
-        List<InterruptionMetadata.ToolFeedback> toolFeedbacks = feedback.toolFeedbacks();
+		List<InterruptionMetadata.ToolFeedback> toolFeedbacks = feedback.toolFeedbacks();
+		Set<String> dynamicToolNames = getDynamicApprovalToolNames(config);
+		Set<String> dynamicToolCallIds = getDynamicApprovalToolCallIds(config);
 
-        // 1. Tool calls in this step that actually require human approval (names defined in approvalOn)
-        List<AssistantMessage.ToolCall> toolCallsNeedingApproval = toolCalls.stream()
-                .filter(tc -> approvalOn.containsKey(tc.name()))
-                .toList();
+		// 1. Tool calls in this step that actually require human approval
+		List<AssistantMessage.ToolCall> toolCallsNeedingApproval = toolCalls.stream()
+				.filter(tc -> approvalOn.containsKey(tc.name()) || dynamicToolNames.contains(tc.name())
+						|| dynamicToolCallIds.contains(tc.id()))
+				.toList();
 
-        // If no tool calls in this step require human approval, validation is trivially satisfied
-        if (toolCallsNeedingApproval.isEmpty()) {
-            return true;
-        }
+		// If no tool calls in this step require human approval, validation is trivially satisfied
+		if (toolCallsNeedingApproval.isEmpty()) {
+			return true;
+		}
 
-        // 2. For each tool call requiring approval, ensure corresponding feedback exists and its result is non-null
-        for (AssistantMessage.ToolCall call : toolCallsNeedingApproval) {
-            InterruptionMetadata.ToolFeedback matchedFeedback = toolFeedbacks.stream()
-                    .filter(tf -> tf.getName().equals(call.name())
-                            // Also validate id if ToolFeedback contains id field
-                            && call.id().equals(tf.getId()))
-                    .findFirst()
-                    .orElse(null);
+		// 2. For each tool call requiring approval, ensure corresponding feedback exists and its result is non-null
+		for (AssistantMessage.ToolCall call : toolCallsNeedingApproval) {
+			InterruptionMetadata.ToolFeedback matchedFeedback = toolFeedbacks.stream()
+					.filter(tf -> tf.getName().equals(call.name()) && call.id().equals(tf.getId()))
+					.findFirst()
+					.orElse(null);
 
-            if (matchedFeedback == null) {
-                log.warn("Missing feedback for tool {} (id={}); waiting for human input.",
-                        call.name(), call.id());
-                return false;
-            }
+			if (matchedFeedback == null) {
+				log.warn("Missing feedback for tool {} (id={}); waiting for human input.",
+						call.name(), call.id());
+				return false;
+			}
 
-            // Ensure the feedback result is provided
-            if (matchedFeedback.getResult() == null) {
-                log.warn("Feedback result for tool {} (id={}) is null; waiting for human input.",
-                        call.name(), call.id());
-                return false;
-            }
-        }
+			if (matchedFeedback.getResult() == null) {
+				log.warn("Feedback result for tool {} (id={}) is null; waiting for human input.",
+						call.name(), call.id());
+				return false;
+			}
+		}
 
-        // 3. Optional: log unexpected or extra feedback entries that do not match any pending approval tool
-        for (InterruptionMetadata.ToolFeedback tf : toolFeedbacks) {
-            boolean matched = toolCallsNeedingApproval.stream()
-                    .anyMatch(call -> call.name().equals(tf.getName()) && call.id().equals(tf.getId()));
-            if (!matched) {
-                log.warn("Ignoring unexpected tool feedback: name={}, id={}", tf.getName(), tf.getId());
-            }
-        }
+		// 3. Optional: log unexpected or extra feedback entries that do not match any pending approval tool
+		for (InterruptionMetadata.ToolFeedback tf : toolFeedbacks) {
+			boolean matched = toolCallsNeedingApproval.stream()
+					.anyMatch(call -> call.name().equals(tf.getName()) && call.id().equals(tf.getId()));
+			if (!matched) {
+				log.warn("Ignoring unexpected tool feedback: name={}, id={}", tf.getName(), tf.getId());
+			}
+		}
 
+		return true;
+	}
 
+	private Set<String> getDynamicApprovalToolNames(RunnableConfig config) {
+		return config.metadata(HitlMetadataKeys.HITL_APPROVAL_TOOL_NAMES_KEY, new TypeRef<List<String>>() { })
+				.map(list -> new HashSet<>(list))
+				.orElseGet(HashSet::new);
+	}
 
-
-
-
-
-        return true;
-    }
+	private Set<String> getDynamicApprovalToolCallIds(RunnableConfig config) {
+		return config.metadata(HitlMetadataKeys.HITL_APPROVAL_TOOL_CALL_IDS_KEY, new TypeRef<List<String>>() { })
+				.map(list -> new HashSet<>(list))
+				.orElseGet(HashSet::new);
+	}
 
 	@Override
 	public String getName() {
-		return HITL_NODE_NAME;
+		return HumanInTheLoopHook.HITL_NODE_NAME;
 	}
 
 	@Override
@@ -280,6 +312,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 
 	public static class Builder {
 		private Map<String, ToolConfig> approvalOn = new HashMap<>();
+		private ToolApprovalDecider approvalDecider;
 
 		public Builder approvalOn(String toolName, ToolConfig toolConfig) {
 			this.approvalOn.put(toolName, toolConfig);
@@ -298,8 +331,56 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 			return this;
 		}
 
+		public Builder approvalDecider(ToolApprovalDecider approvalDecider) {
+			this.approvalDecider = approvalDecider;
+			return this;
+		}
+
 		public HumanInTheLoopHook build() {
 			return new HumanInTheLoopHook(this);
+		}
+	}
+
+	@FunctionalInterface
+	public interface ToolApprovalDecider {
+		ApprovalDecision decide(OverAllState state, RunnableConfig config, AssistantMessage assistantMessage);
+	}
+
+	public static class ApprovalDecision {
+		private final Set<String> toolNames;
+		private final Set<String> toolCallIds;
+		private final Map<String, String> descriptionByToolName;
+
+		public ApprovalDecision(Set<String> toolNames, Set<String> toolCallIds,
+				Map<String, String> descriptionByToolName) {
+			this.toolNames = toolNames;
+			this.toolCallIds = toolCallIds;
+			this.descriptionByToolName = descriptionByToolName;
+		}
+
+		public Set<String> toolNames() {
+			return toolNames;
+		}
+
+		public Set<String> toolCallIds() {
+			return toolCallIds;
+		}
+
+		public Map<String, String> descriptionByToolName() {
+			return descriptionByToolName;
+		}
+	}
+
+	private static class RemoveByHashLocal<T> implements AppenderChannel.RemoveIdentifier<T> {
+		private final T value;
+
+		private RemoveByHashLocal(T value) {
+			this.value = value;
+		}
+
+		@Override
+		public int compareTo(T element, int atIndex) {
+			return java.util.Objects.hashCode(value) - java.util.Objects.hashCode(element);
 		}
 	}
 
