@@ -6,7 +6,7 @@ Spring AI Alibaba Graph is a **workflow and multi-agent framework** for Java dev
 
 Spring AI Alibaba Graph serves as the underlying core engine of the Agent Framework. It provides atomic components for building intelligent agents with interruptible and orchestratable capabilities, offering high flexibility but also relatively high learning costs. In contrast, the Agent Framework is built atop Graph, abstracting away the underlying complexities through concepts like ReactAgent and SequentialAgent.
 
-Please check [the documentation](https://java2ai.com/docs/frameworks/graph-core/quick-start) on official website for mote details
+Please check [the documentation](https://java2ai.com/docs/frameworks/graph-core/quick-start) on official website for more details
 
 ## Core Concepts & Classes
 
