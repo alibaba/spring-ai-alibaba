@@ -1715,6 +1715,54 @@ public class StateGraphTest {
 	}
 
 	/**
+	 * Tests addParallelConditionalEdges rejects mapped nodes that do not converge to the
+	 * same direct successor.
+	 */
+	@Test
+	public void testAddParallelConditionalEdgesRejectsNonConvergingTargets() throws Exception {
+		StateGraph workflow = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			return keyStrategyMap;
+		});
+
+		workflow.addNode("start", node_async(state -> Map.of("messages", "start")))
+				.addNode("conditional_node", node_async(state -> Map.of("messages", "processing")))
+				.addNode("node_a", node_async(state -> Map.of("messages", "node_a_result")))
+				.addNode("node_b", node_async(state -> Map.of("messages", "node_b_result")))
+				.addNode("skip_1", node_async(state -> Map.of("messages", "skip_1_result")))
+				.addNode("skip_2", node_async(state -> Map.of("messages", "skip_2_result")))
+				.addNode("convergence", node_async(state -> Map.of("messages", "convergence")))
+				.addNode("end", node_async(state -> Map.of("messages", "end")));
+
+		workflow.addParallelConditionalEdges(
+				"conditional_node",
+				AsyncMultiCommandAction.node_async((state, config) ->
+						new MultiCommand(List.of("route_a", "route_b", "route_skip"))
+				),
+				Map.of(
+						"route_a", "node_a",
+						"route_b", "node_b",
+						"route_skip", "skip_1"
+				)
+		);
+
+		workflow.addEdge(START, "start")
+				.addEdge("start", "conditional_node")
+				.addEdge("node_a", "convergence")
+				.addEdge("node_b", "convergence")
+				.addEdge("skip_1", "skip_2")
+				.addEdge("skip_2", "convergence")
+				.addEdge("convergence", "end")
+				.addEdge("end", END);
+
+		GraphStateException exception = assertThrows(GraphStateException.class, workflow::compile);
+		assertTrue(exception.getMessage().contains("conditional_node"));
+		assertTrue(exception.getMessage().contains("convergence"));
+		assertTrue(exception.getMessage().contains("skip_2"));
+	}
+
+	/**
 	 * Tests addParallelConditionalEdges with single node (edge case).
 	 * Verifies that even when only one node is returned, it still works correctly.
 	 */
