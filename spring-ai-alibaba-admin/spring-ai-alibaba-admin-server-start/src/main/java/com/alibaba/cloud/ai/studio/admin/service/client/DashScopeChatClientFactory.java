@@ -57,7 +57,7 @@ public class DashScopeChatClientFactory implements ChatClientFactory{
     @Override
     public ChatOptions buildChatOptions(ModelConfigDO modelConfig, Map<String, Object> userParameters,
             Map<String, String> observationMetadata) {
-        DashScopeChatOptions.DashscopeChatOptionsBuilder builder = DashScopeChatOptions.builder();
+        DashScopeChatOptions.DashScopeChatOptionsBuilder builder = DashScopeChatOptions.builder();
         builder.withModel(modelConfig.getModelName());
         builder.withStream(true);
         for (Map.Entry<String, Object> entry : userParameters.entrySet()) {
