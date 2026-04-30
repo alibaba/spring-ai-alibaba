@@ -214,6 +214,98 @@ class AgentToolNodeParallelStarvationTest {
 			}
 		}
 
+		/**
+		 * Regression test for P1 semaphore deadlock bug.
+		 *
+		 * <p>Tests that when toolCalls > maxParallelTools, execution completes without
+		 * deadlock. The old two-stage semaphore pattern would deadlock because:
+		 * <ol>
+		 * <li>Stage 1 tasks acquire permits and block executor threads</li>
+		 * <li>Stage 2 tasks (which release permits) are queued but can't run</li>
+		 * <li>Deadlock: Stage 1 waits for permits; Stage 2 waits for threads</li>
+		 * </ol>
+		 *
+		 * <p>The fix uses a single-stage pattern where semaphore acquire and release
+		 * happen within the same task, preventing thread starvation.</p>
+		 */
+		@Test
+		@Timeout(value = 30, unit = TimeUnit.SECONDS)
+		@DisplayName("should not deadlock when toolCalls > maxParallelTools with limited thread pool")
+		void parallelExecution_shouldNotDeadlock_whenToolCallsExceedMaxParallelTools() throws Exception {
+			// Critical setup: Use executor with fewer threads than tool calls
+			// This setup would cause deadlock with the old two-stage semaphore pattern
+			int threadPoolSize = 3;
+			int maxParallelTools = 2;
+			int toolCount = 10; // More tools than threads AND more than maxParallelTools
+
+			ExecutorService limitedExecutor = Executors.newFixedThreadPool(threadPoolSize);
+
+			try {
+				AtomicInteger executionCount = new AtomicInteger(0);
+				AtomicInteger maxConcurrent = new AtomicInteger(0);
+				AtomicInteger currentConcurrent = new AtomicInteger(0);
+
+				// Create tools that track execution
+				List<ToolCallback> tools = new ArrayList<>();
+				for (int i = 0; i < toolCount; i++) {
+					final int toolIndex = i;
+					tools.add(createSyncTool("tool" + i, () -> {
+						int concurrent = currentConcurrent.incrementAndGet();
+						maxConcurrent.updateAndGet(max -> Math.max(max, concurrent));
+						try {
+							// Simulate some work
+							Thread.sleep(50);
+						}
+						catch (InterruptedException e) {
+							Thread.currentThread().interrupt();
+						}
+						finally {
+							currentConcurrent.decrementAndGet();
+						}
+						executionCount.incrementAndGet();
+						return "result" + toolIndex;
+					}));
+				}
+
+				AgentToolNode toolNode = baseBuilder.toolCallbacks(tools)
+					.parallelToolExecution(true)
+					.maxParallelTools(maxParallelTools)
+					.wrapSyncToolsAsAsync(false)
+					.build();
+
+				// Create tool calls for all tools
+				AssistantMessage.ToolCall[] toolCalls = new AssistantMessage.ToolCall[toolCount];
+				for (int i = 0; i < toolCount; i++) {
+					toolCalls[i] = createToolCall("call" + i, "tool" + i, "{}");
+				}
+
+				AssistantMessage assistantMessage = createAssistantMessageWithToolCalls(toolCalls);
+				OverAllState state = createStateWithMessages(assistantMessage);
+
+				RunnableConfig config = RunnableConfig.builder()
+					.threadId("test-thread")
+					.addParallelNodeExecutor("_AGENT_TOOL_", limitedExecutor)
+					.build();
+
+				// Execute - this would deadlock with old two-stage pattern
+				// With single-stage pattern, it should complete successfully
+				Map<String, Object> result = toolNode.apply(state, config);
+
+				// Verify all tools executed
+				assertThat(executionCount.get()).isEqualTo(toolCount);
+
+				// Verify concurrency was limited by semaphore
+				assertThat(maxConcurrent.get()).isLessThanOrEqualTo(maxParallelTools);
+
+				// Verify response contains all tool results
+				ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
+				assertThat(responseMessage.getResponses()).hasSize(toolCount);
+			}
+			finally {
+				limitedExecutor.shutdownNow();
+			}
+		}
+
 	}
 
 	@Nested
