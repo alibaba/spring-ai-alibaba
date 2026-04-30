@@ -27,6 +27,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -115,6 +116,10 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 		}
 	}
 
+	protected URL getResource(String path) {
+		return getClass().getClassLoader().getResource(path);
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -131,7 +136,7 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 		jarSkillContentCache.clear();
 
 		try {
-			URL resource = getClass().getClassLoader().getResource(classpathPath);
+			URL resource = getResource(classpathPath);
 			if (resource == null) {
 				logger.debug("No '{}' resource found in classpath", classpathPath);
 				this.skills = loadedSkills;
@@ -146,29 +151,39 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 					// Resource is on filesystem (development mode)
 					classpathSkillsPath = Path.of(uri);
 				}
-				else if ("jar".equals(uri.getScheme())) {
-					// Resource is in a JAR file (production mode)
-					// Create or reuse JAR FileSystem
-					if (jarFileSystem == null) {
-						jarFileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
-					}
-					// Get path within the JAR file system
-					// URI format: jar:file:/path/to.jar!/skills
-					// The path after ! is the path within the JAR
-					String jarPath = uri.getSchemeSpecificPart();
-					int separatorIndex = jarPath.indexOf('!');
-					if (separatorIndex != -1 && separatorIndex + 1 < jarPath.length()) {
-						String pathInJar = jarPath.substring(separatorIndex + 1);
-						// Ensure path starts with / for JAR filesystem
-						if (!pathInJar.startsWith("/")) {
-							pathInJar = "/" + pathInJar;
-						}
-						classpathSkillsPath = jarFileSystem.getPath(pathInJar);
-					}
-					else {
-						// Fallback: use the resource path directly
-						classpathSkillsPath = jarFileSystem.getPath("/skills");
-					}
+                else if ("jar".equals(uri.getScheme()) || "nested".equals(uri.getScheme())) {
+                    // Resource is in a JAR file (production mode)
+                    // Handle both jar:file: and jar:nested: protocols
+
+                    // Get the JAR file URI - works for both jar: and nested:
+                    String uriString = uri.toString();
+                    String jarUri = uriString;
+                    String pathInJar = "/skills";
+
+                    // Extract JAR location and internal path
+                    if (uriString.contains("!/")) {
+                        int separatorIndex = uriString.lastIndexOf("!/");
+                        jarUri = uriString.substring(0, separatorIndex);
+                        if (separatorIndex + 2 < uriString.length()) {
+                            pathInJar = uriString.substring(separatorIndex + 2);
+                            if (!pathInJar.startsWith("/")) {
+                                pathInJar = "/" + pathInJar;
+                            }
+                        }
+                    }
+
+                    // Create or reuse JAR FileSystem
+                    URI fsUri = URI.create(jarUri + "!/");
+                    if (jarFileSystem == null) {
+                        try {
+                            jarFileSystem = FileSystems.newFileSystem(fsUri, Collections.emptyMap());
+                        } catch (FileSystemAlreadyExistsException e) {
+                            // FileSystem already exists, get existing one
+                            jarFileSystem = FileSystems.getFileSystem(fsUri);
+                        }
+                    }
+
+                    classpathSkillsPath = jarFileSystem.getPath(pathInJar);
 				}
 				else {
 					logger.debug("Unsupported classpath resource protocol: {}", uri.getScheme());
