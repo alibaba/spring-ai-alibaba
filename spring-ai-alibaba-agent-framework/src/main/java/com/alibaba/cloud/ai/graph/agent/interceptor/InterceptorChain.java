@@ -17,6 +17,11 @@ package com.alibaba.cloud.ai.graph.agent.interceptor;
 
 import java.util.List;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+
+import reactor.core.publisher.Flux;
+
 /**
  * Utility class for chaining model and tool interceptors.
  *
@@ -88,6 +93,64 @@ public class InterceptorChain {
 
 			// Create a wrapper that calls the interceptor's wrap method
 			current = request -> interceptor.interceptToolCall(request, nextHandler);
+		}
+
+		return current;
+	}
+
+	/**
+	 * Apply streaming interceptors to a {@link Flux} of {@link ChatResponse}.
+	 *
+	 * <p>Each interceptor is applied in order (first to last). For each interceptor:
+	 * <ol>
+	 *   <li>{@link StreamingModelInterceptor#beforeStreamCall} is called once before subscription</li>
+	 *   <li>{@link StreamingModelInterceptor#onStreamChunk} is called for each chunk</li>
+	 *   <li>{@link StreamingModelInterceptor#afterStreamComplete} is called when the stream completes</li>
+	 *   <li>{@link StreamingModelInterceptor#onStreamError} is called if an error occurs</li>
+	 * </ol>
+	 *
+	 * @param interceptors List of StreamingModelInterceptors to apply
+	 * @param flux The original Flux of ChatResponse chunks
+	 * @param request The model request (for context)
+	 * @return The transformed Flux with all interceptors applied
+	 */
+	public static Flux<ChatResponse> applyStreamingInterceptors(
+			List<StreamingModelInterceptor> interceptors,
+			Flux<ChatResponse> flux,
+			ModelRequest request) {
+
+		if (interceptors == null || interceptors.isEmpty()) {
+			return flux;
+		}
+
+		// Apply beforeStreamCall for all interceptors (first to last)
+		ModelRequest currentRequest = request;
+		for (StreamingModelInterceptor interceptor : interceptors) {
+			currentRequest = interceptor.beforeStreamCall(currentRequest);
+		}
+
+		// Apply onStreamChunk, afterStreamComplete, and onStreamError for each interceptor
+		final ModelRequest finalRequest = currentRequest;
+		Flux<ChatResponse> current = flux;
+
+		for (StreamingModelInterceptor interceptor : interceptors) {
+			// Aggregate text from all chunks so afterStreamComplete sees the full message,
+			// not just the final delta chunk's text.
+			final StringBuilder aggregator = new StringBuilder();
+
+			current = current
+					.map(chunk -> {
+						ChatResponse transformed = interceptor.onStreamChunk(chunk, finalRequest);
+						if (transformed != null && transformed.getResult() != null
+								&& transformed.getResult().getOutput() != null
+								&& transformed.getResult().getOutput().getText() != null) {
+							aggregator.append(transformed.getResult().getOutput().getText());
+						}
+						return transformed;
+					})
+					.doOnComplete(() -> interceptor.afterStreamComplete(
+							new AssistantMessage(aggregator.toString()), finalRequest))
+					.doOnError(error -> interceptor.onStreamError(error, finalRequest));
 		}
 
 		return current;
