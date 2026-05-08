@@ -176,13 +176,16 @@ public class CompiledGraph {
 						}
 
 						var parallelNodeTargets = findParallelNodeTargets(mappedNodeIds);
-						if (!parallelNodeTargets.isEmpty()) {
-							// Set edge from ConditionalParallelNode to the next node
-							// All parallel nodes point to the same target, use that target
-							edges.put(conditionalParallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
-						} else {
-							throw Errors.illegalMultipleTargetsOnParallelNode.exception(e.sourceId(), 0);
+						if (parallelNodeTargets.size() != 1) {
+							throw Errors.inconsistentConditionalParallelTargets.exception(
+									e.sourceId(),
+									parallelNodeTargets,
+									mappedNodeIds);
 						}
+
+						// Set edge from ConditionalParallelNode to the next node
+						// All parallel nodes point to the same target, use that target
+						edges.put(conditionalParallelNode.id(), new EdgeValue(parallelNodeTargets.iterator().next()));
 						// The ConditionalParallelNode will handle parallel execution internally
 					} else {
 						// Single Command action - same as regular single target edge
