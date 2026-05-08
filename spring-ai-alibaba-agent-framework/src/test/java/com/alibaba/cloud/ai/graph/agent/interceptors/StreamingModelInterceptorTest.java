@@ -28,6 +28,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -145,8 +146,10 @@ class StreamingModelInterceptorTest extends AbstractDashscopeChatModelTest {
 				.build();
 
 		try {
+			// Bounded wait so a hung upstream stream surfaces as a deterministic failure
+			// instead of blocking the test runner forever.
 			agent.stream("查询商品1并简要解读")
-					.blockLast();
+					.blockLast(Duration.ofMinutes(2));
 
 			System.out.println();
 			System.out.println("===== Interceptor 计数 =====");

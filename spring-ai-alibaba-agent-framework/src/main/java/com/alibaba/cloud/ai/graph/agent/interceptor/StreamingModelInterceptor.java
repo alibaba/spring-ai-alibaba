@@ -24,11 +24,18 @@ import org.springframework.ai.chat.model.ChatResponse;
  * <p>Unlike {@link ModelInterceptor} which intercepts the entire model call (request/response),
  * this interceptor provides fine-grained control over individual streaming chunks.</p>
  *
- * <p>Lifecycle:</p>
+ * <p>Lifecycle (per subscription — see
+ * {@link InterceptorChain#applyStreamingInterceptors}):</p>
  * <ol>
- *   <li>{@link #beforeStreamCall} - Called once before the streaming call starts, can modify the request</li>
- *   <li>{@link #onStreamChunk} - Called for each {@link ChatResponse} chunk during streaming</li>
- *   <li>{@link #afterStreamComplete} - Called once after all chunks have been received</li>
+ *   <li>{@link #beforeStreamCall} - Called once before the chunk Flux is subscribed.
+ *       The returned {@link ModelRequest} is threaded into <i>subsequent callbacks</i>
+ *       of this and later interceptors as the {@code request} parameter; it does
+ *       <b>not</b> alter the actual outbound model call (the Flux has already been
+ *       constructed). To modify the outbound request use {@link ModelInterceptor}.</li>
+ *   <li>{@link #onStreamChunk} - Called for each {@link ChatResponse} chunk; can
+ *       transform, observe, or drop ({@code return null}) the chunk</li>
+ *   <li>{@link #afterStreamComplete} - Called once after all chunks have been received,
+ *       with the aggregated {@link AssistantMessage} built from emitted chunk text</li>
  *   <li>{@link #onStreamError} - Called if an error occurs during streaming</li>
  * </ol>
  *
@@ -61,11 +68,22 @@ import org.springframework.ai.chat.model.ChatResponse;
 public interface StreamingModelInterceptor {
 
 	/**
-	 * Called once before the streaming call starts.
-	 * Can be used to modify or enrich the request before it is sent to the model.
+	 * Called once per subscription, before the chunk Flux is subscribed to.
 	 *
-	 * @param request the original model request
-	 * @return the (possibly modified) model request
+	 * <p>The returned {@link ModelRequest} is propagated as the {@code request} parameter
+	 * to this and later interceptors' {@link #onStreamChunk}, {@link #afterStreamComplete},
+	 * and {@link #onStreamError} callbacks. Use this hook to attach context (correlation
+	 * IDs, trace metadata, computed state) that downstream callbacks need to read.
+	 *
+	 * <p><b>Important:</b> the returned request does <i>not</i> alter the outbound model
+	 * call — by the time this method runs, the chunk Flux has already been built from the
+	 * original request. To modify what is sent to the model (messages, options, tools),
+	 * use {@link ModelInterceptor} instead.
+	 *
+	 * @param request the model request as threaded through earlier interceptors'
+	 *                {@code beforeStreamCall} (or the original request for the first
+	 *                interceptor in the chain)
+	 * @return the (possibly enriched) model request to pass to subsequent callbacks
 	 */
 	default ModelRequest beforeStreamCall(ModelRequest request) {
 		return request;
@@ -76,7 +94,9 @@ public interface StreamingModelInterceptor {
 	 * Can be used to inspect, transform, or filter individual chunks.
 	 *
 	 * @param chunk the current streaming chunk
-	 * @param request the original model request (for context)
+	 * @param request the model request as it stands after every interceptor's
+	 *                {@link #beforeStreamCall} has run (i.e. the fully-threaded request,
+	 *                not necessarily the original one passed to the model)
 	 * @return the (possibly modified) chunk to keep emitting, or {@code null} to drop this
 	 *         chunk from the stream entirely. When dropped, downstream interceptors and
 	 *         subscribers will not see this chunk, and its text will not be included in
@@ -90,8 +110,12 @@ public interface StreamingModelInterceptor {
 	 * Called once after all streaming chunks have been received successfully.
 	 * Can be used for logging, metrics collection, or post-processing.
 	 *
-	 * @param aggregatedMessage the aggregated assistant message from all chunks
-	 * @param request the original model request (for context)
+	 * @param aggregatedMessage an {@link AssistantMessage} built by concatenating the
+	 *                          {@code text} of every chunk this interceptor emitted
+	 *                          downstream (chunks dropped via {@link #onStreamChunk}
+	 *                          returning {@code null} are excluded)
+	 * @param request the model request as it stands after every interceptor's
+	 *                {@link #beforeStreamCall} has run
 	 */
 	default void afterStreamComplete(AssistantMessage aggregatedMessage, ModelRequest request) {
 	}
@@ -101,7 +125,8 @@ public interface StreamingModelInterceptor {
 	 * Can be used for error logging, alerting, or fallback logic.
 	 *
 	 * @param error the error that occurred
-	 * @param request the original model request (for context)
+	 * @param request the model request as it stands after every interceptor's
+	 *                {@link #beforeStreamCall} has run
 	 */
 	default void onStreamError(Throwable error, ModelRequest request) {
 	}

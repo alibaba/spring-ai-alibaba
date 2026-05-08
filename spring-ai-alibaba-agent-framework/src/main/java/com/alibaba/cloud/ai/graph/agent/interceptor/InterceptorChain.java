@@ -119,6 +119,15 @@ public class InterceptorChain {
 	 *   <li>{@link StreamingModelInterceptor#onStreamError} is invoked on error</li>
 	 * </ol>
 	 *
+	 * <p><b>Request threading:</b> the {@code request} parameter passed to every
+	 * {@code onStreamChunk} / {@code afterStreamComplete} / {@code onStreamError}
+	 * invocation is the request as it stands <i>after every interceptor's
+	 * {@code beforeStreamCall} has run</i>, not the original {@code request} argument
+	 * to this method. This means {@code beforeStreamCall} is purely a context-propagation
+	 * hook between interceptors; it cannot influence the outbound model call (the chunk
+	 * Flux has already been built from the original request). To modify what is sent to
+	 * the model, use {@link ModelInterceptor}.
+	 *
 	 * <p><b>Wrapping order:</b> the first registered interceptor is the <i>innermost</i>
 	 * operator, i.e. it sees raw model chunks first; later interceptors see whatever the
 	 * previous one returned. This differs from the synchronous {@code chainXxxInterceptors}
