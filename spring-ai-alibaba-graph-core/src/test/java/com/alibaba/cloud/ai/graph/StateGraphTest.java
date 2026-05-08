@@ -1760,6 +1760,82 @@ public class StateGraphTest {
 	}
 
 	/**
+	 * Tests that addParallelConditionalEdges throws an exception when parallel nodes
+	 * converge to multiple different targets. This verifies the fix for GitHub issue #4411,
+	 * where non-deterministic behavior occurred when parallel conditional nodes had
+	 * multiple convergence targets (using HashSet.iterator().next()).
+	 *
+	 * The scenario: node_a -> end_a, node_b -> end_b — two different convergence targets
+	 * should be rejected at compile time with a clear error message.
+	 */
+	@Test
+	public void testAddParallelConditionalEdgesWithMultipleConvergenceTargetsThrows() throws Exception {
+		StateGraph workflow = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			return keyStrategyMap;
+		});
+
+		workflow.addNode("start", node_async(state -> {
+					log.info("start node");
+					return Map.of("messages", "start");
+				}))
+				.addNode("conditional_node", node_async(state -> {
+					log.info("conditional_node");
+					return Map.of("messages", "processing");
+				}))
+				.addNode("node_a", node_async(state -> {
+					log.info("node_a executing");
+					return Map.of("messages", "node_a_result");
+				}))
+				.addNode("node_b", node_async(state -> {
+					log.info("node_b executing");
+					return Map.of("messages", "node_b_result");
+				}))
+				.addNode("end_a", node_async(state -> {
+					log.info("end_a node");
+					return Map.of("messages", "end_a");
+				}))
+				.addNode("end_b", node_async(state -> {
+					log.info("end_b node");
+					return Map.of("messages", "end_b");
+				}));
+
+		// Conditional edges route to node_a and node_b in parallel
+		workflow.addParallelConditionalEdges(
+				"conditional_node",
+				AsyncMultiCommandAction.node_async((state, config) ->
+						new MultiCommand(List.of("route_a", "route_b"))
+				),
+				Map.of(
+						"route_a", "node_a",
+						"route_b", "node_b"
+				)
+		);
+
+		// The problem: node_a -> end_a, node_b -> end_b — different convergence targets
+		workflow.addEdge(START, "start")
+				.addEdge("start", "conditional_node")
+				.addEdge("node_a", "end_a")
+				.addEdge("node_b", "end_b")
+				.addEdge("end_a", END)
+				.addEdge("end_b", END);
+
+		// Compiling this graph should throw an exception because
+		// parallel nodes converge to multiple different targets
+		Exception exception = assertThrows(GraphStateException.class, () -> {
+			workflow.compile();
+		});
+
+		String message = exception.getMessage();
+		log.info("Caught expected exception: {}", message);
+		assertTrue(message.contains("parallel node"),
+				"Exception message should mention 'parallel node', got: " + message);
+		assertTrue(message.contains("must have only one target"),
+				"Exception message should describe the constraint, got: " + message);
+	}
+
+	/**
 	 * Tests a simple A->B->C graph flow with Long type value in overall state.
 	 * NodeA increments the counter by 100, NodeB multiplies it by 2.
 	 * NodeC implements InterruptableAction to check if result exceeds threshold.
