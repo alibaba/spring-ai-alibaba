@@ -464,11 +464,15 @@ public class GraphRunnerContext {
 			// Check if "messages" key exists and is a List
 			Object messagesObj = updateStates.get("messages");
 			if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
-				// Get the last element
-				Object lastElement = messagesList.get(messagesList.size() - 1);
-				// Check if it's a Message type
-				if (lastElement instanceof Message) {
-					message = (Message) lastElement;
+				// Iterate backwards to find the last Message, skipping non-Message
+				// markers such as RemoveByHash that may be appended after the actual
+				// message (e.g. in HITL partial tool-response handling).
+				for (int i = messagesList.size() - 1; i >= 0; i--) {
+					Object element = messagesList.get(i);
+					if (element instanceof Message msg) {
+						message = msg;
+						break;
+					}
 				}
 			} else if (messagesObj instanceof Message singleMessage) {
 				// If it's a single Message instance
