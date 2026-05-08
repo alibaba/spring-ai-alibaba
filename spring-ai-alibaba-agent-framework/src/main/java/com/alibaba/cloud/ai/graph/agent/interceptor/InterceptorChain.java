@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -149,10 +150,30 @@ public class InterceptorChain {
 		}
 
 		return Flux.defer(() -> {
-			// Per-subscription: thread request through beforeStreamCall (first to last)
-			ModelRequest threaded = request;
-			for (StreamingModelInterceptor interceptor : interceptors) {
-				threaded = interceptor.beforeStreamCall(threaded);
+			// Defensive copy: each subscription starts from its own ModelRequest so an
+			// interceptor that mutates context/messages/options in-place inside
+			// beforeStreamCall does not leak state across retries / multi-subscribe.
+			ModelRequest scopedRequest = copyForSubscription(request);
+
+			// Thread request through beforeStreamCall (first to last). Wrapped in try/catch
+			// because we are inside the defer supplier — if we let the exception escape
+			// before any doOnError operator is attached below, per-interceptor onStreamError
+			// callbacks would never fire and startup failures would be invisible to users.
+			ModelRequest threaded = scopedRequest;
+			try {
+				for (StreamingModelInterceptor interceptor : interceptors) {
+					threaded = interceptor.beforeStreamCall(threaded);
+				}
+			} catch (Throwable startupError) {
+				for (StreamingModelInterceptor interceptor : interceptors) {
+					try {
+						interceptor.onStreamError(startupError, scopedRequest);
+					} catch (Throwable cbThrown) {
+						// Don't let one buggy callback hide the original failure
+						startupError.addSuppressed(cbThrown);
+					}
+				}
+				return Flux.error(startupError);
 			}
 			final ModelRequest finalRequest = threaded;
 
@@ -182,6 +203,32 @@ public class InterceptorChain {
 
 			return current;
 		});
+	}
+
+	/**
+	 * Build a per-subscription copy of {@link ModelRequest} so concurrent / retried
+	 * subscriptions of the same wrapped {@link Flux} do not share mutable state.
+	 *
+	 * <p>{@link ModelRequest#builder(ModelRequest)} already shallow-copies
+	 * {@code tools}, {@code dynamicToolCallbacks}, {@code toolDescriptions}, and
+	 * {@code context}, but reuses the {@code messages} list and {@code options} object.
+	 * This helper additionally wraps {@code messages} in a fresh {@link ArrayList} and
+	 * invokes {@code options.copy()} so an interceptor that does e.g.
+	 * {@code request.getOptions().setTemperature(0.0)} or
+	 * {@code request.getMessages().add(...)} mutates only this subscription's copy.
+	 *
+	 * <p>Note: individual {@link org.springframework.ai.chat.messages.Message} elements
+	 * are treated as effectively immutable (Spring AI uses immutable message types in
+	 * practice); we do not deep-copy them.
+	 */
+	private static ModelRequest copyForSubscription(ModelRequest src) {
+		if (src == null) {
+			return null;
+		}
+		return ModelRequest.builder(src)
+				.messages(src.getMessages() != null ? new ArrayList<>(src.getMessages()) : null)
+				.options(src.getOptions() != null ? src.getOptions().copy() : null)
+				.build();
 	}
 
 	/**
