@@ -35,7 +35,8 @@ import org.springframework.ai.openai.api.OpenAiApi;
  */
 abstract class AbstractDashscopeChatModelTest {
 
-	private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+	// Base URL only — OpenAiApi appends "/v1/chat/completions" itself; do NOT include /v1 here.
+	private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode";
 
 	private static final String DEFAULT_MODEL = "qwen-plus";
 

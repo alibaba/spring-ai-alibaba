@@ -77,7 +77,10 @@ public interface StreamingModelInterceptor {
 	 *
 	 * @param chunk the current streaming chunk
 	 * @param request the original model request (for context)
-	 * @return the (possibly modified) chunk; return the original chunk if no modification is needed
+	 * @return the (possibly modified) chunk to keep emitting, or {@code null} to drop this
+	 *         chunk from the stream entirely. When dropped, downstream interceptors and
+	 *         subscribers will not see this chunk, and its text will not be included in
+	 *         the aggregated message passed to {@link #afterStreamComplete}.
 	 */
 	default ChatResponse onStreamChunk(ChatResponse chunk, ModelRequest request) {
 		return chunk;

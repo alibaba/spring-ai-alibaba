@@ -164,7 +164,7 @@ class StreamingModelInterceptorTest extends AbstractDashscopeChatModelTest {
 					"每轮成功完成时都应触发 afterStreamComplete，实际=" + completeCount.get());
 			assertEquals(0, errorCount.get(), "正常路径不应触发 onStreamError");
 			assertNotNull(lastAggregatedText.get(), "聚合文本不应为 null");
-            assertFalse(lastAggregatedText.get().isEmpty(), "最后一轮聚合文本不应为空（说明 chunk text 累加生效）");
+			assertFalse(lastAggregatedText.get().isEmpty(), "最后一轮聚合文本不应为空（说明 chunk text 累加生效）");
 
 		} catch (Exception ex) {
 			ex.printStackTrace();

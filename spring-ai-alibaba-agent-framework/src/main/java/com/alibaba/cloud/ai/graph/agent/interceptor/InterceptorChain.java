@@ -101,13 +101,29 @@ public class InterceptorChain {
 	/**
 	 * Apply streaming interceptors to a {@link Flux} of {@link ChatResponse}.
 	 *
-	 * <p>Each interceptor is applied in order (first to last). For each interceptor:
+	 * <p>The full pipeline is wrapped in {@link Flux#defer(java.util.function.Supplier)} so
+	 * that every subscription (including reactor-driven retries) gets its own
+	 * {@code beforeStreamCall} pass and its own per-interceptor aggregator buffer. Nothing
+	 * runs at composition time.
+	 *
+	 * <p>Per subscription, for each interceptor in registration order (first to last):
 	 * <ol>
-	 *   <li>{@link StreamingModelInterceptor#beforeStreamCall} is called once before subscription</li>
-	 *   <li>{@link StreamingModelInterceptor#onStreamChunk} is called for each chunk</li>
-	 *   <li>{@link StreamingModelInterceptor#afterStreamComplete} is called when the stream completes</li>
-	 *   <li>{@link StreamingModelInterceptor#onStreamError} is called if an error occurs</li>
+	 *   <li>{@link StreamingModelInterceptor#beforeStreamCall} is invoked, threading the
+	 *       (possibly mutated) request to the next interceptor</li>
+	 *   <li>{@link StreamingModelInterceptor#onStreamChunk} is invoked per chunk via
+	 *       {@link Flux#handle}: returning the original/transformed chunk emits it
+	 *       downstream; returning {@code null} drops it (filter)</li>
+	 *   <li>{@link StreamingModelInterceptor#afterStreamComplete} receives an
+	 *       {@link AssistantMessage} built by concatenating each emitted chunk's text
+	 *       (per-subscription, per-interceptor)</li>
+	 *   <li>{@link StreamingModelInterceptor#onStreamError} is invoked on error</li>
 	 * </ol>
+	 *
+	 * <p><b>Wrapping order:</b> the first registered interceptor is the <i>innermost</i>
+	 * operator, i.e. it sees raw model chunks first; later interceptors see whatever the
+	 * previous one returned. This differs from the synchronous {@code chainXxxInterceptors}
+	 * methods above (where the first interceptor is outermost) because chunk-level
+	 * interceptors typically want to observe untransformed model output.
 	 *
 	 * @param interceptors List of StreamingModelInterceptors to apply
 	 * @param flux The original Flux of ChatResponse chunks
@@ -123,41 +139,44 @@ public class InterceptorChain {
 			return flux;
 		}
 
-		// Apply beforeStreamCall for all interceptors (first to last)
-		ModelRequest currentRequest = request;
-		for (StreamingModelInterceptor interceptor : interceptors) {
-			currentRequest = interceptor.beforeStreamCall(currentRequest);
-		}
+		return Flux.defer(() -> {
+			// Per-subscription: thread request through beforeStreamCall (first to last)
+			ModelRequest threaded = request;
+			for (StreamingModelInterceptor interceptor : interceptors) {
+				threaded = interceptor.beforeStreamCall(threaded);
+			}
+			final ModelRequest finalRequest = threaded;
 
-		// Apply onStreamChunk, afterStreamComplete, and onStreamError for each interceptor
-		final ModelRequest finalRequest = currentRequest;
-		Flux<ChatResponse> current = flux;
+			Flux<ChatResponse> current = flux;
+			for (StreamingModelInterceptor interceptor : interceptors) {
+				// Per-subscription, per-interceptor aggregator buffer
+				final StringBuilder aggregator = new StringBuilder();
 
-		for (StreamingModelInterceptor interceptor : interceptors) {
-			// Aggregate text from all chunks so afterStreamComplete sees the full message,
-			// not just the final delta chunk's text.
-			final StringBuilder aggregator = new StringBuilder();
+				current = current
+						.handle((ChatResponse chunk, reactor.core.publisher.SynchronousSink<ChatResponse> sink) -> {
+							ChatResponse transformed = interceptor.onStreamChunk(chunk, finalRequest);
+							if (transformed == null) {
+								// null = drop this chunk (filter); next interceptors won't see it
+								return;
+							}
+							if (transformed.getResult() != null
+									&& transformed.getResult().getOutput() != null
+									&& transformed.getResult().getOutput().getText() != null) {
+								aggregator.append(transformed.getResult().getOutput().getText());
+							}
+							sink.next(transformed);
+						})
+						.doOnComplete(() -> interceptor.afterStreamComplete(
+								new AssistantMessage(aggregator.toString()), finalRequest))
+						.doOnError(error -> interceptor.onStreamError(error, finalRequest));
+			}
 
-			current = current
-					.map(chunk -> {
-						ChatResponse transformed = interceptor.onStreamChunk(chunk, finalRequest);
-						if (transformed != null && transformed.getResult() != null
-								&& transformed.getResult().getOutput() != null
-								&& transformed.getResult().getOutput().getText() != null) {
-							aggregator.append(transformed.getResult().getOutput().getText());
-						}
-						return transformed;
-					})
-					.doOnComplete(() -> interceptor.afterStreamComplete(
-							new AssistantMessage(aggregator.toString()), finalRequest))
-					.doOnError(error -> interceptor.onStreamError(error, finalRequest));
-		}
-
-		return current;
+			return current;
+		});
 	}
 
 	/**
-	 * Example of how interceptors are chained:
+	 * Example of how synchronous (model/tool) interceptors are chained:
 	 *
 	 * Given interceptors [auth, retry, cache] and baseHandler:
 	 *
@@ -166,10 +185,14 @@ public class InterceptorChain {
 	 * 3. Wrap with retry: current = req -> retry.wrap(req, cache.wrap(...))
 	 * 4. Wrap with auth: current = req -> auth.wrap(req, retry.wrap(...))
 	 *
-	 * Final call flow:
+	 * Final call flow (first interceptor is outermost):
 	 * request -> auth -> retry -> cache -> baseHandler
 	 *
 	 * Response flow:
 	 * baseHandler -> cache -> retry -> auth -> response
+	 *
+	 * Note: streaming interceptors use the opposite convention — the first registered
+	 * interceptor is the innermost operator and sees raw chunks first. See
+	 * {@link #applyStreamingInterceptors}.
 	 */
 }
