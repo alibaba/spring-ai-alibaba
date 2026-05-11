@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 com.alibaba.cloud.ai.a2a.autoconfigure.client.A2aClientAgentCardProviderAutoConfiguration
+com.alibaba.cloud.ai.a2a.autoconfigure.server.A2aServerMultiAgentAutoConfiguration
 com.alibaba.cloud.ai.a2a.autoconfigure.server.A2aServerAgentCardAutoConfiguration
 com.alibaba.cloud.ai.a2a.autoconfigure.server.A2aServerHandlerAutoConfiguration
 com.alibaba.cloud.ai.a2a.autoconfigure.server.A2aServerAutoConfiguration

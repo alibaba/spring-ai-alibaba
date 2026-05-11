@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
@@ -94,6 +95,7 @@ public abstract class Builder {
 	protected List<Interceptor> interceptors = new ArrayList<>();
 	protected List<ModelInterceptor> modelInterceptors = new ArrayList<>();
 	protected List<ToolInterceptor> toolInterceptors = new ArrayList<>();
+	protected List<StreamingModelInterceptor> streamingInterceptors = new ArrayList<>();
 
 	protected boolean includeContents = true;
 	protected boolean returnReasoningContents;
@@ -302,6 +304,20 @@ public abstract class Builder {
 		Assert.notNull(interceptors, "interceptors cannot be null");
 		Assert.noNullElements(interceptors, "interceptors cannot contain null elements");
 		this.interceptors.addAll(List.of(interceptors));
+		return this;
+	}
+
+	public Builder streamingInterceptors(List<StreamingModelInterceptor> streamingInterceptors) {
+		Assert.notNull(streamingInterceptors, "streamingInterceptors cannot be null");
+		Assert.noNullElements(streamingInterceptors, "streamingInterceptors cannot contain null elements");
+		this.streamingInterceptors.addAll(streamingInterceptors);
+		return this;
+	}
+
+	public Builder streamingInterceptors(StreamingModelInterceptor... streamingInterceptors) {
+		Assert.notNull(streamingInterceptors, "streamingInterceptors cannot be null");
+		Assert.noNullElements(streamingInterceptors, "streamingInterceptors cannot contain null elements");
+		this.streamingInterceptors.addAll(List.of(streamingInterceptors));
 		return this;
 	}
 

@@ -18,8 +18,9 @@ package com.alibaba.cloud.ai.a2a.autoconfigure.server;
 
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerAgentCardProperties;
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerProperties;
-import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.a2a.core.constants.A2aConstants;
+import com.alibaba.cloud.ai.a2a.core.route.MultiAgentRequestRouter;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -36,10 +37,16 @@ import io.a2a.spec.AgentInterface;
 import io.a2a.spec.AgentSkill;
 
 /**
+ * Auto-configuration for single-agent A2A server.
+ * <p>
+ * This configuration is used when only a single agent is registered (traditional mode).
+ * When multi-agent mode is enabled (agents map is configured), this configuration
+ * is skipped in favor of {@link A2aServerMultiAgentAutoConfiguration}.
+ *
  * @author xiweng.yy
  */
-@AutoConfiguration
-@ConditionalOnMissingBean(AgentCard.class)
+@AutoConfiguration(after = A2aServerMultiAgentAutoConfiguration.class)
+@ConditionalOnMissingBean({ AgentCard.class, MultiAgentRequestRouter.class })
 @EnableConfigurationProperties({ A2aServerProperties.class, A2aServerAgentCardProperties.class })
 public class A2aServerAgentCardAutoConfiguration {
 

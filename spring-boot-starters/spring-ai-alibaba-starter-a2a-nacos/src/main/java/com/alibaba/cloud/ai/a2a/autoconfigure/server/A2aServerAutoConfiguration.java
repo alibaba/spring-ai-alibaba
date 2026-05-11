@@ -18,22 +18,28 @@ package com.alibaba.cloud.ai.a2a.autoconfigure.server;
 
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerProperties;
 import com.alibaba.cloud.ai.a2a.core.route.JsonRpcA2aRouterProvider;
+import com.alibaba.cloud.ai.a2a.core.route.MultiAgentRequestRouter;
 import com.alibaba.cloud.ai.a2a.core.server.JsonRpcA2aRequestHandler;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 
 /**
- * The AutoConfiguration for A2A server.
+ * The AutoConfiguration for A2A server in single-agent mode.
+ * <p>
+ * This configuration is skipped when multi-agent mode is active
+ * (when {@link MultiAgentRequestRouter} bean exists).
  *
  * @author xiweng.yy
  */
-@AutoConfiguration(after = A2aServerHandlerAutoConfiguration.class)
+@AutoConfiguration(after = { A2aServerHandlerAutoConfiguration.class, A2aServerMultiAgentAutoConfiguration.class })
 @EnableConfigurationProperties({ A2aServerProperties.class })
+@ConditionalOnMissingBean(MultiAgentRequestRouter.class)
 public class A2aServerAutoConfiguration {
 
 	@Bean

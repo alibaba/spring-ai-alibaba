@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: skills-sql-assistant
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY:}
+
+# Set to true to run the skills (progressive disclosure) demo on startup.
+skills.runner.enabled: false

@@ -166,7 +166,6 @@ public class FlowGraphBuildingStrategyRegistry {
 		registerStrategy(FlowAgentEnum.PARALLEL.getType(), ParallelGraphBuildingStrategy::new);
 		registerStrategy(FlowAgentEnum.CONDITIONAL.getType(), ConditionalGraphBuildingStrategy::new);
 		registerStrategy(FlowAgentEnum.LOOP.getType(), LoopGraphBuildingStrategy::new);
-		registerStrategy(FlowAgentEnum.SUPERVISOR.getType(), SupervisorGraphBuildingStrategy::new);
 	}
 
 }

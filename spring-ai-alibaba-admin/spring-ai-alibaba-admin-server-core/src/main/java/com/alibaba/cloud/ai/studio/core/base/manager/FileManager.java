@@ -36,6 +36,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * File manager for handling file operations including saving, loading and media type
@@ -106,9 +108,9 @@ public class FileManager {
 
 	/**
 	 * Loads a file from the storage system.
-	 * @param filePath The relative path of the file
+	 * @param filePath The relative path of the file (path traversal sequences are rejected)
 	 * @return A Resource object representing the file
-	 * @throws BizException if the file is not found
+	 * @throws BizException if the file is not found or path is invalid (e.g. path traversal)
 	 */
 	public Resource loadFile(String filePath) {
 		if (UploadType.OSS.getValue().equalsIgnoreCase(studioProperties.getUploadMethod())) {
@@ -122,8 +124,15 @@ public class FileManager {
 		}
 
 		String storagePath = studioProperties.getStoragePath();
-		File file = new File(storagePath + File.separator + filePath);
+		Path basePath = Paths.get(storagePath).toAbsolutePath().normalize();
+		Path targetPath = basePath.resolve(filePath).toAbsolutePath().normalize();
 
+		if (!targetPath.startsWith(basePath)) {
+			log.warn("Path traversal attempt detected: {}", filePath);
+			throw new BizException(ErrorCode.INVALID_PARAMS.toError("path", "Invalid file path"));
+		}
+
+		File file = targetPath.toFile();
 		if (!file.exists()) {
 			throw new BizException(ErrorCode.FILE_NOT_FOUND.toError("File not found: " + filePath));
 		}

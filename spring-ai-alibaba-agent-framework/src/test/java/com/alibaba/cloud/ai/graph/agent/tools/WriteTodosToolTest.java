@@ -45,15 +45,17 @@ class WriteTodosToolTest {
 		ToolContext toolContext = new ToolContext(contextData);
 
 		List<Todo> todos = new ArrayList<>();
-		todos.add(new Todo("Task 1", TodoStatus.PENDING));
-		todos.add(new Todo("Task 2", TodoStatus.COMPLETED));
+		todos.add(new Todo("Task 1", TodoStatus.PENDING, "Working on Task 1"));
+		todos.add(new Todo("Task 2", TodoStatus.COMPLETED, "Completed Task 2"));
 
 		WriteTodosTool.Request request = new WriteTodosTool.Request(todos);
 		WriteTodosTool.Response response = writeTodosTool.apply(request, toolContext);
 
 		assertNotNull(response);
+		assertTrue(response.success());
 		assertFalse(response.message().startsWith("Error:"));
-		assertTrue(response.message().contains("Updated todo list"));
+		assertTrue(response.message().contains("Todos have been modified successfully"));
+		assertEquals(2, response.todoCount());
 
 		assertEquals(todos, extraState.get("todos"));
 	}
@@ -63,10 +65,11 @@ class WriteTodosToolTest {
 		Map<String, Object> emptyContextData = new HashMap<>();
 		ToolContext toolContext = new ToolContext(emptyContextData);
 
-		List<Todo> todos = Collections.singletonList(new Todo("Task 1", TodoStatus.PENDING));
+		List<Todo> todos = Collections.singletonList(new Todo("Task 1", TodoStatus.PENDING, "Working on Task 1"));
 		WriteTodosTool.Request request = new WriteTodosTool.Request(todos);
 		WriteTodosTool.Response response = writeTodosTool.apply(request, toolContext);
 
+		assertFalse(response.success());
 		assertTrue(response.message().startsWith("Error:"));
 		assertTrue(response.message().contains("Extra state is not initialized"));
 	}
@@ -78,10 +81,11 @@ class WriteTodosToolTest {
 
 		ToolContext toolContext = new ToolContext(contextData);
 
-		List<Todo> todos = Collections.singletonList(new Todo("Task 1", TodoStatus.PENDING));
+		List<Todo> todos = Collections.singletonList(new Todo("Task 1", TodoStatus.PENDING, "Working on Task 1"));
 		WriteTodosTool.Request request = new WriteTodosTool.Request(todos);
 		WriteTodosTool.Response response = writeTodosTool.apply(request, toolContext);
 
+		assertFalse(response.success());
 		assertTrue(response.message().startsWith("Error:"));
 		assertTrue(response.message().contains("Extra state has invalid type"));
 	}
@@ -99,7 +103,9 @@ class WriteTodosToolTest {
 		WriteTodosTool.Response response = writeTodosTool.apply(request, toolContext);
 
 		assertNotNull(response);
+		assertTrue(response.success());
 		assertFalse(response.message().startsWith("Error:"));
+		assertEquals(0, response.todoCount());
 		assertEquals(todos, extraState.get("todos"));
 	}
 
@@ -111,17 +117,19 @@ class WriteTodosToolTest {
 
 		ToolContext toolContext = new ToolContext(contextData);
 
-		List<Todo> todos1 = Collections.singletonList(new Todo("Task 1", TodoStatus.PENDING));
+		List<Todo> todos1 = Collections.singletonList(new Todo("Task 1", TodoStatus.PENDING, "Working on Task 1"));
 		WriteTodosTool.Request request1 = new WriteTodosTool.Request(todos1);
 		WriteTodosTool.Response response1 = writeTodosTool.apply(request1, toolContext);
 
+		assertTrue(response1.success());
 		assertFalse(response1.message().startsWith("Error:"));
 		assertEquals(todos1, extraState.get("todos"));
-		List<Todo> todos2 = Arrays.asList(new Todo("Task 2", TodoStatus.PENDING),
-				new Todo("Task 3", TodoStatus.COMPLETED));
+		List<Todo> todos2 = Arrays.asList(new Todo("Task 2", TodoStatus.PENDING, "Working on Task 2"),
+				new Todo("Task 3", TodoStatus.COMPLETED, "Completed Task 3"));
 		WriteTodosTool.Request request2 = new WriteTodosTool.Request(todos2);
 		WriteTodosTool.Response response2 = writeTodosTool.apply(request2, toolContext);
 
+		assertTrue(response2.success());
 		assertFalse(response2.message().startsWith("Error:"));
 		assertEquals(todos2, extraState.get("todos"));
 	}
@@ -134,17 +142,73 @@ class WriteTodosToolTest {
 
 		ToolContext toolContext = new ToolContext(contextData);
 
-		List<Todo> todos = Arrays.asList(new Todo("Task 1", TodoStatus.PENDING),
-				new Todo("Task 2", TodoStatus.IN_PROGRESS),
-				new Todo("Task 3", TodoStatus.COMPLETED));
+		List<Todo> todos = Arrays.asList(new Todo("Task 1", TodoStatus.PENDING, "Working on Task 1"),
+				new Todo("Task 2", TodoStatus.IN_PROGRESS, "Working on Task 2"),
+				new Todo("Task 3", TodoStatus.COMPLETED, "Completed Task 3"));
 
 		WriteTodosTool.Request request = new WriteTodosTool.Request(todos);
 		WriteTodosTool.Response response = writeTodosTool.apply(request, toolContext);
 
 		assertNotNull(response);
+		assertTrue(response.success());
 		assertFalse(response.message().startsWith("Error:"));
+		assertEquals(3, response.todoCount());
 		assertEquals(todos, extraState.get("todos"));
 		assertEquals(3, todos.size());
+	}
+
+	@Test
+	void testTodoBackwardCompatibilityWithoutActiveForm() {
+		Map<String, Object> contextData = new HashMap<>();
+		Map<String, Object> extraState = new HashMap<>();
+		contextData.put(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraState);
+
+		ToolContext toolContext = new ToolContext(contextData);
+
+		// Todo without activeForm - uses content as fallback
+		List<Todo> todos = Collections.singletonList(new Todo("Task 1", TodoStatus.PENDING));
+		WriteTodosTool.Request request = new WriteTodosTool.Request(todos);
+		WriteTodosTool.Response response = writeTodosTool.apply(request, toolContext);
+
+		assertTrue(response.success());
+		assertEquals("Task 1", todos.get(0).getActiveForm());
+	}
+
+	@Test
+	void testValidationRejectsEmptyContent() {
+		Map<String, Object> contextData = new HashMap<>();
+		Map<String, Object> extraState = new HashMap<>();
+		contextData.put(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraState);
+
+		ToolContext toolContext = new ToolContext(contextData);
+
+		List<Todo> todos = Collections.singletonList(new Todo("", TodoStatus.PENDING, "Working"));
+		WriteTodosTool.Request request = new WriteTodosTool.Request(todos);
+		WriteTodosTool.Response response = writeTodosTool.apply(request, toolContext);
+
+		assertFalse(response.success());
+		assertTrue(response.message().contains("empty or blank content"));
+	}
+
+	@Test
+	void testTodoEventHandlerInvoked() {
+		var captured = new ArrayList<List<Todo>>();
+		var tool = new WriteTodosTool(captured::add);
+
+		Map<String, Object> contextData = new HashMap<>();
+		Map<String, Object> extraState = new HashMap<>();
+		contextData.put(AGENT_STATE_FOR_UPDATE_CONTEXT_KEY, extraState);
+		ToolContext toolContext = new ToolContext(contextData);
+
+		List<Todo> todos = Arrays.asList(new Todo("Task 1", TodoStatus.PENDING, "Working on Task 1"),
+				new Todo("Task 2", TodoStatus.COMPLETED, "Completed Task 2"));
+		WriteTodosTool.Request request = new WriteTodosTool.Request(todos);
+
+		WriteTodosTool.Response response = tool.apply(request, toolContext);
+
+		assertTrue(response.success());
+		assertEquals(1, captured.size());
+		assertEquals(todos, captured.get(0));
 	}
 
 }

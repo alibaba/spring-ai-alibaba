@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -67,20 +68,23 @@ public class RoutingNode implements MultiCommandAction {
 		else {
 			sb.append("You are responsible for task routing in a graph-based AI system.\n");
 			sb.append("\n\n");
-			sb.append(
-					"You have access to some specialized agents that can handle this task. You can delegate the task to ONE or MULTIPLE agents for parallel execution.\n");
-			sb.append("The available agents and their capabilities are listed below:\n");
+			sb.append("Analyze the query and determine which specialized agents to delegate to.\n");
+			sb.append("For each relevant agent, generate a targeted sub-question optimized for that agent's capabilities.\n");
+			sb.append("\n");
+			sb.append("Available agents:\n");
 			for (Agent agent : subAgents) {
 				sb.append("- ").append(agent.name()).append(": ").append(agent.description()).append("\n");
 			}
 			sb.append("\n");
-			sb.append("Return a list of agent names from the list above. You can return one or multiple agents.\n");
-			sb.append("If multiple agents are returned, they will execute in parallel.\n");
+			sb.append("Return ONLY the agents that are relevant to the query. Each agent should have a targeted sub-question.\n");
+			sb.append("You can return one or multiple agents. If multiple agents are returned, they will execute in parallel.\n");
 			sb.append("Available names: ");
 			sb.append(String.join(", ", subAgents.stream().map(Agent::name).toList()));
 			sb.append("\n\n");
-			sb.append("Example for single agent: [\"prose_writer_agent\"]\n");
-			sb.append("Example for multiple agents: [\"prose_writer_agent\", \"code_reviewer_agent\"]");
+			sb.append("Respond with a JSON object containing an \"agents\" array. Each element has \"agent\" and \"query\" keys.\n");
+			sb.append("Example for single agent: {\"agents\":[{\"agent\":\"prose_writer_agent\",\"query\":\"What prose style should be used?\"}]}\n");
+			sb.append("Example for multiple agents: {\"agents\":[{\"agent\":\"prose_writer_agent\",\"query\":\"What prose style should be used?\"},{\"agent\":\"code_reviewer_agent\",\"query\":\"What code review criteria apply?\"}]}\n");
+			sb.append("Do not include markdown or explanation, only the JSON object.");
 		}
 
 		// Create BeanOutputConverter for structured output
@@ -99,7 +103,8 @@ public class RoutingNode implements MultiCommandAction {
 		// Prepare messages with instruction if available
 		List<Message> messagesWithInstruction = prepareMessagesWithInstruction(messages);
 		
-		List<String> decisionValues = getDecisionWithRetry(messagesWithInstruction, DEFAULT_MAX_RETRIES);
+		RoutingDecision decision = getDecisionWithRetry(messagesWithInstruction, DEFAULT_MAX_RETRIES);
+		List<String> decisionValues = decision.getAgentNames();
 
 		// Validate all agent names are valid
 		List<String> invalidAgents = decisionValues.stream()
@@ -114,9 +119,12 @@ public class RoutingNode implements MultiCommandAction {
 						rootAgent.name(), decisionValues.size(), String.join(", ", decisionValues));
 			}
 			
-			// Return MultiCommand with the routing decisions as gotoNodes
-			// The state updates can be empty since we're using Command pattern
-			return new MultiCommand(decisionValues, Map.of());
+			// Return MultiCommand with the routing decisions as gotoNodes and agent queries in state.
+			// Each agent's query is stored as independent key: agentName_input
+			Map<String, Object> stateUpdate = new HashMap<>();
+			decision.getAgentQueries().forEach((agentName, query) ->
+					stateUpdate.put(agentName + "_input", query));
+			return new MultiCommand(decisionValues, stateUpdate);
 		}
 		else {
 			logger.error("RoutingAgent {} failed to get valid decision after {} retries. Invalid agents: {}.",
@@ -154,9 +162,9 @@ public class RoutingNode implements MultiCommandAction {
 
 	/**
 	 * Gets a valid routing decision with retry logic.
-	 * Returns a list of agent names (can be single or multiple for parallel execution).
+	 * Returns RoutingDecision containing agent names and their targeted sub-queries.
 	 */
-	private List<String> getDecisionWithRetry(List<Message> messages, int maxRetries) throws Exception {
+	private RoutingDecision getDecisionWithRetry(List<Message> messages, int maxRetries) throws Exception {
 		List<String> lastInvalidDecision = null;
 
 		for (int attempt = 0; attempt <= maxRetries; attempt++) {
@@ -198,8 +206,7 @@ public class RoutingNode implements MultiCommandAction {
 							.entity(this.outputConverter);
 				}
 
-				// Use the getAgents() method which handles both single and multiple agent formats
-				List<String> decisionValues = decision.getAgents();
+				List<String> decisionValues = decision.getAgentNames();
 
 				if (decisionValues != null && !decisionValues.isEmpty()) {
 					// Validate all agent names
@@ -212,7 +219,7 @@ public class RoutingNode implements MultiCommandAction {
 							logger.info("RoutingAgent {} succeeded on retry attempt {}. Routed to sub-agents: {}",
 									rootAgent.name(), attempt, String.join(", ", decisionValues));
 						}
-						return decisionValues;
+						return decision;
 					}
 					else {
 						lastInvalidDecision = decisionValues;
@@ -242,69 +249,51 @@ public class RoutingNode implements MultiCommandAction {
 
 	/**
 	 * Response record for structured routing decision output.
-	 * Supports both single agent (backward compatibility) and multiple agents (for parallel execution).
-	 * The BeanOutputConverter will populate either 'agent' or 'agents' field based on LLM response.
+	 * Each agent has a targeted sub-question optimized for that agent's capabilities.
 	 */
-	public record RoutingDecision(String agent, List<String> agents) {
-		/**
-		 * Canonical constructor - handles both single and multiple agent responses
-		 */
-		public RoutingDecision(String agent, List<String> agents) {
-			// Determine the agents list first
-			if (agents != null && !agents.isEmpty()) {
-				// agents is provided and not empty, use it
-				this.agents = agents;
-			}
-			else if (agent != null && !agent.isEmpty()) {
-				// agents is null/empty but agent is provided, create a list from agent
-				this.agents = Collections.singletonList(agent);
-			}
-			else {
-				// Both are null/empty, use empty list
-				this.agents = Collections.emptyList();
-			}
-			
-			// Determine the agent field
-			if (agent != null && !agent.isEmpty()) {
-				// agent is provided, use it
-				this.agent = agent;
-			}
-			else if (!this.agents.isEmpty()) {
-				// agent is null but agents is provided, use first agent for backward compatibility
-				this.agent = this.agents.get(0);
-			}
-			else {
-				// Both are null/empty
-				this.agent = null;
-			}
+	public static class RoutingDecision {
+		private List<AgentRouting> agents;
+
+		public RoutingDecision() {
+			this.agents = new ArrayList<>();
+		}
+
+		public RoutingDecision(List<AgentRouting> agents) {
+			this.agents = agents != null ? agents : Collections.emptyList();
+		}
+
+		public List<AgentRouting> getAgents() {
+			return agents;
+		}
+
+		public void setAgents(List<AgentRouting> agents) {
+			this.agents = agents != null ? agents : new ArrayList<>();
 		}
 
 		/**
-		 * Constructor that accepts a single agent (for backward compatibility)
+		 * Gets the list of agent names for routing.
 		 */
-		public RoutingDecision(String agent) {
-			this(agent, agent != null ? Collections.singletonList(agent) : Collections.emptyList());
+		public List<String> getAgentNames() {
+			return agents.stream()
+					.filter(a -> a != null && StringUtils.hasText(a.agent()))
+					.map(AgentRouting::agent)
+					.toList();
 		}
 
 		/**
-		 * Constructor that accepts multiple agents
+		 * Gets the map of agent name to targeted sub-query for downstream use.
 		 */
-		public RoutingDecision(List<String> agents) {
-			this(agents != null && !agents.isEmpty() ? agents.get(0) : null, agents != null ? agents : Collections.emptyList());
+		public Map<String, String> getAgentQueries() {
+			return agents.stream()
+					.filter(a -> a != null && StringUtils.hasText(a.agent()))
+					.collect(Collectors.toMap(AgentRouting::agent, a -> a.query() != null ? a.query() : "", (a, b) -> a));
 		}
+	}
 
-		/**
-		 * Gets the list of agents, preferring the agents field over single agent
-		 */
-		public List<String> getAgents() {
-			if (agents != null && !agents.isEmpty()) {
-				return agents;
-			}
-			if (agent != null && !agent.isEmpty()) {
-				return Collections.singletonList(agent);
-			}
-			return Collections.emptyList();
-		}
+	/**
+	 * Single agent routing entry with targeted sub-question.
+	 */
+	public record AgentRouting(String agent, String query) {
 	}
 }
 

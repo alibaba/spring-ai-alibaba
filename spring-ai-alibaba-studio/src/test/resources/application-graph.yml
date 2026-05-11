@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: spring-ai-alibaba-studio-graph-test
+  main:
+    web-application-type: servlet
+
+spring.ai.dashscope.api-key: ${AI_DASHSCOPE_API_KEY:test-key-for-graph-integration-test}
+
+server:
+  port: 0

@@ -23,13 +23,24 @@ import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.mysql.CreateOption;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.mysql.MysqlSaver;
 
+import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
+import javax.sql.DataSource;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -111,6 +122,22 @@ public class MysqlSaverTest {
         dataSource.setURL(url);
         dataSource.setUser(username);
         dataSource.setPassword(password);
+    }
+
+    private static RunnableConfig config(String threadId) {
+        return RunnableConfig.builder().threadId(threadId).build();
+    }
+
+    private static RunnableConfig config(String threadId, String checkpointId) {
+        return RunnableConfig.builder().threadId(threadId).checkPointId(checkpointId).build();
+    }
+
+    private static Checkpoint checkpoint(String value) {
+        return Checkpoint.builder()
+                .nodeId("agent_1")
+                .nextNodeId(END)
+                .state(Map.of("value", value))
+                .build();
     }
 
     @Test
@@ -231,6 +258,159 @@ public class MysqlSaverTest {
 
         saver.release(runnableConfig);
 
+    }
+
+    @Test
+    public void testLatestCheckpointCacheIsBoundedByThreadCount() throws Exception {
+        var countingDataSource = new CountingDataSource(DATA_SOURCE);
+        var saver = MysqlSaver.builder()
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .dataSource(countingDataSource)
+                .maxCachedThreads(2)
+                .build();
+
+        var firstCheckpoint = checkpoint("first");
+        var firstConfig = config("mysql-cache-thread-1");
+        saver.put(firstConfig, firstCheckpoint);
+        saver.put(config("mysql-cache-thread-2"), checkpoint("second"));
+        saver.put(config("mysql-cache-thread-3"), checkpoint("third"));
+
+        countingDataSource.reset();
+        var reloaded = saver.get(firstConfig);
+        assertTrue(reloaded.isPresent());
+        assertEquals(firstCheckpoint.getId(), reloaded.get().getId());
+        assertEquals(1, countingDataSource.latestCheckpointSelects());
+    }
+
+    @Test
+    public void testMysqlSaverKeepsOnlyLatestCheckpointInMemory() throws Exception {
+        var countingDataSource = new CountingDataSource(DATA_SOURCE);
+        var saver = MysqlSaver.builder()
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .dataSource(countingDataSource)
+                .maxCachedThreads(16)
+                .build();
+
+        String threadId = "mysql-cache-single-thread";
+        var firstCheckpoint = checkpoint("first");
+        var secondCheckpoint = checkpoint("second");
+        var thirdCheckpoint = checkpoint("third");
+
+        saver.put(config(threadId), firstCheckpoint);
+        saver.put(config(threadId), secondCheckpoint);
+        saver.put(config(threadId), thirdCheckpoint);
+
+        countingDataSource.reset();
+        var latest = saver.get(config(threadId));
+        assertTrue(latest.isPresent());
+        assertEquals(thirdCheckpoint.getId(), latest.get().getId());
+        assertEquals(0, countingDataSource.latestCheckpointSelects());
+
+        Collection<Checkpoint> history = saver.list(config(threadId));
+        assertEquals(3, history.size());
+
+        countingDataSource.reset();
+        var firstFromDatabase = saver.get(config(threadId, firstCheckpoint.getId()));
+        assertTrue(firstFromDatabase.isPresent());
+        assertEquals(firstCheckpoint.getId(), firstFromDatabase.get().getId());
+        assertEquals(1, countingDataSource.checkpointByIdSelects());
+    }
+
+    private static final class CountingDataSource implements DataSource {
+
+        private final DataSource delegate;
+
+        private final AtomicInteger latestCheckpointSelects = new AtomicInteger();
+
+        private final AtomicInteger checkpointByIdSelects = new AtomicInteger();
+
+        private CountingDataSource(DataSource delegate) {
+            this.delegate = delegate;
+        }
+
+        void reset() {
+            latestCheckpointSelects.set(0);
+            checkpointByIdSelects.set(0);
+        }
+
+        int latestCheckpointSelects() {
+            return latestCheckpointSelects.get();
+        }
+
+        int checkpointByIdSelects() {
+            return checkpointByIdSelects.get();
+        }
+
+        @Override
+        public Connection getConnection() throws SQLException {
+            return countPreparedStatements(delegate.getConnection());
+        }
+
+        @Override
+        public Connection getConnection(String username, String password) throws SQLException {
+            return countPreparedStatements(delegate.getConnection(username, password));
+        }
+
+        private Connection countPreparedStatements(Connection connection) {
+            return (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(), new Class<?>[] { Connection.class },
+                    (proxy, method, args) -> {
+                        countQuery(method, args);
+                        try {
+                            return method.invoke(connection, args);
+                        }
+                        catch (InvocationTargetException ex) {
+                            throw ex.getCause();
+                        }
+                    });
+        }
+
+        private void countQuery(java.lang.reflect.Method method, Object[] args) {
+            if (!"prepareStatement".equals(method.getName()) || args == null || args.length == 0
+                    || !(args[0] instanceof String sql)) {
+                return;
+            }
+            if (sql.contains("LIMIT 1")) {
+                latestCheckpointSelects.incrementAndGet();
+            }
+            if (sql.contains("AND c.checkpoint_id = ?")) {
+                checkpointByIdSelects.incrementAndGet();
+            }
+        }
+
+        @Override
+        public <T> T unwrap(Class<T> iface) throws SQLException {
+            return delegate.unwrap(iface);
+        }
+
+        @Override
+        public boolean isWrapperFor(Class<?> iface) throws SQLException {
+            return delegate.isWrapperFor(iface);
+        }
+
+        @Override
+        public PrintWriter getLogWriter() throws SQLException {
+            return delegate.getLogWriter();
+        }
+
+        @Override
+        public void setLogWriter(PrintWriter out) throws SQLException {
+            delegate.setLogWriter(out);
+        }
+
+        @Override
+        public void setLoginTimeout(int seconds) throws SQLException {
+            delegate.setLoginTimeout(seconds);
+        }
+
+        @Override
+        public int getLoginTimeout() throws SQLException {
+            return delegate.getLoginTimeout();
+        }
+
+        @Override
+        public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+            return delegate.getParentLogger();
+        }
     }
 
 }

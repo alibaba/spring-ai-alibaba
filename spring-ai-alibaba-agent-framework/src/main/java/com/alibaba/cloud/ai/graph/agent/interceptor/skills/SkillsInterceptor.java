@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 
@@ -28,14 +29,16 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.ai.util.json.JsonParser;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -99,6 +102,8 @@ public class SkillsInterceptor extends ModelInterceptor {
 
 	private final Map<String, List<ToolCallback>> groupedTools;
 
+	private final ToolCallbackResolver toolCallbackResolver;
+
 	private SkillsInterceptor(Builder builder) {
 		if (builder.skillRegistry == null) {
 			throw new IllegalArgumentException("SkillRegistry must be provided. Use SkillsAgentHook to load skills.");
@@ -107,6 +112,7 @@ public class SkillsInterceptor extends ModelInterceptor {
 		this.groupedTools = builder.groupedTools != null
 				? builder.groupedTools
 				: Collections.emptyMap();
+		this.toolCallbackResolver = builder.toolCallbackResolver;
 	}
 
 	public static Builder builder() {
@@ -121,22 +127,24 @@ public class SkillsInterceptor extends ModelInterceptor {
 			return handler.call(request);
 		}
 
-		// 1. Extract skill names from AssistantMessage with read_skill tool calls
-		Set<String> readSkillNames = extractReadSkillNames(request.getMessages());
+		// 1. Extract resolved skills from AssistantMessage with read_skill tool calls
+		List<SkillMetadata> readSkills = extractReadSkills(request.getMessages());
 
-		// 2. Collect tools from getGroupedTools for those skill names
+		// 2. Collect tools from groupedTools and allowed_tools for those skills
 		List<ToolCallback> skillTools = new ArrayList<>(request.getDynamicToolCallbacks());
 		Map<String, List<ToolCallback>> grouped = getGroupedTools();
-		for (String skillName : readSkillNames) {
-			List<ToolCallback> toolsForSkill = grouped.get(skillName);
+		for (SkillMetadata skill : readSkills) {
+			List<ToolCallback> toolsForSkill = grouped.get(skill.getName());
 			if (toolsForSkill != null && !toolsForSkill.isEmpty()) {
 				skillTools.addAll(toolsForSkill);
 				if (logger.isInfoEnabled()) {
 					logger.info("SkillsInterceptor: added {} tool(s) for skill '{}' to dynamicToolCallbacks",
-							toolsForSkill.size(), skillName);
+							toolsForSkill.size(), skill.getName());
 				}
 			}
+			skillTools.addAll(resolveAllowedTools(skill));
 		}
+		skillTools = ToolCallbackUtils.deduplicateByName(skillTools);
 
 		String skillsPrompt = buildSkillsPrompt(skills, skillRegistry, skillRegistry.getSystemPromptTemplate());
 		SystemMessage enhanced = enhanceSystemMessage(request.getSystemMessage(), skillsPrompt);
@@ -153,15 +161,11 @@ public class SkillsInterceptor extends ModelInterceptor {
 		return handler.call(modified);
 	}
 
-	/**
-	 * Scan messages for AssistantMessage with tool calls named {@value ReadSkillTool#READ_SKILL},
-	 * parse each call's arguments for <i>skill_name</i>, and return the set of skill names.
-	 */
-	private Set<String> extractReadSkillNames(List<Message> messages) {
+	private List<SkillMetadata> extractReadSkills(List<Message> messages) {
 		if (messages == null || messages.isEmpty()) {
-			return Set.of();
+			return List.of();
 		}
-		Set<String> names = new LinkedHashSet<>();
+		Map<String, SkillMetadata> skillsByName = new LinkedHashMap<>();
 		for (Message message : messages) {
 			if (!(message instanceof AssistantMessage assistantMessage) || !assistantMessage.hasToolCalls()) {
 				continue;
@@ -170,24 +174,52 @@ public class SkillsInterceptor extends ModelInterceptor {
 				if (!ReadSkillTool.READ_SKILL.equals(toolCall.name())) {
 					continue;
 				}
-				String skillName = parseSkillNameFromArguments(toolCall.arguments());
-				if (skillName != null && !skillName.isEmpty()) {
-					names.add(skillName);
-				}
+				resolveSkillFromArguments(toolCall.arguments())
+						.ifPresent(skill -> skillsByName.putIfAbsent(skill.getName(), skill));
 			}
 		}
-		return names;
+		return List.copyOf(skillsByName.values());
 	}
 
-	private static String parseSkillNameFromArguments(String arguments) {
+	private Optional<SkillMetadata> resolveSkillFromArguments(String arguments) {
+		Map<String, Object> parsedArguments = parseArguments(arguments);
+		if (parsedArguments.isEmpty()) {
+			return Optional.empty();
+		}
+
+		String skillName = getStringValue(parsedArguments, "skill_name");
+		String skillPath = getStringValue(parsedArguments, "skill_path");
+		if (skillName == null && skillPath == null) {
+			return Optional.empty();
+		}
+
+		Optional<SkillMetadata> skillByName = skillName != null ? skillRegistry.get(skillName) : Optional.empty();
+		Optional<SkillMetadata> skillByPath = skillPath != null ? skillRegistry.getByPath(skillPath) : Optional.empty();
+		if (skillName != null && skillPath != null) {
+			if (skillByName.isEmpty() || skillByPath.isEmpty()) {
+				return Optional.empty();
+			}
+			if (!skillByName.get().getName().equals(skillByPath.get().getName())) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Ignoring read_skill call because skill_name '{}' and skill_path '{}' do not match",
+							skillName, skillPath);
+				}
+				return Optional.empty();
+			}
+			return skillByName;
+		}
+		return skillByName.isPresent() ? skillByName : skillByPath;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> parseArguments(String arguments) {
 		if (arguments == null || arguments.isBlank()) {
-			return null;
+			return Map.of();
 		}
 		try {
 			Object parsed = JsonParser.fromJson(arguments, Map.class);
 			if (parsed instanceof Map<?, ?> map) {
-				Object v = map.get("skill_name");
-				return v != null ? v.toString().trim() : null;
+				return (Map<String, Object>) map;
 			}
 		}
 		catch (Exception e) {
@@ -195,7 +227,36 @@ public class SkillsInterceptor extends ModelInterceptor {
 				logger.debug("Failed to parse read_skill arguments: {}", e.getMessage());
 			}
 		}
-		return null;
+		return Map.of();
+	}
+
+	private static String getStringValue(Map<String, Object> arguments, String key) {
+		if (arguments == null || arguments.isEmpty()) {
+			return null;
+		}
+		Object value = arguments.get(key);
+		if (value == null) {
+			return null;
+		}
+		String text = value.toString().trim();
+		return StringUtils.hasText(text) ? text : null;
+	}
+
+	private List<ToolCallback> resolveAllowedTools(SkillMetadata skill) {
+		if (toolCallbackResolver == null || skill.getAllowedTools().isEmpty()) {
+			return List.of();
+		}
+		List<ToolCallback> resolvedTools = new ArrayList<>();
+		for (String toolName : skill.getAllowedTools()) {
+			ToolCallback toolCallback = toolCallbackResolver.resolve(toolName);
+			if (toolCallback == null) {
+				logger.debug("SkillsInterceptor: allowed tool '{}' declared by skill '{}' could not be resolved",
+						toolName, skill.getName());
+				continue;
+			}
+			resolvedTools.add(toolCallback);
+		}
+		return resolvedTools;
 	}
 
 	public Map<String, List<ToolCallback>> getGroupedTools() {
@@ -224,6 +285,8 @@ public class SkillsInterceptor extends ModelInterceptor {
 
 		private Map<String, List<ToolCallback>> groupedTools;
 
+		private ToolCallbackResolver toolCallbackResolver;
+
 		/**
 		 * Set a shared SkillRegistry instance.
 		 * This must be the same instance used by SkillsAgentHook to share skills data.
@@ -247,6 +310,11 @@ public class SkillsInterceptor extends ModelInterceptor {
 		 */
 		public Builder groupedTools(Map<String, List<ToolCallback>> groupedTools) {
 			this.groupedTools = groupedTools;
+			return this;
+		}
+
+		public Builder toolCallbackResolver(ToolCallbackResolver toolCallbackResolver) {
+			this.toolCallbackResolver = toolCallbackResolver;
 			return this;
 		}
 

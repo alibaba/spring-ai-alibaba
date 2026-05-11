@@ -19,21 +19,41 @@ package com.alibaba.cloud.ai.agent.studio.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * DTO for the response of GET
- * /apps/{appName}/users/{userId}/sessions/{threadId}/events/{eventId}/graph. Contains the graph
- * representation (e.g., DOT source).
+ * DTO for graph representation response. Contains the graph diagram in Mermaid or DOT format
+ * for UI visualization.
  */
 public class GraphResponse {
+
 	@JsonProperty("dotSrc")
 	public String dotSrc;
 
+	@JsonProperty("mermaidSrc")
+	public String mermaidSrc;
+
 	/**
-	 * Constructs a GraphResponse.
+	 * Constructs a GraphResponse with Mermaid source (preferred for UI).
+	 *
+	 * @param mermaidSrc The graph source in Mermaid format.
+	 */
+	public GraphResponse(String mermaidSrc, boolean useMermaid) {
+		if (useMermaid) {
+			this.mermaidSrc = mermaidSrc;
+			this.dotSrc = null;
+		}
+		else {
+			this.dotSrc = mermaidSrc;
+			this.mermaidSrc = null;
+		}
+	}
+
+	/**
+	 * Constructs a GraphResponse with DOT source (legacy).
 	 *
 	 * @param dotSrc The graph source string (e.g., in DOT format).
 	 */
 	public GraphResponse(String dotSrc) {
 		this.dotSrc = dotSrc;
+		this.mermaidSrc = null;
 	}
 
 	public GraphResponse() {
@@ -41,5 +61,9 @@ public class GraphResponse {
 
 	public String getDotSrc() {
 		return dotSrc;
+	}
+
+	public String getMermaidSrc() {
+		return mermaidSrc;
 	}
 }

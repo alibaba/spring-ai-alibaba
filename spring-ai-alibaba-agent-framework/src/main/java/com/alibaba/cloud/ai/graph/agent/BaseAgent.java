@@ -48,6 +48,10 @@ public abstract class BaseAgent extends Agent {
 
 	public abstract Node asNode(boolean includeContents, boolean returnReasoningContents);
 
+	public Node asNode() {
+		return asNode(includeContents, returnReasoningContents);
+	}
+
 	public boolean isIncludeContents() {
 		return includeContents;
 	}

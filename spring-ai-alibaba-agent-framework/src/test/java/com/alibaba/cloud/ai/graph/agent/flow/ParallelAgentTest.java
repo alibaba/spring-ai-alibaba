@@ -30,10 +30,13 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonS
 import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -63,15 +66,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ParallelAgentTest {
 
-	@Mock
-	private ChatClient chatClient;
-
-	@Mock
-	private ToolCallbackResolver toolCallbackResolver;
+	private ChatModel chatModel;
 
 	@BeforeEach
 	void setUp() {
 		MockitoAnnotations.openMocks(this);
+
+		// Create a simple stub ChatModel that returns basic responses
+		chatModel = new ChatModel() {
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				return new ChatResponse(List.of(new Generation(new AssistantMessage("Test response"))));
+			}
+
+			@Override
+			public ChatOptions getDefaultOptions() {
+				return null; // Return null options for simplicity
+			}
+		};
 	}
 
 	@Test
@@ -124,16 +136,14 @@ class ParallelAgentTest {
 			.name("dataAnalyzer")
 			.description("Analyzes data")
 			.outputKey("analysis_result")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 
 		ReactAgent agent2 = ReactAgent.builder()
 			.name("dataValidator")
 			.description("Validates data")
 			.outputKey("validation_result")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 
 		// Test fluent interface with ParallelAgent
@@ -405,8 +415,7 @@ class ParallelAgentTest {
 			.name(name)
 			.description("Mock agent")
 			.outputKey(outputKey)
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 	}
 
@@ -420,24 +429,21 @@ class ParallelAgentTest {
 			.name("dataAnalyzer")
 			.description("Analyzes data patterns and trends")
 			.outputKey("analysis_result")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 
 		ReactAgent dataValidator = ReactAgent.builder()
 			.name("dataValidator")
 			.description("Validates data quality and integrity")
 			.outputKey("validation_result")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 
 		ReactAgent dataCleaner = ReactAgent.builder()
 			.name("dataCleaner")
 			.description("Cleans and preprocesses data")
 			.outputKey("cleaning_result")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 
 		// Create ParallelAgent using the improved builder with default merge strategy
@@ -461,24 +467,21 @@ class ParallelAgentTest {
 			.name("summaryGenerator")
 			.description("Generates executive summary")
 			.outputKey("summary_section")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 
 		ReactAgent detailsGenerator = ReactAgent.builder()
 			.name("detailsGenerator")
 			.description("Generates detailed analysis")
 			.outputKey("details_section")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 
 		ReactAgent chartsGenerator = ReactAgent.builder()
 			.name("chartsGenerator")
 			.description("Generates charts and visualizations")
 			.outputKey("charts_section")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 
 		// Create ParallelAgent using list merge strategy
@@ -502,24 +505,21 @@ class ParallelAgentTest {
 			.name("introWriter")
 			.description("Writes introduction content")
 			.outputKey("intro_content")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 
 		ReactAgent bodyWriter = ReactAgent.builder()
 			.name("bodyWriter")
 			.description("Writes main body content")
 			.outputKey("body_content")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 
 		ReactAgent conclusionWriter = ReactAgent.builder()
 			.name("conclusionWriter")
 			.description("Writes conclusion content")
 			.outputKey("conclusion_content")
-			.chatClient(chatClient)
-			.resolver(toolCallbackResolver)
+			.model(chatModel)
 			.build();
 
 		// Create ParallelAgent using concatenation merge strategy

@@ -58,6 +58,13 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 */
 	public static final String DYNAMIC_TOOL_CALLBACKS_METADATA_KEY = "_DYNAMIC_TOOL_CALLBACKS_";
 
+	/**
+	 * Metadata key for enabling merge of reasoning content in streamed assistant message
+	 * metadata. When set to {@link Boolean#TRUE}, last and current chunk metadata (including
+	 * reasoning content) are merged; otherwise only current message metadata is used.
+	 */
+	public static final String MERGE_REASONING_CONTENT_METADATA_KEY = "_MERGE_REASONING_CONTENT_";
+
 	private final String threadId;
 
 	private final String checkPointId;
@@ -215,6 +222,27 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		return RunnableConfig.builder(this)
 				.addMetadata(HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
 				.build();
+	}
+
+	/**
+	 * Returns whether reasoning content in streamed assistant message metadata should be
+	 * merged across chunks. When true, last and current chunk metadata (including
+	 * reasoning content) are merged; when false or unset, only current message metadata
+	 * is used.
+	 * @return true if merge is enabled, false otherwise
+	 */
+	public boolean mergeReasoningContent() {
+		return metadata(MERGE_REASONING_CONTENT_METADATA_KEY).map(v -> Boolean.TRUE.equals(v)).orElse(false);
+	}
+
+	/**
+	 * Returns a new RunnableConfig that copies this config and sets the merge reasoning
+	 * content flag. See {@link #mergeReasoningContent()}.
+	 * @param merge whether to merge reasoning content across streamed chunks
+	 * @return a new RunnableConfig with the given merge flag
+	 */
+	public RunnableConfig withMergeReasoningContent(boolean merge) {
+		return RunnableConfig.builder(this).mergeReasoningContent(merge).build();
 	}
 
 	/**
@@ -380,6 +408,17 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 */
 		public Builder resume() {
 			return addMetadata(HUMAN_FEEDBACK_METADATA_KEY, "placeholder");
+		}
+
+		/**
+		 * Enables or disables merging of reasoning content in streamed assistant message
+		 * metadata across chunks. When enabled, last and current chunk metadata (including
+		 * reasoning content) are merged; when disabled, only current message metadata is used.
+		 * @param merge true to enable merge, false to use current message metadata only
+		 * @return this builder for chaining
+		 */
+		public Builder mergeReasoningContent(boolean merge) {
+			return addMetadata(MERGE_REASONING_CONTENT_METADATA_KEY, merge);
 		}
 
 		public Builder addStateUpdate(Map<String, Object> stateUpdate) {

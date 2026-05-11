@@ -19,13 +19,14 @@ export AI_DASHSCOPE_API_KEY=your-api-key
 
 ```shell
 git clone https://github.com/alibaba/spring-ai-alibaba.git
-cd examples/chatbot
+cd spring-ai-alibaba
 ```
 
 2. Start the ChatBot.
 
 ```shell
-mvn spring-boot:run
+# Run from repository root.
+./mvnw -pl examples/chatbot spring-boot:run
 ```
 
 3. Chat with ChatBot.

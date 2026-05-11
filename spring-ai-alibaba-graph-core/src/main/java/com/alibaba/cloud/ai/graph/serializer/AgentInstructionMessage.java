@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AgentInstructionMessage extends AbstractMessage {
-	private transient boolean rendered;
+	private boolean rendered;
 
 	public AgentInstructionMessage(String textContent, Map<String, Object> metadata, boolean rendered) {
 		super(MessageType.USER, textContent, metadata);

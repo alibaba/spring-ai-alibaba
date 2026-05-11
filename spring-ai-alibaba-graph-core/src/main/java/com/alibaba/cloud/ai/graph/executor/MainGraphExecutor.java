@@ -72,7 +72,7 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 
 			if (context.getCurrentNodeId() != null && context.getConfig().isInterrupted(context.getCurrentNodeId())) {
 				context.getConfig().withNodeResumed(context.getCurrentNodeId());
-				return Flux.just(GraphResponse.done(GraphResponse.done(context.getCurrentStateData())));
+				return Flux.just(GraphResponse.done(context.getCurrentStateData()));
 			}
 
 			if (context.isStartNode()) {

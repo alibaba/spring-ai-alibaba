@@ -42,6 +42,7 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 
 import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.core.ParameterizedTypeReference;
@@ -1008,6 +1009,77 @@ class ReactAgentTest {
 		assertTrue(response1.getText().length() > 0, "第一次响应应该有内容");
 		assertTrue(response2.getText().length() > 0, "第二次响应应该有内容");
 		assertTrue(response3.getText().length() > 0, "第三次响应应该有内容");
+	}
+
+
+	@Test
+	void testChatOptionsImmutability() {
+		ToolCallback tool1 = ToolCallbacks.from(new TestTools())[0];
+
+		DashScopeChatOptions originalOptions = DashScopeChatOptions.builder()
+			.model("qwen-plus")
+			.temperature(0.7)
+			.toolCallbacks(List.of(tool1))
+			.build();
+
+		int originalToolCount = originalOptions.getToolCallbacks().size();
+		String originalModel = originalOptions.getModel();
+		Double originalTemperature = originalOptions.getTemperature();
+		String originalToolName = originalOptions.getToolCallbacks().get(0).getToolDefinition().name();
+
+		ToolCallback tool2 = ToolCallbacks.from(new TestTools())[0];
+		ReactAgent agent = ReactAgent.builder()
+			.name("test-agent")
+			.model(chatModel)
+			.chatOptions(originalOptions)
+			.tools(tool2)
+			.saver(new MemorySaver())
+			.build();
+		assertEquals(originalToolCount, originalOptions.getToolCallbacks().size(),
+			"原始 chatOptions 的 toolCallbacks 数量不应改变");
+		assertEquals(originalModel, originalOptions.getModel(),
+			"原始 chatOptions 的 model 不应改变");
+		assertEquals(originalTemperature, originalOptions.getTemperature(),
+			"原始 chatOptions 的 temperature 不应改变");
+
+		List<ToolCallback> originalToolCallbacks = originalOptions.getToolCallbacks();
+		assertEquals(1, originalToolCallbacks.size(), "原始 toolCallbacks 应该只有 1 个");
+		assertEquals(originalToolName, originalToolCallbacks.get(0).getToolDefinition().name(),
+			"原始 toolCallbacks 的工具名称不应改变");
+	}
+
+	@Test
+	void testSharedChatOptionsAcrossAgents() {
+		DashScopeChatOptions sharedOptions = DashScopeChatOptions.builder()
+			.model("qwen-plus")
+			.temperature(0.7)
+			.build();
+
+		ToolCallback tool1 = ToolCallbacks.from(new TestTools())[0];
+		ToolCallback tool2 = ToolCallbacks.from(new TestTools())[0];
+
+		ReactAgent agent1 = ReactAgent.builder()
+			.name("agent1")
+			.model(chatModel)
+			.chatOptions(sharedOptions)
+			.tools(tool1)
+			.saver(new MemorySaver())
+			.build();
+
+		ReactAgent agent2 = ReactAgent.builder()
+			.name("agent2")
+			.model(chatModel)
+			.chatOptions(sharedOptions)
+			.tools(tool2)
+			.saver(new MemorySaver())
+			.build();
+
+		List<ToolCallback> sharedToolCallbacks = sharedOptions.getToolCallbacks();
+		assertTrue(sharedToolCallbacks == null || sharedToolCallbacks.isEmpty(),
+			"共享的 chatOptions 不应该被设置 toolCallbacks");
+
+		assertNotNull(agent1);
+		assertNotNull(agent2);
 	}
 
 }

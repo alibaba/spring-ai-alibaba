@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# Parse mode parameter (default: dev)
+MODE=${1:-dev}
+
+# Validate mode
+if [ "$MODE" != "dev" ] && [ "$MODE" != "prod" ]; then
+    echo "Error: Invalid mode '$MODE'. Use 'dev' or 'prod'."
+    echo "Usage: $0 [dev|prod]"
+    exit 1
+fi
+
+echo "Starting middleware services in $MODE mode..."
+
 # Check if .env file already exists
 if [ -f .env ]; then
     echo ".env file already exists. Skipping creation."
@@ -30,5 +42,16 @@ if [ -d kibana/data ]; then
 fi
 
 # Start containers with docker compose
-echo "Starting containers with docker compose..."
-docker compose up -d --build
+echo "Starting containers with docker-compose-${MODE}.yaml..."
+docker compose -f docker-compose-${MODE}.yaml up -d --build
+
+echo ""
+echo "Middleware services started successfully in $MODE mode!"
+echo ""
+if [ "$MODE" = "dev" ]; then
+    echo "Dev mode includes: MySQL"
+else
+    echo "Prod mode includes: MySQL, Redis, Elasticsearch, Kibana, Nacos, RocketMQ, LoongCollector"
+fi
+echo ""
+echo "To stop services, run: ./stop.sh $MODE"
