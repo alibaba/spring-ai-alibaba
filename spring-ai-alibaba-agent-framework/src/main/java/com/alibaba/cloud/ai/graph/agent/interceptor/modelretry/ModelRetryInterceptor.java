@@ -20,12 +20,19 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
+
+import reactor.core.publisher.Flux;
 
 /**
  * The model calls a retry interceptor to handle retryable exceptions such as network errors.
@@ -74,7 +81,13 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 				}
 
 				ModelResponse modelResponse = handler.call(request);
-				Message message = (Message) modelResponse.getMessage();
+				Object messagePayload = modelResponse.getMessage();
+				if (messagePayload instanceof Flux<?> responseFlux) {
+					return ModelResponse.of(withStreamingRetry(request, handler, castChatResponseFlux(responseFlux), attempt, currentDelay));
+				}
+				if (!(messagePayload instanceof Message message)) {
+					return modelResponse;
+				}
 
 				// Check if the response contains any exception information (exceptions captured from AgentLlmNode).
 				if (message != null && message.getText() != null && message.getText().startsWith("Exception:")) {
@@ -145,6 +158,99 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 
 		// All retries failed.
 		throw new RuntimeException("Model call failed, maximum number of retries reached. " + maxAttempts, lastException);
+	}
+
+	private Flux<ChatResponse> withStreamingRetry(ModelRequest request, ModelCallHandler handler, Flux<ChatResponse> responseFlux,
+			int attempt, long currentDelay) {
+		return Flux.defer(() -> {
+			AtomicBoolean chunkEmitted = new AtomicBoolean(false);
+			return responseFlux.doOnNext(response -> chunkEmitted.set(true)).onErrorResume(error -> {
+				if (chunkEmitted.get()) {
+					// Retrying after partial output would duplicate chunks downstream.
+					return Flux.error(error);
+				}
+				return retryStreamingModelCall(request, handler, attempt, currentDelay, error);
+			});
+		});
+	}
+
+	private Flux<ChatResponse> retryStreamingModelCall(ModelRequest request, ModelCallHandler handler, int failedAttempt,
+			long currentDelay, Throwable error) {
+		Exception exception = toException(error);
+		log.warn("Streaming model call failed (attempted {}/{}): {}", failedAttempt, maxAttempts, exception.getMessage());
+
+		if (failedAttempt >= maxAttempts) {
+			log.error("The maximum number of retries has been reached {}, and the streaming model call has failed.", maxAttempts);
+			return Flux.error(new RuntimeException("Model call failed, maximum number of retries reached.", exception));
+		}
+
+		if (!retryableExceptionPredicate.test(exception)) {
+			log.warn("Exceptions cannot be retried and are thrown immediately: {}", exception.getMessage());
+			return Flux.error(new RuntimeException("Model call failed (non-retryable exception)", exception));
+		}
+
+		int nextAttempt = failedAttempt + 1;
+		long nextDelay = nextDelay(currentDelay);
+		return delay(currentDelay).thenMany(Flux.defer(() -> {
+			log.info("Retry model call, on the {}th attempt (out of {} attempts).", nextAttempt, maxAttempts);
+			try {
+				ModelResponse retryResponse = handler.call(request);
+				return toStreamingFlux(request, handler, retryResponse, nextAttempt, nextDelay);
+			}
+			catch (Exception retryError) {
+				return retryStreamingModelCall(request, handler, nextAttempt, nextDelay, retryError);
+			}
+		}));
+	}
+
+	private Flux<ChatResponse> toStreamingFlux(ModelRequest request, ModelCallHandler handler, ModelResponse modelResponse,
+			int attempt, long currentDelay) {
+		Object messagePayload = modelResponse.getMessage();
+		if (messagePayload instanceof Flux<?> responseFlux) {
+			return withStreamingRetry(request, handler, castChatResponseFlux(responseFlux), attempt, currentDelay);
+		}
+		if (messagePayload instanceof Message message) {
+			if (isExceptionMessage(message)) {
+				return retryStreamingModelCall(request, handler, attempt, currentDelay,
+						new RuntimeException(message.getText()));
+			}
+			if (message instanceof AssistantMessage assistantMessage) {
+				return Flux.just(new ChatResponse(List.of(new Generation(assistantMessage))));
+			}
+		}
+		return Flux.error(new IllegalStateException(
+				"Streaming model call returned unsupported response type: " + responseTypeName(messagePayload)));
+	}
+
+	@SuppressWarnings("unchecked")
+	private Flux<ChatResponse> castChatResponseFlux(Flux<?> responseFlux) {
+		return (Flux<ChatResponse>) responseFlux;
+	}
+
+	private Flux<ChatResponse> delay(long currentDelay) {
+		if (currentDelay <= 0) {
+			return Flux.empty();
+		}
+		return Flux.<ChatResponse>empty().delaySubscription(Duration.ofMillis(currentDelay));
+	}
+
+	private long nextDelay(long currentDelay) {
+		return Math.min((long) (currentDelay * backoffMultiplier), maxDelay);
+	}
+
+	private Exception toException(Throwable error) {
+		if (error instanceof Exception exception) {
+			return exception;
+		}
+		return new RuntimeException(error);
+	}
+
+	private boolean isExceptionMessage(Message message) {
+		return message != null && message.getText() != null && message.getText().startsWith("Exception:");
+	}
+
+	private String responseTypeName(Object messagePayload) {
+		return messagePayload != null ? messagePayload.getClass().getName() : "null";
 	}
 
 	/**
@@ -279,4 +385,3 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 		}
 	}
 }
-
