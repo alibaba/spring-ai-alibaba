@@ -1,9 +1,9 @@
 # [Spring AI Alibaba](https://java2ai.com)
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
-[![CI Status](https://github.com/alibaba/spring-ai-alibaba/workflows/build-and-test.yml/badge.svg)](https://github.com/alibaba/spring-ai-alibaba/actions?query=workflow%3Abuild-and-test.yml)
+[![CI Status](https://github.com/alibaba/spring-ai-alibaba/actions/workflows/build-and-test.yml/badge.svg?branch=main)](https://github.com/alibaba/spring-ai-alibaba/actions/workflows/build-and-test.yml)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alibaba/spring-ai-alibaba)
-[![Maven central](https://img.shields.io/maven-central/v/com.alibaba.cloud.ai/spring-ai-alibaba.svg)](https://central.sonatype.com/artifact/com.alibaba.cloud.ai/spring-ai-alibaba)
+[![Maven Central](https://img.shields.io/badge/Maven%20Central-v1.1.2.2-blue)](https://central.sonatype.com/artifact/com.alibaba.cloud.ai/spring-ai-alibaba/1.1.2.2)
 [![gitleaks badge](https://img.shields.io/badge/protected%20by-gitleaks-blue)](https://github.com/gitleaks/gitleaks)
 
 <html>
