@@ -184,7 +184,7 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 			return Flux.error(new RuntimeException("Model call failed, maximum number of retries reached.", exception));
 		}
 
-		if (!retryableExceptionPredicate.test(exception)) {
+		if (!isRetryableStreamingException(exception)) {
 			log.warn("Exceptions cannot be retried and are thrown immediately: {}", exception.getMessage());
 			return Flux.error(new RuntimeException("Model call failed (non-retryable exception)", exception));
 		}
@@ -246,7 +246,19 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 	}
 
 	private boolean isExceptionMessage(Message message) {
-		return message != null && message.getText() != null && message.getText().startsWith("Exception:");
+		return message != null && isExceptionMessageText(message.getText());
+	}
+
+	private boolean isExceptionMessageText(String text) {
+		return text != null && text.startsWith("Exception:");
+	}
+
+	private boolean isRetryableStreamingException(Exception exception) {
+		String message = exception.getMessage();
+		if (isExceptionMessageText(message)) {
+			return isRetryableExceptionMessage(message);
+		}
+		return retryableExceptionPredicate.test(exception);
 	}
 
 	private String responseTypeName(Object messagePayload) {

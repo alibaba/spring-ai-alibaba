@@ -213,6 +213,38 @@ class ModelRetryInterceptorTest {
 	}
 
 	@Test
+	void testStreamingRetryUsesCapturedExceptionMessageClassifier() {
+		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
+				.maxAttempts(3)
+				.initialDelay(0)
+				.build();
+
+		AtomicInteger attemptCount = new AtomicInteger(0);
+
+		ModelCallHandler handler = request -> {
+			int count = attemptCount.incrementAndGet();
+			if (count == 1) {
+				return ModelResponse.of(Flux.error(new RuntimeException("I/O error on streaming response")));
+			}
+			if (count == 2) {
+				return ModelResponse.of(new AssistantMessage("Exception: network reset before streaming starts"));
+			}
+			return ModelResponse.of(Flux.just(chatResponse("Recovered after captured network exception")));
+		};
+
+		ModelResponse response = interceptor.interceptModel(ModelRequest.builder().build(), handler);
+
+		assertInstanceOf(Flux.class, response.getMessage());
+		@SuppressWarnings("unchecked")
+		Flux<ChatResponse> responseFlux = (Flux<ChatResponse>) response.getMessage();
+		List<ChatResponse> responses = responseFlux.collectList().block(Duration.ofSeconds(2));
+
+		assertEquals(3, attemptCount.get(), "流式重试中的 Exception: network 消息应该继续按可重试异常处理");
+		assertNotNull(responses);
+		assertEquals("Recovered after captured network exception", responses.get(0).getResult().getOutput().getText());
+	}
+
+	@Test
 	void testStreamingNonRetryableException() {
 		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
 				.maxAttempts(3)
