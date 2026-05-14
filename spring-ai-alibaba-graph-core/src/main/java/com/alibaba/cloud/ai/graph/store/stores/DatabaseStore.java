@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.store.stores;
 
 import com.alibaba.cloud.ai.graph.store.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -49,11 +50,19 @@ import java.util.stream.Collectors;
  */
 public class DatabaseStore extends BaseStore {
 
+	enum DatabaseDialect {
+
+		GENERIC, MYSQL, MARIADB, POSTGRESQL
+
+	}
+
 	private final DataSource dataSource;
 
 	private final ObjectMapper objectMapper;
 
 	private final String tableName;
+
+	private final DatabaseDialect databaseDialect;
 
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -75,6 +84,7 @@ public class DatabaseStore extends BaseStore {
 		this.tableName = tableName;
 		this.objectMapper = new ObjectMapper();
 		this.objectMapper.findAndRegisterModules();
+		this.databaseDialect = detectDatabaseDialect();
 		initializeTable();
 	}
 
@@ -87,10 +97,7 @@ public class DatabaseStore extends BaseStore {
 			String itemId = createItemId(item.getNamespace(), item.getKey());
 			String namespaceJson = objectMapper.writeValueAsString(item.getNamespace());
 			String valueJson = objectMapper.writeValueAsString(item.getValue());
-
-			// Use MERGE for H2 compatibility instead of ON DUPLICATE KEY UPDATE
-			String sql = "MERGE INTO " + tableName + " (id, namespace, key_name, value_json, created_at, updated_at) "
-					+ "KEY(id) VALUES (?, ?, ?, ?, ?, ?)";
+			String sql = buildUpsertSql(tableName, databaseDialect);
 
 			try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -287,19 +294,74 @@ public class DatabaseStore extends BaseStore {
 	/**
 	 * Initialize database table.
 	 */
-    private void initializeTable() {
-        // Create table with database-agnostic SQL
-        String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + "id TEXT PRIMARY KEY, "
-                + "namespace TEXT, " + "key_name VARCHAR(500), " + "value_json TEXT, " + "created_at TIMESTAMP, "
-                + "updated_at TIMESTAMP" + ")";
+	private void initializeTable() {
+		String sql = buildCreateTableSql(tableName, databaseDialect);
 
-        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
-        }
-        catch (SQLException e) {
-            throw new RuntimeException("Failed to initialize table", e);
-        }
-    }
+		try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
+			stmt.executeUpdate(sql);
+		}
+		catch (SQLException e) {
+			throw new RuntimeException("Failed to initialize table", e);
+		}
+	}
+
+	private DatabaseDialect detectDatabaseDialect() {
+		try (Connection conn = dataSource.getConnection()) {
+			return resolveDialect(conn.getMetaData().getDatabaseProductName());
+		}
+		catch (SQLException e) {
+			throw new RuntimeException("Failed to detect database dialect", e);
+		}
+	}
+
+	static DatabaseDialect resolveDialect(String databaseProductName) {
+		if (databaseProductName == null) {
+			return DatabaseDialect.GENERIC;
+		}
+
+		String normalizedName = databaseProductName.trim().toLowerCase();
+		if (normalizedName.contains("mariadb")) {
+			return DatabaseDialect.MARIADB;
+		}
+		if (normalizedName.contains("mysql")) {
+			return DatabaseDialect.MYSQL;
+		}
+		if (normalizedName.contains("postgresql")) {
+			return DatabaseDialect.POSTGRESQL;
+		}
+		return DatabaseDialect.GENERIC;
+	}
+
+	static String buildCreateTableSql(String tableName, DatabaseDialect databaseDialect) {
+		if (databaseDialect == DatabaseDialect.MYSQL || databaseDialect == DatabaseDialect.MARIADB) {
+			return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + "id CHAR(64) PRIMARY KEY, "
+					+ "namespace LONGTEXT, " + "key_name VARCHAR(500), " + "value_json LONGTEXT, "
+					+ "created_at TIMESTAMP, " + "updated_at TIMESTAMP" + ")";
+		}
+
+		return "CREATE TABLE IF NOT EXISTS " + tableName + " (" + "id TEXT PRIMARY KEY, " + "namespace TEXT, "
+				+ "key_name VARCHAR(500), " + "value_json TEXT, " + "created_at TIMESTAMP, "
+				+ "updated_at TIMESTAMP" + ")";
+	}
+
+	static String buildUpsertSql(String tableName, DatabaseDialect databaseDialect) {
+		if (databaseDialect == DatabaseDialect.MYSQL || databaseDialect == DatabaseDialect.MARIADB) {
+			return "INSERT INTO " + tableName + " (id, namespace, key_name, value_json, created_at, updated_at) "
+					+ "VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE namespace = VALUES(namespace), "
+					+ "key_name = VALUES(key_name), value_json = VALUES(value_json), created_at = VALUES(created_at), "
+					+ "updated_at = VALUES(updated_at)";
+		}
+
+		if (databaseDialect == DatabaseDialect.POSTGRESQL) {
+			return "INSERT INTO " + tableName + " (id, namespace, key_name, value_json, created_at, updated_at) "
+					+ "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET namespace = EXCLUDED.namespace, "
+					+ "key_name = EXCLUDED.key_name, value_json = EXCLUDED.value_json, "
+					+ "created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at";
+		}
+
+		return "MERGE INTO " + tableName + " (id, namespace, key_name, value_json, created_at, updated_at) "
+				+ "KEY(id) VALUES (?, ?, ?, ?, ?, ?)";
+	}
 
 	/**
 	 * Create item ID from namespace and key.
@@ -308,7 +370,27 @@ public class DatabaseStore extends BaseStore {
 	 * @return item ID
 	 */
 	private String createItemId(List<String> namespace, String key) {
-		return createStoreKey(namespace, key);
+		return buildItemId(namespace, key, databaseDialect);
+	}
+
+	static String buildItemId(List<String> namespace, String key, DatabaseDialect databaseDialect) {
+		String storeKey = buildStoreKey(namespace, key);
+		if (databaseDialect == DatabaseDialect.MYSQL || databaseDialect == DatabaseDialect.MARIADB) {
+			return DigestUtils.sha256Hex(storeKey);
+		}
+		return storeKey;
+	}
+
+	private static String buildStoreKey(List<String> namespace, String key) {
+		Map<String, Object> keyData = new java.util.HashMap<>();
+		keyData.put("namespace", namespace);
+		keyData.put("key", key);
+		try {
+			return java.util.Base64.getEncoder().encodeToString(new ObjectMapper().writeValueAsBytes(keyData));
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Failed to create store key", e);
+		}
 	}
 
 	/**
