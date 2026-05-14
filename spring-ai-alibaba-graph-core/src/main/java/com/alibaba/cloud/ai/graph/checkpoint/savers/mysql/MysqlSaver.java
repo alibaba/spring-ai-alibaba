@@ -64,6 +64,7 @@ import static java.util.Objects.requireNonNull;
  *          ON GRAPH_THREAD(thread_name, is_released)
  *
  *     CREATE TABLE GRAPH_CHECKPOINT (
+ *          checkpoint_seq BIGINT NOT NULL AUTO_INCREMENT UNIQUE,
  *          checkpoint_id VARCHAR(36) PRIMARY KEY,
  *          thread_id VARCHAR(36) NOT NULL,
  *          node_id VARCHAR(255),
@@ -118,6 +119,7 @@ public class MysqlSaver implements BaseCheckpointSaver {
 
 	private static final String CREATE_CHECKPOINT_TABLE = """
 			CREATE TABLE IF NOT EXISTS GRAPH_CHECKPOINT (
+			   checkpoint_seq BIGINT NOT NULL AUTO_INCREMENT UNIQUE,
 			   checkpoint_id VARCHAR(36) PRIMARY KEY,
 			   thread_id VARCHAR(36) NOT NULL,
 			   node_id VARCHAR(255),
@@ -133,6 +135,20 @@ public class MysqlSaver implements BaseCheckpointSaver {
 
 	private static final String DROP_CHECKPOINT_TABLE = "DROP TABLE IF EXISTS GRAPH_CHECKPOINT";
 	private static final String DROP_THREAD_TABLE = "DROP TABLE IF EXISTS GRAPH_THREAD";
+
+	private static final String INDEX_CHECKPOINT_THREAD_SEQUENCE = """
+			CREATE INDEX IDX_GRAPH_CHECKPOINT_THREAD_SEQUENCE
+			  ON GRAPH_CHECKPOINT(thread_id, checkpoint_seq)
+			""";
+
+	private static final String ADD_CHECKPOINT_SEQUENCE_COLUMN = """
+			ALTER TABLE GRAPH_CHECKPOINT
+			ADD COLUMN checkpoint_seq BIGINT NOT NULL AUTO_INCREMENT UNIQUE
+			""";
+
+	private static final String HAS_CHECKPOINT_SEQUENCE_COLUMN = """
+			SHOW COLUMNS FROM GRAPH_CHECKPOINT LIKE 'checkpoint_seq'
+			""";
 
 	// DML statements
 	private static final String UPSERT_THREAD = """
@@ -169,7 +185,7 @@ public class MysqlSaver implements BaseCheckpointSaver {
 			FROM GRAPH_CHECKPOINT c
 			  INNER JOIN GRAPH_THREAD t ON c.thread_id = t.thread_id
 			WHERE t.thread_name = ? AND t.is_released != TRUE
-			ORDER BY c.saved_at DESC
+			ORDER BY c.checkpoint_seq DESC
 			""";
 
 	private static final String RELEASE_THREAD = """
@@ -185,7 +201,7 @@ public class MysqlSaver implements BaseCheckpointSaver {
 			FROM GRAPH_CHECKPOINT c
 			  INNER JOIN GRAPH_THREAD t ON c.thread_id = t.thread_id
 			WHERE t.thread_name = ? AND t.is_released != TRUE
-			ORDER BY c.saved_at DESC
+			ORDER BY c.checkpoint_seq DESC
 			LIMIT 1
 			""";
 
@@ -310,21 +326,38 @@ public class MysqlSaver implements BaseCheckpointSaver {
 					createOption == CreateOption.CREATE_IF_NOT_EXISTS) {
 				statement.execute(CREATE_THREAD_TABLE);
 				statement.execute(CREATE_CHECKPOINT_TABLE);
-
-				// Try to create index, ignore error if it already exists
-				try {
-					statement.execute(INDEX_THREAD_TABLE);
-				}
-				catch (SQLException e) {
-					// Ignore "Duplicate key name" error (error code 1061)
-					if (e.getErrorCode() != 1061) {
-						throw e;
-					}
-				}
+				ensureCheckpointSequenceColumn(connection);
+				createIndexIfAbsent(statement, INDEX_THREAD_TABLE);
+				createIndexIfAbsent(statement, INDEX_CHECKPOINT_THREAD_SEQUENCE);
 			}
 		}
 		catch (SQLException sqlException) {
 			throw new RuntimeException("Unable to create tables", sqlException);
+		}
+	}
+
+	private void createIndexIfAbsent(Statement statement, String indexSql) throws SQLException {
+		try {
+			statement.execute(indexSql);
+		}
+		catch (SQLException e) {
+			// Ignore "Duplicate key name" error (error code 1061)
+			if (e.getErrorCode() != 1061) {
+				throw e;
+			}
+		}
+	}
+
+	private void ensureCheckpointSequenceColumn(Connection connection) throws SQLException {
+		try (Statement statement = connection.createStatement();
+			 ResultSet resultSet = statement.executeQuery(HAS_CHECKPOINT_SEQUENCE_COLUMN)) {
+			if (resultSet.next()) {
+				return;
+			}
+		}
+
+		try (Statement statement = connection.createStatement()) {
+			statement.execute(ADD_CHECKPOINT_SEQUENCE_COLUMN);
 		}
 	}
 
