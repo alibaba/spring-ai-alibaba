@@ -17,22 +17,28 @@ package com.alibaba.cloud.ai.graph.checkpoint.savers.oracle;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.sql.DataSource;
 
@@ -52,8 +58,8 @@ import static java.lang.String.format;
 
 /**
  * <p>
- * OracleSaver is an extension of MemorySaver that enables persistent,
- * reliable storage of workflow state in an Oracle database.
+ * OracleSaver stores Graph state in an Oracle database and keeps only a bounded
+ * latest-checkpoint cache in memory.
  * </p>
  * <p>
  * Two tables are used to store the workflow state:
@@ -91,6 +97,7 @@ import static java.lang.String.format;
  * - CreateOption : indicates whether the tables should be created or
  * existing tables should be used.
  * - StateSerializer: the serializer used to serialize/deserialize state data
+ * - MaxCachedThreads: indicates how many latest checkpoints are kept in memory.
  * </p>
  * <p>
  * Ex:
@@ -104,7 +111,7 @@ import static java.lang.String.format;
  * </pre>
  * </p>
  */
-public class OracleSaver extends MemorySaver {
+public class OracleSaver implements BaseCheckpointSaver {
 
 	private static final Logger log = LoggerFactory.getLogger(OracleSaver.class);
 
@@ -157,14 +164,20 @@ public class OracleSaver extends MemorySaver {
 			""";
 
 	private static final String UPDATE_CHECKPOINT = """
-			UPDATE GRAPH_CHECKPOINT
+			UPDATE GRAPH_CHECKPOINT c
 			SET
 			  checkpoint_id = ?,
 			  node_id = ?,
 			  next_node_id = ?,
 			  state_data = ?,
 			  state_content_type = ?
-			WHERE checkpoint_id = ?
+			WHERE c.checkpoint_id = ?
+			  AND EXISTS (
+			    SELECT 1 FROM GRAPH_THREAD t
+			    WHERE t.thread_id = c.thread_id
+			      AND t.thread_name = ?
+			      AND t.is_released != TRUE
+			  )
 			""";
 
 	private static final String SELECT_CHECKPOINTS = """
@@ -180,8 +193,31 @@ public class OracleSaver extends MemorySaver {
 			ORDER BY c.saved_at DESC
 			""";
 
-	private static final String DELETE_CHECKPOINTS = """
-			    DELETE FROM GRAPH_CHECKPOINT WHERE checkpoint_id = ?
+	private static final String SELECT_LATEST_CHECKPOINT = """
+			SELECT
+			  c.checkpoint_id,
+			  c.node_id,
+			  c.next_node_id,
+			  c.state_data,
+			  c.state_content_type
+			FROM GRAPH_CHECKPOINT c
+			  INNER JOIN GRAPH_THREAD t ON c.thread_id = t.thread_id
+			WHERE t.thread_name = ? AND t.is_released != TRUE
+			ORDER BY c.saved_at DESC
+			FETCH FIRST 1 ROW ONLY
+			""";
+
+	private static final String SELECT_CHECKPOINT_BY_ID = """
+			SELECT
+			  c.checkpoint_id,
+			  c.node_id,
+			  c.next_node_id,
+			  c.state_data,
+			  c.state_content_type
+			FROM GRAPH_CHECKPOINT c
+			  INNER JOIN GRAPH_THREAD t ON c.thread_id = t.thread_id
+			WHERE t.thread_name = ? AND t.is_released != TRUE
+			  AND c.checkpoint_id = ?
 			""";
 
 	private static final String RELEASE_THREAD = """
@@ -192,19 +228,22 @@ public class OracleSaver extends MemorySaver {
 	private final DataSource dataSource;
 	private final CreateOption createOption;
 	private final StateSerializer stateSerializer;
+	private final Map<String, Checkpoint> latestCheckpointCache;
+	private final ReentrantLock lock = new ReentrantLock();
+	private final int maxCachedThreads;
 
 	/**
 	 * Private constructor used by the builder to create a new instance of
 	 * OracleSaver.
 	 *
-	 * @param dataSource      the data source
-	 * @param createOption    the create options
-	 * @param stateSerializer the state serializer
+	 * @param builder the builder
 	 */
-	private OracleSaver(DataSource dataSource, CreateOption createOption, StateSerializer stateSerializer) {
-		this.dataSource = dataSource;
-		this.createOption = createOption;
-		this.stateSerializer = Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
+	private OracleSaver(Builder builder) {
+		this.dataSource = builder.dataSource;
+		this.createOption = builder.createOption;
+		this.stateSerializer = Objects.requireNonNull(builder.stateSerializer, "stateSerializer cannot be null");
+		this.maxCachedThreads = builder.maxCachedThreads;
+		this.latestCheckpointCache = createLatestCheckpointCache(builder.maxCachedThreads);
 		initTables();
 	}
 
@@ -301,96 +340,104 @@ public class OracleSaver extends MemorySaver {
 		return stateSerializer.dataFromBytes(bytes);
 	}
 
-	/**
-	 * If the list of checkpoints is empty, loads the checkpoints from the database.
-	 *
-	 * @param config      the configuration
-	 * @param checkpoints the list of checkpoints
-	 * @return a list of checkpoints
-	 * @throws Exception if an error occurs while the checkpoints are being
-	 *                   loaded from the database.
-	 */
-	@Override
-	protected LinkedList<Checkpoint> loadedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints)
-			throws Exception {
-		if (!checkpoints.isEmpty()) {
-			return checkpoints;
-		}
-
-		final String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
+	private ObjectMapper osonObjectMapper() {
 		JsonFactory osonFactory = new OsonFactory();
-		ObjectMapper objectMapper = new ObjectMapper(osonFactory);
+		return new ObjectMapper(osonFactory);
+	}
 
+	private void defineCheckpointColumns(PreparedStatement preparedStatement) throws SQLException {
+		// Defining JSON columns up front avoids an additional Oracle JDBC metadata round trip.
+		OracleStatement oracleStatement = preparedStatement.unwrap(OracleStatement.class);
+		oracleStatement.defineColumnType(1, OracleTypes.VARCHAR);
+		oracleStatement.defineColumnType(2, OracleTypes.VARCHAR);
+		oracleStatement.defineColumnType(3, OracleTypes.VARCHAR);
+		oracleStatement.defineColumnType(4, OracleTypes.JSON, Integer.MAX_VALUE);
+		oracleStatement.defineColumnType(5, OracleTypes.VARCHAR);
+		oracleStatement.setLobPrefetchSize(Integer.MAX_VALUE);
+	}
+
+	private Checkpoint readCheckpoint(ResultSet resultSet, ObjectMapper objectMapper)
+			throws SQLException, IOException, ClassNotFoundException {
+		byte[] osonBytes = resultSet.getObject(4, OracleJsonDatum.class).shareBytes();
+		Map<String, Object> jsonMap = objectMapper.readValue(osonBytes, Map.class);
+		String base64Data = (String) jsonMap.get("binaryPayload");
+		byte[] binaryPayload = base64Data.getBytes(StandardCharsets.UTF_8);
+
+		return Checkpoint.builder()
+				.id(resultSet.getString(1))
+				.nodeId(resultSet.getString(2))
+				.nextNodeId(resultSet.getString(3))
+				.state(decodeState(binaryPayload, resultSet.getString(5)))
+				.build();
+	}
+
+	/**
+	 * Loads full checkpoint history on demand without retaining it in cache.
+	 */
+	private LinkedList<Checkpoint> selectCheckpoints(String threadName) throws Exception {
+		LinkedList<Checkpoint> checkpoints = new LinkedList<>();
+		ObjectMapper objectMapper = osonObjectMapper();
 		try (Connection connection = dataSource.getConnection();
-			 PreparedStatement preparedStatement = connection.prepareStatement(SELECT_CHECKPOINTS)) {
+				PreparedStatement preparedStatement = connection.prepareStatement(SELECT_CHECKPOINTS)) {
 
-			// Calls to defineColumnType reduce the number of network requests. When Oracle
-			// JDBC knows that it is
-			// fetching VECTOR, CLOB, and/or JSON columns, the first request it sends to the
-			// database can include a LOB
-			// prefetch size (VECTOR and JSON are value-based-lobs). If defineColumnType is
-			// not called, then JDBC needs
-			// to send an additional request with the LOB prefetch size, after the first
-			// request has the database
-			// respond with the column data types. To request all data, the prefetch size is
-			// Integer.MAX_VALUE.
-			OracleStatement oracleStatement = preparedStatement.unwrap(OracleStatement.class);
-			oracleStatement.defineColumnType(1, OracleTypes.VARCHAR); // checkpoint_id
-			oracleStatement.defineColumnType(2, OracleTypes.VARCHAR); // node_id
-			oracleStatement.defineColumnType(3, OracleTypes.VARCHAR); // next_node_id
-			oracleStatement.defineColumnType(4, OracleTypes.JSON, Integer.MAX_VALUE); // state_data
-			oracleStatement.defineColumnType(5, OracleTypes.VARCHAR); // state_content_type
-			oracleStatement.setLobPrefetchSize(Integer.MAX_VALUE); // Workaround for Oracle JDBC bug 37030121
-
+			defineCheckpointColumns(preparedStatement);
 			preparedStatement.setString(1, threadName);
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
 				while (resultSet.next()) {
-					byte[] osonBytes = resultSet.getObject(4, OracleJsonDatum.class).shareBytes();
-					String contentType = resultSet.getString(5);
-
-					// Parse JSON to extract binaryPayload
-					Map<String, Object> jsonMap = objectMapper.readValue(osonBytes, Map.class);
-					String base64Data = (String) jsonMap.get("binaryPayload");
-					// Convert base64 string to bytes (don't decode yet, decodeState will do that)
-					byte[] binaryPayload = base64Data.getBytes(StandardCharsets.UTF_8);
-
-					Checkpoint checkpoint = Checkpoint.builder()
-							.id(resultSet.getString(1))
-							.nodeId(resultSet.getString(2))
-							.nextNodeId(resultSet.getString(3))
-							.state(decodeState(binaryPayload, contentType))
-							.build();
-					checkpoints.add(checkpoint);
+					checkpoints.add(readCheckpoint(resultSet, objectMapper));
 				}
 			}
 		}
-		catch (SQLException sqlException) {
-			throw new Exception("Unable to load checkpoints", sqlException);
-		}
-		catch (ClassNotFoundException e) {
-			throw new Exception("Unable to deserialize checkpoint state", e);
+		catch (SQLException | IOException | ClassNotFoundException ex) {
+			throw new Exception("Unable to load checkpoints", ex);
 		}
 		return checkpoints;
 	}
 
-	/**
-	 * Inserts a checkpoint to the database
-	 *
-	 * @param config      the configuration
-	 * @param checkpoints the list of checkpoints
-	 * @param checkpoint  the checkpoint to insert
-	 * @throws Exception if an error occurs while inserting the checkpoint in the
-	 *                   database.
-	 */
-	@Override
-	protected void insertedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
-			throws Exception {
+	private Optional<Checkpoint> selectLatestCheckpoint(String threadName) throws Exception {
+		ObjectMapper objectMapper = osonObjectMapper();
+		try (Connection connection = dataSource.getConnection();
+				PreparedStatement preparedStatement = connection.prepareStatement(SELECT_LATEST_CHECKPOINT)) {
 
-		final String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
+			defineCheckpointColumns(preparedStatement);
+			preparedStatement.setString(1, threadName);
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					return Optional.of(readCheckpoint(resultSet, objectMapper));
+				}
+				return Optional.empty();
+			}
+		}
+		catch (SQLException | IOException | ClassNotFoundException ex) {
+			throw new Exception("Unable to load latest checkpoint", ex);
+		}
+	}
+
+	private Optional<Checkpoint> selectCheckpointById(String threadName, String checkpointId) throws Exception {
+		ObjectMapper objectMapper = osonObjectMapper();
+		try (Connection connection = dataSource.getConnection();
+				PreparedStatement preparedStatement = connection.prepareStatement(SELECT_CHECKPOINT_BY_ID)) {
+
+			defineCheckpointColumns(preparedStatement);
+			preparedStatement.setString(1, threadName);
+			preparedStatement.setString(2, checkpointId);
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					return Optional.of(readCheckpoint(resultSet, objectMapper));
+				}
+				return Optional.empty();
+			}
+		}
+		catch (SQLException | IOException | ClassNotFoundException ex) {
+			throw new Exception("Unable to load checkpoint", ex);
+		}
+	}
+
+	private void insertCheckpoint(String threadName, Checkpoint checkpoint) throws Exception {
 		Connection conn = null;
 
 		try (Connection ignored = conn = dataSource.getConnection()) {
-			conn.setAutoCommit(false); // Start transaction
+			conn.setAutoCommit(false);
 
 			try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);
 				 PreparedStatement insertCheckpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
@@ -413,31 +460,50 @@ public class OracleSaver extends MemorySaver {
 			conn.commit();
 			log.debug("Checkpoint {} for thread {} inserted successfully.", checkpoint.getId(), threadName);
 		}
-		catch (SQLException | IOException e) {
-			log.error("Error inserting checkpoint with id {} in thread {}", checkpoint.getId(), threadName, e);
+		catch (SQLException | IOException ex) {
+			log.error("Error inserting checkpoint with id {} in thread {}", checkpoint.getId(), threadName, ex);
 			rollback(conn, checkpoint, threadName);
-			throw new Exception("Unable to insert checkpoint", e);
+			throw new Exception("Unable to insert checkpoint", ex);
 		}
-
 	}
 
-	/**
-	 * Marks the checkpoints as released
-	 *
-	 * @param config      the configuration
-	 * @param checkpoints the checkpoints
-	 * @param releaseTag  the release tab
-	 * @throws Exception if an error occurs while marking the checkpoints as
-	 *                   released
-	 */
-	@Override
-	protected void releasedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Tag releaseTag)
-			throws Exception {
-		final String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
+	private void updateCheckpoint(String threadName, String checkpointId, Checkpoint checkpoint) throws Exception {
 		Connection conn = null;
 
 		try (Connection ignored = conn = dataSource.getConnection()) {
-			conn.setAutoCommit(false); // Start transaction
+			conn.setAutoCommit(false);
+
+			try (PreparedStatement preparedStatement = conn.prepareStatement(UPDATE_CHECKPOINT)) {
+				String encodedState = encodeState(checkpoint.getState());
+				preparedStatement.setString(1, checkpoint.getId());
+				preparedStatement.setString(2, checkpoint.getNodeId());
+				preparedStatement.setString(3, checkpoint.getNextNodeId());
+				preparedStatement.setObject(4, encodedState, OracleType.JSON);
+				preparedStatement.setString(5, stateSerializer.contentType());
+				preparedStatement.setString(6, checkpointId);
+				preparedStatement.setString(7, threadName);
+				int rowsAffected = preparedStatement.executeUpdate();
+				if (rowsAffected == 0) {
+					conn.rollback();
+					throw new NoSuchElementException(format("Checkpoint with id %s not found!", checkpointId));
+				}
+			}
+
+			conn.commit();
+			log.debug("Checkpoint with id {} for thread {} updated successfully.", checkpoint.getId(), threadName);
+		}
+		catch (SQLException | IOException ex) {
+			log.error("Error updating checkpoint with id {} in thread {}", checkpoint.getId(), threadName, ex);
+			rollback(conn, checkpoint, threadName);
+			throw new Exception("Unable to update checkpoint", ex);
+		}
+	}
+
+	private void releaseThread(String threadName) throws Exception {
+		Connection conn = null;
+
+		try (Connection ignored = conn = dataSource.getConnection()) {
+			conn.setAutoCommit(false);
 
 			try (PreparedStatement preparedStatement = conn.prepareStatement(RELEASE_THREAD)) {
 				preparedStatement.setString(1, threadName);
@@ -453,72 +519,10 @@ public class OracleSaver extends MemorySaver {
 			conn.commit();
 			log.debug("Thread {} released successfully.", threadName);
 		}
-		catch (SQLException e) {
-			log.error("Error releasing thread {}", threadName, e);
+		catch (SQLException ex) {
+			log.error("Error releasing thread {}", threadName, ex);
 			rollback(conn, threadName);
-			throw new Exception("Unable to release checkpoint", e);
-		}
-	}
-
-	/**
-	 * If the checkpoint exists, updates the checkpoint, otherwise it inserts it.
-	 *
-	 * @param config      the configuration
-	 * @param checkpoints the list of checkpoints
-	 * @param checkpoint  the checkpoint
-	 * @throws Exception if an error occurs while inserting or updating the
-	 *                   checkpoint.
-	 */
-	@Override
-	protected void updatedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
-			throws Exception {
-		final String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
-		Connection conn = null;
-
-		try (Connection ignored = conn = dataSource.getConnection()) {
-			conn.setAutoCommit(false); // Start transaction
-
-			if (config.checkPointId().isPresent()) {
-				// Update existing checkpoint
-				try (PreparedStatement preparedStatement = conn.prepareStatement(UPDATE_CHECKPOINT)) {
-					String encodedState = encodeState(checkpoint.getState());
-					preparedStatement.setString(1, checkpoint.getId());
-					preparedStatement.setString(2, checkpoint.getNodeId());
-					preparedStatement.setString(3, checkpoint.getNextNodeId());
-					preparedStatement.setObject(4, encodedState, OracleType.JSON);
-					preparedStatement.setString(5, stateSerializer.contentType());
-					preparedStatement.setString(6, config.checkPointId().get());
-					preparedStatement.execute();
-				}
-			}
-			else {
-				// Insert new checkpoint (within same transaction)
-				try (PreparedStatement upsertStatement = conn.prepareStatement(UPSERT_THREAD);
-					 PreparedStatement insertCheckpointStatement = conn.prepareStatement(INSERT_CHECKPOINT)) {
-
-					upsertStatement.setString(1, UUID.randomUUID().toString());
-					upsertStatement.setString(2, threadName);
-					upsertStatement.execute();
-
-					String encodedState = encodeState(checkpoint.getState());
-					insertCheckpointStatement.setString(1, checkpoint.getId());
-					insertCheckpointStatement.setString(2, checkpoint.getNodeId());
-					insertCheckpointStatement.setString(3, checkpoint.getNextNodeId());
-					insertCheckpointStatement.setObject(4, encodedState, OracleType.JSON);
-					insertCheckpointStatement.setString(5, stateSerializer.contentType());
-					insertCheckpointStatement.setString(6, threadName);
-
-					insertCheckpointStatement.execute();
-				}
-			}
-
-			conn.commit();
-			log.debug("Checkpoint with id {} for thread {} updated successfully.", checkpoint.getId(), threadName);
-		}
-		catch (SQLException | IOException e) {
-			log.error("Error updating checkpoint with id {} in thread {}", checkpoint.getId(), threadName, e);
-			rollback(conn, checkpoint, threadName);
-			throw new Exception("Unable to update checkpoint", e);
+			throw new Exception("Unable to release checkpoint", ex);
 		}
 	}
 
@@ -547,12 +551,144 @@ public class OracleSaver extends MemorySaver {
 	}
 
 	/**
+	 * Lists active checkpoints for the configured thread.
+	 */
+	@Override
+	public Collection<Checkpoint> list(RunnableConfig config) {
+		lock.lock();
+		try {
+			String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
+			LinkedList<Checkpoint> checkpoints = selectCheckpoints(threadName);
+			if (!checkpoints.isEmpty()) {
+				cacheLatest(threadName, checkpoints.peek());
+			}
+			return Collections.unmodifiableCollection(checkpoints);
+		}
+		catch (Exception ex) {
+			throw new RuntimeException(ex);
+		}
+		finally {
+			lock.unlock();
+		}
+	}
+
+	/**
+	 * Gets a checkpoint for the configured thread.
+	 */
+	@Override
+	public Optional<Checkpoint> get(RunnableConfig config) {
+		lock.lock();
+		try {
+			String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
+			if (config.checkPointId().isPresent()) {
+				return selectCheckpointById(threadName, config.checkPointId().get());
+			}
+
+			Optional<Checkpoint> cached = getCachedLatest(threadName);
+			if (cached.isPresent()) {
+				return cached;
+			}
+
+			Optional<Checkpoint> latest = selectLatestCheckpoint(threadName);
+			latest.ifPresent(checkpoint -> cacheLatest(threadName, checkpoint));
+			return latest;
+		}
+		catch (Exception ex) {
+			throw new RuntimeException(ex);
+		}
+		finally {
+			lock.unlock();
+		}
+	}
+
+	/**
+	 * Inserts or updates a checkpoint.
+	 */
+	@Override
+	public RunnableConfig put(RunnableConfig config, Checkpoint checkpoint) throws Exception {
+		lock.lock();
+		try {
+			String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
+			if (config.checkPointId().isPresent()) {
+				String checkpointId = config.checkPointId().get();
+				updateCheckpoint(threadName, checkpointId, checkpoint);
+				getCachedLatest(threadName)
+						.filter(latest -> latest.getId().equals(checkpointId))
+						.ifPresent(latest -> cacheLatest(threadName, checkpoint));
+				return config;
+			}
+
+			insertCheckpoint(threadName, checkpoint);
+			cacheLatest(threadName, checkpoint);
+			return RunnableConfig.builder(config)
+					.checkPointId(checkpoint.getId())
+					.build();
+		}
+		finally {
+			lock.unlock();
+		}
+	}
+
+	/**
+	 * Releases the active thread and returns the released checkpoints.
+	 */
+	@Override
+	public Tag release(RunnableConfig config) throws Exception {
+		lock.lock();
+		try {
+			String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
+			LinkedList<Checkpoint> checkpoints = selectCheckpoints(threadName);
+			releaseThread(threadName);
+			removeCachedLatest(threadName);
+			return new Tag(threadName, checkpoints);
+		}
+		finally {
+			lock.unlock();
+		}
+	}
+
+	/**
+	 * Creates a bounded LRU cache for latest checkpoints.
+	 */
+	private static Map<String, Checkpoint> createLatestCheckpointCache(int maxCachedThreads) {
+		if (maxCachedThreads == 0) {
+			return Collections.emptyMap();
+		}
+		return new LinkedHashMap<>(16, 0.75f, true) {
+			@Override
+			protected boolean removeEldestEntry(Map.Entry<String, Checkpoint> eldest) {
+				return size() > maxCachedThreads;
+			}
+		};
+	}
+
+	private Optional<Checkpoint> getCachedLatest(String threadName) {
+		if (maxCachedThreads == 0) {
+			return Optional.empty();
+		}
+		return Optional.ofNullable(latestCheckpointCache.get(threadName));
+	}
+
+	private void cacheLatest(String threadName, Checkpoint checkpoint) {
+		if (maxCachedThreads > 0) {
+			latestCheckpointCache.put(threadName, checkpoint);
+		}
+	}
+
+	private void removeCachedLatest(String threadName) {
+		if (maxCachedThreads > 0) {
+			latestCheckpointCache.remove(threadName);
+		}
+	}
+
+	/**
 	 * A builder for OracleSaver.
 	 */
-	public static class Builder extends MemorySaver.Builder {
+	public static class Builder {
 		private DataSource dataSource;
 		private CreateOption createOption = CreateOption.CREATE_IF_NOT_EXISTS;
 		private StateSerializer stateSerializer;
+		private int maxCachedThreads = 1024;
 
 		/**
 		 * Sets the datasource
@@ -588,16 +724,30 @@ public class OracleSaver extends MemorySaver {
 		}
 
 		/**
+		 * Sets the maximum number of latest checkpoints retained in memory.
+		 *
+		 * @param maxCachedThreads max cached threads, or 0 to disable the cache
+		 * @return this builder
+		 */
+		public Builder maxCachedThreads(int maxCachedThreads) {
+			if (maxCachedThreads < 0) {
+				throw new IllegalArgumentException("maxCachedThreads must be greater than or equal to 0");
+			}
+			this.maxCachedThreads = maxCachedThreads;
+			return this;
+		}
+
+		/**
 		 * Creates a new instance of OracleSaver
 		 *
 		 * @return the new instance of OracleSaver.
 		 */
 		public OracleSaver build() {
 			Objects.requireNonNull(dataSource, "dataSource cannot be null");
-            if (stateSerializer == null) {
-                this.stateSerializer = StateGraph.DEFAULT_JACKSON_SERIALIZER;
-            }
-            return new OracleSaver(dataSource, createOption, stateSerializer);
+			if (stateSerializer == null) {
+				this.stateSerializer = StateGraph.DEFAULT_JACKSON_SERIALIZER;
+			}
+			return new OracleSaver(this);
 		}
 	}
 }

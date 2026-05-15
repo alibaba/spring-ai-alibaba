@@ -17,9 +17,15 @@
 package com.alibaba.cloud.ai.graph.utils;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Collections;
+import java.util.Enumeration;
 
 /**
  * @author HeYQ
@@ -71,36 +77,71 @@ public class FileUtils {
 	 * @param workDir The target working directory where the JAR files will be copied.
 	 */
 	public static void copyResourceJarToWorkDir(String workDir) {
-		try {
-			// Get the JAR files from resources/lib directory
-			ClassLoader classLoader = FileUtils.class.getClassLoader();
-			URL libUrl = classLoader.getResource("lib");
-			if (libUrl == null) {
-				throw new RuntimeException("Could not find lib directory in resources");
-			}
+		copyResourceJarToWorkDir(workDir, FileUtils.class.getClassLoader());
+	}
 
-			// Create target directory if it doesn't exist
+	/**
+	 * Copies all JAR files from the resources/lib directory (including resources packaged
+	 * inside dependency JARs) to the specified working directory.
+	 * @param workDir The target working directory where the JAR files will be copied.
+	 * @param classLoader The class loader used to locate lib resources.
+	 */
+	static void copyResourceJarToWorkDir(String workDir, ClassLoader classLoader) {
+		try {
 			Path targetDir = Path.of(workDir);
 			if (!Files.exists(targetDir)) {
 				Files.createDirectories(targetDir);
 			}
 
-			// Get all JAR files from lib directory
-			Path libPath = Path.of(libUrl.toURI());
-			try (var stream = Files.walk(libPath)) {
-				stream.filter(path -> path.toString().endsWith(".jar")).forEach(jarPath -> {
-					try {
-						Path targetPath = targetDir.resolve(jarPath.getFileName());
-						Files.copy(jarPath, targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			Enumeration<URL> libUrls = classLoader.getResources("lib");
+			if (!libUrls.hasMoreElements()) {
+				return;
+			}
+
+			while (libUrls.hasMoreElements()) {
+				URL libUrl = libUrls.nextElement();
+				if ("file".equals(libUrl.getProtocol())) {
+					copyJarFilesFromDir(Path.of(libUrl.toURI()), targetDir);
+					continue;
+				}
+				if ("jar".equals(libUrl.getProtocol())) {
+					String jarUrl = libUrl.toString();
+					int separatorIndex = jarUrl.indexOf("!/");
+					if (separatorIndex <= 0) {
+						continue;
 					}
-					catch (IOException e) {
-						throw new RuntimeException("Failed to copy JAR file: " + jarPath, e);
+					URI jarFileUri = URI.create(jarUrl.substring(0, separatorIndex));
+					try (FileSystem fs = FileSystems.newFileSystem(jarFileUri, Collections.emptyMap())) {
+						copyJarFilesFromDir(fs.getPath("/lib"), targetDir);
 					}
-				});
+				}
 			}
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to copy JAR files to working directory", e);
+		}
+	}
+
+	/**
+	 * Copies all JAR files under the source directory to the target directory.
+	 * @param sourceDir The source directory containing JAR files.
+	 * @param targetDir The target directory where JAR files will be copied.
+	 * @throws IOException if I/O operations fail while scanning or copying files.
+	 */
+	private static void copyJarFilesFromDir(Path sourceDir, Path targetDir) throws IOException {
+		if (!Files.exists(sourceDir)) {
+			return;
+		}
+		try (var stream = Files.walk(sourceDir)) {
+			stream.filter(path -> path.toString().endsWith(".jar")).forEach(jarPath -> {
+				try {
+					Path targetPath = targetDir.resolve(jarPath.getFileName().toString());
+					Files.copy(jarPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+				}
+				catch (IOException e) {
+					throw new RuntimeException("Failed to copy JAR file: " + jarPath, e);
+				}
+			});
 		}
 	}
 
