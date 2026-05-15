@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -367,11 +369,12 @@ public class DatabaseStore extends BaseStore {
         lock.writeLock().lock();
         try {
             String itemId = createItemId(item.getNamespace(), item.getKey());
+            String itemHash = createItemHash(itemId);
             String namespaceJson = objectMapper.writeValueAsString(item.getNamespace());
             String valueJson = objectMapper.writeValueAsString(item.getValue());
 
             try (Connection conn = dataSource.getConnection()) {
-                executeUpsert(conn, itemId, namespaceJson, item.getKey(), valueJson,
+                executeUpsert(conn, itemId, itemHash, namespaceJson, item.getKey(), valueJson,
                         new Timestamp(item.getCreatedAt()), new Timestamp(item.getUpdatedAt()));
             }
         } catch (Exception e) {
@@ -394,15 +397,15 @@ public class DatabaseStore extends BaseStore {
      * @param updatedAt     updated timestamp
      * @throws SQLException if SQL execution fails
      */
-    private void executeUpsert(Connection conn, String itemId, String namespaceJson, String key, String valueJson,
+    private void executeUpsert(Connection conn, String itemId, String itemHash, String namespaceJson, String key, String valueJson,
                                Timestamp createdAt, Timestamp updatedAt) throws SQLException {
         DatabaseDialect dialect = getDatabaseDialect(conn);
         switch (dialect) {
-            case H2 -> executeH2Merge(conn, itemId, namespaceJson, key, valueJson, createdAt, updatedAt);
-            case MYSQL -> executeMysqlUpsert(conn, itemId, namespaceJson, key, valueJson, createdAt, updatedAt);
-            case POSTGRESQL -> executePostgresqlUpsert(conn, itemId, namespaceJson, key, valueJson, createdAt,
+            case H2 -> executeH2Merge(conn, itemId, itemHash, namespaceJson, key, valueJson, createdAt, updatedAt);
+            case MYSQL -> executeMysqlUpsert(conn, itemId, itemHash, namespaceJson, key, valueJson, createdAt, updatedAt);
+            case POSTGRESQL -> executePostgresqlUpsert(conn, itemId, itemHash, namespaceJson, key, valueJson, createdAt,
                     updatedAt);
-            case ORACLE -> executeOracleUpsert(conn, itemId, namespaceJson, key, valueJson, createdAt, updatedAt);
+            case ORACLE -> executeOracleUpsert(conn, itemId, itemHash, namespaceJson, key, valueJson, createdAt, updatedAt);
             case OTHER -> throw new UnsupportedOperationException(
                     "Unsupported database dialect: " + dialect + ". Supported dialects: H2, MySQL, PostgreSQL, Oracle");
         }
@@ -420,18 +423,19 @@ public class DatabaseStore extends BaseStore {
      * @param updatedAt     updated timestamp
      * @throws SQLException if SQL execution fails
      */
-    private void executeH2Merge(Connection conn, String itemId, String namespaceJson, String key, String valueJson,
+    private void executeH2Merge(Connection conn, String itemId, String itemHash, String namespaceJson, String key, String valueJson,
                                 Timestamp createdAt, Timestamp updatedAt) throws SQLException {
-        // MERGE INTO table (id, namespace, key_name, value_json, created_at, updated_at) KEY(id) VALUES (...)
-        String sql = "MERGE INTO " + tableName + " (id, namespace, key_name, value_json, created_at, updated_at) "
-                + "KEY(id) VALUES (?, ?, ?, ?, ?, ?)";
+        // MERGE by id_hash to avoid long-key index limitations across dialects.
+        String sql = "MERGE INTO " + tableName + " (id, id_hash, namespace, key_name, value_json, created_at, updated_at) "
+                + "KEY(id_hash) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, itemId);
-            stmt.setString(2, namespaceJson);
-            stmt.setString(3, key);
-            stmt.setString(4, valueJson);
-            stmt.setTimestamp(5, createdAt);
-            stmt.setTimestamp(6, updatedAt);
+            stmt.setString(2, itemHash);
+            stmt.setString(3, namespaceJson);
+            stmt.setString(4, key);
+            stmt.setString(5, valueJson);
+            stmt.setTimestamp(6, createdAt);
+            stmt.setTimestamp(7, updatedAt);
             stmt.executeUpdate();
         }
     }
@@ -448,20 +452,21 @@ public class DatabaseStore extends BaseStore {
      * @param updatedAt     updated timestamp
      * @throws SQLException if SQL execution fails
      */
-    private void executeMysqlUpsert(Connection conn, String itemId, String namespaceJson, String key, String valueJson,
+    private void executeMysqlUpsert(Connection conn, String itemId, String itemHash, String namespaceJson, String key, String valueJson,
                                     Timestamp createdAt, Timestamp updatedAt) throws SQLException {
         // INSERT ... ON DUPLICATE KEY UPDATE ... VALUES(...)
-        String sql = "INSERT INTO " + tableName + " (id, namespace, key_name, value_json, created_at, updated_at) "
-                + "VALUES (?, ?, ?, ?, ?, ?) "
-                + "ON DUPLICATE KEY UPDATE namespace = VALUES(namespace), key_name = VALUES(key_name), "
+        String sql = "INSERT INTO " + tableName + " (id, id_hash, namespace, key_name, value_json, created_at, updated_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE id = VALUES(id), namespace = VALUES(namespace), key_name = VALUES(key_name), "
                 + "value_json = VALUES(value_json), updated_at = VALUES(updated_at)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, itemId);
-            stmt.setString(2, namespaceJson);
-            stmt.setString(3, key);
-            stmt.setString(4, valueJson);
-            stmt.setTimestamp(5, createdAt);
-            stmt.setTimestamp(6, updatedAt);
+            stmt.setString(2, itemHash);
+            stmt.setString(3, namespaceJson);
+            stmt.setString(4, key);
+            stmt.setString(5, valueJson);
+            stmt.setTimestamp(6, createdAt);
+            stmt.setTimestamp(7, updatedAt);
             stmt.executeUpdate();
         }
     }
@@ -478,21 +483,22 @@ public class DatabaseStore extends BaseStore {
      * @param updatedAt     updated timestamp
      * @throws SQLException if SQL execution fails
      */
-    private void executePostgresqlUpsert(Connection conn, String itemId, String namespaceJson, String key,
+    private void executePostgresqlUpsert(Connection conn, String itemId, String itemHash, String namespaceJson, String key,
                                          String valueJson, Timestamp createdAt, Timestamp updatedAt) throws SQLException {
-        // INSERT ... ON CONFLICT (id) DO UPDATE SET ... = EXCLUDED....
-        String sql = "INSERT INTO " + tableName + " (id, namespace, key_name, value_json, created_at, updated_at) "
-                + "VALUES (?, ?, ?, ?, ?, ?) "
-                + "ON CONFLICT (id) DO UPDATE SET namespace = EXCLUDED.namespace, "
+        // INSERT ... ON CONFLICT (id_hash) DO UPDATE SET ... = EXCLUDED....
+        String sql = "INSERT INTO " + tableName + " (id, id_hash, namespace, key_name, value_json, created_at, updated_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?) "
+                + "ON CONFLICT (id_hash) DO UPDATE SET id = EXCLUDED.id, namespace = EXCLUDED.namespace, "
                 + "key_name = EXCLUDED.key_name, value_json = EXCLUDED.value_json, "
                 + "updated_at = EXCLUDED.updated_at";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, itemId);
-            stmt.setString(2, namespaceJson);
-            stmt.setString(3, key);
-            stmt.setString(4, valueJson);
-            stmt.setTimestamp(5, createdAt);
-            stmt.setTimestamp(6, updatedAt);
+            stmt.setString(2, itemHash);
+            stmt.setString(3, namespaceJson);
+            stmt.setString(4, key);
+            stmt.setString(5, valueJson);
+            stmt.setTimestamp(6, createdAt);
+            stmt.setTimestamp(7, updatedAt);
             stmt.executeUpdate();
         }
     }
@@ -509,25 +515,27 @@ public class DatabaseStore extends BaseStore {
      * @param updatedAt     updated timestamp
      * @throws SQLException if SQL execution fails
      */
-    private void executeOracleUpsert(Connection conn, String itemId, String namespaceJson, String key, String valueJson,
+    private void executeOracleUpsert(Connection conn, String itemId, String itemHash, String namespaceJson, String key, String valueJson,
                                      Timestamp createdAt, Timestamp updatedAt) throws SQLException {
-        // MERGE INTO table USING DUAL ON (id = ?) WHEN MATCHED THEN UPDATE WHEN NOT MATCHED THEN INSERT
-        String sql = "MERGE INTO " + tableName + " USING DUAL ON (id = ?) " + "WHEN MATCHED THEN UPDATE SET "
-                + "namespace = ?, key_name = ?, value_json = ?, updated_at = ? "
-                + "WHEN NOT MATCHED THEN INSERT (id, namespace, key_name, value_json, created_at, updated_at) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
+        // MERGE by id_hash to avoid oversized unique-key issues.
+        String sql = "MERGE INTO " + tableName + " USING DUAL ON (id_hash = ?) " + "WHEN MATCHED THEN UPDATE SET "
+                + "id = ?, namespace = ?, key_name = ?, value_json = ?, updated_at = ? "
+                + "WHEN NOT MATCHED THEN INSERT (id, id_hash, namespace, key_name, value_json, created_at, updated_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, itemId);
-            stmt.setString(2, namespaceJson);
-            stmt.setString(3, key);
-            stmt.setString(4, valueJson);
-            stmt.setTimestamp(5, updatedAt);
-            stmt.setString(6, itemId);
-            stmt.setString(7, namespaceJson);
-            stmt.setString(8, key);
-            stmt.setString(9, valueJson);
-            stmt.setTimestamp(10, createdAt);
-            stmt.setTimestamp(11, updatedAt);
+            stmt.setString(1, itemHash);
+            stmt.setString(2, itemId);
+            stmt.setString(3, namespaceJson);
+            stmt.setString(4, key);
+            stmt.setString(5, valueJson);
+            stmt.setTimestamp(6, updatedAt);
+            stmt.setString(7, itemId);
+            stmt.setString(8, itemHash);
+            stmt.setString(9, namespaceJson);
+            stmt.setString(10, key);
+            stmt.setString(11, valueJson);
+            stmt.setTimestamp(12, createdAt);
+            stmt.setTimestamp(13, updatedAt);
             stmt.executeUpdate();
         }
     }
@@ -571,12 +579,13 @@ public class DatabaseStore extends BaseStore {
         lock.readLock().lock();
         try {
             String itemId = createItemId(namespace, key);
+            String itemHash = createItemHash(itemId);
             String sql = "SELECT namespace, key_name, value_json, created_at, updated_at FROM " + tableName
-                    + " WHERE id = ?";
+                    + " WHERE id_hash = ?";
 
             try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-                stmt.setString(1, itemId);
+                stmt.setString(1, itemHash);
                 ResultSet rs = stmt.executeQuery();
 
                 if (rs.next()) {
@@ -599,11 +608,12 @@ public class DatabaseStore extends BaseStore {
         lock.writeLock().lock();
         try {
             String itemId = createItemId(namespace, key);
-            String sql = "DELETE FROM " + tableName + " WHERE id = ?";
+            String itemHash = createItemHash(itemId);
+            String sql = "DELETE FROM " + tableName + " WHERE id_hash = ?";
 
             try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-                stmt.setString(1, itemId);
+                stmt.setString(1, itemHash);
                 return stmt.executeUpdate() > 0;
             }
         } catch (Exception e) {
@@ -745,22 +755,26 @@ public class DatabaseStore extends BaseStore {
             sql = switch (dialect) {
                 case ORACLE -> "CREATE TABLE " + tableName + " ("
                         + "pk_id NUMBER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, "
-                        + "id VARCHAR2(2000) NOT NULL UNIQUE, "
+                        + "id VARCHAR2(4000) NOT NULL, "
+                        + "id_hash CHAR(64) NOT NULL UNIQUE, "
                         + "namespace VARCHAR2(4000), " + "key_name VARCHAR2(500), " + "value_json CLOB, "
                         + "created_at TIMESTAMP, " + "updated_at TIMESTAMP" + ")";
                 case MYSQL -> "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                         + "pk_id BIGINT AUTO_INCREMENT PRIMARY KEY, "
-                        + "id VARCHAR(2048) NOT NULL UNIQUE, "
+                        + "id VARCHAR(2048) NOT NULL, "
+                        + "id_hash CHAR(64) NOT NULL UNIQUE, "
                         + "namespace TEXT, " + "key_name VARCHAR(500), " + "value_json TEXT, "
                         + "created_at TIMESTAMP, " + "updated_at TIMESTAMP" + ")";
                 case POSTGRESQL -> "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                         + "pk_id BIGSERIAL PRIMARY KEY, "
-                        + "id TEXT NOT NULL UNIQUE, "
+                        + "id TEXT NOT NULL, "
+                        + "id_hash CHAR(64) NOT NULL UNIQUE, "
                         + "namespace TEXT, " + "key_name VARCHAR(500), " + "value_json TEXT, "
                         + "created_at TIMESTAMP, " + "updated_at TIMESTAMP" + ")";
                 case H2 -> "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                         + "pk_id BIGINT AUTO_INCREMENT PRIMARY KEY, "
-                        + "id TEXT NOT NULL UNIQUE, "
+                        + "id TEXT NOT NULL, "
+                        + "id_hash CHAR(64) NOT NULL UNIQUE, "
                         + "namespace TEXT, " + "key_name VARCHAR(500), " + "value_json TEXT, "
                         + "created_at TIMESTAMP, " + "updated_at TIMESTAMP" + ")";
                 case OTHER -> throw new UnsupportedOperationException(
@@ -811,6 +825,27 @@ public class DatabaseStore extends BaseStore {
      */
     private String createItemId(List<String> namespace, String key) {
         return createStoreKey(namespace, key);
+    }
+
+    /**
+     * Create a fixed-length hash for long business identifiers to keep unique indexes
+     * stable across different database dialects.
+     *
+     * @param itemId original business identifier
+     * @return sha256 hex string
+     */
+    private String createItemHash(String itemId) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(itemId.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create item hash", e);
+        }
     }
 
     /**
