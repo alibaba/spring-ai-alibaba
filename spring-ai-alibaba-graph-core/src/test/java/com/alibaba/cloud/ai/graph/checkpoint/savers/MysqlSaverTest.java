@@ -32,6 +32,7 @@ import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Collection;
@@ -133,11 +134,64 @@ public class MysqlSaverTest {
     }
 
     private static Checkpoint checkpoint(String value) {
-        return Checkpoint.builder()
+        return checkpoint(null, value);
+    }
+
+    private static Checkpoint checkpoint(String id, String value) {
+        Checkpoint.Builder builder = Checkpoint.builder()
                 .nodeId("agent_1")
                 .nextNodeId(END)
-                .state(Map.of("value", value))
+                .state(Map.of("value", value));
+        if (id != null) {
+            builder.id(id);
+        }
+        return builder.build();
+    }
+
+    private static void forceSameSavedAt(String threadId) throws SQLException {
+        try (Connection connection = DATA_SOURCE.getConnection();
+                PreparedStatement statement = connection.prepareStatement("""
+                        UPDATE GRAPH_CHECKPOINT c
+                        INNER JOIN GRAPH_THREAD t ON c.thread_id = t.thread_id
+                        SET c.saved_at = TIMESTAMP('2026-01-01 00:00:00')
+                        WHERE t.thread_name = ? AND t.is_released != TRUE
+                        """)) {
+            statement.setString(1, threadId);
+            assertEquals(2, statement.executeUpdate());
+        }
+    }
+
+    private static String firstCheckpointId() {
+        return "00000000-0000-0000-0000-000000000001";
+    }
+
+    private static String secondCheckpointId() {
+        return "00000000-0000-0000-0000-000000000002";
+    }
+
+    @Test
+    public void testMysqlSaverOrdersCheckpointsByInsertSequenceWhenSavedAtTies() throws Exception {
+        var saver = MysqlSaver.builder()
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .dataSource(DATA_SOURCE)
+                .maxCachedThreads(0)
                 .build();
+
+        String threadId = "mysql-checkpoint-sequence-thread";
+        var firstCheckpoint = checkpoint(firstCheckpointId(), "first");
+        var secondCheckpoint = checkpoint(secondCheckpointId(), "second");
+
+        saver.put(config(threadId), firstCheckpoint);
+        saver.put(config(threadId), secondCheckpoint);
+        forceSameSavedAt(threadId);
+
+        Collection<Checkpoint> history = saver.list(config(threadId));
+        assertEquals(2, history.size());
+        assertEquals(secondCheckpoint.getId(), history.iterator().next().getId());
+
+        var latest = saver.get(config(threadId));
+        assertTrue(latest.isPresent());
+        assertEquals(secondCheckpoint.getId(), latest.get().getId());
     }
 
     @Test
