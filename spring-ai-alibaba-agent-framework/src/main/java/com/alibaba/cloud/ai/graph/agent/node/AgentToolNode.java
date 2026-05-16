@@ -826,7 +826,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * Get the executor for tool execution from config or use default.
 	 */
 	private Executor getToolExecutor(RunnableConfig config) {
-		return ParallelNode.getExecutor(config, AGENT_TOOL_NAME);
+		return config.metadata(ParallelNode.formatNodeId(AGENT_TOOL_NAME))
+			.filter(value -> value instanceof Executor)
+			.map(Executor.class::cast)
+			.orElseGet(() -> ParallelNode.getExecutor(config, AGENT_TOOL_NAME));
 	}
 
 	private ToolCallback resolve(String toolName, RunnableConfig config) {

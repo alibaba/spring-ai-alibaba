@@ -46,6 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -182,29 +184,40 @@ class AgentToolNodeIntegrationTest {
 					createToolCall("call-1", "tool1", "{}"), createToolCall("call-2", "tool2", "{}"));
 
 			OverAllState state = createStateWithMessages(assistantMessage);
-			RunnableConfig config = RunnableConfig.builder().build();
+			ExecutorService invocationExecutor = Executors.newSingleThreadExecutor();
+			ExecutorService toolExecutor = Executors.newFixedThreadPool(2);
+			RunnableConfig config = RunnableConfig.builder()
+				.addParallelNodeExecutor(RunnableConfig.AGENT_TOOL_NAME, toolExecutor)
+				.build();
 
 			// When
-			CompletableFuture<Map<String, Object>> futureResult = CompletableFuture.supplyAsync(() -> {
-				try {
-					return node.apply(state, config);
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			});
+			try {
+				CompletableFuture<Map<String, Object>> futureResult = CompletableFuture.supplyAsync(() -> {
+					try {
+						return node.apply(state, config);
+					}
+					catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				}, invocationExecutor);
 
-			// Wait for both tools to start (proves parallel execution)
-			boolean bothStarted = startLatch.await(2, TimeUnit.SECONDS);
-			assertTrue(bothStarted, "Both tools should start in parallel");
+				// Wait for both tools to start (proves parallel execution)
+				boolean bothStarted = startLatch.await(5, TimeUnit.SECONDS);
+				assertTrue(bothStarted, "Both tools should start in parallel");
 
-			// Allow tools to complete
-			continueLatch.countDown();
+				// Allow tools to complete
+				continueLatch.countDown();
 
-			// Then
-			Map<String, Object> result = futureResult.get(5, TimeUnit.SECONDS);
-			ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
-			assertEquals(2, responseMessage.getResponses().size());
+				// Then
+				Map<String, Object> result = futureResult.get(5, TimeUnit.SECONDS);
+				ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
+				assertEquals(2, responseMessage.getResponses().size());
+			}
+			finally {
+				continueLatch.countDown();
+				invocationExecutor.shutdownNow();
+				toolExecutor.shutdownNow();
+			}
 		}
 
 		@Test
