@@ -55,7 +55,8 @@ public class AgentCardConverterUtil {
 			.security(agentCard.getSecurity())
 			.defaultInputModes(agentCard.getDefaultInputModes())
 			.defaultOutputModes(agentCard.getDefaultOutputModes())
-			.supportsAuthenticatedExtendedCard(agentCard.getSupportsAuthenticatedExtendedCard())
+			.supportsAuthenticatedExtendedCard(
+					Boolean.TRUE.equals(agentCard.getSupportsAuthenticatedExtendedCard()))
 			.build();
 	}
 
