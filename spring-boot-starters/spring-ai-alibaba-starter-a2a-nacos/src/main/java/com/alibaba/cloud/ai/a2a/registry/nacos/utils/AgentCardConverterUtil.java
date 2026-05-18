@@ -56,7 +56,7 @@ public class AgentCardConverterUtil {
 			.defaultInputModes(agentCard.getDefaultInputModes())
 			.defaultOutputModes(agentCard.getDefaultOutputModes())
 			.supportsAuthenticatedExtendedCard(
-					Boolean.TRUE.equals(agentCard.getSupportsAuthenticatedExtendedCard()))
+				Boolean.TRUE.equals(agentCard.getSupportsAuthenticatedExtendedCard()))
 			.build();
 	}
 
@@ -142,7 +142,8 @@ public class AgentCardConverterUtil {
 		card.setSecurity(agentCard.security());
 		card.setDefaultInputModes(agentCard.defaultInputModes());
 		card.setDefaultOutputModes(agentCard.defaultOutputModes());
-		card.setSupportsAuthenticatedExtendedCard(agentCard.supportsAuthenticatedExtendedCard());
+		card.setSupportsAuthenticatedExtendedCard(
+				Boolean.TRUE.equals(agentCard.supportsAuthenticatedExtendedCard()));
 		return card;
 	}
 
