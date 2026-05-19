@@ -341,11 +341,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.empty();
 				} else {
 					ChatResponse lastChatResponse = lastChatResponseRef.get();
-					// For completion status with AGENT_MODEL_NAME, create a StreamingOutput with null message to avoid chunk content
-					// This ensures that completion events don't carry the full text content in the chunk field
+					// FINISHED StreamingOutput omits message for agent/graph LLM nodes (tool/hook unchanged); full text still in done(state).
 					Message messageForCompletion = lastChatResponse.getResult().getOutput();
-					if (nodeId.startsWith(RunnableConfig.AGENT_MODEL_NAME)) {
-						// For agent model completion, use null message to prevent chunk content
+					if (shouldOmitMessageOnStreamCompletion(nodeId)) {
 						messageForCompletion = null;
 					}
 					GraphResponse<NodeOutput> aggregatedResponse = GraphResponse
@@ -494,6 +492,16 @@ public class NodeExecutor extends BaseGraphExecutor {
     private static String normalized(String value) {
         return StringUtils.hasText(value) ? value : null;
     }
+
+	/**
+	 * Whether the FINISHED {@link StreamingOutput} after a {@link ChatResponse} flux should omit
+	 * {@link Message} text (agent model and ordinary graph LLM nodes). Tool/hook streams keep the message.
+	 */
+	private static boolean shouldOmitMessageOnStreamCompletion(String nodeId) {
+		return nodeId.startsWith(RunnableConfig.AGENT_MODEL_NAME)
+				|| (!nodeId.startsWith(RunnableConfig.AGENT_TOOL_NAME)
+						&& !nodeId.startsWith(RunnableConfig.AGENT_HOOK_NAME_PREFIX));
+	}
 
 	/**
 	 * Processes a Flux<GraphResponse<NodeOutput>> with embedded flux handling logic.
