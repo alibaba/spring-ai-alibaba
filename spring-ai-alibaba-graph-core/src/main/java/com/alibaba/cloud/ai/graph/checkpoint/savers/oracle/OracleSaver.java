@@ -15,10 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.checkpoint.savers.oracle;
 
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.jdbc.AbstractJdbcCheckpointSaver;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 
 import java.io.IOException;
@@ -29,16 +28,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.locks.ReentrantLock;
 
 import javax.sql.DataSource;
 
@@ -111,7 +106,7 @@ import static java.lang.String.format;
  * </pre>
  * </p>
  */
-public class OracleSaver implements BaseCheckpointSaver {
+public class OracleSaver extends AbstractJdbcCheckpointSaver {
 
 	private static final Logger log = LoggerFactory.getLogger(OracleSaver.class);
 
@@ -228,9 +223,6 @@ public class OracleSaver implements BaseCheckpointSaver {
 	private final DataSource dataSource;
 	private final CreateOption createOption;
 	private final StateSerializer stateSerializer;
-	private final Map<String, Checkpoint> latestCheckpointCache;
-	private final ReentrantLock lock = new ReentrantLock();
-	private final int maxCachedThreads;
 
 	/**
 	 * Private constructor used by the builder to create a new instance of
@@ -239,11 +231,10 @@ public class OracleSaver implements BaseCheckpointSaver {
 	 * @param builder the builder
 	 */
 	private OracleSaver(Builder builder) {
+		super(builder.maxCachedThreads);
 		this.dataSource = builder.dataSource;
 		this.createOption = builder.createOption;
 		this.stateSerializer = Objects.requireNonNull(builder.stateSerializer, "stateSerializer cannot be null");
-		this.maxCachedThreads = builder.maxCachedThreads;
-		this.latestCheckpointCache = createLatestCheckpointCache(builder.maxCachedThreads);
 		initTables();
 	}
 
@@ -374,7 +365,8 @@ public class OracleSaver implements BaseCheckpointSaver {
 	/**
 	 * Loads full checkpoint history on demand without retaining it in cache.
 	 */
-	private LinkedList<Checkpoint> selectCheckpoints(String threadName) throws Exception {
+	@Override
+	protected LinkedList<Checkpoint> selectCheckpoints(String threadName) throws Exception {
 		LinkedList<Checkpoint> checkpoints = new LinkedList<>();
 		ObjectMapper objectMapper = osonObjectMapper();
 		try (Connection connection = dataSource.getConnection();
@@ -394,7 +386,8 @@ public class OracleSaver implements BaseCheckpointSaver {
 		return checkpoints;
 	}
 
-	private Optional<Checkpoint> selectLatestCheckpoint(String threadName) throws Exception {
+	@Override
+	protected Optional<Checkpoint> selectLatestCheckpoint(String threadName) throws Exception {
 		ObjectMapper objectMapper = osonObjectMapper();
 		try (Connection connection = dataSource.getConnection();
 				PreparedStatement preparedStatement = connection.prepareStatement(SELECT_LATEST_CHECKPOINT)) {
@@ -413,7 +406,8 @@ public class OracleSaver implements BaseCheckpointSaver {
 		}
 	}
 
-	private Optional<Checkpoint> selectCheckpointById(String threadName, String checkpointId) throws Exception {
+	@Override
+	protected Optional<Checkpoint> selectCheckpointById(String threadName, String checkpointId) throws Exception {
 		ObjectMapper objectMapper = osonObjectMapper();
 		try (Connection connection = dataSource.getConnection();
 				PreparedStatement preparedStatement = connection.prepareStatement(SELECT_CHECKPOINT_BY_ID)) {
@@ -433,7 +427,8 @@ public class OracleSaver implements BaseCheckpointSaver {
 		}
 	}
 
-	private void insertCheckpoint(String threadName, Checkpoint checkpoint) throws Exception {
+	@Override
+	protected void insertCheckpoint(String threadName, Checkpoint checkpoint) throws Exception {
 		Connection conn = null;
 
 		try (Connection ignored = conn = dataSource.getConnection()) {
@@ -467,7 +462,8 @@ public class OracleSaver implements BaseCheckpointSaver {
 		}
 	}
 
-	private void updateCheckpoint(String threadName, String checkpointId, Checkpoint checkpoint) throws Exception {
+	@Override
+	protected void updateCheckpoint(String threadName, String checkpointId, Checkpoint checkpoint) throws Exception {
 		Connection conn = null;
 
 		try (Connection ignored = conn = dataSource.getConnection()) {
@@ -499,7 +495,8 @@ public class OracleSaver implements BaseCheckpointSaver {
 		}
 	}
 
-	private void releaseThread(String threadName) throws Exception {
+	@Override
+	protected void releaseThread(String threadName) throws Exception {
 		Connection conn = null;
 
 		try (Connection ignored = conn = dataSource.getConnection()) {
@@ -547,137 +544,6 @@ public class OracleSaver implements BaseCheckpointSaver {
 		}
 		catch (SQLException sqlException) {
 			throw new RuntimeException("Unable to create tables", sqlException);
-		}
-	}
-
-	/**
-	 * Lists active checkpoints for the configured thread.
-	 */
-	@Override
-	public Collection<Checkpoint> list(RunnableConfig config) {
-		lock.lock();
-		try {
-			String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
-			LinkedList<Checkpoint> checkpoints = selectCheckpoints(threadName);
-			if (!checkpoints.isEmpty()) {
-				cacheLatest(threadName, checkpoints.peek());
-			}
-			return Collections.unmodifiableCollection(checkpoints);
-		}
-		catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
-		finally {
-			lock.unlock();
-		}
-	}
-
-	/**
-	 * Gets a checkpoint for the configured thread.
-	 */
-	@Override
-	public Optional<Checkpoint> get(RunnableConfig config) {
-		lock.lock();
-		try {
-			String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
-			if (config.checkPointId().isPresent()) {
-				return selectCheckpointById(threadName, config.checkPointId().get());
-			}
-
-			Optional<Checkpoint> cached = getCachedLatest(threadName);
-			if (cached.isPresent()) {
-				return cached;
-			}
-
-			Optional<Checkpoint> latest = selectLatestCheckpoint(threadName);
-			latest.ifPresent(checkpoint -> cacheLatest(threadName, checkpoint));
-			return latest;
-		}
-		catch (Exception ex) {
-			throw new RuntimeException(ex);
-		}
-		finally {
-			lock.unlock();
-		}
-	}
-
-	/**
-	 * Inserts or updates a checkpoint.
-	 */
-	@Override
-	public RunnableConfig put(RunnableConfig config, Checkpoint checkpoint) throws Exception {
-		lock.lock();
-		try {
-			String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
-			if (config.checkPointId().isPresent()) {
-				String checkpointId = config.checkPointId().get();
-				updateCheckpoint(threadName, checkpointId, checkpoint);
-				getCachedLatest(threadName)
-						.filter(latest -> latest.getId().equals(checkpointId))
-						.ifPresent(latest -> cacheLatest(threadName, checkpoint));
-				return config;
-			}
-
-			insertCheckpoint(threadName, checkpoint);
-			cacheLatest(threadName, checkpoint);
-			return RunnableConfig.builder(config)
-					.checkPointId(checkpoint.getId())
-					.build();
-		}
-		finally {
-			lock.unlock();
-		}
-	}
-
-	/**
-	 * Releases the active thread and returns the released checkpoints.
-	 */
-	@Override
-	public Tag release(RunnableConfig config) throws Exception {
-		lock.lock();
-		try {
-			String threadName = config.threadId().orElse(THREAD_ID_DEFAULT);
-			LinkedList<Checkpoint> checkpoints = selectCheckpoints(threadName);
-			releaseThread(threadName);
-			removeCachedLatest(threadName);
-			return new Tag(threadName, checkpoints);
-		}
-		finally {
-			lock.unlock();
-		}
-	}
-
-	/**
-	 * Creates a bounded LRU cache for latest checkpoints.
-	 */
-	private static Map<String, Checkpoint> createLatestCheckpointCache(int maxCachedThreads) {
-		if (maxCachedThreads == 0) {
-			return Collections.emptyMap();
-		}
-		return new LinkedHashMap<>(16, 0.75f, true) {
-			@Override
-			protected boolean removeEldestEntry(Map.Entry<String, Checkpoint> eldest) {
-				return size() > maxCachedThreads;
-			}
-		};
-	}
-
-	private Optional<Checkpoint> getCachedLatest(String threadName) {
-		if (maxCachedThreads == 0) {
-			return Optional.empty();
-		}
-		return Optional.ofNullable(latestCheckpointCache.get(threadName));
-	}
-
-	private void cacheLatest(String threadName, Checkpoint checkpoint) {
-		if (maxCachedThreads > 0) {
-			latestCheckpointCache.put(threadName, checkpoint);
-		}
-	}
-
-	private void removeCachedLatest(String threadName) {
-		if (maxCachedThreads > 0) {
-			latestCheckpointCache.remove(threadName);
 		}
 	}
 
