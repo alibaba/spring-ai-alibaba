@@ -772,9 +772,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 				if (value instanceof Map<?, ?> resultMap) {
 					return copyStateMap(resultMap);
 				}
-				Map<String, Object> state = new HashMap<>();
-				state.put(graphFluxStateKey(graphFlux), value);
-				return state;
 			}
 		}
 

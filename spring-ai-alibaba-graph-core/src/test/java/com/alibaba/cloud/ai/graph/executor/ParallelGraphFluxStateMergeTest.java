@@ -53,6 +53,16 @@ public class ParallelGraphFluxStateMergeTest {
 		assertEquals(List.of("left", "right"), finalState.value("join_results", List.of()));
 	}
 
+	@Test
+	void testParallelGraphFluxDoneNonMapKeepsGraphResponseState() throws Exception {
+		CompiledGraph graph = buildGraphWithNonMapDoneValue();
+
+		OverAllState finalState = graph.invoke(Map.of()).orElseThrow();
+
+		assertEquals("left-token", finalState.value("join_left_payload", ""));
+		assertEquals("right", finalState.value("join_right", ""));
+	}
+
 	private static CompiledGraph buildGraph() throws Exception {
 		StateGraph stateGraph = new StateGraph(() -> {
 			Map<String, KeyStrategy> strategies = new HashMap<>();
@@ -78,6 +88,33 @@ public class ParallelGraphFluxStateMergeTest {
 						"join_left", state.value("left_result", ""),
 						"join_right", state.value("right_result", ""),
 						"join_results", state.value("parallel_results", List.of()));
+			}))
+			.addEdge(START, "left")
+			.addEdge(START, "right")
+			.addEdge("left", "join")
+			.addEdge("right", "join")
+			.addEdge("join", END);
+		return stateGraph.compile();
+	}
+
+	private static CompiledGraph buildGraphWithNonMapDoneValue() throws Exception {
+		StateGraph stateGraph = new StateGraph(() -> {
+			Map<String, KeyStrategy> strategies = new HashMap<>();
+			strategies.put("left_stream", new ReplaceStrategy());
+			strategies.put("right_result", new ReplaceStrategy());
+			strategies.put("join_left_payload", new ReplaceStrategy());
+			strategies.put("join_right", new ReplaceStrategy());
+			return strategies;
+		}).addNode("left", node_async(state -> Map.of("left_stream",
+				Flux.just(GraphResponse.done("left-token")))))
+			.addNode("right", node_async(state -> Map.of("right_stream",
+					Flux.just(GraphResponse.done(Map.of("right_result", "right"))))))
+			.addNode("join", node_async(state -> {
+				GraphResponse<?> leftResponse = assertInstanceOf(
+						GraphResponse.class, state.value("left_stream", Object.class).orElseThrow());
+				return Map.of(
+						"join_left_payload", leftResponse.resultValue().orElse(""),
+						"join_right", state.value("right_result", ""));
 			}))
 			.addEdge(START, "left")
 			.addEdge(START, "right")
