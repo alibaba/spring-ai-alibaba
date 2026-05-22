@@ -87,6 +87,33 @@ class A2aNodeActionWithConfigTests {
 	}
 
 	@Test
+	void toFluxDrainsCompletedFuturesWithoutRecursiveStackGrowth() throws Exception {
+		int count = 20_000;
+		AsyncGenerator<NodeOutput> generator = new AsyncGenerator<>() {
+			private final AtomicInteger index = new AtomicInteger();
+
+			@Override
+			public Data<NodeOutput> next() {
+				int step = index.getAndIncrement();
+				if (step < count) {
+					return Data.of(NodeOutput.of("node-" + step, "", new OverAllState(), new EmptyUsage()));
+				}
+				return Data.done(Map.of("result", "ok"));
+			}
+		};
+
+		Flux<GraphResponse<NodeOutput>> flux = invokeToFlux(generator);
+
+		List<GraphResponse<NodeOutput>> responses = flux.collectList().block(Duration.ofSeconds(5));
+
+		assertNotNull(responses);
+		assertEquals(count + 1, responses.size());
+		assertEquals("node-0", responses.get(0).getOutput().getNow(null).node());
+		assertEquals("node-" + (count - 1), responses.get(count - 1).getOutput().getNow(null).node());
+		assertTrue(responses.get(count).isDone());
+	}
+
+	@Test
 	void toFluxPropagatesErrors() throws Exception {
 		AsyncGenerator<NodeOutput> generator = new AsyncGenerator<>() {
 			private final AtomicInteger index = new AtomicInteger();

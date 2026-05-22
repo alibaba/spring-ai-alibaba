@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2026 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,9 +24,13 @@ import com.alibaba.nacos.api.ai.model.a2a.AgentSkill;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 /**
  * Tests for {@link AgentCardConverterUtil}.
+ *
+ * Verifies that null Boolean fields (e.g. supportsAuthenticatedExtendedCard) do not
+ * cause NullPointerException during conversion.
  */
 class AgentCardConverterUtilTest {
 
@@ -49,6 +53,80 @@ class AgentCardConverterUtilTest {
 				AgentCardConverterUtil.convertToA2aAgentCard(agentCard);
 
 		assertThat(converted.supportsAuthenticatedExtendedCard()).isFalse();
+	}
+
+	@Test
+	void convertToA2aAgentCard_withNullSupportsAuthenticatedExtendedCard_shouldNotThrow() {
+		AgentCard nacosCard = createMinimalAgentCard();
+		// supportsAuthenticatedExtendedCard is left null (default)
+
+		assertThatNoException().isThrownBy(() -> {
+			io.a2a.spec.AgentCard result = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
+			assertThat(result).isNotNull();
+			assertThat(result.supportsAuthenticatedExtendedCard()).isFalse();
+		});
+	}
+
+	@Test
+	void convertToA2aAgentCard_withTrueSupportsAuthenticatedExtendedCard_shouldReturnTrue() {
+		AgentCard nacosCard = createMinimalAgentCard();
+		nacosCard.setSupportsAuthenticatedExtendedCard(true);
+
+		io.a2a.spec.AgentCard result = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
+		assertThat(result).isNotNull();
+		assertThat(result.supportsAuthenticatedExtendedCard()).isTrue();
+	}
+
+	@Test
+	void convertToA2aAgentCard_withFalseSupportsAuthenticatedExtendedCard_shouldReturnFalse() {
+		AgentCard nacosCard = createMinimalAgentCard();
+		nacosCard.setSupportsAuthenticatedExtendedCard(false);
+
+		io.a2a.spec.AgentCard result = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
+		assertThat(result).isNotNull();
+		assertThat(result.supportsAuthenticatedExtendedCard()).isFalse();
+	}
+
+	@Test
+	void convertToA2aAgentCard_withNullAgentCard_shouldReturnNull() {
+		assertThat(AgentCardConverterUtil.convertToA2aAgentCard(null)).isNull();
+	}
+
+	@Test
+	void convertToNacosAgentCard_withNullSupportsAuthenticatedExtendedCard_shouldNotThrow() {
+		io.a2a.spec.AgentCard a2aCard = new io.a2a.spec.AgentCard.Builder().name("test-agent")
+			.description("Test Agent")
+			.url("http://localhost:8080")
+			.version("1.0.0")
+			.protocolVersion("0.2")
+			.preferredTransport("JSONRPC")
+			.defaultInputModes(List.of("text/plain"))
+			.defaultOutputModes(List.of("text/plain"))
+			.skills(List.of())
+			.capabilities(new io.a2a.spec.AgentCapabilities.Builder().streaming(false).build())
+			// supportsAuthenticatedExtendedCard not set — defaults to null in record
+			.build();
+
+		assertThatNoException().isThrownBy(() -> {
+			AgentCard result = AgentCardConverterUtil.convertToNacosAgentCard(a2aCard);
+			assertThat(result).isNotNull();
+			assertThat(result.getSupportsAuthenticatedExtendedCard()).isFalse();
+		});
+	}
+
+	private static AgentCard createMinimalAgentCard() {
+		AgentCard card = new AgentCard();
+		card.setProtocolVersion("0.3.0");
+		card.setName("test-agent");
+		card.setDescription("Test Agent");
+		card.setVersion("1.0.0");
+		card.setUrl("http://localhost:8080");
+		card.setPreferredTransport("JSONRPC");
+		card.setCapabilities(createCapabilities());
+		card.setSkills(List.of(createSkill()));
+		card.setDefaultInputModes(List.of("text/plain"));
+		card.setDefaultOutputModes(List.of("text/plain"));
+		return card;
 	}
 
 	private static AgentCapabilities createCapabilities() {

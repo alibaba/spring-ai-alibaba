@@ -52,7 +52,7 @@ public class RemoteAgentCardProvider implements AgentCardProvider {
 			AgentCard finalAgentCard;
 			AgentCard publicAgentCard = A2A.getAgentCard(this.url);
 			finalAgentCard = publicAgentCard;
-			if (publicAgentCard.supportsAuthenticatedExtendedCard()) {
+			if (Boolean.TRUE.equals(publicAgentCard.supportsAuthenticatedExtendedCard())) {
 				Map<String, String> authHeaders = new HashMap<>();
 				authHeaders.put("Authorization", "Bearer dummy-token-for-extended-card");
 				finalAgentCard = A2A.getAgentCard(this.url, "/agent/authenticatedExtendedCard", authHeaders);
