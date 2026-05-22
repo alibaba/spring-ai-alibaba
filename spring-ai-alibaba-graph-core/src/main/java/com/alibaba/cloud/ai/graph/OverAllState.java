@@ -117,6 +117,20 @@ public final class OverAllState implements Serializable {
 	}
 
 	/**
+	 * Create a new state copy with the provided keys removed.
+	 * @param keysToReset keys that should be removed from the copied state
+	 * @return copied state with reset keys removed
+	 */
+	public OverAllState withResetKeys(Set<String> keysToReset) {
+		if (keysToReset == null || keysToReset.isEmpty()) {
+			return this;
+		}
+		Map<String, Object> newData = new HashMap<>(this.data);
+		keysToReset.forEach(newData::remove);
+		return new OverAllState(newData, new HashMap<>(this.keyStrategies), this.store);
+	}
+
+	/**
 	 * Instantiates a new Over all state.
 	 * @param data the data
 	 */

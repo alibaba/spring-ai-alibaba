@@ -18,13 +18,17 @@ package com.alibaba.cloud.ai.graph.internal.node;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.resumeSubGraphId;
@@ -79,18 +83,14 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 				return CompletableFuture
 					.failedFuture(new IllegalStateException("Missing CheckpointSaver in parent graph!"));
 			}
-
-			// Check saver are the same instance
-			if (parentSaver.get() == subGraphSaver.get()) {
-				subGraphRunnableConfig = RunnableConfig.builder(config)
-					.threadId(config.threadId()
-						.map(threadId -> format("%s_%s", threadId, subGraphId(nodeId)))
-						.orElseGet(() -> subGraphId(nodeId)))
-					.nextNode(null)
-					.checkPointId(null)
-					.build();
-				subGraphRunnableConfig.clearContext();
-			}
+			subGraphRunnableConfig = RunnableConfig.builder(config)
+				.threadId(config.threadId()
+					.map(threadId -> format("%s_%s", threadId, subGraphId(nodeId)))
+					.orElseGet(() -> subGraphId(nodeId)))
+				.nextNode(null)
+				.checkPointId(null)
+				.build();
+			subGraphRunnableConfig.clearContext();
 		}
 
 		final CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
@@ -100,7 +100,8 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 				subGraphRunnableConfig = subGraph.updateState(subGraphRunnableConfig, state.data());
 			}
 
-			var fluxStream = subGraph.graphResponseStream(state, subGraphRunnableConfig);
+			OverAllState subGraphInitState = buildSubGraphInitState(state);
+			var fluxStream = subGraph.graphResponseStream(subGraphInitState, subGraphRunnableConfig);
 
 			future.complete(Map.of(outputKeyToParent(nodeId), fluxStream));
 
@@ -111,5 +112,15 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 		}
 
 		return future;
+	}
+
+	private OverAllState buildSubGraphInitState(OverAllState parentState) {
+		Map<String, KeyStrategy> subKeyStrategies = subGraph.getKeyStrategyMap();
+		Set<String> appendKeys = subKeyStrategies.entrySet()
+			.stream()
+			.filter(entry -> entry.getValue() instanceof AppendStrategy)
+			.map(Map.Entry::getKey)
+			.collect(Collectors.toSet());
+		return parentState.withResetKeys(appendKeys);
 	}
 }
