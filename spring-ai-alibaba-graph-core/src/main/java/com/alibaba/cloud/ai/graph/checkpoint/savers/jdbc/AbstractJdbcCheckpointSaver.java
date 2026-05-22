@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.common.LatestCheckpointCache
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -127,6 +128,7 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 			if (config.checkPointId().isPresent()) {
 				String checkpointId = config.checkPointId().get();
 				updateCheckpoint(threadId, checkpointId, checkpoint);
+				deleteRetainedCheckpoints(threadId, config);
 				latestCheckpointCache.get(threadId)
 						.filter(latest -> latest.getId().equals(checkpointId))
 						.ifPresent(latest -> latestCheckpointCache.put(threadId, checkpoint));
@@ -134,6 +136,7 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 			}
 
 			insertCheckpoint(threadId, checkpoint);
+			deleteRetainedCheckpoints(threadId, config);
 			latestCheckpointCache.put(threadId, checkpoint);
 			return RunnableConfig.builder(config)
 					.checkPointId(checkpoint.getId())
@@ -213,6 +216,34 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 	 * @throws Exception when the concrete saver cannot update the checkpoint
 	 */
 	protected abstract void updateCheckpoint(String threadId, String checkpointId, Checkpoint checkpoint) throws Exception;
+
+	/**
+	 * Deletes active checkpoints by id for a thread. Concrete savers can override this
+	 * to support {@code checkpoints.numRetained}; the default keeps all persisted
+	 * checkpoints.
+	 *
+	 * @param threadId thread name/id used by the concrete saver schema
+	 * @param checkpointIds checkpoint ids to delete
+	 * @throws Exception when the concrete saver cannot delete checkpoints
+	 */
+	protected void deleteCheckpoints(String threadId, Collection<String> checkpointIds) throws Exception {
+	}
+
+	private void deleteRetainedCheckpoints(String threadId, RunnableConfig config) throws Exception {
+		Optional<Integer> retained = checkpointsNumRetained(config);
+		if (retained.isEmpty()) {
+			return;
+		}
+		LinkedList<Checkpoint> checkpoints = selectCheckpoints(threadId);
+		if (checkpoints.size() <= retained.get()) {
+			return;
+		}
+		List<String> checkpointIds = checkpoints.stream()
+				.skip(retained.get())
+				.map(Checkpoint::getId)
+				.toList();
+		deleteCheckpoints(threadId, checkpointIds);
+	}
 
 	/**
 	 * Marks the active thread as released in the backing database.

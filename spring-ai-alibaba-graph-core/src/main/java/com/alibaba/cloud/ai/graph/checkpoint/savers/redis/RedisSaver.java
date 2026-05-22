@@ -317,6 +317,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 				checkpoints.push(checkpoint);
 			}
 
+			retainLatestCheckpoints(checkpoints, config);
 			bucket.set(serializeCheckpoints(checkpoints));
 			if (ttl > 0) {
 				bucket.expire(java.time.Duration.ofMillis(ttlUnit.toMillis(ttl)));

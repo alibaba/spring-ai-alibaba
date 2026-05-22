@@ -104,6 +104,32 @@ public class FileSystemSaverCacheTest {
 	}
 
 	@Test
+	public void shouldRetainOnlyLatestCheckpoints() throws Exception {
+		FileSystemSaver saver = FileSystemSaver.builder()
+				.targetFolder(tempDir)
+				.build();
+		RunnableConfig config = RunnableConfig.builder()
+				.threadId("thread-retained")
+				.checkpointsNumRetained(2)
+				.build();
+
+		Checkpoint firstCheckpoint = checkpoint("v1");
+		Checkpoint secondCheckpoint = checkpoint("v2");
+		Checkpoint thirdCheckpoint = checkpoint("v3");
+
+		saver.put(config, firstCheckpoint);
+		saver.put(config, secondCheckpoint);
+		saver.put(config, thirdCheckpoint);
+
+		var checkpoints = java.util.List.copyOf(saver.list(config));
+		assertEquals(2, checkpoints.size());
+		assertEquals(thirdCheckpoint.getId(), checkpoints.get(0).getId());
+		assertEquals(secondCheckpoint.getId(), checkpoints.get(1).getId());
+		assertTrue(saver.get(config).orElseThrow().getId().equals(thirdCheckpoint.getId()));
+		assertTrue(saver.get(RunnableConfig.builder(config).checkPointId(firstCheckpoint.getId()).build()).isEmpty());
+	}
+
+	@Test
 	public void deleteFileShouldClearLatestCache() throws Exception {
 		FileSystemSaver saver = FileSystemSaver.builder()
 				.targetFolder(tempDir)

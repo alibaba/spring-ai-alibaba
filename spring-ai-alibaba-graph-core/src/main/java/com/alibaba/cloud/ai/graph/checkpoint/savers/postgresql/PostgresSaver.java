@@ -28,6 +28,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -226,6 +228,14 @@ public class PostgresSaver extends AbstractJdbcCheckpointSaver {
 			UPDATE GraphThread
 			SET is_released = TRUE
 			WHERE thread_name = ? AND is_released = FALSE
+			""";
+
+	private static final String DELETE_CHECKPOINTS = """
+			DELETE FROM GraphCheckpoint c
+			USING GraphThread t
+			WHERE c.thread_id = t.thread_id
+			  AND t.thread_name = ? AND t.is_released = FALSE
+			  AND c.checkpoint_id IN (%s)
 			""";
 
 	/**
@@ -507,6 +517,26 @@ public class PostgresSaver extends AbstractJdbcCheckpointSaver {
 			log.error("Error updating checkpoint with id {} in thread {}", checkpoint.getId(), threadId, ex);
 			rollback(conn, checkpoint, threadId);
 			throw new Exception("Unable to update checkpoint", ex);
+		}
+	}
+
+	@Override
+	protected void deleteCheckpoints(String threadId, Collection<String> checkpointIds) throws Exception {
+		if (checkpointIds.isEmpty()) {
+			return;
+		}
+		try (Connection conn = getConnection();
+				PreparedStatement ps = conn.prepareStatement(
+						DELETE_CHECKPOINTS.formatted(String.join(", ", Collections.nCopies(checkpointIds.size(), "?"))))) {
+			ps.setString(1, threadId);
+			int index = 2;
+			for (String checkpointId : checkpointIds) {
+				ps.setObject(index++, UUID.fromString(checkpointId), Types.OTHER);
+			}
+			ps.executeUpdate();
+		}
+		catch (SQLException ex) {
+			throw new Exception("Unable to delete retained checkpoints", ex);
 		}
 	}
 
