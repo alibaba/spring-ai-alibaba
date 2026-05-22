@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.a2a;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.internal.node.SubGraphRunnableConfigBridge;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
@@ -77,6 +78,8 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
 	private CompileConfig parentCompileConfig;
 
+	private CompileConfig childCompileConfig;
+
 
 	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, String agentName, boolean includeContents, String outputKeyToParent, String instruction, boolean streaming) {
 		this.agentName = agentName;
@@ -88,9 +91,19 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		this.shareState = false;
 	}
 
-	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, String agentName, boolean includeContents, String outputKeyToParent, String instruction, boolean streaming, boolean shareState, CompileConfig compileConfig) {
+	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, String agentName, boolean includeContents,
+			String outputKeyToParent, String instruction, boolean streaming, boolean shareState,
+			CompileConfig compileConfig) {
+		this(agentCard, agentName, includeContents, outputKeyToParent, instruction, streaming, shareState,
+				compileConfig, compileConfig);
+	}
+
+	public A2aNodeActionWithConfig(AgentCardWrapper agentCard, String agentName, boolean includeContents,
+			String outputKeyToParent, String instruction, boolean streaming, boolean shareState,
+			CompileConfig parentCompileConfig, CompileConfig childCompileConfig) {
 		this(agentCard, agentName, includeContents, outputKeyToParent, instruction, streaming);
-		this.parentCompileConfig = compileConfig;
+		this.parentCompileConfig = parentCompileConfig;
+		this.childCompileConfig = childCompileConfig;
 		this.shareState = shareState;
 	}
 
@@ -117,13 +130,18 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		if (shareState) {
 			return config;
 		}
-		return RunnableConfig.builder(config)
-				.threadId(config.threadId()
-						.map(threadId -> format("%s_%s", threadId, subGraphId()))
-						.orElseGet(this::subGraphId))
-				.nextNode(null)
-				.checkPointId(null)
-				.build();
+		if (parentCompileConfig == null) {
+			return RunnableConfig.builder(config)
+					.threadId(config.threadId()
+							.map(threadId -> format("%s_%s", threadId, subGraphId()))
+							.orElseGet(this::subGraphId))
+					.nextNode(null)
+					.checkPointId(null)
+					.build();
+		}
+		CompileConfig childConfig = childCompileConfig != null ? childCompileConfig : parentCompileConfig;
+		return SubGraphRunnableConfigBridge.prepareChildRunnableConfig(config, agentName, subGraphId(),
+				parentCompileConfig, childConfig);
 	}
 
 	public String subGraphId() {
