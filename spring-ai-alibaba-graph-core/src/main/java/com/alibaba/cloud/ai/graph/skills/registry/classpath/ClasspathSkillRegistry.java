@@ -27,6 +27,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,6 +81,9 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	private final Map<String, String> jarSkillContentCache = new HashMap<>();
 	// JAR FileSystem for classpath resources (only created if resource is in JAR)
 	private FileSystem jarFileSystem;
+	// Whether this registry instance created (and thus owns) the JAR FileSystem.
+	// If false, the FileSystem was pre-existing and should NOT be closed by this instance.
+	private boolean ownsJarFileSystem;
 
 	private ClasspathSkillRegistry(Builder builder) {
 		this.classpathPath = builder.classpathPath != null && !builder.classpathPath.isEmpty()
@@ -150,7 +154,16 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 					// Resource is in a JAR file (production mode)
 					// Create or reuse JAR FileSystem
 					if (jarFileSystem == null) {
-						jarFileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+						try {
+							jarFileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+							ownsJarFileSystem = true;
+						}
+						catch (FileSystemAlreadyExistsException e) {
+							// Another ClasspathSkillRegistry (or other code) already created
+							// a FileSystem for this JAR. Reuse the existing one.
+							jarFileSystem = FileSystems.getFileSystem(uri);
+							ownsJarFileSystem = false;
+						}
 					}
 					// Get path within the JAR file system
 					// URI format: jar:file:/path/to.jar!/skills
@@ -462,18 +475,23 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	}
 
 	/**
-	 * Closes the JAR FileSystem if it was created.
+	 * Closes the JAR FileSystem if it was created by this instance.
+	 * Only the instance that originally created the FileSystem will close it;
+	 * instances that reused a pre-existing FileSystem will simply release the reference.
 	 * Should be called when the registry is no longer needed.
 	 */
 	public void close() {
 		if (jarFileSystem != null) {
-			try {
-				jarFileSystem.close();
-			}
-			catch (IOException e) {
-				logger.warn("Failed to close JAR filesystem: {}", e.getMessage());
+			if (ownsJarFileSystem) {
+				try {
+					jarFileSystem.close();
+				}
+				catch (IOException e) {
+					logger.warn("Failed to close JAR filesystem: {}", e.getMessage());
+				}
 			}
 			jarFileSystem = null;
+			ownsJarFileSystem = false;
 		}
 	}
 
