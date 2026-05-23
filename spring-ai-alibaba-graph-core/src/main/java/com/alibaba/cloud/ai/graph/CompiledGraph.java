@@ -46,7 +46,6 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
@@ -582,20 +581,27 @@ public class CompiledGraph {
 		Objects.requireNonNull(config, "config cannot be null");
 		try {
 			GraphRunner runner = new GraphRunner(this, config);
-			return runner.run(overAllState).flatMap(data -> {
-				if (data.isDone()) {
-					if (data.resultValue().isPresent() && data.resultValue().get() instanceof NodeOutput) {
-						return Flux.just((NodeOutput) data.resultValue().get());
-					} else {
+			return runner.run(overAllState)
+				.<Flux<NodeOutput>>map(data -> {
+					if (data.isDone()) {
+						if (data.resultValue().isPresent()
+								&& data.resultValue().get() instanceof NodeOutput no) {
+							return Flux.just(no);
+						}
 						return Flux.empty();
 					}
-				}
-				if (data.isError()) {
-					return Mono.fromFuture(data.getOutput()).onErrorMap(throwable -> throwable).flux();
-				}
-
-				return Mono.fromFuture(data.getOutput()).flux();
-			});
+					if (data.isError()) {
+						try {
+							data.getOutput().join();
+							return Flux.<NodeOutput>empty();
+						}
+						catch (java.util.concurrent.CompletionException e) {
+							return Flux.error(e.getCause());
+						}
+					}
+					return Flux.just(data.getOutput().join());
+				})
+				.flatMap(flux -> flux);
 		} catch (Exception e) {
 			return Flux.error(e);
 		}
