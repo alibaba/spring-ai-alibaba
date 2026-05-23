@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -101,6 +102,32 @@ public class CompiledSubGraphTest {
 			.addEdge("NODE3.3", "NODE3.4")
 			.addEdge("NODE3.4", END)
 			.compile(compileConfig);
+	}
+
+	@Test
+	public void testCompiledSubgraphReceivesParentContext() throws Exception {
+		var subGraph = new StateGraph(getStrategyFactory())
+			.addNode("child", AsyncNodeActionWithConfig.node_async((state, config) -> Map.of("messages",
+					"child:" + config.context().get("request-id"))))
+			.addEdge(START, "child")
+			.addEdge("child", END)
+			.compile();
+
+		var parentGraph = new StateGraph(getStrategyFactory())
+			.addNode("parent", AsyncNodeActionWithConfig.node_async((state, config) -> {
+				config.context().put("request-id", "context-value");
+				return Map.of("messages", "parent");
+			}))
+			.addNode("subgraph", subGraph)
+			.addEdge(START, "parent")
+			.addEdge("parent", "subgraph")
+			.addEdge("subgraph", END)
+			.compile();
+
+		var output = parentGraph.invoke(Map.of(), RunnableConfig.builder().build()).orElseThrow();
+
+		assertIterableEquals(List.of("parent", "child:context-value"),
+				output.value("messages", List.class).orElseThrow());
 	}
 
 	@Test
