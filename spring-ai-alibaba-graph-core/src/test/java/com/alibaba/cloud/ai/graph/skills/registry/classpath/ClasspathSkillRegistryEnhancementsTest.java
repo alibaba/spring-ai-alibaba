@@ -20,11 +20,17 @@ import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.net.URI;
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
+import java.nio.file.Files;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -50,6 +56,33 @@ class ClasspathSkillRegistryEnhancementsTest {
 		assertFalse(registry.contains("sample-skill"));
 		assertTrue(registry.search("sample").isEmpty());
 		assertThrows(IllegalStateException.class, () -> registry.readSkillContentByPath(skill.getSkillPath()));
+	}
+
+	@Test
+	void classpathRegistryReusesExistingJarFileSystem(@TempDir Path tempDir) throws Exception {
+		Path jarPath = tempDir.resolve("skills.jar");
+		try (JarOutputStream jarOutputStream = new JarOutputStream(Files.newOutputStream(jarPath))) {
+			jarOutputStream.putNextEntry(new JarEntry("skills/"));
+			jarOutputStream.closeEntry();
+		}
+		URI jarUri = URI.create("jar:" + jarPath.toUri());
+
+		ClasspathSkillRegistry firstRegistry = ClasspathSkillRegistry.builder()
+				.autoLoad(false)
+				.build();
+		ClasspathSkillRegistry secondRegistry = ClasspathSkillRegistry.builder()
+				.autoLoad(false)
+				.build();
+
+		FileSystem firstFileSystem = firstRegistry.getOrCreateJarFileSystem(jarUri);
+		FileSystem secondFileSystem = secondRegistry.getOrCreateJarFileSystem(jarUri);
+
+		assertSame(firstFileSystem, secondFileSystem);
+		secondRegistry.close();
+		assertTrue(firstFileSystem.isOpen());
+
+		firstRegistry.close();
+		assertFalse(firstFileSystem.isOpen());
 	}
 
 }
