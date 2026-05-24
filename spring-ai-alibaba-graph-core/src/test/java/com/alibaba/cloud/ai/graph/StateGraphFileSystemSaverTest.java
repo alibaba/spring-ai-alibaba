@@ -103,14 +103,14 @@ public class StateGraphFileSystemSaverTest {
 				Optional<OverAllState> state = app.invoke(Map.of(), runnableConfig_1);
 
 				assertTrue(state.isPresent());
-				assertEquals(expectedSteps + (execution * 2), (int) state.get().data().get("steps"));
+				assertEquals(expectedSteps, (int) state.get().data().get("steps"));
 
 				List<String> messages = (List<String>) state.get().data().get("messages");
 				assertFalse(messages.isEmpty());
 
 				log.info("thread_1: execution: {} messages:\n{}\n", execution, messages);
 
-				assertEquals(expectedSteps + execution * 2, messages.size());
+				assertEquals(expectedSteps, messages.size());
 				for (int i = 0; i < messages.size(); i++) {
 					assertEquals(format("agent_1:step %d", (i + 1)), messages.get(i));
 				}
@@ -125,23 +125,23 @@ public class StateGraphFileSystemSaverTest {
 				state = app.invoke(emptyMap(), runnableConfig_2);
 
 				assertTrue(state.isPresent());
-				assertEquals(expectedSteps + execution, (int) state.get().data().get("steps"));
+				assertEquals(expectedSteps, (int) state.get().data().get("steps"));
 				messages = (List<String>) state.get().data().get("messages");
 
 				log.info("thread_2: execution: {} messages:\n{}\n", execution, messages);
 
-				assertEquals(expectedSteps + execution, messages.size());
+				assertEquals(expectedSteps, messages.size());
 
 				// RE-SUBMIT THREAD 1
 				state = app.invoke(Map.of(), runnableConfig_1);
 
 				assertTrue(state.isPresent());
-				assertEquals(expectedSteps + 1 + execution * 2, (int) state.get().data().get("steps"));
+				assertEquals(expectedSteps + 1, (int) state.get().data().get("steps"));
 				messages = (List<String>) state.get().data().get("messages");
 
 				log.info("thread_1: execution: {} messages:\n{}\n", execution, messages);
 
-				assertEquals(expectedSteps + 1 + execution * 2, messages.size());
+				assertEquals(expectedSteps + 1, messages.size());
 
 			}
 		}

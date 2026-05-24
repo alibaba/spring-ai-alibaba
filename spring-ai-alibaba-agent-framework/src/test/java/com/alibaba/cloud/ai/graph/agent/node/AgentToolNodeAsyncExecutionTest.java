@@ -29,6 +29,8 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -305,7 +307,9 @@ class AgentToolNodeAsyncExecutionTest {
 		@DisplayName("tool should stop early when checking cancellation")
 		void tool_shouldStopEarly_whenCheckingCancellation() throws InterruptedException {
 			AtomicReference<Integer> iterationsCompleted = new AtomicReference<>(0);
+			CountDownLatch toolStarted = new CountDownLatch(1);
 			CountDownLatch toolFinished = new CountDownLatch(1);
+			ExecutorService executor = Executors.newSingleThreadExecutor();
 
 			CancellableAsyncToolCallback callback = new CancellableAsyncToolCallback() {
 				@Override
@@ -317,6 +321,7 @@ class AgentToolNodeAsyncExecutionTest {
 				public CompletableFuture<String> callAsync(String arguments, ToolContext context,
 						CancellationToken cancellationToken) {
 					return CompletableFuture.supplyAsync(() -> {
+						toolStarted.countDown();
 						try {
 							for (int i = 0; i < 1000; i++) {
 								// Cooperative check
@@ -335,7 +340,7 @@ class AgentToolNodeAsyncExecutionTest {
 						finally {
 							toolFinished.countDown();
 						}
-					});
+					}, executor);
 				}
 
 				@Override
@@ -349,31 +354,41 @@ class AgentToolNodeAsyncExecutionTest {
 				}
 			};
 
-			com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken token = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
-
-			CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
-
-			// Simulate timeout and cancellation
 			try {
-				future.orTimeout(callback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
-			}
-			catch (Exception e) {
-				token.cancel();
-			}
+				com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken token = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
 
-			// Wait for tool to finish - increased from 2s to 10s for CI stability
-			assertTrue(toolFinished.await(10, TimeUnit.SECONDS));
+				CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
 
-			// Tool should have stopped early - increased threshold from 100 to 200 for CI
-			int completed = iterationsCompleted.get();
-			assertTrue(completed < 200, "Tool should stop early but completed " + completed + " iterations");
+				assertTrue(toolStarted.await(5, TimeUnit.SECONDS),
+						"Tool should start before timeout simulation");
+
+				// Simulate timeout and cancellation
+				try {
+					future.orTimeout(callback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
+				}
+				catch (Exception e) {
+					token.cancel();
+				}
+
+				// Wait for tool to finish - increased from 2s to 10s for CI stability
+				assertTrue(toolFinished.await(10, TimeUnit.SECONDS));
+
+				// Tool should have stopped early - increased threshold from 100 to 200 for CI
+				int completed = iterationsCompleted.get();
+				assertTrue(completed < 200, "Tool should stop early but completed " + completed + " iterations");
+			}
+			finally {
+				executor.shutdownNow();
+			}
 		}
 
 		@Test
 		@DisplayName("tool should throw ToolCancelledException when using throwIfCancelled")
 		void tool_shouldThrow_whenUsingThrowIfCancelled() throws InterruptedException {
 			AtomicBoolean exceptionThrown = new AtomicBoolean(false);
+			CountDownLatch toolStarted = new CountDownLatch(1);
 			CountDownLatch toolFinished = new CountDownLatch(1);
+			ExecutorService executor = Executors.newSingleThreadExecutor();
 
 			CancellableAsyncToolCallback callback = new CancellableAsyncToolCallback() {
 				@Override
@@ -385,6 +400,7 @@ class AgentToolNodeAsyncExecutionTest {
 				public CompletableFuture<String> callAsync(String arguments, ToolContext context,
 						CancellationToken cancellationToken) {
 					return CompletableFuture.supplyAsync(() -> {
+						toolStarted.countDown();
 						try {
 							for (int i = 0; i < 1000; i++) {
 								// This throws ToolCancelledException if cancelled
@@ -404,7 +420,7 @@ class AgentToolNodeAsyncExecutionTest {
 						finally {
 							toolFinished.countDown();
 						}
-					});
+					}, executor);
 				}
 
 				@Override
@@ -418,23 +434,31 @@ class AgentToolNodeAsyncExecutionTest {
 				}
 			};
 
-			com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken token = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
-
-			CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
-
-			// Simulate timeout and cancellation
 			try {
-				future.orTimeout(callback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
-			}
-			catch (Exception e) {
-				token.cancel();
-			}
+				com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken token = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
 
-			// Wait for tool to finish - increased from 2s to 10s for CI stability
-			assertTrue(toolFinished.await(10, TimeUnit.SECONDS));
+				CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
 
-			// ToolCancelledException should have been thrown
-			assertTrue(exceptionThrown.get());
+				assertTrue(toolStarted.await(5, TimeUnit.SECONDS),
+						"Tool should start before timeout simulation");
+
+				// Simulate timeout and cancellation
+				try {
+					future.orTimeout(callback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
+				}
+				catch (Exception e) {
+					token.cancel();
+				}
+
+				// Wait for tool to finish - increased from 2s to 10s for CI stability
+				assertTrue(toolFinished.await(10, TimeUnit.SECONDS));
+
+				// ToolCancelledException should have been thrown
+				assertTrue(exceptionThrown.get());
+			}
+			finally {
+				executor.shutdownNow();
+			}
 		}
 
 	}
