@@ -582,23 +582,28 @@ public class CompiledGraph {
 		Objects.requireNonNull(config, "config cannot be null");
 		try {
 			GraphRunner runner = new GraphRunner(this, config);
-			return runner.run(overAllState).flatMap(data -> {
-				if (data.isDone()) {
-					if (data.resultValue().isPresent() && data.resultValue().get() instanceof NodeOutput) {
-						return Flux.just((NodeOutput) data.resultValue().get());
-					} else {
-						return Flux.empty();
-					}
-				}
-				if (data.isError()) {
-					return Mono.fromFuture(data.getOutput()).onErrorMap(throwable -> throwable).flux();
-				}
-
-				return Mono.fromFuture(data.getOutput()).flux();
-			});
+			return flattenGraphResponsesPreservingOrder(runner.run(overAllState));
 		} catch (Exception e) {
 			return Flux.error(e);
 		}
+	}
+
+	static Flux<NodeOutput> flattenGraphResponsesPreservingOrder(Flux<GraphResponse<NodeOutput>> responses) {
+		return responses.flatMapSequential(data -> {
+			if (data.isDone()) {
+				if (data.resultValue().isPresent() && data.resultValue().get() instanceof NodeOutput) {
+					return Flux.just((NodeOutput) data.resultValue().get());
+				}
+				else {
+					return Flux.empty();
+				}
+			}
+			if (data.isError()) {
+				return Mono.fromFuture(data.getOutput()).onErrorMap(throwable -> throwable).flux();
+			}
+
+			return Mono.fromFuture(data.getOutput()).flux();
+		});
 	}
 
 	/**
@@ -777,4 +782,3 @@ public class CompiledGraph {
 	}
 
 }
-
