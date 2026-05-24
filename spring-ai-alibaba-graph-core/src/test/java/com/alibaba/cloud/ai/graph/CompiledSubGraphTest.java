@@ -107,8 +107,10 @@ public class CompiledSubGraphTest {
 	@Test
 	public void testCompiledSubgraphReceivesParentContext() throws Exception {
 		var subGraph = new StateGraph(getStrategyFactory())
-			.addNode("child", AsyncNodeActionWithConfig.node_async((state, config) -> Map.of("messages",
-					"child:" + config.context().get("request-id"))))
+			.addNode("child", AsyncNodeActionWithConfig.node_async((state, config) -> {
+				config.context().put("child-only", "should-not-leak");
+				return Map.of("messages", "child:" + config.context().get("request-id"));
+			}))
 			.addEdge(START, "child")
 			.addEdge("child", END)
 			.compile();
@@ -119,14 +121,17 @@ public class CompiledSubGraphTest {
 				return Map.of("messages", "parent");
 			}))
 			.addNode("subgraph", subGraph)
+			.addNode("after", AsyncNodeActionWithConfig.node_async((state, config) -> Map.of("messages",
+					"after:" + config.context().containsKey("child-only"))))
 			.addEdge(START, "parent")
 			.addEdge("parent", "subgraph")
-			.addEdge("subgraph", END)
+			.addEdge("subgraph", "after")
+			.addEdge("after", END)
 			.compile();
 
 		var output = parentGraph.invoke(Map.of(), RunnableConfig.builder().build()).orElseThrow();
 
-		assertIterableEquals(List.of("parent", "child:context-value"),
+		assertIterableEquals(List.of("parent", "child:context-value", "after:false"),
 				output.value("messages", List.class).orElseThrow());
 	}
 

@@ -68,6 +68,8 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 		final boolean resumeSubgraph = config.metadata(resumeSubGraphId(nodeId), new TypeRef<Boolean>() {
 		}).orElse(false);
 
+		// Build from the parent config so the subgraph receives run-scoped context,
+		// while RunnableConfig.Builder keeps the child context isolated.
 		RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config).checkPointId(null).nextNode(null).build();
 
 		var parentSaver = parentCompileConfig.checkpointSaver();
