@@ -18,16 +18,24 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.std.SpringAIStateSerializer;
@@ -37,6 +45,9 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
@@ -52,6 +63,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,8 +71,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
@@ -71,6 +86,9 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
@@ -1080,6 +1098,143 @@ class ReactAgentTest {
 
 		assertNotNull(agent1);
 		assertNotNull(agent2);
+	}
+
+	/**
+	 * <a href="https://github.com/alibaba/spring-ai-alibaba/issues/4639">#4639</a> 回归：父图在 Agent 节点前中断后，
+	 * 用<strong>父 threadId</strong> resume 不应因子 namespace 无 checkpoint 而失败。
+	 *
+	 * <p><b>前提</b>：父图与子 {@link ReactAgent} 共用同一个 {@link MemorySaver}；
+	 * 子 Agent 通过 {@link ReactAgent#asNode()} 嵌进父图（图里套图，不是拍平子图）。
+	 *
+	 * @see <a href="https://github.com/alibaba/spring-ai-alibaba/issues/4639">issue #4639</a>
+	 */
+	@Nested
+	class ResumeCheckpointRegression {
+
+		private static final String AGENT_NAME = "qa_agent";
+
+		@Test
+		void parentInterruptBeforeAgent_resumeWithParentThreadId_succeeds() throws Exception {
+			// 父子共享的 checkpoint 存储（对应业务里同一个 MemorySaver 实例）
+			MemorySaver saver = MemorySaver.builder().build();
+			StubChatModel stubModel = new StubChatModel();
+
+			// --- 步骤 1：构造子 Agent，并作为父图的一个节点 ---
+			// 建 ReactAgent（名为 qa_agent），子 Agent 也挂同一个 MemorySaver；
+			// 后面用 asNode() 挂到父图（在 buildParentGraph 里），不是拍平子图。
+			ReactAgent qaAgent = ReactAgent.builder()
+					.name(AGENT_NAME)
+					.model(stubModel)
+					.outputKey("qa_result")
+					.saver(saver)
+					.build();
+
+			// --- 步骤 2：构造父图（StateGraph）---
+			// 流程：开始 → prep → qa_agent → 结束；interruptBefore("qa_agent")：
+			// 跑完 prep、还没进 Agent 就停，等人处理。
+			CompiledGraph parentGraph = buildParentGraph(qaAgent, saver);
+
+			// 父图会话 id（对应业务里的 conv-001）；子图实际会用 conv-001_subgraph_qa_agent
+			String threadId = "conv-001-" + System.nanoTime();
+			RunnableConfig invokeConfig = RunnableConfig.builder().threadId(threadId).build();
+
+			// --- 步骤 3：第一次执行父图（模拟用户第一次跑 workflow）---
+			// stream：跑 prep → 准备进 qa_agent 时中断 → 返回 InterruptionMetadata。
+			// checkpoint 写在父 threadId；子 Agent 还没跑，子 threadId 下尚无 checkpoint。
+			AtomicReference<NodeOutput> last = new AtomicReference<>();
+			parentGraph.stream(Map.of("input", "x"), invokeConfig).doOnNext(last::set).blockLast();
+
+			assertInstanceOf(InterruptionMetadata.class, last.get(), "应在进入 qa_agent 前中断");
+			assertEquals(0, stubModel.callCount(), "首次中断前子图模型不应被调用");
+
+			// --- 步骤 4：第二次执行 —— 用父 threadId 恢复（规范写法）---
+			// 同一个父 threadId + resume()，再 stream(null, resumeConfig)，模拟「接着往下跑」。
+			RunnableConfig resumeConfig = RunnableConfig.builder().threadId(threadId).resume().build();
+
+			// --- 步骤 5：父图恢复后进入 qa_agent，子图在 xxx_subgraph_qa_agent 上执行 resume（修复前/后对比）---
+			// xxx_subgraph_qa_agent：父图 resume 成功 → 执行 qa_agent 节点 → 子图 threadId 改为
+			//   {父threadId}_subgraph_qa_agent（共享 MemorySaver 时的命名规则）。
+			//
+			// 修复前：
+			//   · 子图 RunnableConfig 从父 config 拷贝了 HUMAN_FEEDBACK（父 resume 的占位标记）
+			//   · 子图 GraphRunner 当成「在子 namespace 里恢复」→ initializeFromResume
+			//   · 在 xxx_subgraph_qa_agent 下 saver.get() → 无 CP（子 Agent 一直未运行）
+			//   → Resume request without a valid checkpoint!
+			//
+			// 修复后（AgentToSubCompiledGraphNodeAdapter，与「子 namespace 无 CP」对齐）：
+			//   · 检测到子 threadId 下无 checkpoint → 不把父 HUMAN_FEEDBACK 传给子图（避免子图 initializeFromResume）
+			//   · 不调 childGraph.updateState（无 CP 时 updateState 也会 Missing Checkpoint）
+			//   · 用父 state（prep_marker、input 等）调用 graphResponseStream → 子图 initializeFromStart（冷启动）
+			//   · 子 Agent 第一次真正执行，模型被调用 → 下列断言通过。
+			assertFalse(throwsValidCheckpoint(parentGraph, resumeConfig),
+					"父 threadId resume 不应因子 namespace 无 checkpoint 失败");
+			assertTrue(stubModel.callCount() >= 1, "resume 后应真正跑进子 Agent 并调用模型");
+		}
+
+		private static boolean throwsValidCheckpoint(CompiledGraph graph, RunnableConfig resumeConfig) {
+			try {
+				graph.stream(null, resumeConfig).blockLast();
+				return false;
+			}
+			catch (Exception ex) {
+				Throwable root = ex;
+				while (root.getCause() != null && root.getCause() != root) {
+					root = root.getCause();
+				}
+				return root.getMessage() != null && root.getMessage().contains("valid checkpoint");
+			}
+		}
+
+		/**
+		 * 步骤 2 的父图：prep 普通节点 + {@code qa_agent} 子图节点（{@link ReactAgent#asNode()}）。
+		 */
+		private static CompiledGraph buildParentGraph(ReactAgent qaAgent, MemorySaver saver) throws Exception {
+			KeyStrategyFactory keyStrategyFactory = () -> {
+				Map<String, KeyStrategy> strategies = new HashMap<>();
+				strategies.put("input", new ReplaceStrategy());
+				strategies.put("prep_marker", new ReplaceStrategy());
+				strategies.put("messages", new AppendStrategy());
+				strategies.put("qa_result", new ReplaceStrategy());
+				return strategies;
+			};
+
+			StateGraph workflow = new StateGraph(keyStrategyFactory)
+					.addNode("prep", node_async(state -> Map.of("prep_marker", "ok")))
+					// 图里套图：qa_agent 节点 = 整棵 ReactAgent 子图，不是拍平
+					.addNode(AGENT_NAME, qaAgent.asNode(true, false))
+					.addEdge(START, "prep")
+					.addEdge("prep", AGENT_NAME)
+					.addEdge(AGENT_NAME, END);
+
+			return workflow.compile(CompileConfig.builder()
+					.saverConfig(SaverConfig.builder().register(saver).build())
+					// 在 qa_agent 执行前先中断：prep 跑完、Agent 还没进就停
+					.interruptBefore(AGENT_NAME)
+					.build());
+		}
+
+		private static final class StubChatModel implements ChatModel {
+
+			private final AtomicInteger callCount = new AtomicInteger();
+
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				callCount.incrementAndGet();
+				return new ChatResponse(List.of(new Generation(new AssistantMessage("ok"))));
+			}
+
+			@Override
+			public Flux<ChatResponse> stream(Prompt prompt) {
+				return Flux.just(call(prompt));
+			}
+
+			int callCount() {
+				return callCount.get();
+			}
+
+		}
+
 	}
 
 }

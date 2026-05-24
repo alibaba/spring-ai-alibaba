@@ -50,12 +50,12 @@ import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
+import com.alibaba.cloud.ai.graph.internal.node.SubGraphRunnableConfigBridge;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
-import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -91,7 +91,6 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_a
 import static com.alibaba.cloud.ai.graph.agent.hook.InterruptionHook.INTERRUPTION_FEEDBACK_KEY;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.resumeSubGraphId;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.subGraphId;
-import static java.lang.String.format;
 
 
 public class ReactAgent extends BaseAgent {
@@ -1001,28 +1000,27 @@ public class ReactAgent extends BaseAgent {
 
 		@Override
 		public Map<String, Object> apply(OverAllState parentState, RunnableConfig config) throws Exception {
-			final boolean resumeSubgraph = config.metadata(resumeSubGraphId(nodeId), new TypeRef<Boolean>() {}).orElse(false);
-
-			RunnableConfig subGraphRunnableConfig = getSubGraphRunnableConfig(config);
-			Flux<GraphResponse<NodeOutput>> subGraphResult;
-			Object parentMessages = null;
-
 			// Instruction is always injected by InstructionAgentHook in beforeAgent; do not add here
+			Map<String, Object> stateForChild;
 			if (includeContents) {
-				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
+				stateForChild = new HashMap<>(parentState.data());
 				List<Object> newMessages;
 				if (stateForChild.get("messages") != null) {
-					newMessages = new ArrayList<>((List<Object>)stateForChild.remove("messages"));
-				} else {
+					newMessages = new ArrayList<>((List<Object>) stateForChild.remove("messages"));
+				}
+				else {
 					newMessages = new ArrayList<>();
 				}
 				stateForChild.put("messages", newMessages);
-				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
-			} else {
-				Map<String, Object> stateForChild = new HashMap<>(parentState.data());
-				parentMessages = stateForChild.remove("messages");
-				subGraphResult = childGraph.graphResponseStream(stateForChild, subGraphRunnableConfig);
 			}
+			else {
+				stateForChild = new HashMap<>(parentState.data());
+				stateForChild.remove("messages");
+			}
+
+			RunnableConfig subGraphRunnableConfig = resolveSubGraphRunnableConfig(config, stateForChild);
+			Flux<GraphResponse<NodeOutput>> subGraphResult = childGraph.graphResponseStream(stateForChild,
+					subGraphRunnableConfig);
 
 			Map<String, Object> result = new HashMap<>();
 
@@ -1102,35 +1100,30 @@ public class ReactAgent extends BaseAgent {
 			return lastResponse;
 		}
 
+		/**
+		 * Bridges parent resume into the child Agent graph. {@link #getSubGraphRunnableConfig} strips
+		 * parent resume markers; {@link SubGraphRunnableConfigBridge#resolveForCompiledChildResume}
+		 * restores child position only when a child checkpoint exists; {@link SubGraphRunnableConfigBridge#withInterruptionMetadataForHooks}
+		 * forwards {@link com.alibaba.cloud.ai.graph.action.InterruptionMetadata} for HITL hooks only
+		 * (not {@code resume()} placeholder).
+		 */
+		private RunnableConfig resolveSubGraphRunnableConfig(RunnableConfig parentConfig,
+				Map<String, Object> stateForChild) throws Exception {
+			RunnableConfig subGraphRunnableConfig = getSubGraphRunnableConfig(parentConfig);
+			subGraphRunnableConfig = SubGraphRunnableConfigBridge.resolveForCompiledChildResume(stateForChild, childGraph,
+					subGraphRunnableConfig);
+			return SubGraphRunnableConfigBridge.withInterruptionMetadataForHooks(parentConfig,
+					subGraphRunnableConfig);
+		}
+
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
-			RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config)
-					.checkPointId(null)
-					.nextNode(null)
-					.addMetadata("_AGENT_", subGraphId(nodeId)) // subGraphId is the same as the name of the agent that created it
+			RunnableConfig subGraphRunnableConfig = SubGraphRunnableConfigBridge.prepareChildRunnableConfig(config,
+					nodeId, parentCompileConfig, childGraph.compileConfig);
+			RunnableConfig withAgentName = RunnableConfig.builder(subGraphRunnableConfig)
+					.addMetadata(RunnableConfig.AGENT_NAME_KEY, subGraphId(nodeId))
 					.build();
-			subGraphRunnableConfig.clearContext();
-			var parentSaver = parentCompileConfig.checkpointSaver();
-			var subGraphSaver = childGraph.compileConfig.checkpointSaver();
-
-			if (subGraphSaver.isPresent()) {
-				if (parentSaver.isEmpty()) {
-					throw new IllegalStateException("Missing CheckpointSaver in parent graph!");
-				}
-
-				// Check saver are the same instance
-				if (parentSaver.get() == subGraphSaver.get()) {
-					subGraphRunnableConfig = RunnableConfig.builder(config)
-							.threadId(config.threadId()
-									.map(threadId -> format("%s_%s", threadId, subGraphId(nodeId)))
-									.orElseGet(() -> subGraphId(nodeId)))
-							.nextNode(null)
-							.checkPointId(null)
-							.addMetadata("_AGENT_", subGraphId(nodeId)) // subGraphId is the same as the name of the agent that created it
-							.build();
-					subGraphRunnableConfig.clearContext();
-				}
-			}
-			return subGraphRunnableConfig;
+			withAgentName.clearContext();
+			return withAgentName;
 		}
 	}
 

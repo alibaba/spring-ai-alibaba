@@ -21,15 +21,11 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.utils.TypeRef;
-
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.resumeSubGraphId;
-import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.subGraphId;
-import static java.lang.String.format;
 
 /**
  * Represents an action to perform a subgraph on a given state with a specific
@@ -65,40 +61,13 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 	 */
 	@Override
 	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-		final boolean resumeSubgraph = config.metadata(resumeSubGraphId(nodeId), new TypeRef<Boolean>() {
-		}).orElse(false);
-
-		RunnableConfig subGraphRunnableConfig = RunnableConfig.builder(config).checkPointId(null).nextNode(null).build();
-		subGraphRunnableConfig.clearContext();
-
-		var parentSaver = parentCompileConfig.checkpointSaver();
-		var subGraphSaver = subGraph.compileConfig.checkpointSaver();
-
-		if (subGraphSaver.isPresent()) {
-			if (parentSaver.isEmpty()) {
-				return CompletableFuture
-					.failedFuture(new IllegalStateException("Missing CheckpointSaver in parent graph!"));
-			}
-
-			// Check saver are the same instance
-			if (parentSaver.get() == subGraphSaver.get()) {
-				subGraphRunnableConfig = RunnableConfig.builder(config)
-					.threadId(config.threadId()
-						.map(threadId -> format("%s_%s", threadId, subGraphId(nodeId)))
-						.orElseGet(() -> subGraphId(nodeId)))
-					.nextNode(null)
-					.checkPointId(null)
-					.build();
-				subGraphRunnableConfig.clearContext();
-			}
-		}
-
 		final CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 
 		try {
-			if (resumeSubgraph) {
-				subGraphRunnableConfig = subGraph.updateState(subGraphRunnableConfig, state.data());
-			}
+			RunnableConfig subGraphRunnableConfig = SubGraphRunnableConfigBridge.prepareChildRunnableConfig(config,
+					nodeId, parentCompileConfig, subGraph.compileConfig);
+			subGraphRunnableConfig = SubGraphRunnableConfigBridge.resolveForCompiledChildResume(state.data(), subGraph,
+					subGraphRunnableConfig);
 
 			var fluxStream = subGraph.graphResponseStream(state, subGraphRunnableConfig);
 
