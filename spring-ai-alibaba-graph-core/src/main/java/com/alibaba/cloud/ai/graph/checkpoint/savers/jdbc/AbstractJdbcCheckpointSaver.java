@@ -218,16 +218,13 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 	protected abstract void updateCheckpoint(String threadId, String checkpointId, Checkpoint checkpoint) throws Exception;
 
 	/**
-	 * Deletes active checkpoints by id for a thread. Concrete savers can override this
-	 * to support {@code checkpoints.numRetained}; the default keeps all persisted
-	 * checkpoints.
+	 * Deletes active checkpoints by id for a thread.
 	 *
 	 * @param threadId thread name/id used by the concrete saver schema
 	 * @param checkpointIds checkpoint ids to delete
 	 * @throws Exception when the concrete saver cannot delete checkpoints
 	 */
-	protected void deleteCheckpoints(String threadId, Collection<String> checkpointIds) throws Exception {
-	}
+	protected abstract void deleteCheckpoints(String threadId, Collection<String> checkpointIds) throws Exception;
 
 	private void deleteRetainedCheckpoints(String threadId, RunnableConfig config) throws Exception {
 		Optional<Integer> retained = checkpointsNumRetained(config);

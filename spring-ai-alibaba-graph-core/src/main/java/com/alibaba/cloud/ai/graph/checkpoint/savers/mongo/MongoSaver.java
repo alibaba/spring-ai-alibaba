@@ -411,7 +411,6 @@ public class MongoSaver implements BaseCheckpointSaver {
 							.orElseThrow(() -> (new NoSuchElementException(
 									format("Checkpoint with id %s not found!", checkPointId))));
 					finalCheckpointLinkedList.set(index, checkpoint);
-					retainLatestCheckpoints(finalCheckpointLinkedList, config);
 					Document tempDocument = new Document().append("_id", checkpointDocId)
 							.append(DOCUMENT_CONTENT_KEY, serializeCheckpoints(finalCheckpointLinkedList));
 					collection.replaceOne(clientSession, Filters.eq("_id", checkpointDocId), tempDocument);
@@ -423,14 +422,12 @@ public class MongoSaver implements BaseCheckpointSaver {
 			if (checkpointLinkedList == null) {
 				checkpointLinkedList = new LinkedList<>();
 				checkpointLinkedList.push(checkpoint); // Add Checkpoint
-				retainLatestCheckpoints(checkpointLinkedList, config);
 				Document tempDocument = new Document().append("_id", checkpointDocId)
 						.append(DOCUMENT_CONTENT_KEY, serializeCheckpoints(checkpointLinkedList));
 				collection.insertOne(clientSession, tempDocument);
 			}
 			else {
 				checkpointLinkedList.push(checkpoint); // Add Checkpoint
-				retainLatestCheckpoints(checkpointLinkedList, config);
 				Document tempDocument = new Document().append("_id", checkpointDocId)
 						.append(DOCUMENT_CONTENT_KEY, serializeCheckpoints(checkpointLinkedList));
 				ReplaceOptions opts = new ReplaceOptions().upsert(true);

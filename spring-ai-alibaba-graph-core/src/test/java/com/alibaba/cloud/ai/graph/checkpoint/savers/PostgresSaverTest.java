@@ -396,6 +396,37 @@ public class PostgresSaverTest {
         assertEquals(1, countingDataSource.latestCheckpointSelects());
     }
 
+    @Test
+    public void testPostgresSaverRetainsOnlyLatestCheckpoints() throws Exception {
+        var countingDataSource = new CountingDataSource(dataSource());
+        var saver = PostgresSaver.builder()
+                .datasource(countingDataSource)
+                .stateSerializer(serializer)
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .maxCachedThreads(16)
+                .build();
+
+        String threadId = "postgres-retention-thread";
+        var config = RunnableConfig.builder()
+                .threadId(threadId)
+                .checkpointsNumRetained(2)
+                .build();
+        var firstCheckpoint = checkpoint("first");
+        var secondCheckpoint = checkpoint("second");
+        var thirdCheckpoint = checkpoint("third");
+
+        saver.put(config, firstCheckpoint);
+        saver.put(config, secondCheckpoint);
+        countingDataSource.reset();
+        saver.put(config, thirdCheckpoint);
+
+        assertEquals(1, countingDataSource.deleteCheckpointStatements());
+        Collection<Checkpoint> history = saver.list(config);
+        assertEquals(2, history.size());
+        assertEquals(thirdCheckpoint.getId(), history.iterator().next().getId());
+        assertTrue(saver.get(config(threadId, firstCheckpoint.getId())).isEmpty());
+    }
+
 
 	@Test
 	public void testPostgresSaverMultipleRoundTrips() throws Exception {
@@ -606,6 +637,8 @@ public class PostgresSaverTest {
 
         private final AtomicInteger checkpointByIdSelects = new AtomicInteger();
 
+        private final AtomicInteger deleteCheckpointStatements = new AtomicInteger();
+
         private CountingDataSource(DataSource delegate) {
             this.delegate = delegate;
         }
@@ -613,6 +646,7 @@ public class PostgresSaverTest {
         void reset() {
             latestCheckpointSelects.set(0);
             checkpointByIdSelects.set(0);
+            deleteCheckpointStatements.set(0);
         }
 
         int latestCheckpointSelects() {
@@ -621,6 +655,10 @@ public class PostgresSaverTest {
 
         int checkpointByIdSelects() {
             return checkpointByIdSelects.get();
+        }
+
+        int deleteCheckpointStatements() {
+            return deleteCheckpointStatements.get();
         }
 
         @Override
@@ -656,6 +694,9 @@ public class PostgresSaverTest {
             }
             if (sql.contains("AND c.checkpoint_id = ?")) {
                 checkpointByIdSelects.incrementAndGet();
+            }
+            if (sql.contains("DELETE FROM GraphCheckpoint")) {
+                deleteCheckpointStatements.incrementAndGet();
             }
         }
 
