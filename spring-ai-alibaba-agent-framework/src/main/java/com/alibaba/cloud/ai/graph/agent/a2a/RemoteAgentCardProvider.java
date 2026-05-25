@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class RemoteAgentCardProvider implements AgentCardProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(AgentCard.class);
+	private static final Logger logger = LoggerFactory.getLogger(RemoteAgentCardProvider.class);
 
 	private final String url;
 
