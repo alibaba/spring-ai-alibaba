@@ -25,15 +25,23 @@ import org.springframework.ai.chat.model.ChatResponse;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.lang.reflect.RecordComponent;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.type.WritableTypeId;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -96,8 +104,21 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		// Normalize state before serialization to convert non-serializable objects
 		// (GraphResponse, CompletableFuture) into serializable structures
 		Map<String, Object> normalized = normalizeForSerialization(data);
-		String json = objectMapper.writeValueAsString(normalized);
-		Serializer.writeUTF(json, out);
+		try {
+			String json = objectMapper.writeValueAsString(normalized);
+			Serializer.writeUTF(json, out);
+		} catch (JsonMappingException e) {
+			// Defensive fallback: a record may have survived a prior JSON round-trip
+			// while its component values degraded to LinkedHashMap (records are
+			// implicitly final, so DefaultTyping.NON_FINAL skips @class for them).
+			// Copy the mapper, register a Record→Map serializer, and retry.
+			ObjectMapper safeMapper = objectMapper.copy();
+			var module = new SimpleModule();
+			module.addSerializer(Record.class, new RecordFlatteningSerializer());
+			safeMapper.registerModule(module);
+			String json = safeMapper.writeValueAsString(normalized);
+			Serializer.writeUTF(json, out);
+		}
 	}
 
 	@Override
@@ -174,32 +195,32 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			return changed ? result : value;
 		}
 
-	// 6. Array → shallow scan for GraphResponse/ChatResponse/CompletableFuture
-	if (value.getClass().isArray()) {
-		// Check if it's a primitive array (int[], double[], etc.)
-		Class<?> componentType = value.getClass().getComponentType();
-		if (componentType.isPrimitive()) {
-			// Primitive arrays cannot contain GraphResponse/ChatResponse/CompletableFuture
-			// Return as-is, let Jackson handle the serialization
-			return value;
-		}
-		
-		// Object array - check for GraphResponse/ChatResponse/CompletableFuture
-		Object[] array = (Object[]) value;
-		Object[] result = new Object[array.length];
-		boolean changed = false;
-		for (int i = 0; i < array.length; i++) {
-			Object normalized = normalizeValue(array[i]);
-			result[i] = normalized;
-			if (normalized != array[i]) {
-				changed = true;
+		// 6. Array → shallow scan for GraphResponse/ChatResponse/CompletableFuture
+		if (value.getClass().isArray()) {
+			// Check if it's a primitive array (int[], double[], etc.)
+			Class<?> componentType = value.getClass().getComponentType();
+			if (componentType.isPrimitive()) {
+				// Primitive arrays cannot contain GraphResponse/ChatResponse/CompletableFuture
+				// Return as-is, let Jackson handle the serialization
+				return value;
 			}
-		}
-		// If nothing changed, return original array to preserve type
-		return changed ? result : value;
-	}
 
-	// 7. Optional → unwrap and check
+			// Object array - check for GraphResponse/ChatResponse/CompletableFuture
+			Object[] array = (Object[]) value;
+			Object[] result = new Object[array.length];
+			boolean changed = false;
+			for (int i = 0; i < array.length; i++) {
+				Object normalized = normalizeValue(array[i]);
+				result[i] = normalized;
+				if (normalized != array[i]) {
+					changed = true;
+				}
+			}
+			// If nothing changed, return original array to preserve type
+			return changed ? result : value;
+		}
+
+		// 7. Optional → unwrap and check
 		if (value instanceof Optional) {
 			Optional<?> opt = (Optional<?>) value;
 			if (opt.isEmpty()) {
@@ -266,21 +287,21 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 	private Map<String, Object> normalizeChatResponse(ChatResponse response) {
 		Map<String, Object> snapshot = new LinkedHashMap<>();
 		snapshot.put("@type", "ChatResponse");
-		
+
 		// Normalize result (Generation list)
 		if (response.getResult() != null) {
 			snapshot.put("result", deepNormalizeValue(response.getResult()));
 		} else {
 			snapshot.put("result", null);
 		}
-		
+
 		// Normalize metadata
 		if (response.getMetadata() != null) {
 			snapshot.put("metadata", deepNormalizeValue(response.getMetadata()));
 		} else {
 			snapshot.put("metadata", null);
 		}
-		
+
 		return snapshot;
 	}
 
@@ -385,18 +406,18 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			return collection.stream().map(this::deepNormalizeValue).collect(Collectors.toList());
 		}
 
-	// 6. Array → recursive normalization
-	if (value.getClass().isArray()) {
-		// Check if it's a primitive array
-		Class<?> componentType = value.getClass().getComponentType();
-		if (componentType.isPrimitive()) {
-			// Primitive arrays cannot contain GraphResponse/CompletableFuture
-			return value;
+		// 6. Array → recursive normalization
+		if (value.getClass().isArray()) {
+			// Check if it's a primitive array
+			Class<?> componentType = value.getClass().getComponentType();
+			if (componentType.isPrimitive()) {
+				// Primitive arrays cannot contain GraphResponse/CompletableFuture
+				return value;
+			}
+
+			Object[] array = (Object[]) value;
+			return Arrays.stream(array).map(this::deepNormalizeValue).toArray();
 		}
-		
-		Object[] array = (Object[]) value;
-		return Arrays.stream(array).map(this::deepNormalizeValue).toArray();
-	}
 
 		// 6. Optional → unwrap and normalize
 		if (value instanceof Optional) {
@@ -443,6 +464,45 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		}
 
 		return snapshot;
+	}
+
+	/**
+	 * Jackson serializer that writes any {@link Record} as a plain map.
+	 * <p>On the normal path (no DefaultTyping) {@link #serialize} writes the
+	 * record with an explicit {@code @class} key.
+	 * <p>On the fallback path (DefaultTyping active) {@link #serializeWithType}
+	 * delegates to Jackson's {@link TypeSerializer} for the type id and then
+	 * writes the record components.
+	 */
+	private static class RecordFlatteningSerializer extends JsonSerializer<Record> {
+
+		@Override
+		public void serialize(Record value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+			gen.writeStartObject();
+			gen.writeStringField("@class", value.getClass().getName());
+			writeRecordFields(value, gen);
+			gen.writeEndObject();
+		}
+
+		@Override
+		public void serializeWithType(Record value, JsonGenerator gen, SerializerProvider serializers,
+									  TypeSerializer typeSer) throws IOException {
+			WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen,
+					typeSer.typeId(value, JsonToken.START_OBJECT));
+			writeRecordFields(value, gen);
+			typeSer.writeTypeSuffix(gen, typeIdDef);
+		}
+
+		private void writeRecordFields(Record value, JsonGenerator gen) throws IOException {
+			for (RecordComponent rc : value.getClass().getRecordComponents()) {
+				try {
+					rc.getAccessor().setAccessible(true);
+					gen.writeObjectField(rc.getName(), rc.getAccessor().invoke(value));
+				} catch (Exception ignored) {
+				}
+			}
+		}
+
 	}
 
 }
