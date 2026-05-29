@@ -77,11 +77,12 @@ class WebConfigConditionalTest {
 	@Test
 	void shouldNotApplyCorsHeadersWhenDisabled() throws Exception {
 		this.contextRunner.withPropertyValues("spring.ai.alibaba.agent.studio.web.cors.enabled=false").run(context -> {
+			assertThat(context).doesNotHaveBean(WebConfig.class);
 			MockMvc mockMvc = MockMvcBuilders.webAppContextSetup((WebApplicationContext) context).build();
 			mockMvc.perform(options("/test")
 					.header(ORIGIN, "http://localhost:3000")
 					.header(ACCESS_CONTROL_REQUEST_METHOD, "GET"))
-				.andExpect(status().isForbidden())
+				.andExpect(status().isOk())
 				.andExpect(header().doesNotExist(ACCESS_CONTROL_ALLOW_ORIGIN))
 				.andExpect(header().doesNotExist(ACCESS_CONTROL_ALLOW_CREDENTIALS));
 		});
