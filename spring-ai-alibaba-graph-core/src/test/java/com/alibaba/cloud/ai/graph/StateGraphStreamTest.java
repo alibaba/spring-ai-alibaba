@@ -211,7 +211,7 @@ public class StateGraphStreamTest {
 		// Create real API client with API key from environment
 		realApi = DashScopeApi.builder().apiKey(API_KEY).build();
 		// Create chat model with default options
-		options = DashScopeChatOptions.builder().withResponseFormat(DashScopeResponseFormat.builder().type(DashScopeResponseFormat.Type.JSON_OBJECT).build()).withModel(TEST_MODEL).build();
+		options = DashScopeChatOptions.builder().responseFormat(DashScopeResponseFormat.builder().type(DashScopeResponseFormat.Type.JSON_OBJECT).build()).model(TEST_MODEL).build();
 		chatModel = DashScopeChatModel.builder().dashScopeApi(realApi).defaultOptions(options).build();
 	}
 

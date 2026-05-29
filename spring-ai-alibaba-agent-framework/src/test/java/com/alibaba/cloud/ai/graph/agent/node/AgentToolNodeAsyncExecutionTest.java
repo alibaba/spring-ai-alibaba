@@ -19,7 +19,6 @@ import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellableAsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellationToken;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,7 +28,6 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,7 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -307,7 +304,6 @@ class AgentToolNodeAsyncExecutionTest {
 	class CooperativeCancellationTests {
 
 		@Test
-        @Disabled
 		@DisplayName("tool should stop early when checking cancellation")
 		void tool_shouldStopEarly_whenCheckingCancellation() throws InterruptedException {
 			AtomicReference<Integer> iterationsCompleted = new AtomicReference<>(0);
@@ -387,7 +383,6 @@ class AgentToolNodeAsyncExecutionTest {
 		}
 
 		@Test
-        @Disabled
 		@DisplayName("tool should throw ToolCancelledException when using throwIfCancelled")
 		void tool_shouldThrow_whenUsingThrowIfCancelled() throws InterruptedException {
 			AtomicBoolean exceptionThrown = new AtomicBoolean(false);
@@ -407,7 +402,6 @@ class AgentToolNodeAsyncExecutionTest {
 					return CompletableFuture.supplyAsync(() -> {
 						toolStarted.countDown();
 						try {
-							loopStarted.countDown();
 							for (int i = 0; i < 1000; i++) {
 								// This throws ToolCancelledException if cancelled
 								cancellationToken.throwIfCancelled();
