@@ -101,18 +101,14 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 	@Override
 	public final void writeData(Map<String, Object> data, ObjectOutput out) throws IOException {
-		// Normalize state before serialization to convert non-serializable objects
-		// (GraphResponse, CompletableFuture) into serializable structures
 		Map<String, Object> normalized = normalizeForSerialization(data);
 		try {
 			String json = objectMapper.writeValueAsString(normalized);
 			Serializer.writeUTF(json, out);
 		} catch (JsonMappingException e) {
-			// Defensive fallback: a record may have survived a prior JSON round-trip
-			// while its component values degraded to LinkedHashMap (records are
-			// implicitly final, so DefaultTyping.NON_FINAL skips @class for them).
-			// Copy the mapper, register a Record→Map serializer, and retry.
 			ObjectMapper safeMapper = objectMapper.copy();
+			safeMapper.setDefaultTyping(null);
+			safeMapper.deactivateDefaultTyping();
 			var module = new SimpleModule();
 			module.addSerializer(Record.class, new RecordFlatteningSerializer());
 			safeMapper.registerModule(module);
@@ -466,30 +462,30 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		return snapshot;
 	}
 
-	/**
-	 * Jackson serializer that writes any {@link Record} as a plain map.
-	 * <p>On the normal path (no DefaultTyping) {@link #serialize} writes the
-	 * record with an explicit {@code @class} key.
-	 * <p>On the fallback path (DefaultTyping active) {@link #serializeWithType}
-	 * delegates to Jackson's {@link TypeSerializer} for the type id and then
-	 * writes the record components.
-	 */
-	private static class RecordFlatteningSerializer extends JsonSerializer<Record> {
+	private static class RecordFlatteningSerializer extends JsonSerializer<Object> {
 
 		@Override
-		public void serialize(Record value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+		public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+			if (!(value instanceof Record record)) {
+				serializers.defaultSerializeValue(value, gen);
+				return;
+			}
 			gen.writeStartObject();
-			gen.writeStringField("@class", value.getClass().getName());
-			writeRecordFields(value, gen);
+			gen.writeStringField("@class", record.getClass().getName());
+			writeRecordFields(record, gen);
 			gen.writeEndObject();
 		}
 
 		@Override
-		public void serializeWithType(Record value, JsonGenerator gen, SerializerProvider serializers,
+		public void serializeWithType(Object value, JsonGenerator gen, SerializerProvider serializers,
 									  TypeSerializer typeSer) throws IOException {
+			if (!(value instanceof Record record)) {
+				serializers.defaultSerializeValue(value, gen);
+				return;
+			}
 			WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen,
-					typeSer.typeId(value, JsonToken.START_OBJECT));
-			writeRecordFields(value, gen);
+					typeSer.typeId(record, JsonToken.START_OBJECT));
+			writeRecordFields(record, gen);
 			typeSer.writeTypeSuffix(gen, typeIdDef);
 		}
 
