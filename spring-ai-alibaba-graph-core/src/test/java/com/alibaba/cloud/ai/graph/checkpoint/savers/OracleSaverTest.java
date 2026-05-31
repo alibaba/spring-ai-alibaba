@@ -396,6 +396,36 @@ public class OracleSaverTest {
         assertEquals(1, countingDataSource.latestCheckpointSelects());
     }
 
+    @Test
+    public void testOracleSaverRetainsOnlyLatestCheckpoints() throws Exception {
+        var countingDataSource = new CountingDataSource(DATA_SOURCE);
+        var saver = OracleSaver.builder()
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .dataSource(countingDataSource)
+                .maxCachedThreads(16)
+                .build();
+
+        String threadId = "oracle-retention-thread";
+        var config = RunnableConfig.builder()
+                .threadId(threadId)
+                .checkpointsNumRetained(2)
+                .build();
+        var firstCheckpoint = checkpoint("first");
+        var secondCheckpoint = checkpoint("second");
+        var thirdCheckpoint = checkpoint("third");
+
+        saver.put(config, firstCheckpoint);
+        saver.put(config, secondCheckpoint);
+        countingDataSource.reset();
+        saver.put(config, thirdCheckpoint);
+
+        assertEquals(1, countingDataSource.deleteCheckpointStatements());
+        Collection<Checkpoint> history = saver.list(config);
+        assertEquals(2, history.size());
+        assertEquals(thirdCheckpoint.getId(), history.iterator().next().getId());
+        assertTrue(saver.get(config(threadId, firstCheckpoint.getId())).isEmpty());
+    }
+
     private static final class CountingDataSource implements DataSource {
 
         private final DataSource delegate;
@@ -404,6 +434,8 @@ public class OracleSaverTest {
 
         private final AtomicInteger checkpointByIdSelects = new AtomicInteger();
 
+        private final AtomicInteger deleteCheckpointStatements = new AtomicInteger();
+
         private CountingDataSource(DataSource delegate) {
             this.delegate = delegate;
         }
@@ -411,6 +443,7 @@ public class OracleSaverTest {
         void reset() {
             latestCheckpointSelects.set(0);
             checkpointByIdSelects.set(0);
+            deleteCheckpointStatements.set(0);
         }
 
         int latestCheckpointSelects() {
@@ -419,6 +452,10 @@ public class OracleSaverTest {
 
         int checkpointByIdSelects() {
             return checkpointByIdSelects.get();
+        }
+
+        int deleteCheckpointStatements() {
+            return deleteCheckpointStatements.get();
         }
 
         @Override
@@ -454,6 +491,9 @@ public class OracleSaverTest {
             }
             if (sql.contains("AND c.checkpoint_id = ?")) {
                 checkpointByIdSelects.incrementAndGet();
+            }
+            if (sql.contains("DELETE FROM GRAPH_CHECKPOINT")) {
+                deleteCheckpointStatements.incrementAndGet();
             }
         }
 

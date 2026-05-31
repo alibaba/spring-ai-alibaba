@@ -115,6 +115,27 @@ class AbstractJdbcCheckpointSaverTest {
 	}
 
 	@Test
+	void shouldDeleteOlderCheckpointsWhenRetentionIsConfigured() throws Exception {
+		var saver = new FakeJdbcCheckpointSaver(16);
+		var config = RunnableConfig.builder()
+				.threadId("thread-retained")
+				.checkpointsNumRetained(2)
+				.build();
+		var firstCheckpoint = checkpoint("first");
+		var secondCheckpoint = checkpoint("second");
+		var thirdCheckpoint = checkpoint("third");
+
+		saver.put(config, firstCheckpoint);
+		saver.put(config, secondCheckpoint);
+		saver.put(config, thirdCheckpoint);
+
+		var checkpoints = saver.list(config);
+		assertEquals(2, checkpoints.size());
+		assertEquals(thirdCheckpoint.getId(), checkpoints.stream().findFirst().orElseThrow().getId());
+		assertTrue(saver.get(config("thread-retained", firstCheckpoint.getId())).isEmpty());
+	}
+
+	@Test
 	void shouldRejectNegativeMaxCachedThreads() {
 		assertThrows(IllegalArgumentException.class, () -> new FakeJdbcCheckpointSaver(-1));
 	}
@@ -187,6 +208,12 @@ class AbstractJdbcCheckpointSaverTest {
 				}
 			}
 			throw new NoSuchElementException("Checkpoint with id %s not found!".formatted(checkpointId));
+		}
+
+		@Override
+		protected void deleteCheckpoints(String threadId, java.util.Collection<String> checkpointIds) {
+			LinkedList<Checkpoint> history = checkpoints.getOrDefault(threadId, new LinkedList<>());
+			history.removeIf(checkpoint -> checkpointIds.contains(checkpoint.getId()));
 		}
 
 		@Override
