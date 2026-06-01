@@ -441,7 +441,7 @@ public class MultiAgentSupervisorExample {
 					.build();
 
 			this.chatClient = ChatClient.builder(model)
-					.defaultTools(coderTool)
+					.defaultToolCallbacks(coderTool)
 					.build();
 		}
 
