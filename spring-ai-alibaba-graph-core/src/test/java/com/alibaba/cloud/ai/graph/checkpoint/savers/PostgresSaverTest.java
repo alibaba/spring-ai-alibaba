@@ -50,6 +50,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static com.alibaba.cloud.ai.graph.checkpoint.savers.LatestCheckpointCacheTestSupport.enableLatestCheckpointCache;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
@@ -270,12 +271,12 @@ public class PostgresSaverTest {
     @Test
     public void testLatestCheckpointCacheIsBoundedByThreadCount() throws Exception {
         var countingDataSource = new CountingDataSource(dataSource());
-        var saver = PostgresSaver.builder()
+        var saver = enableLatestCheckpointCache(PostgresSaver.builder()
                 .datasource(countingDataSource)
                 .stateSerializer(serializer)
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .maxCachedThreads(2)
-                .build();
+                .build());
 
         var firstCheckpoint = checkpoint("first");
         var firstConfig = config("postgres-cache-thread-1");
@@ -293,12 +294,12 @@ public class PostgresSaverTest {
     @Test
     public void testPostgresSaverKeepsOnlyLatestCheckpointInMemory() throws Exception {
         var countingDataSource = new CountingDataSource(dataSource());
-        var saver = PostgresSaver.builder()
+        var saver = enableLatestCheckpointCache(PostgresSaver.builder()
                 .datasource(countingDataSource)
                 .stateSerializer(serializer)
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .maxCachedThreads(16)
-                .build();
+                .build());
 
         String threadId = "postgres-cache-single-thread";
         var firstCheckpoint = checkpoint("first");
@@ -328,12 +329,12 @@ public class PostgresSaverTest {
     @Test
     public void testPostgresSaverRefreshesLatestCacheWhenLatestCheckpointIsUpdated() throws Exception {
         var countingDataSource = new CountingDataSource(dataSource());
-        var saver = PostgresSaver.builder()
+        var saver = enableLatestCheckpointCache(PostgresSaver.builder()
                 .datasource(countingDataSource)
                 .stateSerializer(serializer)
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .maxCachedThreads(16)
-                .build();
+                .build());
 
         String threadId = "postgres-cache-update-latest-thread";
         var originalCheckpoint = checkpoint("original");
@@ -352,12 +353,12 @@ public class PostgresSaverTest {
     @Test
     public void testPostgresSaverClearsLatestCacheWhenThreadIsReleased() throws Exception {
         var countingDataSource = new CountingDataSource(dataSource());
-        var saver = PostgresSaver.builder()
+        var saver = enableLatestCheckpointCache(PostgresSaver.builder()
                 .datasource(countingDataSource)
                 .stateSerializer(serializer)
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .maxCachedThreads(16)
-                .build();
+                .build());
 
         String threadId = "postgres-cache-release-thread";
         saver.put(config(threadId), checkpoint("released"));
