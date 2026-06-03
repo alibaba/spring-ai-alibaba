@@ -17,22 +17,35 @@ package com.alibaba.cloud.ai.graph.checkpoint.savers;
 
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.postgresql.CreateOption;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.postgresql.PostgresSaver;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.LogManager;
+import java.util.logging.Logger;
+
+import javax.sql.DataSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -103,6 +116,32 @@ public class PostgresSaverTest {
                 .database(DATABASE_NAME)
                 .stateSerializer(serializer)
                 ;
+    }
+
+    private static DataSource dataSource() {
+        var dataSource = new PGSimpleDataSource();
+        dataSource.setServerNames(new String[] {postgres.getHost()});
+        dataSource.setPortNumbers(new int[] {postgres.getFirstMappedPort()});
+        dataSource.setDatabaseName(DATABASE_NAME);
+        dataSource.setUser(postgres.getUsername());
+        dataSource.setPassword(postgres.getPassword());
+        return dataSource;
+    }
+
+    private static RunnableConfig config(String threadId) {
+        return RunnableConfig.builder().threadId(threadId).build();
+    }
+
+    private static RunnableConfig config(String threadId, String checkpointId) {
+        return RunnableConfig.builder().threadId(threadId).checkPointId(checkpointId).build();
+    }
+
+    private static Checkpoint checkpoint(String value) {
+        return Checkpoint.builder()
+                .nodeId("agent_1")
+                .nextNodeId(END)
+                .state(Map.of("value", value))
+                .build();
     }
 
     @Test
@@ -226,6 +265,166 @@ public class PostgresSaverTest {
 
         saver.release( runnableConfig );
 
+    }
+
+    @Test
+    public void testLatestCheckpointCacheIsBoundedByThreadCount() throws Exception {
+        var countingDataSource = new CountingDataSource(dataSource());
+        var saver = PostgresSaver.builder()
+                .datasource(countingDataSource)
+                .stateSerializer(serializer)
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .maxCachedThreads(2)
+                .build();
+
+        var firstCheckpoint = checkpoint("first");
+        var firstConfig = config("postgres-cache-thread-1");
+        saver.put(firstConfig, firstCheckpoint);
+        saver.put(config("postgres-cache-thread-2"), checkpoint("second"));
+        saver.put(config("postgres-cache-thread-3"), checkpoint("third"));
+
+        countingDataSource.reset();
+        var reloaded = saver.get(firstConfig);
+        assertTrue(reloaded.isPresent());
+        assertEquals(firstCheckpoint.getId(), reloaded.get().getId());
+        assertEquals(1, countingDataSource.latestCheckpointSelects());
+    }
+
+    @Test
+    public void testPostgresSaverKeepsOnlyLatestCheckpointInMemory() throws Exception {
+        var countingDataSource = new CountingDataSource(dataSource());
+        var saver = PostgresSaver.builder()
+                .datasource(countingDataSource)
+                .stateSerializer(serializer)
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .maxCachedThreads(16)
+                .build();
+
+        String threadId = "postgres-cache-single-thread";
+        var firstCheckpoint = checkpoint("first");
+        var secondCheckpoint = checkpoint("second");
+        var thirdCheckpoint = checkpoint("third");
+
+        saver.put(config(threadId), firstCheckpoint);
+        saver.put(config(threadId), secondCheckpoint);
+        saver.put(config(threadId), thirdCheckpoint);
+
+        countingDataSource.reset();
+        var latest = saver.get(config(threadId));
+        assertTrue(latest.isPresent());
+        assertEquals(thirdCheckpoint.getId(), latest.get().getId());
+        assertEquals(0, countingDataSource.latestCheckpointSelects());
+
+        Collection<Checkpoint> history = saver.list(config(threadId));
+        assertEquals(3, history.size());
+
+        countingDataSource.reset();
+        var firstFromDatabase = saver.get(config(threadId, firstCheckpoint.getId()));
+        assertTrue(firstFromDatabase.isPresent());
+        assertEquals(firstCheckpoint.getId(), firstFromDatabase.get().getId());
+        assertEquals(1, countingDataSource.checkpointByIdSelects());
+    }
+
+    @Test
+    public void testPostgresSaverRefreshesLatestCacheWhenLatestCheckpointIsUpdated() throws Exception {
+        var countingDataSource = new CountingDataSource(dataSource());
+        var saver = PostgresSaver.builder()
+                .datasource(countingDataSource)
+                .stateSerializer(serializer)
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .maxCachedThreads(16)
+                .build();
+
+        String threadId = "postgres-cache-update-latest-thread";
+        var originalCheckpoint = checkpoint("original");
+        var updatedCheckpoint = checkpoint("updated");
+        var checkpointConfig = saver.put(config(threadId), originalCheckpoint);
+
+        saver.put(checkpointConfig, updatedCheckpoint);
+
+        countingDataSource.reset();
+        var latest = saver.get(config(threadId));
+        assertTrue(latest.isPresent());
+        assertEquals(updatedCheckpoint.getId(), latest.get().getId());
+        assertEquals(0, countingDataSource.latestCheckpointSelects());
+    }
+
+    @Test
+    public void testPostgresSaverClearsLatestCacheWhenThreadIsReleased() throws Exception {
+        var countingDataSource = new CountingDataSource(dataSource());
+        var saver = PostgresSaver.builder()
+                .datasource(countingDataSource)
+                .stateSerializer(serializer)
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .maxCachedThreads(16)
+                .build();
+
+        String threadId = "postgres-cache-release-thread";
+        saver.put(config(threadId), checkpoint("released"));
+
+        countingDataSource.reset();
+        saver.release(config(threadId));
+        var latest = saver.get(config(threadId));
+        assertTrue(latest.isEmpty());
+        assertEquals(1, countingDataSource.latestCheckpointSelects());
+    }
+
+    @Test
+    public void testPostgresSaverCanDisableLatestCheckpointCache() throws Exception {
+        var countingDataSource = new CountingDataSource(dataSource());
+        var saver = PostgresSaver.builder()
+                .datasource(countingDataSource)
+                .stateSerializer(serializer)
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .maxCachedThreads(0)
+                .build();
+
+        String threadId = "postgres-cache-disabled-thread";
+        var latestCheckpoint = checkpoint("latest");
+        saver.put(config(threadId), latestCheckpoint);
+
+        countingDataSource.reset();
+        var firstRead = saver.get(config(threadId));
+        assertTrue(firstRead.isPresent());
+        assertEquals(latestCheckpoint.getId(), firstRead.get().getId());
+        assertEquals(1, countingDataSource.latestCheckpointSelects());
+
+        countingDataSource.reset();
+        var secondRead = saver.get(config(threadId));
+        assertTrue(secondRead.isPresent());
+        assertEquals(latestCheckpoint.getId(), secondRead.get().getId());
+        assertEquals(1, countingDataSource.latestCheckpointSelects());
+    }
+
+    @Test
+    public void testPostgresSaverRetainsOnlyLatestCheckpoints() throws Exception {
+        var countingDataSource = new CountingDataSource(dataSource());
+        var saver = PostgresSaver.builder()
+                .datasource(countingDataSource)
+                .stateSerializer(serializer)
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .maxCachedThreads(16)
+                .build();
+
+        String threadId = "postgres-retention-thread";
+        var config = RunnableConfig.builder()
+                .threadId(threadId)
+                .checkpointsNumRetained(2)
+                .build();
+        var firstCheckpoint = checkpoint("first");
+        var secondCheckpoint = checkpoint("second");
+        var thirdCheckpoint = checkpoint("third");
+
+        saver.put(config, firstCheckpoint);
+        saver.put(config, secondCheckpoint);
+        countingDataSource.reset();
+        saver.put(config, thirdCheckpoint);
+
+        assertEquals(1, countingDataSource.deleteCheckpointStatements());
+        Collection<Checkpoint> history = saver.list(config);
+        assertEquals(2, history.size());
+        assertEquals(thirdCheckpoint.getId(), history.iterator().next().getId());
+        assertTrue(saver.get(config(threadId, firstCheckpoint.getId())).isEmpty());
     }
 
 
@@ -429,5 +628,112 @@ public class PostgresSaverTest {
 			saver.release(config);
 		}
 	}
+
+    private static final class CountingDataSource implements DataSource {
+
+        private final DataSource delegate;
+
+        private final AtomicInteger latestCheckpointSelects = new AtomicInteger();
+
+        private final AtomicInteger checkpointByIdSelects = new AtomicInteger();
+
+        private final AtomicInteger deleteCheckpointStatements = new AtomicInteger();
+
+        private CountingDataSource(DataSource delegate) {
+            this.delegate = delegate;
+        }
+
+        void reset() {
+            latestCheckpointSelects.set(0);
+            checkpointByIdSelects.set(0);
+            deleteCheckpointStatements.set(0);
+        }
+
+        int latestCheckpointSelects() {
+            return latestCheckpointSelects.get();
+        }
+
+        int checkpointByIdSelects() {
+            return checkpointByIdSelects.get();
+        }
+
+        int deleteCheckpointStatements() {
+            return deleteCheckpointStatements.get();
+        }
+
+        @Override
+        public Connection getConnection() throws SQLException {
+            return countPreparedStatements(delegate.getConnection());
+        }
+
+        @Override
+        public Connection getConnection(String username, String password) throws SQLException {
+            return countPreparedStatements(delegate.getConnection(username, password));
+        }
+
+        private Connection countPreparedStatements(Connection connection) {
+            return (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(), new Class<?>[] { Connection.class },
+                    (proxy, method, args) -> {
+                        countQuery(method, args);
+                        try {
+                            return method.invoke(connection, args);
+                        }
+                        catch (InvocationTargetException ex) {
+                            throw ex.getCause();
+                        }
+                    });
+        }
+
+        private void countQuery(java.lang.reflect.Method method, Object[] args) {
+            if (!"prepareStatement".equals(method.getName()) || args == null || args.length == 0
+                    || !(args[0] instanceof String sql)) {
+                return;
+            }
+            if (sql.contains("ORDER BY c.saved_at DESC") && sql.contains("LIMIT 1")) {
+                latestCheckpointSelects.incrementAndGet();
+            }
+            if (sql.contains("AND c.checkpoint_id = ?")) {
+                checkpointByIdSelects.incrementAndGet();
+            }
+            if (sql.contains("DELETE FROM GraphCheckpoint")) {
+                deleteCheckpointStatements.incrementAndGet();
+            }
+        }
+
+        @Override
+        public <T> T unwrap(Class<T> iface) throws SQLException {
+            return delegate.unwrap(iface);
+        }
+
+        @Override
+        public boolean isWrapperFor(Class<?> iface) throws SQLException {
+            return delegate.isWrapperFor(iface);
+        }
+
+        @Override
+        public PrintWriter getLogWriter() throws SQLException {
+            return delegate.getLogWriter();
+        }
+
+        @Override
+        public void setLogWriter(PrintWriter out) throws SQLException {
+            delegate.setLogWriter(out);
+        }
+
+        @Override
+        public void setLoginTimeout(int seconds) throws SQLException {
+            delegate.setLoginTimeout(seconds);
+        }
+
+        @Override
+        public int getLoginTimeout() throws SQLException {
+            return delegate.getLoginTimeout();
+        }
+
+        @Override
+        public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+            return delegate.getParentLogger();
+        }
+    }
 
 }

@@ -73,6 +73,7 @@ public class RoutingMergeNode implements NodeAction {
 		logger.debug("RoutingMergeNode: merging results from {} sub-agents", subAgents.size());
 
 		List<String> formattedResults = new ArrayList<>();
+		String lastResult = null;
 		for (BaseAgent subAgent : subAgents) {
 			String outputKey = subAgent.getOutputKey();
 			if (outputKey == null) {
@@ -84,9 +85,19 @@ public class RoutingMergeNode implements NodeAction {
 				if (text != null && !text.isBlank()) {
 					String source = capitalize(subAgent.name());
 					formattedResults.add("**From " + source + ":**\n" + text);
+					lastResult = text;
 					logger.debug("Collected result from {} (key: {})", subAgent.name(), outputKey);
 				}
 			}
+		}
+
+		// When the router delegated to a single sub-agent, that agent's answer is already the
+		// final response. Re-synthesizing it through the LLM would issue a redundant model call
+		// and emit a second, rephrased copy of the same answer to the user (gh-4616). Pass the
+		// single result through unchanged; only genuinely multi-source results need synthesis.
+		if (formattedResults.size() == 1) {
+			logger.debug("RoutingMergeNode: single routed result, returning it without re-synthesis");
+			return Map.of(mergedOutputKey, lastResult);
 		}
 
 		String query = extractOriginalQuery(state);
