@@ -65,11 +65,11 @@ public class ConversationChatMemory implements ChatMemory {
 		}
 
 		for (Message message : messages) {
-			if (messages.size() >= maxMessages) {
+			historyMessages.offer(message);
+
+			while (historyMessages.size() > maxMessages) {
 				historyMessages.poll();
 			}
-
-			historyMessages.offer(message);
 		}
 
 		redisManager.put(key, historyMessages);
