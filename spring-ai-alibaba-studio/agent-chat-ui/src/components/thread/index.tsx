@@ -10,6 +10,7 @@ import { HumanMessage } from "./messages/human";
 import { ToolResponseMessage } from "./messages/tool-response";
 import { ToolRequestMessage } from "./messages/tool-request";
 import { ToolRequestConfirmMessage } from "./messages/tool-request-confirm";
+import { ParallelAgentMessage } from "./messages/parallel";
 import { DO_NOT_RENDER_ID_PREFIX } from "@/lib/ensure-tool-responses";
 import { SAALogoSVG } from "../icons/saa-logo";
 import { TooltipIconButton } from "./tooltip-icon-button";
@@ -606,6 +607,9 @@ export function Thread() {
 
                         case "tool":
                           return <ToolResponseMessage key={key} message={message} />;
+
+                        case "parallel":
+                          return <ParallelAgentMessage key={key} message={message} />;
 
                         default:
                           console.log('[Thread] Unknown message type:', messageType);

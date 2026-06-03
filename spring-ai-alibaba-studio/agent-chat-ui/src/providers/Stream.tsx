@@ -13,8 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useThreads } from "./Thread";
 import { toast } from "sonner";
-import { createApiClient, ToolFeedbackDTO } from "@/lib/spring-ai-api";
-import { UIMessage, createUIMessage, fromMessageDTO } from "@/types/messages";
+import { createApiClient, ToolFeedbackDTO, AgentRunResponse } from "@/lib/spring-ai-api";
+import { UIMessage, createUIMessage, fromMessageDTO, ParallelMessage, SubAgentResult } from "@/types/messages";
 
 interface StreamContextType {
   messages: UIMessage[];
@@ -191,6 +191,9 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
             );
 
         let isFirstChunk = true;
+        // Track sub-agent streaming state
+        const subAgentChunks: Record<string, string> = {};
+        const subAgentOrder: string[] = [];
         console.log('[Stream] Starting to process agent responses...');
 
         for await (const agentResponse of stream) {
@@ -202,7 +205,56 @@ export const StreamProvider: React.FC<StreamProviderProps> = ({ children }) => {
             continue;
           }
 
-          // Use chunk for streaming updates if available
+          // ── Sub-agent (subGraph) streaming chunk handling ──
+          if (agentResponse.chunk && (agentResponse as AgentRunResponse).subGraph) {
+            const responseAgent = agentResponse.agent || 'unknown';
+            const chunk = agentResponse.chunk;
+
+            // Track new sub-agent names in order
+            if (!(responseAgent in subAgentChunks)) {
+              subAgentOrder.push(responseAgent);
+              subAgentChunks[responseAgent] = '';
+            }
+            subAgentChunks[responseAgent] += chunk;
+
+            // Build / update ParallelMessage
+            const subAgents: SubAgentResult[] = subAgentOrder.map(name => ({
+              name,
+              content: subAgentChunks[name],
+            }));
+            const parallelMsg: ParallelMessage = {
+              messageType: 'parallel',
+              content: subAgents.map(s => s.content).join('\n'),
+              subAgents,
+              metadata: {},
+            };
+
+            setMessages(prev => {
+              const newMessages = [...prev];
+              // Find existing parallel message (last one)
+              let parallelIdx = -1;
+              for (let i = newMessages.length - 1; i >= 0; i--) {
+                if (newMessages[i].message.messageType === 'parallel') {
+                  parallelIdx = i;
+                  break;
+                }
+              }
+              const uiMsg: UIMessage = {
+                id: `parallel-${Date.now()}`,
+                message: parallelMsg,
+                timestamp: Date.now(),
+              };
+              if (parallelIdx >= 0) {
+                newMessages[parallelIdx] = { ...newMessages[parallelIdx], message: parallelMsg };
+              } else {
+                newMessages.push(uiMsg);
+              }
+              return newMessages;
+            });
+            continue;
+          }
+
+          // ── Normal streaming chunk handling ──
           if (agentResponse.chunk) {
             console.log('[Stream] Processing chunk:', agentResponse.chunk);
 
