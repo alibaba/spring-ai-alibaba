@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.checkpoint.savers.jdbc;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,6 +30,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import static com.alibaba.cloud.ai.graph.checkpoint.savers.LatestCheckpointCacheTestSupport.enableLatestCheckpointCache;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,7 +39,7 @@ class AbstractJdbcCheckpointSaverTest {
 
 	@Test
 	void shouldCacheLatestCheckpointAndReloadEvictedThread() throws Exception {
-		var saver = new FakeJdbcCheckpointSaver(2);
+		var saver = enableLatestCheckpointCache(new FakeJdbcCheckpointSaver(2));
 		var firstCheckpoint = checkpoint("first");
 		var firstConfig = config("thread-1");
 
@@ -53,8 +55,21 @@ class AbstractJdbcCheckpointSaverTest {
 	}
 
 	@Test
-	void shouldBypassLatestCacheWhenCheckpointIdIsProvided() throws Exception {
+	void shouldReadLatestCheckpointFromStorageByDefault() throws Exception {
 		var saver = new FakeJdbcCheckpointSaver(16);
+		String threadId = "thread-default-no-cache";
+		var checkpoint = checkpoint("latest");
+		saver.put(config(threadId), checkpoint);
+
+		saver.get(config(threadId));
+		saver.get(config(threadId));
+
+		assertEquals(2, saver.latestCheckpointSelects);
+	}
+
+	@Test
+	void shouldBypassLatestCacheWhenCheckpointIdIsProvided() throws Exception {
+		var saver = enableLatestCheckpointCache(new FakeJdbcCheckpointSaver(16));
 		String threadId = "thread-by-id";
 		var firstCheckpoint = checkpoint("first");
 		var secondCheckpoint = checkpoint("second");
@@ -72,7 +87,7 @@ class AbstractJdbcCheckpointSaverTest {
 
 	@Test
 	void shouldRefreshLatestCacheWhenLatestCheckpointIsUpdated() throws Exception {
-		var saver = new FakeJdbcCheckpointSaver(16);
+		var saver = enableLatestCheckpointCache(new FakeJdbcCheckpointSaver(16));
 		String threadId = "thread-update";
 		var originalCheckpoint = checkpoint("original");
 		var updatedCheckpoint = checkpoint("updated");
@@ -88,7 +103,7 @@ class AbstractJdbcCheckpointSaverTest {
 
 	@Test
 	void shouldClearLatestCacheWhenThreadIsReleased() throws Exception {
-		var saver = new FakeJdbcCheckpointSaver(16);
+		var saver = enableLatestCheckpointCache(new FakeJdbcCheckpointSaver(16));
 		String threadId = "thread-release";
 		saver.put(config(threadId), checkpoint("released"));
 
@@ -103,8 +118,43 @@ class AbstractJdbcCheckpointSaverTest {
 
 	@Test
 	void shouldDisableLatestCacheWhenMaxCachedThreadsIsZero() throws Exception {
-		var saver = new FakeJdbcCheckpointSaver(0);
+		var saver = enableLatestCheckpointCache(new FakeJdbcCheckpointSaver(0));
 		String threadId = "thread-no-cache";
+		var checkpoint = checkpoint("latest");
+		saver.put(config(threadId), checkpoint);
+
+		saver.get(config(threadId));
+		saver.get(config(threadId));
+
+		assertEquals(2, saver.latestCheckpointSelects);
+	}
+
+	@Test
+	void shouldDisableLatestCacheFromSaverConfig() throws Exception {
+		var saver = enableLatestCheckpointCache(new FakeJdbcCheckpointSaver(16));
+		String threadId = "thread-config-no-cache";
+		var checkpoint = checkpoint("latest");
+		saver.put(config(threadId), checkpoint);
+
+		SaverConfig.builder()
+				.register(saver)
+				.latestCheckpointCacheEnabled(false)
+				.build();
+
+		saver.get(config(threadId));
+		saver.get(config(threadId));
+
+		assertEquals(2, saver.latestCheckpointSelects);
+	}
+
+	@Test
+	void shouldApplySaverConfigLatestCacheSettingToLaterRegistrations() throws Exception {
+		var saver = new FakeJdbcCheckpointSaver(16);
+		SaverConfig.builder()
+				.latestCheckpointCacheEnabled(false)
+				.register(saver)
+				.build();
+		String threadId = "thread-config-later-register";
 		var checkpoint = checkpoint("latest");
 		saver.put(config(threadId), checkpoint);
 
