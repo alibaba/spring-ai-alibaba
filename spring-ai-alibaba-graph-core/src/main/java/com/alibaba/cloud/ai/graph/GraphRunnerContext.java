@@ -114,7 +114,8 @@ public class GraphRunnerContext {
 
 		this.currentNodeId = null;
 		this.nextNodeId = checkpoint.getNextNodeId();
-		this.overallState = initialState.input(checkpoint.getState());
+		this.overallState = stateCreate(checkpoint.getState(), initialState);
+		this.overallState.input(initialState.data());
 		this.resumeFrom = checkpoint.getNodeId();
 
 		log.trace("RESUME FROM {}", checkpoint.getNodeId());
