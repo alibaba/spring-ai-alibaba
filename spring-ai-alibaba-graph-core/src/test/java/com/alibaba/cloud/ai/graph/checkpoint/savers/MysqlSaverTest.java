@@ -196,6 +196,32 @@ public class MysqlSaverTest {
     }
 
     @Test
+    public void testMysqlSaverCanReleaseSameThreadNameMoreThanOnce() throws Exception {
+        var saver = MysqlSaver.builder()
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .dataSource(DATA_SOURCE)
+                .build();
+
+        String threadId = "mysql-repeat-release-thread";
+        var firstCheckpoint = checkpoint("first");
+        var secondCheckpoint = checkpoint("second");
+
+        saver.put(config(threadId), firstCheckpoint);
+        var firstRelease = saver.release(config(threadId));
+        assertEquals(threadId, firstRelease.threadId());
+        assertEquals(1, firstRelease.checkpoints().size());
+        assertTrue(saver.get(config(threadId)).isEmpty());
+
+        saver.put(config(threadId), secondCheckpoint);
+        assertEquals(secondCheckpoint.getId(), saver.get(config(threadId)).orElseThrow().getId());
+
+        var secondRelease = saver.release(config(threadId));
+        assertEquals(threadId, secondRelease.threadId());
+        assertEquals(1, secondRelease.checkpoints().size());
+        assertTrue(saver.get(config(threadId)).isEmpty());
+    }
+
+    @Test
     public void testCheckpointWithReleasedThread() throws Exception {
 
         var saver = MysqlSaver.builder()
