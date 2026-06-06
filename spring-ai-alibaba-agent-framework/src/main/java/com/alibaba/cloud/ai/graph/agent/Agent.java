@@ -525,7 +525,7 @@ public abstract class Agent {
 			? RunnableConfig.builder() 
 			: RunnableConfig.builder(config);
 		
-		builder.addMetadata("_AGENT_", name);
+		builder.addMetadata("_stream_", true).addMetadata("_AGENT_", name);
 		applyExecutorConfig(builder);
 		
 		return builder.build();

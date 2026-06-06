@@ -15,9 +15,21 @@
  */
 package com.alibaba.cloud.ai.graph.agent.tools;
 
-public interface ToolContextConstants {
-	String AGENT_STATE_CONTEXT_KEY = "_AGENT_STATE_";
-	String AGENT_STATE_FOR_UPDATE_CONTEXT_KEY = "_AGENT_STATE_FOR_UPDATE_";
-	String AGENT_CONFIG_CONTEXT_KEY = "_AGENT_CONFIG_";
-	String AGENT_TOOL_PROGRESS_EMITTER_CONTEXT_KEY = "_AGENT_TOOL_PROGRESS_EMITTER_";
+import java.util.Map;
+
+/**
+ * Runtime-only tool streaming chunk emitted during tool execution.
+ *
+ * @param toolCallId tool call id from the assistant message
+ * @param toolName tool name
+ * @param content chunk text content
+ * @param metadata optional chunk metadata
+ * @author Zhengcy05
+ * @since 1.0.0
+ */
+public record ToolStreamingChunk(String toolCallId, String toolName, String content, Map<String, Object> metadata) {
+
+	public ToolStreamingChunk {
+		metadata = metadata == null ? Map.of() : Map.copyOf(metadata);
+	}
 }
