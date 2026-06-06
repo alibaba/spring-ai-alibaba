@@ -28,6 +28,9 @@ import java.util.Map;
  */
 public interface ToolProgressEmitter {
 
+	/**
+	 * Noop emitter used by non-streaming execution paths.
+	 */
 	ToolProgressEmitter NOOP = new ToolProgressEmitter() {
 		@Override
 		public boolean next(String content) {
@@ -50,13 +53,48 @@ public interface ToolProgressEmitter {
 		}
 	};
 
+	/**
+	 * Emit a progress chunk with empty metadata.
+	 * @param content the progress content to emit
+	 * @return {@code true} if the chunk was accepted for emission, {@code false}
+	 * otherwise
+	 */
 	default boolean next(String content) {
 		return next(content, Map.of());
 	}
 
+	/**
+	 * Emit a progress chunk for the current tool call.
+	 *
+	 * <p>
+	 * The content is exposed as a runtime {@code AGENT_TOOL_STREAMING} event. The
+	 * metadata map is optional and may be used by higher-level consumers for additional
+	 * rendering or correlation.
+	 * </p>
+	 * @param content the progress content to emit
+	 * @param metadata optional metadata associated with this chunk
+	 * @return {@code true} if the chunk was accepted for emission, {@code false}
+	 * otherwise
+	 */
 	boolean next(String content, Map<String, Object> metadata);
 
+	/**
+	 * Emit a terminal error chunk for the current tool call.
+	 *
+	 * <p>
+	 * This method is intended for runtime streaming visibility only. It does not replace
+	 * the normal tool error handling path, which still determines the final tool result
+	 * returned to the agent.
+	 * </p>
+	 * @param throwable the tool execution error
+	 * @return {@code true} if the error chunk was emitted, {@code false} otherwise
+	 */
 	boolean error(Throwable throwable);
 
+	/**
+	 * Whether this emitter has already entered a terminal state.
+	 * @return {@code true} if no more chunks should be emitted, {@code false}
+	 * otherwise
+	 */
 	boolean isTerminated();
 }

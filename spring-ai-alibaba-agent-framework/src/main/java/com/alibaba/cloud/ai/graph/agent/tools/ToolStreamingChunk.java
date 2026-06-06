@@ -25,10 +25,17 @@ import java.util.Map;
  * @param content chunk text content
  * @param metadata optional chunk metadata
  * @author Zhengcy05
- * @since 1.0.0
+ * @since 1.1.2.2
  */
 public record ToolStreamingChunk(String toolCallId, String toolName, String content, Map<String, Object> metadata) {
 
+	/**
+	 * Canonical constructor that normalizes the metadata map to an immutable value.
+	 * @param toolCallId tool call id from the assistant message
+	 * @param toolName tool name
+	 * @param content chunk text content
+	 * @param metadata optional chunk metadata
+	 */
 	public ToolStreamingChunk {
 		metadata = metadata == null ? Map.of() : Map.copyOf(metadata);
 	}

@@ -34,7 +34,6 @@ import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCancelledException;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolStateCollector;
 import com.alibaba.cloud.ai.graph.agent.tools.ToolProgressEmitter;
-import com.alibaba.cloud.ai.graph.agent.tools.ToolStreamingChunk;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
@@ -71,7 +70,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -308,7 +306,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 */
 	private Flux<GraphResponse<NodeOutput>> executeToolCallsStreamingSequential(List<AssistantMessage.ToolCall> toolCalls,
 			OverAllState state, RunnableConfig config) {
+		// Delayed generation
 		return Flux.defer(() -> {
+			// Initialize a reactive sink: unicast, with backpressure buffer
+			// used for secure launch tools with streaming progress + final result.
 			Sinks.Many<GraphResponse<NodeOutput>> sink = Sinks.many().unicast().onBackpressureBuffer();
 			CompletableFuture.runAsync(() -> {
 				try {
@@ -317,13 +318,13 @@ public class AgentToolNode implements NodeActionWithConfig {
 					Boolean returnDirect = null;
 					for (AssistantMessage.ToolCall toolCall : toolCalls) {
 						Map<String, Object> toolSpecificUpdate = new ConcurrentHashMap<>();
+						// Create a separate progress emitter for each tool to ensure progress data isolation.
 						RuntimeToolProgressEmitter emitter = createRuntimeEmitter(toolCall, sink, state, config);
 						ToolCallResponse response;
 						try {
 							response = executeToolCallWithInterceptors(toolCall, state, config, toolSpecificUpdate, false, null,
 									-1, emitter);
-						}
-						finally {
+						} finally {
 							emitter.finish();
 						}
 						toolResponses.add(response.toToolResponse());
@@ -334,8 +335,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 					emitNext(sink, GraphResponse.of(buildToolFinishedOutput(finalState, state, config)));
 					emitNext(sink, GraphResponse.done(finalState));
 					emitComplete(sink);
-				}
-				catch (Throwable throwable) {
+				} catch (Throwable throwable) {
 					emitError(sink, throwable);
 				}
 			}, getToolExecutor(config));
@@ -357,7 +357,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 */
 	private Flux<GraphResponse<NodeOutput>> executeToolCallsStreamingParallel(List<AssistantMessage.ToolCall> toolCalls,
 			OverAllState state, RunnableConfig config) {
-		// Delayed generation defer
+		// Delayed generation
 		return Flux.defer(() -> {
 			// Initialize a reactive sink: unicast, with backpressure buffer
 			// used for secure launch tools with streaming progress + final result.
@@ -1106,7 +1106,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 */
 	private RuntimeToolProgressEmitter createRuntimeEmitter(AssistantMessage.ToolCall toolCall,
 			Sinks.Many<GraphResponse<NodeOutput>> sink, OverAllState state, RunnableConfig config) {
-		return new RuntimeToolProgressEmitter(toolCall, sink, state, config);
+		return new RuntimeToolProgressEmitter(toolCall, response -> emitNext(sink, response), this::extractErrorMessage,
+				state, config);
 	}
 
 	/**
@@ -1178,62 +1179,6 @@ public class AgentToolNode implements NodeActionWithConfig {
 				.filter(tc -> tc != null && toolName.equals(tc.getToolDefinition().name()))
 				.findFirst())
 			.orElse(null);
-	}
-
-	private final class RuntimeToolProgressEmitter implements ToolProgressEmitter {
-
-		private final AssistantMessage.ToolCall toolCall;
-
-		private final Sinks.Many<GraphResponse<NodeOutput>> sink;
-
-		private final OverAllState state;
-
-		private final RunnableConfig config;
-
-		private final AtomicBoolean terminated = new AtomicBoolean(false);
-
-		private RuntimeToolProgressEmitter(AssistantMessage.ToolCall toolCall, Sinks.Many<GraphResponse<NodeOutput>> sink,
-				OverAllState state, RunnableConfig config) {
-			this.toolCall = toolCall;
-			this.sink = sink;
-			this.state = state;
-			this.config = config;
-		}
-
-		@Override
-		public boolean next(String content, Map<String, Object> metadata) {
-			if (terminated.get() || content == null) {
-				return false;
-			}
-			ToolStreamingChunk chunk = new ToolStreamingChunk(toolCall.id(), toolCall.name(), content, metadata);
-			emitNext(sink, GraphResponse.of(new StreamingOutput<>(chunk, AGENT_TOOL_NAME,
-					(String) config.metadata(RunnableConfig.AGENT_NAME_KEY).orElse(""), state,
-					OutputType.AGENT_TOOL_STREAMING)));
-			return true;
-		}
-
-		@Override
-		public boolean error(Throwable throwable) {
-			if (!terminated.compareAndSet(false, true)) {
-				return false;
-			}
-			String message = extractErrorMessage(throwable);
-			ToolStreamingChunk chunk = new ToolStreamingChunk(toolCall.id(), toolCall.name(), message,
-					Map.of("error", true));
-			emitNext(sink, GraphResponse.of(new StreamingOutput<>(chunk, AGENT_TOOL_NAME,
-					(String) config.metadata(RunnableConfig.AGENT_NAME_KEY).orElse(""), state,
-					OutputType.AGENT_TOOL_STREAMING)));
-			return true;
-		}
-
-		@Override
-		public boolean isTerminated() {
-			return terminated.get();
-		}
-
-		private void finish() {
-			terminated.set(true);
-		}
 	}
 
 	public String getName() {
