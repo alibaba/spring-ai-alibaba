@@ -52,6 +52,7 @@ import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.oracle.OracleContainer;
 
+import static com.alibaba.cloud.ai.graph.checkpoint.savers.LatestCheckpointCacheTestSupport.enableLatestCheckpointCache;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
@@ -275,11 +276,11 @@ public class OracleSaverTest {
     @Test
     public void testLatestCheckpointCacheIsBoundedByThreadCount() throws Exception {
         var countingDataSource = new CountingDataSource(DATA_SOURCE);
-        var saver = OracleSaver.builder()
+        var saver = enableLatestCheckpointCache(OracleSaver.builder()
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .dataSource(countingDataSource)
                 .maxCachedThreads(2)
-                .build();
+                .build());
 
         var firstCheckpoint = checkpoint("first");
         var firstConfig = config("oracle-cache-thread-1");
@@ -297,11 +298,11 @@ public class OracleSaverTest {
     @Test
     public void testOracleSaverKeepsOnlyLatestCheckpointInMemory() throws Exception {
         var countingDataSource = new CountingDataSource(DATA_SOURCE);
-        var saver = OracleSaver.builder()
+        var saver = enableLatestCheckpointCache(OracleSaver.builder()
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .dataSource(countingDataSource)
                 .maxCachedThreads(16)
-                .build();
+                .build());
 
         String threadId = "oracle-cache-single-thread";
         var firstCheckpoint = checkpoint("first");
@@ -331,11 +332,11 @@ public class OracleSaverTest {
     @Test
     public void testOracleSaverRefreshesLatestCacheWhenLatestCheckpointIsUpdated() throws Exception {
         var countingDataSource = new CountingDataSource(DATA_SOURCE);
-        var saver = OracleSaver.builder()
+        var saver = enableLatestCheckpointCache(OracleSaver.builder()
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .dataSource(countingDataSource)
                 .maxCachedThreads(16)
-                .build();
+                .build());
 
         String threadId = "oracle-cache-update-latest-thread";
         var originalCheckpoint = checkpoint("original");
@@ -354,11 +355,11 @@ public class OracleSaverTest {
     @Test
     public void testOracleSaverClearsLatestCacheWhenThreadIsReleased() throws Exception {
         var countingDataSource = new CountingDataSource(DATA_SOURCE);
-        var saver = OracleSaver.builder()
+        var saver = enableLatestCheckpointCache(OracleSaver.builder()
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .dataSource(countingDataSource)
                 .maxCachedThreads(16)
-                .build();
+                .build());
 
         String threadId = "oracle-cache-release-thread";
         saver.put(config(threadId), checkpoint("released"));

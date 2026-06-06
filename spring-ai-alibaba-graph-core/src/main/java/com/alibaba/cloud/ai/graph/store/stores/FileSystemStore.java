@@ -250,8 +250,9 @@ public class FileSystemStore extends BaseStore {
 	 * @return item path
 	 */
 	private Path createItemPath(List<String> namespace, String key) {
-		Path path = rootPath;
+		Path path = rootPath.toAbsolutePath().normalize();
 		for (String ns : namespace) {
+			validatePathSegment(ns, "namespace");
 			path = path.resolve(ns);
 		}
 		Path itemPath = path.resolve(key + ".json").toAbsolutePath().normalize();

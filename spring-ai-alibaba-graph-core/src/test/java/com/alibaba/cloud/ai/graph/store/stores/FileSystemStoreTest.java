@@ -192,6 +192,21 @@ class FileSystemStoreTest {
 	}
 
 	@Test
+	void testRejectsNamespaceTraversalSegments() {
+		RuntimeException ex = assertThrows(RuntimeException.class, () -> store.putItem(
+				StoreItem.of(List.of(".."), "escaped", Map.of("x", "y"))));
+		assertThat(ex).hasCauseInstanceOf(IllegalArgumentException.class);
+		assertThat(ex.getCause()).hasMessageContaining("unsafe path segment");
+	}
+
+	@Test
+	void testRejectsKeyTraversalSegments() {
+		RuntimeException ex = assertThrows(RuntimeException.class, () -> store.getItem(List.of("safe"), "../escaped"));
+		assertThat(ex).hasCauseInstanceOf(IllegalArgumentException.class);
+		assertThat(ex.getCause()).hasMessageContaining("unsafe path segment");
+	}
+
+	@Test
 	void testDirectoryCreation() {
 		// Given
 		List<String> deepNamespace = List.of("level1", "level2", "level3", "level4");

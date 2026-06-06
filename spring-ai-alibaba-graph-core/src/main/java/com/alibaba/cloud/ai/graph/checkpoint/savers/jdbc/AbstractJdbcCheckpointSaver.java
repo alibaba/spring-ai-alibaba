@@ -18,7 +18,9 @@ package com.alibaba.cloud.ai.graph.checkpoint.savers.jdbc;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.common.LatestCheckpointCache;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.common.LatestCheckpointCacheConfigurable;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -33,14 +35,17 @@ import java.util.concurrent.locks.ReentrantLock;
  * This class owns the common saver lifecycle and latest-checkpoint cache behavior.
  * Subclasses keep database-specific SQL, transaction details and row mapping logic.
  */
-public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver {
+public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver, LatestCheckpointCacheConfigurable {
 
 	private final LatestCheckpointCache latestCheckpointCache;
 
 	private final ReentrantLock lock = new ReentrantLock();
 
+	private boolean latestCheckpointCacheEnabled = false;
+
 	/**
-	 * Creates a JDBC saver base with a bounded latest-checkpoint cache.
+	 * Creates a JDBC saver base with a bounded latest-checkpoint cache. The local
+	 * cache is disabled by default and can be enabled from {@link SaverConfig}.
 	 *
 	 * @param maxCachedThreads maximum number of thread latest-checkpoint entries to
 	 * cache, or 0 to disable the cache
@@ -62,7 +67,7 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 		try {
 			String threadId = threadId(config);
 			LinkedList<Checkpoint> checkpoints = selectCheckpoints(threadId);
-			if (!checkpoints.isEmpty()) {
+			if (latestCheckpointCacheEnabled && !checkpoints.isEmpty()) {
 				latestCheckpointCache.put(threadId, checkpoints.peek());
 			}
 			return Collections.unmodifiableCollection(checkpoints);
@@ -92,13 +97,17 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 				return selectCheckpointById(threadId, config.checkPointId().get());
 			}
 
-			Optional<Checkpoint> cached = latestCheckpointCache.get(threadId);
-			if (cached.isPresent()) {
-				return cached;
+			if (latestCheckpointCacheEnabled) {
+				Optional<Checkpoint> cached = latestCheckpointCache.get(threadId);
+				if (cached.isPresent()) {
+					return cached;
+				}
 			}
 
 			Optional<Checkpoint> latest = selectLatestCheckpoint(threadId);
-			latest.ifPresent(checkpoint -> latestCheckpointCache.put(threadId, checkpoint));
+			if (latestCheckpointCacheEnabled) {
+				latest.ifPresent(checkpoint -> latestCheckpointCache.put(threadId, checkpoint));
+			}
 			return latest;
 		}
 		catch (Exception ex) {
@@ -129,15 +138,19 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 				String checkpointId = config.checkPointId().get();
 				updateCheckpoint(threadId, checkpointId, checkpoint);
 				deleteRetainedCheckpoints(threadId, config);
-				latestCheckpointCache.get(threadId)
-						.filter(latest -> latest.getId().equals(checkpointId))
-						.ifPresent(latest -> latestCheckpointCache.put(threadId, checkpoint));
+				if (latestCheckpointCacheEnabled) {
+					latestCheckpointCache.get(threadId)
+							.filter(latest -> latest.getId().equals(checkpointId))
+							.ifPresent(latest -> latestCheckpointCache.put(threadId, checkpoint));
+				}
 				return config;
 			}
 
 			insertCheckpoint(threadId, checkpoint);
 			deleteRetainedCheckpoints(threadId, config);
-			latestCheckpointCache.put(threadId, checkpoint);
+			if (latestCheckpointCacheEnabled) {
+				latestCheckpointCache.put(threadId, checkpoint);
+			}
 			return RunnableConfig.builder(config)
 					.checkPointId(checkpoint.getId())
 					.build();
@@ -164,6 +177,20 @@ public abstract class AbstractJdbcCheckpointSaver implements BaseCheckpointSaver
 			releaseThread(threadId);
 			latestCheckpointCache.remove(threadId);
 			return new Tag(threadId, checkpoints);
+		}
+		finally {
+			lock.unlock();
+		}
+	}
+
+	@Override
+	public final void latestCheckpointCacheEnabled(boolean enabled) {
+		lock.lock();
+		try {
+			this.latestCheckpointCacheEnabled = enabled;
+			if (!enabled) {
+				latestCheckpointCache.clear();
+			}
 		}
 		finally {
 			lock.unlock();
