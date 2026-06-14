@@ -544,7 +544,13 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 			if (toolCallback == null) {
 				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, req.getToolName());
-				throw new IllegalStateException("No ToolCallback found for tool name: " + req.getToolName());
+				return ToolCallResponse.builder()
+					.content("Tool not available: " + req.getToolName())
+					.toolName(req.getToolName())
+					.toolCallId(req.getToolCallId())
+					.status("error")
+					.metadata(Map.of("error", true, "unresolvedToolName", req.getToolName()))
+					.build();
 			}
 
 			if (enableActingLog) {
