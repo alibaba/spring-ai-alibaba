@@ -78,4 +78,130 @@ class MergeStrategyTest {
         assertEquals("New", strategy.apply(null, "New"));
         assertNull(strategy.apply(null, null));
     }
+
+    @Test
+    void testMergeObjectFields() {
+        PlanState oldPlan = new PlanState("Original title", "Initial thought", null);
+        PlanState newPlan = new PlanState(null, "Updated thought", "Completed");
+
+        PlanState result = (PlanState) strategy.apply(oldPlan, newPlan);
+
+        assertNotSame(oldPlan, result);
+        assertNotSame(newPlan, result);
+        assertEquals("Original title", result.title);
+        assertEquals("Updated thought", result.thought);
+        assertEquals("Completed", result.status);
+    }
+
+    @Test
+    void testMergeNestedObjectFields() {
+        PlanState oldPlan = new PlanState("Original title", "Initial thought", "Running");
+        oldPlan.metrics = new PlanMetrics(4, null);
+        PlanState newPlan = new PlanState(null, "Updated thought", null);
+        newPlan.metrics = new PlanMetrics(null, 2);
+
+        PlanState result = (PlanState) strategy.apply(oldPlan, newPlan);
+
+        assertEquals("Original title", result.title);
+        assertEquals("Updated thought", result.thought);
+        assertEquals("Running", result.status);
+        assertEquals(4, result.metrics.totalSteps);
+        assertEquals(2, result.metrics.completedSteps);
+    }
+
+    @Test
+    void testMergeObjectMapFields() {
+        PlanState oldPlan = new PlanState("Original title", null, null);
+        oldPlan.metadata.put("source", "planner");
+        PlanState newPlan = new PlanState(null, null, "Completed");
+        newPlan.metadata.put("owner", "worker");
+
+        PlanState result = (PlanState) strategy.apply(oldPlan, newPlan);
+
+        assertEquals("Original title", result.title);
+        assertEquals("Completed", result.status);
+        assertEquals("planner", result.metadata.get("source"));
+        assertEquals("worker", result.metadata.get("owner"));
+    }
+
+    @Test
+    void testKeepReplacementForObjectsWithoutNoArgsConstructor() {
+        ImmutablePlanState oldPlan = new ImmutablePlanState("Original title");
+        ImmutablePlanState newPlan = new ImmutablePlanState("Updated title");
+
+        Object result = strategy.apply(oldPlan, newPlan);
+
+        assertSame(newPlan, result);
+    }
+
+    @Test
+    void testKeepReplacementForObjectsWithoutFields() {
+        EmptyState oldState = new EmptyState();
+        EmptyState newState = new EmptyState();
+
+        Object result = strategy.apply(oldState, newState);
+
+        assertSame(newState, result);
+    }
+
+    @Test
+    void testIncompatibleTypes() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> strategy.apply(new PlanState("Original title", null, null), new PlanMetrics(1, 0)));
+
+        assertTrue(exception.getMessage().contains("Cannot merge incompatible types"));
+    }
+
+    private static class PlanState {
+
+        private String title;
+
+        private String thought;
+
+        private String status;
+
+        private PlanMetrics metrics;
+
+        private Map<String, String> metadata = new HashMap<>();
+
+        PlanState() {
+        }
+
+        PlanState(String title, String thought, String status) {
+            this.title = title;
+            this.thought = thought;
+            this.status = status;
+        }
+
+    }
+
+    private static class PlanMetrics {
+
+        private Integer totalSteps;
+
+        private Integer completedSteps;
+
+        PlanMetrics() {
+        }
+
+        PlanMetrics(Integer totalSteps, Integer completedSteps) {
+            this.totalSteps = totalSteps;
+            this.completedSteps = completedSteps;
+        }
+
+    }
+
+    private static class ImmutablePlanState {
+
+        private final String title;
+
+        ImmutablePlanState(String title) {
+            this.title = title;
+        }
+
+    }
+
+    private static class EmptyState {
+
+    }
 }
