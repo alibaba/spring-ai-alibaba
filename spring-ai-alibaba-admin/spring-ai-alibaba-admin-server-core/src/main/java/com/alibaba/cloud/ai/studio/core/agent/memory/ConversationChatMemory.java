@@ -64,12 +64,13 @@ public class ConversationChatMemory implements ChatMemory {
 			historyMessages = new ArrayDeque<>();
 		}
 
+		int messageLimit = Math.max(0, maxMessages);
 		for (Message message : messages) {
-			if (messages.size() >= maxMessages) {
-				historyMessages.poll();
-			}
-
 			historyMessages.offer(message);
+		}
+
+		while (historyMessages.size() > messageLimit) {
+			historyMessages.poll();
 		}
 
 		redisManager.put(key, historyMessages);

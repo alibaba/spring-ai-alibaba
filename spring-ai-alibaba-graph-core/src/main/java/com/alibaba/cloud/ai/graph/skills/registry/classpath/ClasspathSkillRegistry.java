@@ -27,6 +27,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,6 +81,7 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	private final Map<String, String> jarSkillContentCache = new HashMap<>();
 	// JAR FileSystem for classpath resources (only created if resource is in JAR)
 	private FileSystem jarFileSystem;
+	private boolean ownsJarFileSystem;
 
 	private ClasspathSkillRegistry(Builder builder) {
 		this.classpathPath = builder.classpathPath != null && !builder.classpathPath.isEmpty()
@@ -149,8 +151,8 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 				else if ("jar".equals(uri.getScheme())) {
 					// Resource is in a JAR file (production mode)
 					// Create or reuse JAR FileSystem
-					if (jarFileSystem == null) {
-						jarFileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+					if (jarFileSystem == null || !jarFileSystem.isOpen()) {
+						jarFileSystem = getOrCreateJarFileSystem(uri);
 					}
 					// Get path within the JAR file system
 					// URI format: jar:file:/path/to.jar!/skills
@@ -201,6 +203,21 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 		}
 
 		this.skills = loadedSkills;
+	}
+
+	FileSystem getOrCreateJarFileSystem(URI uri) throws IOException {
+		if (jarFileSystem != null && jarFileSystem.isOpen()) {
+			return jarFileSystem;
+		}
+		try {
+			jarFileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap());
+			ownsJarFileSystem = true;
+		}
+		catch (FileSystemAlreadyExistsException ex) {
+			jarFileSystem = FileSystems.getFileSystem(uri);
+			ownsJarFileSystem = false;
+		}
+		return jarFileSystem;
 	}
 
 	/**
@@ -466,15 +483,16 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	 * Should be called when the registry is no longer needed.
 	 */
 	public void close() {
-		if (jarFileSystem != null) {
+		if (ownsJarFileSystem && jarFileSystem != null) {
 			try {
 				jarFileSystem.close();
 			}
 			catch (IOException e) {
 				logger.warn("Failed to close JAR filesystem: {}", e.getMessage());
-			}
-			jarFileSystem = null;
 		}
+		jarFileSystem = null;
+		ownsJarFileSystem = false;
+	}
 	}
 
 	/**

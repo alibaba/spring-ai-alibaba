@@ -50,6 +50,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static com.alibaba.cloud.ai.graph.checkpoint.savers.LatestCheckpointCacheTestSupport.enableLatestCheckpointCache;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
@@ -270,12 +271,12 @@ public class PostgresSaverTest {
     @Test
     public void testLatestCheckpointCacheIsBoundedByThreadCount() throws Exception {
         var countingDataSource = new CountingDataSource(dataSource());
-        var saver = PostgresSaver.builder()
+        var saver = enableLatestCheckpointCache(PostgresSaver.builder()
                 .datasource(countingDataSource)
                 .stateSerializer(serializer)
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .maxCachedThreads(2)
-                .build();
+                .build());
 
         var firstCheckpoint = checkpoint("first");
         var firstConfig = config("postgres-cache-thread-1");
@@ -293,12 +294,12 @@ public class PostgresSaverTest {
     @Test
     public void testPostgresSaverKeepsOnlyLatestCheckpointInMemory() throws Exception {
         var countingDataSource = new CountingDataSource(dataSource());
-        var saver = PostgresSaver.builder()
+        var saver = enableLatestCheckpointCache(PostgresSaver.builder()
                 .datasource(countingDataSource)
                 .stateSerializer(serializer)
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .maxCachedThreads(16)
-                .build();
+                .build());
 
         String threadId = "postgres-cache-single-thread";
         var firstCheckpoint = checkpoint("first");
@@ -328,12 +329,12 @@ public class PostgresSaverTest {
     @Test
     public void testPostgresSaverRefreshesLatestCacheWhenLatestCheckpointIsUpdated() throws Exception {
         var countingDataSource = new CountingDataSource(dataSource());
-        var saver = PostgresSaver.builder()
+        var saver = enableLatestCheckpointCache(PostgresSaver.builder()
                 .datasource(countingDataSource)
                 .stateSerializer(serializer)
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .maxCachedThreads(16)
-                .build();
+                .build());
 
         String threadId = "postgres-cache-update-latest-thread";
         var originalCheckpoint = checkpoint("original");
@@ -352,12 +353,12 @@ public class PostgresSaverTest {
     @Test
     public void testPostgresSaverClearsLatestCacheWhenThreadIsReleased() throws Exception {
         var countingDataSource = new CountingDataSource(dataSource());
-        var saver = PostgresSaver.builder()
+        var saver = enableLatestCheckpointCache(PostgresSaver.builder()
                 .datasource(countingDataSource)
                 .stateSerializer(serializer)
                 .createOption(CreateOption.CREATE_OR_REPLACE)
                 .maxCachedThreads(16)
-                .build();
+                .build());
 
         String threadId = "postgres-cache-release-thread";
         saver.put(config(threadId), checkpoint("released"));
@@ -394,6 +395,37 @@ public class PostgresSaverTest {
         assertTrue(secondRead.isPresent());
         assertEquals(latestCheckpoint.getId(), secondRead.get().getId());
         assertEquals(1, countingDataSource.latestCheckpointSelects());
+    }
+
+    @Test
+    public void testPostgresSaverRetainsOnlyLatestCheckpoints() throws Exception {
+        var countingDataSource = new CountingDataSource(dataSource());
+        var saver = PostgresSaver.builder()
+                .datasource(countingDataSource)
+                .stateSerializer(serializer)
+                .createOption(CreateOption.CREATE_OR_REPLACE)
+                .maxCachedThreads(16)
+                .build();
+
+        String threadId = "postgres-retention-thread";
+        var config = RunnableConfig.builder()
+                .threadId(threadId)
+                .checkpointsNumRetained(2)
+                .build();
+        var firstCheckpoint = checkpoint("first");
+        var secondCheckpoint = checkpoint("second");
+        var thirdCheckpoint = checkpoint("third");
+
+        saver.put(config, firstCheckpoint);
+        saver.put(config, secondCheckpoint);
+        countingDataSource.reset();
+        saver.put(config, thirdCheckpoint);
+
+        assertEquals(1, countingDataSource.deleteCheckpointStatements());
+        Collection<Checkpoint> history = saver.list(config);
+        assertEquals(2, history.size());
+        assertEquals(thirdCheckpoint.getId(), history.iterator().next().getId());
+        assertTrue(saver.get(config(threadId, firstCheckpoint.getId())).isEmpty());
     }
 
 
@@ -606,6 +638,8 @@ public class PostgresSaverTest {
 
         private final AtomicInteger checkpointByIdSelects = new AtomicInteger();
 
+        private final AtomicInteger deleteCheckpointStatements = new AtomicInteger();
+
         private CountingDataSource(DataSource delegate) {
             this.delegate = delegate;
         }
@@ -613,6 +647,7 @@ public class PostgresSaverTest {
         void reset() {
             latestCheckpointSelects.set(0);
             checkpointByIdSelects.set(0);
+            deleteCheckpointStatements.set(0);
         }
 
         int latestCheckpointSelects() {
@@ -621,6 +656,10 @@ public class PostgresSaverTest {
 
         int checkpointByIdSelects() {
             return checkpointByIdSelects.get();
+        }
+
+        int deleteCheckpointStatements() {
+            return deleteCheckpointStatements.get();
         }
 
         @Override
@@ -656,6 +695,9 @@ public class PostgresSaverTest {
             }
             if (sql.contains("AND c.checkpoint_id = ?")) {
                 checkpointByIdSelects.incrementAndGet();
+            }
+            if (sql.contains("DELETE FROM GraphCheckpoint")) {
+                deleteCheckpointStatements.incrementAndGet();
             }
         }
 

@@ -228,10 +228,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 		var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
 
 		return rawFlux.filter(element -> {
-				// skip ChatResponse.getResult() == null
-				if (element instanceof ChatResponse response) {
-					return response.getResult() != null &&  response.getResult().getOutput() != null;
-				}
 				// Don't filter out Exception/Throwable - we need to handle them
 				return true;
 			})
@@ -247,6 +243,13 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return errorResponse;
 				}
 				if (element instanceof ChatResponse response) {
+					// Handle usage-only chunks (null result/output) without dropping usage metadata
+					if (response.getResult() == null || response.getResult().getOutput() == null) {
+						GraphResponse<NodeOutput> graphResponse = GraphResponse
+							.of(context.buildStreamingOutput(response, nodeId, true));
+						lastGraphResponseRef.set(graphResponse);
+						return graphResponse;
+					}
 					ChatResponse lastResponse = lastChatResponseRef.get();
 					final var currentMessage = response.getResult().getOutput();
 
@@ -727,9 +730,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return;
 			}
 
-			// Apply mapResult function if available
-			Map<String, Object> resultMap = new HashMap<>();
-			resultMap.put(graphFlux.getKey(), lastData);
+			// Resolve the final GraphFlux result into a graph state update.
+			Map<String, Object> resultMap = graphFluxResultState(graphFlux, lastData);
 
 			// Merge non-GraphFlux state
 			Map<String, Object> partialStateWithoutGraphFlux = partialState.entrySet()
@@ -763,6 +765,37 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 		return processedFlux
 				.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+	}
+
+	private Map<String, Object> graphFluxResultState(GraphFlux<?> graphFlux, Object lastData) {
+		if (lastData instanceof GraphResponse<?> graphResponse) {
+			Optional<Object> resultValue = graphResponse.resultValue();
+			if (resultValue.isPresent()) {
+				Object value = resultValue.get();
+				if (value instanceof Map<?, ?> resultMap) {
+					return copyStateMap(resultMap);
+				}
+			}
+		}
+
+		Map<String, Object> state = new HashMap<>();
+		state.put(graphFluxStateKey(graphFlux), lastData);
+		return state;
+	}
+
+	private static String graphFluxStateKey(GraphFlux<?> graphFlux) {
+		return StringUtils.hasText(graphFlux.getKey()) ? graphFlux.getKey() : "result";
+	}
+
+	private static Map<String, Object> copyStateMap(Map<?, ?> resultMap) {
+		Map<String, Object> state = new HashMap<>();
+		for (Map.Entry<?, ?> entry : resultMap.entrySet()) {
+			if (!(entry.getKey() instanceof String key)) {
+				throw new IllegalArgumentException("GraphFlux done result map keys must be String");
+			}
+			state.put(key, entry.getValue());
+		}
+		return state;
 	}
 
 	/**
@@ -847,7 +880,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 				String nodeId = graphFlux.getNodeId();
 				Object nodeData = nodeDataRefs.get(nodeId).get();
 
-				combinedResultMap.put(graphFlux.getKey(),nodeData);
+				combinedResultMap = OverAllState.updateState(
+						combinedResultMap, graphFluxResultState(graphFlux, nodeData), context.getKeyStrategyMap());
 			}
 
 			// Merge non-ParallelGraphFlux state
@@ -910,4 +944,3 @@ public class NodeExecutor extends BaseGraphExecutor {
 				.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
 	}
 }
-

@@ -73,6 +73,7 @@ public class AgentScopeRoutingMergeNode implements NodeAction {
 		logger.debug("AgentScopeRoutingMergeNode: merging results from {} sub-agents", subAgents.size());
 
 		List<String> formattedResults = new ArrayList<>();
+		String lastResult = null;
 		for (BaseAgent subAgent : subAgents) {
 			String outputKey = subAgent.getOutputKey();
 			if (outputKey == null) {
@@ -84,6 +85,7 @@ public class AgentScopeRoutingMergeNode implements NodeAction {
 				if (text != null && !text.isBlank()) {
 					String source = capitalize(subAgent.name());
 					formattedResults.add("**From " + source + ":**\n" + text);
+					lastResult = text;
 					logger.debug("Collected result from {} (key: {})", subAgent.name(), outputKey);
 				}
 			}
