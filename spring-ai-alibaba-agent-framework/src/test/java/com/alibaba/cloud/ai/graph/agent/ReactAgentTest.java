@@ -129,6 +129,10 @@ class ReactAgentTest {
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver())
 				.build();
 		AssistantMessage message = agent.call("帮我写一篇100字左右散文。");
+		assertNotNull(message, "Message should not be null");
+		assertNotNull(message.getText(), "Message text should not be null");
+
+		System.out.println("=== Text message ===");
 		System.out.println(message.getText());
 	}
 
@@ -264,8 +268,28 @@ class ReactAgentTest {
 	 * 使用getAndCompileGraph方法获取并打印ReactAgent的内部状态图
 	 */
 	private void printReactAgentGraph(ReactAgent agent) {
+
+		assertNotNull(agent, "Agent should not be null");
+
 		GraphRepresentation representation = agent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+
+		assertNotNull(representation, "representation should not be null");
+		assertNotNull(representation.content(), "content should not be null");
+
+		System.out.println("=== ReactAgentGraph ===");
 		System.out.println(representation.content());
+	}
+
+	@Test
+	public void testPrintReactAgentGraph() {
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("simple_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.build();
+
+		printReactAgentGraph(agent);
 	}
 
 	@Test
@@ -304,6 +328,8 @@ class ReactAgentTest {
 				.build();
 
 		AssistantMessage assistantMessage = agent.call("帮我写一首关于春天的现代诗。");
+
+		assertNotNull(assistantMessage, "AssistantMessage should not be null");
 		System.out.println(assistantMessage.getText());
 	}
 
@@ -478,6 +504,7 @@ class ReactAgentTest {
 
 		// Verify serializer is set
 		StateGraph stateGraph = agent.getStateGraph();
+		assertNotNull(stateGraph, "StateGraph should not be null");
 		StateSerializer graphSerializer = stateGraph.getStateSerializer();
 		assertInstanceOf(SpringAIJacksonStateSerializer.class, graphSerializer);
 
@@ -906,10 +933,10 @@ class ReactAgentTest {
 			// Verify executor is set and passed to RunnableConfig using reflection
 			RunnableConfig config = buildNonStreamConfig(agent, null);
 			assertNotNull(config, "RunnableConfig should not be null");
-			
+
 			assertTrue(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
 				"Default parallel executor should be present in metadata");
-			assertEquals(customExecutor, 
+			assertEquals(customExecutor,
 				config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
 				"Executor in metadata should match configured executor");
 		} finally {
@@ -933,7 +960,7 @@ class ReactAgentTest {
 		// Verify no executor in metadata when not configured
 		RunnableConfig config = buildNonStreamConfig(agent, null);
 		assertNotNull(config, "RunnableConfig should not be null");
-		
+
 		assertFalse(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
 			"Default parallel executor should not be present when not configured");
 	}
