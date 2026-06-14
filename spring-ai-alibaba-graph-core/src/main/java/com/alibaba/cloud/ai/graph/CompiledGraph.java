@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -362,7 +363,7 @@ public class CompiledGraph {
 		return parallelNodeEdges.stream()
 				.map(ee -> ee.target().id())
 				.filter(Objects::nonNull)
-				.collect(Collectors.toSet());
+				.collect(Collectors.toCollection(TreeSet::new));
 	}
 
 

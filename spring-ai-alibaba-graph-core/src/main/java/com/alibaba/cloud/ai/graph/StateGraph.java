@@ -294,6 +294,8 @@ public class StateGraph {
 	/**
 	 * Adds node that behave as parallel conditional edges.
 	 * This method allows routing to multiple nodes in parallel based on the multi-command action.
+	 * All nodes referenced by the mappings must have outgoing edges to the same
+	 * immediate convergence node.
 	 * @param id the identifier of the node
 	 * @param action multi-command action to determine multiple target nodes for parallel execution
 	 * @param mappings the mappings of conditions to target nodes
@@ -471,6 +473,8 @@ public class StateGraph {
 	 * Adds conditional edges to the graph that can route to multiple nodes in parallel.
 	 * This method is used when the condition action can return multiple target nodes
 	 * that should be executed in parallel.
+	 * All mapped target nodes must have outgoing edges to the same immediate
+	 * convergence node.
 	 *
 	 * @param sourceId the identifier of the source node
 	 * @param condition the multi-command action used to determine multiple target nodes
