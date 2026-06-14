@@ -50,6 +50,8 @@ class ClasspathSkillRegistryEnhancementsTest {
 		assertEquals(List.of("sample-skill"),
 				registry.search("classpath registry enhancement").stream().map(SkillMetadata::getName).toList());
 		assertTrue(registry.readSkillContentByPath(skill.getSkillPath()).contains("# Sample Skill"));
+		assertTrue(registry.getSkillLoadInstructions().contains("not direct tool names"));
+		assertTrue(registry.getSkillLoadInstructions().contains("calling `read_skill`"));
 
 		assertTrue(registry.disable("sample-skill"));
 		assertTrue(registry.isDisabled("sample-skill"));
