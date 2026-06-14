@@ -17,9 +17,11 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.utils.SerializationUtils;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -116,6 +118,29 @@ public class SerializationUtilsCustomMapTypeTest {
 		MockJSONObject copiedInner = (MockJSONObject) nestedData;
 		assertEquals("value", copiedInner.get("inner"));
 		assertEquals("outer", copiedOuter.get("name"));
+	}
+
+	@Test
+	public void testDeepCopyPreservesUserMessageType() {
+		UserMessage userMessage = UserMessage.builder()
+			.text("Hello from user")
+			.metadata(Map.of("user_id", "123"))
+			.build();
+
+		Map<String, Object> original = new HashMap<>();
+		original.put("messages", List.of(userMessage));
+
+		Map<String, Object> copied = SerializationUtils.deepCopyMap(original);
+
+		Object copiedMessages = copied.get("messages");
+		assertInstanceOf(List.class, copiedMessages);
+		Object copiedMessage = ((List<?>) copiedMessages).get(0);
+		assertInstanceOf(UserMessage.class, copiedMessage);
+		assertNotSame(userMessage, copiedMessage, "UserMessage should be deep copied instead of reused");
+
+		UserMessage copiedUserMessage = (UserMessage) copiedMessage;
+		assertEquals(userMessage.getText(), copiedUserMessage.getText());
+		assertEquals(userMessage.getMetadata(), copiedUserMessage.getMetadata());
 	}
 
 	@Test

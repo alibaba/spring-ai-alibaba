@@ -82,6 +82,15 @@ public final class LatestCheckpointCache {
 	}
 
 	/**
+	 * Clears all cached latest checkpoints.
+	 */
+	public synchronized void clear() {
+		if (maxCachedThreads > 0) {
+			checkpoints.clear();
+		}
+	}
+
+	/**
 	 * Creates either an empty disabled cache or an access-ordered LRU map.
 	 *
 	 * @param maxCachedThreads maximum number of thread entries to keep

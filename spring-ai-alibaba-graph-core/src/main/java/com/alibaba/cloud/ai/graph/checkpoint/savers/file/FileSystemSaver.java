@@ -203,6 +203,7 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 	private void insertCheckpoint(RunnableConfig config, Checkpoint checkpoint) throws Exception {
 		LinkedList<Checkpoint> checkpoints = loadCheckpoints(config);
 		checkpoints.push(checkpoint);
+		retainLatestCheckpoints(checkpoints, config);
 		File targetFile = getFile(config);
 		serialize(checkpoints, targetFile);
 	}
@@ -214,6 +215,7 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 				.findFirst()
 				.orElseThrow(() -> new NoSuchElementException(format("Checkpoint with id %s not found!", checkpointId)));
 		checkpoints.set(index, checkpoint);
+		retainLatestCheckpoints(checkpoints, config);
 		serialize(checkpoints, getFile(config));
 	}
 

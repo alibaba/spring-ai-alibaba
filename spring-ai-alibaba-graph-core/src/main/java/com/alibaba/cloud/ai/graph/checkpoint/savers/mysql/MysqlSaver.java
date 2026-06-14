@@ -27,6 +27,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -53,10 +55,13 @@ import static java.util.Objects.requireNonNull;
  *     CREATE TABLE GRAPH_THREAD (
  *          thread_id VARCHAR(36) PRIMARY KEY,
  *          thread_name VARCHAR(255),
- *          is_released BOOLEAN DEFAULT FALSE NOT NULL
+ *          is_released BOOLEAN DEFAULT FALSE NOT NULL,
+ *          active_thread_name VARCHAR(255) GENERATED ALWAYS AS (
+ *              CASE WHEN is_released = FALSE THEN thread_name ELSE NULL END
+ *          ) STORED
  *     )
- *     CREATE UNIQUE INDEX IDX_GRAPH_THREAD_NAME_RELEASED
- *          ON GRAPH_THREAD(thread_name, is_released)
+ *     CREATE UNIQUE INDEX IDX_GRAPH_THREAD_ACTIVE_NAME
+ *          ON GRAPH_THREAD(active_thread_name)
  *
  *     CREATE TABLE GRAPH_CHECKPOINT (
  *          checkpoint_seq BIGINT NOT NULL AUTO_INCREMENT UNIQUE,
@@ -104,12 +109,15 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 			CREATE TABLE IF NOT EXISTS GRAPH_THREAD (
 			   thread_id VARCHAR(36) PRIMARY KEY,
 			   thread_name VARCHAR(255),
-			   is_released BOOLEAN DEFAULT FALSE NOT NULL
+			   is_released BOOLEAN DEFAULT FALSE NOT NULL,
+			   active_thread_name VARCHAR(255) GENERATED ALWAYS AS (
+			       CASE WHEN is_released = FALSE THEN thread_name ELSE NULL END
+			   ) STORED
 			)""";
 
 	private static final String INDEX_THREAD_TABLE = """
-			CREATE UNIQUE INDEX IDX_GRAPH_THREAD_NAME_RELEASED
-			  ON GRAPH_THREAD(thread_name, is_released)
+			CREATE UNIQUE INDEX IDX_GRAPH_THREAD_ACTIVE_NAME
+			  ON GRAPH_THREAD(active_thread_name)
 			""";
 
 	private static final String CREATE_CHECKPOINT_TABLE = """
@@ -130,6 +138,7 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 
 	private static final String DROP_CHECKPOINT_TABLE = "DROP TABLE IF EXISTS GRAPH_CHECKPOINT";
 	private static final String DROP_THREAD_TABLE = "DROP TABLE IF EXISTS GRAPH_THREAD";
+	private static final String DROP_LEGACY_THREAD_INDEX = "DROP INDEX IDX_GRAPH_THREAD_NAME_RELEASED ON GRAPH_THREAD";
 
 	private static final String INDEX_CHECKPOINT_THREAD_SEQUENCE = """
 			CREATE INDEX IDX_GRAPH_CHECKPOINT_THREAD_SEQUENCE
@@ -143,6 +152,17 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 
 	private static final String HAS_CHECKPOINT_SEQUENCE_COLUMN = """
 			SHOW COLUMNS FROM GRAPH_CHECKPOINT LIKE 'checkpoint_seq'
+			""";
+
+	private static final String ADD_ACTIVE_THREAD_NAME_COLUMN = """
+			ALTER TABLE GRAPH_THREAD
+			ADD COLUMN active_thread_name VARCHAR(255) GENERATED ALWAYS AS (
+			    CASE WHEN is_released = FALSE THEN thread_name ELSE NULL END
+			) STORED
+			""";
+
+	private static final String HAS_ACTIVE_THREAD_NAME_COLUMN = """
+			SHOW COLUMNS FROM GRAPH_THREAD LIKE 'active_thread_name'
 			""";
 
 	// DML statements
@@ -185,6 +205,13 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 
 	private static final String RELEASE_THREAD = """
 			UPDATE GRAPH_THREAD SET is_released = TRUE WHERE thread_name = ? AND is_released = FALSE
+			""";
+
+	private static final String DELETE_CHECKPOINTS = """
+			DELETE c FROM GRAPH_CHECKPOINT c
+			INNER JOIN GRAPH_THREAD t ON c.thread_id = t.thread_id
+			WHERE t.thread_name = ? AND t.is_released != TRUE
+			  AND c.checkpoint_id IN (%s)
 			""";
 
 	private static final String SELECT_LATEST_CHECKPOINT = """
@@ -316,8 +343,9 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 					createOption == CreateOption.CREATE_IF_NOT_EXISTS) {
 				statement.execute(CREATE_THREAD_TABLE);
 				statement.execute(CREATE_CHECKPOINT_TABLE);
+				ensureActiveThreadNameColumn(connection);
 				ensureCheckpointSequenceColumn(connection);
-				createIndexIfAbsent(statement, INDEX_THREAD_TABLE);
+				replaceThreadIndex(statement);
 				createIndexIfAbsent(statement, INDEX_CHECKPOINT_THREAD_SEQUENCE);
 			}
 		}
@@ -335,6 +363,32 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 			if (e.getErrorCode() != 1061) {
 				throw e;
 			}
+		}
+	}
+
+	private void replaceThreadIndex(Statement statement) throws SQLException {
+		try {
+			statement.execute(DROP_LEGACY_THREAD_INDEX);
+		}
+		catch (SQLException e) {
+			// Ignore "Can't DROP ...; check that column/key exists" error (error code 1091)
+			if (e.getErrorCode() != 1091) {
+				throw e;
+			}
+		}
+		createIndexIfAbsent(statement, INDEX_THREAD_TABLE);
+	}
+
+	private void ensureActiveThreadNameColumn(Connection connection) throws SQLException {
+		try (Statement statement = connection.createStatement();
+			 ResultSet resultSet = statement.executeQuery(HAS_ACTIVE_THREAD_NAME_COLUMN)) {
+			if (resultSet.next()) {
+				return;
+			}
+		}
+
+		try (Statement statement = connection.createStatement()) {
+			statement.execute(ADD_ACTIVE_THREAD_NAME_COLUMN);
 		}
 	}
 
@@ -478,6 +532,26 @@ public class MysqlSaver extends AbstractJdbcCheckpointSaver {
 			log.error("Error updating checkpoint with id {} in thread {}", checkpoint.getId(), threadName, ex);
 			rollback(conn, checkpoint, threadName);
 			throw new Exception("Unable to update checkpoint", ex);
+		}
+	}
+
+	@Override
+	protected void deleteCheckpoints(String threadName, Collection<String> checkpointIds) throws Exception {
+		if (checkpointIds.isEmpty()) {
+			return;
+		}
+		try (Connection connection = dataSource.getConnection();
+				PreparedStatement preparedStatement = connection.prepareStatement(
+						DELETE_CHECKPOINTS.formatted(String.join(", ", Collections.nCopies(checkpointIds.size(), "?"))))) {
+			preparedStatement.setString(1, threadName);
+			int index = 2;
+			for (String checkpointId : checkpointIds) {
+				preparedStatement.setString(index++, checkpointId);
+			}
+			preparedStatement.executeUpdate();
+		}
+		catch (SQLException ex) {
+			throw new Exception("Unable to delete retained checkpoints", ex);
 		}
 	}
 
