@@ -15,7 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.plain_text;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.LinkedList;
 import java.util.LinkedHashMap;
@@ -28,6 +30,9 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonS
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 
 /**
  * Minimal reproduction of:
@@ -86,7 +91,7 @@ public class RecordListDegradationTest {
 		SearchInfoContainer container = new SearchInfoContainer();
 
 		LinkedHashMap<String, Object> degradedSearchResult = new LinkedHashMap<>();
-		degradedSearchResult.put("siteName", "example.com");
+		degradedSearchResult.put("site_name", "example.com");
 		degradedSearchResult.put("icon", "https://example.com/icon.png");
 		degradedSearchResult.put("index", 1);
 		degradedSearchResult.put("title", "Example Title");
@@ -116,6 +121,74 @@ public class RecordListDegradationTest {
 		ObjectOutputStream oos = new ObjectOutputStream(baos);
 		serializer.writeData(state, oos);
 		oos.flush();
+
+		// Round-trip: read back and verify data integrity
+		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+		ObjectInputStream ois = new ObjectInputStream(bais);
+		Map<String, Object> restored = serializer.readData(ois);
+
+		assertThat(restored).isNotNull();
+		assertThat(restored.get("messages")).isNotNull()
+				.asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.LIST);
+
+		List<Object> restoredMessages = (List<Object>) restored.get("messages");
+		assertThat(restoredMessages).hasSize(2);
+		assertThat(restoredMessages.get(0)).isEqualTo("placeholder");
+
+		assertThat(restoredMessages.get(1))
+				.asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP);
+		Map<String, Object> restoredInnerMap = (Map<String, Object>) restoredMessages.get(1);
+		assertThat(restoredInnerMap).containsKey("search_info");
+
+		Object searchInfoObj = restoredInnerMap.get("search_info");
+		assertThat(searchInfoObj).isNotNull();
+
+		// search_info keeps its SearchInfoContainer type because DefaultTyping
+		// is preserved in the fallback — only record types are made lenient.
+		List<Object> restoredResults;
+		if (searchInfoObj instanceof Map) {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> restoredSearchInfo = (Map<String, Object>) searchInfoObj;
+			assertThat(restoredSearchInfo).containsKey("search_results");
+			restoredResults = (List<Object>) restoredSearchInfo.get("search_results");
+		}
+		else {
+			SearchInfoContainer restoredContainer = (SearchInfoContainer) searchInfoObj;
+			restoredResults = (List<Object>) (List<?>) restoredContainer.getSearchResults();
+		}
+		assertThat(restoredResults).hasSize(1);
+
+		// The element could be a Map (if the record was degraded) or an actual
+		// SearchResult instance (if the record was reconstructed from its fields).
+		Object resultElement = restoredResults.get(0);
+		String siteName;
+		String icon;
+		int index;
+		String title;
+		String url;
+
+		if (resultElement instanceof SearchResult sr) {
+			siteName = sr.siteName();
+			icon = sr.icon();
+			index = sr.index();
+			title = sr.title();
+			url = sr.url();
+		}
+		else {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> map = (Map<String, Object>) resultElement;
+			siteName = (String) map.get("site_name");
+			icon = (String) map.get("icon");
+			index = (Integer) map.get("index");
+			title = (String) map.get("title");
+			url = (String) map.get("url");
+		}
+
+		assertThat(siteName).isEqualTo("example.com");
+		assertThat(icon).isEqualTo("https://example.com/icon.png");
+		assertThat(index).isEqualTo(1);
+		assertThat(title).isEqualTo("Example Title");
+		assertThat(url).isEqualTo("https://example.com");
 	}
 
 }
