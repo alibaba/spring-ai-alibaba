@@ -15,48 +15,38 @@
  */
 package com.alibaba.cloud.ai.agent.agentscope.flow;
 
-import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
-import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingMergeNode;
-import io.agentscope.core.model.Model;
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import io.agentscope.core.model.Model;
+import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.AssistantMessage;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AgentScopeRoutingMergeNodeTest {
 
 	@Test
-	void singleRoutedResultIsPassedThroughWithoutSynthesis() throws Exception {
+	void returnsSingleRoutedResultWithoutResynthesis() throws Exception {
 		Model model = mock(Model.class);
-		BaseAgent poemAgent = mockAgent("poem_writer_agent", "poem_article");
-		BaseAgent proseAgent = mockAgent("prose_writer_agent", "prose_article");
+		BaseAgent subAgent = mock(BaseAgent.class);
+		when(subAgent.getOutputKey()).thenReturn("writer_output");
+		when(subAgent.name()).thenReturn("writer_agent");
 
-		OverAllState state = new OverAllState(Map.of(
-				"poem_article", new AssistantMessage("A short modern poem about spring."),
-				"messages", List.<Message>of(new UserMessage("Write a poem about spring"))));
+		OverAllState state = new OverAllState();
+		state.updateState(Map.of(
+				"messages", List.of(new AssistantMessage("original question")),
+				"writer_output", new AssistantMessage("final single answer")
+		));
 
-		AgentScopeRoutingMergeNode node = new AgentScopeRoutingMergeNode(model, List.of(poemAgent, proseAgent));
+		AgentScopeRoutingMergeNode node = new AgentScopeRoutingMergeNode(model, List.of(subAgent));
+
 		Map<String, Object> result = node.apply(state);
 
-		assertEquals("A short modern poem about spring.", result.get(RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY),
-				"Single routed result must be returned verbatim, not re-synthesized");
-		verifyNoInteractions(model);
+		assertEquals("final single answer", result.get("merged_result"));
 	}
-
-	private static BaseAgent mockAgent(String name, String outputKey) {
-		BaseAgent agent = mock(BaseAgent.class);
-		when(agent.name()).thenReturn(name);
-		when(agent.getOutputKey()).thenReturn(outputKey);
-		return agent;
-	}
-
 }

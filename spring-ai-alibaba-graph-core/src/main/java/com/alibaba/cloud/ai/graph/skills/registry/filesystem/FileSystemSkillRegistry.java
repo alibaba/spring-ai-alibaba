@@ -99,6 +99,7 @@ public class FileSystemSkillRegistry extends AbstractSkillRegistry {
 			
 			**Important:**
 			
+			  - **For skill names**: Skill names are registry identifiers, not tool names. Do not call a skill name directly as a tool; call `read_skill` with the skill name or path to load the skill first.
 			  - **For SKILL.md files (skill instructions)**: Always use `read_skill` to read skill instructions. Do not attempt to access SKILL.md files through other methods.
 			  - **For other supporting files that skill uses (scripts, references, etc.)**: You may use other appropriate tools to read or access these files as needed, always use absolute paths from the skill list.
 			
@@ -275,6 +276,7 @@ public class FileSystemSkillRegistry extends AbstractSkillRegistry {
 
 		instructions.append("**Skill Path Format:**\n");
 		instructions.append("Each skill has a unique path shown in the skill list above. ");
+		instructions.append("Skill names and paths identify registry entries and are not direct tool names. ");
 		instructions.append("Use the exact path shown when calling `read_skill` to read the SKILL.md file.\n");
 
 		return instructions.toString();
