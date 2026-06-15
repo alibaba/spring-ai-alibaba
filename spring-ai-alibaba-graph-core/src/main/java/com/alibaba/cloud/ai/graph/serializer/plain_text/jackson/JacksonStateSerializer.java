@@ -36,21 +36,30 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.type.WritableTypeId;
+import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 
 /**
  * Base Implementation of {@link PlainTextStateSerializer} using Jackson library. Need to
  * be extended from specific state implementation
  */
 public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
+
+	private static final Logger log = LoggerFactory.getLogger(JacksonStateSerializer.class);
 
 	protected final ObjectMapper objectMapper;
 
@@ -101,19 +110,27 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 	@Override
 	public final void writeData(Map<String, Object> data, ObjectOutput out) throws IOException {
+		// Normalize state before serialization to convert non-serializable objects
+		// (GraphResponse, CompletableFuture) into serializable structures
 		Map<String, Object> normalized = normalizeForSerialization(data);
 		try {
 			String json = objectMapper.writeValueAsString(normalized);
 			Serializer.writeUTF(json, out);
-		} catch (JsonMappingException e) {
-			ObjectMapper safeMapper = objectMapper.copy();
-			safeMapper.setDefaultTyping(null);
-			safeMapper.deactivateDefaultTyping();
-			var module = new SimpleModule();
-			module.addSerializer(Record.class, new RecordFlatteningSerializer());
-			safeMapper.registerModule(module);
-			String json = safeMapper.writeValueAsString(normalized);
-			Serializer.writeUTF(json, out);
+		}
+		catch (JsonMappingException e) {
+			if (e.getMessage() != null
+					&& e.getMessage().contains("object is not an instance of declaring class")) {
+				log.warn("Record type degradation detected, using fallback serialization", e);
+				ObjectMapper safeMapper = objectMapper.copy();
+				var module = new SimpleModule();
+				module.setSerializerModifier(new RecordFallbackSerializerModifier());
+				safeMapper.registerModule(module);
+				String json = safeMapper.writeValueAsString(normalized);
+				Serializer.writeUTF(json, out);
+			}
+			else {
+				throw e;
+			}
 		}
 	}
 
@@ -462,31 +479,63 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		return snapshot;
 	}
 
-	private static class RecordFlatteningSerializer extends JsonSerializer<Object> {
+	/**
+	 * Replaces serializers for record types with lenient versions that tolerate
+	 * degraded Map values (from JSON round-trips where records lost type info).
+	 * Non-final types keep their normal DefaultTyping {@code @class} output.
+	 */
+	private static class RecordFallbackSerializerModifier extends BeanSerializerModifier {
 
 		@Override
-		public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-			if (!(value instanceof Record record)) {
-				serializers.defaultSerializeValue(value, gen);
-				return;
+		public JsonSerializer<?> modifySerializer(SerializationConfig config,
+				BeanDescription beanDesc, JsonSerializer<?> serializer) {
+			if (beanDesc.getBeanClass().isRecord()) {
+				return new DegradedRecordTolerantSerializer(
+						(JsonSerializer<Object>) serializer);
 			}
-			gen.writeStartObject();
-			gen.writeStringField("@class", record.getClass().getName());
-			writeRecordFields(record, gen);
-			gen.writeEndObject();
+			return serializer;
+		}
+	}
+
+	/**
+	 * If the value is a Record → writes {@code @class} + record fields.
+	 * If the value is a degraded Map → serializes as a plain object (only the
+	 * record's type info is lost; everything else keeps its normal shape).
+	 */
+	private static class DegradedRecordTolerantSerializer extends JsonSerializer<Object> {
+
+		private final JsonSerializer<Object> delegate;
+
+		DegradedRecordTolerantSerializer(JsonSerializer<Object> delegate) {
+			this.delegate = delegate;
 		}
 
 		@Override
-		public void serializeWithType(Object value, JsonGenerator gen, SerializerProvider serializers,
-									  TypeSerializer typeSer) throws IOException {
-			if (!(value instanceof Record record)) {
-				serializers.defaultSerializeValue(value, gen);
-				return;
+		public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers)
+				throws IOException {
+			if (value instanceof Record record) {
+				gen.writeStartObject();
+				gen.writeStringField("@class", record.getClass().getName());
+				writeRecordFields(record, gen);
+				gen.writeEndObject();
 			}
-			WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen,
-					typeSer.typeId(record, JsonToken.START_OBJECT));
-			writeRecordFields(record, gen);
-			typeSer.writeTypeSuffix(gen, typeIdDef);
+			else {
+				serializers.defaultSerializeValue(value, gen);
+			}
+		}
+
+		@Override
+		public void serializeWithType(Object value, JsonGenerator gen,
+				SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
+			if (value instanceof Record record) {
+				WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen,
+						typeSer.typeId(record, JsonToken.START_OBJECT));
+				writeRecordFields(record, gen);
+				typeSer.writeTypeSuffix(gen, typeIdDef);
+			}
+			else {
+				serializers.defaultSerializeValue(value, gen);
+			}
 		}
 
 		private void writeRecordFields(Record value, JsonGenerator gen) throws IOException {
@@ -494,11 +543,15 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 				try {
 					rc.getAccessor().setAccessible(true);
 					gen.writeObjectField(rc.getName(), rc.getAccessor().invoke(value));
-				} catch (Exception ignored) {
+				}
+				catch (Exception e) {
+					throw new IOException(
+							"Failed to serialize record field '" + rc.getName()
+									+ "' of " + value.getClass().getName(),
+							e);
 				}
 			}
 		}
-
 	}
 
 }
