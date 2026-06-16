@@ -167,7 +167,8 @@ public class RecordListDegradationTest {
 		String title;
 		String url;
 
-		if (resultElement instanceof SearchResult sr) {
+		if (resultElement instanceof SearchResult) {
+			SearchResult sr = (SearchResult) resultElement;
 			siteName = sr.siteName();
 			icon = sr.icon();
 			index = sr.index();
