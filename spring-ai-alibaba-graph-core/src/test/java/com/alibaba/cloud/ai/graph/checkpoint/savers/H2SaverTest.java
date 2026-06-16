@@ -27,6 +27,9 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
@@ -98,6 +101,38 @@ class H2SaverTest {
 		assertEquals(newCheckpoint.getId(), saver.get(config(threadId)).orElseThrow().getId());
 		assertEquals(1, saver.list(config(threadId)).size());
 		assertEquals(2, rowCount(dataSource, "GRAPH_THREAD"));
+	}
+
+	@Test
+	void shouldKeepOneActiveThreadWhenSaversShareDatasource() throws Exception {
+		DataSource dataSource = dataSource();
+		var firstSaver = saver(dataSource, CreateOption.CREATE_OR_REPLACE);
+		var secondSaver = saver(dataSource, CreateOption.CREATE_IF_NOT_EXISTS);
+		String threadId = "h2-shared-active-thread";
+		var start = new CountDownLatch(1);
+		var executor = Executors.newFixedThreadPool(2);
+		try {
+			var firstWrite = executor.submit(() -> {
+				start.await(5, TimeUnit.SECONDS);
+				firstSaver.put(config(threadId), checkpoint("first"));
+				return null;
+			});
+			var secondWrite = executor.submit(() -> {
+				start.await(5, TimeUnit.SECONDS);
+				secondSaver.put(config(threadId), checkpoint("second"));
+				return null;
+			});
+
+			start.countDown();
+			firstWrite.get(5, TimeUnit.SECONDS);
+			secondWrite.get(5, TimeUnit.SECONDS);
+		}
+		finally {
+			executor.shutdownNow();
+		}
+
+		assertEquals(1, activeThreadCount(dataSource, threadId));
+		assertEquals(2, firstSaver.list(config(threadId)).size());
 	}
 
 	@Test
@@ -175,6 +210,21 @@ class H2SaverTest {
 				var resultSet = statement.executeQuery()) {
 			resultSet.next();
 			return resultSet.getInt(1);
+		}
+	}
+
+	private static int activeThreadCount(DataSource dataSource, String threadId) throws SQLException {
+		try (Connection connection = dataSource.getConnection();
+				PreparedStatement statement = connection.prepareStatement("""
+						SELECT COUNT(*)
+						FROM GRAPH_THREAD
+						WHERE thread_name = ? AND is_released = FALSE
+						""")) {
+			statement.setString(1, threadId);
+			try (var resultSet = statement.executeQuery()) {
+				resultSet.next();
+				return resultSet.getInt(1);
+			}
 		}
 	}
 
