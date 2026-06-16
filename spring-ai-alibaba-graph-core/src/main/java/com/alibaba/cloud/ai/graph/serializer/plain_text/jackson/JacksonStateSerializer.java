@@ -25,6 +25,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.lang.reflect.Field;
 import java.lang.reflect.RecordComponent;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -37,7 +38,9 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.type.WritableTypeId;
 import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
@@ -118,8 +121,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 			Serializer.writeUTF(json, out);
 		}
 		catch (JsonMappingException e) {
-			if (e.getMessage() != null
-					&& e.getMessage().contains("object is not an instance of declaring class")) {
+			if (isRecordDegradation(e, normalized, objectMapper)) {
 				log.warn("Record type degradation detected, using fallback serialization", e);
 				ObjectMapper safeMapper = objectMapper.copy();
 				var module = new SimpleModule();
@@ -480,6 +482,148 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 	}
 
 	/**
+	 * Determines whether the serialization failure is caused by a record type
+	 * that degraded to {@link Map} after a JSON round-trip.
+	 *
+	 * <p>Jackson reports the type-declaration chain via
+	 * {@link JsonMappingException#getPath()}.  We walk that chain backwards
+	 * to find the last non-container type with a field declaration, resolve the
+	 * declared field / element type, and check whether (a) it is a record and
+	 * (b) the actual runtime value at that path is not an instance of it.</p>
+	 */
+	private static boolean isRecordDegradation(JsonMappingException e,
+			Map<String, Object> state, ObjectMapper mapper) {
+		List<Reference> path = e.getPath();
+		if (path == null || path.size() < 2) {
+			log.debug("isRecordDegradation: path is null or too short, path={}", path);
+			return false;
+		}
+
+		log.debug("isRecordDegradation: path size={}, path={}", path.size(), path);
+		for (int i = path.size() - 2; i >= 0; i--) {
+			Reference containerRef = path.get(i);
+			Object from = containerRef.getFrom();
+			log.debug("isRecordDegradation: i={}, from={}, fromClass={}, fieldName={}, index={}",
+					i, from, (from != null ? from.getClass() : "null"),
+					containerRef.getFieldName(), containerRef.getIndex());
+			if (!(from instanceof Class<?> containerType)) {
+				log.debug("  -> skip: from is not a Class");
+				continue;
+			}
+			if (containerType == Object.class
+					|| Map.class.isAssignableFrom(containerType)
+					|| Collection.class.isAssignableFrom(containerType)
+					|| containerType.isArray()) {
+				log.debug("  -> skip: containerType is container/fallback: {}", containerType);
+				continue;
+			}
+
+			String fieldName = containerRef.getFieldName();
+			if (fieldName == null) {
+				log.debug("  -> skip: fieldName is null");
+				continue;
+			}
+
+			JavaType fieldType = resolveFieldType(mapper, containerType, fieldName);
+			log.debug("  -> resolveFieldType({}, \"{}\") = {}", containerType.getSimpleName(), fieldName, fieldType);
+			if (fieldType == null) {
+				log.debug("  -> skip: fieldType is null");
+				continue;
+			}
+
+			JavaType elementType = fieldType.isCollectionLikeType() || fieldType.isArrayType()
+					? fieldType.getContentType()
+					: fieldType;
+			if (elementType == null) {
+				log.debug("  -> skip: elementType is null");
+				continue;
+			}
+
+			Class<?> elementClass = elementType.getRawClass();
+			log.debug("  -> elementClass={}, isRecord={}", elementClass, elementClass != null ? elementClass.isRecord() : "n/a");
+			if (elementClass != null && elementClass.isRecord()) {
+				Object actualValue = resolveValueAtPath(state, path);
+				log.debug("  -> actualValue={}, actualValueClass={}",
+						actualValue, (actualValue != null ? actualValue.getClass() : "null"));
+				boolean isDegraded = actualValue != null && !elementClass.isInstance(actualValue);
+				log.debug("  -> isDegraded={}", isDegraded);
+				return isDegraded;
+			}
+		}
+
+		log.debug("isRecordDegradation: no record degradation found, returning false");
+		return false;
+	}
+
+	/**
+	 * Resolve the declared generic type of a named field using Jackson's type factory.
+	 */
+	private static JavaType resolveFieldType(ObjectMapper mapper, Class<?> containerType,
+			String pathFieldName) {
+		for (Field field : containerType.getDeclaredFields()) {
+			String fieldName = field.getName();
+			com.fasterxml.jackson.annotation.JsonProperty jp = field
+					.getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class);
+			if (pathFieldName.equals(fieldName)
+					|| (jp != null && pathFieldName.equals(jp.value()))) {
+				return mapper.getTypeFactory().constructType(field.getGenericType());
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Walk the state map along the error path to reach the value at which the
+	 * serialization error occurred.
+	 */
+	@SuppressWarnings("unchecked")
+	private static Object resolveValueAtPath(Map<String, Object> state, List<Reference> path) {
+		Object current = state;
+		for (Reference ref : path) {
+			if (current == null) {
+				return null;
+			}
+			if (ref.getFieldName() != null && current instanceof Map) {
+				current = ((Map<String, Object>) current).get(ref.getFieldName());
+			}
+			else if (ref.getIndex() >= 0 && current instanceof List) {
+				List<Object> list = (List<Object>) current;
+				current = ref.getIndex() < list.size() ? list.get(ref.getIndex()) : null;
+			}
+			else if (ref.getIndex() >= 0 && current.getClass().isArray()) {
+				Object[] array = (Object[]) current;
+				current = ref.getIndex() < array.length ? array[ref.getIndex()] : null;
+			}
+			else if (ref.getFieldName() != null) {
+				current = readFieldValue(current, ref.getFieldName());
+			}
+			else {
+				return null;
+			}
+		}
+		return current;
+	}
+
+	private static Object readFieldValue(Object obj, String pathFieldName) {
+		for (Field field : obj.getClass().getDeclaredFields()) {
+			String fieldName = field.getName();
+			com.fasterxml.jackson.annotation.JsonProperty jp = field
+					.getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class);
+			if (pathFieldName.equals(fieldName)
+					|| (jp != null && pathFieldName.equals(jp.value()))) {
+				try {
+					field.setAccessible(true);
+					return field.get(obj);
+				}
+				catch (IllegalAccessException e) {
+					return null;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Replaces serializers for record types with lenient versions that tolerate
 	 * degraded Map values (from JSON round-trips where records lost type info).
 	 * Non-final types keep their normal DefaultTyping {@code @class} output.
@@ -490,8 +634,7 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		public JsonSerializer<?> modifySerializer(SerializationConfig config,
 				BeanDescription beanDesc, JsonSerializer<?> serializer) {
 			if (beanDesc.getBeanClass().isRecord()) {
-				return new DegradedRecordTolerantSerializer(
-						(JsonSerializer<Object>) serializer);
+				return new DegradedRecordTolerantSerializer();
 			}
 			return serializer;
 		}
@@ -503,12 +646,6 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 	 * record's type info is lost; everything else keeps its normal shape).
 	 */
 	private static class DegradedRecordTolerantSerializer extends JsonSerializer<Object> {
-
-		private final JsonSerializer<Object> delegate;
-
-		DegradedRecordTolerantSerializer(JsonSerializer<Object> delegate) {
-			this.delegate = delegate;
-		}
 
 		@Override
 		public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers)
