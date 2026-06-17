@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.unknowntool.UnknownToolGuardConstants;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
@@ -642,8 +643,8 @@ class AgentToolNodeIntegrationTest {
 		}
 
 		@Test
-		@DisplayName("should return unavailable response when tool not found anywhere")
-		void resolve_shouldReturnUnavailableResponse_whenToolNotFound() throws Exception {
+		@DisplayName("should return unavailable response with unknown tool metadata when tool not found anywhere")
+		void resolve_shouldReturnUnavailableResponseWithUnknownToolMetadata_whenToolNotFound() throws Exception {
 			AgentToolNode node = baseBuilder.toolCallbacks(List.of()).toolCallbackResolver(null).build();
 
 			AssistantMessage assistantMessage = createAssistantMessageWithToolCalls(
@@ -655,11 +656,15 @@ class AgentToolNodeIntegrationTest {
 			Map<String, Object> result = node.apply(state, config);
 
 			ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
+			assertNotNull(responseMessage);
 			assertEquals(1, responseMessage.getResponses().size());
 			ToolResponseMessage.ToolResponse response = responseMessage.getResponses().get(0);
 			assertEquals("call-1", response.id());
 			assertEquals("nonExistentTool", response.name());
 			assertEquals("Tool not available: nonExistentTool", response.responseData());
+			assertEquals(true, responseMessage.getMetadata().get(UnknownToolGuardConstants.UNKNOWN_TOOL_RESPONSE_METADATA_KEY));
+			assertEquals(true, responseMessage.getMetadata().get(UnknownToolGuardConstants.ALL_TOOL_CALLS_UNKNOWN_METADATA_KEY));
+			assertEquals(List.of("nonExistentTool"), responseMessage.getMetadata().get(UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY));
 		}
 
 	}

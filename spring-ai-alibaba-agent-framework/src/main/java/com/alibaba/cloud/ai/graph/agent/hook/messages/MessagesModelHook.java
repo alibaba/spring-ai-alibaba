@@ -108,9 +108,8 @@ public abstract class MessagesModelHook implements Hook {
 					result.put("messages", command.getMessages());
 				}
 			}
-			if (command.getJumpTo() != null) {
-				result.put("jump_to", command.getJumpTo().name());
-			}
+			// Always write jump_to so a previous hook decision does not leak into the next node execution.
+			result.put("jump_to", command.getJumpTo() != null ? command.getJumpTo().name() : null);
 
 			return CompletableFuture.completedFuture(result);
 		}
@@ -142,9 +141,8 @@ public abstract class MessagesModelHook implements Hook {
 					result.put("messages", command.getMessages());
 				}
 			}
-			if (command.getJumpTo() != null) {
-				result.put("jump_to", command.getJumpTo().name());
-			}
+			// Always write jump_to so a previous hook decision does not leak into the next node execution.
+			result.put("jump_to", command.getJumpTo() != null ? command.getJumpTo().name() : null);
 
 
 			return CompletableFuture.completedFuture(result);
