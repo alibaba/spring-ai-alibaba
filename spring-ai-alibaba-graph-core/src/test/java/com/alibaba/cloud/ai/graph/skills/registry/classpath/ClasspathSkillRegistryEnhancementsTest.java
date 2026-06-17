@@ -20,12 +20,18 @@ import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.net.URI;
+import java.nio.file.FileSystem;
 import java.nio.file.Path;
+import java.util.jar.JarEntry;
+import java.util.jar.JarOutputStream;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -45,6 +51,8 @@ class ClasspathSkillRegistryEnhancementsTest {
 		assertEquals(List.of("sample-skill"),
 				registry.search("classpath registry enhancement").stream().map(SkillMetadata::getName).toList());
 		assertTrue(registry.readSkillContentByPath(skill.getSkillPath()).contains("# Sample Skill"));
+		assertTrue(registry.getSkillLoadInstructions().contains("not direct tool names"));
+		assertTrue(registry.getSkillLoadInstructions().contains("calling `read_skill`"));
 
 		assertTrue(registry.disable("sample-skill"));
 		assertTrue(registry.isDisabled("sample-skill"));
@@ -67,6 +75,33 @@ class ClasspathSkillRegistryEnhancementsTest {
 		assertEquals(2, metadata.size());
 		assertEquals("1.0", metadata.get("version"));
 		assertEquals("test-author", metadata.get("author"));
+	}
+
+	@Test
+	void classpathRegistryReusesExistingJarFileSystem(@TempDir Path tempDir) throws Exception {
+		Path jarPath = tempDir.resolve("skills.jar");
+		try (JarOutputStream jarOutputStream = new JarOutputStream(Files.newOutputStream(jarPath))) {
+			jarOutputStream.putNextEntry(new JarEntry("skills/"));
+			jarOutputStream.closeEntry();
+		}
+		URI jarUri = URI.create("jar:" + jarPath.toUri());
+
+		ClasspathSkillRegistry firstRegistry = ClasspathSkillRegistry.builder()
+				.autoLoad(false)
+				.build();
+		ClasspathSkillRegistry secondRegistry = ClasspathSkillRegistry.builder()
+				.autoLoad(false)
+				.build();
+
+		FileSystem firstFileSystem = firstRegistry.getOrCreateJarFileSystem(jarUri);
+		FileSystem secondFileSystem = secondRegistry.getOrCreateJarFileSystem(jarUri);
+
+		assertSame(firstFileSystem, secondFileSystem);
+		secondRegistry.close();
+		assertTrue(firstFileSystem.isOpen());
+
+		firstRegistry.close();
+		assertFalse(firstFileSystem.isOpen());
 	}
 
 }

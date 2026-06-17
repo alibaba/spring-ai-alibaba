@@ -15,7 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.utils;
 
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +31,15 @@ public class SerializationUtils {
 	private static final Logger log = LoggerFactory.getLogger(SerializationUtils.class);
 
 	// Jackson ObjectMapper for serialization
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private static final ObjectMapper objectMapper = createObjectMapper();
+
+	private static ObjectMapper createObjectMapper() {
+		ObjectMapper mapper = new ObjectMapper();
+		SimpleModule module = new SimpleModule();
+		SpringAIJacksonStateSerializer.registerMessageHandlers(module);
+		mapper.registerModule(module);
+		return mapper;
+	}
 
 	private SerializationUtils() {
 		// Utility class - prevent instantiation

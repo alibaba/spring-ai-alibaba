@@ -28,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Method;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,6 +42,7 @@ import java.util.stream.IntStream;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.ClientSessionOptions;
+import com.mongodb.MongoDriverInformation;
 import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.ClientSession;
@@ -61,6 +63,10 @@ import static java.lang.String.format;
 public class MongoSaver implements BaseCheckpointSaver {
 
 	private static final Logger logger = LoggerFactory.getLogger(MongoSaver.class);
+
+	private static final MongoDriverInformation DRIVER_INFO = MongoDriverInformation.builder()
+			.driverName("spring-ai-alibaba")
+			.build();
 	private static final String DB_NAME = "check_point_db";
 	private static final String THREAD_META_COLLECTION = "thread_meta";
 	private static final String CHECKPOINT_COLLECTION = "checkpoint_collection";
@@ -87,6 +93,13 @@ public class MongoSaver implements BaseCheckpointSaver {
 		Objects.requireNonNull(client, "client cannot be null");
 		Objects.requireNonNull(stateSerializer, "stateSerializer cannot be null");
 		this.client = client;
+		try {
+			Method appendMetadata = client.getClass().getMethod("appendMetadata", MongoDriverInformation.class);
+			appendMetadata.invoke(client, DRIVER_INFO);
+		}
+		catch (Exception ignored) {
+			// appendMetadata not available in this driver version — skip silently
+		}
 		this.database = client.getDatabase(DB_NAME);
 		this.txnOptions = TransactionOptions.builder().writeConcern(WriteConcern.MAJORITY).build();
 		this.checkpointSerializer = new CheckPointSerializer(stateSerializer);

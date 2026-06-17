@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.skills.registry.filesystem;
 
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
+import com.alibaba.cloud.ai.graph.skills.SkillPromptConstants;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,6 +74,23 @@ class FileSystemSkillRegistryEnhancementsTest {
 		assertEquals(List.of("copy-helper"), registry.search("editing").stream().map(SkillMetadata::getName).toList());
 		assertEquals(List.of("allowed-tools-skill"),
 				registry.search(allowedToolsSkillDir.getFileName().toString()).stream().map(SkillMetadata::getName).toList());
+	}
+
+	@Test
+	void defaultPromptClarifiesSkillsAreLoadedThroughReadSkill() throws Exception {
+		FileSystemSkillRegistry registry = FileSystemSkillRegistry.builder()
+				.projectSkillsDirectory(skillsDir.toString())
+				.build();
+
+		String loadInstructions = registry.getSkillLoadInstructions();
+		String prompt = SkillPromptConstants.buildSkillsPrompt(
+				registry.listAll(), registry, registry.getSystemPromptTemplate());
+
+		assertTrue(loadInstructions.contains("not direct tool names"));
+		assertTrue(loadInstructions.contains("calling `read_skill`"));
+		assertTrue(prompt.contains("Skill names are registry identifiers, not tool names"));
+		assertTrue(prompt.contains("Do not call a skill name directly as a tool"));
+		assertTrue(prompt.contains("call `read_skill` with the skill name or path"));
 	}
 
 	@Test

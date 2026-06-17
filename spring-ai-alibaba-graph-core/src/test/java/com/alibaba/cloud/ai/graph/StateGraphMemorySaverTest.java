@@ -169,6 +169,29 @@ public class StateGraphMemorySaverTest {
 	}
 
 	@Test
+	public void testCheckpointNumRetained() throws Exception {
+		var saver = MemorySaver.builder().build();
+		var config = RunnableConfig.builder()
+				.threadId("retained-thread")
+				.checkpointsNumRetained(2)
+				.build();
+
+		var first = Checkpoint.builder().id("cp1").state(Map.of("value", "1")).nodeId("node1").nextNodeId(END).build();
+		var second = Checkpoint.builder().id("cp2").state(Map.of("value", "2")).nodeId("node2").nextNodeId(END).build();
+		var third = Checkpoint.builder().id("cp3").state(Map.of("value", "3")).nodeId("node3").nextNodeId(END).build();
+
+		saver.put(config, first);
+		saver.put(config, second);
+		saver.put(config, third);
+
+		var checkpoints = List.copyOf(saver.list(config));
+		assertEquals(2, checkpoints.size());
+		assertEquals("cp3", checkpoints.get(0).getId());
+		assertEquals("cp2", checkpoints.get(1).getId());
+		assertTrue(saver.get(RunnableConfig.builder(config).checkPointId("cp1").build()).isEmpty());
+	}
+
+	@Test
 	public void testCheckpointSaverResubmit() throws Exception {
 		int expectedSteps = 5;
 

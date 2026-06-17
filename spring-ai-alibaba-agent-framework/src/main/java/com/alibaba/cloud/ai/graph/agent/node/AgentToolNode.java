@@ -544,7 +544,13 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 			if (toolCallback == null) {
 				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, req.getToolName());
-				throw new IllegalStateException("No ToolCallback found for tool name: " + req.getToolName());
+				return ToolCallResponse.builder()
+					.content("Tool not available: " + req.getToolName())
+					.toolName(req.getToolName())
+					.toolCallId(req.getToolCallId())
+					.status("error")
+					.metadata(Map.of("error", true, "unresolvedToolName", req.getToolName()))
+					.build();
 			}
 
 			if (enableActingLog) {
@@ -826,7 +832,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * Get the executor for tool execution from config or use default.
 	 */
 	private Executor getToolExecutor(RunnableConfig config) {
-		return ParallelNode.getExecutor(config, AGENT_TOOL_NAME);
+		return config.metadata(ParallelNode.formatNodeId(AGENT_TOOL_NAME))
+			.filter(value -> value instanceof Executor)
+			.map(Executor.class::cast)
+			.orElseGet(() -> ParallelNode.getExecutor(config, AGENT_TOOL_NAME));
 	}
 
 	private ToolCallback resolve(String toolName, RunnableConfig config) {
