@@ -241,11 +241,27 @@ public class FileSystemStore extends BaseStore {
 	 * @return item path
 	 */
 	private Path createItemPath(List<String> namespace, String key) {
-		Path path = rootPath;
+		Path path = rootPath.toAbsolutePath().normalize();
 		for (String ns : namespace) {
+			validatePathSegment(ns, "namespace");
 			path = path.resolve(ns);
 		}
-		return path.resolve(key + ".json");
+		validatePathSegment(key, "key");
+		Path itemPath = path.resolve(key + ".json").normalize();
+		if (!itemPath.startsWith(rootPath.toAbsolutePath().normalize())) {
+			throw new IllegalArgumentException("resolved path escapes root directory");
+		}
+		return itemPath;
+	}
+
+	private void validatePathSegment(String segment, String fieldName) {
+		if (segment == null || segment.trim().isEmpty()) {
+			throw new IllegalArgumentException(fieldName + " cannot be null or empty");
+		}
+		Path candidate = Paths.get(segment);
+		if (candidate.isAbsolute() || candidate.getNameCount() != 1 || "..".equals(segment) || ".".equals(segment)) {
+			throw new IllegalArgumentException(fieldName + " contains unsafe path segment: " + segment);
+		}
 	}
 
 	/**

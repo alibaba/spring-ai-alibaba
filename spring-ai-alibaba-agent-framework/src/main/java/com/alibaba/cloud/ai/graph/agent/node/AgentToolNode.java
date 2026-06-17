@@ -578,6 +578,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("error", true);
 		metadata.put("errorMessage", errorMessage);
+		metadata.put("unresolvedToolName", request.getToolName());
 		metadata.put(ToolCallGuardConstants.ERROR_TYPE_METADATA_KEY,
 				UnknownToolGuardConstants.UNKNOWN_TOOL_ERROR_TYPE);
 		metadata.put(UnknownToolGuardConstants.REQUESTED_TOOL_NAMES_METADATA_KEY, List.of(request.getToolName()));
@@ -585,7 +586,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return ToolCallResponse.builder()
 				.toolCallId(request.getToolCallId())
 				.toolName(request.getToolName())
-				.content("Error: " + errorMessage)
+				.content("Tool not available: " + request.getToolName())
 				.status("error")
 				.metadata(metadata)
 				.build();
@@ -893,7 +894,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * Get the executor for tool execution from config or use default.
 	 */
 	private Executor getToolExecutor(RunnableConfig config) {
-		return ParallelNode.getExecutor(config, AGENT_TOOL_NAME);
+		return config.metadata(ParallelNode.formatNodeId(AGENT_TOOL_NAME))
+			.filter(value -> value instanceof Executor)
+			.map(Executor.class::cast)
+			.orElseGet(() -> ParallelNode.getExecutor(config, AGENT_TOOL_NAME));
 	}
 
 	private ToolResponseMessage buildToolResponseMessage(List<ToolCallResponse> responses, Boolean returnDirect) {

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.alibaba.cloud.ai.graph.executor;
 
 import com.alibaba.cloud.ai.graph.GraphResponse;
@@ -227,10 +228,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 		var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
 
 		return rawFlux.filter(element -> {
-				// skip ChatResponse.getResult() == null
-				if (element instanceof ChatResponse response) {
-					return response.getResult() != null &&  response.getResult().getOutput() != null;
-				}
 				// Don't filter out Exception/Throwable - we need to handle them
 				return true;
 			})
@@ -246,6 +243,13 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return errorResponse;
 				}
 				if (element instanceof ChatResponse response) {
+					// Handle usage-only chunks (null result/output) without dropping usage metadata
+					if (response.getResult() == null || response.getResult().getOutput() == null) {
+						GraphResponse<NodeOutput> graphResponse = GraphResponse
+							.of(context.buildStreamingOutput(response, nodeId, true));
+						lastGraphResponseRef.set(graphResponse);
+						return graphResponse;
+					}
 					ChatResponse lastResponse = lastChatResponseRef.get();
 					final var currentMessage = response.getResult().getOutput();
 
@@ -340,11 +344,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.empty();
 				} else {
 					ChatResponse lastChatResponse = lastChatResponseRef.get();
-					// For completion status with AGENT_MODEL_NAME, create a StreamingOutput with null message to avoid chunk content
-					// This ensures that completion events don't carry the full text content in the chunk field
+					// FINISHED StreamingOutput omits message for agent/graph LLM nodes (tool/hook unchanged); full text still in done(state).
 					Message messageForCompletion = lastChatResponse.getResult().getOutput();
-					if (nodeId.startsWith(RunnableConfig.AGENT_MODEL_NAME)) {
-						// For agent model completion, use null message to prevent chunk content
+					if (shouldOmitMessageOnStreamCompletion(nodeId)) {
 						messageForCompletion = null;
 					}
 					GraphResponse<NodeOutput> aggregatedResponse = GraphResponse
@@ -388,38 +390,121 @@ public class NodeExecutor extends BaseGraphExecutor {
 		return merged;
 	}
 
-  /**
-   * Merges tool calls from two messages.
-   * Tool calls with the same id will be merged.
-   *
-   * @return the merged list of tool calls
-   */
-  private List<ToolCall> mergeToolCalls(List<ToolCall> lastToolCalls, List<ToolCall> currentToolCalls) {
+    /**
+     * Merges tool calls from two streamed assistant messages.
+     * <p>
+     * Streaming chunks from some providers may split tool-call fields across multiple chunks
+     * (for example: first chunk has name, later chunk has only arguments and even no id).
+     * We merge by id when possible, and fall back to positional merge to keep a single
+     * tool call record complete.
+     *
+     * @return the merged list of tool calls
+     */
+    private List<ToolCall> mergeToolCalls(List<ToolCall> lastToolCalls, List<ToolCall> currentToolCalls) {
+        if (lastToolCalls == null || lastToolCalls.isEmpty()) {
+            return currentToolCalls != null ? currentToolCalls : List.of();
+        }
+        if (currentToolCalls == null || currentToolCalls.isEmpty()) {
+            return lastToolCalls;
+        }
 
-	  if (lastToolCalls == null || lastToolCalls.isEmpty()) {
-		  return currentToolCalls != null ? currentToolCalls : List.of();
-	  }
-	  if (currentToolCalls == null || currentToolCalls.isEmpty()) {
-		  return lastToolCalls;
-	  }
+        List<ToolCall> merged = new ArrayList<>(lastToolCalls);
+        for (int i = 0; i < currentToolCalls.size(); i++) {
+            ToolCall current = currentToolCalls.get(i);
+            if (current == null) {
+                continue;
+            }
+            int mergeIndex = findToolCallMergeIndex(merged, current, i);
+            if (mergeIndex >= 0) {
+                merged.set(mergeIndex, mergeToolCallFields(merged.get(mergeIndex), current));
+            }
+            else {
+                merged.add(current);
+            }
+        }
+        return merged;
+    }
 
+    private int findToolCallMergeIndex(List<ToolCall> mergedCalls, ToolCall currentToolCall, int currentIndex) {
+        String currentId = normalized(currentToolCall.id());
+        if (StringUtils.hasText(currentId)) {
+            for (int i = 0; i < mergedCalls.size(); i++) {
+                if (currentId.equals(normalized(mergedCalls.get(i).id()))) {
+                    return i;
+                }
+            }
+        }
 
-	  Map<String, ToolCall> toolCallMap = new LinkedHashMap<>();
+        if (currentIndex < mergedCalls.size()) {
+            return currentIndex;
+        }
 
-	  List<AssistantMessage.ToolCall> resultCalls = new ArrayList<>();
-	  currentToolCalls.forEach(tc -> toolCallMap.put(tc.id(), tc));
+        String currentName = normalized(currentToolCall.name());
+        if (StringUtils.hasText(currentName)) {
+            int matchedIndex = -1;
+            for (int i = 0; i < mergedCalls.size(); i++) {
+                if (currentName.equals(normalized(mergedCalls.get(i).name()))) {
+                    if (matchedIndex >= 0) {
+                        return -1;
+                    }
+                    matchedIndex = i;
+                }
+            }
+            if (matchedIndex >= 0) {
+                return matchedIndex;
+            }
+        }
 
-	  // remove duplicate while keep order
-	  lastToolCalls.forEach(tc->{
-		  if( !toolCallMap.containsKey(tc.id()) ) {
-			  resultCalls.add(tc);
-		  }
-	  });
+        return -1;
+    }
 
-	  resultCalls.addAll(currentToolCalls);
+    private ToolCall mergeToolCallFields(ToolCall previous, ToolCall current) {
+        return new AssistantMessage.ToolCall(
+                firstNonBlank(current.id(), previous.id()),
+                firstNonBlank(current.type(), previous.type()),
+                firstNonBlank(current.name(), previous.name()),
+                mergeToolArguments(previous.arguments(), current.arguments()));
+    }
 
-	  return resultCalls;
-  }
+    private static String mergeToolArguments(String previousArguments, String currentArguments) {
+        if (!StringUtils.hasText(previousArguments)) {
+            return currentArguments;
+        }
+        if (!StringUtils.hasText(currentArguments)) {
+            return previousArguments;
+        }
+
+        if (currentArguments.equals(previousArguments)) {
+            return currentArguments;
+        }
+        if (currentArguments.startsWith(previousArguments) || currentArguments.contains(previousArguments)) {
+            return currentArguments;
+        }
+        if (previousArguments.startsWith(currentArguments) || previousArguments.contains(currentArguments)) {
+            return previousArguments;
+        }
+
+        // Typical streaming delta case: append incremental argument fragment.
+        return previousArguments + currentArguments;
+    }
+
+    private static String firstNonBlank(String primary, String fallback) {
+        return StringUtils.hasText(primary) ? primary : fallback;
+    }
+
+    private static String normalized(String value) {
+        return StringUtils.hasText(value) ? value : null;
+    }
+
+	/**
+	 * Whether the FINISHED {@link StreamingOutput} after a {@link ChatResponse} flux should omit
+	 * {@link Message} text (agent model and ordinary graph LLM nodes). Tool/hook streams keep the message.
+	 */
+	private static boolean shouldOmitMessageOnStreamCompletion(String nodeId) {
+		return nodeId.startsWith(RunnableConfig.AGENT_MODEL_NAME)
+				|| (!nodeId.startsWith(RunnableConfig.AGENT_TOOL_NAME)
+						&& !nodeId.startsWith(RunnableConfig.AGENT_HOOK_NAME_PREFIX));
+	}
 
 	/**
 	 * Processes a Flux<GraphResponse<NodeOutput>> with embedded flux handling logic.
@@ -645,9 +730,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return;
 			}
 
-			// Apply mapResult function if available
-			Map<String, Object> resultMap = new HashMap<>();
-			resultMap.put(graphFlux.getKey(), lastData);
+			// Resolve the final GraphFlux result into a graph state update.
+			Map<String, Object> resultMap = graphFluxResultState(graphFlux, lastData);
 
 			// Merge non-GraphFlux state
 			Map<String, Object> partialStateWithoutGraphFlux = partialState.entrySet()
@@ -681,6 +765,37 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 		return processedFlux
 				.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+	}
+
+	private Map<String, Object> graphFluxResultState(GraphFlux<?> graphFlux, Object lastData) {
+		if (lastData instanceof GraphResponse<?> graphResponse) {
+			Optional<Object> resultValue = graphResponse.resultValue();
+			if (resultValue.isPresent()) {
+				Object value = resultValue.get();
+				if (value instanceof Map<?, ?> resultMap) {
+					return copyStateMap(resultMap);
+				}
+			}
+		}
+
+		Map<String, Object> state = new HashMap<>();
+		state.put(graphFluxStateKey(graphFlux), lastData);
+		return state;
+	}
+
+	private static String graphFluxStateKey(GraphFlux<?> graphFlux) {
+		return StringUtils.hasText(graphFlux.getKey()) ? graphFlux.getKey() : "result";
+	}
+
+	private static Map<String, Object> copyStateMap(Map<?, ?> resultMap) {
+		Map<String, Object> state = new HashMap<>();
+		for (Map.Entry<?, ?> entry : resultMap.entrySet()) {
+			if (!(entry.getKey() instanceof String key)) {
+				throw new IllegalArgumentException("GraphFlux done result map keys must be String");
+			}
+			state.put(key, entry.getValue());
+		}
+		return state;
 	}
 
 	/**
@@ -765,7 +880,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 				String nodeId = graphFlux.getNodeId();
 				Object nodeData = nodeDataRefs.get(nodeId).get();
 
-				combinedResultMap.put(graphFlux.getKey(),nodeData);
+				combinedResultMap = OverAllState.updateState(
+						combinedResultMap, graphFluxResultState(graphFlux, nodeData), context.getKeyStrategyMap());
 			}
 
 			// Merge non-ParallelGraphFlux state

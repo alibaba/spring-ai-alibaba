@@ -47,10 +47,6 @@ After forking the repository, new commits may have appeared in the original repo
 
 As one of the implementations of Spring AI, Spring AI Alibaba directly follows the Spring AI project's code standards. Before you start, please refer to the relevant code format specification instructions. You need to configure the code format standards properly before submitting your code.
 
-### Develop
-
-Develop your feature, and **after development, we recommend using the `mvn clean package` command to ensure that the modified code can be compiled locally. This command will also automatically format the code in the Spring way**. Then commit your code. Before committing, please create a new branch related to this feature and use this branch for code submission.
-
 ### Development
 
 Develop your feature, and **after completing development, it's recommended to use the `mvn clean package` command to ensure that the modified code compiles successfully locally. This command also automatically formats the code according to Spring standards.** Before committing your code, please create a new branch specific to your feature and commit your changes to this branch.

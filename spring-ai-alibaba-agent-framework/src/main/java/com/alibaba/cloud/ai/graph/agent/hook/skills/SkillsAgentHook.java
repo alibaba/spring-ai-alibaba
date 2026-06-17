@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import java.util.Collections;
 import java.util.List;
@@ -80,7 +81,10 @@ public class SkillsAgentHook extends AgentHook {
 	private final SkillRegistry skillRegistry;
 	private final boolean autoReload;
 	private final Map<String, List<ToolCallback>> groupedTools;
+	private final ToolCallbackResolver toolCallbackResolver;
 	private final ToolCallback readSkillTool;
+	private final ToolCallback searchSkillsTool;
+	private final ToolCallback disableSkillTool;
 
 	private SkillsAgentHook(Builder builder) {
 		if (builder.skillRegistry == null) {
@@ -89,9 +93,18 @@ public class SkillsAgentHook extends AgentHook {
 		this.skillRegistry = builder.skillRegistry;
 		this.autoReload = builder.autoReload;
 		this.groupedTools = builder.groupedTools != null ? builder.groupedTools : Collections.emptyMap();
+		this.toolCallbackResolver = builder.toolCallbackResolver;
 		this.readSkillTool = ReadSkillTool.createReadSkillToolCallback(
 				this.skillRegistry,
 				ReadSkillTool.DESCRIPTION
+		);
+		this.searchSkillsTool = SearchSkillsTool.createSearchSkillsToolCallback(
+				this.skillRegistry,
+				SearchSkillsTool.DESCRIPTION
+		);
+		this.disableSkillTool = DisableSkillTool.createDisableSkillToolCallback(
+				this.skillRegistry,
+				DisableSkillTool.DESCRIPTION
 		);
 	}
 
@@ -129,12 +142,15 @@ public class SkillsAgentHook extends AgentHook {
 		if (!this.groupedTools.isEmpty()) {
 			interceptorBuilder.groupedTools(this.groupedTools);
 		}
+		if (this.toolCallbackResolver != null) {
+			interceptorBuilder.toolCallbackResolver(this.toolCallbackResolver);
+		}
 		return List.of(interceptorBuilder.build());
 	}
 
 	@Override
 	public List<ToolCallback> getTools() {
-		return List.of(readSkillTool);
+		return List.of(readSkillTool, searchSkillsTool, disableSkillTool);
 	}
 
 	public int getSkillCount() {
@@ -197,6 +213,7 @@ public class SkillsAgentHook extends AgentHook {
 		private SkillRegistry skillRegistry;
 		private boolean autoReload = false;
 		private Map<String, List<ToolCallback>> groupedTools;
+		private ToolCallbackResolver toolCallbackResolver;
 
 		/**
 		 * Sets the SkillRegistry instance.
@@ -236,6 +253,17 @@ public class SkillsAgentHook extends AgentHook {
 		 */
 		public Builder groupedTools(Map<String, List<ToolCallback>> groupedTools) {
 			this.groupedTools = groupedTools;
+			return this;
+		}
+
+		/**
+		 * Sets the ToolCallbackResolver used to resolve additive allowed tools declared by skills.
+		 *
+		 * @param toolCallbackResolver resolver for tool names declared in skill metadata
+		 * @return this builder
+		 */
+		public Builder toolCallbackResolver(ToolCallbackResolver toolCallbackResolver) {
+			this.toolCallbackResolver = toolCallbackResolver;
 			return this;
 		}
 

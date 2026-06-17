@@ -48,4 +48,12 @@ public enum OutputType {
 		}
 	}
 
+	/**
+	 * True for model/graph LLM stream completion ({@link #AGENT_MODEL_FINISHED}, {@link #GRAPH_NODE_FINISHED}):
+	 * text was already streamed; do not append {@link StreamingOutput#message()} again.
+	 */
+	public boolean isStreamAggregationFinished() {
+		return this == AGENT_MODEL_FINISHED || this == GRAPH_NODE_FINISHED;
+	}
+
 }
