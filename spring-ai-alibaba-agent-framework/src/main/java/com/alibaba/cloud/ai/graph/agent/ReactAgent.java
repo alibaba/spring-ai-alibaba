@@ -89,9 +89,11 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_async;
 import static com.alibaba.cloud.ai.graph.agent.hook.InterruptionHook.INTERRUPTION_FEEDBACK_KEY;
+import static com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectConstants.FINISH_REASON_METADATA_KEY;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.resumeSubGraphId;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.subGraphId;
 import static java.lang.String.format;
+import static org.springframework.ai.model.tool.ToolExecutionResult.FINISH_REASON;
 
 
 public class ReactAgent extends BaseAgent {
@@ -837,11 +839,10 @@ public class ReactAgent extends BaseAgent {
 			// 1. Extract last AI message and corresponding tool messages
 			ToolResponseMessage toolResponseMessage = fetchLastToolResponseMessage(state);
 			// 2. Exit condition: All executed tools have return_direct=True
+			//    AgentToolNode sets FINISH_REASON metadata when all tools have returnDirect=true
 			if (toolResponseMessage != null && !toolResponseMessage.getResponses().isEmpty()) {
-				boolean allReturnDirect = toolResponseMessage.getResponses().stream().allMatch(toolResponse -> {
-					String toolName = toolResponse.name();
-					return false; // FIXME
-				});
+				boolean allReturnDirect = toolResponseMessage.getMetadata() != null
+					&& FINISH_REASON.equals(toolResponseMessage.getMetadata().get(FINISH_REASON_METADATA_KEY));
 				if (allReturnDirect) {
 					return endDestination;
 				}
