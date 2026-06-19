@@ -63,11 +63,6 @@ spring-ai-alibaba/
 # Run linting checks (using Makefile)
 make lint
 make licenses-check
-
-# Run examples
-./mvnw -pl :chatbot spring-boot:run
-./mvnw -pl :deepresearch spring-boot:run
-./mvnw -pl :pipeline spring-boot:run
 ```
 
 ## Architecture & Key Concepts
