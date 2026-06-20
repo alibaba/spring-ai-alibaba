@@ -35,6 +35,8 @@ import {
   CheckCircleOutlined
 } from '@ant-design/icons';
 import { handleApiError, notifySuccess, notifyError } from '../../../../utils/notification';
+import { safeJSONParse } from '../../../../utils/util';
+import { getLegacyPath } from '../../../../utils/path';
 import API from '../../../../services';
 import './index.css';
 import usePagination from '../../../../hooks/usePagination';
@@ -163,7 +165,7 @@ function EvaluatorDetail() {
       const evaluatorData = evaluatorResponse.data;
       setEvaluator(evaluatorData);
       try {
-        const isFromEvaluationDebug = stateFromDebug?.prePathname === '/evaluation-debug';
+        const isFromEvaluationDebug = stateFromDebug?.prePathname === getLegacyPath('/evaluation/debug');
         const modelConfig = isFromEvaluationDebug ? (stateFromDebug?.modelConfig || {}) : JSON.parse(evaluatorData.modelConfig || "{}");
         const { modelId, ...conf } = modelConfig;
         const defaultModelParams = !isFromEvaluationDebug && models[0]?.defaultParameters || {};
@@ -375,7 +377,7 @@ function EvaluatorDetail() {
     };
 
     // 跳转到调试页面，携带修改后的配置
-    navigate('/evaluation-debug', { state: debugConfig });
+    navigate(getLegacyPath('/evaluation/debug'), { state: debugConfig });
   };
 
   // 计算下一个版本号
@@ -1382,7 +1384,7 @@ function EvaluatorDetail() {
                       <div>
                         <Text strong className="block mb-2">模型配置</Text>
                         <div className="bg-gray-50 p-3 rounded border text-xs font-mono">
-                          {JSON.stringify(JSON.parse(selectedTemplateDetail.modelConfig), null, 2)}
+                          {JSON.stringify(safeJSONParse(selectedTemplateDetail.modelConfig, () => ({})), null, 2)}
                         </div>
                       </div>
                     )}
