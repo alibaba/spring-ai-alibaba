@@ -156,7 +156,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		Object messages = state.value("messages").orElseThrow();
 		Message lastMessage = null;
 		if (messages instanceof List<?> messageList){
-			lastMessage = ((List<Message>) messageList).getLast();
+			lastMessage = ((List<Message>) messageList).get(messageList.size()-1);
 		}else{
 			// for streaming may only one message
 			lastMessage = (Message) messages;
