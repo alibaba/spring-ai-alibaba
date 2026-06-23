@@ -387,17 +387,39 @@ public class ShellSessionManager {
 
 					String line = outputLine.content;
 
-					// Check for completion marker (only in stdout)
-					if ("stdout".equals(outputLine.source) && line.startsWith(marker)) {
-						String[] parts = line.split(" ", 2);
-						if (parts.length > 1) {
-							try {
-								exitCode = Integer.parseInt(parts[1].trim());
-							} catch (NumberFormatException e) {
-								// Ignore
+					// Check for completion marker (only in stdout). If the previous command
+					// does not print a trailing newline, the marker can be appended to the
+					// same line and should not be treated as command output.
+					if ("stdout".equals(outputLine.source)) {
+						int markerIndex = line.indexOf(marker);
+						if (markerIndex >= 0) {
+							String outputBeforeMarker = line.substring(0, markerIndex);
+							if (!outputBeforeMarker.isEmpty()) {
+								totalLines++;
+								totalBytes += outputBeforeMarker.getBytes().length;
+
+								if (totalLines <= maxOutputLines) {
+									if (maxOutputBytes == null || totalBytes <= maxOutputBytes) {
+										lines.add(outputBeforeMarker);
+									} else {
+										truncatedByBytes = true;
+									}
+								} else {
+									truncatedByLines = true;
+								}
 							}
+
+							String exitCodePart = line.substring(markerIndex + marker.length()).trim();
+							if (!exitCodePart.isEmpty()) {
+								String[] parts = exitCodePart.split("\\s+", 2);
+								try {
+									exitCode = Integer.parseInt(parts[0]);
+								} catch (NumberFormatException e) {
+									// Ignore
+								}
+							}
+							break;
 						}
-						break;
 					}
 
 					totalLines++;
@@ -672,4 +694,3 @@ public class ShellSessionManager {
 		}
 	}
 }
-
