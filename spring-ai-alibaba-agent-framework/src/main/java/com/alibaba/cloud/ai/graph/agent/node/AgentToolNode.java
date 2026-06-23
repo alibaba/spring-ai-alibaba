@@ -152,8 +152,15 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
-		List<Message> messages = (List<Message>) state.value("messages").orElseThrow();
-		Message lastMessage = messages.get(messages.size() - 1);
+
+		Object messages = state.value("messages").orElseThrow();
+		Message lastMessage = null;
+		if (messages instanceof List<?> messageList){
+			lastMessage = ((List<Message>) messageList).getLast();
+		}else{
+			// for streaming may only one message
+			lastMessage = (Message) messages;
+		}
 
 		if (lastMessage instanceof AssistantMessage assistantMessage) {
 			List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
