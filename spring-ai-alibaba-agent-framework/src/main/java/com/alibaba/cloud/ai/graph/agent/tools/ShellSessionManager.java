@@ -386,18 +386,33 @@ public class ShellSessionManager {
 					}
 
 					String line = outputLine.content;
+					boolean completed = false;
 
-					// Check for completion marker (only in stdout)
-					if ("stdout".equals(outputLine.source) && line.startsWith(marker)) {
-						String[] parts = line.split(" ", 2);
-						if (parts.length > 1) {
-							try {
-								exitCode = Integer.parseInt(parts[1].trim());
-							} catch (NumberFormatException e) {
-								// Ignore
+					// Detect the completion marker (only in stdout). The marker is emitted by a
+					// follow-up echo command, so it usually arrives on its own line. But when the
+					// command's output has no trailing newline (e.g. `cat` of a file without a final
+					// newline, or `printf` without `\n`), the line reader merges that trailing output
+					// and the marker into a single line. Searching for the marker anywhere in the line
+					// keeps completion detection working, and any real output preceding the marker is
+					// preserved. See #4740.
+					if ("stdout".equals(outputLine.source)) {
+						int markerIndex = line.indexOf(marker);
+						if (markerIndex >= 0) {
+							String afterMarker = line.substring(markerIndex + marker.length()).trim();
+							if (!afterMarker.isEmpty()) {
+								try {
+									exitCode = Integer.parseInt(afterMarker.split("\\s+")[0]);
+								} catch (NumberFormatException e) {
+									// Ignore
+								}
+							}
+							// Keep any real output that was merged onto the marker line.
+							line = line.substring(0, markerIndex);
+							completed = true;
+							if (line.isEmpty()) {
+								break;
 							}
 						}
-						break;
 					}
 
 					totalLines++;
@@ -418,6 +433,10 @@ public class ShellSessionManager {
 						}
 					} else {
 						truncatedByLines = true;
+					}
+
+					if (completed) {
+						break;
 					}
 
 				} catch (InterruptedException e) {
