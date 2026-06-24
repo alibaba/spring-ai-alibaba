@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@link ShellSessionManager} command output collection.
@@ -105,6 +106,33 @@ class ShellSessionManagerTest {
 			assertFalse(result.isTimedOut(), "command should not time out");
 			assertEquals("a\nb", result.getOutput());
 			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(config);
+		}
+	}
+
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	void stdinReadingCommandDoesNotFalselyCompleteOnEchoedMarker() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		// Short timeout: this command can never complete normally, so keep the expected
+		// timeout/restart fast.
+		ShellSessionManager manager = ShellSessionManager.builder()
+			.workspaceRoot(workspace)
+			.commandTimeout(3000)
+			.build();
+		RunnableConfig config = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(config);
+		try {
+			// `cat` with no argument reads from the session's stdin and consumes/echoes the
+			// injected marker command before it ever runs. The echoed line contains the marker
+			// substring but no valid trailing exit code, so it must NOT be treated as completion
+			// — otherwise the command would be falsely reported as a successful (exitCode == null)
+			// run while still owning the session. It should time out and restart instead.
+			ShellSessionManager.CommandResult result = manager.executeCommand("cat", config);
+
+			assertTrue(result.isTimedOut(), "stdin-consuming command must not falsely complete on echoed marker");
 		}
 		finally {
 			manager.cleanup(config);
