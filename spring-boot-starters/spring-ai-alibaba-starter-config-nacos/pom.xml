@@ -130,7 +130,7 @@
 
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-observation-extension</artifactId>
+            <artifactId>spring-ai-alibaba-observation</artifactId>
             <version>${spring-ai-alibaba-extensions.version}</version>
         </dependency>
 
