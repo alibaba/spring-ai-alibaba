@@ -73,6 +73,7 @@ public class AgentScopeRoutingMergeNode implements NodeAction {
 		logger.debug("AgentScopeRoutingMergeNode: merging results from {} sub-agents", subAgents.size());
 
 		List<String> formattedResults = new ArrayList<>();
+		String lastResult = null;
 		for (BaseAgent subAgent : subAgents) {
 			String outputKey = subAgent.getOutputKey();
 			if (outputKey == null) {
@@ -84,9 +85,16 @@ public class AgentScopeRoutingMergeNode implements NodeAction {
 				if (text != null && !text.isBlank()) {
 					String source = capitalize(subAgent.name());
 					formattedResults.add("**From " + source + ":**\n" + text);
+					lastResult = text;
 					logger.debug("Collected result from {} (key: {})", subAgent.name(), outputKey);
 				}
 			}
+		}
+
+		if (formattedResults.size() == 1) {
+			String singleResult = extractSingleResult(formattedResults.get(0));
+			logger.debug("AgentScopeRoutingMergeNode: single routed result, returning it without re-synthesis");
+			return Map.of(mergedOutputKey, singleResult);
 		}
 
 		String query = extractOriginalQuery(state);
@@ -126,6 +134,14 @@ public class AgentScopeRoutingMergeNode implements NodeAction {
 		}
 		String text = response.getTextContent();
 		return text != null ? text : "";
+	}
+
+	private String extractSingleResult(String formattedResult) {
+		int split = formattedResult.indexOf("\n");
+		if (split < 0) {
+			return formattedResult;
+		}
+		return formattedResult.substring(split + 1).strip();
 	}
 
 	private static String extractText(Object output) {
