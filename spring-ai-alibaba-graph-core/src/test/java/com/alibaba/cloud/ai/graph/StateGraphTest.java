@@ -1794,8 +1794,11 @@ public class StateGraphTest {
 				.addEdge("E", END);
 
 		GraphStateException exception = assertThrows(GraphStateException.class, () -> workflow.compile());
-		assertTrue(exception.getMessage().contains("parallel node [conditional_node] must have only one target"),
-				"Expected compile error for divergent immediate successors, but got: " + exception.getMessage());
+		String message = exception.getMessage();
+		assertTrue(message.contains("parallel node [conditional_node] must have only one target"),
+				"Expected compile error for divergent immediate successors, but got: " + message);
+		assertTrue(message.indexOf("C1") < message.indexOf("D"),
+				"Expected divergent targets to be reported in sorted order, but got: " + message);
 	}
 
 	/**

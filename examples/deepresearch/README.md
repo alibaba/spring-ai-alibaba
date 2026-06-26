@@ -17,9 +17,9 @@ export JINA_API_KEY=your_jina_api_key  # Optional
 
 ### Run the Agent
 
-1. **Run with Maven**
+1. **Run with Maven Wrapper** (run from the repository root; Maven installation is optional when using `mvnw`)
 ```bash
-mvn spring-boot:run
+./mvnw -f examples/deepresearch spring-boot:run
 ```
 
 2. **Run in IDE**
