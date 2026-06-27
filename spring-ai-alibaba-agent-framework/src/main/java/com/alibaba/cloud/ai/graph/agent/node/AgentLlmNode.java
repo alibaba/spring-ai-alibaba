@@ -29,7 +29,7 @@ import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.DefaultChatClient;
+import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -183,7 +183,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
 				.messages(messages)
-				.options(this.chatOptions != null ? this.chatOptions.copy() : null)
+				.options(this.chatOptions != null ? this.chatOptions.mutate().build() : null)
 				.context(contextMap);
 
         // Extract tool names and descriptions from toolCallbacks and pass them to ModelRequest
@@ -350,13 +350,16 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			return null;
 		}
 
+		List<ToolCallback> configuredToolCallbacks = toolCallbacks != null ? toolCallbacks : List.of();
+
 		if (chatOptions != null) {
 			if (chatOptions instanceof ToolCallingChatOptions builderToolCallingOptions) {
-				ToolCallingChatOptions copiedOptions = builderToolCallingOptions.copy();
-
-				List<ToolCallback> mergedToolCallbacks = new ArrayList<>(toolCallbacks);
+				ToolCallingChatOptions.Builder<?> optionsBuilder = builderToolCallingOptions.mutate();
+				List<ToolCallback> mergedToolCallbacks = new ArrayList<>(configuredToolCallbacks);
+				List<ToolCallback> optionToolCallbacks = builderToolCallingOptions.getToolCallbacks() != null
+						? builderToolCallingOptions.getToolCallbacks() : List.of();
 				// Add callbacks from chatOptions that are not already present (toolCallbacks takes precedence)
-				for (ToolCallback callback : builderToolCallingOptions.getToolCallbacks()) {
+				for (ToolCallback callback : optionToolCallbacks) {
 					boolean exists = mergedToolCallbacks.stream()
 							.anyMatch(tc -> tc.getToolDefinition().name().equals(callback.getToolDefinition().name()));
 					if (!exists) {
@@ -364,19 +367,22 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					}
 				}
 
-				copiedOptions.setToolCallbacks(mergedToolCallbacks);
-				copiedOptions.setInternalToolExecutionEnabled(false);
-				return copiedOptions;
+				return optionsBuilder.toolCallbacks(mergedToolCallbacks).build();
 			} else {
-				logger.warn("The provided chatOptions is not of type ToolCallingChatOptions (actual type: {}). " +
-								"It will not take effect. Creating a new ToolCallingChatOptions with toolCallbacks instead.",
-						chatOptions.getClass().getName());
+				if (logger.isDebugEnabled()) {
+					logger.debug("The provided chatOptions is not of type ToolCallingChatOptions (actual type: {}). "
+							+ "Only common ChatOptions fields can be preserved when adding tool callbacks.",
+							chatOptions.getClass().getName());
+				}
+				return ToolCallingChatOptions.builder()
+						.combineWith(chatOptions.mutate())
+						.toolCallbacks(configuredToolCallbacks)
+						.build();
 			}
 		}
 
 		return ToolCallingChatOptions.builder()
-				.toolCallbacks(toolCallbacks)
-				.internalToolExecutionEnabled(false)
+				.toolCallbacks(configuredToolCallbacks)
 				.build();
 	}
 
@@ -503,38 +509,16 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		var promptSpec = this.chatClient.prompt()
                 .messages(messages)
+				.advisors(advisorSpec -> advisorSpec.param(
+						ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey(), false))
                 .advisors(this.advisors);
 
         ToolCallingChatOptions requestOptions = modelRequest.getOptions();
 
         if (requestOptions != null) {
-			ToolCallingChatOptions copiedOptions = requestOptions.copy();
-            copiedOptions.setToolCallbacks(filteredToolCallbacks);
-			// force disable internal tool execution to avoid conflict with Agent framework's tool execution management.
-            copiedOptions.setInternalToolExecutionEnabled(false);
-            promptSpec.options(copiedOptions);
-        } else {
-			// Check if user has set default options in ChatModel or ChatClient.
-			if (promptSpec instanceof DefaultChatClient.DefaultChatClientRequestSpec defaultChatClientRequestSpec) {
-				ChatOptions options = defaultChatClientRequestSpec.getChatOptions();
-				// If no default options set, create new ToolCallingChatOptions with filtered tool callbacks and toolExecution disabled.
-				if (options == null) {
-					options = ToolCallingChatOptions.builder()
-							.toolCallbacks(filteredToolCallbacks)
-							.internalToolExecutionEnabled(false)
-							.build();
-					defaultChatClientRequestSpec.options(options);
-				}
-				// If options is ToolCallingChatOptions, set filtered tool callbacks and toolExecution disabled.
-				else if (options instanceof ToolCallingChatOptions toolCallingChatOptions) {
-					ToolCallingChatOptions copiedOptions = toolCallingChatOptions.copy();
-					copiedOptions.setToolCallbacks(filteredToolCallbacks);
-					copiedOptions.setInternalToolExecutionEnabled(false);
-					defaultChatClientRequestSpec.options(copiedOptions);
-				}
-			} else if (!filteredToolCallbacks.isEmpty()) {
-				promptSpec.tools(filteredToolCallbacks);
-			}
+			promptSpec.options(requestOptions.mutate().toolCallbacks(filteredToolCallbacks));
+        } else if (!filteredToolCallbacks.isEmpty()) {
+			promptSpec.options(ToolCallingChatOptions.builder().toolCallbacks(filteredToolCallbacks));
         }
 
         return promptSpec;

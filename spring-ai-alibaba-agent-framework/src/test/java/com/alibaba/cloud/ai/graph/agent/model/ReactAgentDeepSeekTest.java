@@ -94,7 +94,7 @@ class ReactAgentDeepSeekTest {
 			.build();
 
 		DeepSeekChatModel deepSeekChatModel = DeepSeekChatModel.builder()
-				.defaultOptions(DeepSeekChatOptions.builder()
+				.options(DeepSeekChatOptions.builder()
 						.model("deepseek-chat")
 						.build())
 				.deepSeekApi(deepSeekApi).build();

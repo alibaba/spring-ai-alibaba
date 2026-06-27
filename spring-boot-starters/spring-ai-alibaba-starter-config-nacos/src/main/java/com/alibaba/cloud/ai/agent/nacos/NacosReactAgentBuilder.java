@@ -42,7 +42,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 
@@ -98,7 +97,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 					.getChatClientObservationConvention(), this.advisorObservationConvention);
 		}
 
-		clientBuilder.defaultOptions(chatOptions);
+		clientBuilder.defaultOptions(chatOptions.mutate());
 		chatClient = clientBuilder.build();
 
 		//6.load mcp servers
@@ -256,7 +255,12 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		if (model.getMaxTokens() != null) {
 			chatOptionsBuilder.maxTokens(Integer.parseInt(model.getMaxTokens()));
 		}
-		chatOptionsBuilder.internalToolExecutionEnabled(false);
+		if (model.getApiKey() != null) {
+			chatOptionsBuilder.apiKey(model.getApiKey());
+		}
+		if (model.getBaseUrl() != null) {
+			chatOptionsBuilder.baseUrl(model.getBaseUrl());
+		}
 		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
 				.model(model.getModel())
 				.build();
@@ -266,12 +270,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 
 	private static ChatModel createModel(NacosOptions nacosOptions, ModelVO model, OpenAiChatOptions openAiChatOptions) {
 
-		OpenAiApi openAiApi = OpenAiApi.builder()
-				.apiKey(model.getApiKey()).baseUrl(model.getBaseUrl())
-				.build();
-
-		OpenAiChatModel.Builder builder = OpenAiChatModel.builder().defaultOptions(openAiChatOptions)
-				.openAiApi(openAiApi);
+		OpenAiChatModel.Builder builder = OpenAiChatModel.builder().options(openAiChatOptions);
 		//inject observation config.
 		ObservationConfiguration observationConfiguration = nacosOptions.getObservationConfiguration();
 		if (observationConfiguration != null) {

@@ -20,7 +20,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
  * 共享 base class：通过 OpenAI 兼容接口初始化 DashScope ChatModel。
@@ -35,7 +34,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
  */
 abstract class AbstractDashscopeChatModelTest {
 
-	// Base URL only — OpenAiApi appends "/v1/chat/completions" itself; do NOT include /v1 here.
+	// Base URL only. Spring AI's OpenAI client appends the chat-completions path.
 	private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode";
 
 	private static final String DEFAULT_MODEL = "qwen-plus";
@@ -51,13 +50,12 @@ abstract class AbstractDashscopeChatModelTest {
 		final String baseUrl = System.getenv().getOrDefault("AI_DASHSCOPE_BASE_URL", DEFAULT_BASE_URL);
 		final String model = System.getenv().getOrDefault("AI_DASHSCOPE_MODEL", DEFAULT_MODEL);
 
-		OpenAiApi openAiApi = OpenAiApi.builder()
-				.baseUrl(baseUrl)
-				.apiKey(apiKey)
-				.build();
 		chatModel = OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
-				.defaultOptions(OpenAiChatOptions.builder().model(model).build())
+				.options(OpenAiChatOptions.builder()
+						.baseUrl(baseUrl)
+						.apiKey(apiKey)
+						.model(model)
+						.build())
 				.build();
 	}
 }

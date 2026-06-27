@@ -82,7 +82,7 @@ public class NacosAgentPromptBuilder extends DefaultBuilder {
 			if (promptVO != null) {
 				this.instruction = promptVO.getTemplate();
 				if (this.chatOptions == null) {
-					this.chatOptions = new OpenAiChatOptions();
+					this.chatOptions = OpenAiChatOptions.builder().build();
 				}
 				if (!(this.chatOptions instanceof ObservationMetadataAwareOptions)) {
 					this.chatOptions = (ChatOptions) ChatOptionsProxy.createProxy(this.chatOptions, getMetadata(promptVO));
