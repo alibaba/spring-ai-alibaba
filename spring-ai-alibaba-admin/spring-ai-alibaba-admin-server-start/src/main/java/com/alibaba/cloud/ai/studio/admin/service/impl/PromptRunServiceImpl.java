@@ -15,11 +15,13 @@ import com.alibaba.cloud.ai.studio.admin.utils.SessionUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.Error;
+import com.networknt.schema.dialect.Dialects;
 import io.micrometer.observation.ObservationRegistry;
+import io.swagger.oas.inflector.validators.ValidationMessage;
+import io.swagger.v3.oas.models.SpecVersion;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -48,25 +50,25 @@ import java.util.function.Function;
 @Service
 @RequiredArgsConstructor
 public class PromptRunServiceImpl implements PromptRunService {
-    
+
     private final ChatSessionService chatSessionService;
-    
+
     private final ChatClientFactoryDelegate chatClientFactoryDelegate;
-    
+
     private final ModelConfigParser modelConfigParser;
-    
+
     private final ObjectMapper objectMapper;
-    
+
     private final ObservationRegistry observationRegistry;
-    
+
     @Override
     public Flux<PromptRunResponse> run(PromptRunRequest request) {
         log.info("运行带会话的Prompt调试: {}", request);
-        
+
         try {
             // 1. 获取或创建会话
             ChatSession session = getOrCreateSession(request);
-            
+
             // 2. 添加用户消息到会话
             session.addUserMessage(request.getMessage());
             chatSessionService.updateSession(session);
@@ -76,42 +78,42 @@ public class PromptRunServiceImpl implements PromptRunService {
             if (StringUtils.hasText(request.getVersion())) {
                 session.setVersion(request.getVersion());
             }
-            
+
             session.setTemplate(request.getTemplate());
             session.setVariables(request.getVariables());
             session.setMockTools(request.getMockTools());
             session.setModelConfig(modelConfigParser.checkAndGetModelConfigInfo(request.getModelConfig()));
-            
+
             // 3. 返回会话信息
             PromptRunResponse sessionInfo = PromptRunResponse.createSessionInfoResponse(session);
-            
+
             return Flux.concat(
                     // 首先返回会话信息
                     Flux.just(sessionInfo),
-                    
+
                     // 然后返回真实的AI流式响应
                     generateRealAIResponse(session, request).onErrorResume(error -> {
                         log.error("模型调用失败，返回错误响应", error);
                         return Flux.just(PromptRunResponse.createErrorResponse(session.getSessionId(),
                                 "模型调用失败: " + error.getMessage()));
                     }));
-            
+
         } catch (Exception e) {
             log.error("处理会话请求失败", e);
             return Flux.just(PromptRunResponse.createErrorResponse(null, "处理请求失败: " + e.getMessage()));
         }
     }
-    
+
     @Override
     public ChatSession getSession(String sessionId) {
         return chatSessionService.getSession(sessionId);
     }
-    
+
     @Override
     public void deleteSession(String sessionId) {
         chatSessionService.deleteSession(sessionId);
     }
-    
+
     /**
      * 获取或创建会话
      */
@@ -122,19 +124,19 @@ public class PromptRunServiceImpl implements PromptRunService {
             return chatSessionService.createSessionWithMockTools(request.getPromptKey(), request.getVersion(),
                     request.getTemplate(), request.getVariables(), request.getModelConfig(), request.getMockTools());
         }
-        
+
         // 尝试获取现有会话
         ChatSession existingSession = chatSessionService.getSession(request.getSessionId());
         if (existingSession != null) {
             return existingSession;
         }
-        
+
         // 会话不存在，创建新会话
         log.warn("会话 {} 不存在，创建新会话", request.getSessionId());
         return chatSessionService.createSessionWithMockTools(request.getPromptKey(), request.getVersion(),
                 request.getTemplate(), request.getVariables(), request.getModelConfig(), request.getMockTools());
     }
-    
+
     /**
      * 生成真实的AI流式响应
      *
@@ -145,7 +147,7 @@ public class PromptRunServiceImpl implements PromptRunService {
         // 用于收集完整响应的容器
         AtomicReference<StringBuilder> completeResponse = new AtomicReference<>(new StringBuilder());
         AtomicReference<ChatMessageMetrics> metrics = new AtomicReference<>(ChatMessageMetrics.builder().build());
-        
+
         String fullPrompt = modelConfigParser.replaceVariables(session.getTemplate(), session.getVariables());
         Map<String, String> observationMetadata = new HashMap<>(4);
         if (StringUtils.hasText(request.getPromptKey()) && !"playground".equals(request.getPromptKey())) {
@@ -164,9 +166,9 @@ public class PromptRunServiceImpl implements PromptRunService {
         advisors.add(new TraceIdEnrichAdvisor(observationRegistry));
         ChatClient client = chatClientFactoryDelegate.createChatClient(session.getModelConfig().getModelId(),
                 session.getModelConfig().getParameters(), advisors, observationMetadata);
-        
+
         List<ToolCallback> functionToolCallbacks = buildMockToolBacks(request.getMockTools());
-        
+
         List<Message> messages = new ArrayList<>();
         messages.add(new SystemMessage(fullPrompt));
         messages.addAll(SessionUtils.convertChatMessages(session.getMessages()));
@@ -204,7 +206,7 @@ public class PromptRunServiceImpl implements PromptRunService {
                     }
                 });
     }
-    
+
     public List<ToolCallback> buildMockToolBacks(List<MockTool> mockTools) {
         List<ToolCallback> mockToolCallbacks = new ArrayList<>();
         if (mockTools == null) {
@@ -222,34 +224,34 @@ public class PromptRunServiceImpl implements PromptRunService {
         }
         return mockToolCallbacks;
     }
-    
-    
+
+
     public class MockFunction implements Function<Map<String, Object>, String> {
-        
+
         private final String output;
-        
+
         private final String inputSchema;
-        
+
         public MockFunction(String output, String inputSchema) {
             this.output = output;
             this.inputSchema = inputSchema;
         }
-        
+
         @Override
         public String apply(Map<String, Object> inputMap) {
             try {
                 JsonNode schemaNode = objectMapper.readTree(inputSchema);
                 JsonNode dataNode = objectMapper.valueToTree(inputMap);
-                
-                JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
-                JsonSchema schema = factory.getSchema(schemaNode);
-                Set<ValidationMessage> errors = schema.validate(dataNode);
-                
+
+                SchemaRegistry  factory = SchemaRegistry .withDialect(Dialects.getDraft7());
+                Schema schema = factory.getSchema(schemaNode);
+                List<Error> errors = schema.validate(dataNode);
+
                 if (!errors.isEmpty()) {
                     throw new IllegalArgumentException("Tool Calls Invalid input data: " + errors);
                 }
                 return this.output;
-                
+
             } catch (JsonProcessingException e) {
                 log.error("JSON 处理失败: ", e);
                 throw new RuntimeException("JSON 处理失败: " + e.getMessage(), e);
@@ -258,7 +260,7 @@ public class PromptRunServiceImpl implements PromptRunService {
                 throw new RuntimeException("Schema 校验失败: " + e.getMessage(), e);
             }
         }
-        
+
     }
-    
+
 }
