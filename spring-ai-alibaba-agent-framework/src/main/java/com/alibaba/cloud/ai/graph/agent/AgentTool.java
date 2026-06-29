@@ -31,13 +31,11 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.support.ToolDefinitions;
+import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,8 +49,6 @@ import java.util.Optional;
  */
 public class AgentTool {
 	private static final ToolCallResultConverter CONVERTER = new MessageToolCallResultConverter();
-
-	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	/**
 	 * Create a ToolCallback using MethodToolCallback.
@@ -129,7 +125,7 @@ public class AgentTool {
 			Map<String, Object> originalSchemaMap = null;
 			if (StringUtils.hasLength(originalSchema)) {
 				try {
-					originalSchemaMap = OBJECT_MAPPER.readValue(originalSchema, new TypeReference<HashMap<String, Object>>() {});
+					originalSchemaMap = JsonParser.fromJson(originalSchema, Map.class);
 				}
 				catch (Exception e) {
 					// If parsing fails, treat as a simple string type
@@ -152,7 +148,7 @@ public class AgentTool {
 			wrappedSchema.put("required", List.of("input"));
 
 			// Convert to JSON string
-			return OBJECT_MAPPER.writeValueAsString(wrappedSchema);
+			return JsonParser.toJson(wrappedSchema);
 		}
 		catch (Exception e) {
 			// Fallback: create a simple wrapper schema
@@ -275,7 +271,7 @@ public class AgentTool {
 
 			// Try to parse as JSON object and extract the "input" field
 			try {
-				Map<String, Object> jsonMap = OBJECT_MAPPER.readValue(input, new TypeReference<HashMap<String, Object>>() {});
+				Map<String, Object> jsonMap = JsonParser.fromJson(input, Map.class);
 
 				if (jsonMap != null && jsonMap.containsKey("input")) {
 					Object inputValue = jsonMap.get("input");
@@ -286,7 +282,7 @@ public class AgentTool {
 							return (String) inputValue;
 						}
 						// Otherwise, serialize it to JSON string
-						return OBJECT_MAPPER.writeValueAsString(inputValue);
+						return JsonParser.toJson(inputValue);
 					}
 				}
 			}

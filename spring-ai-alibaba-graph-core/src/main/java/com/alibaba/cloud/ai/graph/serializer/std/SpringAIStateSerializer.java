@@ -49,6 +49,7 @@ public class SpringAIStateSerializer extends ObjectStreamStateSerializer {
 
 		// Conditionally register DeepSeekAssistantMessage serializer if available
 		registerDeepSeekSupportIfAvailable();
+		registerZhiPuAISupportIfAvailable();
 	}
 
 	/**
@@ -65,6 +66,21 @@ public class SpringAIStateSerializer extends ObjectStreamStateSerializer {
 			// DeepSeekAssistantMessage is not available, skip registration
 			// This is expected for projects that don't include DeepSeek dependencies
 			// IllegalStateException may be thrown if the class is found but constructor fails
+		}
+	}
+
+	/**
+	 * Conditionally registers ZhiPuAiAssistantMessage support if the class is available
+	 * on the classpath. Spring AI 2.0 no longer exposes this module in the default
+	 * dependency set, so registration must not introduce a hard dependency.
+	 */
+	private void registerZhiPuAISupportIfAvailable() {
+		try {
+			Class<?> zhiPuAIClass = Class.forName("org.springframework.ai.zhipuai.ZhiPuAiAssistantMessage");
+			mapper().register(zhiPuAIClass, new ZhiPuAIAssistantMessageSerializer());
+		}
+		catch (ClassNotFoundException | LinkageError | IllegalStateException e) {
+			// ZhiPuAiAssistantMessage is optional; skip registration when the module is absent.
 		}
 	}
 
