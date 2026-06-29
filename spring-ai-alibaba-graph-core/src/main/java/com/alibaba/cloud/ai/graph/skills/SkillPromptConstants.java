@@ -54,8 +54,7 @@ public class SkillPromptConstants {
 		if (!userSkills.isEmpty()) {
 			skillList.append("**User Skills:**\n");
 			for (SkillMetadata skill : userSkills) {
-				skillList.append(String.format("- **%s**: %s", skill.getName(), skill.getDescription()));
-				skillList.append(String.format("  → Supporting files that skill uses (scripts, references, etc.) are located at directory `%s`, use this path to form the absolute path when reading supporting files. \n", skill.getSkillPath()));
+				skillList.append(formatSkillEntry(skill));
 			}
 			skillList.append("\n");
 		}
@@ -63,8 +62,7 @@ public class SkillPromptConstants {
 		if (!projectSkills.isEmpty()) {
 			skillList.append("**Project Skills:**\n");
 			for (SkillMetadata skill : projectSkills) {
-				skillList.append(String.format("- **%s**: %s", skill.getName(), skill.getDescription()));
-				skillList.append(String.format("  → Supporting files that skill uses (scripts, references, etc.) are located at directory `%s`, use this path to form the absolute path when reading supporting files.\n", skill.getSkillPath()));
+				skillList.append(formatSkillEntry(skill));
 			}
 			skillList.append("\n");
 		}
@@ -73,5 +71,49 @@ public class SkillPromptConstants {
 		context.put("skills_list", skillList.toString());
 		context.put("skills_load_instructions", skillRegistry.getSkillLoadInstructions());
 		return systemPromptTemplate.render(context);
+	}
+
+	/**
+	 * Format a single skill entry for display in the system prompt.
+	 *
+	 * Includes the skill name, description, optional annotations (license and compatibility),
+	 * allowed tools if present, and supporting files path.
+	 * @param skill the skill metadata to format
+	 * @return the formatted skill entry string
+	 */
+	static String formatSkillEntry(SkillMetadata skill) {
+		String annotations = formatSkillAnnotations(skill);
+		StringBuilder entry = new StringBuilder();
+		entry.append(String.format("- **%s**: %s", skill.getName(), skill.getDescription()));
+		if (!annotations.isEmpty()) {
+			entry.append(" (").append(annotations).append(")");
+		}
+		entry.append("\n");
+		if (skill.getAllowedTools() != null && !skill.getAllowedTools().isEmpty()) {
+			entry.append(String.format("  -> Allowed tools: %s\n", String.join(", ", skill.getAllowedTools())));
+		}
+		entry.append(String.format("  -> Supporting files that skill uses (scripts, references, etc.) are located at directory `%s`, use this path to form the absolute path when reading supporting files. \n", skill.getSkillPath()));
+		return entry.toString();
+	}
+
+	/**
+	 * Build a parenthetical annotation string from optional skill fields.
+	 *
+	 * Combines license and compatibility into a comma-separated string for
+	 * display in the system prompt skill listing, matching the Python
+	 * _format_skill_annotations pattern.
+	 * @param skill the skill metadata to extract annotations from
+	 * @return annotation string like "License: MIT, Compatibility: Python 3.10+",
+	 * or empty string if neither field is set
+	 */
+	static String formatSkillAnnotations(SkillMetadata skill) {
+		List<String> parts = new ArrayList<>();
+		if (skill.getLicense() != null && !skill.getLicense().isEmpty()) {
+			parts.add("License: " + skill.getLicense());
+		}
+		if (skill.getCompatibility() != null && !skill.getCompatibility().isEmpty()) {
+			parts.add("Compatibility: " + skill.getCompatibility());
+		}
+		return String.join(", ", parts);
 	}
 }
