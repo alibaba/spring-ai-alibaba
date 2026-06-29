@@ -93,6 +93,12 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 			}
 		}
 
+		// Prevent non-resumed sub-graphs from inheriting parent's resume metadata
+		if (!resumeSubgraph) {
+			subGraphRunnableConfig.metadata()
+				.ifPresent(m -> m.remove(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY));
+		}
+
 		final CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 
 		try {
