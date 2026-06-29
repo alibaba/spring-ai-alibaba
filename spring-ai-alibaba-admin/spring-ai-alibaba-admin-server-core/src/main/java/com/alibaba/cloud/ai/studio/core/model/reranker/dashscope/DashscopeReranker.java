@@ -17,6 +17,7 @@
 package com.alibaba.cloud.ai.studio.core.model.reranker.dashscope;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.spec.DashScopeApiSpec;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
@@ -93,9 +94,9 @@ public class DashscopeReranker implements DocumentPostProcessor {
 		Assert.notNull(query, "query must not be null");
 		Assert.notNull(documents, "documents must not be null");
 
-		DashScopeApi.RerankRequest rerankRequest = createRequest(query, documents, options);
+        DashScopeApiSpec.RerankRequest rerankRequest = createRequest(query, documents, options);
 
-		ResponseEntity<DashScopeApi.RerankResponse> responseEntity = this.retryTemplate
+		ResponseEntity<DashScopeApiSpec.RerankResponse> responseEntity = this.retryTemplate
 			.execute(ctx -> this.dashscopeApi.rerankEntity(rerankRequest));
 
 		var response = responseEntity.getBody();
@@ -122,14 +123,14 @@ public class DashscopeReranker implements DocumentPostProcessor {
 	 * @param options Reranking configuration options
 	 * @return Configured rerank request
 	 */
-	private DashScopeApi.RerankRequest createRequest(Query query, List<Document> documents,
+	private DashScopeApiSpec.RerankRequest createRequest(Query query, List<Document> documents,
 			DashScopeRerankerOptions options) {
 		List<String> docs = documents.stream().map(Document::getText).toList();
 
-		DashScopeApi.RerankRequestParameter parameter = new DashScopeApi.RerankRequestParameter(options.getTopN(),
+        DashScopeApiSpec.RerankRequestParameter parameter = new DashScopeApiSpec.RerankRequestParameter(options.getTopN(),
 				options.getReturnDocuments());
-		var input = new DashScopeApi.RerankRequestInput(query.text(), docs);
-		return new DashScopeApi.RerankRequest(options.getModel(), input, parameter);
+		var input = new DashScopeApiSpec.RerankRequestInput(query.text(), docs);
+		return new DashScopeApiSpec.RerankRequest(options.getModel(), input, parameter);
 	}
 
 	/**
