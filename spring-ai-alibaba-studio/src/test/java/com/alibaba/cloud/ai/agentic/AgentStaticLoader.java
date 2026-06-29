@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
@@ -30,6 +31,7 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -57,15 +59,24 @@ public class AgentStaticLoader implements AgentLoader {
 
 	private final Map<String, BaseAgent> agents = new ConcurrentHashMap<>();
 
-	public AgentStaticLoader(@Autowired(required = false) ToolCallbackProvider toolCallbackProvider) {
+	public AgentStaticLoader(ObservationRegistry observationRegistry,
+			@Autowired(required = false) ToolCallbackProvider toolCallbackProvider) {
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
+		if (!StringUtils.hasText(apiKey)) {
+			apiKey = "test-key-for-graph-integration-test";
+		}
 		// Create DashScopeApi instance using the API key from environment variable
-		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build();
+		DashScopeApi dashScopeApi = DashScopeApi.builder().apiKey(apiKey).build();
 		// Create DashScope ChatModel instance
-		ChatModel chatModel = DashScopeChatModel.builder().dashScopeApi(dashScopeApi).build();
+		ChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(dashScopeApi)
+				.observationRegistry(observationRegistry)
+				.build();
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("single_agent")
 				.model(chatModel)
+				.observationRegistry(observationRegistry)
 				.saver(new MemorySaver())
 				.tools(PoetTool.createPoetToolCallback())
 				.build();
@@ -77,7 +88,7 @@ public class AgentStaticLoader implements AgentLoader {
 				: Collections.emptyList();
 
 		if (!toolCallbacks.isEmpty()) {
-			ReactAgent researchAgent = new DeepResearchAgent().getResearchAgent(toolCallbacks);
+			ReactAgent researchAgent = new DeepResearchAgent(observationRegistry).getResearchAgent(toolCallbacks);
 			GraphRepresentation representation = researchAgent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
 			this.agents.put("research_agent", researchAgent);
 		}
