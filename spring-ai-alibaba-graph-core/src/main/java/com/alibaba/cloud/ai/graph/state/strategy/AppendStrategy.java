@@ -78,25 +78,24 @@ public class AppendStrategy implements KeyStrategy {
 				if (list.isEmpty()) {
 					return oldValue;
 				}
-				if (oldValueIsList) {
-					var result = evaluateRemoval((List<Object>) oldValue, list);
-					if (allowDuplicate) {
-						return Stream.concat(result.oldValues().stream(), result.newValues()
-										.stream())
-								.collect(Collectors.toList());
-					} else {
-						return Stream.concat(result.oldValues().stream(), result.newValues()
-										.stream())
-								.distinct()
-								.collect(Collectors.toList());
-					}
+				var result = evaluateRemoval(oldList, list);
+				if (allowDuplicate) {
+					return Stream.concat(result.oldValues().stream(), result.newValues()
+									.stream())
+							.collect(Collectors.toList());
+				} else {
+					return Stream.concat(result.oldValues().stream(), result.newValues()
+									.stream())
+							.distinct()
+							.collect(Collectors.toList());
 				}
-				oldList.addAll(list);
 			}
 			else {
-				oldList.add(newValue);
+				ArrayList<Object> newList = new ArrayList<>(oldList.size() + 1);
+				newList.addAll(oldList);
+				newList.add(newValue);
+				return newList;
 			}
-			return oldList;
 		}
 		else {
 			ArrayList<Object> arrayResult = new ArrayList<>();
