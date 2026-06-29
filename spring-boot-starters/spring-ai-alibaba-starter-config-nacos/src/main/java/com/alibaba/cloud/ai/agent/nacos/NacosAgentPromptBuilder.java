@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.agent.nacos;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.alibaba.cloud.ai.agent.nacos.utils.ChatOptionsProxy;
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.cloud.ai.graph.agent.DefaultBuilder;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
@@ -85,7 +84,7 @@ public class NacosAgentPromptBuilder extends DefaultBuilder {
 					this.chatOptions = OpenAiChatOptions.builder().build();
 				}
 				if (!(this.chatOptions instanceof ObservationMetadataAwareOptions)) {
-					this.chatOptions = (ChatOptions) ChatOptionsProxy.createProxy(this.chatOptions, getMetadata(promptVO));
+					this.chatOptions = buildObservationMetadataOptions(this.chatOptions, getMetadata(promptVO));
 				}
 
 				observationMetadataAwareOptions = (ObservationMetadataAwareOptions) this.chatOptions;
@@ -105,5 +104,13 @@ public class NacosAgentPromptBuilder extends DefaultBuilder {
 			registryPrompt(nacosOptions, reactAgent, observationMetadataAwareOptions, promptVO.getPromptKey());
 		}
 		return reactAgent;
+	}
+
+	private static ChatOptions buildObservationMetadataOptions(ChatOptions chatOptions, Map<String, String> metadata) {
+		if (chatOptions instanceof OpenAiChatOptions openAiChatOptions) {
+			return ObservationMetadataOpenAiChatOptions.from(openAiChatOptions, metadata);
+		}
+		throw new IllegalStateException(
+				"Nacos prompt observation metadata requires OpenAiChatOptions with Spring AI 2.0.");
 	}
 }

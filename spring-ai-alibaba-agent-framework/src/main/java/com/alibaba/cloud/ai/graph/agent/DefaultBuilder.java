@@ -349,9 +349,9 @@ public class DefaultBuilder extends Builder {
 
 	/**
 	 * Get the default ChatOptions from a ChatClient via reflection (ChatClient does not expose
-	 * them publicly). Reads {@code defaultChatClientRequest.optionsCustomizer} from the client.
-	 * The options obtained here are the same as (consistent with) the default options in the
-	 * ChatModel backing this ChatClient.
+	 * them publicly). Spring AI applies the request options customizer on top of the backing
+	 * ChatModel options; mirror that behavior here so a partial customizer does not replace model
+	 * defaults.
 	 * @param chatClient the ChatClient instance
 	 * @return the client's default options, or null if not set or reflection fails
 	 */
@@ -363,10 +363,21 @@ public class DefaultBuilder extends Builder {
 			if (defaultChatClientRequest == null) {
 				return null;
 			}
+			Field chatModelField = defaultChatClientRequest.getClass().getDeclaredField("chatModel");
+			chatModelField.setAccessible(true);
+			Object chatModel = chatModelField.get(defaultChatClientRequest);
+			ChatOptions modelOptions = chatModel instanceof ChatModel model ? model.getOptions() : null;
+
 			Field optionsCustomizerField = defaultChatClientRequest.getClass().getDeclaredField("optionsCustomizer");
 			optionsCustomizerField.setAccessible(true);
 			Object optionsCustomizer = optionsCustomizerField.get(defaultChatClientRequest);
-			return optionsCustomizer instanceof ChatOptions.Builder<?> builder ? builder.clone().build() : null;
+			if (!(optionsCustomizer instanceof ChatOptions.Builder<?> builder)) {
+				return modelOptions;
+			}
+			if (modelOptions == null) {
+				return builder.clone().build();
+			}
+			return modelOptions.mutate().combineWith(builder.clone()).build();
 		}
 		catch (NoSuchFieldException | IllegalAccessException e) {
 			if (logger.isDebugEnabled()) {
