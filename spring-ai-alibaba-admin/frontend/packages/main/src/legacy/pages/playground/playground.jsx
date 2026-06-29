@@ -570,6 +570,12 @@ const PlaygroundPage = () => {
       enableFn
     } = promptInstance;
 
+    // Resolve the currently-selected prompt from the loaded prompts list so we
+    // can read its key/version. Previously this referenced an undefined
+    // `currentPrompt`, which threw `ReferenceError: currentPrompt is not defined`
+    // the moment the user clicked Send.
+    const currentPrompt = prompts.find(p => p.promptKey === promptInstance.selectedPromptId);
+
     const config = {
       promptId,
       content,
@@ -578,7 +584,7 @@ const PlaygroundPage = () => {
       modelParams,
       sessionId,
       promptKey: currentPrompt?.promptKey || 'playground',
-      version: currentPrompt?.latestVersion || '1.0',
+      version: currentPrompt?.currentVersion?.version || '1.0',
       mockTools: enableFn === false ? [] : mockTools,
     };
 
@@ -615,7 +621,7 @@ const PlaygroundPage = () => {
     setPromptInstances(prev => prev.map(prompt => {
       if (prompt.id === promptId) {
         const userMessage = {
-          id: Date.now() + prompt.id,
+          id: `user-${Date.now()}-${prompt.id}`,
           type: 'user',
           content: inputText,
           timestamp: formatTime(Date.now())

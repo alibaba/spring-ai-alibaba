@@ -93,7 +93,7 @@ export const executeStreamingPrompt = async (
     };
 
     let currentMessage = {
-      id: Date.now(),
+      id: `ai-${Date.now()}`,
       promptId,
       type: 'assistant', // 修正类型匹配，与UI中的判断一致
       content: '',
