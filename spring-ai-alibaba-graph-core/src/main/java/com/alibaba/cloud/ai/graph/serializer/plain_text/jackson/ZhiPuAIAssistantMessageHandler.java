@@ -25,12 +25,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.zhipuai.ZhiPuAiAssistantMessage;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,10 @@ import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.Serializa
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.serializeMetadata;
 
 public interface ZhiPuAIAssistantMessageHandler {
+
+	String MESSAGE_CLASS_NAME = "org.springframework.ai.zhipuai.ZhiPuAiAssistantMessage";
+
+	String BUILDER_CLASS_NAME = MESSAGE_CLASS_NAME + "$Builder";
 
 	enum Field {
 
@@ -52,34 +57,40 @@ public interface ZhiPuAIAssistantMessageHandler {
 
 	}
 
-	class Serializer extends StdSerializer<ZhiPuAiAssistantMessage> {
+	@SuppressWarnings("unchecked")
+	static void registerTo(SimpleModule module, Class<?> zhiPuAIClass) {
+		Class<Object> messageClass = (Class<Object>) zhiPuAIClass;
+		module.addSerializer(messageClass, new Serializer(messageClass));
+		module.addDeserializer(messageClass, new Deserializer(messageClass));
+	}
 
-		public Serializer() {
-			super(ZhiPuAiAssistantMessage.class);
+	class Serializer extends StdSerializer<Object> {
+
+		Serializer(Class<Object> zhiPuAIClass) {
+			super(zhiPuAIClass);
 		}
 
 		@Override
-		public void serialize(ZhiPuAiAssistantMessage msg, JsonGenerator gen, SerializerProvider provider)
-				throws IOException {
+		public void serialize(Object msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
 			gen.writeStartObject();
-			serializeFields(msg, gen, provider);
+			serializeFields(msg, gen);
 			gen.writeEndObject();
 		}
 
 		@Override
-		public void serializeWithType(ZhiPuAiAssistantMessage msg, JsonGenerator gen, SerializerProvider provider, TypeSerializer typeSer)
+		public void serializeWithType(Object msg, JsonGenerator gen, SerializerProvider provider, TypeSerializer typeSer)
 				throws IOException {
 			WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, typeSer.typeId(msg, JsonToken.START_OBJECT));
-			serializeFields(msg, gen, provider);
+			serializeFields(msg, gen);
 			typeSer.writeTypeSuffix(gen, typeIdDef);
 		}
 
-		private void serializeFields(ZhiPuAiAssistantMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
-			String text = msg.getText();
+		@SuppressWarnings("unchecked")
+		private void serializeFields(Object msg, JsonGenerator gen) throws IOException {
+			String text = (String) invoke(msg, "getText");
 			gen.writeStringField(Field.TEXT.name, text);
 
-			List<AssistantMessage.ToolCall> toolCalls = msg.getToolCalls();
-
+			List<AssistantMessage.ToolCall> toolCalls = (List<AssistantMessage.ToolCall>) invoke(msg, "getToolCalls");
 			gen.writeArrayFieldStart(Field.TOOL_CALLS.name);
 			for (var toolCall : toolCalls) {
 				gen.writeStartObject();
@@ -91,8 +102,7 @@ public interface ZhiPuAIAssistantMessageHandler {
 			}
 			gen.writeEndArray();
 
-			String reasoningContent = msg.getReasoningContent();
-
+			String reasoningContent = (String) invoke(msg, "getReasoningContent");
 			if (reasoningContent != null) {
 				gen.writeStringField(Field.REASONING_CONTENT.name, reasoningContent);
 			}
@@ -100,21 +110,23 @@ public interface ZhiPuAIAssistantMessageHandler {
 				gen.writeNullField(Field.REASONING_CONTENT.name);
 			}
 
-			Map<String, Object> metadata = msg.getMetadata();
+			Map<String, Object> metadata = (Map<String, Object>) invoke(msg, "getMetadata");
 			serializeMetadata(gen, metadata);
 		}
 
 	}
 
-	class Deserializer extends StdDeserializer<ZhiPuAiAssistantMessage> {
+	class Deserializer extends StdDeserializer<Object> {
 
-		protected Deserializer() {
-			super(ZhiPuAiAssistantMessage.class);
+		private final Class<?> zhiPuAIClass;
+
+		Deserializer(Class<?> zhiPuAIClass) {
+			super(zhiPuAIClass);
+			this.zhiPuAIClass = zhiPuAIClass;
 		}
 
 		@Override
-		public ZhiPuAiAssistantMessage deserialize(JsonParser jsonParser, DeserializationContext ctx)
-				throws IOException {
+		public Object deserialize(JsonParser jsonParser, DeserializationContext ctx) throws IOException {
 			var mapper = (ObjectMapper) jsonParser.getCodec();
 			ObjectNode node = mapper.readTree(jsonParser);
 
@@ -128,7 +140,6 @@ public interface ZhiPuAIAssistantMessageHandler {
 					? reasoningContentNode.asText() : null;
 
 			var requests = new LinkedList<AssistantMessage.ToolCall>();
-
 			if (requestsNode != null && !requestsNode.isNull() && !requestsNode.isEmpty()) {
 				for (JsonNode requestNode : requestsNode) {
 					var request = mapper.treeToValue(requestNode, AssistantMessage.ToolCall.class);
@@ -136,14 +147,42 @@ public interface ZhiPuAIAssistantMessageHandler {
 				}
 			}
 
-			return new ZhiPuAiAssistantMessage.Builder()
-					.content(text)
-					.reasoningContent(reasoningContent)
-					.properties(metadata)
-					.toolCalls(requests)
-					.build();
+			return buildMessage(this.zhiPuAIClass, text, metadata, requests, reasoningContent);
 		}
 
+	}
+
+	private static Object buildMessage(Class<?> zhiPuAIClass, String text, Map<String, Object> metadata,
+			List<AssistantMessage.ToolCall> toolCalls, String reasoningContent) throws IOException {
+		try {
+			Class<?> builderClass = Class.forName(BUILDER_CLASS_NAME, true, zhiPuAIClass.getClassLoader());
+			Object builder = builderClass.getDeclaredConstructor().newInstance();
+			invokeBuilder(builderClass, builder, "content", String.class, text);
+			invokeBuilder(builderClass, builder, "reasoningContent", String.class, reasoningContent);
+			invokeBuilder(builderClass, builder, "properties", Map.class, metadata);
+			invokeBuilder(builderClass, builder, "toolCalls", List.class, toolCalls);
+			return builderClass.getMethod("build").invoke(builder);
+		}
+		catch (ReflectiveOperationException e) {
+			throw new IOException("Failed to construct ZhiPuAiAssistantMessage", e);
+		}
+	}
+
+	private static Object invoke(Object target, String methodName) throws IOException {
+		try {
+			return target.getClass().getMethod(methodName).invoke(target);
+		}
+		catch (IllegalAccessException | NoSuchMethodException e) {
+			throw new IOException("Failed to read ZhiPuAiAssistantMessage." + methodName + "()", e);
+		}
+		catch (InvocationTargetException e) {
+			throw new IOException("Failed to read ZhiPuAiAssistantMessage." + methodName + "()", e.getCause());
+		}
+	}
+
+	private static void invokeBuilder(Class<?> builderClass, Object builder, String methodName, Class<?> parameterType,
+			Object value) throws ReflectiveOperationException {
+		builderClass.getMethod(methodName, parameterType).invoke(builder, value);
 	}
 
 }
