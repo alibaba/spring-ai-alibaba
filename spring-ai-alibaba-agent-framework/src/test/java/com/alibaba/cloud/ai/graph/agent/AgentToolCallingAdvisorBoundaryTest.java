@@ -17,6 +17,10 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
@@ -34,8 +38,10 @@ import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class AgentToolCallingAdvisorBoundaryTest {
 
@@ -61,6 +67,25 @@ class AgentToolCallingAdvisorBoundaryTest {
 		assertEquals(0, tools.chatClientAdvisorExecutions.get());
 	}
 
+	@Test
+	void toolOnlyAgentShouldNotReplaceProviderOptionsWithGenericToolOptions() throws Exception {
+		AtomicReference<ModelRequest> capturedRequest = new AtomicReference<>();
+		ToolCallback toolCallback = ToolCallbacks.from(new BoundaryTools())[0];
+		ReactAgent agent = ReactAgent.builder()
+				.name("provider-options-agent")
+				.model(new FixedResponseChatModel("provider response"))
+				.tools(toolCallback)
+				.interceptors(new CapturingModelInterceptor(capturedRequest))
+				.saver(new MemorySaver())
+				.build();
+
+		AssistantMessage result = agent.call("use available tools if needed",
+				RunnableConfig.builder().threadId("provider-options-thread").addMetadata("_stream_", false).build());
+
+		assertEquals("provider response", result.getText());
+		assertNull(capturedRequest.get().getOptions());
+	}
+
 	private static final class ToolCallThenFinalChatModel implements ChatModel {
 
 		private final AtomicInteger callCount = new AtomicInteger();
@@ -79,6 +104,40 @@ class AgentToolCallingAdvisorBoundaryTest {
 		@Override
 		public Flux<ChatResponse> stream(Prompt prompt) {
 			return Flux.just(call(prompt));
+		}
+	}
+
+	private static final class FixedResponseChatModel implements ChatModel {
+
+		private final String response;
+
+		private FixedResponseChatModel(String response) {
+			this.response = response;
+		}
+
+		@Override
+		public ChatResponse call(Prompt prompt) {
+			return new ChatResponse(List.of(new Generation(new AssistantMessage(this.response))));
+		}
+	}
+
+	private static final class CapturingModelInterceptor extends ModelInterceptor {
+
+		private final AtomicReference<ModelRequest> capturedRequest;
+
+		private CapturingModelInterceptor(AtomicReference<ModelRequest> capturedRequest) {
+			this.capturedRequest = capturedRequest;
+		}
+
+		@Override
+		public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
+			this.capturedRequest.set(request);
+			return handler.call(request);
+		}
+
+		@Override
+		public String getName() {
+			return "capturing-model-interceptor";
 		}
 	}
 

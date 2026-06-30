@@ -336,54 +336,45 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	}
 
 	/**
-	 * Build chat options by merging toolCallbacks with the provided chatOptions.
-	 * If chatOptions is null or not of type ToolCallingChatOptions, create a new ToolCallingChatOptions.
-	 * If chatOptions is ToolCallingChatOptions, merge toolCallbacks (toolCallbacks takes precedence).
-	 *
+	 * Build chat options by merging toolCallbacks with existing tool-calling options.
+	 * Tool-only configuration is applied to the request spec so it does not replace
+	 * provider-specific model options with generic options.
 	 * @param chatOptions the original chat options
 	 * @param toolCallbacks the tool callbacks to be included
-	 * @return merged ToolCallingChatOptions
+	 * @return merged ToolCallingChatOptions, or {@code null} when no tool-calling
+	 * options were explicitly provided
 	 */
 	@Nullable
 	private ToolCallingChatOptions buildChatOptions(ChatOptions chatOptions, List<ToolCallback> toolCallbacks) {
-		if (chatOptions == null && (toolCallbacks == null || toolCallbacks.isEmpty())) {
+		if (chatOptions == null) {
 			return null;
 		}
 
 		List<ToolCallback> configuredToolCallbacks = toolCallbacks != null ? toolCallbacks : List.of();
 
-		if (chatOptions != null) {
-			if (chatOptions instanceof ToolCallingChatOptions builderToolCallingOptions) {
-				ToolCallingChatOptions.Builder<?> optionsBuilder = builderToolCallingOptions.mutate();
-				List<ToolCallback> mergedToolCallbacks = new ArrayList<>(configuredToolCallbacks);
-				List<ToolCallback> optionToolCallbacks = builderToolCallingOptions.getToolCallbacks() != null
-						? builderToolCallingOptions.getToolCallbacks() : List.of();
-				// Add callbacks from chatOptions that are not already present (toolCallbacks takes precedence)
-				for (ToolCallback callback : optionToolCallbacks) {
-					boolean exists = mergedToolCallbacks.stream()
-							.anyMatch(tc -> tc.getToolDefinition().name().equals(callback.getToolDefinition().name()));
-					if (!exists) {
-						mergedToolCallbacks.add(callback);
-					}
+		if (chatOptions instanceof ToolCallingChatOptions builderToolCallingOptions) {
+			ToolCallingChatOptions.Builder<?> optionsBuilder = builderToolCallingOptions.mutate();
+			List<ToolCallback> mergedToolCallbacks = new ArrayList<>(configuredToolCallbacks);
+			List<ToolCallback> optionToolCallbacks = builderToolCallingOptions.getToolCallbacks() != null
+					? builderToolCallingOptions.getToolCallbacks() : List.of();
+			// Add callbacks from chatOptions that are not already present (toolCallbacks takes precedence)
+			for (ToolCallback callback : optionToolCallbacks) {
+				boolean exists = mergedToolCallbacks.stream()
+						.anyMatch(tc -> tc.getToolDefinition().name().equals(callback.getToolDefinition().name()));
+				if (!exists) {
+					mergedToolCallbacks.add(callback);
 				}
-
-				return optionsBuilder.toolCallbacks(mergedToolCallbacks).build();
-			} else {
-				if (logger.isDebugEnabled()) {
-					logger.debug("The provided chatOptions is not of type ToolCallingChatOptions (actual type: {}). "
-							+ "Only common ChatOptions fields can be preserved when adding tool callbacks.",
-							chatOptions.getClass().getName());
-				}
-				return ToolCallingChatOptions.builder()
-						.combineWith(chatOptions.mutate())
-						.toolCallbacks(configuredToolCallbacks)
-						.build();
 			}
+
+			return optionsBuilder.toolCallbacks(mergedToolCallbacks).build();
 		}
 
-		return ToolCallingChatOptions.builder()
-				.toolCallbacks(configuredToolCallbacks)
-				.build();
+		if (logger.isDebugEnabled()) {
+			logger.debug("The provided chatOptions is not of type ToolCallingChatOptions (actual type: {}). "
+					+ "Tools will be applied to ChatClient request spec without replacing prompt options.",
+					chatOptions.getClass().getName());
+		}
+		return null;
 	}
 
 	private String renderPromptTemplate(String prompt, Map<String, Object> params) {
@@ -473,13 +464,12 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			return ToolCallbackUtils.deduplicateByName(toolCallbacks);
 		}
 
-		if (modelRequest.getOptions() != null && modelRequest.getOptions().getToolCallbacks() != null) {
+		if (modelRequest.getOptions() == null) {
+			toolCallbacks.addAll(this.toolCallbacks);
+		} else if (modelRequest.getOptions().getToolCallbacks() != null) {
 			toolCallbacks.addAll(modelRequest.getOptions().getToolCallbacks());
 		} else {
-			// do nothing
-
-			// by default, buildChatOptions() makes sure 'modelRequest.getOptions().getToolCallbacks()' is always set.
-			// this leaves room for users to disable all tools by setting empty toolCallbacks in options.
+			// Leave room for users to disable all tools by setting empty toolCallbacks in options.
 		}
 
 		List<String> requestedTools = modelRequest.getTools();
@@ -518,7 +508,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
         if (requestOptions != null) {
 			promptSpec.options(requestOptions.mutate().toolCallbacks(filteredToolCallbacks));
         } else if (!filteredToolCallbacks.isEmpty()) {
-			promptSpec.options(ToolCallingChatOptions.builder().toolCallbacks(filteredToolCallbacks));
+			promptSpec.toolCallbacks(filteredToolCallbacks.toArray(ToolCallback[]::new));
         }
 
         return promptSpec;
