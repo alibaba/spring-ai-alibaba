@@ -195,6 +195,7 @@ class AgentToolNodeAsyncExecutionTest {
 			AtomicBoolean tokenCancelled = new AtomicBoolean(false);
 			AtomicReference<CancellationToken> capturedToken = new AtomicReference<>();
 			CountDownLatch cancellationLatch = new CountDownLatch(1);
+			ExecutorService executor = Executors.newSingleThreadExecutor();
 
 			CancellableAsyncToolCallback callback = new CancellableAsyncToolCallback() {
 				@Override
@@ -222,7 +223,7 @@ class AgentToolNodeAsyncExecutionTest {
 							Thread.currentThread().interrupt();
 						}
 						return "completed";
-					});
+					}, executor);
 				}
 
 				@Override
@@ -236,24 +237,29 @@ class AgentToolNodeAsyncExecutionTest {
 				}
 			};
 
-			// Simulate AgentToolNode behavior
-			com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken token = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
-
-			CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
-
-			// Apply timeout (this is what AgentToolNode does)
 			try {
-				future.orTimeout(callback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
-			}
-			catch (Exception e) {
-				// On timeout, AgentToolNode cancels the token
-				token.cancel();
-			}
+				// Simulate AgentToolNode behavior
+				com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken token = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
 
-			// Verify token was cancelled
-			assertTrue(cancellationLatch.await(1, TimeUnit.SECONDS));
-			assertTrue(tokenCancelled.get());
-			assertTrue(token.isCancelled());
+				CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
+
+				// Apply timeout (this is what AgentToolNode does)
+				try {
+					future.orTimeout(callback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
+				}
+				catch (Exception e) {
+					// On timeout, AgentToolNode cancels the token
+					token.cancel();
+				}
+
+				// Verify token was cancelled
+				assertTrue(cancellationLatch.await(1, TimeUnit.SECONDS));
+				assertTrue(tokenCancelled.get());
+				assertTrue(token.isCancelled());
+			}
+			finally {
+				executor.shutdownNow();
+			}
 		}
 
 		@Test
@@ -473,6 +479,7 @@ class AgentToolNodeAsyncExecutionTest {
 			// This simulates the extraStateFromToolCall behavior
 			Map<String, Object> stateUpdates = new java.util.concurrent.ConcurrentHashMap<>();
 			CountDownLatch writeComplete = new CountDownLatch(1);
+			ExecutorService executor = Executors.newSingleThreadExecutor();
 
 			CancellableAsyncToolCallback callback = new CancellableAsyncToolCallback() {
 				@Override
@@ -497,7 +504,7 @@ class AgentToolNodeAsyncExecutionTest {
 							Thread.currentThread().interrupt();
 						}
 						return "result";
-					});
+					}, executor);
 				}
 
 				@Override
@@ -511,27 +518,32 @@ class AgentToolNodeAsyncExecutionTest {
 				}
 			};
 
-			com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken token = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
-
-			CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
-
-			// Wait for writes - increased from 1s to 5s for CI stability
-			assertTrue(writeComplete.await(5, TimeUnit.SECONDS));
-			assertEquals(2, stateUpdates.size());
-
-			// Simulate AgentToolNode timeout handling
 			try {
-				future.orTimeout(callback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
-			}
-			catch (Exception e) {
-				// This is what AgentToolNode does on timeout
-				token.cancel();
-				stateUpdates.clear(); // AgentToolNode clears extraStateFromToolCall
-			}
+				com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken token = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
 
-			// State should be cleared
-			assertTrue(stateUpdates.isEmpty());
-			assertTrue(token.isCancelled());
+				CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
+
+				// Wait for writes - increased from 1s to 5s for CI stability
+				assertTrue(writeComplete.await(5, TimeUnit.SECONDS));
+				assertEquals(2, stateUpdates.size());
+
+				// Simulate AgentToolNode timeout handling
+				try {
+					future.orTimeout(callback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
+				}
+				catch (Exception e) {
+					// This is what AgentToolNode does on timeout
+					token.cancel();
+					stateUpdates.clear(); // AgentToolNode clears extraStateFromToolCall
+				}
+
+				// State should be cleared
+				assertTrue(stateUpdates.isEmpty());
+				assertTrue(token.isCancelled());
+			}
+			finally {
+				executor.shutdownNow();
+			}
 		}
 
 	}
@@ -609,6 +621,7 @@ class AgentToolNodeAsyncExecutionTest {
 		void extractErrorMessage_shouldProduceTimeoutMessage_forTimeoutException() {
 			// This tests the extractErrorMessage behavior indirectly via async tool timeout
 			AtomicBoolean timeoutOccurred = new AtomicBoolean(false);
+			ExecutorService executor = Executors.newSingleThreadExecutor();
 
 			CancellableAsyncToolCallback slowCallback = new CancellableAsyncToolCallback() {
 				@Override
@@ -627,7 +640,7 @@ class AgentToolNodeAsyncExecutionTest {
 							Thread.currentThread().interrupt();
 						}
 						return "never-returned";
-					});
+					}, executor);
 				}
 
 				@Override
@@ -641,21 +654,26 @@ class AgentToolNodeAsyncExecutionTest {
 				}
 			};
 
-			// Simulate timeout behavior
-			com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken token = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
-
-			CompletableFuture<String> future = slowCallback.callAsync("{}", new ToolContext(Map.of()), token);
-
 			try {
-				future.orTimeout(slowCallback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
-			}
-			catch (Exception e) {
-				timeoutOccurred.set(true);
-				token.cancel();
-			}
+				// Simulate timeout behavior
+				com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken token = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
 
-			assertTrue(timeoutOccurred.get(), "Timeout should occur");
-			assertTrue(token.isCancelled(), "Token should be cancelled after timeout");
+				CompletableFuture<String> future = slowCallback.callAsync("{}", new ToolContext(Map.of()), token);
+
+				try {
+					future.orTimeout(slowCallback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
+				}
+				catch (Exception e) {
+					timeoutOccurred.set(true);
+					token.cancel();
+				}
+
+				assertTrue(timeoutOccurred.get(), "Timeout should occur");
+				assertTrue(token.isCancelled(), "Token should be cancelled after timeout");
+			}
+			finally {
+				executor.shutdownNow();
+			}
 		}
 
 		@Test
