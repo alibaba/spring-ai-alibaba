@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.agent.nacos;
 
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
 
@@ -22,6 +23,8 @@ import com.alibaba.cloud.ai.agent.nacos.vo.AgentVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.exception.NacosException;
@@ -32,6 +35,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,6 +87,24 @@ class NacosReactAgentBuilderObservationMetadataTest {
 				requestObservationOptions.getObservationMetadata());
 	}
 
+	@Test
+	void refreshedPromptMetadataIsVisibleInChatClientRequestOptions() throws Exception {
+		NacosReactAgentBuilder builder = new NacosReactAgentBuilder();
+		ReactAgent agent = builder.nacosOptions(this.nacosOptions)
+				.name("test-agent")
+				.build();
+		ObservationMetadataAwareOptions holderOptions = builder.agentVOHolder.getObservationMetadataAwareOptions();
+		ChatClient chatClient = getChatClient(agent);
+
+		holderOptions.getObservationMetadata().put("promptVersion", "v2");
+		ChatOptions requestOptions = buildRequestOptions(chatClient);
+
+		ObservationMetadataAwareOptions requestObservationOptions = assertInstanceOf(
+				ObservationMetadataAwareOptions.class, requestOptions);
+		assertEquals(Map.of("promptKey", "test-prompt", "promptVersion", "v2"),
+				requestObservationOptions.getObservationMetadata());
+	}
+
 	private void setupNacosConfigs() throws NacosException {
 		AgentVO agentVO = new AgentVO();
 		agentVO.setPromptKey("test-prompt");
@@ -107,6 +131,42 @@ class NacosReactAgentBuilderObservationMetadataTest {
 		mcpServersVO.setMcpServers(Collections.emptyList());
 		when(this.nacosConfigService.getConfig(eq("mcp-servers.json"), anyString(), anyLong()))
 				.thenReturn(JSON.toJSONString(mcpServersVO));
+	}
+
+	private static ChatClient getChatClient(ReactAgent agent) throws Exception {
+		Field llmNodeField = ReactAgent.class.getDeclaredField("llmNode");
+		llmNodeField.setAccessible(true);
+		AgentLlmNode llmNode = (AgentLlmNode) llmNodeField.get(agent);
+
+		Field chatClientField = AgentLlmNode.class.getDeclaredField("chatClient");
+		chatClientField.setAccessible(true);
+		return (ChatClient) chatClientField.get(llmNode);
+	}
+
+	private static ChatOptions buildRequestOptions(ChatClient chatClient) throws Exception {
+		Field defaultRequestField = chatClient.getClass().getDeclaredField("defaultChatClientRequest");
+		defaultRequestField.setAccessible(true);
+		Object defaultChatClientRequest = defaultRequestField.get(chatClient);
+
+		ChatModel chatModel = getField(defaultChatClientRequest, "chatModel", ChatModel.class);
+		ChatOptions.Builder<?> builder = chatModel.getOptions().mutate();
+		ChatOptions.Builder<?> optionsCustomizer = getField(defaultChatClientRequest, "optionsCustomizer",
+				ChatOptions.Builder.class);
+		if (optionsCustomizer != null) {
+			builder.combineWith(optionsCustomizer);
+		}
+		return builder.build();
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> T getField(Object target, String fieldName, Class<?> fieldType) throws Exception {
+		Field field = target.getClass().getDeclaredField(fieldName);
+		field.setAccessible(true);
+		Object value = field.get(target);
+		if (value == null || fieldType.isInstance(value)) {
+			return (T) value;
+		}
+		throw new IllegalStateException("Unexpected field type: " + fieldName);
 	}
 
 }

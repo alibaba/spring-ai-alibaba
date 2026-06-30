@@ -46,4 +46,22 @@ class ObservationMetadataOpenAiChatOptionsTest {
 				observationOptions.getObservationMetadata());
 	}
 
+	@Test
+	void clonedBuilderSeesRefreshedObservationMetadata() {
+		OpenAiChatOptions options = ObservationMetadataOpenAiChatOptions.from(OpenAiChatOptions.builder()
+				.model("configured-model")
+				.build(), Map.of("promptKey", "prompt-a", "promptVersion", "v1"));
+		ObservationMetadataAwareOptions holderOptions = assertInstanceOf(ObservationMetadataAwareOptions.class,
+				options);
+		OpenAiChatOptions.Builder requestBuilder = options.mutate();
+
+		holderOptions.getObservationMetadata().put("promptVersion", "v2");
+		OpenAiChatOptions requestOptions = requestBuilder.build();
+
+		ObservationMetadataAwareOptions requestObservationOptions = assertInstanceOf(
+				ObservationMetadataAwareOptions.class, requestOptions);
+		assertEquals(Map.of("promptKey", "prompt-a", "promptVersion", "v2"),
+				requestObservationOptions.getObservationMetadata());
+	}
+
 }

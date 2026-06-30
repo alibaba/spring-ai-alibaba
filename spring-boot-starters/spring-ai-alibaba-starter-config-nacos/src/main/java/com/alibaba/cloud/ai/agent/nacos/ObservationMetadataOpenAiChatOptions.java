@@ -29,6 +29,11 @@ final class ObservationMetadataOpenAiChatOptions extends OpenAiChatOptions imple
 	private Map<String, String> observationMetadata;
 
 	private ObservationMetadataOpenAiChatOptions(OpenAiChatOptions options, Map<String, String> observationMetadata) {
+		this(options, copyObservationMetadata(observationMetadata), true);
+	}
+
+	private ObservationMetadataOpenAiChatOptions(OpenAiChatOptions options, Map<String, String> observationMetadata,
+			boolean sharedObservationMetadata) {
 		super(options.getBaseUrl(), options.getApiKey(), options.getCredential(), options.getModel(),
 				options.getMicrosoftDeploymentName(), options.getMicrosoftFoundryServiceVersion(),
 				options.getOrganizationId(), options.isMicrosoftFoundry(), options.isGitHubModels(),
@@ -42,7 +47,8 @@ final class ObservationMetadataOpenAiChatOptions extends OpenAiChatOptions imple
 				options.getParallelToolCalls(), options.getStore(), copyMap(options.getMetadata()),
 				options.getReasoningEffort(), options.getVerbosity(), options.getServiceTier(),
 				options.getPromptCacheKey(), copyMap(options.getExtraBody()));
-		this.observationMetadata = copyObservationMetadata(observationMetadata);
+		this.observationMetadata = sharedObservationMetadata ? useObservationMetadata(observationMetadata)
+				: copyObservationMetadata(observationMetadata);
 	}
 
 	static ObservationMetadataOpenAiChatOptions from(OpenAiChatOptions options,
@@ -69,6 +75,10 @@ final class ObservationMetadataOpenAiChatOptions extends OpenAiChatOptions imple
 		return source != null ? new HashMap<>(source) : new HashMap<>();
 	}
 
+	private static Map<String, String> useObservationMetadata(Map<String, String> source) {
+		return source != null ? source : new HashMap<>();
+	}
+
 	private static <T> List<T> copyList(List<T> source) {
 		return source != null ? new ArrayList<>(source) : null;
 	}
@@ -83,7 +93,7 @@ final class ObservationMetadataOpenAiChatOptions extends OpenAiChatOptions imple
 
 		private Builder(OpenAiChatOptions options, Map<String, String> observationMetadata) {
 			copyFrom(options);
-			this.observationMetadata = copyObservationMetadata(observationMetadata);
+			this.observationMetadata = useObservationMetadata(observationMetadata);
 		}
 
 		Builder observationMetadata(Map<String, String> observationMetadata) {
@@ -98,7 +108,7 @@ final class ObservationMetadataOpenAiChatOptions extends OpenAiChatOptions imple
 
 		@Override
 		public ObservationMetadataOpenAiChatOptions build() {
-			return ObservationMetadataOpenAiChatOptions.from(super.build(), this.observationMetadata);
+			return new ObservationMetadataOpenAiChatOptions(super.build(), this.observationMetadata, true);
 		}
 
 		private void copyFrom(OpenAiChatOptions options) {

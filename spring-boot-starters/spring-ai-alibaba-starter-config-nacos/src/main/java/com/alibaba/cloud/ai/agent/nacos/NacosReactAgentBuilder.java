@@ -263,7 +263,8 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
 				.model(model.getModel())
 				.build();
-		return ObservationMetadataOpenAiChatOptions.from(openaiChatOptions, metadata);
+		return (OpenAiChatOptions) ObservationMetadataChatOptionsSupport.withObservationMetadata(openaiChatOptions,
+				metadata);
 
 	}
 

@@ -26,10 +26,13 @@ import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.FormatProvider;
 import org.springframework.ai.tool.ToolCallback;
@@ -71,16 +74,18 @@ public class DefaultBuilder extends Builder {
 		ChatOptions effectiveOptions = mergeSourceOptionsWithAgentOptions(sourceOptions, this.chatOptions);
 
 		if (chatClient == null) {
-			ChatClient.Builder clientBuilder = ChatClient.builder(model,
+			ChatModel effectiveModel = withDefaultOptions(model, effectiveOptions);
+			ChatClient.Builder clientBuilder = ChatClient.builder(effectiveModel,
 					this.observationRegistry == null ? ObservationRegistry.NOOP : this.observationRegistry,
 					this.customObservationConvention, this.advisorObservationConvention);
-			if (effectiveOptions != null) {
+			if (effectiveOptions != null && effectiveModel == model) {
 				clientBuilder.defaultOptions(effectiveOptions.mutate());
 			}
 			chatClient = clientBuilder.build();
 		} else {
 			ChatClient.Builder chatClientBuilder = chatClient.mutate();
-			if (effectiveOptions != null) {
+			boolean optionsAppliedToModel = replaceChatClientBuilderModelOptions(chatClientBuilder, effectiveOptions);
+			if (effectiveOptions != null && !optionsAppliedToModel) {
 				chatClientBuilder.defaultOptions(effectiveOptions.mutate());
 			}
 			chatClient = chatClientBuilder.build();
@@ -327,10 +332,17 @@ public class DefaultBuilder extends Builder {
 			return sourceOptions;
 		}
 		Class<?> sourceOptionsClass = sourceOptions.getClass();
-		if (sourceOptionsClass != agentOptions.getClass()) {
+		Class<?> agentOptionsClass = agentOptions.getClass();
+		if (sourceOptionsClass != agentOptionsClass && !sourceOptionsClass.isAssignableFrom(agentOptionsClass)) {
 			logger.warn(
 					"chatOptions type ({}) should be consistent with the default options type ({}) from ChatModel/ChatClient for proper merging.",
 					agentOptions.getClass().getName(), sourceOptionsClass.getName());
+		}
+		if (isObservationMetadataAware(agentOptions)) {
+			ChatOptions.Builder<?> agentOptionsBuilder = agentOptions.mutate();
+			agentOptionsBuilder.combineWith(sourceOptions.mutate());
+			agentOptionsBuilder.combineWith(agentOptions.mutate());
+			return agentOptionsBuilder.build();
 		}
 		return sourceOptions.mutate().combineWith(agentOptions.mutate()).build();
 	}
@@ -377,7 +389,7 @@ public class DefaultBuilder extends Builder {
 			if (modelOptions == null) {
 				return builder.clone().build();
 			}
-			return modelOptions.mutate().combineWith(builder.clone()).build();
+			return mergeSourceOptionsWithAgentOptionsBuilder(modelOptions, builder.clone());
 		}
 		catch (NoSuchFieldException | IllegalAccessException e) {
 			if (logger.isDebugEnabled()) {
@@ -385,6 +397,114 @@ public class DefaultBuilder extends Builder {
 			}
 			return null;
 		}
+	}
+
+	private static ChatOptions mergeSourceOptionsWithAgentOptionsBuilder(ChatOptions sourceOptions,
+			ChatOptions.Builder<?> agentOptionsBuilder) {
+		if (isObservationMetadataAwareBuilder(agentOptionsBuilder)) {
+			ChatOptions.Builder<?> metadataBuilder = agentOptionsBuilder.clone();
+			metadataBuilder.combineWith(sourceOptions.mutate());
+			metadataBuilder.combineWith(agentOptionsBuilder.clone());
+			return metadataBuilder.build();
+		}
+		return sourceOptions.mutate().combineWith(agentOptionsBuilder.clone()).build();
+	}
+
+	private static ChatModel withDefaultOptions(ChatModel chatModel, ChatOptions effectiveOptions) {
+		if (chatModel == null || effectiveOptions == null || !isObservationMetadataAware(effectiveOptions)) {
+			return chatModel;
+		}
+		if (chatModel.getOptions() == effectiveOptions) {
+			return chatModel;
+		}
+		return new OptionsOverrideChatModel(chatModel, effectiveOptions);
+	}
+
+	private static boolean replaceChatClientBuilderModelOptions(ChatClient.Builder chatClientBuilder,
+			ChatOptions effectiveOptions) {
+		if (effectiveOptions == null || !isObservationMetadataAware(effectiveOptions)) {
+			return false;
+		}
+		try {
+			Field defaultRequestField = chatClientBuilder.getClass().getDeclaredField("defaultRequest");
+			defaultRequestField.setAccessible(true);
+			Object defaultChatClientRequest = defaultRequestField.get(chatClientBuilder);
+			if (defaultChatClientRequest == null) {
+				return false;
+			}
+			Field chatModelField = defaultChatClientRequest.getClass().getDeclaredField("chatModel");
+			chatModelField.setAccessible(true);
+			Object chatModel = chatModelField.get(defaultChatClientRequest);
+			if (chatModel instanceof ChatModel model) {
+				chatModelField.set(defaultChatClientRequest, withDefaultOptions(model, effectiveOptions));
+				Field optionsCustomizerField = defaultChatClientRequest.getClass().getDeclaredField("optionsCustomizer");
+				optionsCustomizerField.setAccessible(true);
+				optionsCustomizerField.set(defaultChatClientRequest, null);
+				return true;
+			}
+		}
+		catch (NoSuchFieldException | IllegalAccessException | RuntimeException e) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Could not override default ChatClient model options via reflection: {}", e.getMessage());
+			}
+		}
+		return false;
+	}
+
+	private static boolean isObservationMetadataAware(ChatOptions chatOptions) {
+		if (chatOptions == null) {
+			return false;
+		}
+		try {
+			chatOptions.getClass().getMethod("getObservationMetadata");
+			chatOptions.getClass().getMethod("setObservationMetadata", java.util.Map.class);
+			return true;
+		}
+		catch (NoSuchMethodException e) {
+			return false;
+		}
+	}
+
+	private static boolean isObservationMetadataAwareBuilder(ChatOptions.Builder<?> builder) {
+		Class<?> builderClass = builder.getClass();
+		while (builderClass != null) {
+			try {
+				builderClass.getDeclaredField("observationMetadata");
+				return true;
+			}
+			catch (NoSuchFieldException e) {
+				builderClass = builderClass.getSuperclass();
+			}
+		}
+		return false;
+	}
+
+	private static final class OptionsOverrideChatModel implements ChatModel {
+
+		private final ChatModel delegate;
+
+		private final ChatOptions options;
+
+		private OptionsOverrideChatModel(ChatModel delegate, ChatOptions options) {
+			this.delegate = delegate;
+			this.options = options;
+		}
+
+		@Override
+		public ChatOptions getOptions() {
+			return this.options;
+		}
+
+		@Override
+		public ChatResponse call(Prompt prompt) {
+			return this.delegate.call(prompt);
+		}
+
+		@Override
+		public Flux<ChatResponse> stream(Prompt prompt) {
+			return this.delegate.stream(prompt);
+		}
+
 	}
 
 }
