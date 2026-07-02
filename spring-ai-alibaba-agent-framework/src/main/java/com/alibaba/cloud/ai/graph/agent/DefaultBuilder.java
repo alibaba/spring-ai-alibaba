@@ -236,8 +236,11 @@ public class DefaultBuilder extends Builder {
 				}
 				ToolCallback toolCallback = this.resolver.resolve(toolName);
 				if (toolCallback == null) {
+					// Tool name could not be resolved (e.g. the model/skill referenced a
+					// non-existent tool). Skip it instead of failing the whole agent build,
+					// consistent with the runtime fallback in AgentToolNode.
 					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
-					throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
+					continue;
 				}
 				regularTools.add(toolCallback);
 			}
