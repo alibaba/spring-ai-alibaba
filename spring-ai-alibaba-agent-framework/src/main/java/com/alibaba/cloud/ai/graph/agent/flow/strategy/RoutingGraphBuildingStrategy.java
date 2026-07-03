@@ -15,15 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.strategy;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.action.AsyncMultiCommandAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
-import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
@@ -78,14 +75,7 @@ public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrat
 
 		// Step 4: Add merge node for result synthesis
 		String mergeNodeName = rootAgent.name() + "_merge";
-		List<BaseAgent> baseAgentList = new ArrayList<>(config.getSubAgents().size());
-		for (Agent subAgent : config.getSubAgents()) {
-			if (!(subAgent instanceof BaseAgent)) {
-				throw new IllegalArgumentException("Routing sub-agents must be BaseAgent for merge support");
-			}
-			baseAgentList.add((BaseAgent) subAgent);
-		}
-		graph.addNode(mergeNodeName, node_async(new RoutingMergeNode(config.getChatModel(), baseAgentList)));
+		graph.addNode(mergeNodeName, node_async(new RoutingMergeNode(config.getChatModel(), config.getSubAgents())));
 
 		// Step 5: Process sub-agents for routing
 		Map<String, String> edgeRoutingMap = new HashMap<>();
