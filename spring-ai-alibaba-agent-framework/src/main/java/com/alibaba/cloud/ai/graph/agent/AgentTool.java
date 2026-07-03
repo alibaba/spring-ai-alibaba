@@ -122,14 +122,12 @@ public class AgentTool {
 	 * @return a wrapped schema with "input" parameter containing the original schema
 	 */
 	private static String wrapSchemaInInputParameter(String originalSchema) {
-		ObjectMapper objectMapper = JsonParser.getObjectMapper();
-		
 		try {
 			// Parse the original schema if provided
 			Map<String, Object> originalSchemaMap = null;
 			if (StringUtils.hasLength(originalSchema)) {
 				try {
-					originalSchemaMap = objectMapper.readValue(originalSchema, new TypeReference<HashMap<String, Object>>() {});
+					originalSchemaMap = JsonParser.fromJson(originalSchema, Map.class);
 				}
 				catch (Exception e) {
 					// If parsing fails, treat as a simple string type
@@ -152,7 +150,7 @@ public class AgentTool {
 			wrappedSchema.put("required", List.of("input"));
 
 			// Convert to JSON string
-			return objectMapper.writeValueAsString(wrappedSchema);
+			return JsonParser.toJson(wrappedSchema);
 		}
 		catch (Exception e) {
 			// Fallback: create a simple wrapper schema
@@ -275,8 +273,7 @@ public class AgentTool {
 
 			// Try to parse as JSON object and extract the "input" field
 			try {
-				ObjectMapper objectMapper = JsonParser.getObjectMapper();
-				Map<String, Object> jsonMap = objectMapper.readValue(input, new TypeReference<HashMap<String, Object>>() {});
+				Map<String, Object> jsonMap = JsonParser.fromJson(input, Map.class);
 
 				if (jsonMap != null && jsonMap.containsKey("input")) {
 					Object inputValue = jsonMap.get("input");
@@ -287,7 +284,7 @@ public class AgentTool {
 							return (String) inputValue;
 						}
 						// Otherwise, serialize it to JSON string
-						return JsonParser.getObjectMapper().writeValueAsString(inputValue);
+						return JsonParser.toJson(inputValue);
 					}
 				}
 			}

@@ -34,7 +34,6 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.zhipuai.ZhiPuAiAssistantMessage;
 
 import java.io.Serial;
 import java.lang.reflect.Modifier;
@@ -70,10 +69,7 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 			typeMapper.register(new TypeMapper.Reference<DeepSeekAssistantMessage>("DEEPSEEK_ASSISTANT") {
 			});
 		}
-		if (isPresent(ZHI_PU_AI_ASSISTANT_CLASS_NAME)) {
-			typeMapper.register(new TypeMapper.Reference<ZhiPuAiAssistantMessage>("ZHI_PU_AI_ASSISTANT") {
-			});
-		}
+		registerZhiPuAITypeMappingIfAvailable();
 
 		objectMapper.registerModule(module);
 
@@ -113,6 +109,30 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 		objectMapper.setDefaultTyping(typeResolver);
 	}
 
+	private void registerZhiPuAITypeMappingIfAvailable() {
+		Class<?> zhiPuAIClass = resolveZhiPuAIClass();
+		if (zhiPuAIClass != null) {
+			typeMapper.register(new TypeMapper.Reference<Object>("ZHI_PU_AI_ASSISTANT", zhiPuAIClass) {
+			});
+		}
+	}
+
+	private static void registerZhiPuAIHandlersIfAvailable(SimpleModule module) {
+		Class<?> zhiPuAIClass = resolveZhiPuAIClass();
+		if (zhiPuAIClass != null) {
+			ZhiPuAIAssistantMessageHandler.registerTo(module, zhiPuAIClass);
+		}
+	}
+
+	private static Class<?> resolveZhiPuAIClass() {
+		try {
+			return Class.forName(ZHI_PU_AI_ASSISTANT_CLASS_NAME);
+		}
+		catch (ClassNotFoundException | LinkageError e) {
+			return null;
+		}
+	}
+
 	private static boolean isPresent(String className) {
 		try {
 			Class.forName(className);
@@ -150,11 +170,8 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 			if (isPresent(DEEPSEEK_ASSISTANT_CLASS_NAME)) {
 				module.addDeserializer(DeepSeekAssistantMessage.class, new DeepSeekAssistantMessageHandler.Deserializer());
 			}
-			if (isPresent(ZHI_PU_AI_ASSISTANT_CLASS_NAME)) {
-				module.addDeserializer(ZhiPuAiAssistantMessage.class, new ZhiPuAIAssistantMessageHandler.Deserializer());
-			}
 
-        }
+		}
 
 	}
 
@@ -170,6 +187,7 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 		ChatMessageSerializer.registerTo(module);
 		ChatMessageDeserializer.registerTo(module);
 		NodeOutputDeserializer.registerTo(module);
+		registerZhiPuAIHandlersIfAvailable(module);
 	}
 
 	interface ChatMessageSerializer {
@@ -202,11 +220,8 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 			if (isPresent(DEEPSEEK_ASSISTANT_CLASS_NAME)) {
 				module.addSerializer(DeepSeekAssistantMessage.class, new DeepSeekAssistantMessageHandler.Serializer());
 			}
-			if (isPresent(ZHI_PU_AI_ASSISTANT_CLASS_NAME)) {
-				module.addSerializer(ZhiPuAiAssistantMessage.class, new ZhiPuAIAssistantMessageHandler.Serializer());
-			}
 
-        }
+		}
 
 	}
 

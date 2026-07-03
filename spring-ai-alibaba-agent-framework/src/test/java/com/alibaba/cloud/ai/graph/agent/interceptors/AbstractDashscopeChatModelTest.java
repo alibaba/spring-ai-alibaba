@@ -20,22 +20,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
 
 /**
- * 共享 base class：通过 OpenAI 兼容接口初始化 DashScope ChatModel。
- * 子类用 {@link #chatModel} 字段直接拿到注入好的实例。
+ * Shared base class for creating a DashScope ChatModel through the OpenAI-compatible API.
+ * Subclasses can use the initialized {@link #chatModel} field directly.
  *
- * <p>运行前需设置以下环境变量：
+ * <p>Set the following environment variables before running these tests:
  * <ul>
- *   <li>{@code AI_DASHSCOPE_API_KEY}  - DashScope API 密钥（必填，缺失时测试自动跳过）</li>
- *   <li>{@code AI_DASHSCOPE_BASE_URL} - API 地址（可选，默认 DashScope 公网兼容端点）</li>
- *   <li>{@code AI_DASHSCOPE_MODEL}    - 模型名称（可选，默认 qwen-plus）</li>
+ *   <li>{@code AI_DASHSCOPE_API_KEY}  - DashScope API key (required; tests are skipped when absent)</li>
+ *   <li>{@code AI_DASHSCOPE_BASE_URL} - API base URL (optional; defaults to DashScope public compatible endpoint)</li>
+ *   <li>{@code AI_DASHSCOPE_MODEL}    - model name (optional; defaults to qwen-plus)</li>
  * </ul>
  */
 abstract class AbstractDashscopeChatModelTest {
 
-	// Base URL only — OpenAiApi appends "/v1/chat/completions" itself; do NOT include /v1 here.
+	// Base URL only. Spring AI's OpenAI client appends the chat-completions path.
 	private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode";
 
 	private static final String DEFAULT_MODEL = "qwen-plus";
@@ -51,13 +50,12 @@ abstract class AbstractDashscopeChatModelTest {
 		final String baseUrl = System.getenv().getOrDefault("AI_DASHSCOPE_BASE_URL", DEFAULT_BASE_URL);
 		final String model = System.getenv().getOrDefault("AI_DASHSCOPE_MODEL", DEFAULT_MODEL);
 
-		OpenAiApi openAiApi = OpenAiApi.builder()
-				.baseUrl(baseUrl)
-				.apiKey(apiKey)
-				.build();
 		chatModel = OpenAiChatModel.builder()
-				.openAiApi(openAiApi)
-				.defaultOptions(OpenAiChatOptions.builder().model(model).build())
+				.options(OpenAiChatOptions.builder()
+						.baseUrl(baseUrl)
+						.apiKey(apiKey)
+						.model(model)
+						.build())
 				.build();
 	}
 }

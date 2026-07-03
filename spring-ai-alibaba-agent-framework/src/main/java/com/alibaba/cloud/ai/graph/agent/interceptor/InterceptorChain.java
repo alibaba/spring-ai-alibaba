@@ -213,8 +213,8 @@ public class InterceptorChain {
 	 * {@code tools}, {@code dynamicToolCallbacks}, {@code toolDescriptions}, and
 	 * {@code context}, but reuses the {@code messages} list and {@code options} object.
 	 * This helper additionally wraps {@code messages} in a fresh {@link ArrayList} and
-	 * invokes {@code options.copy()} so an interceptor that does e.g.
-	 * {@code request.getOptions().setTemperature(0.0)} or
+	 * invokes {@code options.mutate().build()} so an interceptor that does e.g.
+	 * {@code request.getOptions().mutate().temperature(0.0)} or
 	 * {@code request.getMessages().add(...)} mutates only this subscription's copy.
 	 *
 	 * <p>Note: individual {@link org.springframework.ai.chat.messages.Message} elements
@@ -227,7 +227,7 @@ public class InterceptorChain {
 		}
 		return ModelRequest.builder(src)
 				.messages(src.getMessages() != null ? new ArrayList<>(src.getMessages()) : null)
-				.options(src.getOptions() != null ? src.getOptions().copy() : null)
+				.options(src.getOptions() != null ? src.getOptions().mutate().build() : null)
 				.build();
 	}
 

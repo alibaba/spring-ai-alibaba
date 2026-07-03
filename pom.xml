@@ -86,7 +86,7 @@
     <properties>
 
         <!-- Spring AI Alibaba Version -->
-        <revision>2.0.0-M1.1</revision>
+        <revision>2.0.0.0-RC1</revision>
 
         <!-- Maven project basic config -->
         <java.version>17</java.version>
@@ -96,10 +96,10 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
         <!-- Spring version -->
-        <spring-ai.version>2.0.0-M1</spring-ai.version>
-        <spring-ai-alibaba-extensions.version>2.0.0-M1.1</spring-ai-alibaba-extensions.version>
-        <spring-boot.version>4.0.0</spring-boot.version>
-        <springdoc-openapi.version>2.8.8</springdoc-openapi.version>
+        <spring-ai.version>2.0.0</spring-ai.version>
+        <spring-ai-alibaba-extensions.version>2.0.0.0-RC1</spring-ai-alibaba-extensions.version>
+        <spring-boot.version>4.1.0</spring-boot.version>
+        <springdoc-openapi.version>2.8.15</springdoc-openapi.version>
 
         <!-- DashScope SDK Version -->
         <dashscope-sdk-java.version>2.15.1</dashscope-sdk-java.version>
@@ -126,6 +126,7 @@
 
         <opennlp-tools.version>2.3.3</opennlp-tools.version>
 
+        <json-schema-validator.version>3.0.1</json-schema-validator.version>
         <json-path.version>2.9.0</json-path.version>
 
         <jedis.version>5.2.0</jedis.version>
@@ -134,17 +135,20 @@
 
         <commons-collections.version>3.2.2</commons-collections.version>
 
-        <commons-io.version>2.14.0</commons-io.version>
+        <commons-io.version>2.21.0</commons-io.version>
 
-        <commons-lang3.version>3.9</commons-lang3.version>
+        <commons-lang3.version>3.20.0</commons-lang3.version>
 
         <webdrivermanager.version>6.1.0</webdrivermanager.version>
 
         <poi.version>5.4.0</poi.version>
 
-        <mcp.version>0.14.0</mcp.version>
+        <mcp.sdk.version>2.0.0</mcp.sdk.version>
         <opentelemetry.version>1.38.0</opentelemetry.version>
         <a2a-sdk.version>0.2.5.Beta2</a2a-sdk.version>
+
+        <!-- JSpecify Version -->
+        <jspecify.version>1.0.0</jspecify.version>
 
         <graalvm.polyglot.version>24.2.1</graalvm.polyglot.version>
 
@@ -154,6 +158,9 @@
         <surefireArgLine>-Xms512m -Xmx1024m</surefireArgLine>
 
         <!-- plugin versions -->
+        <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
+        <!-- The version (range) of the JDK we want to use to compile. -->
+        <compiler.jdk.version>[17,)</compiler.jdk.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         <maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
         <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
@@ -164,7 +171,7 @@
         <maven-assembly-plugin.version>3.7.0</maven-assembly-plugin.version>
         <maven-failsafe-plugin.version>3.1.2</maven-failsafe-plugin.version>
         <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
-        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
         <maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
         <asciidoctor-maven-plugin.version>2.2.3</asciidoctor-maven-plugin.version>
         <springdoc-openapi-maven-plugin.version>1.4</springdoc-openapi-maven-plugin.version>
@@ -188,6 +195,23 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp-bom</artifactId>
+                <version>${okhttp.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>com.alibaba</groupId>
                 <artifactId>dashscope-sdk-java</artifactId>
@@ -250,9 +274,19 @@
             <dependency>
                 <groupId>io.modelcontextprotocol.sdk</groupId>
                 <artifactId>mcp-bom</artifactId>
-                <version>${mcp.version}</version>
+                <version>${mcp.sdk.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jspecify</groupId>
+                <artifactId>jspecify</artifactId>
+                <version>${jspecify.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.networknt</groupId>
+                <artifactId>json-schema-validator</artifactId>
+                <version>${json-schema-validator.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.oracle.database.jdbc</groupId>
@@ -261,6 +295,13 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+        </dependency>
+    </dependencies>
 
     <repositories>
         <repository>
@@ -278,29 +319,6 @@
             <id>spring-snapshots</id>
             <name>Spring Snapshots</name>
             <url>https://repo.spring.io/snapshot</url>
-        </repository>
-        <repository>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-            <id>snapshots</id>
-            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-        </repository>
-        <repository>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-            <id>sonatype-snapshots</id>
-            <name>Sonatype Snapshot Repository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
     </repositories>
 
@@ -382,6 +400,30 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
                 <version>${maven-site-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${maven-enforcer-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>maven-enforcer</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>${compiler.jdk.version}</version>
+                                </requireJavaVersion>
+                                <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
+                                <requireMavenVersion>
+                                    <version>[3.9.1,)</version>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
