@@ -515,8 +515,12 @@ class AgentToolNodeAsyncExecutionTest {
 
 			CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
 
-			// Wait for writes - increased from 1s to 5s for CI stability
-			assertTrue(writeComplete.await(5, TimeUnit.SECONDS));
+			// Wait for writes. This latch fires as soon as the async task performs its
+			// two writes, so the deadline is only an upper bound: a successful run returns
+			// immediately and never waits the full duration. It is generous (30s) because
+			// the task runs on the shared ForkJoinPool.commonPool(), whose start latency
+			// can spike under parallel test execution on loaded CI runners.
+			assertTrue(writeComplete.await(30, TimeUnit.SECONDS));
 			assertEquals(2, stateUpdates.size());
 
 			// Simulate AgentToolNode timeout handling

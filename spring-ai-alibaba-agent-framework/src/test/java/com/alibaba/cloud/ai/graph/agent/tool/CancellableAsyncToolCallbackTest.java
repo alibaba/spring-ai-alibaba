@@ -446,8 +446,12 @@ class CancellableAsyncToolCallbackTest {
 			// Cancel
 			token.cancel();
 
-			// Wait for tool to finish
-			assertTrue(toolFinished.await(1, TimeUnit.SECONDS));
+			// Wait for tool to finish. The latch fires as soon as the cancelled tool
+			// returns, so this deadline is only an upper bound (a successful run returns
+			// immediately). It is generous (30s) because the tool runs on the shared
+			// ForkJoinPool.commonPool(), whose start/scheduling latency can spike under
+			// parallel test execution on loaded CI runners.
+			assertTrue(toolFinished.await(30, TimeUnit.SECONDS));
 
 			// Tool should have stopped early (not completed all 1000 iterations)
 			assertTrue(iterationsCompleted.get() < 100, "Tool should have stopped early, but completed " + iterationsCompleted.get() + " iterations");
