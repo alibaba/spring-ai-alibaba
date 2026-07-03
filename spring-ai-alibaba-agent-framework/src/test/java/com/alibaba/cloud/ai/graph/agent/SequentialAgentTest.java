@@ -92,7 +92,7 @@ class SequentialAgentTest {
 			OverAllState state = result.get();
 
 			assertTrue(state.value("article").isPresent(), "Article should be present after writer agent");
-			assertEquals(5, ((List<?>)state.value("messages").get()).size());
+			assertEquals(3, ((List<?>)state.value("messages").get()).size());
 			AssistantMessage article = (AssistantMessage) state.value("article").get();
 			assertNotNull(article.getText(), "Article content should not be null");
 
@@ -147,7 +147,7 @@ class SequentialAgentTest {
 
 			assertTrue(state.value("article").isPresent(), "Article should be present after writer agent");
 			assertTrue(state.value("reviewed_article").isPresent(), "Reviewed article should be present after reviewer agent");
-			assertEquals(9, ((List<?>)state.value("messages").get()).size());
+			assertEquals(7, ((List<?>)state.value("messages").get()).size());
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();
@@ -189,7 +189,7 @@ class SequentialAgentTest {
 			OverAllState state = result.get();
 			assertTrue(state.value("article").isPresent(), "Article should be present after writer agent");
 			assertTrue(state.value("reviewed_article").isPresent(), "Reviewed article should be present after reviewer agent");
-			assertEquals(5, ((List<?>)state.value("messages").get()).size());
+			assertEquals(3, ((List<?>)state.value("messages").get()).size());
 		}
 		catch (java.util.concurrent.CompletionException e) {
 			e.printStackTrace();

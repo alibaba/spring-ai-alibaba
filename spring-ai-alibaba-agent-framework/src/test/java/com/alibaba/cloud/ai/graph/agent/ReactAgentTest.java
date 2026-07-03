@@ -632,7 +632,7 @@ class ReactAgentTest {
         var react = ReactAgent.builder()
                 .name("demoReactAgent")
                 .model(chatModel)
-                .instruction("地点为: {target_topic}")
+                .instruction("根据用户输入的地点调用工具。")
                 .tools(ToolCallbacks.from(new TestTools()))
                 .systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
                 .build();
@@ -675,7 +675,7 @@ class ReactAgentTest {
 		var react = ReactAgent.builder()
 				.name("demoReactAgent")
 				.model(chatModel)
-				.instruction("地点为: {target_topic}")
+				.instruction("根据用户输入的地点调用工具。")
 				.tools(ToolCallbacks.from(new TestTools()))
 				.hooks(List.of(streamingModelHook))
 				.systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
@@ -730,7 +730,7 @@ class ReactAgentTest {
         var reactAgent1 = ReactAgent.builder()
                 .name("demoReactAgent")
                 .model(chatModel)
-                .instruction("地点为: {target_topic}")
+                .instruction("根据用户输入的地点调用工具。")
                 .tools(ToolCallbacks.from(new TestTools()))
                 .systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
                 .build();
@@ -739,14 +739,14 @@ class ReactAgentTest {
                 .name("demoReactAgent")
                 .model(chatModel)
                 .hooks(List.of(new TestModelHook(), new TestAgentHook()))
-                .instruction("主题为: {target_topic}")
+                .instruction("根据用户输入的主题写作。")
                 .systemPrompt("你是一个诗歌写作专家，请按照给定的主题写作200字左右的诗歌")
                 .build();
 
         var reactAgent3 = ReactAgent.builder()
                 .name("demoReactAgent")
                 .model(chatModel)
-                .instruction("地点为: {target_topic}")
+                .instruction("根据用户输入的地点调用工具。")
                 .tools(ToolCallbacks.from(new TestTools()))
                 .systemPrompt("你是一个天气预报助手，帮我查看指定地点的天气预报")
                 .build();
@@ -784,7 +784,7 @@ class ReactAgentTest {
                 .name("demoReactAgent")
                 .model(chatModel)
                 .hooks(List.of(new TestModelHook(), new TestAgentHook()))
-                .instruction("主题为: {target_topic}")
+                .instruction("根据用户输入的主题写作。")
                 .systemPrompt("你是一个诗歌写作专家，请按照给定的主题写作200字左右的诗歌")
                 .build()
                 .call("春天")
