@@ -39,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -106,6 +107,26 @@ class FlowAgentArchitectureTest {
 		assertEquals("intelligentRouter", agent.name());
 		assertEquals("Routes tasks intelligently", agent.description());
 		assertEquals(2, agent.subAgents().size());
+	}
+
+	@Test
+	void testLlmRoutingAgentSupportsFlowAgentSubAgent() throws Exception {
+		ReactAgent writerAgent = createMockReactAgent("writerAgent", "draft");
+		ReactAgent reviewerAgent = createMockReactAgent("reviewerAgent", "reviewed");
+		SequentialAgent writingWorkflow = SequentialAgent.builder()
+			.name("writingWorkflow")
+			.description("Writes and reviews content")
+			.subAgents(List.of(writerAgent, reviewerAgent))
+			.build();
+
+		LlmRoutingAgent router = LlmRoutingAgent.builder()
+			.name("router")
+			.description("Routes tasks to workflows")
+			.subAgents(List.of(writingWorkflow))
+			.model(chatModel)
+			.build();
+
+		assertDoesNotThrow(router::getGraph);
 	}
 
 	@Test
