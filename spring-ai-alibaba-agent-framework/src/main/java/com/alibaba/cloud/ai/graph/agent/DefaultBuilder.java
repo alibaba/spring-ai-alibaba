@@ -26,12 +26,14 @@ import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.converter.FormatProvider;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -41,7 +43,6 @@ import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProces
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -73,15 +74,21 @@ public class DefaultBuilder extends Builder {
 		ChatOptions effectiveOptions = mergeSourceOptionsWithAgentOptions(sourceOptions, this.chatOptions);
 
 		if (chatClient == null) {
-			ChatClient.Builder clientBuilder = ChatClient.builder(model,
+			ChatModel effectiveModel = withDefaultOptions(model, effectiveOptions);
+			ChatClient.Builder clientBuilder = ChatClient.builder(effectiveModel,
 					this.observationRegistry == null ? ObservationRegistry.NOOP : this.observationRegistry,
 					this.customObservationConvention, this.advisorObservationConvention);
-			if (effectiveOptions != null) {
-				clientBuilder.defaultOptions(effectiveOptions);
+			if (effectiveOptions != null && effectiveModel == model) {
+				clientBuilder.defaultOptions(effectiveOptions.mutate());
 			}
 			chatClient = clientBuilder.build();
 		} else {
-			chatClient = chatClient.mutate().defaultOptions(effectiveOptions).build();
+			ChatClient.Builder chatClientBuilder = chatClient.mutate();
+			boolean optionsAppliedToModel = replaceChatClientBuilderModelOptions(chatClientBuilder, effectiveOptions);
+			if (effectiveOptions != null && !optionsAppliedToModel) {
+				chatClientBuilder.defaultOptions(effectiveOptions.mutate());
+			}
+			chatClient = chatClientBuilder.build();
 		}
 
 		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
@@ -314,10 +321,8 @@ public class DefaultBuilder extends Builder {
 
 	/**
 	 * Merge source options (from ChatModel or ChatClient) with agent-level chatOptions.
-	 * Agent-level options take precedence. Uses ModelOptionsUtils.merge with the source
-	 * options type as the target.
+	 * Agent-level options take precedence.
 	 */
-	@SuppressWarnings("unchecked")
 	private static ChatOptions mergeSourceOptionsWithAgentOptions(ChatOptions sourceOptions,
 			ChatOptions agentOptions) {
 		if (sourceOptions == null) {
@@ -327,18 +332,23 @@ public class DefaultBuilder extends Builder {
 			return sourceOptions;
 		}
 		Class<?> sourceOptionsClass = sourceOptions.getClass();
-		if (sourceOptionsClass == agentOptions.getClass()) {
+		Class<?> agentOptionsClass = agentOptions.getClass();
+		if (sourceOptionsClass != agentOptionsClass && !sourceOptionsClass.isAssignableFrom(agentOptionsClass)) {
 			logger.warn(
 					"chatOptions type ({}) should be consistent with the default options type ({}) from ChatModel/ChatClient for proper merging.",
 					agentOptions.getClass().getName(), sourceOptionsClass.getName());
 		}
-//		Class<ChatOptions> targetClass = (Class<ChatOptions>) sourceOptionsClass;
-//		ChatOptions agentAsSourceType = ModelOptionsUtils.copyToTarget(agentOptions, ChatOptions.class, targetClass);
-		return (ChatOptions) ModelOptionsUtils.merge(agentOptions, sourceOptions, sourceOptionsClass);
+		if (isObservationMetadataAware(agentOptions)) {
+			ChatOptions.Builder<?> agentOptionsBuilder = agentOptions.mutate();
+			agentOptionsBuilder.combineWith(sourceOptions.mutate());
+			agentOptionsBuilder.combineWith(agentOptions.mutate());
+			return agentOptionsBuilder.build();
+		}
+		return sourceOptions.mutate().combineWith(agentOptions.mutate()).build();
 	}
 
 	/**
-	 * Get the default ChatOptions from a ChatModel via reflection (e.g. {@code getDefaultOptions()}).
+	 * Get the default ChatOptions from a ChatModel.
 	 * @param model the ChatModel instance (may be null)
 	 * @return the model's default options, or null if not set or reflection fails
 	 */
@@ -346,28 +356,17 @@ public class DefaultBuilder extends Builder {
 		if (model == null) {
 			return null;
 		}
-		try {
-			Method m = model.getClass().getMethod("getDefaultOptions");
-			Object o = m.invoke(model);
-			return o instanceof ChatOptions ? (ChatOptions) o : null;
-		}
-		catch (ReflectiveOperationException e) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Could not read default options from ChatModel via reflection: {}", e.getMessage());
-			}
-			return null;
-		}
+		return model.getOptions();
 	}
 
 	/**
 	 * Get the default ChatOptions from a ChatClient via reflection (ChatClient does not expose
-	 * them publicly). Reads {@code defaultChatClientRequest.chatOptions} from the client.
-	 * The options obtained here are the same as (consistent with) the default options in the
-	 * ChatModel backing this ChatClient.
+	 * them publicly). Spring AI applies the request options customizer on top of the backing
+	 * ChatModel options; mirror that behavior here so a partial customizer does not replace model
+	 * defaults.
 	 * @param chatClient the ChatClient instance
 	 * @return the client's default options, or null if not set or reflection fails
 	 */
-	@SuppressWarnings("unchecked")
 	private static ChatOptions getChatClientDefaultOptions(ChatClient chatClient) {
 		try {
 			Field defaultRequestField = chatClient.getClass().getDeclaredField("defaultChatClientRequest");
@@ -376,10 +375,21 @@ public class DefaultBuilder extends Builder {
 			if (defaultChatClientRequest == null) {
 				return null;
 			}
-			Field chatOptionsField = defaultChatClientRequest.getClass().getDeclaredField("chatOptions");
-			chatOptionsField.setAccessible(true);
-			Object options = chatOptionsField.get(defaultChatClientRequest);
-			return options instanceof ChatOptions ? (ChatOptions) options : null;
+			Field chatModelField = defaultChatClientRequest.getClass().getDeclaredField("chatModel");
+			chatModelField.setAccessible(true);
+			Object chatModel = chatModelField.get(defaultChatClientRequest);
+			ChatOptions modelOptions = chatModel instanceof ChatModel model ? model.getOptions() : null;
+
+			Field optionsCustomizerField = defaultChatClientRequest.getClass().getDeclaredField("optionsCustomizer");
+			optionsCustomizerField.setAccessible(true);
+			Object optionsCustomizer = optionsCustomizerField.get(defaultChatClientRequest);
+			if (!(optionsCustomizer instanceof ChatOptions.Builder<?> builder)) {
+				return modelOptions;
+			}
+			if (modelOptions == null) {
+				return builder.clone().build();
+			}
+			return mergeSourceOptionsWithAgentOptionsBuilder(modelOptions, builder.clone());
 		}
 		catch (NoSuchFieldException | IllegalAccessException e) {
 			if (logger.isDebugEnabled()) {
@@ -387,6 +397,114 @@ public class DefaultBuilder extends Builder {
 			}
 			return null;
 		}
+	}
+
+	private static ChatOptions mergeSourceOptionsWithAgentOptionsBuilder(ChatOptions sourceOptions,
+			ChatOptions.Builder<?> agentOptionsBuilder) {
+		if (isObservationMetadataAwareBuilder(agentOptionsBuilder)) {
+			ChatOptions.Builder<?> metadataBuilder = agentOptionsBuilder.clone();
+			metadataBuilder.combineWith(sourceOptions.mutate());
+			metadataBuilder.combineWith(agentOptionsBuilder.clone());
+			return metadataBuilder.build();
+		}
+		return sourceOptions.mutate().combineWith(agentOptionsBuilder.clone()).build();
+	}
+
+	private static ChatModel withDefaultOptions(ChatModel chatModel, ChatOptions effectiveOptions) {
+		if (chatModel == null || effectiveOptions == null || !isObservationMetadataAware(effectiveOptions)) {
+			return chatModel;
+		}
+		if (chatModel.getOptions() == effectiveOptions) {
+			return chatModel;
+		}
+		return new OptionsOverrideChatModel(chatModel, effectiveOptions);
+	}
+
+	private static boolean replaceChatClientBuilderModelOptions(ChatClient.Builder chatClientBuilder,
+			ChatOptions effectiveOptions) {
+		if (effectiveOptions == null || !isObservationMetadataAware(effectiveOptions)) {
+			return false;
+		}
+		try {
+			Field defaultRequestField = chatClientBuilder.getClass().getDeclaredField("defaultRequest");
+			defaultRequestField.setAccessible(true);
+			Object defaultChatClientRequest = defaultRequestField.get(chatClientBuilder);
+			if (defaultChatClientRequest == null) {
+				return false;
+			}
+			Field chatModelField = defaultChatClientRequest.getClass().getDeclaredField("chatModel");
+			chatModelField.setAccessible(true);
+			Object chatModel = chatModelField.get(defaultChatClientRequest);
+			if (chatModel instanceof ChatModel model) {
+				chatModelField.set(defaultChatClientRequest, withDefaultOptions(model, effectiveOptions));
+				Field optionsCustomizerField = defaultChatClientRequest.getClass().getDeclaredField("optionsCustomizer");
+				optionsCustomizerField.setAccessible(true);
+				optionsCustomizerField.set(defaultChatClientRequest, null);
+				return true;
+			}
+		}
+		catch (NoSuchFieldException | IllegalAccessException | RuntimeException e) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Could not override default ChatClient model options via reflection: {}", e.getMessage());
+			}
+		}
+		return false;
+	}
+
+	private static boolean isObservationMetadataAware(ChatOptions chatOptions) {
+		if (chatOptions == null) {
+			return false;
+		}
+		try {
+			chatOptions.getClass().getMethod("getObservationMetadata");
+			chatOptions.getClass().getMethod("setObservationMetadata", java.util.Map.class);
+			return true;
+		}
+		catch (NoSuchMethodException e) {
+			return false;
+		}
+	}
+
+	private static boolean isObservationMetadataAwareBuilder(ChatOptions.Builder<?> builder) {
+		Class<?> builderClass = builder.getClass();
+		while (builderClass != null) {
+			try {
+				builderClass.getDeclaredField("observationMetadata");
+				return true;
+			}
+			catch (NoSuchFieldException e) {
+				builderClass = builderClass.getSuperclass();
+			}
+		}
+		return false;
+	}
+
+	private static final class OptionsOverrideChatModel implements ChatModel {
+
+		private final ChatModel delegate;
+
+		private final ChatOptions options;
+
+		private OptionsOverrideChatModel(ChatModel delegate, ChatOptions options) {
+			this.delegate = delegate;
+			this.options = options;
+		}
+
+		@Override
+		public ChatOptions getOptions() {
+			return this.options;
+		}
+
+		@Override
+		public ChatResponse call(Prompt prompt) {
+			return this.delegate.call(prompt);
+		}
+
+		@Override
+		public Flux<ChatResponse> stream(Prompt prompt) {
+			return this.delegate.stream(prompt);
+		}
+
 	}
 
 }

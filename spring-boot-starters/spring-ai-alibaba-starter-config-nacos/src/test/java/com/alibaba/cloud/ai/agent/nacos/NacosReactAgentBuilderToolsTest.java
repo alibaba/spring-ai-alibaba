@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.agent.nacos;
 
-import com.alibaba.cloud.ai.agent.nacos.utils.ChatOptionsProxy;
 import com.alibaba.cloud.ai.agent.nacos.vo.AgentVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.McpServersVO;
 import com.alibaba.cloud.ai.agent.nacos.vo.ModelVO;
@@ -25,21 +24,16 @@ import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
-import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.config.NacosConfigService;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
@@ -73,8 +67,6 @@ class NacosReactAgentBuilderToolsTest {
 	private NacosMcpOperationService mcpOperationService;
 
 	private NacosOptions nacosOptions;
-
-	private MockedStatic<ChatOptionsProxy> chatOptionsProxyMockedStatic;
 
 	/**
 	 * Simple ToolCallbackResolver implementation that provides tools.
@@ -229,49 +221,10 @@ class NacosReactAgentBuilderToolsTest {
 				.thenReturn(JSON.toJSONString(mcpServersVO));
 	}
 
-	/**
-	 * Create a mock OpenAiChatOptions that implements ObservationMetadataAwareOptions.
-	 */
-	private OpenAiChatOptions createMockChatOptions() {
-		OpenAiChatOptions options = OpenAiChatOptions.builder()
-				.model("gpt-4")
-				.temperature(0.7)
-				.build();
-		return options;
-	}
-
 	@BeforeEach
 	void setUp() throws Exception {
 		nacosOptions = createMockNacosOptions();
 		setupMockNacosConfigs();
-
-		// Mock the static ChatOptionsProxy.createProxy method to avoid CGLIB issues
-		chatOptionsProxyMockedStatic = mockStatic(ChatOptionsProxy.class);
-		chatOptionsProxyMockedStatic.when(() -> ChatOptionsProxy.createProxy(any(ChatOptions.class), anyMap()))
-				.thenAnswer(invocation -> {
-					ChatOptions originalOptions = invocation.getArgument(0);
-					// Return a mock that implements both interfaces
-					OpenAiChatOptions mockOptions = mock(OpenAiChatOptions.class, withSettings()
-							.extraInterfaces(ObservationMetadataAwareOptions.class));
-
-					// Setup basic behavior
-					when(mockOptions.getModel()).thenReturn("gpt-4");
-					when(mockOptions.getTemperature()).thenReturn(0.7);
-
-					// Setup ObservationMetadataAwareOptions behavior
-					Map<String, String> metadata = new HashMap<>();
-					ObservationMetadataAwareOptions observationOptions = (ObservationMetadataAwareOptions) mockOptions;
-					when(observationOptions.getObservationMetadata()).thenReturn(metadata);
-
-					return mockOptions;
-				});
-	}
-
-	@AfterEach
-	void tearDown() {
-		if (chatOptionsProxyMockedStatic != null) {
-			chatOptionsProxyMockedStatic.close();
-		}
 	}
 
 	/**

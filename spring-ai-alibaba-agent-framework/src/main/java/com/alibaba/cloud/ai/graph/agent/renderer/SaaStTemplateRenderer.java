@@ -126,13 +126,13 @@ public class SaaStTemplateRenderer implements TemplateRenderer {
 	}
 
 	@Override
-	public String apply(String template, Map<String, Object> variables) {
+	public String apply(String template, Map<String, ? extends Object> variables) {
 		Assert.hasText(template, "template cannot be null or empty");
 		Assert.notNull(variables, "variables cannot be null");
 		Assert.noNullElements(variables.keySet(), "variables keys cannot be null");
 
 		ST st = createST(template);
-		for (Map.Entry<String, Object> entry : variables.entrySet()) {
+		for (Map.Entry<String, ? extends Object> entry : variables.entrySet()) {
 			st.add(entry.getKey(), entry.getValue());
 		}
 		if (this.validationMode != ValidationMode.NONE) {
@@ -448,7 +448,7 @@ public class SaaStTemplateRenderer implements TemplateRenderer {
 	 * @param templateVariables the provided variables
 	 * @return set of missing variable names, or empty set if none are missing
 	 */
-	private Set<String> validate(ST st, Map<String, Object> templateVariables) {
+	private Set<String> validate(ST st, Map<String, ? extends Object> templateVariables) {
 		Set<String> templateTokens = getInputVariables(st);
 		Set<String> modelKeys = templateVariables.keySet();
 		Set<String> missingVariables = new HashSet<>(templateTokens);
