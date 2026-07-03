@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.PlainTextStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 
 import java.io.IOException;
@@ -30,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,6 +59,8 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		super(stateFactory);
 		this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper cannot be null");
 		this.objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+		this.objectMapper.addMixIn(Usage.class, NonNullUsageMixin.class);
+		this.objectMapper.addMixIn(EmptyUsage.class, NonNullUsageMixin.class);
 
 		this.objectMapper.registerModule(new Jdk8Module());
 		this.objectMapper.registerModule(new JavaTimeModule());
@@ -75,6 +80,11 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 		module.addDeserializer(List.class, new GenericListDeserializer(typeMapper));
 
 		this.objectMapper.registerModule(module);
+
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private abstract static class NonNullUsageMixin {
 
 	}
 
