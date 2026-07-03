@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Real PostgreSQL integration tests for DatabaseStore SQL compatibility.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class DatabaseStorePostgreSqlIntegrationTest {
 
 	@Container

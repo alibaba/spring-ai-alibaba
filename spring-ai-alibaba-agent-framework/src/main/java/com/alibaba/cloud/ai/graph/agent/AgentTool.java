@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
@@ -29,12 +30,10 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
-import org.springframework.ai.tool.method.MethodToolCallback;
-import org.springframework.ai.tool.support.ToolDefinitions;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 
-import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -44,18 +43,17 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Factory class for creating MethodToolCallback instances for ReactAgent.
- * This class provides a programmatic way to create MethodToolCallback without requiring @Tool annotation.
+ * Factory class for creating ToolCallback instances for ReactAgent.
+ * This class provides a programmatic way to expose a ReactAgent as a tool without requiring @Tool annotation.
  */
 public class AgentTool {
 	private static final ToolCallResultConverter CONVERTER = new MessageToolCallResultConverter();
 
 	/**
-	 * Create a ToolCallback using MethodToolCallback.
-	 * This is a convenience method that delegates to AgentMethodToolCallback.create().
+	 * Create a ToolCallback for invoking a ReactAgent as a tool.
 	 *
 	 * @param agent the ReactAgent instance
-	 * @return ToolCallback created with MethodToolCallback
+	 * @return ToolCallback for the ReactAgent
 	 * @see AgentTool#create(ReactAgent)
 	 */
 	public static ToolCallback getFunctionToolCallback(ReactAgent agent) {
@@ -63,22 +61,12 @@ public class AgentTool {
 	}
 
 	/**
-	 * Create a ToolCallback using MethodToolCallback.
-	 * This method uses reflection to find the executeAgent method and builds MethodToolCallback
-	 * directly without requiring @Tool annotation.
+	 * Create a ToolCallback that forwards raw tool-call JSON to the agent executor.
 	 * 
 	 * @param agent the ReactAgent instance
-	 * @return ToolCallback created with MethodToolCallback
+	 * @return ToolCallback for the ReactAgent
 	 */
 	public static ToolCallback create(ReactAgent agent) {
-		// Find the executeAgent method using reflection
-		java.lang.reflect.Method method = ReflectionUtils.findMethod(AgentToolExecutor.class, 
-				"executeAgent", String.class, ToolContext.class);
-		
-		if (method == null) {
-			throw new IllegalStateException("Could not find executeAgent method in AgentToolExecutor class");
-		}
-
 		// Get the original schema from inputSchema or inputType
 		String originalSchema = StringUtils.hasLength(agent.getInputSchema())
 				? agent.getInputSchema()
@@ -86,30 +74,12 @@ public class AgentTool {
 				? JsonSchemaGenerator.generateForType(agent.getInputType())
 				: null;
 
-		// Wrap the original schema in an "input" parameter
-
-		// Create ToolDefinition using ToolDefinition.builder() with the method
-		DefaultToolDefinition.Builder builder = ToolDefinitions.builder(method)
+		DefaultToolDefinition.Builder builder = ToolDefinition.builder()
 				.name(agent.name())
-				.description(agent.description());
+				.description(agent.description())
+				.inputSchema(wrapSchemaInInputParameter(originalSchema));
 
-		if (StringUtils.hasLength(originalSchema)) {
-			String wrappedInputSchema = wrapSchemaInInputParameter(originalSchema);
-			builder.inputSchema(wrappedInputSchema);
-		}
-
-		ToolDefinition toolDefinition = builder.build();
-
-				// Create the executor instance
-		AgentToolExecutor executor = new AgentToolExecutor(agent);
-
-		// Build MethodToolCallback
-		return MethodToolCallback.builder()
-				.toolDefinition(toolDefinition)
-				.toolMethod(method)
-				.toolObject(executor)
-				.toolCallResultConverter(CONVERTER)
-				.build();
+		return new AgentToolCallback(builder.build(), new AgentToolExecutor(agent));
 	}
 
 	/**
@@ -166,9 +136,45 @@ public class AgentTool {
 		}
 	}
 
+	private static class AgentToolCallback implements StateAwareToolCallback {
+
+		private final ToolDefinition toolDefinition;
+
+		private final AgentToolExecutor executor;
+
+		AgentToolCallback(ToolDefinition toolDefinition, AgentToolExecutor executor) {
+			this.toolDefinition = toolDefinition;
+			this.executor = executor;
+		}
+
+		@Override
+		public ToolDefinition getToolDefinition() {
+			return toolDefinition;
+		}
+
+		@Override
+		public String call(String toolInput) {
+			return call(toolInput, new ToolContext(Map.of()));
+		}
+
+		@Override
+		public String call(String toolInput, ToolContext toolContext) {
+			try {
+				AssistantMessage result = executor.executeAgent(toolInput, toolContext);
+				return CONVERTER.convert(result, AssistantMessage.class);
+			}
+			catch (ToolExecutionException e) {
+				throw e;
+			}
+			catch (RuntimeException e) {
+				throw new ToolExecutionException(toolDefinition, e);
+			}
+		}
+
+	}
+
 	/**
-	 * Executor class for AgentTool that contains the method to be used by MethodToolCallback.
-	 * This class does not require @Tool annotation, as the method is registered via reflection.
+	 * Executor class for AgentTool. This class does not require @Tool annotation.
 	 */
 	public static class AgentToolExecutor {
 
@@ -180,11 +186,10 @@ public class AgentTool {
 
 		/**
 		 * Execute the agent tool with the given input.
-		 * This method is used by MethodToolCallback via reflection.
-		 * The ToolContext parameter is automatically injected by Spring AI and is not exposed to the LLM.
+		 * This method is called by AgentToolCallback with the raw tool-call JSON and the injected ToolContext.
 		 * 
 		 * @param input the input JSON string containing the "input" parameter
-		 * @param toolContext the tool context containing state, config, etc. (automatically injected)
+		 * @param toolContext the tool context containing state, config, etc.
 		 * @return AssistantMessage the response from the agent
 		 */
 		public AssistantMessage executeAgent(String input, ToolContext toolContext) {
