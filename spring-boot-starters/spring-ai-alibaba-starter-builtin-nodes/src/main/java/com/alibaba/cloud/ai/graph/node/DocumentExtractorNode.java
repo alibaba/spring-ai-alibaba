@@ -24,8 +24,8 @@ import com.alibaba.cloud.ai.parser.markdown.MarkdownDocumentParser;
 import com.alibaba.cloud.ai.parser.tika.TikaDocumentParser;
 import com.alibaba.cloud.ai.parser.yaml.YamlDocumentParser;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.util.json.JsonParser;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -46,6 +46,8 @@ import java.util.function.Function;
  * @since 2025-05-02 17:03
  */
 public class DocumentExtractorNode implements NodeAction {
+
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	private final String paramsKey;
 
@@ -129,7 +131,7 @@ public class DocumentExtractorNode implements NodeAction {
 			else {
 				// Try to parse as Json string, if failed the input is invalid
 				try {
-					fileList = JsonParser.fromJson(fileObj.toString(), new TypeReference<List<String>>() {
+					fileList = OBJECT_MAPPER.readValue(fileObj.toString(), new TypeReference<List<String>>() {
 					});
 				}
 				catch (Exception ignore) {
