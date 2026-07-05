@@ -22,11 +22,14 @@ import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.util.StringUtils;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -228,16 +231,57 @@ public class GraphAgentExecutor implements AgentExecutor {
 			}
 
 			String content = "";
-			if (nodeOutput instanceof StreamingOutput) {
-				content = ((StreamingOutput) nodeOutput).chunk();
+			Map<String, Object> artifactMetadata = new HashMap<>();
+			if (nodeOutput instanceof StreamingOutput streamingOutput) {
+				content = streamingOutput.chunk();
+				OutputType outputType = streamingOutput.getOutputType();
+				if (outputType != null) {
+					// Task 2.1: carry outputType so the client can distinguish model vs tool streaming
+					artifactMetadata.put("outputType", outputType.name());
+					// Task 2.3: carry tool call name/state for AGENT_TOOL_STREAMING events
+					if (outputType == OutputType.AGENT_TOOL_STREAMING) {
+						String toolName = extractToolCallName(streamingOutput.message());
+						if (StringUtils.hasText(toolName)) {
+							artifactMetadata.put("toolCallName", toolName);
+						}
+						artifactMetadata.put("toolCallState",
+								StringUtils.hasLength(content) ? "running" : "completed");
+					}
+				}
+				// Task 2.2: carry reasoningContent (truncated to 4096 chars)
+				if (streamingOutput.message() instanceof AssistantMessage assistantMessage) {
+					Object reasoningContent = assistantMessage.getMetadata().get("reasoningContent");
+					if (reasoningContent instanceof String rc && !rc.isEmpty()) {
+						int end = 4096;
+						// avoid splitting a UTF-16 surrogate pair (e.g. emoji) at the cut point
+						if (rc.length() > end && Character.isHighSurrogate(rc.charAt(end - 1))) {
+							end--;
+						}
+						artifactMetadata.put("reasoningContent", rc.length() > 4096 ? rc.substring(0, end) : rc);
+					}
+				}
 			}
 
-			if (!StringUtils.hasLength(content)) {
+			// AGENT_TOOL_STREAMING events, and reasoning-only chunks, may carry empty content
+			// but still convey meaningful metadata (toolCallState / reasoningContent).
+			boolean toolEvent = "AGENT_TOOL_STREAMING".equals(artifactMetadata.get("outputType"));
+			boolean reasoningEvent = artifactMetadata.containsKey("reasoningContent");
+			if (!StringUtils.hasLength(content) && !toolEvent && !reasoningEvent) {
 				return;
 			}
 
-			taskUpdater.addArtifact(Collections.singletonList(new TextPart(content)), null,
-					String.valueOf(artifactNum.incrementAndGet()), Map.of());
+			taskUpdater.addArtifact(Collections.singletonList(new TextPart(content == null ? "" : content)), null,
+					String.valueOf(artifactNum.incrementAndGet()), artifactMetadata);
+		}
+
+		/**
+		 * Extract the tool call name from an AssistantMessage for AGENT_TOOL_STREAMING metadata.
+		 */
+		private String extractToolCallName(org.springframework.ai.chat.messages.Message message) {
+			if (message instanceof AssistantMessage assistantMessage && assistantMessage.hasToolCalls()) {
+				return assistantMessage.getToolCalls().get(0).name();
+			}
+			return null;
 		}
 
 		private String buildDebugDetailInfo(NodeOutput nodeOutput) {

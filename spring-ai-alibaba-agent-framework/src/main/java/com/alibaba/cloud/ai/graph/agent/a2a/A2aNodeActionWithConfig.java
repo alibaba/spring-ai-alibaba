@@ -23,8 +23,10 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
 import org.springframework.util.StringUtils;
@@ -227,7 +229,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		return AsyncGeneratorQueue.of(queue, q -> {
 			String baseUrl = resolveAgentBaseUrl(this.agentCard);
 			if (baseUrl == null || baseUrl.isBlank()) {
-				StreamingOutput errorOutput = new StreamingOutput("Error: AgentCard.url is empty", "a2aNode", agentName, state);
+				StreamingOutput errorOutput = buildStreamingOutput("Error: AgentCard.url is empty", state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
 				return;
 			}
@@ -241,15 +243,14 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 				try (CloseableHttpResponse response = httpClient.execute(post)) {
 					int statusCode = response.getStatusLine().getStatusCode();
 					if (statusCode != 200) {
-						StreamingOutput errorOutput = new StreamingOutput("HTTP request failed, status: " + statusCode,
-								"a2aNode", agentName, state);
+						StreamingOutput errorOutput = buildStreamingOutput("HTTP request failed, status: " + statusCode, state);
 						queue.add(AsyncGenerator.Data.of(errorOutput));
 						return;
 					}
 
 					HttpEntity entity = response.getEntity();
 					if (entity == null) {
-						StreamingOutput errorOutput = new StreamingOutput("Empty HTTP entity", "a2aNode", agentName, state);
+						StreamingOutput errorOutput = buildStreamingOutput("Empty HTTP entity", state);
 						queue.add(AsyncGenerator.Data.of(errorOutput));
 						return;
 					}
@@ -277,10 +278,18 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 									Map<String, Object> result = (Map<String, Object>) parsed.get("result");
 									if (result != null) {
 										String text = extractResponseText(result);
+										Map<String, Object> md = extractArtifactMetadata(result);
+										boolean toolEvent = md != null && "AGENT_TOOL_STREAMING".equals(md.get("outputType"));
+										boolean reasoningEvent = md != null && md.get("reasoningContent") != null;
 										if (text != null && !text.isEmpty()) {
 											accumulated.append(text);
 											queue.add(AsyncGenerator.Data
-												.of(new StreamingOutput(text, "a2aNode", agentName, state)));
+												.of(buildStreamingOutput(text, state, md)));
+										}
+										else if (toolEvent || reasoningEvent) {
+											// tool-state or reasoning-only chunks carry empty text but meaningful metadata
+											queue.add(AsyncGenerator.Data
+												.of(buildStreamingOutput("", state, md)));
 										}
 									}
 								}
@@ -298,20 +307,21 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 									});
 							Map<String, Object> result = (Map<String, Object>) resultMap.get("result");
 							String text = extractResponseText(result);
+							Map<String, Object> md = extractArtifactMetadata(result);
 							if (text != null && !text.isEmpty()) {
 								accumulated.append(text);
-								queue.add(AsyncGenerator.Data.of(new StreamingOutput(text, "a2aNode", agentName, state)));
+								queue.add(AsyncGenerator.Data.of(buildStreamingOutput(text, state, md)));
 							}
 						}
 						catch (Exception ex) {
 							queue.add(AsyncGenerator.Data
-								.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", agentName, state)));
+								.of(buildStreamingOutput("Error: " + ex.getMessage(), state)));
 						}
 					}
 				}
 			}
 			catch (Exception e) {
-				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
+				StreamingOutput errorOutput = buildStreamingOutput("Error: " + e.getMessage(), state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
 			}
 			finally {
@@ -387,7 +397,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 			}
 			catch (Exception e) {
 				// On error, emit an error message and signal completion
-				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
+				StreamingOutput errorOutput = buildStreamingOutput("Error: " + e.getMessage(), state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
 				queue.add(AsyncGenerator.Data.done(Map.of(outputKey, accumulated.toString())));
 			}
@@ -410,13 +420,13 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
 			if (responseText2 != null && !responseText2.isEmpty()) {
 				accumulated.append(responseText2);
-				StreamingOutput streamingOutput = new StreamingOutput(responseText2, "a2aNode", agentName, state);
+				StreamingOutput streamingOutput = buildStreamingOutput(responseText2, state);
 				queue.add(AsyncGenerator.Data.of(streamingOutput));
 			}
 		}
 		catch (Exception e) {
 			// On parse failure, emit an error message
-			StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
+			StreamingOutput errorOutput = buildStreamingOutput("Error: " + e.getMessage(), state);
 			queue.add(AsyncGenerator.Data.of(errorOutput));
 		}
 
@@ -427,12 +437,83 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	}
 
 	/**
+	 * Build a {@link StreamingOutput} for an A2A remote response chunk. See gh-4760.
+	 */
+	private StreamingOutput<?> buildStreamingOutput(String text, OverAllState state) {
+		return buildStreamingOutput(text, state, null);
+	}
+
+	/**
+	 * Build a {@link StreamingOutput} using A2A artifact metadata (tasks 3.1-3.4). When the metadata
+	 * is absent (legacy server), falls back to {@link OutputType#AGENT_MODEL_STREAMING}.
+	 */
+	@SuppressWarnings("unchecked")
+	private StreamingOutput<?> buildStreamingOutput(String text, OverAllState state, Map<String, Object> metadata) {
+		// Task 3.4: default when server does not provide outputType metadata
+		OutputType outputType = OutputType.AGENT_MODEL_STREAMING;
+		Map<String, Object> messageMetadata = new HashMap<>();
+		if (metadata != null) {
+			// Task 3.1: parse outputType
+			Object rawType = metadata.get("outputType");
+			if (rawType instanceof String typeName) {
+				try {
+					outputType = OutputType.valueOf(typeName);
+				}
+				catch (IllegalArgumentException ignore) {
+					outputType = OutputType.AGENT_MODEL_STREAMING;
+				}
+			}
+			// Task 3.2: parse reasoningContent into the AssistantMessage metadata
+			Object rc = metadata.get("reasoningContent");
+			if (rc instanceof String rcStr && !rcStr.isEmpty()) {
+				messageMetadata.put("reasoningContent", rcStr);
+			}
+			// Task 3.3: parse tool call name/state
+			Object toolName = metadata.get("toolCallName");
+			if (toolName instanceof String tn && !tn.isEmpty()) {
+				messageMetadata.put("toolCallName", tn);
+			}
+			Object toolState = metadata.get("toolCallState");
+			if (toolState instanceof String ts && !ts.isEmpty()) {
+				messageMetadata.put("toolCallState", ts);
+			}
+		}
+		AssistantMessage message = messageMetadata.isEmpty() ? new AssistantMessage(text)
+				: AssistantMessage.builder().content(text).properties(messageMetadata).build();
+		return new StreamingOutput<>(message, text, "a2aNode", agentName, state, outputType);
+	}
+
+	/**
+	 * Extract the custom metadata map carried on an A2A {@code artifact-update} artifact, or
+	 * {@code null} when none is present (legacy server).
+	 */
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> extractArtifactMetadata(Map<String, Object> result) {
+		if (result == null || !"artifact-update".equals(result.get("kind"))) {
+			return null;
+		}
+		Object artifactObj = result.get("artifact");
+		if (artifactObj instanceof Map<?, ?> artifact) {
+			Object md = ((Map<String, Object>) artifact).get("metadata");
+			if (md instanceof Map<?, ?> mdMap && !mdMap.isEmpty()) {
+				return (Map<String, Object>) mdMap;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Create a StreamingOutput from the parsed result map.
 	 */
 	private StreamingOutput createStreamingOutputFromResult(Map<String, Object> result, OverAllState state) {
 		String text = extractResponseText(result);
+		Map<String, Object> md = extractArtifactMetadata(result);
 		if (text != null && !text.isEmpty()) {
-			return new StreamingOutput(text, "a2aNode", agentName, state);
+			return buildStreamingOutput(text, state, md);
+		}
+		if (md != null && (md.get("reasoningContent") != null
+				|| "AGENT_TOOL_STREAMING".equals(md.get("outputType")))) {
+			return buildStreamingOutput("", state, md);
 		}
 		return null;
 	}
