@@ -477,10 +477,16 @@ public class NodeExecutor extends BaseGraphExecutor {
         if (currentArguments.equals(previousArguments)) {
             return currentArguments;
         }
-        if (currentArguments.startsWith(previousArguments) || currentArguments.contains(previousArguments)) {
+        // Cumulative-snapshot providers resend the full arguments each chunk, so a later
+        // chunk is a prefix-extension of the earlier one: keep the longer snapshot.
+        // We must only test startsWith (a prefix), NOT contains: an incremental delta can
+        // legitimately be a substring of the already-accumulated arguments (e.g. streaming
+        // {"count": 100} digit-by-digit, where the final "0" is contained in "...10"), and
+        // a contains-based short-circuit would silently drop that fragment.
+        if (currentArguments.startsWith(previousArguments)) {
             return currentArguments;
         }
-        if (previousArguments.startsWith(currentArguments) || previousArguments.contains(currentArguments)) {
+        if (previousArguments.startsWith(currentArguments)) {
             return previousArguments;
         }
 

@@ -86,6 +86,103 @@ public class StreamFunctionCallTest {
         assertEquals("{\"city\":\"Beijing\"}", toolCall.arguments());
     }
 
+    /**
+     * Issue #4066 regression: incremental argument fragments must never be dropped when a
+     * later fragment happens to be a substring of the already-accumulated arguments. Here
+     * {@code {"count": 100}} is streamed digit-by-digit; the final {@code "0"} is contained
+     * in the accumulated {@code ...10}, which previously triggered a contains-based
+     * short-circuit and produced {@code {"count": 10}}.
+     */
+    @Test
+    void testStreamingRepeatedDigitFragmentsShouldNotBeDropped() throws Exception {
+        ChatModel chatModel = createMockChatModelStreamingArgFragments(
+                "call_2", "do_count",
+                new String[] {"{\"count\": ", "1", "0", "0", "}"});
+
+        StateGraph stateGraph = new StateGraph(() -> {
+            Map<String, com.alibaba.cloud.ai.graph.KeyStrategy> keyStrategyMap = new HashMap<>();
+            keyStrategyMap.put("messages", new AppendStrategy());
+            return keyStrategyMap;
+        }).addNode("llmNode", node_async(new LLmNodeAction(chatModel, "llmNode")))
+                .addEdge(START, "llmNode")
+                .addEdge("llmNode", END);
+
+        CompiledGraph compiledGraph = stateGraph.compile();
+
+        Map<String, Object> input = new HashMap<>();
+        input.put(OverAllState.DEFAULT_INPUT_KEY, "count");
+
+        Optional<OverAllState> finalState = compiledGraph.invoke(input);
+        assertTrue(finalState.isPresent());
+
+        List<?> messages = finalState.get().value("messages", List.class).orElseThrow();
+        AssistantMessage assistantMessage = (AssistantMessage) messages.get(messages.size() - 1);
+        assertEquals(1, assistantMessage.getToolCalls().size());
+
+        AssistantMessage.ToolCall toolCall = assistantMessage.getToolCalls().get(0);
+        assertEquals("call_2", toolCall.id());
+        assertEquals("do_count", toolCall.name());
+        assertEquals("{\"count\": 100}", toolCall.arguments());
+    }
+
+    /**
+     * Cumulative-snapshot providers that resend the full arguments on every chunk must
+     * still collapse to a single (not concatenated) argument string.
+     */
+    @Test
+    void testStreamingCumulativeSnapshotFragmentsShouldNotBeConcatenated() throws Exception {
+        ChatModel chatModel = createMockChatModelStreamingArgFragments(
+                "call_3", "get_weather",
+                new String[] {"{\"city\":", "{\"city\":\"Bei", "{\"city\":\"Beijing\"}"});
+
+        StateGraph stateGraph = new StateGraph(() -> {
+            Map<String, com.alibaba.cloud.ai.graph.KeyStrategy> keyStrategyMap = new HashMap<>();
+            keyStrategyMap.put("messages", new AppendStrategy());
+            return keyStrategyMap;
+        }).addNode("llmNode", node_async(new LLmNodeAction(chatModel, "llmNode")))
+                .addEdge(START, "llmNode")
+                .addEdge("llmNode", END);
+
+        CompiledGraph compiledGraph = stateGraph.compile();
+
+        Map<String, Object> input = new HashMap<>();
+        input.put(OverAllState.DEFAULT_INPUT_KEY, "weather in beijing");
+
+        Optional<OverAllState> finalState = compiledGraph.invoke(input);
+        assertTrue(finalState.isPresent());
+
+        List<?> messages = finalState.get().value("messages", List.class).orElseThrow();
+        AssistantMessage assistantMessage = (AssistantMessage) messages.get(messages.size() - 1);
+        assertEquals(1, assistantMessage.getToolCalls().size());
+        assertEquals("{\"city\":\"Beijing\"}", assistantMessage.getToolCalls().get(0).arguments());
+    }
+
+    /**
+     * Streams a single tool call whose id/name arrive on the first chunk and whose
+     * argument fragments arrive one per subsequent chunk (id/name null after the first).
+     */
+    private static ChatModel createMockChatModelStreamingArgFragments(String id, String name, String[] argFragments) {
+        return new ChatModel() {
+            @Override
+            public ChatResponse call(Prompt prompt) {
+                return new ChatResponse(List.of(new Generation(new AssistantMessage("fallback"))));
+            }
+
+            @Override
+            public Flux<ChatResponse> stream(Prompt prompt) {
+                Flux<ChatResponse> flux = Flux.empty();
+                for (int i = 0; i < argFragments.length; i++) {
+                    AssistantMessage.ToolCall chunk = new AssistantMessage.ToolCall(
+                            i == 0 ? id : null, "function", i == 0 ? name : null, argFragments[i]);
+                    flux = flux.concatWith(Flux.just(new ChatResponse(List.of(new Generation(
+                            AssistantMessage.builder().content("").toolCalls(List.of(chunk)).build(),
+                            ChatGenerationMetadata.NULL)))));
+                }
+                return flux;
+            }
+        };
+    }
+
     private static ChatModel createMockChatModelWithSplitToolCallChunks() {
         return new ChatModel() {
             @Override
