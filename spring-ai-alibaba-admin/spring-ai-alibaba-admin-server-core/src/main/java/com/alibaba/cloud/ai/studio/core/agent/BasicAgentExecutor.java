@@ -147,7 +147,6 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 		ToolCallingChatOptions chatOptions = buildChatOptions(config);
 
 		// build tool callback provider
-		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 		CompositeToolCallbackProvider toolCallbackProvider = buildToolCallbackProvider(config, request.getExtraPrams());
 
 		// build messages
@@ -161,8 +160,8 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 			.prompt(prompt)
 			.stream()
 			.chatResponse()
-			.concatMap(response -> processToolCallsRecursively(chatClientBuilder, response, prompt, toolCallingManager,
-					toolCallbackProvider, requestContext, chatOptions));
+			.concatMap(response -> processToolCallsRecursively(chatClientBuilder, response, prompt, toolCallbackProvider,
+					requestContext, chatOptions));
 	}
 
 	/**
@@ -178,7 +177,6 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 		ToolCallingChatOptions chatOptions = buildChatOptions(config);
 
 		// build tool callback provider
-		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 		CompositeToolCallbackProvider toolCallbackProvider = buildToolCallbackProvider(config, request.getExtraPrams());
 
 		// build messages
@@ -192,6 +190,7 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 
 		Assert.notNull(response, "response can not be null");
 		if (response.hasToolCalls()) {
+			ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
 
 			Prompt newPrompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
@@ -660,13 +659,14 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 	}
 
 	private Flux<AgentResponse> processToolCallsRecursively(ChatClient.Builder chatClientBuilder, ChatResponse response,
-			Prompt originalPrompt, ToolCallingManager toolCallingManager,
-			CompositeToolCallbackProvider toolCallbackProvider, RequestContext requestContext,
+			Prompt originalPrompt, CompositeToolCallbackProvider toolCallbackProvider, RequestContext requestContext,
 			ToolCallingChatOptions chatOptions) {
 
 		if (!response.hasToolCalls()) {
 			return convertResponse(response, toolCallbackProvider).flux();
 		}
+
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
 		// Handle tool calling process
 		return Flux.concat(
@@ -700,8 +700,7 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 								.chatResponse()
 								// Key change: Recursively process the response
 								.concatMap(newResponse -> processToolCallsRecursively(chatClientBuilder, newResponse,
-										newPrompt, toolCallingManager, toolCallbackProvider, requestContext,
-										chatOptions)));
+										newPrompt, toolCallbackProvider, requestContext, chatOptions)));
 				}));
 	}
 
