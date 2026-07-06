@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,8 +59,6 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosMcpGatewayToolCallback.class);
 
-	public static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(30);
-
 	private static final Pattern TEMPLATE_PATTERN = Pattern.compile("\\{\\{\\s*(\\.[\\w]+(?:\\.[\\w]+)*)\\s*\\}\\}");
 
 	// 匹配 {{ ${nacos.dataId/group} }} 或 {{ ${nacos.dataId/group}.key1.key2 }}
@@ -95,7 +92,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	 * @param toolDefinition the tool definition
 	 */
 	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition, NacosMcpOperationService nacosMcpOperationService, McpServersVO.McpServerVO mcpServersVO) {
-		this(toolDefinition, nacosMcpOperationService, mcpServersVO, DEFAULT_REQUEST_TIMEOUT);
+		this(toolDefinition, nacosMcpOperationService, mcpServersVO, null);
 	}
 
 	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition,
@@ -104,7 +101,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 		this.toolDefinition = (NacosMcpGatewayToolDefinition) toolDefinition;
 		this.nacosMcpOperationService = nacosMcpOperationService;
 		this.mcpServerVO = mcpServersVO;
-		this.requestTimeout = Objects.requireNonNull(requestTimeout, "requestTimeout cannot be null");
+		this.requestTimeout = requestTimeout;
 	}
 
 	public Duration getRequestTimeout() {
@@ -545,7 +542,11 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				HttpClientSseClientTransport transport = transportBuilder.build();
 
 				// 创建MCP同步客户端
-				McpSyncClient client = McpClient.sync(transport).requestTimeout(requestTimeout).build();
+				McpClient.SyncSpec clientSpec = McpClient.sync(transport);
+				if (requestTimeout != null) {
+					clientSpec.requestTimeout(requestTimeout);
+				}
+				McpSyncClient client = clientSpec.build();
 				try {
 					// 初始化客户端
 					InitializeResult initializeResult = client.initialize();

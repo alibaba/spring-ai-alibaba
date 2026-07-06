@@ -30,8 +30,6 @@ import org.springframework.boot.convert.DurationStyle;
 
 public class NacosOptions {
 
-	private static final Duration DEFAULT_MCP_GATEWAY_TOOL_TIMEOUT = Duration.ofSeconds(30);
-
 	protected boolean encrypted;
 
 	protected boolean modelEncrypted;
@@ -56,7 +54,7 @@ public class NacosOptions {
 
 	private String mcpNamespace;
 
-	private Duration mcpGatewayToolTimeout = DEFAULT_MCP_GATEWAY_TOOL_TIMEOUT;
+	private Duration mcpGatewayToolTimeout;
 
 	private void encryptParamInit(Properties properties) {
 		encrypted = Boolean.parseBoolean(properties.getProperty("encrypted", "false"));
@@ -99,7 +97,7 @@ public class NacosOptions {
 			timeout = properties.getProperty("mcp-gateway-tool-timeout");
 		}
 		if (StringUtils.isBlank(timeout)) {
-			return DEFAULT_MCP_GATEWAY_TOOL_TIMEOUT;
+			return null;
 		}
 		properties.remove("mcpGatewayToolTimeout");
 		properties.remove("mcp-gateway-tool-timeout");

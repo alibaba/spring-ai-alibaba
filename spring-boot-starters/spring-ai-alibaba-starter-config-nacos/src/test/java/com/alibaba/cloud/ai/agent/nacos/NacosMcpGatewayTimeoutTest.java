@@ -41,10 +41,10 @@ import static org.mockito.Mockito.when;
 class NacosMcpGatewayTimeoutTest {
 
 	@Test
-	void shouldUseThirtySecondGatewayToolTimeoutByDefault() throws Exception {
+	void shouldLeaveGatewayToolTimeoutUnsetByDefault() throws Exception {
 		NacosOptions options = new NacosOptions(properties());
 
-		assertThat(options.getMcpGatewayToolTimeout()).isEqualTo(Duration.ofSeconds(30));
+		assertThat(options.getMcpGatewayToolTimeout()).isNull();
 	}
 
 	@Test
@@ -82,6 +82,25 @@ class NacosMcpGatewayTimeoutTest {
 		assertThat(callbacks).hasSize(1);
 		assertThat(callbacks.get(0)).isInstanceOfSatisfying(NacosMcpGatewayToolCallback.class,
 				callback -> assertThat(callback.getRequestTimeout()).isEqualTo(Duration.ofSeconds(90)));
+	}
+
+	@Test
+	void shouldLeaveGatewayToolCallbackTimeoutUnsetByDefault() throws Exception {
+		NacosMcpOperationService operationService = mock(NacosMcpOperationService.class);
+		McpServerDetailInfo detailInfo = mcpServerDetailInfo();
+		when(operationService.getServerDetail("order-service")).thenReturn(detailInfo);
+
+		McpServersVO.McpServerVO serverVO = new McpServersVO.McpServerVO();
+		serverVO.setMcpServerName("order-service");
+
+		NacosMcpGatewayToolsInitializer initializer = new NacosMcpGatewayToolsInitializer(operationService,
+				List.of(serverVO));
+
+		List<ToolCallback> callbacks = initializer.initializeTools();
+
+		assertThat(callbacks).hasSize(1);
+		assertThat(callbacks.get(0))
+				.isInstanceOfSatisfying(NacosMcpGatewayToolCallback.class, callback -> assertThat(callback.getRequestTimeout()).isNull());
 	}
 
 	private static Properties properties() {

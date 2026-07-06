@@ -45,7 +45,7 @@ public class NacosMcpGatewayToolsInitializer {
 	private final Duration requestTimeout;
 
 	public NacosMcpGatewayToolsInitializer(NacosMcpOperationService nacosMcpOperationService, List<McpServersVO.McpServerVO> mcpServers) {
-		this(nacosMcpOperationService, mcpServers, NacosMcpGatewayToolCallback.DEFAULT_REQUEST_TIMEOUT);
+		this(nacosMcpOperationService, mcpServers, null);
 	}
 
 	public NacosMcpGatewayToolsInitializer(NacosMcpOperationService nacosMcpOperationService, List<McpServersVO.McpServerVO> mcpServers,
