@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.agent.nacos;
 
+import java.time.Duration;
 import java.util.Properties;
 
 import com.alibaba.cloud.ai.mcp.nacos.service.NacosMcpOperationService;
@@ -25,7 +26,11 @@ import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.maintainer.client.ai.AiMaintainerService;
 import com.alibaba.nacos.maintainer.client.ai.NacosAiMaintainerServiceImpl;
 
+import org.springframework.boot.convert.DurationStyle;
+
 public class NacosOptions {
+
+	private static final Duration DEFAULT_MCP_GATEWAY_TOOL_TIMEOUT = Duration.ofSeconds(30);
 
 	protected boolean encrypted;
 
@@ -51,6 +56,8 @@ public class NacosOptions {
 
 	private String mcpNamespace;
 
+	private Duration mcpGatewayToolTimeout = DEFAULT_MCP_GATEWAY_TOOL_TIMEOUT;
+
 	private void encryptParamInit(Properties properties) {
 		encrypted = Boolean.parseBoolean(properties.getProperty("encrypted", "false"));
 		String defaultEncrypted = String.valueOf(encrypted);
@@ -70,6 +77,7 @@ public class NacosOptions {
 		encryptParamInit(properties);
 		agentName = properties.getProperty("agentName");
 		mcpNamespace = properties.getProperty("mcpNamespace", properties.getProperty("namespace"));
+		mcpGatewayToolTimeout = parseMcpGatewayToolTimeout(properties);
 		String rawLabels = properties.getProperty("nacos.app.conn.labels", "");
 		if (StringUtils.isBlank(rawLabels)) {
 			rawLabels = "AgentName=" + agentName;
@@ -83,6 +91,19 @@ public class NacosOptions {
 		nacosAiMaintainerService = new NacosAiMaintainerServiceImpl(properties);
 		mcpOperationService = new NacosMcpOperationService(properties);
 
+	}
+
+	private Duration parseMcpGatewayToolTimeout(Properties properties) {
+		String timeout = properties.getProperty("mcpGatewayToolTimeout");
+		if (!StringUtils.isBlank(properties.getProperty("mcp-gateway-tool-timeout"))) {
+			timeout = properties.getProperty("mcp-gateway-tool-timeout");
+		}
+		if (StringUtils.isBlank(timeout)) {
+			return DEFAULT_MCP_GATEWAY_TOOL_TIMEOUT;
+		}
+		properties.remove("mcpGatewayToolTimeout");
+		properties.remove("mcp-gateway-tool-timeout");
+		return DurationStyle.detectAndParse(timeout);
 	}
 
 	public boolean isEncrypted() {
@@ -179,6 +200,14 @@ public class NacosOptions {
 
 	public void setMcpNamespace(String mcpNamespace) {
 		this.mcpNamespace = mcpNamespace;
+	}
+
+	public Duration getMcpGatewayToolTimeout() {
+		return mcpGatewayToolTimeout;
+	}
+
+	public void setMcpGatewayToolTimeout(Duration mcpGatewayToolTimeout) {
+		this.mcpGatewayToolTimeout = mcpGatewayToolTimeout;
 	}
 
 }
