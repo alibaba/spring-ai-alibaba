@@ -145,6 +145,17 @@ public class RoutingNode implements MultiCommandAction {
 		}
 	}
 
+	/**
+	 * Clears wrapper outputs for selected FlowAgent branches before they run.
+	 * <p>
+	 * Checkpointed graph state may still contain a previous
+	 * {@code subgraph_<agent>_compiled_graph} value. If the selected workflow writes its
+	 * current answer under {@code messages} or a child output key, leaving that wrapper in
+	 * state can make the merge node collect the previous turn's answer.
+	 * @param stateUpdate the state update map that will be returned with the routing
+	 * decision
+	 * @param decisionValues the sub-agent names selected by the current routing decision
+	 */
 	private void removeStaleSelectedWrapperOutputs(Map<String, Object> stateUpdate, List<String> decisionValues) {
 		for (Agent subAgent : subAgents) {
 			if (subAgent instanceof FlowAgent && decisionValues.contains(subAgent.name())) {
@@ -156,6 +167,8 @@ public class RoutingNode implements MultiCommandAction {
 	/**
 	 * Prepares messages with instruction. If rootAgent has instruction, adds it as UserMessage.
 	 * Otherwise, adds a default instruction message.
+	 * @param messages the original conversation messages from graph state
+	 * @return a new message list with the routing instruction appended
 	 */
 	private List<Message> prepareMessagesWithInstruction(List<Message> messages) {
 		List<Message> messagesWithInstruction = new ArrayList<>(messages);
@@ -182,6 +195,10 @@ public class RoutingNode implements MultiCommandAction {
 	/**
 	 * Gets a valid routing decision with retry logic.
 	 * Returns RoutingDecision containing agent names and their targeted sub-queries.
+	 * @param messages messages sent to the routing model
+	 * @param maxRetries maximum number of retry attempts after the initial call
+	 * @return a routing decision containing selected agent names and sub-queries
+	 * @throws Exception if the model call fails on the final attempt
 	 */
 	private RoutingDecision getDecisionWithRetry(List<Message> messages, int maxRetries) throws Exception {
 		List<String> lastInvalidDecision = null;
