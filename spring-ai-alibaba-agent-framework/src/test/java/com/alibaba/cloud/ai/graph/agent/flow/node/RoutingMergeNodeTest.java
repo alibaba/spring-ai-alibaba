@@ -17,12 +17,14 @@ package com.alibaba.cloud.ai.graph.agent.flow.node;
 
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.internal.node.Node;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -31,6 +33,9 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 
+import reactor.core.publisher.Flux;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -39,12 +44,6 @@ import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.o
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link RoutingMergeNode}.
@@ -62,7 +61,7 @@ class RoutingMergeNodeTest {
 	 */
 	@Test
 	void singleRoutedResultIsPassedThroughWithoutSynthesis() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		BaseAgent poemAgent = mockAgent("poem_writer_agent", "poem_article");
 		BaseAgent proseAgent = mockAgent("prose_writer_agent", "prose_article");
@@ -78,7 +77,7 @@ class RoutingMergeNodeTest {
 
 		assertEquals("A short modern poem about spring.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Single routed result must be returned verbatim, not re-synthesized");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	/**
@@ -87,9 +86,7 @@ class RoutingMergeNodeTest {
 	 */
 	@Test
 	void multipleResultsAreSynthesizedViaLlm() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
-		when(chatModel.call(any(Prompt.class)))
-				.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("SYNTHESIZED ANSWER")))));
+		RecordingChatModel chatModel = new RecordingChatModel("SYNTHESIZED ANSWER");
 
 		BaseAgent poemAgent = mockAgent("poem_writer_agent", "poem_article");
 		BaseAgent proseAgent = mockAgent("prose_writer_agent", "prose_article");
@@ -105,12 +102,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("SYNTHESIZED ANSWER", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Multiple results must be synthesized via the LLM");
-		verify(chatModel, times(1)).call(any(Prompt.class));
+		assertEquals(1, chatModel.callCount());
 	}
 
 	@Test
 	void explicitListOutputPreservesAllEntries() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 		BaseAgent searchAgent = mockAgent("search_agent", "search_results");
 		List<String> searchResults = List.of("First search hit.", "Second search hit.");
 
@@ -129,12 +126,12 @@ class RoutingMergeNodeTest {
 		assertEquals(searchResults.toString(),
 				RoutingMergeNode.extractText(GraphResponse.done(Map.of("search_results", searchResults)),
 						"search_results"));
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void flowAgentResultIsResolvedFromNestedFinalOutputKey() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		BaseAgent draftAgent = mockAgent("draft_agent", "draft_article");
 		BaseAgent reviewAgent = mockAgent("review_agent", "reviewed_article");
@@ -158,12 +155,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("Reviewed final article.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Sequential FlowAgent result should use its final nested output");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void flowAgentResultFallsBackToMessagesForNestedAgentWithoutOutputKey() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		BaseAgent draftAgent = mockAgent("draft_agent", "draft_article");
 		BaseAgent reviewerAgent = mockAgent("reviewer_agent", null);
@@ -188,12 +185,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("Reviewed final article from messages.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Sequential FlowAgent result should fall back to messages for default agent output");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void messagesFallbackDoesNotCollectUnselectedAgents() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		SequentialAgent selectedWorkflow = SequentialAgent.builder()
 			.name("selected_workflow")
@@ -219,12 +216,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("Selected workflow answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Shared messages must not be collected for unselected agents");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void currentRouteSelectionIgnoresStaleCheckpointInputMarkers() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		SequentialAgent selectedWorkflow = SequentialAgent.builder()
 			.name("selected_workflow")
@@ -253,12 +250,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("Selected workflow answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Stale route inputs from checkpoints must not disable the single-agent messages fallback");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void unroutedFlowAgentsAreNotResolvedFromSharedExplicitOutputKeys() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		SequentialAgent selectedWorkflow = SequentialAgent.builder()
 			.name("selected_workflow")
@@ -283,12 +280,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("Selected workflow answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Unrouted workflows must not collect shared explicit output keys");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void sharedExplicitOutputKeyIsCollectedOnlyOnceForMultipleRoutedAgents() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		SequentialAgent firstWorkflow = SequentialAgent.builder()
 			.name("first_workflow")
@@ -312,14 +309,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("Only one shared answer exists in state.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"A shared explicit output key represents one parent-state value and must not be duplicated");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void multipleRoutedWorkflowsPreferWrapperOverSharedChildOutputKey() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
-		when(chatModel.call(any(Prompt.class)))
-				.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("SYNTHESIZED ANSWER")))));
+		RecordingChatModel chatModel = new RecordingChatModel("SYNTHESIZED ANSWER");
 
 		SequentialAgent firstWorkflow = SequentialAgent.builder()
 			.name("first_workflow")
@@ -348,9 +343,8 @@ class RoutingMergeNodeTest {
 
 		assertEquals("SYNTHESIZED ANSWER", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Multiple routed workflows should synthesize their namespaced wrapper outputs");
-		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
-		verify(chatModel, times(1)).call(promptCaptor.capture());
-		String promptContent = promptCaptor.getValue().getContents();
+		assertEquals(1, chatModel.callCount());
+		String promptContent = chatModel.lastPrompt().getContents();
 		assertTrue(promptContent.contains("First workflow wrapper answer."));
 		assertTrue(promptContent.contains("Second workflow wrapper answer."));
 		assertFalse(promptContent.contains("Shared child value that must not be attributed."));
@@ -358,9 +352,7 @@ class RoutingMergeNodeTest {
 
 	@Test
 	void multipleRoutedParallelWorkflowsPreferMergeOutputKeyOverWrapper() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
-		when(chatModel.call(any(Prompt.class)))
-				.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("SYNTHESIZED ANSWER")))));
+		RecordingChatModel chatModel = new RecordingChatModel("SYNTHESIZED ANSWER");
 
 		ParallelAgent firstParallel = ParallelAgent.builder()
 			.name("first_parallel")
@@ -396,9 +388,8 @@ class RoutingMergeNodeTest {
 
 		assertEquals("SYNTHESIZED ANSWER", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Multiple routed parallel workflows should synthesize their mergeOutputKey results");
-		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
-		verify(chatModel, times(1)).call(promptCaptor.capture());
-		String promptContent = promptCaptor.getValue().getContents();
+		assertEquals(1, chatModel.callCount());
+		String promptContent = chatModel.lastPrompt().getContents();
 		assertTrue(promptContent.contains("First merged answer."));
 		assertTrue(promptContent.contains("Second merged answer."));
 		assertFalse(promptContent.contains("First wrapper answer that must not be used."));
@@ -407,9 +398,7 @@ class RoutingMergeNodeTest {
 
 	@Test
 	void multipleRoutedParallelWorkflowsPreferWrapperWhenMergeOutputKeyIsShared() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
-		when(chatModel.call(any(Prompt.class)))
-				.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("SYNTHESIZED ANSWER")))));
+		RecordingChatModel chatModel = new RecordingChatModel("SYNTHESIZED ANSWER");
 
 		ParallelAgent firstParallel = ParallelAgent.builder()
 			.name("first_parallel")
@@ -444,9 +433,8 @@ class RoutingMergeNodeTest {
 
 		assertEquals("SYNTHESIZED ANSWER", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Shared mergeOutputKey values should be resolved through workflow wrappers");
-		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
-		verify(chatModel, times(1)).call(promptCaptor.capture());
-		String promptContent = promptCaptor.getValue().getContents();
+		assertEquals(1, chatModel.callCount());
+		String promptContent = chatModel.lastPrompt().getContents();
 		assertTrue(promptContent.contains("First parallel wrapper answer."));
 		assertTrue(promptContent.contains("Second parallel wrapper answer."));
 		assertFalse(promptContent.contains("Shared merge value that must not be attributed."));
@@ -454,9 +442,7 @@ class RoutingMergeNodeTest {
 
 	@Test
 	void multipleRoutedParallelWorkflowsPreferWrapperWhenChildOutputKeysAreShared() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
-		when(chatModel.call(any(Prompt.class)))
-				.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("SYNTHESIZED ANSWER")))));
+		RecordingChatModel chatModel = new RecordingChatModel("SYNTHESIZED ANSWER");
 
 		ParallelAgent firstParallel = ParallelAgent.builder()
 			.name("first_parallel")
@@ -490,9 +476,8 @@ class RoutingMergeNodeTest {
 
 		assertEquals("SYNTHESIZED ANSWER", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Shared child output keys should be resolved through workflow wrappers");
-		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
-		verify(chatModel, times(1)).call(promptCaptor.capture());
-		String promptContent = promptCaptor.getValue().getContents();
+		assertEquals(1, chatModel.callCount());
+		String promptContent = chatModel.lastPrompt().getContents();
 		assertTrue(promptContent.contains("First parallel wrapper answer."));
 		assertTrue(promptContent.contains("Second parallel wrapper answer."));
 		assertFalse(promptContent.contains("Shared search value that must not be attributed."));
@@ -501,7 +486,7 @@ class RoutingMergeNodeTest {
 
 	@Test
 	void parallelAgentWithoutMergeOutputKeyCollectsAllChildOutputs() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		BaseAgent firstAgent = mockAgent("first_agent", "first_answer");
 		BaseAgent secondAgent = mockAgent("second_agent", "second_answer");
@@ -522,12 +507,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("First child answer.\n\nSecond child answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"ParallelAgent without mergeOutputKey should expose all child outputs as one routed source");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void sequentialAgentWithFinalParallelAgentCollectsAllChildOutputs() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		BaseAgent draftAgent = mockAgent("draft_agent", "draft_answer");
 		BaseAgent styleReviewer = mockAgent("style_reviewer", "style_answer");
@@ -558,12 +543,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("Style review.\n\nFact review.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"SequentialAgent should preserve all outputs from a final ParallelAgent");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void messagesFallbackIsNotUsedForMultipleRoutedAgents() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		SequentialAgent firstWorkflow = SequentialAgent.builder()
 			.name("first_workflow")
@@ -590,12 +575,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("No results found from any knowledge source.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Shared messages must not be duplicated across multiple routed agents");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void messagesFallbackIgnoresUserOnlyHistory() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		SequentialAgent writingWorkflow = SequentialAgent.builder()
 			.name("writing_workflow")
@@ -613,12 +598,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("No results found from any knowledge source.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"User-only message history must not be treated as an agent answer");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void nestedRoutingAgentResultUsesItsMergedOutputBeforeChildOutputs() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		BaseAgent firstAgent = mockAgent("first_agent", "first_answer");
 		BaseAgent secondAgent = mockAgent("second_agent", "second_answer");
@@ -641,12 +626,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("Child router synthesized answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Nested routing agents should expose their own merged output to the parent merge");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void routingMergedOutputIsNotDuplicatedForMultipleNestedRoutingAgents() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		LlmRoutingAgent firstRouter = LlmRoutingAgent.builder()
 			.name("first_router")
@@ -672,14 +657,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("No results found from any knowledge source.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Shared routing merge output must not be duplicated across multiple routed child routers");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void multipleNestedRoutingAgentsUseNamespacedWrapperResults() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
-		when(chatModel.call(any(Prompt.class)))
-				.thenReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("SYNTHESIZED ANSWER")))));
+		RecordingChatModel chatModel = new RecordingChatModel("SYNTHESIZED ANSWER");
 
 		LlmRoutingAgent firstRouter = LlmRoutingAgent.builder()
 			.name("first_router")
@@ -717,9 +700,8 @@ class RoutingMergeNodeTest {
 
 		assertEquals("SYNTHESIZED ANSWER", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Multiple nested routing results should be synthesized from namespaced wrapper outputs");
-		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
-		verify(chatModel, times(1)).call(promptCaptor.capture());
-		String promptContent = promptCaptor.getValue().getContents();
+		assertEquals(1, chatModel.callCount());
+		String promptContent = chatModel.lastPrompt().getContents();
 		assertTrue(promptContent.contains("First router synthesized answer."));
 		assertTrue(promptContent.contains("Second router synthesized answer."));
 		assertFalse(promptContent.contains("Shared parent merge result that must not be used."));
@@ -731,7 +713,7 @@ class RoutingMergeNodeTest {
 
 	@Test
 	void parentRoutingSelectionIsNamespacedFromChildRoutingSelection() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		BaseAgent parentRouter = mockAgent("parent_router", null);
 		LlmRoutingAgent childRouter = LlmRoutingAgent.builder()
@@ -760,12 +742,12 @@ class RoutingMergeNodeTest {
 
 		assertEquals("Child router synthesized answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Parent routing merge should ignore child-router selection markers");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
 	void parentRoutingMergeIgnoresGlobalMarkerWhenNamespacedMarkerIsAbsent() throws Exception {
-		ChatModel chatModel = mock(ChatModel.class);
+		RecordingChatModel chatModel = new RecordingChatModel();
 
 		BaseAgent parentRouter = mockAgent("parent_router", null);
 		LlmRoutingAgent childRouter = LlmRoutingAgent.builder()
@@ -791,14 +773,64 @@ class RoutingMergeNodeTest {
 
 		assertEquals("Child router synthesized answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Parent routing merge should fall back to top-level route inputs, not stale global markers");
-		verify(chatModel, never()).call(any(Prompt.class));
+		assertEquals(0, chatModel.callCount());
 	}
 
 	private static BaseAgent mockAgent(String name, String outputKey) {
-		BaseAgent agent = mock(BaseAgent.class);
-		when(agent.name()).thenReturn(name);
-		when(agent.getOutputKey()).thenReturn(outputKey);
-		return agent;
+		return new StubBaseAgent(name, outputKey);
+	}
+
+	private static final class StubBaseAgent extends BaseAgent {
+
+		private StubBaseAgent(String name, String outputKey) {
+			super(name, "Test agent", false, false, outputKey, null);
+		}
+
+		@Override
+		public Node asNode(boolean includeContents, boolean returnReasoningContents) {
+			throw new UnsupportedOperationException("RoutingMergeNodeTest only needs agent metadata");
+		}
+
+		@Override
+		protected StateGraph initGraph() throws GraphStateException {
+			throw new UnsupportedOperationException("RoutingMergeNodeTest only needs agent metadata");
+		}
+
+	}
+
+	private static final class RecordingChatModel implements ChatModel {
+
+		private final String response;
+
+		private final List<Prompt> prompts = new ArrayList<>();
+
+		private RecordingChatModel() {
+			this("UNUSED");
+		}
+
+		private RecordingChatModel(String response) {
+			this.response = response;
+		}
+
+		@Override
+		public ChatResponse call(Prompt prompt) {
+			prompts.add(prompt);
+			return new ChatResponse(List.of(new Generation(new AssistantMessage(response))));
+		}
+
+		@Override
+		public Flux<ChatResponse> stream(Prompt prompt) {
+			return Flux.just(call(prompt));
+		}
+
+		private int callCount() {
+			return prompts.size();
+		}
+
+		private Prompt lastPrompt() {
+			return prompts.get(prompts.size() - 1);
+		}
+
 	}
 
 }

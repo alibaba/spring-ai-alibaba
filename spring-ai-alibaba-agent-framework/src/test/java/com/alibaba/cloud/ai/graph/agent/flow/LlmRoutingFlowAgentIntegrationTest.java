@@ -45,6 +45,7 @@ import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.o
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -293,8 +294,53 @@ class LlmRoutingFlowAgentIntegrationTest {
 
 		assertTrue(result.isPresent());
 		assertEquals("Current child merged answer", result.get().value(DEFAULT_MERGED_OUTPUT_KEY).orElse(null));
-		assertFalse(result.get().data().containsValue("Stale child router wrapper"),
+		assertNotEquals("Stale child router wrapper",
+				result.get().value(outputKeyToParent("child_router")).orElse(null),
 				"Nested router wrappers from earlier checkpoint turns must not be reused");
+	}
+
+	@Test
+	void multipleNestedRoutingAgentsUseCurrentMergedResultsFromRealSubgraphs() throws Exception {
+		NestedRoutingChatModel chatModel = new NestedRoutingChatModel();
+
+		LlmRoutingAgent firstRouter = LlmRoutingAgent.builder()
+			.name("first_router")
+			.model(chatModel)
+			.description("Routes first nested task")
+			.subAgents(List.of(
+					outputAgent("first_inner_agent", chatModel, "first_inner_answer", "Return FIRST_INNER"),
+					outputAgent("second_inner_agent", chatModel, "second_inner_answer", "Return SECOND_INNER")))
+			.build();
+		LlmRoutingAgent secondRouter = LlmRoutingAgent.builder()
+			.name("second_router")
+			.model(chatModel)
+			.description("Routes second nested task")
+			.subAgents(List.of(
+					outputAgent("third_inner_agent", chatModel, "third_inner_answer", "Return THIRD_INNER"),
+					outputAgent("fourth_inner_agent", chatModel, "fourth_inner_answer", "Return FOURTH_INNER")))
+			.build();
+		LlmRoutingAgent routingAgent = LlmRoutingAgent.builder()
+			.name("routing_agent")
+			.model(chatModel)
+			.description("Routes to nested routers")
+			.subAgents(List.of(firstRouter, secondRouter))
+			.build();
+
+		Optional<OverAllState> result = routingAgent.invoke(Map.of(
+				"input", "Route to both nested routers",
+				"messages", List.<Message>of(new UserMessage("Route to both nested routers")),
+				outputKeyToParent("first_router"), "Stale first router wrapper",
+				outputKeyToParent("second_router"), "Stale second router wrapper"));
+
+		assertTrue(result.isPresent());
+		assertEquals("Parent merged answer", result.get().value(DEFAULT_MERGED_OUTPUT_KEY).orElse(null));
+		String parentSynthesisPrompt = chatModel.prompts().get(chatModel.prompts().size() - 1).getContents();
+		assertTrue(parentSynthesisPrompt.contains("First router merged answer"));
+		assertTrue(parentSynthesisPrompt.contains("Second router merged answer"));
+		assertFalse(parentSynthesisPrompt.contains("Stale first router wrapper"));
+		assertFalse(parentSynthesisPrompt.contains("Stale second router wrapper"));
+		assertFalse(parentSynthesisPrompt.contains("First inner answer"));
+		assertFalse(parentSynthesisPrompt.contains("Third inner answer"));
 	}
 
 	private static void assertMessageText(Optional<Object> value, String expectedText) {
@@ -308,11 +354,15 @@ class LlmRoutingFlowAgentIntegrationTest {
 	}
 
 	private static ReactAgent outputAgent(String name, ChatModel chatModel, String outputKey) {
+		return outputAgent(name, chatModel, outputKey, "Return a scripted answer");
+	}
+
+	private static ReactAgent outputAgent(String name, ChatModel chatModel, String outputKey, String instruction) {
 		return ReactAgent.builder()
 			.name(name)
 			.model(chatModel)
 			.description("Returns a scripted answer")
-			.instruction("Return a scripted answer")
+			.instruction(instruction)
 			.outputKey(outputKey)
 			.build();
 	}
@@ -346,6 +396,78 @@ class LlmRoutingFlowAgentIntegrationTest {
 
 		private int callCount() {
 			return calls.get();
+		}
+
+		private List<Prompt> prompts() {
+			return prompts;
+		}
+
+	}
+
+	private static final class NestedRoutingChatModel implements ChatModel {
+
+		private final List<Prompt> prompts = new ArrayList<>();
+
+		@Override
+		public ChatResponse call(Prompt prompt) {
+			prompts.add(prompt);
+			String contents = prompt.getContents();
+			String response;
+			if (contents.contains("Available names: first_router, second_router")) {
+				response = """
+						{"agents":[
+						  {"agent":"first_router","query":"route first nested task"},
+						  {"agent":"second_router","query":"route second nested task"}
+						]}
+						""";
+			}
+			else if (contents.contains("Available names: first_inner_agent, second_inner_agent")) {
+				response = """
+						{"agents":[
+						  {"agent":"first_inner_agent","query":"answer first"},
+						  {"agent":"second_inner_agent","query":"answer second"}
+						]}
+						""";
+			}
+			else if (contents.contains("Available names: third_inner_agent, fourth_inner_agent")) {
+				response = """
+						{"agents":[
+						  {"agent":"third_inner_agent","query":"answer third"},
+						  {"agent":"fourth_inner_agent","query":"answer fourth"}
+						]}
+						""";
+			}
+			else if (contents.contains("FIRST_INNER")) {
+				response = "First inner answer";
+			}
+			else if (contents.contains("SECOND_INNER")) {
+				response = "Second inner answer";
+			}
+			else if (contents.contains("THIRD_INNER")) {
+				response = "Third inner answer";
+			}
+			else if (contents.contains("FOURTH_INNER")) {
+				response = "Fourth inner answer";
+			}
+			else if (contents.contains("First inner answer") && contents.contains("Second inner answer")) {
+				response = "First router merged answer";
+			}
+			else if (contents.contains("Third inner answer") && contents.contains("Fourth inner answer")) {
+				response = "Second router merged answer";
+			}
+			else if (contents.contains("First router merged answer")
+					&& contents.contains("Second router merged answer")) {
+				response = "Parent merged answer";
+			}
+			else {
+				throw new IllegalStateException("Unexpected prompt: " + contents);
+			}
+			return new ChatResponse(List.of(new Generation(new AssistantMessage(response))));
+		}
+
+		@Override
+		public Flux<ChatResponse> stream(Prompt prompt) {
+			return Flux.just(call(prompt));
 		}
 
 		private List<Prompt> prompts() {
