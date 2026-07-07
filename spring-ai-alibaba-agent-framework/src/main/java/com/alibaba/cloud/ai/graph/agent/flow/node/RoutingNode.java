@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.MultiCommand;
 import com.alibaba.cloud.ai.graph.action.MultiCommandAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -39,6 +40,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
 
 /**
  * Routing node that makes LLM-based routing decisions.
@@ -141,6 +144,7 @@ public class RoutingNode implements MultiCommandAction {
 			// Each agent's query is stored as independent key: agentName_input
 			Map<String, Object> stateUpdate = new HashMap<>();
 			stateUpdate.put(routedAgentNamesKey(rootAgent.name()), new ArrayList<>(decisionValues));
+			removeStaleSelectedWrapperOutputs(stateUpdate, decisionValues);
 			decision.getAgentQueries().forEach((agentName, query) ->
 					stateUpdate.put(agentName + "_input", query));
 			return new MultiCommand(decisionValues, stateUpdate);
@@ -172,7 +176,31 @@ public class RoutingNode implements MultiCommandAction {
 			}
 			return "";
 		});
-		return new MultiCommand(List.of(fallbackAgent), Map.of(fallbackAgent + "_input", fallbackInput));
+		Map<String, Object> stateUpdate = new HashMap<>();
+		List<String> decisionValues = List.of(fallbackAgent);
+		stateUpdate.put(routedAgentNamesKey(rootAgent.name()), new ArrayList<>(decisionValues));
+		removeStaleSelectedWrapperOutputs(stateUpdate, decisionValues);
+		stateUpdate.put(fallbackAgent + "_input", fallbackInput);
+		return new MultiCommand(decisionValues, stateUpdate);
+	}
+
+	/**
+	 * Clears wrapper outputs for selected FlowAgent branches before they run.
+	 * <p>
+	 * Checkpointed graph state may still contain a previous
+	 * {@code subgraph_<agent>_compiled_graph} value. If the selected workflow writes its
+	 * current answer under {@code messages} or a child output key, leaving that wrapper in
+	 * state can make the merge node collect the previous turn's answer.
+	 * @param stateUpdate the state update map that will be returned with the routing
+	 * decision
+	 * @param decisionValues the sub-agent names selected by the current routing decision
+	 */
+	private void removeStaleSelectedWrapperOutputs(Map<String, Object> stateUpdate, List<String> decisionValues) {
+		for (Agent subAgent : subAgents) {
+			if (subAgent instanceof FlowAgent && decisionValues.contains(subAgent.name())) {
+				stateUpdate.put(outputKeyToParent(subAgent.name()), OverAllState.MARK_FOR_REMOVAL);
+			}
+		}
 	}
 
 	/**
