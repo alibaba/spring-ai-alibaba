@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.MultiCommand;
 import com.alibaba.cloud.ai.graph.action.MultiCommandAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -39,6 +40,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
 
 /**
  * Routing node that makes LLM-based routing decisions.
@@ -129,6 +132,7 @@ public class RoutingNode implements MultiCommandAction {
 			// Each agent's query is stored as independent key: agentName_input
 			Map<String, Object> stateUpdate = new HashMap<>();
 			stateUpdate.put(routedAgentNamesKey(rootAgent.name()), new ArrayList<>(decisionValues));
+			removeStaleSelectedWrapperOutputs(stateUpdate, decisionValues);
 			decision.getAgentQueries().forEach((agentName, query) ->
 					stateUpdate.put(agentName + "_input", query));
 			return new MultiCommand(decisionValues, stateUpdate);
@@ -138,6 +142,14 @@ public class RoutingNode implements MultiCommandAction {
 					rootAgent.name(), DEFAULT_MAX_RETRIES, invalidAgents);
 			throw new IllegalStateException(
 					"RoutingAgent " + rootAgent.name() + " failed to get valid decision after retries. Invalid agents: " + invalidAgents + ".");
+		}
+	}
+
+	private void removeStaleSelectedWrapperOutputs(Map<String, Object> stateUpdate, List<String> decisionValues) {
+		for (Agent subAgent : subAgents) {
+			if (subAgent instanceof FlowAgent && decisionValues.contains(subAgent.name())) {
+				stateUpdate.put(outputKeyToParent(subAgent.name()), OverAllState.MARK_FOR_REMOVAL);
+			}
 		}
 	}
 
