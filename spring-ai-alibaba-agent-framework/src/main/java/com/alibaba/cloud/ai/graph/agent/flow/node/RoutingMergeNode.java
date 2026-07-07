@@ -68,15 +68,26 @@ public class RoutingMergeNode implements NodeAction {
 			""";
 
 	private final ChatModel chatModel;
+	private final String routingAgentName;
 	private final List<Agent> subAgents;
 	private final String mergedOutputKey;
 
 	public RoutingMergeNode(ChatModel chatModel, List<? extends Agent> subAgents) {
-		this(chatModel, subAgents, DEFAULT_MERGED_OUTPUT_KEY);
+		this(chatModel, null, subAgents, DEFAULT_MERGED_OUTPUT_KEY);
+	}
+
+	public RoutingMergeNode(ChatModel chatModel, Agent routingAgent, List<? extends Agent> subAgents) {
+		this(chatModel, routingAgent, subAgents, DEFAULT_MERGED_OUTPUT_KEY);
 	}
 
 	public RoutingMergeNode(ChatModel chatModel, List<? extends Agent> subAgents, String mergedOutputKey) {
+		this(chatModel, null, subAgents, mergedOutputKey);
+	}
+
+	public RoutingMergeNode(ChatModel chatModel, Agent routingAgent, List<? extends Agent> subAgents,
+			String mergedOutputKey) {
 		this.chatModel = chatModel;
+		this.routingAgentName = routingAgent != null ? routingAgent.name() : null;
 		this.subAgents = List.copyOf(subAgents);
 		this.mergedOutputKey = mergedOutputKey != null ? mergedOutputKey : DEFAULT_MERGED_OUTPUT_KEY;
 	}
@@ -267,7 +278,9 @@ public class RoutingMergeNode implements NodeAction {
 	}
 
 	private Optional<Set<String>> currentRoutedAgentNames(OverAllState state) {
-		Optional<Object> value = state.value(RoutingNode.ROUTED_AGENT_NAMES_KEY);
+		Optional<Object> value = routingAgentName != null
+				? state.value(RoutingNode.routedAgentNamesKey(routingAgentName))
+				: state.value(RoutingNode.ROUTED_AGENT_NAMES_KEY);
 		if (value.isEmpty()) {
 			return Optional.empty();
 		}

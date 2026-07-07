@@ -52,6 +52,10 @@ public class RoutingNode implements MultiCommandAction {
 
 	static final String ROUTED_AGENT_NAMES_KEY = "_routing_selected_agents";
 
+	static String routedAgentNamesKey(String routingAgentName) {
+		return ROUTED_AGENT_NAMES_KEY + "_" + routingAgentName;
+	}
+
 	private final ChatClient chatClient;
 	private final BeanOutputConverter<RoutingDecision> outputConverter;
 	private final Agent rootAgent;
@@ -124,7 +128,7 @@ public class RoutingNode implements MultiCommandAction {
 			// Return MultiCommand with the routing decisions as gotoNodes and agent queries in state.
 			// Each agent's query is stored as independent key: agentName_input
 			Map<String, Object> stateUpdate = new HashMap<>();
-			stateUpdate.put(ROUTED_AGENT_NAMES_KEY, new ArrayList<>(decisionValues));
+			stateUpdate.put(routedAgentNamesKey(rootAgent.name()), new ArrayList<>(decisionValues));
 			decision.getAgentQueries().forEach((agentName, query) ->
 					stateUpdate.put(agentName + "_input", query));
 			return new MultiCommand(decisionValues, stateUpdate);
