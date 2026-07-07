@@ -729,6 +729,71 @@ class RoutingMergeNodeTest {
 		assertFalse(promptContent.contains("Second raw answer."));
 	}
 
+	@Test
+	void parentRoutingSelectionIsNamespacedFromChildRoutingSelection() throws Exception {
+		ChatModel chatModel = mock(ChatModel.class);
+
+		BaseAgent parentRouter = mockAgent("parent_router", null);
+		LlmRoutingAgent childRouter = LlmRoutingAgent.builder()
+			.name("child_router")
+			.description("Child router")
+			.model(chatModel)
+			.subAgents(List.of(mockAgent("inner_agent", "inner_answer")))
+			.build();
+
+		// Subgraphs merge state back into the parent. The child router may update its own
+		// route marker after the parent has selected child_router, so the parent merge must
+		// read the marker namespaced by parent_router rather than the child's selection.
+		OverAllState state = new OverAllState(Map.of(
+				RoutingNode.routedAgentNamesKey("parent_router"), List.of("child_router"),
+				RoutingNode.routedAgentNamesKey("child_router"), List.of("inner_agent"),
+				RoutingNode.ROUTED_AGENT_NAMES_KEY, List.of("inner_agent"),
+				"child_router_input", "Run child router",
+				"inner_agent_input", "Run inner agent",
+				outputKeyToParent("child_router"), GraphResponse.done(Map.of(
+						outputKeyToParent("child_router"), "Child router raw fallback answer.",
+						DEFAULT_MERGED_OUTPUT_KEY, "Child router synthesized answer.")))
+		);
+
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, parentRouter, List.of(childRouter));
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Child router synthesized answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
+				"Parent routing merge should ignore child-router selection markers");
+		verify(chatModel, never()).call(any(Prompt.class));
+	}
+
+	@Test
+	void parentRoutingMergeIgnoresGlobalMarkerWhenNamespacedMarkerIsAbsent() throws Exception {
+		ChatModel chatModel = mock(ChatModel.class);
+
+		BaseAgent parentRouter = mockAgent("parent_router", null);
+		LlmRoutingAgent childRouter = LlmRoutingAgent.builder()
+			.name("child_router")
+			.description("Child router")
+			.model(chatModel)
+			.subAgents(List.of(mockAgent("inner_agent", "inner_answer")))
+			.build();
+
+		// The production merge node knows its parent router name. If an old or nested
+		// un-namespaced marker is present without the parent marker, it must not be treated
+		// as the parent router's current selection.
+		OverAllState state = new OverAllState(Map.of(
+				RoutingNode.ROUTED_AGENT_NAMES_KEY, List.of("inner_agent"),
+				"child_router_input", "Run child router",
+				"inner_agent_input", "Run inner agent",
+				outputKeyToParent("child_router"), GraphResponse.done(Map.of(
+						DEFAULT_MERGED_OUTPUT_KEY, "Child router synthesized answer.")))
+		);
+
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, parentRouter, List.of(childRouter));
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Child router synthesized answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
+				"Parent routing merge should fall back to top-level route inputs, not stale global markers");
+		verify(chatModel, never()).call(any(Prompt.class));
+	}
+
 	private static BaseAgent mockAgent(String name, String outputKey) {
 		BaseAgent agent = mock(BaseAgent.class);
 		when(agent.name()).thenReturn(name);
