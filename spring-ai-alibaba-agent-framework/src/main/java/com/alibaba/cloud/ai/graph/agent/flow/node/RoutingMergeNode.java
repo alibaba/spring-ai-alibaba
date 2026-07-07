@@ -36,6 +36,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -87,11 +88,12 @@ public class RoutingMergeNode implements NodeAction {
 		List<String> formattedResults = new ArrayList<>();
 		Set<String> collectedOutputKeys = new HashSet<>();
 		String lastResult = null;
-		long routedAgentCount = countRoutedAgents(state);
-		boolean hasRoutingMarkers = routedAgentCount > 0;
-		long routingMergedOutputOwnerCount = countRoutingMergedOutputOwners(state, hasRoutingMarkers);
+		Optional<Set<String>> routedAgentNames = currentRoutedAgentNames(state);
+		long routedAgentCount = countRoutedAgents(state, routedAgentNames);
+		boolean hasRoutingMarkers = routedAgentNames.isPresent() || routedAgentCount > 0;
+		long routingMergedOutputOwnerCount = countRoutingMergedOutputOwners(state, hasRoutingMarkers, routedAgentNames);
 		for (Agent subAgent : subAgents) {
-			boolean topLevelRoutedAgent = isTopLevelRoutedAgent(state, subAgent);
+			boolean topLevelRoutedAgent = isTopLevelRoutedAgent(state, subAgent, routedAgentNames);
 			if (hasRoutingMarkers && !topLevelRoutedAgent) {
 				logger.debug("Skipping unrouted sub-agent {}", subAgent.name());
 				continue;
@@ -99,7 +101,7 @@ public class RoutingMergeNode implements NodeAction {
 			boolean allowDefaultMessagesOutput = routedAgentCount == 1 && topLevelRoutedAgent;
 			boolean allowRoutingMergedOutput = routingMergedOutputOwnerCount == 1 && usesRoutingMergedOutput(subAgent);
 			boolean preferWrapperOutput = shouldPreferWrapperOutput(state, subAgent, routedAgentCount, topLevelRoutedAgent,
-					routingMergedOutputOwnerCount);
+					routingMergedOutputOwnerCount, routedAgentNames);
 			List<String> outputKeys = resolveOutputKeys(subAgent, allowDefaultMessagesOutput,
 					allowRoutingMergedOutput, preferWrapperOutput);
 			List<String> sourceTexts = new ArrayList<>();
@@ -211,7 +213,7 @@ public class RoutingMergeNode implements NodeAction {
 	}
 
 	private boolean shouldPreferWrapperOutput(OverAllState state, Agent agent, long routedAgentCount,
-			boolean topLevelRoutedAgent, long routingMergedOutputOwnerCount) {
+			boolean topLevelRoutedAgent, long routingMergedOutputOwnerCount, Optional<Set<String>> routedAgentNames) {
 		if (routedAgentCount <= 1 || !topLevelRoutedAgent || !(agent instanceof FlowAgent)
 				|| state.value(outputKeyToParent(agent.name())).isEmpty()) {
 			return false;
@@ -224,7 +226,7 @@ public class RoutingMergeNode implements NodeAction {
 
 		return subAgents.stream()
 			.filter(other -> other != agent)
-			.filter(other -> isTopLevelRoutedAgent(state, other))
+			.filter(other -> isTopLevelRoutedAgent(state, other, routedAgentNames))
 			.map(other -> resolvedNonWrapperOutputKeys(other, routingMergedOutputOwnerCount))
 			.anyMatch(otherOutputKeys -> otherOutputKeys.stream().anyMatch(outputKeys::contains));
 	}
@@ -241,19 +243,48 @@ public class RoutingMergeNode implements NodeAction {
 		return outputKeys;
 	}
 
-	private long countRoutedAgents(OverAllState state) {
-		return subAgents.stream().filter(agent -> isTopLevelRoutedAgent(state, agent)).count();
+	private long countRoutedAgents(OverAllState state, Optional<Set<String>> routedAgentNames) {
+		if (routedAgentNames.isPresent()) {
+			Set<String> selectedAgents = routedAgentNames.get();
+			return subAgents.stream().filter(agent -> selectedAgents.contains(agent.name())).count();
+		}
+		return subAgents.stream().filter(agent -> isTopLevelRoutedAgent(state, agent, routedAgentNames)).count();
 	}
 
-	private long countRoutingMergedOutputOwners(OverAllState state, boolean hasRoutingMarkers) {
+	private long countRoutingMergedOutputOwners(OverAllState state, boolean hasRoutingMarkers,
+			Optional<Set<String>> routedAgentNames) {
 		return subAgents.stream()
-			.filter(agent -> !hasRoutingMarkers || isTopLevelRoutedAgent(state, agent))
+			.filter(agent -> !hasRoutingMarkers || isTopLevelRoutedAgent(state, agent, routedAgentNames))
 			.filter(this::usesRoutingMergedOutput)
 			.count();
 	}
 
-	private boolean isTopLevelRoutedAgent(OverAllState state, Agent agent) {
+	private boolean isTopLevelRoutedAgent(OverAllState state, Agent agent, Optional<Set<String>> routedAgentNames) {
+		if (routedAgentNames.isPresent()) {
+			return routedAgentNames.get().contains(agent.name());
+		}
 		return state.value(agent.name() + "_input").isPresent();
+	}
+
+	private Optional<Set<String>> currentRoutedAgentNames(OverAllState state) {
+		Optional<Object> value = state.value(RoutingNode.ROUTED_AGENT_NAMES_KEY);
+		if (value.isEmpty()) {
+			return Optional.empty();
+		}
+
+		Set<String> agentNames = new LinkedHashSet<>();
+		Object routedAgents = value.get();
+		if (routedAgents instanceof Iterable<?> iterable) {
+			for (Object agentName : iterable) {
+				if (agentName instanceof String name && !name.isBlank()) {
+					agentNames.add(name);
+				}
+			}
+		}
+		else if (routedAgents instanceof String name && !name.isBlank()) {
+			agentNames.add(name);
+		}
+		return Optional.of(agentNames);
 	}
 
 	private boolean usesRoutingMergedOutput(Agent agent) {

@@ -223,6 +223,40 @@ class RoutingMergeNodeTest {
 	}
 
 	@Test
+	void currentRouteSelectionIgnoresStaleCheckpointInputMarkers() throws Exception {
+		ChatModel chatModel = mock(ChatModel.class);
+
+		SequentialAgent selectedWorkflow = SequentialAgent.builder()
+			.name("selected_workflow")
+			.description("Selected workflow")
+			.subAgents(List.of(mockAgent("selected_final_agent", null)))
+			.build();
+		SequentialAgent skippedWorkflow = SequentialAgent.builder()
+			.name("skipped_workflow")
+			.description("Skipped workflow")
+			.subAgents(List.of(mockAgent("skipped_final_agent", null)))
+			.build();
+
+		// Checkpointed graph state can retain old <agent>_input keys across turns.
+		// The explicit current-route marker must be authoritative for this run.
+		OverAllState state = new OverAllState(Map.of(
+				RoutingNode.ROUTED_AGENT_NAMES_KEY, List.of("selected_workflow"),
+				"selected_workflow_input", "Run the selected workflow",
+				"skipped_workflow_input", "Stale input from a previous checkpointed turn",
+				"messages", List.<Message>of(
+						new UserMessage("Run one workflow"),
+						new AssistantMessage("Selected workflow answer.")))
+		);
+
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(selectedWorkflow, skippedWorkflow));
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Selected workflow answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
+				"Stale route inputs from checkpoints must not disable the single-agent messages fallback");
+		verify(chatModel, never()).call(any(Prompt.class));
+	}
+
+	@Test
 	void unroutedFlowAgentsAreNotResolvedFromSharedExplicitOutputKeys() throws Exception {
 		ChatModel chatModel = mock(ChatModel.class);
 
