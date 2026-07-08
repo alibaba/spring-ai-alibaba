@@ -47,6 +47,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
@@ -184,6 +187,50 @@ class StreamCheckpointCancellationTest {
 	}
 
 	@Test
+	void staleBackgroundCheckpointBeforeFirstWriteShouldNotOverrideNextTurnCheckpoint() throws Exception {
+		MemorySaver saver = MemorySaver.builder().build();
+		CountDownLatch oldRunAtStart = new CountDownLatch(1);
+		CountDownLatch releaseOldRun = new CountDownLatch(1);
+		RunnableConfig config = RunnableConfig.builder().threadId("stale-background-first-write-thread").build();
+		CompiledGraph oldGraph = buildAnswerGraph(saver, "old background", new GraphLifecycleListener() {
+			@Override
+			public void onStart(String nodeId, Map<String, Object> state, RunnableConfig config) {
+				oldRunAtStart.countDown();
+				try {
+					if (!releaseOldRun.await(3, TimeUnit.SECONDS)) {
+						throw new IllegalStateException("old run was not released");
+					}
+				}
+				catch (InterruptedException ex) {
+					Thread.currentThread().interrupt();
+					throw new IllegalStateException(ex);
+				}
+			}
+		});
+
+		CompletableFuture<List<NodeOutput>> oldRun = CompletableFuture.supplyAsync(() -> oldGraph
+			.stream(Map.of("messages", List.of(new UserMessage("old request"))), config)
+			.collectList()
+			.block(Duration.ofSeconds(5)));
+		assertTrue(oldRunAtStart.await(2, TimeUnit.SECONDS), "old run should stop before its START checkpoint");
+
+		CompiledGraph nextGraph = buildAnswerGraph(saver, "continued", null);
+		List<NodeOutput> outputs = nextGraph
+			.stream(Map.of("messages", List.of(new UserMessage("please continue"))), config)
+			.collectList()
+			.block(Duration.ofSeconds(5));
+		assertNotNull(outputs);
+
+		releaseOldRun.countDown();
+		oldRun.get(5, TimeUnit.SECONDS);
+		Object lastMessage = awaitLastCheckpointMessage(nextGraph, config);
+
+		assertInstanceOf(AssistantMessage.class, lastMessage);
+		assertEquals("continued", ((AssistantMessage) lastMessage).getText(),
+				"old background run must not write its first checkpoint after a newer turn has advanced the thread");
+	}
+
+	@Test
 	void streamCancellationAfterToolBeforeModelShouldStillPersistFinalAssistantMessage() throws Exception {
 		MemorySaver saver = MemorySaver.builder().build();
 		StreamGraphFixture fixture = buildStreamGraphFixture(saver);
@@ -310,6 +357,25 @@ class StreamCheckpointCancellationTest {
 		return stateGraph.compile(CompileConfig.builder()
 			.saverConfig(SaverConfig.builder().register(saver).build())
 			.build());
+	}
+
+	private static CompiledGraph buildAnswerGraph(MemorySaver saver, String answer, GraphLifecycleListener listener)
+			throws Exception {
+		StateGraph stateGraph = new StateGraph(() -> {
+			Map<String, KeyStrategy> strategies = new HashMap<>();
+			strategies.put("messages", new AppendStrategy());
+			return strategies;
+		}).addNode("streaming_model",
+				node_async(state -> Map.of("messages", Flux.just(chatResponse(answer)))))
+			.addEdge(START, "streaming_model")
+			.addEdge("streaming_model", END);
+
+		CompileConfig.Builder builder = CompileConfig.builder()
+			.saverConfig(SaverConfig.builder().register(saver).build());
+		if (listener != null) {
+			builder.withLifecycleListener(listener);
+		}
+		return stateGraph.compile(builder.build());
 	}
 
 	private static CompiledGraph buildContinuationGraph(MemorySaver saver, AtomicBoolean openAiPayloadVerified,

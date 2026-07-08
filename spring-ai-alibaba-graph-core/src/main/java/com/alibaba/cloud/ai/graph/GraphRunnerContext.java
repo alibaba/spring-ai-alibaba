@@ -80,6 +80,8 @@ public class GraphRunnerContext {
 
 	String checkpointLineageHeadId;
 
+	boolean checkpointLineageGuardActive;
+
 	public GraphRunnerContext(OverAllState initialState, RunnableConfig config, CompiledGraph compiledGraph)
 			throws Exception {
 		this.compiledGraph = compiledGraph;
@@ -132,10 +134,19 @@ public class GraphRunnerContext {
 			log.debug("Initializing with inputs: {}", inputs.keySet());
 		}
 
+		initializeCheckpointLineage(config);
 		// Use CompiledGraph's getInitialState method
 		this.overallState = stateCreate(compiledGraph.getInitialState(inputs, config), initialState);
 		this.currentNodeId = START;
 		this.nextNodeId = null;
+	}
+
+	private void initializeCheckpointLineage(RunnableConfig config) {
+		compiledGraph.compileConfig.checkpointSaver().ifPresent(saver -> {
+			RunnableConfig latestConfig = RunnableConfig.builder(config).checkPointId(null).build();
+			this.checkpointLineageHeadId = saver.get(latestConfig).map(Checkpoint::getId).orElse(null);
+			this.checkpointLineageGuardActive = true;
+		});
 	}
 
 	// FIXME, duplicated method with CompiledGraph.stateCreate, need to have a
@@ -247,11 +258,11 @@ public class GraphRunnerContext {
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
 			var saver = compiledGraph.compileConfig.checkpointSaver().get();
-			if (checkpointLineageHeadId != null) {
+			if (checkpointLineageGuardActive) {
 				RunnableConfig latestConfig = RunnableConfig.builder(config).checkPointId(null).build();
 				Optional<Checkpoint> latestCheckpoint = saver.get(latestConfig);
-				if (latestCheckpoint.isEmpty()
-						|| !Objects.equals(latestCheckpoint.get().getId(), checkpointLineageHeadId)) {
+				String latestCheckpointId = latestCheckpoint.map(Checkpoint::getId).orElse(null);
+				if (!Objects.equals(latestCheckpointId, checkpointLineageHeadId)) {
 					log.debug(
 							"Skip checkpoint for node '{}' because a newer checkpoint has already been persisted for this thread.",
 							nodeId);
@@ -265,6 +276,7 @@ public class GraphRunnerContext {
 			RunnableConfig appendConfig = RunnableConfig.builder(config).checkPointId(null).build();
 			this.config = saver.put(appendConfig, cp);
 			this.checkpointLineageHeadId = cp.getId();
+			this.checkpointLineageGuardActive = true;
 			return Optional.of(cp);
 		}
 		return Optional.empty();
