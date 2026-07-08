@@ -17,9 +17,10 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
-import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
+import com.alibaba.cloud.ai.graph.internal.edge.EdgeValue;
 import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
 import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
@@ -99,9 +100,12 @@ public class GraphRunnerContext {
 
 		var saver = compiledGraph.compileConfig.checkpointSaver()
 				.orElseThrow(() -> new IllegalStateException("Resume request without a configured checkpoint saver!"));
-		initializeCheckpointLineage(config);
-		var checkpoint = saver.get(config)
-				.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
+		Checkpoint checkpoint;
+		synchronized (saver) {
+			initializeCheckpointLineage(saver, config);
+			checkpoint = saver.get(config)
+					.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
+		}
 
 		var startCheckpointNextNodeAction = compiledGraph.getNodeAction(checkpoint.getNextNodeId());
 		if (startCheckpointNextNodeAction instanceof ResumableSubGraphAction resumableAction) {
@@ -135,19 +139,25 @@ public class GraphRunnerContext {
 			log.debug("Initializing with inputs: {}", inputs.keySet());
 		}
 
-		initializeCheckpointLineage(config);
 		// Use CompiledGraph's getInitialState method
-		this.overallState = stateCreate(compiledGraph.getInitialState(inputs, config), initialState);
+		var saver = compiledGraph.compileConfig.checkpointSaver();
+		if (saver.isPresent()) {
+			synchronized (saver.get()) {
+				initializeCheckpointLineage(saver.get(), config);
+				this.overallState = stateCreate(compiledGraph.getInitialState(inputs, config), initialState);
+			}
+		}
+		else {
+			this.overallState = stateCreate(compiledGraph.getInitialState(inputs, config), initialState);
+		}
 		this.currentNodeId = START;
 		this.nextNodeId = null;
 	}
 
-	private void initializeCheckpointLineage(RunnableConfig config) {
-		compiledGraph.compileConfig.checkpointSaver().ifPresent(saver -> {
-			RunnableConfig latestConfig = RunnableConfig.builder(config).checkPointId(null).build();
-			this.checkpointLineageHeadId = saver.get(latestConfig).map(Checkpoint::getId).orElse(null);
-			this.checkpointLineageGuardActive = true;
-		});
+	private void initializeCheckpointLineage(BaseCheckpointSaver saver, RunnableConfig config) {
+		RunnableConfig latestConfig = RunnableConfig.builder(config).checkPointId(null).build();
+		this.checkpointLineageHeadId = saver.get(latestConfig).map(Checkpoint::getId).orElse(null);
+		this.checkpointLineageGuardActive = true;
 	}
 
 	// FIXME, duplicated method with CompiledGraph.stateCreate, need to have a
@@ -259,35 +269,60 @@ public class GraphRunnerContext {
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
 			var saver = compiledGraph.compileConfig.checkpointSaver().get();
-			if (!isCheckpointLineageCurrent()) {
-				log.debug(
-						"Skip checkpoint for node '{}' because a newer checkpoint has already been persisted for this thread.",
-						nodeId);
-				return Optional.empty();
-			}
-			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(overallState.data())).nextNodeId(nextNodeId)
+			synchronized (saver) {
+				if (!isCheckpointLineageCurrent(saver)) {
+					log.debug(
+							"Skip checkpoint for node '{}' because a newer checkpoint has already been persisted for this thread.",
+							nodeId);
+					return Optional.empty();
+				}
+				var cp = Checkpoint.builder()
+					.nodeId(nodeId)
+					.state(cloneState(overallState.data()))
+					.nextNodeId(nextNodeId)
 					.build();
-			// Force checkPointId to null to ensure we append a new checkpoint instead of
-			// replacing the current one
-			RunnableConfig appendConfig = RunnableConfig.builder(config).checkPointId(null).build();
-			this.config = saver.put(appendConfig, cp);
-			this.checkpointLineageHeadId = cp.getId();
-			this.checkpointLineageGuardActive = true;
-			return Optional.of(cp);
+				// Force checkPointId to null to ensure we append a new checkpoint instead of
+				// replacing the current one
+				RunnableConfig appendConfig = RunnableConfig.builder(config).checkPointId(null).build();
+				this.config = saver.put(appendConfig, cp);
+				this.checkpointLineageHeadId = cp.getId();
+				this.checkpointLineageGuardActive = true;
+				return Optional.of(cp);
+			}
 		}
 		return Optional.empty();
 	}
 
 	public boolean isCheckpointLineageCurrent() {
+		return compiledGraph.compileConfig.checkpointSaver().map(saver -> {
+			synchronized (saver) {
+				return isCheckpointLineageCurrent(saver);
+			}
+		}).orElse(true);
+	}
+
+	private boolean isCheckpointLineageCurrent(BaseCheckpointSaver saver) {
 		if (!checkpointLineageGuardActive) {
 			return true;
 		}
-		return compiledGraph.compileConfig.checkpointSaver().map(saver -> {
-			RunnableConfig latestConfig = RunnableConfig.builder(config).checkPointId(null).build();
-			Optional<Checkpoint> latestCheckpoint = saver.get(latestConfig);
-			String latestCheckpointId = latestCheckpoint.map(Checkpoint::getId).orElse(null);
-			return Objects.equals(latestCheckpointId, checkpointLineageHeadId);
-		}).orElse(true);
+		RunnableConfig latestConfig = RunnableConfig.builder(config).checkPointId(null).build();
+		Optional<Checkpoint> latestCheckpoint = saver.get(latestConfig);
+		String latestCheckpointId = latestCheckpoint.map(Checkpoint::getId).orElse(null);
+		return Objects.equals(latestCheckpointId, checkpointLineageHeadId);
+	}
+
+	public Optional<BaseCheckpointSaver.Tag> releaseCheckpointThread() throws Exception {
+		if (compiledGraph.compileConfig.checkpointSaver().isEmpty()) {
+			return Optional.empty();
+		}
+		var saver = compiledGraph.compileConfig.checkpointSaver().get();
+		synchronized (saver) {
+			if (!isCheckpointLineageCurrent(saver)) {
+				log.debug("Skip thread release because a newer checkpoint has already been persisted for this thread.");
+				return Optional.empty();
+			}
+			return Optional.of(saver.release(config));
+		}
 	}
 
 	// ================================================================================================================

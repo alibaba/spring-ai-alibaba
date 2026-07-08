@@ -18,8 +18,6 @@ package com.alibaba.cloud.ai.graph.executor;
 import com.alibaba.cloud.ai.graph.GraphRunnerContext;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
-
 import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
@@ -54,13 +52,14 @@ public abstract class BaseGraphExecutor {
 		return Flux.defer(() -> {
 			try {
 				if (context.getCompiledGraph().compileConfig.releaseThread()
-						&& context.getCompiledGraph().compileConfig.checkpointSaver().isPresent()
-						&& context.isCheckpointLineageCurrent()) {
-					BaseCheckpointSaver.Tag tag = context
-						.getCompiledGraph().compileConfig.checkpointSaver()
-						.get()
-						.release(context.getConfig());
-					resultValue.set(tag);
+						&& context.getCompiledGraph().compileConfig.checkpointSaver().isPresent()) {
+					var tag = context.releaseCheckpointThread();
+					if (tag.isPresent()) {
+						resultValue.set(tag.get());
+					}
+					else {
+						resultValue.set(new HashMap<>(context.getOverallState().data()));
+					}
 				} else {
 					resultValue.set(new HashMap<>(context.getOverallState().data()));
 				}

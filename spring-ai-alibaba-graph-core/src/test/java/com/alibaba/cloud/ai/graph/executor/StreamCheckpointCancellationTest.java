@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -42,10 +43,13 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -228,6 +232,74 @@ class StreamCheckpointCancellationTest {
 		assertInstanceOf(AssistantMessage.class, lastMessage);
 		assertEquals("continued", ((AssistantMessage) lastMessage).getText(),
 				"old background run must not write its first checkpoint after a newer turn has advanced the thread");
+	}
+
+	@Test
+	void checkpointLineageCheckAndAppendShouldBeAtomic() throws Exception {
+		BlockingSaver saver = new BlockingSaver(true, false);
+		RunnableConfig config = RunnableConfig.builder().threadId("checkpoint-lineage-atomic-thread").build();
+		CompiledGraph oldGraph = buildAnswerGraph(saver, "old background", false, null);
+
+		CompletableFuture<List<NodeOutput>> oldRun = CompletableFuture.supplyAsync(() -> oldGraph
+			.stream(Map.of("messages", List.of(new UserMessage("old request"))), config)
+			.collectList()
+			.block(Duration.ofSeconds(5)));
+		assertTrue(saver.awaitFirstAppendReached(), "old run should pause after passing the lineage check");
+
+		CompiledGraph nextGraph = buildAnswerGraph(saver, "continued", false, null);
+		CountDownLatch nextRunCompleted = new CountDownLatch(1);
+		CompletableFuture<List<NodeOutput>> nextRun = CompletableFuture.supplyAsync(() -> {
+			try {
+				return nextGraph.stream(Map.of("messages", List.of(new UserMessage("please continue"))), config)
+					.collectList()
+					.block(Duration.ofSeconds(5));
+			}
+			finally {
+				nextRunCompleted.countDown();
+			}
+		});
+		assertFalse(nextRunCompleted.await(200, TimeUnit.MILLISECONDS),
+				"another run on the same saver must not complete while the first append is inside its critical section");
+
+		saver.releaseFirstAppend();
+		assertNotNull(oldRun.get(5, TimeUnit.SECONDS));
+		assertNotNull(nextRun.get(5, TimeUnit.SECONDS));
+	}
+
+	@Test
+	void checkpointLineageCheckAndReleaseShouldBeAtomic() throws Exception {
+		BlockingSaver saver = new BlockingSaver(false, true);
+		RunnableConfig config = RunnableConfig.builder().threadId("checkpoint-release-atomic-thread").build();
+		CompiledGraph oldGraph = buildAnswerGraph(saver, "old background", true, null);
+
+		CompletableFuture<List<NodeOutput>> oldRun = CompletableFuture.supplyAsync(() -> oldGraph
+			.stream(Map.of("messages", List.of(new UserMessage("old request"))), config)
+			.collectList()
+			.block(Duration.ofSeconds(5)));
+		assertTrue(saver.awaitFirstReleaseReached(), "old run should pause inside release after passing the lineage check");
+
+		CompiledGraph nextGraph = buildAnswerGraph(saver, "continued", false, null);
+		CountDownLatch nextRunCompleted = new CountDownLatch(1);
+		CompletableFuture<List<NodeOutput>> nextRun = CompletableFuture.supplyAsync(() -> {
+			try {
+				return nextGraph.stream(Map.of("messages", List.of(new UserMessage("please continue"))), config)
+					.collectList()
+					.block(Duration.ofSeconds(5));
+			}
+			finally {
+				nextRunCompleted.countDown();
+			}
+		});
+		assertFalse(nextRunCompleted.await(200, TimeUnit.MILLISECONDS),
+				"another run on the same saver must not complete while release is inside its critical section");
+
+		saver.releaseFirstRelease();
+		assertNotNull(oldRun.get(5, TimeUnit.SECONDS));
+		assertNotNull(nextRun.get(5, TimeUnit.SECONDS));
+
+		Object lastMessage = awaitLastCheckpointMessage(nextGraph, config);
+		assertInstanceOf(AssistantMessage.class, lastMessage);
+		assertEquals("continued", ((AssistantMessage) lastMessage).getText());
 	}
 
 	@Test
@@ -459,12 +531,12 @@ class StreamCheckpointCancellationTest {
 			.build());
 	}
 
-	private static CompiledGraph buildAnswerGraph(MemorySaver saver, String answer, GraphLifecycleListener listener)
+	private static CompiledGraph buildAnswerGraph(BaseCheckpointSaver saver, String answer, GraphLifecycleListener listener)
 			throws Exception {
 		return buildAnswerGraph(saver, answer, false, listener);
 	}
 
-	private static CompiledGraph buildAnswerGraph(MemorySaver saver, String answer, boolean releaseThread,
+	private static CompiledGraph buildAnswerGraph(BaseCheckpointSaver saver, String answer, boolean releaseThread,
 			GraphLifecycleListener listener) throws Exception {
 		StateGraph stateGraph = new StateGraph(() -> {
 			Map<String, KeyStrategy> strategies = new HashMap<>();
@@ -482,6 +554,110 @@ class StreamCheckpointCancellationTest {
 			builder.withLifecycleListener(listener);
 		}
 		return stateGraph.compile(builder.build());
+	}
+
+	private static final class BlockingSaver implements BaseCheckpointSaver {
+
+		private final LinkedList<Checkpoint> checkpoints = new LinkedList<>();
+
+		private final boolean blockFirstAppend;
+
+		private final boolean blockFirstRelease;
+
+		private final CountDownLatch firstAppendReached = new CountDownLatch(1);
+
+		private final CountDownLatch releaseFirstAppend = new CountDownLatch(1);
+
+		private final CountDownLatch firstReleaseReached = new CountDownLatch(1);
+
+		private final CountDownLatch releaseFirstRelease = new CountDownLatch(1);
+
+		private final AtomicBoolean shouldBlockFirstAppend = new AtomicBoolean(true);
+
+		private final AtomicBoolean shouldBlockFirstRelease = new AtomicBoolean(true);
+
+		BlockingSaver(boolean blockFirstAppend, boolean blockFirstRelease) {
+			this.blockFirstAppend = blockFirstAppend;
+			this.blockFirstRelease = blockFirstRelease;
+		}
+
+		@Override
+		public synchronized Collection<Checkpoint> list(RunnableConfig config) {
+			return List.copyOf(checkpoints);
+		}
+
+		@Override
+		public synchronized Optional<Checkpoint> get(RunnableConfig config) {
+			if (config.checkPointId().isPresent()) {
+				return checkpoints.stream()
+					.filter(checkpoint -> checkpoint.getId().equals(config.checkPointId().get()))
+					.findFirst();
+			}
+			return checkpoints.isEmpty() ? Optional.empty() : Optional.of(checkpoints.peek());
+		}
+
+		@Override
+		public RunnableConfig put(RunnableConfig config, Checkpoint checkpoint) throws Exception {
+			if (config.checkPointId().isPresent()) {
+				return replace(config, checkpoint);
+			}
+			if (blockFirstAppend && shouldBlockFirstAppend.compareAndSet(true, false)) {
+				firstAppendReached.countDown();
+				if (!releaseFirstAppend.await(3, TimeUnit.SECONDS)) {
+					throw new IllegalStateException("first append was not released");
+				}
+			}
+			synchronized (this) {
+				checkpoints.push(checkpoint);
+			}
+			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
+		}
+
+		private synchronized RunnableConfig replace(RunnableConfig config, Checkpoint checkpoint) {
+			String checkpointId = config.checkPointId().orElseThrow();
+			for (int i = 0; i < checkpoints.size(); i++) {
+				if (checkpointId.equals(checkpoints.get(i).getId())) {
+					checkpoints.set(i, checkpoint);
+					return config;
+				}
+			}
+			throw new IllegalArgumentException("Checkpoint with id " + checkpointId + " not found");
+		}
+
+		@Override
+		public Tag release(RunnableConfig config) throws Exception {
+			if (blockFirstRelease && shouldBlockFirstRelease.compareAndSet(true, false)) {
+				firstReleaseReached.countDown();
+				if (!releaseFirstRelease.await(3, TimeUnit.SECONDS)) {
+					throw new IllegalStateException("first release was not released");
+				}
+			}
+			return doRelease(config);
+		}
+
+		private synchronized Tag doRelease(RunnableConfig config) {
+			String threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
+			List<Checkpoint> released = List.copyOf(checkpoints);
+			checkpoints.clear();
+			return new Tag(threadId, released);
+		}
+
+		boolean awaitFirstAppendReached() throws InterruptedException {
+			return firstAppendReached.await(2, TimeUnit.SECONDS);
+		}
+
+		void releaseFirstAppend() {
+			releaseFirstAppend.countDown();
+		}
+
+		boolean awaitFirstReleaseReached() throws InterruptedException {
+			return firstReleaseReached.await(2, TimeUnit.SECONDS);
+		}
+
+		void releaseFirstRelease() {
+			releaseFirstRelease.countDown();
+		}
+
 	}
 
 	private static CompiledGraph buildContinuationGraph(MemorySaver saver, AtomicBoolean openAiPayloadVerified,
