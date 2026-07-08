@@ -542,11 +542,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				HttpClientSseClientTransport transport = transportBuilder.build();
 
 				// 创建MCP同步客户端
-				McpClient.SyncSpec clientSpec = McpClient.sync(transport);
-				if (requestTimeout != null) {
-					clientSpec.requestTimeout(requestTimeout);
-				}
-				McpSyncClient client = clientSpec.build();
+				McpSyncClient client = configureTimeouts(McpClient.sync(transport)).build();
 				try {
 					// 初始化客户端
 					InitializeResult initializeResult = client.initialize();
@@ -599,6 +595,14 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			logger.error("[handleMcpStreamProtocol] serviceRef is null");
 			return "Error: service reference is null";
 		}
+	}
+
+	McpClient.SyncSpec configureTimeouts(McpClient.SyncSpec clientSpec) {
+		if (requestTimeout != null) {
+			clientSpec.requestTimeout(requestTimeout);
+			clientSpec.initializationTimeout(requestTimeout);
+		}
+		return clientSpec;
 	}
 
 	/**
