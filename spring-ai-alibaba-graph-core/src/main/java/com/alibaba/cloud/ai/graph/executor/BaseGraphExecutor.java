@@ -54,7 +54,8 @@ public abstract class BaseGraphExecutor {
 		return Flux.defer(() -> {
 			try {
 				if (context.getCompiledGraph().compileConfig.releaseThread()
-						&& context.getCompiledGraph().compileConfig.checkpointSaver().isPresent()) {
+						&& context.getCompiledGraph().compileConfig.checkpointSaver().isPresent()
+						&& context.isCheckpointLineageCurrent()) {
 					BaseCheckpointSaver.Tag tag = context
 						.getCompiledGraph().compileConfig.checkpointSaver()
 						.get()

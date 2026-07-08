@@ -99,6 +99,7 @@ public class GraphRunnerContext {
 
 		var saver = compiledGraph.compileConfig.checkpointSaver()
 				.orElseThrow(() -> new IllegalStateException("Resume request without a configured checkpoint saver!"));
+		initializeCheckpointLineage(config);
 		var checkpoint = saver.get(config)
 				.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
 
@@ -258,16 +259,11 @@ public class GraphRunnerContext {
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
 			var saver = compiledGraph.compileConfig.checkpointSaver().get();
-			if (checkpointLineageGuardActive) {
-				RunnableConfig latestConfig = RunnableConfig.builder(config).checkPointId(null).build();
-				Optional<Checkpoint> latestCheckpoint = saver.get(latestConfig);
-				String latestCheckpointId = latestCheckpoint.map(Checkpoint::getId).orElse(null);
-				if (!Objects.equals(latestCheckpointId, checkpointLineageHeadId)) {
-					log.debug(
-							"Skip checkpoint for node '{}' because a newer checkpoint has already been persisted for this thread.",
-							nodeId);
-					return Optional.empty();
-				}
+			if (!isCheckpointLineageCurrent()) {
+				log.debug(
+						"Skip checkpoint for node '{}' because a newer checkpoint has already been persisted for this thread.",
+						nodeId);
+				return Optional.empty();
 			}
 			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(overallState.data())).nextNodeId(nextNodeId)
 					.build();
@@ -280,6 +276,18 @@ public class GraphRunnerContext {
 			return Optional.of(cp);
 		}
 		return Optional.empty();
+	}
+
+	public boolean isCheckpointLineageCurrent() {
+		if (!checkpointLineageGuardActive) {
+			return true;
+		}
+		return compiledGraph.compileConfig.checkpointSaver().map(saver -> {
+			RunnableConfig latestConfig = RunnableConfig.builder(config).checkPointId(null).build();
+			Optional<Checkpoint> latestCheckpoint = saver.get(latestConfig);
+			String latestCheckpointId = latestCheckpoint.map(Checkpoint::getId).orElse(null);
+			return Objects.equals(latestCheckpointId, checkpointLineageHeadId);
+		}).orElse(true);
 	}
 
 	// ================================================================================================================
