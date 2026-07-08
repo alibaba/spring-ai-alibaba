@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.utils.MessageSequenceValidator;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -48,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static java.lang.String.format;
@@ -462,9 +464,20 @@ public class CompiledGraph {
 	public Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
 
 		return compileConfig.checkpointSaver()
-				.flatMap(saver -> saver.get(config))
+				.flatMap(saver -> latestConsistentCheckpoint(saver, config))
 				.map(cp -> OverAllState.updateState(cp.getState(), inputs, keyStrategyMap))
 				.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, keyStrategyMap));
+	}
+
+	private Optional<Checkpoint> latestConsistentCheckpoint(BaseCheckpointSaver saver, RunnableConfig config) {
+		if (config.checkPointId().isPresent()) {
+			return saver.get(config).filter(checkpoint -> MessageSequenceValidator
+				.isCheckpointReadyForNewInput(checkpoint.getState()));
+		}
+		// Saver histories are latest-first; this is also the order used by
+		// lastStateOf().
+		return saver.list(config).stream().filter(checkpoint -> MessageSequenceValidator
+			.isCheckpointReadyForNewInput(checkpoint.getState())).findFirst();
 	}
 
 	/**
@@ -554,10 +567,33 @@ public class CompiledGraph {
 		Objects.requireNonNull(config, "config cannot be null");
 		try {
 			GraphRunner runner = new GraphRunner(this, config);
-			return runner.run(state);
+			return keepExecutingAfterDownstreamCancel(runner.run(state));
 		} catch (Exception e) {
 			return Flux.error(e);
 		}
+	}
+
+	private Flux<GraphResponse<NodeOutput>> keepExecutingAfterDownstreamCancel(
+			Flux<GraphResponse<NodeOutput>> executionFlux) {
+		if (compileConfig.checkpointSaver().isEmpty()) {
+			return executionFlux;
+		}
+		return Flux.create(sink -> Schedulers.boundedElastic().schedule(() -> executionFlux.subscribe(data -> {
+			if (!sink.isCancelled()) {
+				sink.next(data);
+			}
+		}, error -> {
+			if (!sink.isCancelled()) {
+				sink.error(error);
+			}
+			else {
+				log.warn("Background graph execution failed after downstream cancellation.", error);
+			}
+		}, () -> {
+			if (!sink.isCancelled()) {
+				sink.complete();
+			}
+		})));
 	}
 
 	/**
@@ -583,7 +619,7 @@ public class CompiledGraph {
 		Objects.requireNonNull(config, "config cannot be null");
 		try {
 			GraphRunner runner = new GraphRunner(this, config);
-			return flattenGraphResponsesPreservingOrder(runner.run(overAllState));
+			return flattenGraphResponsesPreservingOrder(keepExecutingAfterDownstreamCancel(runner.run(overAllState)));
 		} catch (Exception e) {
 			return Flux.error(e);
 		}
