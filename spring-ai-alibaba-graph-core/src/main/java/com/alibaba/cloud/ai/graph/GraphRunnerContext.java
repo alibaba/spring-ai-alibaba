@@ -78,6 +78,8 @@ public class GraphRunnerContext {
 
 	ReturnFromEmbed returnFromEmbed;
 
+	String checkpointLineageHeadId;
+
 	public GraphRunnerContext(OverAllState initialState, RunnableConfig config, CompiledGraph compiledGraph)
 			throws Exception {
 		this.compiledGraph = compiledGraph;
@@ -244,12 +246,25 @@ public class GraphRunnerContext {
 
 	public Optional<Checkpoint> addCheckpoint(String nodeId, String nextNodeId) throws Exception {
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
+			var saver = compiledGraph.compileConfig.checkpointSaver().get();
+			if (checkpointLineageHeadId != null) {
+				RunnableConfig latestConfig = RunnableConfig.builder(config).checkPointId(null).build();
+				Optional<Checkpoint> latestCheckpoint = saver.get(latestConfig);
+				if (latestCheckpoint.isEmpty()
+						|| !Objects.equals(latestCheckpoint.get().getId(), checkpointLineageHeadId)) {
+					log.debug(
+							"Skip checkpoint for node '{}' because a newer checkpoint has already been persisted for this thread.",
+							nodeId);
+					return Optional.empty();
+				}
+			}
 			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(overallState.data())).nextNodeId(nextNodeId)
 					.build();
 			// Force checkPointId to null to ensure we append a new checkpoint instead of
 			// replacing the current one
 			RunnableConfig appendConfig = RunnableConfig.builder(config).checkPointId(null).build();
-			this.config = compiledGraph.compileConfig.checkpointSaver().get().put(appendConfig, cp);
+			this.config = saver.put(appendConfig, cp);
+			this.checkpointLineageHeadId = cp.getId();
 			return Optional.of(cp);
 		}
 		return Optional.empty();

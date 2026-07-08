@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -150,6 +151,39 @@ class StreamCheckpointCancellationTest {
 	}
 
 	@Test
+	void staleBackgroundCheckpointShouldNotOverrideNextTurnCheckpoint() throws Exception {
+		MemorySaver saver = MemorySaver.builder().build();
+		StreamGraphFixture timeoutFixture = buildStreamGraphFixture(saver, Duration.ofMillis(300));
+		RunnableConfig firstTurnConfig = RunnableConfig.builder().threadId("stale-background-checkpoint-thread").build();
+
+		RuntimeException error = assertThrows(RuntimeException.class,
+				() -> timeoutAfterStreamingModelStarts(timeoutFixture.compiledGraph().stream(initialMessages(),
+						firstTurnConfig))
+					.collectList()
+					.block(Duration.ofSeconds(5)));
+		assertTrue(hasCause(error, TimeoutException.class), "test should first reproduce timeout cancellation");
+
+		AtomicBoolean openAiPayloadVerified = new AtomicBoolean(false);
+		CompiledGraph continuationGraph = buildContinuationGraph(saver, openAiPayloadVerified, List.of("user"));
+		RunnableConfig nextTurnConfig = RunnableConfig.builder().threadId("stale-background-checkpoint-thread").build();
+
+		List<NodeOutput> outputs = continuationGraph
+			.stream(Map.of("messages", List.of(new UserMessage("\u8bf7\u7ee7\u7eed"))), nextTurnConfig)
+			.collectList()
+			.block(Duration.ofSeconds(5));
+		assertNotNull(outputs);
+		assertTrue(openAiPayloadVerified.get(), "next turn should run before the old background stream completes");
+
+		assertTrue(awaitUntil(timeoutFixture.modelStreamCompleted()::get),
+				"old background stream should complete after the next turn");
+		Object lastMessage = awaitLastCheckpointMessage(continuationGraph, nextTurnConfig);
+
+		assertInstanceOf(AssistantMessage.class, lastMessage);
+		assertEquals("continued", ((AssistantMessage) lastMessage).getText(),
+				"stale background checkpoint must not become the latest checkpoint after a newer turn");
+	}
+
+	@Test
 	void streamCancellationAfterToolBeforeModelShouldStillPersistFinalAssistantMessage() throws Exception {
 		MemorySaver saver = MemorySaver.builder().build();
 		StreamGraphFixture fixture = buildStreamGraphFixture(saver);
@@ -222,6 +256,11 @@ class StreamCheckpointCancellationTest {
 	}
 
 	private static StreamGraphFixture buildStreamGraphFixture(MemorySaver saver) throws Exception {
+		return buildStreamGraphFixture(saver, Duration.ofMillis(50));
+	}
+
+	private static StreamGraphFixture buildStreamGraphFixture(MemorySaver saver, Duration finalChunkDelay)
+			throws Exception {
 		AtomicBoolean modelStreamSubscribed = new AtomicBoolean(false);
 		AtomicBoolean modelStreamCancelled = new AtomicBoolean(false);
 		AtomicBoolean modelStreamCompleted = new AtomicBoolean(false);
@@ -235,7 +274,7 @@ class StreamCheckpointCancellationTest {
 			.addNode("streaming_model",
 					node_async(state -> Map.of("messages",
 							streamingAssistantResponse(modelStreamSubscribed, modelStreamCancelled,
-									modelStreamCompleted))))
+									modelStreamCompleted, finalChunkDelay))))
 			.addEdge(START, "tool_node")
 			.addEdge("tool_node", "streaming_model")
 			.addEdge("streaming_model", END);
@@ -341,10 +380,10 @@ class StreamCheckpointCancellationTest {
 	}
 
 	private static Flux<ChatResponse> streamingAssistantResponse(AtomicBoolean subscribed, AtomicBoolean cancelled,
-			AtomicBoolean completed) {
+			AtomicBoolean completed, Duration finalChunkDelay) {
 		return Flux.concat(
 				Flux.just(chatResponse("tool result")),
-				Flux.just(chatResponse(" received")).delayElements(Duration.ofMillis(50)))
+				Flux.just(chatResponse(" received")).delayElements(finalChunkDelay))
 			.doOnSubscribe(subscription -> subscribed.set(true))
 			.doOnCancel(() -> cancelled.set(true))
 			.doOnComplete(() -> completed.set(true));
@@ -380,6 +419,16 @@ class StreamCheckpointCancellationTest {
 			throws InterruptedException {
 		List<?> checkpointMessages = awaitCheckpointMessages(compiledGraph, config);
 		return checkpointMessages.get(checkpointMessages.size() - 1);
+	}
+
+	private static boolean awaitUntil(BooleanSupplier condition) throws InterruptedException {
+		for (int attempt = 0; attempt < 20; attempt++) {
+			if (condition.getAsBoolean()) {
+				return true;
+			}
+			Thread.sleep(50);
+		}
+		return false;
 	}
 
 	private static Flux<NodeOutput> timeoutAfterStreamingModelStarts(Flux<NodeOutput> stream) {
