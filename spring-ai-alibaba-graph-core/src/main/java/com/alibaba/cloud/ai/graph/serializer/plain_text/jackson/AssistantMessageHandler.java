@@ -34,8 +34,8 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
-import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.deserializeMetadata;
-import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.serializeMetadata;
+import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.deserializeAssistantMetadata;
+import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.serializeAssistantMetadata;
 
 public interface AssistantMessageHandler {
 
@@ -85,7 +85,7 @@ public interface AssistantMessageHandler {
 		}
 		gen.writeEndArray();
 
-		serializeMetadata(gen, msg.getMetadata());
+		serializeAssistantMetadata(gen, msg.getMetadata());
 
 		// gen.writeArrayFieldStart( Property.MEDIA.field);
 		// for (var media : msg.getMedia()) {
@@ -107,7 +107,7 @@ public interface AssistantMessageHandler {
 			ObjectNode node = mapper.readTree(jsonParser);
 
 			var text = node.findValue(Field.TEXT.name).asText();
-			var metadata = deserializeMetadata(mapper, node);
+			var metadata = deserializeAssistantMetadata(mapper, node);
 			var requestsNode = node.findValue(Field.TOOL_CALLS.name);
 
 			if (requestsNode.isNull() || requestsNode.isEmpty()) {
