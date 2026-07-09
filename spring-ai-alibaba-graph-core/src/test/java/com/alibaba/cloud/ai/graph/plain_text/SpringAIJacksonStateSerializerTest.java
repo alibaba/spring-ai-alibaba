@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.graph.plain_text;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
+import com.alibaba.cloud.ai.graph.serializer.check_point.CheckPointSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
@@ -38,6 +40,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -128,6 +131,72 @@ class SpringAIJacksonStateSerializerTest {
 		assertEquals(original.getText(), deserialized.getText());
 		assertEquals(original.getMetadata(), deserialized.getMetadata());
 		assertEquals(MessageType.ASSISTANT, deserialized.getMessageType());
+	}
+
+	@Test
+	void shouldPreserveAssistantMessageBinaryListMetadata() throws Exception {
+		byte[] signature = new byte[] { 1, -2, 127, -128 };
+		AssistantMessage original = AssistantMessage.builder()
+			.content("Use tool")
+			.properties(Map.of("thoughtSignatures", List.of(signature)))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(original);
+
+		assertNotNull(deserialized);
+		@SuppressWarnings("unchecked")
+		List<byte[]> signatures = (List<byte[]>) deserialized.getMetadata().get("thoughtSignatures");
+		assertEquals(1, signatures.size());
+		assertArrayEquals(signature, signatures.get(0));
+	}
+
+	@Test
+	void shouldPreserveAssistantMessageBinaryListMetadataWhenCloningState() throws Exception {
+		byte[] signature = new byte[] { 5, 6, 7, 8 };
+		AssistantMessage original = AssistantMessage.builder()
+			.content("Call tool")
+			.properties(Map.of("thoughtSignatures", List.of(signature)))
+			.build();
+
+		OverAllState cloned = serializer.cloneObject(Map.of("messages", List.of(original)));
+
+		@SuppressWarnings("unchecked")
+		List<AssistantMessage> messages = (List<AssistantMessage>) cloned.data().get("messages");
+		@SuppressWarnings("unchecked")
+		List<byte[]> signatures = (List<byte[]>) messages.get(0).getMetadata().get("thoughtSignatures");
+		assertEquals(1, signatures.size());
+		assertArrayEquals(signature, signatures.get(0));
+	}
+
+	@Test
+	void shouldPreserveAssistantMessageBinaryListMetadataInCheckpoint() throws Exception {
+		byte[] signature = new byte[] { 13, 14, 15, 16 };
+		AssistantMessage original = AssistantMessage.builder()
+			.content("Call tool")
+			.properties(Map.of("thoughtSignatures", List.of(signature)))
+			.build();
+		Checkpoint checkpoint = Checkpoint.builder()
+			.id("checkpoint-1")
+			.nodeId("model")
+			.nextNodeId("tool")
+			.state(Map.of("messages", List.of(original)))
+			.build();
+		CheckPointSerializer checkpointSerializer = new CheckPointSerializer(serializer);
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream out = new ObjectOutputStream(baos);
+		checkpointSerializer.write(checkpoint, out);
+		out.flush();
+
+		ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+		Checkpoint deserialized = checkpointSerializer.read(in);
+
+		@SuppressWarnings("unchecked")
+		List<AssistantMessage> messages = (List<AssistantMessage>) deserialized.getState().get("messages");
+		@SuppressWarnings("unchecked")
+		List<byte[]> signatures = (List<byte[]>) messages.get(0).getMetadata().get("thoughtSignatures");
+		assertEquals(1, signatures.size());
+		assertArrayEquals(signature, signatures.get(0));
 	}
 
 	@Test
