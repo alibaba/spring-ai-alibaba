@@ -19,7 +19,10 @@ import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 
 import io.a2a.spec.AgentCard;
@@ -266,6 +269,45 @@ class A2aNodeActionWithConfigTests {
 	private static Method initExtractResponseTextMethod() {
 		try {
 			Method method = A2aNodeActionWithConfig.class.getDeclaredMethod("extractResponseText", Map.class);
+			method.setAccessible(true);
+			return method;
+		}
+		catch (NoSuchMethodException ex) {
+			throw new IllegalStateException(ex);
+		}
+	}
+
+	// ==================== Tests for gh-4760: A2A streaming output metadata ====================
+
+	private static final Method BUILD_STREAMING_OUTPUT = initBuildStreamingOutputMethod();
+
+	/**
+	 * The studio chat UI renders streaming text from the {@code chunk} / {@code message} fields of
+	 * {@link StreamingOutput}. Before gh-4760, A2A streaming events were built with the plain
+	 * {@code (text, node, agentName, state)} constructor, leaving {@code message}, {@code chunk} and
+	 * {@code outputType} unset, so the SSE payload serialized to {@code {}} and the remote agent's
+	 * reply was never displayed. The streaming output must now carry the text in both {@code chunk}
+	 * and {@code message} and be tagged {@link OutputType#AGENT_MODEL_STREAMING}.
+	 */
+	@Test
+	void buildStreamingOutput_populatesMessageChunkAndOutputType() throws Exception {
+		OverAllState state = new OverAllState();
+
+		StreamingOutput<?> output = (StreamingOutput<?>) BUILD_STREAMING_OUTPUT.invoke(this.action, "hello world",
+				state);
+
+		// chunk + message are the fields the studio chat UI reads to render streaming text
+		assertEquals("hello world", output.chunk(), "chunk must carry the streamed text");
+		assertInstanceOf(AssistantMessage.class, output.message(), "message must be an assistant message");
+		assertEquals("hello world", ((AssistantMessage) output.message()).getText());
+		// outputType restores metadata for downstream consumers of getOutputType()
+		assertEquals(OutputType.AGENT_MODEL_STREAMING, output.getOutputType());
+	}
+
+	private static Method initBuildStreamingOutputMethod() {
+		try {
+			Method method = A2aNodeActionWithConfig.class.getDeclaredMethod("buildStreamingOutput", String.class,
+					OverAllState.class);
 			method.setAccessible(true);
 			return method;
 		}
