@@ -23,6 +23,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -56,6 +58,8 @@ public final class AgentSpecLoader {
 	private static final Logger logger = LoggerFactory.getLogger(AgentSpecLoader.class);
 
 	private static final Yaml YAML = new Yaml();
+
+	private static final Pattern FRONT_MATTER_DELIMITER = Pattern.compile("^---[ \\t]*(?:\\r?\\n|$)", Pattern.MULTILINE);
 
 	private AgentSpecLoader() {
 	}
@@ -127,19 +131,20 @@ public final class AgentSpecLoader {
 		if (!StringUtils.hasText(markdown)) {
 			return null;
 		}
-		if (!markdown.startsWith("---")) {
+		Matcher delimiterMatcher = FRONT_MATTER_DELIMITER.matcher(markdown);
+		if (!delimiterMatcher.find() || delimiterMatcher.start() != 0) {
 			logger.warn("Agent spec must start with YAML front matter (---)");
 			return null;
 		}
 
-		int endIndex = markdown.indexOf("---", 3);
-		if (endIndex == -1) {
+		int frontMatterStart = delimiterMatcher.end();
+		if (!delimiterMatcher.find()) {
 			logger.warn("Agent spec front matter not properly closed with ---");
 			return null;
 		}
 
-		String frontMatterStr = markdown.substring(3, endIndex).trim();
-		String content = markdown.substring(endIndex + 3).trim();
+		String frontMatterStr = markdown.substring(frontMatterStart, delimiterMatcher.start()).trim();
+		String content = markdown.substring(delimiterMatcher.end()).trim();
 
 		Map<String, Object> frontMatter;
 		try {
