@@ -77,7 +77,7 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 	# this example uses 'spring-ai-alibaba-starter-dashscope', visit https://java2ai.com to learn how to use OpenAI/DeepSeek.
 	export AI_DASHSCOPE_API_KEY=your-api-key
 	```
-	
+
 	```shell
 	# Maven installation is optional when using mvnw.
 	./mvnw -pl examples/chatbot spring-boot:run
@@ -86,7 +86,7 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 3. Chat with ChatBot.
 
 	Open the browser and visit [http://localhost:8080/chatui/index.html](http://localhost:8080/chatui/index.html) to chat with the ChatBot.
-	
+
 <p align="center">
 	<img src="./docs/imgs/chatbot-chat-ui.gif" alt="chatbot-ui" style="max-width: 740px; height: auto" />
 </p>
@@ -112,7 +112,7 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 	```
 
 2. Define Chatbot
-   
+
 	For more details of how to write a Chatbot, please check the [Quick Start](https://java2ai.com/docs/quick-start) on our official website.
 
 ## 📚 Documentation

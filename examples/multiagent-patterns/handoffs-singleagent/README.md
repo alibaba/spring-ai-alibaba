@@ -4,29 +4,29 @@ This module implements the **handoffs (state machine)** pattern with a single ag
 
 ## Architecture
 
-- **Single agent, step-based configuration**  
+- **Single agent, step-based configuration**
   One ReactAgent runs the whole flow. Each “step” is a different configuration (system prompt + tool set) of the same agent, selected by a **ModelInterceptor** that reads `current_step` from the request context (graph state).
 
-- **State-driven steps**  
+- **State-driven steps**
   - `warranty_collector`: Ask if the device is under warranty; only tool: `record_warranty_status`.
   - `issue_classifier`: Ask for issue description and classify as hardware/software; only tool: `record_issue_type`.
   - `resolution_specialist`: Provide solution or escalate; tools: `provide_solution`, `escalate_to_human`.
 
-- **Tools that update state**  
+- **Tools that update state**
   `record_warranty_status` and `record_issue_type` write to the graph state via `ToolContextHelper.getStateForUpdate(toolContext)` and set `current_step` to the next step. The framework merges these updates into the graph state so the next model call sees the new step.
 
-- **Checkpointer**  
+- **Checkpointer**
   A `MemorySaver` is used so that state (and thus `current_step`, `warranty_status`, `issue_type`) persists across turns when you use the same `thread_id` in `RunnableConfig`.
 
 ## Design choices
 
-1. **State keys**  
+1. **State keys**
    `current_step`, `warranty_status`, `issue_type` are stored in the graph state. A **Hook** adds key strategies (ReplaceStrategy) for these keys so they merge correctly when tools return updates.
 
-2. **Step-config interceptor**  
+2. **Step-config interceptor**
    `StepConfigInterceptor` runs before each model call. It reads `current_step` from the request context, looks up the step config, and overrides the system message and the list of tools so the model only sees the tools for that step.
 
-3. **Tool responses**  
+3. **Tool responses**
    State-updating tools return a plain string. The framework turns that into the tool response message; the state update is applied separately via the tool context update map.
 
 ## Project layout
@@ -115,8 +115,8 @@ Without a checkpointer and without reusing `thread_id`, each call would start fr
 
 ## Configuration
 
-- **`spring.ai.dashscope.api-key`**  
+- **`spring.ai.dashscope.api-key`**
   Required. Defaults to `AI_DASHSCOPE_API_KEY` env var.
 
-- **`handoffs.run-examples`**  
+- **`handoffs.run-examples`**
   If `true`, runs the four-turn demo on startup. Default: `false`.

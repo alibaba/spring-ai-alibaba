@@ -4,14 +4,14 @@ This module implements the **multiple agent subgraphs handoffs** pattern (same l
 
 ## Architecture
 
-- **Separate agents as graph nodes**  
+- **Separate agents as graph nodes**
   Sales and support agents are separate nodes. Sales uses Spring AI ReactAgent; support uses AgentScope ReActAgent via AgentScopeAgent with Toolkit. The parent StateGraph routes between them based on `active_agent`.
 
-- **Handoff tools**  
+- **Handoff tools**
   - `TransferToSupportTool`: Sales agent (ReactAgent) uses it to hand off to support. Updates `active_agent`, uses `returnDirect=true` so the agent exits immediately.
   - `TransferToSalesTool`: Support agent (AgentScopeAgent) uses it to hand off to sales. Registered via AgentScope Toolkit; uses `ToolContextHelper.getStateForUpdate()` to update `active_agent`.
 
-- **Conditional routing**  
+- **Conditional routing**
   - `route_initial`: START → sales_agent or support_agent (default: sales).
   - `route_after_sales`: If `active_agent` is support_agent → support_agent; else → END.
   - `route_after_support`: If `active_agent` is sales_agent → sales_agent; else → END.
@@ -37,20 +37,20 @@ public String transferToSales(
 OverAllState state = ToolContextHelper.getState(toolContext).orElse(null);
 ```
 
-**Update state:**  
+**Update state:**
 Put keys into `getStateForUpdate(toolContext)`; the graph must declare those keys in its key strategies (e.g. `ReplaceStrategy` for `active_agent` or `extraState`).
 
 See `UpdateExtraStateTool` for a full example that reads state and updates `extraState`.
 
 ## Design choices
 
-1. **returnDirect on handoff tools (Spring AI)**  
+1. **returnDirect on handoff tools (Spring AI)**
    Sales agent's TransferToSupportTool uses `@Tool(returnDirect = true)` so the agent exits immediately after the tool.
 
-2. **State update**  
+2. **State update**
    Tools use `ToolContextHelper.getStateForUpdate(toolContext)` to set `active_agent` (or other keys). The update is merged into the graph state when the agent node completes.
 
-3. **AgentScope Toolkit**  
+3. **AgentScope Toolkit**
    Support agent uses `io.agentscope.core.tool.Toolkit` and `ReActAgent.builder().toolkit(toolkit)`. Tools use `io.agentscope.core.tool.Tool` and `@ToolParam`; `ToolContext` is auto-injected.
 
 ## Project layout
@@ -141,10 +141,10 @@ result.messages().forEach(msg -> System.out.println(msg.getText()));
 
 ## Configuration
 
-- **`spring.ai.dashscope.api-key`**  
+- **`spring.ai.dashscope.api-key`**
   Required. Defaults to `AI_DASHSCOPE_API_KEY` env var.
 
-- **`agentscope.runner.enabled`**  
+- **`agentscope.runner.enabled`**
   If `true`, runs the AgentScope multi-agent handoffs demo on startup. Default: `false`.
 
 ## Related

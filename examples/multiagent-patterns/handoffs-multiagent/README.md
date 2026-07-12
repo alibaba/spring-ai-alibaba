@@ -4,27 +4,27 @@ This module implements the **multiple agent subgraphs** handoffs pattern. Distin
 
 ## Architecture
 
-- **Separate agents as graph nodes**  
+- **Separate agents as graph nodes**
   Sales and support agents are separate nodes. Each invokes a ReactAgent (CompiledGraph). The parent StateGraph routes between them based on `active_agent`.
 
-- **Handoff tools** (one class per tool for clarity)  
+- **Handoff tools** (one class per tool for clarity)
   - `TransferToSalesTool`: Support agent uses it to hand off to sales. Updates `active_agent`, uses `returnDirect=true` so the agent exits immediately.
   - `TransferToSupportTool`: Sales agent uses it to hand off to support.
 
-- **Conditional routing**  
+- **Conditional routing**
   - `route_initial`: START → sales_agent or support_agent (default: sales).
   - `route_after_sales`: If `active_agent` is support_agent → support_agent; else → END.
   - `route_after_support`: If `active_agent` is sales_agent → sales_agent; else → END.
 
 ## Design choices
 
-1. **returnDirect on handoff tools**  
+1. **returnDirect on handoff tools**
    Handoff tools use `@Tool(returnDirect = true)` so the agent exits immediately after the tool. No model response is generated. The parent graph's conditional edge then routes to the target agent.
 
-2. **State update**  
+2. **State update**
    Tools use `ToolContextHelper.getStateForUpdate(toolContext)` to set `active_agent`. The update is merged into the graph state when the agent node completes.
 
-3. **Context**  
+3. **Context**
    The full message history flows to the next agent. For production, consider summarizing or filtering context for token efficiency.
 
 **Studio:** The two agents (`sales_agent`, `support_agent`) are Spring beans; Studio discovers them automatically via context scanning. No custom `AgentLoader` is required.
@@ -111,8 +111,8 @@ result.messages().forEach(msg -> System.out.println(msg.getText()));
 
 ## Configuration
 
-- **`spring.ai.dashscope.api-key`**  
+- **`spring.ai.dashscope.api-key`**
   Required. Defaults to `AI_DASHSCOPE_API_KEY` env var.
 
-- **`handoffs.runner.enabled`**  
+- **`handoffs.runner.enabled`**
   If `true`, runs the multi-agent handoffs demo on startup. Default: `false`.
