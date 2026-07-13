@@ -48,6 +48,8 @@
     </developers>
 
     <modules>
+        <module>examples/chatbot</module>
+        <module>examples/chatbot</module>
         <module>spring-ai-alibaba-bom</module>
         <module>spring-ai-alibaba-graph-core</module>
         <module>spring-ai-alibaba-agent-framework</module>
