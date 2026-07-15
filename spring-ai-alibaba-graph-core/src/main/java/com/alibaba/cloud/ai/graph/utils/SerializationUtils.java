@@ -128,10 +128,21 @@ public class SerializationUtils {
 
 		// Handle arrays
 		if (value.getClass().isArray()) {
-			Object[] originalArray = (Object[]) value;
-			Object[] copyArray = new Object[originalArray.length];
-			for (int i = 0; i < originalArray.length; i++) {
-				copyArray[i] = deepCopyValue(originalArray[i]);
+			Class<?> componentType = value.getClass().getComponentType();
+			int length = java.lang.reflect.Array.getLength(value);
+			// Primitive arrays (int[], float[], byte[], ...) are not instances of
+			// Object[], so casting them would throw a ClassCastException. Their
+			// elements are immutable, so a shallow element copy is sufficient.
+			if (componentType.isPrimitive()) {
+				Object copyArray = java.lang.reflect.Array.newInstance(componentType, length);
+				System.arraycopy(value, 0, copyArray, 0, length);
+				return copyArray;
+			}
+			// Object arrays: preserve the original component type instead of forcing
+			// Object[], and deep copy each element.
+			Object copyArray = java.lang.reflect.Array.newInstance(componentType, length);
+			for (int i = 0; i < length; i++) {
+				java.lang.reflect.Array.set(copyArray, i, deepCopyValue(java.lang.reflect.Array.get(value, i)));
 			}
 			return copyArray;
 		}
