@@ -126,13 +126,18 @@ public class SerializationUtils {
 			return copySet;
 		}
 
-		// Handle arrays
-		if (value.getClass().isArray()) {
-			Object[] originalArray = (Object[]) value;
-			Object[] copyArray = new Object[originalArray.length];
-			for (int i = 0; i < originalArray.length; i++) {
-				copyArray[i] = deepCopyValue(originalArray[i]);
-			}
+        // Handle arrays (both object arrays like String[] and primitive arrays like
+        // int[], float[], double[], byte[], ...). Using java.lang.reflect.Array preserves
+        // the original component type and avoids casting a primitive array to Object[],
+        // which throws ClassCastException (e.g. [F cannot be cast to [Ljava.lang.Object;).
+        // Primitive elements are immutable and returned as-is by the recursive call, so a
+        // single element-wise loop is a correct deep copy for both array kinds.
+        if (value.getClass().isArray()) {
+            int length = java.lang.reflect.Array.getLength(value);
+            Object copyArray = java.lang.reflect.Array.newInstance(value.getClass().getComponentType(), length);
+            for (int i = 0; i < length; i++) {
+                java.lang.reflect.Array.set(copyArray, i, deepCopyValue(java.lang.reflect.Array.get(value, i)));
+            }
 			return copyArray;
 		}
 
