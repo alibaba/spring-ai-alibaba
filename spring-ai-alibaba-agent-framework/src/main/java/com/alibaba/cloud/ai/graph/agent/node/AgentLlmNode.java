@@ -508,7 +508,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
         if (requestOptions != null) {
 			promptSpec.options(requestOptions.mutate().toolCallbacks(filteredToolCallbacks));
         } else if (!filteredToolCallbacks.isEmpty()) {
-			promptSpec.toolCallbacks(filteredToolCallbacks.toArray(ToolCallback[]::new));
+			promptSpec.tools(filteredToolCallbacks);
         }
 
         return promptSpec;

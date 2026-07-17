@@ -124,7 +124,7 @@ public class AgentNode implements NodeAction {
 				try {
 					yield this.retryTemplate.execute(() -> {
 						String content = this.chatClient.prompt(systemPrompt)
-							.toolCallbacks(this.toolCallbacks)
+							.tools(this.toolCallbacks)
 							.user(userPrompt)
 							.call()
 							.content();

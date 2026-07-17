@@ -188,7 +188,7 @@ public class LlmNode implements NodeAction {
 		augmentUserMessage(outputSchema);
 
 		ChatClient.ChatClientRequestSpec chatClientRequestSpec = chatClient.prompt()
-				.toolCallbacks(toolCallbacks)
+				.tools(toolCallbacks)
 				.messages(messages)
 				.advisors(advisors);
 
