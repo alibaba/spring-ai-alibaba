@@ -330,6 +330,7 @@
                 </executions>
                 <configuration>
                     <mainClass>com.alibaba.cloud.ai.studio.admin.SaaStudioAdmin</mainClass>
+                    <skip>false</skip>
                 </configuration>
             </plugin>
             <plugin>

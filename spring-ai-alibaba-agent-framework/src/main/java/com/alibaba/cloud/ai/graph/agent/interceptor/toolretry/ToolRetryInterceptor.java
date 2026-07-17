@@ -45,7 +45,7 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 
 	private static final Logger log = LoggerFactory.getLogger(ToolRetryInterceptor.class);
 
-	private final int maxRetries;
+	private final int maxAttempts;
 	private final Set<String> toolNames;
 	private final Predicate<Exception> retryOn;
 	private final OnFailureBehavior onFailure;
@@ -56,7 +56,7 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 	private final boolean jitter;
 
 	private ToolRetryInterceptor(Builder builder) {
-		this.maxRetries = builder.maxRetries;
+		this.maxAttempts = builder.maxAttempts;
 		this.toolNames = builder.toolNames != null ? new HashSet<>(builder.toolNames) : null;
 		this.retryOn = builder.retryOn;
 		this.onFailure = builder.onFailure;
@@ -81,11 +81,17 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 		}
 
 		Exception lastException = null;
-		int attempt = 0;
 
-		while (attempt <= maxRetries) {
+		// maxAttempts counts the initial call plus retries and is always >= 1, so the tool is executed at least once and is never skipped.
+		for (int attempt = 0; attempt < maxAttempts; attempt++) {
 			try {
-				return handler.call(request);
+				ToolCallResponse response = handler.call(request);
+				if (ToolCallResponse.SUCCESS_STATUS.equals(response.getStatus())) {
+					return response;
+				}
+				// A non-success status is treated as a failure so it can be retried.
+				String result = response.getResult() != null ? response.getResult() : "unknown error";
+				throw new RuntimeException(result);
 			}
 			catch (Exception e) {
 				lastException = e;
@@ -96,15 +102,15 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 					throw e;
 				}
 
-				if (attempt == maxRetries) {
-					// Max retries reached
+				// Last attempt failed: Stop the operation
+				if (attempt >= maxAttempts - 1) {
 					break;
 				}
 
 				// Calculate delay
 				long delay = calculateDelay(attempt);
 				log.warn("Tool '{}' failed (attempt {}/{}), retrying in {}ms: {}",
-						toolName, attempt + 1, maxRetries + 1, delay, e.getMessage());
+						toolName, attempt + 1, maxAttempts, delay, e.getMessage());
 
 				try {
 					Thread.sleep(delay);
@@ -113,22 +119,20 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 					Thread.currentThread().interrupt();
 					throw new RuntimeException("Retry interrupted", ie);
 				}
-
-				attempt++;
 			}
 		}
 
 		// All retries exhausted
 		if (onFailure == OnFailureBehavior.RAISE) {
-			throw new RuntimeException("Tool call failed after " + (maxRetries + 1) + " attempts", lastException);
+			throw new RuntimeException("Tool call failed after " + maxAttempts + " attempts", lastException);
 		}
 		else {
 			// Return error message as tool response
 			String errorMessage = errorFormatter != null
 					? errorFormatter.apply(lastException)
-					: "Tool call failed after " + (maxRetries + 1) + " attempts: " + lastException.getMessage();
+					: "Tool call failed after " + maxAttempts + " attempts: " + lastException.getMessage();
 
-			log.error("Tool '{}' failed after {} attempts: {}", toolName, maxRetries + 1, lastException.getMessage());
+			log.error("Tool '{}' failed after {} attempts: {}", toolName, maxAttempts, lastException.getMessage());
 			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), errorMessage);
 		}
 	}
@@ -157,7 +161,8 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 	}
 
 	public static class Builder {
-		private int maxRetries = 2;
+		// Total number of attempts including the first call.
+		private int maxAttempts = 3;
 		private Set<String> toolNames;
 		private Predicate<Exception> retryOn = e -> true; // Retry on all exceptions by default
 		private OnFailureBehavior onFailure = OnFailureBehavior.RETURN_MESSAGE;
@@ -167,11 +172,29 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 		private long maxDelayMs = 60000;
 		private boolean jitter = true;
 
+		/**
+		 * Set the maximum number of attempts, including the first call. Must be >= 1.
+		 * @param maxAttempts total attempts (initial call plus retries)
+		 */
+		public Builder maxAttempts(int maxAttempts) {
+			if (maxAttempts < 1) {
+				throw new IllegalArgumentException("maxAttempts must be >= 1");
+			}
+			this.maxAttempts = maxAttempts;
+			return this;
+		}
+
+		/**
+		 * Set the maximum number of retries (excluding the first call).
+		 * @param maxRetries number of retries; total attempts will be {@code maxRetries + 1}
+		 * @deprecated use {@link #maxAttempts(int)} instead, which counts the initial call
+		 */
+		@Deprecated
 		public Builder maxRetries(int maxRetries) {
 			if (maxRetries < 0) {
 				throw new IllegalArgumentException("maxRetries must be >= 0");
 			}
-			this.maxRetries = maxRetries;
+			this.maxAttempts = maxRetries + 1;
 			return this;
 		}
 

@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import com.alibaba.cloud.ai.dashscope.chat.MessageFormat;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -35,8 +36,10 @@ import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
@@ -52,6 +55,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -129,6 +133,10 @@ class ReactAgentTest {
 		ReactAgent agent = ReactAgent.builder().name("single_agent").model(chatModel).saver(new MemorySaver())
 				.build();
 		AssistantMessage message = agent.call("帮我写一篇100字左右散文。");
+		assertNotNull(message, "Message should not be null");
+		assertNotNull(message.getText(), "Message text should not be null");
+
+		System.out.println("=== Text message ===");
 		System.out.println(message.getText());
 	}
 
@@ -264,8 +272,28 @@ class ReactAgentTest {
 	 * 使用getAndCompileGraph方法获取并打印ReactAgent的内部状态图
 	 */
 	private void printReactAgentGraph(ReactAgent agent) {
+
+		assertNotNull(agent, "Agent should not be null");
+
 		GraphRepresentation representation = agent.getAndCompileGraph().stateGraph.getGraph(GraphRepresentation.Type.PLANTUML);
+
+		assertNotNull(representation, "representation should not be null");
+		assertNotNull(representation.content(), "content should not be null");
+
+		System.out.println("=== ReactAgentGraph ===");
 		System.out.println(representation.content());
+	}
+
+	@Test
+	public void testPrintReactAgentGraph() {
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("simple_agent")
+				.model(chatModel)
+				.saver(new MemorySaver())
+				.build();
+
+		printReactAgentGraph(agent);
 	}
 
 	@Test
@@ -304,6 +332,8 @@ class ReactAgentTest {
 				.build();
 
 		AssistantMessage assistantMessage = agent.call("帮我写一首关于春天的现代诗。");
+
+		assertNotNull(assistantMessage, "AssistantMessage should not be null");
 		System.out.println(assistantMessage.getText());
 	}
 
@@ -478,6 +508,7 @@ class ReactAgentTest {
 
 		// Verify serializer is set
 		StateGraph stateGraph = agent.getStateGraph();
+		assertNotNull(stateGraph, "StateGraph should not be null");
 		StateSerializer graphSerializer = stateGraph.getStateSerializer();
 		assertInstanceOf(SpringAIJacksonStateSerializer.class, graphSerializer);
 
@@ -906,10 +937,10 @@ class ReactAgentTest {
 			// Verify executor is set and passed to RunnableConfig using reflection
 			RunnableConfig config = buildNonStreamConfig(agent, null);
 			assertNotNull(config, "RunnableConfig should not be null");
-			
+
 			assertTrue(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
 				"Default parallel executor should be present in metadata");
-			assertEquals(customExecutor, 
+			assertEquals(customExecutor,
 				config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).get(),
 				"Executor in metadata should match configured executor");
 		} finally {
@@ -933,7 +964,7 @@ class ReactAgentTest {
 		// Verify no executor in metadata when not configured
 		RunnableConfig config = buildNonStreamConfig(agent, null);
 		assertNotNull(config, "RunnableConfig should not be null");
-		
+
 		assertFalse(config.metadata(RunnableConfig.DEFAULT_PARALLEL_EXECUTOR_KEY).isPresent(),
 			"Default parallel executor should not be present when not configured");
 	}
@@ -1082,4 +1113,39 @@ class ReactAgentTest {
 		assertNotNull(agent2);
 	}
 
+	@Test
+	void testVisionReact() throws GraphRunnerException {
+		DashScopeChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build())
+				.defaultOptions(DashScopeChatOptions.builder()
+						.model("qwen3.6-flash")
+						.multiModel(true)
+						.build())
+				.build();
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("vision-model-agent")
+				.model(chatModel)
+				.systemPrompt("你是一个耐心的助手，回答要简短。")
+				.build();
+
+		Media media = Media.builder()
+				.mimeType(Media.Format.IMAGE_PNG)
+				.data(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png"))
+				.build();
+
+		UserMessage userMessage = UserMessage
+				.builder()
+				.text("图中描绘的是什么景象?")
+				.media(media)
+				.metadata(Map.of("messageFormat", MessageFormat.IMAGE))
+				.build();
+
+		List<String> results = agent.streamMessages(userMessage)
+				.map(Message::getText)
+				.collectList()
+				.block();
+		assertNotNull(results);
+        assertFalse(results.isEmpty());
+	}
 }

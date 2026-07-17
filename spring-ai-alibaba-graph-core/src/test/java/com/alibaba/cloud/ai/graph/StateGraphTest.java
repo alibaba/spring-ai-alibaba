@@ -1760,6 +1760,48 @@ public class StateGraphTest {
 	}
 
 	/**
+	 * Tests addParallelConditionalEdges with divergent successors.
+	 * Verifies that compile fails fast when conditional parallel branches do not
+	 * converge to one immediate target.
+	 */
+	@Test
+	public void testAddParallelConditionalEdgesWithDifferentImmediateSuccessors() throws Exception {
+		StateGraph workflow = new StateGraph(() -> {
+			Map<String, KeyStrategy> keyStrategyMap = new HashMap<>();
+			keyStrategyMap.put("messages", new AppendStrategy());
+			return keyStrategyMap;
+		});
+
+		workflow.addNode("start", node_async(state -> Map.of("messages", "start")))
+				.addNode("conditional_node", node_async(state -> Map.of("messages", "conditional")))
+				.addNode("B", node_async(state -> Map.of("messages", "B")))
+				.addNode("C", node_async(state -> Map.of("messages", "C")))
+				.addNode("D", node_async(state -> Map.of("messages", "D")))
+				.addNode("C1", node_async(state -> Map.of("messages", "C1")))
+				.addNode("E", node_async(state -> Map.of("messages", "E")));
+
+		workflow.addParallelConditionalEdges(
+				"conditional_node",
+				AsyncMultiCommandAction.node_async((state, config) -> new MultiCommand(List.of("route_b", "route_c"))),
+				Map.of("route_b", "B", "route_c", "C"));
+
+		workflow.addEdge(START, "start")
+				.addEdge("start", "conditional_node")
+				.addEdge("B", "D")
+				.addEdge("D", "E")
+				.addEdge("C", "C1")
+				.addEdge("C1", "E")
+				.addEdge("E", END);
+
+		GraphStateException exception = assertThrows(GraphStateException.class, () -> workflow.compile());
+		String message = exception.getMessage();
+		assertTrue(message.contains("parallel node [conditional_node] must have only one target"),
+				"Expected compile error for divergent immediate successors, but got: " + message);
+		assertTrue(message.indexOf("C1") < message.indexOf("D"),
+				"Expected divergent targets to be reported in sorted order, but got: " + message);
+	}
+
+	/**
 	 * Tests a simple A->B->C graph flow with Long type value in overall state.
 	 * NodeA increments the counter by 100, NodeB multiplies it by 2.
 	 * NodeC implements InterruptableAction to check if result exceeds threshold.

@@ -42,6 +42,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
@@ -108,6 +109,8 @@ public class ReactAgent extends BaseAgent {
 
 	private List<ToolInterceptor> toolInterceptors;
 
+	private List<StreamingModelInterceptor> streamingInterceptors;
+
 	private String instruction;
 
 	private StateSerializer stateSerializer;
@@ -125,6 +128,7 @@ public class ReactAgent extends BaseAgent {
 		this.hooks = builder.hooks;
 		this.modelInterceptors = builder.modelInterceptors;
 		this.toolInterceptors = builder.toolInterceptors;
+		this.streamingInterceptors = builder.streamingInterceptors;
 		this.includeContents = builder.includeContents;
 		this.inputSchema = builder.inputSchema;
 		this.inputType = builder.inputType;
@@ -148,6 +152,9 @@ public class ReactAgent extends BaseAgent {
 		}
 		if (mergedToolInterceptors != null && !mergedToolInterceptors.isEmpty()) {
 			this.toolNode.setToolInterceptors(mergedToolInterceptors);
+		}
+		if (this.streamingInterceptors != null && !this.streamingInterceptors.isEmpty()) {
+			this.llmNode.setStreamingInterceptors(this.streamingInterceptors);
 		}
 
         // Set tools flag if tool interceptors are present.

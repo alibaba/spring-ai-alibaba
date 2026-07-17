@@ -120,7 +120,7 @@ public class NacosA2aProperties implements EnvironmentAware {
 		return serverAddr;
 	}
 
-	void setServerAddr(String serverAddr) {
+	public void setServerAddr(String serverAddr) {
 		this.serverAddr = serverAddr;
 	}
 

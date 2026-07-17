@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.checkpoint.config;
 
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.common.LatestCheckpointCacheConfigurable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,12 +25,21 @@ public class SaverConfig {
 
 	private final List<BaseCheckpointSaver> savers = new ArrayList<>();
 
+	private boolean latestCheckpointCacheEnabled = false;
+
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	public SaverConfig register(BaseCheckpointSaver saver) {
 		savers.add(saver);
+		applyLatestCheckpointCacheConfig(saver);
+		return this;
+	}
+
+	public SaverConfig latestCheckpointCacheEnabled(boolean enabled) {
+		this.latestCheckpointCacheEnabled = enabled;
+		applyLatestCheckpointCacheConfig();
 		return this;
 	}
 
@@ -47,6 +57,20 @@ public class SaverConfig {
 		return savers;
 	}
 
+	public boolean latestCheckpointCacheEnabled() {
+		return latestCheckpointCacheEnabled;
+	}
+
+	private void applyLatestCheckpointCacheConfig() {
+		savers.forEach(this::applyLatestCheckpointCacheConfig);
+	}
+
+	private void applyLatestCheckpointCacheConfig(BaseCheckpointSaver saver) {
+		if (saver instanceof LatestCheckpointCacheConfigurable configurable) {
+			configurable.latestCheckpointCacheEnabled(latestCheckpointCacheEnabled);
+		}
+	}
+
 	public static class Builder {
 
 		private final SaverConfig config;
@@ -57,6 +81,11 @@ public class SaverConfig {
 
 		public Builder register(BaseCheckpointSaver saver) {
 			this.config.register(saver);
+			return this;
+		}
+
+		public Builder latestCheckpointCacheEnabled(boolean enabled) {
+			this.config.latestCheckpointCacheEnabled(enabled);
 			return this;
 		}
 

@@ -49,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class HttpNodeTest {
 
@@ -279,6 +280,24 @@ public class HttpNodeTest {
 		assertEquals(HttpStatus.OK.value(), messages.get("status"));
 
 		assertEquals(3, mockWebServer.getRequestCount());
+	}
+
+	@Test
+	void testShouldNotRetryWhenRetryDisabled() {
+		mockWebServer.enqueue(new MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
+		mockWebServer.enqueue(new MockResponse().setBody("OK").setHeader(HttpHeaders.CONTENT_TYPE, "text/plain"));
+
+		String url = mockWebServer.url("/retry-disabled").toString();
+		HttpNode node = HttpNode.builder()
+				.webClient(webClient)
+				.method(HttpMethod.POST)
+				.url(url)
+				.retryConfig(new RetryConfig(3, 100, false))
+				.build();
+
+		assertThrows(Exception.class, () -> node.apply(new OverAllState()));
+
+		assertEquals(1, mockWebServer.getRequestCount());
 	}
 
 	@Test
