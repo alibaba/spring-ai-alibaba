@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.a2a.registry.nacos.discovery;
 import com.alibaba.cloud.ai.graph.agent.a2a.AgentCardWrapper;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -53,7 +54,11 @@ public class NacosAgentCardWrapper extends AgentCardWrapper {
 		if (CollectionUtils.isEmpty(getAgentCard().additionalInterfaces())) {
 			return super.url();
 		}
-		List<AgentInterface> agentInterfaces = getAgentCard().additionalInterfaces().stream().filter(agentInterface -> getAgentCard().preferredTransport().equals(agentInterface.transport())).toList();
+		List<AgentInterface> agentInterfaces = getAgentCard().additionalInterfaces()
+			.stream()
+			.filter(agentInterface -> agentInterface != null
+					&& Objects.equals(getAgentCard().preferredTransport(), agentInterface.transport()))
+			.toList();
 		if (CollectionUtils.isEmpty(agentInterfaces)) {
 			return super.url();
 		}

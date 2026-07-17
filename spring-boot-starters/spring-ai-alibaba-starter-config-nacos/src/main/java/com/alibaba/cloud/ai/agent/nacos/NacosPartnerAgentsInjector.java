@@ -29,15 +29,17 @@ public class NacosPartnerAgentsInjector {
 
 	private static final Logger logger = LoggerFactory.getLogger(NacosPartnerAgentsInjector.class);
 
+	private static final String PARTNER_AGENTS_DATA_ID = "partner-agents.json";
+
 	public static void registry(AgentLlmNode llmNode, AgentToolNode toolNode, NacosOptions nacosOptions, String agentName) {
 
 		try {
 			nacosOptions.getNacosConfigService()
-					.addListener("parterner-agents.json", "ai-agent-" + agentName, new AbstractListener() {
+					.addListener(PARTNER_AGENTS_DATA_ID, "ai-agent-" + agentName, new AbstractListener() {
 						@Override
 						public void receiveConfigInfo(String configInfo) {
 							PartnerAgentsVO partnerAgentsVO = JSON.parseObject(configInfo, PartnerAgentsVO.class);
-							System.out.println(partnerAgentsVO);
+							logger.debug("Received partner agents config: {}", partnerAgentsVO);
 						}
 					});
 		}
@@ -50,7 +52,7 @@ public class NacosPartnerAgentsInjector {
 	public static PartnerAgentsVO getPartnerVO(NacosOptions nacosOptions, String agentName) {
 		try {
 			String config = nacosOptions.getNacosConfigService()
-					.getConfig("parterner-agents.json", "ai-agent-" + agentName, 3000L);
+					.getConfig(PARTNER_AGENTS_DATA_ID, "ai-agent-" + agentName, 3000L);
 			return JSON.parseObject(config, PartnerAgentsVO.class);
 		}
 		catch (NacosException e) {
