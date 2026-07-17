@@ -60,6 +60,9 @@
         <logback.version>1.5.8</logback.version>
         <commons-lang3.version>3.11</commons-lang3.version>
         <commons-collections.version>3.2.2</commons-collections.version>
+        <!-- Align commons-io with the version required by POI/Tika (see #4453).
+             swagger-parser pulls in 2.15.1, which lacks BoundedInputStream.builder(). -->
+        <commons-io.version>2.18.0</commons-io.version>
 
         <!-- 搜索引擎 -->
         <elasticsearch.version>8.13.4</elasticsearch.version>
@@ -240,6 +243,14 @@
                 <groupId>com.networknt</groupId>
                 <artifactId>json-schema-validator</artifactId>
                 <version>${json-schema-validator.version}</version>
+            </dependency>
+
+            <!-- Force commons-io to the version POI/Tika need (#4453).
+                 Otherwise swagger-parser's 2.15.1 wins and lacks BoundedInputStream.builder(). -->
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
             </dependency>
 
             <!-- SpringDoc OpenAPI -->
