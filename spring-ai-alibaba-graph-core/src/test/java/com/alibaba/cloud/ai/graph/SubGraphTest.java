@@ -642,6 +642,43 @@ public class SubGraphTest {
 				.block();
 	}
 
+	@Test
+	void compiledSubgraphsShouldNotReappendInheritedState() throws Exception {
+		KeyStrategyFactory keyStrategyFactory = () -> Map.of("output", new AppendStrategy());
+
+		CompiledGraph subGraphA = new StateGraph(keyStrategyFactory)
+			.addNode("a", node_async(state -> Map.of("output", "a")))
+			.addNode("b", node_async(state -> Map.of("output", "b")))
+			.addEdge(START, "a")
+			.addEdge("a", "b")
+			.addEdge("b", END)
+			.compile();
+
+		CompiledGraph subGraphB = new StateGraph(keyStrategyFactory)
+			.addNode("c", node_async(state -> Map.of("output", "c")))
+			.addNode("d", node_async(state -> Map.of("output", "d")))
+			.addEdge(START, "c")
+			.addEdge("c", "d")
+			.addEdge("d", END)
+			.compile();
+
+		OverAllState state = new StateGraph(keyStrategyFactory)
+			.addNode("a", node_async(currentState -> Map.of("output", "a")))
+			.addNode("subGraphA", subGraphA)
+			.addNode("c", node_async(currentState -> Map.of("output", "c")))
+			.addNode("subGraphB", subGraphB)
+			.addEdge(START, "a")
+			.addEdge("a", "subGraphA")
+			.addEdge("subGraphA", "c")
+			.addEdge("c", "subGraphB")
+			.addEdge("subGraphB", END)
+			.compile()
+			.invoke(Map.of())
+			.orElseThrow();
+
+		assertEquals(List.of("a", "a", "b", "c", "c", "d"), state.value("output").orElseThrow());
+	}
+
     @Test
     public void testMultiSubgraphKeyStrategyMerge() throws Exception {
         // Subgraph A: provides the strategy for aKey
