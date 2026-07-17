@@ -23,7 +23,7 @@ package com.alibaba.cloud.ai.a2a.core.constants;
  */
 public class A2aConstants {
 
-	public static final String DEFAULT_A2A_PROTOCOL_VERSION = "0.2.5";
+	public static final String DEFAULT_A2A_PROTOCOL_VERSION = "1.0";
 
 	public static final String DEFAULT_AGENT_VERSION = "1.0.0";
 

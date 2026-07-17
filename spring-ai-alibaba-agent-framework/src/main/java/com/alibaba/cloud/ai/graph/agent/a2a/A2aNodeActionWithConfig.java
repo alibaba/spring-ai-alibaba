@@ -52,12 +52,15 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.a2aproject.sdk.spec.Message;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Schedulers;
 
 import static java.lang.String.format;
+import static org.a2aproject.sdk.spec.A2AMethods.SEND_MESSAGE_METHOD;
+import static org.a2aproject.sdk.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
 
 public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
@@ -546,20 +549,30 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 			throw new IllegalStateException("Result is null, cannot extract response text");
 		}
 
-		if ("status-update".equals(result.get("kind"))) {
+		for (String wrapperKey : List.of("task", "message", "statusUpdate", "artifactUpdate")) {
+			Object wrappedResult = result.get(wrapperKey);
+			if (wrappedResult instanceof Map<?, ?>) {
+				return extractResponseText((Map<String, Object>) wrappedResult);
+			}
+		}
+
+		if ("status-update".equals(result.get("kind"))
+				|| (result.containsKey("taskId") && result.containsKey("status"))) {
 			Map<String, Object> status = (Map<String, Object>) result.get("status");
 			if (status != null) {
 				String state = (String) status.get("state");
-				if ("completed".equals(state)) {
+				String normalizedState = state != null && state.startsWith("TASK_STATE_")
+						? state.substring("TASK_STATE_".length()).toLowerCase() : state;
+				if ("completed".equals(normalizedState)) {
 					return "";
 				}
-				else if ("processing".equals(state)) {
+				else if ("processing".equals(normalizedState)) {
 					return "";
 				}
-				else if ("failed".equals(state)) {
+				else if ("failed".equals(normalizedState)) {
 					return "";
 				}
-				else if ("working".equals(state)) {
+				else if ("working".equals(normalizedState)) {
 					Map<String, Object> message = (Map<String, Object>) status.get("message");
 					if (message != null && message.containsKey("parts")) {
 						List<Object> parts = (List<Object>) message.get("parts");
@@ -575,11 +588,11 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 					}
 					return "";
 				}
-				else if ("submitted".equals(state)) {
+				else if ("submitted".equals(normalizedState)) {
 					// submitted is the initial state when a task is created, should be ignored
 					return "";
 				}
-				else if ("canceled".equals(state)) {
+				else if ("canceled".equals(normalizedState)) {
 					// canceled state should be ignored
 					return "";
 				}
@@ -590,7 +603,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 			return "";
 		}
 
-		if ("artifact-update".equals(result.get("kind"))) {
+		if ("artifact-update".equals(result.get("kind")) || result.containsKey("artifact")) {
 			Map<String, Object> artifact = (Map<String, Object>) result.get("artifact");
 			if (artifact != null && artifact.containsKey("parts")) {
 				List<Object> parts = (List<Object>) artifact.get("parts");
@@ -679,13 +692,12 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		String id = UUID.randomUUID().toString();
 		String messageId = UUID.randomUUID().toString().replace("-", "");
 
-		Map<String, Object> part = Map.of("kind", "text", "text", text);
+		Map<String, Object> part = Map.of("text", text);
 
 		Map<String, Object> message = new HashMap<>();
-		message.put("kind", "message");
 		message.put("messageId", messageId);
 		message.put("parts", List.of(part));
-		message.put("role", "user");
+		message.put("role", Message.Role.ROLE_USER.name());
 
 		Map<String, Object> params = new HashMap<>();
 		params.put("message", message);
@@ -699,7 +711,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		Map<String, Object> root = new HashMap<>();
 		root.put("id", id);
 		root.put("jsonrpc", "2.0");
-		root.put("method", "message/send");
+		root.put("method", SEND_MESSAGE_METHOD);
 		root.put("params", params);
 
 		try {
@@ -711,7 +723,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	}
 
 	/**
-	 * Build the JSON-RPC streaming request payload (method: message/stream).
+	 * Build the JSON-RPC streaming request payload (method: SendStreamingMessage).
 	 * @param state Parent state
 	 * @return JSON string payload for streaming
 	 */
@@ -722,13 +734,12 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		String id = UUID.randomUUID().toString();
 		String messageId = UUID.randomUUID().toString().replace("-", "");
 
-		Map<String, Object> part = Map.of("kind", "text", "text", text);
+		Map<String, Object> part = Map.of("text", text);
 
 		Map<String, Object> message = new HashMap<>();
-		message.put("kind", "message");
 		message.put("messageId", messageId);
 		message.put("parts", List.of(part));
-		message.put("role", "user");
+		message.put("role", Message.Role.ROLE_USER.name());
 
 		Map<String, Object> params = new HashMap<>();
 		params.put("message", message);
@@ -742,7 +753,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		Map<String, Object> root = new HashMap<>();
 		root.put("id", id);
 		root.put("jsonrpc", "2.0");
-		root.put("method", "message/stream");
+		root.put("method", SEND_STREAMING_MESSAGE_METHOD);
 		root.put("params", params);
 
 		try {
@@ -771,8 +782,6 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	 */
 	private String sendMessageToServer(AgentCardWrapper agentCard, String requestPayload) throws Exception {
 		String baseUrl = resolveAgentBaseUrl(agentCard);
-		System.out.println(baseUrl);
-		System.out.println(requestPayload);
 		if (baseUrl == null || baseUrl.isBlank()) {
 			throw new IllegalStateException("AgentCard.url is empty");
 		}

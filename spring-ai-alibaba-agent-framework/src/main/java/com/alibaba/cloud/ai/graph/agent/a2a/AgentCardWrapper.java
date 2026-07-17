@@ -19,12 +19,13 @@ package com.alibaba.cloud.ai.graph.agent.a2a;
 import java.util.List;
 import java.util.Map;
 
-import io.a2a.spec.AgentCapabilities;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.AgentInterface;
-import io.a2a.spec.AgentProvider;
-import io.a2a.spec.AgentSkill;
-import io.a2a.spec.SecurityScheme;
+import org.a2aproject.sdk.spec.AgentCapabilities;
+import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentInterface;
+import org.a2aproject.sdk.spec.AgentProvider;
+import org.a2aproject.sdk.spec.AgentSkill;
+import org.a2aproject.sdk.spec.Legacy_0_3_AgentInterface;
+import org.a2aproject.sdk.spec.SecurityScheme;
 
 /**
  * The Wrapper of AgentCard.
@@ -48,7 +49,7 @@ public class AgentCardWrapper {
 	}
 
 	public String url() {
-		return this.agentCard.url();
+		return preferredInterface().url();
 	}
 
 	public AgentProvider provider() {
@@ -80,7 +81,7 @@ public class AgentCardWrapper {
 	}
 
 	public boolean supportsAuthenticatedExtendedCard() {
-		return this.agentCard.supportsAuthenticatedExtendedCard();
+		return this.agentCard.capabilities().extendedAgentCard();
 	}
 
 	public Map<String, SecurityScheme> securitySchemes() {
@@ -88,7 +89,10 @@ public class AgentCardWrapper {
 	}
 
 	public List<Map<String, List<String>>> security() {
-		return this.agentCard.security();
+		if (this.agentCard.securityRequirements() == null) {
+			return List.of();
+		}
+		return this.agentCard.securityRequirements().stream().map(requirement -> requirement.schemes()).toList();
 	}
 
 	public String iconUrl() {
@@ -96,15 +100,24 @@ public class AgentCardWrapper {
 	}
 
 	public List<AgentInterface> additionalInterfaces() {
-		return this.agentCard.additionalInterfaces();
+		if (this.agentCard.supportedInterfaces() != null && !this.agentCard.supportedInterfaces().isEmpty()) {
+			return this.agentCard.supportedInterfaces();
+		}
+		if (this.agentCard.additionalInterfaces() == null) {
+			return List.of();
+		}
+		return this.agentCard.additionalInterfaces()
+			.stream()
+			.map(agentInterface -> new AgentInterface(agentInterface.transport(), agentInterface.url()))
+			.toList();
 	}
 
 	public String preferredTransport() {
-		return this.agentCard.preferredTransport();
+		return preferredInterface().protocolBinding();
 	}
 
 	public String protocolVersion() {
-		return this.agentCard.protocolVersion();
+		return preferredInterface().protocolVersion();
 	}
 
 	public AgentCard getAgentCard() {
@@ -113,5 +126,22 @@ public class AgentCardWrapper {
 
 	public void setAgentCard(AgentCard agentCard) {
 		this.agentCard = agentCard;
+	}
+
+	private AgentInterface preferredInterface() {
+		if (this.agentCard.supportedInterfaces() != null && !this.agentCard.supportedInterfaces().isEmpty()) {
+			return this.agentCard.supportedInterfaces().get(0);
+		}
+		if (this.agentCard.url() != null) {
+			String transport = this.agentCard.preferredTransport() == null ? "JSONRPC"
+					: this.agentCard.preferredTransport();
+			return new AgentInterface(transport, this.agentCard.url());
+		}
+		List<Legacy_0_3_AgentInterface> additionalInterfaces = this.agentCard.additionalInterfaces();
+		if (additionalInterfaces != null && !additionalInterfaces.isEmpty()) {
+			Legacy_0_3_AgentInterface agentInterface = additionalInterfaces.get(0);
+			return new AgentInterface(agentInterface.transport(), agentInterface.url());
+		}
+		throw new IllegalStateException("Agent card does not declare a supported interface");
 	}
 }

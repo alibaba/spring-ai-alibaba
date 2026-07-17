@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.service.NacosA2aOperationService;
 import com.alibaba.cloud.ai.a2a.core.registry.AgentRegistry;
 
-import io.a2a.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentCard;
 
 /**
  * The Agent registry for Nacos.

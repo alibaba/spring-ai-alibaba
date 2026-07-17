@@ -24,8 +24,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.alibaba.nacos.common.utils.CollectionUtils;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.AgentInterface;
+import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentInterface;
 
 /**
  * Spring AI Alibaba Agent Card Wrapper for Nacos.
@@ -43,21 +43,22 @@ public class NacosAgentCardWrapper extends AgentCardWrapper {
 	}
 
 	private void shuffleStartIndex() {
-		if (CollectionUtils.isNotEmpty(getAgentCard().additionalInterfaces())) {
-			int shuffleIndex = ThreadLocalRandom.current().nextInt(getAgentCard().additionalInterfaces().size());
+		if (CollectionUtils.isNotEmpty(getAgentCard().supportedInterfaces())) {
+			int shuffleIndex = ThreadLocalRandom.current().nextInt(getAgentCard().supportedInterfaces().size());
 			pollingIndex.set(shuffleIndex);
 		}
 	}
 
 	@Override
 	public String url() {
-		if (CollectionUtils.isEmpty(getAgentCard().additionalInterfaces())) {
+		if (CollectionUtils.isEmpty(getAgentCard().supportedInterfaces())) {
 			return super.url();
 		}
-		List<AgentInterface> agentInterfaces = getAgentCard().additionalInterfaces()
+		String preferredTransport = super.preferredTransport();
+		List<AgentInterface> agentInterfaces = getAgentCard().supportedInterfaces()
 			.stream()
 			.filter(agentInterface -> agentInterface != null
-					&& Objects.equals(getAgentCard().preferredTransport(), agentInterface.transport()))
+					&& Objects.equals(preferredTransport, agentInterface.protocolBinding()))
 			.toList();
 		if (CollectionUtils.isEmpty(agentInterfaces)) {
 			return super.url();

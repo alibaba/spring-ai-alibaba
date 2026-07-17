@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.a2a;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -25,7 +26,7 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 
-import io.a2a.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentCard;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -38,6 +39,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.TypeReference;
+import org.a2aproject.sdk.grpc.utils.JSONRPCUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -260,6 +265,52 @@ class A2aNodeActionWithConfigTests {
 
 		String response = invokeExtractResponseText(result);
 		assertEquals("This is the artifact response", response);
+	}
+
+	@Test
+	void extractResponseText_withV1TaskResult_extractsArtifactText() throws Exception {
+		Map<String, Object> task = Map.of("status", Map.of("state", "TASK_STATE_COMPLETED"), "artifacts",
+				List.of(Map.of("parts", List.of(Map.of("text", "A2A v1 response")))));
+
+		String response = invokeExtractResponseText(Map.of("task", task));
+
+		assertEquals("A2A v1 response", response);
+	}
+
+	@Test
+	void extractResponseText_withV1ArtifactUpdate_extractsArtifactText() throws Exception {
+		Map<String, Object> update = Map.of("artifact",
+				Map.of("parts", List.of(Map.of("text", "A2A v1 streaming response"))));
+
+		String response = invokeExtractResponseText(Map.of("artifactUpdate", update));
+
+		assertEquals("A2A v1 streaming response", response);
+	}
+
+	@Test
+	void buildSendRequests_useV1MethodAndMessageShape() throws Exception {
+		assertV1RequestShape("buildSendMessageRequest", "SendMessage");
+		assertV1RequestShape("buildSendStreamingMessageRequest", "SendStreamingMessage");
+	}
+
+	@SuppressWarnings("unchecked")
+	private void assertV1RequestShape(String methodName, String expectedMethod) throws Exception {
+		Method method = A2aNodeActionWithConfig.class.getDeclaredMethod(methodName, OverAllState.class,
+				RunnableConfig.class);
+		method.setAccessible(true);
+		String payload = (String) method.invoke(this.action, new OverAllState(), RunnableConfig.builder().build());
+		Map<String, Object> request = JSON.parseObject(payload, new TypeReference<Map<String, Object>>() {
+		});
+		Map<String, Object> params = (Map<String, Object>) request.get("params");
+		Map<String, Object> message = (Map<String, Object>) params.get("message");
+		List<Map<String, Object>> parts = (List<Map<String, Object>>) message.get("parts");
+
+		assertEquals(expectedMethod, request.get("method"));
+		assertEquals(expectedMethod, JSONRPCUtils.parseRequestBody(payload, null).getMethod());
+		assertEquals("ROLE_USER", message.get("role"));
+		assertFalse(message.containsKey("kind"));
+		assertFalse(parts.get(0).containsKey("kind"));
+		assertEquals("instruction", parts.get(0).get("text"));
 	}
 
 	private String invokeExtractResponseText(Map<String, Object> result) throws Exception {

@@ -15,11 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import io.a2a.A2A;
-import io.a2a.spec.AgentCard;
+import org.a2aproject.sdk.A2A;
+import org.a2aproject.sdk.spec.AgentCard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,18 +46,14 @@ public class RemoteAgentCardProvider implements AgentCardProvider {
 
 	private AgentCard getAgentCardFromUrl() {
 		try {
-			AgentCard finalAgentCard;
 			AgentCard publicAgentCard = A2A.getAgentCard(this.url);
-			finalAgentCard = publicAgentCard;
-			if (Boolean.TRUE.equals(publicAgentCard.supportsAuthenticatedExtendedCard())) {
-				Map<String, String> authHeaders = new HashMap<>();
-				authHeaders.put("Authorization", "Bearer dummy-token-for-extended-card");
-				finalAgentCard = A2A.getAgentCard(this.url, "/agent/authenticatedExtendedCard", authHeaders);
+			if (publicAgentCard.capabilities().extendedAgentCard()) {
+				logger.info("Agent advertises an authenticated extended card. Using the public card until authenticated client credentials are configured.");
 			}
 			else {
 				logger.info("Public card does not indicate support for an extended card. Using public card.");
 			}
-			return finalAgentCard;
+			return publicAgentCard;
 		}
 		catch (Exception e) {
 			logger.error("Error building agent card", e);

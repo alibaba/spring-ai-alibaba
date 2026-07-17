@@ -17,10 +17,12 @@
 package com.alibaba.cloud.ai.a2a.registry.nacos.utils;
 
 import java.util.List;
+import java.util.Map;
 
 import com.alibaba.nacos.api.ai.model.a2a.AgentCapabilities;
 import com.alibaba.nacos.api.ai.model.a2a.AgentCard;
 import com.alibaba.nacos.api.ai.model.a2a.AgentSkill;
+import com.alibaba.nacos.api.ai.model.a2a.SecurityScheme;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,10 +51,10 @@ class AgentCardConverterUtilTest {
 		agentCard.setDefaultOutputModes(List.of("text/plain"));
 		agentCard.setSupportsAuthenticatedExtendedCard(null);
 
-		io.a2a.spec.AgentCard converted =
+		org.a2aproject.sdk.spec.AgentCard converted =
 				AgentCardConverterUtil.convertToA2aAgentCard(agentCard);
 
-		assertThat(converted.supportsAuthenticatedExtendedCard()).isFalse();
+		assertThat(converted.capabilities().extendedAgentCard()).isFalse();
 	}
 
 	@Test
@@ -61,9 +63,9 @@ class AgentCardConverterUtilTest {
 		// supportsAuthenticatedExtendedCard is left null (default)
 
 		assertThatNoException().isThrownBy(() -> {
-			io.a2a.spec.AgentCard result = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
+			org.a2aproject.sdk.spec.AgentCard result = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
 			assertThat(result).isNotNull();
-			assertThat(result.supportsAuthenticatedExtendedCard()).isFalse();
+			assertThat(result.capabilities().extendedAgentCard()).isFalse();
 		});
 	}
 
@@ -72,9 +74,9 @@ class AgentCardConverterUtilTest {
 		AgentCard nacosCard = createMinimalAgentCard();
 		nacosCard.setSupportsAuthenticatedExtendedCard(true);
 
-		io.a2a.spec.AgentCard result = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
+		org.a2aproject.sdk.spec.AgentCard result = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
 		assertThat(result).isNotNull();
-		assertThat(result.supportsAuthenticatedExtendedCard()).isTrue();
+		assertThat(result.capabilities().extendedAgentCard()).isTrue();
 	}
 
 	@Test
@@ -82,9 +84,9 @@ class AgentCardConverterUtilTest {
 		AgentCard nacosCard = createMinimalAgentCard();
 		nacosCard.setSupportsAuthenticatedExtendedCard(false);
 
-		io.a2a.spec.AgentCard result = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
+		org.a2aproject.sdk.spec.AgentCard result = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
 		assertThat(result).isNotNull();
-		assertThat(result.supportsAuthenticatedExtendedCard()).isFalse();
+		assertThat(result.capabilities().extendedAgentCard()).isFalse();
 	}
 
 	@Test
@@ -94,16 +96,19 @@ class AgentCardConverterUtilTest {
 
 	@Test
 	void convertToNacosAgentCard_withNullSupportsAuthenticatedExtendedCard_shouldNotThrow() {
-		io.a2a.spec.AgentCard a2aCard = new io.a2a.spec.AgentCard.Builder().name("test-agent")
+		org.a2aproject.sdk.spec.AgentCard a2aCard = org.a2aproject.sdk.spec.AgentCard.builder()
+			.name("test-agent")
 			.description("Test Agent")
 			.url("http://localhost:8080")
 			.version("1.0.0")
-			.protocolVersion("0.2")
 			.preferredTransport("JSONRPC")
 			.defaultInputModes(List.of("text/plain"))
 			.defaultOutputModes(List.of("text/plain"))
 			.skills(List.of())
-			.capabilities(new io.a2a.spec.AgentCapabilities.Builder().streaming(false).build())
+			.capabilities(org.a2aproject.sdk.spec.AgentCapabilities.builder().streaming(false).build())
+			.supportedInterfaces(List.of(new org.a2aproject.sdk.spec.AgentInterface("JSONRPC",
+					"http://localhost:8080"),
+					new org.a2aproject.sdk.spec.AgentInterface("GRPC", "http://localhost:8081")))
 			// supportsAuthenticatedExtendedCard not set — defaults to null in record
 			.build();
 
@@ -111,7 +116,32 @@ class AgentCardConverterUtilTest {
 			AgentCard result = AgentCardConverterUtil.convertToNacosAgentCard(a2aCard);
 			assertThat(result).isNotNull();
 			assertThat(result.getSupportsAuthenticatedExtendedCard()).isFalse();
+			assertThat(result.getUrl()).isEqualTo("http://localhost:8080");
+			assertThat(result.getAdditionalInterfaces()).singleElement().satisfies(agentInterface -> {
+				assertThat(agentInterface.getTransport()).isEqualTo("GRPC");
+				assertThat(agentInterface.getUrl()).isEqualTo("http://localhost:8081");
+			});
 		});
+	}
+
+	@Test
+	void shouldRoundTripLegacyApiKeySecurityScheme() {
+		AgentCard nacosCard = createMinimalAgentCard();
+		SecurityScheme apiKey = new SecurityScheme();
+		apiKey.put("type", "apiKey");
+		apiKey.put("in", "header");
+		apiKey.put("name", "X-API-Key");
+		nacosCard.setSecuritySchemes(Map.of("apiKey", apiKey));
+
+		org.a2aproject.sdk.spec.AgentCard a2aCard = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
+
+		assertThat(a2aCard.securitySchemes().get("apiKey"))
+			.isInstanceOf(org.a2aproject.sdk.spec.APIKeySecurityScheme.class);
+		AgentCard roundTripped = AgentCardConverterUtil.convertToNacosAgentCard(a2aCard);
+		assertThat(roundTripped.getSecuritySchemes().get("apiKey"))
+			.containsEntry("type", "apiKey")
+			.containsEntry("in", "header")
+			.containsEntry("name", "X-API-Key");
 	}
 
 	private static AgentCard createMinimalAgentCard() {

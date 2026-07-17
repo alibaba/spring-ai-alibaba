@@ -19,6 +19,7 @@ package com.alibaba.cloud.ai.a2a.core.route;
 import com.alibaba.cloud.ai.a2a.core.server.JsonRpcA2aRequestHandler;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.servlet.function.HandlerFunction;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.RouterFunctions;
@@ -29,9 +30,10 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.function.Consumer;
 
-import io.a2a.spec.JSONRPCResponse;
-import io.a2a.spec.TaskStatusUpdateEvent;
-import io.a2a.util.Utils;
+import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
+import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.A2AResponse;
+import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -43,7 +45,7 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
 
 	private static final Logger log = LoggerFactory.getLogger(JsonRpcA2aRouterProvider.class);
 
-	public static final String DEFAULT_WELL_KNOWN_URL = "/.well-known/agent.json";
+	public static final String DEFAULT_WELL_KNOWN_URL = "/.well-known/agent-card.json";
 
 	public static final String DEFAULT_MESSAGE_URL = "/a2a";
 
@@ -79,7 +81,9 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
 		@Override
 		public ServerResponse handle(ServerRequest request) throws Exception {
 			try {
-				return ServerResponse.ok().body(a2aRequestHandler.getAgentCard());
+				return ServerResponse.ok()
+					.contentType(MediaType.APPLICATION_JSON)
+					.body(JsonUtil.toJson(a2aRequestHandler.getAgentCard()));
 			}
 			catch (Exception e) {
 				log.error("Failed to get Agent Card: {}", e.getMessage());
@@ -115,8 +119,8 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
 			}
 		}
 
-		private ServerResponse buildJsonRpcResponse(Object result) {
-			return ServerResponse.ok().body(result);
+		private ServerResponse buildJsonRpcResponse(Object result) throws JsonProcessingException {
+			return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(JsonUtil.toJson(result));
 		}
 
 		private ServerResponse buildSseResponse(Flux<?> result) {
@@ -128,21 +132,21 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
 					log.debug("Agent SSE connection timeout.");
 				});
 				result.subscribe((Consumer<Object>) o -> {
-					if (o instanceof JSONRPCResponse) {
+					if (o instanceof A2AResponse) {
 						try {
-							String sseBody = Utils.OBJECT_MAPPER.writeValueAsString(o);
+							String sseBody = JsonUtil.toJson(o);
 							if (log.isDebugEnabled()) {
 								log.debug("send sse body to agent: {}", sseBody);
 							}
 							sseBuilder.data(sseBody);
-							if (((JSONRPCResponse<?>) o).getResult() instanceof TaskStatusUpdateEvent) {
-								TaskStatusUpdateEvent event = (TaskStatusUpdateEvent) ((JSONRPCResponse<?>) o).getResult();
+							if (((A2AResponse<?>) o).getResult() instanceof TaskStatusUpdateEvent) {
+								TaskStatusUpdateEvent event = (TaskStatusUpdateEvent) ((A2AResponse<?>) o).getResult();
 								if (event.isFinal()) {
 									sseBuilder.complete();
 								}
 							}
 						}
-						catch (IOException e) {
+						catch (JsonProcessingException | IOException e) {
 							sseBuilder.error(e);
 						}
 					}

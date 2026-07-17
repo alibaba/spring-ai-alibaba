@@ -18,9 +18,9 @@ package com.alibaba.cloud.ai.a2a.registry.nacos.discovery;
 
 import java.util.List;
 
-import io.a2a.spec.AgentCapabilities;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.AgentInterface;
+import org.a2aproject.sdk.spec.AgentCapabilities;
+import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentInterface;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,8 +30,7 @@ class NacosAgentCardWrapperTest {
 
 	@Test
 	void urlShouldFallbackToAgentCardUrlWhenPreferredTransportIsMissing() {
-		AgentCard agentCard = createAgentCard(null,
-				List.of(new AgentInterface("JSONRPC", "http://localhost:8081")));
+		AgentCard agentCard = createAgentCard(null, List.of());
 		NacosAgentCardWrapper wrapper = new NacosAgentCardWrapper(agentCard);
 
 		assertThatNoException().isThrownBy(wrapper::url);
@@ -48,17 +47,16 @@ class NacosAgentCardWrapperTest {
 	}
 
 	private AgentCard createAgentCard(String preferredTransport, List<AgentInterface> additionalInterfaces) {
-		return new AgentCard.Builder().name("test-agent")
+		return AgentCard.builder().name("test-agent")
 			.description("Test Agent")
 			.url("http://localhost:8080")
 			.version("1.0.0")
-			.protocolVersion("0.3.0")
 			.preferredTransport(preferredTransport)
 			.defaultInputModes(List.of("text/plain"))
 			.defaultOutputModes(List.of("text/plain"))
 			.skills(List.of())
-			.capabilities(new AgentCapabilities.Builder().streaming(false).build())
-			.additionalInterfaces(additionalInterfaces)
+			.capabilities(AgentCapabilities.builder().streaming(false).build())
+			.supportedInterfaces(additionalInterfaces)
 			.build();
 	}
 
