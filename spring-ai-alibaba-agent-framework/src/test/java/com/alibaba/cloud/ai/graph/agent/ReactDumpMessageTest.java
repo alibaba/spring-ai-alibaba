@@ -195,7 +195,7 @@ public class ReactDumpMessageTest {
 
         // 注册 ReadSkillTool，让 LLM 能按需调用 read_skill 读取完整 Skill 内容
         if (skillComponents.readSkillToolCallback != null) {
-            requestSpec.toolCallbacks(skillComponents.readSkillToolCallback);
+            requestSpec.tools(skillComponents.readSkillToolCallback);
         }
 
         // 使用 stream().content() 模式，Spring AI 自动处理 tool call
