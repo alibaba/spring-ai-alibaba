@@ -28,11 +28,13 @@ import io.a2a.spec.AgentCard;
 
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class A2aRemoteAgent extends BaseAgent {
-	Logger logger = Logger.getLogger(A2aRemoteAgent.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(A2aRemoteAgent.class);
 
 	private final AgentCardWrapper agentCard;
 

@@ -17,9 +17,9 @@ export JINA_API_KEY=your_jina_api_key  # Optional
 
 ### Run the Agent
 
-1. **Run with Maven**
+1. **Run with Maven Wrapper** (run from the repository root; Maven installation is optional when using `mvnw`)
 ```bash
-mvn spring-boot:run
+./mvnw -f examples/deepresearch spring-boot:run
 ```
 
 2. **Run in IDE**
@@ -73,7 +73,7 @@ DeepResearch implements an agentic architecture that goes beyond simple tool-cal
 - `Hook`: Event hooks for human approval, summarization, tool call limits
 - `MemorySaver`: In-memory state management with conversation history
 
-**Builtin Interceptors**
+**Built-in Interceptors**
 - `TodoListInterceptor`: Task list management and tracking
 - `FilesystemInterceptor`: File system access control with sandboxing
 - `SubAgentInterceptor`: Subagent spawning and coordination
@@ -81,7 +81,7 @@ DeepResearch implements an agentic architecture that goes beyond simple tool-cal
 - `LargeResultEvictionInterceptor`: Auto-dump large results to files
 - `ToolRetryInterceptor`: Retry logic for failed tool calls
 
-**Builtin Hooks**
+**Built-in Hooks**
 - `SummarizationHook`: Conversation history summarization (triggers at 120K tokens)
 - `HumanInTheLoopHook`: Human approval for critical operations
 - `ToolCallLimitHook`: Limit tool calls per run (default: 25)

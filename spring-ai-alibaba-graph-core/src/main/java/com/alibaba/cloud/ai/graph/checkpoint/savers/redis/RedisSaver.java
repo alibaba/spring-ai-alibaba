@@ -65,6 +65,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 	private static final String FIELD_THREAD_NAME = "thread_name";
 	private final Serializer<Checkpoint> checkpointSerializer;
 	private RedissonClient redisson;
+	private final long ttl;
+	private final TimeUnit ttlUnit;
 
 	/**
 	 * Protected constructor for RedisSaver.
@@ -72,12 +74,16 @@ public class RedisSaver implements BaseCheckpointSaver {
 	 *
 	 * @param redisson the redisson
 	 * @param stateSerializer the state serializer
+	 * @param ttl the time-to-live value for Redis keys, -1 means no expiration
+	 * @param ttlUnit the time unit for ttl
 	 */
-	protected RedisSaver(RedissonClient redisson, StateSerializer stateSerializer) {
+	protected RedisSaver(RedissonClient redisson, StateSerializer stateSerializer, long ttl, TimeUnit ttlUnit) {
 		requireNonNull(redisson, "redisson cannot be null");
 		requireNonNull(stateSerializer, "stateSerializer cannot be null");
 		this.redisson = redisson;
 		this.checkpointSerializer = new CheckPointSerializer(stateSerializer);
+		this.ttl = ttl;
+		this.ttlUnit = ttlUnit;
 	}
 
 	/**
@@ -142,12 +148,18 @@ public class RedisSaver implements BaseCheckpointSaver {
 		String newThreadId = UUID.randomUUID().toString();
 		meta.put(FIELD_THREAD_ID, newThreadId);
 		meta.put(FIELD_IS_RELEASED, "false");
+		if (ttl > 0) {
+			meta.expire(java.time.Duration.ofMillis(ttlUnit.toMillis(ttl)));
+		}
 
 		// Set reverse mapping
 		String reverseKey = THREAD_REVERSE_PREFIX + newThreadId;
 		RMap<String, String> reverse = redisson.getMap(reverseKey);
 		reverse.put(FIELD_THREAD_NAME, threadName);
 		reverse.put(FIELD_IS_RELEASED, "false");
+		if (ttl > 0) {
+			reverse.expire(java.time.Duration.ofMillis(ttlUnit.toMillis(ttl)));
+		}
 
 		return newThreadId;
 	}
@@ -306,6 +318,9 @@ public class RedisSaver implements BaseCheckpointSaver {
 			}
 
 			bucket.set(serializeCheckpoints(checkpoints));
+			if (ttl > 0) {
+				bucket.expire(java.time.Duration.ofMillis(ttlUnit.toMillis(ttl)));
+			}
 			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 
 		}
@@ -385,6 +400,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 	public static class Builder {
 		private RedissonClient redisson;
 		private StateSerializer stateSerializer;
+		private long ttl = -1;
+		private TimeUnit ttlUnit = TimeUnit.SECONDS;
 
 		/**
 		 * Sets the Redisson client.
@@ -409,6 +426,30 @@ public class RedisSaver implements BaseCheckpointSaver {
 		}
 
 		/**
+		 * Sets the time-to-live (TTL) for all Redis keys managed by RedisSaver.
+		 * When set, checkpoint data, thread metadata, and reverse mappings will
+		 * automatically expire after the specified duration.
+		 * <p>
+		 * Default is -1 (no expiration), which preserves backward compatibility.
+		 *
+		 * @param ttl the time-to-live value, must be positive; -1 means no expiration
+		 * @param ttlUnit the time unit for ttl, must not be null
+		 * @return this builder
+		 * @throws IllegalArgumentException if ttlUnit is null or ttl is 0 or less than -1
+		 */
+		public Builder ttl(long ttl, TimeUnit ttlUnit) {
+			if (ttlUnit == null) {
+				throw new IllegalArgumentException("ttlUnit cannot be null");
+			}
+			if (ttl == 0 || ttl < -1) {
+				throw new IllegalArgumentException("ttl must be positive or -1 (no expiration), got: " + ttl);
+			}
+			this.ttl = ttl;
+			this.ttlUnit = ttlUnit;
+			return this;
+		}
+
+		/**
 		 * Builds a new RedisSaver instance.
 		 * @return a new RedisSaver instance
 		 * @throws IllegalArgumentException if redisson or stateSerializer is null
@@ -420,7 +461,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 			if (stateSerializer == null) {
 				this.stateSerializer = StateGraph.DEFAULT_JACKSON_SERIALIZER;
 			}
-			return new RedisSaver(redisson, stateSerializer);
+			return new RedisSaver(redisson, stateSerializer, ttl, ttlUnit);
 		}
 	}
 

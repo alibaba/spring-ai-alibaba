@@ -22,7 +22,13 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.modelretry.ModelRetryInterceptor;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import reactor.core.publisher.Flux;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -146,6 +152,152 @@ class ModelRetryInterceptorTest {
 
 		assertEquals(3, attemptCount.get(), "应该重试直到成功");
 		assertEquals("Success after retry", ((AssistantMessage) response.getMessage()).getText());
+	}
+
+	@Test
+	void testStreamingSuccessOnSecondAttempt() {
+		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
+				.maxAttempts(3)
+				.initialDelay(0)
+				.build();
+
+		AtomicInteger attemptCount = new AtomicInteger(0);
+
+		ModelCallHandler handler = request -> {
+			int count = attemptCount.incrementAndGet();
+			if (count == 1) {
+				return ModelResponse.of(Flux.error(new RuntimeException("I/O error on streaming response")));
+			}
+			return ModelResponse.of(Flux.just(chatResponse("Success after streaming retry")));
+		};
+
+		ModelResponse response = interceptor.interceptModel(ModelRequest.builder().build(), handler);
+
+		assertInstanceOf(Flux.class, response.getMessage());
+		@SuppressWarnings("unchecked")
+		Flux<ChatResponse> responseFlux = (Flux<ChatResponse>) response.getMessage();
+		List<ChatResponse> responses = responseFlux.collectList().block(Duration.ofSeconds(2));
+
+		assertEquals(2, attemptCount.get(), "应该重试流式模型调用");
+		assertNotNull(responses);
+		assertEquals("Success after streaming retry", responses.get(0).getResult().getOutput().getText());
+	}
+
+	@Test
+	void testStreamingExceptionMessageRetry() {
+		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
+				.maxAttempts(3)
+				.initialDelay(0)
+				.build();
+
+		AtomicInteger attemptCount = new AtomicInteger(0);
+
+		ModelCallHandler handler = request -> {
+			int count = attemptCount.incrementAndGet();
+			if (count == 1) {
+				return ModelResponse.of(new AssistantMessage("Exception: I/O error before streaming starts"));
+			}
+			return ModelResponse.of(Flux.just(chatResponse("Streaming recovered")));
+		};
+
+		ModelResponse response = interceptor.interceptModel(ModelRequest.builder().build(), handler);
+
+		assertInstanceOf(Flux.class, response.getMessage());
+		@SuppressWarnings("unchecked")
+		Flux<ChatResponse> responseFlux = (Flux<ChatResponse>) response.getMessage();
+		List<ChatResponse> responses = responseFlux.collectList().block(Duration.ofSeconds(2));
+
+		assertEquals(2, attemptCount.get(), "应该重试流式启动阶段异常");
+		assertNotNull(responses);
+		assertEquals("Streaming recovered", responses.get(0).getResult().getOutput().getText());
+	}
+
+	@Test
+	void testStreamingRetryUsesCapturedExceptionMessageClassifier() {
+		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
+				.maxAttempts(3)
+				.initialDelay(0)
+				.build();
+
+		AtomicInteger attemptCount = new AtomicInteger(0);
+
+		ModelCallHandler handler = request -> {
+			int count = attemptCount.incrementAndGet();
+			if (count == 1) {
+				return ModelResponse.of(Flux.error(new RuntimeException("I/O error on streaming response")));
+			}
+			if (count == 2) {
+				return ModelResponse.of(new AssistantMessage("Exception: network reset before streaming starts"));
+			}
+			return ModelResponse.of(Flux.just(chatResponse("Recovered after captured network exception")));
+		};
+
+		ModelResponse response = interceptor.interceptModel(ModelRequest.builder().build(), handler);
+
+		assertInstanceOf(Flux.class, response.getMessage());
+		@SuppressWarnings("unchecked")
+		Flux<ChatResponse> responseFlux = (Flux<ChatResponse>) response.getMessage();
+		List<ChatResponse> responses = responseFlux.collectList().block(Duration.ofSeconds(2));
+
+		assertEquals(3, attemptCount.get(), "流式重试中的 Exception: network 消息应该继续按可重试异常处理");
+		assertNotNull(responses);
+		assertEquals("Recovered after captured network exception", responses.get(0).getResult().getOutput().getText());
+	}
+
+	@Test
+	void testStreamingNonRetryableException() {
+		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
+				.maxAttempts(3)
+				.initialDelay(0)
+				.build();
+
+		AtomicInteger attemptCount = new AtomicInteger(0);
+
+		ModelCallHandler handler = request -> {
+			attemptCount.incrementAndGet();
+			return ModelResponse.of(Flux.error(new RuntimeException("Authentication failed")));
+		};
+
+		ModelResponse response = interceptor.interceptModel(ModelRequest.builder().build(), handler);
+
+		assertInstanceOf(Flux.class, response.getMessage());
+		@SuppressWarnings("unchecked")
+		Flux<ChatResponse> responseFlux = (Flux<ChatResponse>) response.getMessage();
+
+		RuntimeException exception = assertThrows(RuntimeException.class,
+				() -> responseFlux.collectList().block(Duration.ofSeconds(2)));
+		assertEquals(1, attemptCount.get(), "不可重试的流式异常应该只尝试一次");
+		assertTrue(exception.getMessage().contains("non-retryable exception"));
+	}
+
+	@Test
+	void testStreamingErrorAfterFirstChunkIsNotRetried() {
+		ModelRetryInterceptor interceptor = ModelRetryInterceptor.builder()
+				.maxAttempts(3)
+				.initialDelay(0)
+				.build();
+
+		AtomicInteger attemptCount = new AtomicInteger(0);
+
+		ModelCallHandler handler = request -> {
+			attemptCount.incrementAndGet();
+			return ModelResponse.of(Flux.just(chatResponse("partial response"))
+					.concatWith(Flux.error(new RuntimeException("I/O error after streaming started"))));
+		};
+
+		ModelResponse response = interceptor.interceptModel(ModelRequest.builder().build(), handler);
+
+		assertInstanceOf(Flux.class, response.getMessage());
+		@SuppressWarnings("unchecked")
+		Flux<ChatResponse> responseFlux = (Flux<ChatResponse>) response.getMessage();
+		List<ChatResponse> emittedResponses = new ArrayList<>();
+
+		RuntimeException exception = assertThrows(RuntimeException.class,
+				() -> responseFlux.doOnNext(emittedResponses::add).collectList().block(Duration.ofSeconds(2)));
+		assertEquals(1, attemptCount.get(), "已经输出部分流式结果后不应该重试，避免重复输出");
+		assertEquals(1, emittedResponses.size());
+		assertEquals("partial response", emittedResponses.get(0).getResult().getOutput().getText());
+		assertTrue(exception.getMessage().contains("I/O error after streaming started"));
 	}
 
 	@Test
@@ -288,5 +440,8 @@ class ModelRetryInterceptorTest {
 			ModelRetryInterceptor.builder().backoffMultiplier(0.5).build();
 		}, "backoffMultiplier 必须 >= 1.0");
 	}
-}
 
+	private ChatResponse chatResponse(String text) {
+		return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
+	}
+}

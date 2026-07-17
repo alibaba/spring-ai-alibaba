@@ -23,13 +23,13 @@ import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.function.BiFunction;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -120,25 +120,23 @@ public class WebFetchTool implements BiFunction<WebFetchTool.Request, ToolContex
 
 	private final FlexmarkHtmlConverter htmlToMarkdownConverter;
 
-	private final Map<String, CacheEntry> urlCache;
-
-	private final int maxCacheSize;
-
-	private final Object cacheLock = new Object();
+	private final Cache<String, String> urlCache;
 
 	private final int maxRetries;
 
 	private WebFetchTool(ChatClient chatClient, int maxContentLength, int maxCacheSize, int maxRetries) {
 		this.chatClient = chatClient;
 		this.maxContentLength = maxContentLength;
-		this.maxCacheSize = maxCacheSize;
 		this.maxRetries = maxRetries;
 		this.httpClient = HttpClient.newBuilder()
 			.followRedirects(HttpClient.Redirect.ALWAYS)
 			.connectTimeout(DEFAULT_CONNECT_TIMEOUT)
 			.build();
 		this.htmlToMarkdownConverter = FlexmarkHtmlConverter.builder().build();
-		this.urlCache = new ConcurrentHashMap<>();
+		this.urlCache = Caffeine.newBuilder()
+			.maximumSize(maxCacheSize)
+			.expireAfterWrite(CACHE_TTL)
+			.build();
 	}
 
 	@JsonClassDescription("Request to fetch and process web content")
@@ -182,7 +180,7 @@ public class WebFetchTool implements BiFunction<WebFetchTool.Request, ToolContex
 
 		// Check cache first
 		String cacheKey = buildCacheKey(url, prompt);
-		String content = getCachedContent(cacheKey);
+		String content = this.urlCache.getIfPresent(cacheKey);
 
 		if (content != null) {
 			logger.debug("Cache hit for URL: {} with prompt hash: {}", url, prompt.hashCode());
@@ -216,7 +214,7 @@ public class WebFetchTool implements BiFunction<WebFetchTool.Request, ToolContex
 		String summary = summarize(mdContent, prompt);
 
 		// Cache the content
-		cacheContent(cacheKey, summary);
+		this.urlCache.put(cacheKey, summary);
 
 		return summary;
 	}
@@ -388,37 +386,6 @@ public class WebFetchTool implements BiFunction<WebFetchTool.Request, ToolContex
 			return content.substring(0, this.maxContentLength);
 		}
 		return content;
-	}
-
-	private String getCachedContent(String url) {
-		CacheEntry entry = this.urlCache.get(url);
-		if (entry != null && !entry.isExpired()) {
-			return entry.content();
-		}
-		if (entry != null) {
-			this.urlCache.remove(url);
-		}
-		return null;
-	}
-
-	private void cacheContent(String cacheKey, String content) {
-		if (this.urlCache.size() > this.maxCacheSize) {
-			synchronized (this.cacheLock) {
-				if (this.urlCache.size() > this.maxCacheSize) {
-					this.urlCache.entrySet().removeIf(entry -> entry.getValue().isExpired());
-					logger.debug("Cleaned up expired cache entries. Current cache size: {}", this.urlCache.size());
-				}
-			}
-		}
-		this.urlCache.put(cacheKey, new CacheEntry(content, System.currentTimeMillis()));
-	}
-
-	private record CacheEntry(String content, long timestamp) {
-
-		boolean isExpired() {
-			return System.currentTimeMillis() - timestamp > CACHE_TTL.toMillis();
-		}
-
 	}
 
 	/**

@@ -78,7 +78,7 @@ docker run --name nacos -d -p 8848:8848 -e MODE=standalone nacos/nacos-server:la
 ### 2) 启动应用
 
 ```bash
-mvn -q -pl examples/documentation -am spring-boot:run
+./mvnw -q -f examples/documentation spring-boot:run
 ```
 
 ### 3) 访问演示接口

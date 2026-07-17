@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.agent.nacos.tools;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -84,14 +85,27 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 
 	McpServersVO.McpServerVO mcpServerVO;
 
+	private final Duration requestTimeout;
+
 	/**
 	 * Instantiates a new Nacos mcp gateway tool callback.
 	 * @param toolDefinition the tool definition
 	 */
 	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition, NacosMcpOperationService nacosMcpOperationService, McpServersVO.McpServerVO mcpServersVO) {
+		this(toolDefinition, nacosMcpOperationService, mcpServersVO, null);
+	}
+
+	public NacosMcpGatewayToolCallback(final McpGatewayToolDefinition toolDefinition,
+			NacosMcpOperationService nacosMcpOperationService, McpServersVO.McpServerVO mcpServersVO,
+			Duration requestTimeout) {
 		this.toolDefinition = (NacosMcpGatewayToolDefinition) toolDefinition;
 		this.nacosMcpOperationService = nacosMcpOperationService;
 		this.mcpServerVO = mcpServersVO;
+		this.requestTimeout = requestTimeout;
+	}
+
+	public Duration getRequestTimeout() {
+		return requestTimeout;
 	}
 
 	/**
@@ -528,7 +542,7 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				HttpClientSseClientTransport transport = transportBuilder.build();
 
 				// 创建MCP同步客户端
-				McpSyncClient client = McpClient.sync(transport).build();
+				McpSyncClient client = configureTimeouts(McpClient.sync(transport)).build();
 				try {
 					// 初始化客户端
 					InitializeResult initializeResult = client.initialize();
@@ -581,6 +595,14 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 			logger.error("[handleMcpStreamProtocol] serviceRef is null");
 			return "Error: service reference is null";
 		}
+	}
+
+	McpClient.SyncSpec configureTimeouts(McpClient.SyncSpec clientSpec) {
+		if (requestTimeout != null) {
+			clientSpec.requestTimeout(requestTimeout);
+			clientSpec.initializationTimeout(requestTimeout);
+		}
+		return clientSpec;
 	}
 
 	/**

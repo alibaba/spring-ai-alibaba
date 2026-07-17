@@ -23,8 +23,10 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.async.AsyncGenerator;
 import com.alibaba.cloud.ai.graph.async.AsyncGeneratorQueue;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
 import org.springframework.util.StringUtils;
@@ -144,54 +146,67 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	}
 
 	private <E> void drainGenerator(AsyncGenerator<E> generator, FluxSink<GraphResponse<E>> sink) {
-		if (sink.isCancelled()) {
-			return;
-		}
+		while (!sink.isCancelled()) {
+			final AsyncGenerator.Data<E> data;
+			try {
+				data = generator.next();
+			}
+			catch (Exception ex) {
+				sink.error(ex);
+				return;
+			}
 
-		final AsyncGenerator.Data<E> data;
-		try {
-			data = generator.next();
-		}
-		catch (Exception ex) {
-			sink.error(ex);
-			return;
-		}
-
-		if (data.isDone()) {
-			data.resultValue().ifPresent(result -> {
+			if (data.isDone()) {
+				data.resultValue().ifPresent(result -> {
+					if (!sink.isCancelled()) {
+						sink.next(GraphResponse.done(result));
+					}
+				});
 				if (!sink.isCancelled()) {
-					sink.next(GraphResponse.done(result));
+					sink.complete();
 				}
+				return;
+			}
+
+			var future = data.getData();
+			if (future == null) {
+				sink.error(new IllegalStateException("AsyncGenerator data is null without completion signal"));
+				return;
+			}
+
+			if (future.isDone()) {
+				try {
+					E value = future.join();
+					if (!sink.isCancelled()) {
+						sink.next(GraphResponse.of(value));
+					}
+				}
+				catch (Exception ex) {
+					sink.error(unwrapCompletionException(ex));
+					return;
+				}
+				continue;
+			}
+
+			future.whenComplete((value, throwable) -> {
+				if (sink.isCancelled()) {
+					return;
+				}
+
+				if (throwable != null) {
+					Throwable actual = unwrapCompletionException(throwable);
+					sink.error(actual);
+					return;
+				}
+
+				if (!sink.isCancelled()) {
+					sink.next(GraphResponse.of(value));
+				}
+
+				drainGenerator(generator, sink);
 			});
-			if (!sink.isCancelled()) {
-				sink.complete();
-			}
 			return;
 		}
-
-		var future = data.getData();
-		if (future == null) {
-			sink.error(new IllegalStateException("AsyncGenerator data is null without completion signal"));
-			return;
-		}
-
-		future.whenComplete((value, throwable) -> {
-			if (sink.isCancelled()) {
-				return;
-			}
-
-			if (throwable != null) {
-				Throwable actual = unwrapCompletionException(throwable);
-				sink.error(actual);
-				return;
-			}
-
-			if (!sink.isCancelled()) {
-				sink.next(GraphResponse.of(value));
-			}
-
-			drainGenerator(generator, sink);
-		});
 	}
 
 	private Throwable unwrapCompletionException(Throwable throwable) {
@@ -214,7 +229,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		return AsyncGeneratorQueue.of(queue, q -> {
 			String baseUrl = resolveAgentBaseUrl(this.agentCard);
 			if (baseUrl == null || baseUrl.isBlank()) {
-				StreamingOutput errorOutput = new StreamingOutput("Error: AgentCard.url is empty", "a2aNode", agentName, state);
+				StreamingOutput errorOutput = buildStreamingOutput("Error: AgentCard.url is empty", state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
 				return;
 			}
@@ -228,15 +243,14 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 				try (CloseableHttpResponse response = httpClient.execute(post)) {
 					int statusCode = response.getStatusLine().getStatusCode();
 					if (statusCode != 200) {
-						StreamingOutput errorOutput = new StreamingOutput("HTTP request failed, status: " + statusCode,
-								"a2aNode", agentName, state);
+						StreamingOutput errorOutput = buildStreamingOutput("HTTP request failed, status: " + statusCode, state);
 						queue.add(AsyncGenerator.Data.of(errorOutput));
 						return;
 					}
 
 					HttpEntity entity = response.getEntity();
 					if (entity == null) {
-						StreamingOutput errorOutput = new StreamingOutput("Empty HTTP entity", "a2aNode", agentName, state);
+						StreamingOutput errorOutput = buildStreamingOutput("Empty HTTP entity", state);
 						queue.add(AsyncGenerator.Data.of(errorOutput));
 						return;
 					}
@@ -267,7 +281,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 										if (text != null && !text.isEmpty()) {
 											accumulated.append(text);
 											queue.add(AsyncGenerator.Data
-												.of(new StreamingOutput(text, "a2aNode", agentName, state)));
+												.of(buildStreamingOutput(text, state)));
 										}
 									}
 								}
@@ -287,18 +301,18 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 							String text = extractResponseText(result);
 							if (text != null && !text.isEmpty()) {
 								accumulated.append(text);
-								queue.add(AsyncGenerator.Data.of(new StreamingOutput(text, "a2aNode", agentName, state)));
+								queue.add(AsyncGenerator.Data.of(buildStreamingOutput(text, state)));
 							}
 						}
 						catch (Exception ex) {
 							queue.add(AsyncGenerator.Data
-								.of(new StreamingOutput("Error: " + ex.getMessage(), "a2aNode", agentName, state)));
+								.of(buildStreamingOutput("Error: " + ex.getMessage(), state)));
 						}
 					}
 				}
 			}
 			catch (Exception e) {
-				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
+				StreamingOutput errorOutput = buildStreamingOutput("Error: " + e.getMessage(), state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
 			}
 			finally {
@@ -374,7 +388,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 			}
 			catch (Exception e) {
 				// On error, emit an error message and signal completion
-				StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
+				StreamingOutput errorOutput = buildStreamingOutput("Error: " + e.getMessage(), state);
 				queue.add(AsyncGenerator.Data.of(errorOutput));
 				queue.add(AsyncGenerator.Data.done(Map.of(outputKey, accumulated.toString())));
 			}
@@ -397,13 +411,13 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
 			if (responseText2 != null && !responseText2.isEmpty()) {
 				accumulated.append(responseText2);
-				StreamingOutput streamingOutput = new StreamingOutput(responseText2, "a2aNode", agentName, state);
+				StreamingOutput streamingOutput = buildStreamingOutput(responseText2, state);
 				queue.add(AsyncGenerator.Data.of(streamingOutput));
 			}
 		}
 		catch (Exception e) {
 			// On parse failure, emit an error message
-			StreamingOutput errorOutput = new StreamingOutput("Error: " + e.getMessage(), "a2aNode", agentName, state);
+			StreamingOutput errorOutput = buildStreamingOutput("Error: " + e.getMessage(), state);
 			queue.add(AsyncGenerator.Data.of(errorOutput));
 		}
 
@@ -414,12 +428,29 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	}
 
 	/**
+	 * Build a {@link StreamingOutput} for an A2A remote response chunk.
+	 *
+	 * <p>
+	 * The plain {@code (originData, node, agentName, state)} constructor leaves {@code message},
+	 * {@code chunk} and {@code outputType} unset, so the serialized streaming event is empty
+	 * ({@code data:{}}). The studio chat UI renders streaming text from the {@code chunk} /
+	 * {@code message} fields, so A2A remote-agent replies were never displayed. Wrapping the text
+	 * in an {@link AssistantMessage} populates both {@code message} and {@code chunk}, and tagging
+	 * the event {@link OutputType#AGENT_MODEL_STREAMING} restores the metadata expected by
+	 * downstream consumers of {@link StreamingOutput#getOutputType()}. See gh-4760.
+	 */
+	private StreamingOutput<?> buildStreamingOutput(String text, OverAllState state) {
+		return new StreamingOutput<>(new AssistantMessage(text), text, "a2aNode", agentName, state,
+				OutputType.AGENT_MODEL_STREAMING);
+	}
+
+	/**
 	 * Create a StreamingOutput from the parsed result map.
 	 */
 	private StreamingOutput createStreamingOutputFromResult(Map<String, Object> result, OverAllState state) {
 		String text = extractResponseText(result);
 		if (text != null && !text.isEmpty()) {
-			return new StreamingOutput(text, "a2aNode", agentName, state);
+			return buildStreamingOutput(text, state);
 		}
 		return null;
 	}
