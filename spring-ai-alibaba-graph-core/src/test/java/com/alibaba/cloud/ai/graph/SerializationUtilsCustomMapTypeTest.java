@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.utils.SerializationUtils;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.HashMap;
@@ -141,6 +142,102 @@ public class SerializationUtilsCustomMapTypeTest {
 		UserMessage copiedUserMessage = (UserMessage) copiedMessage;
 		assertEquals(userMessage.getText(), copiedUserMessage.getText());
 		assertEquals(userMessage.getMetadata(), copiedUserMessage.getMetadata());
+	}
+
+	@Test
+	public void testDeepCopyPreservesSystemMessageType() {
+		SystemMessage systemMessage = SystemMessage.builder()
+			.text("You are a helpful assistant")
+			.metadata(Map.of("source", "system"))
+			.build();
+
+		Map<String, Object> original = new HashMap<>();
+		original.put("messages", List.of(systemMessage));
+
+		Map<String, Object> copied = SerializationUtils.deepCopyMap(original);
+
+		Object copiedMessages = copied.get("messages");
+		assertInstanceOf(List.class, copiedMessages);
+		Object copiedMessage = ((List<?>) copiedMessages).get(0);
+		assertInstanceOf(SystemMessage.class, copiedMessage);
+		assertNotSame(systemMessage, copiedMessage, "SystemMessage should be deep copied instead of reused");
+
+		SystemMessage copiedSystemMessage = (SystemMessage) copiedMessage;
+		assertEquals(systemMessage.getText(), copiedSystemMessage.getText());
+		assertEquals(systemMessage.getMetadata(), copiedSystemMessage.getMetadata());
+	}
+
+	@Test
+	public void testDeepCopyValueOfUserMessage() {
+		UserMessage userMessage = UserMessage.builder()
+			.text("Hello from user")
+			.metadata(Map.of("user_id", "123"))
+			.build();
+
+		Object copied = SerializationUtils.deepCopyValue(userMessage);
+
+		assertInstanceOf(UserMessage.class, copied);
+		assertNotSame(userMessage, copied, "UserMessage should be a new instance after deep copy");
+
+		UserMessage copiedUserMessage = (UserMessage) copied;
+		assertEquals(userMessage.getText(), copiedUserMessage.getText());
+		assertEquals(userMessage.getMetadata(), copiedUserMessage.getMetadata());
+	}
+
+	@Test
+	public void testDeepCopyValueOfSystemMessage() {
+		SystemMessage systemMessage = SystemMessage.builder()
+			.text("You are a helpful assistant")
+			.metadata(Map.of("priority", 1))
+			.build();
+
+		Object copied = SerializationUtils.deepCopyValue(systemMessage);
+
+		assertInstanceOf(SystemMessage.class, copied);
+		assertNotSame(systemMessage, copied, "SystemMessage should be a new instance after deep copy");
+
+		SystemMessage copiedSystemMessage = (SystemMessage) copied;
+		assertEquals(systemMessage.getText(), copiedSystemMessage.getText());
+		assertEquals(systemMessage.getMetadata(), copiedSystemMessage.getMetadata());
+	}
+
+	@Test
+	public void testDeepCopyUserMessageMetadataIsDecoupled() {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("user_id", "123");
+		metadata.put("nested", new HashMap<>(Map.of("deep", "value")));
+
+		UserMessage userMessage = UserMessage.builder()
+			.text("Hello")
+			.metadata(metadata)
+			.build();
+
+		UserMessage copied = (UserMessage) SerializationUtils.deepCopyValue(userMessage);
+
+		// Mutating the original message's metadata must not affect the copy, proving a deep copy.
+		userMessage.getMetadata().put("user_id", "changed");
+
+		assertNotEquals(userMessage.getMetadata().get("user_id"), copied.getMetadata().get("user_id"),
+				"Copied UserMessage metadata should be decoupled from the original");
+		assertEquals("123", copied.getMetadata().get("user_id"));
+	}
+
+	@Test
+	public void testDeepCopyMixedMessagesInList() {
+		UserMessage userMessage = UserMessage.builder().text("Hello").build();
+		SystemMessage systemMessage = SystemMessage.builder().text("System prompt").build();
+
+		Map<String, Object> original = new HashMap<>();
+		original.put("messages", List.of(systemMessage, userMessage));
+
+		Map<String, Object> copied = SerializationUtils.deepCopyMap(original);
+
+		List<?> copiedMessages = (List<?>) copied.get("messages");
+		assertEquals(2, copiedMessages.size());
+		assertInstanceOf(SystemMessage.class, copiedMessages.get(0));
+		assertInstanceOf(UserMessage.class, copiedMessages.get(1));
+		assertNotSame(systemMessage, copiedMessages.get(0));
+		assertNotSame(userMessage, copiedMessages.get(1));
 	}
 
 	@Test
