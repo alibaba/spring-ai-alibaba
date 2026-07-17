@@ -47,7 +47,8 @@ public class NacosMcpToolsInjector {
 	public static List<ToolCallback> convert(NacosOptions nacosOptions, McpServersVO mcpServersVO) {
 
 		NacosMcpGatewayToolsInitializer nacosMcpGatewayToolsInitializer = new NacosMcpGatewayToolsInitializer(
-				nacosOptions.mcpOperationService, mcpServersVO.getMcpServers());
+				nacosOptions.mcpOperationService, mcpServersVO.getMcpServers(),
+				nacosOptions.getMcpGatewayToolTimeout());
 		return Collections.unmodifiableList(nacosMcpGatewayToolsInitializer.initializeTools());
 	}
 

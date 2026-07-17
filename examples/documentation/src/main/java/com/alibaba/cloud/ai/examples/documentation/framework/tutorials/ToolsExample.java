@@ -44,6 +44,9 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
+import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
+
 /**
  * Tools Tutorial - 完整代码示例
  * 展示如何创建和使用Tools让Agent与外部系统交互
@@ -721,8 +724,8 @@ public class ToolsExample {
 
 		@Override
 		public String apply(String input, ToolContext toolContext) {
-			OverAllState state = (OverAllState) toolContext.getContext().get("state");
-			RunnableConfig config = (RunnableConfig) toolContext.getContext().get("config");
+			OverAllState state = (OverAllState) toolContext.getContext().get(AGENT_STATE_CONTEXT_KEY);
+			RunnableConfig config = (RunnableConfig) toolContext.getContext().get(AGENT_CONFIG_CONTEXT_KEY);
 
 			// 从state中获取消息
 			Optional<Object> messagesOpt = state.value("messages");
@@ -775,7 +778,7 @@ public class ToolsExample {
 
 		@Override
 		public String apply(String query, ToolContext toolContext) {
-			RunnableConfig config = (RunnableConfig) toolContext.getContext().get("config");
+			RunnableConfig config = (RunnableConfig) toolContext.getContext().get(AGENT_CONFIG_CONTEXT_KEY);
 			String userId = (String) config.metadata("user_id").orElse(null);
 
 			if (userId == null) {
