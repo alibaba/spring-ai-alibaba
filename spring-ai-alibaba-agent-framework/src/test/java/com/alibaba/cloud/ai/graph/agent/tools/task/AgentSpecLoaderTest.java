@@ -53,6 +53,25 @@ class AgentSpecLoaderTest {
 	}
 
 	@Test
+	@DisplayName("Should ignore delimiter text inside front matter values")
+	void shouldIgnoreDelimiterTextInsideFrontMatterValues() {
+		String markdown = """
+				---
+				name: Explore
+				description: Fast---and safe codebase exploration
+				---
+
+				You are a file search specialist.
+				""";
+
+		AgentSpec spec = AgentSpecLoader.parse(markdown);
+
+		assertThat(spec).isNotNull();
+		assertThat(spec.description()).isEqualTo("Fast---and safe codebase exploration");
+		assertThat(spec.systemPrompt()).isEqualTo("You are a file search specialist.");
+	}
+
+	@Test
 	@DisplayName("Should return null for content without front matter")
 	void shouldReturnNullForContentWithoutFrontMatter() {
 		AgentSpec spec = AgentSpecLoader.parse("Just plain content");
