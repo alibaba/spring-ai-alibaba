@@ -15,9 +15,13 @@
  */
 package com.alibaba.cloud.ai.graph.utils;
 
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -35,7 +39,15 @@ public class SerializationUtils {
 	private static final Logger log = LoggerFactory.getLogger(SerializationUtils.class);
 
 	// Jackson ObjectMapper for serialization
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	private static final ObjectMapper objectMapper = createObjectMapper();
+
+	private static ObjectMapper createObjectMapper() {
+		ObjectMapper mapper = new ObjectMapper();
+		SimpleModule module = new SimpleModule();
+		SpringAIJacksonStateSerializer.registerMessageHandlers(module);
+		mapper.registerModule(module);
+		return mapper;
+	}
 
 	private SerializationUtils() {
 		// Utility class - prevent instantiation
@@ -97,6 +109,16 @@ public class SerializationUtils {
 			return value;
 		}
 
+		// Handle UserMessage
+		if (value instanceof UserMessage userMessage) {
+			return userMessage.copy();
+		}
+
+		// Handle SystemMessage
+		if (value instanceof SystemMessage systemMessage) {
+			return systemMessage.copy();
+		}
+
 		// Handle Map
 		if (value instanceof Map) {
 			return deepCopyMap((Map<String, Object>) value);
@@ -122,13 +144,18 @@ public class SerializationUtils {
 			return copySet;
 		}
 
-		// Handle arrays
-		if (value.getClass().isArray()) {
-			Object[] originalArray = (Object[]) value;
-			Object[] copyArray = new Object[originalArray.length];
-			for (int i = 0; i < originalArray.length; i++) {
-				copyArray[i] = deepCopyValue(originalArray[i]);
-			}
+        // Handle arrays (both object arrays like String[] and primitive arrays like
+        // int[], float[], double[], byte[], ...). Using java.lang.reflect.Array preserves
+        // the original component type and avoids casting a primitive array to Object[],
+        // which throws ClassCastException (e.g. [F cannot be cast to [Ljava.lang.Object;).
+        // Primitive elements are immutable and returned as-is by the recursive call, so a
+        // single element-wise loop is a correct deep copy for both array kinds.
+        if (value.getClass().isArray()) {
+            int length = java.lang.reflect.Array.getLength(value);
+            Object copyArray = java.lang.reflect.Array.newInstance(value.getClass().getComponentType(), length);
+            for (int i = 0; i < length; i++) {
+                java.lang.reflect.Array.set(copyArray, i, deepCopyValue(java.lang.reflect.Array.get(value, i)));
+            }
 			return copyArray;
 		}
 

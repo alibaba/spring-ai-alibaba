@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
 import static java.lang.String.format;
+import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.CHECKPOINTS_NUM_RETAINED;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
@@ -419,6 +420,16 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 */
 		public Builder mergeReasoningContent(boolean merge) {
 			return addMetadata(MERGE_REASONING_CONTENT_METADATA_KEY, merge);
+		}
+
+		/**
+		 * Sets how many latest checkpoints a saver should retain for the run.
+		 * A value less than or equal to 0 disables checkpoint retention pruning.
+		 * @param numRetained number of latest checkpoints to retain
+		 * @return this builder for chaining
+		 */
+		public Builder checkpointsNumRetained(int numRetained) {
+			return addMetadata(CHECKPOINTS_NUM_RETAINED, numRetained);
 		}
 
 		public Builder addStateUpdate(Map<String, Object> stateUpdate) {

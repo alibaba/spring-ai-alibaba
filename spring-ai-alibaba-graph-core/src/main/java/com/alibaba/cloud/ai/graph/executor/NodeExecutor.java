@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
@@ -53,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -226,12 +228,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 			GraphRunnerContext context, Flux<?> rawFlux, String key, String nodeId) {
 		var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
 		var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
+		var upstreamAlreadyEmittedCompletion = new AtomicBoolean(false);
 
 		return rawFlux.filter(element -> {
-				// skip ChatResponse.getResult() == null
-				if (element instanceof ChatResponse response) {
-					return response.getResult() != null &&  response.getResult().getOutput() != null;
-				}
 				// Don't filter out Exception/Throwable - we need to handle them
 				return true;
 			})
@@ -247,6 +246,13 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return errorResponse;
 				}
 				if (element instanceof ChatResponse response) {
+					// Handle usage-only chunks (null result/output) without dropping usage metadata
+					if (response.getResult() == null || response.getResult().getOutput() == null) {
+						GraphResponse<NodeOutput> graphResponse = GraphResponse
+							.of(context.buildStreamingOutput(response, nodeId, true));
+						lastGraphResponseRef.set(graphResponse);
+						return graphResponse;
+					}
 					ChatResponse lastResponse = lastChatResponseRef.get();
 					final var currentMessage = response.getResult().getOutput();
 
@@ -287,6 +293,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 				}
 				else if (element instanceof GraphResponse) {
 					GraphResponse<NodeOutput> graphResponse = (GraphResponse<NodeOutput>) element;
+					if (graphResponse.isDone() || graphResponse.resultValue().isPresent()) {
+						upstreamAlreadyEmittedCompletion.set(true);
+					}
 					lastGraphResponseRef.set(graphResponse);
 					return graphResponse;
 				} else if (element instanceof NodeOutput nodeOutput) {
@@ -317,6 +326,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return Flux.just(errorResponse);
 			})
 			.concatWith(Flux.defer(() -> {
+				if (upstreamAlreadyEmittedCompletion.get()) {
+					return Flux.empty();
+				}
 				if (lastChatResponseRef.get() == null) {
 					GraphResponse<NodeOutput> lastGraphResponse = lastGraphResponseRef.get();
 					if (lastGraphResponse != null && lastGraphResponse.resultValue().isPresent()) {
@@ -341,11 +353,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.empty();
 				} else {
 					ChatResponse lastChatResponse = lastChatResponseRef.get();
-					// For completion status with AGENT_MODEL_NAME, create a StreamingOutput with null message to avoid chunk content
-					// This ensures that completion events don't carry the full text content in the chunk field
+					// FINISHED StreamingOutput omits message for agent/graph LLM nodes (tool/hook unchanged); full text still in done(state).
 					Message messageForCompletion = lastChatResponse.getResult().getOutput();
-					if (nodeId.startsWith(RunnableConfig.AGENT_MODEL_NAME)) {
-						// For agent model completion, use null message to prevent chunk content
+					if (shouldOmitMessageOnStreamCompletion(nodeId)) {
 						messageForCompletion = null;
 					}
 					GraphResponse<NodeOutput> aggregatedResponse = GraphResponse
@@ -496,6 +506,16 @@ public class NodeExecutor extends BaseGraphExecutor {
     }
 
 	/**
+	 * Whether the FINISHED {@link StreamingOutput} after a {@link ChatResponse} flux should omit
+	 * {@link Message} text (agent model and ordinary graph LLM nodes). Tool/hook streams keep the message.
+	 */
+	private static boolean shouldOmitMessageOnStreamCompletion(String nodeId) {
+		return nodeId.startsWith(RunnableConfig.AGENT_MODEL_NAME)
+				|| (!nodeId.startsWith(RunnableConfig.AGENT_TOOL_NAME)
+						&& !nodeId.startsWith(RunnableConfig.AGENT_HOOK_NAME_PREFIX));
+	}
+
+	/**
 	 * Processes a Flux<GraphResponse<NodeOutput>> with embedded flux handling logic.
 	 * This is the core processing logic extracted from handleEmbeddedFlux for reuse.
 	 * @param mainGraphExecutor the main graph executor
@@ -557,6 +577,10 @@ public class NodeExecutor extends BaseGraphExecutor {
 				Object value = nodeResultValue.get();
 				if (value instanceof Map<?, ?>) {
 					updateState = (Map<String, Object>) value;
+				}
+				else if (value instanceof BaseCheckpointSaver.Tag) {
+					// When releaseThread=true, completion may return a Tag.
+					// Tag is a checkpoint-release receipt, not a state update, so skip merge here.
 				}
 				else {
 					throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
@@ -719,9 +743,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 				return;
 			}
 
-			// Apply mapResult function if available
-			Map<String, Object> resultMap = new HashMap<>();
-			resultMap.put(graphFlux.getKey(), lastData);
+			// Resolve the final GraphFlux result into a graph state update.
+			Map<String, Object> resultMap = graphFluxResultState(graphFlux, lastData);
 
 			// Merge non-GraphFlux state
 			Map<String, Object> partialStateWithoutGraphFlux = partialState.entrySet()
@@ -755,6 +778,37 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 		return processedFlux
 				.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+	}
+
+	private Map<String, Object> graphFluxResultState(GraphFlux<?> graphFlux, Object lastData) {
+		if (lastData instanceof GraphResponse<?> graphResponse) {
+			Optional<Object> resultValue = graphResponse.resultValue();
+			if (resultValue.isPresent()) {
+				Object value = resultValue.get();
+				if (value instanceof Map<?, ?> resultMap) {
+					return copyStateMap(resultMap);
+				}
+			}
+		}
+
+		Map<String, Object> state = new HashMap<>();
+		state.put(graphFluxStateKey(graphFlux), lastData);
+		return state;
+	}
+
+	private static String graphFluxStateKey(GraphFlux<?> graphFlux) {
+		return StringUtils.hasText(graphFlux.getKey()) ? graphFlux.getKey() : "result";
+	}
+
+	private static Map<String, Object> copyStateMap(Map<?, ?> resultMap) {
+		Map<String, Object> state = new HashMap<>();
+		for (Map.Entry<?, ?> entry : resultMap.entrySet()) {
+			if (!(entry.getKey() instanceof String key)) {
+				throw new IllegalArgumentException("GraphFlux done result map keys must be String");
+			}
+			state.put(key, entry.getValue());
+		}
+		return state;
 	}
 
 	/**
@@ -839,7 +893,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 				String nodeId = graphFlux.getNodeId();
 				Object nodeData = nodeDataRefs.get(nodeId).get();
 
-				combinedResultMap.put(graphFlux.getKey(),nodeData);
+				combinedResultMap = OverAllState.updateState(
+						combinedResultMap, graphFluxResultState(graphFlux, nodeData), context.getKeyStrategyMap());
 			}
 
 			// Merge non-ParallelGraphFlux state
@@ -902,4 +957,3 @@ public class NodeExecutor extends BaseGraphExecutor {
 				.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
 	}
 }
-

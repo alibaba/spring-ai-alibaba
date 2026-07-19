@@ -125,11 +125,13 @@ public class MemorySaver implements BaseCheckpointSaver {
 						.findFirst()
 						.orElseThrow(() -> (new NoSuchElementException(format("Checkpoint with id %s not found!", checkPointId))));
 				checkpoints.set(index, checkpoint);
+				retainLatestCheckpoints(checkpoints, config);
 				updatedCheckpoint(config, checkpoints, checkpoint);
 				return config;
 			}
 
 			checkpoints.push(checkpoint); // Add Checkpoint
+			retainLatestCheckpoints(checkpoints, config);
 			insertedCheckpoint(config, checkpoints, checkpoint);
 
 			return RunnableConfig.builder(config)

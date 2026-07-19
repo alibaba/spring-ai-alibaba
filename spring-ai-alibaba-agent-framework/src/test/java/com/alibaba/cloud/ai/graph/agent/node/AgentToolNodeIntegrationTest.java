@@ -46,6 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -182,29 +184,40 @@ class AgentToolNodeIntegrationTest {
 					createToolCall("call-1", "tool1", "{}"), createToolCall("call-2", "tool2", "{}"));
 
 			OverAllState state = createStateWithMessages(assistantMessage);
-			RunnableConfig config = RunnableConfig.builder().build();
+			ExecutorService invocationExecutor = Executors.newSingleThreadExecutor();
+			ExecutorService toolExecutor = Executors.newFixedThreadPool(2);
+			RunnableConfig config = RunnableConfig.builder()
+				.addParallelNodeExecutor(RunnableConfig.AGENT_TOOL_NAME, toolExecutor)
+				.build();
 
 			// When
-			CompletableFuture<Map<String, Object>> futureResult = CompletableFuture.supplyAsync(() -> {
-				try {
-					return node.apply(state, config);
-				}
-				catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			});
+			try {
+				CompletableFuture<Map<String, Object>> futureResult = CompletableFuture.supplyAsync(() -> {
+					try {
+						return node.apply(state, config);
+					}
+					catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				}, invocationExecutor);
 
-			// Wait for both tools to start (proves parallel execution)
-			boolean bothStarted = startLatch.await(2, TimeUnit.SECONDS);
-			assertTrue(bothStarted, "Both tools should start in parallel");
+				// Wait for both tools to start (proves parallel execution)
+				boolean bothStarted = startLatch.await(5, TimeUnit.SECONDS);
+				assertTrue(bothStarted, "Both tools should start in parallel");
 
-			// Allow tools to complete
-			continueLatch.countDown();
+				// Allow tools to complete
+				continueLatch.countDown();
 
-			// Then
-			Map<String, Object> result = futureResult.get(5, TimeUnit.SECONDS);
-			ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
-			assertEquals(2, responseMessage.getResponses().size());
+				// Then
+				Map<String, Object> result = futureResult.get(5, TimeUnit.SECONDS);
+				ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
+				assertEquals(2, responseMessage.getResponses().size());
+			}
+			finally {
+				continueLatch.countDown();
+				invocationExecutor.shutdownNow();
+				toolExecutor.shutdownNow();
+			}
 		}
 
 		@Test
@@ -274,9 +287,32 @@ class AgentToolNodeIntegrationTest {
 
 	}
 
+
 	@Nested
 	@DisplayName("Sequential Execution Tests")
 	class SequentialExecutionTests {
+
+
+		@Test
+		@DisplayName("should degrade gracefully when tool callback cannot be resolved")
+		void apply_shouldReturnUnavailableToolResponse_whenToolCallbackMissing() throws Exception {
+			AgentToolNode node = baseBuilder.toolCallbacks(List.of()).build();
+
+			AssistantMessage assistantMessage = createAssistantMessageWithToolCalls(
+					createToolCall("call-1", "fuyao-web-search", "{}"));
+
+			OverAllState state = createStateWithMessages(assistantMessage);
+			RunnableConfig config = RunnableConfig.builder().build();
+
+			Map<String, Object> result = node.apply(state, config);
+
+			ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
+			assertEquals(1, responseMessage.getResponses().size());
+			ToolResponseMessage.ToolResponse response = responseMessage.getResponses().get(0);
+			assertEquals("call-1", response.id());
+			assertEquals("fuyao-web-search", response.name());
+			assertEquals("Tool not available: fuyao-web-search", response.responseData());
+		}
 
 		@Test
 		@DisplayName("should maintain tool response order in sequential mode")
@@ -606,9 +642,8 @@ class AgentToolNodeIntegrationTest {
 		}
 
 		@Test
-		@DisplayName("should throw exception when tool not found anywhere")
-		void resolve_shouldThrow_whenToolNotFound() {
-			// Given
+		@DisplayName("should return unavailable response when tool not found anywhere")
+		void resolve_shouldReturnUnavailableResponse_whenToolNotFound() throws Exception {
 			AgentToolNode node = baseBuilder.toolCallbacks(List.of()).toolCallbackResolver(null).build();
 
 			AssistantMessage assistantMessage = createAssistantMessageWithToolCalls(
@@ -617,8 +652,14 @@ class AgentToolNodeIntegrationTest {
 			OverAllState state = createStateWithMessages(assistantMessage);
 			RunnableConfig config = RunnableConfig.builder().build();
 
-			// When/Then
-			assertThrows(IllegalStateException.class, () -> node.apply(state, config));
+			Map<String, Object> result = node.apply(state, config);
+
+			ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
+			assertEquals(1, responseMessage.getResponses().size());
+			ToolResponseMessage.ToolResponse response = responseMessage.getResponses().get(0);
+			assertEquals("call-1", response.id());
+			assertEquals("nonExistentTool", response.name());
+			assertEquals("Tool not available: nonExistentTool", response.responseData());
 		}
 
 	}
@@ -735,6 +776,28 @@ class AgentToolNodeIntegrationTest {
 			assertNotNull(capturedToken.get(), "Token should be passed");
 			// Should NOT be NONE token
 			assertFalse(capturedToken.get() == CancellationToken.NONE, "Should receive real token, not NONE");
+		}
+
+
+		@Test
+		@DisplayName("should degrade gracefully when tool callback cannot be resolved")
+		void apply_shouldReturnUnavailableToolResponse_whenToolCallbackMissing() throws Exception {
+			AgentToolNode node = baseBuilder.toolCallbacks(List.of()).build();
+
+			AssistantMessage assistantMessage = createAssistantMessageWithToolCalls(
+					createToolCall("call-1", "fuyao-web-search", "{}"));
+
+			OverAllState state = createStateWithMessages(assistantMessage);
+			RunnableConfig config = RunnableConfig.builder().build();
+
+			Map<String, Object> result = node.apply(state, config);
+
+			ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
+			assertEquals(1, responseMessage.getResponses().size());
+			ToolResponseMessage.ToolResponse response = responseMessage.getResponses().get(0);
+			assertEquals("call-1", response.id());
+			assertEquals("fuyao-web-search", response.name());
+			assertEquals("Tool not available: fuyao-web-search", response.responseData());
 		}
 
 	}

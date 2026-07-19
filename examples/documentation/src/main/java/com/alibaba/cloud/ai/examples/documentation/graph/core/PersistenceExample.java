@@ -108,10 +108,13 @@ public class PersistenceExample {
 		System.out.println("Current state: " + stateSnapshot.state());
 		System.out.println("Current node: " + stateSnapshot.node());
 
-		// 获取特定 checkpoint_id 的状态快照
+		// 使用本次运行产生的 checkpoint id
+		String checkpointId = stateSnapshot.config()
+				.checkPointId()
+				.orElseThrow(() -> new IllegalStateException("latest snapshot has no checkpoint id"));
 		RunnableConfig configWithCheckpoint = RunnableConfig.builder()
 				.threadId("1")
-				.checkPointId("1ef663ba-28fe-6528-8002-5a559208592c")
+				.checkPointId(checkpointId)
 				.build();
 		StateSnapshot specificSnapshot = graph.getState(configWithCheckpoint);
 		System.out.println("Specific checkpoint state: " + specificSnapshot.state());
