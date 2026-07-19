@@ -565,10 +565,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 			Map<String, Object> updateState = new HashMap<>();
+			boolean hasStateResult = false;
 			if (nodeResultValue.isPresent()) {
 				Object value = nodeResultValue.get();
 				if (value instanceof Map<?, ?>) {
 					updateState = (Map<String, Object>) value;
+					hasStateResult = true;
 				}
 				else {
 					throw new IllegalArgumentException("Node stream must return Map result using Data.done(),");
@@ -579,7 +581,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			combinedUpdateState.putAll(updateState);
 			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfterForStreaming(context, combinedUpdateState);
 
-			if (context.getNodeAction(context.getCurrentNodeId()) instanceof SubCompiledGraphNodeAction) {
+			if (context.getNodeAction(context.getCurrentNodeId()) instanceof SubCompiledGraphNodeAction && hasStateResult) {
 				context.replaceCurrentState(updateState);
 			}
 			else {

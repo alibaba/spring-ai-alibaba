@@ -679,6 +679,38 @@ public class SubGraphTest {
 		assertEquals(List.of("a", "a", "b", "c", "c", "d"), state.value("output").orElseThrow());
 	}
 
+	@Test
+	void compiledSubgraphErrorShouldPreserveParentState() throws Exception {
+		KeyStrategyFactory keyStrategyFactory = () -> Map.of("output", new AppendStrategy());
+
+		CompiledGraph failingSubGraph = new StateGraph(keyStrategyFactory)
+			.addNode("failure", node_async(state -> {
+				throw new IllegalStateException("subgraph failure");
+			}))
+			.addEdge(START, "failure")
+			.addEdge("failure", END)
+			.compile();
+
+		CompiledGraph parentGraph = new StateGraph(keyStrategyFactory)
+			.addNode("parent", node_async(state -> Map.of("output", "parent")))
+			.addNode("subGraph", failingSubGraph)
+			.addEdge(START, "parent")
+			.addEdge("parent", "subGraph")
+			.addEdge("subGraph", END)
+			.compile();
+
+		List<GraphResponse<NodeOutput>> responses = parentGraph
+			.graphResponseStream(Map.of(), RunnableConfig.builder().build())
+			.collectList()
+			.block();
+
+		assertNotNull(responses);
+		assertTrue(responses.stream().anyMatch(GraphResponse::isError));
+		Map<?, ?> finalState = assertInstanceOf(Map.class,
+				responses.get(responses.size() - 1).resultValue().orElseThrow());
+		assertEquals(List.of("parent"), finalState.get("output"));
+	}
+
     @Test
     public void testMultiSubgraphKeyStrategyMerge() throws Exception {
         // Subgraph A: provides the strategy for aKey
