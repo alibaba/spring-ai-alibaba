@@ -100,6 +100,10 @@ public abstract class Builder {
 	protected boolean includeContents = true;
 	protected boolean returnReasoningContents;
 
+	// Register AssistantMessageSanitizerInterceptor by default to keep tool-calling
+	// AssistantMessages with null text compatible with strict DeepSeek-compatible backends.
+	protected boolean assistantMessageSanitizerEnabled = true;
+
 	protected String outputKey;
 
 	protected KeyStrategy outputKeyStrategy;
@@ -276,6 +280,23 @@ public abstract class Builder {
 
 	public Builder returnReasoningContents(boolean returnReasoningContents) {
 		this.returnReasoningContents = returnReasoningContents;
+		return this;
+	}
+
+	/**
+	 * Enables or disables the default {@code AssistantMessageSanitizerInterceptor}.
+	 * <p>
+	 * When enabled (the default), tool-calling {@code AssistantMessage}s whose text content
+	 * is {@code null} are rewritten with an empty-string content before being sent back to
+	 * the model. This keeps the serialized request compatible with strict
+	 * DeepSeek-compatible backends that reject assistant messages without a {@code content}
+	 * field. Disable this if you need the literal {@code "content": null} form once it is
+	 * supported upstream in Spring AI.
+	 * @param assistantMessageSanitizerEnabled true to register the sanitizer (default), false to disable it
+	 * @return this builder instance
+	 */
+	public Builder assistantMessageSanitizerEnabled(boolean assistantMessageSanitizerEnabled) {
+		this.assistantMessageSanitizerEnabled = assistantMessageSanitizerEnabled;
 		return this;
 	}
 
