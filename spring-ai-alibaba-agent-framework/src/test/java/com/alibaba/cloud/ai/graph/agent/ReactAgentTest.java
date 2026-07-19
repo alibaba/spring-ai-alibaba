@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import com.alibaba.cloud.ai.dashscope.chat.MessageFormat;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
@@ -35,8 +36,10 @@ import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
@@ -52,6 +55,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -1109,4 +1113,39 @@ class ReactAgentTest {
 		assertNotNull(agent2);
 	}
 
+	@Test
+	void testVisionReact() throws GraphRunnerException {
+		DashScopeChatModel chatModel = DashScopeChatModel.builder()
+				.dashScopeApi(DashScopeApi.builder().apiKey(System.getenv("AI_DASHSCOPE_API_KEY")).build())
+				.defaultOptions(DashScopeChatOptions.builder()
+						.model("qwen3.6-flash")
+						.multiModel(true)
+						.build())
+				.build();
+
+		ReactAgent agent = ReactAgent.builder()
+				.name("vision-model-agent")
+				.model(chatModel)
+				.systemPrompt("你是一个耐心的助手，回答要简短。")
+				.build();
+
+		Media media = Media.builder()
+				.mimeType(Media.Format.IMAGE_PNG)
+				.data(URI.create("https://dashscope.oss-cn-beijing.aliyuncs.com/images/tiger.png"))
+				.build();
+
+		UserMessage userMessage = UserMessage
+				.builder()
+				.text("图中描绘的是什么景象?")
+				.media(media)
+				.metadata(Map.of("messageFormat", MessageFormat.IMAGE))
+				.build();
+
+		List<String> results = agent.streamMessages(userMessage)
+				.map(Message::getText)
+				.collectList()
+				.block();
+		assertNotNull(results);
+        assertFalse(results.isEmpty());
+	}
 }
