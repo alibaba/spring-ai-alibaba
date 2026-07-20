@@ -20,16 +20,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -182,34 +178,26 @@ public class SerializationUtils {
 	 * (which shares the internal list references and causes state corruption), we
 	 * manually reconstruct a new instance with copied content.
 	 */
-	@SuppressWarnings("unchecked")
 	private static Object deepCopyMessage(Message message) {
 		if (message instanceof UserMessage userMessage) {
-			return new UserMessage(userMessage.getText(),
-				userMessage.getMetadata() != null ? new HashMap<>(userMessage.getMetadata()) : null);
-		}
-		if (message instanceof AssistantMessage assistantMessage) {
-			List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
-			List<AssistantMessage.ToolCall> copiedToolCalls = null;
-			if (toolCalls != null) {
-				copiedToolCalls = toolCalls.stream()
-					.map(tc -> AssistantMessage.ToolCall.builder()
-						.id(tc.id())
-						.name(tc.name())
-						.arguments(tc.arguments())
-						.build())
-					.toList();
-			}
-			return AssistantMessage.builder()
-				.content(assistantMessage.getText())
-				.properties(assistantMessage.getMetadata() != null
-					? new HashMap<>(assistantMessage.getMetadata()) : null)
-				.toolCalls(copiedToolCalls)
-				.build();
+			return userMessage.copy();
 		}
 		if (message instanceof SystemMessage systemMessage) {
-			return new SystemMessage(systemMessage.getText(),
-				systemMessage.getMetadata() != null ? new HashMap<>(systemMessage.getMetadata()) : null);
+			return systemMessage.copy();
+		}
+		if (message instanceof AssistantMessage assistantMessage) {
+			AssistantMessage.Builder builder = AssistantMessage.builder().content(assistantMessage.getText());
+			if (assistantMessage.getMetadata() != null) {
+				builder.properties(new HashMap<>(assistantMessage.getMetadata()));
+			}
+			// ToolCall is an immutable record, so copying the list is a deep copy
+			if (assistantMessage.getToolCalls() != null) {
+				builder.toolCalls(new java.util.ArrayList<>(assistantMessage.getToolCalls()));
+			}
+			if (assistantMessage.getMedia() != null) {
+				builder.media(new java.util.ArrayList<>(assistantMessage.getMedia()));
+			}
+			return builder.build();
 		}
 		// For other Message subtypes, fall back to Jackson serialization
 		try {
