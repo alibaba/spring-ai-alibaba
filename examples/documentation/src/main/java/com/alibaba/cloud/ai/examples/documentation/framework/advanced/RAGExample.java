@@ -101,7 +101,7 @@ public class RAGExample {
 		List<Document> documents = textReader.get();
 
 		// 2. 分割文档为块
-		TokenTextSplitter splitter = new TokenTextSplitter();
+		TokenTextSplitter splitter = TokenTextSplitter.builder().build();
 		List<Document> chunks = splitter.apply(documents);
 
 		// 3. 将块添加到向量存储

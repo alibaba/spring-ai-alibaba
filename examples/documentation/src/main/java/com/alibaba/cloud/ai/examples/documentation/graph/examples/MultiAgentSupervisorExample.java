@@ -389,7 +389,7 @@ public class MultiAgentSupervisorExample {
 					.build();
 
 			this.chatClient = ChatClient.builder(model)
-					.defaultToolCallbacks(searchTool)
+					.defaultTools(searchTool)
 					.build();
 		}
 
@@ -441,7 +441,7 @@ public class MultiAgentSupervisorExample {
 					.build();
 
 			this.chatClient = ChatClient.builder(model)
-					.defaultToolCallbacks(coderTool)
+					.defaultTools(coderTool)
 					.build();
 		}
 

@@ -8,8 +8,7 @@ spring:
     dashscope:
       api-key: ${DASHSCOPE_API_KEY:your-api-key}
       chat:
-        options:
-          model: ${DASHSCOPE_MODEL:qwen-plus}
+        model: ${DASHSCOPE_MODEL:qwen-plus}
     # A2A Nacos 配置
     alibaba:
       a2a:

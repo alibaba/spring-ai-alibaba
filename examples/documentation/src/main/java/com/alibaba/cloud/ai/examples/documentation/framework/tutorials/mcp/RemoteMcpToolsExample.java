@@ -26,12 +26,11 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.fastjson2.JSON;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.jspecify.annotations.NonNull;
@@ -46,6 +45,7 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -207,12 +207,11 @@ public class RemoteMcpToolsExample {
             //create MCP Transport
             McpClientTransport mcpClientTransport;
             if (isStreamable) {
-                ObjectMapper objectMapper = new ObjectMapper();
                 mcpClientTransport = HttpClientStreamableHttpTransport
                         .builder(baseUrl)
                         .endpoint(endpoint)
                         .clientBuilder(HttpClient.newBuilder())
-                        .jsonMapper(new JacksonMcpJsonMapper(objectMapper)).build();
+                        .jsonMapper(new JacksonMcpJsonMapper(JsonMapper.shared())).build();
 
             }
             else {
@@ -358,7 +357,7 @@ public class RemoteMcpToolsExample {
                                 2. Please check the available train numbers and their departure times.
                                 3. Please also check Beijing’s weather forecast for tomorrow.
                                 """)
-                        .toolCallbacks(toolCallbackProvider);
+                        .tools(toolCallbackProvider);
         //check the logs from DefaultToolCallingManager
         String text = doChat.call().chatResponse().getResult().getOutput().getText();
         System.out.println(text);

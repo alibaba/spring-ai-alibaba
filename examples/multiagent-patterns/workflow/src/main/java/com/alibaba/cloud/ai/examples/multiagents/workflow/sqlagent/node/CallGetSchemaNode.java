@@ -48,7 +48,6 @@ public class CallGetSchemaNode implements NodeAction {
 
 		ToolCallingChatOptions options = ToolCallingChatOptions.builder()
 				.toolCallbacks(List.of(sqlTools.getSchemaTool()))
-				.internalToolExecutionEnabled(false)
 				.build();
 
 		AssistantMessage response = chatModel.call(new Prompt(messages, options)).getResult().getOutput();
