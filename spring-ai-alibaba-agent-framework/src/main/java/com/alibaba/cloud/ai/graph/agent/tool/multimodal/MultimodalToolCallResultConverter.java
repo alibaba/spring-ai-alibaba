@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.tool.multimodal;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
@@ -105,7 +105,7 @@ public class MultimodalToolCallResultConverter implements ToolCallResultConverte
 			}
 			map.put("media", mediaList);
 		}
-		return JsonParser.toJson(map);
+		return new JsonHelper().toJson(map);
 	}
 
 	private Map<String, Object> mediaToMap(Media media) {

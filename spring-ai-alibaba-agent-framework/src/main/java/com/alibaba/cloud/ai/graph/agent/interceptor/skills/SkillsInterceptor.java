@@ -30,7 +30,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -211,16 +211,12 @@ public class SkillsInterceptor extends ModelInterceptor {
 		return skillByName.isPresent() ? skillByName : skillByPath;
 	}
 
-	@SuppressWarnings("unchecked")
 	private Map<String, Object> parseArguments(String arguments) {
 		if (arguments == null || arguments.isBlank()) {
 			return Map.of();
 		}
 		try {
-			Object parsed = JsonParser.fromJson(arguments, Map.class);
-			if (parsed instanceof Map<?, ?> map) {
-				return (Map<String, Object>) map;
-			}
+			return new JsonHelper().fromJsonToMap(arguments);
 		}
 		catch (Exception e) {
 			if (logger.isDebugEnabled()) {

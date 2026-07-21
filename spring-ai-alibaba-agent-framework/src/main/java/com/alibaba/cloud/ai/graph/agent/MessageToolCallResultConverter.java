@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
@@ -39,7 +39,7 @@ public class MessageToolCallResultConverter implements ToolCallResultConverter {
 	public String convert(@Nullable Object result, @Nullable Type returnType) {
 		if (returnType == Void.TYPE) {
 			logger.debug("The tool has no return type. Converting to conventional response.");
-			return JsonParser.toJson("Done");
+			return new JsonHelper().toJson("Done");
 		} else if (result instanceof AssistantMessage assistantMessage) {
 			if (StringUtils.hasLength(assistantMessage.getText())) {
 				return assistantMessage.getText();
@@ -47,10 +47,10 @@ public class MessageToolCallResultConverter implements ToolCallResultConverter {
 				throw new UnsupportedOperationException("Currently Spring AI ToolResponseMessage only supports text type, that's why the return type of this method is String. More types like image/audio/video/file can be supported in the future.");
 			}
 			logger.warn("The tool returned an empty AssistantMessage. Converting to conventional response.");
-			return JsonParser.toJson("Done");
+			return new JsonHelper().toJson("Done");
 		} else {
 			logger.debug("Converting tool result to JSON.");
-			return JsonParser.toJson(result);
+			return new JsonHelper().toJson(result);
 		}
 	}
 }
