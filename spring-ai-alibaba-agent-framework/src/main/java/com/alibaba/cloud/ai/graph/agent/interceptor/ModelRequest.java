@@ -46,7 +46,7 @@ public class ModelRequest {
 			List<String> tools, List<ToolCallback> dynamicToolCallbacks, Map<String, String> toolDescriptions,
 			Map<String, Object> context) {
 		this.systemMessage = systemMessage;
-		this.messages = messages;
+		this.messages = messages == null ? null : new ArrayList<>(messages);
 		this.options = options;
 		this.tools = tools;
 		this.dynamicToolCallbacks = dynamicToolCallbacks;
