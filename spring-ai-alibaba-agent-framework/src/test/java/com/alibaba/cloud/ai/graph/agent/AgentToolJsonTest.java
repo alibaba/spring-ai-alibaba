@@ -15,8 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
-import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
+import java.lang.reflect.Constructor;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
+import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -28,18 +32,10 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import reactor.core.publisher.Flux;
 
-import java.lang.reflect.Constructor;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,16 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AgentToolJsonTest {
 
 	@Test
-	void agentToolJsonShouldUseSpringAiJsonParser() throws Exception {
-		String source = Files.readString(Path.of("src/main/java/com/alibaba/cloud/ai/graph/agent/AgentTool.java"));
-
-		assertFalse(source.contains("new ObjectMapper()"));
-		assertTrue(source.contains("org.springframework.ai.util.json.JsonParser")
-				|| source.contains("import org.springframework.ai.util.json.JsonParser;"));
-	}
-
-	@Test
-	void inputSchemaShouldBeWrappedWithSpringAiJsonParserCompatibleJson() {
+	void inputSchemaShouldBeWrappedWithSpringAiJsonHelperCompatibleJson() {
 		ReactAgent agent = ReactAgent.builder()
 			.name("structured_child_agent")
 			.description("Structured child agent")
@@ -78,7 +65,7 @@ class AgentToolJsonTest {
 			.build();
 
 		ToolCallback callback = AgentTool.create(agent);
-		Map<String, Object> wrappedSchema = JsonParser.fromJson(callback.getToolDefinition().inputSchema(), Map.class);
+		Map<String, Object> wrappedSchema = new JsonHelper().fromJsonToMap(callback.getToolDefinition().inputSchema());
 		Map<String, Object> properties = asMap(wrappedSchema.get("properties"));
 		Map<String, Object> input = asMap(properties.get("input"));
 

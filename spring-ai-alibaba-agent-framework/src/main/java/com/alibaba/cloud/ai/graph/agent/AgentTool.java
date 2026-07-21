@@ -31,7 +31,7 @@ import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 
 import org.springframework.util.StringUtils;
@@ -48,6 +48,7 @@ import java.util.Optional;
  */
 public class AgentTool {
 	private static final ToolCallResultConverter CONVERTER = new MessageToolCallResultConverter();
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	/**
 	 * Create a ToolCallback for invoking a ReactAgent as a tool.
@@ -95,7 +96,7 @@ public class AgentTool {
 			Map<String, Object> originalSchemaMap = null;
 			if (StringUtils.hasLength(originalSchema)) {
 				try {
-					originalSchemaMap = JsonParser.fromJson(originalSchema, Map.class);
+					originalSchemaMap = jsonHelper.fromJsonToMap(originalSchema);
 				}
 				catch (Exception e) {
 					// If parsing fails, treat as a simple string type
@@ -118,7 +119,7 @@ public class AgentTool {
 			wrappedSchema.put("required", List.of("input"));
 
 			// Convert to JSON string
-			return JsonParser.toJson(wrappedSchema);
+			return jsonHelper.toJson(wrappedSchema);
 		}
 		catch (Exception e) {
 			// Fallback: create a simple wrapper schema
@@ -276,7 +277,7 @@ public class AgentTool {
 
 			// Try to parse as JSON object and extract the "input" field
 			try {
-				Map<String, Object> jsonMap = JsonParser.fromJson(input, Map.class);
+				Map<String, Object> jsonMap = jsonHelper.fromJsonToMap(input);
 
 				if (jsonMap != null && jsonMap.containsKey("input")) {
 					Object inputValue = jsonMap.get("input");
@@ -287,7 +288,7 @@ public class AgentTool {
 							return (String) inputValue;
 						}
 						// Otherwise, serialize it to JSON string
-						return JsonParser.toJson(inputValue);
+						return jsonHelper.toJson(inputValue);
 					}
 				}
 			}

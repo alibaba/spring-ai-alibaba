@@ -27,7 +27,7 @@ import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.support.ToolUtils;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.Nullable;
@@ -97,7 +97,7 @@ public class RuntimeFunctionToolCallback<I, O> implements ToolCallback {
 
 		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
 
-		I request = JsonParser.fromJson(toolInput, this.toolInputType);
+		I request = new JsonHelper().fromJson(toolInput, this.toolInputType);
 		O response = this.toolFunction.apply(request, toolContext);
 
 		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());

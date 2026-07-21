@@ -17,7 +17,7 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.store.Store;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
@@ -550,7 +550,7 @@ public final class OverAllState implements Serializable {
 		Map<String, Object> jsonView = new LinkedHashMap<>();
 		jsonView.put("OverAllState", stateView);
 		try {
-			return JsonParser.toJson(jsonView);
+			return new JsonHelper().toJson(jsonView);
 		}
 		catch (RuntimeException ex) {
 			return "OverAllState{" + "data=" + data + '\'' + '}';
