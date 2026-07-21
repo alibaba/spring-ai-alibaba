@@ -26,7 +26,10 @@ import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 
+import org.apache.http.client.methods.HttpPost;
+import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentInterface;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -291,6 +294,25 @@ class A2aNodeActionWithConfigTests {
 	void buildSendRequests_useV1MethodAndMessageShape() throws Exception {
 		assertV1RequestShape("buildSendMessageRequest", "SendMessage");
 		assertV1RequestShape("buildSendStreamingMessageRequest", "SendStreamingMessage");
+	}
+
+	@Test
+	void createHttpPost_setsA2aVersionHeaderForBothSendPaths() throws Exception {
+		AgentCard agentCard = mock(AgentCard.class);
+		when(agentCard.supportedInterfaces())
+			.thenReturn(List.of(new AgentInterface("JSONRPC", "http://localhost:8080/a2a", null, "1.0")));
+		AgentCardWrapper agentCardWrapper = new AgentCardWrapper(agentCard);
+		Method method = A2aNodeActionWithConfig.class.getDeclaredMethod("createHttpPost", AgentCardWrapper.class,
+				String.class, boolean.class);
+		method.setAccessible(true);
+
+		HttpPost nonStreamingPost = (HttpPost) method.invoke(this.action, agentCardWrapper, agentCardWrapper.url(), false);
+		HttpPost streamingPost = (HttpPost) method.invoke(this.action, agentCardWrapper, agentCardWrapper.url(), true);
+
+		assertEquals("1.0", nonStreamingPost.getFirstHeader(A2AHeaders.A2A_VERSION).getValue());
+		assertEquals("1.0", streamingPost.getFirstHeader(A2AHeaders.A2A_VERSION).getValue());
+		assertNull(nonStreamingPost.getFirstHeader("Accept"));
+		assertEquals("text/event-stream", streamingPost.getFirstHeader("Accept").getValue());
 	}
 
 	@SuppressWarnings("unchecked")

@@ -52,6 +52,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.a2aproject.sdk.common.A2AHeaders;
 import org.a2aproject.sdk.spec.Message;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -238,9 +239,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 			}
 
 			try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-				HttpPost post = new HttpPost(baseUrl);
-				post.setHeader("Content-Type", "application/json");
-				post.setHeader("Accept", "text/event-stream");
+				HttpPost post = createHttpPost(this.agentCard, baseUrl, true);
 				post.setEntity(new StringEntity(requestPayload, ContentType.APPLICATION_JSON));
 
 				try (CloseableHttpResponse response = httpClient.execute(post)) {
@@ -787,8 +786,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		}
 
 		try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-			HttpPost post = new HttpPost(baseUrl);
-			post.setHeader("Content-Type", "application/json");
+			HttpPost post = createHttpPost(agentCard, baseUrl, false);
 			post.setEntity(new StringEntity(requestPayload, ContentType.APPLICATION_JSON));
 
 			try (CloseableHttpResponse response = httpClient.execute(post)) {
@@ -803,6 +801,16 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 				return EntityUtils.toString(entity, "UTF-8");
 			}
 		}
+	}
+
+	private HttpPost createHttpPost(AgentCardWrapper agentCard, String baseUrl, boolean streaming) {
+		HttpPost post = new HttpPost(baseUrl);
+		post.setHeader("Content-Type", "application/json");
+		post.setHeader(A2AHeaders.A2A_VERSION, agentCard.protocolVersion());
+		if (streaming) {
+			post.setHeader("Accept", "text/event-stream");
+		}
+		return post;
 	}
 
 	/**

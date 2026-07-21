@@ -92,8 +92,9 @@ public class JsonRpcA2aRequestHandler implements A2aRequestHandler {
 
 	@Override
 	public Object onHandler(String body, ServerRequest.Headers headers) {
+		A2ARequest<?> request = null;
 		try {
-			A2ARequest<?> request = JSONRPCUtils.parseRequestBody(body, null);
+			request = JSONRPCUtils.parseRequestBody(body, null);
 			ServerCallContext context = createCallContext(headers);
 			context.getState().put(METHOD_NAME_KEY, request.getMethod());
 			return request instanceof NonStreamingJSONRPCRequest<?> nonStreamingRequest
@@ -115,10 +116,11 @@ public class JsonRpcA2aRequestHandler implements A2aRequestHandler {
 			return new A2AErrorResponse(new JSONParseError(e.getMessage()));
 		}
 		catch (A2AError e) {
-			return new A2AErrorResponse(e);
+			return request != null ? generateErrorResponse(request, e) : new A2AErrorResponse(e);
 		}
 		catch (Throwable t) {
-			return new A2AErrorResponse(new InternalError(t.getMessage()));
+			InternalError error = new InternalError(t.getMessage());
+			return request != null ? generateErrorResponse(request, error) : new A2AErrorResponse(error);
 		}
 	}
 
