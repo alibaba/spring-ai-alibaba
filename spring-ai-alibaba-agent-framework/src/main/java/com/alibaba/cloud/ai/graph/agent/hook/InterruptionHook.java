@@ -18,8 +18,6 @@ package com.alibaba.cloud.ai.graph.agent.hook;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
@@ -49,7 +47,7 @@ import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_I
  * InterruptionHook hook = InterruptionHook.builder().build();
  */
 @HookPositions({HookPosition.BEFORE_MODEL})
-public class InterruptionHook extends ModelHook implements AsyncNodeActionWithConfig, InterruptableAction {
+public class InterruptionHook extends AbstractInterruptableModelHook {
 	private static final Logger log = LoggerFactory.getLogger(InterruptionHook.class);
 	
 	public static final String INTERRUPTION_FEEDBACK_KEY = "INTERRUPTION_FEEDBACK";
