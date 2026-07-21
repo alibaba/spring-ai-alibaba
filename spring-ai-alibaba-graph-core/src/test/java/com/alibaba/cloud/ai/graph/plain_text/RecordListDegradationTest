@@ -1,0 +1,195 @@
+/*
+ * Copyright 2024-2026 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.alibaba.cloud.ai.graph.plain_text;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.LinkedList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.alibaba.cloud.ai.dashscope.spec.DashScopeApiSpec.SearchResult;
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+
+/**
+ * Minimal reproduction of:
+ * <pre>
+ * com.fasterxml.jackson.databind.JsonMappingException:
+ *   object is not an instance of declaring class
+ * (through reference chain:
+ *   java.util.LinkedHashMap["messages"]
+ *   -&gt; java.util.ArrayList[1]
+ *   -&gt; java.util.HashMap["search_info"]
+ *   -&gt; SearchInfoContainer["search_results"]
+ *   -&gt; java.util.LinkedList[0]
+ *   -&gt; java.util.LinkedHashMap["site_name"])
+ * </pre>
+ *
+ * <p>Root cause: {@code DefaultTyping.NON_FINAL} adds {@code @class} hints for
+ * non-final types (like {@code SearchInfoContainer}) but NOT for records (which are
+ * final).  After a JSON round-trip, {@code SearchResult} records lose type info and
+ * become {@code LinkedHashMap}.  When the now-broken container is re-serialized,
+ * Jackson consults the <em>declared</em> element type ({@code SearchResult}), obtains
+ * a serializer for it, and tries to apply it to the {@code LinkedHashMap} — which
+ * fails because {@code LinkedHashMap} is not an instance of the record class.</p>
+ *
+ * <p>This test goes through {@code JacksonStateSerializer.writeData()}, the exact
+ * code path that needs the {@code RecordFlatteningSerializer} fallback fix.
+ * Without the fix this test <strong>fails</strong> with the above exception.</p>
+ */
+public class RecordListDegradationTest {
+
+	/**
+	 * Non-final POJO mimicking {@code DashScopeApiSpec$SearchInfo}.
+	 * {@code DefaultTyping.NON_FINAL} adds a {@code @class} hint for this type,
+	 * so it survives a JSON round-trip with its type intact.
+	 */
+	@SuppressWarnings("unused")
+	public static class SearchInfoContainer {
+		@JsonProperty("search_results")
+		private LinkedList<SearchResult> searchResults;
+
+		public LinkedList<SearchResult> getSearchResults() {
+			return searchResults;
+		}
+
+		public void setSearchResults(LinkedList<SearchResult> searchResults) {
+			this.searchResults = searchResults;
+		}
+	}
+
+	@Test
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	void shouldSerializeStateContainingDegradedRecordInTypedList() throws Exception {
+		// Directly construct the broken state: a non-final container whose
+		// declared List<SearchResult> field actually holds LinkedHashMap entries.
+		// This simulates what happens after a JSON round-trip: records lose type
+		// info and become plain maps, but the container retains its declared type.
+		SearchInfoContainer container = new SearchInfoContainer();
+
+		LinkedHashMap<String, Object> degradedSearchResult = new LinkedHashMap<>();
+		degradedSearchResult.put("site_name", "example.com");
+		degradedSearchResult.put("icon", "https://example.com/icon.png");
+		degradedSearchResult.put("index", 1);
+		degradedSearchResult.put("title", "Example Title");
+		degradedSearchResult.put("url", "https://example.com");
+
+		LinkedList rawList = new LinkedList();
+		rawList.add(degradedSearchResult);
+		container.setSearchResults(rawList);
+
+		Map<String, Object> innerMap = new LinkedHashMap<>();
+		innerMap.put("search_info", container);
+
+		List<Object> messages = new LinkedList<>();
+		messages.add("placeholder");
+		messages.add(innerMap);
+
+		Map<String, Object> state = new LinkedHashMap<>();
+		state.put("messages", messages);
+
+		SpringAIJacksonStateSerializer serializer = new SpringAIJacksonStateSerializer(
+				OverAllState::new);
+
+		// Exercise writeData — the exact method that needs the fix.
+		// Without RecordFlatteningSerializer fallback, this throws:
+		//   JsonMappingException: object is not an instance of declaring class
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(baos);
+		serializer.writeData(state, oos);
+		oos.flush();
+
+		// Round-trip: read back and verify data integrity
+		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+		ObjectInputStream ois = new ObjectInputStream(bais);
+		Map<String, Object> restored = serializer.readData(ois);
+
+		assertThat(restored).isNotNull();
+		assertThat(restored.get("messages")).isNotNull()
+				.asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.LIST);
+
+		List<Object> restoredMessages = (List<Object>) restored.get("messages");
+		assertThat(restoredMessages).hasSize(2);
+		assertThat(restoredMessages.get(0)).isEqualTo("placeholder");
+
+		assertThat(restoredMessages.get(1))
+				.asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP);
+		Map<String, Object> restoredInnerMap = (Map<String, Object>) restoredMessages.get(1);
+		assertThat(restoredInnerMap).containsKey("search_info");
+
+		Object searchInfoObj = restoredInnerMap.get("search_info");
+		assertThat(searchInfoObj).isNotNull();
+
+		// search_info keeps its SearchInfoContainer type because DefaultTyping
+		// is preserved in the fallback — only record types are made lenient.
+		List<Object> restoredResults;
+		if (searchInfoObj instanceof Map) {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> restoredSearchInfo = (Map<String, Object>) searchInfoObj;
+			assertThat(restoredSearchInfo).containsKey("search_results");
+			restoredResults = (List<Object>) restoredSearchInfo.get("search_results");
+		}
+		else {
+			SearchInfoContainer restoredContainer = (SearchInfoContainer) searchInfoObj;
+			restoredResults = (List<Object>) (List<?>) restoredContainer.getSearchResults();
+		}
+		assertThat(restoredResults).hasSize(1);
+
+		// The element could be a Map (if the record was degraded) or an actual
+		// SearchResult instance (if the record was reconstructed from its fields).
+		Object resultElement = restoredResults.get(0);
+		String siteName;
+		String icon;
+		int index;
+		String title;
+		String url;
+
+		if (resultElement instanceof SearchResult) {
+			SearchResult sr = (SearchResult) resultElement;
+			siteName = sr.siteName();
+			icon = sr.icon();
+			index = sr.index();
+			title = sr.title();
+			url = sr.url();
+		}
+		else {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> map = (Map<String, Object>) resultElement;
+			siteName = (String) map.get("site_name");
+			icon = (String) map.get("icon");
+			index = (Integer) map.get("index");
+			title = (String) map.get("title");
+			url = (String) map.get("url");
+		}
+
+		assertThat(siteName).isEqualTo("example.com");
+		assertThat(icon).isEqualTo("https://example.com/icon.png");
+		assertThat(index).isEqualTo(1);
+		assertThat(title).isEqualTo("Example Title");
+		assertThat(url).isEqualTo("https://example.com");
+	}
+
+}
