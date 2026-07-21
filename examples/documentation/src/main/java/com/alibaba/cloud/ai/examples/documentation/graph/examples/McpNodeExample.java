@@ -72,7 +72,7 @@ public class McpNodeExample {
 		public McpNode(ChatClient.Builder chatClientBuilder, Set<ToolCallback> toolCallbacks) {
 			// 为节点配置 MCP 工具
 			this.chatClient = chatClientBuilder
-					.defaultToolCallbacks(toolCallbacks.toArray(ToolCallback[]::new))
+					.defaultTools(toolCallbacks)
 					.build();
 		}
 

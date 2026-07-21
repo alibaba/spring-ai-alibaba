@@ -100,7 +100,7 @@ public class AgentsExample {
 				.dashScopeApi(dashScopeApi)
 				.defaultOptions(DashScopeChatOptions.builder()
 						.temperature(0.7)      // 控制随机性
-						.maxToken(2000)       // 最大输出长度
+						.maxCompletionTokens(2000)       // 最大输出长度
 						.topP(0.9)            // 核采样参数
 						.enableThinking(true)
 						.build())

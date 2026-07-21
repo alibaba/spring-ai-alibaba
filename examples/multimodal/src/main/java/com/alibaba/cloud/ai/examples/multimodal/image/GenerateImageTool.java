@@ -54,7 +54,7 @@ public class GenerateImageTool {
 			@ToolParam(description = "Image size, e.g. 1024x1024, 1280x720 (default 1024x1024)", required = false) String size) {
 
 		int count = (n != null && n > 0) ? Math.min(n, 4) : 1;
-		var builder = ImageOptionsBuilder.builder().N(count);
+		var builder = ImageOptionsBuilder.builder().n(count);
 		if (size != null && !size.isBlank()) {
 			try {
 				String[] parts = size.split("[x*]");

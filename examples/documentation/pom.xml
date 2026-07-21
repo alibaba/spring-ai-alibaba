@@ -20,7 +20,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.7</version>
+		<version>4.1.0</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.alibaba.cloud.ai</groupId>
@@ -28,25 +28,12 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Examples::Documentation</name>
 	<description>Examples for Website.</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
 
 	<properties>
 		<java.version>17</java.version>
-		<spring-ai.version>1.1.2</spring-ai.version>
-		<spring-ai-alibaba.version>1.1.2.2</spring-ai-alibaba.version>
-		<spring-ai-alibaba-extensions.version>1.1.2.2</spring-ai-alibaba-extensions.version>
+		<spring-ai.version>2.0.0</spring-ai.version>
+		<spring-ai-alibaba.version>2.0.0.0-RC1</spring-ai-alibaba.version>
+		<spring-ai-alibaba-extensions.version>2.0.0.0-RC1</spring-ai-alibaba-extensions.version>
 
 		<redisson.version>3.22.0</redisson.version>
 	</properties>
