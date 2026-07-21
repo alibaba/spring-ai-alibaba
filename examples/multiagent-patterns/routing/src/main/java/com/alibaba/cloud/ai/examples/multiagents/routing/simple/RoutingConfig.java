@@ -41,8 +41,8 @@ public class RoutingConfig {
 	 * {@link LlmRoutingAgent.LlmRoutingAgentBuilder#instruction(String)} when building the router agent.
 	 */
 	private static final String GITHUB_PROMPT = """
-			You are a GitHub expert. Answer questions about code, API references, and implementation \
-			details by searching repositories, issues, and pull requests.
+			You are a GitHub expert. Answer questions about code, API references, implementation details, and pull request operations by searching repositories, issues, and pull requests.
+			You may use `create_pr` to draft or summarize a pull request when appropriate.
 			Please respond to the following request: {github_input}
 			""";
 
