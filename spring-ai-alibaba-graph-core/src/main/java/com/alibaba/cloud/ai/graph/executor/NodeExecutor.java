@@ -341,8 +341,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 						if (result instanceof Map resultMap) {
 							if (!resultMap.containsKey(key) && resultMap.containsKey("messages")) {
-								List<Object> messages = (List<Object>) resultMap.get("messages");
-								Object lastMessage = messages.get(messages.size() - 1);
+								Object messagesValue = resultMap.get("messages");
+								Object lastMessage = extractLastMessage(messagesValue);
 								if (lastMessage instanceof AssistantMessage lastAssistantMessage) {
 									resultMap.put(key, lastAssistantMessage.getText());
 								}
@@ -370,6 +370,26 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.just(aggregatedResponse, doneResponse);
 				}
 			}));
+	}
+
+	/**
+	 * Extract the last message from the embedded streaming result.
+	 *
+	 * <p>
+	 * This method was introduced because embedded GraphFlux completion payloads do not
+	 * always use the same shape for the {@code messages} field. Some nodes return a
+	 * {@link java.util.List} of messages, while others (such as tool execution nodes)
+	 * may return a single {@link org.springframework.ai.chat.messages.Message} instance.
+	 * To keep the streaming completion path backward-compatible and avoid
+	 * {@link ClassCastException}, this helper normalizes both forms when resolving the
+	 * last message.
+	 * </p>
+	 */
+	private static Object extractLastMessage(Object messagesValue) {
+		if (messagesValue instanceof List<?> messages && !messages.isEmpty()) {
+			return messages.get(messages.size() - 1);
+		}
+		return messagesValue;
 	}
 
 	/**
