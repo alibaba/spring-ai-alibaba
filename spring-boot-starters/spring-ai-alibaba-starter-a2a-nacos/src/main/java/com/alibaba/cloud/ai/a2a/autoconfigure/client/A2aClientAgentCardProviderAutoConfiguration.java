@@ -86,8 +86,11 @@ public class A2aClientAgentCardProviderAutoConfiguration {
 	private List<AgentInterface> getSupportedInterfaces(A2aClientAgentCardProperties properties) {
 		List<AgentInterface> interfaces = new ArrayList<>();
 		if (properties.getUrl() != null) {
-			interfaces.add(new AgentInterface(properties.getPreferredTransport() == null ? "JSONRPC"
-					: properties.getPreferredTransport(), properties.getUrl(), null, properties.getProtocolVersion()));
+			String transport = properties.getPreferredTransport() == null ? "JSONRPC"
+					: properties.getPreferredTransport();
+			String protocolVersion = properties.getProtocolVersion();
+			interfaces.add(protocolVersion == null ? new AgentInterface(transport, properties.getUrl())
+					: new AgentInterface(transport, properties.getUrl(), null, protocolVersion));
 		}
 		if (properties.getAdditionalInterfaces() != null) {
 			properties.getAdditionalInterfaces()
