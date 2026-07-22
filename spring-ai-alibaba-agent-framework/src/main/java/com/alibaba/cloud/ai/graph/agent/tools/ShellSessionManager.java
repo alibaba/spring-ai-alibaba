@@ -523,18 +523,36 @@ public class ShellSessionManager {
 					}
 
 					String line = outputLine.content;
+					boolean completed = false;
 
-					// Check for completion marker (only in stdout)
-					if ("stdout".equals(outputLine.source) && line.startsWith(marker)) {
-						String[] parts = line.split(" ", 2);
-						if (parts.length > 1) {
-							try {
-								exitCode = Integer.parseInt(parts[1].trim());
-							} catch (NumberFormatException e) {
-								// Ignore
+					// Detect the completion marker (only in stdout). The marker is emitted by a
+					// follow-up echo command, so it usually arrives on its own line. But when the
+					// command's output has no trailing newline (e.g. `cat` of a file without a final
+					// newline, or `printf` without `\n`), the line reader merges that trailing output
+					// and the marker into a single line, so we look for the marker anywhere in the
+					// line and preserve any real output that precedes it.
+					//
+					// We only treat the line as completion when the text following the marker parses
+					// as the expected exit-status integer. A command that reads from stdin (e.g.
+					// `cat`, `read`, `head -n1`) can consume and echo the injected marker command
+					// itself before it ever runs; that echoed line contains the marker substring but
+					// no valid trailing exit code, so it must NOT be treated as completion (otherwise
+					// the command would be falsely reported as a successful run while still owning the
+					// session). See #4740.
+					if ("stdout".equals(outputLine.source)) {
+						int markerIndex = line.indexOf(marker);
+						if (markerIndex >= 0) {
+							Integer parsedExitCode = parseExitCode(line.substring(markerIndex + marker.length()));
+							if (parsedExitCode != null) {
+								exitCode = parsedExitCode;
+								// Keep any real output that was merged onto the marker line.
+								line = line.substring(0, markerIndex);
+								completed = true;
+								if (line.isEmpty()) {
+									break;
+								}
 							}
 						}
-						break;
 					}
 
 					totalLines++;
@@ -557,6 +575,10 @@ public class ShellSessionManager {
 						truncatedByLines = true;
 					}
 
+					if (completed) {
+						break;
+					}
+
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 					break;
@@ -566,6 +588,24 @@ public class ShellSessionManager {
 			String output = String.join("\n", lines);
 			return new CommandResult(output, exitCode, timedOut, truncatedByLines,
 				truncatedByBytes, totalLines, totalBytes);
+		}
+
+		/**
+		 * Parse the exit status that the completion marker echoes after it (e.g. the {@code 0}
+		 * in {@code <marker> 0}). Returns {@code null} when the text is empty or its first token
+		 * is not an integer, which signals that this occurrence of the marker is not a genuine
+		 * completion line (for example the marker command echoed back by a stdin-reading command).
+		 */
+		private Integer parseExitCode(String afterMarker) {
+			String trimmed = afterMarker.trim();
+			if (trimmed.isEmpty()) {
+				return null;
+			}
+			try {
+				return Integer.parseInt(trimmed.split("\\s+")[0]);
+			} catch (NumberFormatException e) {
+				return null;
+			}
 		}
 	}
 

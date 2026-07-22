@@ -1,11 +1,11 @@
 /*
- * Copyright 2024-2026 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,19 @@
 package com.alibaba.cloud.ai.graph.agent.tools;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -315,6 +321,112 @@ class ShellSessionManagerTest {
 				"Exception message should indicate uninitialized session");
 
 		config = null; // Prevent tearDown cleanup
+	}
+
+	// ==================== Output Collection Tests (#4740, non-Windows) ====================
+	// Reproduces #4740: a command whose output does not end with a newline (e.g. `cat` of a
+	// file without a trailing newline) caused the completion marker to be merged onto the last
+	// output line, so it was never detected and collectOutput hung until the command timed out.
+
+	private ShellSessionManager newManager(Path workspace) {
+		return ShellSessionManager.builder()
+				.workspaceRoot(workspace)
+				.commandTimeout(10000)
+				.build();
+	}
+
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@DisabledOnOs(OS.WINDOWS)
+	void outputWithoutTrailingNewlineIsCapturedAndDoesNotHang() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			// printf without \n leaves no trailing newline, so the marker is merged onto
+			// this line. Before the fix this hung until the command timed out.
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("printf 'hello-no-newline'", cfg);
+
+			assertFalse(result.isTimedOut(), "command should not time out");
+			assertEquals("hello-no-newline", result.getOutput());
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@DisabledOnOs(OS.WINDOWS)
+	void exitCodeIsParsedWhenMergedWithOutput() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			// Output has no trailing newline AND the command fails: the non-zero exit code
+			// must still be parsed from the line the marker was merged onto.
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("printf 'oops' && false", cfg);
+
+			assertFalse(result.isTimedOut(), "command should not time out");
+			assertEquals("oops", result.getOutput());
+			assertEquals(1, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@DisabledOnOs(OS.WINDOWS)
+	void normalOutputWithTrailingNewlineStillWorks() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			ShellSessionManager.CommandResult result = manager.executeCommand("printf 'a\\nb\\n'", cfg);
+
+			assertFalse(result.isTimedOut(), "command should not time out");
+			assertEquals("a\nb", result.getOutput());
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	@DisabledOnOs(OS.WINDOWS)
+	void stdinReadingCommandDoesNotFalselyCompleteOnEchoedMarker() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		// Short timeout: this command can never complete normally, so keep the expected
+		// timeout/restart fast.
+		ShellSessionManager manager = ShellSessionManager.builder()
+				.workspaceRoot(workspace)
+				.commandTimeout(3000)
+				.build();
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			// `cat` with no argument reads from the session's stdin and consumes/echoes the
+			// injected marker command before it ever runs. The echoed line contains the marker
+			// substring but no valid trailing exit code, so it must NOT be treated as completion
+			// — otherwise the command would be falsely reported as a successful (exitCode == null)
+			// run while still owning the session. It should time out and restart instead.
+			ShellSessionManager.CommandResult result = manager.executeCommand("cat", cfg);
+
+			assertTrue(result.isTimedOut(), "stdin-consuming command must not falsely complete on echoed marker");
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
 	}
 
 }
