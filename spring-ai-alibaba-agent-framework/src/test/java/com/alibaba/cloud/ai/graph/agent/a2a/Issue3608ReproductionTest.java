@@ -159,7 +159,7 @@ class Issue3608ReproductionTest {
 		Method extractMethod = A2aNodeActionWithConfig.class.getDeclaredMethod("extractResponseText", java.util.Map.class);
 		extractMethod.setAccessible(true);
 
-		String[] ignorableStates = {"completed", "processing", "failed", "submitted", "canceled"};
+		String[] ignorableStates = { "completed", "processing", "submitted" };
 
 		for (String state : ignorableStates) {
 			java.util.Map<String, Object> result = new java.util.HashMap<>();

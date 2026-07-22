@@ -38,6 +38,8 @@ import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
  */
 public class AgentCardConverterUtil {
 
+	private static final String LEGACY_PROTOCOL_VERSION = "0.3";
+
 	public static org.a2aproject.sdk.spec.AgentCard convertToA2aAgentCard(AgentCard agentCard) {
 		if (agentCard == null) {
 			return null;
@@ -109,19 +111,24 @@ public class AgentCardConverterUtil {
 
 	private static List<org.a2aproject.sdk.spec.AgentInterface> convertToA2aAgentInterfaces(AgentCard agentCard) {
 		List<org.a2aproject.sdk.spec.AgentInterface> interfaces = new ArrayList<>();
+		String protocolVersion = nacosProtocolVersion(agentCard.getProtocolVersion());
 		if (agentCard.getUrl() != null) {
 			interfaces.add(new org.a2aproject.sdk.spec.AgentInterface(
 					agentCard.getPreferredTransport() == null ? "JSONRPC" : agentCard.getPreferredTransport(),
-					agentCard.getUrl(), null, agentCard.getProtocolVersion()));
+					agentCard.getUrl(), null, protocolVersion));
 		}
 		if (agentCard.getAdditionalInterfaces() != null) {
 			agentCard.getAdditionalInterfaces()
 				.stream()
-				.map(agentInterface -> transferAgentInterface(agentInterface, agentCard.getProtocolVersion()))
+				.map(agentInterface -> transferAgentInterface(agentInterface, protocolVersion))
 				.filter(agentInterface -> agentInterface != null && !interfaces.contains(agentInterface))
 				.forEach(interfaces::add);
 		}
 		return interfaces;
+	}
+
+	private static String nacosProtocolVersion(String protocolVersion) {
+		return protocolVersion == null || protocolVersion.isBlank() ? LEGACY_PROTOCOL_VERSION : protocolVersion;
 	}
 
 	private static org.a2aproject.sdk.spec.AgentInterface transferAgentInterface(AgentInterface agentInterface,
@@ -166,9 +173,12 @@ public class AgentCardConverterUtil {
 	}
 
 	public static AgentCard convertToNacosAgentCard(org.a2aproject.sdk.spec.AgentCard agentCard) {
+		validateNacosCompatibleCard(agentCard);
 		AgentCard card = new AgentCard();
-		org.a2aproject.sdk.spec.AgentInterface primaryInterface = agentCard.supportedInterfaces().isEmpty() ? null
-				: agentCard.supportedInterfaces().get(0);
+		List<org.a2aproject.sdk.spec.AgentInterface> supportedInterfaces = effectiveInterfaces(agentCard);
+		org.a2aproject.sdk.spec.AgentInterface primaryInterface = supportedInterfaces.isEmpty() ? null
+				: supportedInterfaces.get(0);
+		validateNacosCompatibleInterfaces(supportedInterfaces, primaryInterface);
 		card.setProtocolVersion(primaryInterface == null ? null : primaryInterface.protocolVersion());
 		card.setName(agentCard.name());
 		card.setDescription(agentCard.description());
@@ -178,7 +188,7 @@ public class AgentCardConverterUtil {
 		card.setSkills(agentCard.skills().stream().map(AgentCardConverterUtil::convertToNacosAgentSkill).toList());
 		card.setUrl(primaryInterface == null ? null : primaryInterface.url());
 		card.setPreferredTransport(primaryInterface == null ? null : primaryInterface.protocolBinding());
-		card.setAdditionalInterfaces(convertToNacosAgentInterfaces(agentCard.supportedInterfaces()));
+		card.setAdditionalInterfaces(convertToNacosAgentInterfaces(supportedInterfaces));
 		card.setProvider(convertToNacosAgentProvider(agentCard.provider()));
 		card.setDocumentationUrl(agentCard.documentationUrl());
 		card.setSecuritySchemes(convertToNacosSecuritySchemes(agentCard.securitySchemes()));
@@ -188,6 +198,71 @@ public class AgentCardConverterUtil {
 		card.setDefaultOutputModes(agentCard.defaultOutputModes());
 		card.setSupportsAuthenticatedExtendedCard(agentCard.capabilities().extendedAgentCard());
 		return card;
+	}
+
+	private static List<org.a2aproject.sdk.spec.AgentInterface> effectiveInterfaces(
+			org.a2aproject.sdk.spec.AgentCard agentCard) {
+		if (agentCard.supportedInterfaces() != null && !agentCard.supportedInterfaces().isEmpty()) {
+			return agentCard.supportedInterfaces();
+		}
+		List<org.a2aproject.sdk.spec.AgentInterface> interfaces = new ArrayList<>();
+		if (agentCard.url() != null) {
+			String transport = agentCard.preferredTransport() == null ? "JSONRPC" : agentCard.preferredTransport();
+			interfaces.add(new org.a2aproject.sdk.spec.AgentInterface(transport, agentCard.url(), null,
+					LEGACY_PROTOCOL_VERSION));
+		}
+		if (agentCard.additionalInterfaces() != null) {
+			agentCard.additionalInterfaces().stream().filter(agentInterface -> agentInterface != null).map(agentInterface ->
+					new org.a2aproject.sdk.spec.AgentInterface(agentInterface.transport(), agentInterface.url(), null,
+							LEGACY_PROTOCOL_VERSION))
+				.filter(agentInterface -> !interfaces.contains(agentInterface))
+				.forEach(interfaces::add);
+		}
+		return interfaces;
+	}
+
+	private static void validateNacosCompatibleCard(org.a2aproject.sdk.spec.AgentCard agentCard) {
+		if (agentCard.signatures() != null && !agentCard.signatures().isEmpty()) {
+			throw new IllegalArgumentException("Nacos cannot losslessly represent agent card signatures");
+		}
+		if (agentCard.capabilities() != null && agentCard.capabilities().extensions() != null
+				&& !agentCard.capabilities().extensions().isEmpty()) {
+			throw new IllegalArgumentException("Nacos cannot losslessly represent agent capability extensions");
+		}
+	}
+
+	private static void validateNacosCompatibleInterfaces(
+			List<org.a2aproject.sdk.spec.AgentInterface> supportedInterfaces,
+			org.a2aproject.sdk.spec.AgentInterface primaryInterface) {
+		if (primaryInterface == null) {
+			if (!supportedInterfaces.isEmpty()) {
+				throw new IllegalArgumentException("Nacos cannot register a null primary agent interface");
+			}
+			return;
+		}
+		String primaryVersion = primaryInterface.protocolVersion();
+		if (primaryVersion == null || primaryVersion.isBlank()) {
+			throw incompatibleInterface(0, primaryInterface, "does not declare a protocol version");
+		}
+		for (int index = 0; index < supportedInterfaces.size(); index++) {
+			org.a2aproject.sdk.spec.AgentInterface agentInterface = supportedInterfaces.get(index);
+			if (agentInterface == null) {
+				throw new IllegalArgumentException("Nacos cannot register null agent interface at index " + index);
+			}
+			if (agentInterface.tenant() != null && !agentInterface.tenant().isBlank()) {
+				throw incompatibleInterface(index, agentInterface, "declares tenant " + agentInterface.tenant());
+			}
+			if (!primaryVersion.equals(agentInterface.protocolVersion())) {
+				throw incompatibleInterface(index, agentInterface,
+						"uses protocol version " + agentInterface.protocolVersion() + " instead of " + primaryVersion);
+			}
+		}
+	}
+
+	private static IllegalArgumentException incompatibleInterface(int index,
+			org.a2aproject.sdk.spec.AgentInterface agentInterface, String reason) {
+		return new IllegalArgumentException("Nacos cannot losslessly represent agent interface at index " + index
+				+ " (" + agentInterface.protocolBinding() + " " + agentInterface.url() + "): " + reason);
 	}
 
 	private static AgentCapabilities convertToNacosAgentCapabilities(org.a2aproject.sdk.spec.AgentCapabilities capabilities) {

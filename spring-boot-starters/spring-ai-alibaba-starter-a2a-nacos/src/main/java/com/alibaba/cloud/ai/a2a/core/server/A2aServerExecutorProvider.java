@@ -25,4 +25,8 @@ public interface A2aServerExecutorProvider {
 
 	ExecutorService getA2aServerExecutor();
 
+	default ExecutorService getEventConsumerExecutor() {
+		return getA2aServerExecutor();
+	}
+
 }

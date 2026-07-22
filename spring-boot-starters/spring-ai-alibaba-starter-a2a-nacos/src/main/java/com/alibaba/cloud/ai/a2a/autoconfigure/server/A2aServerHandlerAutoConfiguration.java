@@ -49,9 +49,7 @@ import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
 import org.a2aproject.sdk.server.tasks.TaskStore;
-import org.a2aproject.sdk.server.tasks.TaskStateProvider;
 import org.a2aproject.sdk.spec.AgentCard;
-import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandler;
 
 /**
@@ -106,7 +104,7 @@ public class A2aServerHandlerAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public QueueManager queueManager(TaskStore taskStore, MainEventBus mainEventBus) {
-		return new InMemoryQueueManager(asTaskStateProvider(taskStore), mainEventBus);
+		return new InMemoryQueueManager(TaskStateProviderAdapter.from(taskStore), mainEventBus);
 	}
 
 	@Bean
@@ -133,9 +131,9 @@ public class A2aServerHandlerAutoConfiguration {
 	public RequestHandler requestHandler(AgentExecutor agentExecutor, TaskStore taskStore, QueueManager queueManager,
 			PushNotificationConfigStore pushConfigStore, MainEventBusProcessor mainEventBusProcessor,
 			A2aServerExecutorProvider a2aServerExecutorProvider) {
-		return new DefaultRequestHandler(agentExecutor, taskStore, queueManager, pushConfigStore, mainEventBusProcessor,
-				a2aServerExecutorProvider.getA2aServerExecutor(),
-				a2aServerExecutorProvider.getA2aServerExecutor());
+		return DefaultRequestHandler.create(agentExecutor, taskStore, queueManager, pushConfigStore,
+				mainEventBusProcessor, a2aServerExecutorProvider.getA2aServerExecutor(),
+				a2aServerExecutorProvider.getEventConsumerExecutor());
 	}
 
 	@Bean
@@ -151,25 +149,6 @@ public class A2aServerHandlerAutoConfiguration {
 			havingValue = ServerTypeEnum.JSON_RPC_TYPE, matchIfMissing = true)
 	public JsonRpcA2aRequestHandler jsonRpcA2aRequestHandler(JSONRPCHandler jsonrpcHandler) {
 		return new JsonRpcA2aRequestHandler(jsonrpcHandler);
-	}
-
-	private static TaskStateProvider asTaskStateProvider(TaskStore taskStore) {
-		if (taskStore instanceof TaskStateProvider taskStateProvider) {
-			return taskStateProvider;
-		}
-		return new TaskStateProvider() {
-			@Override
-			public boolean isTaskActive(String taskId) {
-				Task task = taskStore.get(taskId);
-				return task == null || !task.status().state().isFinal();
-			}
-
-			@Override
-			public boolean isTaskFinalized(String taskId) {
-				Task task = taskStore.get(taskId);
-				return task != null && task.status().state().isFinal();
-			}
-		};
 	}
 
 }

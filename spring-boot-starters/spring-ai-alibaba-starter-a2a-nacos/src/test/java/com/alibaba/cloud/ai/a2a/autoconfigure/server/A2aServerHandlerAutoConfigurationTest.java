@@ -19,12 +19,15 @@ package com.alibaba.cloud.ai.a2a.autoconfigure.server;
 import java.util.List;
 
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.a2a.core.server.A2aServerExecutorProvider;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import org.a2aproject.sdk.server.config.A2AConfigProvider;
 import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
+import org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandler;
 import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentInterface;
@@ -47,6 +50,32 @@ class A2aServerHandlerAutoConfigurationTest {
 			assertThat(context).hasNotFailed();
 			assertThat(context).hasSingleBean(A2AConfigProvider.class);
 			assertThat(context).hasSingleBean(RequestHandler.class);
+			RequestHandler requestHandler = context.getBean(RequestHandler.class);
+			A2aServerExecutorProvider executorProvider = context.getBean(A2aServerExecutorProvider.class);
+			assertThat(requestHandler).isInstanceOf(DefaultRequestHandler.class);
+			assertThat(ReflectionTestUtils.getField(requestHandler, "agentCompletionTimeoutSeconds")).isEqualTo(30);
+			assertThat(ReflectionTestUtils.getField(requestHandler, "consumptionCompletionTimeoutSeconds")).isEqualTo(5);
+			assertThat(ReflectionTestUtils.getField(requestHandler, "executor"))
+				.isSameAs(executorProvider.getA2aServerExecutor());
+			assertThat(ReflectionTestUtils.getField(requestHandler, "eventConsumerExecutor"))
+				.isSameAs(executorProvider.getEventConsumerExecutor());
+			assertThat(executorProvider.getEventConsumerExecutor())
+				.isNotSameAs(executorProvider.getA2aServerExecutor());
+		});
+	}
+
+	@Test
+	void customConfigProviderControlsBlockingTimeouts() {
+		A2AConfigProvider configProvider = mock(A2AConfigProvider.class);
+		org.mockito.Mockito.when(configProvider.getValue("a2a.blocking.agent.timeout.seconds")).thenReturn("11");
+		org.mockito.Mockito.when(configProvider.getValue("a2a.blocking.consumption.timeout.seconds")).thenReturn("7");
+
+		this.contextRunner.withBean(A2AConfigProvider.class, () -> configProvider).run(context -> {
+			assertThat(context).hasNotFailed();
+			RequestHandler requestHandler = context.getBean(RequestHandler.class);
+			assertThat(ReflectionTestUtils.getField(requestHandler, "configProvider")).isSameAs(configProvider);
+			assertThat(ReflectionTestUtils.getField(requestHandler, "agentCompletionTimeoutSeconds")).isEqualTo(11);
+			assertThat(ReflectionTestUtils.getField(requestHandler, "consumptionCompletionTimeoutSeconds")).isEqualTo(7);
 		});
 	}
 

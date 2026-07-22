@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests for {@link AgentCardConverterUtil}.
@@ -90,6 +91,28 @@ class AgentCardConverterUtilTest {
 	}
 
 	@Test
+	void convertToA2aAgentCard_defaultsMissingProtocolVersionToLegacy03() {
+		AgentCard nacosCard = createMinimalAgentCard();
+		nacosCard.setProtocolVersion(null);
+
+		org.a2aproject.sdk.spec.AgentCard result = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
+
+		assertThat(result.supportedInterfaces()).singleElement().satisfies(agentInterface ->
+			assertThat(agentInterface.protocolVersion()).isEqualTo("0.3"));
+	}
+
+	@Test
+	void convertToA2aAgentCard_preservesLegacy02ProtocolVersion() {
+		AgentCard nacosCard = createMinimalAgentCard();
+		nacosCard.setProtocolVersion("0.2.5");
+
+		org.a2aproject.sdk.spec.AgentCard result = AgentCardConverterUtil.convertToA2aAgentCard(nacosCard);
+
+		assertThat(result.supportedInterfaces()).singleElement().satisfies(agentInterface ->
+			assertThat(agentInterface.protocolVersion()).isEqualTo("0.2.5"));
+	}
+
+	@Test
 	void convertToA2aAgentCard_withNullAgentCard_shouldReturnNull() {
 		assertThat(AgentCardConverterUtil.convertToA2aAgentCard(null)).isNull();
 	}
@@ -142,6 +165,109 @@ class AgentCardConverterUtilTest {
 			.containsEntry("type", "apiKey")
 			.containsEntry("in", "header")
 			.containsEntry("name", "X-API-Key");
+	}
+
+	@Test
+	void convertToNacosAgentCard_rejectsTenantThatNacosCannotRepresent() {
+		org.a2aproject.sdk.spec.AgentCard card = a2aCardWithInterfaces(List.of(
+				new org.a2aproject.sdk.spec.AgentInterface("JSONRPC", "http://localhost:8080", "tenant-a", "1.0")));
+
+		assertThatThrownBy(() -> AgentCardConverterUtil.convertToNacosAgentCard(card))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("index 0")
+			.hasMessageContaining("tenant-a");
+	}
+
+	@Test
+	void convertToNacosAgentCard_rejectsMixedProtocolVersions() {
+		org.a2aproject.sdk.spec.AgentCard card = a2aCardWithInterfaces(List.of(
+				new org.a2aproject.sdk.spec.AgentInterface("JSONRPC", "http://localhost:8080", null, "1.0"),
+				new org.a2aproject.sdk.spec.AgentInterface("JSONRPC", "http://localhost:8081", null, "0.3")));
+
+		assertThatThrownBy(() -> AgentCardConverterUtil.convertToNacosAgentCard(card))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("index 1")
+			.hasMessageContaining("0.3")
+			.hasMessageContaining("1.0");
+	}
+
+	@Test
+	void convertToNacosAgentCard_preservesLegacyTopLevelAndAdditionalInterfaces() {
+		org.a2aproject.sdk.spec.AgentCard legacyCard = org.a2aproject.sdk.spec.AgentCard.builder()
+			.name("legacy-agent")
+			.description("Legacy Agent")
+			.version("0.3.0")
+			.url("http://localhost:8080")
+			.preferredTransport("JSONRPC")
+			.additionalInterfaces(List.of(
+					new org.a2aproject.sdk.spec.Legacy_0_3_AgentInterface("GRPC", "http://localhost:8081")))
+			.supportedInterfaces(List.of())
+			.defaultInputModes(List.of("text/plain"))
+			.defaultOutputModes(List.of("text/plain"))
+			.skills(List.of())
+			.capabilities(org.a2aproject.sdk.spec.AgentCapabilities.builder().streaming(false).build())
+			.build();
+
+		AgentCard converted = AgentCardConverterUtil.convertToNacosAgentCard(legacyCard);
+
+		assertThat(converted.getProtocolVersion()).isEqualTo("0.3");
+		assertThat(converted.getUrl()).isEqualTo("http://localhost:8080");
+		assertThat(converted.getPreferredTransport()).isEqualTo("JSONRPC");
+		assertThat(converted.getAdditionalInterfaces()).singleElement().satisfies(agentInterface -> {
+			assertThat(agentInterface.getTransport()).isEqualTo("GRPC");
+			assertThat(agentInterface.getUrl()).isEqualTo("http://localhost:8081");
+		});
+		assertThat(AgentCardConverterUtil.convertToA2aAgentCard(converted).supportedInterfaces())
+			.hasSize(2)
+			.allSatisfy(agentInterface -> assertThat(agentInterface.protocolVersion()).isEqualTo("0.3"));
+	}
+
+	@Test
+	void convertToNacosAgentCard_rejectsSignaturesThatWouldBeLost() {
+		org.a2aproject.sdk.spec.AgentCard card = org.a2aproject.sdk.spec.AgentCard
+			.builder(a2aCardWithInterfaces(List.of(
+					new org.a2aproject.sdk.spec.AgentInterface("JSONRPC", "http://localhost:8080", null, "1.0"))))
+			.signatures(List.of(org.a2aproject.sdk.spec.AgentCardSignature.builder()
+				.signature("signed")
+				.protectedHeader("header")
+				.build()))
+			.build();
+
+		assertThatThrownBy(() -> AgentCardConverterUtil.convertToNacosAgentCard(card))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("signatures");
+	}
+
+	@Test
+	void convertToNacosAgentCard_rejectsCapabilityExtensionsThatWouldBeLost() {
+		org.a2aproject.sdk.spec.AgentCard base = a2aCardWithInterfaces(List.of(
+				new org.a2aproject.sdk.spec.AgentInterface("JSONRPC", "http://localhost:8080", null, "1.0")));
+		org.a2aproject.sdk.spec.AgentCard card = org.a2aproject.sdk.spec.AgentCard.builder(base)
+			.capabilities(org.a2aproject.sdk.spec.AgentCapabilities.builder()
+				.extensions(List.of(org.a2aproject.sdk.spec.AgentExtension.builder()
+					.uri("https://example.test/extension")
+					.required(true)
+					.build()))
+				.build())
+			.build();
+
+		assertThatThrownBy(() -> AgentCardConverterUtil.convertToNacosAgentCard(card))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("extensions");
+	}
+
+	private static org.a2aproject.sdk.spec.AgentCard a2aCardWithInterfaces(
+			List<org.a2aproject.sdk.spec.AgentInterface> interfaces) {
+		return org.a2aproject.sdk.spec.AgentCard.builder()
+			.name("test-agent")
+			.description("Test Agent")
+			.version("1.0.0")
+			.defaultInputModes(List.of("text/plain"))
+			.defaultOutputModes(List.of("text/plain"))
+			.skills(List.of())
+			.capabilities(org.a2aproject.sdk.spec.AgentCapabilities.builder().streaming(false).build())
+			.supportedInterfaces(interfaces)
+			.build();
 	}
 
 	private static AgentCard createMinimalAgentCard() {

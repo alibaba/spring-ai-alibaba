@@ -38,6 +38,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -50,6 +51,8 @@ import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 
 import org.a2aproject.sdk.server.agentexecution.AgentExecutor;
+import org.a2aproject.sdk.server.config.A2AConfigProvider;
+import org.a2aproject.sdk.server.config.DefaultValuesConfigProvider;
 import org.a2aproject.sdk.server.events.InMemoryQueueManager;
 import org.a2aproject.sdk.server.events.MainEventBus;
 import org.a2aproject.sdk.server.events.MainEventBusProcessor;
@@ -62,12 +65,10 @@ import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
 import org.a2aproject.sdk.server.tasks.PushNotificationSender;
 import org.a2aproject.sdk.server.tasks.TaskStore;
-import org.a2aproject.sdk.server.tasks.TaskStateProvider;
 import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentInterface;
 import org.a2aproject.sdk.spec.SecurityRequirement;
-import org.a2aproject.sdk.spec.Task;
 import org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,6 +109,12 @@ public class A2aServerMultiAgentAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	public A2AConfigProvider multiAgentA2aConfigProvider() {
+		return new DefaultValuesConfigProvider();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
 	public TaskStore multiAgentTaskStore() {
 		return new InMemoryTaskStore();
 	}
@@ -121,7 +128,7 @@ public class A2aServerMultiAgentAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public QueueManager multiAgentQueueManager(TaskStore taskStore, MainEventBus mainEventBus) {
-		return new InMemoryQueueManager(asTaskStateProvider(taskStore), mainEventBus);
+		return new InMemoryQueueManager(TaskStateProviderAdapter.from(taskStore), mainEventBus);
 	}
 
 	@Bean
@@ -153,7 +160,7 @@ public class A2aServerMultiAgentAutoConfiguration {
 			A2aMultiAgentProperties multiAgentProperties, ObjectProvider<Map<String, Agent>> agentMapProvider,
 			MultiAgentRequestRouter router, TaskStore taskStore, QueueManager queueManager,
 			PushNotificationConfigStore pushConfigStore, MainEventBusProcessor mainEventBusProcessor,
-			A2aServerExecutorProvider executorProvider) {
+			A2aServerExecutorProvider executorProvider, AutowireCapableBeanFactory beanFactory) {
 
 		Map<String, Agent> agents = agentMapProvider.getIfAvailable();
 		Map<String, A2aAgentCardProperties> agentConfigs = multiAgentProperties.getAgents();
@@ -183,10 +190,13 @@ public class A2aServerMultiAgentAutoConfiguration {
 
 			// Create and register handler for this agent
 			AgentExecutor agentExecutor = new GraphAgentExecutor(agent);
-			RequestHandler requestHandler = DefaultRequestHandler.create(agentExecutor, taskStore, queueManager,
+			DefaultRequestHandler requestHandler = DefaultRequestHandler.create(agentExecutor, taskStore, queueManager,
 					pushConfigStore, mainEventBusProcessor, executorProvider.getA2aServerExecutor(),
-					executorProvider.getA2aServerExecutor());
-			JSONRPCHandler jsonRpcHandler = new JSONRPCHandler(agentCard, requestHandler,
+					executorProvider.getEventConsumerExecutor());
+			beanFactory.autowireBean(requestHandler);
+			RequestHandler initializedRequestHandler = (RequestHandler) beanFactory.initializeBean(requestHandler,
+					"a2aRequestHandler-" + agentKey);
+			JSONRPCHandler jsonRpcHandler = new JSONRPCHandler(agentCard, initializedRequestHandler,
 					executorProvider.getA2aServerExecutor());
 			JsonRpcA2aRequestHandler a2aHandler = new JsonRpcA2aRequestHandler(jsonRpcHandler);
 
@@ -296,25 +306,6 @@ public class A2aServerMultiAgentAutoConfiguration {
 				.forEach(interfaces::add);
 		}
 		return List.copyOf(interfaces);
-	}
-
-	private static TaskStateProvider asTaskStateProvider(TaskStore taskStore) {
-		if (taskStore instanceof TaskStateProvider taskStateProvider) {
-			return taskStateProvider;
-		}
-		return new TaskStateProvider() {
-			@Override
-			public boolean isTaskActive(String taskId) {
-				Task task = taskStore.get(taskId);
-				return task == null || !task.status().state().isFinal();
-			}
-
-			@Override
-			public boolean isTaskFinalized(String taskId) {
-				Task task = taskStore.get(taskId);
-				return task != null && task.status().state().isFinal();
-			}
-		};
 	}
 
 }

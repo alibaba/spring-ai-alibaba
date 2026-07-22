@@ -26,14 +26,10 @@ import org.springframework.web.servlet.function.RouterFunctions;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
-import java.io.IOException;
 import java.time.Duration;
-import java.util.function.Consumer;
 
 import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
 import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
-import org.a2aproject.sdk.jsonrpc.common.wrappers.A2AResponse;
-import org.a2aproject.sdk.spec.TaskStatusUpdateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -124,34 +120,7 @@ public class JsonRpcA2aRouterProvider implements A2aRouterProvider<JsonRpcA2aReq
 		}
 
 		private ServerResponse buildSseResponse(Flux<?> result) {
-			return ServerResponse.sse(sseBuilder -> {
-				sseBuilder.onComplete(() -> {
-					log.debug("Agent SSE connection completed.");
-				});
-				sseBuilder.onTimeout(() -> {
-					log.debug("Agent SSE connection timeout.");
-				});
-				result.subscribe((Consumer<Object>) o -> {
-					if (o instanceof A2AResponse) {
-						try {
-							String sseBody = JsonUtil.toJson(o);
-							if (log.isDebugEnabled()) {
-								log.debug("send sse body to agent: {}", sseBody);
-							}
-							sseBuilder.data(sseBody);
-							if (((A2AResponse<?>) o).getResult() instanceof TaskStatusUpdateEvent) {
-								TaskStatusUpdateEvent event = (TaskStatusUpdateEvent) ((A2AResponse<?>) o).getResult();
-								if (event.isFinal()) {
-									sseBuilder.complete();
-								}
-							}
-						}
-						catch (JsonProcessingException | IOException e) {
-							sseBuilder.error(e);
-						}
-					}
-				});
-			}, Duration.ZERO);
+			return ServerResponse.sse(sseBuilder -> A2aSseResponseWriter.write(result, sseBuilder, log), Duration.ZERO);
 		}
 
 	}

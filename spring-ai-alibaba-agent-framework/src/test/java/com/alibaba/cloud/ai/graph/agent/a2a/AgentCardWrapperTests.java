@@ -58,6 +58,9 @@ class AgentCardWrapperTests {
 
 		assertEquals("http://localhost:8080/jsonrpc", wrapper.url());
 		assertEquals("jsonrpc", wrapper.preferredTransport());
+		assertEquals("0.3", wrapper.protocolVersion());
+		assertEquals(List.of("0.3", "0.3"),
+				wrapper.additionalInterfaces().stream().map(AgentInterface::protocolVersion).toList());
 	}
 
 	@Test
@@ -69,6 +72,7 @@ class AgentCardWrapperTests {
 
 		assertEquals("http://localhost:8080/jsonrpc", wrapper.url());
 		assertEquals(TransportProtocol.JSONRPC.asString(), wrapper.preferredTransport());
+		assertEquals("0.3", wrapper.protocolVersion());
 	}
 
 	@Test

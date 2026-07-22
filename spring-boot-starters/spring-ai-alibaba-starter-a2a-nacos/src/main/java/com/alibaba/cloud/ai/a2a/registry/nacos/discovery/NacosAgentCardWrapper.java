@@ -50,24 +50,26 @@ public class NacosAgentCardWrapper extends AgentCardWrapper {
 	}
 
 	@Override
-	public String url() {
-		if (CollectionUtils.isEmpty(getAgentCard().supportedInterfaces())) {
-			return super.url();
+	public AgentEndpoint endpoint() {
+		AgentCard agentCard = getAgentCard();
+		AgentEndpoint preferred = preferredEndpoint(agentCard);
+		if (CollectionUtils.isEmpty(agentCard.supportedInterfaces())) {
+			return preferred;
 		}
-		String preferredTransport = super.preferredTransport();
-		List<AgentInterface> agentInterfaces = getAgentCard().supportedInterfaces()
+		List<AgentInterface> agentInterfaces = agentCard.supportedInterfaces()
 			.stream()
 			.filter(agentInterface -> agentInterface != null
-					&& Objects.equals(preferredTransport, agentInterface.protocolBinding()))
+					&& preferred.protocolBinding().equalsIgnoreCase(agentInterface.protocolBinding())
+					&& Objects.equals(preferred.protocolVersion(), agentInterface.protocolVersion())
+					&& Objects.equals(preferred.tenant(), agentInterface.tenant()))
 			.toList();
 		if (CollectionUtils.isEmpty(agentInterfaces)) {
-			return super.url();
+			return preferred;
 		}
-		if (1 == agentInterfaces.size()) {
-			return agentInterfaces.get(0).url();
-		}
-		int index = pollingIndex.incrementAndGet() % agentInterfaces.size();
-		return agentInterfaces.get(index).url();
+		int index = agentInterfaces.size() == 1 ? 0
+				: Math.floorMod(pollingIndex.getAndIncrement(), agentInterfaces.size());
+		return new AgentEndpoint(agentInterfaces.get(index).url(), preferred.protocolBinding(),
+				preferred.protocolVersion(), preferred.tenant());
 	}
 
 	@Override

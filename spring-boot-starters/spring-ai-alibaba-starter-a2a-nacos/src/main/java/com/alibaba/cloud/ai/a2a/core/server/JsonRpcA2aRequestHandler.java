@@ -118,8 +118,9 @@ public class JsonRpcA2aRequestHandler implements A2aRequestHandler {
 		catch (A2AError e) {
 			return request != null ? generateErrorResponse(request, e) : new A2AErrorResponse(e);
 		}
-		catch (Throwable t) {
-			InternalError error = new InternalError(t.getMessage());
+		catch (Exception ex) {
+			LOGGER.error("Unexpected error while handling an A2A JSON-RPC request", ex);
+			InternalError error = new InternalError("Internal server error");
 			return request != null ? generateErrorResponse(request, error) : new A2AErrorResponse(error);
 		}
 	}
@@ -205,13 +206,11 @@ public class JsonRpcA2aRequestHandler implements A2aRequestHandler {
 		state.put(HEADERS_KEY, headers.asHttpHeaders().toSingleValueMap());
 
 		Set<String> requestedExtensions = new HashSet<>();
-		String extensionsHeader = headers.firstHeader(A2AHeaders.A2A_EXTENSIONS);
-		if (extensionsHeader != null) {
-			Arrays.stream(extensionsHeader.split(","))
+		headers.asHttpHeaders().getOrEmpty(A2AHeaders.A2A_EXTENSIONS).stream()
+			.flatMap(extensionsHeader -> Arrays.stream(extensionsHeader.split(",")))
 				.map(String::trim)
 				.filter(extension -> !extension.isEmpty())
 				.forEach(requestedExtensions::add);
-		}
 		return new ServerCallContext(UnauthenticatedUser.INSTANCE, state, requestedExtensions,
 				headers.firstHeader(A2AHeaders.A2A_VERSION));
 	}
