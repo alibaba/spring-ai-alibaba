@@ -65,6 +65,12 @@ import static org.a2aproject.sdk.spec.A2AMethods.SEND_STREAMING_MESSAGE_METHOD;
 
 public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 
+	private static final String LEGACY_PROTOCOL_VERSION = "0.3";
+
+	private static final String LEGACY_SEND_MESSAGE_METHOD = "message/send";
+
+	private static final String LEGACY_SEND_STREAMING_MESSAGE_METHOD = "message/stream";
+
 	private final String agentName;
 
 	private final AgentCardWrapper agentCard;
@@ -685,18 +691,39 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 	 * @return JSON string payload (e.g., JSON-RPC params)
 	 */
 	private String buildSendMessageRequest(OverAllState state, RunnableConfig config) {
+		return buildSendRequest(state, config, false);
+	}
+
+	/**
+	 * Build the JSON-RPC streaming request payload (method: SendStreamingMessage).
+	 * @param state Parent state
+	 * @return JSON string payload for streaming
+	 */
+	private String buildSendStreamingMessageRequest(OverAllState state, RunnableConfig config) {
+		return buildSendRequest(state, config, true);
+	}
+
+	private String buildSendRequest(OverAllState state, RunnableConfig config, boolean streaming) {
 		Object textValue = getEffectiveInstruction(state);
 		String text = String.valueOf(textValue);
+		boolean legacyProtocol = isLegacyProtocolVersion(this.agentCard.protocolVersion());
 
 		String id = UUID.randomUUID().toString();
 		String messageId = UUID.randomUUID().toString().replace("-", "");
 
-		Map<String, Object> part = Map.of("text", text);
+		Map<String, Object> part = new HashMap<>();
+		part.put("text", text);
+		if (legacyProtocol) {
+			part.put("kind", "text");
+		}
 
 		Map<String, Object> message = new HashMap<>();
 		message.put("messageId", messageId);
 		message.put("parts", List.of(part));
-		message.put("role", Message.Role.ROLE_USER.name());
+		message.put("role", legacyProtocol ? "user" : Message.Role.ROLE_USER.name());
+		if (legacyProtocol) {
+			message.put("kind", "message");
+		}
 
 		Map<String, Object> params = new HashMap<>();
 		params.put("message", message);
@@ -710,7 +737,7 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		Map<String, Object> root = new HashMap<>();
 		root.put("id", id);
 		root.put("jsonrpc", "2.0");
-		root.put("method", SEND_MESSAGE_METHOD);
+		root.put("method", requestMethod(streaming, legacyProtocol));
 		root.put("params", params);
 
 		try {
@@ -721,46 +748,16 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 		}
 	}
 
-	/**
-	 * Build the JSON-RPC streaming request payload (method: SendStreamingMessage).
-	 * @param state Parent state
-	 * @return JSON string payload for streaming
-	 */
-	private String buildSendStreamingMessageRequest(OverAllState state, RunnableConfig config) {
-		Object textValue = getEffectiveInstruction(state);
-		String text = String.valueOf(textValue);
-
-		String id = UUID.randomUUID().toString();
-		String messageId = UUID.randomUUID().toString().replace("-", "");
-
-		Map<String, Object> part = Map.of("text", text);
-
-		Map<String, Object> message = new HashMap<>();
-		message.put("messageId", messageId);
-		message.put("parts", List.of(part));
-		message.put("role", Message.Role.ROLE_USER.name());
-
-		Map<String, Object> params = new HashMap<>();
-		params.put("message", message);
-
-		Map<String, Object> metadata = new HashMap<>();
-		config.threadId().ifPresent(threadId -> metadata.put("threadId", threadId));
-		// FIXME, the key 'userId' should be configurable
-		config.metadata("userId").ifPresent(userId -> metadata.put("userId", userId));
-		params.put("metadata", metadata);
-
-		Map<String, Object> root = new HashMap<>();
-		root.put("id", id);
-		root.put("jsonrpc", "2.0");
-		root.put("method", SEND_STREAMING_MESSAGE_METHOD);
-		root.put("params", params);
-
-		try {
-			return objectMapper.writeValueAsString(root);
+	private String requestMethod(boolean streaming, boolean legacyProtocol) {
+		if (legacyProtocol) {
+			return streaming ? LEGACY_SEND_STREAMING_MESSAGE_METHOD : LEGACY_SEND_MESSAGE_METHOD;
 		}
-		catch (Exception e) {
-			throw new IllegalStateException("Failed to build JSON-RPC streaming payload", e);
-		}
+		return streaming ? SEND_STREAMING_MESSAGE_METHOD : SEND_MESSAGE_METHOD;
+	}
+
+	private boolean isLegacyProtocolVersion(String protocolVersion) {
+		return protocolVersion != null && (LEGACY_PROTOCOL_VERSION.equals(protocolVersion)
+				|| protocolVersion.startsWith(LEGACY_PROTOCOL_VERSION + "."));
 	}
 
 	private String getEffectiveInstruction(OverAllState state) {

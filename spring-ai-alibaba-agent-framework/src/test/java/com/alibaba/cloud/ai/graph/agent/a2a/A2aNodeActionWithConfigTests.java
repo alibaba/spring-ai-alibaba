@@ -166,8 +166,14 @@ class A2aNodeActionWithConfigTests {
 	}
 
 	private static AgentCardWrapper createAgentCardWrapper() {
+		return createAgentCardWrapper("1.0");
+	}
+
+	private static AgentCardWrapper createAgentCardWrapper(String protocolVersion) {
 		AgentCard agentCard = mock(AgentCard.class);
 		when(agentCard.name()).thenReturn("test-agent");
+		when(agentCard.supportedInterfaces())
+			.thenReturn(List.of(new AgentInterface("JSONRPC", "http://localhost:8080/a2a", null, protocolVersion)));
 		return new AgentCardWrapper(agentCard);
 	}
 
@@ -296,6 +302,16 @@ class A2aNodeActionWithConfigTests {
 		assertV1RequestShape("buildSendStreamingMessageRequest", "SendStreamingMessage");
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "0.3", "0.3.0" })
+	void buildSendRequests_useLegacyMethodAndMessageShapeForProtocolVersion03(String protocolVersion) throws Exception {
+		A2aNodeActionWithConfig legacyAction = new A2aNodeActionWithConfig(createAgentCardWrapper(protocolVersion), "",
+				false, "messages", "instruction", true);
+
+		assertLegacyRequestShape(legacyAction, "buildSendMessageRequest", "message/send");
+		assertLegacyRequestShape(legacyAction, "buildSendStreamingMessageRequest", "message/stream");
+	}
+
 	@Test
 	void createHttpPost_setsA2aVersionHeaderForBothSendPaths() throws Exception {
 		AgentCard agentCard = mock(AgentCard.class);
@@ -332,6 +348,26 @@ class A2aNodeActionWithConfigTests {
 		assertEquals("ROLE_USER", message.get("role"));
 		assertFalse(message.containsKey("kind"));
 		assertFalse(parts.get(0).containsKey("kind"));
+		assertEquals("instruction", parts.get(0).get("text"));
+	}
+
+	@SuppressWarnings("unchecked")
+	private void assertLegacyRequestShape(A2aNodeActionWithConfig target, String methodName, String expectedMethod)
+			throws Exception {
+		Method method = A2aNodeActionWithConfig.class.getDeclaredMethod(methodName, OverAllState.class,
+				RunnableConfig.class);
+		method.setAccessible(true);
+		String payload = (String) method.invoke(target, new OverAllState(), RunnableConfig.builder().build());
+		Map<String, Object> request = JSON.parseObject(payload, new TypeReference<Map<String, Object>>() {
+		});
+		Map<String, Object> params = (Map<String, Object>) request.get("params");
+		Map<String, Object> message = (Map<String, Object>) params.get("message");
+		List<Map<String, Object>> parts = (List<Map<String, Object>>) message.get("parts");
+
+		assertEquals(expectedMethod, request.get("method"));
+		assertEquals("user", message.get("role"));
+		assertEquals("message", message.get("kind"));
+		assertEquals("text", parts.get(0).get("kind"));
 		assertEquals("instruction", parts.get(0).get("text"));
 	}
 

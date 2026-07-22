@@ -26,6 +26,7 @@ import org.a2aproject.sdk.spec.AgentProvider;
 import org.a2aproject.sdk.spec.AgentSkill;
 import org.a2aproject.sdk.spec.Legacy_0_3_AgentInterface;
 import org.a2aproject.sdk.spec.SecurityScheme;
+import org.a2aproject.sdk.spec.TransportProtocol;
 
 /**
  * The Wrapper of AgentCard.
@@ -33,6 +34,8 @@ import org.a2aproject.sdk.spec.SecurityScheme;
  * @author xiweng.yy
  */
 public class AgentCardWrapper {
+
+	private static final String JSONRPC_TRANSPORT = TransportProtocol.JSONRPC.asString();
 
 	private AgentCard agentCard;
 
@@ -129,19 +132,33 @@ public class AgentCardWrapper {
 	}
 
 	private AgentInterface preferredInterface() {
-		if (this.agentCard.supportedInterfaces() != null && !this.agentCard.supportedInterfaces().isEmpty()) {
-			return this.agentCard.supportedInterfaces().get(0);
+		List<AgentInterface> supportedInterfaces = this.agentCard.supportedInterfaces();
+		if (supportedInterfaces != null) {
+			for (AgentInterface agentInterface : supportedInterfaces) {
+				if (agentInterface != null && isJsonRpc(agentInterface.protocolBinding())) {
+					return agentInterface;
+				}
+			}
 		}
 		if (this.agentCard.url() != null) {
-			String transport = this.agentCard.preferredTransport() == null ? "JSONRPC"
+			String transport = this.agentCard.preferredTransport() == null ? JSONRPC_TRANSPORT
 					: this.agentCard.preferredTransport();
-			return new AgentInterface(transport, this.agentCard.url());
+			if (isJsonRpc(transport)) {
+				return new AgentInterface(transport, this.agentCard.url());
+			}
 		}
 		List<Legacy_0_3_AgentInterface> additionalInterfaces = this.agentCard.additionalInterfaces();
-		if (additionalInterfaces != null && !additionalInterfaces.isEmpty()) {
-			Legacy_0_3_AgentInterface agentInterface = additionalInterfaces.get(0);
-			return new AgentInterface(agentInterface.transport(), agentInterface.url());
+		if (additionalInterfaces != null) {
+			for (Legacy_0_3_AgentInterface agentInterface : additionalInterfaces) {
+				if (agentInterface != null && isJsonRpc(agentInterface.transport())) {
+					return new AgentInterface(agentInterface.transport(), agentInterface.url());
+				}
+			}
 		}
-		throw new IllegalStateException("Agent card does not declare a supported interface");
+		throw new IllegalStateException("Agent card does not declare a JSONRPC interface");
+	}
+
+	private boolean isJsonRpc(String transport) {
+		return transport != null && JSONRPC_TRANSPORT.equalsIgnoreCase(transport);
 	}
 }
