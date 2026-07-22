@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: ${LANGFUSE_SERVICE_NAME:spring-ai-alibaba-studio-langfuse}
+  ai:
+    chat:
+      client:
+        observations:
+          log-prompt: ${SPRING_AI_LOG_PROMPT:false}
+          log-completion: ${SPRING_AI_LOG_COMPLETION:false}
+      observations:
+        log-prompt: ${SPRING_AI_LOG_PROMPT:false}
+        log-completion: ${SPRING_AI_LOG_COMPLETION:false}
+    image:
+      observations:
+        log-prompt: ${SPRING_AI_LOG_PROMPT:false}
+    vectorstore:
+      observations:
+        log-query-response: ${SPRING_AI_LOG_QUERY_RESPONSE:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      enabled: false
+  observations:
+    annotations:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  opentelemetry:
+    resource-attributes:
+      service.name: ${LANGFUSE_SERVICE_NAME:spring-ai-alibaba-studio-langfuse}
+      deployment.environment: ${LANGFUSE_ENV:development}
+  otlp:
+    tracing:
+      endpoint: ${LANGFUSE_OTLP_TRACES_ENDPOINT:https://us.cloud.langfuse.com/api/public/otel/v1/traces}
+      headers:
+        Authorization: Basic ${LANGFUSE_OTEL_AUTH:}
+      export:
+        enabled: ${LANGFUSE_ENABLED:false}
+    metrics:
+      export:
+        enabled: false
+    logging:
+      export:
+        enabled: false

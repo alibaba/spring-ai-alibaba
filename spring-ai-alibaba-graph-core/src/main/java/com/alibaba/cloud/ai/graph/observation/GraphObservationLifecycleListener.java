@@ -54,6 +54,14 @@ public class GraphObservationLifecycleListener implements GraphLifecycleListener
 		this.observationRegistry = observationRegistry;
 	}
 
+	/**
+	 * Returns the observation registry bound to this listener.
+	 * @return the observation registry
+	 */
+	public ObservationRegistry observationRegistry() {
+		return observationRegistry;
+	}
+
 	public static class GraphObservationContext {
 		final Observation graphObservation;
 		final Map<String, Observation> nodeObservations = new ConcurrentHashMap<>();
