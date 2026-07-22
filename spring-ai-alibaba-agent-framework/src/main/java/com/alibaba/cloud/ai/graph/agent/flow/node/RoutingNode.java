@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.MultiCommand;
 import com.alibaba.cloud.ai.graph.action.MultiCommandAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -40,6 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
+
 /**
  * Routing node that makes LLM-based routing decisions.
  * This node is designed to work with hooks - hooks can execute before this node
@@ -49,6 +52,12 @@ import java.util.stream.Collectors;
 public class RoutingNode implements MultiCommandAction {
 	private static final Logger logger = LoggerFactory.getLogger(RoutingNode.class);
 	private static final int DEFAULT_MAX_RETRIES = 2;
+
+	static final String ROUTED_AGENT_NAMES_KEY = "_routing_selected_agents";
+
+	static String routedAgentNamesKey(String routingAgentName) {
+		return ROUTED_AGENT_NAMES_KEY + "_" + routingAgentName;
+	}
 
 	private final ChatClient chatClient;
 	private final BeanOutputConverter<RoutingDecision> outputConverter;
@@ -122,6 +131,8 @@ public class RoutingNode implements MultiCommandAction {
 			// Return MultiCommand with the routing decisions as gotoNodes and agent queries in state.
 			// Each agent's query is stored as independent key: agentName_input
 			Map<String, Object> stateUpdate = new HashMap<>();
+			stateUpdate.put(routedAgentNamesKey(rootAgent.name()), new ArrayList<>(decisionValues));
+			removeStaleSelectedWrapperOutputs(stateUpdate, decisionValues);
 			decision.getAgentQueries().forEach((agentName, query) ->
 					stateUpdate.put(agentName + "_input", query));
 			return new MultiCommand(decisionValues, stateUpdate);
@@ -135,8 +146,29 @@ public class RoutingNode implements MultiCommandAction {
 	}
 
 	/**
+	 * Clears wrapper outputs for selected FlowAgent branches before they run.
+	 * <p>
+	 * Checkpointed graph state may still contain a previous
+	 * {@code subgraph_<agent>_compiled_graph} value. If the selected workflow writes its
+	 * current answer under {@code messages} or a child output key, leaving that wrapper in
+	 * state can make the merge node collect the previous turn's answer.
+	 * @param stateUpdate the state update map that will be returned with the routing
+	 * decision
+	 * @param decisionValues the sub-agent names selected by the current routing decision
+	 */
+	private void removeStaleSelectedWrapperOutputs(Map<String, Object> stateUpdate, List<String> decisionValues) {
+		for (Agent subAgent : subAgents) {
+			if (subAgent instanceof FlowAgent && decisionValues.contains(subAgent.name())) {
+				stateUpdate.put(outputKeyToParent(subAgent.name()), OverAllState.MARK_FOR_REMOVAL);
+			}
+		}
+	}
+
+	/**
 	 * Prepares messages with instruction. If rootAgent has instruction, adds it as UserMessage.
 	 * Otherwise, adds a default instruction message.
+	 * @param messages the original conversation messages from graph state
+	 * @return a new message list with the routing instruction appended
 	 */
 	private List<Message> prepareMessagesWithInstruction(List<Message> messages) {
 		List<Message> messagesWithInstruction = new ArrayList<>(messages);
@@ -163,6 +195,10 @@ public class RoutingNode implements MultiCommandAction {
 	/**
 	 * Gets a valid routing decision with retry logic.
 	 * Returns RoutingDecision containing agent names and their targeted sub-queries.
+	 * @param messages messages sent to the routing model
+	 * @param maxRetries maximum number of retry attempts after the initial call
+	 * @return a routing decision containing selected agent names and sub-queries
+	 * @throws Exception if the model call fails on the final attempt
 	 */
 	private RoutingDecision getDecisionWithRetry(List<Message> messages, int maxRetries) throws Exception {
 		List<String> lastInvalidDecision = null;
@@ -296,4 +332,3 @@ public class RoutingNode implements MultiCommandAction {
 	public record AgentRouting(String agent, String query) {
 	}
 }
-
