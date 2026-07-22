@@ -20,8 +20,10 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.Usage;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Map;
 public class AgentRunResponse {
 
 	@JsonProperty("node")
@@ -41,6 +43,24 @@ public class AgentRunResponse {
 
 	@JsonProperty("chunk")
 	private String chunk;
+
+	/**
+	 * Indicates this response comes from a sub-graph (sub-agent) within a
+	 * ParallelAgent / SequentialAgent. The frontend uses this flag to group
+	 * streaming chunks by {@code agent} name into separate cards.
+	 */
+	@JsonProperty("subGraph")
+	@JsonInclude(JsonInclude.Include.NON_DEFAULT)
+	private boolean subGraph;
+
+	/**
+	 * Parallel sub-agent results. Present only when this response comes from a
+	 * ParallelAgent node whose state contains multiple named AssistantMessage results.
+	 * Key = sub-agent result name (e.g. "poem_result"), Value = sub-agent result.
+	 */
+	@JsonProperty("subAgents")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private Map<String, SubAgentResult> subAgents;
 
 	AgentRunResponse() {
 	}
@@ -65,6 +85,16 @@ public class AgentRunResponse {
 		this.message = message;
 		this.tokenUsage = tokenUsage;
 		this.chunk = chunk;
+	}
+
+	/**
+	 * Constructor with parallel sub-agent results.
+	 */
+	public AgentRunResponse(String node, String agent, Usage tokenUsage, Map<String, SubAgentResult> subAgents) {
+		this.node = node;
+		this.agent = agent;
+		this.tokenUsage = tokenUsage;
+		this.subAgents = subAgents;
 	}
 
 	// Public getters for Jackson serialization
@@ -115,5 +145,69 @@ public class AgentRunResponse {
 
 	public void setChunk(String chunk) {
 		this.chunk = chunk;
+	}
+
+	public Map<String, SubAgentResult> getSubAgents() {
+		return subAgents;
+	}
+
+	public void setSubAgents(Map<String, SubAgentResult> subAgents) {
+		this.subAgents = subAgents;
+	}
+
+	public boolean isSubGraph() {
+		return subGraph;
+	}
+
+	public void setSubGraph(boolean subGraph) {
+		this.subGraph = subGraph;
+	}
+
+	/**
+	 * Represents a single parallel sub-agent's result.
+	 */
+	public static class SubAgentResult {
+
+		@JsonProperty("name")
+		private String name;
+
+		@JsonProperty("message")
+		private MessageDTO message;
+
+		@JsonProperty("chunk")
+		private String chunk;
+
+		public SubAgentResult() {
+		}
+
+		public SubAgentResult(String name, MessageDTO message, String chunk) {
+			this.name = name;
+			this.message = message;
+			this.chunk = chunk;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public MessageDTO getMessage() {
+			return message;
+		}
+
+		public void setMessage(MessageDTO message) {
+			this.message = message;
+		}
+
+		public String getChunk() {
+			return chunk;
+		}
+
+		public void setChunk(String chunk) {
+			this.chunk = chunk;
+		}
 	}
 }

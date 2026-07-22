@@ -67,13 +67,29 @@ export interface ToolResponse {
   responseData: string;
 }
 
+// Parallel sub-agent result
+export interface SubAgentResult {
+  name: string;
+  content: string;
+  message?: Message;
+}
+
+// Parallel agent message - contains multiple sub-agent results rendered as cards
+export interface ParallelMessage {
+  messageType: 'parallel';
+  content: string; // summary / fallback text
+  subAgents: SubAgentResult[];
+  metadata?: Record<string, any>;
+}
+
 // Union type for all messages
 export type Message =
   | UserMessage
   | AssistantMessage
   | ToolRequestMessage
   | ToolRequestConfirmMessage
-  | ToolResponseMessage;
+  | ToolResponseMessage
+  | ParallelMessage;
 
 // UI-specific message with additional fields for rendering
 export interface UIMessage {
@@ -101,6 +117,10 @@ export function isToolRequestConfirmMessage(message: Message): message is ToolRe
 
 export function isToolResponseMessage(message: Message): message is ToolResponseMessage {
   return message.messageType === 'tool';
+}
+
+export function isParallelMessage(message: Message): message is ParallelMessage {
+  return message.messageType === 'parallel';
 }
 
 // Helper to convert backend MessageDTO to UI Message
