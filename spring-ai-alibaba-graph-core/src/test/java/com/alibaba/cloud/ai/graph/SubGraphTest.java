@@ -694,9 +694,16 @@ public class SubGraphTest {
 		CompiledGraph parentGraph = new StateGraph(keyStrategyFactory)
 			.addNode("parent", node_async(state -> Map.of("output", "parent")))
 			.addNode("subGraph", failingSubGraph)
+			.addNode("recovered", node_async(state -> Map.of("output", "recovered")))
+			.addNode("lostState", node_async(state -> Map.of("output", "lost-state")))
 			.addEdge(START, "parent")
 			.addEdge("parent", "subGraph")
-			.addEdge("subGraph", END)
+			.addConditionalEdges("subGraph",
+					edge_async(state -> List.of("parent").equals(state.value("output").orElse(null))
+							? "recovered" : "lostState"),
+					Map.of("recovered", "recovered", "lostState", "lostState"))
+			.addEdge("recovered", END)
+			.addEdge("lostState", END)
 			.compile();
 
 		List<GraphResponse<NodeOutput>> responses = parentGraph
@@ -708,7 +715,7 @@ public class SubGraphTest {
 		assertTrue(responses.stream().anyMatch(GraphResponse::isError));
 		Map<?, ?> finalState = assertInstanceOf(Map.class,
 				responses.get(responses.size() - 1).resultValue().orElseThrow());
-		assertEquals(List.of("parent"), finalState.get("output"));
+		assertEquals(List.of("parent", "recovered"), finalState.get("output"));
 	}
 
     @Test

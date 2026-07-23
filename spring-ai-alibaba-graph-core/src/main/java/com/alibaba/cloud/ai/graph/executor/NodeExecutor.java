@@ -573,8 +573,6 @@ public class NodeExecutor extends BaseGraphExecutor {
 							&& !(e.getValue() instanceof ParallelGraphFlux))
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-			boolean isSubgraphError = data != null && data.isError();
-
 			Map<String, Object> updateState = new HashMap<>();
 			boolean hasStateResult = false;
 			if (nodeResultValue.isPresent()) {
@@ -592,24 +590,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 				}
 			}
 
-			Map<String, Object> combinedUpdateState = new HashMap<>();
+			Map<String, Object> combinedUpdateState = new HashMap<>(partialStateWithoutFlux);
+			combinedUpdateState.putAll(updateState);
+			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfterForStreaming(context, combinedUpdateState);
 
-			if (!isSubgraphError) {
-				combinedUpdateState.putAll(partialStateWithoutFlux);
-				combinedUpdateState.putAll(updateState);
-			}
-
-			Optional<InterruptionMetadata> interruptAfterMetadata = isSubgraphError
-					? Optional.empty()
-					: interruptAfterForStreaming(context, combinedUpdateState);
-
-			if (isSubgraphError) {
-				if (LOGGER.isDebugEnabled()) {
-					LOGGER.debug("Skip applying subgraph state updates after error from '{}'", context.getCurrentNodeId());
-				}
-			}
-			else if (context.getNodeAction(context.getCurrentNodeId()) instanceof SubCompiledGraphNodeAction && hasStateResult
-					&& !updateState.isEmpty()) {
+			if (context.getNodeAction(context.getCurrentNodeId()) instanceof SubCompiledGraphNodeAction
+					&& hasStateResult && !data.isError()) {
 				context.replaceCurrentState(updateState);
 			}
 			else {
