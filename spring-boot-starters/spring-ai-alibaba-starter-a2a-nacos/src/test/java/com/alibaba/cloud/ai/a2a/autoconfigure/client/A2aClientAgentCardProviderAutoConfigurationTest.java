@@ -16,9 +16,12 @@
 
 package com.alibaba.cloud.ai.a2a.autoconfigure.client;
 
+import com.alibaba.cloud.ai.a2a.autoconfigure.A2aClientAgentCardProperties;
 import com.alibaba.cloud.ai.graph.agent.a2a.AgentCardProvider;
 import org.a2aproject.sdk.spec.AgentInterface;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -45,6 +48,21 @@ class A2aClientAgentCardProviderAutoConfigurationTest {
 			assertThat(provider.getAgentCard().protocolVersion())
 				.isEqualTo(new AgentInterface("JSONRPC", AGENT_URL).protocolVersion());
 		});
+	}
+
+	@Test
+	void shouldUseSdkProtocolVersionForAdditionalInterfaceWhenNotConfigured() {
+		A2aClientAgentCardProperties properties = new A2aClientAgentCardProperties();
+		properties.setName("test-agent");
+		properties.setDescription("Test agent");
+		properties.setVersion("1.0.0");
+		properties.setAdditionalInterfaces(List.of(new AgentInterface("JSONRPC", AGENT_URL, null, null)));
+
+		AgentCardProvider provider = new A2aClientAgentCardProviderAutoConfiguration()
+			.localAgentCardProvider(properties);
+
+		assertThat(provider.getAgentCard().protocolVersion())
+			.isEqualTo(new AgentInterface("JSONRPC", AGENT_URL).protocolVersion());
 	}
 
 }

@@ -98,10 +98,19 @@ public class A2aClientAgentCardProviderAutoConfiguration {
 		if (properties.getAdditionalInterfaces() != null) {
 			properties.getAdditionalInterfaces()
 				.stream()
+				.map(this::withDefaultProtocolVersion)
 				.filter(agentInterface -> !interfaces.contains(agentInterface))
 				.forEach(interfaces::add);
 		}
 		return List.copyOf(interfaces);
+	}
+
+	private AgentInterface withDefaultProtocolVersion(AgentInterface agentInterface) {
+		if (agentInterface.protocolVersion() == null || agentInterface.protocolVersion().isBlank()) {
+			return new AgentInterface(agentInterface.protocolBinding(), agentInterface.url(), agentInterface.tenant(),
+					A2aConstants.DEFAULT_A2A_PROTOCOL_VERSION);
+		}
+		return agentInterface;
 	}
 
 }
