@@ -17,14 +17,17 @@
 package com.alibaba.cloud.ai.a2a.core.server;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,6 +48,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
@@ -296,6 +300,51 @@ class GraphAgentExecutorTest {
 		verify(emitter, never()).fail(any(Message.class));
 	}
 
+	@Test
+	void cancelPreventsLateNonStreamArtifactsAndCompletion() throws Exception {
+		CountDownLatch invocationStarted = new CountDownLatch(1);
+		CountDownLatch invocationInterrupted = new CountDownLatch(1);
+		CountDownLatch releaseInvocation = new CountDownLatch(1);
+		ReactAgent agent = mock(ReactAgent.class);
+		when(agent.getOutputKey()).thenReturn("output");
+		doAnswer(invocation -> {
+			invocationStarted.countDown();
+			while (true) {
+				try {
+					releaseInvocation.await();
+					break;
+				}
+				catch (InterruptedException ex) {
+					invocationInterrupted.countDown();
+				}
+			}
+			return Optional.of(new OverAllState(Map.of("output", "late result")));
+		}).when(agent).invoke(anyString(), any(RunnableConfig.class));
+		GraphAgentExecutor executor = new GraphAgentExecutor(agent);
+		RequestContext context = nonStreamingContext();
+		AgentEmitter emitter = emitter();
+		AtomicReference<Throwable> failure = new AtomicReference<>();
+		Thread worker = executeInThread(executor, context, emitter, failure);
+
+		try {
+			assertTrue(invocationStarted.await(2, TimeUnit.SECONDS));
+			executor.cancel(context, emitter);
+			assertTrue(invocationInterrupted.await(2, TimeUnit.SECONDS));
+			verify(emitter).cancel();
+		}
+		finally {
+			releaseInvocation.countDown();
+			worker.join(Duration.ofSeconds(2).toMillis());
+		}
+
+		assertFalse(worker.isAlive());
+		assertThat(failure.get()).isNull();
+		assertThat(activeNonStreamExecutions(executor)).isEmpty();
+		verify(emitter, never()).addArtifact(anyList(), isNull(), anyString(), anyMap());
+		verify(emitter, never()).complete();
+		verify(emitter, never()).fail(any(Message.class));
+	}
+
 	private static GraphAgentExecutor executorFor(Flux<NodeOutput> stream) throws Exception {
 		Agent agent = mock(Agent.class);
 		when(agent.stream(anyString(), any(RunnableConfig.class))).thenReturn(stream);
@@ -307,6 +356,14 @@ class GraphAgentExecutorTest {
 		when(context.getUserInput()).thenReturn("hello");
 		when(context.getTaskId()).thenReturn("task-1");
 		when(context.getMetadata()).thenReturn(Map.of(GraphAgentExecutor.STREAMING_METADATA_KEY, true));
+		return context;
+	}
+
+	private static RequestContext nonStreamingContext() {
+		RequestContext context = mock(RequestContext.class);
+		when(context.getUserInput()).thenReturn("hello");
+		when(context.getTaskId()).thenReturn("task-1");
+		when(context.getMetadata()).thenReturn(Map.of());
 		return context;
 	}
 
@@ -334,6 +391,11 @@ class GraphAgentExecutorTest {
 	@SuppressWarnings("unchecked")
 	private static Map<String, ?> activeStreams(GraphAgentExecutor executor) {
 		return (Map<String, ?>) ReflectionTestUtils.getField(executor, "activeStreams");
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Map<String, ?> activeNonStreamExecutions(GraphAgentExecutor executor) {
+		return (Map<String, ?>) ReflectionTestUtils.getField(executor, "activeNonStreamExecutions");
 	}
 
 }

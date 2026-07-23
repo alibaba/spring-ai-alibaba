@@ -33,11 +33,11 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.concurrent.TimeUnit;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -67,11 +67,7 @@ public class GraphAgentExecutor implements AgentExecutor {
 
 	private final ConcurrentMap<String, StreamExecution> activeStreams = new ConcurrentHashMap<>();
 
-	private final ConcurrentMap<String, AtomicBoolean> activeNonStreamCancellations = new ConcurrentHashMap<>();
-
-	private final ConcurrentMap<String, Thread> activeNonStreamTasks = new ConcurrentHashMap<>();
-
-	private final ConcurrentMap<String, CountDownLatch> activeNonStreamCompletions = new ConcurrentHashMap<>();
+	private final ConcurrentMap<String, NonStreamExecution> activeNonStreamExecutions = new ConcurrentHashMap<>();
 
 	public GraphAgentExecutor(Agent executeAgent) {
 		this.executeAgent = executeAgent;
@@ -103,8 +99,13 @@ public class GraphAgentExecutor implements AgentExecutor {
 		String streamKey = streamKey(context, emitter);
 		StreamExecution execution = this.activeStreams.get(streamKey);
 		if (execution == null) {
-			cancelNonStream(streamKey);
-			emitter.cancel();
+			NonStreamExecution nonStreamExecution = this.activeNonStreamExecutions.get(streamKey);
+			if (nonStreamExecution == null || nonStreamExecution.cancel()) {
+				if (nonStreamExecution != null) {
+					awaitNonStreamCompletion(nonStreamExecution);
+				}
+				emitter.cancel();
+			}
 			return;
 		}
 		boolean cancelled = execution.cancel();
@@ -237,56 +238,42 @@ public class GraphAgentExecutor implements AgentExecutor {
 	private void executeForNonStreamTask(String inputMessage, RequestContext context, AgentEmitter emitter)
 			throws GraphStateException, GraphRunnerException {
 		String streamKey = streamKey(context, emitter);
-		CountDownLatch nonStreamCompletion = activeNonStreamCompletions
-			.computeIfAbsent(streamKey, k -> new CountDownLatch(1));
-		AtomicBoolean cancelRequested = this.activeNonStreamCancellations.computeIfAbsent(streamKey, k -> new AtomicBoolean());
-		Thread previous = this.activeNonStreamTasks.put(streamKey, Thread.currentThread());
-		if (previous != null && previous != Thread.currentThread()) {
-			this.activeNonStreamTasks.put(streamKey, previous);
+		NonStreamExecution execution = new NonStreamExecution();
+		if (this.activeNonStreamExecutions.putIfAbsent(streamKey, execution) != null) {
+			throw new IllegalStateException("A non-stream agent execution is already active for task " + streamKey);
 		}
 
-		RunnableConfig runnableConfig = getRunnableConfig(context);
-		if (cancelRequested.get()) {
-			emitter.cancel();
-			return;
-		}
+		execution.start(Thread.currentThread());
+		try {
+			RunnableConfig runnableConfig = getRunnableConfig(context);
+			if (!execution.runIfActive(() -> startTask(context, emitter))) {
+				return;
+			}
 
-		startTask(context, emitter);
-		if (Thread.currentThread().isInterrupted()) {
-			return;
-		}
-		if (cancelRequested.get()) {
-			emitter.cancel();
-			return;
-		}
+			var result = executeAgent.invoke(inputMessage, runnableConfig);
+			if (execution.isCancelled()) {
+				return;
+			}
 
-		var result = executeAgent.invoke(inputMessage, runnableConfig);
-		if (Thread.currentThread().isInterrupted() || cancelRequested.get() || isTaskCanceled(streamKey)) {
-			return;
+			// FIXME: currently only support ReactAgent and A2aRemoteAgent as the root agent
+			String outputText = result.get().data().containsKey(((BaseAgent)executeAgent).getOutputKey())
+					? String.valueOf(result.get().data().get(((BaseAgent)executeAgent).getOutputKey()))
+					: "No output key in result.";
+			execution.complete(() -> {
+				emitter.addArtifact(List.of(new TextPart(outputText)), null, "conversation_result",
+						Map.of("output", outputText));
+				emitter.complete();
+			});
 		}
-
-		// FIXME: currently only support ReactAgent and A2aRemoteAgent as the root agent
-		String outputText = result.get().data().containsKey(((BaseAgent)executeAgent).getOutputKey())
-				? String.valueOf(result.get().data().get(((BaseAgent)executeAgent).getOutputKey())) : "No output key in result.";
-		if (cancelRequested.get() || isTaskCanceled(streamKey)) {
-			return;
+		catch (RuntimeException | GraphRunnerException ex) {
+			if (!execution.isCancelled()) {
+				throw ex;
+			}
 		}
-
-		emitter.addArtifact(List.of(new TextPart(outputText)), null, "conversation_result",
-				Map.of("output", outputText));
-		if (cancelRequested.get() || isTaskCanceled(streamKey)) {
-			return;
+		finally {
+			this.activeNonStreamExecutions.remove(streamKey, execution);
+			execution.signalCompletion();
 		}
-		emitter.complete();
-		if (cancelRequested.get() || isTaskCanceled(streamKey)) {
-			return;
-		}
-	} finally {
-		nonStreamCompletion.countDown();
-		activeNonStreamCompletions.remove(streamKey, nonStreamCompletion);
-		this.activeNonStreamTasks.remove(streamKey);
-		cleanupNonStreamCancellation(streamKey);
-	}
 	}
 
 	private void startTask(RequestContext context, AgentEmitter emitter) {
@@ -307,34 +294,12 @@ public class GraphAgentExecutor implements AgentExecutor {
 		return taskId;
 	}
 
-	private void cancelNonStream(String streamKey) {
-		AtomicBoolean cancelRequested = this.activeNonStreamCancellations.computeIfAbsent(streamKey, k -> new AtomicBoolean());
-		cancelRequested.set(true);
-		Thread taskThread = this.activeNonStreamTasks.get(streamKey);
-		if (taskThread != null && taskThread != Thread.currentThread()) {
-			taskThread.interrupt();
+	private void awaitNonStreamCompletion(NonStreamExecution execution) {
+		try {
+			execution.awaitCompletion(500, TimeUnit.MILLISECONDS);
 		}
-		CountDownLatch nonStreamCompletion = this.activeNonStreamCompletions.get(streamKey);
-		if (nonStreamCompletion != null) {
-			try {
-				nonStreamCompletion.await(500, TimeUnit.MILLISECONDS);
-			}
-			catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-	}
-
-	private boolean isTaskCanceled(String streamKey) {
-		AtomicBoolean cancelRequested = this.activeNonStreamCancellations.get(streamKey);
-		return cancelRequested != null && cancelRequested.get();
-	}
-
-	private void cleanupNonStreamCancellation(String streamKey) {
-		this.activeNonStreamTasks.remove(streamKey);
-		AtomicBoolean cancellation = this.activeNonStreamCancellations.remove(streamKey);
-		if (cancellation != null) {
-			cancellation.set(false);
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 		}
 	}
 
@@ -433,6 +398,69 @@ public class GraphAgentExecutor implements AgentExecutor {
 			outputJson.put("data", nodeOutput.state().data());
 			outputJson.put("node", nodeOutput.node());
 			return JSON.toJSONString(outputJson);
+		}
+
+	}
+
+	private static final class NonStreamExecution {
+
+		private final CountDownLatch completion = new CountDownLatch(1);
+
+		private Thread worker;
+
+		private State state = State.RUNNING;
+
+		synchronized void start(Thread worker) {
+			this.worker = worker;
+			if (this.state == State.CANCELLED) {
+				worker.interrupt();
+			}
+		}
+
+		synchronized boolean runIfActive(Runnable action) {
+			if (this.state != State.RUNNING) {
+				return false;
+			}
+			action.run();
+			return true;
+		}
+
+		synchronized boolean complete(Runnable terminalSignal) {
+			if (this.state != State.RUNNING) {
+				return false;
+			}
+			this.state = State.COMPLETED;
+			terminalSignal.run();
+			return true;
+		}
+
+		synchronized boolean cancel() {
+			if (this.state != State.RUNNING) {
+				return false;
+			}
+			this.state = State.CANCELLED;
+			if (this.worker != null && this.worker != Thread.currentThread()) {
+				this.worker.interrupt();
+			}
+			return true;
+		}
+
+		synchronized boolean isCancelled() {
+			return this.state == State.CANCELLED;
+		}
+
+		void signalCompletion() {
+			this.completion.countDown();
+		}
+
+		boolean awaitCompletion(long timeout, TimeUnit unit) throws InterruptedException {
+			return this.completion.await(timeout, unit);
+		}
+
+		private enum State {
+
+			RUNNING, CANCELLED, COMPLETED
+
 		}
 
 	}

@@ -17,6 +17,11 @@
 package com.alibaba.cloud.ai.a2a.autoconfigure.server;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.a2a.core.server.A2aServerExecutorProvider;
@@ -77,6 +82,68 @@ class A2aServerHandlerAutoConfigurationTest {
 			assertThat(ReflectionTestUtils.getField(requestHandler, "agentCompletionTimeoutSeconds")).isEqualTo(11);
 			assertThat(ReflectionTestUtils.getField(requestHandler, "consumptionCompletionTimeoutSeconds")).isEqualTo(7);
 		});
+	}
+
+	@Test
+	void replacesSharedBoundedExecutorWithLifecycleManagedConsumerExecutor() {
+		ExecutorService requestExecutor = Executors.newSingleThreadExecutor();
+		A2aServerExecutorProvider executorProvider = new A2aServerExecutorProvider() {
+			@Override
+			public ExecutorService getA2aServerExecutor() {
+				return requestExecutor;
+			}
+
+			@Override
+			public ExecutorService getEventConsumerExecutor() {
+				return requestExecutor;
+			}
+		};
+		AtomicReference<ExecutorService> consumerExecutor = new AtomicReference<>();
+		CountDownLatch requestOccupied = new CountDownLatch(1);
+		CountDownLatch releaseRequest = new CountDownLatch(1);
+
+		try {
+			this.contextRunner.withBean(A2aServerExecutorProvider.class, () -> executorProvider).run(context -> {
+				assertThat(context).hasNotFailed();
+				requestExecutor.execute(() -> {
+					requestOccupied.countDown();
+					try {
+						releaseRequest.await();
+					}
+					catch (InterruptedException ex) {
+						Thread.currentThread().interrupt();
+					}
+				});
+				assertThat(await(requestOccupied)).isTrue();
+
+				RequestHandler requestHandler = context.getBean(RequestHandler.class);
+				ExecutorService resolvedConsumer = (ExecutorService) ReflectionTestUtils.getField(requestHandler,
+						"eventConsumerExecutor");
+				consumerExecutor.set(resolvedConsumer);
+				assertThat(resolvedConsumer).isNotSameAs(requestExecutor);
+
+				CountDownLatch consumed = new CountDownLatch(1);
+				resolvedConsumer.execute(consumed::countDown);
+				assertThat(await(consumed)).isTrue();
+			});
+
+			assertThat(consumerExecutor.get()).isNotNull();
+			assertThat(consumerExecutor.get().isShutdown()).isTrue();
+		}
+		finally {
+			releaseRequest.countDown();
+			requestExecutor.shutdownNow();
+		}
+	}
+
+	private static boolean await(CountDownLatch latch) {
+		try {
+			return latch.await(2, TimeUnit.SECONDS);
+		}
+		catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+			throw new AssertionError("Interrupted while waiting for executor task", ex);
+		}
 	}
 
 	private static AgentCard agentCard() {

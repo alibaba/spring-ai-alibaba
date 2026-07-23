@@ -27,9 +27,6 @@ import com.alibaba.cloud.ai.a2a.core.server.GraphAgentExecutor;
 import com.alibaba.cloud.ai.a2a.core.server.JsonRpcA2aRequestHandler;
 import com.alibaba.cloud.ai.a2a.core.server.ServerTypeEnum;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -73,6 +70,13 @@ public class A2aServerHandlerAutoConfiguration {
 	@ConditionalOnMissingBean
 	public A2aServerExecutorProvider a2aServerExecutorProvider() {
 		return new DefaultA2aServerExecutorProvider();
+	}
+
+	@Bean(destroyMethod = "close")
+	@ConditionalOnMissingBean
+	A2aEventConsumerExecutorManager a2aEventConsumerExecutorManager(
+			A2aServerExecutorProvider a2aServerExecutorProvider) {
+		return new A2aEventConsumerExecutorManager(a2aServerExecutorProvider);
 	}
 
 	@Bean
@@ -133,10 +137,11 @@ public class A2aServerHandlerAutoConfiguration {
 	@ConditionalOnMissingBean
 	public RequestHandler requestHandler(AgentExecutor agentExecutor, TaskStore taskStore, QueueManager queueManager,
 			PushNotificationConfigStore pushConfigStore, MainEventBusProcessor mainEventBusProcessor,
-			A2aServerExecutorProvider a2aServerExecutorProvider) {
-		ExecutorService eventConsumerExecutor = resolveEventConsumerExecutor(a2aServerExecutorProvider);
+			A2aServerExecutorProvider a2aServerExecutorProvider,
+			A2aEventConsumerExecutorManager eventConsumerExecutorManager) {
 		return DefaultRequestHandler.create(agentExecutor, taskStore, queueManager, pushConfigStore,
-				mainEventBusProcessor, a2aServerExecutorProvider.getA2aServerExecutor(), eventConsumerExecutor);
+				mainEventBusProcessor, a2aServerExecutorProvider.getA2aServerExecutor(),
+				eventConsumerExecutorManager.getExecutor());
 	}
 
 	@Bean
@@ -152,15 +157,6 @@ public class A2aServerHandlerAutoConfiguration {
 			havingValue = ServerTypeEnum.JSON_RPC_TYPE, matchIfMissing = true)
 	public JsonRpcA2aRequestHandler jsonRpcA2aRequestHandler(JSONRPCHandler jsonrpcHandler) {
 		return new JsonRpcA2aRequestHandler(jsonrpcHandler);
-	}
-
-	private ExecutorService resolveEventConsumerExecutor(A2aServerExecutorProvider a2aServerExecutorProvider) {
-		ExecutorService requestExecutor = a2aServerExecutorProvider.getA2aServerExecutor();
-		ExecutorService eventConsumerExecutor = a2aServerExecutorProvider.getEventConsumerExecutor();
-		if (eventConsumerExecutor == null || eventConsumerExecutor == requestExecutor) {
-			return Executors.newCachedThreadPool();
-		}
-		return eventConsumerExecutor;
 	}
 
 }
