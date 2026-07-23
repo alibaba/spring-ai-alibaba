@@ -42,6 +42,8 @@
 
 * **[Graph-based Workflow](https://java2ai.com/docs/frameworks/graph-core/quick-start)**: Graph based workflow runtime and api for conditional routing, nested graphs, parallel execution, and state management. Export workflows to PlantUML and Mermaid formats.
 
+* **[Graph Engineering](./docs/graph-engineering.md)**: Compose specialized agents or deterministic steps into explicit nodes, edges, shared state, verifier nodes, and distributed A2A handoffs when a single `ReactAgent` loop is no longer enough.
+
 * **[A2A Support](https://java2ai.com/docs/frameworks/agent-framework/advanced/a2a)**: Agent-to-Agent communication support with Nacos integration, enabling distributed agent coordination and collaboration across services.
 
 * **[Rich Model, Tool and MCP Support](https://java2ai.com/integration/chatmodels/dashScope)**: Leveraging core concepts of Spring AI, supports multiple LLM providers (DashScope, OpenAI, etc.), tool calling, and Model Context Protocol (MCP).
@@ -120,6 +122,9 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 * [Quick Start](https://java2ai.com/docs/quick-start) - Get started with a simple agent
 * [Agent Framework Tutorials](https://java2ai.com/docs/frameworks/agent-framework/tutorials/agents) - Step by step tutorials
 * [Use Graph API to Build Complex Workflows](https://java2ai.com/docs/frameworks/agent-framework/advanced/context-engineering) - In-depth user guide for building multi-agent and workflows
+* [Graph Engineering with Spring AI Alibaba](./docs/graph-engineering.md) - Positioning guide for nodes, edges, shared state, verifier nodes, A2A, and external-agent orchestration
+* [Lightweight RepoOps Graph Engineering](./docs/graph-engineering-repoops-lightweight.md) - Single-application RepoOps lifecycle design using Spring AI Alibaba Graph, local agents, tools, and optional A2A
+* [Graph Engineering Examples](./examples/graphengineering) - Runnable RepoOps issue workflow using Spring AI Alibaba Graph with AgentScope Java nodes
 * [Spring AI Basics](https://java2ai.com/ecosystem/spring-ai/reference/concepts) - Ai Application basic concepts, including ChatModel, MCP, Tool, Messages, etc.
 * [Chat Memory](https://docs.spring.io/spring-ai/reference/api/chatclient.html#chat-memory) - Spring AI reference for chat memory repositories and usage
 
@@ -132,6 +137,7 @@ This project consists of several core components:
 * spring-ai-alibaba-admin: A one-stop Agent platform that supports visualized Agent development, observability, evaluation, and MCP management, etc.
 * spring-ai-alibaba-studio: The embedded ui for quickly debugging agent in a visualized way.
 * spring-boot-starters: Starters integrating Agent Framework with Nacos to provide A2A and dynamic config features.
+* examples/graphengineering: Runnable Graph Engineering examples. The current RepoOps issue workflow shows how Spring AI Alibaba Graph owns state and routing while AgentScope Java implements specialist nodes.
 
 ## Spring AI Alibaba Ecosystem
  Repository | Description | ⭐
