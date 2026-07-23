@@ -66,6 +66,10 @@ public class GraphAgentExecutor implements AgentExecutor {
 
 	private final ConcurrentMap<String, StreamExecution> activeStreams = new ConcurrentHashMap<>();
 
+	private final ConcurrentMap<String, AtomicBoolean> activeNonStreamCancellations = new ConcurrentHashMap<>();
+
+	private final ConcurrentMap<String, Thread> activeNonStreamTasks = new ConcurrentHashMap<>();
+
 	public GraphAgentExecutor(Agent executeAgent) {
 		this.executeAgent = executeAgent;
 	}
@@ -96,6 +100,7 @@ public class GraphAgentExecutor implements AgentExecutor {
 		String streamKey = streamKey(context, emitter);
 		StreamExecution execution = this.activeStreams.get(streamKey);
 		if (execution == null) {
+			cancelNonStream(streamKey);
 			emitter.cancel();
 			return;
 		}
@@ -228,16 +233,50 @@ public class GraphAgentExecutor implements AgentExecutor {
 
 	private void executeForNonStreamTask(String inputMessage, RequestContext context, AgentEmitter emitter)
 			throws GraphStateException, GraphRunnerException {
+		String streamKey = streamKey(context, emitter);
+		AtomicBoolean cancelRequested = this.activeNonStreamCancellations.computeIfAbsent(streamKey, k -> new AtomicBoolean());
+		Thread previous = this.activeNonStreamTasks.put(streamKey, Thread.currentThread());
+		if (previous != null && previous != Thread.currentThread()) {
+			this.activeNonStreamTasks.put(streamKey, previous);
+		}
+
 		RunnableConfig runnableConfig = getRunnableConfig(context);
+		if (cancelRequested.get()) {
+			emitter.cancel();
+			return;
+		}
+
 		startTask(context, emitter);
+		if (cancelRequested.get()) {
+			emitter.cancel();
+			return;
+		}
+
 		var result = executeAgent.invoke(inputMessage, runnableConfig);
+		if (cancelRequested.get() || isTaskCanceled(streamKey)) {
+			return;
+		}
+
 		// FIXME: currently only support ReactAgent and A2aRemoteAgent as the root agent
 		String outputText = result.get().data().containsKey(((BaseAgent)executeAgent).getOutputKey())
 				? String.valueOf(result.get().data().get(((BaseAgent)executeAgent).getOutputKey())) : "No output key in result.";
+		if (cancelRequested.get() || isTaskCanceled(streamKey)) {
+			return;
+		}
 
 		emitter.addArtifact(List.of(new TextPart(outputText)), null, "conversation_result",
 				Map.of("output", outputText));
+		if (cancelRequested.get() || isTaskCanceled(streamKey)) {
+			return;
+		}
 		emitter.complete();
+		if (cancelRequested.get() || isTaskCanceled(streamKey)) {
+			return;
+		}
+	} finally {
+		this.activeNonStreamTasks.remove(streamKey);
+		cleanupNonStreamCancellation(streamKey);
+	}
 	}
 
 	private void startTask(RequestContext context, AgentEmitter emitter) {
@@ -256,6 +295,28 @@ public class GraphAgentExecutor implements AgentExecutor {
 			throw new IllegalStateException("Cannot track an agent stream without a task id");
 		}
 		return taskId;
+	}
+
+	private void cancelNonStream(String streamKey) {
+		AtomicBoolean cancelRequested = this.activeNonStreamCancellations.computeIfAbsent(streamKey, k -> new AtomicBoolean());
+		cancelRequested.set(true);
+		Thread taskThread = this.activeNonStreamTasks.get(streamKey);
+		if (taskThread != null && taskThread != Thread.currentThread()) {
+			taskThread.interrupt();
+		}
+	}
+
+	private boolean isTaskCanceled(String streamKey) {
+		AtomicBoolean cancelRequested = this.activeNonStreamCancellations.get(streamKey);
+		return cancelRequested != null && cancelRequested.get();
+	}
+
+	private void cleanupNonStreamCancellation(String streamKey) {
+		this.activeNonStreamTasks.remove(streamKey);
+		AtomicBoolean cancellation = this.activeNonStreamCancellations.remove(streamKey);
+		if (cancellation != null) {
+			cancellation.set(false);
+		}
 	}
 
 	private void awaitCompletion(StreamExecution execution) {
