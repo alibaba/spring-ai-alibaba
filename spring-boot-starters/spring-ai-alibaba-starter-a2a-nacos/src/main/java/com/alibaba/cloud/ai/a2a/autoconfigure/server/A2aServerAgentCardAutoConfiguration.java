@@ -125,6 +125,7 @@ public class A2aServerAgentCardAutoConfiguration {
 		if (a2AServerAgentCardProperties.getAdditionalInterfaces() != null) {
 			a2AServerAgentCardProperties.getAdditionalInterfaces()
 				.stream()
+				.map(A2aAgentInterfaceNormalizer::withDefaultProtocolVersion)
 				.filter(agentInterface -> !interfaces.contains(agentInterface))
 				.forEach(interfaces::add);
 		}

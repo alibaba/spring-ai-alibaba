@@ -310,6 +310,7 @@ public class A2aServerMultiAgentAutoConfiguration {
 		if (cardProps.getAdditionalInterfaces() != null) {
 			cardProps.getAdditionalInterfaces()
 				.stream()
+				.map(A2aAgentInterfaceNormalizer::withDefaultProtocolVersion)
 				.filter(agentInterface -> !interfaces.contains(agentInterface))
 				.forEach(interfaces::add);
 		}
