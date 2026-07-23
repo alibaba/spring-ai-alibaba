@@ -594,7 +594,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 			combinedUpdateState.putAll(updateState);
 			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfterForStreaming(context, combinedUpdateState);
 
-			if (context.getNodeAction(context.getCurrentNodeId()) instanceof SubCompiledGraphNodeAction && hasStateResult) {
+			if (context.getNodeAction(context.getCurrentNodeId()) instanceof SubCompiledGraphNodeAction && hasStateResult
+					&& !updateState.isEmpty()) {
 				context.replaceCurrentState(updateState);
 			}
 			else {
