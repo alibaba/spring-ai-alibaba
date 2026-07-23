@@ -1,0 +1,131 @@
+graph:
+  id: repoops-issue-lifecycle
+  runtime: Spring AI Alibaba StateGraph
+  purpose: >
+    Issue-driven RepoOps lifecycle graph. Spring AI Alibaba owns topology,
+    state, routing, verifier loop-back, and evidence. AgentScope Java owns
+    specialist agent execution inside business nodes.
+
+state:
+  replace:
+    - graph_id
+    - run_id
+    - current_node
+    - issue_file
+    - issue_url
+    - issue_payload
+    - issue_title
+    - issue_type
+    - issue_source
+    - issue_repository
+    - issue_summary
+    - requires_review
+    - requires_deploy
+    - triage_result
+    - route_decision
+    - work_plan
+    - implementation_proposal
+    - review_decision
+    - review_gate_result
+    - audit_report
+  append:
+    - node_trace
+    - route_history
+    - evidence_bundle
+
+nodes:
+  - id: initialize_run
+    type: deterministic_initializer
+    mandate: Create graph_id and run_id before business work starts.
+    inputs: []
+    outputs: [graph_id, run_id, current_node, node_trace, evidence_bundle]
+    outgoing: [read_issue]
+
+  - id: read_issue
+    type: deterministic_intake
+    mandate: Read classpath JSON, local JSON, or GitHub issue URL and normalize issue state.
+    inputs: [issue_file]
+    outputs: [issue_payload, issue_type, issue_repository, issue_summary, node_trace, evidence_bundle]
+    outgoing: [agentscope_triager]
+
+  - id: agentscope_triager
+    type: agentic_worker
+    provider: AgentScopeAgent
+    mandate: Classify issue impact, priority, owner hint, and missing context.
+    inputs: [issue_payload]
+    outputs: [triage_result, node_trace, evidence_bundle]
+    outgoing: [route_issue]
+
+  - id: route_issue
+    type: deterministic_router
+    mandate: Turn triage route_candidate into an auditable route_decision, falling back to issue_type when needed.
+    inputs: [triage_result, issue_type]
+    outputs: [route_decision, route_history, node_trace, evidence_bundle]
+    outgoing:
+      bug: agentscope_bug_diagnoser
+      feature: agentscope_feature_planner
+      question: agentscope_question_responder
+
+  - id: agentscope_bug_diagnoser
+    type: agentic_worker
+    provider: AgentScopeAgent
+    mandate: Produce a reproduction, diagnosis, and regression-test plan.
+    inputs: [issue_payload, triage_result]
+    outputs: [work_plan, node_trace, evidence_bundle]
+    outgoing: [agentscope_implementer]
+
+  - id: agentscope_feature_planner
+    type: agentic_worker
+    provider: AgentScopeAgent
+    mandate: Produce a feature design and acceptance criteria.
+    inputs: [issue_payload, triage_result]
+    outputs: [work_plan, node_trace, evidence_bundle]
+    outgoing: [agentscope_implementer]
+
+  - id: agentscope_question_responder
+    type: agentic_worker
+    provider: AgentScopeAgent
+    mandate: Answer support questions without entering implementation workflow.
+    inputs: [issue_payload, triage_result]
+    outputs: [work_plan, node_trace, evidence_bundle]
+    outgoing: [record_question_evidence]
+
+  - id: record_question_evidence
+    type: deterministic_evidence
+    mandate: Record that question issues bypass implementation and review.
+    inputs: [work_plan]
+    outputs: [implementation_proposal, review_decision, review_gate_result, node_trace, evidence_bundle]
+    outgoing: [agentscope_auditor]
+
+  - id: agentscope_implementer
+    type: agentic_worker
+    provider: AgentScopeAgent
+    mandate: Produce a reviewable implementation proposal, not an actual patch.
+    inputs: [issue_payload, work_plan]
+    outputs: [implementation_proposal, node_trace, evidence_bundle]
+    outgoing: [agentscope_reviewer]
+
+  - id: agentscope_reviewer
+    type: verifier_agent
+    provider: AgentScopeAgent
+    mandate: Independently review the implementation proposal.
+    inputs: [issue_payload, triage_result, work_plan, implementation_proposal]
+    outputs: [review_decision, node_trace, evidence_bundle]
+    outgoing: [review_gate]
+
+  - id: review_gate
+    type: deterministic_verifier_router
+    mandate: Convert reviewer text into pass/fail route and preserve the decision.
+    inputs: [review_decision]
+    outputs: [review_gate_result, route_history, node_trace, evidence_bundle]
+    outgoing:
+      pass: agentscope_auditor
+      fail: agentscope_implementer
+
+  - id: agentscope_auditor
+    type: audit_agent
+    provider: AgentScopeAgent
+    mandate: Produce final route, repository/source, review, deploy, and evidence summary.
+    inputs: [issue_payload, triage_result, work_plan, implementation_proposal, review_decision, review_gate_result]
+    outputs: [audit_report, node_trace, evidence_bundle]
+    outgoing: [END]

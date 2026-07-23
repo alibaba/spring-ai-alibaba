@@ -1,0 +1,9 @@
+{
+  "title": "Regression: CI fails after dependency bump",
+  "type": "bug",
+  "source": "github",
+  "repository": "example/api",
+  "summary": "CI log indicates a deterministic unit test regression.",
+  "requires_review": true,
+  "requires_deploy": false
+}

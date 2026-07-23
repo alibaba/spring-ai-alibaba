@@ -2,6 +2,12 @@
 
 This module implements the **multiple agent subgraphs handoffs** pattern (same logic as [handoffs-multiagent](../handoffs-multiagent)), with the support agent using **AgentScope** via `AgentScopeAgent`. Distinct sales and support agents exist as separate nodes in a StateGraph. Handoff tools navigate between agent nodes by updating `active_agent`, which the parent graph's conditional edges use for routing.
 
+Graph Engineering examples that use AgentScope Java have been moved to
+`../../graphengineering` so the handoff example stays focused on the handoff
+pattern. See `examples/graphengineering` for the RepoOps issue workflow where
+Spring AI Alibaba owns orchestration and AgentScope Java implements business
+nodes.
+
 ## Architecture
 
 - **Separate agents as graph nodes**  
