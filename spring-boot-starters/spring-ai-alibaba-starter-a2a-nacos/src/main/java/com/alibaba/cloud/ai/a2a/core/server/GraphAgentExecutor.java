@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.concurrent.TimeUnit;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -69,6 +70,8 @@ public class GraphAgentExecutor implements AgentExecutor {
 	private final ConcurrentMap<String, AtomicBoolean> activeNonStreamCancellations = new ConcurrentHashMap<>();
 
 	private final ConcurrentMap<String, Thread> activeNonStreamTasks = new ConcurrentHashMap<>();
+
+	private final ConcurrentMap<String, CountDownLatch> activeNonStreamCompletions = new ConcurrentHashMap<>();
 
 	public GraphAgentExecutor(Agent executeAgent) {
 		this.executeAgent = executeAgent;
@@ -234,6 +237,8 @@ public class GraphAgentExecutor implements AgentExecutor {
 	private void executeForNonStreamTask(String inputMessage, RequestContext context, AgentEmitter emitter)
 			throws GraphStateException, GraphRunnerException {
 		String streamKey = streamKey(context, emitter);
+		CountDownLatch nonStreamCompletion = activeNonStreamCompletions
+			.computeIfAbsent(streamKey, k -> new CountDownLatch(1));
 		AtomicBoolean cancelRequested = this.activeNonStreamCancellations.computeIfAbsent(streamKey, k -> new AtomicBoolean());
 		Thread previous = this.activeNonStreamTasks.put(streamKey, Thread.currentThread());
 		if (previous != null && previous != Thread.currentThread()) {
@@ -247,13 +252,16 @@ public class GraphAgentExecutor implements AgentExecutor {
 		}
 
 		startTask(context, emitter);
+		if (Thread.currentThread().isInterrupted()) {
+			return;
+		}
 		if (cancelRequested.get()) {
 			emitter.cancel();
 			return;
 		}
 
 		var result = executeAgent.invoke(inputMessage, runnableConfig);
-		if (cancelRequested.get() || isTaskCanceled(streamKey)) {
+		if (Thread.currentThread().isInterrupted() || cancelRequested.get() || isTaskCanceled(streamKey)) {
 			return;
 		}
 
@@ -274,6 +282,8 @@ public class GraphAgentExecutor implements AgentExecutor {
 			return;
 		}
 	} finally {
+		nonStreamCompletion.countDown();
+		activeNonStreamCompletions.remove(streamKey, nonStreamCompletion);
 		this.activeNonStreamTasks.remove(streamKey);
 		cleanupNonStreamCancellation(streamKey);
 	}
@@ -303,6 +313,15 @@ public class GraphAgentExecutor implements AgentExecutor {
 		Thread taskThread = this.activeNonStreamTasks.get(streamKey);
 		if (taskThread != null && taskThread != Thread.currentThread()) {
 			taskThread.interrupt();
+		}
+		CountDownLatch nonStreamCompletion = this.activeNonStreamCompletions.get(streamKey);
+		if (nonStreamCompletion != null) {
+			try {
+				nonStreamCompletion.await(500, TimeUnit.MILLISECONDS);
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
 		}
 	}
 

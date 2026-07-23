@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.a2a.autoconfigure.client.condition.A2aClientAgentCar
 import com.alibaba.cloud.ai.graph.agent.a2a.AgentCardProvider;
 import com.alibaba.cloud.ai.graph.agent.a2a.AgentCardWrapper;
 import com.alibaba.cloud.ai.graph.agent.a2a.RemoteAgentCardProvider;
+import com.alibaba.cloud.ai.a2a.core.constants.A2aConstants;
 import org.a2aproject.sdk.spec.AgentCapabilities;
 import org.a2aproject.sdk.spec.AgentCard;
 import org.a2aproject.sdk.spec.AgentInterface;
@@ -89,8 +90,10 @@ public class A2aClientAgentCardProviderAutoConfiguration {
 			String transport = properties.getPreferredTransport() == null ? "JSONRPC"
 					: properties.getPreferredTransport();
 			String protocolVersion = properties.getProtocolVersion();
-			interfaces.add(protocolVersion == null ? new AgentInterface(transport, properties.getUrl())
-					: new AgentInterface(transport, properties.getUrl(), null, protocolVersion));
+			if (protocolVersion == null || protocolVersion.isBlank()) {
+				protocolVersion = A2aConstants.DEFAULT_A2A_PROTOCOL_VERSION;
+			}
+			interfaces.add(new AgentInterface(transport, properties.getUrl(), null, protocolVersion));
 		}
 		if (properties.getAdditionalInterfaces() != null) {
 			properties.getAdditionalInterfaces()

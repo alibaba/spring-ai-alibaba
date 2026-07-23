@@ -101,19 +101,27 @@ public class JsonRpcA2aRequestHandler implements A2aRequestHandler {
 					? handleNonStreamRequest(nonStreamingRequest, context) : handleStreamRequest(request, context);
 		}
 		catch (InvalidParamsJsonMappingException e) {
-			return new A2AErrorResponse(e.getId(), new InvalidParamsError(null, e.getMessage(), null));
+			String requestId = request != null ? request.getId() : e.getId();
+			return new A2AErrorResponse(requestId, new InvalidParamsError(requestId, e.getMessage(), null));
 		}
 		catch (MethodNotFoundJsonMappingException e) {
-			return new A2AErrorResponse(e.getId(), new MethodNotFoundError(null, e.getMessage(), null));
+			String requestId = request != null ? request.getId() : e.getId();
+			return new A2AErrorResponse(requestId, new MethodNotFoundError(requestId, e.getMessage(), null));
 		}
 		catch (IdJsonMappingException e) {
-			return new A2AErrorResponse(e.getId(), new InvalidRequestError(null, e.getMessage(), null));
+			String requestId = request != null ? request.getId() : e.getId();
+			return new A2AErrorResponse(requestId, new InvalidRequestError(requestId, e.getMessage(), null));
 		}
 		catch (JsonMappingException e) {
-			return new A2AErrorResponse(new InvalidRequestError(null, e.getMessage(), null));
+			String requestId = request != null ? request.getId() : null;
+			return requestId == null
+					? new A2AErrorResponse(new InvalidRequestError(null, e.getMessage(), null))
+					: new A2AErrorResponse(requestId, new InvalidRequestError(requestId, e.getMessage(), null));
 		}
 		catch (JsonSyntaxException | JsonProcessingException e) {
-			return new A2AErrorResponse(new JSONParseError(e.getMessage()));
+			String requestId = request != null ? request.getId() : null;
+			return requestId == null ? new A2AErrorResponse(new JSONParseError(e.getMessage()))
+					: new A2AErrorResponse(requestId, new JSONParseError(e.getMessage()));
 		}
 		catch (A2AError e) {
 			return request != null ? generateErrorResponse(request, e) : new A2AErrorResponse(e);

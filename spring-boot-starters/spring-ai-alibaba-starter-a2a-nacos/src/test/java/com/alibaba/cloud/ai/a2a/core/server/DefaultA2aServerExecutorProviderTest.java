@@ -43,7 +43,7 @@ class DefaultA2aServerExecutorProviderTest {
 		try {
 			A2aServerExecutorProvider provider = () -> executor;
 
-			assertThat(provider.getEventConsumerExecutor()).isSameAs(executor);
+			assertThat(provider.getEventConsumerExecutor()).isNull();
 		}
 		finally {
 			executor.shutdownNow();

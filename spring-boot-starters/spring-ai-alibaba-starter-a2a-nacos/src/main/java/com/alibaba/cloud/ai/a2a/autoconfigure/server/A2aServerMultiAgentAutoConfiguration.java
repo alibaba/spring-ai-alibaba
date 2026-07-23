@@ -19,6 +19,8 @@ package com.alibaba.cloud.ai.a2a.autoconfigure.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aAgentCardProperties;
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aMultiAgentProperties;
@@ -192,7 +194,7 @@ public class A2aServerMultiAgentAutoConfiguration {
 			AgentExecutor agentExecutor = new GraphAgentExecutor(agent);
 			DefaultRequestHandler requestHandler = DefaultRequestHandler.create(agentExecutor, taskStore, queueManager,
 					pushConfigStore, mainEventBusProcessor, executorProvider.getA2aServerExecutor(),
-					executorProvider.getEventConsumerExecutor());
+					resolveEventConsumerExecutor(executorProvider));
 			beanFactory.autowireBean(requestHandler);
 			RequestHandler initializedRequestHandler = (RequestHandler) beanFactory.initializeBean(requestHandler,
 					"a2aRequestHandler-" + agentKey);
@@ -291,6 +293,15 @@ public class A2aServerMultiAgentAutoConfiguration {
 	private String buildMultiAgentUrl(A2aServerProperties serverProperties, String agentKey) {
 		return DEFAULT_PROTOCOL + serverProperties.getAddress() + ":" + serverProperties.getPort() + "/a2a/"
 				+ agentKey;
+	}
+
+	private ExecutorService resolveEventConsumerExecutor(A2aServerExecutorProvider a2aServerExecutorProvider) {
+		ExecutorService requestExecutor = a2aServerExecutorProvider.getA2aServerExecutor();
+		ExecutorService eventConsumerExecutor = a2aServerExecutorProvider.getEventConsumerExecutor();
+		if (eventConsumerExecutor == null || eventConsumerExecutor == requestExecutor) {
+			return Executors.newCachedThreadPool();
+		}
+		return eventConsumerExecutor;
 	}
 
 	private List<AgentInterface> buildSupportedInterfaces(A2aAgentCardProperties cardProps,
