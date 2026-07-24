@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.plain_text;
 
+import com.alibaba.cloud.ai.dashscope.spec.DashScopeApiSpec;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
@@ -315,6 +316,31 @@ class SpringAIJacksonStateSerializerTest {
 		@SuppressWarnings("unchecked")
 		Map<String, Object> deserializedNestedMap = (Map<String, Object>) deserializedMetadata.get("nested_object");
 		assertEquals("nested_value", deserializedNestedMap.get("nested_key"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldSerializeDashScopeSearchInfoContainingMapResults() throws Exception {
+		List rawSearchResults = List.of(Map.of(
+				"site_name", "example",
+				"icon", "",
+				"index", 0,
+				"title", "Example",
+				"url", "https://example.com"));
+		DashScopeApiSpec.SearchInfo searchInfo = new DashScopeApiSpec.SearchInfo(rawSearchResults, List.of());
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("search_info", searchInfo))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		assertTrue(deserialized.getMetadata().get("search_info") instanceof Map);
+		Map<String, Object> deserializedSearchInfo =
+				(Map<String, Object>) deserialized.getMetadata().get("search_info");
+		assertTrue(deserializedSearchInfo.get("search_results") instanceof List);
+		List<?> deserializedSearchResults = (List<?>) deserializedSearchInfo.get("search_results");
+		assertEquals("example", ((Map<?, ?>) deserializedSearchResults.get(0)).get("site_name"));
 	}
 
 	private <T> T serializeAndDeserialize(T object) throws IOException, ClassNotFoundException {
