@@ -20,8 +20,11 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
 import com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
+import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -30,11 +33,15 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import reactor.core.publisher.Flux;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -103,6 +110,45 @@ class AgentToolConfigPropagationTest {
 		assertTrue(exception.getMessage().contains("input=hello"));
 	}
 
+	@Test
+	@DisplayName("AgentTool sub-agent should execute tools activated by read_skill")
+	void shouldExecuteDynamicSkillToolInSubAgent() throws Exception {
+		AtomicReference<String> recordedValue = new AtomicReference<>();
+		ToolCallback recordResultTool = FunctionToolCallback
+				.builder("record_result",
+						(RecordResultRequest request, ToolContext context) -> {
+							recordedValue.set(request.value);
+							return "recorded";
+						})
+				.description("Records a result value")
+				.inputType(RecordResultRequest.class)
+				.build();
+		SkillRegistry registry = FileSystemSkillRegistry.builder()
+				.projectSkillsDirectory(Path.of("src/test/resources/skills").toAbsolutePath().toString())
+				.build();
+		SkillsAgentHook skillsHook = SkillsAgentHook.builder()
+				.skillRegistry(registry)
+				.groupedTools(Map.of("grouped-tools-test", List.of(recordResultTool)))
+				.build();
+		ReactAgent subAgent = ReactAgent.builder()
+				.name("skill_child_agent")
+				.description("Executes tasks using dynamically activated skill tools")
+				.model(new SkillToolCallingChatModel())
+				.hooks(List.of(skillsHook))
+				.build();
+		ReactAgent parentAgent = ReactAgent.builder()
+				.name("streaming_parent_agent")
+				.model(new ParentToolCallingChatModel())
+				.tools(AgentTool.create(subAgent))
+				.build();
+
+		RunnableConfig parentConfig = RunnableConfig.builder().threadId("parent-thread").build();
+		assertNotNull(parentAgent.stream("delegate this task", parentConfig).blockLast());
+
+		assertEquals("nested-value", recordedValue.get(),
+				"Tool activated by read_skill should remain available to the sub-agent tool node");
+	}
+
 	private static class FixedResponseChatModel implements ChatModel {
 
 		private final String responseText;
@@ -120,6 +166,65 @@ class AgentToolConfigPropagationTest {
 		public Flux<ChatResponse> stream(Prompt prompt) {
 			return Flux.just(call(prompt));
 		}
+	}
+
+	private static class SkillToolCallingChatModel implements ChatModel {
+
+		private final AtomicInteger callCount = new AtomicInteger();
+
+		@Override
+		public ChatResponse call(Prompt prompt) {
+			AssistantMessage response = switch (callCount.getAndIncrement()) {
+				case 0 -> AssistantMessage.builder()
+						.content("")
+						.toolCalls(List.of(new AssistantMessage.ToolCall("read-skill", "function", "read_skill",
+								"{\"skill_name\":\"grouped-tools-test\"}")))
+						.build();
+				case 1 -> AssistantMessage.builder()
+						.content("")
+						.toolCalls(List.of(new AssistantMessage.ToolCall("record-result", "function", "record_result",
+								"{\"value\":\"nested-value\"}")))
+						.build();
+				default -> new AssistantMessage("done");
+			};
+			return new ChatResponse(List.of(new Generation(response)));
+		}
+
+		@Override
+		public Flux<ChatResponse> stream(Prompt prompt) {
+			return Flux.just(call(prompt));
+		}
+	}
+
+	private static class ParentToolCallingChatModel implements ChatModel {
+
+		private final AtomicInteger callCount = new AtomicInteger();
+
+		@Override
+		public ChatResponse call(Prompt prompt) {
+			return response();
+		}
+
+		@Override
+		public Flux<ChatResponse> stream(Prompt prompt) {
+			return Flux.just(response());
+		}
+
+		private ChatResponse response() {
+			AssistantMessage response = callCount.getAndIncrement() == 0
+					? AssistantMessage.builder()
+							.content("")
+							.toolCalls(List.of(new AssistantMessage.ToolCall("delegate", "function",
+									"skill_child_agent", "{\"input\":\"record nested-value\"}")))
+							.build()
+					: new AssistantMessage("parent done");
+			return new ChatResponse(List.of(new Generation(response)));
+		}
+	}
+
+	private static class RecordResultRequest {
+
+		public String value;
 	}
 
 	@HookPositions(HookPosition.BEFORE_MODEL)
