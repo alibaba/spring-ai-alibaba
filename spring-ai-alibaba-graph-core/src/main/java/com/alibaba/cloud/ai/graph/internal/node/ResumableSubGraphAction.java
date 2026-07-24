@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.graph.internal.node;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+
 import static java.lang.String.format;
 
 /**
@@ -39,9 +41,24 @@ public interface ResumableSubGraphAction {
 		return format("resume_%s", subGraphId(nodeId));
 	}
 
+	/**
+	 * Removes parent resume metadata when the current subgraph is not the resume target.
+	 * Parent graph metadata is copied for every child invocation, but human feedback
+	 * belongs only to the interrupted child. Forwarding it to a later child makes that
+	 * child incorrectly initialize in resume mode.
+	 * @param config the isolated configuration created for the child graph
+	 * @param resumeSubgraph whether this child is the interrupted resume target
+	 * @return the scoped child configuration
+	 */
+	static RunnableConfig scopeResumeMetadata(RunnableConfig config, boolean resumeSubgraph) {
+		if (!resumeSubgraph) {
+			config.metadata().ifPresent(metadata -> metadata.remove(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY));
+		}
+		return config;
+	}
+
 	static String outputKeyToParent(String nodeId) {
 		return format("%s_%s", subGraphId(nodeId), OUTPUT_KEY_TO_PARENT_SUFFIX);
 	}
 
 }
-
