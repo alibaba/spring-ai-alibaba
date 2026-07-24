@@ -1,0 +1,51 @@
+# DingTalk message-channel example.
+#
+# Setup checklist:
+#
+# 1. DashScope API key — set DASHSCOPE_API_KEY in your env (or replace the
+#    placeholder below).
+#
+# 2. DingTalk side, two bot types map to two env vars below:
+#
+#    a) For INBOUND (user @ the bot, agent replies):
+#       Register an "enterprise inner robot" at https://open-dev.dingtalk.com.
+#       Copy its `AppSecret` -> set DINGTALK_APP_SECRET.
+#       Set the receive-message URL to:
+#           https://<your-public-host>/channel/dingtalk/callback
+#       Locally: run `ngrok http 8080` (or cpolar) and use the https URL it
+#       prints.
+#
+#    b) For OUTBOUND active push (agent or scheduled job pushes to a group):
+#       Add a custom robot to a DingTalk group; in its setup, enable signing.
+#       Copy the webhook URL -> set DINGTALK_WEBHOOK_URL.
+#       (Optional — leave blank if you only need inbound.)
+#
+# 3. Run: ./mvnw spring-boot:run
+#    Then send a message in DingTalk; check the app log for the inbound
+#    payload and the rendered reply.
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: message-channel-dingtalk-example
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:your-dashscope-api-key-here}
+      chat:
+        options:
+          model: qwen-plus
+    alibaba:
+      message-channel:
+        channels:
+          dingtalk:
+            type: dingtalk
+            bind-agent: customerAgent
+            options:
+              app-secret: ${DINGTALK_APP_SECRET:please-set-DINGTALK_APP_SECRET}
+              webhook-url: ${DINGTALK_WEBHOOK_URL:}
+
+logging:
+  level:
+    com.alibaba.cloud.ai.messagechannel: DEBUG
