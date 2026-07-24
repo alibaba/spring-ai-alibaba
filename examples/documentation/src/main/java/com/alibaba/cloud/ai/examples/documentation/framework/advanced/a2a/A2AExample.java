@@ -101,7 +101,7 @@ public class A2AExample {
 
 		// 3) 远程调用：通过 A2aRemoteAgent 调用（即便是同进程，也模拟远程化调用路径）
 		System.out.println("【阶段3：远程调用】通过 A2aRemoteAgent 执行远程调用");
-		System.out.println("- 调用路径: A2aRemoteAgent -> REST API (/a2a/message) -> 本地 ReactAgent");
+		System.out.println("- 调用路径: A2aRemoteAgent -> POST /a2a (JSON-RPC message/send) -> 本地 ReactAgent");
 		System.out.println("- 传输协议: JSON-RPC over HTTP");
 		System.out.println();
 
