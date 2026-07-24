@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
+import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -573,10 +574,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 			Map<String, Object> updateState = new HashMap<>();
+			boolean hasStateResult = false;
 			if (nodeResultValue.isPresent()) {
 				Object value = nodeResultValue.get();
 				if (value instanceof Map<?, ?>) {
 					updateState = (Map<String, Object>) value;
+					hasStateResult = true;
 				}
 				else if (value instanceof BaseCheckpointSaver.Tag) {
 					// When releaseThread=true, completion may return a Tag.
@@ -591,8 +594,14 @@ public class NodeExecutor extends BaseGraphExecutor {
 			combinedUpdateState.putAll(updateState);
 			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfterForStreaming(context, combinedUpdateState);
 
-			context.mergeIntoCurrentState(partialStateWithoutFlux);
-			context.mergeIntoCurrentState(updateState);
+			if (context.getNodeAction(context.getCurrentNodeId()) instanceof SubCompiledGraphNodeAction
+					&& hasStateResult && !data.isError()) {
+				context.replaceCurrentState(updateState);
+			}
+			else {
+				context.mergeIntoCurrentState(partialStateWithoutFlux);
+				context.mergeIntoCurrentState(updateState);
+			}
 
 			try {
 				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());

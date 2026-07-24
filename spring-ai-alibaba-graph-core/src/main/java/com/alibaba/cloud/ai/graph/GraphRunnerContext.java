@@ -342,6 +342,18 @@ public class GraphRunnerContext {
 	}
 
 	/**
+	 * Replaces the current state data with an authoritative state snapshot while
+	 * preserving the configured key strategies and store.
+	 * @param state the complete state snapshot
+	 */
+	public void replaceCurrentState(Map<String, Object> state) {
+		Map<String, Object> filteredState = findTokenUsageInDeltaState(state);
+
+		this.overallState.reset();
+		this.overallState.updateStateWithKeyStrategies(filteredState, Map.of());
+	}
+
+	/**
 	 * FIXME, this method is a temporary fix to separate Usage from state updates.
 	 * works together with AgentLlmNode non-stream node.
 	 */
