@@ -25,7 +25,9 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
+import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.exception.AgentException;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
@@ -34,13 +36,11 @@ import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.InstructionAgentHook;
-import com.alibaba.cloud.ai.graph.agent.hook.InterruptionHook;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
-import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -369,8 +369,8 @@ public class ReactAgent extends BaseAgent {
 		// Add hook nodes for beforeModel hooks
 		for (Hook hook : beforeModelHooks) {
 			if (hook instanceof ModelHook modelHook) {
-				if (hook instanceof InterruptionHook interruptionHook) {
-					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", interruptionHook);
+				if (hook instanceof AsyncNodeActionWithConfig action && hook instanceof InterruptableAction) {
+					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", action);
 				} else {
 					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", modelHook::beforeModel);
 				}
@@ -382,8 +382,8 @@ public class ReactAgent extends BaseAgent {
 		// Add hook nodes for afterModel hooks
 		for (Hook hook : afterModelHooks) {
 			if (hook instanceof ModelHook modelHook) {
-				if (hook instanceof HumanInTheLoopHook humanInTheLoopHook) {
-					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", humanInTheLoopHook);
+				if (hook instanceof AsyncNodeActionWithConfig action && hook instanceof InterruptableAction) {
+					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", action);
 				} else {
 					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", modelHook::afterModel);
 				}
