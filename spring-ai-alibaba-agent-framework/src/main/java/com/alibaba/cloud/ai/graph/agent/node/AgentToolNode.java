@@ -34,6 +34,7 @@ import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCancelledException;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolStateCollector;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -46,7 +47,12 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallback;
+import org.springframework.ai.tool.observation.DefaultToolCallingObservationConvention;
+import org.springframework.ai.tool.observation.ToolCallingObservationContext;
+import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
+import org.springframework.ai.tool.observation.ToolCallingObservationDocumentation;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -65,6 +71,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -99,6 +106,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private static final Logger logger = LoggerFactory.getLogger(AgentToolNode.class);
 
+	private static final ToolCallingObservationConvention DEFAULT_OBSERVATION_CONVENTION =
+			new DefaultToolCallingObservationConvention();
+
 	private final String agentName;
 
 	private final boolean enableActingLog;
@@ -110,6 +120,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 	private final Duration toolExecutionTimeout;
 
 	private final boolean wrapSyncToolsAsAsync;
+
+	private final ObservationRegistry observationRegistry;
 
 	private List<ToolCallback> toolCallbacks;
 
@@ -132,6 +144,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		this.maxParallelTools = builder.maxParallelTools;
 		this.toolExecutionTimeout = builder.toolExecutionTimeout;
 		this.wrapSyncToolsAsAsync = builder.wrapSyncToolsAsAsync;
+		this.observationRegistry = builder.observationRegistry;
 	}
 
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
@@ -572,8 +585,9 @@ public class AgentToolNode implements NodeActionWithConfig {
 			}
 
 			// Route to async or sync execution based on callback type
-			return executeToolByType(toolCallback, req, toolContextMap, config, extraStateFromToolCall,
-					inParallelExecution, cancellationTokens, toolIndex);
+			return observeToolCall(toolCallback, req,
+					() -> executeToolByType(toolCallback, req, toolContextMap, config, extraStateFromToolCall,
+							inParallelExecution, cancellationTokens, toolIndex));
 		};
 
 		// Chain interceptors if any
@@ -581,6 +595,24 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		// Execute the chained handler
 		return chainedHandler.call(request);
+	}
+
+	private ToolCallResponse observeToolCall(ToolCallback toolCallback, ToolCallRequest request,
+			Supplier<ToolCallResponse> execution) {
+		String arguments = StringUtils.hasText(request.getArguments()) ? request.getArguments() : "{}";
+		ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
+				.toolDefinition(toolCallback.getToolDefinition())
+				.toolMetadata(toolCallback.getToolMetadata())
+				.toolCallArguments(arguments)
+				.build();
+
+		return ToolCallingObservationDocumentation.TOOL_CALL
+				.observation(null, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, observationRegistry)
+				.observe(() -> {
+					ToolCallResponse response = execution.get();
+					observationContext.setToolCallResult(response.getResult());
+					return response;
+				});
 	}
 
 	/**
@@ -888,6 +920,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		private boolean wrapSyncToolsAsAsync = false;
 
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
 		private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 		private Map<String, Object> toolContext = new HashMap<>();
@@ -906,6 +940,12 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		public Builder enableActingLog(boolean enableActingLog) {
 			this.enableActingLog = enableActingLog;
+			return this;
+		}
+
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = Objects.requireNonNull(observationRegistry,
+					"observationRegistry must not be null");
 			return this;
 		}
 

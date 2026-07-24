@@ -71,10 +71,17 @@ public class DefaultBuilder extends Builder {
 				? getChatClientDefaultOptions(chatClient)
 				: getChatModelDefaultOptions(model);
 		ChatOptions effectiveOptions = mergeSourceOptionsWithAgentOptions(sourceOptions, this.chatOptions);
+		ObservationRegistry effectiveObservationRegistry = this.observationRegistry;
+		if (effectiveObservationRegistry == null && this.compileConfig != null) {
+			effectiveObservationRegistry = this.compileConfig.observationRegistry();
+		}
+		if (effectiveObservationRegistry == null) {
+			effectiveObservationRegistry = ObservationRegistry.NOOP;
+		}
 
 		if (chatClient == null) {
 			ChatClient.Builder clientBuilder = ChatClient.builder(model,
-					this.observationRegistry == null ? ObservationRegistry.NOOP : this.observationRegistry,
+					effectiveObservationRegistry,
 					this.customObservationConvention, this.advisorObservationConvention);
 			if (effectiveOptions != null) {
 				clientBuilder.defaultOptions(effectiveOptions);
@@ -136,6 +143,7 @@ public class DefaultBuilder extends Builder {
 		AgentToolNode toolNode;
 		AgentToolNode.Builder toolBuilder = AgentToolNode.builder()
 				.agentName(this.name)
+				.observationRegistry(effectiveObservationRegistry)
 				.parallelToolExecution(this.parallelToolExecution)
 				.maxParallelTools(this.maxParallelTools)
 				.toolExecutionTimeout(this.toolExecutionTimeout)
