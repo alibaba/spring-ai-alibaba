@@ -36,11 +36,12 @@ import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.InstructionAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.InterruptionHook;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
-import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
-import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectModelHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
@@ -317,6 +318,9 @@ public class ReactAgent extends BaseAgent {
 		// Always inject default InstructionAgentHook so instruction is handled in beforeAgent
 		List<Hook> effectiveHooks = new ArrayList<>();
 		effectiveHooks.add(InstructionAgentHook.create());
+		if (hasTools && shouldAddReturnDirectModelHook(hooks)) {
+			effectiveHooks.add(new ReturnDirectModelHook());
+		}
 		effectiveHooks.addAll(hooks);
 
 		// Validate hook uniqueness
@@ -680,15 +684,7 @@ public class ReactAgent extends BaseAgent {
 
 		if (canJumpTo != null && !canJumpTo.isEmpty()) {
 			EdgeAction router = state -> {
-				Object jumpToValue = state.value("jump_to").orElse(null);
-				JumpTo jumpTo = null;
-				if (jumpToValue != null) {
-					if (jumpToValue instanceof JumpTo) {
-						jumpTo = (JumpTo) jumpToValue;
-					} else if (jumpToValue instanceof String) {
-						jumpTo = JumpTo.fromStringOrNull((String) jumpToValue);
-					}
-				}
+				JumpTo jumpTo = consumeJumpTo(state);
 				return resolveJump(jumpTo, modelDestination, endDestination, defaultDestination);
 			};
 
@@ -722,7 +718,7 @@ public class ReactAgent extends BaseAgent {
 		graph.addConditionalEdges(loopExitNode, edge_async(agentInstance.makeModelToTools(loopEntryNode, exitNode)), Map.of(AGENT_TOOL_NAME, AGENT_TOOL_NAME, exitNode, exitNode, loopEntryNode, loopEntryNode));
 
 		// Tools to model routing
-		graph.addConditionalEdges(AGENT_TOOL_NAME, edge_async(agentInstance.makeToolsToModelEdge(loopEntryNode, exitNode)), Map.of(loopEntryNode, loopEntryNode, exitNode, exitNode));
+		graph.addConditionalEdges(AGENT_TOOL_NAME, edge_async(agentInstance.makeToolsToModelEdge(loopEntryNode)), Map.of(loopEntryNode, loopEntryNode));
 	}
 
 	private static String resolveJump(JumpTo jumpTo, String modelDestination, String endDestination, String defaultDestination) {
@@ -763,23 +759,13 @@ public class ReactAgent extends BaseAgent {
 		return state -> {
 			// Priority 1: Check for jump_to instruction from hooks
 			// This allows afterModel hooks to control workflow execution
-			Object jumpToValue = state.value("jump_to").orElse(null);
-			if (jumpToValue != null) {
-				JumpTo jumpTo = null;
-				if (jumpToValue instanceof JumpTo) {
-					jumpTo = (JumpTo) jumpToValue;
-				} else if (jumpToValue instanceof String) {
-					jumpTo = JumpTo.fromStringOrNull((String) jumpToValue);
-				}
-				
-				// If a valid jump_to instruction exists, execute it immediately
-				if (jumpTo != null) {
-					return switch (jumpTo) {
-						case model -> modelDestination;
-						case end -> endDestination;
-						case tool -> AGENT_TOOL_NAME;
-					};
-				}
+			JumpTo jumpTo = consumeJumpTo(state);
+			if (jumpTo != null) {
+				return switch (jumpTo) {
+					case model -> modelDestination;
+					case end -> endDestination;
+					case tool -> AGENT_TOOL_NAME;
+				};
 			}
 			
 			// Priority 2: Check message content for tool calls
@@ -832,41 +818,23 @@ public class ReactAgent extends BaseAgent {
 		};
 	}
 
-	private EdgeAction makeToolsToModelEdge(String modelDestination, String endDestination) {
-		return state -> {
-			// 1. Extract last AI message and corresponding tool messages
-			ToolResponseMessage toolResponseMessage = fetchLastToolResponseMessage(state);
-			// 2. Exit condition: All executed tools have return_direct=True
-			if (toolResponseMessage != null && !toolResponseMessage.getResponses().isEmpty()) {
-				boolean allReturnDirect = toolResponseMessage.getResponses().stream().allMatch(toolResponse -> {
-					String toolName = toolResponse.name();
-					return false; // FIXME
-				});
-				if (allReturnDirect) {
-					return endDestination;
-				}
-			}
-
-			// 3. Default: Continue the loop
-			//    Tool execution completed successfully, route back to the model
-			//    so it can process the tool results and decide the next action.
-			return modelDestination;
-		};
+	private EdgeAction makeToolsToModelEdge(String modelDestination) {
+		return state -> modelDestination;
 	}
 
-	private ToolResponseMessage fetchLastToolResponseMessage(OverAllState state) {
-		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-
-		ToolResponseMessage toolResponseMessage = null;
-
-		for (int i = messages.size() - 1; i >= 0; i--) {
-			if (messages.get(i) instanceof ToolResponseMessage) {
-				toolResponseMessage = (ToolResponseMessage) messages.get(i);
-				break;
-			}
+	private static JumpTo consumeJumpTo(OverAllState state) {
+		Object jumpToValue = state.value("jump_to").orElse(null);
+		if (jumpToValue == null) {
+			return null;
 		}
-
-		return toolResponseMessage;
+		state.updateState(Map.of("jump_to", OverAllState.MARK_FOR_REMOVAL));
+		if (jumpToValue instanceof JumpTo jumpTo) {
+			return jumpTo;
+		}
+		if (jumpToValue instanceof String jumpToText) {
+			return JumpTo.fromStringOrNull(jumpToText);
+		}
+		return null;
 	}
 
 	/**
@@ -951,6 +919,12 @@ public class ReactAgent extends BaseAgent {
 		}
 
 		return result.isEmpty() ? null : result;
+	}
+
+	private static boolean shouldAddReturnDirectModelHook(List<? extends Hook> hooks) {
+		return hooks.stream()
+				.noneMatch(hook -> hook instanceof ReturnDirectModelHook
+						|| ReturnDirectModelHook.NAME.equals(hook.getName()));
 	}
 
 	public String instruction() {

@@ -42,9 +42,11 @@ import static org.springframework.ai.model.tool.ToolExecutionResult.FINISH_REASO
 @HookPositions({HookPosition.BEFORE_MODEL})
 public class ReturnDirectModelHook extends MessagesModelHook {
 
+	public static final String NAME = "finish_reason_check_messages_model_hook";
+
 	@Override
 	public String getName() {
-		return "finish_reason_check_messages_model_hook";
+		return NAME;
 	}
 
 	@Override
