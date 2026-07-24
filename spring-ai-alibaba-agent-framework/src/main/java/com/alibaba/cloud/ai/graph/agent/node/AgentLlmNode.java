@@ -52,7 +52,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -66,6 +68,10 @@ import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_I
 public class AgentLlmNode implements NodeActionWithConfig {
 	private static final Logger logger = LoggerFactory.getLogger(AgentLlmNode.class);
 	public static final String MODEL_ITERATION_KEY = "_MODEL_ITERATION_";
+
+	private static final String THOUGHT_SIGNATURES_METADATA_KEY = "thoughtSignatures";
+
+	private static final String BINARY_METADATA_DATA_FIELD = "data";
 
 	private String agentName;
 
@@ -172,6 +178,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			messages = (List<Message>) state.value("messages").get();
 		}
 
+		messages = restoreThoughtSignatures(messages);
 		augmentUserMessage(messages, outputSchema);
 		renderTemplatedUserMessage(messages, state.data(), config.metadata());
 
@@ -537,7 +544,92 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			}
         }
 
-        return promptSpec;
+		return promptSpec;
+	}
+
+	private List<Message> restoreThoughtSignatures(List<Message> messages) {
+		if (messages == null || messages.isEmpty()) {
+			return messages;
+		}
+
+		List<Message> restoredMessages = new ArrayList<>(messages.size());
+		boolean changed = false;
+		for (Message message : messages) {
+			Message restoredMessage = restoreAssistantThoughtSignatures(message);
+			restoredMessages.add(restoredMessage);
+			changed = changed || restoredMessage != message;
+		}
+		return changed ? restoredMessages : messages;
+	}
+
+	private Message restoreAssistantThoughtSignatures(Message message) {
+		if (!(message instanceof AssistantMessage assistantMessage)) {
+			return message;
+		}
+		if (message.getClass() != AssistantMessage.class) {
+			return message;
+		}
+		Map<String, Object> metadata = assistantMessage.getMetadata();
+		if (metadata == null || metadata.isEmpty()) {
+			return message;
+		}
+
+		Object thoughtSignatures = metadata.get(THOUGHT_SIGNATURES_METADATA_KEY);
+		Object restoredThoughtSignatures = restoreThoughtSignatureList(thoughtSignatures);
+		if (restoredThoughtSignatures == thoughtSignatures) {
+			return message;
+		}
+
+		Map<String, Object> restoredMetadata = new LinkedHashMap<>(metadata);
+		restoredMetadata.put(THOUGHT_SIGNATURES_METADATA_KEY, restoredThoughtSignatures);
+		return AssistantMessage.builder()
+			.content(assistantMessage.getText())
+			.properties(restoredMetadata)
+			.toolCalls(assistantMessage.getToolCalls())
+			.media(assistantMessage.getMedia())
+			.build();
+	}
+
+	private Object restoreThoughtSignatureList(Object value) {
+		if (!(value instanceof List<?> signatures)) {
+			return value;
+		}
+
+		List<Object> restoredSignatures = new ArrayList<>(signatures.size());
+		boolean changed = false;
+		for (Object signature : signatures) {
+			Object restoredSignature = restoreThoughtSignature(signature);
+			restoredSignatures.add(restoredSignature);
+			changed = changed || restoredSignature != signature;
+		}
+		return changed ? restoredSignatures : value;
+	}
+
+	private Object restoreThoughtSignature(Object value) {
+		if (value instanceof byte[]) {
+			return value;
+		}
+		if (value instanceof Map<?, ?> map) {
+			byte[] bytes = byteArrayFromNumbers(map.get(BINARY_METADATA_DATA_FIELD));
+			return bytes != null ? bytes : value;
+		}
+		byte[] bytes = byteArrayFromNumbers(value);
+		return bytes != null ? bytes : value;
+	}
+
+	private byte[] byteArrayFromNumbers(Object value) {
+		if (!(value instanceof Collection<?> numbers)) {
+			return null;
+		}
+		byte[] bytes = new byte[numbers.size()];
+		int index = 0;
+		for (Object item : numbers) {
+			if (!(item instanceof Number number)) {
+				return null;
+			}
+			bytes[index++] = number.byteValue();
+		}
+		return bytes;
 	}
 
 	public String getName() {

@@ -16,8 +16,10 @@
 package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import org.springframework.ai.chat.messages.AssistantMessage;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -57,6 +59,29 @@ class OverAllStateBuilderTest {
 		assertThat(state.data()).containsEntry("input", "Hello World").containsEntry("count", 1);
 		assertThat(state.containStrategy("input")).isTrue();
 		assertThat(state.value("input", String.class)).hasValue("Hello World");
+	}
+
+	@Test
+	void testBuildWithData_shouldPreserveAssistantMessageThoughtSignatures() {
+		// Arrange
+		byte[] signature = new byte[] { 1, -2, 3, -4 };
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("Call tool")
+			.properties(Map.of("thoughtSignatures", List.of(signature)))
+			.build();
+
+		// Act
+		OverAllState state = OverAllStateBuilder.builder()
+			.withData(Map.of("messages", List.of(assistantMessage)))
+			.build();
+
+		// Assert
+		List<?> messages = (List<?>) state.data().get("messages");
+		AssistantMessage copiedMessage = (AssistantMessage) messages.get(0);
+		List<?> signatures = (List<?>) copiedMessage.getMetadata().get("thoughtSignatures");
+		assertThat(signatures).hasSize(1);
+		assertThat(signatures.get(0)).isInstanceOf(byte[].class);
+		assertThat((byte[]) signatures.get(0)).containsExactly(signature);
 	}
 
 	@Test
