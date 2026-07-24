@@ -131,10 +131,18 @@ public class SummarizationHook extends MessagesModelHook {
 			}
 		}
 
+		// Preserve original SystemMessage(s) — they must not be summarized (fixes #4048)
+		List<Message> preservedSystemMessages = new ArrayList<>();
+		for (int i = 0; i < cutoffIndex; i++) {
+			if (previousMessages.get(i) instanceof SystemMessage sm) {
+				preservedSystemMessages.add(sm);
+			}
+		}
+
 		List<Message> toSummarize = new ArrayList<>();
 		for (int i = 0; i < cutoffIndex; i++) {
 			Message msg = previousMessages.get(i);
-			if (msg != firstUserMessage) {
+			if (msg != firstUserMessage && !(msg instanceof SystemMessage)) {
 				toSummarize.add(msg);
 			}
 		}
@@ -149,6 +157,8 @@ public class SummarizationHook extends MessagesModelHook {
 		}
 
 		List<Message> newMessages = new ArrayList<>();
+		// Add preserved SystemMessage(s) first so they appear at the top
+		newMessages.addAll(preservedSystemMessages);
 		if (firstUserMessage != null) {
 			newMessages.add(firstUserMessage);
 		}
