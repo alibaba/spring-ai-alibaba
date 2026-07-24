@@ -38,12 +38,26 @@ public class ArrayLoopStrategy implements LoopStrategy {
 
     private final Converter<List<Message>, List<?>> converter;
 
+    private final int batchSize;
+
     public ArrayLoopStrategy(Converter<List<Message>, List<?>> converter) {
+        this(converter, 1);
+    }
+
+    public ArrayLoopStrategy(Converter<List<Message>, List<?>> converter, int batchSize) {
+        if (batchSize <= 0) {
+            throw new IllegalArgumentException("batchSize must be greater than zero");
+        }
         this.converter = converter;
+        this.batchSize = batchSize;
+    }
+
+    public ArrayLoopStrategy(int batchSize) {
+        this(DEFAULT_MESSAGE_CONVERTER, batchSize);
     }
 
     public ArrayLoopStrategy() {
-        this(DEFAULT_MESSAGE_CONVERTER);
+        this(1);
     }
 
     @Override
@@ -63,8 +77,12 @@ public class ArrayLoopStrategy implements LoopStrategy {
         List<?> list = state.value(loopListKey(), List.class).orElse(List.of());
         int index = state.value(loopCountKey(), maxLoopCount());
         if(index < list.size()) {
-            UserMessage message = new UserMessage(list.get(index).toString());
-            return Map.of(loopCountKey(), index + 1, loopFlagKey(), true,
+            int nextIndex = Math.min(index + batchSize, list.size());
+            String messageText = batchSize == 1
+                    ? list.get(index).toString()
+                    : JsonParser.toJson(list.subList(index, nextIndex));
+            UserMessage message = new UserMessage(messageText);
+            return Map.of(loopCountKey(), nextIndex, loopFlagKey(), true,
                     LoopStrategy.MESSAGE_KEY, message);
         } else {
             return Map.of(loopFlagKey(), false);
