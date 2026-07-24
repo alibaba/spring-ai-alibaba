@@ -30,28 +30,27 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import io.a2a.A2A;
-import io.a2a.server.agentexecution.AgentExecutor;
-import io.a2a.server.agentexecution.RequestContext;
-import io.a2a.server.events.EventQueue;
-import io.a2a.server.tasks.TaskUpdater;
-import io.a2a.spec.JSONRPCError;
-import io.a2a.spec.Message;
-import io.a2a.spec.MessageSendParams;
-import io.a2a.spec.Part;
-import io.a2a.spec.Task;
-import io.a2a.spec.TaskState;
-import io.a2a.spec.TaskStatus;
-import io.a2a.spec.TextPart;
+import org.reactivestreams.Subscription;
+import org.a2aproject.sdk.server.agentexecution.AgentExecutor;
+import org.a2aproject.sdk.server.agentexecution.RequestContext;
+import org.a2aproject.sdk.server.tasks.AgentEmitter;
+import org.a2aproject.sdk.spec.A2AError;
+import org.a2aproject.sdk.spec.TextPart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.Disposable;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 
 public class GraphAgentExecutor implements AgentExecutor {
@@ -62,75 +61,79 @@ public class GraphAgentExecutor implements AgentExecutor {
 
 	public static final String STREAMING_METADATA_KEY = "isStreaming";
 
+	private static final String AGENT_EXECUTION_FAILED = "Agent execution failed";
+
 	private final Agent executeAgent;
+
+	private final ConcurrentMap<String, StreamExecution> activeStreams = new ConcurrentHashMap<>();
+
+	private final ConcurrentMap<String, NonStreamExecution> activeNonStreamExecutions = new ConcurrentHashMap<>();
 
 	public GraphAgentExecutor(Agent executeAgent) {
 		this.executeAgent = executeAgent;
 	}
 
-	private Task newTask(Message request) {
-		String contextId = request.getContextId();
-		if (contextId == null || contextId.isEmpty()) {
-			contextId = UUID.randomUUID().toString();
-		}
-		String id = UUID.randomUUID().toString();
-		if (request.getTaskId() != null && !request.getTaskId().isEmpty()) {
-			id = request.getTaskId();
-		}
-		return new Task(id, contextId, new TaskStatus(TaskState.SUBMITTED), null, List.of(request), null);
-	}
-
 	@Override
-	public void execute(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+	public void execute(RequestContext context, AgentEmitter emitter) throws A2AError {
 		try {
-			Message message = context.getParams().message();
-			StringBuilder sb = new StringBuilder();
-			for (Part<?> each : message.getParts()) {
-				if (Part.Kind.TEXT.equals(each.getKind())) {
-					sb.append(((TextPart) each).getText()).append("\n");
-				}
-			}
-			// TODO adapter for all agent type, now only support react agent
-			String input = sb.toString().trim();
+			String input = context.getUserInput().trim();
 			if (!StringUtils.hasLength(input)) {
 				LOGGER.info("Instruction in remote agent is empty, this agent will share messages with remote agent by using the same threadId.");
 			}
 
 			if (isStreamRequest(context)) {
-				executeStreamTask(input, context, eventQueue);
+				executeStreamTask(input, context, emitter);
 			}
 			else {
-				executeForNonStreamTask(input, context, eventQueue);
+				executeForNonStreamTask(input, context, emitter);
 			}
 		}
 		catch (Exception e) {
 			LOGGER.error("Agent execution failed", e);
-			eventQueue.enqueueEvent(A2A.toAgentMessage("Agent execution failed: " + e.getMessage()));
+			emitter.fail(emitter.newAgentMessage(List.of(new TextPart(AGENT_EXECUTION_FAILED)), Map.of()));
 		}
 	}
 
 	@Override
-	public void cancel(RequestContext context, EventQueue eventQueue) throws JSONRPCError {
+	public void cancel(RequestContext context, AgentEmitter emitter) throws A2AError {
+		String streamKey = streamKey(context, emitter);
+		StreamExecution execution = this.activeStreams.get(streamKey);
+		if (execution == null) {
+			NonStreamExecution nonStreamExecution = this.activeNonStreamExecutions.get(streamKey);
+			if (nonStreamExecution == null || nonStreamExecution.cancel()) {
+				if (nonStreamExecution != null) {
+					awaitNonStreamCompletion(nonStreamExecution);
+				}
+				emitter.cancel();
+			}
+			return;
+		}
+		boolean cancelled = execution.cancel();
+		if (cancelled) {
+			try {
+				emitter.cancel();
+			}
+			finally {
+				this.activeStreams.remove(streamKey, execution);
+				execution.signalCompletion();
+			}
+		}
 	}
 
 	private boolean isStreamRequest(RequestContext context) {
-		MessageSendParams params = context.getParams();
-		if (null == params.metadata()) {
+		Map<String, Object> metadata = context.getMetadata();
+		if (metadata == null) {
 			return false;
 		}
-		if (!params.metadata().containsKey(STREAMING_METADATA_KEY)) {
-			return false;
-		}
-		return (boolean) params.metadata().get(STREAMING_METADATA_KEY);
+		return Boolean.TRUE.equals(metadata.get(STREAMING_METADATA_KEY));
 	}
 
 	private RunnableConfig getRunnableConfig(RequestContext context) {
 		RunnableConfig.Builder builder = RunnableConfig.builder();
 
 		// Get metadata from context
-		MessageSendParams params = context.getParams();
-		if (params != null && params.metadata() != null) {
-			Map<String, Object> metadata = params.metadata();
+		Map<String, Object> metadata = context.getMetadata();
+		if (metadata != null) {
 
 			// Check if threadId exists in metadata and add it to RunnableConfig
 			if (metadata.containsKey("threadId")) {
@@ -149,78 +152,228 @@ public class GraphAgentExecutor implements AgentExecutor {
 		return builder.build();
 	}
 
-	private void executeStreamTask(String inputMessage, RequestContext context, EventQueue eventQueue)
+	private void executeStreamTask(String inputMessage, RequestContext context, AgentEmitter emitter)
 			throws GraphStateException, GraphRunnerException {
-		RunnableConfig runnableConfig = getRunnableConfig(context);
-		Flux<NodeOutput> generator = executeAgent.stream(inputMessage, runnableConfig);
-		Task task = context.getTask();
-		if (task == null) {
-			task = newTask(context.getMessage());
-			eventQueue.enqueueEvent(task);
+		String streamKey = streamKey(context, emitter);
+		StreamExecution execution = new StreamExecution();
+		if (this.activeStreams.putIfAbsent(streamKey, execution) != null) {
+			throw new IllegalStateException("An agent stream is already active for task " + context.getTaskId());
 		}
-		TaskUpdater taskUpdater = new TaskUpdater(context, eventQueue);
-		taskUpdater.submit();
-		generator.subscribe(new ReactAgentNodeOutputConsumer(taskUpdater), throwable -> {
-			LOGGER.error("Agent execution failed", throwable);
-			taskUpdater.fail(A2A.toAgentMessage(throwable.getMessage()));
-		}, taskUpdater::complete);
-		waitTaskCompleted(task);
-	}
 
-	private void executeForNonStreamTask(String inputMessage, RequestContext context, EventQueue eventQueue)
-			throws GraphStateException, GraphRunnerException {
-		RunnableConfig runnableConfig = getRunnableConfig(context);
-		var result = executeAgent.invoke(inputMessage, runnableConfig);
-		// FIXME: currently only support ReactAgent and A2aRemoteAgent as the root agent
-		String outputText = result.get().data().containsKey(((BaseAgent)executeAgent).getOutputKey())
-				? String.valueOf(result.get().data().get(((BaseAgent)executeAgent).getOutputKey())) : "No output key in result.";
+		try {
+			RunnableConfig runnableConfig = getRunnableConfig(context);
+			Flux<NodeOutput> generator = executeAgent.stream(inputMessage, runnableConfig);
+			ReactAgentNodeOutputConsumer outputConsumer = new ReactAgentNodeOutputConsumer(emitter);
+			AtomicReference<Error> fatalError = new AtomicReference<>();
+			BaseSubscriber<NodeOutput> subscriber = new BaseSubscriber<>() {
+				@Override
+				protected void hookOnSubscribe(Subscription subscription) {
+					requestUnbounded();
+				}
 
-		Task task = context.getTask();
-		if (task == null) {
-			task = newTask(context.getMessage());
-			eventQueue.enqueueEvent(task);
-		}
-		TaskUpdater taskUpdater = new TaskUpdater(context, eventQueue);
-		boolean taskComplete = true;
-		boolean requireUserInput = false;
-		if (!taskComplete && !requireUserInput) {
-			taskUpdater.startWork(taskUpdater.newAgentMessage(List.of(new TextPart(outputText)), Map.of()));
-		}
-		else if (requireUserInput) {
-			taskUpdater.startWork(taskUpdater.newAgentMessage(List.of(new TextPart(outputText)), Map.of()));
-		}
-		else {
-			taskUpdater.addArtifact(List.of(new TextPart(outputText)), UUID.randomUUID().toString(),
-					"conversation_result", Map.of("output", outputText));
-			taskUpdater.complete();
-		}
-	}
+				@Override
+				protected void hookOnNext(NodeOutput value) {
+					outputConsumer.accept(value);
+				}
 
-	private void waitTaskCompleted(Task task) {
-		while (!task.getStatus().state().equals(TaskState.COMPLETED)
-				&& !task.getStatus().state().equals(TaskState.CANCELED)) {
-			try {
-				TimeUnit.SECONDS.sleep(1);
-			}
-			catch (InterruptedException ignored) {
+				@Override
+				protected void hookOnError(Throwable throwable) {
+					if (throwable instanceof Error error) {
+						fatalError.set(error);
+						terminateStream(streamKey, execution, () -> {
+						});
+						return;
+					}
+					LOGGER.error("Agent execution failed", throwable);
+					terminateStream(streamKey, execution,
+							() -> emitter.fail(emitter.newAgentMessage(List.of(new TextPart(AGENT_EXECUTION_FAILED)), Map.of())));
+				}
+
+				@Override
+				protected void hookOnComplete() {
+					terminateStream(streamKey, execution, emitter::complete);
+				}
+			};
+			boolean started = execution.start(subscriber, () -> startTask(context, emitter));
+			if (started) {
+				generator.subscribe(subscriber);
+				awaitCompletion(execution);
+				if (fatalError.get() != null) {
+					throw fatalError.get();
+				}
 			}
 		}
+		catch (Exception ex) {
+			LOGGER.error("Agent execution failed", ex);
+			if (execution.cancel()) {
+				finishClaimedStream(streamKey, execution,
+						() -> emitter.fail(emitter.newAgentMessage(List.of(new TextPart(AGENT_EXECUTION_FAILED)), Map.of())));
+			}
+		}
+		catch (Error ex) {
+			if (execution.cancel()) {
+				this.activeStreams.remove(streamKey, execution);
+				execution.signalCompletion();
+			}
+			throw ex;
+		}
+	}
+
+	private void terminateStream(String streamKey, StreamExecution execution, Runnable terminalSignal) {
+		if (execution.claimTermination()) {
+			finishClaimedStream(streamKey, execution, terminalSignal);
+		}
+	}
+
+	private void finishClaimedStream(String streamKey, StreamExecution execution, Runnable terminalSignal) {
+		try {
+			terminalSignal.run();
+		}
+		finally {
+			this.activeStreams.remove(streamKey, execution);
+			execution.signalCompletion();
+		}
+	}
+
+	private void executeForNonStreamTask(String inputMessage, RequestContext context, AgentEmitter emitter)
+			throws GraphStateException, GraphRunnerException {
+		String streamKey = streamKey(context, emitter);
+		NonStreamExecution execution = new NonStreamExecution();
+		if (this.activeNonStreamExecutions.putIfAbsent(streamKey, execution) != null) {
+			throw new IllegalStateException("A non-stream agent execution is already active for task " + streamKey);
+		}
+
+		execution.start(Thread.currentThread());
+		try {
+			RunnableConfig runnableConfig = getRunnableConfig(context);
+			if (!execution.runIfActive(() -> startTask(context, emitter))) {
+				return;
+			}
+
+			var result = executeAgent.invoke(inputMessage, runnableConfig);
+			if (execution.isCancelled()) {
+				return;
+			}
+
+			// FIXME: currently only support ReactAgent and A2aRemoteAgent as the root agent
+			String outputText = result.get().data().containsKey(((BaseAgent)executeAgent).getOutputKey())
+					? String.valueOf(result.get().data().get(((BaseAgent)executeAgent).getOutputKey()))
+					: "No output key in result.";
+			execution.complete(() -> {
+				emitter.addArtifact(List.of(new TextPart(outputText)), null, "conversation_result",
+						Map.of("output", outputText));
+				emitter.complete();
+			});
+		}
+		catch (RuntimeException | GraphRunnerException ex) {
+			if (!execution.isCancelled()) {
+				throw ex;
+			}
+		}
+		finally {
+			this.activeNonStreamExecutions.remove(streamKey, execution);
+			execution.signalCompletion();
+		}
+	}
+
+	private void startTask(RequestContext context, AgentEmitter emitter) {
+		if (context.getTask() == null) {
+			emitter.submit();
+		}
+		emitter.startWork();
+	}
+
+	private String streamKey(RequestContext context, AgentEmitter emitter) {
+		String taskId = context.getTaskId();
+		if (!StringUtils.hasText(taskId)) {
+			taskId = emitter.getTaskId();
+		}
+		if (!StringUtils.hasText(taskId)) {
+			throw new IllegalStateException("Cannot track an agent stream without a task id");
+		}
+		return taskId;
+	}
+
+	private void awaitNonStreamCompletion(NonStreamExecution execution) {
+		try {
+			execution.awaitCompletion(500, TimeUnit.MILLISECONDS);
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+	}
+
+	private void awaitCompletion(StreamExecution execution) {
+		try {
+			execution.awaitCompletion();
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("Interrupted while waiting for agent stream completion", e);
+		}
+	}
+
+	private static final class StreamExecution {
+
+		private final CountDownLatch completion = new CountDownLatch(1);
+
+		private final AtomicBoolean terminationClaimed = new AtomicBoolean();
+
+		private final AtomicReference<Disposable> subscription = new AtomicReference<>();
+
+		synchronized boolean start(Disposable disposable, Runnable taskStarter) {
+			if (this.terminationClaimed.get()) {
+				disposable.dispose();
+				return false;
+			}
+			if (!this.subscription.compareAndSet(null, disposable)) {
+				disposable.dispose();
+				throw new IllegalStateException("Agent stream subscription was already registered");
+			}
+			taskStarter.run();
+			return true;
+		}
+
+		synchronized boolean claimTermination() {
+			return this.terminationClaimed.compareAndSet(false, true);
+		}
+
+		synchronized boolean cancel() {
+			if (!claimTermination()) {
+				return false;
+			}
+			Disposable disposable = this.subscription.get();
+			if (disposable != null) {
+				disposable.dispose();
+			}
+			return true;
+		}
+
+		void signalCompletion() {
+			this.completion.countDown();
+		}
+
+		void awaitCompletion() throws InterruptedException {
+			this.completion.await();
+		}
+
 	}
 
 	private static class ReactAgentNodeOutputConsumer implements Consumer<NodeOutput> {
 
-		private final TaskUpdater taskUpdater;
+		private final AgentEmitter emitter;
 
 		private final AtomicInteger artifactNum;
 
-		private ReactAgentNodeOutputConsumer(TaskUpdater taskUpdater) {
-			this.taskUpdater = taskUpdater;
+		private ReactAgentNodeOutputConsumer(AgentEmitter emitter) {
+			this.emitter = emitter;
 			this.artifactNum = new AtomicInteger();
 		}
 
 		@Override
 		public void accept(NodeOutput nodeOutput) {
-			if (nodeOutput.isSTART() || nodeOutput.isEND() || IGNORE_NODE_TYPE.contains(nodeOutput.node())) {
+			if (nodeOutput.isSTART() || nodeOutput.isEND()
+					|| (nodeOutput.node() != null && IGNORE_NODE_TYPE.contains(nodeOutput.node()))) {
 				if (LOGGER.isDebugEnabled()) {
 					LOGGER.debug("Agent parts output: {}", buildDebugDetailInfo(nodeOutput));
 				}
@@ -236,7 +389,7 @@ public class GraphAgentExecutor implements AgentExecutor {
 				return;
 			}
 
-			taskUpdater.addArtifact(Collections.singletonList(new TextPart(content)), null,
+			emitter.addArtifact(Collections.singletonList(new TextPart(content)), null,
 					String.valueOf(artifactNum.incrementAndGet()), Map.of());
 		}
 
@@ -245,6 +398,69 @@ public class GraphAgentExecutor implements AgentExecutor {
 			outputJson.put("data", nodeOutput.state().data());
 			outputJson.put("node", nodeOutput.node());
 			return JSON.toJSONString(outputJson);
+		}
+
+	}
+
+	private static final class NonStreamExecution {
+
+		private final CountDownLatch completion = new CountDownLatch(1);
+
+		private Thread worker;
+
+		private State state = State.RUNNING;
+
+		synchronized void start(Thread worker) {
+			this.worker = worker;
+			if (this.state == State.CANCELLED) {
+				worker.interrupt();
+			}
+		}
+
+		synchronized boolean runIfActive(Runnable action) {
+			if (this.state != State.RUNNING) {
+				return false;
+			}
+			action.run();
+			return true;
+		}
+
+		synchronized boolean complete(Runnable terminalSignal) {
+			if (this.state != State.RUNNING) {
+				return false;
+			}
+			this.state = State.COMPLETED;
+			terminalSignal.run();
+			return true;
+		}
+
+		synchronized boolean cancel() {
+			if (this.state != State.RUNNING) {
+				return false;
+			}
+			this.state = State.CANCELLED;
+			if (this.worker != null && this.worker != Thread.currentThread()) {
+				this.worker.interrupt();
+			}
+			return true;
+		}
+
+		synchronized boolean isCancelled() {
+			return this.state == State.CANCELLED;
+		}
+
+		void signalCompletion() {
+			this.completion.countDown();
+		}
+
+		boolean awaitCompletion(long timeout, TimeUnit unit) throws InterruptedException {
+			return this.completion.await(timeout, unit);
+		}
+
+		private enum State {
+
+			RUNNING, CANCELLED, COMPLETED
+
 		}
 
 	}

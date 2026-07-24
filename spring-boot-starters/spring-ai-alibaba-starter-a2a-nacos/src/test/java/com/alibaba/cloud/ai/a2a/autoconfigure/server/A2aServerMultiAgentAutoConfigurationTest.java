@@ -16,15 +16,30 @@
 
 package com.alibaba.cloud.ai.a2a.autoconfigure.server;
 
+import com.alibaba.cloud.ai.a2a.autoconfigure.A2aAgentCardProperties;
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aMultiAgentProperties;
+import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerProperties;
+import com.alibaba.cloud.ai.a2a.core.constants.A2aConstants;
 import com.alibaba.cloud.ai.a2a.core.route.MultiAgentRequestRouter;
+import com.alibaba.cloud.ai.a2a.core.server.JsonRpcA2aRequestHandler;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import org.a2aproject.sdk.server.config.A2AConfigProvider;
+import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
+import org.a2aproject.sdk.spec.AgentInterface;
+import org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link A2aServerMultiAgentAutoConfiguration}.
@@ -77,6 +92,54 @@ class A2aServerMultiAgentAutoConfigurationTest {
 				assertThat(router.size()).isEqualTo(0);
 				assertThat(router.hasHandler("weather-agent")).isFalse();
 			});
+	}
+
+	@Test
+	void customConfigProviderInitializesEachRequestHandler() {
+		A2AConfigProvider configProvider = mock(A2AConfigProvider.class);
+		when(configProvider.getValue("a2a.blocking.agent.timeout.seconds")).thenReturn("13");
+		when(configProvider.getValue("a2a.blocking.consumption.timeout.seconds")).thenReturn("9");
+		ReactAgent agent = mock(ReactAgent.class);
+		when(agent.name()).thenReturn("weather-agent");
+		when(agent.description()).thenReturn("Weather service");
+
+		this.contextRunner
+			.withPropertyValues("spring.ai.alibaba.a2a.server.agents.weather-agent.name=Weather Agent",
+					"spring.ai.alibaba.a2a.server.address=localhost", "spring.ai.alibaba.a2a.server.port=8080")
+			.withBean("weather-agent", ReactAgent.class, () -> agent)
+			.withBean(A2AConfigProvider.class, () -> configProvider)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				JsonRpcA2aRequestHandler handler = context.getBean(MultiAgentRequestRouter.class)
+					.getHandler("weather-agent");
+				assertThat(handler).isNotNull();
+				JSONRPCHandler jsonRpcHandler = (JSONRPCHandler) ReflectionTestUtils.getField(handler, "jsonRpcHandler");
+				RequestHandler requestHandler = (RequestHandler) ReflectionTestUtils.getField(jsonRpcHandler,
+						"requestHandler");
+				assertThat(ReflectionTestUtils.getField(requestHandler, "configProvider")).isSameAs(configProvider);
+				assertThat(ReflectionTestUtils.getField(requestHandler, "agentCompletionTimeoutSeconds")).isEqualTo(13);
+				assertThat(ReflectionTestUtils.getField(requestHandler, "consumptionCompletionTimeoutSeconds")).isEqualTo(9);
+			});
+	}
+
+	@Test
+	void defaultsMissingAdditionalInterfaceVersionAndPreservesExplicitVersion() {
+		A2aAgentCardProperties cardProperties = new A2aAgentCardProperties();
+		cardProperties.setAdditionalInterfaces(List.of(
+				new AgentInterface("HTTP+JSON", "http://localhost:8080/http-json", "tenant-a", ""),
+				new AgentInterface("JSONRPC", "http://localhost:8081/a2a", "tenant-b", "0.3")));
+		A2aServerProperties serverProperties = new A2aServerProperties();
+		serverProperties.setAddress("localhost");
+		serverProperties.setPort(8080);
+
+		List<AgentInterface> interfaces = ReflectionTestUtils.invokeMethod(
+				new A2aServerMultiAgentAutoConfiguration(), "buildSupportedInterfaces", cardProperties,
+				serverProperties, "weather-agent");
+
+		assertThat(interfaces)
+			.contains(new AgentInterface("HTTP+JSON", "http://localhost:8080/http-json", "tenant-a",
+					A2aConstants.DEFAULT_A2A_PROTOCOL_VERSION))
+			.contains(new AgentInterface("JSONRPC", "http://localhost:8081/a2a", "tenant-b", "0.3"));
 	}
 
 }

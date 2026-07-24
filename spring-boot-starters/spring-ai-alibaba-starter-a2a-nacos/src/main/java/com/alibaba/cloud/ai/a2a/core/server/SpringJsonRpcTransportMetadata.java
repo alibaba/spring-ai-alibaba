@@ -16,38 +16,17 @@
 
 package com.alibaba.cloud.ai.a2a.core.server;
 
+import org.a2aproject.sdk.server.TransportMetadata;
+import org.a2aproject.sdk.spec.TransportProtocol;
+
 /**
- * A2A server protocol type enum
- *
- * @author xiweng.yy
+ * Transport metadata for the Spring MVC JSON-RPC endpoint.
  */
-public enum ServerTypeEnum {
+public class SpringJsonRpcTransportMetadata implements TransportMetadata {
 
-	JSON_RPC(ServerTypeEnum.JSON_RPC_TYPE), GRPC(ServerTypeEnum.GRPC_TYPE), REST(ServerTypeEnum.REST_TYPE);
-
-	public static final String JSON_RPC_TYPE = "JSONRPC";
-
-	public static final String GRPC_TYPE = "GRPC";
-
-	public static final String REST_TYPE = "HTTP+JSON";
-
-	private final String type;
-
-	ServerTypeEnum(String type) {
-		this.type = type;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public static ServerTypeEnum valueOfType(String type) {
-		for (ServerTypeEnum value : values()) {
-			if (value.getType().equals(type)) {
-				return value;
-			}
-		}
-		return null;
+	@Override
+	public String getTransportProtocol() {
+		return TransportProtocol.JSONRPC.asString();
 	}
 
 }

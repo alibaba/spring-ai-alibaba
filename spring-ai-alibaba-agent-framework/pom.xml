@@ -52,7 +52,7 @@
         </dependency>
 
         <dependency>
-            <groupId>io.github.a2asdk</groupId>
+            <groupId>org.a2aproject.sdk</groupId>
             <artifactId>a2a-java-sdk-client</artifactId>
         </dependency>
         <dependency>

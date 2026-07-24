@@ -19,11 +19,11 @@ package com.alibaba.cloud.ai.a2a.autoconfigure;
 import java.util.List;
 import java.util.Map;
 
-import io.a2a.spec.AgentCapabilities;
-import io.a2a.spec.AgentInterface;
-import io.a2a.spec.AgentProvider;
-import io.a2a.spec.AgentSkill;
-import io.a2a.spec.SecurityScheme;
+import org.a2aproject.sdk.spec.AgentCapabilities;
+import org.a2aproject.sdk.spec.AgentInterface;
+import org.a2aproject.sdk.spec.AgentProvider;
+import org.a2aproject.sdk.spec.AgentSkill;
+import org.a2aproject.sdk.spec.SecurityScheme;
 
 /**
  * A2a server agent card properties.

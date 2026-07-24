@@ -55,7 +55,7 @@ public class NacosA2aOperationService {
 		this.nacosA2aRegistryProperties = nacosA2aRegistryProperties;
 	}
 
-	public void registerAgent(io.a2a.spec.AgentCard agentCard) {
+	public void registerAgent(org.a2aproject.sdk.spec.AgentCard agentCard) {
 		AgentCard nacosAgentCard = AgentCardConverterUtil.convertToNacosAgentCard(agentCard);
 		try {
 			tryReleaseAgentCard(nacosAgentCard);

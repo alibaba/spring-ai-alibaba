@@ -19,12 +19,14 @@ package com.alibaba.cloud.ai.graph.agent.a2a;
 import java.util.List;
 import java.util.Map;
 
-import io.a2a.spec.AgentCapabilities;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.AgentInterface;
-import io.a2a.spec.AgentProvider;
-import io.a2a.spec.AgentSkill;
-import io.a2a.spec.SecurityScheme;
+import org.a2aproject.sdk.spec.AgentCapabilities;
+import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentInterface;
+import org.a2aproject.sdk.spec.AgentProvider;
+import org.a2aproject.sdk.spec.AgentSkill;
+import org.a2aproject.sdk.spec.Legacy_0_3_AgentInterface;
+import org.a2aproject.sdk.spec.SecurityScheme;
+import org.a2aproject.sdk.spec.TransportProtocol;
 
 /**
  * The Wrapper of AgentCard.
@@ -33,7 +35,14 @@ import io.a2a.spec.SecurityScheme;
  */
 public class AgentCardWrapper {
 
-	private AgentCard agentCard;
+	private static final String JSONRPC_TRANSPORT = TransportProtocol.JSONRPC.asString();
+
+	private static final String LEGACY_PROTOCOL_VERSION = "0.3";
+
+	private volatile AgentCard agentCard;
+
+	public record AgentEndpoint(String url, String protocolBinding, String protocolVersion, String tenant) {
+	}
 
 	public AgentCardWrapper(AgentCard agentCard) {
 		this.agentCard = agentCard;
@@ -48,7 +57,7 @@ public class AgentCardWrapper {
 	}
 
 	public String url() {
-		return this.agentCard.url();
+		return endpoint().url();
 	}
 
 	public AgentProvider provider() {
@@ -80,7 +89,7 @@ public class AgentCardWrapper {
 	}
 
 	public boolean supportsAuthenticatedExtendedCard() {
-		return this.agentCard.supportsAuthenticatedExtendedCard();
+		return this.agentCard.capabilities().extendedAgentCard();
 	}
 
 	public Map<String, SecurityScheme> securitySchemes() {
@@ -88,7 +97,10 @@ public class AgentCardWrapper {
 	}
 
 	public List<Map<String, List<String>>> security() {
-		return this.agentCard.security();
+		if (this.agentCard.securityRequirements() == null) {
+			return List.of();
+		}
+		return this.agentCard.securityRequirements().stream().map(requirement -> requirement.schemes()).toList();
 	}
 
 	public String iconUrl() {
@@ -96,15 +108,36 @@ public class AgentCardWrapper {
 	}
 
 	public List<AgentInterface> additionalInterfaces() {
-		return this.agentCard.additionalInterfaces();
+		if (this.agentCard.supportedInterfaces() != null && !this.agentCard.supportedInterfaces().isEmpty()) {
+			return this.agentCard.supportedInterfaces();
+		}
+		if (this.agentCard.additionalInterfaces() == null) {
+			return List.of();
+		}
+		return this.agentCard.additionalInterfaces()
+			.stream()
+			.map(agentInterface -> legacyInterface(agentInterface.transport(), agentInterface.url()))
+			.toList();
 	}
 
 	public String preferredTransport() {
-		return this.agentCard.preferredTransport();
+		return endpoint().protocolBinding();
 	}
 
 	public String protocolVersion() {
-		return this.agentCard.protocolVersion();
+		return endpoint().protocolVersion();
+	}
+
+	public String tenant() {
+		return endpoint().tenant();
+	}
+
+	/**
+	 * Select the endpoint once so callers can build and send a request from one
+	 * immutable agent-card snapshot.
+	 */
+	public AgentEndpoint endpoint() {
+		return preferredEndpoint(this.agentCard);
 	}
 
 	public AgentCard getAgentCard() {
@@ -113,5 +146,49 @@ public class AgentCardWrapper {
 
 	public void setAgentCard(AgentCard agentCard) {
 		this.agentCard = agentCard;
+	}
+
+	protected final AgentEndpoint preferredEndpoint(AgentCard agentCard) {
+		AgentInterface agentInterface = preferredInterface(agentCard);
+		String protocolVersion = agentInterface.protocolVersion();
+		if (protocolVersion == null || protocolVersion.isBlank()) {
+			throw new IllegalStateException("JSONRPC interface does not declare a protocol version");
+		}
+		return new AgentEndpoint(agentInterface.url(), agentInterface.protocolBinding(), protocolVersion,
+				agentInterface.tenant());
+	}
+
+	private AgentInterface preferredInterface(AgentCard agentCard) {
+		List<AgentInterface> supportedInterfaces = agentCard.supportedInterfaces();
+		if (supportedInterfaces != null) {
+			for (AgentInterface agentInterface : supportedInterfaces) {
+				if (agentInterface != null && isJsonRpc(agentInterface.protocolBinding())) {
+					return agentInterface;
+				}
+			}
+		}
+		if (agentCard.url() != null) {
+			String transport = agentCard.preferredTransport() == null ? JSONRPC_TRANSPORT : agentCard.preferredTransport();
+			if (isJsonRpc(transport)) {
+				return legacyInterface(transport, agentCard.url());
+			}
+		}
+		List<Legacy_0_3_AgentInterface> additionalInterfaces = agentCard.additionalInterfaces();
+		if (additionalInterfaces != null) {
+			for (Legacy_0_3_AgentInterface agentInterface : additionalInterfaces) {
+				if (agentInterface != null && isJsonRpc(agentInterface.transport())) {
+					return legacyInterface(agentInterface.transport(), agentInterface.url());
+				}
+			}
+		}
+		throw new IllegalStateException("Agent card does not declare a JSONRPC interface");
+	}
+
+	private boolean isJsonRpc(String transport) {
+		return transport != null && JSONRPC_TRANSPORT.equalsIgnoreCase(transport);
+	}
+
+	private AgentInterface legacyInterface(String transport, String url) {
+		return new AgentInterface(transport, url, null, LEGACY_PROTOCOL_VERSION);
 	}
 }

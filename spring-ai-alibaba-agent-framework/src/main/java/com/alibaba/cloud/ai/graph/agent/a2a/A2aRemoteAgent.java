@@ -24,7 +24,7 @@ import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import io.a2a.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentCard;
 
 import java.util.HashMap;
 import java.util.Objects;

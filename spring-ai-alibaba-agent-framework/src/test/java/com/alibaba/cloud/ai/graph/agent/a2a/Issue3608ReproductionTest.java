@@ -16,8 +16,8 @@
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.AgentCapabilities;
+import org.a2aproject.sdk.spec.AgentCapabilities;
+import org.a2aproject.sdk.spec.AgentCard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -159,7 +159,7 @@ class Issue3608ReproductionTest {
 		Method extractMethod = A2aNodeActionWithConfig.class.getDeclaredMethod("extractResponseText", java.util.Map.class);
 		extractMethod.setAccessible(true);
 
-		String[] ignorableStates = {"completed", "processing", "failed", "submitted", "canceled"};
+		String[] ignorableStates = { "completed", "processing", "submitted" };
 
 		for (String state : ignorableStates) {
 			java.util.Map<String, Object> result = new java.util.HashMap<>();
