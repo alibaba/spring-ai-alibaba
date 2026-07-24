@@ -32,6 +32,10 @@ import com.alibaba.cloud.ai.graph.store.StoreItem;
 import com.alibaba.cloud.ai.graph.store.stores.MemoryStore;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.HashMap;
 import java.util.List;
@@ -71,10 +75,10 @@ public class MemoryExample {
 			List<Map<String, String>> messages =
 					(List<Map<String, String>>) state.value("messages").orElse(List.of());
 
-			// 使用 ChatClient 调用 AI 模型
+			// 将检查点恢复出的完整历史传给模型，而不是只发送当前轮消息
 			ChatClient chatClient = chatClientBuilder.build();
 			String response = chatClient.prompt()
-					.user(messages.get(messages.size() - 1).get("content"))
+					.messages(toChatMessages(messages))
 					.call()
 					.content();
 
@@ -111,6 +115,22 @@ public class MemoryExample {
 		)), config);
 		// AI 将能够记住之前的对话，回答 "Bob"
 		System.out.println("Short-term memory example executed");
+	}
+
+	static List<Message> toChatMessages(List<Map<String, String>> messages) {
+		return messages.stream()
+				.map(MemoryExample::toChatMessage)
+				.toList();
+	}
+
+	private static Message toChatMessage(Map<String, String> message) {
+		String content = message.get("content");
+		return switch (message.get("role")) {
+			case "user" -> new UserMessage(content);
+			case "assistant" -> new AssistantMessage(content);
+			case "system" -> new SystemMessage(content);
+			default -> throw new IllegalArgumentException("Unsupported message role: " + message.get("role"));
+		};
 	}
 
 	/**
@@ -397,4 +417,3 @@ public class MemoryExample {
 		}
 	}
 }
-
