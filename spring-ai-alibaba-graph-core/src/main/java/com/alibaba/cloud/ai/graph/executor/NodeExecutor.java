@@ -206,9 +206,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 			NodeOutput output = context.buildNodeOutputAndAddCheckpoint(updateState);
 
 			context.doListeners(NODE_AFTER, null);
-			// Recursively call the main execution handler
-			return Flux.just(GraphResponse.of(output))
-				.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
+			// Continue with the main execution handler (expanded iteratively by GraphRunner)
+			return Flux.just(GraphResponse.of(output),
+					GraphResponse.continueWith(() -> mainGraphExecutor.execute(context, resultValue)));
 		}
 		catch (Exception e) {
 			return Flux.just(GraphResponse.error(e));
@@ -609,7 +609,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 		});
 
 		return processedFlux
-			.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+			.concatWith(updateContextMono.thenMany(Flux
+				.just(GraphResponse.continueWith(() -> mainGraphExecutor.execute(context, resultValue)))));
 	}
 
 	/**
@@ -777,7 +778,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 		});
 
 		return processedFlux
-				.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+				.concatWith(updateContextMono.thenMany(Flux
+					.just(GraphResponse.continueWith(() -> mainGraphExecutor.execute(context, resultValue)))));
 	}
 
 	private Map<String, Object> graphFluxResultState(GraphFlux<?> graphFlux, Object lastData) {
@@ -929,7 +931,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 		});
 
 		return mergedFlux
-				.concatWith(updateContextMono.thenMany(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue))));
+				.concatWith(updateContextMono.thenMany(Flux
+					.just(GraphResponse.continueWith(() -> mainGraphExecutor.execute(context, resultValue)))));
 	}
 
 	/**
@@ -952,8 +955,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 		}
 
 		NodeOutput output = context.buildNodeOutputAndAddCheckpoint(partialState);
-		// Recursively call the main execution handler
-		return Flux.just(GraphResponse.of(output))
-				.concatWith(Flux.defer(() -> mainGraphExecutor.execute(context, resultValue)));
+		// Continue with the main execution handler (expanded iteratively by GraphRunner)
+		return Flux.just(GraphResponse.of(output),
+				GraphResponse.continueWith(() -> mainGraphExecutor.execute(context, resultValue)));
 	}
 }
