@@ -19,7 +19,6 @@ import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import com.alibaba.cloud.ai.graph.skills.registry.AbstractSkillRegistry;
 
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-
 import org.springframework.core.io.Resource;
 
 import java.io.File;

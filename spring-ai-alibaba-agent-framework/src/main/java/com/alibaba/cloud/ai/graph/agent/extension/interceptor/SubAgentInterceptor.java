@@ -15,8 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.extension.interceptor;
 
-import com.alibaba.cloud.ai.graph.agent.extension.tools.model.TaskTool;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.extension.tools.model.TaskTool;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;

@@ -27,18 +27,15 @@ import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.converter.FormatProvider;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
-
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
-
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;

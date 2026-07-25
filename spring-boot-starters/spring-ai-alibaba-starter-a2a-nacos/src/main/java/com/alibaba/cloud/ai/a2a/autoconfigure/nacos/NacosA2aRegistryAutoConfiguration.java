@@ -16,13 +16,13 @@
 
 package com.alibaba.cloud.ai.a2a.autoconfigure.nacos;
 
+import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerProperties;
+import com.alibaba.cloud.ai.a2a.autoconfigure.server.A2aServerAgentCardAutoConfiguration;
+import com.alibaba.cloud.ai.a2a.autoconfigure.server.A2aServerRegistryAutoConfiguration;
 import com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosA2aRegistryProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosAgentRegistry;
 import com.alibaba.cloud.ai.a2a.registry.nacos.service.NacosA2aOperationService;
-import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerProperties;
-import com.alibaba.cloud.ai.a2a.autoconfigure.server.A2aServerAgentCardAutoConfiguration;
-import com.alibaba.cloud.ai.a2a.autoconfigure.server.A2aServerRegistryAutoConfiguration;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
