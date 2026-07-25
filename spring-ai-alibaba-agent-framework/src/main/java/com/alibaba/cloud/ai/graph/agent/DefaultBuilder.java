@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.graph.agent.extension.interceptor.AssistantMessageSanitizerInterceptor;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
@@ -118,7 +119,9 @@ public class DefaultBuilder extends Builder {
 		}
 		
 		separateInterceptorsByType();
-		
+
+		registerDefaultModelInterceptors();
+
 		List<ToolCallback> allTools = gatherLocalTools();
 		
 		// Set combined tools to LLM node
@@ -168,6 +171,30 @@ public class DefaultBuilder extends Builder {
 		return new ReactAgent(llmNode, toolNode, buildConfig(), this);
 	}
 	
+	/**
+	 * Register framework-provided model interceptors that are enabled by default.
+	 * <p>
+	 * The {@link AssistantMessageSanitizerInterceptor} is appended last so it sits innermost
+	 * in the interceptor chain (closest to the model call). This way it normalizes the message
+	 * list only after any user-configured interceptors have run, right before the request is
+	 * sent to the model. Registration is skipped when disabled via
+	 * {@link Builder#assistantMessageSanitizerEnabled(boolean)} or when an interceptor with the
+	 * same name is already present.
+	 */
+	protected void registerDefaultModelInterceptors() {
+		if (!this.assistantMessageSanitizerEnabled) {
+			return;
+		}
+		if (modelInterceptors == null) {
+			modelInterceptors = new ArrayList<>();
+		}
+		boolean alreadyPresent = modelInterceptors.stream()
+				.anyMatch(interceptor -> AssistantMessageSanitizerInterceptor.class.equals(interceptor.getClass()));
+		if (!alreadyPresent) {
+			modelInterceptors.add(AssistantMessageSanitizerInterceptor.builder().build());
+		}
+	}
+
 	/**
 	 * Separate unified interceptors by type into modelInterceptors and toolInterceptors.
 	 */
