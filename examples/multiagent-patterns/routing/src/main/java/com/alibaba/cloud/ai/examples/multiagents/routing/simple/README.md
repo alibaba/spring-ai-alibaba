@@ -7,7 +7,7 @@ This example implements the **routing** multi-agent pattern with Spring AI Aliba
 - **LlmRoutingAgent**  
   The core routing component. An LLM analyzes the query and routes to one or more specialist agents with targeted sub-queries. Each agent receives its sub-question via the `{agentName_input}` placeholder in its instruction. Selected agents run in parallel via the framework's graph-based parallel conditional edges.
 - **Specialist agents**  
-  - **GitHub agent**: Tools `search_code`, `search_issues`, `search_prs`; answers about code, API references, implementation details.  
+  - **GitHub agent**: Tools `search_code`, `search_issues`, `search_prs`, `create_pr`; answers about code, API references, implementation details.  
   - **Notion agent**: Tools `search_notion`, `get_page`; answers about internal docs, processes, wikis.  
   - **Slack agent**: Tools `search_slack`, `get_thread`; answers from team discussions and threads.
 

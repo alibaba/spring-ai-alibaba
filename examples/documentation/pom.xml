@@ -173,4 +173,28 @@
 		</repository>
 	</repositories>
 
+	<profiles>
+		<profile>
+			<id>langfuse</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.alibaba.cloud.ai</groupId>
+					<artifactId>spring-ai-alibaba-starter-graph-observation</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-actuator</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>io.micrometer</groupId>
+					<artifactId>micrometer-tracing-bridge-otel</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>io.opentelemetry</groupId>
+					<artifactId>opentelemetry-exporter-otlp</artifactId>
+				</dependency>
+			</dependencies>
+		</profile>
+	</profiles>
+
 </project>
