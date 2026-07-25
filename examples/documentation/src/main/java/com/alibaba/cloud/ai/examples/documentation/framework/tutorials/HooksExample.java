@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.UpdatePolicy;
@@ -50,10 +51,12 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.toolselection.ToolSelectionI
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -493,6 +496,59 @@ public class HooksExample {
 	}
 
 	/**
+	 * 在 Agent 执行前替换完整消息列表。
+	 *
+	 * <p>messages 通道默认使用追加策略。原始 {@link AgentHook} 返回
+	 * {@code Map.of("messages", fullMessageList)} 会把完整列表追加到已有列表，
+	 * 导致消息重复。需要替换完整列表时，应使用 {@link MessagesAgentHook} 并返回
+	 * {@link UpdatePolicy#REPLACE}；只返回新增消息时才使用追加策略。
+	 */
+	@HookPositions({HookPosition.BEFORE_AGENT})
+	public static class QueryEnhancementHook extends MessagesAgentHook {
+
+		private ReactAgent agent;
+
+		@Override
+		public String getName() {
+			return "query_enhancement";
+		}
+
+		@Override
+		public ReactAgent getAgent() {
+			return agent;
+		}
+
+		@Override
+		public void setAgent(ReactAgent agent) {
+			this.agent = agent;
+		}
+
+		@Override
+		public int getOrder() {
+			return 0;
+		}
+
+		@Override
+		public AgentCommand beforeAgent(List<Message> previousMessages, RunnableConfig config) {
+			List<Message> enhancedMessages = new ArrayList<>(previousMessages);
+			for (int i = enhancedMessages.size() - 1; i >= 0; i--) {
+				Message message = enhancedMessages.get(i);
+				if (message instanceof UserMessage userMessage) {
+					String enhancedQuery = enhanceQuery(userMessage.getText());
+					enhancedMessages.set(i, new UserMessage(enhancedQuery));
+					break;
+				}
+			}
+			return new AgentCommand(enhancedMessages, UpdatePolicy.REPLACE);
+		}
+
+		private String enhanceQuery(String originalQuery) {
+			// Replace this with the application's query rewriting implementation.
+			return "请结合对话上下文回答：" + originalQuery;
+		}
+	}
+
+	/**
 	 * 示例14：自定义 ModelInterceptor
 	 */
 	public static class LoggingInterceptor extends ModelInterceptor {
@@ -649,4 +705,3 @@ public class HooksExample {
 		}
 	}
 }
-
