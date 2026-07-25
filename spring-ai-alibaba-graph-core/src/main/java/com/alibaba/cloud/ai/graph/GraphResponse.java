@@ -17,11 +17,14 @@ package com.alibaba.cloud.ai.graph;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import reactor.core.publisher.Flux;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -38,6 +41,17 @@ public class GraphResponse<E> implements Serializable {
 	Object resultValue;
 
 	Map<String, Object> metadata;
+
+	/**
+	 * Lazy continuation of the graph execution. Executors emit a marker response
+	 * carrying the next execution step instead of recursively nesting it with
+	 * {@code concatWith(Flux.defer(...))}; {@link com.alibaba.cloud.ai.graph.GraphRunner}
+	 * expands these markers iteratively so the reactive operator depth stays constant
+	 * regardless of how many nodes execute (see issue #4594). Markers are internal and
+	 * never emitted to downstream consumers.
+	 */
+	@JsonIgnore
+	transient Supplier<Flux<GraphResponse<E>>> continuation;
 
 	public GraphResponse(){}
 
@@ -91,6 +105,21 @@ public class GraphResponse<E> implements Serializable {
 		return GraphResponse.of(future, metadata);
 	}
 
+	/**
+	 * Creates an internal marker response carrying the next execution step. The supplier
+	 * is invoked lazily by the runner-level driver once all elements preceding the marker
+	 * have been emitted, preserving the ordering semantics of the previous recursive
+	 * {@code concatWith(Flux.defer(...))} chaining without growing the operator chain.
+	 * @param continuation supplier of the next execution step
+	 * @param <E> the type of the data element
+	 * @return a continuation marker response
+	 */
+	public static <E> GraphResponse<E> continueWith(Supplier<Flux<GraphResponse<E>>> continuation) {
+		GraphResponse<E> response = new GraphResponse<>(null, null);
+		response.continuation = continuation;
+		return response;
+	}
+
 	public CompletableFuture<E> getOutput() {
 		return output;
 	}
@@ -102,6 +131,16 @@ public class GraphResponse<E> implements Serializable {
 	@JsonIgnore
 	public boolean isDone() {
 		return output == null;
+	}
+
+	@JsonIgnore
+	public Supplier<Flux<GraphResponse<E>>> getContinuation() {
+		return continuation;
+	}
+
+	@JsonIgnore
+	public boolean hasContinuation() {
+		return continuation != null;
 	}
 
 	@JsonIgnore

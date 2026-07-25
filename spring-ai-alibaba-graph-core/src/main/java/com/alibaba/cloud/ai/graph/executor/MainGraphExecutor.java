@@ -130,9 +130,9 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 			NodeOutput output = context.buildOutput(START, cp);
 
 			context.setCurrentNodeId(context.getNextNodeId());
-			// Recursively call the main execution handler
-			return Flux.just(GraphResponse.of(output))
-				.concatWith(Flux.defer(() -> execute(context, new AtomicReference<>())));
+			// Continue with the main execution handler (expanded iteratively by GraphRunner)
+			return Flux.just(GraphResponse.of(output),
+					GraphResponse.continueWith(() -> execute(context, new AtomicReference<>())));
 		}
 		catch (Exception e) {
 			return Flux.just(GraphResponse.error(e));
@@ -150,8 +150,8 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 		try {
 			context.doListeners(END, null);
 			NodeOutput output = context.buildNodeOutput(END);
-			return Flux.just(GraphResponse.of(output))
-				.concatWith(Flux.defer(() -> handleCompletion(context, resultValue)));
+			return Flux.just(GraphResponse.of(output),
+					GraphResponse.continueWith(() -> handleCompletion(context, resultValue)));
 		}
 		catch (Exception e) {
 			return Flux.just(GraphResponse.error(e));
