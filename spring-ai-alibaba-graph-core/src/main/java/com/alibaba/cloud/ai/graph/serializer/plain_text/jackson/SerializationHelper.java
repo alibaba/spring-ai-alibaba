@@ -30,8 +30,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,6 +51,7 @@ import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.fasterxml.jackson.databind.ser.std.CollectionSerializer;
 import com.fasterxml.jackson.databind.ser.std.MapSerializer;
 import com.fasterxml.jackson.databind.ser.std.ObjectArraySerializer;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 
 class SerializationHelper {
 
@@ -77,6 +81,11 @@ class SerializationHelper {
 	}
 
 	private static Object normalizeMetadataValue(SerializerProvider provider, Object value) throws IOException {
+		return normalizeMetadataValue(provider, value, JsonInclude.Include.ALWAYS);
+	}
+
+	private static Object normalizeMetadataValue(SerializerProvider provider, Object value,
+			JsonInclude.Include contentInclusion) throws IOException {
 		if (value instanceof Map<?, ?> map) {
 			if (hasClassSerializationOverrides(provider, map.getClass())
 					|| !isStandardMapSerializer(provider.findValueSerializer(map.getClass()))) {
@@ -84,7 +93,9 @@ class SerializationHelper {
 			}
 			Map<Object, Object> normalized = new LinkedHashMap<>(map.size());
 			for (Map.Entry<?, ?> entry : map.entrySet()) {
-				normalized.put(entry.getKey(), normalizeMetadataValue(provider, entry.getValue()));
+				if (shouldInclude(provider, contentInclusion, entry.getValue())) {
+					normalized.put(entry.getKey(), normalizeMetadataValue(provider, entry.getValue()));
+				}
 			}
 			return normalized;
 		}
@@ -95,7 +106,9 @@ class SerializationHelper {
 			}
 			List<Object> normalized = new ArrayList<>(collection.size());
 			for (Object item : collection) {
-				normalized.add(normalizeMetadataValue(provider, item));
+				if (shouldInclude(provider, contentInclusion, item)) {
+					normalized.add(normalizeMetadataValue(provider, item));
+				}
 			}
 			return normalized;
 		}
@@ -107,7 +120,10 @@ class SerializationHelper {
 			int length = Array.getLength(value);
 			List<Object> normalized = new ArrayList<>(length);
 			for (int i = 0; i < length; i++) {
-				normalized.add(normalizeMetadataValue(provider, Array.get(value, i)));
+				Object item = Array.get(value, i);
+				if (shouldInclude(provider, contentInclusion, item)) {
+					normalized.add(normalizeMetadataValue(provider, item));
+				}
 			}
 			return normalized;
 		}
@@ -125,6 +141,7 @@ class SerializationHelper {
 			}
 			Map<String, Object> normalized = new LinkedHashMap<>();
 			JsonInclude.Value recordInclusion = getRecordInclusion(provider, record.getClass());
+			Map<String, JsonSerializer<Object>> propertySerializers = getAssignedPropertySerializers(beanSerializer);
 			for (BeanPropertyDefinition property : properties) {
 				if (!property.couldSerialize()) {
 					continue;
@@ -137,7 +154,12 @@ class SerializationHelper {
 					accessor.fixAccess(provider.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
 					Object propertyValue = accessor.getValue(record);
 					if (shouldInclude(provider, recordInclusion.getValueInclusion(), propertyValue)) {
-						normalized.put(property.getName(), normalizeMetadataValue(provider, propertyValue));
+						JsonSerializer<Object> propertySerializer = propertySerializers.get(property.getName());
+						Object normalizedValue = propertySerializer != null && propertyValue != null
+								? applyPropertySerializer(provider, propertySerializer, propertyValue)
+								: normalizeMetadataValue(provider, propertyValue,
+										recordInclusion.getContentInclusion());
+						normalized.put(property.getName(), normalizedValue);
 					}
 				}
 				catch (IllegalArgumentException ex) {
@@ -223,6 +245,7 @@ class SerializationHelper {
 				? hasUnsupportedRecordInclusion(effectiveInclusion)
 				: !defaultInclusion.equals(globalInclusion) || !effectiveInclusion.equals(defaultInclusion);
 		return unsupportedInclusion
+				|| provider.getConfig().findMixInClassFor(valueClass) != null
 				|| hasNonStructuralJacksonAnnotation(List.of(valueClass.getAnnotations()))
 				|| introspector.findSerializer(classInfo) != null
 				|| introspector.findKeySerializer(classInfo) != null
@@ -268,11 +291,6 @@ class SerializationHelper {
 		while (properties.hasNext()) {
 			PropertyWriter property = properties.next();
 			effectiveNames.add(property.getName());
-			if (property instanceof com.fasterxml.jackson.databind.ser.BeanPropertyWriter beanProperty
-					&& beanProperty.getSerializer() != null
-					&& !beanProperty.getSerializer().getClass().getPackageName().startsWith("com.fasterxml.jackson")) {
-				return true;
-			}
 			AnnotatedMember member = property.getMember();
 			if (member != null && hasNonStructuralJacksonAnnotation(member.annotations())) {
 				return true;
@@ -297,6 +315,30 @@ class SerializationHelper {
 			}
 		}
 		return !effectiveNames.equals(declaredNames);
+	}
+
+	private static Map<String, JsonSerializer<Object>> getAssignedPropertySerializers(BeanSerializerBase serializer) {
+		Map<String, JsonSerializer<Object>> serializers = new LinkedHashMap<>();
+		var properties = serializer.properties();
+		while (properties.hasNext()) {
+			PropertyWriter property = properties.next();
+			if (property instanceof com.fasterxml.jackson.databind.ser.BeanPropertyWriter beanProperty
+					&& beanProperty.getSerializer() != null) {
+				serializers.put(property.getName(), beanProperty.getSerializer());
+			}
+		}
+		return serializers;
+	}
+
+	private static Object applyPropertySerializer(SerializerProvider provider,
+			JsonSerializer<Object> serializer, Object value) throws IOException {
+		ObjectCodec codec = provider.getGenerator().getCodec();
+		try (TokenBuffer buffer = new TokenBuffer(codec, false)) {
+			serializer.serialize(value, buffer, provider);
+			try (JsonParser parser = buffer.asParser(codec)) {
+				return codec.readValue(parser, Object.class);
+			}
+		}
 	}
 
 	private static boolean hasNonStructuralJacksonAnnotation(Iterable<Annotation> annotations) {

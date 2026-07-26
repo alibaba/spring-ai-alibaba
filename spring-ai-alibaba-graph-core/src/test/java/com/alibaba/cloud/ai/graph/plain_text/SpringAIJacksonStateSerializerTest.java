@@ -24,15 +24,21 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
+import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -700,6 +706,81 @@ class SpringAIJacksonStateSerializerTest {
 		assertTrue(deserializedMap.containsKey("empty"));
 	}
 
+	@Test
+	void shouldPreserveContainerMixInSerializationRules() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.addMixIn(MixInMap.class, TypedContainerMixIn.class);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		MixInMap mixInMap = new MixInMap();
+		mixInMap.put("visible", "value");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("custom_map", mixInMap))
+			.build();
+
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		try (ObjectOutputStream output = new ObjectOutputStream(bytes)) {
+			customSerializer.writeData(Map.of("object", message), output);
+		}
+
+		assertTrue(new String(bytes.toByteArray(), StandardCharsets.ISO_8859_1)
+			.contains(MixInMap.class.getName()));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldPreserveModifierAssignedJacksonPropertySerializer() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		SimpleModule module = new SimpleModule();
+		module.setSerializerModifier(new BeanSerializerModifier() {
+			@Override
+			public List<BeanPropertyWriter> changeProperties(SerializationConfig config,
+					BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
+				if (beanDesc.getBeanClass() == ModifiedMetadata.class) {
+					beanProperties.stream()
+						.filter(property -> property.getName().equals("code"))
+						.forEach(property -> property.assignSerializer(ToStringSerializer.instance));
+				}
+				return beanProperties;
+			}
+		});
+		objectMapper.registerModule(module);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		List rawResults = List.of(Map.of("name", "visible"));
+		ModifiedMetadata metadata = new ModifiedMetadata(42, rawResults);
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("modified_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("modified_record");
+		assertEquals("42", record.get("code"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldApplyRecordContentInclusionDuringNormalization() throws Exception {
+		Map rawResults = new HashMap();
+		rawResults.put("visible", Map.of("name", "visible"));
+		rawResults.put("empty", null);
+		ContentIncludedMetadata metadata = new ContentIncludedMetadata(rawResults);
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("included_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("included_record");
+		assertEquals(Map.of("visible", Map.of("name", "visible")), record.get("results"));
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
@@ -717,6 +798,13 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	private record ReferenceMetadata(List<SearchResultMetadata> results, AtomicReference<String> reference) {
+	}
+
+	private record ModifiedMetadata(Integer code, List<SearchResultMetadata> results) {
+	}
+
+	@JsonInclude(content = JsonInclude.Include.NON_NULL)
+	private record ContentIncludedMetadata(Map<String, SearchResultMetadata> results) {
 	}
 
 	private record RedactedMetadata(String value) {
@@ -759,6 +847,13 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	private static final class OverrideMap extends HashMap<String, Object> {
+	}
+
+	private static final class MixInMap extends HashMap<String, Object> {
+	}
+
+	@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+	private abstract static class TypedContainerMixIn {
 	}
 
 	private static final class RedactingSerializer<T> extends JsonSerializer<T> {
