@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -39,7 +40,9 @@ import org.a2aproject.sdk.spec.Part;
 import org.a2aproject.sdk.spec.TextPart;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,6 +54,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -78,6 +82,60 @@ class GraphAgentExecutorTest {
 		assertThat(activeStreams(executor)).isEmpty();
 		verify(emitter).cancel();
 		verify(emitter, never()).complete();
+	}
+
+	@Test
+	void cancelWaitsForInFlightStreamOutputBeforeEmittingTerminalSignal() throws Exception {
+		AtomicReference<FluxSink<NodeOutput>> sink = new AtomicReference<>();
+		CountDownLatch subscribed = new CountDownLatch(1);
+		GraphAgentExecutor executor = executorFor(Flux.create(fluxSink -> {
+			sink.set(fluxSink);
+			subscribed.countDown();
+		}));
+		RequestContext context = streamingContext();
+		AgentEmitter emitter = emitter();
+		CountDownLatch artifactEntered = new CountDownLatch(1);
+		CountDownLatch releaseArtifact = new CountDownLatch(1);
+		CountDownLatch cancelSignalled = new CountDownLatch(1);
+		doAnswer(invocation -> {
+			artifactEntered.countDown();
+			releaseArtifact.await();
+			return null;
+		}).when(emitter).addArtifact(anyList(), isNull(), anyString(), anyMap());
+		doAnswer(invocation -> {
+			cancelSignalled.countDown();
+			return null;
+		}).when(emitter).cancel();
+
+		AtomicReference<Throwable> executeFailure = new AtomicReference<>();
+		Thread worker = executeInThread(executor, context, emitter, executeFailure);
+		assertTrue(subscribed.await(2, TimeUnit.SECONDS));
+
+		StreamingOutput<?> output = mock(StreamingOutput.class);
+		when(output.node()).thenReturn("llm");
+		when(output.chunk()).thenReturn("chunk");
+		Thread publisher = new Thread(() -> sink.get().next(output));
+		publisher.start();
+		assertTrue(artifactEntered.await(2, TimeUnit.SECONDS));
+
+		Thread cancelWorker = new Thread(() -> executor.cancel(context, emitter));
+		try {
+			cancelWorker.start();
+			assertFalse(cancelSignalled.await(100, TimeUnit.MILLISECONDS));
+		}
+		finally {
+			releaseArtifact.countDown();
+			publisher.join(Duration.ofSeconds(2).toMillis());
+			cancelWorker.join(Duration.ofSeconds(2).toMillis());
+			worker.join(Duration.ofSeconds(2).toMillis());
+		}
+
+		assertTrue(cancelSignalled.await(2, TimeUnit.SECONDS));
+		assertThat(executeFailure.get()).isNull();
+		InOrder signals = inOrder(emitter);
+		signals.verify(emitter).addArtifact(anyList(), isNull(), anyString(), anyMap());
+		signals.verify(emitter).cancel();
+		assertThat(activeStreams(executor)).isEmpty();
 	}
 
 	@Test

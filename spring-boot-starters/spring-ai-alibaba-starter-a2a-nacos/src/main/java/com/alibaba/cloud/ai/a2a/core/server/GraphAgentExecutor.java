@@ -173,7 +173,7 @@ public class GraphAgentExecutor implements AgentExecutor {
 
 				@Override
 				protected void hookOnNext(NodeOutput value) {
-					outputConsumer.accept(value);
+					execution.runIfActive(() -> outputConsumer.accept(value));
 				}
 
 				@Override
@@ -336,6 +336,14 @@ public class GraphAgentExecutor implements AgentExecutor {
 
 		synchronized boolean claimTermination() {
 			return this.terminationClaimed.compareAndSet(false, true);
+		}
+
+		synchronized boolean runIfActive(Runnable action) {
+			if (this.terminationClaimed.get()) {
+				return false;
+			}
+			action.run();
+			return true;
 		}
 
 		synchronized boolean cancel() {

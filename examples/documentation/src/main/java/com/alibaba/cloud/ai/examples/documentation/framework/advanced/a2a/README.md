@@ -13,7 +13,7 @@
 1. **本地 Agent 创建**：`A2AAgentConfig` 创建 ReactAgent Bean
 2. **A2A Server 自动暴露**：Spring Boot 启动时，A2A Server AutoConfiguration 自动：
    - 根据 ReactAgent Bean 生成 AgentCard
-   - 暴露 REST API 端点（`/.well-known/agent.json` 和 `/a2a/message`）
+   - 暴露 REST API 端点（`/.well-known/agent-card.json` 和 `/a2a`）
 3. **Nacos Registry 注册**：配置 `registry.enabled: true` 后：
    - 自动将 AgentCard 注册到 Nacos A2A 服务注册表
    - 其他服务可通过 Nacos 发现此 Agent
@@ -91,7 +91,7 @@ curl http://localhost:8080/api/a2a/demo
 
 **本地 AgentCard**：
 ```bash
-curl http://localhost:8080/.well-known/agent.json
+curl http://localhost:8080/.well-known/agent-card.json
 ```
 
 **Nacos 控制台**：
