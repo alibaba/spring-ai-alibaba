@@ -385,7 +385,6 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	void shouldSerializePrivateRecordUsingJacksonPropertyRules() throws Exception {
 		PrivateMetadata metadata = new PrivateMetadata("visible", "ignored", "secret");
 		AssistantMessage message = AssistantMessage.builder()
@@ -395,9 +394,28 @@ class SpringAIJacksonStateSerializerTest {
 
 		AssistantMessage deserialized = serializeAndDeserialize(message);
 
+		PrivateMetadata record =
+				(PrivateMetadata) deserialized.getMetadata().get("private_record");
+		assertEquals("visible", record.visible());
+		assertNull(record.ignored());
+		assertNull(record.secret());
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldNormalizePrivateRecordWithIncompatibleCollectionElements() throws Exception {
+		List rawResults = List.of(Map.of("name", "visible"));
+		PrivateSearchMetadata metadata = new PrivateSearchMetadata(rawResults, "ignored", "secret");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("private_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
 		Map<String, Object> record =
 				(Map<String, Object>) deserialized.getMetadata().get("private_record");
-		assertEquals("visible", record.get("visible_name"));
+		assertEquals(List.of(Map.of("name", "visible")), record.get("results"));
 		assertEquals(1, record.size());
 	}
 
@@ -611,6 +629,14 @@ class SpringAIJacksonStateSerializerTest {
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
+	}
+
+	private record PrivateSearchMetadata(@JsonProperty("results") List<SearchResultMetadata> results,
+			@JsonIgnore String ignored,
+			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
+	}
+
+	private record SearchResultMetadata(String name) {
 	}
 
 	private record RedactedMetadata(String value) {

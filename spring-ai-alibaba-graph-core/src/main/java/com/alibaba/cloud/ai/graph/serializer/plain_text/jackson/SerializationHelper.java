@@ -20,9 +20,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -110,16 +112,19 @@ class SerializationHelper {
 			return normalized;
 		}
 		if (value instanceof Record record) {
-			if (!(provider.findValueSerializer(record.getClass()) instanceof BeanSerializerBase beanSerializer)
-					|| hasClassSerializationOverrides(provider, record.getClass())
-					|| hasCustomPropertySerializer(provider, beanSerializer)) {
+			if (!(provider.findValueSerializer(record.getClass()) instanceof BeanSerializerBase beanSerializer)) {
+				return record;
+			}
+			List<BeanPropertyDefinition> properties = provider.getConfig()
+				.introspect(provider.constructType(record.getClass()))
+				.findProperties();
+			if (hasClassSerializationOverrides(provider, record.getClass())
+					|| hasCustomPropertySerializer(provider, beanSerializer, properties)
+					|| !requiresRecordNormalization(provider, record, properties)) {
 				return record;
 			}
 			Map<String, Object> normalized = new LinkedHashMap<>();
 			JsonInclude.Value recordInclusion = getRecordInclusion(provider, record.getClass());
-			List<BeanPropertyDefinition> properties = provider.getConfig()
-				.introspect(provider.constructType(record.getClass()))
-				.findProperties();
 			for (BeanPropertyDefinition property : properties) {
 				if (!property.couldSerialize()) {
 					continue;
@@ -142,6 +147,32 @@ class SerializationHelper {
 			return normalized;
 		}
 		return value;
+	}
+
+	private static boolean requiresRecordNormalization(SerializerProvider provider, Record record,
+			List<BeanPropertyDefinition> properties) throws IOException {
+		for (BeanPropertyDefinition property : properties) {
+			AnnotatedMember accessor = property.getAccessor();
+			if (accessor == null || !property.getPrimaryType().isCollectionLikeType()) {
+				continue;
+			}
+			Class<?> contentType = property.getPrimaryType().getContentType().getRawClass();
+			if (contentType == Object.class) {
+				continue;
+			}
+			try {
+				accessor.fixAccess(provider.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+				Object propertyValue = accessor.getValue(record);
+				if (propertyValue instanceof Collection<?> collection
+						&& collection.stream().filter(item -> item != null).anyMatch(item -> !contentType.isInstance(item))) {
+					return true;
+				}
+			}
+			catch (IllegalArgumentException ex) {
+				throw new IOException("Failed to inspect metadata record " + record.getClass().getName(), ex);
+			}
+		}
+		return false;
 	}
 
 	private static boolean isStandardMapSerializer(Object serializer) {
@@ -170,10 +201,13 @@ class SerializationHelper {
 		var classInfo = provider.getConfig()
 			.introspectClassAnnotations(provider.constructType(valueClass))
 			.getClassInfo();
-		JsonInclude classInclusion = valueClass.getAnnotation(JsonInclude.class);
+		JsonInclude.Value defaultInclusion = provider.getDefaultPropertyInclusion(valueClass);
+		JsonInclude.Value effectiveInclusion = provider.getConfig()
+			.introspect(provider.constructType(valueClass))
+			.findPropertyInclusion(defaultInclusion);
 		boolean unsupportedInclusion = valueClass.isRecord()
-				? hasUnsupportedRecordInclusion(getRecordInclusion(provider, valueClass))
-				: classInclusion != null;
+				? hasUnsupportedRecordInclusion(effectiveInclusion)
+				: !effectiveInclusion.equals(defaultInclusion);
 		return unsupportedInclusion
 				|| hasNonStructuralJacksonAnnotation(List.of(valueClass.getAnnotations()))
 				|| introspector.findSerializer(classInfo) != null
@@ -185,9 +219,10 @@ class SerializationHelper {
 	}
 
 	private static JsonInclude.Value getRecordInclusion(SerializerProvider provider, Class<?> recordClass) {
-		JsonInclude.Value inclusion = provider.getDefaultPropertyInclusion(recordClass);
-		JsonInclude classInclusion = recordClass.getAnnotation(JsonInclude.class);
-		return classInclusion != null ? inclusion.withOverrides(JsonInclude.Value.from(classInclusion)) : inclusion;
+		JsonInclude.Value defaultInclusion = provider.getDefaultPropertyInclusion(recordClass);
+		return provider.getConfig()
+			.introspect(provider.constructType(recordClass))
+			.findPropertyInclusion(defaultInclusion);
 	}
 
 	private static boolean hasUnsupportedRecordInclusion(JsonInclude.Value inclusion) {
@@ -208,11 +243,19 @@ class SerializationHelper {
 		};
 	}
 
-	private static boolean hasCustomPropertySerializer(SerializerProvider provider, BeanSerializerBase serializer) {
+	private static boolean hasCustomPropertySerializer(SerializerProvider provider, BeanSerializerBase serializer,
+			List<BeanPropertyDefinition> definitions) {
 		var introspector = provider.getAnnotationIntrospector();
 		var properties = serializer.properties();
+		Set<String> effectiveNames = new HashSet<>();
 		while (properties.hasNext()) {
 			PropertyWriter property = properties.next();
+			effectiveNames.add(property.getName());
+			if (property instanceof com.fasterxml.jackson.databind.ser.BeanPropertyWriter beanProperty
+					&& beanProperty.getSerializer() != null
+					&& !beanProperty.getSerializer().getClass().getPackageName().startsWith("com.fasterxml.jackson")) {
+				return true;
+			}
 			AnnotatedMember member = property.getMember();
 			if (member != null && hasNonStructuralJacksonAnnotation(member.annotations())) {
 				return true;
@@ -230,7 +273,13 @@ class SerializationHelper {
 				return true;
 			}
 		}
-		return false;
+		Set<String> declaredNames = new HashSet<>();
+		for (BeanPropertyDefinition definition : definitions) {
+			if (definition.couldSerialize()) {
+				declaredNames.add(definition.getName());
+			}
+		}
+		return !effectiveNames.equals(declaredNames);
 	}
 
 	private static boolean hasNonStructuralJacksonAnnotation(Iterable<Annotation> annotations) {
