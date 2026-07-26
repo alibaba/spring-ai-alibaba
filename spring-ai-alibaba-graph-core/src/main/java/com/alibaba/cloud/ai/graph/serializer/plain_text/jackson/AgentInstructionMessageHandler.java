@@ -72,7 +72,7 @@ public interface AgentInstructionMessageHandler {
 		private void serializeFields(AgentInstructionMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
 			gen.writeStringField(Field.TEXT.name, msg.getText());
 			gen.writeBooleanField(Field.RENDERED.name, msg.isRendered());
-			serializeMetadata(gen, msg.getMetadata());
+			serializeMetadata(gen, provider, msg.getMetadata());
 		}
 	}
 

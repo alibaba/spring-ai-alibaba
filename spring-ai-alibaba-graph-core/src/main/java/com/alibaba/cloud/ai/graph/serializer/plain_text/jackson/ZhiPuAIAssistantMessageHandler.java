@@ -101,7 +101,7 @@ public interface ZhiPuAIAssistantMessageHandler {
 			}
 
 			Map<String, Object> metadata = msg.getMetadata();
-			serializeMetadata(gen, metadata);
+			serializeMetadata(gen, provider, metadata);
 		}
 
 	}

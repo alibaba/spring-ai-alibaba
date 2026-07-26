@@ -20,6 +20,8 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -341,6 +343,28 @@ class SpringAIJacksonStateSerializerTest {
 		assertTrue(deserializedSearchInfo.get("search_results") instanceof List);
 		List<?> deserializedSearchResults = (List<?>) deserializedSearchInfo.get("search_results");
 		assertEquals("example", ((Map<?, ?>) deserializedSearchResults.get(0)).get("site_name"));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void shouldSerializePrivateRecordUsingJacksonPropertyRules() throws Exception {
+		PrivateMetadata metadata = new PrivateMetadata("visible", "ignored", "secret");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("private_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("private_record");
+		assertEquals("visible", record.get("visible_name"));
+		assertEquals(1, record.size());
+	}
+
+	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
+			@JsonIgnore String ignored,
+			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
 	}
 
 	private <T> T serializeAndDeserialize(T object) throws IOException, ClassNotFoundException {

@@ -17,20 +17,21 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 
 class SerializationHelper {
 
@@ -54,22 +55,23 @@ class SerializationHelper {
 		});
 	}
 
-	static void serializeMetadata(JsonGenerator gen, Map<String, Object> metadata) throws IOException {
-		gen.writeObjectField(METADATA_FIELD, normalizeMetadataValue(metadata));
+	static void serializeMetadata(JsonGenerator gen, SerializerProvider provider, Map<String, Object> metadata)
+			throws IOException {
+		gen.writeObjectField(METADATA_FIELD, normalizeMetadataValue(provider, metadata));
 	}
 
-	private static Object normalizeMetadataValue(Object value) throws IOException {
+	private static Object normalizeMetadataValue(SerializerProvider provider, Object value) throws IOException {
 		if (value instanceof Map<?, ?> map) {
 			Map<Object, Object> normalized = new LinkedHashMap<>(map.size());
 			for (Map.Entry<?, ?> entry : map.entrySet()) {
-				normalized.put(entry.getKey(), normalizeMetadataValue(entry.getValue()));
+				normalized.put(entry.getKey(), normalizeMetadataValue(provider, entry.getValue()));
 			}
 			return normalized;
 		}
 		if (value instanceof Collection<?> collection) {
 			List<Object> normalized = new ArrayList<>(collection.size());
 			for (Object item : collection) {
-				normalized.add(normalizeMetadataValue(item));
+				normalized.add(normalizeMetadataValue(provider, item));
 			}
 			return normalized;
 		}
@@ -77,24 +79,28 @@ class SerializationHelper {
 			int length = Array.getLength(value);
 			List<Object> normalized = new ArrayList<>(length);
 			for (int i = 0; i < length; i++) {
-				normalized.add(normalizeMetadataValue(Array.get(value, i)));
+				normalized.add(normalizeMetadataValue(provider, Array.get(value, i)));
 			}
 			return normalized;
 		}
 		if (value instanceof Record record) {
 			Map<String, Object> normalized = new LinkedHashMap<>();
-			for (RecordComponent component : record.getClass().getRecordComponents()) {
-				try {
-					JsonProperty jsonProperty = component.getAnnotation(JsonProperty.class);
-					if (jsonProperty == null) {
-						jsonProperty = component.getAccessor().getAnnotation(JsonProperty.class);
-					}
-					String propertyName = jsonProperty != null && !jsonProperty.value().isEmpty()
-							? jsonProperty.value() : component.getName();
-					normalized.put(propertyName,
-							normalizeMetadataValue(component.getAccessor().invoke(record)));
+			List<BeanPropertyDefinition> properties = provider.getConfig()
+				.introspect(provider.constructType(record.getClass()))
+				.findProperties();
+			for (BeanPropertyDefinition property : properties) {
+				if (!property.couldSerialize()) {
+					continue;
 				}
-				catch (IllegalAccessException | InvocationTargetException ex) {
+				AnnotatedMember accessor = property.getAccessor();
+				if (accessor == null) {
+					continue;
+				}
+				try {
+					accessor.fixAccess(provider.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
+					normalized.put(property.getName(), normalizeMetadataValue(provider, accessor.getValue(record)));
+				}
+				catch (IllegalArgumentException ex) {
 					throw new IOException("Failed to serialize metadata record " + record.getClass().getName(), ex);
 				}
 			}

@@ -85,7 +85,7 @@ public interface AssistantMessageHandler {
 		}
 		gen.writeEndArray();
 
-		serializeMetadata(gen, msg.getMetadata());
+		serializeMetadata(gen, provider, msg.getMetadata());
 
 		// gen.writeArrayFieldStart( Property.MEDIA.field);
 		// for (var media : msg.getMedia()) {
