@@ -28,6 +28,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -265,6 +266,7 @@ class SerializationHelper {
 				? hasUnsupportedRecordInclusion(effectiveInclusion)
 				: !defaultInclusion.equals(globalInclusion) || !effectiveInclusion.equals(defaultInclusion);
 		return unsupportedInclusion
+				|| !JsonFormat.Value.empty().equals(provider.getConfig().getDefaultPropertyFormat(valueClass))
 				|| provider.getConfig().findMixInClassFor(valueClass) != null
 				|| hasNonStructuralJacksonAnnotation(List.of(valueClass.getAnnotations()))
 				|| introspector.findSerializer(classInfo) != null

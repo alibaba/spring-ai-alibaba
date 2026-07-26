@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -494,6 +495,30 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	@Test
+	void shouldPreservePerTypeContainerFormat() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configOverride(FormatList.class)
+			.setFormat(JsonFormat.Value.empty()
+				.withFeature(JsonFormat.Feature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED));
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		FormatList values = new FormatList();
+		values.add("only");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("values", values))
+			.build();
+
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		try (ObjectOutputStream output = new ObjectOutputStream(bytes)) {
+			customSerializer.writeData(Map.of("object", message), output);
+		}
+
+		assertTrue(new String(bytes.toByteArray(), StandardCharsets.ISO_8859_1)
+			.contains(FormatList.class.getName()));
+	}
+
+	@Test
 	void shouldUseConfiguredRecordSerializer() throws Exception {
 		ObjectMapper objectMapper = new ObjectMapper();
 		SimpleModule module = new SimpleModule();
@@ -929,6 +954,9 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	private static final class MixInMap extends HashMap<String, Object> {
+	}
+
+	private static final class FormatList extends ArrayList<String> {
 	}
 
 	@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
