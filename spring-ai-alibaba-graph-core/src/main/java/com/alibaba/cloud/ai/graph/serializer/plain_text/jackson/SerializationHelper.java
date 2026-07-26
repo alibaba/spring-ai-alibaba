@@ -73,7 +73,8 @@ class SerializationHelper {
 
 	private static Object normalizeMetadataValue(SerializerProvider provider, Object value) throws IOException {
 		if (value instanceof Map<?, ?> map) {
-			if (!isStandardMapSerializer(provider.findValueSerializer(map.getClass()))) {
+			if (hasClassSerializationOverrides(provider, map.getClass())
+					|| !isStandardMapSerializer(provider.findValueSerializer(map.getClass()))) {
 				return map;
 			}
 			Map<Object, Object> normalized = new LinkedHashMap<>(map.size());
@@ -83,7 +84,8 @@ class SerializationHelper {
 			return normalized;
 		}
 		if (value instanceof Collection<?> collection) {
-			if (!isStandardCollectionSerializer(provider.findValueSerializer(collection.getClass()))) {
+			if (hasClassSerializationOverrides(provider, collection.getClass())
+					|| !isStandardCollectionSerializer(provider.findValueSerializer(collection.getClass()))) {
 				return collection;
 			}
 			List<Object> normalized = new ArrayList<>(collection.size());
@@ -93,7 +95,8 @@ class SerializationHelper {
 			return normalized;
 		}
 		if (value != null && value.getClass().isArray() && !value.getClass().getComponentType().isPrimitive()) {
-			if (!isStandardObjectArraySerializer(provider.findValueSerializer(value.getClass()))) {
+			if (hasClassSerializationOverrides(provider, value.getClass())
+					|| !isStandardObjectArraySerializer(provider.findValueSerializer(value.getClass()))) {
 				return value;
 			}
 			int length = Array.getLength(value);
@@ -105,6 +108,7 @@ class SerializationHelper {
 		}
 		if (value instanceof Record record) {
 			if (!(provider.findValueSerializer(record.getClass()) instanceof BeanSerializerBase beanSerializer)
+					|| hasClassSerializationOverrides(provider, record.getClass())
 					|| hasCustomPropertySerializer(provider, beanSerializer)) {
 				return record;
 			}
@@ -152,6 +156,21 @@ class SerializationHelper {
 		return (serializer instanceof ObjectArraySerializer arraySerializer
 				&& arraySerializer.getContentSerializer() == null)
 				|| serializer instanceof StringArraySerializer;
+	}
+
+	private static boolean hasClassSerializationOverrides(SerializerProvider provider, Class<?> valueClass) {
+		var introspector = provider.getAnnotationIntrospector();
+		var classInfo = provider.getConfig()
+			.introspectClassAnnotations(provider.constructType(valueClass))
+			.getClassInfo();
+		JsonInclude.Value inclusion = provider.getDefaultPropertyInclusion(valueClass);
+		return !JsonInclude.Value.empty().equals(inclusion)
+				|| introspector.findSerializer(classInfo) != null
+				|| introspector.findKeySerializer(classInfo) != null
+				|| introspector.findContentSerializer(classInfo) != null
+				|| introspector.findNullSerializer(classInfo) != null
+				|| introspector.findSerializationConverter(classInfo) != null
+				|| introspector.findFilterId(classInfo) != null;
 	}
 
 	private static boolean hasCustomPropertySerializer(SerializerProvider provider, BeanSerializerBase serializer) {

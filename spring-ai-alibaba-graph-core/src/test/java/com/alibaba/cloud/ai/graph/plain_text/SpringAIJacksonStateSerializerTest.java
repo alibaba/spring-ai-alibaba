@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonS
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -30,6 +31,8 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -522,6 +525,62 @@ class SpringAIJacksonStateSerializerTest {
 		assertNull(record.emptyItems());
 	}
 
+	@Test
+	void shouldUseConfiguredRecordFilter() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.setFilterProvider(new SimpleFilterProvider().addFilter("metadataFilter",
+				SimpleBeanPropertyFilter.filterOutAllExcept("visible")));
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("filtered_record", new FilteredMetadata("visible", "secret")))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		FilteredMetadata record =
+				(FilteredMetadata) deserialized.getMetadata().get("filtered_record");
+		assertEquals("visible", record.visible());
+		assertNull(record.secret());
+	}
+
+	@Test
+	void shouldUseMapperRecordInclusionRules() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_EMPTY);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("included_record", new MapperIncludedMetadata("visible", List.of())))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		MapperIncludedMetadata record =
+				(MapperIncludedMetadata) deserialized.getMetadata().get("included_record");
+		assertEquals("visible", record.visible());
+		assertNull(record.emptyItems());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void shouldUseAnnotatedMapKeySerializer() throws Exception {
+		SecretKeyMap secretMap = new SecretKeyMap();
+		secretMap.put("secret-key", "visible");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("custom_map", secretMap))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> deserializedMap =
+				(Map<String, Object>) deserialized.getMetadata().get("custom_map");
+		assertEquals(Map.of("redacted-key", "visible"), deserializedMap);
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
@@ -541,6 +600,13 @@ class SpringAIJacksonStateSerializerTest {
 			@JsonInclude(JsonInclude.Include.NON_EMPTY) List<String> emptyItems) {
 	}
 
+	@JsonFilter("metadataFilter")
+	private record FilteredMetadata(String visible, String secret) {
+	}
+
+	private record MapperIncludedMetadata(String visible, List<String> emptyItems) {
+	}
+
 	private static final class SecretMap extends HashMap<String, Object> {
 	}
 
@@ -555,6 +621,10 @@ class SpringAIJacksonStateSerializerTest {
 	private static final class SecretAnnotatedList extends ArrayList<String> {
 	}
 
+	@JsonSerialize(keyUsing = RedactingKeySerializer.class)
+	private static final class SecretKeyMap extends HashMap<String, Object> {
+	}
+
 	private static final class RedactingSerializer<T> extends JsonSerializer<T> {
 
 		@Override
@@ -566,6 +636,15 @@ class SpringAIJacksonStateSerializerTest {
 		public void serializeWithType(T value, JsonGenerator gen, SerializerProvider serializers,
 				TypeSerializer typeSerializer) throws IOException {
 			serialize(value, gen, serializers);
+		}
+
+	}
+
+	private static final class RedactingKeySerializer extends JsonSerializer<Object> {
+
+		@Override
+		public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+			gen.writeFieldName("redacted-key");
 		}
 
 	}
