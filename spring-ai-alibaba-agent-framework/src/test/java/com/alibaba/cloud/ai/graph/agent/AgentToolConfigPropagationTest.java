@@ -130,11 +130,12 @@ class AgentToolConfigPropagationTest {
 				.skillRegistry(registry)
 				.groupedTools(Map.of("grouped-tools-test", List.of(recordResultTool)))
 				.build();
+		ConfigCaptureHook captureHook = new ConfigCaptureHook();
 		ReactAgent subAgent = ReactAgent.builder()
 				.name("skill_child_agent")
 				.description("Executes tasks using dynamically activated skill tools")
 				.model(new SkillToolCallingChatModel())
-				.hooks(List.of(skillsHook))
+				.hooks(List.of(skillsHook, captureHook))
 				.build();
 		ReactAgent parentAgent = ReactAgent.builder()
 				.name("streaming_parent_agent")
@@ -142,11 +143,20 @@ class AgentToolConfigPropagationTest {
 				.tools(AgentTool.create(subAgent))
 				.build();
 
-		RunnableConfig parentConfig = RunnableConfig.builder().threadId("parent-thread").build();
+		RunnableConfig parentConfig = RunnableConfig.builder()
+				.threadId("parent-thread")
+				.addMetadata("business_key", "streaming-parent-value")
+				.build();
 		assertNotNull(parentAgent.stream("delegate this task", parentConfig).blockLast());
 
 		assertEquals("nested-value", recordedValue.get(),
 				"Tool activated by read_skill should remain available to the sub-agent tool node");
+		RunnableConfig childConfig = captureHook.capturedConfig();
+		assertNotNull(childConfig, "Streaming AgentTool should pass a runnable config to the child");
+		assertEquals("parent-thread_skill_child_agent", childConfig.threadId().orElse(null),
+				"Child thread id should be derived from the streaming parent config");
+		assertEquals("streaming-parent-value", childConfig.metadata("business_key").orElse(null),
+				"Child should preserve business metadata from the streaming parent config");
 	}
 
 	private static class FixedResponseChatModel implements ChatModel {
