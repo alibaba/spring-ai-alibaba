@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -420,6 +421,45 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldNormalizePrivateRecordWithIncompatibleMapValues() throws Exception {
+		Map rawResults = Map.of("result", Map.of("name", "visible"));
+		PrivateMapMetadata metadata = new PrivateMapMetadata(rawResults);
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("private_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("private_record");
+		assertEquals(Map.of("result", Map.of("name", "visible")), record.get("results"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldHonorNonAbsentForJacksonReferenceValues() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_ABSENT);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		List rawResults = List.of(Map.of("name", "visible"));
+		ReferenceMetadata metadata = new ReferenceMetadata(rawResults, new AtomicReference<>());
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("private_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("private_record");
+		assertEquals(List.of(Map.of("name", "visible")), record.get("results"));
+		assertEquals(1, record.size());
+	}
+
+	@Test
 	void shouldPreserveJacksonByteArraySerialization() throws Exception {
 		AssistantMessage message = AssistantMessage.builder()
 			.content("result")
@@ -637,6 +677,12 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	private record SearchResultMetadata(String name) {
+	}
+
+	private record PrivateMapMetadata(Map<String, SearchResultMetadata> results) {
+	}
+
+	private record ReferenceMetadata(List<SearchResultMetadata> results, AtomicReference<String> reference) {
 	}
 
 	private record RedactedMetadata(String value) {

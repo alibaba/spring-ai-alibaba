@@ -153,18 +153,13 @@ class SerializationHelper {
 			List<BeanPropertyDefinition> properties) throws IOException {
 		for (BeanPropertyDefinition property : properties) {
 			AnnotatedMember accessor = property.getAccessor();
-			if (accessor == null || !property.getPrimaryType().isCollectionLikeType()) {
-				continue;
-			}
-			Class<?> contentType = property.getPrimaryType().getContentType().getRawClass();
-			if (contentType == Object.class) {
+			if (accessor == null) {
 				continue;
 			}
 			try {
 				accessor.fixAccess(provider.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
 				Object propertyValue = accessor.getValue(record);
-				if (propertyValue instanceof Collection<?> collection
-						&& collection.stream().filter(item -> item != null).anyMatch(item -> !contentType.isInstance(item))) {
+				if (hasIncompatibleContainerValue(property.getPrimaryType(), propertyValue)) {
 					return true;
 				}
 			}
@@ -173,6 +168,24 @@ class SerializationHelper {
 			}
 		}
 		return false;
+	}
+
+	private static boolean hasIncompatibleContainerValue(com.fasterxml.jackson.databind.JavaType declaredType,
+			Object value) {
+		if (declaredType.isCollectionLikeType() && value instanceof Collection<?> collection) {
+			return hasIncompatibleValue(declaredType.getContentType().getRawClass(), collection);
+		}
+		if (declaredType.isMapLikeType() && value instanceof Map<?, ?> map) {
+			return hasIncompatibleValue(declaredType.getKeyType().getRawClass(), map.keySet())
+					|| hasIncompatibleValue(declaredType.getContentType().getRawClass(), map.values());
+		}
+		return false;
+	}
+
+	private static boolean hasIncompatibleValue(Class<?> declaredType, Collection<?> values) {
+		return declaredType != Object.class && values.stream()
+			.filter(item -> item != null)
+			.anyMatch(item -> !declaredType.isInstance(item));
 	}
 
 	private static boolean isStandardMapSerializer(Object serializer) {
@@ -229,7 +242,9 @@ class SerializationHelper {
 		JsonInclude.Include value = inclusion.getValueInclusion();
 		JsonInclude.Include content = inclusion.getContentInclusion();
 		return value == JsonInclude.Include.NON_DEFAULT || value == JsonInclude.Include.CUSTOM
-				|| content != JsonInclude.Include.ALWAYS && content != JsonInclude.Include.USE_DEFAULTS;
+				|| content != JsonInclude.Include.ALWAYS && content != JsonInclude.Include.USE_DEFAULTS
+						&& content != JsonInclude.Include.NON_NULL && content != JsonInclude.Include.NON_EMPTY
+						&& content != JsonInclude.Include.NON_ABSENT;
 	}
 
 	private static boolean shouldInclude(SerializerProvider provider, JsonInclude.Include inclusion, Object value)
@@ -238,7 +253,8 @@ class SerializationHelper {
 			case NON_NULL -> value != null;
 			case NON_EMPTY -> value != null && !provider.findValueSerializer(value.getClass()).isEmpty(provider, value);
 			case NON_ABSENT -> value != null
-					&& (!(value instanceof java.util.Optional<?> optional) || optional.isPresent());
+					&& (!provider.constructType(value.getClass()).isReferenceType()
+							|| !provider.findValueSerializer(value.getClass()).isEmpty(provider, value));
 			default -> true;
 		};
 	}
