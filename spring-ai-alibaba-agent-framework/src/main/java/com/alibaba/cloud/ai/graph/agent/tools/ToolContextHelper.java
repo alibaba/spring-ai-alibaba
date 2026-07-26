@@ -114,6 +114,23 @@ public final class ToolContextHelper {
 	}
 
 	/**
+	 * Get the optional tool progress emitter from ToolContext.
+	 *
+	 * <p>This emitter is only available during runtime streaming execution and is not
+	 * persisted into state or checkpoints.</p>
+	 *
+	 * @param toolContext the tool context
+	 * @return Optional containing the progress emitter if present
+	 */
+	public static Optional<ToolProgressEmitter> getToolProgressEmitter(@Nullable ToolContext toolContext) {
+		if (toolContext == null) {
+			return Optional.empty();
+		}
+		return getMetadata(toolContext, ToolContextConstants.AGENT_TOOL_PROGRESS_EMITTER_CONTEXT_KEY,
+				ToolProgressEmitter.class);
+	}
+
+	/**
 	 * Get metadata value by key with type safety.
 	 *
 	 * <p>Works with both framework keys and your custom keys:</p>

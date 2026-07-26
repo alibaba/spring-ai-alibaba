@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.node;
 
+import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
@@ -25,6 +27,12 @@ import com.alibaba.cloud.ai.graph.agent.tool.AsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellableAsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellationToken;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
+import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
+import com.alibaba.cloud.ai.graph.agent.tools.ToolProgressEmitter;
+import com.alibaba.cloud.ai.graph.agent.tools.ToolStreamingChunk;
+import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,6 +52,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -53,6 +63,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
@@ -60,6 +73,7 @@ import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -798,6 +812,314 @@ class AgentToolNodeIntegrationTest {
 			assertEquals("call-1", response.id());
 			assertEquals("fuyao-web-search", response.name());
 			assertEquals("Tool not available: fuyao-web-search", response.responseData());
+		}
+
+	}
+
+	@Nested
+	@DisplayName("Streaming Tool Execution Tests")
+	class StreamingToolExecutionTests {
+
+		@Test
+		@DisplayName("should not expose progress emitter in non-streaming mode")
+		void apply_shouldNotExposeProgressEmitter_whenNonStreaming() throws Exception {
+			AtomicReference<ToolProgressEmitter> capturedEmitter = new AtomicReference<>();
+
+			StateAwareToolCallback tool = new StateAwareToolCallback() {
+				@Override
+				public ToolDefinition getToolDefinition() {
+					return ToolDefinition.builder().name("nonStreamingTool").description("Non streaming tool").inputSchema("{}").build();
+				}
+
+				@Override
+				public String call(String toolInput, ToolContext toolContext) {
+					capturedEmitter.set(ToolContextHelper.getToolProgressEmitter(toolContext).orElse(null));
+					return "done";
+				}
+
+				@Override
+				public String call(String toolInput) {
+					return call(toolInput, new ToolContext(Map.of()));
+				}
+			};
+
+			AgentToolNode node = baseBuilder.toolCallbacks(List.of(tool)).build();
+			OverAllState state = createStateWithMessages(createAssistantMessageWithToolCalls(
+					createToolCall("call-1", "nonStreamingTool", "{}")));
+
+			Map<String, Object> result = node.apply(state, RunnableConfig.builder().build());
+
+			assertNull(capturedEmitter.get(), "Emitter should only exist during streaming execution");
+			assertTrue(result.get("messages") instanceof ToolResponseMessage);
+		}
+
+		@Test
+		@DisplayName("should emit streaming chunks and finished output for sync tool")
+		void apply_shouldEmitStreamingChunks_forSyncTool() throws Exception {
+			StateAwareToolCallback tool = new StateAwareToolCallback() {
+				@Override
+				public ToolDefinition getToolDefinition() {
+					return ToolDefinition.builder().name("syncStreamingTool").description("Sync streaming tool").inputSchema("{}").build();
+				}
+
+				@Override
+				public String call(String toolInput, ToolContext toolContext) {
+					ToolContextHelper.getToolProgressEmitter(toolContext).ifPresent(emitter -> {
+						emitter.next("step-1");
+						emitter.next("step-2", Map.of("phase", "write"));
+					});
+					return "sync-result";
+				}
+
+				@Override
+				public String call(String toolInput) {
+					return call(toolInput, new ToolContext(Map.of()));
+				}
+			};
+
+			AgentToolNode node = baseBuilder.toolCallbacks(List.of(tool)).build();
+			OverAllState state = createStateWithMessages(createAssistantMessageWithToolCalls(
+					createToolCall("call-1", "syncStreamingTool", "{}")));
+
+			List<GraphResponse<NodeOutput>> responses = collectStreamingResponses(node, state, streamingConfig());
+			List<StreamingOutput<?>> outputs = collectStreamingOutputs(responses);
+
+			List<StreamingOutput<?>> toolStreamingOutputs = outputs.stream()
+				.filter(output -> output.getOutputType() == OutputType.AGENT_TOOL_STREAMING)
+				.toList();
+			assertEquals(2, toolStreamingOutputs.size());
+			assertTrue(toolStreamingOutputs.stream().allMatch(output -> output.message() == null));
+
+			ToolStreamingChunk firstChunk = (ToolStreamingChunk) toolStreamingOutputs.get(0).getOriginData();
+			assertEquals("call-1", firstChunk.toolCallId());
+			assertEquals("syncStreamingTool", firstChunk.toolName());
+			assertEquals("step-1", firstChunk.content());
+
+			ToolStreamingChunk secondChunk = (ToolStreamingChunk) toolStreamingOutputs.get(1).getOriginData();
+			assertEquals("write", secondChunk.metadata().get("phase"));
+
+			StreamingOutput<?> finishedOutput = outputs.stream()
+				.filter(output -> output.getOutputType() == OutputType.AGENT_TOOL_FINISHED)
+				.findFirst()
+				.orElseThrow();
+			assertTrue(finishedOutput.message() instanceof ToolResponseMessage);
+			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) finishedOutput.message();
+			assertEquals("sync-result", toolResponseMessage.getResponses().get(0).responseData());
+
+			Map<String, Object> finalState = extractDoneState(responses);
+			assertFalse(finalState.containsKey("_AGENT_TOOL_STREAMING_GRAPH_"));
+			assertTrue(finalState.get("messages") instanceof ToolResponseMessage);
+		}
+
+		@Test
+		@DisplayName("should emit streaming chunks for async tool before final result")
+		void apply_shouldEmitStreamingChunks_forAsyncTool() throws Exception {
+			AsyncToolCallback asyncTool = new AsyncToolCallback() {
+				@Override
+				public ToolDefinition getToolDefinition() {
+					return ToolDefinition.builder().name("asyncStreamingTool").description("Async streaming tool").inputSchema("{}").build();
+				}
+
+				@Override
+				public CompletableFuture<String> callAsync(String arguments, ToolContext context) {
+					return CompletableFuture.supplyAsync(() -> {
+						ToolContextHelper.getToolProgressEmitter(context).ifPresent(emitter -> {
+							emitter.next("async-step-1");
+							emitter.next("async-step-2");
+						});
+						return "async-result";
+					});
+				}
+
+				@Override
+				public String call(String toolInput) {
+					return callAsync(toolInput, new ToolContext(Map.of())).join();
+				}
+			};
+
+			AgentToolNode node = baseBuilder.toolCallbacks(List.of(asyncTool)).build();
+			OverAllState state = createStateWithMessages(createAssistantMessageWithToolCalls(
+					createToolCall("call-1", "asyncStreamingTool", "{}")));
+
+			List<GraphResponse<NodeOutput>> responses = collectStreamingResponses(node, state, streamingConfig());
+			List<StreamingOutput<?>> outputs = collectStreamingOutputs(responses);
+
+			long toolStreamingCount = outputs.stream()
+				.filter(output -> output.getOutputType() == OutputType.AGENT_TOOL_STREAMING)
+				.count();
+			assertEquals(2, toolStreamingCount);
+
+			StreamingOutput<?> finishedOutput = outputs.stream()
+				.filter(output -> output.getOutputType() == OutputType.AGENT_TOOL_FINISHED)
+				.findFirst()
+				.orElseThrow();
+			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) finishedOutput.message();
+			assertEquals("async-result", toolResponseMessage.getResponses().get(0).responseData());
+		}
+
+		@Test
+		@DisplayName("should support interleaved chunks from parallel tools")
+		void apply_shouldSupportParallelStreamingTools() throws Exception {
+			CountDownLatch startLatch = new CountDownLatch(2);
+			CountDownLatch continueLatch = new CountDownLatch(1);
+
+			StateAwareToolCallback tool1 = createProgressTool("parallelTool1", "call-1", startLatch, continueLatch);
+			StateAwareToolCallback tool2 = createProgressTool("parallelTool2", "call-2", startLatch, continueLatch);
+
+			AgentToolNode node = baseBuilder.toolCallbacks(List.of(tool1, tool2))
+				.parallelToolExecution(true)
+				.maxParallelTools(2)
+				.build();
+
+			OverAllState state = createStateWithMessages(createAssistantMessageWithToolCalls(
+					createToolCall("call-1", "parallelTool1", "{}"),
+					createToolCall("call-2", "parallelTool2", "{}")));
+			ExecutorService toolExecutor = Executors.newFixedThreadPool(2);
+			RunnableConfig config = RunnableConfig.builder()
+				.addMetadata("_stream_", true)
+				.addParallelNodeExecutor(RunnableConfig.AGENT_TOOL_NAME, toolExecutor)
+				.build();
+
+			try {
+				CompletableFuture<List<GraphResponse<NodeOutput>>> responseFuture = CompletableFuture
+					.supplyAsync(() -> {
+						try {
+							return collectStreamingResponses(node, state, config);
+						}
+						catch (Exception e) {
+							throw new RuntimeException(e);
+						}
+					});
+				assertTrue(startLatch.await(5, TimeUnit.SECONDS), "Both tools should start while the stream is active");
+				continueLatch.countDown();
+				List<GraphResponse<NodeOutput>> responses = responseFuture.get(5, TimeUnit.SECONDS);
+
+				List<ToolStreamingChunk> chunks = collectStreamingOutputs(responses).stream()
+					.filter(output -> output.getOutputType() == OutputType.AGENT_TOOL_STREAMING)
+					.map(output -> (ToolStreamingChunk) output.getOriginData())
+					.toList();
+
+				assertEquals(4, chunks.size());
+				assertEquals(Set.of("call-1", "call-2"),
+						chunks.stream().map(ToolStreamingChunk::toolCallId).collect(Collectors.toSet()));
+				assertEquals(Set.of("parallelTool1", "parallelTool2"),
+						chunks.stream().map(ToolStreamingChunk::toolName).collect(Collectors.toSet()));
+
+				Map<String, Object> doneState = extractDoneState(responses);
+				ToolResponseMessage toolResponseMessage = (ToolResponseMessage) doneState.get("messages");
+				assertEquals(2, toolResponseMessage.getResponses().size());
+			}
+			finally {
+				continueLatch.countDown();
+				toolExecutor.shutdownNow();
+			}
+		}
+
+		@Test
+		@DisplayName("should keep final error path when tool fails after partial progress")
+		void apply_shouldKeepErrorPath_whenToolFailsAfterProgress() throws Exception {
+			StateAwareToolCallback tool = new StateAwareToolCallback() {
+				@Override
+				public ToolDefinition getToolDefinition() {
+					return ToolDefinition.builder().name("failingStreamingTool").description("Failing streaming tool").inputSchema("{}").build();
+				}
+
+				@Override
+				public String call(String toolInput, ToolContext toolContext) {
+					ToolContextHelper.getToolProgressEmitter(toolContext).ifPresent(emitter -> emitter.next("before-error"));
+					throw new IllegalStateException("boom");
+				}
+
+				@Override
+				public String call(String toolInput) {
+					return call(toolInput, new ToolContext(Map.of()));
+				}
+			};
+
+			AgentToolNode node = baseBuilder.toolCallbacks(List.of(tool)).build();
+			OverAllState state = createStateWithMessages(createAssistantMessageWithToolCalls(
+					createToolCall("call-1", "failingStreamingTool", "{}")));
+
+			List<GraphResponse<NodeOutput>> responses = collectStreamingResponses(node, state, streamingConfig());
+			List<ToolStreamingChunk> chunks = collectStreamingOutputs(responses).stream()
+				.filter(output -> output.getOutputType() == OutputType.AGENT_TOOL_STREAMING)
+				.map(output -> (ToolStreamingChunk) output.getOriginData())
+				.toList();
+
+			assertEquals(1, chunks.size());
+			assertEquals("before-error", chunks.get(0).content());
+
+			Map<String, Object> doneState = extractDoneState(responses);
+			ToolResponseMessage toolResponseMessage = (ToolResponseMessage) doneState.get("messages");
+			assertTrue(toolResponseMessage.getResponses().get(0).responseData().contains("Error: boom"));
+		}
+
+		private StateAwareToolCallback createProgressTool(String name, String callId, CountDownLatch startLatch,
+				CountDownLatch continueLatch) {
+			return new StateAwareToolCallback() {
+				@Override
+				public ToolDefinition getToolDefinition() {
+					return ToolDefinition.builder().name(name).description("Parallel progress tool").inputSchema("{}").build();
+				}
+
+				@Override
+				public String call(String toolInput, ToolContext toolContext) {
+					ToolProgressEmitter emitter = ToolContextHelper.getToolProgressEmitter(toolContext).orElseThrow();
+					emitter.next(name + "-step-1", Map.of("toolCallId", callId));
+					startLatch.countDown();
+					try {
+						continueLatch.await(5, TimeUnit.SECONDS);
+					}
+					catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						throw new IllegalStateException(e);
+					}
+					emitter.next(name + "-step-2", Map.of("toolCallId", callId));
+					return name + "-result";
+				}
+
+				@Override
+				public String call(String toolInput) {
+					return call(toolInput, new ToolContext(Map.of()));
+				}
+			};
+		}
+
+		private RunnableConfig streamingConfig() {
+			return RunnableConfig.builder().addMetadata("_stream_", true).build();
+		}
+
+		private List<GraphResponse<NodeOutput>> collectStreamingResponses(AgentToolNode node, OverAllState state,
+				RunnableConfig config) throws Exception {
+			Map<String, Object> result = node.apply(state, config);
+			Object graphObject = result.get("_AGENT_TOOL_STREAMING_GRAPH_");
+			assertTrue(graphObject instanceof GraphFlux<?>);
+			GraphFlux<?> graphFlux = (GraphFlux<?>) graphObject;
+			@SuppressWarnings("unchecked")
+			Flux<GraphResponse<NodeOutput>> flux = (Flux<GraphResponse<NodeOutput>>) graphFlux.getFlux();
+			return flux.collectList().block(Duration.ofSeconds(5));
+		}
+
+		private List<StreamingOutput<?>> collectStreamingOutputs(List<GraphResponse<NodeOutput>> responses) {
+			return responses.stream()
+				.filter(response -> response.getOutput() != null && !response.getOutput().isCompletedExceptionally())
+				.map(response -> response.getOutput().join())
+				.filter(output -> output instanceof StreamingOutput<?>)
+				.map(output -> (StreamingOutput<?>) output)
+				.collect(ArrayList::new, List::add, List::addAll);
+		}
+
+		private Map<String, Object> extractDoneState(List<GraphResponse<NodeOutput>> responses) {
+			return responses.stream()
+				.filter(GraphResponse::isDone)
+				.map(GraphResponse::resultValue)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.filter(Map.class::isInstance)
+				.map(Map.class::cast)
+				.map(map -> (Map<String, Object>) map)
+				.reduce((first, second) -> second)
+				.orElseThrow();
 		}
 
 	}
