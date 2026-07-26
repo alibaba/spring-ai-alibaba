@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -113,6 +116,9 @@ class SerializationHelper {
 				return record;
 			}
 			Map<String, Object> normalized = new LinkedHashMap<>();
+			JsonInclude jsonInclude = record.getClass().getAnnotation(JsonInclude.class);
+			boolean suppressNulls = jsonInclude != null
+					&& jsonInclude.value() == JsonInclude.Include.NON_NULL;
 			List<BeanPropertyDefinition> properties = provider.getConfig()
 				.introspect(provider.constructType(record.getClass()))
 				.findProperties();
@@ -126,7 +132,10 @@ class SerializationHelper {
 				}
 				try {
 					accessor.fixAccess(provider.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
-					normalized.put(property.getName(), normalizeMetadataValue(provider, accessor.getValue(record)));
+					Object propertyValue = accessor.getValue(record);
+					if (!suppressNulls || propertyValue != null) {
+						normalized.put(property.getName(), normalizeMetadataValue(provider, propertyValue));
+					}
 				}
 				catch (IllegalArgumentException ex) {
 					throw new IOException("Failed to serialize metadata record " + record.getClass().getName(), ex);
@@ -164,7 +173,15 @@ class SerializationHelper {
 			.introspectClassAnnotations(provider.constructType(valueClass))
 			.getClassInfo();
 		JsonInclude.Value inclusion = provider.getDefaultPropertyInclusion(valueClass);
+		JsonInclude classInclusion = valueClass.getAnnotation(JsonInclude.class);
+		boolean supportedRecordInclusion = valueClass.isRecord() && classInclusion != null
+				&& (classInclusion.value() == JsonInclude.Include.ALWAYS
+						|| classInclusion.value() == JsonInclude.Include.USE_DEFAULTS
+						|| classInclusion.value() == JsonInclude.Include.NON_NULL);
+		boolean unsupportedClassInclusion = classInclusion != null && !supportedRecordInclusion;
 		return !JsonInclude.Value.empty().equals(inclusion)
+				|| unsupportedClassInclusion
+				|| hasNonStructuralJacksonAnnotation(List.of(valueClass.getAnnotations()))
 				|| introspector.findSerializer(classInfo) != null
 				|| introspector.findKeySerializer(classInfo) != null
 				|| introspector.findContentSerializer(classInfo) != null
@@ -179,6 +196,9 @@ class SerializationHelper {
 		while (properties.hasNext()) {
 			PropertyWriter property = properties.next();
 			AnnotatedMember member = property.getMember();
+			if (member != null && hasNonStructuralJacksonAnnotation(member.annotations())) {
+				return true;
+			}
 			JsonInclude.Value inclusion = member != null ? introspector.findPropertyInclusion(member) : null;
 			if (inclusion != null && !JsonInclude.Value.empty().equals(inclusion)) {
 				return true;
@@ -189,6 +209,17 @@ class SerializationHelper {
 					|| introspector.findNullSerializer(member) != null
 					|| introspector.findSerializationConverter(member) != null
 					|| introspector.findSerializationContentConverter(member) != null)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean hasNonStructuralJacksonAnnotation(Iterable<Annotation> annotations) {
+		for (Annotation annotation : annotations) {
+			Class<? extends Annotation> type = annotation.annotationType();
+			if (type.getPackageName().startsWith("com.fasterxml.jackson")
+					&& type != JsonProperty.class && type != JsonIgnore.class && type != JsonInclude.class) {
 				return true;
 			}
 		}
