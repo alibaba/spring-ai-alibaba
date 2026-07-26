@@ -358,6 +358,33 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldSerializeDashScopeSearchInfoWithGlobalInclusion() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_EMPTY);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		List rawSearchResults = List.of(Map.of(
+				"site_name", "example",
+				"icon", "",
+				"index", 0,
+				"title", "Example",
+				"url", "https://example.com"));
+		DashScopeApiSpec.SearchInfo searchInfo = new DashScopeApiSpec.SearchInfo(rawSearchResults, List.of());
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("search_info", searchInfo))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		Map<String, Object> deserializedSearchInfo =
+				(Map<String, Object>) deserialized.getMetadata().get("search_info");
+		List<?> deserializedSearchResults = (List<?>) deserializedSearchInfo.get("search_results");
+		assertEquals("example", ((Map<?, ?>) deserializedSearchResults.get(0)).get("site_name"));
+	}
+
+	@Test
 	@SuppressWarnings("unchecked")
 	void shouldSerializePrivateRecordUsingJacksonPropertyRules() throws Exception {
 		PrivateMetadata metadata = new PrivateMetadata("visible", "ignored", "secret");

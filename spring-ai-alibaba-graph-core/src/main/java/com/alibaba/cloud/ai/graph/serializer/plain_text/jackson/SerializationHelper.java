@@ -116,9 +116,7 @@ class SerializationHelper {
 				return record;
 			}
 			Map<String, Object> normalized = new LinkedHashMap<>();
-			JsonInclude jsonInclude = record.getClass().getAnnotation(JsonInclude.class);
-			boolean suppressNulls = jsonInclude != null
-					&& jsonInclude.value() == JsonInclude.Include.NON_NULL;
+			JsonInclude.Value recordInclusion = getRecordInclusion(provider, record.getClass());
 			List<BeanPropertyDefinition> properties = provider.getConfig()
 				.introspect(provider.constructType(record.getClass()))
 				.findProperties();
@@ -133,7 +131,7 @@ class SerializationHelper {
 				try {
 					accessor.fixAccess(provider.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
 					Object propertyValue = accessor.getValue(record);
-					if (!suppressNulls || propertyValue != null) {
+					if (shouldInclude(provider, recordInclusion.getValueInclusion(), propertyValue)) {
 						normalized.put(property.getName(), normalizeMetadataValue(provider, propertyValue));
 					}
 				}
@@ -172,15 +170,11 @@ class SerializationHelper {
 		var classInfo = provider.getConfig()
 			.introspectClassAnnotations(provider.constructType(valueClass))
 			.getClassInfo();
-		JsonInclude.Value inclusion = provider.getDefaultPropertyInclusion(valueClass);
 		JsonInclude classInclusion = valueClass.getAnnotation(JsonInclude.class);
-		boolean supportedRecordInclusion = valueClass.isRecord() && classInclusion != null
-				&& (classInclusion.value() == JsonInclude.Include.ALWAYS
-						|| classInclusion.value() == JsonInclude.Include.USE_DEFAULTS
-						|| classInclusion.value() == JsonInclude.Include.NON_NULL);
-		boolean unsupportedClassInclusion = classInclusion != null && !supportedRecordInclusion;
-		return !JsonInclude.Value.empty().equals(inclusion)
-				|| unsupportedClassInclusion
+		boolean unsupportedInclusion = valueClass.isRecord()
+				? hasUnsupportedRecordInclusion(getRecordInclusion(provider, valueClass))
+				: classInclusion != null;
+		return unsupportedInclusion
 				|| hasNonStructuralJacksonAnnotation(List.of(valueClass.getAnnotations()))
 				|| introspector.findSerializer(classInfo) != null
 				|| introspector.findKeySerializer(classInfo) != null
@@ -188,6 +182,30 @@ class SerializationHelper {
 				|| introspector.findNullSerializer(classInfo) != null
 				|| introspector.findSerializationConverter(classInfo) != null
 				|| introspector.findFilterId(classInfo) != null;
+	}
+
+	private static JsonInclude.Value getRecordInclusion(SerializerProvider provider, Class<?> recordClass) {
+		JsonInclude.Value inclusion = provider.getDefaultPropertyInclusion(recordClass);
+		JsonInclude classInclusion = recordClass.getAnnotation(JsonInclude.class);
+		return classInclusion != null ? inclusion.withOverrides(JsonInclude.Value.from(classInclusion)) : inclusion;
+	}
+
+	private static boolean hasUnsupportedRecordInclusion(JsonInclude.Value inclusion) {
+		JsonInclude.Include value = inclusion.getValueInclusion();
+		JsonInclude.Include content = inclusion.getContentInclusion();
+		return value == JsonInclude.Include.NON_DEFAULT || value == JsonInclude.Include.CUSTOM
+				|| content != JsonInclude.Include.ALWAYS && content != JsonInclude.Include.USE_DEFAULTS;
+	}
+
+	private static boolean shouldInclude(SerializerProvider provider, JsonInclude.Include inclusion, Object value)
+			throws IOException {
+		return switch (inclusion) {
+			case NON_NULL -> value != null;
+			case NON_EMPTY -> value != null && !provider.findValueSerializer(value.getClass()).isEmpty(provider, value);
+			case NON_ABSENT -> value != null
+					&& (!(value instanceof java.util.Optional<?> optional) || optional.isPresent());
+			default -> true;
+		};
 	}
 
 	private static boolean hasCustomPropertySerializer(SerializerProvider provider, BeanSerializerBase serializer) {
