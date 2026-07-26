@@ -214,13 +214,14 @@ class SerializationHelper {
 		var classInfo = provider.getConfig()
 			.introspectClassAnnotations(provider.constructType(valueClass))
 			.getClassInfo();
+		JsonInclude.Value globalInclusion = provider.getConfig().getDefaultPropertyInclusion();
 		JsonInclude.Value defaultInclusion = provider.getDefaultPropertyInclusion(valueClass);
 		JsonInclude.Value effectiveInclusion = provider.getConfig()
 			.introspect(provider.constructType(valueClass))
 			.findPropertyInclusion(defaultInclusion);
 		boolean unsupportedInclusion = valueClass.isRecord()
 				? hasUnsupportedRecordInclusion(effectiveInclusion)
-				: !effectiveInclusion.equals(defaultInclusion);
+				: !defaultInclusion.equals(globalInclusion) || !effectiveInclusion.equals(defaultInclusion);
 		return unsupportedInclusion
 				|| hasNonStructuralJacksonAnnotation(List.of(valueClass.getAnnotations()))
 				|| introspector.findSerializer(classInfo) != null

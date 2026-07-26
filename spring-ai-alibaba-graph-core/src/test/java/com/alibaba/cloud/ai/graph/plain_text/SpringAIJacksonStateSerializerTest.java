@@ -45,6 +45,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -666,6 +667,39 @@ class SpringAIJacksonStateSerializerTest {
 		assertEquals(Map.of("redacted-key", "visible"), deserializedMap);
 	}
 
+	@Test
+	@SuppressWarnings("unchecked")
+	void shouldUsePerTypeMapInclusion() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configOverride(OverrideMap.class)
+			.setInclude(JsonInclude.Value.construct(JsonInclude.Include.ALWAYS, JsonInclude.Include.NON_NULL));
+		assertTrue(!objectMapper.getSerializationConfig()
+			.getDefaultPropertyInclusion()
+			.equals(objectMapper.getSerializationConfig().getDefaultPropertyInclusion(OverrideMap.class)));
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		OverrideMap overrideMap = new OverrideMap();
+		overrideMap.put("empty", null);
+		overrideMap.put("visible", "value");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("custom_map", overrideMap))
+			.build();
+
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		try (ObjectOutputStream output = new ObjectOutputStream(bytes)) {
+			customSerializer.writeData(Map.of("object", message), output);
+		}
+		assertTrue(new String(bytes.toByteArray(), StandardCharsets.ISO_8859_1)
+			.contains(OverrideMap.class.getName()));
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		Map<String, Object> deserializedMap =
+				(Map<String, Object>) deserialized.getMetadata().get("custom_map");
+		assertEquals("value", deserializedMap.get("visible"));
+		assertTrue(deserializedMap.containsKey("empty"));
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
@@ -722,6 +756,9 @@ class SpringAIJacksonStateSerializerTest {
 
 	@JsonSerialize(keyUsing = RedactingKeySerializer.class)
 	private static final class SecretKeyMap extends HashMap<String, Object> {
+	}
+
+	private static final class OverrideMap extends HashMap<String, Object> {
 	}
 
 	private static final class RedactingSerializer<T> extends JsonSerializer<T> {
