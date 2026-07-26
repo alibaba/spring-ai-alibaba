@@ -41,6 +41,7 @@ import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import com.fasterxml.jackson.databind.util.NameTransformer;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -1013,6 +1014,99 @@ class SpringAIJacksonStateSerializerTest {
 				((Map<String, Object>) map.get("record")).get("results"));
 	}
 
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldPreservePropertiesRenamedBySerializerModifier() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		SimpleModule module = new SimpleModule();
+		module.setSerializerModifier(new BeanSerializerModifier() {
+			@Override
+			public List<BeanPropertyWriter> changeProperties(SerializationConfig config,
+					BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
+				if (beanDesc.getBeanClass() == RenamedPropertyMetadata.class) {
+					return beanProperties.stream()
+						.map(property -> property.getName().equals("secret")
+								? property.rename(new NameTransformer() {
+									@Override
+									public String transform(String name) {
+										return "redacted";
+									}
+
+									@Override
+									public String reverse(String transformed) {
+										return "redacted".equals(transformed) ? "secret" : null;
+									}
+								})
+								: property)
+						.toList();
+				}
+				return beanProperties;
+			}
+		});
+		objectMapper.registerModule(module);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		List rawResults = List.of(Map.of("name", "visible"));
+		RenamedPropertyMetadata metadata = new RenamedPropertyMetadata(rawResults, "value");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("renamed_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("renamed_record");
+		assertEquals("value", record.get("redacted"));
+		assertTrue(!record.containsKey("secret"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldKeepNormalizedChildrenWhenOverriddenContainerCannotBeCopied() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.addMixIn(ConstructorMap.class, TypedContainerMixIn.class);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		List rawResults = List.of(Map.of("name", "visible"));
+		ConstructorMap values = new ConstructorMap("required");
+		values.put("record", new PrivateSearchMetadata(rawResults, "ignored", "secret"));
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("values", values))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		Map<String, Object> map = (Map<String, Object>) deserialized.getMetadata().get("values");
+		assertTrue(map.get("record") instanceof Map);
+		assertEquals(List.of(Map.of("name", "visible")),
+				((Map<String, Object>) map.get("record")).get("results"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldNormalizeChildrenOfOverriddenObjectArrays() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.addMixIn(PrivateSearchMetadata[].class, TypedContainerMixIn.class);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		List rawResults = List.of(Map.of("name", "visible"));
+		PrivateSearchMetadata[] values =
+				{ new PrivateSearchMetadata(rawResults, "ignored", "secret") };
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("values", values))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		List<?> array = (List<?>) deserialized.getMetadata().get("values");
+		assertTrue(array.get(0) instanceof Map);
+		assertEquals(List.of(Map.of("name", "visible")),
+				((Map<String, Object>) array.get(0)).get("results"));
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
@@ -1062,6 +1156,9 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	private record RemovedPropertyMetadata(List<SearchResultMetadata> results, String secret) {
+	}
+
+	private record RenamedPropertyMetadata(List<SearchResultMetadata> results, String secret) {
 	}
 
 	private record UnwrappedMetadata(List<SearchResultMetadata> results,
@@ -1120,6 +1217,13 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	private static final class NestedOverrideMap extends HashMap<String, Object> {
+	}
+
+	private static final class ConstructorMap extends HashMap<String, Object> {
+
+		private ConstructorMap(String required) {
+		}
+
 	}
 
 	@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)

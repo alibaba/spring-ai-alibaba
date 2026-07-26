@@ -122,8 +122,7 @@ class SerializationHelper {
 					: normalized;
 		}
 		if (value != null && value.getClass().isArray() && !value.getClass().getComponentType().isPrimitive()) {
-			if (hasClassSerializationOverrides(provider, value.getClass())
-					|| !isStandardObjectArraySerializer(provider.findValueSerializer(value.getClass()))) {
+			if (!isStandardObjectArraySerializer(provider.findValueSerializer(value.getClass()))) {
 				return value;
 			}
 			int length = Array.getLength(value);
@@ -161,7 +160,7 @@ class SerializationHelper {
 			}
 			Map<String, Object> normalized = new LinkedHashMap<>();
 			JsonInclude.Value recordInclusion = getRecordInclusion(provider, record.getClass());
-			Map<String, BeanPropertyWriter> propertyWriters = getEffectivePropertyWriters(beanSerializer);
+			List<BeanPropertyWriter> propertyWriters = getEffectivePropertyWriters(beanSerializer);
 			for (BeanPropertyDefinition property : properties) {
 				if (!property.couldSerialize()) {
 					continue;
@@ -170,7 +169,7 @@ class SerializationHelper {
 				if (accessor == null) {
 					continue;
 				}
-				BeanPropertyWriter propertyWriter = propertyWriters.get(property.getName());
+				BeanPropertyWriter propertyWriter = findEffectivePropertyWriter(propertyWriters, property);
 				if (propertyWriter == null) {
 					continue;
 				}
@@ -181,6 +180,7 @@ class SerializationHelper {
 							getPropertyInclusion(provider, accessor, recordInclusion);
 					if (shouldInclude(provider, propertyInclusion.getValueInclusion(), propertyValue)) {
 						boolean hasAssignedSerializer = propertyWriter.isUnwrapping()
+								|| !propertyWriter.getName().equals(property.getName())
 								|| (propertyValue == null
 										? propertyWriter.hasNullSerializer()
 										: propertyWriter.hasSerializer());
@@ -338,16 +338,31 @@ class SerializationHelper {
 		};
 	}
 
-	private static Map<String, BeanPropertyWriter> getEffectivePropertyWriters(BeanSerializerBase serializer) {
-		Map<String, BeanPropertyWriter> writers = new LinkedHashMap<>();
+	private static List<BeanPropertyWriter> getEffectivePropertyWriters(BeanSerializerBase serializer) {
+		List<BeanPropertyWriter> writers = new ArrayList<>();
 		var properties = serializer.properties();
 		while (properties.hasNext()) {
 			PropertyWriter property = properties.next();
 			if (property instanceof BeanPropertyWriter beanProperty) {
-				writers.put(property.getName(), beanProperty);
+				writers.add(beanProperty);
 			}
 		}
 		return writers;
+	}
+
+	private static BeanPropertyWriter findEffectivePropertyWriter(List<BeanPropertyWriter> writers,
+			BeanPropertyDefinition property) {
+		AnnotatedMember accessor = property.getAccessor();
+		for (BeanPropertyWriter writer : writers) {
+			if (accessor != null && writer.getMember() != null
+					&& accessor.getMember().equals(writer.getMember().getMember())) {
+				return writer;
+			}
+			if (writer.getName().equals(property.getName())) {
+				return writer;
+			}
+		}
+		return null;
 	}
 
 	private static Map<String, Object> applyPropertyWriter(SerializerProvider provider,
@@ -376,7 +391,7 @@ class SerializationHelper {
 		}
 		Map<Object, Object> copy = instantiateContainer(provider, original.getClass(), Map.class);
 		if (copy == null) {
-			return original;
+			return normalized;
 		}
 		copy.putAll(normalized);
 		return copy;
@@ -389,7 +404,7 @@ class SerializationHelper {
 		}
 		Collection<Object> copy = instantiateContainer(provider, original.getClass(), Collection.class);
 		if (copy == null) {
-			return original;
+			return normalized;
 		}
 		copy.addAll(normalized);
 		return copy;
