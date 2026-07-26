@@ -367,6 +367,10 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 				throw new InterruptedException("A2A stream was cancelled");
 			}
 			this.queue.put(data);
+			if (this.cancelled.get()) {
+				resetCancelledQueue();
+				throw new InterruptedException("A2A stream was cancelled");
+			}
 		}
 
 		@Override
@@ -404,6 +408,10 @@ public class A2aNodeActionWithConfig implements NodeActionWithConfig {
 			if (thread != null) {
 				thread.interrupt();
 			}
+			resetCancelledQueue();
+		}
+
+		private void resetCancelledQueue() {
 			this.queue.clear();
 			Data<E> done = Data.done();
 			this.terminalEnqueued.set(true);
