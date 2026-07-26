@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonS
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -485,6 +486,42 @@ class SpringAIJacksonStateSerializerTest {
 		assertEquals("redacted", deserialized.getMetadata().get("custom_array"));
 	}
 
+	@Test
+	@SuppressWarnings("unchecked")
+	void shouldUseAnnotatedContainerContentSerializers() throws Exception {
+		SecretAnnotatedMap secretMap = new SecretAnnotatedMap();
+		secretMap.put("password", "secret");
+		SecretAnnotatedList secretList = new SecretAnnotatedList();
+		secretList.add("secret");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("custom_map", secretMap, "custom_list", secretList))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> deserializedMap =
+				(Map<String, Object>) deserialized.getMetadata().get("custom_map");
+		assertEquals("redacted", deserializedMap.get("password"));
+		assertEquals(List.of(SecretAnnotatedList.class.getName(), List.of("redacted")),
+				deserialized.getMetadata().get("custom_list"));
+	}
+
+	@Test
+	void shouldUseRecordPropertyInclusionRules() throws Exception {
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("included_record", new IncludedMetadata("visible", List.of())))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		IncludedMetadata record =
+				(IncludedMetadata) deserialized.getMetadata().get("included_record");
+		assertEquals("visible", record.visible());
+		assertNull(record.emptyItems());
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
@@ -500,10 +537,22 @@ class SpringAIJacksonStateSerializerTest {
 	private record SecretValue(String value) {
 	}
 
+	private record IncludedMetadata(String visible,
+			@JsonInclude(JsonInclude.Include.NON_EMPTY) List<String> emptyItems) {
+	}
+
 	private static final class SecretMap extends HashMap<String, Object> {
 	}
 
 	private static final class SecretList extends ArrayList<String> {
+	}
+
+	@JsonSerialize(contentUsing = RedactingSerializer.class)
+	private static final class SecretAnnotatedMap extends HashMap<String, Object> {
+	}
+
+	@JsonSerialize(contentUsing = RedactingSerializer.class)
+	private static final class SecretAnnotatedList extends ArrayList<String> {
 	}
 
 	private static final class RedactingSerializer<T> extends JsonSerializer<T> {

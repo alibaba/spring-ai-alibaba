@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -37,6 +38,7 @@ import com.fasterxml.jackson.databind.ser.impl.IndexedListSerializer;
 import com.fasterxml.jackson.databind.ser.impl.IndexedStringListSerializer;
 import com.fasterxml.jackson.databind.ser.impl.StringArraySerializer;
 import com.fasterxml.jackson.databind.ser.impl.StringCollectionSerializer;
+import com.fasterxml.jackson.databind.ser.std.AsArraySerializerBase;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.fasterxml.jackson.databind.ser.std.CollectionSerializer;
 import com.fasterxml.jackson.databind.ser.std.MapSerializer;
@@ -132,18 +134,24 @@ class SerializationHelper {
 	}
 
 	private static boolean isStandardMapSerializer(Object serializer) {
-		return serializer instanceof MapSerializer;
+		return serializer instanceof MapSerializer mapSerializer
+				&& mapSerializer.getContentSerializer() == null;
 	}
 
 	private static boolean isStandardCollectionSerializer(Object serializer) {
-		return serializer instanceof CollectionSerializer
-				|| serializer instanceof IndexedListSerializer
+		if (serializer instanceof AsArraySerializerBase<?> arraySerializer
+				&& arraySerializer.getContentSerializer() != null) {
+			return false;
+		}
+		return serializer instanceof CollectionSerializer || serializer instanceof IndexedListSerializer
 				|| serializer instanceof IndexedStringListSerializer
 				|| serializer instanceof StringCollectionSerializer;
 	}
 
 	private static boolean isStandardObjectArraySerializer(Object serializer) {
-		return serializer instanceof ObjectArraySerializer || serializer instanceof StringArraySerializer;
+		return (serializer instanceof ObjectArraySerializer arraySerializer
+				&& arraySerializer.getContentSerializer() == null)
+				|| serializer instanceof StringArraySerializer;
 	}
 
 	private static boolean hasCustomPropertySerializer(SerializerProvider provider, BeanSerializerBase serializer) {
@@ -152,6 +160,10 @@ class SerializationHelper {
 		while (properties.hasNext()) {
 			PropertyWriter property = properties.next();
 			AnnotatedMember member = property.getMember();
+			JsonInclude.Value inclusion = member != null ? introspector.findPropertyInclusion(member) : null;
+			if (inclusion != null && !JsonInclude.Value.empty().equals(inclusion)) {
+				return true;
+			}
 			if (member != null && (introspector.findSerializer(member) != null
 					|| introspector.findKeySerializer(member) != null
 					|| introspector.findContentSerializer(member) != null
