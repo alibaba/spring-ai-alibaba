@@ -15,8 +15,10 @@
  */
 package com.alibaba.cloud.ai.agent.agentscope;
 
+import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
@@ -28,8 +30,6 @@ import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
-import com.alibaba.cloud.ai.graph.GraphResponse;
-import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -43,13 +43,13 @@ import io.agentscope.core.session.Session;
 import io.agentscope.core.state.SessionKey;
 import io.agentscope.core.state.SimpleSessionKey;
 import io.agentscope.core.tool.ToolExecutionContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -62,12 +62,12 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_async;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_STATE_FOR_UPDATE_CONTEXT_KEY;
 import static java.lang.String.format;
-import static com.alibaba.cloud.ai.graph.StateGraph.START;
-import static com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_async;
 
 /**
  * Spring AI Alibaba agent that proxies an AgentScope {@link ReActAgent}.

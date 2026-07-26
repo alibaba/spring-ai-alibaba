@@ -22,11 +22,11 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.net.URI;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
-import java.nio.file.Files;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
