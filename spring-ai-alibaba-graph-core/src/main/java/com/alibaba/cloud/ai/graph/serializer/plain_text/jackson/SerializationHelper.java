@@ -20,11 +20,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -36,6 +34,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -146,7 +145,6 @@ class SerializationHelper {
 				.introspect(provider.constructType(record.getClass()))
 				.findProperties();
 			if (hasClassSerializationOverrides(provider, record.getClass())
-					|| hasCustomPropertySerializer(provider, beanSerializer, properties)
 					|| !requiresRecordNormalization(provider, record, properties)) {
 				return record;
 			}
@@ -164,7 +162,9 @@ class SerializationHelper {
 				try {
 					accessor.fixAccess(provider.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
 					Object propertyValue = accessor.getValue(record);
-					if (shouldInclude(provider, recordInclusion.getValueInclusion(), propertyValue)) {
+					JsonInclude.Value propertyInclusion =
+							getPropertyInclusion(provider, accessor, recordInclusion);
+					if (shouldInclude(provider, propertyInclusion.getValueInclusion(), propertyValue)) {
 						BeanPropertyWriter propertyWriter = propertyWriters.get(property.getName());
 						boolean hasAssignedSerializer = propertyWriter != null
 								&& (propertyValue == null
@@ -179,7 +179,7 @@ class SerializationHelper {
 						else {
 							normalized.put(property.getName(),
 									normalizeMetadataValue(provider, propertyValue,
-											recordInclusion.getContentInclusion()));
+											propertyInclusion.getContentInclusion()));
 						}
 					}
 				}
@@ -213,22 +213,25 @@ class SerializationHelper {
 		return false;
 	}
 
-	private static boolean hasIncompatibleContainerValue(com.fasterxml.jackson.databind.JavaType declaredType,
-			Object value) {
+	private static boolean hasIncompatibleContainerValue(JavaType declaredType, Object value) {
 		if (declaredType.isCollectionLikeType() && value instanceof Collection<?> collection) {
-			return hasIncompatibleValue(declaredType.getContentType().getRawClass(), collection);
+			return hasIncompatibleValue(declaredType.getContentType(), collection);
 		}
 		if (declaredType.isMapLikeType() && value instanceof Map<?, ?> map) {
-			return hasIncompatibleValue(declaredType.getKeyType().getRawClass(), map.keySet())
-					|| hasIncompatibleValue(declaredType.getContentType().getRawClass(), map.values());
+			return hasIncompatibleValue(declaredType.getKeyType(), map.keySet())
+					|| hasIncompatibleValue(declaredType.getContentType(), map.values());
 		}
 		return false;
 	}
 
-	private static boolean hasIncompatibleValue(Class<?> declaredType, Collection<?> values) {
-		return declaredType != Object.class && values.stream()
+	private static boolean hasIncompatibleValue(JavaType declaredType, Collection<?> values) {
+		if (declaredType == null || declaredType.getRawClass() == Object.class) {
+			return false;
+		}
+		return values.stream()
 			.filter(item -> item != null)
-			.anyMatch(item -> !declaredType.isInstance(item));
+			.anyMatch(item -> !declaredType.getRawClass().isInstance(item)
+					|| hasIncompatibleContainerValue(declaredType, item));
 	}
 
 	private static boolean isStandardMapSerializer(Object serializer) {
@@ -296,6 +299,13 @@ class SerializationHelper {
 			.findPropertyInclusion(defaultInclusion);
 	}
 
+	private static JsonInclude.Value getPropertyInclusion(SerializerProvider provider,
+			AnnotatedMember accessor, JsonInclude.Value recordInclusion) {
+		JsonInclude.Value propertyInclusion =
+				provider.getAnnotationIntrospector().findPropertyInclusion(accessor);
+		return propertyInclusion != null ? recordInclusion.withOverrides(propertyInclusion) : recordInclusion;
+	}
+
 	private static boolean hasUnsupportedRecordInclusion(JsonInclude.Value inclusion) {
 		JsonInclude.Include value = inclusion.getValueInclusion();
 		JsonInclude.Include content = inclusion.getContentInclusion();
@@ -315,40 +325,6 @@ class SerializationHelper {
 							|| !provider.findValueSerializer(value.getClass()).isEmpty(provider, value));
 			default -> true;
 		};
-	}
-
-	private static boolean hasCustomPropertySerializer(SerializerProvider provider, BeanSerializerBase serializer,
-			List<BeanPropertyDefinition> definitions) {
-		var introspector = provider.getAnnotationIntrospector();
-		var properties = serializer.properties();
-		Set<String> effectiveNames = new HashSet<>();
-		while (properties.hasNext()) {
-			PropertyWriter property = properties.next();
-			effectiveNames.add(property.getName());
-			AnnotatedMember member = property.getMember();
-			if (member != null && hasNonStructuralJacksonAnnotation(member.annotations())) {
-				return true;
-			}
-			JsonInclude.Value inclusion = member != null ? introspector.findPropertyInclusion(member) : null;
-			if (inclusion != null && !JsonInclude.Value.empty().equals(inclusion)) {
-				return true;
-			}
-			if (member != null && (introspector.findSerializer(member) != null
-					|| introspector.findKeySerializer(member) != null
-					|| introspector.findContentSerializer(member) != null
-					|| introspector.findNullSerializer(member) != null
-					|| introspector.findSerializationConverter(member) != null
-					|| introspector.findSerializationContentConverter(member) != null)) {
-				return true;
-			}
-		}
-		Set<String> declaredNames = new HashSet<>();
-		for (BeanPropertyDefinition definition : definitions) {
-			if (definition.couldSerialize()) {
-				declaredNames.add(definition.getName());
-			}
-		}
-		return !effectiveNames.equals(declaredNames);
 	}
 
 	private static Map<String, BeanPropertyWriter> getAssignedPropertyWriters(BeanSerializerBase serializer) {

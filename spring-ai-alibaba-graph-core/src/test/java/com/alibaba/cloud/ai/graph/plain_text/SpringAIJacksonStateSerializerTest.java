@@ -878,6 +878,42 @@ class SpringAIJacksonStateSerializerTest {
 		assertEquals("redacted", record.get("nullable"));
 	}
 
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldNormalizeRecordWhilePreservingComponentRules() throws Exception {
+		List rawResults = List.of(Map.of("name", "visible"));
+		CombinedRuleMetadata metadata = new CombinedRuleMetadata(rawResults, "secret", null);
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("combined_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("combined_record");
+		assertEquals(List.of(Map.of("name", "visible")), record.get("results"));
+		assertEquals("redacted", record.get("secret"));
+		assertTrue(!record.containsKey("optional"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldNormalizeNestedIncompatibleContainers() throws Exception {
+		List rawResults = List.of(List.of(Map.of("name", "visible")));
+		NestedMetadata metadata = new NestedMetadata(rawResults);
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("nested_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("nested_record");
+		assertEquals(List.of(List.of(Map.of("name", "visible"))), record.get("results"));
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
@@ -909,6 +945,14 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	private record NullModifiedMetadata(String nullable, List<SearchResultMetadata> results) {
+	}
+
+	private record CombinedRuleMetadata(List<SearchResultMetadata> results,
+			@JsonSerialize(using = RedactingSerializer.class) String secret,
+			@JsonInclude(JsonInclude.Include.NON_NULL) String optional) {
+	}
+
+	private record NestedMetadata(List<List<SearchResultMetadata>> results) {
 	}
 
 	private record RedactedMetadata(String value) {
