@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -40,7 +41,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
-import com.fasterxml.jackson.databind.ser.AnyGetterWriter;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.IndexedListSerializer;
@@ -52,6 +52,7 @@ import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.fasterxml.jackson.databind.ser.std.CollectionSerializer;
 import com.fasterxml.jackson.databind.ser.std.MapSerializer;
 import com.fasterxml.jackson.databind.ser.std.ObjectArraySerializer;
+import com.fasterxml.jackson.databind.util.BeanUtil;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 
 class SerializationHelper {
@@ -89,9 +90,13 @@ class SerializationHelper {
 			JsonInclude.Include contentInclusion) throws IOException {
 		if (value instanceof Map<?, ?> map) {
 			boolean preserveContainer = hasClassSerializationOverrides(provider, map.getClass());
-			if (!isStandardMapSerializer(provider.findValueSerializer(map.getClass()))) {
+			Object serializer = provider.findValueSerializer(map.getClass());
+			if (!isStandardMapSerializer(serializer)
+					|| preserveContainer && hasAssignedMapContentSerializer(serializer)) {
 				return map;
 			}
+			boolean incompatible = hasIncompatibleContainerValue(
+					provider.constructType(map.getClass()), map);
 			Map<Object, Object> normalized = new LinkedHashMap<>(map.size());
 			boolean changed = false;
 			for (Map.Entry<?, ?> entry : map.entrySet()) {
@@ -104,13 +109,19 @@ class SerializationHelper {
 					changed = true;
 				}
 			}
-			return preserveContainer ? preserveMapType(provider, map, normalized, changed) : normalized;
+			return preserveContainer && !incompatible
+					? preserveMapType(provider, map, normalized, changed)
+					: normalized;
 		}
 		if (value instanceof Collection<?> collection) {
 			boolean preserveContainer = hasClassSerializationOverrides(provider, collection.getClass());
-			if (!isStandardCollectionSerializer(provider.findValueSerializer(collection.getClass()))) {
+			Object serializer = provider.findValueSerializer(collection.getClass());
+			if (!isStandardCollectionSerializer(serializer)
+					|| preserveContainer && hasAssignedCollectionContentSerializer(serializer)) {
 				return collection;
 			}
+			boolean incompatible = hasIncompatibleContainerValue(
+					provider.constructType(collection.getClass()), collection);
 			List<Object> normalized = new ArrayList<>(collection.size());
 			boolean changed = false;
 			for (Object item : collection) {
@@ -118,7 +129,7 @@ class SerializationHelper {
 				normalized.add(normalizedItem);
 				changed |= normalizedItem != item;
 			}
-			return preserveContainer
+			return preserveContainer && !incompatible
 					? preserveCollectionType(provider, collection, normalized, changed)
 					: normalized;
 		}
@@ -162,6 +173,7 @@ class SerializationHelper {
 			Map<String, Object> normalized = new LinkedHashMap<>();
 			JsonInclude.Value recordInclusion = getRecordInclusion(provider, record.getClass());
 			List<BeanPropertyWriter> propertyWriters = getEffectivePropertyWriters(beanSerializer);
+			List<BeanPropertyWriter> remainingWriters = new ArrayList<>(propertyWriters);
 			for (BeanPropertyDefinition property : properties) {
 				if (!property.couldSerialize()) {
 					continue;
@@ -174,12 +186,13 @@ class SerializationHelper {
 				if (propertyWriter == null) {
 					continue;
 				}
+				remainingWriters.remove(propertyWriter);
 				try {
 					accessor.fixAccess(provider.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
 					Object propertyValue = accessor.getValue(record);
 					JsonInclude.Value propertyInclusion =
 							getPropertyInclusion(provider, accessor, recordInclusion);
-					if (shouldInclude(provider, propertyInclusion.getValueInclusion(), propertyValue)) {
+					if (shouldInclude(provider, propertyInclusion, property, propertyValue)) {
 						boolean hasAssignedSerializer = propertyWriter.isUnwrapping()
 								|| !propertyWriter.getName().equals(property.getName())
 								|| propertyWriter.getTypeSerializer() != null
@@ -200,10 +213,8 @@ class SerializationHelper {
 					throw new IOException("Failed to serialize metadata record " + record.getClass().getName(), ex);
 				}
 			}
-			for (BeanPropertyWriter propertyWriter : propertyWriters) {
-				if (propertyWriter instanceof AnyGetterWriter) {
-					normalized.putAll(applyPropertyWriter(provider, propertyWriter, record));
-				}
+			for (BeanPropertyWriter propertyWriter : remainingWriters) {
+				normalized.putAll(applyPropertyWriter(provider, propertyWriter, record));
 			}
 			return normalized;
 		}
@@ -253,18 +264,23 @@ class SerializationHelper {
 	}
 
 	private static boolean isStandardMapSerializer(Object serializer) {
+		return serializer instanceof MapSerializer;
+	}
+
+	private static boolean hasAssignedMapContentSerializer(Object serializer) {
 		return serializer instanceof MapSerializer mapSerializer
-				&& mapSerializer.getContentSerializer() == null;
+				&& mapSerializer.getContentSerializer() != null;
 	}
 
 	private static boolean isStandardCollectionSerializer(Object serializer) {
-		if (serializer instanceof AsArraySerializerBase<?> arraySerializer
-				&& arraySerializer.getContentSerializer() != null) {
-			return false;
-		}
 		return serializer instanceof CollectionSerializer || serializer instanceof IndexedListSerializer
 				|| serializer instanceof IndexedStringListSerializer
 				|| serializer instanceof StringCollectionSerializer;
+	}
+
+	private static boolean hasAssignedCollectionContentSerializer(Object serializer) {
+		return serializer instanceof AsArraySerializerBase<?> arraySerializer
+				&& arraySerializer.getContentSerializer() != null;
 	}
 
 	private static boolean isStandardObjectArraySerializer(Object serializer) {
@@ -342,6 +358,30 @@ class SerializationHelper {
 					&& (!provider.constructType(value.getClass()).isReferenceType()
 							|| !provider.findValueSerializer(value.getClass()).isEmpty(provider, value));
 			default -> true;
+		};
+	}
+
+	private static boolean shouldInclude(SerializerProvider provider, JsonInclude.Value inclusion,
+			BeanPropertyDefinition property, Object value) throws IOException {
+		return switch (inclusion.getValueInclusion()) {
+			case NON_DEFAULT -> {
+				Object defaultValue = property.getMetadata().getDefaultValue();
+				if (defaultValue == null) {
+					defaultValue = BeanUtil.getDefaultValue(property.getPrimaryType());
+				}
+				yield !Objects.deepEquals(value, defaultValue);
+			}
+			case CUSTOM -> {
+				Class<?> filterClass = inclusion.getValueFilter();
+				if (filterClass == null) {
+					yield true;
+				}
+				Object filter = provider.includeFilterInstance(property, filterClass);
+				yield value == null
+						? !provider.includeFilterSuppressNulls(filter)
+						: !filter.equals(value);
+			}
+			default -> shouldInclude(provider, inclusion.getValueInclusion(), value);
 		};
 	}
 

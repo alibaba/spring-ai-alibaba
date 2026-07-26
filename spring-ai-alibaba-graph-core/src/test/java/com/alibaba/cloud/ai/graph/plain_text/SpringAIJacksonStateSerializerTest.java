@@ -1147,6 +1147,89 @@ class SpringAIJacksonStateSerializerTest {
 		assertEquals("value", typedValue.value());
 	}
 
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldApplyComponentCustomAndDefaultInclusionDuringNormalization() throws Exception {
+		List rawResults = List.of(Map.of("name", "visible"));
+		ComponentIncludedMetadata metadata =
+				new ComponentIncludedMetadata(rawResults, 0, "hidden");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("included_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("included_record");
+		assertEquals(List.of(Map.of("name", "visible")), record.get("results"));
+		assertTrue(!record.containsKey("defaultCode"));
+		assertTrue(!record.containsKey("filteredValue"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldPreservePropertiesAddedBySerializerModifier() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		SimpleModule module = new SimpleModule();
+		module.setSerializerModifier(new BeanSerializerModifier() {
+			@Override
+			public List<BeanPropertyWriter> changeProperties(SerializationConfig config,
+					BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
+				if (beanDesc.getBeanClass() == RenamedPropertyMetadata.class) {
+					BeanPropertyWriter source = beanProperties.stream()
+						.filter(property -> property.getName().equals("secret"))
+						.findFirst()
+						.orElseThrow();
+					beanProperties.add(source.rename(new NameTransformer() {
+						@Override
+						public String transform(String name) {
+							return "computed";
+						}
+
+						@Override
+						public String reverse(String transformed) {
+							return "computed".equals(transformed) ? "secret" : null;
+						}
+					}));
+				}
+				return beanProperties;
+			}
+		});
+		objectMapper.registerModule(module);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		List rawResults = List.of(Map.of("name", "visible"));
+		RenamedPropertyMetadata metadata = new RenamedPropertyMetadata(rawResults, "value");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("modified_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("modified_record");
+		assertEquals("value", record.get("secret"));
+		assertEquals("value", record.get("computed"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldNormalizeGenericStandardContainerSubclasses() throws Exception {
+		SearchResultList results = new SearchResultList();
+		((List) results).add(Map.of("name", "visible"));
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("generic_results", results))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		assertEquals(List.of(Map.of("name", "visible")),
+				deserialized.getMetadata().get("generic_results"));
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
@@ -1216,6 +1299,12 @@ class SpringAIJacksonStateSerializerTest {
 			@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS) SecretValue typedValue) {
 	}
 
+	private record ComponentIncludedMetadata(List<SearchResultMetadata> results,
+			@JsonInclude(JsonInclude.Include.NON_DEFAULT) int defaultCode,
+			@JsonInclude(value = JsonInclude.Include.CUSTOM,
+					valueFilter = HiddenValueFilter.class) String filteredValue) {
+	}
+
 	private record RedactedMetadata(String value) {
 	}
 
@@ -1270,6 +1359,18 @@ class SpringAIJacksonStateSerializerTest {
 	private static final class ConstructorMap extends HashMap<String, Object> {
 
 		private ConstructorMap(String required) {
+		}
+
+	}
+
+	private static final class SearchResultList extends ArrayList<SearchResultMetadata> {
+	}
+
+	private static final class HiddenValueFilter {
+
+		@Override
+		public boolean equals(Object value) {
+			return "hidden".equals(value);
 		}
 
 	}
