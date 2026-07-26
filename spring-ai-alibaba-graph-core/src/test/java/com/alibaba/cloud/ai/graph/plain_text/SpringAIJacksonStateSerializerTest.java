@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -410,12 +411,69 @@ class SpringAIJacksonStateSerializerTest {
 		assertEquals("redacted", deserialized.getMetadata().get("custom_record"));
 	}
 
+	@Test
+	void shouldUseConfiguredRecordComponentSerializer() throws Exception {
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("custom_component", new ComponentMetadata("secret", List.of("visible"))))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		ComponentMetadata record =
+				(ComponentMetadata) deserialized.getMetadata().get("custom_component");
+		assertEquals("redacted", record.value());
+		assertEquals(List.of("visible"), record.items());
+	}
+
+	@Test
+	void shouldUseConfiguredMetadataMapSerializer() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		SimpleModule module = new SimpleModule();
+		module.addSerializer(SecretMap.class, new RedactingSerializer<>());
+		objectMapper.registerModule(module);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		SecretMap secretMap = new SecretMap();
+		secretMap.put("password", "secret");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("custom_map", secretMap))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		assertEquals("redacted", deserialized.getMetadata().get("custom_map"));
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
 	}
 
 	private record RedactedMetadata(String value) {
+	}
+
+	private record ComponentMetadata(
+			@JsonSerialize(using = RedactingSerializer.class) String value, List<String> items) {
+	}
+
+	private static final class SecretMap extends HashMap<String, Object> {
+	}
+
+	private static final class RedactingSerializer<T> extends JsonSerializer<T> {
+
+		@Override
+		public void serialize(T value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+			gen.writeString("redacted");
+		}
+
+		@Override
+		public void serializeWithType(T value, JsonGenerator gen, SerializerProvider serializers,
+				TypeSerializer typeSerializer) throws IOException {
+			serialize(value, gen, serializers);
+		}
+
 	}
 
 	private <T> T serializeAndDeserialize(T object) throws IOException, ClassNotFoundException {

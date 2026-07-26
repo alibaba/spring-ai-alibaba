@@ -32,7 +32,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
+import com.fasterxml.jackson.databind.ser.std.MapSerializer;
 
 class SerializationHelper {
 
@@ -63,6 +65,9 @@ class SerializationHelper {
 
 	private static Object normalizeMetadataValue(SerializerProvider provider, Object value) throws IOException {
 		if (value instanceof Map<?, ?> map) {
+			if (!isStandardMapSerializer(provider.findValueSerializer(map.getClass()))) {
+				return map;
+			}
 			Map<Object, Object> normalized = new LinkedHashMap<>(map.size());
 			for (Map.Entry<?, ?> entry : map.entrySet()) {
 				normalized.put(entry.getKey(), normalizeMetadataValue(provider, entry.getValue()));
@@ -85,7 +90,8 @@ class SerializationHelper {
 			return normalized;
 		}
 		if (value instanceof Record record) {
-			if (!(provider.findValueSerializer(record.getClass()) instanceof BeanSerializerBase)) {
+			if (!(provider.findValueSerializer(record.getClass()) instanceof BeanSerializerBase beanSerializer)
+					|| hasCustomPropertySerializer(provider, beanSerializer)) {
 				return record;
 			}
 			Map<String, Object> normalized = new LinkedHashMap<>();
@@ -111,6 +117,28 @@ class SerializationHelper {
 			return normalized;
 		}
 		return value;
+	}
+
+	private static boolean isStandardMapSerializer(Object serializer) {
+		return serializer instanceof MapSerializer;
+	}
+
+	private static boolean hasCustomPropertySerializer(SerializerProvider provider, BeanSerializerBase serializer) {
+		var introspector = provider.getAnnotationIntrospector();
+		var properties = serializer.properties();
+		while (properties.hasNext()) {
+			PropertyWriter property = properties.next();
+			AnnotatedMember member = property.getMember();
+			if (member != null && (introspector.findSerializer(member) != null
+					|| introspector.findKeySerializer(member) != null
+					|| introspector.findContentSerializer(member) != null
+					|| introspector.findNullSerializer(member) != null
+					|| introspector.findSerializationConverter(member) != null
+					|| introspector.findSerializationContentConverter(member) != null)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }
