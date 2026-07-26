@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import com.fasterxml.jackson.databind.ser.AnyGetterWriter;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.IndexedListSerializer;
@@ -181,6 +182,7 @@ class SerializationHelper {
 					if (shouldInclude(provider, propertyInclusion.getValueInclusion(), propertyValue)) {
 						boolean hasAssignedSerializer = propertyWriter.isUnwrapping()
 								|| !propertyWriter.getName().equals(property.getName())
+								|| propertyWriter.getTypeSerializer() != null
 								|| (propertyValue == null
 										? propertyWriter.hasNullSerializer()
 										: propertyWriter.hasSerializer());
@@ -196,6 +198,11 @@ class SerializationHelper {
 				}
 				catch (IllegalArgumentException ex) {
 					throw new IOException("Failed to serialize metadata record " + record.getClass().getName(), ex);
+				}
+			}
+			for (BeanPropertyWriter propertyWriter : propertyWriters) {
+				if (propertyWriter instanceof AnyGetterWriter) {
+					normalized.putAll(applyPropertyWriter(provider, propertyWriter, record));
 				}
 			}
 			return normalized;

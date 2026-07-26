@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -1107,6 +1108,45 @@ class SpringAIJacksonStateSerializerTest {
 				((Map<String, Object>) array.get(0)).get("results"));
 	}
 
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldPreserveAnyGetterFieldsDuringRecordNormalization() throws Exception {
+		List rawResults = List.of(Map.of("name", "visible"));
+		AnyGetterMetadata metadata =
+				new AnyGetterMetadata(rawResults, Map.of("dynamic", "value"));
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("any_getter_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("any_getter_record");
+		assertEquals(List.of(Map.of("name", "visible")), record.get("results"));
+		assertEquals("value", record.get("dynamic"));
+		assertTrue(!record.containsKey("additional"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldPreservePropertyTypeInfoDuringRecordNormalization() throws Exception {
+		List rawResults = List.of(Map.of("name", "visible"));
+		TypeInfoMetadata metadata =
+				new TypeInfoMetadata(rawResults, new SecretValue("value"));
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("type_info_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("type_info_record");
+		SecretValue typedValue = (SecretValue) record.get("typedValue");
+		assertEquals("value", typedValue.value());
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
@@ -1166,6 +1206,14 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	private record UnwrappedDetails(String detail) {
+	}
+
+	private record AnyGetterMetadata(List<SearchResultMetadata> results,
+			@JsonAnyGetter Map<String, Object> additional) {
+	}
+
+	private record TypeInfoMetadata(List<SearchResultMetadata> results,
+			@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS) SecretValue typedValue) {
 	}
 
 	private record RedactedMetadata(String value) {
