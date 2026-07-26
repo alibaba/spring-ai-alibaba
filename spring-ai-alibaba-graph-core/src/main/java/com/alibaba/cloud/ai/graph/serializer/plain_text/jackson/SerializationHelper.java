@@ -35,10 +35,12 @@ import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.IndexedListSerializer;
 import com.fasterxml.jackson.databind.ser.impl.IndexedStringListSerializer;
+import com.fasterxml.jackson.databind.ser.impl.StringArraySerializer;
 import com.fasterxml.jackson.databind.ser.impl.StringCollectionSerializer;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 import com.fasterxml.jackson.databind.ser.std.CollectionSerializer;
 import com.fasterxml.jackson.databind.ser.std.MapSerializer;
+import com.fasterxml.jackson.databind.ser.std.ObjectArraySerializer;
 
 class SerializationHelper {
 
@@ -89,6 +91,9 @@ class SerializationHelper {
 			return normalized;
 		}
 		if (value != null && value.getClass().isArray() && !value.getClass().getComponentType().isPrimitive()) {
+			if (!isStandardObjectArraySerializer(provider.findValueSerializer(value.getClass()))) {
+				return value;
+			}
 			int length = Array.getLength(value);
 			List<Object> normalized = new ArrayList<>(length);
 			for (int i = 0; i < length; i++) {
@@ -135,6 +140,10 @@ class SerializationHelper {
 				|| serializer instanceof IndexedListSerializer
 				|| serializer instanceof IndexedStringListSerializer
 				|| serializer instanceof StringCollectionSerializer;
+	}
+
+	private static boolean isStandardObjectArraySerializer(Object serializer) {
+		return serializer instanceof ObjectArraySerializer || serializer instanceof StringArraySerializer;
 	}
 
 	private static boolean hasCustomPropertySerializer(SerializerProvider provider, BeanSerializerBase serializer) {
