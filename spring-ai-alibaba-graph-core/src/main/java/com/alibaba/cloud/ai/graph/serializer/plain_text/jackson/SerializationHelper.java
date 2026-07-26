@@ -266,6 +266,7 @@ class SerializationHelper {
 				? hasUnsupportedRecordInclusion(effectiveInclusion)
 				: !defaultInclusion.equals(globalInclusion) || !effectiveInclusion.equals(defaultInclusion);
 		return unsupportedInclusion
+				|| hasContainerConfigOverride(provider, valueClass)
 				|| !JsonFormat.Value.empty().equals(provider.getConfig().getDefaultPropertyFormat(valueClass))
 				|| provider.getConfig().findMixInClassFor(valueClass) != null
 				|| hasNonStructuralJacksonAnnotation(List.of(valueClass.getAnnotations()))
@@ -275,6 +276,17 @@ class SerializationHelper {
 				|| introspector.findNullSerializer(classInfo) != null
 				|| introspector.findSerializationConverter(classInfo) != null
 				|| introspector.findFilterId(classInfo) != null;
+	}
+
+	private static boolean hasContainerConfigOverride(SerializerProvider provider, Class<?> valueClass) {
+		if (valueClass.isRecord()) {
+			return false;
+		}
+		var override = provider.getConfig().findConfigOverride(valueClass);
+		return override != null
+				&& (override.getFormat() != null || override.getInclude() != null
+						|| override.getIncludeAsProperty() != null || override.getIgnorals() != null
+						|| override.getIsIgnoredType() != null || override.getVisibility() != null);
 	}
 
 	private static JsonInclude.Value getRecordInclusion(SerializerProvider provider, Class<?> recordClass) {
