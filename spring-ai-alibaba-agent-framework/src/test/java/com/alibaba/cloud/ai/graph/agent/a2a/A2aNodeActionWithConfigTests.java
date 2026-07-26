@@ -369,14 +369,14 @@ class A2aNodeActionWithConfigTests {
 
 	@Test
 	void artifactReplacementSnapshots_emitOnlyDeltaAndDoNotDuplicateResult() throws Exception {
-		String first = artifactUpdateResponse("hel", false, false);
-		String second = artifactUpdateResponse("hello", false, true);
+		String first = artifactUpdateResponse("pre", false, false);
+		String second = artifactUpdateResponse("prefix", false, true);
 		HttpServer server = startSseServer("data:" + first + "\n\ndata:" + second + "\n\n");
 		try {
 			List<GraphResponse<NodeOutput>> responses = invokeStreamingAction(streamingAction(server));
 
-			assertEquals(List.of("hel", "lo"), streamingChunks(responses));
-			assertEquals("hello", streamingResult(responses));
+			assertEquals(List.of("pre", "fix"), streamingChunks(responses));
+			assertEquals("prefix", streamingResult(responses));
 		}
 		finally {
 			server.stop(0);
@@ -385,14 +385,14 @@ class A2aNodeActionWithConfigTests {
 
 	@Test
 	void taskArtifactSnapshotFollowedByReplacementUpdate_doesNotDuplicateResult() throws Exception {
-		String task = taskSnapshotResponse("hel", "TASK_STATE_WORKING");
-		String update = artifactUpdateResponse("hello", false, true);
+		String task = taskSnapshotResponse("pre", "TASK_STATE_WORKING");
+		String update = artifactUpdateResponse("prefix", false, true);
 		HttpServer server = startSseServer("data:" + task + "\n\ndata:" + update + "\n\n");
 		try {
 			List<GraphResponse<NodeOutput>> responses = invokeStreamingAction(streamingAction(server));
 
-			assertEquals(List.of("hel", "lo"), streamingChunks(responses));
-			assertEquals("hello", streamingResult(responses));
+			assertEquals(List.of("pre", "fix"), streamingChunks(responses));
+			assertEquals("prefix", streamingResult(responses));
 		}
 		finally {
 			server.stop(0);
