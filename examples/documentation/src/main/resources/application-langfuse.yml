@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: react-agent-langfuse-demo
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY}
+      chat:
+        options:
+          model: ${DASHSCOPE_MODEL:qwen-plus}
+    chat:
+      observations:
+        log-prompt: true
+        log-completion: true
+    mcp:
+      client:
+        enabled: false
+    alibaba:
+      a2a:
+        nacos:
+          discovery:
+            enabled: false
+          registry:
+            enabled: false
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${LANGFUSE_OTLP_TRACES_ENDPOINT:https://cloud.langfuse.com/api/public/otel/v1/traces}
+      headers:
+        Authorization: Basic ${LANGFUSE_AUTH_STRING}
+        x-langfuse-ingestion-version: "4"
+
+logging:
+  level:
+    com.alibaba.cloud.ai: INFO
+    org.springframework.ai: INFO

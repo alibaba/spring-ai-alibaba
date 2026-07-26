@@ -49,8 +49,17 @@ public class GraphRunner {
 		return Flux.defer(() -> {
 			try {
 				GraphRunnerContext context = new GraphRunnerContext(initialState, config, compiledGraph);
-				// Delegate to the main execution handler - demonstrates polymorphism
-				return mainGraphExecutor.execute(context, resultValue);
+				// Delegate to the main execution handler, then expand step continuations
+				// iteratively (depth-first). Executors emit a continuation marker as the
+				// last element of each step instead of recursively nesting the next step
+				// with concatWith(Flux.defer(...)), which grew the reactive operator chain
+				// by one layer per executed node and blew the stack on long-running loops
+				// (issue #4594). expandDeep drains continuations through a single operator,
+				// keeping the subscriber depth constant while preserving emission order.
+				return mainGraphExecutor.execute(context, resultValue)
+					.expandDeep(response -> response.hasContinuation()
+							? Flux.defer(() -> response.getContinuation().get()) : Flux.empty())
+					.filter(response -> !response.hasContinuation());
 			}
 			catch (Exception e) {
 				return Flux.error(e);

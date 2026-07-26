@@ -13,7 +13,8 @@
 1. **本地 Agent 创建**：`A2AAgentConfig` 创建 ReactAgent Bean
 2. **A2A Server 自动暴露**：Spring Boot 启动时，A2A Server AutoConfiguration 自动：
    - 根据 ReactAgent Bean 生成 AgentCard
-   - 暴露 REST API 端点（`/.well-known/agent.json` 和 `/a2a/message`）
+   - 暴露 `GET /.well-known/agent.json`（AgentCard）和 `POST /a2a`（JSON-RPC 消息）端点
+   - `message/send` 和 `message/stream` 是 JSON-RPC 请求体中的 method，不是 HTTP 路径
 3. **Nacos Registry 注册**：配置 `registry.enabled: true` 后：
    - 自动将 AgentCard 注册到 Nacos A2A 服务注册表
    - 其他服务可通过 Nacos 发现此 Agent
@@ -46,6 +47,7 @@ spring:
             enabled: true   # 启用服务注册（注册本地 Agent）
         server:
           version: 1.0.0
+          # message-url: /a2a/message # 可选；默认消息端点是 /a2a
           card:
             name: data_analysis_agent
             description: 专门用于数据分析和统计计算的本地智能体
@@ -58,6 +60,7 @@ spring:
 - `registry.enabled: true` - 必须启用才能将 Agent 注册到 Nacos
 - `discovery.enabled: true` - 启用后才能通过 AgentCardProvider 发现其他 Agent
 - `server.card` - 定义注册到 Nacos 的 AgentCard 元数据
+- `server.message-url` - 可选的 JSON-RPC 消息端点，默认值为 `/a2a`
 
 ## 运行
 
@@ -93,6 +96,33 @@ curl http://localhost:8080/api/a2a/demo
 ```bash
 curl http://localhost:8080/.well-known/agent.json
 ```
+
+**A2A JSON-RPC 消息**：
+```bash
+curl --request POST http://localhost:8080/a2a \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "jsonrpc": "2.0",
+    "id": "demo-request",
+    "method": "message/send",
+    "params": {
+      "message": {
+        "kind": "message",
+        "messageId": "demo-message",
+        "role": "user",
+        "parts": [
+          {
+            "kind": "text",
+            "text": "请给出一条数据分析建议"
+          }
+        ]
+      }
+    }
+  }'
+```
+
+如果显式配置 `spring.ai.alibaba.a2a.server.message-url=/a2a/message`，则将上面
+的请求地址改为 `/a2a/message`。未配置时访问该路径会返回 404。
 
 **Nacos 控制台**：
 - 打开 http://localhost:8848/nacos

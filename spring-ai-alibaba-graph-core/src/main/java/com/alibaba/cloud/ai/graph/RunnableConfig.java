@@ -27,8 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
-import static java.lang.String.format;
 import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.CHECKPOINTS_NUM_RETAINED;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
