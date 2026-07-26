@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -914,6 +915,104 @@ class SpringAIJacksonStateSerializerTest {
 		assertEquals(List.of(List.of(Map.of("name", "visible"))), record.get("results"));
 	}
 
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldNormalizeRecordWithSupportedMixInRules() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.addMixIn(MixInRuleMetadata.class, NonNullRecordMixIn.class);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		List rawResults = List.of(Map.of("name", "visible"));
+		MixInRuleMetadata metadata = new MixInRuleMetadata(rawResults, null);
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("mix_in_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("mix_in_record");
+		assertEquals(List.of(Map.of("name", "visible")), record.get("results"));
+		assertTrue(!record.containsKey("optional"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldHonorPropertiesRemovedBySerializerModifier() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		SimpleModule module = new SimpleModule();
+		module.setSerializerModifier(new BeanSerializerModifier() {
+			@Override
+			public List<BeanPropertyWriter> changeProperties(SerializationConfig config,
+					BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
+				if (beanDesc.getBeanClass() == RemovedPropertyMetadata.class) {
+					beanProperties.removeIf(property -> property.getName().equals("secret"));
+				}
+				return beanProperties;
+			}
+		});
+		objectMapper.registerModule(module);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		List rawResults = List.of(Map.of("name", "visible"));
+		RemovedPropertyMetadata metadata = new RemovedPropertyMetadata(rawResults, "secret");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("modified_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("modified_record");
+		assertEquals(List.of(Map.of("name", "visible")), record.get("results"));
+		assertTrue(!record.containsKey("secret"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldPreserveUnwrappedWriterFieldsDuringNormalization() throws Exception {
+		List rawResults = List.of(Map.of("name", "visible"));
+		UnwrappedMetadata metadata =
+				new UnwrappedMetadata(rawResults, new UnwrappedDetails("detail"));
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("unwrapped_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("unwrapped_record");
+		assertEquals(List.of(Map.of("name", "visible")), record.get("results"));
+		assertEquals("detail", record.get("detail"));
+		assertTrue(!record.containsKey("details"));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldNormalizeChildrenOfOverriddenContainers() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.addMixIn(NestedOverrideMap.class, TypedContainerMixIn.class);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		List rawResults = List.of(Map.of("name", "visible"));
+		NestedOverrideMap values = new NestedOverrideMap();
+		values.put("record", new PrivateSearchMetadata(rawResults, "ignored", "secret"));
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("values", values))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		Map<String, Object> map = (Map<String, Object>) deserialized.getMetadata().get("values");
+		assertTrue(map.get("record") instanceof Map);
+		assertEquals(List.of(Map.of("name", "visible")),
+				((Map<String, Object>) map.get("record")).get("results"));
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
@@ -953,6 +1052,23 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	private record NestedMetadata(List<List<SearchResultMetadata>> results) {
+	}
+
+	private record MixInRuleMetadata(List<SearchResultMetadata> results, String optional) {
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	private abstract static class NonNullRecordMixIn {
+	}
+
+	private record RemovedPropertyMetadata(List<SearchResultMetadata> results, String secret) {
+	}
+
+	private record UnwrappedMetadata(List<SearchResultMetadata> results,
+			@JsonUnwrapped UnwrappedDetails details) {
+	}
+
+	private record UnwrappedDetails(String detail) {
 	}
 
 	private record RedactedMetadata(String value) {
@@ -1001,6 +1117,9 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	private static final class FormatList extends ArrayList<String> {
+	}
+
+	private static final class NestedOverrideMap extends HashMap<String, Object> {
 	}
 
 	@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)

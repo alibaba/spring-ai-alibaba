@@ -87,28 +87,39 @@ class SerializationHelper {
 	private static Object normalizeMetadataValue(SerializerProvider provider, Object value,
 			JsonInclude.Include contentInclusion) throws IOException {
 		if (value instanceof Map<?, ?> map) {
-			if (hasClassSerializationOverrides(provider, map.getClass())
-					|| !isStandardMapSerializer(provider.findValueSerializer(map.getClass()))) {
+			boolean preserveContainer = hasClassSerializationOverrides(provider, map.getClass());
+			if (!isStandardMapSerializer(provider.findValueSerializer(map.getClass()))) {
 				return map;
 			}
 			Map<Object, Object> normalized = new LinkedHashMap<>(map.size());
+			boolean changed = false;
 			for (Map.Entry<?, ?> entry : map.entrySet()) {
 				if (shouldInclude(provider, contentInclusion, entry.getValue())) {
-					normalized.put(entry.getKey(), normalizeMetadataValue(provider, entry.getValue()));
+					Object normalizedValue = normalizeMetadataValue(provider, entry.getValue());
+					normalized.put(entry.getKey(), normalizedValue);
+					changed |= normalizedValue != entry.getValue();
+				}
+				else {
+					changed = true;
 				}
 			}
-			return normalized;
+			return preserveContainer ? preserveMapType(provider, map, normalized, changed) : normalized;
 		}
 		if (value instanceof Collection<?> collection) {
-			if (hasClassSerializationOverrides(provider, collection.getClass())
-					|| !isStandardCollectionSerializer(provider.findValueSerializer(collection.getClass()))) {
+			boolean preserveContainer = hasClassSerializationOverrides(provider, collection.getClass());
+			if (!isStandardCollectionSerializer(provider.findValueSerializer(collection.getClass()))) {
 				return collection;
 			}
 			List<Object> normalized = new ArrayList<>(collection.size());
+			boolean changed = false;
 			for (Object item : collection) {
-				normalized.add(normalizeMetadataValue(provider, item));
+				Object normalizedItem = normalizeMetadataValue(provider, item);
+				normalized.add(normalizedItem);
+				changed |= normalizedItem != item;
 			}
-			return normalized;
+			return preserveContainer
+					? preserveCollectionType(provider, collection, normalized, changed)
+					: normalized;
 		}
 		if (value != null && value.getClass().isArray() && !value.getClass().getComponentType().isPrimitive()) {
 			if (hasClassSerializationOverrides(provider, value.getClass())
@@ -150,7 +161,7 @@ class SerializationHelper {
 			}
 			Map<String, Object> normalized = new LinkedHashMap<>();
 			JsonInclude.Value recordInclusion = getRecordInclusion(provider, record.getClass());
-			Map<String, BeanPropertyWriter> propertyWriters = getAssignedPropertyWriters(beanSerializer);
+			Map<String, BeanPropertyWriter> propertyWriters = getEffectivePropertyWriters(beanSerializer);
 			for (BeanPropertyDefinition property : properties) {
 				if (!property.couldSerialize()) {
 					continue;
@@ -159,22 +170,22 @@ class SerializationHelper {
 				if (accessor == null) {
 					continue;
 				}
+				BeanPropertyWriter propertyWriter = propertyWriters.get(property.getName());
+				if (propertyWriter == null) {
+					continue;
+				}
 				try {
 					accessor.fixAccess(provider.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
 					Object propertyValue = accessor.getValue(record);
 					JsonInclude.Value propertyInclusion =
 							getPropertyInclusion(provider, accessor, recordInclusion);
 					if (shouldInclude(provider, propertyInclusion.getValueInclusion(), propertyValue)) {
-						BeanPropertyWriter propertyWriter = propertyWriters.get(property.getName());
-						boolean hasAssignedSerializer = propertyWriter != null
-								&& (propertyValue == null
+						boolean hasAssignedSerializer = propertyWriter.isUnwrapping()
+								|| (propertyValue == null
 										? propertyWriter.hasNullSerializer()
 										: propertyWriter.hasSerializer());
 						if (hasAssignedSerializer) {
-							SerializedProperty serialized = applyPropertyWriter(provider, propertyWriter, record);
-							if (serialized.present()) {
-								normalized.put(property.getName(), serialized.value());
-							}
+							normalized.putAll(applyPropertyWriter(provider, propertyWriter, record));
 						}
 						else {
 							normalized.put(property.getName(),
@@ -271,7 +282,7 @@ class SerializationHelper {
 		return unsupportedInclusion
 				|| hasContainerConfigOverride(provider, valueClass)
 				|| !JsonFormat.Value.empty().equals(provider.getConfig().getDefaultPropertyFormat(valueClass))
-				|| provider.getConfig().findMixInClassFor(valueClass) != null
+				|| !valueClass.isRecord() && provider.getConfig().findMixInClassFor(valueClass) != null
 				|| hasNonStructuralJacksonAnnotation(List.of(valueClass.getAnnotations()))
 				|| introspector.findSerializer(classInfo) != null
 				|| introspector.findKeySerializer(classInfo) != null
@@ -327,20 +338,19 @@ class SerializationHelper {
 		};
 	}
 
-	private static Map<String, BeanPropertyWriter> getAssignedPropertyWriters(BeanSerializerBase serializer) {
+	private static Map<String, BeanPropertyWriter> getEffectivePropertyWriters(BeanSerializerBase serializer) {
 		Map<String, BeanPropertyWriter> writers = new LinkedHashMap<>();
 		var properties = serializer.properties();
 		while (properties.hasNext()) {
 			PropertyWriter property = properties.next();
-			if (property instanceof BeanPropertyWriter beanProperty
-					&& (beanProperty.hasSerializer() || beanProperty.hasNullSerializer())) {
+			if (property instanceof BeanPropertyWriter beanProperty) {
 				writers.put(property.getName(), beanProperty);
 			}
 		}
 		return writers;
 	}
 
-	private static SerializedProperty applyPropertyWriter(SerializerProvider provider,
+	private static Map<String, Object> applyPropertyWriter(SerializerProvider provider,
 			BeanPropertyWriter writer, Record record) throws IOException {
 		ObjectCodec codec = provider.getGenerator().getCodec();
 		try (TokenBuffer buffer = new TokenBuffer(codec, false)) {
@@ -353,14 +363,52 @@ class SerializationHelper {
 			}
 			buffer.writeEndObject();
 			try (JsonParser parser = buffer.asParser(codec)) {
-				Map<?, ?> serialized = codec.readValue(parser, Map.class);
-				return new SerializedProperty(serialized.containsKey(writer.getName()),
-						serialized.get(writer.getName()));
+				return codec.readValue(parser, new TypeReference<>() {
+				});
 			}
 		}
 	}
 
-	private record SerializedProperty(boolean present, Object value) {
+	private static Object preserveMapType(SerializerProvider provider, Map<?, ?> original,
+			Map<Object, Object> normalized, boolean changed) {
+		if (!changed) {
+			return original;
+		}
+		Map<Object, Object> copy = instantiateContainer(provider, original.getClass(), Map.class);
+		if (copy == null) {
+			return original;
+		}
+		copy.putAll(normalized);
+		return copy;
+	}
+
+	private static Object preserveCollectionType(SerializerProvider provider, Collection<?> original,
+			List<Object> normalized, boolean changed) {
+		if (!changed) {
+			return original;
+		}
+		Collection<Object> copy = instantiateContainer(provider, original.getClass(), Collection.class);
+		if (copy == null) {
+			return original;
+		}
+		copy.addAll(normalized);
+		return copy;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> T instantiateContainer(SerializerProvider provider, Class<?> containerClass,
+			Class<?> expectedType) {
+		try {
+			var constructor = containerClass.getDeclaredConstructor();
+			if (provider.isEnabled(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS)) {
+				constructor.setAccessible(true);
+			}
+			Object instance = constructor.newInstance();
+			return expectedType.isInstance(instance) ? (T) instance : null;
+		}
+		catch (ReflectiveOperationException | RuntimeException ex) {
+			return null;
+		}
 	}
 
 	private static boolean hasNonStructuralJacksonAnnotation(Iterable<Annotation> annotations) {
