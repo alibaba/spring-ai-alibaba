@@ -25,9 +25,12 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
+import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -69,6 +72,25 @@ class CustomInterruptibleHookTest {
 		assertEquals(1, hook.beforeModelCalls.get());
 		assertEquals(1, hook.afterModelCalls.get());
 		assertEquals(0, hook.applyCalls.get());
+	}
+
+	@Test
+	void shouldPreserveInterruptionForMessagesModelHook() throws Exception {
+		CustomInterruptibleMessagesHook hook = new CustomInterruptibleMessagesHook();
+		ReactAgent agent = ReactAgent.builder()
+				.name("custom-interruptible-messages-hook-agent")
+				.model(new StubChatModel())
+				.hooks(hook)
+				.saver(new MemorySaver())
+				.build();
+
+		Optional<NodeOutput> output = agent.invokeAndGetOutput("pause after the model",
+				RunnableConfig.builder().threadId("custom-interruptible-messages-hook-thread").build());
+
+		InterruptionMetadata interruption =
+				assertInstanceOf(InterruptionMetadata.class, output.orElseThrow());
+		assertEquals("messages", interruption.metadata("source").orElseThrow());
+		assertEquals(1, hook.afterModelCalls.get());
 	}
 
 	@HookPositions({ HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL })
@@ -119,6 +141,38 @@ class CustomInterruptibleHookTest {
 		@Override
 		public String getName() {
 			return "CUSTOM_INTERRUPTION";
+		}
+
+	}
+
+	@HookPositions(HookPosition.AFTER_MODEL)
+	private static final class CustomInterruptibleMessagesHook extends MessagesModelHook
+			implements InterruptableAction {
+
+		private final AtomicInteger afterModelCalls = new AtomicInteger();
+
+		@Override
+		public AgentCommand afterModel(List<Message> previousMessages, RunnableConfig config) {
+			this.afterModelCalls.incrementAndGet();
+			return new AgentCommand(previousMessages);
+		}
+
+		@Override
+		public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+			return Optional.empty();
+		}
+
+		@Override
+		public Optional<InterruptionMetadata> interruptAfter(String nodeId, OverAllState state,
+				Map<String, Object> actionResult, RunnableConfig config) {
+			return Optional.of(InterruptionMetadata.builder(nodeId, state)
+					.addMetadata("source", "messages")
+					.build());
+		}
+
+		@Override
+		public String getName() {
+			return "CUSTOM_MESSAGES_INTERRUPTION";
 		}
 
 	}

@@ -370,29 +370,33 @@ public class ReactAgent extends BaseAgent {
 
 		// Add hook nodes for beforeModel hooks
 		for (Hook hook : beforeModelHooks) {
+			AsyncNodeActionWithConfig action = null;
 			if (hook instanceof ModelHook modelHook) {
-				if (hook instanceof InterruptableAction interruptableAction) {
-					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel",
-							new InterruptibleModelHookAction(modelHook::beforeModel, interruptableAction));
-				} else {
-					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", modelHook::beforeModel);
-				}
+				action = modelHook::beforeModel;
 			} else if (hook instanceof MessagesModelHook messagesModelHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", MessagesModelHook.beforeModelAction(messagesModelHook));
+				action = MessagesModelHook.beforeModelAction(messagesModelHook);
+			}
+			if (action != null) {
+				if (hook instanceof InterruptableAction interruptableAction) {
+					action = new InterruptibleModelHookAction(action, interruptableAction);
+				}
+				graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", action);
 			}
 		}
 
 		// Add hook nodes for afterModel hooks
 		for (Hook hook : afterModelHooks) {
+			AsyncNodeActionWithConfig action = null;
 			if (hook instanceof ModelHook modelHook) {
-				if (hook instanceof InterruptableAction interruptableAction) {
-					graph.addNode(Hook.getFullHookName(hook) + ".afterModel",
-							new InterruptibleModelHookAction(modelHook::afterModel, interruptableAction));
-				} else {
-					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", modelHook::afterModel);
-				}
+				action = modelHook::afterModel;
 			} else if (hook instanceof MessagesModelHook messagesModelHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".afterModel", MessagesModelHook.afterModelAction(messagesModelHook));
+				action = MessagesModelHook.afterModelAction(messagesModelHook);
+			}
+			if (action != null) {
+				if (hook instanceof InterruptableAction interruptableAction) {
+					action = new InterruptibleModelHookAction(action, interruptableAction);
+				}
+				graph.addNode(Hook.getFullHookName(hook) + ".afterModel", action);
 			}
 		}
 
