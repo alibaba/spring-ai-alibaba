@@ -16,10 +16,10 @@
 
 package com.alibaba.cloud.ai.a2a.registry.nacos.service;
 
+import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.properties.NacosA2aProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.register.NacosA2aRegistryProperties;
 import com.alibaba.cloud.ai.a2a.registry.nacos.utils.AgentCardConverterUtil;
-import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerProperties;
 
 import com.alibaba.nacos.api.ai.A2aService;
 import com.alibaba.nacos.api.ai.constant.AiConstants;

@@ -18,8 +18,40 @@ package com.alibaba.cloud.ai.sandbox;
 
 import com.alibaba.cloud.ai.sandbox.tools.base.SaaBasePythonRunner;
 import com.alibaba.cloud.ai.sandbox.tools.base.SaaBaseShellRunner;
-import com.alibaba.cloud.ai.sandbox.tools.browser.*;
-import com.alibaba.cloud.ai.sandbox.tools.fs.*;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserBackNavigator;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserClicker;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserCloser;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserConsoleMessagesRetriever;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserDialogHandler;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserDragger;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserFileUploader;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserForwardNavigator;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserHoverer;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserKeyPresser;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserNavigator;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserNetworkRequestsRetriever;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserOptionSelector;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserPdfSaver;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserScreenshotTaker;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserSnapshotTaker;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserTabCloser;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserTabCreator;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserTabLister;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserTabSelector;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserTyper;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserWaiter;
+import com.alibaba.cloud.ai.sandbox.tools.browser.SaaBrowserWindowResizer;
+import com.alibaba.cloud.ai.sandbox.tools.fs.SaaFsAllowedDirectoriesLister;
+import com.alibaba.cloud.ai.sandbox.tools.fs.SaaFsDirectoryCreator;
+import com.alibaba.cloud.ai.sandbox.tools.fs.SaaFsDirectoryLister;
+import com.alibaba.cloud.ai.sandbox.tools.fs.SaaFsFileEditor;
+import com.alibaba.cloud.ai.sandbox.tools.fs.SaaFsFileInfoRetriever;
+import com.alibaba.cloud.ai.sandbox.tools.fs.SaaFsFileMover;
+import com.alibaba.cloud.ai.sandbox.tools.fs.SaaFsFileReader;
+import com.alibaba.cloud.ai.sandbox.tools.fs.SaaFsFileSearcher;
+import com.alibaba.cloud.ai.sandbox.tools.fs.SaaFsFileWriter;
+import com.alibaba.cloud.ai.sandbox.tools.fs.SaaFsMultiFileReader;
+import com.alibaba.cloud.ai.sandbox.tools.fs.SaaFsTreeBuilder;
 import com.alibaba.cloud.ai.sandbox.tools.mcp.SaaMCPTool;
 import io.agentscope.runtime.sandbox.box.Sandbox;
 import io.agentscope.runtime.sandbox.manager.SandboxService;
@@ -27,13 +59,12 @@ import io.agentscope.runtime.sandbox.tools.MCPTool;
 import io.agentscope.runtime.sandbox.tools.McpConfigConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.tool.ToolCallback;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.springframework.ai.tool.ToolCallback;
 
 public class ToolkitInit {
     public static Logger logger = LoggerFactory.getLogger(ToolkitInit.class);

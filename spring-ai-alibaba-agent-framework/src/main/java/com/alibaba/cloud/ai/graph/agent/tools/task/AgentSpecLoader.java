@@ -168,7 +168,7 @@ public final class AgentSpecLoader {
 			return null;
 		}
 
-		List<String> toolNames = parseToolNames(getString(frontMatter, "tools"));
+		List<String> toolNames = parseToolNames(frontMatter.get("tools"));
 		String model = getString(frontMatter, "model");
 
 		return new AgentSpec(name, description, content, toolNames, model);
@@ -179,7 +179,19 @@ public final class AgentSpecLoader {
 		return v != null ? v.toString().trim() : null;
 	}
 
-	private static List<String> parseToolNames(String toolsStr) {
+	private static List<String> parseToolNames(Object tools) {
+		if (tools instanceof Iterable<?> iterable) {
+			List<String> toolNames = new ArrayList<>();
+			for (Object tool : iterable) {
+				String toolName = tool != null ? tool.toString().trim() : null;
+				if (StringUtils.hasText(toolName)) {
+					toolNames.add(toolName);
+				}
+			}
+			return toolNames;
+		}
+
+		String toolsStr = tools != null ? tools.toString().trim() : null;
 		if (!StringUtils.hasText(toolsStr)) {
 			return List.of();
 		}

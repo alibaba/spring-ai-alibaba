@@ -20,6 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -99,6 +101,16 @@ public class SerializationUtils {
 		if (value instanceof String || value instanceof Number ||
 			value instanceof Boolean || value instanceof Character) {
 			return value;
+		}
+
+		// Handle UserMessage
+		if (value instanceof UserMessage userMessage) {
+			return userMessage.copy();
+		}
+
+		// Handle SystemMessage
+		if (value instanceof SystemMessage systemMessage) {
+			return systemMessage.copy();
 		}
 
 		// Handle Map
