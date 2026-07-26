@@ -28,6 +28,7 @@ import com.alibaba.cloud.ai.graph.SubGraphNode;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.exception.AgentException;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
@@ -79,6 +80,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -369,8 +371,9 @@ public class ReactAgent extends BaseAgent {
 		// Add hook nodes for beforeModel hooks
 		for (Hook hook : beforeModelHooks) {
 			if (hook instanceof ModelHook modelHook) {
-				if (hook instanceof AsyncNodeActionWithConfig action && hook instanceof InterruptableAction) {
-					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", action);
+				if (hook instanceof InterruptableAction interruptableAction) {
+					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel",
+							new InterruptibleModelHookAction(modelHook::beforeModel, interruptableAction));
 				} else {
 					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", modelHook::beforeModel);
 				}
@@ -382,8 +385,9 @@ public class ReactAgent extends BaseAgent {
 		// Add hook nodes for afterModel hooks
 		for (Hook hook : afterModelHooks) {
 			if (hook instanceof ModelHook modelHook) {
-				if (hook instanceof AsyncNodeActionWithConfig action && hook instanceof InterruptableAction) {
-					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", action);
+				if (hook instanceof InterruptableAction interruptableAction) {
+					graph.addNode(Hook.getFullHookName(hook) + ".afterModel",
+							new InterruptibleModelHookAction(modelHook::afterModel, interruptableAction));
 				} else {
 					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", modelHook::afterModel);
 				}
@@ -403,6 +407,36 @@ public class ReactAgent extends BaseAgent {
 		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
 				entryNode, loopEntryNode, loopExitNode, exitNode, this);
 		return graph;
+	}
+
+	private static final class InterruptibleModelHookAction implements AsyncNodeActionWithConfig, InterruptableAction {
+
+		private final AsyncNodeActionWithConfig positionAction;
+
+		private final InterruptableAction interruptableAction;
+
+		private InterruptibleModelHookAction(AsyncNodeActionWithConfig positionAction,
+				InterruptableAction interruptableAction) {
+			this.positionAction = positionAction;
+			this.interruptableAction = interruptableAction;
+		}
+
+		@Override
+		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+			return this.positionAction.apply(state, config);
+		}
+
+		@Override
+		public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+			return this.interruptableAction.interrupt(nodeId, state, config);
+		}
+
+		@Override
+		public Optional<InterruptionMetadata> interruptAfter(String nodeId, OverAllState state,
+				Map<String, Object> actionResult, RunnableConfig config) {
+			return this.interruptableAction.interruptAfter(nodeId, state, actionResult, config);
+		}
+
 	}
 
 	/**

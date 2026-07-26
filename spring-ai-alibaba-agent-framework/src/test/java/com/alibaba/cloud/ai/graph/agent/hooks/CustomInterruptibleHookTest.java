@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import reactor.core.publisher.Flux;
 
@@ -49,11 +50,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CustomInterruptibleHookTest {
 
 	@Test
-	void shouldPreserveInterruptibleActionForCustomAfterModelHook() throws Exception {
+	void shouldPreservePositionCallbacksForInterruptibleModelHook() throws Exception {
+		CustomInterruptibleHook hook = new CustomInterruptibleHook();
 		ReactAgent agent = ReactAgent.builder()
 				.name("custom-interruptible-hook-agent")
 				.model(new StubChatModel())
-				.hooks(new CustomInterruptibleHook())
+				.hooks(hook)
 				.saver(new MemorySaver())
 				.build();
 
@@ -64,19 +66,51 @@ class CustomInterruptibleHookTest {
 		assertTrue(output.isPresent());
 		InterruptionMetadata interruption = assertInstanceOf(InterruptionMetadata.class, output.get());
 		assertEquals("custom", interruption.metadata("source").orElseThrow());
+		assertEquals(1, hook.beforeModelCalls.get());
+		assertEquals(1, hook.afterModelCalls.get());
+		assertEquals(0, hook.applyCalls.get());
 	}
 
-	@HookPositions(HookPosition.AFTER_MODEL)
+	@HookPositions({ HookPosition.BEFORE_MODEL, HookPosition.AFTER_MODEL })
 	private static final class CustomInterruptibleHook extends ModelHook
 			implements AsyncNodeActionWithConfig, InterruptableAction {
 
+		private final AtomicInteger beforeModelCalls = new AtomicInteger();
+
+		private final AtomicInteger afterModelCalls = new AtomicInteger();
+
+		private final AtomicInteger applyCalls = new AtomicInteger();
+
 		@Override
 		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-			return afterModel(state, config);
+			this.applyCalls.incrementAndGet();
+			return CompletableFuture.completedFuture(Map.of());
+		}
+
+		@Override
+		public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+			this.beforeModelCalls.incrementAndGet();
+			return CompletableFuture.completedFuture(Map.of("before_model_called", true));
+		}
+
+		@Override
+		public CompletableFuture<Map<String, Object>> afterModel(OverAllState state, RunnableConfig config) {
+			this.afterModelCalls.incrementAndGet();
+			return CompletableFuture.completedFuture(Map.of("after_model_called", true));
 		}
 
 		@Override
 		public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+			return Optional.empty();
+		}
+
+		@Override
+		public Optional<InterruptionMetadata> interruptAfter(String nodeId, OverAllState state,
+				Map<String, Object> actionResult, RunnableConfig config) {
+			if (!nodeId.endsWith(".afterModel")) {
+				return Optional.empty();
+			}
+			assertEquals(true, actionResult.get("after_model_called"));
 			return Optional.of(InterruptionMetadata.builder(nodeId, state)
 					.addMetadata("source", "custom")
 					.build());
