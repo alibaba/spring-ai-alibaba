@@ -63,6 +63,23 @@ class ArrayLoopStrategyTest {
 	}
 
 	@Test
+	void explicitSingleElementBatchShouldKeepJsonArrayFraming() {
+		ArrayLoopStrategy customConverterStrategy = LoopMode.array(1, messages -> List.of("one", "two"));
+		Map<String, Object> customState =
+				new HashMap<>(customConverterStrategy.loopInit(stateWithMessage("ignored")));
+
+		assertDispatch(customConverterStrategy.loopDispatch(new OverAllState(customState)),
+				customConverterStrategy, 1, "[\"one\"]");
+
+		ArrayLoopStrategy defaultConverterStrategy = LoopMode.array(1);
+		Map<String, Object> defaultState =
+				new HashMap<>(defaultConverterStrategy.loopInit(stateWithMessage("[\"one\",\"two\"]")));
+
+		assertDispatch(defaultConverterStrategy.loopDispatch(new OverAllState(defaultState)),
+				defaultConverterStrategy, 1, "[\"one\"]");
+	}
+
+	@Test
 	void shouldRejectNonPositiveBatchSize() {
 		assertThrows(IllegalArgumentException.class, () -> LoopMode.array(0));
 		assertThrows(IllegalArgumentException.class, () -> LoopMode.array(-1, messages -> List.of()));
