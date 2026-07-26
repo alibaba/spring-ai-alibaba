@@ -71,6 +71,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -313,6 +315,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		}
 
 		Executor executor = getToolExecutor(config);
+		Observation parentObservation = observationRegistry.getCurrentObservation();
 
 		// Create state snapshot for thread safety
 		// Note: snapShot() is a shallow copy, shared mutable objects (like messages List)
@@ -336,16 +339,23 @@ public class AgentToolNode implements NodeActionWithConfig {
 		List<CompletableFuture<Void>> futures = IntStream.range(0, toolCalls.size()).mapToObj(index -> {
 			AssistantMessage.ToolCall toolCall = toolCalls.get(index);
 			Map<String, Object> toolSpecificUpdate = stateCollector.createToolUpdateMap(index);
+			ToolObservationTracker observationTracker = new ToolObservationTracker();
 
 			return CompletableFuture.runAsync(() -> {
-				try {
+				try (Observation.Scope parentScope =
+						parentObservation != null ? parentObservation.openScope() : null) {
 					// Acquire permit to limit concurrent executions
 					semaphore.acquire();
 					try {
+						if (orderedResponses.get(index) != null) {
+							return;
+						}
 						ToolCallResponse response = executeToolCallWithInterceptors(toolCall, stateSnapshot, config,
-								toolSpecificUpdate, true, cancellationTokens, index);
+								toolSpecificUpdate, true, cancellationTokens, index, observationTracker);
 						// CAS: only set if still null (not already timed out)
-						orderedResponses.compareAndSet(index, null, response);
+						if (orderedResponses.compareAndSet(index, null, response)) {
+							observationTracker.complete();
+						}
 					}
 					finally {
 						semaphore.release();
@@ -355,8 +365,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 					Thread.currentThread().interrupt();
 					failures.add(e);
 					// CAS: only set error if still null
-					orderedResponses.compareAndSet(index, null,
-							ToolCallResponse.error(toolCall.id(), toolCall.name(), "Tool execution was interrupted"));
+					if (orderedResponses.compareAndSet(index, null,
+							ToolCallResponse.error(toolCall.id(), toolCall.name(), "Tool execution was interrupted"))) {
+						observationTracker.errorAndComplete(e);
+					}
 				}
 			}, executor)
 				.orTimeout(toolExecutionTimeout.toMillis(), TimeUnit.MILLISECONDS)
@@ -366,6 +378,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 					ToolCallResponse errorResponse = ToolCallResponse.error(toolCall.id(), toolCall.name(),
 							extractErrorMessage(cause));
 					if (orderedResponses.compareAndSet(index, null, errorResponse)) {
+						observationTracker.errorAndComplete(cause);
 						if (cause instanceof TimeoutException) {
 							stateCollector.discardToolUpdateMap(index);
 							// Cancel the tool's cancellation token to notify it to stop gracefully
@@ -523,7 +536,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 	private ToolCallResponse executeToolCallWithInterceptors(AssistantMessage.ToolCall toolCall, OverAllState state,
 			RunnableConfig config, Map<String, Object> extraStateFromToolCall, boolean inParallelExecution) {
 		return executeToolCallWithInterceptors(toolCall, state, config, extraStateFromToolCall, inParallelExecution,
-				null, -1);
+				null, -1, null);
 	}
 
 	/**
@@ -539,11 +552,14 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * execution (may be null)
 	 * @param toolIndex the index of this tool in the parallel execution (used as key in
 	 * cancellationTokens)
+	 * @param observationTracker optional tracker that lets the parallel timeout path
+	 * complete the observation
 	 * @return the tool call response
 	 */
 	private ToolCallResponse executeToolCallWithInterceptors(AssistantMessage.ToolCall toolCall, OverAllState state,
 			RunnableConfig config, Map<String, Object> extraStateFromToolCall, boolean inParallelExecution,
-			Map<Integer, DefaultCancellationToken> cancellationTokens, int toolIndex) {
+			Map<Integer, DefaultCancellationToken> cancellationTokens, int toolIndex,
+			ToolObservationTracker observationTracker) {
 
 		// Create ToolCallRequest
 		ToolCallRequest request = ToolCallRequest.builder()
@@ -588,7 +604,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 			// Route to async or sync execution based on callback type
 			return observeToolCall(toolCallback, req,
 					() -> executeToolByType(toolCallback, req, toolContextMap, config, extraStateFromToolCall,
-							inParallelExecution, cancellationTokens, toolIndex));
+							inParallelExecution, cancellationTokens, toolIndex),
+					observationTracker);
 		};
 
 		// Chain interceptors if any
@@ -599,7 +616,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 	}
 
 	private ToolCallResponse observeToolCall(ToolCallback toolCallback, ToolCallRequest request,
-			Supplier<ToolCallResponse> execution) {
+			Supplier<ToolCallResponse> execution, ToolObservationTracker observationTracker) {
 		String arguments = StringUtils.hasText(request.getArguments()) ? request.getArguments() : "{}";
 		ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 				.toolDefinition(toolCallback.getToolDefinition())
@@ -609,14 +626,74 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		Observation observation = ToolCallingObservationDocumentation.TOOL_CALL
 			.observation(null, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, observationRegistry);
-		return observation.observe(() -> {
-			ToolCallResponse response = execution.get();
-			observationContext.setToolCallResult(response.getResult());
-			if (response.isError()) {
-				observation.error(new IllegalStateException(response.getResult()));
+		if (observationTracker != null) {
+			observation.start();
+			observationTracker.register(observation);
+			try (Observation.Scope scope = observation.openScope()) {
+				return executeObservedToolCall(execution, observationContext, observation);
 			}
-			return response;
+			catch (RuntimeException | Error ex) {
+				observationTracker.errorAndComplete(ex);
+				throw ex;
+			}
+		}
+		return observation.observe(() -> {
+			return executeObservedToolCall(execution, observationContext, observation);
 		});
+	}
+
+	private ToolCallResponse executeObservedToolCall(Supplier<ToolCallResponse> execution,
+			ToolCallingObservationContext observationContext, Observation observation) {
+		ToolCallResponse response = execution.get();
+		observationContext.setToolCallResult(response.getResult());
+		if (response.isError()) {
+			observation.error(new IllegalStateException(response.getResult()));
+		}
+		return response;
+	}
+
+	private static final class ToolObservationTracker {
+
+		private final AtomicReference<Observation> observation = new AtomicReference<>();
+
+		private final AtomicReference<Throwable> terminalError = new AtomicReference<>();
+
+		private final AtomicBoolean terminalRequested = new AtomicBoolean();
+
+		private final AtomicBoolean completed = new AtomicBoolean();
+
+		private void register(Observation observation) {
+			this.observation.set(observation);
+			completeIfReady();
+		}
+
+		private void complete() {
+			complete(null);
+		}
+
+		private void errorAndComplete(Throwable error) {
+			complete(error);
+		}
+
+		private void complete(Throwable error) {
+			if (error != null) {
+				this.terminalError.compareAndSet(null, error);
+			}
+			this.terminalRequested.set(true);
+			completeIfReady();
+		}
+
+		private void completeIfReady() {
+			Observation current = this.observation.get();
+			if (this.terminalRequested.get() && current != null && this.completed.compareAndSet(false, true)) {
+				Throwable error = this.terminalError.get();
+				if (error != null) {
+					current.error(error);
+				}
+				current.stop();
+			}
+		}
+
 	}
 
 	/**

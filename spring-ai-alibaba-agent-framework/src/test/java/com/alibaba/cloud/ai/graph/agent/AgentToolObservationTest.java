@@ -33,11 +33,16 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.observation.ToolCallingObservationContext;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AgentToolObservationTest {
 
@@ -97,6 +102,73 @@ class AgentToolObservationTest {
 		assertEquals(1, stoppedToolObservations.size());
 	}
 
+	@Test
+	void shouldPropagateParentObservationIntoParallelToolWorkers() throws Exception {
+		ObservationRegistry observationRegistry = ObservationRegistry.create();
+		List<ToolCallingObservationContext> stoppedToolObservations = new CopyOnWriteArrayList<>();
+		observationRegistry.observationConfig()
+			.observationHandler(new ToolObservationCollector(stoppedToolObservations));
+		ReactAgent agent = ReactAgent.builder()
+			.name("parallel_observed_agent")
+			.model(new MultiToolCallingChatModel("first_tool", "second_tool"))
+			.tools(observedTool("first_tool"), observedTool("second_tool"))
+			.parallelToolExecution(true)
+			.observationRegistry(observationRegistry)
+			.build();
+		Observation parent = Observation.start("parent", observationRegistry);
+
+		try (Observation.Scope scope = parent.openScope()) {
+			agent.call("invoke both tools");
+		}
+		finally {
+			parent.stop();
+		}
+
+		assertEquals(2, stoppedToolObservations.size());
+		stoppedToolObservations.forEach(context -> assertSame(parent, context.getParentObservation()));
+	}
+
+	@Test
+	void shouldCompleteParallelToolObservationWhenOuterTimeoutWins() throws Exception {
+		ObservationRegistry observationRegistry = ObservationRegistry.create();
+		List<ToolCallingObservationContext> stoppedToolObservations = new CopyOnWriteArrayList<>();
+		AtomicInteger observedErrors = new AtomicInteger();
+		observationRegistry.observationConfig()
+			.observationHandler(new ToolObservationCollector(stoppedToolObservations, observedErrors));
+		CountDownLatch releaseSlowTool = new CountDownLatch(1);
+		ToolCallback slowTool = FunctionToolCallback.builder("slow_tool", (ObservedRequest request) -> {
+			try {
+				releaseSlowTool.await(2, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+			}
+			return "slow";
+		})
+			.description("Waits until released")
+			.inputType(ObservedRequest.class)
+			.build();
+		ReactAgent agent = ReactAgent.builder()
+			.name("parallel_timeout_agent")
+			.model(new MultiToolCallingChatModel("slow_tool", "fast_tool"))
+			.tools(slowTool, observedTool("fast_tool"))
+			.parallelToolExecution(true)
+			.toolExecutionTimeout(Duration.ofMillis(50))
+			.observationRegistry(observationRegistry)
+			.build();
+
+		try {
+			agent.call("invoke both tools");
+			assertEquals(2, stoppedToolObservations.size());
+			assertEquals(1, observedErrors.get());
+			assertTrue(stoppedToolObservations.stream()
+				.anyMatch(context -> context.getToolDefinition().name().equals("slow_tool")));
+		}
+		finally {
+			releaseSlowTool.countDown();
+		}
+	}
+
 	private static void assertToolObservation(boolean useCompileConfigRegistry) throws Exception {
 		ObservationRegistry observationRegistry = ObservationRegistry.create();
 		List<ToolCallingObservationContext> stoppedToolObservations = new CopyOnWriteArrayList<>();
@@ -127,11 +199,46 @@ class AgentToolObservationTest {
 	}
 
 	private static ToolCallback observedTool() {
-		return FunctionToolCallback.builder("observed_tool",
+		return observedTool("observed_tool");
+	}
+
+	private static ToolCallback observedTool(String name) {
+		return FunctionToolCallback.builder(name,
 				(ObservedRequest request) -> "observed:" + request.value)
 			.description("Returns an observed value")
 			.inputType(ObservedRequest.class)
 			.build();
+	}
+
+	private static class MultiToolCallingChatModel implements ChatModel {
+
+		private final AtomicInteger callCount = new AtomicInteger();
+
+		private final List<String> toolNames;
+
+		private MultiToolCallingChatModel(String... toolNames) {
+			this.toolNames = List.of(toolNames);
+		}
+
+		@Override
+		public ChatResponse call(Prompt prompt) {
+			AssistantMessage response = this.callCount.getAndIncrement() == 0
+					? AssistantMessage.builder()
+						.content("")
+						.toolCalls(this.toolNames.stream()
+							.map(name -> new AssistantMessage.ToolCall("call-" + name, "function", name,
+									"{\"value\":\"hello\"}"))
+							.toList())
+						.build()
+					: new AssistantMessage("done");
+			return new ChatResponse(List.of(new Generation(response)));
+		}
+
+		@Override
+		public Flux<ChatResponse> stream(Prompt prompt) {
+			return Flux.just(call(prompt));
+		}
+
 	}
 
 	private static class ToolCallingChatModel implements ChatModel {
