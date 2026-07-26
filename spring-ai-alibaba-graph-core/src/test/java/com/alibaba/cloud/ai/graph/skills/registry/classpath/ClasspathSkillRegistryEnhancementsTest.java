@@ -27,6 +27,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -58,6 +59,22 @@ class ClasspathSkillRegistryEnhancementsTest {
 		assertFalse(registry.contains("sample-skill"));
 		assertTrue(registry.search("sample").isEmpty());
 		assertThrows(IllegalStateException.class, () -> registry.readSkillContentByPath(skill.getSkillPath()));
+	}
+
+	@Test
+	void classpathRegistryParsesLicenseCompatibilityMetadata(@TempDir Path tempDir) {
+		ClasspathSkillRegistry registry = ClasspathSkillRegistry.builder()
+				.classpathPath("skills")
+				.basePath(tempDir.toString())
+				.build();
+
+		SkillMetadata skill = registry.get("sample-skill").orElseThrow();
+		assertEquals("MIT", skill.getLicense());
+		assertEquals("Spring AI 1.0+", skill.getCompatibility());
+		Map<String, String> metadata = skill.getMetaData();
+		assertEquals(2, metadata.size());
+		assertEquals("1.0", metadata.get("version"));
+		assertEquals("test-author", metadata.get("author"));
 	}
 
 	@Test
