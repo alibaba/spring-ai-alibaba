@@ -41,6 +41,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -446,6 +447,26 @@ class SpringAIJacksonStateSerializerTest {
 		assertEquals("redacted", deserialized.getMetadata().get("custom_map"));
 	}
 
+	@Test
+	void shouldUseConfiguredMetadataCollectionSerializer() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		SimpleModule module = new SimpleModule();
+		module.addSerializer(SecretList.class, new RedactingSerializer<>());
+		objectMapper.registerModule(module);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		SecretList secretList = new SecretList();
+		secretList.add("secret");
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("custom_list", secretList))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		assertEquals("redacted", deserialized.getMetadata().get("custom_list"));
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
@@ -459,6 +480,9 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	private static final class SecretMap extends HashMap<String, Object> {
+	}
+
+	private static final class SecretList extends ArrayList<String> {
 	}
 
 	private static final class RedactingSerializer<T> extends JsonSerializer<T> {

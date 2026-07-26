@@ -33,7 +33,11 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
+import com.fasterxml.jackson.databind.ser.impl.IndexedListSerializer;
+import com.fasterxml.jackson.databind.ser.impl.IndexedStringListSerializer;
+import com.fasterxml.jackson.databind.ser.impl.StringCollectionSerializer;
 import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
+import com.fasterxml.jackson.databind.ser.std.CollectionSerializer;
 import com.fasterxml.jackson.databind.ser.std.MapSerializer;
 
 class SerializationHelper {
@@ -75,6 +79,9 @@ class SerializationHelper {
 			return normalized;
 		}
 		if (value instanceof Collection<?> collection) {
+			if (!isStandardCollectionSerializer(provider.findValueSerializer(collection.getClass()))) {
+				return collection;
+			}
 			List<Object> normalized = new ArrayList<>(collection.size());
 			for (Object item : collection) {
 				normalized.add(normalizeMetadataValue(provider, item));
@@ -121,6 +128,13 @@ class SerializationHelper {
 
 	private static boolean isStandardMapSerializer(Object serializer) {
 		return serializer instanceof MapSerializer;
+	}
+
+	private static boolean isStandardCollectionSerializer(Object serializer) {
+		return serializer instanceof CollectionSerializer
+				|| serializer instanceof IndexedListSerializer
+				|| serializer instanceof IndexedStringListSerializer
+				|| serializer instanceof StringCollectionSerializer;
 	}
 
 	private static boolean hasCustomPropertySerializer(SerializerProvider provider, BeanSerializerBase serializer) {
