@@ -34,6 +34,7 @@ import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCancelledException;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolStateCollector;
 
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -606,13 +607,16 @@ public class AgentToolNode implements NodeActionWithConfig {
 				.toolCallArguments(arguments)
 				.build();
 
-		return ToolCallingObservationDocumentation.TOOL_CALL
-				.observation(null, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, observationRegistry)
-				.observe(() -> {
-					ToolCallResponse response = execution.get();
-					observationContext.setToolCallResult(response.getResult());
-					return response;
-				});
+		Observation observation = ToolCallingObservationDocumentation.TOOL_CALL
+			.observation(null, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, observationRegistry);
+		return observation.observe(() -> {
+			ToolCallResponse response = execution.get();
+			observationContext.setToolCallResult(response.getResult());
+			if (response.isError()) {
+				observation.error(new IllegalStateException(response.getResult()));
+			}
+			return response;
+		});
 	}
 
 	/**
@@ -786,8 +790,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 			else if (cause instanceof ToolExecutionException toolExecutionException) {
 				logger.error("Async tool {} execution failed, handling with processor: {}", request.getToolName(),
 						toolExecutionExceptionProcessor.getClass().getName(), toolExecutionException);
-				String result = toolExecutionExceptionProcessor.process(toolExecutionException);
-				return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), result);
+				return handledToolFailure(request, toolExecutionException);
 			}
 			else {
 				logger.error("Async tool {} execution failed: {}", request.getToolName(), cause.getMessage(), cause);
@@ -828,13 +831,23 @@ public class AgentToolNode implements NodeActionWithConfig {
 		catch (ToolExecutionException e) {
 			logger.error("Tool {} execution failed, handling with processor: {}", request.getToolName(),
 					toolExecutionExceptionProcessor.getClass().getName(), e);
-			String result = toolExecutionExceptionProcessor.process(e);
-			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), result);
+			return handledToolFailure(request, e);
 		}
 		catch (Exception e) {
 			logger.error("Tool {} execution failed: {}", request.getToolName(), e.getMessage(), e);
 			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), e);
 		}
+	}
+
+	private ToolCallResponse handledToolFailure(ToolCallRequest request, ToolExecutionException exception) {
+		String result = toolExecutionExceptionProcessor.process(exception);
+		return ToolCallResponse.builder()
+			.content(result)
+			.toolName(request.getToolName())
+			.toolCallId(request.getToolCallId())
+			.status("error")
+			.metadata(Map.of("error", true, "errorMessage", extractErrorMessage(exception)))
+			.build();
 	}
 
 	/**

@@ -16,10 +16,13 @@
 package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.agent.tools.task.AgentSpec;
+import com.alibaba.cloud.ai.graph.agent.tools.task.AgentSpecReactAgentFactory;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -48,26 +51,58 @@ class AgentToolObservationTest {
 		assertToolObservation(true);
 	}
 
+	@Test
+	void shouldMarkHandledToolFailureOnObservation() throws Exception {
+		ObservationRegistry observationRegistry = ObservationRegistry.create();
+		List<ToolCallingObservationContext> stoppedToolObservations = new CopyOnWriteArrayList<>();
+		AtomicInteger observedErrors = new AtomicInteger();
+		observationRegistry.observationConfig()
+			.observationHandler(new ToolObservationCollector(stoppedToolObservations, observedErrors));
+		ToolCallback failingTool = FunctionToolCallback.builder("failing_tool", (ObservedRequest request) -> {
+			throw new IllegalStateException("tool failed");
+		})
+			.description("Always fails")
+			.inputType(ObservedRequest.class)
+			.build();
+		ReactAgent agent = ReactAgent.builder()
+			.name("failing_tool_agent")
+			.model(new ToolCallingChatModel("failing_tool"))
+			.tools(failingTool)
+			.observationRegistry(observationRegistry)
+			.build();
+
+		agent.call("invoke the failing tool");
+
+		assertEquals(1, stoppedToolObservations.size());
+		assertEquals(1, observedErrors.get());
+	}
+
+	@Test
+	void shouldForwardObservationRegistryFromAgentSpecFactory() throws Exception {
+		ObservationRegistry observationRegistry = ObservationRegistry.create();
+		List<ToolCallingObservationContext> stoppedToolObservations = new CopyOnWriteArrayList<>();
+		observationRegistry.observationConfig()
+			.observationHandler(new ToolObservationCollector(stoppedToolObservations));
+		ToolCallback observedTool = observedTool();
+		ChatClient chatClient = ChatClient.builder(new ToolCallingChatModel(), observationRegistry, null, null).build();
+		AgentSpecReactAgentFactory factory = AgentSpecReactAgentFactory.builder()
+			.chatClient(chatClient)
+			.defaultTools(observedTool)
+			.observationRegistry(observationRegistry)
+			.build();
+
+		ReactAgent agent = factory.create(AgentSpec.of("spec_agent", "test agent", "use the tool"));
+		agent.call("invoke the observed tool");
+
+		assertEquals(1, stoppedToolObservations.size());
+	}
+
 	private static void assertToolObservation(boolean useCompileConfigRegistry) throws Exception {
 		ObservationRegistry observationRegistry = ObservationRegistry.create();
 		List<ToolCallingObservationContext> stoppedToolObservations = new CopyOnWriteArrayList<>();
 		observationRegistry.observationConfig()
-				.observationHandler(new ObservationHandler<ToolCallingObservationContext>() {
-					@Override
-					public void onStop(ToolCallingObservationContext context) {
-						stoppedToolObservations.add(context);
-					}
-
-					@Override
-					public boolean supportsContext(Observation.Context context) {
-						return context instanceof ToolCallingObservationContext;
-					}
-				});
-		ToolCallback observedTool = FunctionToolCallback.builder("observed_tool",
-				(ObservedRequest request) -> "observed:" + request.value)
-			.description("Returns an observed value")
-			.inputType(ObservedRequest.class)
-			.build();
+			.observationHandler(new ToolObservationCollector(stoppedToolObservations));
+		ToolCallback observedTool = observedTool();
 		Builder agentBuilder = ReactAgent.builder()
 			.name("observed_agent")
 			.model(new ToolCallingChatModel())
@@ -91,16 +126,34 @@ class AgentToolObservationTest {
 		assertEquals("\"observed:hello\"", context.getToolCallResult());
 	}
 
+	private static ToolCallback observedTool() {
+		return FunctionToolCallback.builder("observed_tool",
+				(ObservedRequest request) -> "observed:" + request.value)
+			.description("Returns an observed value")
+			.inputType(ObservedRequest.class)
+			.build();
+	}
+
 	private static class ToolCallingChatModel implements ChatModel {
 
 		private final AtomicInteger callCount = new AtomicInteger();
+
+		private final String toolName;
+
+		private ToolCallingChatModel() {
+			this("observed_tool");
+		}
+
+		private ToolCallingChatModel(String toolName) {
+			this.toolName = toolName;
+		}
 
 		@Override
 		public ChatResponse call(Prompt prompt) {
 			AssistantMessage response = callCount.getAndIncrement() == 0
 					? AssistantMessage.builder()
 						.content("")
-						.toolCalls(List.of(new AssistantMessage.ToolCall("call-1", "function", "observed_tool",
+						.toolCalls(List.of(new AssistantMessage.ToolCall("call-1", "function", this.toolName,
 								"{\"value\":\"hello\"}")))
 						.build()
 					: new AssistantMessage("done");
@@ -111,6 +164,30 @@ class AgentToolObservationTest {
 		public Flux<ChatResponse> stream(Prompt prompt) {
 			return Flux.just(call(prompt));
 		}
+	}
+
+	private record ToolObservationCollector(List<ToolCallingObservationContext> observations, AtomicInteger errors)
+			implements ObservationHandler<ToolCallingObservationContext> {
+
+		private ToolObservationCollector(List<ToolCallingObservationContext> observations) {
+			this(observations, new AtomicInteger());
+		}
+
+		@Override
+		public void onError(ToolCallingObservationContext context) {
+			this.errors.incrementAndGet();
+		}
+
+		@Override
+		public void onStop(ToolCallingObservationContext context) {
+			this.observations.add(context);
+		}
+
+		@Override
+		public boolean supportsContext(Observation.Context context) {
+			return context instanceof ToolCallingObservationContext;
+		}
+
 	}
 
 	private static class ObservedRequest {
