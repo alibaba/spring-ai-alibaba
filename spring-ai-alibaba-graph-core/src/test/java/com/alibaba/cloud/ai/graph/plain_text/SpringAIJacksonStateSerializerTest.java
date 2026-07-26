@@ -22,6 +22,12 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -362,12 +368,62 @@ class SpringAIJacksonStateSerializerTest {
 		assertEquals(1, record.size());
 	}
 
+	@Test
+	void shouldPreserveJacksonByteArraySerialization() throws Exception {
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("payload", new byte[] { 1, 2, 3 }))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		assertEquals(List.of("[B", "AQID"), deserialized.getMetadata().get("payload"));
+	}
+
+	@Test
+	void shouldUseConfiguredRecordSerializer() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		SimpleModule module = new SimpleModule();
+		module.addSerializer(RedactedMetadata.class, new JsonSerializer<>() {
+			@Override
+			public void serialize(RedactedMetadata value, JsonGenerator gen, SerializerProvider serializers)
+					throws IOException {
+				gen.writeString("redacted");
+			}
+
+			@Override
+			public void serializeWithType(RedactedMetadata value, JsonGenerator gen, SerializerProvider serializers,
+					TypeSerializer typeSerializer) throws IOException {
+				serialize(value, gen, serializers);
+			}
+		});
+		objectMapper.registerModule(module);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("custom_record", new RedactedMetadata("secret")))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		assertEquals("redacted", deserialized.getMetadata().get("custom_record"));
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
 	}
 
+	private record RedactedMetadata(String value) {
+	}
+
 	private <T> T serializeAndDeserialize(T object) throws IOException, ClassNotFoundException {
+		return serializeAndDeserialize(object, this.serializer);
+	}
+
+	private <T> T serializeAndDeserialize(T object, SpringAIJacksonStateSerializer stateSerializer)
+			throws IOException, ClassNotFoundException {
 		// 将对象包装在Map中进行序列化
 		Map<String, Object> data = new HashMap<>();
 		data.put("object", object);
@@ -375,13 +431,13 @@ class SpringAIJacksonStateSerializerTest {
 		// 序列化
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ObjectOutputStream oos = new ObjectOutputStream(baos);
-		serializer.writeData(data, oos);
+		stateSerializer.writeData(data, oos);
 		oos.flush();
 
 		// 反序列化
 		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
 		ObjectInputStream ois = new ObjectInputStream(bais);
-		Map<String, Object> deserializedData = serializer.readData(ois);
+		Map<String, Object> deserializedData = stateSerializer.readData(ois);
 
 		// 返回反序列化的对象
 		@SuppressWarnings("unchecked")

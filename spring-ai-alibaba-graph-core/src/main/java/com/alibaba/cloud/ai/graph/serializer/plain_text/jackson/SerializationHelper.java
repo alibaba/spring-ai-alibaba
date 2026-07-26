@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import com.fasterxml.jackson.databind.ser.std.BeanSerializerBase;
 
 class SerializationHelper {
 
@@ -75,7 +76,7 @@ class SerializationHelper {
 			}
 			return normalized;
 		}
-		if (value != null && value.getClass().isArray()) {
+		if (value != null && value.getClass().isArray() && !value.getClass().getComponentType().isPrimitive()) {
 			int length = Array.getLength(value);
 			List<Object> normalized = new ArrayList<>(length);
 			for (int i = 0; i < length; i++) {
@@ -84,6 +85,9 @@ class SerializationHelper {
 			return normalized;
 		}
 		if (value instanceof Record record) {
+			if (!(provider.findValueSerializer(record.getClass()) instanceof BeanSerializerBase)) {
+				return record;
+			}
 			Map<String, Object> normalized = new LinkedHashMap<>();
 			List<BeanPropertyDefinition> properties = provider.getConfig()
 				.introspect(provider.constructType(record.getClass()))
