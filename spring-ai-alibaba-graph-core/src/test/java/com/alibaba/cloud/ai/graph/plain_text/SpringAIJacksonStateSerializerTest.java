@@ -62,6 +62,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -476,6 +477,20 @@ class SpringAIJacksonStateSerializerTest {
 		AssistantMessage deserialized = serializeAndDeserialize(message);
 
 		assertEquals(List.of("[B", "AQID"), deserialized.getMetadata().get("payload"));
+	}
+
+	@Test
+	void shouldPreserveOrdinaryObjectArrayType() throws Exception {
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("values", new String[] { "first", "second" }))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		assertTrue(deserialized.getMetadata().get("values") instanceof String[]);
+		assertArrayEquals(new String[] { "first", "second" },
+				(String[]) deserialized.getMetadata().get("values"));
 	}
 
 	@Test

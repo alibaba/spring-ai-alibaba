@@ -118,14 +118,35 @@ class SerializationHelper {
 				return value;
 			}
 			int length = Array.getLength(value);
-			List<Object> normalized = new ArrayList<>(length);
+			Class<?> componentType = value.getClass().getComponentType();
+			Object normalizedArray = Array.newInstance(componentType, length);
+			List<Object> normalizedList = null;
 			for (int i = 0; i < length; i++) {
 				Object item = Array.get(value, i);
-				if (shouldInclude(provider, contentInclusion, item)) {
-					normalized.add(normalizeMetadataValue(provider, item));
+				if (!shouldInclude(provider, contentInclusion, item)) {
+					if (normalizedList == null) {
+						normalizedList = new ArrayList<>(length);
+						for (int j = 0; j < i; j++) {
+							normalizedList.add(Array.get(normalizedArray, j));
+						}
+					}
+					continue;
+				}
+				Object normalizedItem = normalizeMetadataValue(provider, item);
+				if (normalizedList == null && (normalizedItem == null || componentType.isInstance(normalizedItem))) {
+					Array.set(normalizedArray, i, normalizedItem);
+				}
+				else {
+					if (normalizedList == null) {
+						normalizedList = new ArrayList<>(length);
+						for (int j = 0; j < i; j++) {
+							normalizedList.add(Array.get(normalizedArray, j));
+						}
+					}
+					normalizedList.add(normalizedItem);
 				}
 			}
-			return normalized;
+			return normalizedList != null ? normalizedList : normalizedArray;
 		}
 		if (value instanceof Record record) {
 			if (!(provider.findValueSerializer(record.getClass()) instanceof BeanSerializerBase beanSerializer)) {
