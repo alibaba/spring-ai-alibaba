@@ -796,6 +796,63 @@ class SpringAIJacksonStateSerializerTest {
 		assertEquals(Map.of("visible", Map.of("name", "visible")), record.get("results"));
 	}
 
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldPreserveCollectionPositionsWithRecordContentInclusion() throws Exception {
+		List rawResults = new ArrayList();
+		rawResults.add(Map.of("name", "first"));
+		rawResults.add(null);
+		rawResults.add(Map.of("name", "third"));
+		CollectionContentIncludedMetadata metadata = new CollectionContentIncludedMetadata(rawResults);
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("included_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("included_record");
+		List<?> results = (List<?>) record.get("results");
+		assertEquals(3, results.size());
+		assertNull(results.get(1));
+		assertEquals(Map.of("name", "third"), results.get(2));
+	}
+
+	@Test
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	void shouldPreserveModifierAssignedNullSerializer() throws Exception {
+		ObjectMapper objectMapper = new ObjectMapper();
+		SimpleModule module = new SimpleModule();
+		module.setSerializerModifier(new BeanSerializerModifier() {
+			@Override
+			public List<BeanPropertyWriter> changeProperties(SerializationConfig config,
+					BeanDescription beanDesc, List<BeanPropertyWriter> beanProperties) {
+				if (beanDesc.getBeanClass() == NullModifiedMetadata.class) {
+					beanProperties.stream()
+						.filter(property -> property.getName().equals("nullable"))
+						.forEach(property -> property.assignNullSerializer(new RedactingSerializer<>()));
+				}
+				return beanProperties;
+			}
+		});
+		objectMapper.registerModule(module);
+		SpringAIJacksonStateSerializer customSerializer =
+				new SpringAIJacksonStateSerializer(OverAllState::new, objectMapper);
+		List rawResults = List.of(Map.of("name", "visible"));
+		NullModifiedMetadata metadata = new NullModifiedMetadata(null, rawResults);
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("modified_record", metadata))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message, customSerializer);
+
+		Map<String, Object> record =
+				(Map<String, Object>) deserialized.getMetadata().get("modified_record");
+		assertEquals("redacted", record.get("nullable"));
+	}
+
 	private record PrivateMetadata(@JsonProperty("visible_name") String visible,
 			@JsonIgnore String ignored,
 			@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) String secret) {
@@ -820,6 +877,13 @@ class SpringAIJacksonStateSerializerTest {
 
 	@JsonInclude(content = JsonInclude.Include.NON_NULL)
 	private record ContentIncludedMetadata(Map<String, SearchResultMetadata> results) {
+	}
+
+	@JsonInclude(content = JsonInclude.Include.NON_NULL)
+	private record CollectionContentIncludedMetadata(List<SearchResultMetadata> results) {
+	}
+
+	private record NullModifiedMetadata(String nullable, List<SearchResultMetadata> results) {
 	}
 
 	private record RedactedMetadata(String value) {

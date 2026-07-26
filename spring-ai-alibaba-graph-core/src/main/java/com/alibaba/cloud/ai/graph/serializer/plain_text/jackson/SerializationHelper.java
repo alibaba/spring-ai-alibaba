@@ -34,7 +34,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,6 +41,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.fasterxml.jackson.databind.ser.PropertyWriter;
+import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.IndexedListSerializer;
 import com.fasterxml.jackson.databind.ser.impl.IndexedStringListSerializer;
 import com.fasterxml.jackson.databind.ser.impl.StringArraySerializer;
@@ -106,9 +106,7 @@ class SerializationHelper {
 			}
 			List<Object> normalized = new ArrayList<>(collection.size());
 			for (Object item : collection) {
-				if (shouldInclude(provider, contentInclusion, item)) {
-					normalized.add(normalizeMetadataValue(provider, item));
-				}
+				normalized.add(normalizeMetadataValue(provider, item));
 			}
 			return normalized;
 		}
@@ -123,15 +121,6 @@ class SerializationHelper {
 			List<Object> normalizedList = null;
 			for (int i = 0; i < length; i++) {
 				Object item = Array.get(value, i);
-				if (!shouldInclude(provider, contentInclusion, item)) {
-					if (normalizedList == null) {
-						normalizedList = new ArrayList<>(length);
-						for (int j = 0; j < i; j++) {
-							normalizedList.add(Array.get(normalizedArray, j));
-						}
-					}
-					continue;
-				}
 				Object normalizedItem = normalizeMetadataValue(provider, item);
 				if (normalizedList == null && (normalizedItem == null || componentType.isInstance(normalizedItem))) {
 					Array.set(normalizedArray, i, normalizedItem);
@@ -162,7 +151,7 @@ class SerializationHelper {
 			}
 			Map<String, Object> normalized = new LinkedHashMap<>();
 			JsonInclude.Value recordInclusion = getRecordInclusion(provider, record.getClass());
-			Map<String, JsonSerializer<Object>> propertySerializers = getAssignedPropertySerializers(beanSerializer);
+			Map<String, BeanPropertyWriter> propertyWriters = getAssignedPropertyWriters(beanSerializer);
 			for (BeanPropertyDefinition property : properties) {
 				if (!property.couldSerialize()) {
 					continue;
@@ -175,12 +164,22 @@ class SerializationHelper {
 					accessor.fixAccess(provider.isEnabled(MapperFeature.OVERRIDE_PUBLIC_ACCESS_MODIFIERS));
 					Object propertyValue = accessor.getValue(record);
 					if (shouldInclude(provider, recordInclusion.getValueInclusion(), propertyValue)) {
-						JsonSerializer<Object> propertySerializer = propertySerializers.get(property.getName());
-						Object normalizedValue = propertySerializer != null && propertyValue != null
-								? applyPropertySerializer(provider, propertySerializer, propertyValue)
-								: normalizeMetadataValue(provider, propertyValue,
-										recordInclusion.getContentInclusion());
-						normalized.put(property.getName(), normalizedValue);
+						BeanPropertyWriter propertyWriter = propertyWriters.get(property.getName());
+						boolean hasAssignedSerializer = propertyWriter != null
+								&& (propertyValue == null
+										? propertyWriter.hasNullSerializer()
+										: propertyWriter.hasSerializer());
+						if (hasAssignedSerializer) {
+							SerializedProperty serialized = applyPropertyWriter(provider, propertyWriter, record);
+							if (serialized.present()) {
+								normalized.put(property.getName(), serialized.value());
+							}
+						}
+						else {
+							normalized.put(property.getName(),
+									normalizeMetadataValue(provider, propertyValue,
+											recordInclusion.getContentInclusion()));
+						}
 					}
 				}
 				catch (IllegalArgumentException ex) {
@@ -338,28 +337,40 @@ class SerializationHelper {
 		return !effectiveNames.equals(declaredNames);
 	}
 
-	private static Map<String, JsonSerializer<Object>> getAssignedPropertySerializers(BeanSerializerBase serializer) {
-		Map<String, JsonSerializer<Object>> serializers = new LinkedHashMap<>();
+	private static Map<String, BeanPropertyWriter> getAssignedPropertyWriters(BeanSerializerBase serializer) {
+		Map<String, BeanPropertyWriter> writers = new LinkedHashMap<>();
 		var properties = serializer.properties();
 		while (properties.hasNext()) {
 			PropertyWriter property = properties.next();
-			if (property instanceof com.fasterxml.jackson.databind.ser.BeanPropertyWriter beanProperty
-					&& beanProperty.getSerializer() != null) {
-				serializers.put(property.getName(), beanProperty.getSerializer());
+			if (property instanceof BeanPropertyWriter beanProperty
+					&& (beanProperty.hasSerializer() || beanProperty.hasNullSerializer())) {
+				writers.put(property.getName(), beanProperty);
 			}
 		}
-		return serializers;
+		return writers;
 	}
 
-	private static Object applyPropertySerializer(SerializerProvider provider,
-			JsonSerializer<Object> serializer, Object value) throws IOException {
+	private static SerializedProperty applyPropertyWriter(SerializerProvider provider,
+			BeanPropertyWriter writer, Record record) throws IOException {
 		ObjectCodec codec = provider.getGenerator().getCodec();
 		try (TokenBuffer buffer = new TokenBuffer(codec, false)) {
-			serializer.serialize(value, buffer, provider);
+			buffer.writeStartObject();
+			try {
+				writer.serializeAsField(record, buffer, provider);
+			}
+			catch (Exception ex) {
+				throw new IOException("Failed to apply serializer for metadata property " + writer.getName(), ex);
+			}
+			buffer.writeEndObject();
 			try (JsonParser parser = buffer.asParser(codec)) {
-				return codec.readValue(parser, Object.class);
+				Map<?, ?> serialized = codec.readValue(parser, Map.class);
+				return new SerializedProperty(serialized.containsKey(writer.getName()),
+						serialized.get(writer.getName()));
 			}
 		}
+	}
+
+	private record SerializedProperty(boolean present, Object value) {
 	}
 
 	private static boolean hasNonStructuralJacksonAnnotation(Iterable<Annotation> annotations) {
