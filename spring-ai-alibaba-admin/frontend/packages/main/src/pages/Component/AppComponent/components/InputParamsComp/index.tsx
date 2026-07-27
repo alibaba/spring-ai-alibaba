@@ -50,9 +50,10 @@ interface IInputCompItemProps {
 
 export function InputCompItem(props: IInputCompItemProps) {
   const [expand, setExpand] = useState(true);
+  const params = props.params || [];
   const changeRowItem = (payload: Partial<IParamItem>, ind: number) => {
     props.onChange(
-      props.params.map((item, index) => ({
+      params.map((item, index) => ({
         ...item,
         ...(ind === index ? payload : {}),
       })),
@@ -125,7 +126,7 @@ export function InputCompItem(props: IInputCompItemProps) {
               })}
             </span>
           </Flex>
-          {props.params.map((item, index) => (
+          {params.map((item, index) => (
             <Flex
               key={`${item.field}_${index}`}
               className={styles['form-row-item']}
@@ -258,8 +259,11 @@ export function InputCompItem(props: IInputCompItemProps) {
 }
 
 export default function InputParamsComp(props: IProps) {
+  const userParams = props.input?.user_params || [];
+  const systemParams = props.input?.system_params || [];
+
   const handleChangeUserParams = (params: IParamItem[], code: string) => {
-    const newUserParams = props.input.user_params.map((item) => {
+    const newUserParams = userParams.map((item) => {
       if (item.code === code)
         return {
           ...item,
@@ -274,7 +278,7 @@ export default function InputParamsComp(props: IProps) {
 
   return (
     <Flex vertical gap={20}>
-      {props.input.user_params.map((item) => (
+      {userParams.map((item) => (
         <InputCompItem
           onChange={(val) => handleChangeUserParams(val, item.code)}
           name={item.name}
@@ -289,7 +293,7 @@ export default function InputParamsComp(props: IProps) {
           dm: '系统参数',
         })}
         onChange={(val) => props.onChange({ system_params: val })}
-        params={props.input.system_params}
+        params={systemParams}
         disabled={props.disabled}
       />
     </Flex>

@@ -16,46 +16,58 @@ export default (props: {
   return (
     <Flex
       justify="space-between"
+      align="center"
+      gap={8}
       style={{ background: 'var(--ag-ant-color-fill-tertiary)' }}
-      className="w-full height-[32px] rounded-[6px] p-[6px_12px]"
+      className="w-full rounded-[8px] px-[12px] py-[8px]"
     >
       <Flex
-        gap={4}
-        className="flex flex-1 items-center title"
-        style={{ width: 'calc(100% - 24px)' }}
+        gap={8}
+        align="center"
+        className="flex-1 min-w-0"
+        style={{ width: 0 }}
       >
-        <IconFont type={props.iconType} size="small"></IconFont>
+        <IconFont type={props.iconType} size="small" />
         <Typography.Text
           ellipsis={{ tooltip: renderTooltip(props.name) }}
-          style={{ color: 'var(--ag-ant-color-text-base)', width: '112px' }}
-          className="text-[12px] text-normal leading-[20px]"
+          style={{
+            color: 'var(--ag-ant-color-text-base)',
+            maxWidth: 140,
+            flexShrink: 0,
+          }}
+          className="text-[12px] leading-[20px]"
         >
           {props.name}
         </Typography.Text>
-        <Typography.Text
-          style={{
-            width: 'calc(100% - 140px)',
-            color: 'var(--ag-ant-color-text-tertiary)',
-          }}
-          ellipsis={{ tooltip: renderTooltip(props?.description || '') }}
-        >
-          {props?.description}
-        </Typography.Text>
-        <Popover content={props.weightInfo?.description}>
+        {props.description ? (
           <Typography.Text
             style={{
-              color: 'var(--ag-ant-color-text-description)',
-              fontSize: '12px',
-              flexShrink: 0,
-              marginRight: '12px',
+              flex: 1,
+              minWidth: 0,
+              color: 'var(--ag-ant-color-text-tertiary)',
             }}
+            ellipsis={{ tooltip: renderTooltip(props.description) }}
+            className="text-[12px] leading-[20px]"
           >
-            {props.weightInfo?.label}
-            {props.weightInfo?.value}
+            {props.description}
           </Typography.Text>
-        </Popover>
+        ) : null}
+        {props.weightInfo ? (
+          <Popover content={props.weightInfo.description}>
+            <Typography.Text
+              style={{
+                color: 'var(--ag-ant-color-text-description)',
+                fontSize: 12,
+                flexShrink: 0,
+              }}
+            >
+              {props.weightInfo.label}
+              {props.weightInfo.value}
+            </Typography.Text>
+          </Popover>
+        ) : null}
       </Flex>
-      {props.rightArea}
+      <div style={{ flexShrink: 0 }}>{props.rightArea}</div>
     </Flex>
   );
 };

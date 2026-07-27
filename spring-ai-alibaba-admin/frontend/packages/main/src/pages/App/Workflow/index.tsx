@@ -587,6 +587,7 @@ function Workflow() {
         <InnerLayout
           loading={state.loading}
           fullScreen={true}
+          styles={{ contentArea: { padding: 0 } }}
           activeTab={activeTab}
           onTabChange={(val) => {
             setActiveTab(val);

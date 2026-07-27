@@ -1,18 +1,23 @@
 .overview-container {
-  width: 80%;
-  max-width: 1200px;
-  padding: 40px 0;
+  width: 100%;
+  max-width: 960px;
+  padding: 16px 0 24px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .loading {
-  padding: 24px;
+  padding: 24px 0;
   color: var(--ag-ant-color-text-secondary);
   font-size: 14px;
 }
 
 .info-item {
   margin-bottom: 20px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 
   .info-label {
     font-size: 14px;
@@ -39,7 +44,7 @@
 
   .code-container {
     overflow: auto;
-    width: 90%;
+    width: 100%;
 
     .code-block {
       padding: 0;

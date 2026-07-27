@@ -30,7 +30,7 @@ export default function OutputParamsComp(props: IProps) {
           })}
         </span>
       </Flex>
-      {props.output.map((item, index) => (
+      {(props.output || []).map((item, index) => (
         <Flex gap={8} key={index}>
           <Input className="flex-1" value={item.field} disabled />
           <Input className="flex-1" value={item.type} disabled />

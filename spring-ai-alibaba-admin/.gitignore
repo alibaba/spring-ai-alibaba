@@ -44,6 +44,12 @@ docker/middleware/nacos/*
 docker/middleware/redis/*
 docker/middleware/rocketmq/*
 
+# Local saa-admin deployment runtime data (owned by container UIDs)
+docker/saa-admin/data/
+docker/saa-admin/.env
+docker/saa-admin/**/*.rdb
+docker/saa-admin/**/*.aof
+
 
 # windows os
 /extensions/

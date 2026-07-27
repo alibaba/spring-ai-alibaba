@@ -87,6 +87,7 @@ const generateAgentConfig = () => {
     tools: {}, // plugin tools
     file_search: {},
     mcp_servers: [], // mcp servers
+    skills: [], // agent skills
     agent_components: [], // agent components
     workflow_components: [], // workflow components
   };

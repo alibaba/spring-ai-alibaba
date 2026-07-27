@@ -6,6 +6,7 @@ import { IKnowledgeListItem } from './knowledge';
 import { IMcpServer } from './mcp';
 import { IModel } from './modelService';
 import { PluginTool } from './plugin';
+import { ISkill } from './skill';
 import { IBizEdge, IBizNode } from './workflow';
 
 // Application status mapping (keep i18n strings as is)
@@ -138,6 +139,7 @@ export interface IAssistantConfig {
     similarity_threshold?: number; // Similarity threshold
   };
   mcp_servers?: { id: string }[]; // MCP servers
+  skills?: { id: string }[]; // Agent skills
   agent_components?: string[]; // Agent components
   workflow_components?: string[]; // Workflow components
   modality_type?: ModalityType; // Interaction modality type
@@ -154,6 +156,7 @@ export interface IAssistantConfigWithInfos
     | 'model'
     | 'tools'
     | 'mcp_servers'
+    | 'skills'
     | 'agent_components'
     | 'workflow_components'
     | 'file_search'
@@ -161,6 +164,7 @@ export interface IAssistantConfigWithInfos
   model?: IModel;
   tools?: PluginTool[];
   mcp_servers?: IMcpServer[];
+  skills?: ISkill[];
   agent_components?: IAppComponentListItem[];
   workflow_components?: IAppComponentListItem[];
   file_search?: IAssistantConfig['file_search'] & {

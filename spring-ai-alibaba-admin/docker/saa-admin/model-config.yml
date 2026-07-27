@@ -1,0 +1,52 @@
+models:
+  - id: 1
+    name: DeepSeek-V4-Flash
+    provider: openai
+    modelName: DeepSeek-V4-Flash
+    baseUrl: https://seeapi.zhidaoauto.com
+    apiKey: ${SEEAPI_API_KEY}
+    status: 1
+    defaultParameters:
+      temperature: 0.7
+      maxTokens: 8192
+    supportedParameters:
+      - name: temperature
+        type: number
+        minValue: 0
+        maxValue: 2
+        defaultValue: 0.7
+        required: false
+        description: 采样温度
+      - name: maxTokens
+        type: number
+        minValue: 1
+        maxValue: 8192
+        defaultValue: 4096
+        required: false
+        description: 最大输出token
+
+  - id: 2
+    name: MiniMax-M2.7
+    provider: openai
+    modelName: MiniMax-M2.7
+    baseUrl: https://seeapi.zhidaoauto.com
+    apiKey: ${SEEAPI_API_KEY}
+    status: 1
+    defaultParameters:
+      temperature: 0.7
+      maxTokens: 8192
+    supportedParameters:
+      - name: temperature
+        type: number
+        minValue: 0
+        maxValue: 2
+        defaultValue: 0.7
+        required: false
+        description: 采样温度
+      - name: maxTokens
+        type: number
+        minValue: 1
+        maxValue: 8192
+        defaultValue: 4096
+        required: false
+        description: 最大输出token

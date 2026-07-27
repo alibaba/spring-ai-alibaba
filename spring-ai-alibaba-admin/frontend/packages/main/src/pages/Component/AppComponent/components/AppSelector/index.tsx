@@ -46,14 +46,16 @@ export const APP_ICON_IMAGE = {
 
 export default function AppSelector(props: IProps) {
   const navigate = useNavigate();
+  const list = props.list || [];
+
   const memoList = useMemo(() => {
     if (!props.value || (Array.isArray(props.value) && !props.value.length))
-      return props.list.map((item) => ({
+      return list.map((item) => ({
         ...item,
         isSelected: false,
       }));
 
-    return props.list.map((item) => {
+    return list.map((item) => {
       const isSelected = Array.isArray(props.value)
         ? props.value.includes(item.app_id)
         : props.value === item.app_id;
@@ -62,10 +64,10 @@ export default function AppSelector(props: IProps) {
         isSelected,
       };
     });
-  }, [props.value, props.list]);
+  }, [props.value, list]);
 
   if (props.loading) return <Spin className="loading-center" spinning />;
-  if (!props.list.length)
+  if (!list.length)
     return (
       <div className="loading-center">
         <Empty
@@ -224,8 +226,8 @@ export function AppSelectorModalByAppComponent(props: IAppModalProps) {
     })
       .then((res) => {
         setState({
-          list: res.records,
-          total: res.total,
+          list: res?.records || [],
+          total: res?.total || 0,
           loading: false,
         });
       })
@@ -257,8 +259,8 @@ export function AppSelectorModalByAppComponent(props: IAppModalProps) {
         dm: '选择应用',
       })}
     >
-      <Flex vertical gap={12}>
-        <Flex justify="space-between" align="center">
+      <Flex vertical gap={0}>
+        <Flex justify="space-between" align="flex-start">
           <Search
             className={styles.search}
             value={state.app_name}

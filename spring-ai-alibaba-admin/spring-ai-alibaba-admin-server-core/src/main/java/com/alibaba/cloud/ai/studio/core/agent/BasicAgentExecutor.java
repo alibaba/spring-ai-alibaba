@@ -35,14 +35,18 @@ import com.alibaba.cloud.ai.studio.runtime.domain.knowledgebase.DocumentChunk;
 import com.alibaba.cloud.ai.studio.runtime.utils.JsonUtils;
 import com.alibaba.cloud.ai.studio.core.base.service.McpServerService;
 import com.alibaba.cloud.ai.studio.core.base.service.PluginService;
+import com.alibaba.cloud.ai.studio.core.base.service.SkillService;
 import com.alibaba.cloud.ai.studio.core.base.service.ToolExecutionService;
 import com.alibaba.cloud.ai.studio.core.config.CommonConfig;
+import com.alibaba.cloud.ai.studio.core.config.StudioProperties;
 import com.alibaba.cloud.ai.studio.core.context.RequestContextHolder;
 import com.alibaba.cloud.ai.studio.core.model.llm.ModelFactory;
 import com.alibaba.cloud.ai.studio.core.base.manager.AppComponentManager;
 import com.alibaba.cloud.ai.studio.core.base.manager.DocumentRetrieverManager;
 import com.alibaba.cloud.ai.studio.core.base.manager.FileManager;
 import com.alibaba.cloud.ai.studio.core.rag.advisor.KnowledgeBaseRetrievalAdvisor;
+import com.alibaba.cloud.ai.studio.core.agent.skill.SkillPromptSupport;
+import com.alibaba.cloud.ai.studio.core.agent.skill.WorkspaceSkillRegistry;
 import com.alibaba.cloud.ai.studio.core.agent.tool.AgentToolCallback;
 import com.alibaba.cloud.ai.studio.core.agent.tool.CompositeToolCallbackProvider;
 import com.alibaba.cloud.ai.studio.core.agent.tool.ToolArgumentsHelper;
@@ -130,6 +134,12 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 
 	/** Manager for file operations */
 	private final FileManager fileManager;
+
+	/** Service for managing skills */
+	private final SkillService skillService;
+
+	/** Studio storage properties */
+	private final StudioProperties studioProperties;
 
 	/**
 	 * Executes the agent request in streaming mode
@@ -313,8 +323,10 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 
 		List<Message> messages = new ArrayList<>();
 		List<ChatMessage> chatMessages = request.getMessages();
-		if (StringUtils.isNotBlank(config.getInstructions())
-				&& !MessageRole.SYSTEM.getValue().equals(chatMessages.get(0).getRole().getValue())) {
+		boolean hasSystemMessage = !CollectionUtils.isEmpty(chatMessages)
+				&& MessageRole.SYSTEM.getValue().equals(chatMessages.get(0).getRole().getValue());
+		boolean hasSkills = !CollectionUtils.isEmpty(config.getSkills());
+		if ((StringUtils.isNotBlank(config.getInstructions()) || hasSkills) && !hasSystemMessage) {
 			Message message = buildInstructions(context, config.getInstructions());
 			messages.add(message);
 		}
@@ -367,6 +379,17 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 			}
 		}
 
+		// Progressive disclosure for attached skills
+		if (!CollectionUtils.isEmpty(config.getSkills())) {
+			List<String> skillIds = config.getSkills()
+				.stream()
+				.map(AgentConfig.SkillRef::getId)
+				.filter(Objects::nonNull)
+				.toList();
+			WorkspaceSkillRegistry registry = new WorkspaceSkillRegistry(studioProperties, skillService.getSkills(skillIds));
+			instructions = SkillPromptSupport.appendToInstructions(instructions, registry);
+		}
+
 		// Handle custom prompt variables
 		List<AgentConfig.PromptVariable> promptVariables = config.getPromptVariables();
 		Map<String, Object> map = new HashMap<>();
@@ -400,6 +423,10 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 			return new SystemMessage(instructions);
 		}
 
+		// Avoid SystemPromptTemplate interpreting `{...}` inside skill prompt sections
+		if (map.isEmpty() || !CollectionUtils.isEmpty(config.getSkills())) {
+			return new SystemMessage(StringUtils.defaultString(instructions));
+		}
 		return new SystemPromptTemplate(instructions).createMessage(map);
 	}
 
@@ -656,7 +683,7 @@ public class BasicAgentExecutor extends AbstractAgentExecutor {
 	private CompositeToolCallbackProvider buildToolCallbackProvider(AgentConfig config,
 			Map<String, Object> extraParams) {
 		return new CompositeToolCallbackProvider(config, pluginService, toolExecutionService, mcpServerService,
-				appComponentManager, extraParams);
+				appComponentManager, skillService, studioProperties, extraParams);
 	}
 
 	private Flux<AgentResponse> processToolCallsRecursively(ChatClient.Builder chatClientBuilder, ChatResponse response,

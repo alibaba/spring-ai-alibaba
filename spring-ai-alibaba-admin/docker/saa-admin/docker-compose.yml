@@ -1,0 +1,305 @@
+# Spring AI Alibaba Admin — full stack for this host
+# Avoids host port conflicts with WeKnora / Nuwax / Docmost.
+# Access: http://172.30.10.28:9080/admin
+
+name: saa-admin
+
+services:
+  mysql:
+    container_name: saa-mysql
+    restart: always
+    image: sca-registry.cn-hangzhou.cr.aliyuncs.com/dubbo/mysql:8.0.35
+    user: "${UID}:${GID}"
+    env_file:
+      - ./mysql.env
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./conf/mysql:/etc/mysql/conf.d
+      - ./init/mysql:/docker-entrypoint-initdb.d/
+    ports:
+      - "13316:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    networks:
+      - saa-net
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.1.2
+    container_name: saa-elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - cluster.name=saa-es-cluster
+      - node.name=saa-es-node-1
+      - bootstrap.memory_lock=true
+      - http.cors.enabled=true
+      - http.cors.allow-origin="*"
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "19200:9200"
+      - "19300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    networks:
+      - saa-net
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.1.2
+    container_name: saa-kibana
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+    ports:
+      - "15601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - saa-net
+
+  elasticsearch-init:
+    image: curlimages/curl:latest
+    container_name: saa-elasticsearch-init
+    restart: "no"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - ./init/elasticsearch:/scripts
+    working_dir: /scripts
+    command: ["sh", "init-indices.sh"]
+    networks:
+      - saa-net
+
+  loongcollector:
+    image: sls-opensource-registry.cn-shanghai.cr.aliyuncs.com/loongcollector-community-edition/loongcollector:3.1.4
+    container_name: saa-loongcollector
+    restart: always
+    depends_on:
+      elasticsearch-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./conf/loongcollector:/usr/local/loongcollector/conf/continuous_pipeline_config/local
+    ports:
+      # OTLP HTTP for agent apps on LAN
+      - "${LAN_IP}:14318:4318"
+    networks:
+      - saa-net
+
+  nacos:
+    container_name: saa-nacos
+    restart: always
+    image: nacos/nacos-server:v2.4.3
+    ports:
+      - "17080:8080"
+      - "17848:8848"
+      - "19848:9848"
+    environment:
+      - MODE=standalone
+      - NACOS_AUTH_TOKEN=dG9rZW5hbHNka2ZqbGFza2RqZmxhc2tkamZsYXNrZGpmb3dpZWpmbztzZGxm
+      - NACOS_AUTH_IDENTITY_KEY=admin
+      - NACOS_AUTH_IDENTITY_VALUE=admin
+      - JVM_XMS=256m
+      - JVM_XMX=512m
+    volumes:
+      - ./data/nacos/logs:/home/nacos/logs
+      - ./data/nacos/data:/home/nacos/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - saa-net
+
+  redis:
+    restart: always
+    image: redis:7.2.5
+    container_name: saa-redis
+    ports:
+      - "16380:6379"
+    volumes:
+      - ./data/redis:/data
+    command: redis-server
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - saa-net
+
+  rmq-namesrv:
+    image: apache/rocketmq:5.3.2
+    container_name: saa-rmq-namesrv
+    restart: always
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+      - NAMESRV_ADDR=rmq-namesrv:9876
+      - HEAP_OPTS=-Xms128M -Xmx256M -Xmn128M
+    ports:
+      - "19876:9876"
+    networks:
+      - saa-net
+    command: sh mqnamesrv
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ps aux | grep mqnamesrv | grep -v grep || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  rmq-broker:
+    image: apache/rocketmq:5.3.2
+    container_name: saa-rmq-broker
+    restart: always
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+      - NAMESRV_ADDR=rmq-namesrv:9876
+      - HEAP_OPTS=-Xms256M -Xmx512M -Xmn256M -XX:MaxDirectMemorySize=128M
+    volumes:
+      - ./data/rocketmq/store:/home/rocketmq/store
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    depends_on:
+      rmq-namesrv:
+        condition: service_healthy
+    networks:
+      - saa-net
+    command: sh mqbroker
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ps aux | grep mqbroker | grep -v grep || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  rmq-proxy:
+    image: apache/rocketmq:5.3.2
+    container_name: saa-rmq-proxy
+    restart: always
+    volumes:
+      - ./conf/rocketmq:/home/rocketmq/conf
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+      - NAMESRV_ADDR=rmq-namesrv:9876
+      - HEAP_OPTS=-Xms128M -Xmx256M -Xmn128M
+    networks:
+      - saa-net
+    depends_on:
+      rmq-broker:
+        condition: service_healthy
+      rmq-namesrv:
+        condition: service_healthy
+    ports:
+      - "18080:18080"
+      - "18081:18081"
+    command: sh mqproxy -pc /home/rocketmq/conf/rmq-proxy.json
+
+  init-topic:
+    image: apache/rocketmq:5.3.2
+    container_name: saa-rmq-init-topic
+    restart: "no"
+    depends_on:
+      rmq-namesrv:
+        condition: service_healthy
+      rmq-broker:
+        condition: service_healthy
+    networks:
+      - saa-net
+    entrypoint: >
+      sh -c "
+        echo 'Waiting for RocketMQ...' &&
+        sleep 30 &&
+        until sh mqadmin clusterList -n rmq-namesrv:9876; do
+          echo 'Waiting for RocketMQ cluster...' &&
+          sleep 10
+        done &&
+        sh mqadmin updateTopic -n rmq-namesrv:9876 -t topic_saa_studio_document_index -c DefaultCluster -a +message.type=NORMAL &&
+        sh mqadmin updateSubGroup -n rmq-namesrv:9876 -g group_saa_studio_document_index -c DefaultCluster &&
+        echo 'Topic creation completed'
+      "
+
+  admin:
+    container_name: saa-admin
+    restart: always
+    build:
+      context: ../..
+      dockerfile: spring-ai-alibaba-admin-server-start/Dockerfile
+    image: spring-ai-admin-server:local
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      rmq-proxy:
+        condition: service_started
+    ports:
+      # LAN access — 8080 is used by WeKnora
+      - "${LAN_IP}:${ADMIN_HOST_PORT}:8080"
+    environment:
+      - TZ=${TZ:-Asia/Shanghai}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/admin?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch:9200
+      - SPRING_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - NACOS_SERVER_ADDR=nacos:8848
+      - ROCKETMQ_ENDPOINTS=rmq-proxy:18080
+      - MANAGEMENT_OTLP_TRACING_EXPORT_ENDPOINT=http://loongcollector:4318/v1/traces
+      - MODEL_CONFIG_FILE=/app/model-config.yml
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
+      - SEEAPI_API_KEY=${SEEAPI_API_KEY:-}
+      - SPRING_AI_ALIBABA_STUDIO_STORAGE_PATH=/app/storage
+    volumes:
+      - ./model-config.yml:/app/model-config.yml:ro
+      - ./data/admin-storage:/app/storage
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+    networks:
+      - saa-net
+
+volumes:
+  elasticsearch_data:
+    driver: local
+
+networks:
+  saa-net:
+    driver: bridge
+    name: saa-admin-net

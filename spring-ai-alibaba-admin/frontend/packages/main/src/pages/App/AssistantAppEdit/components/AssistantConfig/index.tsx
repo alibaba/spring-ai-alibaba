@@ -16,6 +16,7 @@ import HistoryPanelComp from '../HistoryPanel/HistoryPanelComp';
 import KnowledgeBaseSelectorComp from '../KnowledgeSelectorComp';
 import MCPSelectorComp from '../MCPSelectorComp';
 import PluginSelectorComp from '../PluginSelectorComp';
+import SkillSelectorComp from '../SkillSelectorComp';
 import WorkFlowSelectorComp from '../WorkFlowSelectorComp';
 import styles from './index.module.less';
 import ModelConfig from './modelConfig';
@@ -90,12 +91,16 @@ export default function AssistantConfig() {
           defaultSizePercentage={widthLayout.leftWidth}
           id={getUniqueId().left}
           order={1}
-          style={{ overflowY: 'auto' }}
+          style={{
+            overflowY: 'auto',
+            background: 'var(--ag-ant-color-bg-base)',
+          }}
         >
           <ConfigProvider componentDisabled={appState.readonly}>
-            <div className="p-[8px_20px]">
+            <div className={styles.configHeader}>
               <Flex
                 justify="space-between"
+                align="center"
                 className={classNames(styles.title, 'w-full')}
               >
                 {$i18n.get({
@@ -103,13 +108,15 @@ export default function AssistantConfig() {
                   dm: 'API配置',
                 })}
 
-                <ModelConfig></ModelConfig>
+                <div className={styles.modelConfigWrap}>
+                  <ModelConfig></ModelConfig>
+                </div>
               </Flex>
             </div>
             <div className={styles.configTimelineContainer}>
               <Timeline
                 className={styles.configTimeline}
-                style={{ padding: '0 20px', marginTop: 8 }}
+                style={{ padding: '8px 24px 24px', marginTop: 0 }}
                 items={compact([
                 {
                   children: (
@@ -175,6 +182,7 @@ export default function AssistantConfig() {
                       </div>
                       <MCPSelectorComp />
                       <PluginSelectorComp />
+                      <SkillSelectorComp />
                       <AgentSelectorComp />
                       <WorkFlowSelectorComp />
                     </div>

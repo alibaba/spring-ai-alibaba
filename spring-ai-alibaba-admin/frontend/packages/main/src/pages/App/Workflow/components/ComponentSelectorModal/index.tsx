@@ -144,7 +144,7 @@ export default function ComponentSelectorModal(
             options={tabs}
           />
         </div>
-        <Flex className="px-[24px]" justify="space-between">
+        <Flex className="px-[24px] mb-[24px]" justify="space-between" align="center">
           <Input.Search
             className={styles.search}
             value={state.name}

@@ -22,7 +22,6 @@ export default function () {
 
   return (
     <CardList
-      className="pt-[20px]"
       loading={loading}
       emptyAction={
         <Button

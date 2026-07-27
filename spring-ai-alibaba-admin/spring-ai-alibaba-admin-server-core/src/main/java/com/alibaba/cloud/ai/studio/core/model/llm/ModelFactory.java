@@ -119,11 +119,13 @@ public class ModelFactory {
 		ModelCredential credential = getModelCredential(searchOptions.getRerankProvider(),
 				searchOptions.getRerankModel());
 
+		int topN = searchOptions.getTopK() != null ? searchOptions.getTopK() : 3;
+
 		return DashscopeReranker.builder()
 			.dashscopeApi(DashScopeApi.builder().apiKey(credential.getApiKey()).build())
 			.options(DashScopeRerankerOptions.builder()
 				.returnDocuments(false)
-				.topN(searchOptions.getTopK())
+				.topN(topN)
 				.model(searchOptions.getRerankModel())
 				.build())
 			.build();

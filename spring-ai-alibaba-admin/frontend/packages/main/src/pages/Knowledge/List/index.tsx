@@ -7,7 +7,6 @@ import { IGetKnowledgeListParams } from '@/types/knowledge';
 import { AlertDialog, Button, IconFont } from '@spark-ai/design';
 import { useMount, useSetState } from 'ahooks';
 import { Flex } from 'antd';
-import classNames from 'classnames';
 import { useRef } from 'react';
 import { history } from 'umi';
 import KnowledgeCard from './components/Card';
@@ -152,7 +151,7 @@ export default function () {
             })}
             value={state.name}
             onChange={(val) => setState({ name: val })}
-            className={classNames(styles['search'], 'mx-[20px] my-[16px]')}
+            className={styles['search']}
             onSearch={handleSearch}
           />
         )}

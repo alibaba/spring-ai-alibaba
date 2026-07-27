@@ -757,6 +757,7 @@
   "main.pages.Component.Plugin.components.OutputParamsConfig.index.type": "类型",
   "main.pages.Component.Plugin.components.OutputParamsConfig.index.addOutputParameter": "增加出参",
   "main.pages.Component.index.plugin": "插件",
+  "main.pages.Component.index.skill": "Skills",
   "main.pages.Component.index.workflow": "工作流",
   "main.pages.Component.index.intelligentAgent": "智能体",
   "main.pages.Component.index.componentManagement": "组件管理",

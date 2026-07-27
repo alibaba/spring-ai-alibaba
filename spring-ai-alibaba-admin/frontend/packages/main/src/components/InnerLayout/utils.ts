@@ -60,13 +60,15 @@ export const useInnerLayout = (): {
 
   // Special handling for bottom area - wrap content in a div
   const bottomPortal = (children: React.ReactNode) => {
-    // Default styles
     const style: React.CSSProperties = {
       backgroundColor: 'var(--ag-ant-color-bg-base)',
       borderTop: '1px solid var(--ag-ant-color-border-secondary)',
-      padding: '16px 24px',
+      padding: '12px 20px',
       display: 'flex',
       gap: 8,
+      alignItems: 'center',
+      width: '100%',
+      boxSizing: 'border-box',
     };
 
     return baseBottomPortal(

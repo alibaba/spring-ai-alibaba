@@ -34,6 +34,8 @@ public interface CacheConstants {
 	/** Cache key prefix for plugin and workspace */
 	String CACHE_PLUGIN_WORKSPACE_ID_PREFIX = "plugin:%s:%s";
 
+	String CACHE_SKILL_WORKSPACE_ID_PREFIX = "skill:%s:%s";
+
 	/** Cache key prefix for tool and workspace */
 	String CACHE_TOOL_WORKSPACE_ID_PREFIX = "tool:%s:%s";
 

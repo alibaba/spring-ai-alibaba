@@ -757,6 +757,7 @@
   "main.pages.Component.Plugin.components.OutputParamsConfig.index.type": "タイプ",
   "main.pages.Component.Plugin.components.OutputParamsConfig.index.addOutputParameter": "出力パラメータを追加",
   "main.pages.Component.index.plugin": "プラグイン",
+  "main.pages.Component.index.skill": "Skills",
   "main.pages.Component.index.workflow": "ワークフロー",
   "main.pages.Component.index.intelligentAgent": "インテリジェントエージェント",
   "main.pages.Component.index.componentManagement": "コンポーネント管理",
