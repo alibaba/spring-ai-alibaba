@@ -384,6 +384,13 @@ public interface JacksonDeserializer<T> {
 				if (PRIMITIVE_WRAPPER_TYPES.contains(className)) {
 					return convertPrimitiveWrapperType(className, payload);
 				}
+				// Jackson's WRAPPER_ARRAY default typing writes some primitive arrays with a
+				// scalar payload rather than a JSON array: byte[] becomes a base64 string and
+				// char[] becomes a plain string. Detect these so they round-trip as the
+				// original array type instead of degrading to a List of [typeId, payload].
+				if ((className.startsWith("[") || className.endsWith("[]")) && !payload.isNull()) {
+					return instantiateScalarPayloadArray(className, payload, objectMapper);
+				}
 			}
 
 			if (payload.isArray()) {
@@ -480,6 +487,29 @@ public interface JacksonDeserializer<T> {
 		}
 		catch (ClassNotFoundException ex) {
 			throw new IllegalStateException("Cannot instantiate array type: " + className, ex);
+		}
+	}
+
+	/**
+	 * Reconstruct a primitive array that Jackson's WRAPPER_ARRAY default typing serialized
+	 * with a scalar (non-array) payload. Notably {@code byte[]} is written as a base64
+	 * string and {@code char[]} as a plain string. Delegating to Jackson preserves the
+	 * exact array type so values such as Gemini {@code thoughtSignatures} ({@code List<byte[]>})
+	 * survive a serialize/clone round-trip.
+	 * @param className the serialized component type id (e.g. {@code [B} or {@code byte[]})
+	 * @param payload the scalar payload node
+	 * @param objectMapper the ObjectMapper to bind with
+	 * @return the reconstructed array
+	 * @throws IOException if binding fails
+	 */
+	private static Object instantiateScalarPayloadArray(String className, JsonNode payload, ObjectMapper objectMapper)
+			throws IOException {
+		try {
+			Class<?> arrayClass = resolveArrayClass(className);
+			return objectMapper.treeToValue(payload, arrayClass);
+		}
+		catch (ClassNotFoundException | IllegalArgumentException ex) {
+			throw new IOException("Cannot instantiate array type from scalar payload: " + className, ex);
 		}
 	}
 
