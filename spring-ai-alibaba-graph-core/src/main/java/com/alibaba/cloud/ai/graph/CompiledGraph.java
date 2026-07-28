@@ -640,7 +640,15 @@ public class CompiledGraph {
 
 	/**
 	 * Calls the graph execution and returns the final state.
-	 * 
+	 * <p>
+	 * Checkpoint semantics: when a checkpoint saver is configured, this method resumes from
+	 * a persisted checkpoint only when {@code config} explicitly requests it, either by
+	 * carrying a concrete checkpoint id ({@link RunnableConfig#withCheckPointId(String)}) or
+	 * by carrying resume metadata ({@link RunnableConfig#withResume()}). Calling
+	 * {@code invoke(Map.of(), config)} with neither reuses the persisted state but restarts
+	 * execution from {@code START}; use {@code invoke(Map.of(), config.withResume())} to
+	 * continue from the latest checkpoint's next node without knowing its id.
+	 *
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return an Optional containing the final state
