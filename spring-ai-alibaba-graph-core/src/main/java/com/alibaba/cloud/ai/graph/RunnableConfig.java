@@ -217,6 +217,19 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 * {@link #HUMAN_FEEDBACK_METADATA_KEY} with value {@code "placeholder"} to metadata.
 	 * Used when building a config for resuming a run (e.g. after human feedback is
 	 * collected and the graph is continued).
+	 * <p>
+	 * This is also the way to resume from the latest persisted checkpoint without knowing
+	 * its checkpoint id. A plain {@code invoke(Map.of(), config)} (config without a
+	 * checkpoint id and without resume metadata) reuses the persisted state but restarts
+	 * execution from {@code START}; adding this resume metadata makes the run continue from
+	 * the latest checkpoint's next node instead. For example:
+	 * <pre>{@code
+	 * // restarts from START, only the persisted state is reused
+	 * graph.invoke(Map.of(), config);
+	 *
+	 * // continues from the latest checkpoint's next node
+	 * graph.invoke(Map.of(), config.withResume());
+	 * }</pre>
 	 * @return a new RunnableConfig with human feedback placeholder metadata
 	 */
 	public RunnableConfig withResume() {
@@ -404,7 +417,10 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 * Adds resume metadata ({@link #HUMAN_FEEDBACK_METADATA_KEY} with value
 		 * {@code "placeholder"}) so the built config is suitable for resuming a run
 		 * (e.g. after human feedback). Equivalent to building and then calling
-		 * {@link RunnableConfig#withResume()}, but allows fluent builder usage.
+		 * {@link RunnableConfig#withResume()}, but allows fluent builder usage. This also
+		 * makes a subsequent {@code invoke}/{@code stream} continue from the latest
+		 * checkpoint's next node without an explicit checkpoint id; see
+		 * {@link RunnableConfig#withResume()} for details.
 		 * @return this builder for chaining
 		 */
 		public Builder resume() {
