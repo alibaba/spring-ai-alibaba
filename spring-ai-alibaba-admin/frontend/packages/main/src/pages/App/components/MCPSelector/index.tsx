@@ -71,7 +71,7 @@ const MCPServerSelector = (props: IMCPServerSelectorProps) => {
 
   return (
     <>
-      <Flex justify="space-between" className="mb-[16px]">
+      <Flex justify="space-between" className="mb-[24px]">
         <Input
           onChange={onInputChange}
           prefix={<IconFont type="spark-search-line" />}

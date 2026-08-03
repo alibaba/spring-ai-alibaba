@@ -16,17 +16,21 @@
 
 package com.alibaba.cloud.ai.studio.core.agent.tool;
 
-import com.alibaba.cloud.ai.studio.runtime.enums.AppComponentTypeEnum;
+import com.alibaba.cloud.ai.studio.core.agent.skill.WorkspaceSkillRegistry;
+import com.alibaba.cloud.ai.studio.core.base.manager.AppComponentManager;
+import com.alibaba.cloud.ai.studio.core.base.service.McpServerService;
+import com.alibaba.cloud.ai.studio.core.base.service.PluginService;
+import com.alibaba.cloud.ai.studio.core.base.service.SkillService;
+import com.alibaba.cloud.ai.studio.core.base.service.ToolExecutionService;
+import com.alibaba.cloud.ai.studio.core.config.StudioProperties;
 import com.alibaba.cloud.ai.studio.runtime.domain.app.AgentConfig;
 import com.alibaba.cloud.ai.studio.runtime.domain.mcp.McpQuery;
 import com.alibaba.cloud.ai.studio.runtime.domain.mcp.McpServerDetail;
 import com.alibaba.cloud.ai.studio.runtime.domain.mcp.McpTool;
 import com.alibaba.cloud.ai.studio.runtime.domain.plugin.Tool;
+import com.alibaba.cloud.ai.studio.runtime.domain.skill.Skill;
 import com.alibaba.cloud.ai.studio.runtime.domain.tool.ToolCallSchema;
-import com.alibaba.cloud.ai.studio.core.base.service.McpServerService;
-import com.alibaba.cloud.ai.studio.core.base.service.PluginService;
-import com.alibaba.cloud.ai.studio.core.base.service.ToolExecutionService;
-import com.alibaba.cloud.ai.studio.core.base.manager.AppComponentManager;
+import com.alibaba.cloud.ai.studio.runtime.enums.AppComponentTypeEnum;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,8 +45,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * A composite tool callback provider that manages and provides tool callbacks from
- * multiple sources: plugins, MCP servers, and application components.
+ * Composite tool callback provider for plugins, MCP, app components and skills.
  *
  * @since 1.0.0.3
  */
@@ -50,78 +53,72 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CompositeToolCallbackProvider implements ToolCallbackProvider {
 
-	/** Configuration for the agent */
 	private final AgentConfig agentConfig;
 
-	/** Service for managing plugins */
 	private final PluginService pluginService;
 
-	/** Service for executing tools */
 	private final ToolExecutionService toolExecutionService;
 
-	/** Service for managing MCP servers */
 	private final McpServerService mcpServerService;
 
-	/** Manager for application components */
 	private final AppComponentManager appComponentManager;
 
-	/** Additional parameters for tool execution */
+	private final SkillService skillService;
+
+	private final StudioProperties studioProperties;
+
 	@Getter
 	private final Map<String, Object> extraParams;
 
 	private List<ToolCallback> toolCallbacks;
 
+	private WorkspaceSkillRegistry skillRegistry;
+
 	@NotNull
 	@Override
 	public ToolCallback[] getToolCallbacks() {
-		// cache tool callbacks info for performance issue.
 		if (toolCallbacks != null) {
 			return toolCallbacks.toArray(new ToolCallback[0]);
 		}
 
 		toolCallbacks = new ArrayList<>();
 
-		// build plugin tools
 		List<AgentConfig.Tool> pluginTools = agentConfig.getTools();
 		if (!CollectionUtils.isEmpty(pluginTools)) {
-			List<ToolCallback> pluginToolCallbacks = buildPluginToolCallbacks(pluginTools);
-			addToolCallbacks(toolCallbacks, pluginToolCallbacks);
+			addToolCallbacks(toolCallbacks, buildPluginToolCallbacks(pluginTools));
 		}
 
-		// build mcp tools
 		List<AgentConfig.McpServer> mcpServers = agentConfig.getMcpServers();
 		if (!CollectionUtils.isEmpty(mcpServers)) {
-			List<ToolCallback> mcpToolCallbacks = buildMcpToolCallbacks(mcpServers);
-			addToolCallbacks(toolCallbacks, mcpToolCallbacks);
+			addToolCallbacks(toolCallbacks, buildMcpToolCallbacks(mcpServers));
 		}
 
-		// build agent components
 		List<String> agentComponents = agentConfig.getAgentComponents();
 		if (!CollectionUtils.isEmpty(agentComponents)) {
-			List<ToolCallback> agentComponentCallbacks = buildAppComponentCallbacks(agentComponents,
-					AppComponentTypeEnum.Agent);
-			addToolCallbacks(toolCallbacks, agentComponentCallbacks);
+			addToolCallbacks(toolCallbacks, buildAppComponentCallbacks(agentComponents, AppComponentTypeEnum.Agent));
 		}
 
-		// build workflow components
 		List<String> workflowComponents = agentConfig.getWorkflowComponents();
 		if (!CollectionUtils.isEmpty(workflowComponents)) {
-			List<ToolCallback> workflowComponentCallbacks = buildAppComponentCallbacks(workflowComponents,
-					AppComponentTypeEnum.Workflow);
-			addToolCallbacks(toolCallbacks, workflowComponentCallbacks);
+			addToolCallbacks(toolCallbacks,
+					buildAppComponentCallbacks(workflowComponents, AppComponentTypeEnum.Workflow));
+		}
+
+		List<AgentConfig.SkillRef> skills = agentConfig.getSkills();
+		if (!CollectionUtils.isEmpty(skills)) {
+			addToolCallbacks(toolCallbacks, buildSkillToolCallbacks(skills));
 		}
 
 		return toolCallbacks.toArray(new ToolCallback[0]);
 	}
 
-	/**
-	 * Validates that there are no duplicate tool names in the provided callbacks.
-	 * <p>
-	 * This method ensures that each tool has a unique name, which is required for proper
-	 * tool resolution and execution.
-	 * @param toolCallbacks the tool callbacks to validate
-	 * @throws IllegalStateException if duplicate tool names are found
-	 */
+	public WorkspaceSkillRegistry getSkillRegistry() {
+		if (skillRegistry == null && !CollectionUtils.isEmpty(agentConfig.getSkills())) {
+			getToolCallbacks();
+		}
+		return skillRegistry;
+	}
+
 	private void validateToolCallbacks(ToolCallback[] toolCallbacks) {
 		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
 		if (!duplicateToolNames.isEmpty()) {
@@ -130,25 +127,20 @@ public class CompositeToolCallbackProvider implements ToolCallbackProvider {
 		}
 	}
 
-	/**
-	 * Creates a list of tool callbacks based on the provided configuration and services.
-	 */
 	public static List<ToolCallback> toolCallbacks(AgentConfig config, PluginService pluginService,
 			ToolExecutionService toolExecutionService, McpServerService mcpServerService,
-			AppComponentManager appComponentManager, Map<String, Object> extraParams) {
+			AppComponentManager appComponentManager, SkillService skillService, StudioProperties studioProperties,
+			Map<String, Object> extraParams) {
 		CompositeToolCallbackProvider provider = new CompositeToolCallbackProvider(config, pluginService,
-				toolExecutionService, mcpServerService, appComponentManager, extraParams);
+				toolExecutionService, mcpServerService, appComponentManager, skillService, studioProperties,
+				extraParams);
 		ToolCallback[] toolCallbacks = provider.getToolCallbacks();
 		if (ArrayUtils.isEmpty(toolCallbacks)) {
 			return List.of();
 		}
-
 		return List.of(toolCallbacks);
 	}
 
-	/**
-	 * Adds new tool callbacks to the list, skipping any duplicates.
-	 */
 	private void addToolCallbacks(List<ToolCallback> toolCallbacks, List<ToolCallback> newToolCallbacks) {
 		Set<String> existingNames = toolCallbacks.stream()
 			.map(callback -> callback.getToolDefinition().name())
@@ -165,9 +157,6 @@ public class CompositeToolCallbackProvider implements ToolCallbackProvider {
 		}).forEach(toolCallbacks::add);
 	}
 
-	/**
-	 * Builds tool callbacks from plugin tools.
-	 */
 	private List<ToolCallback> buildPluginToolCallbacks(List<AgentConfig.Tool> pluginTools) {
 		List<String> toolIds = pluginTools.stream().map(AgentConfig.Tool::getId).toList();
 		if (CollectionUtils.isEmpty(toolIds)) {
@@ -179,17 +168,11 @@ public class CompositeToolCallbackProvider implements ToolCallbackProvider {
 			return List.of();
 		}
 
-		List<ToolCallback> toolCallbacks = new ArrayList<>();
-		tools.forEach(tool -> {
-			toolCallbacks.add(new PluginToolCallback(toolExecutionService, tool, extraParams));
-		});
-
-		return toolCallbacks;
+		List<ToolCallback> callbacks = new ArrayList<>();
+		tools.forEach(tool -> callbacks.add(new PluginToolCallback(toolExecutionService, tool, extraParams)));
+		return callbacks;
 	}
 
-	/**
-	 * Builds tool callbacks from MCP server tools.
-	 */
 	private List<ToolCallback> buildMcpToolCallbacks(List<AgentConfig.McpServer> mcpServers) {
 		if (CollectionUtils.isEmpty(mcpServers)) {
 			return List.of();
@@ -203,21 +186,17 @@ public class CompositeToolCallbackProvider implements ToolCallbackProvider {
 			return List.of();
 		}
 
-		List<ToolCallback> toolCallbacks = new ArrayList<>();
+		List<ToolCallback> callbacks = new ArrayList<>();
 		for (McpServerDetail mcpServerDetail : mcpServerDetails) {
 			if (!CollectionUtils.isEmpty(mcpServerDetail.getTools())) {
 				for (McpTool tool : mcpServerDetail.getTools()) {
-					toolCallbacks.add(new McpToolCallback(mcpServerService, mcpServerDetail, tool, extraParams));
+					callbacks.add(new McpToolCallback(mcpServerService, mcpServerDetail, tool, extraParams));
 				}
 			}
 		}
-
-		return toolCallbacks;
+		return callbacks;
 	}
 
-	/**
-	 * Builds tool callbacks from application components.
-	 */
 	private List<ToolCallback> buildAppComponentCallbacks(List<String> agentComponents,
 			AppComponentTypeEnum componentType) {
 		if (CollectionUtils.isEmpty(agentComponents)) {
@@ -229,13 +208,23 @@ public class CompositeToolCallbackProvider implements ToolCallbackProvider {
 			return List.of();
 		}
 
-		List<ToolCallback> toolCallbacks = new ArrayList<>();
-		toolCallSchemaMap.forEach((key, value) -> {
-			toolCallbacks
-				.add(new AppComponentToolCallback(appComponentManager, key, value, extraParams, componentType));
-		});
+		List<ToolCallback> callbacks = new ArrayList<>();
+		toolCallSchemaMap.forEach((key, value) -> callbacks
+			.add(new AppComponentToolCallback(appComponentManager, key, value, extraParams, componentType)));
+		return callbacks;
+	}
 
-		return toolCallbacks;
+	private List<ToolCallback> buildSkillToolCallbacks(List<AgentConfig.SkillRef> skillRefs) {
+		List<String> skillIds = skillRefs.stream().map(AgentConfig.SkillRef::getId).filter(Objects::nonNull).toList();
+		if (CollectionUtils.isEmpty(skillIds)) {
+			return List.of();
+		}
+		List<Skill> skills = skillService.getSkills(skillIds);
+		this.skillRegistry = new WorkspaceSkillRegistry(studioProperties, skills);
+		if (skillRegistry.isEmpty()) {
+			return List.of();
+		}
+		return List.of(new SkillToolCallback(skillRegistry), new SkillResourceToolCallback(skillRegistry));
 	}
 
 }

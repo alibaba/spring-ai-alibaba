@@ -5,6 +5,7 @@ import { compact } from 'lodash-es';
 import { history, useParams } from 'umi';
 import AppComponent from './AppComponent';
 import PluginList from './Plugin/List';
+import SkillList from './Skill';
 
 const tabs = compact([
   process.env.BACK_END !== 'python' && {
@@ -14,6 +15,14 @@ const tabs = compact([
     }),
     key: 'plugin',
     children: <PluginList />,
+  },
+  process.env.BACK_END !== 'python' && {
+    label: $i18n.get({
+      id: 'main.pages.Component.index.skill',
+      dm: 'Skills',
+    }),
+    key: 'skill',
+    children: <SkillList />,
   },
   {
     label: $i18n.get({

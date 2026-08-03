@@ -138,7 +138,7 @@ export default function KnowledgeSelector(props: IKnowledgeSelectorProps) {
 
   return (
     <>
-      <div className="flex-justify-between px-[24px]">
+      <div className="flex justify-between items-start px-[24px]">
         <Search
           onSearch={handleSearch}
           placeholder={$i18n.get({

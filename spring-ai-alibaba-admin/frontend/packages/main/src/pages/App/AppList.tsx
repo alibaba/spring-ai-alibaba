@@ -253,7 +253,6 @@ export default function () {
           })}
           value={state.name}
           onChange={(val) => setState({ name: val })}
-          className={'mx-[20px] my-[16px]'}
           onSearch={handleSearch}
         />
       )}

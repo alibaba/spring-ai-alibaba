@@ -65,7 +65,15 @@ public enum ToolCallType {
 
 	/** Result of a file search operation */
 	@JsonProperty("file_search_result")
-	FILE_SEARCH_RESULT("file_search_result"),;
+	FILE_SEARCH_RESULT("file_search_result"),
+
+	/** Skill tool call type */
+	@JsonProperty("skill_tool_call")
+	SKILL_TOOL_CALL("skill_tool_call"),
+
+	/** Result of a skill tool call */
+	@JsonProperty("skill_tool_result")
+	SKILL_TOOL_RESULT("skill_tool_result"),;
 
 	/** The string value representing this tool call type */
 	private final String value;

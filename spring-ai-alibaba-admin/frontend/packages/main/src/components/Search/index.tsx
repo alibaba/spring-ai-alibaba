@@ -38,15 +38,17 @@ const Search: React.FC<SearchProps> = ({
   };
 
   return (
-    <Input
-      className={classNames(styles['input'], className)}
-      prefix={<IconFont type="spark-search-line" />}
-      placeholder={placeholder}
-      value={value}
-      onChange={handleChange}
-      onPressEnter={handleSearch}
-      allowClear
-    />
+    <div className={styles.wrap}>
+      <Input
+        className={classNames(styles['input'], className)}
+        prefix={<IconFont type="spark-search-line" />}
+        placeholder={placeholder}
+        value={value}
+        onChange={handleChange}
+        onPressEnter={handleSearch}
+        allowClear
+      />
+    </div>
   );
 };
 

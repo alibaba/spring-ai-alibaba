@@ -757,6 +757,7 @@
   "main.pages.Component.Plugin.components.OutputParamsConfig.index.type": "Type",
   "main.pages.Component.Plugin.components.OutputParamsConfig.index.addOutputParameter": "Add Output Parameter",
   "main.pages.Component.index.plugin": "Plugin",
+  "main.pages.Component.index.skill": "Skills",
   "main.pages.Component.index.workflow": "Workflow",
   "main.pages.Component.index.intelligentAgent": "Agent",
   "main.pages.Component.index.componentManagement": "Component Management",

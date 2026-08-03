@@ -51,6 +51,8 @@ export interface IToolCall {
     | 'file_search_result' // File search result
     | 'mcp_tool_call' // MCP tool call
     | 'mcp_tool_result' // MCP tool result
+    | 'skill_tool_call'
+    | 'skill_tool_result'
     | 'component_tool_call' // Component call
     | 'component_tool_result'; // Component call result
 }

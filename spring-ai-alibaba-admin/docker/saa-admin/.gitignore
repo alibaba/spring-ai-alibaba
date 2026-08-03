@@ -1,0 +1,5 @@
+# Runtime volumes created by Docker (often root/999 owned, not readable by host user)
+/data/
+.env
+*.rdb
+*.aof

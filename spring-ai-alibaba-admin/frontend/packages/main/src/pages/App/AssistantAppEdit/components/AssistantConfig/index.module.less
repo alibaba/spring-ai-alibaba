@@ -107,7 +107,8 @@
 .container {
   height: 100%;
   display: flex;
-  background-color: var(--ag-ant-color-border-secondary);
+  background-color: var(--ag-ant-color-fill-tertiary);
+  overflow: hidden;
 
   .divider {
     width: 1px;
@@ -144,15 +145,28 @@
   position: relative;
   height: 100%;
   flex: 1;
-  border-left: 1px solid var(--ag-ant-color-border-secondary);
+  border-left: none;
   border-bottom: none;
   width: 100%;
+  background: var(--ag-ant-color-bg-base);
 }
 
 .title {
   font-size: 16px;
   font-weight: 600;
   line-height: 32px;
+}
+
+.configHeader {
+  padding: 24px 28px 12px 32px;
+  box-sizing: border-box;
+}
+
+.modelConfigWrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 16px;
 }
 
 .formTitle {
@@ -193,14 +207,16 @@
 
 .divider1 {
   position: relative;
-  width: 1px;
+  width: 8px;
   height: 100%;
+  background: var(--ag-ant-color-fill-tertiary);
 
   img {
     width: 16px;
     height: 100%;
     position: absolute;
-    left: -1px;
+    left: 50%;
+    transform: translateX(-50%);
     cursor: col-resize !important;
     opacity: 0;
     user-select: none;
@@ -210,13 +226,16 @@
 .resizeHandle {
   cursor: col-resize !important;
   outline: none;
-  width: 1px;
+  width: 8px;
   display: flex;
   justify-content: stretch;
   align-items: stretch;
   transition: background-color 0.2s linear;
+  background: var(--ag-ant-color-fill-tertiary);
 
   &:hover {
+    background: var(--ag-ant-color-primary-bg);
+
     .divider1 {
       background-color: var(--ag-ant-color-primary-hover);
     }

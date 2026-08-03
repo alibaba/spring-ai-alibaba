@@ -197,7 +197,7 @@ export default function ComponentSelectorDrawer(props: IProps) {
       title={renderTitle}
     >
       <Flex className="h-full" vertical gap={16}>
-        <Flex justify="space-between" align="center">
+        <Flex justify="space-between" align="center" className="mb-[24px]">
           <Input.Search
             className={styles.search}
             placeholder={$i18n.get({

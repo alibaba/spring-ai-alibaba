@@ -121,6 +121,10 @@ export default defineConfig({
       component: 'Component/Plugin/Tools/List',
     },
     {
+      path: '/component/skill/:id',
+      component: 'Component/Skill/Detail',
+    },
+    {
       path: '/knowledge',
       component: 'Knowledge/List/index',
     },

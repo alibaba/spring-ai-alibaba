@@ -160,12 +160,27 @@ export default function EditDrawer(props: IProps) {
     );
   }, [state]);
 
+  const normalizeComponentConfig = (raw: any) => {
+    const inputRaw = raw?.input || {};
+    return {
+      input: {
+        user_params:
+          inputRaw.user_params ?? inputRaw.userParams ?? ([] as any[]),
+        system_params:
+          inputRaw.system_params ?? inputRaw.systemParams ?? ([] as any[]),
+      } as IConfigInput,
+      output: (raw?.output ?? []) as IOutputParamItem[],
+    };
+  };
+
   useMount(async () => {
     try {
       if (props.data.code) {
         const res = await getAppComponentDetailByCode(props.data.code);
         if (!res) return;
-        const componentDetailCfg = JSON.parse(res.config);
+        const componentDetailCfg = normalizeComponentConfig(
+          JSON.parse(res.config || '{}'),
+        );
         setState({
           input: componentDetailCfg.input,
           output: componentDetailCfg.output,
@@ -177,7 +192,9 @@ export default function EditDrawer(props: IProps) {
         });
       } else {
         const ret = await getConfigByAppId(props.data.app_id as string);
-        const componentParams = JSON.parse(ret.config);
+        const componentParams = normalizeComponentConfig(
+          JSON.parse(ret?.config || '{}'),
+        );
         setState({
           input: componentParams.input,
           output: componentParams.output,

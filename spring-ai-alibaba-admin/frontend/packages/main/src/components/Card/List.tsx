@@ -47,7 +47,7 @@ const CardList: React.FC<IProps> = (props) => {
 
   if (!props.children?.length && !props.loading)
     return (
-      <div className="loading-center pt-[20px]">
+      <div className="loading-center" style={{ paddingTop: 24 }}>
         <Empty
           title={
             props.isSearch

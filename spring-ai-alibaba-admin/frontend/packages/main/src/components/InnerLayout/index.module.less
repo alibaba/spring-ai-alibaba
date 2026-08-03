@@ -46,12 +46,14 @@
     }
 
     .left {
-      gap: 4px;
+      gap: 12px;
+      min-width: 0;
 
       .back-icon {
         width: 32px;
         font-size: 20px;
-        margin-right: 6px;
+        margin-right: 4px;
+        flex-shrink: 0;
       }
     }
 
@@ -64,6 +66,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      min-width: 0;
     }
 
     .middle {
@@ -151,6 +154,9 @@
   .content-area {
     height: 0;
     flex: 1;
+    padding: 16px 20px 0;
+    box-sizing: border-box;
+    min-height: 0;
 
     :global {
       .ag-ant-spin-nested-loading,
@@ -164,9 +170,10 @@
   .bottom {
     background-color: var(--ag-ant-color-bg-base);
     border-top: 1px solid var(--ag-ant-color-border-secondary);
-    padding: 16px 24px;
+    padding: 12px 20px;
     display: flex;
     gap: 8px;
+    align-items: center;
   }
 
   .vertical-center {
@@ -192,7 +199,7 @@
 
   .tabs {
     max-width: 100%;
-    padding: 0 8px;
+    padding: 0 12px;
     :global {
       .ag-spark-segmented-tab-bar {
         margin-bottom: 0;

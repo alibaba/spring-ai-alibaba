@@ -1,11 +1,12 @@
 .container {
-  padding: 24px 0;
-  max-width: 1440px;
-  width: calc(100% - 264px);
+  padding: 16px 20px 24px;
+  max-width: 960px;
+  width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  box-sizing: border-box;
 
   .title {
     font-size: 16px;
@@ -16,16 +17,18 @@
 
 .card {
   display: flex;
-  padding: 20px;
-  border-radius: 6px;
-  background: var(--ag-ant-color-bg-base);
+  align-items: flex-start;
+  padding: 16px 20px;
+  border-radius: 8px;
+  background: var(--ag-ant-color-bg-container);
   border: 1px solid var(--ag-ant-color-border-secondary);
-  gap: 8px;
+  gap: 12px;
+  box-sizing: border-box;
 
   .img-con {
     border: 1px solid var(--ag-ant-color-border-secondary);
-    border-radius: 6px;
-    margin-right: 8px;
+    border-radius: 8px;
+    flex-shrink: 0;
     width: 48px;
     height: 48px;
     display: flex;
@@ -49,4 +52,9 @@
     line-height: 20px;
     color: var(--ag-ant-color-text-tertiary);
   }
+}
+
+.disabled {
+  opacity: 0.6;
+  pointer-events: none;
 }

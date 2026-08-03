@@ -294,26 +294,58 @@ export default function SideMenuLayout({ children }: { children: React.ReactNode
               collapsed={collapsed}
               theme="light"
               className="shadow-lg border-r border-gray-200"
-              style={{ height: '100vh', position: 'fixed', left: 0, top: 0, bottom: 0 }}
+              style={{
+                height: '100vh',
+                position: 'fixed',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                overflow: 'hidden',
+              }}
             >
-              <div className="p-6 border-b border-gray-200">
-                <h1 className="text-xl font-bold text-gray-800 flex items-center whitespace-nowrap overflow-hidden">
-                  <SettingOutlined className="mr-1 text-blue-500" />
+              <div
+                style={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+              >
+              <div
+                className="p-4 border-b border-gray-200"
+                style={{ flexShrink: 0 }}
+              >
+                <h1 className="text-xl font-bold text-gray-800 flex items-center whitespace-nowrap overflow-hidden m-0">
+                  <SettingOutlined className="mr-2 text-blue-500" />
                   {!collapsed && 'SAA Admin'}
                 </h1>
               </div>
 
-              <Menu
-                mode="inline"
-                selectedKeys={[selectedKey]}
-                defaultOpenKeys={collapsed ? [] : ['studio']}
-                items={menuItems}
-                onClick={handleMenuClick}
-                className="border-r-0 mt-6"
-                inlineCollapsed={collapsed}
-              />
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  paddingBottom: 8,
+                }}
+              >
+                <Menu
+                  mode="inline"
+                  selectedKeys={[selectedKey]}
+                  defaultOpenKeys={collapsed ? [] : ['studio']}
+                  items={menuItems}
+                  onClick={handleMenuClick}
+                  className="border-r-0"
+                  style={{ borderInlineEnd: 'none' }}
+                  inlineCollapsed={collapsed}
+                />
+              </div>
 
-              <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white">
+              <div
+                className="border-t border-gray-200 bg-white"
+                style={{ flexShrink: 0 }}
+              >
                 <div
                   className="flex items-center justify-center p-4 cursor-pointer hover:bg-gray-50 transition-colors"
                   onClick={() => setCollapsed(!collapsed)}
@@ -323,12 +355,21 @@ export default function SideMenuLayout({ children }: { children: React.ReactNode
                   ) : (
                     <MenuFoldOutlined className="text-gray-600 text-lg" />
                   )}
-                  {!collapsed && <span className="ml-2 text-gray-600">收起菜单</span>}
+                  {!collapsed && (
+                    <span className="ml-2 text-gray-600">收起菜单</span>
+                  )}
                 </div>
+              </div>
               </div>
             </Sider>
 
-            <AntLayout style={{ marginLeft: collapsed ? 80 : 256, transition: 'margin-left 0.2s' }}>
+            <AntLayout
+              style={{
+                marginLeft: collapsed ? 80 : 256,
+                transition: 'margin-left 0.2s',
+                background: 'var(--ag-ant-color-bg-layout, #f5f5f5)',
+              }}
+            >
               <Header
                 right={
                   <>
@@ -340,8 +381,25 @@ export default function SideMenuLayout({ children }: { children: React.ReactNode
                 }
               />
               <Content className="overflow-hidden">
-                <div className="h-full overflow-y-auto bg-gray-50" style={{ minHeight: 'calc(100vh - 56px)' }}>
-                  {children}
+                <div
+                  className="h-full overflow-hidden"
+                  style={{
+                    minHeight: 'calc(100vh - 56px)',
+                    background: 'var(--ag-ant-color-bg-layout, #f5f5f5)',
+                    padding: '0 12px 12px 12px',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <div
+                    className="h-full overflow-hidden"
+                    style={{
+                      background: 'var(--ag-ant-color-bg-base)',
+                      borderRadius: 8,
+                      border: '1px solid var(--ag-ant-color-border-secondary)',
+                    }}
+                  >
+                    {children}
+                  </div>
                 </div>
               </Content>
             </AntLayout>

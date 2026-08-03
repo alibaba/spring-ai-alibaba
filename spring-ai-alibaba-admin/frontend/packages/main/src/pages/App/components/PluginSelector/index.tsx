@@ -69,7 +69,7 @@ export default function ToolSelector(props: IProps) {
   return (
     <Flex className={classNames('p-[8px]', props.className)} vertical>
       {
-        <Flex justify="space-between" align="center">
+        <Flex justify="space-between" align="center" className="mb-[24px]">
           <Input.Search
             style={{ width: 280 }}
             width={280}

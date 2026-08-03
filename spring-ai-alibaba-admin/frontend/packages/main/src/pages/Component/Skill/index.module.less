@@ -1,0 +1,112 @@
+.grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  justify-content: stretch;
+  align-content: start;
+  gap: 20px;
+  margin: 0 0 20px;
+  width: 100%;
+  flex-wrap: unset !important;
+}
+
+.skillCard {
+  width: 100%;
+  min-height: 240px;
+  height: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--ag-ant-color-border-secondary);
+  background: var(--ag-ant-color-bg-container);
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+
+  &:hover {
+    border-color: var(--ag-ant-color-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.cardMain {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ag-ant-color-fill-tertiary);
+  color: var(--ag-ant-color-primary);
+  font-size: 18px;
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  margin: 0 !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: 22px !important;
+  color: var(--ag-ant-color-text) !important;
+  max-width: 100%;
+}
+
+.skillName {
+  margin: 0 !important;
+  font-size: 12px !important;
+  line-height: 18px !important;
+  color: var(--ag-ant-color-text-tertiary) !important;
+  max-width: 100%;
+}
+
+.desc {
+  margin: 0 !important;
+  flex: 1;
+  min-height: 40px;
+  font-size: 13px !important;
+  line-height: 20px !important;
+  color: var(--ag-ant-color-text-secondary) !important;
+}
+
+.meta {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--ag-ant-color-text-quaternary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ag-ant-color-border-secondary);
+  flex-shrink: 0;
+}
