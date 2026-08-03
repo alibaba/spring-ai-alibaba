@@ -145,6 +145,34 @@ class FileSystemStoreTest {
 	}
 
 	@Test
+	void testRejectsPathTraversalInNamespace() {
+		Path escapedFile = tempDir.resolveSibling("escaped.json");
+
+		assertThrows(IllegalArgumentException.class,
+				() -> store.putItem(StoreItem.of(List.of(".."), "escaped", Map.of("data", "test_value"))));
+
+		assertThat(Files.exists(escapedFile)).isFalse();
+	}
+
+	@Test
+	void testRejectsPathTraversalInKey() {
+		Path escapedFile = tempDir.resolveSibling("escaped.json");
+
+		assertThrows(IllegalArgumentException.class,
+				() -> store.putItem(StoreItem.of(List.of("safe"), "../../escaped", Map.of("data", "test_value"))));
+
+		assertThat(Files.exists(escapedFile)).isFalse();
+	}
+
+	@Test
+	void testRejectsPathTraversalForReadAndDelete() {
+		assertThrows(IllegalArgumentException.class, () -> store.getItem(List.of(".."), "escaped"));
+		assertThrows(IllegalArgumentException.class, () -> store.getItem(List.of("safe"), "../../escaped"));
+		assertThrows(IllegalArgumentException.class, () -> store.deleteItem(List.of(".."), "escaped"));
+		assertThrows(IllegalArgumentException.class, () -> store.deleteItem(List.of("safe"), "../../escaped"));
+	}
+
+	@Test
 	void testSizeAndClear() {
 		// Given
 		assertThat(store.isEmpty()).isTrue();

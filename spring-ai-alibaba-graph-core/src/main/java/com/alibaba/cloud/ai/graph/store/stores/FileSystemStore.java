@@ -69,7 +69,7 @@ public class FileSystemStore extends BaseStore {
 	 * @param rootPath the root path for storage
 	 */
 	public FileSystemStore(Path rootPath) {
-		this.rootPath = rootPath;
+		this.rootPath = rootPath.toAbsolutePath().normalize();
 		this.objectMapper = new ObjectMapper();
 		this.objectMapper.findAndRegisterModules();
 		initializeRootDirectory();
@@ -86,6 +86,9 @@ public class FileSystemStore extends BaseStore {
 
 			String itemJson = objectMapper.writeValueAsString(item);
 			Files.write(itemPath, itemJson.getBytes());
+		}
+		catch (IllegalArgumentException e) {
+			throw e;
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to store item to file system", e);
@@ -110,6 +113,9 @@ public class FileSystemStore extends BaseStore {
 			StoreItem item = objectMapper.readValue(itemJson, StoreItem.class);
 			return Optional.of(item);
 		}
+		catch (IllegalArgumentException e) {
+			throw e;
+		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to retrieve item from file system", e);
 		}
@@ -132,6 +138,9 @@ public class FileSystemStore extends BaseStore {
 				return true;
 			}
 			return false;
+		}
+		catch (IllegalArgumentException e) {
+			throw e;
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to delete item from file system", e);
@@ -258,22 +267,11 @@ public class FileSystemStore extends BaseStore {
 			validatePathSegment(ns, "namespace");
 			path = path.resolve(ns);
 		}
-		validatePathSegment(key, "key");
-		Path itemPath = path.resolve(key + ".json").normalize();
-		if (!itemPath.startsWith(rootPath.toAbsolutePath().normalize())) {
-			throw new IllegalArgumentException("resolved path escapes root directory");
+		Path itemPath = path.resolve(key + ".json").toAbsolutePath().normalize();
+		if (!itemPath.startsWith(rootPath)) {
+			throw new IllegalArgumentException("store item path must stay under root directory");
 		}
 		return itemPath;
-	}
-
-	private void validatePathSegment(String segment, String fieldName) {
-		if (segment == null || segment.trim().isEmpty()) {
-			throw new IllegalArgumentException(fieldName + " cannot be null or empty");
-		}
-		Path candidate = Paths.get(segment);
-		if (candidate.isAbsolute() || candidate.getNameCount() != 1 || "..".equals(segment) || ".".equals(segment)) {
-			throw new IllegalArgumentException(fieldName + " contains unsafe path segment: " + segment);
-		}
 	}
 
 	/**
