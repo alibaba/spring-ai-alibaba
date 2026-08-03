@@ -43,6 +43,24 @@
   cursor: pointer;
 }
 
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sidebar-menu {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.sidebar-fixed-section {
+  flex: none;
+}
+
 .menu-list {
   position: absolute;
   inset: 0;
