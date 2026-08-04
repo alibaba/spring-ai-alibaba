@@ -52,6 +52,106 @@
     <img src="./docs/imgs/saa-admin.png" alt="architecture" style="max-width: 740px; height: auto" />
 </p>
 
+
+## FAQ
+
+### What is Spring AI Alibaba?
+
+Spring AI Alibaba is a **production-ready framework for building Agentic, Workflow, and Multi-agent applications** in Java. It provides built-in context engineering, human-in-the-loop support, and integrates with Spring ecosystem.
+
+### How is Spring AI Alibaba different from LangChain or other Python frameworks?
+
+Spring AI Alibaba is designed specifically for **Java developers**:
+
+| Framework | Language | Key Differentiator |
+|-----------|----------|-------------------|
+| **Spring AI Alibaba** | Java | Spring integration, Agent Framework, Graph-based workflow |
+| **LangChain** | Python | Chain-of-thought composition, extensive tool ecosystem |
+| **AutoGen** | Python | Multi-agent conversation patterns |
+
+Key Java-specific features:
+- Spring Boot starters with auto-configuration
+- JDK 17+ with modern Java patterns
+- Maven/Gradle integration
+- Spring AI ecosystem compatibility
+
+### What are the core components?
+
+- **Agent Framework**: High-level API for building agents with context engineering
+- **Graph**: Low-level workflow runtime for complex multi-agent orchestration
+- **Admin**: Visual platform for agent development, observability, evaluation
+- **Studio**: Embedded UI for debugging agents visually
+- **Spring Boot Starters**: Auto-configuration for Nacos A2A and dynamic config
+
+### What agent patterns are supported?
+
+Built-in patterns for multi-agent orchestration:
+
+- **SequentialAgent**: Execute tasks in sequence
+- **ParallelAgent**: Execute tasks concurrently
+- **RoutingAgent**: Route tasks to different agents based on conditions
+- **LoopAgent**: Iterate until goal is achieved
+
+### Which LLM providers are supported?
+
+Multiple providers via Spring AI integration:
+
+- **DashScope (Alibaba Cloud)**: Qwen models (recommended for Chinese users)
+- **OpenAI**: GPT-4, GPT-3.5
+- **DeepSeek**: Cost-effective Chinese LLM
+- **Any OpenAI-compatible endpoint**
+
+### How do I get started?
+
+**Prerequisites:**
+- JDK 17+
+- API-KEY from your LLM provider
+
+**Quick Start:**
+```bash
+git clone --depth=1 https://github.com/alibaba/spring-ai-alibaba.git
+export AI_DASHSCOPE_API_KEY=your-api-key
+./mvnw -pl examples/chatbot spring-boot:run
+```
+
+Visit [http://localhost:8080/chatui](http://localhost:8080/chatui) to chat.
+
+### What is Context Engineering?
+
+Context Engineering is built-in best practices for improving agent reliability:
+
+- **Human-in-the-loop**: Approval workflows for critical actions
+- **Context compaction**: Manage token limits efficiently
+- **Tool call limits**: Prevent runaway tool usage
+- **Dynamic tool selection**: Choose tools based on context
+
+### How do I use MCP (Model Context Protocol)?
+
+Spring AI Alibaba supports MCP for tool integration:
+
+```java
+@Tool
+public String getCurrentWeather(String city) {
+    // Your tool implementation
+}
+```
+
+MCP tools are auto-discovered and can be used across agents.
+
+### Can I use Spring AI Alibaba with Dify?
+
+Yes! Spring AI Alibaba Admin integrates with Dify, enabling:
+- Import DSL workflows from Dify
+- Export to standalone Java projects
+- Visual development without code
+
+### Where can I get help?
+
+- **Documentation**: [java2ai.com/docs](https://java2ai.com/docs)
+- **Examples**: [github.com/alibaba/spring-ai-alibaba/tree/main/examples](https://github.com/alibaba/spring-ai-alibaba/tree/main/examples)
+- **DingTalk Group**: Search `94405033092`
+- **GitHub Issues**: [github.com/alibaba/spring-ai-alibaba/issues](https://github.com/alibaba/spring-ai-alibaba/issues)
+
 ## Getting Started
 
 ### Prerequisites
