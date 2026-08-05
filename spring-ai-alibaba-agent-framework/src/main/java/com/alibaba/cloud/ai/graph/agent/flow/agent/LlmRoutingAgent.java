@@ -16,15 +16,18 @@
 package com.alibaba.cloud.ai.graph.agent.flow.agent;
 
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowAgentBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.util.StringUtils;
 
 public class LlmRoutingAgent extends FlowAgent {
 
+	public static final String FALLBACK_AGENT_KEY = "fallbackAgent";
 	private final ChatModel chatModel;
 	private final String fallbackAgent;
 	private final String systemPrompt;
@@ -57,6 +60,7 @@ public class LlmRoutingAgent extends FlowAgent {
 	@Override
 	protected StateGraph buildSpecificGraph(FlowGraphBuilder.FlowGraphConfig config) throws GraphStateException {
 		config.setChatModel(this.chatModel);
+		config.customProperty(FALLBACK_AGENT_KEY, fallbackAgent);
 		return FlowGraphBuilder.buildGraph(FlowAgentEnum.ROUTING.getType(), config);
 	}
 
@@ -81,6 +85,16 @@ public class LlmRoutingAgent extends FlowAgent {
 			return this;
 		}
 
+		/**
+		 * Sets the name of a configured sub-agent to use when the routing model
+		 * cannot produce a valid routing decision after all retry attempts.
+		 *
+		 * <p>The fallback agent must be one of the agents configured through
+		 * {@link FlowAgentBuilder#subAgents}. This property is optional.</p>
+		 *
+		 * @param fallbackAgent the name of an existing sub-agent
+		 * @return this builder
+		 */
 		public LlmRoutingAgentBuilder fallbackAgent(String fallbackAgent) {
 			this.fallbackAgent = fallbackAgent;
 			return this;
@@ -106,6 +120,15 @@ public class LlmRoutingAgent extends FlowAgent {
 			super.validate();
 			if (chatModel == null) {
 				throw new IllegalArgumentException("ChatModel must be provided for LLM routing agent");
+			}
+			if (StringUtils.hasText(fallbackAgent)) {
+				boolean fallbackAgentExists = subAgents.stream()
+						.map(Agent::name)
+						.anyMatch(fallbackAgent::equals);
+
+				if (!fallbackAgentExists) {
+					throw new IllegalArgumentException("Fallback agent '" + fallbackAgent + "' must be one of the configured sub-agents");
+				}
 			}
 		}
 

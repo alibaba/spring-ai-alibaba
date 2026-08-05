@@ -53,10 +53,16 @@ public class RoutingNode implements MultiCommandAction {
 	private final ChatClient chatClient;
 	private final BeanOutputConverter<RoutingDecision> outputConverter;
 	private final Agent rootAgent;
+	private final String fallbackAgent;
 	private final List<Agent> subAgents;
 
 	public RoutingNode(ChatModel chatModel, Agent rootAgent, List<Agent> subAgents) {
+		this(chatModel, rootAgent, subAgents, null);
+	}
+
+	public RoutingNode(ChatModel chatModel, Agent rootAgent, List<Agent> subAgents, String fallbackAgent) {
 		this.rootAgent = rootAgent;
+		this.fallbackAgent = fallbackAgent;
 		this.subAgents = subAgents;
 
 		StringBuilder sb = new StringBuilder();
@@ -102,8 +108,21 @@ public class RoutingNode implements MultiCommandAction {
 		
 		// Prepare messages with instruction if available
 		List<Message> messagesWithInstruction = prepareMessagesWithInstruction(messages);
-		
-		RoutingDecision decision = getDecisionWithRetry(messagesWithInstruction, DEFAULT_MAX_RETRIES);
+
+		RoutingDecision decision;
+		try {
+			decision = getDecisionWithRetry(messagesWithInstruction, DEFAULT_MAX_RETRIES);
+		} catch (Exception routingFailure) {
+			if (!StringUtils.hasText(fallbackAgent)) {
+				throw routingFailure;
+			}
+
+			logger.warn("RoutingAgent {} failed after retries. "+ "Falling back to agent '{}'.",
+					rootAgent.name(), fallbackAgent, routingFailure);
+
+			return new MultiCommand(List.of(fallbackAgent));
+		}
+
 		List<String> decisionValues = decision.getAgentNames();
 
 		// Validate all agent names are valid
