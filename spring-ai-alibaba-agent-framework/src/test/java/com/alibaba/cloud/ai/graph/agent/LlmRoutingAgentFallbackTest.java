@@ -18,17 +18,23 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
+import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
+import org.springframework.core.io.ByteArrayResource;
 
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -72,6 +78,100 @@ class LlmRoutingAgentFallbackTest {
         assertEquals(1, fallbackModel.callCount(), "Configured fallback agent should execute once");
         AssistantMessage fallbackOutput = result.get().value("fallback_output", AssistantMessage.class).orElseThrow();
         assertEquals("FALLBACK_EXECUTED", fallbackOutput.getText());
+    }
+
+    /**
+     * Agent API invocations populate the graph input from the latest user message. The
+     * fallback should expose that original text through the documented
+     * {@code {agentName_input}} placeholder when no targeted routing query is available.
+     */
+    @Test
+    void fallbackAgentReceivesOriginalInputForAgentSpecificPlaceholder() throws GraphRunnerException {
+        CapturingChatModel fallbackModel = new CapturingChatModel("FALLBACK_EXECUTED");
+        LlmRoutingAgent routingAgent = routingAgentWithFallback(fallbackModel);
+
+        Optional<OverAllState> result = routingAgent.invoke("the original user request");
+
+        assertTrue(result.isPresent());
+        assertInstructionEquals(fallbackModel,
+                "Handle this original request: the original user request");
+    }
+
+    /**
+     * An explicitly supplied graph input is authoritative when it differs from the
+     * conversation history.
+     */
+    @Test
+    void explicitInputTakesPrecedenceOverLatestUserMessage() throws GraphRunnerException {
+        CapturingChatModel fallbackModel = new CapturingChatModel("FALLBACK_EXECUTED");
+        LlmRoutingAgent routingAgent = routingAgentWithFallback(fallbackModel);
+
+        Optional<OverAllState> result = routingAgent.invoke(Map.of(
+                OverAllState.DEFAULT_INPUT_KEY, "explicit fallback request",
+                "messages", List.of(new UserMessage("message history request"))));
+
+        assertTrue(result.isPresent());
+        assertInstructionEquals(fallbackModel,
+                "Handle this original request: explicit fallback request");
+    }
+
+    /**
+     * Direct graph-style invocations may provide messages without the standard input key.
+     * In that case, the latest user message text supplies the fallback placeholder.
+     */
+    @Test
+    void messagesOnlyInvocationUsesLatestUserMessageText() throws GraphRunnerException {
+        CapturingChatModel fallbackModel = new CapturingChatModel("FALLBACK_EXECUTED");
+        LlmRoutingAgent routingAgent = routingAgentWithFallback(fallbackModel);
+
+        Optional<OverAllState> result = routingAgent.invoke(Map.of("messages", List.of(
+                new UserMessage("older request"),
+                new AssistantMessage("older response"),
+                new UserMessage("latest request"))));
+
+        assertTrue(result.isPresent());
+        assertInstructionEquals(fallbackModel, "Handle this original request: latest request");
+    }
+
+    /**
+     * Empty text on the latest user message can represent a media-only request. It must
+     * remain empty rather than falling back to stale text from an earlier user turn. The
+     * fallback still receives the media separately through the propagated messages.
+     */
+    @Test
+    void mediaOnlyLatestUserMessageDoesNotReuseOlderText() throws GraphRunnerException {
+        Media image = Media.builder()
+                .mimeType(Media.Format.IMAGE_PNG)
+                .data(new ByteArrayResource(new byte[] { 1, 2, 3 }))
+                .build();
+        UserMessage latestMessage = UserMessage.builder().text("").media(image).build();
+        CapturingChatModel fallbackModel = new CapturingChatModel("FALLBACK_EXECUTED");
+        LlmRoutingAgent routingAgent = routingAgentWithFallback(fallbackModel, true);
+
+        Optional<OverAllState> result = routingAgent.invoke(Map.of("messages", List.of(
+                new UserMessage("older request"),
+                new AssistantMessage("older response"),
+                latestMessage)));
+
+        assertTrue(result.isPresent());
+        assertInstructionEquals(fallbackModel, "Handle this original request: ");
+        assertTrue(fallbackModel.lastPromptContainsMedia(image));
+    }
+
+    /**
+     * If neither graph input nor a user message exists, the fallback placeholder resolves
+     * to an empty string so prompt rendering can continue.
+     */
+    @Test
+    void missingInputAndUserMessageUsesEmptyString() throws GraphRunnerException {
+        CapturingChatModel fallbackModel = new CapturingChatModel("FALLBACK_EXECUTED");
+        LlmRoutingAgent routingAgent = routingAgentWithFallback(fallbackModel);
+
+        Optional<OverAllState> result = routingAgent.invoke(Map.of(
+                "messages", List.of(new AssistantMessage("assistant-only history"))));
+
+        assertTrue(result.isPresent());
+        assertInstructionEquals(fallbackModel, "Handle this original request: ");
     }
 
     /**
@@ -192,6 +292,34 @@ class LlmRoutingAgentFallbackTest {
         assertEquals("PRIMARY_EXECUTED", primaryOutput.getText());
     }
 
+    private static LlmRoutingAgent routingAgentWithFallback(CapturingChatModel fallbackModel) {
+        return routingAgentWithFallback(fallbackModel, false);
+    }
+
+    private static LlmRoutingAgent routingAgentWithFallback(CapturingChatModel fallbackModel,
+                                                            boolean includeContents) {
+        ReactAgent fallbackAgent = ReactAgent.builder()
+                .name("fallback_agent")
+                .description("Fallback agent")
+                .model(fallbackModel)
+                .instruction("Handle this original request: {fallback_agent_input}")
+                .includeContents(includeContents)
+                .outputKey("fallback_output")
+                .build();
+
+        return LlmRoutingAgent.builder()
+                .name("router")
+                .description("Routes requests")
+                .model(new CountingChatModel(invalidRoutingDecision()))
+                .subAgents(List.of(fallbackAgent))
+                .fallbackAgent(fallbackAgent.name())
+                .build();
+    }
+
+    private static void assertInstructionEquals(CapturingChatModel model, String expectedText) {
+        assertEquals(expectedText, model.lastInstructionText());
+    }
+
     private static ReactAgent agent(String name, String outputKey, ChatModel model) {
         return ReactAgent.builder()
                 .name(name)
@@ -218,6 +346,44 @@ class LlmRoutingAgentFallbackTest {
             current = current.getCause();
         }
         return false;
+    }
+
+    private static final class CapturingChatModel implements ChatModel {
+
+        private final String responseText;
+
+        private List<Message> lastPromptMessages = List.of();
+
+        private CapturingChatModel(String responseText) {
+            this.responseText = responseText;
+        }
+
+        @Override
+        public ChatResponse call(Prompt prompt) {
+            this.lastPromptMessages = List.copyOf(prompt.getInstructions());
+            return new ChatResponse(List.of(new Generation(new AssistantMessage(responseText))));
+        }
+
+        @Override
+        public Flux<ChatResponse> stream(Prompt prompt) {
+            return Flux.just(call(prompt));
+        }
+
+        private String lastInstructionText() {
+            return lastPromptMessages.stream()
+                    .filter(AgentInstructionMessage.class::isInstance)
+                    .map(Message::getText)
+                    .findFirst()
+                    .orElseThrow();
+        }
+
+        private boolean lastPromptContainsMedia(Media media) {
+            return lastPromptMessages.stream()
+                    .filter(UserMessage.class::isInstance)
+                    .map(UserMessage.class::cast)
+                    .flatMap(message -> message.getMedia().stream())
+                    .anyMatch(media::equals);
+        }
     }
 
     /**
