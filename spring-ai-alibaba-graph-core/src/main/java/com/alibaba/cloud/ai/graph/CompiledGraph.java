@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.internal.node.Node;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduleConfig;
 import com.alibaba.cloud.ai.graph.scheduling.ScheduledAgentTask;
 import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.utils.MessageSequenceValidator;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -462,9 +463,20 @@ public class CompiledGraph {
 	public Map<String, Object> getInitialState(Map<String, Object> inputs, RunnableConfig config) {
 
 		return compileConfig.checkpointSaver()
-				.flatMap(saver -> saver.get(config))
+				.flatMap(saver -> latestConsistentCheckpoint(saver, config))
 				.map(cp -> OverAllState.updateState(cp.getState(), inputs, keyStrategyMap))
 				.orElseGet(() -> OverAllState.updateState(new HashMap<>(), inputs, keyStrategyMap));
+	}
+
+	private Optional<Checkpoint> latestConsistentCheckpoint(BaseCheckpointSaver saver, RunnableConfig config) {
+		if (config.checkPointId().isPresent()) {
+			return saver.get(config).filter(checkpoint -> MessageSequenceValidator
+				.isCheckpointReadyForNewInput(checkpoint.getState()));
+		}
+		// Saver histories are latest-first; this is also the order used by
+		// lastStateOf().
+		return saver.list(config).stream().filter(checkpoint -> MessageSequenceValidator
+			.isCheckpointReadyForNewInput(checkpoint.getState())).findFirst();
 	}
 
 	/**
