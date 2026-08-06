@@ -25,6 +25,7 @@ import com.alibaba.cloud.ai.graph.action.AsyncMultiCommandAction;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.agent.flow.enums.FlowAgentEnum;
 import com.alibaba.cloud.ai.graph.agent.flow.node.RoutingMergeNode;
@@ -100,7 +101,8 @@ public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrat
 
 		// Step 6: Add parallel conditional edges for routing
 		// This allows routing to one or multiple sub-agents in parallel
-		RoutingNode routingNode = new RoutingNode(config.getChatModel(), rootAgent, config.getSubAgents());
+		String fallbackAgent = (String) config.getCustomProperty(LlmRoutingAgent.FALLBACK_AGENT_KEY);
+		RoutingNode routingNode = new RoutingNode(config.getChatModel(), rootAgent, config.getSubAgents(), fallbackAgent);
 		graph.addParallelConditionalEdges(
 				routingExitNode,
 				AsyncMultiCommandAction.node_async(routingNode),

@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -53,10 +54,16 @@ public class RoutingNode implements MultiCommandAction {
 	private final ChatClient chatClient;
 	private final BeanOutputConverter<RoutingDecision> outputConverter;
 	private final Agent rootAgent;
+	private final String fallbackAgent;
 	private final List<Agent> subAgents;
 
 	public RoutingNode(ChatModel chatModel, Agent rootAgent, List<Agent> subAgents) {
+		this(chatModel, rootAgent, subAgents, null);
+	}
+
+	public RoutingNode(ChatModel chatModel, Agent rootAgent, List<Agent> subAgents, String fallbackAgent) {
 		this.rootAgent = rootAgent;
+		this.fallbackAgent = fallbackAgent;
 		this.subAgents = subAgents;
 
 		StringBuilder sb = new StringBuilder();
@@ -102,8 +109,22 @@ public class RoutingNode implements MultiCommandAction {
 		
 		// Prepare messages with instruction if available
 		List<Message> messagesWithInstruction = prepareMessagesWithInstruction(messages);
-		
-		RoutingDecision decision = getDecisionWithRetry(messagesWithInstruction, DEFAULT_MAX_RETRIES);
+
+		RoutingDecision decision;
+		try {
+			decision = getDecisionWithRetry(messagesWithInstruction, DEFAULT_MAX_RETRIES);
+		} catch (Exception routingFailure) {
+			if (!StringUtils.hasText(fallbackAgent)) {
+				throw routingFailure;
+			}
+
+			logger.warn("RoutingAgent {} failed after retries. " + "Falling back to agent '{}'.",
+					rootAgent.name(), fallbackAgent, routingFailure);
+
+			Object fallbackInput = resolveFallbackInput(state, messages);
+			return new MultiCommand(List.of(fallbackAgent), Map.of(fallbackAgent + "_input", fallbackInput));
+		}
+
 		List<String> decisionValues = decision.getAgentNames();
 
 		// Validate all agent names are valid
@@ -132,6 +153,30 @@ public class RoutingNode implements MultiCommandAction {
 			throw new IllegalStateException(
 					"RoutingAgent " + rootAgent.name() + " failed to get valid decision after retries. Invalid agents: " + invalidAgents + ".");
 		}
+	}
+
+	/**
+	 * Resolves the value for the fallback agent's {@code {agentName_input}}
+	 * placeholder. The explicit graph input takes precedence. For direct graph
+	 * invocations that provide only messages, the text of the latest user message is
+	 * used, even when it is empty, so an older request is not associated with newer
+	 * media-only content. Media remains available through the messages propagated to
+	 * sub-agents that include parent contents.
+	 */
+	private Object resolveFallbackInput(OverAllState state, List<Message> messages) {
+		Optional<Object> input = state.value(OverAllState.DEFAULT_INPUT_KEY);
+		if (input.isPresent()) {
+			return input.get();
+		}
+
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			Message message = messages.get(i);
+			if (message instanceof UserMessage) {
+				return message.getText();
+			}
+		}
+
+		return "";
 	}
 
 	/**
