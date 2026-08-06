@@ -13,24 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.alibaba.cloud.ai.a2a.autoconfigure.server;
 
-package com.alibaba.cloud.ai.a2a.core.constants;
+import com.alibaba.cloud.ai.a2a.core.constants.A2aConstants;
 
-/**
- * A2a protocol constants.
- *
- * @author xiweng.yy
- */
-public class A2aConstants {
+import org.a2aproject.sdk.spec.AgentInterface;
 
-	public static final String DEFAULT_A2A_PROTOCOL_VERSION = "1.0";
+final class A2aAgentInterfaceNormalizer {
 
-	public static final String DEFAULT_AGENT_VERSION = "1.0.0";
+	private A2aAgentInterfaceNormalizer() {
+	}
 
-	public static final String AGENT_TRANSPORT_TYPE_JSON_RPC = "JSONRPC";
-
-	public static final String AGENT_TRANSPORT_TYPE_GRPC = "GRPC";
-
-	public static final String AGENT_TRANSPORT_TYPE_REST = "HTTP+JSON";
+	static AgentInterface withDefaultProtocolVersion(AgentInterface agentInterface) {
+		if (agentInterface.protocolVersion() == null || agentInterface.protocolVersion().isBlank()) {
+			return new AgentInterface(agentInterface.protocolBinding(), agentInterface.url(), agentInterface.tenant(),
+					A2aConstants.DEFAULT_A2A_PROTOCOL_VERSION);
+		}
+		return agentInterface;
+	}
 
 }

@@ -17,10 +17,13 @@
 package com.alibaba.cloud.ai.a2a.registry.nacos.discovery;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import io.a2a.spec.AgentCapabilities;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.AgentInterface;
+import org.a2aproject.sdk.spec.AgentCapabilities;
+import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentInterface;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,8 +33,7 @@ class NacosAgentCardWrapperTest {
 
 	@Test
 	void urlShouldFallbackToAgentCardUrlWhenPreferredTransportIsMissing() {
-		AgentCard agentCard = createAgentCard(null,
-				List.of(new AgentInterface("JSONRPC", "http://localhost:8081")));
+		AgentCard agentCard = createAgentCard(null, List.of());
 		NacosAgentCardWrapper wrapper = new NacosAgentCardWrapper(agentCard);
 
 		assertThatNoException().isThrownBy(wrapper::url);
@@ -47,18 +49,42 @@ class NacosAgentCardWrapperTest {
 		assertThat(wrapper.url()).isEqualTo("http://localhost:8081");
 	}
 
+	@Test
+	void urlShouldOnlyPollInterfacesWithMatchingTransportVersionAndTenant() {
+		AgentCard agentCard = AgentCard.builder()
+			.name("test-agent")
+			.description("Test Agent")
+			.version("1.0.0")
+			.defaultInputModes(List.of("text/plain"))
+			.defaultOutputModes(List.of("text/plain"))
+			.skills(List.of())
+			.capabilities(AgentCapabilities.builder().streaming(false).build())
+			.supportedInterfaces(List.of(
+					new AgentInterface("JSONRPC", "http://localhost:8080", "tenant-a", "1.0"),
+					new AgentInterface("JSONRPC", "http://localhost:8081", "tenant-a", "0.3"),
+					new AgentInterface("JSONRPC", "http://localhost:8082", "tenant-b", "1.0"),
+					new AgentInterface("jsonrpc", "http://localhost:8083", "tenant-a", "1.0")))
+			.build();
+		NacosAgentCardWrapper wrapper = new NacosAgentCardWrapper(agentCard);
+
+		Set<String> urls = IntStream.range(0, 20).mapToObj(ignored -> wrapper.url()).collect(Collectors.toSet());
+
+		assertThat(urls).containsExactlyInAnyOrder("http://localhost:8080", "http://localhost:8083");
+		assertThat(wrapper.protocolVersion()).isEqualTo("1.0");
+		assertThat(wrapper.tenant()).isEqualTo("tenant-a");
+	}
+
 	private AgentCard createAgentCard(String preferredTransport, List<AgentInterface> additionalInterfaces) {
-		return new AgentCard.Builder().name("test-agent")
+		return AgentCard.builder().name("test-agent")
 			.description("Test Agent")
 			.url("http://localhost:8080")
 			.version("1.0.0")
-			.protocolVersion("0.3.0")
 			.preferredTransport(preferredTransport)
 			.defaultInputModes(List.of("text/plain"))
 			.defaultOutputModes(List.of("text/plain"))
 			.skills(List.of())
-			.capabilities(new AgentCapabilities.Builder().streaming(false).build())
-			.additionalInterfaces(additionalInterfaces)
+			.capabilities(AgentCapabilities.builder().streaming(false).build())
+			.supportedInterfaces(additionalInterfaces)
 			.build();
 	}
 

@@ -115,7 +115,7 @@ public class A2AExample {
 		// 验证要点
 		System.out.println("【验证要点】");
 		System.out.println("1. 本地 AgentCard:");
-		System.out.println("   → curl http://localhost:8080/.well-known/agent.json");
+		System.out.println("   → curl http://localhost:8080/.well-known/agent-card.json");
 		System.out.println();
 		System.out.println("2. Nacos 控制台（验证注册）:");
 		System.out.println("   → http://localhost:8848/nacos");

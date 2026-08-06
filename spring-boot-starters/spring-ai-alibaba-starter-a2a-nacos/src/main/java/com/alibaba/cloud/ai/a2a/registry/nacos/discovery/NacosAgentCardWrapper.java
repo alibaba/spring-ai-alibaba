@@ -24,8 +24,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.alibaba.nacos.common.utils.CollectionUtils;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.AgentInterface;
+import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentInterface;
 
 /**
  * Spring AI Alibaba Agent Card Wrapper for Nacos.
@@ -43,30 +43,33 @@ public class NacosAgentCardWrapper extends AgentCardWrapper {
 	}
 
 	private void shuffleStartIndex() {
-		if (CollectionUtils.isNotEmpty(getAgentCard().additionalInterfaces())) {
-			int shuffleIndex = ThreadLocalRandom.current().nextInt(getAgentCard().additionalInterfaces().size());
+		if (CollectionUtils.isNotEmpty(getAgentCard().supportedInterfaces())) {
+			int shuffleIndex = ThreadLocalRandom.current().nextInt(getAgentCard().supportedInterfaces().size());
 			pollingIndex.set(shuffleIndex);
 		}
 	}
 
 	@Override
-	public String url() {
-		if (CollectionUtils.isEmpty(getAgentCard().additionalInterfaces())) {
-			return super.url();
+	public AgentEndpoint endpoint() {
+		AgentCard agentCard = getAgentCard();
+		AgentEndpoint preferred = preferredEndpoint(agentCard);
+		if (CollectionUtils.isEmpty(agentCard.supportedInterfaces())) {
+			return preferred;
 		}
-		List<AgentInterface> agentInterfaces = getAgentCard().additionalInterfaces()
+		List<AgentInterface> agentInterfaces = agentCard.supportedInterfaces()
 			.stream()
 			.filter(agentInterface -> agentInterface != null
-					&& Objects.equals(getAgentCard().preferredTransport(), agentInterface.transport()))
+					&& preferred.protocolBinding().equalsIgnoreCase(agentInterface.protocolBinding())
+					&& Objects.equals(preferred.protocolVersion(), agentInterface.protocolVersion())
+					&& Objects.equals(preferred.tenant(), agentInterface.tenant()))
 			.toList();
 		if (CollectionUtils.isEmpty(agentInterfaces)) {
-			return super.url();
+			return preferred;
 		}
-		if (1 == agentInterfaces.size()) {
-			return agentInterfaces.get(0).url();
-		}
-		int index = pollingIndex.incrementAndGet() % agentInterfaces.size();
-		return agentInterfaces.get(index).url();
+		int index = agentInterfaces.size() == 1 ? 0
+				: Math.floorMod(pollingIndex.getAndIncrement(), agentInterfaces.size());
+		return new AgentEndpoint(agentInterfaces.get(index).url(), preferred.protocolBinding(),
+				preferred.protocolVersion(), preferred.tenant());
 	}
 
 	@Override
