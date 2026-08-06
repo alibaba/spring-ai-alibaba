@@ -85,7 +85,7 @@ public interface ToolResponseMessageHandler {
 			}
 			gen.writeEndArray();
 
-			serializeMetadata(gen, msg.getMetadata());
+			serializeMetadata(gen, provider, msg.getMetadata());
 		}
 	}
 
