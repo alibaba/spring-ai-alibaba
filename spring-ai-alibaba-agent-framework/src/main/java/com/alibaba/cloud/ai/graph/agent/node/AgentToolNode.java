@@ -579,8 +579,17 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Chain interceptors if any
 		ToolCallHandler chainedHandler = InterceptorChain.chainToolInterceptors(toolInterceptors, baseHandler);
 
-		// Execute the chained handler
-		return chainedHandler.call(request);
+		// Execute the chained handler with a fallback catch to ensure the graph
+		// never crashes from tool exceptions. This is the single place where
+		// unhandled exceptions are converted to ToolCallResponse.error(...) so
+		// that upstream interceptors have a chance to handle them first.
+		try {
+			return chainedHandler.call(request);
+		}
+		catch (Exception e) {
+			logger.error("Tool {} execution failed after interceptor chain: {}", request.getToolName(), e.getMessage(), e);
+			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(e));
+		}
 	}
 
 	/**
@@ -738,38 +747,34 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 			return ToolCallResponse.success(request.getToolCallId(), request.getToolName(), result);
 		}
+		catch (ToolExecutionException e) {
+			logger.error("Async tool {} execution failed, handling with processor: {}", request.getToolName(),
+					toolExecutionExceptionProcessor.getClass().getName(), e);
+			String result = toolExecutionExceptionProcessor.process(e);
+			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), result);
+		}
 		catch (CompletionException e) {
 			Throwable cause = e.getCause() != null ? e.getCause() : e;
 
-			// Clear state updates on timeout to prevent stale data from being merged
+			// Cancel the cancellation token on timeout so the async tool can stop
+			// gracefully, and clear stale state updates. This is async-specific
+			// infrastructure handling, not exception swallowing.
 			if (cause instanceof TimeoutException) {
-				// Cancel the token to notify the tool to stop gracefully
 				if (cancellationToken != null) {
 					cancellationToken.cancel();
 				}
 				extraStateFromToolCall.clear();
 				logger.warn("Async tool {} timed out, discarding any state updates", request.getToolName());
-				return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(cause));
 			}
-			else if (cause instanceof ToolExecutionException toolExecutionException) {
-				logger.error("Async tool {} execution failed, handling with processor: {}", request.getToolName(),
-						toolExecutionExceptionProcessor.getClass().getName(), toolExecutionException);
-				String result = toolExecutionExceptionProcessor.process(toolExecutionException);
-				return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), result);
-			}
-			else {
-				logger.error("Async tool {} execution failed: {}", request.getToolName(), cause.getMessage(), cause);
-				return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(cause));
-			}
+
+			// Rethrow so upstream interceptors can handle (retry, error-classify, etc.)
+			throw e;
 		}
-		catch (CancellationException e) {
-			logger.warn("Async tool {} execution was cancelled", request.getToolName(), e);
-			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(e));
-		}
-		catch (Exception e) {
-			logger.error("Async tool {} execution failed: {}", request.getToolName(), e.getMessage(), e);
-			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), extractErrorMessage(e));
-		}
+		// NOTE: CancellationException and generic Exception are no longer caught
+		// here. Previously this method swallowed all exceptions by returning
+		// ToolCallResponse.error(...), which prevented upstream interceptors from
+		// seeing them. Now exceptions propagate to the interceptor chain, and the
+		// final fallback is in executeToolCallWithInterceptors.
 	}
 
 	/**
@@ -799,10 +804,14 @@ public class AgentToolNode implements NodeActionWithConfig {
 			String result = toolExecutionExceptionProcessor.process(e);
 			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), result);
 		}
-		catch (Exception e) {
-			logger.error("Tool {} execution failed: {}", request.getToolName(), e.getMessage(), e);
-			return ToolCallResponse.error(request.getToolCallId(), request.getToolName(), e);
-		}
+		// NOTE: generic Exception is no longer caught here. Previously this method
+		// swallowed all exceptions by returning ToolCallResponse.error(...), which
+		// prevented upstream interceptors (e.g., ToolRetryInterceptor,
+		// ToolErrorInterceptor) from seeing the exception. Interceptors that rely
+		// on catch(Exception) to implement retry or error-classification were
+		// effectively dead code. Now exceptions propagate to the interceptor chain
+		// so they can be handled, and the final fallback is in
+		// executeToolCallWithInterceptors.
 	}
 
 	/**
