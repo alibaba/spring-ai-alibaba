@@ -134,6 +134,11 @@ public class InterruptionHook extends ModelHook implements AsyncNodeActionWithCo
 		
 		return CompletableFuture.completedFuture(updates);
 	}
+
+	@Override
+	public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+		return apply(state, config);
+	}
 	
 	@Override
 	public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
@@ -200,4 +205,3 @@ public class InterruptionHook extends ModelHook implements AsyncNodeActionWithCo
 		}
 	}
 }
-
