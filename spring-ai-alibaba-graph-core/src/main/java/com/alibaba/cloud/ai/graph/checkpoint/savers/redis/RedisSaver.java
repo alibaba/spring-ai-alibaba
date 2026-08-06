@@ -37,11 +37,14 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.redisson.api.RBucket;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.ByteArrayCodec;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -63,6 +66,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 	private static final String FIELD_THREAD_ID = "thread_id";
 	private static final String FIELD_IS_RELEASED = "is_released";
 	private static final String FIELD_THREAD_NAME = "thread_name";
+	private static final byte[] CHECKPOINT_FORMAT_MAGIC = { 'S', 'A', 'A', 'C', 1 };
 	private final Serializer<Checkpoint> checkpointSerializer;
 	private RedissonClient redisson;
 	private final long ttl;
@@ -94,33 +98,64 @@ public class RedisSaver implements BaseCheckpointSaver {
 		return new Builder();
 	}
 
-	private String serializeCheckpoints(List<Checkpoint> checkpoints) throws IOException {
-		try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			 ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+	private byte[] serializeCheckpoints(List<Checkpoint> checkpoints) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		baos.write(CHECKPOINT_FORMAT_MAGIC);
+		try (GZIPOutputStream gzip = new GZIPOutputStream(baos);
+			 ObjectOutputStream oos = new ObjectOutputStream(gzip)) {
 			oos.writeInt(checkpoints.size());
 			for (Checkpoint checkpoint : checkpoints) {
 				checkpointSerializer.write(checkpoint, oos);
 			}
-			oos.flush();
-			byte[] bytes = baos.toByteArray();
-			return Base64.getEncoder().encodeToString(bytes);
+		}
+		return baos.toByteArray();
+	}
+
+	private LinkedList<Checkpoint> deserializeCheckpoints(String contentKey) throws IOException, ClassNotFoundException {
+		RBucket<byte[]> binaryBucket = redisson.getBucket(contentKey, ByteArrayCodec.INSTANCE);
+		byte[] content = binaryBucket.get();
+		if (content == null || content.length == 0) {
+			return new LinkedList<>();
+		}
+		if (hasVersionedHeader(content)) {
+			try (ByteArrayInputStream bais = new ByteArrayInputStream(content, CHECKPOINT_FORMAT_MAGIC.length,
+					content.length - CHECKPOINT_FORMAT_MAGIC.length);
+				 GZIPInputStream gzip = new GZIPInputStream(bais);
+				 ObjectInputStream ois = new ObjectInputStream(gzip)) {
+				return readCheckpoints(ois);
+			}
+		}
+
+		String legacyContent = redisson.<String>getBucket(contentKey).get();
+		if (legacyContent == null || legacyContent.isEmpty()) {
+			return new LinkedList<>();
+		}
+		byte[] legacyBytes = Base64.getDecoder().decode(legacyContent);
+		try (ByteArrayInputStream bais = new ByteArrayInputStream(legacyBytes);
+			 ObjectInputStream ois = new ObjectInputStream(bais)) {
+			return readCheckpoints(ois);
 		}
 	}
 
-	private LinkedList<Checkpoint> deserializeCheckpoints(String content) throws IOException, ClassNotFoundException {
-		if (content == null || content.isEmpty()) {
-			return new LinkedList<>();
+	private boolean hasVersionedHeader(byte[] content) {
+		if (content.length < CHECKPOINT_FORMAT_MAGIC.length) {
+			return false;
 		}
-		byte[] bytes = Base64.getDecoder().decode(content);
-		try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-			 ObjectInputStream ois = new ObjectInputStream(bais)) {
+		for (int i = 0; i < CHECKPOINT_FORMAT_MAGIC.length; i++) {
+			if (content[i] != CHECKPOINT_FORMAT_MAGIC[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private LinkedList<Checkpoint> readCheckpoints(ObjectInputStream ois) throws IOException, ClassNotFoundException {
 			int size = ois.readInt();
 			LinkedList<Checkpoint> checkpoints = new LinkedList<>();
 			for (int i = 0; i < size; i++) {
 				checkpoints.add(checkpointSerializer.read(ois));
 			}
 			return checkpoints;
-		}
 	}
 
 	/**
@@ -209,9 +244,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 			}
 
 			// Use thread_id to query checkpoints
-			RBucket<String> bucket = redisson.getBucket(CHECKPOINT_PREFIX + threadId);
-			String content = bucket.get();
-			return deserializeCheckpoints(content);
+			return deserializeCheckpoints(CHECKPOINT_PREFIX + threadId);
 
 		}
 		catch (InterruptedException e) {
@@ -251,9 +284,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 			}
 
 			// Use thread_id to query checkpoints
-			RBucket<String> bucket = redisson.getBucket(CHECKPOINT_PREFIX + threadId);
-			String content = bucket.get();
-			LinkedList<Checkpoint> checkpoints = deserializeCheckpoints(content);
+			LinkedList<Checkpoint> checkpoints = deserializeCheckpoints(CHECKPOINT_PREFIX + threadId);
 
 			if (config.checkPointId().isPresent()) {
 				return config.checkPointId()
@@ -298,9 +329,8 @@ public class RedisSaver implements BaseCheckpointSaver {
 			String threadId = getOrCreateThreadId(threadName);
 
 			// Use thread_id as key for checkpoint storage
-			RBucket<String> bucket = redisson.getBucket(CHECKPOINT_PREFIX + threadId);
-			String content = bucket.get();
-			LinkedList<Checkpoint> checkpoints = deserializeCheckpoints(content);
+			String contentKey = CHECKPOINT_PREFIX + threadId;
+			LinkedList<Checkpoint> checkpoints = deserializeCheckpoints(contentKey);
 
 			if (config.checkPointId().isPresent()) {
 				// Replace Checkpoint
@@ -317,6 +347,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 				checkpoints.push(checkpoint);
 			}
 
+			RBucket<byte[]> bucket = redisson.getBucket(contentKey, ByteArrayCodec.INSTANCE);
 			bucket.set(serializeCheckpoints(checkpoints));
 			if (ttl > 0) {
 				bucket.expire(java.time.Duration.ofMillis(ttlUnit.toMillis(ttl)));
@@ -374,9 +405,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 
 			// Get checkpoints for Tag (using thread_id)
 			String contentKey = CHECKPOINT_PREFIX + threadId;
-			RBucket<String> bucket = redisson.getBucket(contentKey);
-			String content = bucket.get();
-			Collection<Checkpoint> checkpoints = deserializeCheckpoints(content);
+			Collection<Checkpoint> checkpoints = deserializeCheckpoints(contentKey);
 
 			return new Tag(threadName, checkpoints);
 
