@@ -17,10 +17,17 @@ package com.alibaba.cloud.ai.graph;
 
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.AsyncCommandAction;
+import com.alibaba.cloud.ai.graph.action.AsyncMultiCommandAction;
+import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.action.MultiCommand;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.state.StateSnapshot;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
 
@@ -160,6 +167,111 @@ public class InterruptionTest {
 			.collectList()
 			.block();
 		assertIterableEquals(List.of("C", END), results);
+	}
+
+	@Test
+	void updateStateAsNodeShouldNotReappendExistingAppendState() throws Exception {
+		MemorySaver saver = MemorySaver.builder().build();
+		KeyStrategyFactory keyStrategyFactory = () -> Map.of(
+				"messages", new AppendStrategy(),
+				"human_feedback", new ReplaceStrategy(),
+				"edge_updates", new AppendStrategy());
+
+		CompiledGraph workflow = new StateGraph(keyStrategyFactory)
+			.addNode("step_1", node_async((state, config) -> Map.of("messages", "Step 1")))
+			.addNode("human_feedback", node_async((state, config) -> Map.of()))
+			.addNode("step_3", node_async((state, config) -> Map.of("messages", "Step 3")))
+			.addEdge(START, "step_1")
+			.addEdge("step_1", "human_feedback")
+			.addConditionalEdges("human_feedback",
+					AsyncCommandAction.node_async((state, currentConfig) ->
+							new Command("next", Map.of("edge_updates", "recorded"))),
+					Map.of("next", "step_3", "wait", END))
+			.addEdge("step_3", END)
+			.compile(CompileConfig.builder()
+				.saverConfig(SaverConfig.builder().register(saver).build())
+				.interruptBefore("human_feedback")
+				.build());
+
+		RunnableConfig config = RunnableConfig.builder().threadId("issue-4886").build();
+		workflow.stream(Map.of("messages", "build"), config).blockLast();
+
+		StateSnapshot checkpoint = workflow.lastStateOf(config).orElseThrow();
+		assertIterableEquals(List.of("build", "Step 1"),
+				(List<?>) checkpoint.state().value("messages").orElseThrow());
+
+		RunnableConfig updatedConfig = workflow.updateState(checkpoint.config(), Map.of("human_feedback", "next"),
+				"human_feedback");
+		StateSnapshot updatedCheckpoint = workflow.stateOf(updatedConfig).orElseThrow();
+
+		assertEquals(List.of("build", "Step 1"), updatedCheckpoint.state().value("messages").orElseThrow());
+		assertEquals("next", updatedCheckpoint.state().value("human_feedback").orElseThrow());
+		assertEquals(List.of("recorded"), updatedCheckpoint.state().value("edge_updates").orElseThrow());
+	}
+
+	@Test
+	void updateStateAsNodeShouldNotReappendExistingAppendStateForStaticEdge() throws Exception {
+		MemorySaver saver = MemorySaver.builder().build();
+		KeyStrategyFactory keyStrategyFactory = () -> Map.of(
+				"messages", new AppendStrategy(),
+				"human_feedback", new ReplaceStrategy());
+
+		CompiledGraph workflow = new StateGraph(keyStrategyFactory)
+			.addNode("step_1", node_async((state, config) -> Map.of("messages", "Step 1")))
+			.addNode("human_feedback", node_async((state, config) -> Map.of()))
+			.addNode("step_3", node_async((state, config) -> Map.of("messages", "Step 3")))
+			.addEdge(START, "step_1")
+			.addEdge("step_1", "human_feedback")
+			.addEdge("human_feedback", "step_3")
+			.addEdge("step_3", END)
+			.compile(CompileConfig.builder()
+				.saverConfig(SaverConfig.builder().register(saver).build())
+				.interruptBefore("human_feedback")
+				.build());
+
+		RunnableConfig config = RunnableConfig.builder().threadId("issue-4886-static").build();
+		workflow.stream(Map.of("messages", "build"), config).blockLast();
+
+		RunnableConfig updatedConfig = workflow.updateState(workflow.lastStateOf(config).orElseThrow().config(),
+				Map.of("human_feedback", "next"), "human_feedback");
+		StateSnapshot updatedCheckpoint = workflow.stateOf(updatedConfig).orElseThrow();
+
+		assertEquals(List.of("build", "Step 1"), updatedCheckpoint.state().value("messages").orElseThrow());
+		assertEquals("step_3", updatedConfig.nextNode().orElseThrow());
+	}
+
+	@Test
+	void updateStateAsNodeShouldNotReappendExistingAppendStateForMultiCommandRoute() throws Exception {
+		MemorySaver saver = MemorySaver.builder().build();
+		KeyStrategyFactory keyStrategyFactory = () -> Map.of(
+				"messages", new AppendStrategy(),
+				"human_feedback", new ReplaceStrategy());
+
+		CompiledGraph workflow = new StateGraph(keyStrategyFactory)
+			.addNode("step_1", node_async((state, config) -> Map.of("messages", "Step 1")))
+			.addNode("human_feedback", node_async((state, config) -> Map.of()))
+			.addNode("step_3", node_async((state, config) -> Map.of("messages", "Step 3")))
+			.addEdge(START, "step_1")
+			.addEdge("step_1", "human_feedback")
+			.addParallelConditionalEdges("human_feedback",
+					AsyncMultiCommandAction.node_async((state, currentConfig) ->
+							new MultiCommand(List.of("next"), Map.of("edge_update", "deferred"))),
+					Map.of("next", "step_3"))
+			.addEdge("step_3", END)
+			.compile(CompileConfig.builder()
+				.saverConfig(SaverConfig.builder().register(saver).build())
+				.interruptBefore("human_feedback")
+				.build());
+
+		RunnableConfig config = RunnableConfig.builder().threadId("issue-4886-multi").build();
+		workflow.stream(Map.of("messages", "build"), config).blockLast();
+
+		RunnableConfig updatedConfig = workflow.updateState(workflow.lastStateOf(config).orElseThrow().config(),
+				Map.of("human_feedback", "next"), "human_feedback");
+		StateSnapshot updatedCheckpoint = workflow.stateOf(updatedConfig).orElseThrow();
+
+		assertEquals(List.of("build", "Step 1"), updatedCheckpoint.state().value("messages").orElseThrow());
+		assertFalse(updatedCheckpoint.state().value("edge_update").isPresent());
 	}
 
 	/**
