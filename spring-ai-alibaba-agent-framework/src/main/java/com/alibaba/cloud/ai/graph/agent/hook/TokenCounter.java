@@ -71,7 +71,10 @@ public interface TokenCounter {
 					// Count tokens in tool calls
 					for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 						// Count tokens in tool arguments (JSON string)
-						total += toolCall.arguments().length() / charsPerToken;
+						//加判空，不然无参数工具会报错
+						if(toolCall.arguments()!=null){
+						  total += toolCall.arguments().length() / charsPerToken;
+						}
 					}
 				}
 				// Handle other message types
