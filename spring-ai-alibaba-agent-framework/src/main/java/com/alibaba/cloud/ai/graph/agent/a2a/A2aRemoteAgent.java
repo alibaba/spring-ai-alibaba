@@ -15,7 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph.agent.a2a;
 
-import com.alibaba.cloud.ai.graph.*;
+import com.alibaba.cloud.ai.graph.CompileConfig;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
@@ -28,11 +32,13 @@ import io.a2a.spec.AgentCard;
 
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class A2aRemoteAgent extends BaseAgent {
-	Logger logger = Logger.getLogger(A2aRemoteAgent.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(A2aRemoteAgent.class);
 
 	private final AgentCardWrapper agentCard;
 

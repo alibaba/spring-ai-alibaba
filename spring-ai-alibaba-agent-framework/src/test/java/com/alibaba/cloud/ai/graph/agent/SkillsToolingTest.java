@@ -98,9 +98,10 @@ class SkillsToolingTest {
 	@Test
 	void skillsAgentHookExposesRegistryTools() {
 		SkillsAgentHook hook = SkillsAgentHook.builder().skillRegistry(registry).build();
+		List<String> toolNames = hook.getTools().stream().map(tool -> tool.getToolDefinition().name()).toList();
 
-		assertEquals(List.of("read_skill", "search_skills", "disable_skill"),
-				hook.getTools().stream().map(tool -> tool.getToolDefinition().name()).toList());
+		assertEquals(List.of("read_skill", "search_skills", "disable_skill"), toolNames);
+		assertFalse(toolNames.contains("allowed-tools-test"));
 	}
 
 }

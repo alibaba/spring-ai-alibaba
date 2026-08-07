@@ -102,11 +102,7 @@ public class TemplateTransformNode implements NodeAction {
 				logger.debug("Variable '{}' exists but is null: {}", key, replacement);
 			}
 			else {
-				if (defaultValue != null) {
-					replacement = "{{" + key + " ?: " + defaultValue.trim() + "}}";
-				} else {
-					replacement = "{{" + key + "}}";
-				}
+				replacement = "{{" + key + "}}";
 				logger.debug("Variable '{}' not found, keeping placeholder: {}", key, replacement);
 			}
 			replacement = replacement.replace("\\", "\\\\").replace("$", "\\$");

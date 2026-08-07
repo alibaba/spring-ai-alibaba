@@ -26,9 +26,31 @@ import static java.util.Optional.ofNullable;
 
 public interface BaseCheckpointSaver {
 	String THREAD_ID_DEFAULT = "$default";
+	String CHECKPOINTS_NUM_RETAINED = "checkpoints.numRetained";
 
 	default Optional<Checkpoint> getLast(LinkedList<Checkpoint> checkpoints, RunnableConfig config) {
 		return (checkpoints.isEmpty()) ? Optional.empty() : ofNullable(checkpoints.peek());
+	}
+
+	default Optional<Integer> checkpointsNumRetained(RunnableConfig config) {
+		return config.metadata(CHECKPOINTS_NUM_RETAINED).map(value -> {
+			if (value instanceof Number number) {
+				return number.intValue();
+			}
+			if (value instanceof String text) {
+				return Integer.parseInt(text);
+			}
+			throw new IllegalArgumentException(
+					"checkpoints.numRetained must be a number or numeric string, got: " + value.getClass().getName());
+		}).filter(value -> value > 0);
+	}
+
+	default void retainLatestCheckpoints(LinkedList<Checkpoint> checkpoints, RunnableConfig config) {
+		checkpointsNumRetained(config).ifPresent(numRetained -> {
+			while (checkpoints.size() > numRetained) {
+				checkpoints.removeLast();
+			}
+		});
 	}
 
 	Collection<Checkpoint> list(RunnableConfig config);

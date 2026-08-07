@@ -59,3 +59,4 @@ modified_mcp_config.json
 **/spans.json
 
 .checkstyle
+model-config.yaml

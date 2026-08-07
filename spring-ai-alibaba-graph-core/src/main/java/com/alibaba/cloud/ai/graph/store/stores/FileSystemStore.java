@@ -15,12 +15,24 @@
  */
 package com.alibaba.cloud.ai.graph.store.stores;
 
-import com.alibaba.cloud.ai.graph.store.*;
+import com.alibaba.cloud.ai.graph.store.NamespaceListRequest;
+import com.alibaba.cloud.ai.graph.store.StoreItem;
+import com.alibaba.cloud.ai.graph.store.StoreSearchRequest;
+import com.alibaba.cloud.ai.graph.store.StoreSearchResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
@@ -241,11 +253,27 @@ public class FileSystemStore extends BaseStore {
 	 * @return item path
 	 */
 	private Path createItemPath(List<String> namespace, String key) {
-		Path path = rootPath;
+		Path path = rootPath.toAbsolutePath().normalize();
 		for (String ns : namespace) {
+			validatePathSegment(ns, "namespace");
 			path = path.resolve(ns);
 		}
-		return path.resolve(key + ".json");
+		validatePathSegment(key, "key");
+		Path itemPath = path.resolve(key + ".json").normalize();
+		if (!itemPath.startsWith(rootPath.toAbsolutePath().normalize())) {
+			throw new IllegalArgumentException("resolved path escapes root directory");
+		}
+		return itemPath;
+	}
+
+	private void validatePathSegment(String segment, String fieldName) {
+		if (segment == null || segment.trim().isEmpty()) {
+			throw new IllegalArgumentException(fieldName + " cannot be null or empty");
+		}
+		Path candidate = Paths.get(segment);
+		if (candidate.isAbsolute() || candidate.getNameCount() != 1 || "..".equals(segment) || ".".equals(segment)) {
+			throw new IllegalArgumentException(fieldName + " contains unsafe path segment: " + segment);
+		}
 	}
 
 	/**

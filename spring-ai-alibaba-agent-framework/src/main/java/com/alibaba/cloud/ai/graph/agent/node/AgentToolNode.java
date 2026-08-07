@@ -18,10 +18,8 @@ package com.alibaba.cloud.ai.graph.agent.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
-import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallExecutionContext;
-import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallExecutionContext;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
@@ -33,6 +31,8 @@ import com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken;
 import com.alibaba.cloud.ai.graph.agent.tool.StateAwareToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCancelledException;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolStateCollector;
+import com.alibaba.cloud.ai.graph.internal.node.ParallelNode;
+import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -544,7 +544,13 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 			if (toolCallback == null) {
 				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, req.getToolName());
-				throw new IllegalStateException("No ToolCallback found for tool name: " + req.getToolName());
+				return ToolCallResponse.builder()
+					.content("Tool not available: " + req.getToolName())
+					.toolName(req.getToolName())
+					.toolCallId(req.getToolCallId())
+					.status("error")
+					.metadata(Map.of("error", true, "unresolvedToolName", req.getToolName()))
+					.build();
 			}
 
 			if (enableActingLog) {
@@ -730,7 +736,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				}
 			}
 
-			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), result);
+			return ToolCallResponse.success(request.getToolCallId(), request.getToolName(), result);
 		}
 		catch (CompletionException e) {
 			Throwable cause = e.getCause() != null ? e.getCause() : e;
@@ -785,7 +791,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 				}
 			}
 
-			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), result);
+			return ToolCallResponse.success(request.getToolCallId(), request.getToolName(), result);
 		}
 		catch (ToolExecutionException e) {
 			logger.error("Tool {} execution failed, handling with processor: {}", request.getToolName(),
@@ -826,7 +832,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 	 * Get the executor for tool execution from config or use default.
 	 */
 	private Executor getToolExecutor(RunnableConfig config) {
-		return ParallelNode.getExecutor(config, AGENT_TOOL_NAME);
+		return config.metadata(ParallelNode.formatNodeId(AGENT_TOOL_NAME))
+			.filter(value -> value instanceof Executor)
+			.map(Executor.class::cast)
+			.orElseGet(() -> ParallelNode.getExecutor(config, AGENT_TOOL_NAME));
 	}
 
 	private ToolCallback resolve(String toolName, RunnableConfig config) {

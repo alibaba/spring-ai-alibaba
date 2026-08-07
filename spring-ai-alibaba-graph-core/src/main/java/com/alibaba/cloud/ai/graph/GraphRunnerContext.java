@@ -83,6 +83,16 @@ public class GraphRunnerContext {
 		this.compiledGraph = compiledGraph;
 		this.config = config;
 
+		// Decide whether this run continues from a persisted checkpoint or starts over
+		// from START. A checkpoint is only resumed when the config explicitly asks for it,
+		// either by carrying a concrete checkpoint id or by carrying resume metadata
+		// (added via RunnableConfig.withResume() / RunnableConfig.builder(config).resume()).
+		//
+		// Note: passing a config that merely has a checkpoint saver / thread id (e.g.
+		// invoke(Map.of(), config) without a checkpoint id and without resume metadata)
+		// intentionally starts from START and only reuses the persisted state; it does NOT
+		// continue from the latest checkpoint's next node. To resume from the latest
+		// checkpoint without knowing its id, use config.withResume(). See RunnableConfig#withResume().
 		if (config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY).isPresent() || config.checkPointId().isPresent()) {
 			initializeFromResume(initialState, config);
 		} else {
@@ -114,7 +124,8 @@ public class GraphRunnerContext {
 
 		this.currentNodeId = null;
 		this.nextNodeId = checkpoint.getNextNodeId();
-		this.overallState = initialState.input(checkpoint.getState());
+		this.overallState = stateCreate(checkpoint.getState(), initialState);
+		this.overallState.input(initialState.data());
 		this.resumeFrom = checkpoint.getNodeId();
 
 		log.trace("RESUME FROM {}", checkpoint.getNodeId());
@@ -464,11 +475,15 @@ public class GraphRunnerContext {
 			// Check if "messages" key exists and is a List
 			Object messagesObj = updateStates.get("messages");
 			if (messagesObj instanceof List<?> messagesList && !messagesList.isEmpty()) {
-				// Get the last element
-				Object lastElement = messagesList.get(messagesList.size() - 1);
-				// Check if it's a Message type
-				if (lastElement instanceof Message) {
-					message = (Message) lastElement;
+				// Iterate backwards to find the last Message, skipping non-Message
+				// markers such as RemoveByHash that may be appended after the actual
+				// message (e.g. in HITL partial tool-response handling).
+				for (int i = messagesList.size() - 1; i >= 0; i--) {
+					Object element = messagesList.get(i);
+					if (element instanceof Message msg) {
+						message = msg;
+						break;
+					}
 				}
 			} else if (messagesObj instanceof Message singleMessage) {
 				// If it's a single Message instance

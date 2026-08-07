@@ -96,10 +96,13 @@ public class KnowledgeBaseDocumentRetriever implements DocumentRetriever {
 				documents.addAll(future.get(SEARCH_TIMEOUT, TimeUnit.SECONDS));
 			}
 
+			Integer topK = searchOptions.getTopK();
+			Float similarityThreshold = searchOptions.getSimilarityThreshold();
 			List<Document> results = documents.stream()
 				.sorted(Comparator.comparing(Document::getScore, Comparator.nullsLast(Comparator.reverseOrder())))
-				.filter(x -> x.getScore() != null && x.getScore() > searchOptions.getSimilarityThreshold())
-				.limit(searchOptions.getTopK())
+				.filter(x -> x.getScore() != null
+						&& (similarityThreshold == null || x.getScore() > similarityThreshold))
+				.limit(topK != null ? topK.longValue() : Long.MAX_VALUE)
 				.toList();
 
 			LogUtils.monitor("DocumentRetriever", "retrieve", start, SUCCESS, query.text(), results.size());

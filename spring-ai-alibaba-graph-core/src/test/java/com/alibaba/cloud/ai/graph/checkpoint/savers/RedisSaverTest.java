@@ -26,12 +26,18 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.redis.RedisSaver;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
+import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
+import com.alibaba.cloud.ai.graph.serializer.check_point.CheckPointSerializer;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +56,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.config.Config;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -867,5 +874,64 @@ class RedisSaverTest {
 
 		executorService.shutdown();
 		executorService.awaitTermination(5, TimeUnit.SECONDS);
+	}
+
+	@Test
+	void testReadsAndMigratesLegacyBase64Payload() throws Exception {
+		String threadName = "test-legacy-migration-" + UUID.randomUUID();
+		String storedThreadId = UUID.randomUUID().toString();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadName).build();
+		String contentKey = "graph:checkpoint:content:" + storedThreadId;
+
+		redisson.<String, String>getMap("graph:thread:meta:" + threadName).put("thread_id", storedThreadId);
+		redisson.<String, String>getMap("graph:thread:meta:" + threadName).put("is_released", "false");
+
+		Checkpoint legacyCheckpoint = Checkpoint.builder()
+				.id("legacy")
+				.state(Map.of("content", "repetitive checkpoint content ".repeat(4096)))
+				.nodeId("node1")
+				.nextNodeId("node2")
+				.build();
+		String legacyPayload = serializeLegacyCheckpoints(List.of(legacyCheckpoint));
+		redisson.<String>getBucket(contentKey).set(legacyPayload);
+
+		List<Checkpoint> legacyResult = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(1, legacyResult.size());
+		assertEquals("legacy", legacyResult.get(0).getId());
+
+		Checkpoint currentCheckpoint = Checkpoint.builder()
+				.id("current")
+				.state(Map.of("content", "repetitive checkpoint content ".repeat(4096)))
+				.nodeId("node2")
+				.nextNodeId("node3")
+				.build();
+		redisSaver.put(config, currentCheckpoint);
+
+		byte[] migratedPayload = redisson.<byte[]>getBucket(contentKey, ByteArrayCodec.INSTANCE).get();
+		assertNotNull(migratedPayload);
+		assertEquals('S', migratedPayload[0]);
+		assertEquals('A', migratedPayload[1]);
+		assertEquals('A', migratedPayload[2]);
+		assertEquals('C', migratedPayload[3]);
+		assertEquals(1, migratedPayload[4]);
+		assertTrue(migratedPayload.length < legacyPayload.getBytes(StandardCharsets.UTF_8).length);
+
+		List<Checkpoint> migratedResult = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(2, migratedResult.size());
+		assertTrue(migratedResult.stream().anyMatch(checkpoint -> "legacy".equals(checkpoint.getId())));
+		assertTrue(migratedResult.stream().anyMatch(checkpoint -> "current".equals(checkpoint.getId())));
+	}
+
+	private static String serializeLegacyCheckpoints(List<Checkpoint> checkpoints) throws Exception {
+		Serializer<Checkpoint> checkpointSerializer = new CheckPointSerializer(serializer);
+		try (ByteArrayOutputStream output = new ByteArrayOutputStream();
+			 ObjectOutputStream objectOutput = new ObjectOutputStream(output)) {
+			objectOutput.writeInt(checkpoints.size());
+			for (Checkpoint checkpoint : checkpoints) {
+				checkpointSerializer.write(checkpoint, objectOutput);
+			}
+			objectOutput.flush();
+			return Base64.getEncoder().encodeToString(output.toByteArray());
+		}
 	}
 }

@@ -15,9 +15,11 @@
  */
 package com.alibaba.cloud.ai.graph.agent.tools;
 
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.List;
 
+import com.github.benmanes.caffeine.cache.Cache;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
@@ -81,6 +83,27 @@ class WebFetchToolTest {
 				new ToolContext(Collections.emptyMap()));
 		assertTrue(result.startsWith("Error:"));
 		assertTrue(result.contains("Invalid URL"));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void testCacheRespectsMaxCacheSize() throws Exception {
+		int maxCacheSize = 10;
+		ChatModel chatModel = mock(ChatModel.class);
+		ChatClient chatClient = ChatClient.builder(chatModel).build();
+		WebFetchTool tool = WebFetchTool.builder(chatClient).maxCacheSize(maxCacheSize).buildWebFetchTool();
+
+		Field cacheField = WebFetchTool.class.getDeclaredField("urlCache");
+		cacheField.setAccessible(true);
+		Cache<String, String> cache = (Cache<String, String>) cacheField.get(tool);
+
+		for (int i = 0; i < maxCacheSize * 10; i++) {
+			cache.put("https://example.com/" + i + "::prompt::0", "content-" + i);
+		}
+		cache.cleanUp();
+
+		assertTrue(cache.estimatedSize() <= maxCacheSize,
+				"cache size " + cache.estimatedSize() + " must not exceed maxCacheSize " + maxCacheSize);
 	}
 
 	@Test

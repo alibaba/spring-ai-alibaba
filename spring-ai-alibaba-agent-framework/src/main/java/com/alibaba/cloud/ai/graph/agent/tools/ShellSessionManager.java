@@ -20,16 +20,36 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
  * Manages shell sessions and command execution.
  * Provides persistent shell execution capabilities with state preservation.
+ *
+ * <p>This class maintains a global registry of shell sessions keyed by {@code threadId},
+ * enabling session recovery after Human-in-the-Loop (HITL) interrupts. When a graph
+ * resumes with a fresh {@link RunnableConfig} (which has an empty context), the session
+ * can be looked up from the registry using the same threadId, preserving working directory,
+ * environment variables, and other shell state.</p>
  */
 public class ShellSessionManager {
 
@@ -37,6 +57,19 @@ public class ShellSessionManager {
 	private static final String DONE_MARKER_PREFIX = "__LC_SHELL_DONE__";
 	private static final String SESSION_INSTANCE_CONTEXT_KEY = "_SHELL_SESSION_";
 	private static final String SESSION_PATH_CONTEXT_KEY = "_SHELL_PATH_";
+
+	/**
+	 * Global registry of shell sessions, keyed by threadId.
+	 * This enables session recovery after HITL interrupts where the original
+	 * RunnableConfig.context is lost but the threadId is preserved.
+	 */
+	private static final ConcurrentHashMap<String, SessionEntry> SESSION_REGISTRY = new ConcurrentHashMap<>();
+
+	/**
+	 * Entry in the session registry, holding both the session and its workspace path.
+	 */
+	private record SessionEntry(ShellSession session, Path workspacePath) {
+	}
 
 	private final Path workspaceRoot;
 	private final boolean useTemporaryWorkspace;
@@ -72,6 +105,8 @@ public class ShellSessionManager {
 
 	/**
 	 * Initialize shell session.
+	 * The session is registered in the global registry using {@code threadId} as the key,
+	 * enabling recovery after HITL interrupts.
 	 */
 	public void initialize(RunnableConfig config) {
 		try {
@@ -85,9 +120,16 @@ public class ShellSessionManager {
 				Files.createDirectories(workspace);
 			}
 
-			ShellSession session = new ShellSession(workspace, shellCommand, environment);
+			ShellSession session = new ShellSession(workspace, shellCommand, environment, terminationTimeout);
 			session.start();
 			config.context().put(SESSION_INSTANCE_CONTEXT_KEY, session);
+
+			// Register in global registry for HITL recovery
+			final Path finalWorkspace = workspace;
+			config.threadId().ifPresent(threadId -> {
+				SESSION_REGISTRY.put(threadId, new SessionEntry(session, finalWorkspace));
+				log.debug("Registered shell session in global registry with threadId: {}", threadId);
+			});
 
 			log.info("Started shell session in workspace: {}", workspace);
 
@@ -106,10 +148,15 @@ public class ShellSessionManager {
 
 	/**
 	 * Clean up shell session.
+	 * This removes the session from both the context and the global registry.
 	 */
 	public void cleanup(RunnableConfig config) {
 		try {
+			// Try to get session from context first, then from registry
 			ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
+			if (session == null) {
+				session = getSessionFromRegistry(config);
+			}
 			if (session != null) {
 				// Run shutdown commands
 				for (String command : shutdownCommands) {
@@ -126,14 +173,30 @@ public class ShellSessionManager {
 	}
 
 	private void doCleanup(RunnableConfig config) {
+		// Try to get session from context first
 		ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
+		Path tempDir = (Path) config.context().get(SESSION_PATH_CONTEXT_KEY);
+
+		// If not in context, try to get from registry (HITL resume scenario)
+		SessionEntry registryEntry = null;
+		if (session == null && config.threadId().isPresent()) {
+			registryEntry = SESSION_REGISTRY.remove(config.threadId().get());
+			if (registryEntry != null) {
+				session = registryEntry.session();
+				tempDir = registryEntry.workspacePath();
+				log.debug("Removed shell session from global registry for threadId: {}", config.threadId().get());
+			}
+		} else if (session != null && config.threadId().isPresent()) {
+			// Also remove from registry if we found it in context
+			SESSION_REGISTRY.remove(config.threadId().get());
+		}
+
 		if (session != null) {
 			session.stop(terminationTimeout);
 			config.context().remove(SESSION_INSTANCE_CONTEXT_KEY);
 		}
 
-		Path tempDir = (Path) config.context().get(SESSION_PATH_CONTEXT_KEY);
-		if (tempDir != null) {
+		if (tempDir != null && useTemporaryWorkspace) {
 			try {
 				deleteDirectory(tempDir);
 			} catch (IOException e) {
@@ -144,12 +207,71 @@ public class ShellSessionManager {
 	}
 
 	/**
+	 * Attempt to recover a shell session from the global registry.
+	 * This is used during HITL resume when the original context is lost.
+	 *
+	 * @param config the runnable config containing threadId
+	 * @return the recovered session, or null if not found
+	 */
+	private ShellSession recoverSessionFromRegistry(RunnableConfig config) {
+		return config.threadId().map(threadId -> {
+			SessionEntry entry = SESSION_REGISTRY.get(threadId);
+			if (entry != null) {
+				log.info("Recovered shell session from global registry for threadId: {}. " +
+						"Shell state (working directory, environment) is preserved.", threadId);
+				// Put back into context for subsequent calls
+				config.context().put(SESSION_INSTANCE_CONTEXT_KEY, entry.session());
+				if (entry.workspacePath() != null) {
+					config.context().put(SESSION_PATH_CONTEXT_KEY, entry.workspacePath());
+				}
+				return entry.session();
+			}
+			return null;
+		}).orElse(null);
+	}
+
+	/**
+	 * Get session from registry without removing it.
+	 */
+	private ShellSession getSessionFromRegistry(RunnableConfig config) {
+		return config.threadId()
+				.map(threadId -> SESSION_REGISTRY.get(threadId))
+				.map(SessionEntry::session)
+				.orElse(null);
+	}
+
+	/**
 	 * Execute a command in the current shell session.
+	 * <p>If the session is missing from the context (e.g. after a Human-in-the-Loop resume
+	 * where a fresh {@link RunnableConfig} with an empty context is used), the method will:
+	 * <ol>
+	 *   <li>First attempt to recover the existing session from the global registry using threadId</li>
+	 *   <li>If not found in registry, create a new session as fallback</li>
+	 * </ol>
+	 * This ensures shell state (working directory, environment variables) is preserved across HITL interrupts.</p>
 	 */
 	public CommandResult executeCommand(String command, RunnableConfig config) {
 		ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
 		if (session == null) {
-			throw new IllegalStateException("Shell session not initialized. Call initialize() first, you might need to enable ShellToolAgentHook to enable shell session management.");
+			// Try to recover from global registry using threadId
+			session = recoverSessionFromRegistry(config);
+			if (session == null) {
+				// Only auto-initialize in the HITL recovery case (threadId present).
+				// For truly uninitialized usage (no threadId), preserve the previous
+				// behavior and fail fast rather than starting a new shell process
+				// without lifecycle management.
+				if (config.threadId().isPresent()) {
+					log.warn("Shell session not found in context or registry for threadId {}. " +
+							"Creating new session for HITL recovery.", config.threadId().get());
+					initialize(config);
+					session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
+				}
+				else {
+					throw new IllegalStateException(
+							"Shell session not initialized. Call initialize() before executeCommand() " +
+									"or ensure lifecycle management (e.g., ShellToolAgentHook) is installed.");
+				}
+			}
 		}
 
 		log.info("Executing shell command: {}", command);
@@ -175,11 +297,18 @@ public class ShellSessionManager {
 
 	/**
 	 * Restart the shell session.
+	 * <p>If the session is missing from the context (e.g. after HITL resume),
+	 * it will first attempt to recover from the global registry.</p>
 	 */
 	public void restartSession(RunnableConfig config) {
 		ShellSession session = (ShellSession) config.context().get(SESSION_INSTANCE_CONTEXT_KEY);
 		if (session == null) {
-			throw new IllegalStateException("Shell session not initialized.");
+			// Try to recover from global registry (HITL resume scenario)
+			session = recoverSessionFromRegistry(config);
+		}
+		if (session == null) {
+			throw new IllegalStateException("Shell session not initialized. " +
+					"Cannot restart a session that does not exist.");
 		}
 
 		log.info("Restarting shell session");
@@ -193,6 +322,20 @@ public class ShellSessionManager {
 
 	public int getMaxOutputLines() {
 		return maxOutputLines;
+	}
+
+	/**
+	 * Clear the global session registry. Package-private for test isolation.
+	 */
+	static void clearSessionRegistry() {
+		SESSION_REGISTRY.clear();
+	}
+
+	/**
+	 * Check if a session is registered for the given threadId. Package-private for testing.
+	 */
+	static boolean isSessionInRegistry(String threadId) {
+		return SESSION_REGISTRY.containsKey(threadId);
 	}
 
 	public Long getMaxOutputBytes() {
@@ -216,11 +359,18 @@ public class ShellSessionManager {
 
 	/**
 	 * Persistent shell session that executes commands sequentially.
+	 * <p>This is a static nested class to avoid implicit reference to the outer
+	 * {@link ShellSessionManager} instance, which could cause memory leaks when
+	 * sessions are stored in the static {@link #SESSION_REGISTRY}.</p>
 	 */
-	private class ShellSession {
+	private static class ShellSession {
+		private static final Logger log = LoggerFactory.getLogger(ShellSession.class);
+		private static final String DONE_MARKER_PREFIX = "__LC_SHELL_DONE__";
+
 		private final Path workspace;
 		private final List<String> command;
 		private final Map<String, String> env;
+		private final long terminationTimeout;
 		private final boolean isWindows;
 		private final boolean isPowerShell;
 		private Process process;
@@ -228,10 +378,11 @@ public class ShellSessionManager {
 		private BlockingQueue<OutputLine> outputQueue;
 		private volatile boolean terminated;
 
-		ShellSession(Path workspace, List<String> command, Map<String, String> env) {
+		ShellSession(Path workspace, List<String> command, Map<String, String> env, long terminationTimeout) {
 			this.workspace = workspace;
 			this.command = command;
 			this.env = env;
+			this.terminationTimeout = terminationTimeout;
 			this.outputQueue = new LinkedBlockingQueue<>();
 			// Detect shell type
 			String shellCmd = command.isEmpty() ? "" : command.get(0).toLowerCase();
@@ -278,7 +429,7 @@ public class ShellSessionManager {
 		}
 
 		void restart() {
-			stop(terminationTimeout);
+			stop(this.terminationTimeout);
 			try {
 				start();
 			} catch (IOException e) {
@@ -335,8 +486,16 @@ public class ShellSessionManager {
 				
 				// Send marker command based on shell type
 				if (isPowerShell) {
-					// PowerShell: use $LASTEXITCODE for exit code
-					stdin.write(String.format("Write-Output \"%s $LASTEXITCODE\"\n", marker));
+					// PowerShell only sets $LASTEXITCODE for native programs and scripts. Capture
+					// $? first so successful cmdlets still produce a numeric completion status,
+					// while preserving the native exit code when one is available.
+					stdin.write(String.format(
+							"$__lcSucceeded = $?; $__lcNativeExit = $LASTEXITCODE; "
+									+ "if ($__lcSucceeded) { $__lcExitCode = 0 } "
+									+ "elseif ($null -ne $__lcNativeExit) { $__lcExitCode = $__lcNativeExit } "
+									+ "else { $__lcExitCode = 1 }; "
+									+ "Write-Output \"%s $__lcExitCode\"\n",
+							marker));
 				} else if (isWindows) {
 					// Windows cmd.exe: use ERRORLEVEL
 					stdin.write(String.format("echo %s %%ERRORLEVEL%%\n", marker));
@@ -386,18 +545,36 @@ public class ShellSessionManager {
 					}
 
 					String line = outputLine.content;
+					boolean completed = false;
 
-					// Check for completion marker (only in stdout)
-					if ("stdout".equals(outputLine.source) && line.startsWith(marker)) {
-						String[] parts = line.split(" ", 2);
-						if (parts.length > 1) {
-							try {
-								exitCode = Integer.parseInt(parts[1].trim());
-							} catch (NumberFormatException e) {
-								// Ignore
+					// Detect the completion marker (only in stdout). The marker is emitted by a
+					// follow-up echo command, so it usually arrives on its own line. But when the
+					// command's output has no trailing newline (e.g. `cat` of a file without a final
+					// newline, or `printf` without `\n`), the line reader merges that trailing output
+					// and the marker into a single line, so we look for the marker anywhere in the
+					// line and preserve any real output that precedes it.
+					//
+					// We only treat the line as completion when the text following the marker parses
+					// as the expected exit-status integer. A command that reads from stdin (e.g.
+					// `cat`, `read`, `head -n1`) can consume and echo the injected marker command
+					// itself before it ever runs; that echoed line contains the marker substring but
+					// no valid trailing exit code, so it must NOT be treated as completion (otherwise
+					// the command would be falsely reported as a successful run while still owning the
+					// session). See #4740.
+					if ("stdout".equals(outputLine.source)) {
+						int markerIndex = line.indexOf(marker);
+						if (markerIndex >= 0) {
+							Integer parsedExitCode = parseExitCode(line.substring(markerIndex + marker.length()));
+							if (parsedExitCode != null) {
+								exitCode = parsedExitCode;
+								// Keep any real output that was merged onto the marker line.
+								line = line.substring(0, markerIndex);
+								completed = true;
+								if (line.isEmpty()) {
+									break;
+								}
 							}
 						}
-						break;
 					}
 
 					totalLines++;
@@ -420,6 +597,10 @@ public class ShellSessionManager {
 						truncatedByLines = true;
 					}
 
+					if (completed) {
+						break;
+					}
+
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 					break;
@@ -429,6 +610,24 @@ public class ShellSessionManager {
 			String output = String.join("\n", lines);
 			return new CommandResult(output, exitCode, timedOut, truncatedByLines,
 				truncatedByBytes, totalLines, totalBytes);
+		}
+
+		/**
+		 * Parse the exit status that the completion marker echoes after it (e.g. the {@code 0}
+		 * in {@code <marker> 0}). Returns {@code null} when the text is empty or its first token
+		 * is not an integer, which signals that this occurrence of the marker is not a genuine
+		 * completion line (for example the marker command echoed back by a stdin-reading command).
+		 */
+		private Integer parseExitCode(String afterMarker) {
+			String trimmed = afterMarker.trim();
+			if (trimmed.isEmpty()) {
+				return null;
+			}
+			try {
+				return Integer.parseInt(trimmed.split("\\s+")[0]);
+			} catch (NumberFormatException e) {
+				return null;
+			}
 		}
 	}
 
@@ -672,4 +871,3 @@ public class ShellSessionManager {
 		}
 	}
 }
-

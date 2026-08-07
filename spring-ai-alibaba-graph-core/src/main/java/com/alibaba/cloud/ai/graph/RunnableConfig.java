@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
+import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.CHECKPOINTS_NUM_RETAINED;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -216,6 +217,19 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 * {@link #HUMAN_FEEDBACK_METADATA_KEY} with value {@code "placeholder"} to metadata.
 	 * Used when building a config for resuming a run (e.g. after human feedback is
 	 * collected and the graph is continued).
+	 * <p>
+	 * This is also the way to resume from the latest persisted checkpoint without knowing
+	 * its checkpoint id. A plain {@code invoke(Map.of(), config)} (config without a
+	 * checkpoint id and without resume metadata) reuses the persisted state but restarts
+	 * execution from {@code START}; adding this resume metadata makes the run continue from
+	 * the latest checkpoint's next node instead. For example:
+	 * <pre>{@code
+	 * // restarts from START, only the persisted state is reused
+	 * graph.invoke(Map.of(), config);
+	 *
+	 * // continues from the latest checkpoint's next node
+	 * graph.invoke(Map.of(), config.withResume());
+	 * }</pre>
 	 * @return a new RunnableConfig with human feedback placeholder metadata
 	 */
 	public RunnableConfig withResume() {
@@ -403,7 +417,10 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 * Adds resume metadata ({@link #HUMAN_FEEDBACK_METADATA_KEY} with value
 		 * {@code "placeholder"}) so the built config is suitable for resuming a run
 		 * (e.g. after human feedback). Equivalent to building and then calling
-		 * {@link RunnableConfig#withResume()}, but allows fluent builder usage.
+		 * {@link RunnableConfig#withResume()}, but allows fluent builder usage. This also
+		 * makes a subsequent {@code invoke}/{@code stream} continue from the latest
+		 * checkpoint's next node without an explicit checkpoint id; see
+		 * {@link RunnableConfig#withResume()} for details.
 		 * @return this builder for chaining
 		 */
 		public Builder resume() {
@@ -419,6 +436,16 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 */
 		public Builder mergeReasoningContent(boolean merge) {
 			return addMetadata(MERGE_REASONING_CONTENT_METADATA_KEY, merge);
+		}
+
+		/**
+		 * Sets how many latest checkpoints a saver should retain for the run.
+		 * A value less than or equal to 0 disables checkpoint retention pruning.
+		 * @param numRetained number of latest checkpoints to retain
+		 * @return this builder for chaining
+		 */
+		public Builder checkpointsNumRetained(int numRetained) {
+			return addMetadata(CHECKPOINTS_NUM_RETAINED, numRetained);
 		}
 
 		public Builder addStateUpdate(Map<String, Object> stateUpdate) {

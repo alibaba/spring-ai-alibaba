@@ -110,6 +110,7 @@ curl -X POST http://localhost:8080/api/audio/tts \
 |----------|---------|-------------|
 | `spring.ai.dashscope.api-key` | `${AI_DASHSCOPE_API_KEY}` | DashScope API key |
 | `spring.ai.dashscope.chat.options.model` | `qwen-vl-plus` | Vision model (use `-vl` models for multimodal) |
+| `spring.ai.dashscope.chat.options.multi-model` | `false` | Use the DashScope multimodal generation endpoint; set to `true` for vision models |
 
 Supported vision models: `qwen-vl-plus`, `qwen-vl-max`, `qwen2-vl-plus`, `qwen3-vl-plus`.
 

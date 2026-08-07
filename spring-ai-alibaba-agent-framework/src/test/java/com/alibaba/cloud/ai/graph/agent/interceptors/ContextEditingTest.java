@@ -17,6 +17,8 @@ package com.alibaba.cloud.ai.graph.agent.interceptors;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.contextediting.ContextEditingInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
@@ -35,7 +37,9 @@ import org.springframework.ai.chat.prompt.Prompt;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -86,6 +90,58 @@ class ContextEditingTest {
 
 		assertTrue(result.isPresent(), "Agent result should be present");
 //		assertCompactionOccurred(result.get());
+	}
+
+	@Test
+	void testContextEditingUsesConfiguredTokenCounterForCandidateBudget() {
+		ContextEditingInterceptor contextEditingInterceptor = ContextEditingInterceptor.builder()
+				.trigger(50)
+				.keep(0)
+				.clearAtLeast(100)
+				.tokenCounter(messages -> messages.stream()
+						.mapToInt(message -> message instanceof ToolResponseMessage ? 100 : 0)
+						.sum())
+				.build();
+		List<Message> messages = List.of(
+				new UserMessage("Use the tool responses."),
+				toolResponse("call-1", "search", "a"),
+				toolResponse("call-2", "search", "b"),
+				toolResponse("call-3", "search", "c"));
+
+		AtomicReference<ModelRequest> capturedRequest = new AtomicReference<>();
+		contextEditingInterceptor.interceptModel(ModelRequest.builder().messages(messages).build(), request -> {
+			capturedRequest.set(request);
+			return ModelResponse.of(new AssistantMessage("Task completed."));
+		});
+
+		assertTrue(capturedRequest.get() != null, "Updated request should be passed to handler");
+		assertEquals(1, countClearedToolResponses(capturedRequest.get().getMessages()));
+	}
+
+	@Test
+	void testContextEditingUsesConfiguredTokenCounterForToolCallBudget() {
+		ContextEditingInterceptor contextEditingInterceptor = ContextEditingInterceptor.builder()
+				.trigger(50)
+				.keep(0)
+				.clearAtLeast(100)
+				.tokenCounter(messages -> messages.stream()
+						.mapToInt(message -> message instanceof AssistantMessage ? 100 : 0)
+						.sum())
+				.build();
+		List<Message> messages = List.of(
+				new UserMessage("Use the tool calls."),
+				assistantToolCall("call-1", "search", "a"),
+				assistantToolCall("call-2", "search", "b"),
+				assistantToolCall("call-3", "search", "c"));
+
+		AtomicReference<ModelRequest> capturedRequest = new AtomicReference<>();
+		contextEditingInterceptor.interceptModel(ModelRequest.builder().messages(messages).build(), request -> {
+			capturedRequest.set(request);
+			return ModelResponse.of(new AssistantMessage("Task completed."));
+		});
+
+		assertTrue(capturedRequest.get() != null, "Updated request should be passed to handler");
+		assertEquals(1, countClearedToolCalls(capturedRequest.get().getMessages()));
 	}
 
 	/**
@@ -139,6 +195,47 @@ class ContextEditingTest {
 				.build());
 
 		return messages;
+	}
+
+	private ToolResponseMessage toolResponse(String id, String name, String data) {
+		return ToolResponseMessage.builder()
+				.responses(List.of(new ToolResponseMessage.ToolResponse(id, name, data)))
+				.build();
+	}
+
+	private AssistantMessage assistantToolCall(String id, String name, String arguments) {
+		return AssistantMessage.builder()
+				.content("")
+				.toolCalls(List.of(new AssistantMessage.ToolCall(id, "function", name, arguments)))
+				.build();
+	}
+
+	private int countClearedToolResponses(List<Message> messages) {
+		int cleared = 0;
+		for (Message msg : messages) {
+			if (msg instanceof ToolResponseMessage trm) {
+				for (ToolResponseMessage.ToolResponse response : trm.getResponses()) {
+					if (PLACEHOLDER.equals(response.responseData())) {
+						cleared++;
+					}
+				}
+			}
+		}
+		return cleared;
+	}
+
+	private int countClearedToolCalls(List<Message> messages) {
+		int cleared = 0;
+		for (Message msg : messages) {
+			if (msg instanceof AssistantMessage assistantMessage) {
+				for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+					if (PLACEHOLDER.equals(toolCall.arguments())) {
+						cleared++;
+					}
+				}
+			}
+		}
+		return cleared;
 	}
 
 	private void assertCompactionOccurred(OverAllState state) {

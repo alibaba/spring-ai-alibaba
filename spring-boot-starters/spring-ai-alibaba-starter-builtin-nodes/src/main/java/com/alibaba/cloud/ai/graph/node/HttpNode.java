@@ -143,8 +143,12 @@ public class HttpNode implements NodeAction {
 			initBody(body, requestSpec, state);
 
 			Mono<ResponseEntity<byte[]>> responseMono = requestSpec
-				.exchangeToMono((ClientResponse resp) -> resp.toEntity(byte[].class))
-				.retryWhen(Retry.backoff(retryConfig.maxRetries, Duration.ofMillis(retryConfig.maxRetryInterval)));
+				.exchangeToMono((ClientResponse resp) -> resp.toEntity(byte[].class));
+			if (retryConfig.isEnable()) {
+				responseMono = responseMono.retryWhen(
+						Retry.backoff(retryConfig.maxRetries,Duration.ofMillis(retryConfig.maxRetryInterval)));
+			}
+
 			ResponseEntity<byte[]> responseEntity = responseMono.block();
 			Map<String, Object> httpResponse = processResponse(responseEntity, state);
 

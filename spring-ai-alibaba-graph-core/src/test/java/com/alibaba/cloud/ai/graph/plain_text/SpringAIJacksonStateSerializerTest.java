@@ -261,6 +261,26 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	@Test
+	void shouldPreserveTypedListElementsInStateValue() throws Exception {
+		Plan original = new Plan(List.of(new PlanStep("search"), new PlanStep("write")));
+
+		Plan deserialized = serializeAndDeserialize(original);
+
+		assertNotNull(deserialized);
+		assertEquals(2, deserialized.steps().size());
+		assertTrue(deserialized.steps().get(0) instanceof PlanStep);
+		assertEquals("search", deserialized.steps().get(0).title());
+
+		Map<String, Object> data = new HashMap<>();
+		data.put("plan", deserialized);
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = new ObjectOutputStream(baos);
+		serializer.writeData(data, oos);
+		oos.flush();
+	}
+
+	@Test
 	void testComplexMetadataSerialization() throws Exception {
 		// 测试复杂元数据的序列化
 		Map<String, Object> metadata = new HashMap<>();
@@ -410,6 +430,42 @@ class SpringAIJacksonStateSerializerTest {
 			index += substring.length();
 		}
 		return count;
+	}
+
+	public static class Plan {
+
+		private List<PlanStep> steps;
+
+		@SuppressWarnings("unused")
+		public Plan() {
+		}
+
+		public Plan(List<PlanStep> steps) {
+			this.steps = steps;
+		}
+
+		public List<PlanStep> steps() {
+			return steps;
+		}
+
+	}
+
+	public static final class PlanStep {
+
+		private String title;
+
+		@SuppressWarnings("unused")
+		public PlanStep() {
+		}
+
+		public PlanStep(String title) {
+			this.title = title;
+		}
+
+		public String title() {
+			return title;
+		}
+
 	}
 
 }

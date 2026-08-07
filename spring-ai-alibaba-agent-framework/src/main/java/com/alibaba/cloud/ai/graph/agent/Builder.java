@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
@@ -94,9 +95,14 @@ public abstract class Builder {
 	protected List<Interceptor> interceptors = new ArrayList<>();
 	protected List<ModelInterceptor> modelInterceptors = new ArrayList<>();
 	protected List<ToolInterceptor> toolInterceptors = new ArrayList<>();
+	protected List<StreamingModelInterceptor> streamingInterceptors = new ArrayList<>();
 
 	protected boolean includeContents = true;
 	protected boolean returnReasoningContents;
+
+	// Register AssistantMessageSanitizerInterceptor by default to keep tool-calling
+	// AssistantMessages with null text compatible with strict DeepSeek-compatible backends.
+	protected boolean assistantMessageSanitizerEnabled = true;
 
 	protected String outputKey;
 
@@ -277,6 +283,23 @@ public abstract class Builder {
 		return this;
 	}
 
+	/**
+	 * Enables or disables the default {@code AssistantMessageSanitizerInterceptor}.
+	 * <p>
+	 * When enabled (the default), tool-calling {@code AssistantMessage}s whose text content
+	 * is {@code null} are rewritten with an empty-string content before being sent back to
+	 * the model. This keeps the serialized request compatible with strict
+	 * DeepSeek-compatible backends that reject assistant messages without a {@code content}
+	 * field. Disable this if you need the literal {@code "content": null} form once it is
+	 * supported upstream in Spring AI.
+	 * @param assistantMessageSanitizerEnabled true to register the sanitizer (default), false to disable it
+	 * @return this builder instance
+	 */
+	public Builder assistantMessageSanitizerEnabled(boolean assistantMessageSanitizerEnabled) {
+		this.assistantMessageSanitizerEnabled = assistantMessageSanitizerEnabled;
+		return this;
+	}
+
 	public Builder hooks(List<? extends Hook> hooks) {
 		Assert.notNull(hooks, "hooks cannot be null");
 		Assert.noNullElements(hooks, "hooks cannot contain null elements");
@@ -302,6 +325,20 @@ public abstract class Builder {
 		Assert.notNull(interceptors, "interceptors cannot be null");
 		Assert.noNullElements(interceptors, "interceptors cannot contain null elements");
 		this.interceptors.addAll(List.of(interceptors));
+		return this;
+	}
+
+	public Builder streamingInterceptors(List<StreamingModelInterceptor> streamingInterceptors) {
+		Assert.notNull(streamingInterceptors, "streamingInterceptors cannot be null");
+		Assert.noNullElements(streamingInterceptors, "streamingInterceptors cannot contain null elements");
+		this.streamingInterceptors.addAll(streamingInterceptors);
+		return this;
+	}
+
+	public Builder streamingInterceptors(StreamingModelInterceptor... streamingInterceptors) {
+		Assert.notNull(streamingInterceptors, "streamingInterceptors cannot be null");
+		Assert.noNullElements(streamingInterceptors, "streamingInterceptors cannot contain null elements");
+		this.streamingInterceptors.addAll(List.of(streamingInterceptors));
 		return this;
 	}
 

@@ -26,6 +26,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.InterceptorChain;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
+import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.DefaultChatClient;
@@ -75,6 +76,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private List<ModelInterceptor> modelInterceptors = new ArrayList<>();
 
+	private List<StreamingModelInterceptor> streamingInterceptors = new ArrayList<>();
+
 	private String outputKey;
 
 	private String outputSchema;
@@ -107,6 +110,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		if (builder.modelInterceptors != null) {
 			this.modelInterceptors = builder.modelInterceptors;
 		}
+		if (builder.streamingInterceptors != null) {
+			this.streamingInterceptors = builder.streamingInterceptors;
+		}
 		this.chatClient = builder.chatClient;
 		this.chatOptions = buildChatOptions(builder.chatOptions, this.toolCallbacks);
 		this.enableReasoningLog = builder.enableReasoningLog;
@@ -122,6 +128,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	public void setModelInterceptors(List<ModelInterceptor> modelInterceptors) {
 		this.modelInterceptors = modelInterceptors;
+	}
+
+	public void setStreamingInterceptors(List<StreamingModelInterceptor> streamingInterceptors) {
+		this.streamingInterceptors = streamingInterceptors;
 	}
 
 	public void setInstruction(String instruction) {
@@ -226,6 +236,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 								}
 							}
 						});
+					}
+					if (streamingInterceptors != null && !streamingInterceptors.isEmpty()) {
+						chatResponseFlux = InterceptorChain.applyStreamingInterceptors(
+								streamingInterceptors, chatResponseFlux, request);
 					}
 					return ModelResponse.of(chatResponseFlux);
 				} catch (Exception e) {
@@ -549,6 +563,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private List<ModelInterceptor> modelInterceptors;
 
+		private List<StreamingModelInterceptor> streamingInterceptors;
+
 		private String instruction;
 
 		private boolean enableReasoningLog;
@@ -592,6 +608,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder modelInterceptors(List<ModelInterceptor> modelInterceptors) {
 			this.modelInterceptors = modelInterceptors;
+			return this;
+		}
+
+		public Builder streamingInterceptors(List<StreamingModelInterceptor> streamingInterceptors) {
+			this.streamingInterceptors = streamingInterceptors;
 			return this;
 		}
 

@@ -12,6 +12,7 @@ This example implements the **skills** (progressive disclosure) pattern with Spr
 - **Progressive disclosure**  
   - The model sees only skill **descriptions** in the prompt (e.g. “sales_analytics: Database schema and business logic for sales data…”).  
   - When the user asks for something that requires schema or examples, the agent calls **read_skill(skill_name)** to load the full SKILL.md content (tables, business logic, example queries).  
+  - Skill names are registry identifiers, not tool names. The model should not call a skill name directly as a tool; it should call **read_skill** with the skill name first.
   - This keeps the initial context small and avoids loading all skill text upfront.
 
 - **Skills in this example**  
@@ -23,7 +24,7 @@ This example implements the **skills** (progressive disclosure) pattern with Spr
    Uses **ClasspathSkillRegistry.builder().classpathPath("skills").build()** so skills are loaded from `src/main/resources/skills/` (and the same path inside the packaged JAR). No custom in-memory skill list.
 
 2. **SkillsAgentHook**  
-   **SkillsAgentHook.builder().skillRegistry(registry).build()** provides the `read_skill` tool and the interceptor that injects skill descriptions into the system message. No custom LoadSkillTool or SkillInterceptor.
+   **SkillsAgentHook.builder().skillRegistry(registry).build()** provides the `read_skill` tool and the interceptor that injects skill descriptions into the system message. No custom LoadSkillTool or SkillInterceptor. Skills do not automatically become ToolCallbacks; use `groupedTools` when tools should become available after a skill is read.
 
 3. **Agent configuration**  
    ReactAgent is built with **.hooks(List.of(skillsAgentHook))**; no need to add tools or interceptors explicitly—the hook contributes both.

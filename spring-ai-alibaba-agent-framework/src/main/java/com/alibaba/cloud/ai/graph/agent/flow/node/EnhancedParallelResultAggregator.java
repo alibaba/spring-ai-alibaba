@@ -26,7 +26,12 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.LoopStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Enhanced parallel result aggregator that supports custom merge strategies and

@@ -25,6 +25,8 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -408,6 +410,7 @@ class CancellableAsyncToolCallbackTest {
 		void tool_shouldStopGracefully_whenCheckingCancellation() throws InterruptedException {
 			AtomicReference<Integer> iterationsCompleted = new AtomicReference<>(0);
 			CountDownLatch toolFinished = new CountDownLatch(1);
+			ExecutorService executor = Executors.newSingleThreadExecutor();
 
 			DefaultCancellationToken token = new DefaultCancellationToken();
 
@@ -433,24 +436,30 @@ class CancellableAsyncToolCallbackTest {
 						finally {
 							toolFinished.countDown();
 						}
-					});
+					}, executor);
 				}
 			};
 
-			// Start the tool
-			CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
+			try {
+				// Start the tool
+				CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
 
-			// Let it run for a bit
-			Thread.sleep(50);
+				// Let it run for a bit
+				Thread.sleep(50);
 
-			// Cancel
-			token.cancel();
+				// Cancel
+				token.cancel();
 
-			// Wait for tool to finish
-			assertTrue(toolFinished.await(1, TimeUnit.SECONDS));
+				// Wait for tool to finish
+				assertTrue(toolFinished.await(1, TimeUnit.SECONDS));
 
-			// Tool should have stopped early (not completed all 1000 iterations)
-			assertTrue(iterationsCompleted.get() < 100, "Tool should have stopped early, but completed " + iterationsCompleted.get() + " iterations");
+				// Tool should have stopped early (not completed all 1000 iterations)
+				assertTrue(iterationsCompleted.get() < 100,
+						"Tool should have stopped early, but completed " + iterationsCompleted.get() + " iterations");
+			}
+			finally {
+				executor.shutdownNow();
+			}
 		}
 
 	}

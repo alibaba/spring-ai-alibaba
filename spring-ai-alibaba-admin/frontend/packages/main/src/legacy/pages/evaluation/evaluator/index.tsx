@@ -178,12 +178,20 @@ const EvaluationEvaluator: React.FC = () => {
       dataIndex: 'modelConfig',
       key: 'modelConfig',
       render: (modelConfig: string) => {
-        // 优先使用 modelName，如果为空或为 '-' 则从 modelConfig 中提取
-        const modelConfigJson = JSON.parse(modelConfig);
-        const name = modelNameMap[modelConfigJson?.modelId];
-        return name ? (
-          <Tag color="geekblue">{name}</Tag>
-        ) : "-";
+        // 未发布或未完整配置的评估器可能没有 modelConfig。
+        if (!modelConfig || modelConfig === 'undefined') {
+          return '-';
+        }
+
+        try {
+          const modelConfigJson = JSON.parse(modelConfig);
+          const name = modelNameMap[modelConfigJson?.modelId];
+          return name ? (
+            <Tag color="geekblue">{name}</Tag>
+          ) : '-';
+        } catch {
+          return '-';
+        }
       },
     },
     {

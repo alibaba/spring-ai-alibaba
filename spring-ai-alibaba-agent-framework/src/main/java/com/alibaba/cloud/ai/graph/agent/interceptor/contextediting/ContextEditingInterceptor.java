@@ -204,7 +204,7 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 					continue;
 				}
 
-				int tokens = TokenCounter.approximateMsgCounter().countTokens(List.of(toolMsg));
+				int tokens = tokenCounter.countTokens(List.of(toolMsg));
 				candidates.add(new ClearableToolMessage(i, tokens));
 			}
 			else if (msg instanceof AssistantMessage assistantMsg) {
@@ -240,7 +240,7 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 					continue;
 				}
 
-				int tokens = TokenCounter.approximateMsgCounter().countTokens(List.of(assistantMsg));
+				int tokens = tokenCounter.countTokens(List.of(assistantMsg));
 				candidates.add(new ClearableToolMessage(i, tokens));
 			}
 		}
@@ -326,4 +326,3 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 		}
 	}
 }
-

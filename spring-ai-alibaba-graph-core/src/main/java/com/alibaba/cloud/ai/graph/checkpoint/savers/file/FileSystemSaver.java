@@ -17,8 +17,8 @@ package com.alibaba.cloud.ai.graph.checkpoint.savers.file;
 
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.serializer.Serializer;
 import com.alibaba.cloud.ai.graph.serializer.StateSerializer;
 import com.alibaba.cloud.ai.graph.serializer.check_point.CheckPointSerializer;
@@ -31,10 +31,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 
@@ -45,8 +53,12 @@ import static java.lang.String.format;
  * named "thread-<i>threadId</i>.saver" if the RunnableConfig has a threadId, or
  * "thread-$default.saver" if it doesn't.
  * </p>
+ * <p>
+ * Full checkpoint history is loaded from the file on demand. In memory this saver keeps
+ * only a bounded latest-checkpoint cache.
+ * </p>
  */
-public class FileSystemSaver extends MemorySaver {
+public class FileSystemSaver implements BaseCheckpointSaver {
 
 	public static final String EXTENSION = ".saver";
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FileSystemSaver.class);
@@ -54,23 +66,43 @@ public class FileSystemSaver extends MemorySaver {
 
 	private final Serializer<Checkpoint> serializer;
 
-	@SuppressWarnings("unchecked")
+	private final Map<String, Checkpoint> latestCheckpointCache;
+	private final ReentrantLock lock = new ReentrantLock();
+	private final int maxCachedThreads;
+
+	/**
+	 * Protected constructor for FileSystemSaver.
+	 * Use {@link #builder()} to create instances.
+	 * @param targetFolder the directory where checkpoint files are stored
+	 * @param stateSerializer the serializer used to persist checkpoint state
+	 */
 	protected FileSystemSaver(Path targetFolder, StateSerializer stateSerializer) {
-		if(stateSerializer == null) {
+		this(new Builder()
+				.targetFolder(targetFolder)
+				.stateSerializer(stateSerializer));
+	}
+
+	@SuppressWarnings("unchecked")
+	protected FileSystemSaver(Builder builder) {
+		StateSerializer stateSerializer = builder.stateSerializer;
+		if (stateSerializer == null) {
 			this.serializer = new CheckPointSerializer(StateGraph.DEFAULT_JACKSON_SERIALIZER);
-		} else {
+		}
+		else {
 			this.serializer = new CheckPointSerializer(stateSerializer);
 		}
-		this.targetFolder = Objects.requireNonNull(targetFolder, "targetFolder cannot be null");
+		this.targetFolder = Objects.requireNonNull(builder.targetFolder, "targetFolder cannot be null");
+		this.maxCachedThreads = builder.maxCachedThreads;
+		this.latestCheckpointCache = createLatestCheckpointCache(builder.maxCachedThreads);
 
 		try {
-			if (Files.exists(targetFolder) && !Files.isDirectory(targetFolder)) {
-				throw new IllegalArgumentException(format("targetFolder '%s' must be a directory", targetFolder));
+			if (Files.exists(this.targetFolder) && !Files.isDirectory(this.targetFolder)) {
+				throw new IllegalArgumentException(format("targetFolder '%s' must be a directory", this.targetFolder));
 			}
-			Files.createDirectories(targetFolder);
+			Files.createDirectories(this.targetFolder);
 		}
 		catch (IOException ex) {
-			throw new IllegalArgumentException(format("targetFolder '%s' cannot be created", targetFolder), ex);
+			throw new IllegalArgumentException(format("targetFolder '%s' cannot be created", this.targetFolder), ex);
 		}
 
 	}
@@ -94,6 +126,10 @@ public class FileSystemSaver extends MemorySaver {
 
 	private File getFile(RunnableConfig config) {
 		return getPath(config).toFile();
+	}
+
+	private String getThreadId(RunnableConfig config) {
+		return config.threadId().orElse(THREAD_ID_DEFAULT);
 	}
 
 	private void serialize(LinkedList<Checkpoint> checkpoints, File outFile) throws IOException {
@@ -120,29 +156,164 @@ public class FileSystemSaver extends MemorySaver {
 		}
 	}
 
-	@Override
-	protected LinkedList<Checkpoint> loadedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints)
-			throws Exception {
-
-		File targetFile = getFile(config);
-		if (targetFile.exists() && checkpoints.isEmpty()) {
-			deserialize(targetFile, checkpoints);
+	private LinkedList<Checkpoint> deserialize(File file) throws IOException, ClassNotFoundException {
+		LinkedList<Checkpoint> checkpoints = new LinkedList<>();
+		if (file.exists()) {
+			deserialize(file, checkpoints);
 		}
 		return checkpoints;
-
 	}
 
-	@Override
-	protected void insertedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
-			throws Exception {
+	private Optional<Checkpoint> deserializeLatest(File file) throws IOException, ClassNotFoundException {
+		if (!file.exists()) {
+			return Optional.empty();
+		}
+
+		try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(file.toPath()))) {
+			int size = ois.readInt();
+			if (size == 0) {
+				return Optional.empty();
+			}
+			return Optional.of(serializer.read(ois));
+		}
+	}
+
+	private Optional<Checkpoint> deserializeCheckpoint(File file, String checkpointId)
+			throws IOException, ClassNotFoundException {
+		if (!file.exists()) {
+			return Optional.empty();
+		}
+
+		try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(file.toPath()))) {
+			int size = ois.readInt();
+			for (int i = 0; i < size; i++) {
+				Checkpoint checkpoint = serializer.read(ois);
+				if (checkpoint.getId().equals(checkpointId)) {
+					return Optional.of(checkpoint);
+				}
+			}
+			return Optional.empty();
+		}
+	}
+
+	private LinkedList<Checkpoint> loadCheckpoints(RunnableConfig config) throws IOException, ClassNotFoundException {
+		return deserialize(getFile(config));
+	}
+
+	private void insertCheckpoint(RunnableConfig config, Checkpoint checkpoint) throws Exception {
+		LinkedList<Checkpoint> checkpoints = loadCheckpoints(config);
+		checkpoints.push(checkpoint);
+		retainLatestCheckpoints(checkpoints, config);
 		File targetFile = getFile(config);
 		serialize(checkpoints, targetFile);
 	}
 
+	private void updateCheckpoint(RunnableConfig config, String checkpointId, Checkpoint checkpoint) throws Exception {
+		LinkedList<Checkpoint> checkpoints = loadCheckpoints(config);
+		int index = IntStream.range(0, checkpoints.size())
+				.filter(i -> checkpoints.get(i).getId().equals(checkpointId))
+				.findFirst()
+				.orElseThrow(() -> new NoSuchElementException(format("Checkpoint with id %s not found!", checkpointId)));
+		checkpoints.set(index, checkpoint);
+		retainLatestCheckpoints(checkpoints, config);
+		serialize(checkpoints, getFile(config));
+	}
+
+	/**
+	 * Lists active checkpoints for the configured thread.
+	 */
 	@Override
-	protected void updatedCheckpoint(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Checkpoint checkpoint)
-			throws Exception {
-		insertedCheckpoint(config, checkpoints, checkpoint);
+	public Collection<Checkpoint> list(RunnableConfig config) {
+		lock.lock();
+		try {
+			LinkedList<Checkpoint> checkpoints = loadCheckpoints(config);
+			if (!checkpoints.isEmpty()) {
+				cacheLatest(getThreadId(config), checkpoints.peek());
+			}
+			return Collections.unmodifiableCollection(checkpoints);
+		}
+		catch (Exception ex) {
+			throw new RuntimeException(ex);
+		}
+		finally {
+			lock.unlock();
+		}
+	}
+
+	/**
+	 * Gets a checkpoint for the configured thread.
+	 */
+	@Override
+	public Optional<Checkpoint> get(RunnableConfig config) {
+		lock.lock();
+		try {
+			String threadId = getThreadId(config);
+			File targetFile = getFile(config);
+			if (config.checkPointId().isPresent()) {
+				return deserializeCheckpoint(targetFile, config.checkPointId().get());
+			}
+
+			Optional<Checkpoint> cached = getCachedLatest(threadId);
+			if (cached.isPresent()) {
+				return cached;
+			}
+
+			Optional<Checkpoint> latest = deserializeLatest(targetFile);
+			latest.ifPresent(checkpoint -> cacheLatest(threadId, checkpoint));
+			return latest;
+		}
+		catch (Exception ex) {
+			throw new RuntimeException(ex);
+		}
+		finally {
+			lock.unlock();
+		}
+	}
+
+	/**
+	 * Inserts or updates a checkpoint.
+	 */
+	@Override
+	public RunnableConfig put(RunnableConfig config, Checkpoint checkpoint) throws Exception {
+		lock.lock();
+		try {
+			String threadId = getThreadId(config);
+			if (config.checkPointId().isPresent()) {
+				String checkpointId = config.checkPointId().get();
+				updateCheckpoint(config, checkpointId, checkpoint);
+				getCachedLatest(threadId)
+						.filter(latest -> latest.getId().equals(checkpointId))
+						.ifPresent(latest -> cacheLatest(threadId, checkpoint));
+				return config;
+			}
+
+			insertCheckpoint(config, checkpoint);
+			cacheLatest(threadId, checkpoint);
+			return RunnableConfig.builder(config)
+					.checkPointId(checkpoint.getId())
+					.build();
+		}
+		finally {
+			lock.unlock();
+		}
+	}
+
+	/**
+	 * Releases the active thread and returns the released checkpoints.
+	 */
+	@Override
+	public Tag release(RunnableConfig config) throws Exception {
+		lock.lock();
+		try {
+			String threadId = getThreadId(config);
+			LinkedList<Checkpoint> checkpoints = loadCheckpoints(config);
+			releaseFile(config);
+			removeCachedLatest(threadId);
+			return new Tag(threadId, checkpoints);
+		}
+		finally {
+			lock.unlock();
+		}
 	}
 
 	/**
@@ -152,14 +323,10 @@ public class FileSystemSaver extends MemorySaver {
 	 * existing versioned files, deleting the original unversioned file, and then clearing
 	 * the in-memory checkpoints.
 	 * @param config The configuration for which to release checkpoints.
-	 * @param checkpoints released checkpoints
-	 * @param releaseTag released Tag
 	 * @throws Exception If an error occurs during file operations or releasing from
 	 * memory.
 	 */
-	@Override
-	protected void releasedCheckpoints(RunnableConfig config, LinkedList<Checkpoint> checkpoints, Tag releaseTag)
-			throws Exception {
+	private void releaseFile(RunnableConfig config) throws Exception {
 		var currentPath = getPath(config);
 
 		if (!Files.exists(currentPath)) {
@@ -172,11 +339,11 @@ public class FileSystemSaver extends MemorySaver {
 		int maxVersion = 0;
 		try (var stream = Files.list(targetFolder)) {
 			maxVersion = stream.map(path -> path.getFileName().toString())
-					.map(versionPattern::matcher)
-					.filter(Matcher::matches)
-					.mapToInt(matcher -> Integer.parseInt(matcher.group(1)))
-					.max()
-					.orElse(0); // Default to 0 if no versioned files found
+				.map(versionPattern::matcher)
+				.filter(Matcher::matches)
+				.mapToInt(matcher -> Integer.parseInt(matcher.group(1)))
+				.max()
+				.orElse(0); // Default to 0 if no versioned files found
 		}
 		catch (IOException e) {
 			log.error(
@@ -203,7 +370,9 @@ public class FileSystemSaver extends MemorySaver {
 	public boolean deleteFile(RunnableConfig config) {
 		Path path = getPath(config);
 		try {
-			return Files.deleteIfExists(path);
+			boolean deleted = Files.deleteIfExists(path);
+			removeCachedLatest(getThreadId(config));
+			return deleted;
 		}
 		catch (IOException e) {
 			log.warn("Failed to delete checkpoint file {}", path, e);
@@ -212,11 +381,46 @@ public class FileSystemSaver extends MemorySaver {
 	}
 
 	/**
+	 * Creates a bounded LRU cache for latest checkpoints.
+	 */
+	private static Map<String, Checkpoint> createLatestCheckpointCache(int maxCachedThreads) {
+		if (maxCachedThreads == 0) {
+			return Collections.emptyMap();
+		}
+		return new LinkedHashMap<>(16, 0.75f, true) {
+			@Override
+			protected boolean removeEldestEntry(Map.Entry<String, Checkpoint> eldest) {
+				return size() > maxCachedThreads;
+			}
+		};
+	}
+
+	private Optional<Checkpoint> getCachedLatest(String threadId) {
+		if (maxCachedThreads == 0) {
+			return Optional.empty();
+		}
+		return Optional.ofNullable(latestCheckpointCache.get(threadId));
+	}
+
+	private void cacheLatest(String threadId, Checkpoint checkpoint) {
+		if (maxCachedThreads > 0) {
+			latestCheckpointCache.put(threadId, checkpoint);
+		}
+	}
+
+	private void removeCachedLatest(String threadId) {
+		if (maxCachedThreads > 0) {
+			latestCheckpointCache.remove(threadId);
+		}
+	}
+
+	/**
 	 * Builder class for FileSystemSaver.
 	 */
-	public static class Builder extends MemorySaver.Builder {
+	public static class Builder {
 		private Path targetFolder;
 		private StateSerializer stateSerializer;
+		private int maxCachedThreads = 1024;
 
 		public Builder targetFolder(Path targetFolder) {
 			this.targetFolder = targetFolder;
@@ -229,12 +433,25 @@ public class FileSystemSaver extends MemorySaver {
 		}
 
 		/**
+		 * Sets the maximum number of latest checkpoints retained in memory.
+		 * @param maxCachedThreads max cached threads, or 0 to disable the cache
+		 * @return this builder
+		 */
+		public Builder maxCachedThreads(int maxCachedThreads) {
+			if (maxCachedThreads < 0) {
+				throw new IllegalArgumentException("maxCachedThreads must be greater than or equal to 0");
+			}
+			this.maxCachedThreads = maxCachedThreads;
+			return this;
+		}
+
+		/**
 		 * Builds a new FileSystemSaver instance.
 		 * @return a new FileSystemSaver instance
-		 * @throws IllegalArgumentException if targetFolder or stateSerializer is null
+		 * @throws IllegalArgumentException if targetFolder is null
 		 */
 		public FileSystemSaver build() {
-			return new FileSystemSaver(targetFolder, stateSerializer);
+			return new FileSystemSaver(this);
 		}
 	}
 
