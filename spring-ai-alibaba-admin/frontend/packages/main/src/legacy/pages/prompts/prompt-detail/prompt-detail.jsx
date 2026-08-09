@@ -1078,7 +1078,12 @@ const PromptDetailPage = () => {
                 {$i18n.get({ id: 'legacy.prompts.version.count', dm: '版本数量' })}
               </Text>
               <div className='mt-1' >
-                <Text strong className='text-lg' >{promptVersions.length} versions</Text>
+                <Text strong className='text-lg' >
+                  {$i18n.get(
+                    { id: 'legacy.prompts.version.count.value', dm: '{count} 个版本' },
+                    { count: promptVersions.length },
+                  )}
+                </Text>
               </div>
             </div>
           </Col>
