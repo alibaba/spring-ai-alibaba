@@ -39,8 +39,8 @@ const PublishSuccessModal = ({ prompt, version, onClose }) => {
 
 
   const integrationCode2 = `spring.ai.alibaba.agent.proxy.nacos.serverAddr={ replace with the Nacos address, e.g. 127.0.0.1:8848}
-{$i18n.get({ id: 'legacy.prompts.spring.ai.alibaba.agent.proxy.nacos.username', dm: 'spring.ai.alibaba.agent.proxy.nacos.username={ 替换 nacos 用户名, 示例：nacos}' })}
-{$i18n.get({ id: 'legacy.prompts.spring.ai.alibaba.agent.proxy.nacos.password', dm: 'spring.ai.alibaba.agent.proxy.nacos.password={ 替换 nacos 密码, 示例：nacos}' })}
+${$i18n.get({ id: 'legacy.prompts.spring.ai.alibaba.agent.proxy.nacos.username', dm: 'spring.ai.alibaba.agent.proxy.nacos.username={ 替换 nacos 用户名, 示例：nacos}' })}
+${$i18n.get({ id: 'legacy.prompts.spring.ai.alibaba.agent.proxy.nacos.password', dm: 'spring.ai.alibaba.agent.proxy.nacos.password={ 替换 nacos 密码, 示例：nacos}' })}
 spring.ai.alibaba.agent.proxy.nacos.promptKey={ replace with the promptKey, e.g. mse-nacos-helper }`;
 
   const integrationCode3 = `<dependency>
