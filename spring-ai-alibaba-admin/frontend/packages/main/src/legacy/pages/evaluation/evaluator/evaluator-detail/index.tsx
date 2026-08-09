@@ -36,6 +36,7 @@ import {
 } from '@ant-design/icons';
 import { handleApiError, notifySuccess, notifyError } from '../../../../utils/notification';
 import API from '../../../../services';
+import { formatDateTime } from '../../../../utils/formatDateTime';
 import './index.css';
 import usePagination from '../../../../hooks/usePagination';
 import $i18n from '@/i18n';
@@ -44,26 +45,6 @@ import { ModelsContext } from '../../../../context/models';
 const { TextArea } = Input;
 const { Option } = Select;
 const { Title, Text } = Typography;
-
-// 格式化时间显示
-const formatDateTime = (dateTimeString: string) => {
-  if (!dateTimeString) return '-';
-  try {
-    const date = new Date(dateTimeString);
-    const localeMap: Record<string, string> = { zh: 'zh-CN', en: 'en-US', ja: 'ja-JP' };
-    return date.toLocaleString(localeMap[$i18n.getCurrentLanguage()] || 'en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  } catch {
-    return dateTimeString;
-  }
-};
-
 
 function EvaluatorDetail() {
   const { id } = useParams<{ id: string }>();

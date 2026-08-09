@@ -8,30 +8,10 @@ import GatherCreate from './gatherCreate';
 import { getLegacyPath } from '../../../utils/path';
 import './index.css';
 import usePagination from '../../../hooks/usePagination';
+import { formatDateTime } from '../../../utils/formatDateTime';
 import $i18n from '@/i18n';
 
 const { Title } = Typography;
-
-const LOCALE_MAP: Record<string, string> = { zh: 'zh-CN', en: 'en-US', ja: 'ja-JP' };
-
-// 格式化时间显示
-const formatDateTime = (dateTimeString: string) => {
-    if (!dateTimeString) return '-';
-    try {
-        const date = new Date(dateTimeString);
-        const locale = LOCALE_MAP[$i18n.getCurrentLanguage()] || 'en-US';
-        return date.toLocaleString(locale, {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    } catch {
-        return dateTimeString;
-    }
-};
 
 interface DatasetRecord {
   id: number;

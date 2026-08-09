@@ -12,6 +12,7 @@ import {
   Button
 } from 'antd';
 import $i18n from '@/i18n';
+import { formatDateTime } from '../utils/formatDateTime';
 import {
   ArrowLeftOutlined,
   ArrowRightOutlined,
@@ -168,7 +169,7 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
                 <div>
                   <Text strong>{$i18n.get({ id: 'legacy.prompts.created.at.4', dm: '创建时间：' })}</Text>
                   <Text style={{ marginLeft: 8 }}>
-                    {olderVersion.createTime ? new Date(olderVersion.createTime).toLocaleString('zh-CN') : $i18n.get({ id: 'legacy.prompts.unknown', dm: '未知' })}
+                    {olderVersion.createTime ? formatDateTime(olderVersion.createTime) : $i18n.get({ id: 'legacy.prompts.unknown', dm: '未知' })}
                   </Text>
                 </div>
                 <div>
@@ -195,13 +196,13 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
               </Title>
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
                 <div>
-                  <Text strong>Created At: </Text>
+                  <Text strong>{$i18n.get({ id: 'legacy.prompts.created.at.4', dm: '创建时间：' })}</Text>
                   <Text style={{ marginLeft: 8 }}>
-                    {newerVersion.createTime ? new Date(newerVersion.createTime).toLocaleString('zh-CN') : $i18n.get({ id: 'legacy.prompts.unknown', dm: '未知' })}
+                    {newerVersion.createTime ? formatDateTime(newerVersion.createTime) : $i18n.get({ id: 'legacy.prompts.unknown', dm: '未知' })}
                   </Text>
                 </div>
                 <div>
-                  <Text strong>Description: </Text>
+                  <Text strong>{$i18n.get({ id: 'legacy.prompts.description.3', dm: '说明：' })}</Text>
                   <Text style={{ marginLeft: 8 }}>
                     {newerVersion.description || newerVersion.versionDescription || $i18n.get({ id: 'legacy.prompts.no.description.3', dm: '无描述' })}
                   </Text>

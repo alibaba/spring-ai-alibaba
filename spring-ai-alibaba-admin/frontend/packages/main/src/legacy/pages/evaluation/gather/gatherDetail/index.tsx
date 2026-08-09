@@ -29,30 +29,12 @@ import {
 } from '@ant-design/icons';
 import API from '../../../../services';
 import usePagination from '../../../../hooks/usePagination';
+import { formatDateTime } from '../../../../utils/formatDateTime';
 import './index.css';
 import $i18n from '@/i18n';
 
 const { TabPane } = Tabs;
 const { Title, Text } = Typography;
-
-// 格式化时间显示
-const formatDateTime = (dateTimeString: string) => {
-    if (!dateTimeString) return '-';
-    try {
-        const date = new Date(dateTimeString);
-        const localeMap: Record<string, string> = { zh: 'zh-CN', en: 'en-US', ja: 'ja-JP' };
-        return date.toLocaleString(localeMap[$i18n.getCurrentLanguage()] || 'en-US', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    } catch {
-        return dateTimeString;
-    }
-};
 
 // 评测集详情接口
 interface DatasetDetail {
