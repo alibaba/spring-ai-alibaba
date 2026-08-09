@@ -323,11 +323,9 @@ public class CompiledGraph {
 			var nextNodeCommand = nextNodeId(asNode, branchCheckpoint.getState(), config);
 
 			nextNodeId = nextNodeCommand.gotoNode();
-			Map<String, Object> nextState = OverAllState.updateState(branchCheckpoint.getState(),
-					nextNodeCommand.update(), keyStrategyMap);
 			branchCheckpoint = Checkpoint.builder()
 					.id(branchCheckpoint.getId())
-					.state(nextState)
+					.state(nextNodeCommand.update())
 					.nodeId(branchCheckpoint.getNodeId())
 					.nextNodeId(branchCheckpoint.getNextNodeId())
 					.build();
