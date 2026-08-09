@@ -92,7 +92,15 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
       title={
         <div>
           <Title level={4} style={{ margin: 0 }}>
-            Version Comparison - {prompt.promptKey || prompt.name || $i18n.get({ id: 'legacy.prompts.unknown.prompt', dm: '未知Prompt' })}
+            {$i18n.get(
+              { id: 'legacy.prompts.version.comparison.title', dm: '版本对比 - {name}' },
+              {
+                name:
+                  prompt.promptKey ||
+                  prompt.name ||
+                  $i18n.get({ id: 'legacy.prompts.unknown.prompt', dm: '未知Prompt' }),
+              },
+            )}
           </Title>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 16, fontSize: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
