@@ -18,7 +18,8 @@ const formatDateTime = (dateTimeString: string) => {
     if (!dateTimeString) return '-';
     try {
         const date = new Date(dateTimeString);
-        return date.toLocaleString('zh-CN', {
+        const localeMap: Record<string, string> = { zh: 'zh-CN', en: 'en-US', ja: 'ja-JP' };
+        return date.toLocaleString(localeMap[$i18n.getCurrentLanguage()] || 'en-US', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
