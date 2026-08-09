@@ -8,6 +8,7 @@ import ExperimentCreate from './experimentCreate';
 import usePagination from '../../../hooks/usePagination';
 import { getLegacyPath } from '../../../utils/path';
 import './index.css';
+import $i18n from '@/i18n';
 
 const { Option } = Select;
 const { Title } = Typography;
@@ -77,7 +78,7 @@ const Experiment = () => {
                 // 优先使用pageItems，如果不存在则使用records作为降级
                 const responseData = response.data as any;
                 const dataItems = responseData.pageItems || responseData.records || [];
-                
+
                 // 使用真实数据
                 const experiments: ExperimentRecord[] = dataItems.map((item: any) => ({
                     id: item.id,
@@ -103,10 +104,10 @@ const Experiment = () => {
                     current: responseData.pageNumber || pagination.current
                 }));
             } else {
-                throw new Error(response.message || 'Failed to load experiments');
+                throw new Error(response.message || $i18n.get({ id: 'legacy.experiment.loadFailed', dm: "加载失败" }));
             }
         } catch (error) {
-            handleApiError(error, 'Failed to retrieve experiments');
+            handleApiError(error, $i18n.get({ id: 'legacy.experiment.fetchListFailed', dm: "获取实验列表失败" }));
             // 发生错误时设置为空列表
             setDataSource([]);
             setPagination(prev => ({
@@ -176,18 +177,21 @@ const Experiment = () => {
     // 停止实验
     const handleStopExperiment = async (record: ExperimentRecord) => {
         Modal.confirm({
-            title: 'Confirm Stop',
-            content: `Are you sure you want to stop experiment "${record.name}"? Its status will change to Failed.`,
-            okText: 'Confirm Stop',
+            title: $i18n.get({ id: 'legacy.experiment.confirmStopTitle', dm: "确认停止" }),
+            content: $i18n.get(
+      { id: 'legacy.experiment.confirmStopContent', dm: "确定要停止实验 \"{name}\" 吗？停止后实验状态将变为失败。" },
+      { name: record.name },
+    ),
+            okText: $i18n.get({ id: 'legacy.experiment.confirmStopOk', dm: "确认停止" }),
             okType: 'danger',
-            cancelText: 'Cancel',
+            cancelText: $i18n.get({ id: 'legacy.common.cancel', dm: "取消" }),
             onOk: async () => {
                 try {
                     await API.stopExperiment({ experimentId: record.id });
-                    notifySuccess({ message: 'Experiment stopped' });
+                    notifySuccess({ message: $i18n.get({ id: 'legacy.experiment.stopped', dm: "实验已停止" }) });
                     fetchExperiments();
                 } catch (error) {
-                    handleApiError(error, 'Failed to stop experiment');
+                    handleApiError(error, $i18n.get({ id: 'legacy.experiment.stopFailed', dm: "停止实验失败" }));
                 }
             }
         });
@@ -198,10 +202,13 @@ const Experiment = () => {
         try {
             // 这里应该调用重新运行实验的API
             // await API.rerunExperiment({ id: record.id });
-            message.info(`Rerunning experiment: ${record.name}`);
+            message.info($i18n.get(
+      { id: 'legacy.experiment.rerunInfo', dm: "重新运行实验: {name}" },
+      { name: record.name },
+    ));
             // fetchExperiments();
         } catch (error) {
-            handleApiError(error, 'Failed to rerun experiment');
+            handleApiError(error, $i18n.get({ id: 'legacy.experiment.rerunFailed', dm: "重新运行实验失败" }));
         }
     };
 
@@ -216,18 +223,21 @@ const Experiment = () => {
     // 删除实验
     const handleDeleteExperiment = async (record: ExperimentRecord) => {
         Modal.confirm({
-            title: 'Confirm Delete',
-            content: `Are you sure you want to delete experiment "${record.name}"? This action cannot be undone.`,
-            okText: 'Confirm Delete',
+            title: $i18n.get({ id: 'legacy.experiment.confirmDeleteTitle', dm: "确认删除" }),
+            content: $i18n.get(
+      { id: 'legacy.experiment.confirmDeleteContent', dm: "确定要删除实验 \"{name}\" 吗？此操作不可恢复。" },
+      { name: record.name },
+    ),
+            okText: $i18n.get({ id: 'legacy.experiment.confirmDeleteOk', dm: "确认删除" }),
             okType: 'danger',
-            cancelText: 'Cancel',
+            cancelText: $i18n.get({ id: 'legacy.common.cancel', dm: "取消" }),
             onOk: async () => {
                 try {
                     await API.deleteExperiment({ experimentId: record.id });
-                    notifySuccess({ message: 'Experiment deleted successfully' });
+                    notifySuccess({ message: $i18n.get({ id: 'legacy.experiment.deleted', dm: "实验删除成功" }) });
                     fetchExperiments();
                 } catch (error) {
-                    handleApiError(error, 'Failed to delete experiment');
+                    handleApiError(error, $i18n.get({ id: 'legacy.experiment.deleteFailed', dm: "删除实验失败" }));
                 }
             }
         });
@@ -237,22 +247,25 @@ const Experiment = () => {
     const renderStatus = (status: string, progress?: number) => {
         switch (status) {
             case 'WAITING':
-                return <Tag color="default">Waiting</Tag>;
+                return <Tag color="default">{$i18n.get({ id: 'legacy.experiment.status.waiting', dm: "等待中" })}</Tag>;
             case 'RUNNING':
                 return (
                     <div>
-                        <Tag color="blue">Running</Tag>
+                        <Tag color="blue">{$i18n.get({ id: 'legacy.experiment.status.running', dm: "运行中" })}</Tag>
                         <div style={{fontSize: '12px', color: 'rgb(102, 102, 102)', marginTop: '4px'}}>
-                            {progress !== undefined && <span>Progress: {progress}%</span>}
+                            {progress !== undefined && <span>{$i18n.get(
+      { id: 'legacy.experiment.status.progress', dm: "进度: {progress}%" },
+      { progress },
+    )}</span>}
                         </div>
                     </div>
                 );
             case 'COMPLETED':
-                return <Tag color="green">Completed</Tag>;
+                return <Tag color="green">{$i18n.get({ id: 'legacy.experiment.status.completed', dm: "已完成" })}</Tag>;
             case 'FAILED':
-                return <Tag color="red">Failed</Tag>;
+                return <Tag color="red">{$i18n.get({ id: 'legacy.experiment.status.failed', dm: "失败" })}</Tag>;
             case 'STOPPED':
-                return <Tag color="orange">Stopped</Tag>;
+                return <Tag color="orange">{$i18n.get({ id: 'legacy.experiment.status.stopped', dm: "已停止" })}</Tag>;
             default:
                 return <Tag>{status}</Tag>;
         }
@@ -260,11 +273,11 @@ const Experiment = () => {
 
     const columns = [
         {
-            title: 'Experiment Name',
+            title: $i18n.get({ id: 'legacy.experiment.col.name', dm: "实验名称" }),
             dataIndex: 'name',
             key: 'name',
             render: (text: string, record: ExperimentRecord) => (
-                <div 
+                <div
                     className="font-medium text-blue-600 cursor-pointer hover:text-blue-800 hover:underline"
                     onClick={() => handleViewExperiment(record)}
                 >
@@ -272,9 +285,9 @@ const Experiment = () => {
                 </div>
             )
         },
-        { 
-            title: 'Description', 
-            dataIndex: 'description', 
+        {
+            title: $i18n.get({ id: 'legacy.common.description', dm: "描述" }),
+            dataIndex: 'description',
             ellipsis: true,
             render: (text: string) => (
                 <Tooltip title={text} placement="topLeft">
@@ -283,7 +296,7 @@ const Experiment = () => {
             )
         },
         {
-            title: 'Evaluation Set',
+            title: $i18n.get({ id: 'legacy.experiment.col.dataset', dm: "评测集" }),
             dataIndex: 'datasetVersion',
             key: 'datasetVersion',
             render: (text: string, record: ExperimentRecord) => (
@@ -294,7 +307,7 @@ const Experiment = () => {
             )
         },
         {
-            title: 'Evaluator',
+            title: $i18n.get({ id: 'legacy.experiment.col.evaluator', dm: "评估器" }),
             dataIndex: 'evaluatorConfig',
             key: 'evaluatorConfig',
             render: (evaluatorConfig: string, record: ExperimentRecord) => {
@@ -309,16 +322,19 @@ const Experiment = () => {
                         evaluatorNames = record.evaluatorVersionIds.map(id => `ID: ${id}`);
                     }
                 }
-                
+
                 if (evaluatorNames.length === 0) {
-                    return <span className="text-gray-400">None</span>;
+                    return <span className="text-gray-400">{$i18n.get({ id: 'legacy.experiment.col.none', dm: "无" })}</span>;
                 }
-                
+
                 // 将所有评估器名称用逗号连接
-                const allEvaluatorNames = evaluatorNames.join(', ');
-                
+                const allEvaluatorNames = evaluatorNames.join($i18n.get({ id: 'legacy.experiment.listSeparator', dm: "，" }));
+
                 return (
-                    <Tooltip title={`All evaluators:\n${allEvaluatorNames}`} placement="topLeft">
+                    <Tooltip title={$i18n.get(
+      { id: 'legacy.experiment.allEvaluators', dm: "全部评估器:\n{names}" },
+      { names: allEvaluatorNames },
+    )} placement="topLeft">
                         <div className="text-sm text-gray-600 mt-1 truncate" style={{ maxWidth: '200px' }}>
                             {allEvaluatorNames}
                         </div>
@@ -327,7 +343,7 @@ const Experiment = () => {
             }
         },
         {
-            title: 'Status',
+            title: $i18n.get({ id: 'legacy.common.status', dm: "状态" }),
             dataIndex: 'status',
             key: 'status',
             render: (status: string, record: ExperimentRecord) => renderStatus(status, record.progress)
@@ -338,19 +354,19 @@ const Experiment = () => {
         //     key: 'creator'
         // },
         {
-            title: 'Created At',
+            title: $i18n.get({ id: 'legacy.experiment.col.createdAt', dm: "创建时间" }),
             dataIndex: 'createTime',
             key: 'createTime',
             render: (text: string) => formatDateTime(text)
         },
         {
-            title: 'Updated At',
+            title: $i18n.get({ id: 'legacy.experiment.col.updatedAt', dm: "更新时间" }),
             dataIndex: 'updateTime',
             key: 'updateTime',
             render: (text: string) => formatDateTime(text)
         },
         {
-            title: 'Actions',
+            title: $i18n.get({ id: 'legacy.common.actions', dm: "操作" }),
             key: 'action',
             width: 160,
             fixed: 'right' as const,
@@ -360,7 +376,7 @@ const Experiment = () => {
                     switch (record.status) {
                         case 'RUNNING':
                             return (
-                                <Tooltip title="Stop">
+                                <Tooltip title={$i18n.get({ id: 'legacy.experiment.action.stop', dm: "停止" })}>
                                     <Button
                                         type="link"
                                         icon={<StopOutlined />}
@@ -371,7 +387,7 @@ const Experiment = () => {
                             );
                         case 'COMPLETED':
                             return (
-                                <Tooltip title="View Results">
+                                <Tooltip title={$i18n.get({ id: 'legacy.experiment.action.viewResults', dm: "查看结果" })}>
                                     <Button
                                         type="link"
                                         icon={<BarChartOutlined />}
@@ -381,7 +397,7 @@ const Experiment = () => {
                             );
                         case 'FAILED':
                             return (
-                                <Tooltip title="Rerun">
+                                <Tooltip title={$i18n.get({ id: 'legacy.experiment.action.rerun', dm: "重新运行" })}>
                                     <Button
                                         type="link"
                                         icon={<PlayCircleOutlined />}
@@ -394,7 +410,7 @@ const Experiment = () => {
                             return null;
                         case 'STOPPED':
                             return (
-                                <Tooltip title="Rerun">
+                                <Tooltip title={$i18n.get({ id: 'legacy.experiment.action.rerun', dm: "重新运行" })}>
                                     <Button
                                         type="link"
                                         icon={<PlayCircleOutlined />}
@@ -409,7 +425,7 @@ const Experiment = () => {
 
                 return (
                     <Space size="middle">
-                        <Tooltip title="View Details">
+                        <Tooltip title={$i18n.get({ id: 'legacy.common.viewDetails', dm: "查看详情" })}>
                             <Button
                                 type="link"
                                 icon={<EyeOutlined />}
@@ -417,7 +433,7 @@ const Experiment = () => {
                             />
                         </Tooltip>
                         {renderSecondAction()}
-                        <Tooltip title="Delete">
+                        <Tooltip title={$i18n.get({ id: 'legacy.common.delete', dm: "删除" })}>
                             <Button
                                 type="link"
                                 icon={<DeleteOutlined />}
@@ -440,14 +456,14 @@ const Experiment = () => {
         <div className="experiment-page p-8 fade-in">
             {/* 页面标题 */}
             <div className="mb-8">
-                <Title level={2} style={{ marginBottom: 8 }}>Experiment Management</Title>
+                <Title level={2} style={{ marginBottom: 8 }}>{$i18n.get({ id: 'legacy.experiment.title', dm: "实验管理" })}</Title>
             </div>
 
             {/* 搜索和筛选区域 */}
             <Card className='mb-4'>
                 <div className="flex gap-4 justify-between" style={{flexWrap: 'wrap'}}>
                     <Input.Search
-                        placeholder="Search by name"
+                        placeholder={$i18n.get({ id: 'legacy.experiment.searchName', dm: "搜索名称" })}
                         allowClear
                         style={{ width: 280 }}
                         value={searchText}
@@ -455,31 +471,31 @@ const Experiment = () => {
                         onSearch={handleSearch}
                     />
                     <Select
-                        placeholder="Select status"
+                        placeholder={$i18n.get({ id: 'legacy.experiment.selectStatus', dm: "状态 请选择" })}
                         allowClear
                         style={{ width: 200 }}
                         value={statusFilter}
                         onChange={handleStatusFilter}
                     >
-                        <Option value="RUNNING">Running</Option>
-                        <Option value="COMPLETED">Completed</Option>
-                        <Option value="FAILED">Failed</Option>
-                        <Option value="WAITING">Waiting</Option>
-                        <Option value="STOPPED">Stopped</Option>
+                        <Option value="RUNNING">{$i18n.get({ id: 'legacy.experiment.status.running', dm: "运行中" })}</Option>
+                        <Option value="COMPLETED">{$i18n.get({ id: 'legacy.experiment.status.completed', dm: "已完成" })}</Option>
+                        <Option value="FAILED">{$i18n.get({ id: 'legacy.experiment.status.failed', dm: "失败" })}</Option>
+                        <Option value="WAITING">{$i18n.get({ id: 'legacy.experiment.status.waiting', dm: "等待中" })}</Option>
+                        <Option value="STOPPED">{$i18n.get({ id: 'legacy.experiment.status.stopped', dm: "已停止" })}</Option>
                     </Select>
                     <div style={{flex: 1}}></div>
-                    <Button 
-                        icon={<SyncOutlined />} 
+                    <Button
+                        icon={<SyncOutlined />}
                         onClick={handleRefresh}
                     >
-                        Refresh
+                        {$i18n.get({ id: 'legacy.common.refresh', dm: "刷新" })}
                     </Button>
-                    <Button 
-                        type="primary" 
+                    <Button
+                        type="primary"
                         icon={<PlusOutlined />}
                         onClick={handleCreateExperiment}
                     >
-                        Create Experiment
+                        {$i18n.get({ id: 'legacy.common.createExperiment', dm: "新建实验" })}
                     </Button>
                 </div>
             </Card>
@@ -501,13 +517,13 @@ const Experiment = () => {
                         }}
                         scroll={{ x: 800 }}
                     />
-                    
+
                 </div>
             </Card>
 
             {/* 创建实验侧滑面板 */}
             <Drawer
-                title="Create Experiment"
+                title={$i18n.get({ id: 'legacy.common.createExperiment', dm: "新建实验" })}
                 placement="right"
                 width="90%"
                 open={showCreateDrawer}
@@ -519,7 +535,7 @@ const Experiment = () => {
                 }}
             >
                 <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <ExperimentCreate 
+                    <ExperimentCreate
                       hideTitle={true} // 隐藏标题
                       onCancel={handleCloseCreateDrawer}
                       onSuccess={() => {

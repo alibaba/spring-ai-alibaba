@@ -34,6 +34,7 @@ import API from '../../../services';
 import { ModelsContext } from '../../../context/models';
 import usePagination from '../../../hooks/usePagination';
 import { getLegacyPath } from '../../../utils/path';
+import $i18n from '@/i18n';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -80,7 +81,7 @@ const VersionHistoryPage = () => {
       // Load prompt basic info
       const promptResponse = await API.getPrompt({ promptKey });
       if (promptResponse.code !== 200) {
-        throw new Error(promptResponse.message || 'Failed to get Prompt information');
+        throw new Error(promptResponse.message || $i18n.get({ id: 'legacy.prompts.failed.to.get.prompt.information', dm: '获取 Prompt 信息失败' }));
       }
       setCurrentPrompt(promptResponse.data);
 
@@ -92,7 +93,7 @@ const VersionHistoryPage = () => {
       });
 
       if (versionsResponse.code !== 200) {
-        throw new Error(versionsResponse.message || 'Failed to get version list');
+        throw new Error(versionsResponse.message || $i18n.get({ id: 'legacy.prompts.failed.to.get.version.list', dm: '获取版本列表失败' }));
       }
 
       setVersions(versionsResponse.data.pageItems || []);
@@ -103,8 +104,8 @@ const VersionHistoryPage = () => {
       });
     } catch (err) {
       console.error('Failed to load data:', err);
-      handleApiError(err, 'Load version data');
-      setError(err.message || 'Loading failed. Please try again later.');
+      handleApiError(err, $i18n.get({ id: 'legacy.prompts.load.version.data', dm: '加载版本数据' }));
+      setError(err.message || $i18n.get({ id: 'legacy.prompts.loading.failed.please.try.again.later', dm: '加载失败，请稍后重试' }));
     } finally {
       setLoading(false);
     }
@@ -136,7 +137,7 @@ const VersionHistoryPage = () => {
       });
 
       if (response.code !== 200) {
-        throw new Error(response.message || 'Failed to get version details');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.prompts.failed.to.get.version.details', dm: '获取版本详情失败' }));
       }
 
       const versionDetail = response.data;
@@ -176,7 +177,7 @@ const VersionHistoryPage = () => {
       setShowVersionDetail(true);
     } catch (err) {
       console.error('Failed to load version details:', err);
-      handleApiError(err, 'Load version details');
+      handleApiError(err, $i18n.get({ id: 'legacy.prompts.load.version.details', dm: '加载版本详情' }));
     } finally {
       setLoadingVersionDetail(false);
     }
@@ -205,7 +206,7 @@ const VersionHistoryPage = () => {
             size="large"
           >
             <div className="text-center pt-4">
-              <p className="text-gray-600 mt-4">Loading version data...</p>
+              <p className="text-gray-600 mt-4">{$i18n.get({ id: 'legacy.prompts.loading.version.data', dm: '加载版本数据中...' })}</p>
             </div>
           </Spin>
         </div>
@@ -218,14 +219,14 @@ const VersionHistoryPage = () => {
       <div className="p-8 fade-in">
         <Result
           status="error"
-          title="Failed to load version data"
+          title={$i18n.get({ id: 'legacy.prompts.failed.to.load.version.data', dm: '加载版本数据失败' })}
           subTitle={error}
           extra={[
             <Button type="primary" key="retry" onClick={() => loadPromptData()}>
-              Retry
+              {$i18n.get({ id: 'legacy.prompts.retry', dm: '重试' })}
             </Button>,
             <Button key="back" onClick={() => navigate('/prompts')}>
-              Back to list
+              {$i18n.get({ id: 'legacy.prompts.back.to.list', dm: '返回列表' })}
             </Button>,
           ]}
         />
@@ -238,11 +239,11 @@ const VersionHistoryPage = () => {
       <div className="p-8 fade-in">
         <Result
           status="404"
-          title="Prompt not found"
-          subTitle="The requested Prompt was not found. It may have been deleted or does not exist."
+          title={$i18n.get({ id: 'legacy.prompts.prompt.not.found', dm: 'Prompt 不存在' })}
+          subTitle={$i18n.get({ id: 'legacy.prompts.the.requested.prompt.was.not.found.it.may.have.been.deleted', dm: '未找到指定的 Prompt，可能已被删除或不存在。' })}
           extra={
             <Button type="primary" onClick={() => navigate('/prompts')}>
-              Back to list
+              {$i18n.get({ id: 'legacy.prompts.back.to.list', dm: '返回列表' })}
             </Button>
           }
         />
@@ -267,7 +268,7 @@ const VersionHistoryPage = () => {
       ]);
 
       if (detail1Response.code !== 200 || detail2Response.code !== 200) {
-        throw new Error('Failed to get version details');
+        throw new Error($i18n.get({ id: 'legacy.prompts.failed.to.get.version.details', dm: '获取版本详情失败' }));
       }
 
       // 处理版本1数据
@@ -332,7 +333,7 @@ const VersionHistoryPage = () => {
       setShowCompare(true);
     } catch (err) {
       console.error('Failed to load version comparison data:', err);
-      handleApiError(err, 'Load version comparison data');
+      handleApiError(err, $i18n.get({ id: 'legacy.prompts.load.version.comparison.data', dm: '加载版本对比数据' }));
     } finally {
       setLoadingVersionDetail(false);
     }
@@ -384,7 +385,7 @@ const VersionHistoryPage = () => {
         ]);
 
         if (prevDetailResponse.code !== 200) {
-          throw new Error('Failed to get previous version details');
+          throw new Error($i18n.get({ id: 'legacy.prompts.failed.to.get.previous.version.details', dm: '获取前版本详情失败' }));
         }
 
         // 处理前版本数据
@@ -408,12 +409,12 @@ const VersionHistoryPage = () => {
         setShowCompare(true);
       } catch (err) {
         console.error('Failed to load version comparison data:', err);
-        handleApiError(err, 'Load version comparison data');
+        handleApiError(err, $i18n.get({ id: 'legacy.prompts.load.version.comparison.data', dm: '加载版本对比数据' }));
       } finally {
         setLoadingVersionDetail(false);
       }
     } else {
-      notifyError({ message: 'No previous version is available for comparison' });
+      notifyError({ message: $i18n.get({ id: 'legacy.prompts.no.previous.version.is.available.for.comparison', dm: '没有可对比的前版本' }) });
     }
   };
 
@@ -460,10 +461,10 @@ const VersionHistoryPage = () => {
                 onClick={() => navigate('/prompts')}
                 size="large"
               />
-              <Title level={1} style={{ margin: 0 }}>Version History</Title>
+              <Title level={1} style={{ margin: 0 }}>{$i18n.get({ id: 'legacy.prompts.version.history.3', dm: '版本记录' })}</Title>
             </div>
             <Paragraph style={{ margin: 0, color: '#595959' }}>
-              <Text strong>{currentPrompt.promptKey}</Text> version release history
+              <Text strong>{currentPrompt.promptKey}</Text>{$i18n.get({ id: 'legacy.prompts.version.release.history', dm: ' 的版本发布记录' })}
             </Paragraph>
           </div>
         </div>
@@ -473,7 +474,7 @@ const VersionHistoryPage = () => {
       <Alert
         message={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text>Select two versions to compare, or click Details in the Actions column to view version details.</Text>
+            <Text>{$i18n.get({ id: 'legacy.prompts.select.two.versions.to.compare.or.click.details.in.the.actio', dm: '勾选两个版本进行对比，或点击操作列的“详情”按钮查看版本详情' })}</Text>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {selectedVersions.length > 0 && (
                 <Button
@@ -481,7 +482,7 @@ const VersionHistoryPage = () => {
                   size="small"
                   onClick={clearSelection}
                 >
-                  Clear selection ({selectedVersions.length})
+                  {$i18n.get({ id: 'legacy.prompts.clear.selection.2', dm: '清除选择 ({count})' }, { count: selectedVersions.length })}
                 </Button>
               )}
             </div>
@@ -504,7 +505,7 @@ const VersionHistoryPage = () => {
           }))}
           columns={[
             {
-              title: 'Select',
+              title: $i18n.get({ id: 'legacy.prompts.select', dm: '选择' }),
               key: 'select',
               width: 60,
               align: 'center',
@@ -520,44 +521,44 @@ const VersionHistoryPage = () => {
               )
             },
             {
-              title: 'Version',
+              title: $i18n.get({ id: 'legacy.prompts.version', dm: '版本号' }),
               key: 'version',
               width: 150,
               render: (_, record) => (
                 <Space direction="vertical" size={4}>
                   <Tag color="blue">{record.version}</Tag>
                   {record.actualIndex === 0 && (
-                    <Tag color="success" size="small">Current Version</Tag>
+                    <Tag color="success" size="small">{$i18n.get({ id: 'legacy.prompts.current.version', dm: '当前版本' })}</Tag>
                   )}
                   {selectedVersions.some(v => v.version === record.version) && (
-                    <Tag color="blue" size="small" icon={<CheckCircleOutlined />}>Selected</Tag>
+                    <Tag color="blue" size="small" icon={<CheckCircleOutlined />}>{$i18n.get({ id: 'legacy.prompts.selected', dm: '已选择' })}</Tag>
                   )}
                 </Space>
               )
             },
             {
-              title: 'Published At',
+              title: $i18n.get({ id: 'legacy.prompts.published.at', dm: '发布时间' }),
               key: 'createTime',
               width: 150,
               render: (_, record) => formatTime(record.createTime)
             },
             {
-              title: 'Version Description',
+              title: $i18n.get({ id: 'legacy.prompts.version.description', dm: '版本说明' }),
               key: 'description',
               width: 200,
               ellipsis: {
                 showTitle: false
               },
               render: (_, record) => (
-                <Tooltip title={record.versionDescription || record.cachedDetail?.description || 'No description'}>
+                <Tooltip title={record.versionDescription || record.cachedDetail?.description || $i18n.get({ id: 'legacy.prompts.no.description.3', dm: '无描述' })}>
                   <Text ellipsis>
-                    {record.versionDescription || record.cachedDetail?.description || 'No description'}
+                    {record.versionDescription || record.cachedDetail?.description || $i18n.get({ id: 'legacy.prompts.no.description.3', dm: '无描述' })}
                   </Text>
                 </Tooltip>
               )
             },
             // {
-            //   title: 'Model Configuration',
+            //   title: $i18n.get({ id: 'legacy.prompts.model.configuration', dm: '模型配置' }),
             //   key: 'modelConfig',
             //   width: 180,
             //   render: (_, record) => {
@@ -599,20 +600,20 @@ const VersionHistoryPage = () => {
             //   }
             // },
             {
-              title: 'Status',
+              title: $i18n.get({ id: 'legacy.prompts.status', dm: '状态' }),
               key: 'status',
               width: 120,
               render: (_, record) => {
                 if (record.status === 'release') {
                   return (
                     <Tag color="success" icon={<CheckCircleOutlined />}>
-                      Release
+                      {$i18n.get({ id: 'legacy.prompts.release', dm: '正式版本' })}
                     </Tag>
                   );
                 }
                 return (
                   <Tag color="warning" icon={<ExperimentOutlined />}>
-                    Pre-release
+                    {$i18n.get({ id: 'legacy.prompts.pre.release', dm: 'PRE版本' })}
                   </Tag>
                 );
               }
@@ -647,7 +648,7 @@ const VersionHistoryPage = () => {
             //   }
             // },
             {
-              title: 'Actions',
+              title: $i18n.get({ id: 'legacy.prompts.actions', dm: '操作' }),
               key: 'actions',
               width: 100,
               align: 'center',
@@ -660,9 +661,9 @@ const VersionHistoryPage = () => {
                     e.stopPropagation();
                     handleVersionClick(record);
                   }}
-                  title="View details"
+                  title={$i18n.get({ id: 'legacy.prompts.view.details', dm: '查看详情' })}
                 >
-                  Details
+                  {$i18n.get({ id: 'legacy.prompts.details', dm: '详情' })}
                 </Button>
               )
             }
@@ -671,10 +672,10 @@ const VersionHistoryPage = () => {
             emptyText: (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="No version history yet"
+                description={$i18n.get({ id: 'legacy.prompts.no.version.history.yet', dm: '暂无版本记录' })}
               >
                 <Button type="primary" onClick={() => navigate(`/prompt-detail?promptKey=${promptKey}`)}>
-                  Create a version
+                  {$i18n.get({ id: 'legacy.prompts.create.a.version', dm: '开始创建版本' })}
                 </Button>
               </Empty>
             )
@@ -693,7 +694,7 @@ const VersionHistoryPage = () => {
         {/* 底部Actions区 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text type="secondary">
-            Total {pagination.total} versions, sorted by publish time in descending order
+            {$i18n.get({ id: 'legacy.prompts.total.versions.sorted.by.publish.time.in.descending.order', dm: '共 {total} 个版本，按发布时间倒序排列' }, { total: pagination.total })}
           </Text>
 
           <Space>
@@ -704,23 +705,23 @@ const VersionHistoryPage = () => {
                 loading={loadingVersionDetail}
                 onClick={() => loadVersionsAndCompare(selectedVersions[0], selectedVersions[1])}
               >
-                {loadingVersionDetail ? 'Loading...' : 'Compare selected versions'}
+                {loadingVersionDetail ? $i18n.get({ id: 'legacy.prompts.loading', dm: '加载中...' }) : $i18n.get({ id: 'legacy.prompts.compare.selected.versions', dm: '对比选中版本' })}
               </Button>
             )}
             <div>
               {selectedVersions.length === 0 && (
-                <Text type="secondary">Select two versions to compare</Text>
+                <Text type="secondary">{$i18n.get({ id: 'legacy.prompts.select.two.versions.to.compare', dm: '请选择两个版本进行对比' })}</Text>
               )}
               {selectedVersions.length === 1 && (
-                <Text type="secondary">1 version selected. Select 1 more version.</Text>
+                <Text type="secondary">{$i18n.get({ id: 'legacy.prompts.1.version.selected.select.1.more.version', dm: '已选择1个版本，请再选择1个版本' })}</Text>
               )}
               {selectedVersions.length === 2 && !loadingVersionDetail && (
-                <Text type="secondary">Selected versions {selectedVersions[0].version} and {selectedVersions[1].version}</Text>
+                <Text type="secondary">{$i18n.get({ id: 'legacy.prompts.selected.versions.pair', dm: '已选择版本 {v1} 和 {v2}' }, { v1: selectedVersions[0].version, v2: selectedVersions[1].version })}</Text>
               )}
               {loadingVersionDetail && (
                 <Text type="secondary">
                   <LoadingOutlined style={{ marginRight: 8 }} />
-                  Loading version details for comparison...
+                  {$i18n.get({ id: 'legacy.prompts.loading.version.details.for.comparison', dm: '正在加载版本详情用于对比...' })}
                 </Text>
               )}
             </div>
@@ -730,7 +731,7 @@ const VersionHistoryPage = () => {
 
       {/* 版本Details模态框 */}
       <Modal
-        title={`Version Details - ${selectedVersion?.version}`}
+        title={$i18n.get({ id: 'legacy.prompts.version.details', dm: '版本详情 - {selectedVersion}' }, { selectedVersion: selectedVersion?.version })}
         open={showVersionDetail && selectedVersion}
         onCancel={() => setShowVersionDetail(false)}
         width={1000}
@@ -749,16 +750,16 @@ const VersionHistoryPage = () => {
               icon={<UndoOutlined />}
               onClick={handleRestoreVersion}
             >
-              Restore to editor
+              {$i18n.get({ id: 'legacy.prompts.restore.to.editor', dm: '恢复到编辑区' })}
             </Button>
             <Button
               icon={<BranchesOutlined />}
               onClick={handleVersionDetailCompare}
             >
-              Compare with previous version
+              {$i18n.get({ id: 'legacy.prompts.compare.with.previous.version', dm: '与前版本对比' })}
             </Button>
             <Button onClick={() => setShowVersionDetail(false)}>
-              Close
+              {$i18n.get({ id: 'legacy.prompts.close', dm: '关闭' })}
             </Button>
           </Space>
         ]}
@@ -770,7 +771,7 @@ const VersionHistoryPage = () => {
               size="large"
             >
               <div style={{ textAlign: 'center', paddingTop: 16 }}>
-                <Text type="secondary">Loading version details...</Text>
+                <Text type="secondary">{$i18n.get({ id: 'legacy.prompts.loading.version.details', dm: '加载版本详情中...' })}</Text>
               </div>
             </Spin>
           </div>
@@ -780,7 +781,7 @@ const VersionHistoryPage = () => {
             <Row gutter={24}>
               <Col span={12}>
                 <div>
-                  <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Version</Text>
+                  <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>{$i18n.get({ id: 'legacy.prompts.version', dm: '版本号' })}</Text>
                   <div style={{ padding: '8px 16px', backgroundColor: '#fafafa', borderRadius: 6 }}>
                     <Tag color="blue">{selectedVersion?.version}</Tag>
                   </div>
@@ -788,7 +789,7 @@ const VersionHistoryPage = () => {
               </Col>
               <Col span={12}>
                 <div>
-                  <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Created At</Text>
+                  <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>{$i18n.get({ id: 'legacy.prompts.created.at', dm: '创建时间' })}</Text>
                   <div style={{ padding: '8px 16px', backgroundColor: '#fafafa', borderRadius: 6, color: '#262626' }}>
                     {formatTime(selectedVersion?.createTime)}
                   </div>
@@ -798,16 +799,16 @@ const VersionHistoryPage = () => {
 
             {/* Version Description */}
             <div>
-              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Version Description</Text>
+              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>{$i18n.get({ id: 'legacy.prompts.version.description', dm: '版本说明' })}</Text>
               <div style={{ padding: '12px 16px', backgroundColor: '#fafafa', borderRadius: 6, color: '#262626' }}>
-                {selectedVersion?.description || selectedVersion?.versionDescription || 'No description'}
+                {selectedVersion?.description || selectedVersion?.versionDescription || $i18n.get({ id: 'legacy.prompts.no.description.3', dm: '无描述' })}
               </div>
             </div>
 
             {/* Model Configuration */}
             {selectedVersion?.modelConfig && (
               <div>
-                <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Model Configuration</Text>
+                <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>{$i18n.get({ id: 'legacy.prompts.model.configuration', dm: '模型配置' })}</Text>
                 <div style={{ padding: '12px 16px', backgroundColor: '#fafafa', borderRadius: 6 }}>
                   <Row gutter={16}>
                     <Col span={12}>
@@ -830,7 +831,7 @@ const VersionHistoryPage = () => {
             {/* Parameters */}
             {selectedVersion?.parameters && selectedVersion.parameters.length > 0 && (
               <div>
-                <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Parameters</Text>
+                <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>{$i18n.get({ id: 'legacy.prompts.parameters', dm: '参数列表' })}</Text>
                 <div style={{ padding: '12px 16px', backgroundColor: '#fafafa', borderRadius: 6 }}>
                   <Space size={[8, 8]} wrap>
                     {selectedVersion.parameters.map((param, index) => (
@@ -843,15 +844,15 @@ const VersionHistoryPage = () => {
 
             {/* Version Status */}
             <div>
-              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Version Status</Text>
+              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>{$i18n.get({ id: 'legacy.prompts.version.status', dm: '版本状态' })}</Text>
               <div style={{ padding: '8px 16px', backgroundColor: '#fafafa', borderRadius: 6 }}>
                 {(selectedVersion?.versionType || selectedVersion?.status) === 'release' ? (
                   <Tag color="success" icon={<CheckCircleOutlined />}>
-                    Release
+                    {$i18n.get({ id: 'legacy.prompts.release', dm: '正式版本' })}
                   </Tag>
                 ) : (
                   <Tag color="warning" icon={<ExperimentOutlined />}>
-                    Pre-release
+                    {$i18n.get({ id: 'legacy.prompts.pre.release', dm: 'PRE版本' })}
                   </Tag>
                 )}
               </div>
@@ -859,7 +860,7 @@ const VersionHistoryPage = () => {
 
             {/* Version Content */}
             <div>
-              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Version Content</Text>
+              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>{$i18n.get({ id: 'legacy.prompts.version.content', dm: '版本内容' })}</Text>
               <div style={{
                 padding: '12px 16px',
                 backgroundColor: '#fafafa',
@@ -871,7 +872,7 @@ const VersionHistoryPage = () => {
                 maxHeight: 256,
                 overflowY: 'auto'
               }}>
-                {selectedVersion?.content || selectedVersion?.template || 'No content'}
+                {selectedVersion?.content || selectedVersion?.template || $i18n.get({ id: 'legacy.prompts.no.content', dm: '无内容' })}
               </div>
             </div>
           </Space>

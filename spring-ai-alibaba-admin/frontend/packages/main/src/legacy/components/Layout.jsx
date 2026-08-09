@@ -13,6 +13,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined
 } from '@ant-design/icons';
+import $i18n from '@/i18n';
 
 const { Sider, Content } = AntLayout;
 
@@ -68,7 +69,10 @@ const Layout = ({ children }) => {
   const menuItems = [
     {
       key: 'prompt',
-      label: 'Prompt Engineering',
+      label: $i18n.get({
+        id: 'legacy.layout.promptEngineering',
+        dm: 'Prompt工程',
+      }),
       icon: <BulbOutlined />,
       children: [
         {
@@ -85,29 +89,44 @@ const Layout = ({ children }) => {
     },
     {
       key: 'evaluation',
-      label: 'Evaluation',
+      label: $i18n.get({
+        id: 'legacy.layout.evaluation',
+        dm: '评测',
+      }),
       icon: <ExperimentOutlined />,
       children: [
         {
           key: '/admin/evaluation/gather',
-          label: 'Evaluation Sets',
+          label: $i18n.get({
+            id: 'legacy.layout.evaluationSets',
+            dm: '评测集',
+          }),
           icon: <UnorderedListOutlined />
         },
         {
           key: '/admin/evaluation/evaluator',
-          label: 'Evaluators',
+          label: $i18n.get({
+            id: 'legacy.layout.evaluators',
+            dm: '评估器',
+          }),
           icon: <BarChartOutlined />
         },
         {
           key: '/admin/evaluation/experiment',
-          label: 'Experiments',
+          label: $i18n.get({
+            id: 'legacy.layout.experiments',
+            dm: '实验',
+          }),
           icon: <ExperimentOutlined />
         }
       ]
     },
     {
       key: 'observability',
-      label: 'Observability',
+      label: $i18n.get({
+        id: 'legacy.layout.observability',
+        dm: '可观测',
+      }),
       icon: <LineChartOutlined />,
       children: [
         {
@@ -158,7 +177,14 @@ const Layout = ({ children }) => {
               <MenuUnfoldOutlined className="text-gray-600 text-lg" /> : 
               <MenuFoldOutlined className="text-gray-600 text-lg" />
             }
-            {!collapsed && <span className="ml-2 text-gray-600">Collapse Menu</span>}
+            {!collapsed && (
+              <span className="ml-2 text-gray-600">
+                {$i18n.get({
+                  id: 'legacy.layout.collapseMenu',
+                  dm: '收起菜单',
+                })}
+              </span>
+            )}
           </div>
         </div>
       </Sider>

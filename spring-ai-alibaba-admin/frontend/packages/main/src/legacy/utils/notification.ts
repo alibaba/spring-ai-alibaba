@@ -1,4 +1,5 @@
 import { notification } from 'antd';
+import $i18n from '@/i18n';
 
 // Configure global notification style
 notification.config({
@@ -51,49 +52,98 @@ export const notifyInfo = (options: NotificationOptions) => {
   });
 };
 
-const failedMessage = (context: string, suffix = '') => {
-  const base = context?.trim() ? context.trim() : 'Operation';
-  // If caller already passed a full English sentence, keep it.
-  if (/failed|error|unable|cannot/i.test(base)) {
-    return suffix ? `${base}${suffix}` : base;
-  }
-  return `${base} failed${suffix}`;
-};
-
-export const handleApiError = (error: any, context: string = 'Operation') => {
-  let message = failedMessage(context);
-  let description = 'Please try again later';
+export const handleApiError = (
+  error: any,
+  context: string = $i18n.get({
+    id: 'legacy.notification.operation',
+    dm: '操作',
+  }),
+) => {
+  let message = $i18n.get({
+    id: 'legacy.notification.operationFailed',
+    dm: '操作失败',
+  });
+  let description = $i18n.get({
+    id: 'legacy.notification.retryLater',
+    dm: '请稍后重试',
+  });
 
   if (error && typeof error === 'object') {
     if (error.message) {
-      message = failedMessage(context);
+      message = $i18n.get(
+        {
+          id: 'legacy.notification.contextFailed',
+          dm: '{context}失败',
+        },
+        { context },
+      );
       description = error.message;
     } else if (error.code && error.code !== 200) {
-      message = failedMessage(context, ` (code: ${error.code})`);
-      description = error.message || 'Unexpected server response';
+      message = $i18n.get(
+        {
+          id: 'legacy.notification.contextFailedWithCode',
+          dm: '{context}失败 (错误码: {code})',
+        },
+        { context, code: error.code },
+      );
+      description =
+        error.message ||
+        $i18n.get({
+          id: 'legacy.notification.serverException',
+          dm: '服务器返回异常',
+        });
     } else if (typeof error === 'string') {
-      message = failedMessage(context);
+      message = $i18n.get(
+        {
+          id: 'legacy.notification.contextFailed',
+          dm: '{context}失败',
+        },
+        { context },
+      );
       description = error;
     }
   } else if (typeof error === 'string') {
-    message = failedMessage(context);
+    message = $i18n.get(
+      {
+        id: 'legacy.notification.contextFailed',
+        dm: '{context}失败',
+      },
+      { context },
+    );
     description = error;
   }
 
   notifyError({ message, description });
 };
 
-export const handleNetworkError = (context: string = 'Operation') => {
+export const handleNetworkError = (
+  context: string = $i18n.get({
+    id: 'legacy.notification.operation',
+    dm: '操作',
+  }),
+) => {
   notifyError({
-    message: failedMessage(context),
-    description: 'Network error. Check your connection and try again.',
+    message: $i18n.get(
+      {
+        id: 'legacy.notification.contextFailed',
+        dm: '{context}失败',
+      },
+      { context },
+    ),
+    description: $i18n.get({
+      id: 'legacy.notification.networkError',
+      dm: '网络连接异常，请检查网络后重试',
+    }),
     duration: 6,
   });
 };
 
 export const handleValidationError = (message: string, description?: string) => {
   notifyWarning({
-    message: 'Validation failed',
+    message: $i18n.get({
+      id: 'legacy.notification.validationFailed',
+      dm: '输入验证失败',
+    }),
     description: description || message,
   });
 };

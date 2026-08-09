@@ -38,6 +38,7 @@ import { handleApiError, notifySuccess, notifyError } from '../../../../utils/no
 import API from '../../../../services';
 import './index.css';
 import usePagination from '../../../../hooks/usePagination';
+import $i18n from '@/i18n';
 import { ModelsContext } from '../../../../context/models';
 
 const { TextArea } = Input;
@@ -49,7 +50,8 @@ const formatDateTime = (dateTimeString: string) => {
   if (!dateTimeString) return '-';
   try {
     const date = new Date(dateTimeString);
-    return date.toLocaleString('en-US', {
+    const localeMap: Record<string, string> = { zh: 'zh-CN', en: 'en-US', ja: 'ja-JP' };
+    return date.toLocaleString(localeMap[$i18n.getCurrentLanguage()] || 'en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -157,7 +159,7 @@ function EvaluatorDetail() {
       const evaluatorResponse = await API.getEvaluator({ id: parseInt(id) });
 
       if (evaluatorResponse.code !== 200) {
-        throw new Error(evaluatorResponse.message || 'Failed to load evaluator details');
+        throw new Error(evaluatorResponse.message || $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.loadFailedError', dm: '获取评估器详情失败' }));
       }
 
       const evaluatorData = evaluatorResponse.data;
@@ -188,8 +190,8 @@ function EvaluatorDetail() {
 
     } catch (err: any) {
       console.error('Failed to load evaluator details:', err);
-      handleApiError(err, 'Load evaluator details');
-      setError(err.message || 'Load failed. Please try again later.');
+      handleApiError(err, $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.loadContext', dm: '加载评估器详情' }));
+      setError(err.message || $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.loadFailedRetry', dm: '加载失败，请稍后重试' }));
     } finally {
       setLoading(false);
     }
@@ -216,11 +218,11 @@ function EvaluatorDetail() {
           total: responseData.totalCount || 0
         }));
       } else {
-        throw new Error(response.message || 'Failed to get version list');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.versionListFailed', dm: '获取版本列表失败' }));
       }
     } catch (err: any) {
       console.error('Failed to load version list:', err);
-      handleApiError(err, 'Load version list');
+      handleApiError(err, $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.versionListContext', dm: '加载版本列表' }));
     } finally {
       setVersionsLoading(false);
     }
@@ -241,7 +243,7 @@ function EvaluatorDetail() {
       });
 
       if (response.code === 200) {
-        notifySuccess({ message: 'Evaluator information updated successfully' });
+        notifySuccess({ message: $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.updateSuccess', dm: '评估器信息更新成功' }) });
         setEvaluator(prev => ({
           ...prev!,
           ...values,
@@ -249,13 +251,13 @@ function EvaluatorDetail() {
         }));
         setIsEditing(false);
       } else {
-        throw new Error(response.message || 'Update failed');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.updateFailed', dm: '更新失败' }));
       }
     } catch (error: any) {
       if (error.errorFields) {
-        message.error('Please check that the form is completed correctly');
+        message.error($i18n.get({ id: 'legacy.evaluation.common.checkForm', dm: '请检查表单填写是否正确' }));
       } else {
-        handleApiError(error, 'Update evaluator information');
+        handleApiError(error, $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.updateContext', dm: '更新评估器信息' }));
       }
     } finally {
       setEditLoading(false);
@@ -270,11 +272,11 @@ function EvaluatorDetail() {
       if (response.code === 200) {
         setTemplates(response.data.pageItems || []);
       } else {
-        throw new Error(response.message || 'Failed to get template list');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.templateListFailed', dm: '获取模板列表失败' }));
       }
     } catch (error: any) {
       console.error('Failed to load template list:', error);
-      handleApiError(error, 'Load template list');
+      handleApiError(error, $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.templateListContext', dm: '加载模板列表' }));
     } finally {
       setTemplatesLoading(false);
     }
@@ -288,11 +290,11 @@ function EvaluatorDetail() {
       if (response.code === 200) {
         setSelectedTemplateDetail(response.data);
       } else {
-        throw new Error(response.message || 'Failed to get template details');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.templateDetailFailed', dm: '获取模板详情失败' }));
       }
     } catch (error: any) {
       console.error('Failed to load template details:', error);
-      handleApiError(error, 'Load template details');
+      handleApiError(error, $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.templateDetailContext', dm: '加载模板详情' }));
     } finally {
       setTemplateDetailLoading(false);
     }
@@ -344,7 +346,7 @@ function EvaluatorDetail() {
     setSelectedTemplateDetail(null);
 
     // 显示成功消息
-    message.success('Template imported successfully');
+    message.success($i18n.get({ id: 'legacy.evaluation.evaluatorDetail.templateImportSuccess', dm: '模板导入成功' }));
   };
 
   // 打开模板导入弹窗
@@ -464,7 +466,7 @@ function EvaluatorDetail() {
       // 检查版本号是否已存在
       const existingVersion = versions.find(v => v.version === values.version);
       if (existingVersion) {
-        message.error(`Version ${values.version} already exists. Please use a different version number.`);
+        message.error($i18n.get({ id: 'legacy.evaluation.evaluatorDetail.versionExists', dm: '版本号 {version} 已存在，请使用其他版本号' }, { version: values.version }));
         return;
       }
 
@@ -486,19 +488,19 @@ function EvaluatorDetail() {
       });
 
       if (response.code === 200) {
-        message.success(`Version ${values.version} published successfully`);
+        message.success($i18n.get({ id: 'legacy.evaluation.evaluatorDetail.versionPublished', dm: '版本 {version} 发布成功' }, { version: values.version }));
         setShowPublishModal(false);
         loadVersions(); // 重新加载版本列表
         loadEvaluatorDetail(); // 重新加载评估器详情
       } else {
-        throw new Error(response.message || 'Publish failed');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.publishFailed', dm: '发布失败' }));
       }
     } catch (error: any) {
       if (error.errorFields) {
         // 表单验证错误，不需要额外处理
         return;
       }
-      handleApiError(error, 'Publish new version');
+      handleApiError(error, $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.publishContext', dm: '发布新版本' }));
     } finally {
       setPublishLoading(false);
     }
@@ -659,19 +661,19 @@ function EvaluatorDetail() {
   // 版本记录表格列配置
   const versionColumns = [
     {
-      title: 'Version',
+      title: $i18n.get({ id: 'legacy.evaluation.common.version', dm: '版本号' }),
       dataIndex: 'version',
       key: 'version',
       render: (text: string) => <Tag color="blue">{text}</Tag>
     },
     {
-      title: 'Description',
+      title: $i18n.get({ id: 'legacy.evaluation.common.description', dm: '描述' }),
       dataIndex: 'description',
       key: 'description',
       render: (text: string) => text || '-'
     },
     {
-      title: 'Judge Model',
+      title: $i18n.get({ id: 'legacy.evaluation.common.judgeModel', dm: '裁判模型' }),
       dataIndex: 'modelConfig',
       key: 'modelConfig',
       render: (modelConfig: string) => {
@@ -680,7 +682,7 @@ function EvaluatorDetail() {
       }
     },
     {
-      title: 'Created At',
+      title: $i18n.get({ id: 'legacy.evaluation.common.createdAt', dm: '创建时间' }),
       dataIndex: 'createTime',
       key: 'createTime',
       render: (text: string) => formatDateTime(text)
@@ -735,7 +737,7 @@ function EvaluatorDetail() {
         <div className="flex items-center justify-center h-64">
           <Spin size="large">
             <div className="text-center pt-4">
-              <p className="text-gray-600 mt-4">Loading evaluator details...</p>
+              <p className="text-gray-600 mt-4">{$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.loading', dm: '加载评估器详情中...' })}</p>
             </div>
           </Spin>
         </div>
@@ -747,17 +749,17 @@ function EvaluatorDetail() {
     return (
       <div className="p-6">
         <Alert
-          message="Load Failed"
-          description={error || 'Evaluator not found'}
+          message={$i18n.get({ id: 'legacy.evaluation.common.loadFailed', dm: '加载失败' })}
+          description={error || $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.notFound', dm: '评估器不存在' })}
           type="error"
           showIcon
           action={
             <Space>
               <Button size="small" onClick={loadEvaluatorDetail}>
-                Retry
+                {$i18n.get({ id: 'legacy.evaluation.common.retry', dm: '重试' })}
               </Button>
               <Button size="small" onClick={() => navigate('/evaluation-evaluator')}>
-                Back to List
+                {$i18n.get({ id: 'legacy.evaluation.common.backToList', dm: '返回列表' })}
               </Button>
             </Space>
           }
@@ -776,14 +778,14 @@ function EvaluatorDetail() {
             onClick={() => navigate('/evaluation-evaluator')}
             size="large"
           />
-          <Title level={2} className="m-0">Evaluator Details</Title>
+          <Title level={2} className="m-0">{$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.pageTitle', dm: '评估器详情' })}</Title>
       </div>
 
       {/* 评估器基础信息 */}
       <Card
         title={
           <div className="flex justify-between items-center">
-            <span>Basic Information</span>
+            <span>{$i18n.get({ id: 'legacy.evaluation.common.basicInformation', dm: '基本信息' })}</span>
             <div>
               {isEditing ? (
                 <Space>
@@ -798,7 +800,7 @@ function EvaluatorDetail() {
                     }}
                     icon={<CloseOutlined />}
                   >
-                    Cancel
+                    {$i18n.get({ id: 'legacy.evaluation.common.cancel', dm: '取消' })}
                   </Button>
                   <Button
                     type="primary"
@@ -807,7 +809,7 @@ function EvaluatorDetail() {
                     onClick={handleSaveBasicInfo}
                     icon={<SaveOutlined />}
                   >
-                    Save
+                    {$i18n.get({ id: 'legacy.evaluation.common.save', dm: '保存' })}
                   </Button>
                 </Space>
               ) : (
@@ -816,7 +818,7 @@ function EvaluatorDetail() {
                   onClick={() => setIsEditing(true)}
                   icon={<EditOutlined />}
                 >
-                  Edit
+                  {$i18n.get({ id: 'legacy.evaluation.common.edit', dm: '编辑' })}
                 </Button>
               )}
             </div>
@@ -829,24 +831,24 @@ function EvaluatorDetail() {
             <Row gutter={24}>
               <Col span={12}>
                 <Form.Item
-                  label="Name"
+                  label={$i18n.get({ id: 'legacy.evaluation.common.name', dm: '名称' })}
                   name="name"
                   rules={[
-                    { required: true, message: 'Please enter an evaluator name' },
-                    { max: 50, message: 'Name cannot exceed 50 characters' }
+                    { required: true, message: $i18n.get({ id: 'legacy.evaluation.common.pleaseEnterEvaluatorName', dm: '请输入评估器名称' }) },
+                    { max: 50, message: $i18n.get({ id: 'legacy.evaluation.common.nameMax50', dm: '名称不能超过50个字符' }) }
                   ]}
                 >
-                  <Input placeholder="Enter an evaluator name" />
+                  <Input placeholder={$i18n.get({ id: 'legacy.evaluation.common.enterEvaluatorName', dm: '输入评估器名称' })} />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label="Description"
+                  label={$i18n.get({ id: 'legacy.evaluation.common.description', dm: '描述' })}
                   name="description"
-                  rules={[{ max: 500, message: 'Description cannot exceed 500 characters' }]}
+                  rules={[{ max: 500, message: $i18n.get({ id: 'legacy.evaluation.common.descMax500', dm: '描述不能超过500个字符' }) }]}
                 >
                   <TextArea
-                    placeholder="Enter an evaluator description (optional)"
+                    placeholder={$i18n.get({ id: 'legacy.evaluation.common.enterEvaluatorDescOptional', dm: '输入评估器描述（可选）' })}
                     rows={3}
                     showCount
                     maxLength={500}
@@ -860,7 +862,7 @@ function EvaluatorDetail() {
             <Col xs={24} sm={12} lg={6}>
               <div>
                 <Text type="secondary" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '12px' }}>
-                  Evaluator Name
+                  {$i18n.get({ id: 'legacy.evaluation.common.evaluatorName', dm: '评估器名称' })}
                 </Text>
                 <div style={{ marginTop: 4 }}>
                   <Text strong style={{ fontSize: '16px' }}>{evaluator.name}</Text>
@@ -871,13 +873,13 @@ function EvaluatorDetail() {
             <Col xs={24} sm={12} lg={6}>
               <div>
                 <Text type="secondary" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '12px' }}>
-                  Current Version
+                  {$i18n.get({ id: 'legacy.evaluation.common.currentVersion', dm: '当前版本' })}
                 </Text>
                 <div style={{ marginTop: 4 }}>
                   {evaluator.latestVersion ? (
                     <Tag color="blue">{evaluator.latestVersion}</Tag>
                   ) : (
-                    <Tag color="default">No Versions</Tag>
+                    <Tag color="default">{$i18n.get({ id: 'legacy.evaluation.common.noVersions', dm: '暂无版本' })}</Tag>
                   )}
                 </div>
               </div>
@@ -886,7 +888,7 @@ function EvaluatorDetail() {
             <Col xs={24} sm={12} lg={6}>
               <div>
                 <Text type="secondary" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '12px' }}>
-                  Current Model
+                  {$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.currentModel', dm: '当前模型' })}
                 </Text>
                 <div style={{ marginTop: 4 }}>
                   {(() => {
@@ -904,7 +906,7 @@ function EvaluatorDetail() {
         {!isEditing && evaluator.description && (
           <div style={{ marginTop: 16 }}>
             <Text type="secondary" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '12px' }}>
-              Description
+              {$i18n.get({ id: 'legacy.evaluation.common.description', dm: '描述' })}
             </Text>
             <div style={{ marginTop: 8 }}>
               <Text>{evaluator.description}</Text>
@@ -918,12 +920,12 @@ function EvaluatorDetail() {
             <Row gutter={[16, 8]}>
               <Col span={12}>
                 <Text type="secondary">
-                  Created At: {formatDateTime(evaluator.createTime)}
+                  {$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.createdAtLabel', dm: '创建时间：{time}' }, { time: formatDateTime(evaluator.createTime) })}
                 </Text>
               </Col>
               <Col span={12}>
                 <Text type="secondary">
-                  Updated At: {formatDateTime(evaluator.updateTime)}
+                  {$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.updatedAtLabel', dm: '更新时间：{time}' }, { time: formatDateTime(evaluator.updateTime) })}
                 </Text>
               </Col>
             </Row>
@@ -939,30 +941,30 @@ function EvaluatorDetail() {
           items={[
             {
               key: 'config',
-              label: 'Model Configuration',
+              label: $i18n.get({ id: 'legacy.evaluation.common.modelConfiguration', dm: '模型配置' }),
               children: (
                 <div>
                   <div className="flex justify-between items-center mb-4">
-                    <Title level={4} className="m-0">Model Configuration</Title>
+                    <Title level={4} className="m-0">{$i18n.get({ id: 'legacy.evaluation.common.modelConfiguration', dm: '模型配置' })}</Title>
                     <Space>
-                      <Button onClick={handleOpenTemplateModal}>Import from Template</Button>
-                      <Tooltip title="Open the debug page">
+                      <Button onClick={handleOpenTemplateModal}>{$i18n.get({ id: 'legacy.evaluation.common.importFromTemplate', dm: '从模版导入' })}</Button>
+                      <Tooltip title={$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.openDebugTooltip', dm: '跳转至调试页面' })}>
                         <Button
                           icon={<BugOutlined />}
                           onClick={handleDebug}
                           disabled={!canPublishVersion}
                         >
-                          Debug
+                          {$i18n.get({ id: 'legacy.evaluation.common.debug', dm: '调试' })}
                         </Button>
                       </Tooltip>
-                      <Tooltip title={canPublishVersion ? "Publish New Version" : "The System Prompt must contain variables before you can publish a version"}>
+                      <Tooltip title={canPublishVersion ? $i18n.get({ id: 'legacy.evaluation.common.publishNewVersion', dm: '发布新版本' }) : $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.needVariablesTooltip', dm: 'System Prompt 中必须包含变量才能发布版本' })}>
                         <Button
                           type="primary"
                           icon={<RocketOutlined />}
                           onClick={handlePublishVersion}
                           disabled={!canPublishVersion}
                         >
-                          Publish New Version
+                          {$i18n.get({ id: 'legacy.evaluation.common.publishNewVersion', dm: '发布新版本' })}
                         </Button>
                       </Tooltip>
                     </Space>
@@ -971,8 +973,8 @@ function EvaluatorDetail() {
                   <Form form={configForm} layout="vertical">
                     <Row gutter={24}>
                       <Col span={24}>
-                        <Form.Item label="Judge Model" name="modelId" required>
-                          <Select placeholder="Select a model" onChange={handleModelChange}>
+                        <Form.Item label={$i18n.get({ id: 'legacy.evaluation.common.judgeModel', dm: '裁判模型' })} name="modelId" required>
+                          <Select placeholder={$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.selectModel', dm: '选择模型' })} onChange={handleModelChange}>
                             {models.map(model => (
                               <Option key={model.id} value={model.id}>
                                 {model.name}
@@ -1014,7 +1016,7 @@ function EvaluatorDetail() {
                           label={
                             <div className="flex items-center gap-2">
                               <span>System Prompt</span>
-                              <Tooltip title="Define variables using the {{variable_name}} format">
+                              <Tooltip title={$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.varFormatTooltip', dm: '使用 {{variable_name}} 格式定义变量' })}>
                                 <InfoCircleOutlined className="text-gray-400" />
                               </Tooltip>
                             </div>
@@ -1023,7 +1025,7 @@ function EvaluatorDetail() {
                         >
                           <TextArea
                             rows={3}
-                            placeholder="Enter the system prompt. Use {{variable_name}} to define variables."
+                            placeholder={$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.systemPromptPlaceholder', dm: '输入系统提示词，使用 {{variable_name}} 定义变量' })}
                             onChange={(e) => {
                               // 实时显示检测到的变量
                               const newPrompt = e.target.value;
@@ -1054,7 +1056,7 @@ function EvaluatorDetail() {
                                       <div className="flex items-center gap-2 mb-2">
                                         <InfoCircleOutlined className="text-blue-500" />
                                         <span className="text-sm font-medium text-blue-700">
-                                          Detected Variables ({variableNames.length})
+                                          {$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.detectedVariables', dm: '检测到的变量 ({count} 个)' }, { count: variableNames.length })}
                                         </span>
                                       </div>
                                       <div className="flex flex-wrap gap-2">
@@ -1072,8 +1074,8 @@ function EvaluatorDetail() {
                                 return (
                                   <div className="mb-4">
                                     <Alert
-                                      message="No Variables Detected"
-                                      description="No variables were detected in the System Prompt (format: {{variable_name}}). Add variables before publishing a version."
+                                      message={$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.noVariablesTitle', dm: '未检测到变量' })}
+                                      description={$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.noVariablesDesc', dm: 'System Prompt 中未检测到变量（格式：{{变量名}}）。需要添加变量才能发布版本。' })}
                                       type="warning"
                                       showIcon
                                       icon={<ExclamationCircleOutlined />}
@@ -1093,7 +1095,7 @@ function EvaluatorDetail() {
             },
             {
               key: 'versions',
-              label: 'Version History',
+              label: $i18n.get({ id: 'legacy.evaluation.common.versionHistory', dm: '版本记录' }),
               children: (
                 <Table
                   columns={versionColumns}
@@ -1110,7 +1112,7 @@ function EvaluatorDetail() {
             },
             {
               key: 'experiments',
-              label: 'Related Experiments',
+              label: $i18n.get({ id: 'legacy.evaluation.common.relatedExperiments', dm: '关联实验' }),
               children: (
                 <div>
                   {/* <Row className="mb-4">
@@ -1132,7 +1134,7 @@ function EvaluatorDetail() {
                     }}
                     columns={[
                       {
-                        title: 'Version',
+                        title: $i18n.get({ id: 'legacy.evaluation.common.version', dm: '版本号' }),
                         dataIndex: 'version',
                         width: '15%',
                         render: (version: string) => (
@@ -1140,7 +1142,7 @@ function EvaluatorDetail() {
                         )
                       },
                       {
-                        title: 'Experiment Name',
+                        title: $i18n.get({ id: 'legacy.evaluation.common.experimentName', dm: '实验名称' }),
                         dataIndex: 'name',
                         width: '10%',
                         render: (name: string, record: any) => (
@@ -1156,7 +1158,7 @@ function EvaluatorDetail() {
                         )
                       },
                       {
-                        title: "Description",
+                        title: $i18n.get({ id: 'legacy.evaluation.common.description', dm: '描述' }),
                         dataIndex: 'description',
                         width: '25%',
                         ellipsis: true,
@@ -1167,26 +1169,26 @@ function EvaluatorDetail() {
                         )
                       },
                       {
-                        title: 'Status',
+                        title: $i18n.get({ id: 'legacy.evaluation.common.status', dm: '状态' }),
                         dataIndex: 'status',
                         width: '15%',
                         render: (status: string) => {
                           const statusConfig = {
-                            'RUNNING': { color: 'processing', text: 'Running' },
-                            'COMPLETED': { color: 'success', text: 'Completed' },
-                            'FAILED': { color: 'error', text: 'Stopped' },
-                            'WAITING': { color: 'default', text: 'Waiting' },
-                            '运行中': { color: 'processing', text: 'Running' },
-                            '已完成': { color: 'success', text: 'Completed' },
-                            '已停止': { color: 'error', text: 'Stopped' },
-                            '等待中': { color: 'default', text: 'Waiting' }
+                            'RUNNING': { color: 'processing', text: $i18n.get({ id: 'legacy.evaluation.common.statusRunning', dm: '运行中' }) },
+                            'COMPLETED': { color: 'success', text: $i18n.get({ id: 'legacy.evaluation.common.statusCompleted', dm: '已完成' }) },
+                            'FAILED': { color: 'error', text: $i18n.get({ id: 'legacy.evaluation.common.statusStopped', dm: '已停止' }) },
+                            'WAITING': { color: 'default', text: $i18n.get({ id: 'legacy.evaluation.common.statusWaiting', dm: '等待中' }) },
+                            '运行中': { color: 'processing', text: $i18n.get({ id: 'legacy.evaluation.common.statusRunning', dm: '运行中' }) },
+                            '已完成': { color: 'success', text: $i18n.get({ id: 'legacy.evaluation.common.statusCompleted', dm: '已完成' }) },
+                            '已停止': { color: 'error', text: $i18n.get({ id: 'legacy.evaluation.common.statusStopped', dm: '已停止' }) },
+                            '等待中': { color: 'default', text: $i18n.get({ id: 'legacy.evaluation.common.statusWaiting', dm: '等待中' }) }
                           };
                           const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['WAITING'];
                           return <Tag color={config.color}>{config.text}</Tag>;
                         }
                       },
                       {
-                        title: 'Created At',
+                        title: $i18n.get({ id: 'legacy.evaluation.common.createdAt', dm: '创建时间' }),
                         dataIndex: 'createTime',
                         width: '30%',
                         render: (text: string) => formatDateTime(text)
@@ -1205,7 +1207,7 @@ function EvaluatorDetail() {
         title={
           <div className="flex items-center gap-3">
             <RocketOutlined className="text-blue-500" />
-            <span>Publish New Version</span>
+            <span>{$i18n.get({ id: 'legacy.evaluation.common.publishNewVersion', dm: '发布新版本' })}</span>
           </div>
         }
         open={showPublishModal}
@@ -1215,8 +1217,8 @@ function EvaluatorDetail() {
         }}
         onOk={handlePublishConfirm}
         confirmLoading={publishLoading}
-        okText="Publish Version"
-        cancelText="Cancel"
+        okText={$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.publishVersion', dm: '发布版本' })}
+        cancelText={$i18n.get({ id: 'legacy.evaluation.common.cancel', dm: '取消' })}
         width={520}
         centered
       >
@@ -1226,28 +1228,28 @@ function EvaluatorDetail() {
             layout="vertical"
           >
             <Form.Item
-              label="Version"
+              label={$i18n.get({ id: 'legacy.evaluation.common.version', dm: '版本号' })}
               name="version"
               rules={[
-                { required: true, message: 'Please enter a version number' },
+                { required: true, message: $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.pleaseEnterVersion', dm: '请输入版本号' }) },
                 {
                   pattern: /^\d+\.\d+\.\d+$/,
-                  message: 'The version format must be x.y.z (for example, 1.0.0)'
+                  message: $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.versionFormat', dm: '版本号格式应为 x.y.z (如: 1.0.0)' })
                 }
               ]}
             >
-              <Input placeholder="Enter a version number, for example: 1.0.0" />
+              <Input placeholder={$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.versionPlaceholder', dm: '请输入版本号，如: 1.0.0' })} />
             </Form.Item>
 
             <Form.Item
-              label="Version Description"
+              label={$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.versionDescription', dm: '版本描述' })}
               name="description"
               rules={[
-                { max: 200, message: 'Description cannot exceed 200 characters' }
+                { max: 200, message: $i18n.get({ id: 'legacy.evaluation.evaluatorDetail.descMax200', dm: '描述不能超过200个字符' }) }
               ]}
             >
               <TextArea
-                placeholder="Enter a version description (optional)"
+                placeholder={$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.versionDescPlaceholder', dm: '请输入版本描述（可选）' })}
                 rows={3}
                 showCount
                 maxLength={200}
@@ -1265,8 +1267,8 @@ function EvaluatorDetail() {
               <InfoCircleOutlined className="text-blue-500 text-xl" />
             </div>
             <div>
-              <Title level={3} className="m-0">Import from Template</Title>
-              <Text type="secondary">Select a preset template to quickly configure the evaluator</Text>
+              <Title level={3} className="m-0">{$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.importTemplateTitle', dm: '从模板导入' })}</Title>
+              <Text type="secondary">{$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.importTemplateSubtitle', dm: '选择一个预设模板快速配置评估器' })}</Text>
             </div>
           </div>
         }
@@ -1284,7 +1286,7 @@ function EvaluatorDetail() {
             setSelectedTemplateId(null);
             setSelectedTemplateDetail(null);
           }}>
-            Cancel
+            {$i18n.get({ id: 'legacy.evaluation.common.cancel', dm: '取消' })}
           </Button>,
           <Button
             key="import"
@@ -1293,7 +1295,7 @@ function EvaluatorDetail() {
             onClick={handleTemplateImport}
             icon={<SaveOutlined />}
           >
-            Import Template
+            {$i18n.get({ id: 'legacy.evaluation.common.importTemplate', dm: '导入模板' })}
           </Button>
         ]}
       >
@@ -1303,8 +1305,8 @@ function EvaluatorDetail() {
             <Card
               title={
                 <div className="flex items-center gap-2">
-                  <span>Select a Template</span>
-                  <Text type="secondary">({templates.length} templates)</Text>
+                  <span>{$i18n.get({ id: 'legacy.evaluation.common.selectTemplate', dm: '选择模板' })}</span>
+                  <Text type="secondary">{$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.templateCount', dm: '({count} 个模板)' }, { count: templates.length })}</Text>
                 </div>
               }
               size="small"
@@ -1338,7 +1340,7 @@ function EvaluatorDetail() {
                   </Row>
                 ) : (
                   <div className="text-center py-16">
-                    <Text type="secondary">No template data</Text>
+                    <Text type="secondary">{$i18n.get({ id: 'legacy.evaluation.common.noTemplateData', dm: '暂无模板数据' })}</Text>
                   </div>
                 )}
               </Spin>
@@ -1351,7 +1353,7 @@ function EvaluatorDetail() {
               title={
                 <div className="flex items-center gap-2">
                   <InfoCircleOutlined />
-                  <span>Template Preview</span>
+                  <span>{$i18n.get({ id: 'legacy.evaluation.common.templatePreview', dm: '模板预览' })}</span>
                 </div>
               }
               size="small"
@@ -1360,18 +1362,18 @@ function EvaluatorDetail() {
                 {selectedTemplateDetail ? (
                   <div className="space-y-4">
                     <div>
-                      <Text strong className="block mb-1">Template Name</Text>
+                      <Text strong className="block mb-1">{$i18n.get({ id: 'legacy.evaluation.common.templateName', dm: '模板名称' })}</Text>
                       <Text>{selectedTemplateDetail.templateDesc}</Text>
                     </div>
 
                     <div>
-                      <Text strong className="block mb-1">Template Key</Text>
+                      <Text strong className="block mb-1">{$i18n.get({ id: 'legacy.evaluation.common.templateKey', dm: '模板Key' })}</Text>
                       <Text>{selectedTemplateDetail.evaluatorTemplateKey}</Text>
                     </div>
 
                     {selectedTemplateDetail.template && (
                       <div>
-                        <Text strong className="block mb-2">Prompt Content</Text>
+                        <Text strong className="block mb-2">{$i18n.get({ id: 'legacy.evaluation.common.promptContent', dm: 'Prompt 内容' })}</Text>
                         <div className="bg-gray-50 p-3 rounded border text-xs font-mono max-h-48 overflow-y-auto whitespace-pre-wrap">
                           {selectedTemplateDetail.template}
                         </div>
@@ -1380,7 +1382,7 @@ function EvaluatorDetail() {
 
                     {selectedTemplateDetail.modelConfig && (
                       <div>
-                        <Text strong className="block mb-2">Model Configuration</Text>
+                        <Text strong className="block mb-2">{$i18n.get({ id: 'legacy.evaluation.common.modelConfiguration', dm: '模型配置' })}</Text>
                         <div className="bg-gray-50 p-3 rounded border text-xs font-mono">
                           {JSON.stringify(JSON.parse(selectedTemplateDetail.modelConfig), null, 2)}
                         </div>
@@ -1389,7 +1391,7 @@ function EvaluatorDetail() {
 
                     {selectedTemplateDetail.variables && (
                       <div>
-                        <Text strong className="block mb-2">Variables</Text>
+                        <Text strong className="block mb-2">{$i18n.get({ id: 'legacy.evaluation.common.variables', dm: '变量' })}</Text>
                         <div className="bg-gray-50 p-3 rounded border text-xs font-mono">
                           {selectedTemplateDetail.variables}
                         </div>
@@ -1400,7 +1402,7 @@ function EvaluatorDetail() {
                   <div className="text-center py-12">
                     <InfoCircleOutlined className="text-4xl text-gray-300 mb-4" />
                     <br />
-                    <Text type="secondary">Select a template on the left to view its details</Text>
+                    <Text type="secondary">{$i18n.get({ id: 'legacy.evaluation.evaluatorDetail.selectTemplateHint', dm: '点击左侧模板查看详情' })}</Text>
                   </div>
                 )}
               </Spin>

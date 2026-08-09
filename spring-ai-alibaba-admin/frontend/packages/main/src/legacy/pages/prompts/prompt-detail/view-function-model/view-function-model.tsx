@@ -6,6 +6,7 @@ import { json } from '@codemirror/lang-json';
 import { githubLight } from '@uiw/codemirror-theme-github';
 import { DeleteOutlined } from '@ant-design/icons';
 import { safeJSONParse, safeJSONStringify } from "../../../../utils/util";
+import $i18n from '@/i18n';
 
 interface ViewFunctionModelProps {
   open: boolean;
@@ -69,9 +70,9 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
       setLocalFunctions(updatedFunctions);
       setSelectedFunction(updatedFunction);
       setEditingFunction(null);
-      message.success('Function updated successfully');
+      message.success($i18n.get({ id: 'legacy.prompts.function.updated.successfully', dm: '函数更新成功' }));
     } catch (error) {
-      message.error('Invalid JSON format. Please check and try again.');
+      message.error($i18n.get({ id: 'legacy.prompts.invalid.json.format.please.check.and.try.again', dm: 'JSON 格式错误，请检查后重试' }));
     }
   };
 
@@ -91,7 +92,7 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
   const handleDelete = (functionName: string) => {
     const updatedFunctions = localFunctions.filter(fn => fn.toolDefinition.name !== functionName);
     setLocalFunctions(updatedFunctions);
-    message.success('Function deleted successfully');
+    message.success($i18n.get({ id: 'legacy.prompts.function.deleted.successfully', dm: '函数删除成功' }));
 
     if (selectedFunction?.toolDefinition.name === functionName) {
       setSelectedFunction(updatedFunctions[0] || null);
@@ -118,10 +119,10 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
       open={open}
       onCancel={handleCancel}
       onOk={handleOk}
-      title="View Function"
+      title={$i18n.get({ id: 'legacy.prompts.view.function', dm: '查看函数' })}
       width={1200}
-      okText="Save"
-      cancelText="Cancel"
+      okText={$i18n.get({ id: 'legacy.prompts.save', dm: '保存' })}
+      cancelText={$i18n.get({ id: 'legacy.prompts.cancel', dm: '取消' })}
       okButtonProps={{
         disabled: Boolean(editingFunction)
       }}
@@ -129,7 +130,7 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
       <div className="flex gap-4" style={{ height: "600px" }}>
         {/* 左侧Function List */}
         <div className="w-80 border-r border-gray-200 pr-4">
-          <div className="text-sm font-medium text-gray-700 mb-3">Function List</div>
+          <div className="text-sm font-medium text-gray-700 mb-3">{$i18n.get({ id: 'legacy.prompts.function.list', dm: '函数列表' })}</div>
           <div className="space-y-2 overflow-y-auto">
             {localFunctions.map((fn) => (
               <Card
@@ -143,14 +144,14 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
                 title={fn.toolDefinition.name}
                 extra={
                   <Popconfirm
-                    title="Delete this function?"
+                    title={$i18n.get({ id: 'legacy.prompts.delete.this.function', dm: '确定删除这个函数吗？' })}
                     onConfirm={(e) => {
                       e?.stopPropagation();
                       handleDelete(fn.toolDefinition.name);
                     }}
                     onCancel={(e) => e?.stopPropagation()}
-                    okText="OK"
-                    cancelText="Cancel"
+                    okText={$i18n.get({ id: 'legacy.prompts.ok', dm: '确定' })}
+                    cancelText={$i18n.get({ id: 'legacy.prompts.cancel', dm: '取消' })}
                   >
                     <Button
                       type="text"
@@ -177,10 +178,10 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
               // Edit模式
               <div className="h-full">
                 <div className="flex justify-between items-center mb-4">
-                  <div className="text-sm font-medium text-gray-700">Edit Function</div>
+                  <div className="text-sm font-medium text-gray-700">{$i18n.get({ id: 'legacy.prompts.edit.function', dm: '编辑函数' })}</div>
                   <div className="space-x-2">
-                    <Button size="small" onClick={handleCancelEdit}>Cancel</Button>
-                    <Button size="small" type="primary" onClick={handleSaveEdit}>Save</Button>
+                    <Button size="small" onClick={handleCancelEdit}>{$i18n.get({ id: 'legacy.prompts.cancel', dm: '取消' })}</Button>
+                    <Button size="small" type="primary" onClick={handleSaveEdit}>{$i18n.get({ id: 'legacy.prompts.save', dm: '保存' })}</Button>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -201,7 +202,7 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
                   </div>
                   <div style={{ width: "40%" }}>
                     <div className="flex justify-between">
-                      <Typography.Paragraph className="flex items-center" style={{ marginBottom: 0 }} copyable={{ text: JSON.stringify(defaultValue) }} >Default Mock Value</Typography.Paragraph>
+                      <Typography.Paragraph className="flex items-center" style={{ marginBottom: 0 }} copyable={{ text: JSON.stringify(defaultValue) }} >{$i18n.get({ id: 'legacy.prompts.default.mock.value', dm: '默认模拟值' })}</Typography.Paragraph>
                       <Button type="text" className="invisible"></Button>
                     </div>
                     <Input.TextArea
@@ -218,27 +219,27 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
                 <div className="flex justify-between items-center mb-4">
                   <div className="text-lg font-medium">{selectedFunction.toolDefinition.name}</div>
                   <Button size="small" type="primary" onClick={() => handleEdit(selectedFunction)}>
-                    Edit
+                    {$i18n.get({ id: 'legacy.prompts.edit', dm: '编辑' })}
                   </Button>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <div className="text-sm font-medium text-gray-700 mb-2">Description</div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">{$i18n.get({ id: 'legacy.prompts.description', dm: '描述' })}</div>
                     <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded">
                       {selectedFunction.toolDefinition.description}
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-sm font-medium text-gray-700 mb-2">Parameters</div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">{$i18n.get({ id: 'legacy.prompts.parameters.2', dm: '参数' })}</div>
                     <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-70 font-mono">
                       {JSON.stringify(JSON.parse(selectedFunction.toolDefinition.parameters), null, 2)}
                     </pre>
                   </div>
 
                   <div>
-                    <div className="text-sm font-medium text-gray-700 mb-2">Default Mock Value</div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">{$i18n.get({ id: 'legacy.prompts.default.mock.value', dm: '默认模拟值' })}</div>
                     <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-32 font-mono">
                       {selectedFunction.output}
                     </pre>
@@ -248,7 +249,7 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
             )
           ) : (
             <div className="flex items-center justify-center h-full text-gray-400">
-              Select a function to view details
+              {$i18n.get({ id: 'legacy.prompts.select.a.function.to.view.details', dm: '选择一个函数查看详情' })}
             </div>
           )}
         </div>

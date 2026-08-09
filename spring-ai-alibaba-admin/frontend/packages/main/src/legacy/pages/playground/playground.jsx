@@ -47,6 +47,7 @@ import ViewFunctionModel from '../prompts/prompt-detail/view-function-model/view
 import FunctionList from '../prompts/prompt-detail/FunctionList';
 import { safeJSONParse } from '../../utils/util';
 import { useNavigate } from 'react-router-dom';
+import $i18n from '@/i18n';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -221,7 +222,10 @@ const PlaygroundPage = () => {
       });
 
       if (response.code !== 200) {
-        throw new Error(response.message || 'Failed to load prompts');
+        throw new Error(response.message || $i18n.get({
+          id: 'legacy.playground.failedLoadPrompts',
+          dm: '获取 Prompts 列表失败',
+        }));
       }
 
       // Transform API data to match expected format
@@ -290,8 +294,14 @@ const PlaygroundPage = () => {
       setPrompts(transformedPrompts);
     } catch (err) {
       console.error('加载 Prompts 数据失败:', err);
-      handleApiError(err, 'Load prompt data');
-      setError(err.message || 'Failed to load prompts. Please try again later.');
+      handleApiError(err, $i18n.get({
+        id: 'legacy.playground.loadPromptData',
+        dm: '加载 Prompts 数据',
+      }));
+      setError(err.message || $i18n.get({
+        id: 'legacy.playground.failedLoadPromptsRetry',
+        dm: '加载失败，请稍后重试',
+      }));
     } finally {
       setLoading(false);
     }
@@ -313,7 +323,10 @@ const PlaygroundPage = () => {
       });
 
       if (response.code !== 200) {
-        throw new Error(response.message || 'Failed to load version details');
+        throw new Error(response.message || $i18n.get({
+          id: 'legacy.playground.failedGetVersionDetails',
+          dm: '获取版本详情失败',
+        }));
       }
 
       const versionDetail = response.data;
@@ -340,7 +353,10 @@ const PlaygroundPage = () => {
       return enhancedVersion;
     } catch (err) {
       console.error('加载版本详情失败:', err);
-      handleApiError(err, 'Load version details');
+      handleApiError(err, $i18n.get({
+        id: 'legacy.playground.loadVersionDetails',
+        dm: '加载版本详情',
+      }));
       throw err;
     }
   };
@@ -498,7 +514,12 @@ const PlaygroundPage = () => {
           ));
         } catch (err) {
           console.error('加载版本详情失败:', err);
-          notifyError({ message: 'Failed to load version details' });
+          notifyError({
+            message: $i18n.get({
+              id: 'legacy.playground.failedLoadVersionDetails',
+              dm: '加载版本详情失败',
+            }),
+          });
         }
       }
     }
@@ -528,7 +549,10 @@ const PlaygroundPage = () => {
 
   const copyPrompt = (promptId) => {
     if (promptInstances.length >= 3) {
-      alert('You can compare up to three prompts at once.');
+      alert($i18n.get({
+        id: 'legacy.playground.maxComparePrompts',
+        dm: '最多只能同时对比3个Prompt',
+      }));
       return;
     }
 
@@ -707,7 +731,10 @@ const PlaygroundPage = () => {
   const restoreSession = async (promptId) => {
     const sessionId = recentlyDeletedSessions[promptId];
     if (!sessionId) {
-      message.error('No session is available to restore.');
+      message.error($i18n.get({
+        id: 'legacy.playground.noSessionToRestore',
+        dm: '没有可恢复的会话',
+      }));
       return false;
     }
 
@@ -746,15 +773,24 @@ const PlaygroundPage = () => {
           return newSessions;
         });
 
-        message.success('Session restored successfully.');
+        message.success($i18n.get({
+          id: 'legacy.playground.sessionRestored',
+          dm: '会话恢复成功',
+        }));
         return true;
       } else {
-        message.error(response.message || 'Failed to restore session.');
+        message.error(response.message || $i18n.get({
+          id: 'legacy.playground.failedRestoreSession',
+          dm: '恢复会话失败',
+        }));
         return false;
       }
     } catch (error) {
       console.error('Restore session error:', error);
-      message.error('Failed to restore session.');
+      message.error($i18n.get({
+        id: 'legacy.playground.failedRestoreSession',
+        dm: '恢复会话失败',
+      }));
       return false;
     }
   };
@@ -773,15 +809,24 @@ const PlaygroundPage = () => {
             ? { ...p, sessionId: null, chatHistory: [] }
             : p
         ));
-        message.success('Session deleted successfully.');
+        message.success($i18n.get({
+          id: 'legacy.playground.sessionDeleted',
+          dm: '会话删除成功',
+        }));
         return true;
       } else {
-        message.error(response.message || 'Failed to delete session.');
+        message.error(response.message || $i18n.get({
+          id: 'legacy.playground.failedDeleteSession',
+          dm: '删除会话失败',
+        }));
         return false;
       }
     } catch (error) {
       console.error('Delete session error:', error);
-      message.error('Failed to delete session.');
+      message.error($i18n.get({
+        id: 'legacy.playground.failedDeleteSession',
+        dm: '删除会话失败',
+      }));
       return false;
     }
   };
@@ -906,7 +951,10 @@ const PlaygroundPage = () => {
         >
           <div className="text-center pt-4">
             <Text type="secondary" className="mt-4 block">
-              Loading prompts...
+              {$i18n.get({
+                id: 'legacy.playground.loadingPrompts',
+                dm: '加载 Prompts 数据中...',
+              })}
             </Text>
           </div>
         </Spin>
@@ -921,7 +969,12 @@ const PlaygroundPage = () => {
 
       <div className="mb-8">
         <Title level={1} className="m-0 mb-2">Playground</Title>
-        <Paragraph type="secondary" className="m-0">Test and debug your AI prompts.</Paragraph>
+        <Paragraph type="secondary" className="m-0">
+          {$i18n.get({
+            id: 'legacy.playground.subtitle',
+            dm: '测试和调试你的AI提示词',
+          })}
+        </Paragraph>
       </div>
 
       <Space direction="vertical" size={32} className="w-full">
@@ -964,7 +1017,12 @@ const PlaygroundPage = () => {
                 <div className="text-center">
                   <Spin size="large" />
                   <div className="mt-4">
-                    <Text type="secondary">Loading models...</Text>
+                    <Text type="secondary">
+                      {$i18n.get({
+                        id: 'legacy.playground.loadingModels',
+                        dm: '正在加载模型...',
+                      })}
+                    </Text>
                   </div>
                 </div>
               </Card>
@@ -973,7 +1031,12 @@ const PlaygroundPage = () => {
             <div className="col-span-full">
               <Card className="h-[400px] flex items-center justify-center">
                 <div className="text-center">
-                  <Text type="secondary">Initializing...</Text>
+                  <Text type="secondary">
+                    {$i18n.get({
+                      id: 'legacy.playground.initializing',
+                      dm: '正在初始化...',
+                    })}
+                  </Text>
                 </div>
               </Card>
             </div>
@@ -990,7 +1053,13 @@ const PlaygroundPage = () => {
                       <div className="flex items-center justify-between">
                         <div>
                           <Text strong style={{ fontSize: promptInstances.length === 3 ? '16px' : '18px' }}>
-                            Configuration {index + 1}
+                            {$i18n.get(
+                              {
+                                id: 'legacy.playground.configurationN',
+                                dm: '配置 {index}',
+                              },
+                              { index: index + 1 },
+                            )}
                           </Text>
                           {prompt.promptName && (
                             <Text
@@ -1014,7 +1083,9 @@ const PlaygroundPage = () => {
                               setSelectedSessionId(prompt.id);
                             }}
                           >
-                            {promptInstances.length >= 3 ? 'Add' : 'Add Function'}
+                            {promptInstances.length >= 3
+                              ? $i18n.get({ id: 'legacy.playground.add', dm: '新增' })
+                              : $i18n.get({ id: 'legacy.playground.addFunction', dm: '新增函数' })}
                           </Button>
                           <Button
                             type="primary"
@@ -1026,7 +1097,9 @@ const PlaygroundPage = () => {
                               background: 'linear-gradient(90deg, #16a085 0%, #2ecc71 100%)'
                             }}
                           >
-                            {promptInstances.length === 3 ? 'Template' : 'Import from Template'}
+                            {promptInstances.length === 3
+                              ? $i18n.get({ id: 'legacy.playground.template', dm: '模板' })
+                              : $i18n.get({ id: 'legacy.playground.importFromTemplate', dm: '从模板导入' })}
                           </Button>
                           <Button
                             type="text"
@@ -1034,7 +1107,15 @@ const PlaygroundPage = () => {
                             size={promptInstances.length === 3 ? "small" : "default"}
                             onClick={() => copyPrompt(prompt.id)}
                             disabled={promptInstances.length >= 3}
-                            title={promptInstances.length >= 3 ? 'You can debug up to three prompts at once' : 'Duplicate prompt for comparison'}
+                            title={promptInstances.length >= 3
+                              ? $i18n.get({
+                                  id: 'legacy.playground.maxDebugThree',
+                                  dm: '最多同时调试三个prompt',
+                                })
+                              : $i18n.get({
+                                  id: 'legacy.playground.duplicateForCompare',
+                                  dm: '复制Prompt进行对比',
+                                })}
                           />
                           {promptInstances.length > 1 && (
                             <Button
@@ -1043,7 +1124,10 @@ const PlaygroundPage = () => {
                               icon={<DeleteOutlined />}
                               size={promptInstances.length === 3 ? "small" : "default"}
                               onClick={() => removePrompt(prompt.id)}
-                              title="Delete prompt"
+                              title={$i18n.get({
+                                id: 'legacy.playground.deletePrompt',
+                                dm: '删除Prompt',
+                              })}
                             />
                           )}
                         </Space>
@@ -1055,7 +1139,15 @@ const PlaygroundPage = () => {
                       {
                         (!prompt.selectedPromptId || !prompt.selectedVersionId) && (
                           <Alert
-                            message={!prompt.selectedPromptId ? "Select a prompt or edit the content directly" : "Select a version"}
+                            message={!prompt.selectedPromptId
+                              ? $i18n.get({
+                                  id: 'legacy.playground.selectOrEditPrompt',
+                                  dm: '请选择 Prompt 或直接编辑内容',
+                                })
+                              : $i18n.get({
+                                  id: 'legacy.playground.selectVersionMsg',
+                                  dm: '请选择版本',
+                                })}
                             type="info"
                             showIcon
                             className="w-full text-center mb-3"
@@ -1073,22 +1165,39 @@ const PlaygroundPage = () => {
                               fontSize: promptInstances.length === 3 ? '12px' : '14px'
                             }}
                           >
-                            Select Prompt
+                            {$i18n.get({
+                              id: 'legacy.playground.selectPrompt',
+                              dm: '选择Prompt',
+                            })}
                           </Text>
                           <Select
                             value={prompt.selectedPromptId || undefined}
                             onChange={(value) => selectPrompt(prompt.id, value || '')}
-                            placeholder="Select an existing prompt..."
+                            placeholder={$i18n.get({
+                              id: 'legacy.playground.selectExistingPrompt',
+                              dm: '选择已有Prompt...',
+                            })}
                             className="w-full"
                             size={promptInstances.length === 3 ? 'small' : 'middle'}
                             allowClear
                           >
                             {prompts.filter(p => p.versions && p.versions.length > 0).length === 0 ? (
-                              <Option disabled value="">No prompts available</Option>
+                              <Option disabled value="">
+                                {$i18n.get({
+                                  id: 'legacy.playground.noPromptsAvailable',
+                                  dm: '暂无可用的 Prompts',
+                                })}
+                              </Option>
                             ) : (
                               prompts.filter(p => p.versions && p.versions.length > 0).map((p) => (
                                 <Option key={p.promptKey} value={p.promptKey}>
-                                  {p.name} ({p.versions.length} versions)
+                                  {$i18n.get(
+                                    {
+                                      id: 'legacy.playground.promptVersionsCount',
+                                      dm: '{name} ({count} 个版本)',
+                                    },
+                                    { name: p.name, count: p.versions.length },
+                                  )}
                                 </Option>
                               ))
                             )}
@@ -1105,12 +1214,18 @@ const PlaygroundPage = () => {
                                 fontSize: promptInstances.length === 3 ? '12px' : '14px'
                               }}
                             >
-                              Select Version
+                              {$i18n.get({
+                                id: 'legacy.playground.selectVersion',
+                                dm: '选择版本',
+                              })}
                             </Text>
                             <Select
                               value={prompt.selectedVersionId || undefined}
                               onChange={(value) => selectVersion(prompt.id, value || '')}
-                              placeholder="Select a version..."
+                              placeholder={$i18n.get({
+                                id: 'legacy.playground.selectVersionPlaceholder',
+                                dm: '选择版本...',
+                              })}
                               className="w-full"
                               size={promptInstances.length === 3 ? 'small' : 'middle'}
                               allowClear
@@ -1121,7 +1236,9 @@ const PlaygroundPage = () => {
                                   selectedPrompt.versions.slice().reverse().map((version) => (
                                     <Option key={version.id} value={version.id}>
                                       {version.version} - {version.description}
-                                      {version.versionType === 'release' || version.status === 'release' || version.status === 'published' ? ' (Release)' : ' (Pre-release)'}
+                                      {version.versionType === 'release' || version.status === 'release' || version.status === 'published'
+                                        ? $i18n.get({ id: 'legacy.playground.releaseTag', dm: ' (正式版)' })
+                                        : $i18n.get({ id: 'legacy.playground.preReleaseTag', dm: ' (PRE版)' })}
                                     </Option>
                                   )) : [];
                               })()}
@@ -1138,12 +1255,18 @@ const PlaygroundPage = () => {
                               fontSize: promptInstances.length === 3 ? '12px' : '14px'
                             }}
                           >
-                            Prompt Content
+                            {$i18n.get({
+                              id: 'legacy.playground.promptContent',
+                              dm: 'Prompt内容',
+                            })}
                           </Text>
                           <TextArea
                             value={prompt.content}
                             onChange={(e) => handleContentChange(prompt.id, e.target.value)}
-                            placeholder="Enter prompt content. Use {{parameterName}} to define parameters..."
+                            placeholder={$i18n.get({
+                              id: 'legacy.playground.promptContentPlaceholder',
+                              dm: '输入Prompt内容，使用 {{参数名}} 来定义参数...',
+                            })}
                             style={{
                               height: promptInstances.length >= 3 ? 100 : 120,
                               resize: 'none'
@@ -1158,18 +1281,34 @@ const PlaygroundPage = () => {
                             {/* 模型选择 */}
                             <div>
                               <Text strong className='mb-2 block'>
-                                Model
+                                {$i18n.get({
+                                  id: 'legacy.playground.model',
+                                  dm: '模型',
+                                })}
                               </Text>
                               <Select
                                 value={prompt.selectedModel}
                                 onChange={(value) => updatePromptModel(prompt.id, value)}
                                 style={{ width: '100%' }}
                                 size={promptInstances.length === 3 ? 'small' : 'middle'}
-                                placeholder={models.length === 0 ? "Loading models..." : "Select a model"}
+                                placeholder={models.length === 0
+                                  ? $i18n.get({
+                                      id: 'legacy.playground.loadingModels',
+                                      dm: '正在加载模型...',
+                                    })
+                                  : $i18n.get({
+                                      id: 'legacy.playground.selectModel',
+                                      dm: '选择模型',
+                                    })}
                                 disabled={models.length === 0}
                               >
                                 {models.length === 0 ? (
-                                  <Option disabled value="">No models available</Option>
+                                  <Option disabled value="">
+                                    {$i18n.get({
+                                      id: 'legacy.playground.noModelsAvailable',
+                                      dm: '暂无可用模型',
+                                    })}
+                                  </Option>
                                 ) : (
                                   models.map((model) => (
                                     <Option key={model.id} value={model.id}>
@@ -1183,7 +1322,10 @@ const PlaygroundPage = () => {
                             {/* 模型参数 */}
                             <Card size="small" style={{ backgroundColor: '#fafafa' }}>
                               <Text strong className="block mb-2">
-                                Model Parameters
+                                {$i18n.get({
+                                  id: 'legacy.playground.modelParameters',
+                                  dm: '模型参数',
+                                })}
                               </Text>
                               <Row gutter={[8, 8]}>
                                 {(() => {
@@ -1252,7 +1394,10 @@ const PlaygroundPage = () => {
                         {prompt.parameters.length > 0 && (
                           <div>
                             <Text strong className="block mb-2">
-                              Parameter Configuration
+                              {$i18n.get({
+                                id: 'legacy.playground.parameterConfiguration',
+                                dm: '参数配置',
+                              })}
                             </Text>
                             <Row gutter={[8, 8]}>
                               {prompt.parameters.map((param) => (
@@ -1263,7 +1408,13 @@ const PlaygroundPage = () => {
                                   <Input
                                     value={prompt.parameterValues[param] || ''}
                                     onChange={(e) => updateParameterValue(prompt.id, param, e.target.value)}
-                                    placeholder={`Enter a value for ${param}...`}
+                                    placeholder={$i18n.get(
+                                      {
+                                        id: 'legacy.playground.enterParamValue',
+                                        dm: '输入 {param} 的值...',
+                                      },
+                                      { param },
+                                    )}
                                     size="small"
                                   />
                                 </Col>
@@ -1301,7 +1452,10 @@ const PlaygroundPage = () => {
                                 background: 'linear-gradient(90deg, #52c41a 0%, #2ecc71 100%)'
                               }}
                             >
-                              Publish New Version
+                              {$i18n.get({
+                                id: 'legacy.playground.publishNewVersion',
+                                dm: '发布新版本',
+                              })}
                             </Button>
                           )}
 
@@ -1324,7 +1478,10 @@ const PlaygroundPage = () => {
                               size={promptInstances.length === 3 ? 'small' : 'middle'}
                               className="border-none"
                             >
-                              Quickly Create New Prompt
+                              {$i18n.get({
+                                id: 'legacy.playground.quicklyCreatePrompt',
+                                dm: '快速创建新 Prompt',
+                              })}
                             </Button>
                           )}
                         </div>
@@ -1339,13 +1496,30 @@ const PlaygroundPage = () => {
                         <div className="flex items-center gap-3">
                           <Avatar icon={<CommentOutlined />} style={{ backgroundColor: '#e6f7ff' }} />
                           <div>
-                            <Text strong className="text-lg">Conversation Test</Text>
+                            <Text strong className="text-lg">
+                              {$i18n.get({
+                                id: 'legacy.playground.conversationTest',
+                                dm: '对话测试',
+                              })}
+                            </Text>
                             <div>
                               <Text type="secondary" className="text-sm">
-                                Test configuration {index + 1}
+                                {$i18n.get(
+                                  {
+                                    id: 'legacy.playground.testConfigEffect',
+                                    dm: '测试配置 {index} 的效果',
+                                  },
+                                  { index: index + 1 },
+                                )}
                                 {prompt.sessionId && (
                                   <Tag color="green" size="small" className="ml-2">
-                                    Session: {prompt.sessionId.substring(0, 8)}...
+                                    {$i18n.get(
+                                      {
+                                        id: 'legacy.playground.sessionTag',
+                                        dm: '会话: {id}...',
+                                      },
+                                      { id: prompt.sessionId.substring(0, 8) },
+                                    )}
                                   </Tag>
                                 )}
                               </Text>
@@ -1359,10 +1533,16 @@ const PlaygroundPage = () => {
                               size="small"
                               icon={<RocketOutlined />}
                               onClick={() => restoreSession(prompt.id)}
-                              title="Restore the previous session"
+                              title={$i18n.get({
+                                id: 'legacy.playground.restorePreviousSession',
+                                dm: '恢复上一次会话',
+                              })}
                               style={{ color: '#52c41a' }}
                             >
-                              Restore Session
+                              {$i18n.get({
+                                id: 'legacy.playground.restoreSession',
+                                dm: '恢复会话',
+                              })}
                             </Button>
                           )}
                           {prompt.chatHistory && prompt.chatHistory.length > 0 && (
@@ -1371,9 +1551,15 @@ const PlaygroundPage = () => {
                               size="small"
                               icon={<ClearOutlined />}
                               onClick={() => clearChatHistory(prompt.id)}
-                              title="Clear conversation"
+                              title={$i18n.get({
+                                id: 'legacy.playground.clearConversation',
+                                dm: '清空对话',
+                              })}
                             >
-                              Clear
+                              {$i18n.get({
+                                id: 'legacy.playground.clear',
+                                dm: '清空',
+                              })}
                             </Button>
                           )}
                           <Badge
@@ -1410,10 +1596,16 @@ const PlaygroundPage = () => {
                               }}
                             />
                             <Title level={5} style={{ margin: 0, marginBottom: 8, color: '#8c8c8c' }}>
-                              Start a conversation
+                              {$i18n.get({
+                                id: 'legacy.playground.startConversation',
+                                dm: '等待开始对话',
+                              })}
                             </Title>
                             <Text type="secondary" style={{ fontSize: '13px' }}>
-                              Send a message below to begin testing.
+                              {$i18n.get({
+                                id: 'legacy.playground.sendMessageToTest',
+                                dm: '在下方输入框中发送消息开始测试',
+                              })}
                             </Text>
                           </div>
                         ) : (
@@ -1465,9 +1657,15 @@ const PlaygroundPage = () => {
                                             icon={<CopyOutlined />}
                                             onClick={() => {
                                               navigator.clipboard.writeText(message.content);
-                                              message.success('Copied to clipboard.');
+                                              message.success($i18n.get({
+                                                id: 'legacy.playground.copiedToClipboard',
+                                                dm: '已复制到剪贴板',
+                                              }));
                                             }}
-                                            title="Copy response"
+                                            title={$i18n.get({
+                                              id: 'legacy.playground.copyResponse',
+                                              dm: '复制回复',
+                                            })}
                                             style={{ fontSize: '10px', padding: '2px 4px', height: 20 }}
                                           />
                                         )}
@@ -1511,9 +1709,33 @@ const PlaygroundPage = () => {
                                               {message.content}
                                             </Text>
                                             <div className='flex gap-2 mt-2'>
-                                              <Tag color="geekblue">Input tokens: {message?.usage?.promptTokens}</Tag>
-                                              <Tag color='geekblue'>Output tokens: {message?.usage?.completionTokens}</Tag>
-                                              <Tag color='geekblue'>Total tokens: {message?.usage?.totalTokens}</Tag>
+                                              <Tag color="geekblue">
+                                                {$i18n.get(
+                                                  {
+                                                    id: 'legacy.playground.inputTokens',
+                                                    dm: '输入 Token: {count}',
+                                                  },
+                                                  { count: message?.usage?.promptTokens },
+                                                )}
+                                              </Tag>
+                                              <Tag color='geekblue'>
+                                                {$i18n.get(
+                                                  {
+                                                    id: 'legacy.playground.outputTokens',
+                                                    dm: '输出 Token: {count}',
+                                                  },
+                                                  { count: message?.usage?.completionTokens },
+                                                )}
+                                              </Tag>
+                                              <Tag color='geekblue'>
+                                                {$i18n.get(
+                                                  {
+                                                    id: 'legacy.playground.totalTokens',
+                                                    dm: '总 Token: {count}',
+                                                  },
+                                                  { count: message?.usage?.totalTokens },
+                                                )}
+                                              </Tag>
                                             </div>
                                             {/* 模型参数信息 */}
                                             <div className='flex justify-between items-center mt-2 gap-2'>
@@ -1522,7 +1744,12 @@ const PlaygroundPage = () => {
                                               </Text>
                                               {
                                                 Boolean(message.traceId) && (
-                                                  <Tooltip title="View trace">
+                                                  <Tooltip
+                                                    title={$i18n.get({
+                                                      id: 'legacy.playground.viewTrace',
+                                                      dm: '查看调用链路跟踪',
+                                                    })}
+                                                  >
                                                     <Button
                                                       type="text"
                                                       size="small"
@@ -1563,7 +1790,10 @@ const PlaygroundPage = () => {
                                 handleSendMessage(prompt.id, userInput);
                               }
                             }}
-                            placeholder="Enter a question to test... (Enter to send, Shift+Enter for a new line)"
+                            placeholder={$i18n.get({
+                              id: 'legacy.playground.inputPlaceholder',
+                              dm: '输入您的问题进行测试... (Enter发送，Shift+Enter换行)',
+                            })}
                             rows={3}
                             disabled={prompt.isLoading}
                             style={{
@@ -1594,7 +1824,9 @@ const PlaygroundPage = () => {
                               color: 'white'
                             }}
                           >
-                            {prompt.isLoading ? 'Processing...' : 'Send'}
+                            {prompt.isLoading
+                              ? $i18n.get({ id: 'legacy.playground.processing', dm: '处理中...' })
+                              : $i18n.get({ id: 'legacy.playground.send', dm: '发送' })}
                           </Button>
                         </div>
                       </div>

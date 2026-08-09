@@ -33,6 +33,7 @@ import './tracing.css';
 import usePagination from '../../hooks/usePagination';
 import type { ColumnType } from 'antd/lib/table';
 import { copyToClipboard, safeJSONParse } from '../../utils/util';
+import $i18n from '@/i18n';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -56,8 +57,8 @@ const formatDateTime = (dateString: string) => {
 const SOURCE_TYPE_MAP: Record<string, string> = {
   prompt: 'Prompt',
   playground: 'Playground',
-  experiment: 'Experiment',
-  evaluator: 'Evaluator',
+  experiment: $i18n.get({ id: 'legacy.tracing.source.experiment', dm: "实验" }),
+  evaluator: $i18n.get({ id: 'legacy.tracing.source.evaluator', dm: "评估器" }),
 };
 
 const STATUS_COLOR_MAP: Record<string, string> = {
@@ -178,7 +179,7 @@ const SpanWaterfallRow: React.FC<SpanWaterfallRowProps> = ({ span, depth, traceS
             </div>
           </Tooltip>
           {operationName === 'chat' && <div className="">
-            <Tooltip title="Add to Evaluation Set">
+            <Tooltip title={$i18n.get({ id: 'legacy.tracing.addToDataset', dm: "添加到评测集" })}>
               <Button
                 size="small"
                 icon={<DatabaseOutlined />}
@@ -266,7 +267,7 @@ function TracingPage() {
         fetchDatasetDetail(value)
       ]).catch(error => {
         console.error('获取评测集信息失败:', error);
-        message.error('Failed to retrieve evaluation set information');
+        message.error($i18n.get({ id: 'legacy.tracing.fetchDatasetInfoFailed', dm: "获取评测集信息失败" }));
       });
     }
   };
@@ -299,7 +300,7 @@ function TracingPage() {
         setOperations([...new Set(res.data.services?.flatMap((s: any) => s.operations) || [])]);
       }
     } catch (error) {
-      handleApiError(error, 'Failed to retrieve services');
+      handleApiError(error, $i18n.get({ id: 'legacy.tracing.fetchServicesFailed', dm: "获取服务列表失败" }));
     }
   }, []);
 
@@ -341,7 +342,7 @@ function TracingPage() {
         setOverviewData(res.data);
       }
     } catch (error) {
-      handleApiError(error, 'Failed to retrieve overview data');
+      handleApiError(error, $i18n.get({ id: 'legacy.tracing.fetchOverviewFailed', dm: "获取概览数据失败" }));
     } finally {
       setOverviewLoading(false);
     }
@@ -361,7 +362,7 @@ function TracingPage() {
         setPagination(prev => ({ ...prev, total: res.data.totalCount || 0 }));
       }
     } catch (error) {
-      handleApiError(error, 'Failed to retrieve traces');
+      handleApiError(error, $i18n.get({ id: 'legacy.tracing.fetchTracesFailed', dm: "获取Trace列表失败" }));
     } finally {
       setLoading(false);
     }
@@ -443,11 +444,11 @@ function TracingPage() {
         setDatasets(transformedDatasets);
       } else {
         setDatasets([]);
-        message.error('Failed to retrieve evaluation sets');
+        message.error($i18n.get({ id: 'legacy.tracing.fetchDatasetsFailed', dm: "获取评测集列表失败" }));
       }
     } catch (error) {
       setDatasets([]);
-      message.error('Failed to retrieve evaluation sets');
+      message.error($i18n.get({ id: 'legacy.tracing.fetchDatasetsFailed', dm: "获取评测集列表失败" }));
     } finally {
       setDatasetsLoading(false);
     }
@@ -474,11 +475,11 @@ function TracingPage() {
         }
       } else {
         setDatasetVersions([]);
-        message.error('Failed to retrieve evaluation set versions');
+        message.error($i18n.get({ id: 'legacy.tracing.fetchDatasetVersionsFailed', dm: "获取评测集版本列表失败" }));
       }
     } catch (error) {
       setDatasetVersions([]);
-      message.error('Failed to retrieve evaluation set versions');
+      message.error($i18n.get({ id: 'legacy.tracing.fetchDatasetVersionsFailed', dm: "获取评测集版本列表失败" }));
     } finally {
       setDatasetVersionsLoading(false);
     }
@@ -526,12 +527,12 @@ function TracingPage() {
           setFieldMappings({});
         }
       } else {
-        message.error('Failed to retrieve evaluation set details');
+        message.error($i18n.get({ id: 'legacy.tracing.fetchDatasetDetailFailed', dm: "获取评测集详情失败" }));
         setDatasetColumns([]);
         setFieldMappings({});
       }
     } catch (error) {
-      message.error('Failed to retrieve evaluation set details');
+      message.error($i18n.get({ id: 'legacy.tracing.fetchDatasetDetailFailed', dm: "获取评测集详情失败" }));
       setDatasetColumns([]);
       setFieldMappings({});
     }
@@ -622,14 +623,14 @@ function TracingPage() {
   // 保存到数据集
   const handleSaveToDataset = async () => {
     if (!selectedSpanForDataset || !selectedDatasetId || !selectedDatasetVersionId) {
-      message.error('Please select an evaluation set and version');
+      message.error($i18n.get({ id: 'legacy.tracing.selectDatasetVersionRequired', dm: "请选择完整的评测集和版本信息" }));
       return;
     }
 
     // 检查是否有字段映射配置
     const hasMappings = Object.values(fieldMappings).some(mapping => mapping);
     if (!hasMappings) {
-      message.warning('Configure at least one field mapping');
+      message.warning($i18n.get({ id: 'legacy.tracing.needFieldMapping', dm: "请至少配置一个字段映射关系" }));
       return;
     }
 
@@ -682,7 +683,7 @@ function TracingPage() {
 
       // 检查构造的数据是否为空
       if (Object.keys(dataContent).length === 0) {
-        message.warning('No data is available to save. Check the field mappings.');
+        message.warning($i18n.get({ id: 'legacy.tracing.noDataToSave', dm: "没有可保存的数据，请检查字段映射配置" }));
         return;
       }
 
@@ -699,7 +700,7 @@ function TracingPage() {
       });
 
       if (response.code === 200) {
-        message.success('Added to the evaluation set successfully');
+        message.success($i18n.get({ id: 'legacy.tracing.addToDatasetSuccess', dm: "已成功添加到评测集" }));
         setAddToDatasetModalVisible(false);
         // 重置状态
         setSelectedSpanForDataset(null);
@@ -713,10 +714,10 @@ function TracingPage() {
         setOutputContentValues([]);
         setOtherAttrValues({});
       } else {
-        message.error('Failed to add to the evaluation set: ' + (response.message || 'Unknown error'));
+        message.error($i18n.get({ id: 'legacy.tracing.addToDatasetFailed', dm: "添加到评测集失败: {reason}" }, { reason: response.message || $i18n.get({ id: 'legacy.tracing.unknownError', dm: "未知错误" }) }));
       }
     } catch (error: any) {
-      message.error('Failed to add to the evaluation set: ' + (error.message || 'Network or server error'));
+      message.error($i18n.get({ id: 'legacy.tracing.addToDatasetFailed', dm: "添加到评测集失败: {reason}" }, { reason: error.message || $i18n.get({ id: 'legacy.tracing.networkError', dm: "网络错误或服务器异常" }) }));
       console.error('添加到评测集失败:', error);
     }
   };
@@ -823,10 +824,10 @@ function TracingPage() {
         const tree = buildSpanTree(traceDetailData.spans || []);
         setSpanTree(tree);
       } else {
-        notifyError({ message: 'Failed to retrieve trace details' });
+        notifyError({ message: $i18n.get({ id: 'legacy.tracing.fetchTraceDetailFailed', dm: "获取Trace详情失败" }) });
       }
     } catch (error) {
-      handleApiError(error, 'Failed to retrieve trace details');
+      handleApiError(error, $i18n.get({ id: 'legacy.tracing.fetchTraceDetailFailed', dm: "获取Trace详情失败" }));
     } finally {
       setTraceDetailLoading(false);
     }
@@ -859,13 +860,13 @@ function TracingPage() {
       }
     },
     {
-      title: 'Source Type',
+      title: $i18n.get({ id: 'legacy.tracing.col.sourceType', dm: "来源类型" }),
       dataIndex: ['attributes', 'spring.ai.alibaba.studio.source'],
       key: 'sourceType',
       render: (type: string) => SOURCE_TYPE_MAP[type] || type || "-"
     },
     {
-      title: 'Application / Span',
+      title: $i18n.get({ id: 'legacy.tracing.col.appSpan', dm: "应用 / Span" }),
       key: 'service',
       width: "15%",
       render: (_: any, record: any) => {
@@ -886,7 +887,7 @@ function TracingPage() {
       }
     },
     {
-      title: "Input / Output",
+      title: $i18n.get({ id: 'legacy.tracing.col.inputOutput', dm: "输入/输出信息" }),
       dataIndex: "inputMessage",
       width: "20%",
       render: (_v: any, record: any) => {
@@ -960,14 +961,14 @@ function TracingPage() {
       }
     },
     {
-      title: 'Model',
+      title: $i18n.get({ id: 'legacy.common.model', dm: "模型" }),
       dataIndex: ['attributes', 'gen_ai.request.model'],
       key: 'model',
       ellipsis: true,
       render: (val: string) => <Popover content={val || '-'}>{val || '-'}</Popover>
     },
     {
-      title: 'Status',
+      title: $i18n.get({ id: 'legacy.common.status', dm: "状态" }),
       dataIndex: 'status',
       key: 'status',
       width: 80,
@@ -975,21 +976,21 @@ function TracingPage() {
         return <Tag color={STATUS_COLOR_MAP[status] || STATUS_COLOR_MAP.default}>{status}</Tag>
       }
     },
-    { title: 'Start Time', dataIndex: 'startTime', key: 'startTime', render: (time: string) => formatDateTime(time) },
+    { title: $i18n.get({ id: 'legacy.tracing.col.startTime', dm: "开始时间" }), dataIndex: 'startTime', key: 'startTime', render: (time: string) => formatDateTime(time) },
     {
-      title: 'Duration',
+      title: $i18n.get({ id: 'legacy.tracing.col.duration', dm: "持续时间" }),
       dataIndex: 'durationNs',
       key: 'duration',
       render: (ns: number) => formatDuration(ns / 1000000)
     },
     {
-      title: 'Actions',
+      title: $i18n.get({ id: 'legacy.common.actions', dm: "操作" }),
       key: 'action',
       render: (_: any, record: any) => (
         <Button type="link" onClick={() => {
           showDrawer(record);
         }}>
-          View Details
+          {$i18n.get({ id: 'legacy.common.viewDetails', dm: "查看详情" })}
         </Button>
       ),
     },
@@ -1014,7 +1015,7 @@ function TracingPage() {
 
   const renderDrawerContent = () => {
     if (traceDetailLoading) return <div style={{ textAlign: 'center', padding: '48px 0' }}><Spin size="large" /></div>;
-    if (!traceDetail) return <Empty description="Unable to load trace details" />;
+    if (!traceDetail) return <Empty description={$i18n.get({ id: 'legacy.tracing.unableLoadDetail', dm: "无法加载Trace详情" })} />;
 
     console.log(traceDetail, 'asd...')
     if (traceDetail.duration === 0 || traceDetail.startTime === undefined) {
@@ -1048,7 +1049,7 @@ function TracingPage() {
       <>
       <Row gutter={[24, 24]}>
         <Col span={15}>
-          <Card title="Span Waterfall" bodyStyle={{ padding: 0 }}>
+          <Card title={$i18n.get({ id: 'legacy.tracing.spanWaterfall', dm: "Span 瀑布图" })} bodyStyle={{ padding: 0 }}>
             <div className="span-waterfall-chart">
               <div className="flex items-center w-full border-b border-gray-200 bg-gray-50 font-semibold text-xs text-gray-500">
                 <div className="w-3/5 shrink-0 p-2">Operation Name</div>
@@ -1077,15 +1078,15 @@ function TracingPage() {
           </Card>
         </Col>
           <Col span={9}>
-            <Card title={`Span Details: ${selectedSpan?.operationName || '-'}`}>
+            <Card title={$i18n.get({ id: 'legacy.tracing.spanDetails', dm: "Span 详情: {name}" }, { name: selectedSpan?.operationName || '-' })}>
             {
               selectedSpan ? (
                 <Tabs defaultActiveKey="info">
-                  <Tabs.TabPane tab="Basic Info" key="info">
+                  <Tabs.TabPane tab={$i18n.get({ id: 'legacy.tracing.basicInfo', dm: "基本信息" })} key="info">
                     <div className='flex flex-col gap-2 mb-2'>
                     {
                       Boolean(selectedSpan.attributes?.["gen_ai.input.messages"]) && (
-                        <Card size="small" title="Input">
+                        <Card size="small" title={$i18n.get({ id: 'legacy.tracing.inputInfo', dm: "输入信息" })}>
                           <Tabs
                             items={
                               formatMessageToJSON(selectedSpan.attributes["gen_ai.input.messages"]).map(([key, value]) => {
@@ -1106,7 +1107,7 @@ function TracingPage() {
                     }
                     {
                       Boolean(selectedSpan.attributes["gen_ai.output.messages"])&& (
-                        <Card size="small" title="Output">
+                        <Card size="small" title={$i18n.get({ id: 'legacy.tracing.outputInfo', dm: "输出信息" })}>
                           <Tabs
                             items={
                               formatMessageToJSON(selectedSpan.attributes["gen_ai.output.messages"]).map(([key, value]) => {
@@ -1128,16 +1129,16 @@ function TracingPage() {
                     </div>
                     <Row gutter={[0, 12]}>
                       <Col span={12}><Text strong>SpanId:</Text> {selectedSpan.spanID}</Col>
-                      <Col span={12}><Text strong>Type:</Text> {selectedSpan.operationName}</Col>
+                      <Col span={12}><Text strong>{$i18n.get({ id: 'legacy.tracing.typeColon', dm: "类型:" })}</Text> {selectedSpan.operationName}</Col>
                       <Col span={12}><Text strong>Kind:</Text> {selectedSpan.kind}</Col>
-                      <Col span={12}><Text strong>Status:</Text> {selectedSpan.status.code}</Col>
-                      <Col span={12}><Text strong>Start Time:</Text> {formatDateTime(selectedSpan.startTime)}</Col>
-                      <Col span={12}><Text strong>End Time:</Text> {formatDateTime(selectedSpan.finishTime)}</Col>
-                      <Col span={12}><Text strong>Duration:</Text> {formatDuration(selectedSpan.duration)}</Col>
+                      <Col span={12}><Text strong>{$i18n.get({ id: 'legacy.tracing.statusColon', dm: "状态:" })}</Text> {selectedSpan.status.code}</Col>
+                      <Col span={12}><Text strong>{$i18n.get({ id: 'legacy.tracing.startTimeColon', dm: "开始时间:" })}</Text> {formatDateTime(selectedSpan.startTime)}</Col>
+                      <Col span={12}><Text strong>{$i18n.get({ id: 'legacy.tracing.endTimeColon', dm: "结束时间:" })}</Text> {formatDateTime(selectedSpan.finishTime)}</Col>
+                      <Col span={12}><Text strong>{$i18n.get({ id: 'legacy.tracing.durationColon', dm: "持续时间:" })}</Text> {formatDuration(selectedSpan.duration)}</Col>
                     </Row>
                   </Tabs.TabPane>
-                  <Tabs.TabPane tab="Attributes" key="attributes" className='flex flex-col gap-4'>
-                    <Card size="small" title="AI Attributes">
+                  <Tabs.TabPane tab={$i18n.get({ id: 'legacy.tracing.attributes', dm: "属性" })} key="attributes" className='flex flex-col gap-4'>
+                    <Card size="small" title={$i18n.get({ id: 'legacy.tracing.aiAttributes', dm: "AI 相关属性" })}>
                       {
                         Object.entries(aiAttr).map(([key, value]) => {
                           return (
@@ -1156,9 +1157,9 @@ function TracingPage() {
                                 <CopyOutlined
                                   onClick={() => {
                                     copyToClipboard(value as string).then(() => {
-                                      message.success("Copied")
+                                      message.success($i18n.get({ id: 'legacy.tracing.copySuccess', dm: "复制成功" }))
                                     }).catch((error) => {
-                                      message.error("Copy failed")
+                                      message.error($i18n.get({ id: 'legacy.tracing.copyFailed', dm: "复制失败" }))
                                     });
                                   }}
                                 className='text-blue-400 cursor-pointer' />
@@ -1168,7 +1169,7 @@ function TracingPage() {
                         })
                       }
                     </Card>
-                    <Card size="small" title="Other Attributes">
+                    <Card size="small" title={$i18n.get({ id: 'legacy.tracing.otherAttributes', dm: "其他属性" })}>
                       {
                         Object.entries(otherAttr).map(([key, value]) => {
                           return (
@@ -1187,9 +1188,9 @@ function TracingPage() {
                                 <CopyOutlined
                                   onClick={() => {
                                     copyToClipboard(value as string).then(() => {
-                                      message.success("Copied")
+                                      message.success($i18n.get({ id: 'legacy.tracing.copySuccess', dm: "复制成功" }))
                                     }).catch((error) => {
-                                      message.error("Copy failed")
+                                      message.error($i18n.get({ id: 'legacy.tracing.copyFailed', dm: "复制失败" }))
                                     });
                                   }}
                                 className='text-blue-400 cursor-pointer' />
@@ -1200,7 +1201,7 @@ function TracingPage() {
                       }
                     </Card>
                   </Tabs.TabPane>
-                  <Tabs.TabPane tab="Events" key="events">
+                  <Tabs.TabPane tab={$i18n.get({ id: 'legacy.tracing.events', dm: "事件" })} key="events">
                     {
                       selectedSpan.events.length > 0 ? (
                         <Timeline>
@@ -1212,13 +1213,13 @@ function TracingPage() {
                           ))}
                         </Timeline>
                       ) : (
-                        <Empty description="No events" />
+                        <Empty description={$i18n.get({ id: 'legacy.tracing.noEvents', dm: "暂无事件" })} />
                       )
                     }
                   </Tabs.TabPane>
                 </Tabs>
               ) : (
-                <Empty description="Select a Span to view details" />
+                <Empty description={$i18n.get({ id: 'legacy.tracing.selectSpan', dm: "请选择一个 Span 查看详情" })} />
               )
             }
             </Card>
@@ -1227,7 +1228,7 @@ function TracingPage() {
 
         {/* 添加到评测集弹出框 */}
         <Modal
-          title="Add to Evaluation Set"
+          title={$i18n.get({ id: 'legacy.tracing.addToDataset', dm: "添加到评测集" })}
           open={addToDatasetModalVisible}
           onCancel={handleCloseAddToDatasetModal}
           width={800}
@@ -1235,36 +1236,36 @@ function TracingPage() {
           bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
           footer={[
             <Button key="cancel" onClick={handleCloseAddToDatasetModal}>
-              Cancel
+              {$i18n.get({ id: 'legacy.common.cancel', dm: "取消" })}
             </Button>,
             <Button key="save" type="primary" onClick={handleSaveToDataset}>
-              Save to Evaluation Set
+              {$i18n.get({ id: 'legacy.tracing.saveToDataset', dm: "保存到数据集" })}
             </Button>
           ]}
         >
           {selectedSpanForDataset && (
             <div>
               {/* Span信息展示 */}
-              <Card title="Span Information" size="small" className="mb-4">
+              <Card title={$i18n.get({ id: 'legacy.tracing.spanInfo', dm: "Span信息" })} size="small" className="mb-4">
                 <Row gutter={[12, 12]}>
-                  <Col span={12}><Text strong>Name:</Text> {selectedSpanForDataset?.operationName || '-'}</Col>
+                  <Col span={12}><Text strong>{$i18n.get({ id: 'legacy.tracing.nameColon', dm: "名称:" })}</Text> {selectedSpanForDataset?.operationName || '-'}</Col>
                   <Col span={12}><Text strong>SpanId:</Text> {selectedSpanForDataset?.spanID || '-'}</Col>
-                  <Col span={12}><Text strong>Type:</Text> {selectedSpan?.kind || '-'}</Col>
-                  <Col span={12}><Text strong>Service:</Text> {traceDetail?.serviceName || '-'}</Col>
+                  <Col span={12}><Text strong>{$i18n.get({ id: 'legacy.tracing.typeColon', dm: "类型:" })}</Text> {selectedSpan?.kind || '-'}</Col>
+                  <Col span={12}><Text strong>{$i18n.get({ id: 'legacy.tracing.serviceColon', dm: "服务:" })}</Text> {traceDetail?.serviceName || '-'}</Col>
                 </Row>
               </Card>
 
               {/* 评测集选择 */}
-              <Card title="Select Evaluation Set" size="small" className="mb-4">
+              <Card title={$i18n.get({ id: 'legacy.tracing.selectDataset', dm: "选择评测集" })} size="small" className="mb-4">
                 <Row gutter={[16, 16]}>
                   <Col span={24}>
                     <Form.Item
-                      label="Evaluation Set"
+                      label={$i18n.get({ id: 'legacy.tracing.datasetLabel', dm: "评测集" })}
                       required
                       className="mb-0"
                     >
                       <Select
-                        placeholder="Select an evaluation set"
+                        placeholder={$i18n.get({ id: 'legacy.tracing.datasetPlaceholder', dm: "请选择评测集" })}
                         loading={datasetsLoading}
                         value={selectedDatasetId || undefined}
                         onChange={handleDatasetChange}
@@ -1281,12 +1282,12 @@ function TracingPage() {
                   </Col>
                   <Col span={24}>
                     <Form.Item
-                      label="Version"
+                      label={$i18n.get({ id: 'legacy.common.version', dm: "版本" })}
                       required
                       className="mb-0"
                     >
                       <Select
-                        placeholder="Select a version"
+                        placeholder={$i18n.get({ id: 'legacy.tracing.versionPlaceholder', dm: "请选择版本" })}
                         loading={datasetVersionsLoading}
                         value={selectedDatasetVersionId || undefined}
                         onChange={handleDatasetVersionChange}
@@ -1307,9 +1308,9 @@ function TracingPage() {
 
               {/* 评测集列结构展示和字段映射配置 */}
               {(selectedDatasetId && selectedDatasetVersionId) && (
-                <Card title="Field Mapping Configuration" size="small">
+                <Card title={$i18n.get({ id: 'legacy.tracing.fieldMapping', dm: "字段映射配置" })} size="small">
                   <div className="mb-3">
-                    <Text strong>Evaluation Set Columns (Version {datasetVersions.find(v => v.id.toString() === selectedDatasetVersionId)?.version || selectedDatasetVersionId}):</Text>
+                    <Text strong>{$i18n.get({ id: 'legacy.tracing.datasetColumns', dm: "评测集列结构 (版本 {version}):" }, { version: datasetVersions.find(v => v.id.toString() === selectedDatasetVersionId)?.version || selectedDatasetVersionId })}</Text>
                     {datasetColumns.length > 0 ? (
                       <div className="mt-2">
                         {datasetColumns.map((column: any) => (
@@ -1320,14 +1321,14 @@ function TracingPage() {
                       </div>
                     ) : (
                       <div className="mt-2">
-                        <Text type="secondary">No column information available</Text>
+                        <Text type="secondary">{$i18n.get({ id: 'legacy.tracing.noColumnInfo', dm: "暂无列结构信息" })}</Text>
                       </div>
                     )}
                   </div>
 
                   {datasetColumns.length > 0 && (
                     <div>
-                      <Text strong>Field Mapping:</Text>
+                      <Text strong>{$i18n.get({ id: 'legacy.tracing.fieldMappingLabel', dm: "字段映射:" })}</Text>
                       <div className="mt-2">
                         {/* 根据Span数据结构动态生成映射项 */}
                         <div className="bg-gray-50 p-3 rounded">
@@ -1340,7 +1341,7 @@ function TracingPage() {
                                   <Row gutter={[8, 8]} align="middle">
                                     <Col span={11}>
                                       <Input
-                                        placeholder="Input content"
+                                        placeholder={$i18n.get({ id: 'legacy.tracing.inputContent', dm: "输入内容" })}
                                         value={content}
                                         onChange={(e) => {
                                           const newValues = [...inputContentValues];
@@ -1354,7 +1355,7 @@ function TracingPage() {
                                     </Col>
                                     <Col span={11}>
                                       <Select
-                                        placeholder="Map to evaluation set field"
+                                        placeholder={$i18n.get({ id: 'legacy.tracing.mapToField', dm: "映射到评测集字段" })}
                                         style={{ width: '100%' }}
                                         value={fieldMappings[`inputContent-${index}`] || undefined}
                                         onChange={(value) => handleFieldMappingChange(`inputContent-${index}`, value)}
@@ -1376,7 +1377,7 @@ function TracingPage() {
                                   <Row gutter={[8, 8]} align="middle">
                                     <Col span={11}>
                                       <Input
-                                        placeholder="Output content"
+                                        placeholder={$i18n.get({ id: 'legacy.tracing.outputContent', dm: "输出内容" })}
                                         value={content}
                                         onChange={(e) => {
                                           const newValues = [...outputContentValues];
@@ -1390,7 +1391,7 @@ function TracingPage() {
                                     </Col>
                                     <Col span={11}>
                                       <Select
-                                        placeholder="Map to evaluation set field"
+                                        placeholder={$i18n.get({ id: 'legacy.tracing.mapToField', dm: "映射到评测集字段" })}
                                         style={{ width: '100%' }}
                                         value={fieldMappings[`outputContent-${index}`] || undefined}
                                         onChange={(value) => handleFieldMappingChange(`outputContent-${index}`, value)}
@@ -1412,7 +1413,7 @@ function TracingPage() {
                                   <Row gutter={[8, 8]} align="middle">
                                     <Col span={11}>
                                       <Input
-                                        placeholder="Other attribute"
+                                        placeholder={$i18n.get({ id: 'legacy.tracing.otherAttrPlaceholder', dm: "其他属性" })}
                                         value={typeof value === 'object' ? JSON.stringify(value) : value}
                                         onChange={(e) => {
                                           setOtherAttrValues(prev => ({
@@ -1427,7 +1428,7 @@ function TracingPage() {
                                     </Col>
                                     <Col span={11}>
                                       <Select
-                                        placeholder="Map to evaluation set field"
+                                        placeholder={$i18n.get({ id: 'legacy.tracing.mapToField', dm: "映射到评测集字段" })}
                                         style={{ width: '100%' }}
                                         value={fieldMappings[`otherAttr-${key}`] || undefined}
                                         onChange={(value) => handleFieldMappingChange(`otherAttr-${key}`, value)}
@@ -1464,7 +1465,7 @@ function TracingPage() {
   return (
     <div style={{ padding: 24 }}>
       <Title level={2}>
-        Trace Monitoring
+        {$i18n.get({ id: 'legacy.tracing.title', dm: "链路追踪" })}
         {filteredPromptName && (
           <Tag color="blue" closable onClose={handleClearPromptFilter} style={{ marginLeft: 8, verticalAlign: 'middle' }}>
             Prompt: {filteredPromptName}
@@ -1490,13 +1491,13 @@ function TracingPage() {
         <Card style={{ marginBottom: 24 }}>
           <Row gutter={16}>
             <Col span={8}>
-              <Statistic title="Total Traces" value={overviewData?.['operation.count']?.total} loading={overviewLoading} />
+              <Statistic title={$i18n.get({ id: 'legacy.tracing.totalTraces', dm: "Trace 总数" })} value={overviewData?.['operation.count']?.total} loading={overviewLoading} />
             </Col>
             <Col span={8}>
-              <Statistic title="Token Usage" value={overviewData?.['usage.tokens']?.total} loading={overviewLoading} />
+              <Statistic title={$i18n.get({ id: 'legacy.tracing.tokenUsage', dm: "Token 消耗" })} value={overviewData?.['usage.tokens']?.total} loading={overviewLoading} />
             </Col>
             <Col span={8}>
-              <Statistic title="Model Calls" value={overviewData?.['operation.count']?.total} loading={overviewLoading} />
+              <Statistic title={$i18n.get({ id: 'legacy.tracing.modelCalls', dm: "模型调用次数" })} value={overviewData?.['operation.count']?.total} loading={overviewLoading} />
             </Col>
           </Row>
         </Card>
@@ -1504,8 +1505,8 @@ function TracingPage() {
         <Card style={{ marginBottom: 24 }}>
           <Row gutter={24}>
             <Col span={6}>
-              <Form.Item name="serviceName" label="Source Application">
-                <Select showSearch placeholder="All" allowClear>
+              <Form.Item name="serviceName" label={$i18n.get({ id: 'legacy.tracing.sourceApp', dm: "来源应用" })}>
+                <Select showSearch placeholder={$i18n.get({ id: 'legacy.tracing.all', dm: "全部" })} allowClear>
                   {services.map(s => <Option key={s} value={s}>{s}</Option>)}
                 </Select>
               </Form.Item>
@@ -1513,36 +1514,36 @@ function TracingPage() {
             {
               serviceName === "spring-ai-alibaba-studio" && (
                 <Col span={6}>
-                  <Form.Item name="sourceType" label="Source Type">
-                    <Select placeholder="All" allowClear>
+                  <Form.Item name="sourceType" label={$i18n.get({ id: 'legacy.tracing.col.sourceType', dm: "来源类型" })}>
+                    <Select placeholder={$i18n.get({ id: 'legacy.tracing.all', dm: "全部" })} allowClear>
                       <Option value="prompt">Prompt</Option>
                       <Option value="playground">Playground</Option>
-                      <Option value="evaluator">Evaluator</Option>
-                      <Option value="experiment">Experiment</Option>
+                      <Option value="evaluator">{$i18n.get({ id: 'legacy.tracing.source.evaluator', dm: "评估器" })}</Option>
+                      <Option value="experiment">{$i18n.get({ id: 'legacy.tracing.source.experiment', dm: "实验" })}</Option>
                     </Select>
                   </Form.Item>
                 </Col>
               )
             }
             <Col span={6}>
-              <Form.Item name="spanName" label="Span Name">
-                <Select showSearch placeholder="All" allowClear>
+              <Form.Item name="spanName" label={$i18n.get({ id: 'legacy.tracing.spanName', dm: "Span名称" })}>
+                <Select showSearch placeholder={$i18n.get({ id: 'legacy.tracing.all', dm: "全部" })} allowClear>
                   {operations.map(op => <Option key={op} value={op}>{op}</Option>)}
                 </Select>
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item name="traceId" label="TraceId">
-                <Input placeholder="Enter Trace ID" />
+                <Input placeholder={$i18n.get({ id: 'legacy.tracing.traceIdPlaceholder', dm: "输入TraceId" })} />
               </Form.Item>
             </Col>
             <Col span={6} className="flex gap-2 justify-end">
-              <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>Search</Button>
+              <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>{$i18n.get({ id: 'legacy.tracing.search', dm: "查询" })}</Button>
               <Button className='mr-2' onClick={() => {
                form.resetFields();
                onSearch();
                navigate('/tracing', { replace: true });
-              }}>Reset</Button>
+              }}>{$i18n.get({ id: 'legacy.tracing.reset', dm: "重置" })}</Button>
             </Col>
           </Row>
           <Form.List name="advancedFilters">
@@ -1550,11 +1551,11 @@ function TracingPage() {
               <>
                 {fields.map(({ key, name, ...restField }) => (
                   <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
-                    <Form.Item {...restField} name={[name, 'key']} rules={[{ required: true, message: 'Please select an attribute' }]}>
-                      <Input placeholder='Attribute' width={200} />
+                    <Form.Item {...restField} name={[name, 'key']} rules={[{ required: true, message: $i18n.get({ id: 'legacy.tracing.attrRequired', dm: "请选择属性" }) }]}>
+                      <Input placeholder={$i18n.get({ id: 'legacy.tracing.attrPlaceholder', dm: "属性" })} width={200} />
                     </Form.Item>
-                    <Form.Item {...restField} name={[name, 'value']} rules={[{ required: true, message: 'Please enter an attribute value' }]}>
-                      <Input placeholder="Attribute value" width={200} />
+                    <Form.Item {...restField} name={[name, 'value']} rules={[{ required: true, message: $i18n.get({ id: 'legacy.tracing.attrValueRequired', dm: "请输入属性值" }) }]}>
+                      <Input placeholder={$i18n.get({ id: 'legacy.tracing.attrValuePlaceholder', dm: "属性值" })} width={200} />
                     </Form.Item>
                     <MinusCircleOutlined onClick={() => remove(name)} />
                   </Space>
@@ -1564,7 +1565,7 @@ function TracingPage() {
                     type="dashed"
                     onClick={() => add()} block icon={<PlusOutlined />}
                   >
-                    Add Advanced Filter
+                    {$i18n.get({ id: 'legacy.tracing.addAdvancedFilter', dm: "添加高级筛选" })}
                   </Button>
                 </Form.Item>
               </>
@@ -1589,7 +1590,7 @@ function TracingPage() {
       <Drawer
         title={
           <div className='flex items-center'>
-            Trace Details
+            {$i18n.get({ id: 'legacy.tracing.traceDetails', dm: "Trace 详情" })}
             <Paragraph className='ml-2' style={{marginBottom: 0}} copyable={{ text: traceDetail?.traceID }}>
               {traceDetail?.traceID}</Paragraph>
           </div>
