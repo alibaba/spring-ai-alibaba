@@ -103,10 +103,10 @@ const Experiment = () => {
                     current: responseData.pageNumber || pagination.current
                 }));
             } else {
-                throw new Error(response.message || '加载失败');
+                throw new Error(response.message || 'Failed to load experiments');
             }
         } catch (error) {
-            handleApiError(error, '获取实验列表失败');
+            handleApiError(error, 'Failed to retrieve experiments');
             // 发生错误时设置为空列表
             setDataSource([]);
             setPagination(prev => ({
@@ -176,18 +176,18 @@ const Experiment = () => {
     // 停止实验
     const handleStopExperiment = async (record: ExperimentRecord) => {
         Modal.confirm({
-            title: '确认停止',
-            content: `确定要停止实验 "${record.name}" 吗？停止后实验状态将变为失败。`,
-            okText: '确认停止',
+            title: 'Confirm Stop',
+            content: `Are you sure you want to stop experiment "${record.name}"? Its status will change to Failed.`,
+            okText: 'Confirm Stop',
             okType: 'danger',
-            cancelText: '取消',
+            cancelText: 'Cancel',
             onOk: async () => {
                 try {
                     await API.stopExperiment({ experimentId: record.id });
-                    notifySuccess({ message: '实验已停止' });
+                    notifySuccess({ message: 'Experiment stopped' });
                     fetchExperiments();
                 } catch (error) {
-                    handleApiError(error, '停止实验失败');
+                    handleApiError(error, 'Failed to stop experiment');
                 }
             }
         });
@@ -198,10 +198,10 @@ const Experiment = () => {
         try {
             // 这里应该调用重新运行实验的API
             // await API.rerunExperiment({ id: record.id });
-            message.info(`重新运行实验: ${record.name}`);
+            message.info(`Rerunning experiment: ${record.name}`);
             // fetchExperiments();
         } catch (error) {
-            handleApiError(error, '重新运行实验失败');
+            handleApiError(error, 'Failed to rerun experiment');
         }
     };
 
@@ -216,18 +216,18 @@ const Experiment = () => {
     // 删除实验
     const handleDeleteExperiment = async (record: ExperimentRecord) => {
         Modal.confirm({
-            title: '确认删除',
-            content: `确定要删除实验 "${record.name}" 吗？此操作不可恢复。`,
-            okText: '确认删除',
+            title: 'Confirm Delete',
+            content: `Are you sure you want to delete experiment "${record.name}"? This action cannot be undone.`,
+            okText: 'Confirm Delete',
             okType: 'danger',
-            cancelText: '取消',
+            cancelText: 'Cancel',
             onOk: async () => {
                 try {
                     await API.deleteExperiment({ experimentId: record.id });
-                    notifySuccess({ message: '实验删除成功' });
+                    notifySuccess({ message: 'Experiment deleted successfully' });
                     fetchExperiments();
                 } catch (error) {
-                    handleApiError(error, '删除实验失败');
+                    handleApiError(error, 'Failed to delete experiment');
                 }
             }
         });
@@ -237,22 +237,22 @@ const Experiment = () => {
     const renderStatus = (status: string, progress?: number) => {
         switch (status) {
             case 'WAITING':
-                return <Tag color="default">等待中</Tag>;
+                return <Tag color="default">Waiting</Tag>;
             case 'RUNNING':
                 return (
                     <div>
-                        <Tag color="blue">运行中</Tag>
+                        <Tag color="blue">Running</Tag>
                         <div style={{fontSize: '12px', color: 'rgb(102, 102, 102)', marginTop: '4px'}}>
-                            {progress !== undefined && <span>进度: {progress}%</span>}
+                            {progress !== undefined && <span>Progress: {progress}%</span>}
                         </div>
                     </div>
                 );
             case 'COMPLETED':
-                return <Tag color="green">已完成</Tag>;
+                return <Tag color="green">Completed</Tag>;
             case 'FAILED':
-                return <Tag color="red">失败</Tag>;
+                return <Tag color="red">Failed</Tag>;
             case 'STOPPED':
-                return <Tag color="orange">已停止</Tag>;
+                return <Tag color="orange">Stopped</Tag>;
             default:
                 return <Tag>{status}</Tag>;
         }
@@ -260,7 +260,7 @@ const Experiment = () => {
 
     const columns = [
         {
-            title: '实验名称',
+            title: 'Experiment Name',
             dataIndex: 'name',
             key: 'name',
             render: (text: string, record: ExperimentRecord) => (
@@ -273,7 +273,7 @@ const Experiment = () => {
             )
         },
         { 
-            title: '描述', 
+            title: 'Description', 
             dataIndex: 'description', 
             ellipsis: true,
             render: (text: string) => (
@@ -283,7 +283,7 @@ const Experiment = () => {
             )
         },
         {
-            title: '评测集',
+            title: 'Evaluation Set',
             dataIndex: 'datasetVersion',
             key: 'datasetVersion',
             render: (text: string, record: ExperimentRecord) => (
@@ -294,7 +294,7 @@ const Experiment = () => {
             )
         },
         {
-            title: '评估器',
+            title: 'Evaluator',
             dataIndex: 'evaluatorConfig',
             key: 'evaluatorConfig',
             render: (evaluatorConfig: string, record: ExperimentRecord) => {
@@ -311,14 +311,14 @@ const Experiment = () => {
                 }
                 
                 if (evaluatorNames.length === 0) {
-                    return <span className="text-gray-400">无</span>;
+                    return <span className="text-gray-400">None</span>;
                 }
                 
                 // 将所有评估器名称用逗号连接
-                const allEvaluatorNames = evaluatorNames.join('，');
+                const allEvaluatorNames = evaluatorNames.join(', ');
                 
                 return (
-                    <Tooltip title={`全部评估器:\n${allEvaluatorNames}`} placement="topLeft">
+                    <Tooltip title={`All evaluators:\n${allEvaluatorNames}`} placement="topLeft">
                         <div className="text-sm text-gray-600 mt-1 truncate" style={{ maxWidth: '200px' }}>
                             {allEvaluatorNames}
                         </div>
@@ -327,7 +327,7 @@ const Experiment = () => {
             }
         },
         {
-            title: '状态',
+            title: 'Status',
             dataIndex: 'status',
             key: 'status',
             render: (status: string, record: ExperimentRecord) => renderStatus(status, record.progress)
@@ -338,19 +338,19 @@ const Experiment = () => {
         //     key: 'creator'
         // },
         {
-            title: '创建时间',
+            title: 'Created At',
             dataIndex: 'createTime',
             key: 'createTime',
             render: (text: string) => formatDateTime(text)
         },
         {
-            title: '更新时间',
+            title: 'Updated At',
             dataIndex: 'updateTime',
             key: 'updateTime',
             render: (text: string) => formatDateTime(text)
         },
         {
-            title: '操作',
+            title: 'Actions',
             key: 'action',
             width: 160,
             fixed: 'right' as const,
@@ -360,7 +360,7 @@ const Experiment = () => {
                     switch (record.status) {
                         case 'RUNNING':
                             return (
-                                <Tooltip title="停止">
+                                <Tooltip title="Stop">
                                     <Button
                                         type="link"
                                         icon={<StopOutlined />}
@@ -371,7 +371,7 @@ const Experiment = () => {
                             );
                         case 'COMPLETED':
                             return (
-                                <Tooltip title="查看结果">
+                                <Tooltip title="View Results">
                                     <Button
                                         type="link"
                                         icon={<BarChartOutlined />}
@@ -381,7 +381,7 @@ const Experiment = () => {
                             );
                         case 'FAILED':
                             return (
-                                <Tooltip title="重新运行">
+                                <Tooltip title="Rerun">
                                     <Button
                                         type="link"
                                         icon={<PlayCircleOutlined />}
@@ -394,7 +394,7 @@ const Experiment = () => {
                             return null;
                         case 'STOPPED':
                             return (
-                                <Tooltip title="重新运行">
+                                <Tooltip title="Rerun">
                                     <Button
                                         type="link"
                                         icon={<PlayCircleOutlined />}
@@ -409,7 +409,7 @@ const Experiment = () => {
 
                 return (
                     <Space size="middle">
-                        <Tooltip title="查看详情">
+                        <Tooltip title="View Details">
                             <Button
                                 type="link"
                                 icon={<EyeOutlined />}
@@ -417,7 +417,7 @@ const Experiment = () => {
                             />
                         </Tooltip>
                         {renderSecondAction()}
-                        <Tooltip title="删除">
+                        <Tooltip title="Delete">
                             <Button
                                 type="link"
                                 icon={<DeleteOutlined />}
@@ -440,14 +440,14 @@ const Experiment = () => {
         <div className="experiment-page p-8 fade-in">
             {/* 页面标题 */}
             <div className="mb-8">
-                <Title level={2} style={{ marginBottom: 8 }}>实验管理</Title>
+                <Title level={2} style={{ marginBottom: 8 }}>Experiment Management</Title>
             </div>
 
             {/* 搜索和筛选区域 */}
             <Card className='mb-4'>
                 <div className="flex gap-4 justify-between" style={{flexWrap: 'wrap'}}>
                     <Input.Search
-                        placeholder="搜索名称"
+                        placeholder="Search by name"
                         allowClear
                         style={{ width: 280 }}
                         value={searchText}
@@ -455,31 +455,31 @@ const Experiment = () => {
                         onSearch={handleSearch}
                     />
                     <Select
-                        placeholder="状态 请选择"
+                        placeholder="Select status"
                         allowClear
                         style={{ width: 200 }}
                         value={statusFilter}
                         onChange={handleStatusFilter}
                     >
-                        <Option value="RUNNING">运行中</Option>
-                        <Option value="COMPLETED">已完成</Option>
-                        <Option value="FAILED">失败</Option>
-                        <Option value="WAITING">等待中</Option>
-                        <Option value="STOPPED">已停止</Option>
+                        <Option value="RUNNING">Running</Option>
+                        <Option value="COMPLETED">Completed</Option>
+                        <Option value="FAILED">Failed</Option>
+                        <Option value="WAITING">Waiting</Option>
+                        <Option value="STOPPED">Stopped</Option>
                     </Select>
                     <div style={{flex: 1}}></div>
                     <Button 
                         icon={<SyncOutlined />} 
                         onClick={handleRefresh}
                     >
-                        刷新
+                        Refresh
                     </Button>
                     <Button 
                         type="primary" 
                         icon={<PlusOutlined />}
                         onClick={handleCreateExperiment}
                     >
-                        新建实验
+                        Create Experiment
                     </Button>
                 </div>
             </Card>
@@ -507,7 +507,7 @@ const Experiment = () => {
 
             {/* 创建实验侧滑面板 */}
             <Drawer
-                title="新建实验"
+                title="Create Experiment"
                 placement="right"
                 width="90%"
                 open={showCreateDrawer}

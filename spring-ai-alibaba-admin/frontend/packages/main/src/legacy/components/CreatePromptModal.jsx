@@ -65,7 +65,7 @@ const CreatePromptModal = (props) => {
   // 快速创建模式下的版本信息
   const [versionData, setVersionData] = useState({
     version: '0.0.1',
-    versionDescription: '初始版本',
+    versionDescription: 'Initial version',
     status: 'release' // release 或 pre
   });
 
@@ -87,7 +87,7 @@ const CreatePromptModal = (props) => {
 
   const handleSubmit = async () => {
     if (!formData.promptKey.trim()) {
-      message.error('请填写 Prompt Key');
+      message.error('Please enter a Prompt Key.');
       return;
     }
 
@@ -109,13 +109,13 @@ const CreatePromptModal = (props) => {
       const createResponse = await API.publishPrompt(createParams);
 
       if (createResponse.code !== 200) {
-        throw new Error(createResponse.message || '创建失败');
+        throw new Error(createResponse.message || 'Failed to create prompt');
       }
 
       // 如果是快速创建且有内容，同时创建版本
       if (quickCreate && initialData.content && initialData.content.trim()) {
         if (!versionData.version.trim()) {
-          message.error('请填写版本号');
+          message.error('Please enter a version number.');
           setLoading(false);
           return;
         }
@@ -133,16 +133,16 @@ const CreatePromptModal = (props) => {
         const versionResponse = await API.publishPromptVersion(versionParams);
 
         if (versionResponse.code !== 200) {
-          throw new Error(versionResponse.message || '版本创建失败');
+          throw new Error(versionResponse.message || 'Failed to create version');
         }
       }
 
       // 成功完成
       message.success({
-        content: quickCreate ? 'Prompt 创建和版本发布成功' : 'Prompt 创建成功',
+        content: quickCreate ? 'Prompt created and version published successfully' : 'Prompt created successfully',
         description: quickCreate
-          ? `已创建 Prompt "${formData.promptKey}" 并发布版本 ${versionData.version}`
-          : `已创建 Prompt "${formData.promptKey}"`
+          ? `Created prompt "${formData.promptKey}" and published version ${versionData.version}.`
+          : `Created prompt "${formData.promptKey}".`
       });
 
       if (onSuccess) {
@@ -152,8 +152,8 @@ const CreatePromptModal = (props) => {
       }
     } catch (err) {
       console.error('创建失败:', err);
-      message.error(err.message || '创建失败，请稍后重试');
-      setError(err.message || '创建失败，请稍后重试');
+      message.error(err.message || 'Failed to create prompt. Please try again later.');
+      setError(err.message || 'Failed to create prompt. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -188,7 +188,7 @@ const CreatePromptModal = (props) => {
             )}
           </div>
           <Title level={3} style={{ margin: 0 }}>
-            {quickCreate ? '快速创建新Prompt' : '创建新Prompt'}
+            {quickCreate ? 'Quickly Create New Prompt' : 'Create New Prompt'}
           </Title>
         </div>
       }
@@ -205,7 +205,7 @@ const CreatePromptModal = (props) => {
       }}
       footer={[
         <Button key="cancel" onClick={onClose}>
-          取消
+          Cancel
         </Button>,
         <Button
           key="submit"
@@ -221,10 +221,10 @@ const CreatePromptModal = (props) => {
           }}
         >
           {loading
-            ? '创建中...'
+            ? 'Creating...'
             : quickCreate
-              ? `快速创建并发布${versionData.status === 'release' ? '正式' : 'PRE'}版本`
-              : '创建 Prompt'
+              ? `Create and Publish ${versionData.status === 'release' ? 'Release' : 'Pre-release'} Version`
+              : 'Create Prompt'
           }
         </Button>
       ]}
@@ -233,8 +233,8 @@ const CreatePromptModal = (props) => {
       <Space direction="vertical" size={24} style={{ width: '100%' }}>
         {quickCreate && (
           <Alert
-            message="快速创建模式"
-            description="将同时创建新Prompt并发布第一个版本"
+            message="Quick Create Mode"
+            description="This creates a new prompt and publishes its first version."
             type="info"
             icon={<RocketOutlined />}
             showIcon
@@ -243,7 +243,7 @@ const CreatePromptModal = (props) => {
 
         {error && (
           <Alert
-            message="创建失败"
+            message="Creation failed"
             description={error}
             type="error"
             icon={<ExclamationCircleOutlined />}
@@ -251,7 +251,7 @@ const CreatePromptModal = (props) => {
           />
         )}
 
-        <Card title="基本信息" size="small">
+        <Card title="Basic Information" size="small">
           <Space direction="vertical" size={16} style={{ width: '100%' }}>
             <div>
               <Text strong style={{ display: 'block', marginBottom: 8 }}>Prompt Key <span className='text-red-700'>*</span></Text>
@@ -262,30 +262,30 @@ const CreatePromptModal = (props) => {
                   const validValue = value.replace(/[^a-zA-Z0-9_-]/g, '');
                   setFormData(prev => ({ ...prev, promptKey: validValue }));
                 }}
-                placeholder="输入Prompt Key（仅支持英文、数字、下划线、横杠）..."
+                placeholder="Enter a Prompt Key (letters, numbers, underscores, and hyphens only)..."
                 size="large"
               />
               <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: 4 }}>
-                仅支持英文字母、数字、下划线（_）和横杠（-）
+                Only letters, numbers, underscores (_), and hyphens (-) are supported.
               </Text>
             </div>
 
             <div>
-              <Text strong style={{ display: 'block', marginBottom: 8 }}>标签</Text>
+              <Text strong style={{ display: 'block', marginBottom: 8 }}>Tags</Text>
               <Input
                 value={formData.tags}
                 onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-                placeholder="多个标签用逗号分隔，例如：营销，文案，创意"
+                placeholder="Separate multiple tags with commas, e.g. marketing, copywriting, creative"
                 size="large"
               />
             </div>
 
             <div>
-              <Text strong style={{ display: 'block', marginBottom: 8 }}>描述</Text>
+              <Text strong style={{ display: 'block', marginBottom: 8 }}>Description</Text>
               <TextArea
                 value={formData.promptDescription}
                 onChange={(e) => setFormData(prev => ({ ...prev, promptDescription: e.target.value }))}
-                placeholder="描述这个Prompt的用途和特点..."
+                placeholder="Describe this prompt's purpose and characteristics..."
                 rows={3}
                 size="large"
               />
@@ -294,11 +294,11 @@ const CreatePromptModal = (props) => {
         </Card>
 
         {quickCreate && (
-          <Card title="版本信息" size="small">
+          <Card title="Version Information" size="small">
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <Row gutter={16}>
                 <Col span={8}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>版本号 *</Text>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>Version Number *</Text>
                   <Input
                     value={versionData.version}
                     onChange={(e) => setVersionData(prev => ({ ...prev, version: e.target.value }))}
@@ -308,31 +308,31 @@ const CreatePromptModal = (props) => {
                 </Col>
 
                 <Col span={8}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>版本类型 *</Text>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>Version Type *</Text>
                   <Select
                     value={versionData.status}
                     onChange={(value) => setVersionData(prev => ({ ...prev, status: value }))}
                     style={{ width: '100%' }}
                     size="large"
                   >
-                    <Option value="release">正式版本</Option>
-                    <Option value="pre">PRE版本</Option>
+                    <Option value="release">Release</Option>
+                    <Option value="pre">Pre-release</Option>
                   </Select>
                 </Col>
 
                 <Col span={8}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>版本说明</Text>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>Version Description</Text>
                   <Input
                     value={versionData.versionDescription}
                     onChange={(e) => setVersionData(prev => ({ ...prev, versionDescription: e.target.value }))}
-                    placeholder="初始版本"
+                    placeholder="Initial version"
                     size="large"
                   />
                 </Col>
               </Row>
 
               <div>
-                <Text strong style={{ display: 'block', marginBottom: 8 }}>版本内容预览</Text>
+                <Text strong style={{ display: 'block', marginBottom: 8 }}>Version Content Preview</Text>
                 {initialData.content && initialData.content.trim() ? (
                   <div style={{
                     padding: 16,
@@ -349,7 +349,7 @@ const CreatePromptModal = (props) => {
                   </div>
                 ) : (
                   <Alert
-                    message="请在编辑区填写Prompt内容"
+                    message="Enter prompt content in the editor."
                     type="warning"
                     icon={<ExclamationCircleOutlined />}
                     showIcon
@@ -359,7 +359,7 @@ const CreatePromptModal = (props) => {
 
               {/* 参数预览 */}
               {variablesWithValueList.length > 0 && (
-                <Card title="检测到的参数: 键值对" size="small">
+                <Card title="Detected Parameters: Key-Value Pairs" size="small">
                   <Space size={[8, 8]} wrap>
                     {variablesWithValueList.map((param, index) => (
                       <Tag key={index} color="blue">
@@ -372,12 +372,12 @@ const CreatePromptModal = (props) => {
 
               {/* 模型配置预览 */}
               {modelConfig && (
-                <Card title="模型配置" size="small">
+                <Card title="Model Configuration" size="small">
                   <Row gutter={[16, 8]}>
                     {/* 显示模型名称而非ID */}
                     <Col span={24} style={{ marginBottom: 8 }}>
                       <Space>
-                        <Text strong>模型：</Text>
+                        <Text strong>Model:</Text>
                         <Text code>{getModelName(modelConfig.modelId)}</Text>
                       </Space>
                     </Col>
@@ -391,7 +391,7 @@ const CreatePromptModal = (props) => {
                         return (
                           <Col span={24}>
                             <Text type="secondary" style={{ fontStyle: 'italic' }}>
-                              暂无模型参数配置
+                              No model parameters configured.
                             </Text>
                           </Col>
                         );
@@ -401,7 +401,7 @@ const CreatePromptModal = (props) => {
                         return (
                           <Col span={12} key={key}>
                             <Space>
-                              <Text strong>{key}：</Text>
+                              <Text strong>{key}:</Text>
                               <Text code>{value}</Text>
                             </Space>
                           </Col>
@@ -414,22 +414,22 @@ const CreatePromptModal = (props) => {
               )}
 
               <Alert
-                message={versionData.status === 'release' ? '正式版本说明' : 'PRE版本说明'}
+                message={versionData.status === 'release' ? 'Release Version' : 'Pre-release Version'}
                 description={
                   <div>
                     {versionData.status === 'release' ? (
                       <div>
                         <Paragraph style={{ margin: 0, marginBottom: 4 }}>
-                          <Text strong>正式版本：</Text>稳定的生产环境版本，会更新当前版本指针
+                          <Text strong>Release version:</Text> A stable production version that updates the current-version pointer.
                         </Paragraph>
-                        <Text>适用于生产环境使用，经过充分测试和验证</Text>
+                        <Text>Use this version in production after thorough testing and validation.</Text>
                       </div>
                     ) : (
                       <div>
                         <Paragraph style={{ margin: 0, marginBottom: 4 }}>
-                          <Text strong>PRE版本：</Text>预发布版本，用于测试和验证
+                          <Text strong>Pre-release version:</Text> A pre-release version for testing and validation.
                         </Paragraph>
-                        <Text>适用于测试环境，不会更新当前版本指针</Text>
+                        <Text>Use this version in test environments; it does not update the current-version pointer.</Text>
                       </div>
                     )}
                   </div>

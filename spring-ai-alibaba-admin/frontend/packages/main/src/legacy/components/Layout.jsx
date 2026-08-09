@@ -68,7 +68,7 @@ const Layout = ({ children }) => {
   const menuItems = [
     {
       key: 'prompt',
-      label: 'Prompt工程',
+      label: 'Prompt Engineering',
       icon: <BulbOutlined />,
       children: [
         {
@@ -85,29 +85,29 @@ const Layout = ({ children }) => {
     },
     {
       key: 'evaluation',
-      label: '评测',
+      label: 'Evaluation',
       icon: <ExperimentOutlined />,
       children: [
         {
           key: '/admin/evaluation/gather',
-          label: '评测集',
+          label: 'Evaluation Sets',
           icon: <UnorderedListOutlined />
         },
         {
           key: '/admin/evaluation/evaluator',
-          label: '评估器',
+          label: 'Evaluators',
           icon: <BarChartOutlined />
         },
         {
           key: '/admin/evaluation/experiment',
-          label: '实验',
+          label: 'Experiments',
           icon: <ExperimentOutlined />
         }
       ]
     },
     {
       key: 'observability',
-      label: '可观测',
+      label: 'Observability',
       icon: <LineChartOutlined />,
       children: [
         {
@@ -158,7 +158,7 @@ const Layout = ({ children }) => {
               <MenuUnfoldOutlined className="text-gray-600 text-lg" /> : 
               <MenuFoldOutlined className="text-gray-600 text-lg" />
             }
-            {!collapsed && <span className="ml-2 text-gray-600">收起菜单</span>}
+            {!collapsed && <span className="ml-2 text-gray-600">Collapse Menu</span>}
           </div>
         </div>
       </Sider>

@@ -90,12 +90,12 @@ const PromptsPage = () => {
           totalPage: response.data.totalPage || 0,
         });
       } else {
-        throw new Error(response.message || '加载失败');
+        throw new Error(response.message || 'Failed to load prompts');
       }
     } catch (err) {
       console.error('加载 Prompts 失败:', err);
-      handleApiError(err, '加载 Prompts 列表');
-      setError(err.message || '网络错误，请稍后重试');
+      handleApiError(err, 'Load prompts');
+      setError(err.message || 'Network error. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -140,19 +140,19 @@ const PromptsPage = () => {
       if (response.code === 200) {
         // 删除成功后重新加载列表
         notifySuccess({
-          message: 'Prompt 删除成功',
-          description: `已成功删除 Prompt "${selectedPrompt.promptKey}"`
+          message: 'Prompt deleted',
+          description: `Prompt "${selectedPrompt.promptKey}" was deleted successfully.`
         });
         await loadPrompts(pagination.current);
         setShowDeleteModal(false);
         setSelectedPrompt(null);
       } else {
-        throw new Error(response.message || '删除失败');
+        throw new Error(response.message || 'Failed to delete prompt');
       }
     } catch (err) {
       console.error('删除 Prompt 失败:', err);
-      handleApiError(err, '删除 Prompt');
-      setError(err.message || '删除失败，请稍后重试');
+      handleApiError(err, 'Delete prompt');
+      setError(err.message || 'Failed to delete prompt. Please try again later.');
     }
   };
 
@@ -161,7 +161,7 @@ const PromptsPage = () => {
     if (!prompt.latestVersion || !prompt.latestVersionStatus) {
       return (
         <Tag color="warning" icon={<ClockCircleOutlined />}>
-          无版本
+          No version
         </Tag>
       );
     }
@@ -170,19 +170,19 @@ const PromptsPage = () => {
     if (prompt.latestVersionStatus === 'release') {
       return (
         <Tag color="success" icon={<CheckCircleOutlined />}>
-          正式版本
+          Release
         </Tag>
       );
     } else if (prompt.latestVersionStatus === 'pre') {
       return (
         <Tag color="processing" icon={<ExperimentOutlined />}>
-          PRE版本
+          Pre-release
         </Tag>
       );
     } else {
       return (
         <Tag color="default" icon={<QuestionCircleOutlined />}>
-          未知状态
+          Unknown status
         </Tag>
       );
     }
@@ -197,7 +197,7 @@ const PromptsPage = () => {
       render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>,
     },
     {
-      title: '描述',
+      title: 'Description',
       dataIndex: 'promptDescription',
       key: 'promptDescription',
       ellipsis: {
@@ -205,29 +205,29 @@ const PromptsPage = () => {
       },
       render: (text) => (
         <Tooltip placement="topLeft" title={text}>
-          {text || '无描述'}
+          {text || 'No description'}
         </Tooltip>
       ),
     },
     {
-      title: '最新版本',
+      title: 'Latest version',
       dataIndex: 'latestVersion',
       key: 'latestVersion',
       render: (version) => (
         version ? (
           <Tag color="blue">{version}</Tag>
         ) : (
-          <Tag color="default">无版本</Tag>
+          <Tag color="default">No version</Tag>
         )
       ),
     },
     {
-      title: '状态',
+      title: 'Status',
       key: 'status',
       render: (_, record) => renderStatusBadge(record),
     },
     {
-      title: '标签',
+      title: 'Tags',
       dataIndex: 'tags',
       key: 'tags',
       render: (tags) => (
@@ -241,23 +241,23 @@ const PromptsPage = () => {
       ),
     },
     {
-      title: '创建时间',
+      title: 'Created at',
       dataIndex: 'createTime',
       key: 'createTime',
       render: (time) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
-      title: '更新时间',
+      title: 'Updated at',
       dataIndex: 'updateTime',
       key: 'updateTime',
       render: (time) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
-      title: '操作',
+      title: 'Actions',
       key: 'action',
       render: (_, record) => (
         <Space size="middle">
-          <Tooltip title="查看详情">
+          <Tooltip title="View details">
             <Button
               type="text"
               icon={<EyeOutlined />}
@@ -267,7 +267,7 @@ const PromptsPage = () => {
               }}
             />
           </Tooltip>
-          <Tooltip title="查看调用链路追踪">
+          <Tooltip title="View trace">
             <Button
               type="text"
               icon={<ShareAltOutlined />}
@@ -283,7 +283,7 @@ const PromptsPage = () => {
               }}
             />
           </Tooltip>
-          <Tooltip title="删除">
+          <Tooltip title="Delete">
             <Button
               type="text"
               danger
@@ -304,14 +304,14 @@ const PromptsPage = () => {
     {/* <ElementSelector onSelect={handleElementSelect} debug={true}>*/}
       <div className="p-8 fade-in">
       <div className="mb-8">
-        <Title level={2} style={{ marginBottom: 8 }}>Prompts管理</Title>
-        <Paragraph type="secondary">管理和组织你的AI提示词模板</Paragraph>
+        <Title level={2} style={{ marginBottom: 8 }}>Prompt Management</Title>
+        <Paragraph type="secondary">Manage and organize your AI prompt templates.</Paragraph>
       </div>
 
       {/* 错误提示 */}
       {error && (
         <Alert
-          message="加载错误"
+          message="Loading error"
           description={error}
           type="error"
           showIcon
@@ -324,10 +324,10 @@ const PromptsPage = () => {
         <div style={{ display: 'flex', gap: 16, alignItems: 'end', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 256 }}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-              按 Prompt Key 搜索
+              Search by Prompt Key
             </label>
             <Search
-              placeholder="输入 Prompt Key..."
+              placeholder="Enter a Prompt Key..."
               onSearch={handleSearchName}
               allowClear
             />
@@ -335,10 +335,10 @@ const PromptsPage = () => {
 
           <div style={{ flex: 1, minWidth: 256 }}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-              按标签搜索
+              Search by tag
             </label>
             <Search
-              placeholder="输入标签..."
+              placeholder="Enter a tag..."
               onSearch={handleSearchTag}
               allowClear
             />
@@ -350,7 +350,7 @@ const PromptsPage = () => {
               onClick={() => setShowCreateModal(true)}
               icon={<PlusOutlined />}
             >
-              创建Prompt
+              Create Prompt
             </Button>
           </Space>
         </div>
@@ -371,10 +371,10 @@ const PromptsPage = () => {
             emptyText: (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="没有找到匹配的 Prompt"
+                description="No matching prompts found"
               >
                 <Button type="primary" onClick={() => setShowCreateModal(true)}>
-                  创建第一个 Prompt
+                  Create your first prompt
                 </Button>
               </Empty>
             ),

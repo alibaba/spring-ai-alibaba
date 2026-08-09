@@ -24,7 +24,7 @@ const formatDateTime = (dateTimeString: string) => {
     if (!dateTimeString) return '-';
     try {
         const date = new Date(dateTimeString);
-        return date.toLocaleString('zh-CN', {
+        return date.toLocaleString('en-US', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -189,7 +189,7 @@ const ExperimentDetail: React.FC = () => {
           referenceOutput: item.referenceOutput,
           score: item.score,
           status: item.score > 0.5 ? 'success' : 'failed',
-          reason: item.reason || '暂无理由'
+          reason: item.reason || 'No reason provided'
         }));
         
         setResultData(results);
@@ -201,7 +201,7 @@ const ExperimentDetail: React.FC = () => {
           total: totalCount || 0
         }));
       } else {
-        throw new Error(response.message || '获取评测结果失败');
+        throw new Error(response.message || 'Failed to retrieve evaluation results');
       }
     } catch (error) {
       console.error('获取评测结果失败:', error);
@@ -231,7 +231,7 @@ const ExperimentDetail: React.FC = () => {
         const overviewList = response.data as any;
         setOverviewData(overviewList);
       } else {
-        throw new Error(response.message || '获取概览数据失败');
+        throw new Error(response.message || 'Failed to retrieve overview data');
       }
     } catch (error) {
       console.error('获取概览数据失败:', error);
@@ -318,7 +318,7 @@ const ExperimentDetail: React.FC = () => {
           endTime: apiData.completeTime || undefined,
           completeTime: apiData.completeTime || undefined,
           dataset: {
-            name: '默认评测集', // 默认值，后续可以通过 datasetId 查询获取
+            name: 'Default evaluation dataset', // 默认值，后续可以通过 datasetId 查询获取
             id: apiData.datasetId.toString(),
             columns: ['input', 'reference_output']
           },
@@ -327,7 +327,7 @@ const ExperimentDetail: React.FC = () => {
             promptKey: evaluationObject.config?.promptKey || '',
             version: evaluationObject.config?.versionId || '',
             promptDetail: evaluationObject.config?.promptDescription || '',
-            promptContent: '默认Prompt内容', // 默认值
+            promptContent: 'Default prompt content', // 默认值
             inputTemplate: '{{input}}'
           },
           evaluators: evaluatorConfigs.map((config: EvaluatorConfig, index: number) => ({
@@ -339,7 +339,7 @@ const ExperimentDetail: React.FC = () => {
             columns: ['input', 'reference_output']
           })),
           evaluationResults: {
-            schema: '字段映射',
+            schema: 'Field mapping',
             mapping: {
               'evaluator.input': 'dataset.input',
               'evaluator.output': 'evaluation_object.output', // 移除硬编码的actual_output
@@ -351,7 +351,7 @@ const ExperimentDetail: React.FC = () => {
         
         setDetail(detailData);
       } else {
-        throw new Error(response.message || '获取实验详情失败');
+        throw new Error(response.message || 'Failed to retrieve experiment details');
       }
     } catch (error) {
       console.error('获取实验详情失败:', error);
@@ -439,13 +439,13 @@ const ExperimentDetail: React.FC = () => {
         // 重新获取详情以获取最新状态
         await fetchExperimentDetail();
       } else {
-        throw new Error(response.message || '停止实验失败');
+        throw new Error(response.message || 'Failed to stop experiment');
       }
     } catch (error) {
       console.error('停止实验失败:', error);
       
       // 错误处理
-      message.error('停止实验失败，请重试');
+      message.error('Failed to stop experiment. Please try again.');
     } finally {
       setStopping(false);
     }
@@ -454,11 +454,11 @@ const ExperimentDetail: React.FC = () => {
   // 渲染状态标签
   const renderStatusTag = (status: string) => {
     const statusConfig = {
-      RUNNING: { color: 'blue', text: '运行中' },
-      COMPLETED: { color: 'green', text: '已完成' },
-      FAILED: { color: 'red', text: '失败' },
-      WAITING: { color: 'default', text: '等待中' },
-      STOPPED: { color: 'orange', text: '已停止' }
+      RUNNING: { color: 'blue', text: 'Running' },
+      COMPLETED: { color: 'green', text: 'Completed' },
+      FAILED: { color: 'red', text: 'Failed' },
+      WAITING: { color: 'default', text: 'Waiting' },
+      STOPPED: { color: 'orange', text: 'Stopped' }
     };
     const config = statusConfig[status as keyof typeof statusConfig];
     return <Tag color={config?.color || 'default'}>{config?.text || status}</Tag>;
@@ -496,8 +496,8 @@ const ExperimentDetail: React.FC = () => {
           height: '100vh',
           width: '100%'
         }}>
-          <p style={{ marginBottom: '20px' }}>实验详情不存在</p>
-          <Button onClick={handleGoBack}>返回列表</Button>
+          <p style={{ marginBottom: '20px' }}>Experiment details not found</p>
+          <Button onClick={handleGoBack}>Back to list</Button>
         </div>
       </div>
     );
@@ -527,9 +527,9 @@ const ExperimentDetail: React.FC = () => {
               icon={<ReloadOutlined />}
               onClick={fetchExperimentDetail}
               className="mr-4"
-              title="刷新"
+              title="Refresh"
             >
-              刷新
+              Refresh
             </Button>
             <Button 
               danger 
@@ -537,7 +537,7 @@ const ExperimentDetail: React.FC = () => {
               loading={stopping}
               onClick={handleStopExperiment}
             >
-              停止实验
+              Stop experiment
             </Button>
           </div>
         )}
@@ -546,8 +546,8 @@ const ExperimentDetail: React.FC = () => {
       {/* 实验状态信息 */}
       {/* {detail.status === 'RUNNING' && (
         <Alert
-          message="实验正在运行中"
-          description={`当前进度: ${detail.progress}%，已处理 ${detail.totalProgress} 条数据`}
+          message="Experiment is running"
+          description={`Progress: ${detail.progress}%, processed ${detail.totalProgress} items`}
           type="info"
           showIcon
           className="mb-6"
@@ -560,20 +560,20 @@ const ExperimentDetail: React.FC = () => {
           {/* 左侧列 */}
           <div className="space-y-4">
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>实验名称：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Experiment name:</span>
               <span className="text-base text-gray-900" style={{ wordBreak: 'break-word' }}>{detail?.name || '-'}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>描述：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Description:</span>
               <span className="text-base text-gray-900" style={{ wordBreak: 'break-word' }}>{detail?.description || '-'}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>评测集：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Evaluation dataset:</span>
               <span className="text-base text-gray-900" style={{ wordBreak: 'break-word' }}>{detail?.dataset?.name || '-'}</span>
             </div>
             {/* 评估器字段和内容展示在一行 */}
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>评估器：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Evaluators:</span>
               <div>
                 {detail?.evaluators && detail?.evaluators?.length > 0 ? (
                   detail?.evaluators.map((evaluator, index) => (
@@ -591,23 +591,23 @@ const ExperimentDetail: React.FC = () => {
           {/* 右侧列 */}
           <div className="space-y-4">
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>状态：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Status:</span>
               <span className="text-base">{detail && renderStatusTag(detail.status)}</span>
             </div>
             {/* <div className="flex items-center">
-              <span className="text-sm font-medium" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>创建人：</span>
+              <span className="text-sm font-medium" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Created by: </span>
               <span className="text-base text-gray-900">{detail.creator}</span>
             </div> */}
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>评测对象：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Evaluation target:</span>
               <span className="text-base text-gray-900" style={{ wordBreak: 'break-word' }}>{detail?.evaluationObject?.type || '-'}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>更新时间：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Updated at:</span>
               <span className="text-base text-gray-900">{detail && formatDateTime(detail.startTime)}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>创建时间：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Created at:</span>
               <span className="text-base text-gray-900">{detail && formatDateTime(detail.createTime)}</span>
             </div>
           </div>
@@ -627,7 +627,7 @@ const ExperimentDetail: React.FC = () => {
                 }`}
                 onClick={() => setActiveTab('overview')}
               >
-                概览
+                Overview
               </div>
               <div 
                 className={`pb-2 cursor-pointer font-medium ${
@@ -649,7 +649,7 @@ const ExperimentDetail: React.FC = () => {
                   }
                 }}
               >
-                评测结果
+                Evaluation results
               </div>
             </div>
           </div>
@@ -659,7 +659,7 @@ const ExperimentDetail: React.FC = () => {
             <>
               {/* 评估器结果概览 */}
               <div className="mb-6">
-                <h3 className="text-lg font-medium mb-4">评估器结果概览</h3>
+                <h3 className="text-lg font-medium mb-4">Evaluator results overview</h3>
                 <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {detail?.evaluators && detail.evaluators.length > 0 ? (
                     detail.evaluators.map((evaluator, index) => {
@@ -685,7 +685,7 @@ const ExperimentDetail: React.FC = () => {
                           <div className="flex justify-between items-start mb-4">
                             <div>
                               <h4 className="text-base font-medium text-gray-900 mb-1">{evaluator.name}</h4>
-                              <p className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>评估器描述</p>
+                              <p className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Evaluator description</p>
                             </div>
                             <Tag color="blue">{evaluator.version}</Tag>
                           </div>
@@ -693,7 +693,7 @@ const ExperimentDetail: React.FC = () => {
                           <div className="space-y-3">
                             <div>
                               <div className="flex justify-between items-center mb-1">
-                                <span className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>完成进度</span>
+                                <span className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Completion progress</span>
                                 <span className="text-sm font-medium">{overview.completeItemsCount}/{overview.totalItemsCount || evaluator.dataCount}</span>
                               </div>
                               <Progress percent={progressPercent} strokeColor="#1677ff" size="small" />
@@ -703,12 +703,12 @@ const ExperimentDetail: React.FC = () => {
                             </div>
                             
                             <div className="flex justify-between items-center">
-                              <span className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>平均得分</span>
+                              <span className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Average score</span>
                               <span className={`text-lg font-semibold ${scoreColor}`}>{overview.averageScore.toFixed(2)}</span>
                             </div>
                             
                             <div className="text-xs" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>
-                              基于 {overview.completeItemsCount} 条已完成评估
+                              Based on {overview.completeItemsCount} completed evaluations
                             </div>
                           </div>
                         </Card>
@@ -716,7 +716,7 @@ const ExperimentDetail: React.FC = () => {
                     })
                   ) : (
                     <div className="col-span-full text-center py-8 text-gray-500">
-                      暂无评估器数据
+                      No evaluator data available
                     </div>
                   )}
                 </div>
@@ -752,7 +752,7 @@ const ExperimentDetail: React.FC = () => {
                   {/* 如果没有评估器数据，不显示任何Tab */}
                   {(!detail?.evaluators || detail.evaluators.length === 0) && (
                     <div className="text-gray-500 py-2">
-                      暂无评估器数据
+                      No evaluator data available
                     </div>
                   )}
                 </div>
@@ -793,13 +793,13 @@ const ExperimentDetail: React.FC = () => {
                         <div className="text-base font-medium mb-2">{currentEvaluator.name}</div>
                         <div className="flex items-center space-x-6 text-sm">
                           <div>
-                            <span style={{ color: 'rgba(0, 0, 0, 0.45)' }}>平均得分：</span>
+                            <span style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Average score:</span>
                             <span className={`text-lg font-semibold ml-2 ${scoreColor}`}>
                               {overview.averageScore.toFixed(2)}
                             </span>
                           </div>
                           <div>
-                            <span style={{ color: 'rgba(0, 0, 0, 0.45)' }}>完成进度：</span>
+                            <span style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Completion progress:</span>
                             <span className="font-medium ml-2">
                               {overview.completeItemsCount}/{overview.totalItemsCount || currentEvaluator.dataCount}
                             </span>
@@ -857,7 +857,7 @@ const ExperimentDetail: React.FC = () => {
                   }}
                   columns={[
                     { 
-                      title: '输入', 
+                      title: 'Input', 
                       dataIndex: 'input', 
                       width: '25%',
                       ellipsis: true,
@@ -868,7 +868,7 @@ const ExperimentDetail: React.FC = () => {
                       )
                     },
                     { 
-                      title: '实际输出', 
+                      title: 'Actual output', 
                       dataIndex: 'actualOutput', 
                       width: '25%',
                       ellipsis: true,
@@ -879,7 +879,7 @@ const ExperimentDetail: React.FC = () => {
                       )
                     },
                     { 
-                      title: '参考输出', 
+                      title: 'Reference output', 
                       dataIndex: 'referenceOutput', 
                       width: '25%',
                       ellipsis: true,
@@ -890,7 +890,7 @@ const ExperimentDetail: React.FC = () => {
                       )
                     },
                     { 
-                      title: '分数', 
+                      title: 'Score', 
                       dataIndex: 'score', 
                       width: '10%',
                       render: (score: number) => {
@@ -903,7 +903,7 @@ const ExperimentDetail: React.FC = () => {
                       }
                     },
                     { 
-                      title: '理由', 
+                      title: 'Reason', 
                       dataIndex: 'reason', 
                       width: '15%',
                       ellipsis: true,

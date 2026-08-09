@@ -27,14 +27,14 @@ function AddFunctionModal(props: AddFunctionModalProps) {
         name: string; description: string; parameters: any;
       };
       if (functions.find(f => f.toolDefinition.name === name)) {
-        message.error('函数已存在')
+        message.error('Function already exists')
         return
       }
       onOk({ toolDefinition: { name, description, parameters: safeJSONStringify(parameters) }, output: defaultValue });
       setSchema('');
       setDefaultValue('');
     } catch (e) {
-      message.error('JSON 格式错误，请检查后重试');
+      message.error('Invalid JSON format. Please check and try again.');
     }
   }
 
@@ -75,7 +75,7 @@ function AddFunctionModal(props: AddFunctionModalProps) {
       destroyOnHidden
       open={open}
       onCancel={handleCancel}
-      title="新增函数"
+      title="Add Function"
       width={900}
       onOk={handleOk}
     >
@@ -83,7 +83,7 @@ function AddFunctionModal(props: AddFunctionModalProps) {
         <div style={{ width: "60%" }}>
           <div className="flex justify-between">
             <Typography.Paragraph className="flex items-center" style={{ marginBottom: 0 }} copyable={{ text: schema }} >SCHEMA</Typography.Paragraph>
-            <Button type="text" onClick={handleInsertTemplate}>插入模版</Button>
+            <Button type="text" onClick={handleInsertTemplate}>Insert Template</Button>
           </div>
           <div
             className="border border-solid border-[#d9d9d9] hover:border-[#4096ff] rounded-md mt-2 overflow-hidden"
@@ -101,12 +101,12 @@ function AddFunctionModal(props: AddFunctionModalProps) {
         </div>
         <div style={{ width: "40%" }}>
           <div className="flex justify-between">
-            <Typography.Paragraph className="flex items-center" style={{ marginBottom: 0 }} copyable={{ text: safeJSONStringify(defaultValue) }} >默认模拟值</Typography.Paragraph>
+            <Typography.Paragraph className="flex items-center" style={{ marginBottom: 0 }} copyable={{ text: safeJSONStringify(defaultValue) }} >Default Mock Value</Typography.Paragraph>
             <Button type="text" className="invisible"></Button>
           </div>
           <div className="border rounded-md mt-2">
             <Input.TextArea
-              placeholder="请输入模拟值来模拟函数返回"
+              placeholder="Enter a mock value to simulate the function response"
               value={defaultValue}
               onChange={(e) => setDefaultValue(e.target.value)}
               rows={23}

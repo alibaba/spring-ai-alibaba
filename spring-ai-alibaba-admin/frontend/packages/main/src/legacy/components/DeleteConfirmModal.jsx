@@ -23,7 +23,7 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
     if (confirmName === promptName) {
       onConfirm();
     } else {
-      message.error('输入的名称不匹配，请重新输入');
+      message.error('The entered name does not match. Please try again.');
     }
   };
 
@@ -42,7 +42,7 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
           }}>
             <ExclamationCircleOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />
           </div>
-          <Text strong style={{ fontSize: 18 }}>确认删除</Text>
+          <Text strong style={{ fontSize: 18 }}>Confirm Deletion</Text>
         </div>
       }
       open={true}
@@ -51,7 +51,7 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
       centered
       footer={[
         <Button key="cancel" onClick={onClose}>
-          取消
+          Cancel
         </Button>,
         <Button
           key="confirm"
@@ -60,7 +60,7 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
           disabled={confirmName !== (prompt.promptKey || prompt.name)}
           onClick={handleConfirm}
         >
-          确认删除
+          Delete
         </Button>
       ]}
       closeIcon={<CloseOutlined />}
@@ -70,7 +70,7 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
           message={
             <div>
               <Paragraph style={{ margin: 0, marginBottom: 8 }}>
-                你确定要删除Prompt吗？请输入 <Text strong style={{ color: '#ff4d4f' }}>{prompt.promptKey || prompt.name}</Text> 确认删除操作。
+                Are you sure you want to delete this prompt? Enter <Text strong style={{ color: '#ff4d4f' }}>{prompt.promptKey || prompt.name}</Text> to confirm.
               </Paragraph>
             </div>
           }
@@ -79,17 +79,17 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
         />
         
         <div>
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>请输入Prompt名称确认：</Text>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>Enter the prompt name to confirm:</Text>
           <Input
             value={confirmName}
             onChange={(e) => setConfirmName(e.target.value)}
-            placeholder={`输入"${prompt.promptKey || prompt.name}"确认删除`}
+            placeholder={`Enter "${prompt.promptKey || prompt.name}" to confirm deletion`}
             status={confirmName && confirmName !== (prompt.promptKey || prompt.name) ? 'error' : undefined}
             size="large"
           />
           {confirmName && confirmName !== (prompt.promptKey || prompt.name) && (
             <Text type="danger" style={{ fontSize: '12px', marginTop: 4, display: 'block' }}>
-              输入的名称与 Prompt 名称不匹配
+              The entered name does not match the prompt name.
             </Text>
           )}
         </div>

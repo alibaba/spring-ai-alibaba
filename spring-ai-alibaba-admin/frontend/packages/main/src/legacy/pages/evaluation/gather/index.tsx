@@ -16,7 +16,7 @@ const formatDateTime = (dateTimeString: string) => {
     if (!dateTimeString) return '-';
     try {
         const date = new Date(dateTimeString);
-        return date.toLocaleString('zh-CN', {
+        return date.toLocaleString('en-US', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -89,10 +89,10 @@ const EvaluationGather = () => {
                     current: responseData.pageNumber || pagination.current
                 }));
             } else {
-                throw new Error(response.message || '加载失败');
+                throw new Error(response.message || 'Failed to load');
             }
         } catch (error) {
-            handleApiError(error, '获取评测集列表失败');
+            handleApiError(error, 'Failed to fetch evaluation sets');
             // 发生错误时设置为空列表
             setDataSource([]);
             setPagination(prev => ({
@@ -144,18 +144,18 @@ const EvaluationGather = () => {
     // 删除评测集
     const handleDeleteDataset = async (record: DatasetRecord) => {
         Modal.confirm({
-            title: '确认删除',
-            content: `确定要删除评测集 "${record.name}" 吗？此操作不可恢复。`,
-            okText: '确认删除',
+            title: 'Confirm Delete',
+            content: `Are you sure you want to delete the evaluation set "${record.name}"? This action cannot be undone.`,
+            okText: 'Delete',
             okType: 'danger',
-            cancelText: '取消',
+            cancelText: 'Cancel',
             onOk: async () => {
                 try {
                     await API.deleteDataset({ datasetId: record.id });
-                    notifySuccess({ message: '评测集已删除' });
+                    notifySuccess({ message: 'Evaluation set deleted' });
                     fetchDatasets();
                 } catch (error) {
-                    handleApiError(error, '删除评测集失败');
+                    handleApiError(error, 'Failed to delete evaluation set');
                 }
             }
         });
@@ -163,7 +163,7 @@ const EvaluationGather = () => {
 
     const columns = [
         {
-            title: '评测集名称',
+            title: 'Evaluation Set Name',
             dataIndex: 'name',
             key: 'name',
             render: (text: string, record: DatasetRecord) => (
@@ -176,7 +176,7 @@ const EvaluationGather = () => {
             )
         },
         {
-            title: '描述',
+            title: 'Description',
             dataIndex: 'description',
             key: 'description',
             ellipsis: {
@@ -189,7 +189,7 @@ const EvaluationGather = () => {
             ),
         },
         {
-            title: '版本',
+            title: 'Version',
             dataIndex: 'version',
             key: 'version',
             render: (version: string) => (
@@ -203,7 +203,7 @@ const EvaluationGather = () => {
         //     width: 100
         // },
         {
-            title: '数据量',
+            title: 'Data Count',
             dataIndex: 'dataCount',
             key: 'dataCount',
             render: (count: number) => (
@@ -213,32 +213,32 @@ const EvaluationGather = () => {
             )
         },
         {
-            title: '创建时间',
+            title: 'Created At',
             dataIndex: 'createTime',
             key: 'createTime',
             render: (text: string) => formatDateTime(text)
         },
         {
-            title: '更新时间',
+            title: 'Updated At',
             dataIndex: 'updateTime',
             key: 'updateTime',
             render: (text: string) => formatDateTime(text)
         },
         {
-            title: '操作',
+            title: 'Actions',
             key: 'action',
             width: 120,
             fixed: 'right' as const,
             render: (_: any, record: DatasetRecord) => (
                 <Space size="middle">
-                    <Tooltip title="详情">
+                    <Tooltip title="Details">
                         <Button
                             type="link"
                             icon={<EyeOutlined />}
                             onClick={() => handleViewDataset(record)}
                         />
                     </Tooltip>
-                    <Tooltip title="删除">
+                    <Tooltip title="Delete">
                         <Button
                             type="link"
                             icon={<DeleteOutlined />}
@@ -257,14 +257,14 @@ const EvaluationGather = () => {
         <div className="evaluation-gather-page p-8 fade-in">
             {/* 页面标题 */}
             <div className="mb-8">
-                <Title level={2} style={{ marginBottom: 8 }}>评测集管理</Title>
+                <Title level={2} style={{ marginBottom: 8 }}>Evaluation Set Management</Title>
             </div>
 
             {/* 搜索区域 */}
             <Card className='mb-4'>
                 <div className="flex gap-4 justify-between" style={{flexWrap: 'wrap'}}>
                     <Input.Search
-                        placeholder="搜索名称"
+                        placeholder="Search by name"
                         allowClear
                         style={{ width: 280 }}
                         className='mr-4'
@@ -273,7 +273,7 @@ const EvaluationGather = () => {
                         onSearch={handleSearch}
                     />
                     {/* <Input
-                        placeholder="搜索创建人"
+                        placeholder="Search by creator"
                         allowClear
                         style={{ width: 280 }}
                         value={searchCreator}
@@ -290,7 +290,7 @@ const EvaluationGather = () => {
                         icon={<PlusOutlined />}
                         onClick={handleCreateDataset}
                     >
-                        创建评测集
+                        Create Evaluation Set
                     </Button>
                 </div>
             </Card>
@@ -317,7 +317,7 @@ const EvaluationGather = () => {
 
             {/* 创建评测集侧滑面板 */}
             <Drawer
-                title="创建评测集"
+                title="Create Evaluation Set"
                 placement="right"
                 width="90%"
                 open={showCreateDrawer}

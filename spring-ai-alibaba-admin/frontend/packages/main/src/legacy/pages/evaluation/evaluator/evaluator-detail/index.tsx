@@ -49,7 +49,7 @@ const formatDateTime = (dateTimeString: string) => {
   if (!dateTimeString) return '-';
   try {
     const date = new Date(dateTimeString);
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString('en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -157,7 +157,7 @@ function EvaluatorDetail() {
       const evaluatorResponse = await API.getEvaluator({ id: parseInt(id) });
 
       if (evaluatorResponse.code !== 200) {
-        throw new Error(evaluatorResponse.message || '获取评估器详情失败');
+        throw new Error(evaluatorResponse.message || 'Failed to load evaluator details');
       }
 
       const evaluatorData = evaluatorResponse.data;
@@ -187,9 +187,9 @@ function EvaluatorDetail() {
       // 配置表单将在 useEffect 中设置，以便使用正确的模型配置
 
     } catch (err: any) {
-      console.error('加载评估器详情失败:', err);
-      handleApiError(err, '加载评估器详情');
-      setError(err.message || '加载失败，请稍后重试');
+      console.error('Failed to load evaluator details:', err);
+      handleApiError(err, 'Load evaluator details');
+      setError(err.message || 'Load failed. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -216,11 +216,11 @@ function EvaluatorDetail() {
           total: responseData.totalCount || 0
         }));
       } else {
-        throw new Error(response.message || '获取版本列表失败');
+        throw new Error(response.message || 'Failed to get version list');
       }
     } catch (err: any) {
-      console.error('加载版本列表失败:', err);
-      handleApiError(err, '加载版本列表');
+      console.error('Failed to load version list:', err);
+      handleApiError(err, 'Load version list');
     } finally {
       setVersionsLoading(false);
     }
@@ -241,7 +241,7 @@ function EvaluatorDetail() {
       });
 
       if (response.code === 200) {
-        notifySuccess({ message: '评估器信息更新成功' });
+        notifySuccess({ message: 'Evaluator information updated successfully' });
         setEvaluator(prev => ({
           ...prev!,
           ...values,
@@ -249,13 +249,13 @@ function EvaluatorDetail() {
         }));
         setIsEditing(false);
       } else {
-        throw new Error(response.message || '更新失败');
+        throw new Error(response.message || 'Update failed');
       }
     } catch (error: any) {
       if (error.errorFields) {
-        message.error('请检查表单填写是否正确');
+        message.error('Please check that the form is completed correctly');
       } else {
-        handleApiError(error, '更新评估器信息');
+        handleApiError(error, 'Update evaluator information');
       }
     } finally {
       setEditLoading(false);
@@ -270,11 +270,11 @@ function EvaluatorDetail() {
       if (response.code === 200) {
         setTemplates(response.data.pageItems || []);
       } else {
-        throw new Error(response.message || '获取模板列表失败');
+        throw new Error(response.message || 'Failed to get template list');
       }
     } catch (error: any) {
-      console.error('加载模板列表失败:', error);
-      handleApiError(error, '加载模板列表');
+      console.error('Failed to load template list:', error);
+      handleApiError(error, 'Load template list');
     } finally {
       setTemplatesLoading(false);
     }
@@ -288,11 +288,11 @@ function EvaluatorDetail() {
       if (response.code === 200) {
         setSelectedTemplateDetail(response.data);
       } else {
-        throw new Error(response.message || '获取模板详情失败');
+        throw new Error(response.message || 'Failed to get template details');
       }
     } catch (error: any) {
-      console.error('加载模板详情失败:', error);
-      handleApiError(error, '加载模板详情');
+      console.error('Failed to load template details:', error);
+      handleApiError(error, 'Load template details');
     } finally {
       setTemplateDetailLoading(false);
     }
@@ -326,7 +326,7 @@ function EvaluatorDetail() {
 
         setModelConf(otherConfig);
       } catch (error) {
-        console.warn('解析模板模型配置失败:', error);
+        console.warn('Failed to parse template model configuration:', error);
       }
     }
 
@@ -344,7 +344,7 @@ function EvaluatorDetail() {
     setSelectedTemplateDetail(null);
 
     // 显示成功消息
-    message.success('模板导入成功');
+    message.success('Template imported successfully');
   };
 
   // 打开模板导入弹窗
@@ -464,7 +464,7 @@ function EvaluatorDetail() {
       // 检查版本号是否已存在
       const existingVersion = versions.find(v => v.version === values.version);
       if (existingVersion) {
-        message.error(`版本号 ${values.version} 已存在，请使用其他版本号`);
+        message.error(`Version ${values.version} already exists. Please use a different version number.`);
         return;
       }
 
@@ -486,19 +486,19 @@ function EvaluatorDetail() {
       });
 
       if (response.code === 200) {
-        message.success(`版本 ${values.version} 发布成功`);
+        message.success(`Version ${values.version} published successfully`);
         setShowPublishModal(false);
         loadVersions(); // 重新加载版本列表
         loadEvaluatorDetail(); // 重新加载评估器详情
       } else {
-        throw new Error(response.message || '发布失败');
+        throw new Error(response.message || 'Publish failed');
       }
     } catch (error: any) {
       if (error.errorFields) {
         // 表单验证错误，不需要额外处理
         return;
       }
-      handleApiError(error, '发布新版本');
+      handleApiError(error, 'Publish new version');
     } finally {
       setPublishLoading(false);
     }
@@ -659,19 +659,19 @@ function EvaluatorDetail() {
   // 版本记录表格列配置
   const versionColumns = [
     {
-      title: '版本号',
+      title: 'Version',
       dataIndex: 'version',
       key: 'version',
       render: (text: string) => <Tag color="blue">{text}</Tag>
     },
     {
-      title: '描述',
+      title: 'Description',
       dataIndex: 'description',
       key: 'description',
       render: (text: string) => text || '-'
     },
     {
-      title: '裁判模型',
+      title: 'Judge Model',
       dataIndex: 'modelConfig',
       key: 'modelConfig',
       render: (modelConfig: string) => {
@@ -680,7 +680,7 @@ function EvaluatorDetail() {
       }
     },
     {
-      title: '创建时间',
+      title: 'Created At',
       dataIndex: 'createTime',
       key: 'createTime',
       render: (text: string) => formatDateTime(text)
@@ -735,7 +735,7 @@ function EvaluatorDetail() {
         <div className="flex items-center justify-center h-64">
           <Spin size="large">
             <div className="text-center pt-4">
-              <p className="text-gray-600 mt-4">加载评估器详情中...</p>
+              <p className="text-gray-600 mt-4">Loading evaluator details...</p>
             </div>
           </Spin>
         </div>
@@ -747,17 +747,17 @@ function EvaluatorDetail() {
     return (
       <div className="p-6">
         <Alert
-          message="加载失败"
-          description={error || '评估器不存在'}
+          message="Load Failed"
+          description={error || 'Evaluator not found'}
           type="error"
           showIcon
           action={
             <Space>
               <Button size="small" onClick={loadEvaluatorDetail}>
-                重试
+                Retry
               </Button>
               <Button size="small" onClick={() => navigate('/evaluation-evaluator')}>
-                返回列表
+                Back to List
               </Button>
             </Space>
           }
@@ -776,14 +776,14 @@ function EvaluatorDetail() {
             onClick={() => navigate('/evaluation-evaluator')}
             size="large"
           />
-          <Title level={2} className="m-0">评估器详情</Title>
+          <Title level={2} className="m-0">Evaluator Details</Title>
       </div>
 
       {/* 评估器基础信息 */}
       <Card
         title={
           <div className="flex justify-between items-center">
-            <span>基础信息</span>
+            <span>Basic Information</span>
             <div>
               {isEditing ? (
                 <Space>
@@ -798,7 +798,7 @@ function EvaluatorDetail() {
                     }}
                     icon={<CloseOutlined />}
                   >
-                    取消
+                    Cancel
                   </Button>
                   <Button
                     type="primary"
@@ -807,7 +807,7 @@ function EvaluatorDetail() {
                     onClick={handleSaveBasicInfo}
                     icon={<SaveOutlined />}
                   >
-                    保存
+                    Save
                   </Button>
                 </Space>
               ) : (
@@ -816,7 +816,7 @@ function EvaluatorDetail() {
                   onClick={() => setIsEditing(true)}
                   icon={<EditOutlined />}
                 >
-                  编辑
+                  Edit
                 </Button>
               )}
             </div>
@@ -829,24 +829,24 @@ function EvaluatorDetail() {
             <Row gutter={24}>
               <Col span={12}>
                 <Form.Item
-                  label="名称"
+                  label="Name"
                   name="name"
                   rules={[
-                    { required: true, message: '请输入评估器名称' },
-                    { max: 50, message: '名称不能超过50个字符' }
+                    { required: true, message: 'Please enter an evaluator name' },
+                    { max: 50, message: 'Name cannot exceed 50 characters' }
                   ]}
                 >
-                  <Input placeholder="输入评估器名称" />
+                  <Input placeholder="Enter an evaluator name" />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
-                  label="描述"
+                  label="Description"
                   name="description"
-                  rules={[{ max: 500, message: '描述不能超过500个字符' }]}
+                  rules={[{ max: 500, message: 'Description cannot exceed 500 characters' }]}
                 >
                   <TextArea
-                    placeholder="输入评估器描述（可选）"
+                    placeholder="Enter an evaluator description (optional)"
                     rows={3}
                     showCount
                     maxLength={500}
@@ -860,7 +860,7 @@ function EvaluatorDetail() {
             <Col xs={24} sm={12} lg={6}>
               <div>
                 <Text type="secondary" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '12px' }}>
-                  评估器名称
+                  Evaluator Name
                 </Text>
                 <div style={{ marginTop: 4 }}>
                   <Text strong style={{ fontSize: '16px' }}>{evaluator.name}</Text>
@@ -871,13 +871,13 @@ function EvaluatorDetail() {
             <Col xs={24} sm={12} lg={6}>
               <div>
                 <Text type="secondary" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '12px' }}>
-                  当前版本
+                  Current Version
                 </Text>
                 <div style={{ marginTop: 4 }}>
                   {evaluator.latestVersion ? (
                     <Tag color="blue">{evaluator.latestVersion}</Tag>
                   ) : (
-                    <Tag color="default">暂无版本</Tag>
+                    <Tag color="default">No Versions</Tag>
                   )}
                 </div>
               </div>
@@ -886,7 +886,7 @@ function EvaluatorDetail() {
             <Col xs={24} sm={12} lg={6}>
               <div>
                 <Text type="secondary" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '12px' }}>
-                  当前模型
+                  Current Model
                 </Text>
                 <div style={{ marginTop: 4 }}>
                   {(() => {
@@ -904,7 +904,7 @@ function EvaluatorDetail() {
         {!isEditing && evaluator.description && (
           <div style={{ marginTop: 16 }}>
             <Text type="secondary" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '12px' }}>
-              描述
+              Description
             </Text>
             <div style={{ marginTop: 8 }}>
               <Text>{evaluator.description}</Text>
@@ -918,12 +918,12 @@ function EvaluatorDetail() {
             <Row gutter={[16, 8]}>
               <Col span={12}>
                 <Text type="secondary">
-                  创建时间：{formatDateTime(evaluator.createTime)}
+                  Created At: {formatDateTime(evaluator.createTime)}
                 </Text>
               </Col>
               <Col span={12}>
                 <Text type="secondary">
-                  更新时间：{formatDateTime(evaluator.updateTime)}
+                  Updated At: {formatDateTime(evaluator.updateTime)}
                 </Text>
               </Col>
             </Row>
@@ -939,30 +939,30 @@ function EvaluatorDetail() {
           items={[
             {
               key: 'config',
-              label: '模型配置',
+              label: 'Model Configuration',
               children: (
                 <div>
                   <div className="flex justify-between items-center mb-4">
-                    <Title level={4} className="m-0">模型配置</Title>
+                    <Title level={4} className="m-0">Model Configuration</Title>
                     <Space>
-                      <Button onClick={handleOpenTemplateModal}>从模版导入</Button>
-                      <Tooltip title="跳转至调试页面">
+                      <Button onClick={handleOpenTemplateModal}>Import from Template</Button>
+                      <Tooltip title="Open the debug page">
                         <Button
                           icon={<BugOutlined />}
                           onClick={handleDebug}
                           disabled={!canPublishVersion}
                         >
-                          调试
+                          Debug
                         </Button>
                       </Tooltip>
-                      <Tooltip title={canPublishVersion ? "发布新版本" : "System Prompt 中必须包含变量才能发布版本"}>
+                      <Tooltip title={canPublishVersion ? "Publish New Version" : "The System Prompt must contain variables before you can publish a version"}>
                         <Button
                           type="primary"
                           icon={<RocketOutlined />}
                           onClick={handlePublishVersion}
                           disabled={!canPublishVersion}
                         >
-                          发布新版本
+                          Publish New Version
                         </Button>
                       </Tooltip>
                     </Space>
@@ -971,8 +971,8 @@ function EvaluatorDetail() {
                   <Form form={configForm} layout="vertical">
                     <Row gutter={24}>
                       <Col span={24}>
-                        <Form.Item label="裁判模型" name="modelId" required>
-                          <Select placeholder="选择模型" onChange={handleModelChange}>
+                        <Form.Item label="Judge Model" name="modelId" required>
+                          <Select placeholder="Select a model" onChange={handleModelChange}>
                             {models.map(model => (
                               <Option key={model.id} value={model.id}>
                                 {model.name}
@@ -1014,7 +1014,7 @@ function EvaluatorDetail() {
                           label={
                             <div className="flex items-center gap-2">
                               <span>System Prompt</span>
-                              <Tooltip title="使用 {{variable_name}} 格式定义变量">
+                              <Tooltip title="Define variables using the {{variable_name}} format">
                                 <InfoCircleOutlined className="text-gray-400" />
                               </Tooltip>
                             </div>
@@ -1023,7 +1023,7 @@ function EvaluatorDetail() {
                         >
                           <TextArea
                             rows={3}
-                            placeholder="输入系统提示词，使用 {{variable_name}} 定义变量"
+                            placeholder="Enter the system prompt. Use {{variable_name}} to define variables."
                             onChange={(e) => {
                               // 实时显示检测到的变量
                               const newPrompt = e.target.value;
@@ -1054,7 +1054,7 @@ function EvaluatorDetail() {
                                       <div className="flex items-center gap-2 mb-2">
                                         <InfoCircleOutlined className="text-blue-500" />
                                         <span className="text-sm font-medium text-blue-700">
-                                          检测到的变量 ({variableNames.length} 个)
+                                          Detected Variables ({variableNames.length})
                                         </span>
                                       </div>
                                       <div className="flex flex-wrap gap-2">
@@ -1072,8 +1072,8 @@ function EvaluatorDetail() {
                                 return (
                                   <div className="mb-4">
                                     <Alert
-                                      message="未检测到变量"
-                                      description="System Prompt 中未检测到变量（格式：{{变量名}}）。需要添加变量才能发布版本。"
+                                      message="No Variables Detected"
+                                      description="No variables were detected in the System Prompt (format: {{variable_name}}). Add variables before publishing a version."
                                       type="warning"
                                       showIcon
                                       icon={<ExclamationCircleOutlined />}
@@ -1093,7 +1093,7 @@ function EvaluatorDetail() {
             },
             {
               key: 'versions',
-              label: '版本记录',
+              label: 'Version History',
               children: (
                 <Table
                   columns={versionColumns}
@@ -1110,13 +1110,13 @@ function EvaluatorDetail() {
             },
             {
               key: 'experiments',
-              label: '关联实验',
+              label: 'Related Experiments',
               children: (
                 <div>
                   {/* <Row className="mb-4">
                     <Col span={6}>
                       <Input.Search
-                        placeholder="搜索实验"
+                        placeholder="Search experiments"
                         onSearch={handleExperimentSearch}
                       />
                     </Col>
@@ -1132,7 +1132,7 @@ function EvaluatorDetail() {
                     }}
                     columns={[
                       {
-                        title: '版本号',
+                        title: 'Version',
                         dataIndex: 'version',
                         width: '15%',
                         render: (version: string) => (
@@ -1140,7 +1140,7 @@ function EvaluatorDetail() {
                         )
                       },
                       {
-                        title: '实验名称',
+                        title: 'Experiment Name',
                         dataIndex: 'name',
                         width: '10%',
                         render: (name: string, record: any) => (
@@ -1156,7 +1156,7 @@ function EvaluatorDetail() {
                         )
                       },
                       {
-                        title: "描述",
+                        title: "Description",
                         dataIndex: 'description',
                         width: '25%',
                         ellipsis: true,
@@ -1167,26 +1167,26 @@ function EvaluatorDetail() {
                         )
                       },
                       {
-                        title: '状态',
+                        title: 'Status',
                         dataIndex: 'status',
                         width: '15%',
                         render: (status: string) => {
                           const statusConfig = {
-                            'RUNNING': { color: 'processing', text: '运行中' },
-                            'COMPLETED': { color: 'success', text: '已完成' },
-                            'FAILED': { color: 'error', text: '已停止' },
-                            'WAITING': { color: 'default', text: '等待中' },
-                            '运行中': { color: 'processing', text: '运行中' },
-                            '已完成': { color: 'success', text: '已完成' },
-                            '已停止': { color: 'error', text: '已停止' },
-                            '等待中': { color: 'default', text: '等待中' }
+                            'RUNNING': { color: 'processing', text: 'Running' },
+                            'COMPLETED': { color: 'success', text: 'Completed' },
+                            'FAILED': { color: 'error', text: 'Stopped' },
+                            'WAITING': { color: 'default', text: 'Waiting' },
+                            '运行中': { color: 'processing', text: 'Running' },
+                            '已完成': { color: 'success', text: 'Completed' },
+                            '已停止': { color: 'error', text: 'Stopped' },
+                            '等待中': { color: 'default', text: 'Waiting' }
                           };
-                          const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['等待中'];
+                          const config = statusConfig[status as keyof typeof statusConfig] || statusConfig['WAITING'];
                           return <Tag color={config.color}>{config.text}</Tag>;
                         }
                       },
                       {
-                        title: '创建时间',
+                        title: 'Created At',
                         dataIndex: 'createTime',
                         width: '30%',
                         render: (text: string) => formatDateTime(text)
@@ -1205,7 +1205,7 @@ function EvaluatorDetail() {
         title={
           <div className="flex items-center gap-3">
             <RocketOutlined className="text-blue-500" />
-            <span>发布新版本</span>
+            <span>Publish New Version</span>
           </div>
         }
         open={showPublishModal}
@@ -1215,8 +1215,8 @@ function EvaluatorDetail() {
         }}
         onOk={handlePublishConfirm}
         confirmLoading={publishLoading}
-        okText="发布版本"
-        cancelText="取消"
+        okText="Publish Version"
+        cancelText="Cancel"
         width={520}
         centered
       >
@@ -1226,28 +1226,28 @@ function EvaluatorDetail() {
             layout="vertical"
           >
             <Form.Item
-              label="版本号"
+              label="Version"
               name="version"
               rules={[
-                { required: true, message: '请输入版本号' },
+                { required: true, message: 'Please enter a version number' },
                 {
                   pattern: /^\d+\.\d+\.\d+$/,
-                  message: '版本号格式应为 x.y.z (如: 1.0.0)'
+                  message: 'The version format must be x.y.z (for example, 1.0.0)'
                 }
               ]}
             >
-              <Input placeholder="请输入版本号，如: 1.0.0" />
+              <Input placeholder="Enter a version number, for example: 1.0.0" />
             </Form.Item>
 
             <Form.Item
-              label="版本描述"
+              label="Version Description"
               name="description"
               rules={[
-                { max: 200, message: '描述不能超过200个字符' }
+                { max: 200, message: 'Description cannot exceed 200 characters' }
               ]}
             >
               <TextArea
-                placeholder="请输入版本描述（可选）"
+                placeholder="Enter a version description (optional)"
                 rows={3}
                 showCount
                 maxLength={200}
@@ -1265,8 +1265,8 @@ function EvaluatorDetail() {
               <InfoCircleOutlined className="text-blue-500 text-xl" />
             </div>
             <div>
-              <Title level={3} className="m-0">从模板导入</Title>
-              <Text type="secondary">选择一个预设模板快速配置评估器</Text>
+              <Title level={3} className="m-0">Import from Template</Title>
+              <Text type="secondary">Select a preset template to quickly configure the evaluator</Text>
             </div>
           </div>
         }
@@ -1284,7 +1284,7 @@ function EvaluatorDetail() {
             setSelectedTemplateId(null);
             setSelectedTemplateDetail(null);
           }}>
-            取消
+            Cancel
           </Button>,
           <Button
             key="import"
@@ -1293,7 +1293,7 @@ function EvaluatorDetail() {
             onClick={handleTemplateImport}
             icon={<SaveOutlined />}
           >
-            导入模板
+            Import Template
           </Button>
         ]}
       >
@@ -1303,8 +1303,8 @@ function EvaluatorDetail() {
             <Card
               title={
                 <div className="flex items-center gap-2">
-                  <span>选择模板</span>
-                  <Text type="secondary">({templates.length} 个模板)</Text>
+                  <span>Select a Template</span>
+                  <Text type="secondary">({templates.length} templates)</Text>
                 </div>
               }
               size="small"
@@ -1338,7 +1338,7 @@ function EvaluatorDetail() {
                   </Row>
                 ) : (
                   <div className="text-center py-16">
-                    <Text type="secondary">暂无模板数据</Text>
+                    <Text type="secondary">No template data</Text>
                   </div>
                 )}
               </Spin>
@@ -1351,7 +1351,7 @@ function EvaluatorDetail() {
               title={
                 <div className="flex items-center gap-2">
                   <InfoCircleOutlined />
-                  <span>模板预览</span>
+                  <span>Template Preview</span>
                 </div>
               }
               size="small"
@@ -1360,18 +1360,18 @@ function EvaluatorDetail() {
                 {selectedTemplateDetail ? (
                   <div className="space-y-4">
                     <div>
-                      <Text strong className="block mb-1">模板名称</Text>
+                      <Text strong className="block mb-1">Template Name</Text>
                       <Text>{selectedTemplateDetail.templateDesc}</Text>
                     </div>
 
                     <div>
-                      <Text strong className="block mb-1">模板Key</Text>
+                      <Text strong className="block mb-1">Template Key</Text>
                       <Text>{selectedTemplateDetail.evaluatorTemplateKey}</Text>
                     </div>
 
                     {selectedTemplateDetail.template && (
                       <div>
-                        <Text strong className="block mb-2">Prompt 内容</Text>
+                        <Text strong className="block mb-2">Prompt Content</Text>
                         <div className="bg-gray-50 p-3 rounded border text-xs font-mono max-h-48 overflow-y-auto whitespace-pre-wrap">
                           {selectedTemplateDetail.template}
                         </div>
@@ -1380,7 +1380,7 @@ function EvaluatorDetail() {
 
                     {selectedTemplateDetail.modelConfig && (
                       <div>
-                        <Text strong className="block mb-2">模型配置</Text>
+                        <Text strong className="block mb-2">Model Configuration</Text>
                         <div className="bg-gray-50 p-3 rounded border text-xs font-mono">
                           {JSON.stringify(JSON.parse(selectedTemplateDetail.modelConfig), null, 2)}
                         </div>
@@ -1389,7 +1389,7 @@ function EvaluatorDetail() {
 
                     {selectedTemplateDetail.variables && (
                       <div>
-                        <Text strong className="block mb-2">变量</Text>
+                        <Text strong className="block mb-2">Variables</Text>
                         <div className="bg-gray-50 p-3 rounded border text-xs font-mono">
                           {selectedTemplateDetail.variables}
                         </div>
@@ -1400,7 +1400,7 @@ function EvaluatorDetail() {
                   <div className="text-center py-12">
                     <InfoCircleOutlined className="text-4xl text-gray-300 mb-4" />
                     <br />
-                    <Text type="secondary">点击左侧模板查看详情</Text>
+                    <Text type="secondary">Select a template on the left to view its details</Text>
                   </div>
                 )}
               </Spin>

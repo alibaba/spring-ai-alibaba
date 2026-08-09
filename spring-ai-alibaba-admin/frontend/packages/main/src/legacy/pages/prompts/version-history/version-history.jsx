@@ -80,7 +80,7 @@ const VersionHistoryPage = () => {
       // Load prompt basic info
       const promptResponse = await API.getPrompt({ promptKey });
       if (promptResponse.code !== 200) {
-        throw new Error(promptResponse.message || '获取 Prompt 信息失败');
+        throw new Error(promptResponse.message || 'Failed to get Prompt information');
       }
       setCurrentPrompt(promptResponse.data);
 
@@ -92,7 +92,7 @@ const VersionHistoryPage = () => {
       });
 
       if (versionsResponse.code !== 200) {
-        throw new Error(versionsResponse.message || '获取版本列表失败');
+        throw new Error(versionsResponse.message || 'Failed to get version list');
       }
 
       setVersions(versionsResponse.data.pageItems || []);
@@ -102,9 +102,9 @@ const VersionHistoryPage = () => {
         totalPage: versionsResponse.data.totalPage || 0,
       });
     } catch (err) {
-      console.error('加载数据失败:', err);
-      handleApiError(err, '加载版本数据');
-      setError(err.message || '加载失败，请稍后重试');
+      console.error('Failed to load data:', err);
+      handleApiError(err, 'Load version data');
+      setError(err.message || 'Loading failed. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -136,7 +136,7 @@ const VersionHistoryPage = () => {
       });
 
       if (response.code !== 200) {
-        throw new Error(response.message || '获取版本详情失败');
+        throw new Error(response.message || 'Failed to get version details');
       }
 
       const versionDetail = response.data;
@@ -175,8 +175,8 @@ const VersionHistoryPage = () => {
       setSelectedVersion(enhancedVersion);
       setShowVersionDetail(true);
     } catch (err) {
-      console.error('加载版本详情失败:', err);
-      handleApiError(err, '加载版本详情');
+      console.error('Failed to load version details:', err);
+      handleApiError(err, 'Load version details');
     } finally {
       setLoadingVersionDetail(false);
     }
@@ -205,7 +205,7 @@ const VersionHistoryPage = () => {
             size="large"
           >
             <div className="text-center pt-4">
-              <p className="text-gray-600 mt-4">加载版本数据中...</p>
+              <p className="text-gray-600 mt-4">Loading version data...</p>
             </div>
           </Spin>
         </div>
@@ -218,14 +218,14 @@ const VersionHistoryPage = () => {
       <div className="p-8 fade-in">
         <Result
           status="error"
-          title="加载版本数据失败"
+          title="Failed to load version data"
           subTitle={error}
           extra={[
             <Button type="primary" key="retry" onClick={() => loadPromptData()}>
-              重试
+              Retry
             </Button>,
             <Button key="back" onClick={() => navigate('/prompts')}>
-              返回列表
+              Back to list
             </Button>,
           ]}
         />
@@ -238,11 +238,11 @@ const VersionHistoryPage = () => {
       <div className="p-8 fade-in">
         <Result
           status="404"
-          title="Prompt 不存在"
-          subTitle="未找到指定的 Prompt，可能已被删除或不存在。"
+          title="Prompt not found"
+          subTitle="The requested Prompt was not found. It may have been deleted or does not exist."
           extra={
             <Button type="primary" onClick={() => navigate('/prompts')}>
-              返回列表
+              Back to list
             </Button>
           }
         />
@@ -251,7 +251,7 @@ const VersionHistoryPage = () => {
   }
 
   const handleVersionClick = (version) => {
-    // 点击版本行时加载并显示版本详情
+    // 点击版本行时加载并显示版本Details
     loadVersionDetail(version);
   };
 
@@ -267,7 +267,7 @@ const VersionHistoryPage = () => {
       ]);
 
       if (detail1Response.code !== 200 || detail2Response.code !== 200) {
-        throw new Error('获取版本详情失败');
+        throw new Error('Failed to get version details');
       }
 
       // 处理版本1数据
@@ -331,8 +331,8 @@ const VersionHistoryPage = () => {
       setSelectedVersions([enhancedVersion1, enhancedVersion2]);
       setShowCompare(true);
     } catch (err) {
-      console.error('加载版本对比数据失败:', err);
-      handleApiError(err, '加载版本对比数据');
+      console.error('Failed to load version comparison data:', err);
+      handleApiError(err, 'Load version comparison data');
     } finally {
       setLoadingVersionDetail(false);
     }
@@ -342,20 +342,20 @@ const VersionHistoryPage = () => {
     event.stopPropagation(); // 阻止事件冒泡到行点击
 
     if (selectedVersions.some(v => v.version === version.version)) {
-      // 取消选择
+      // 取消Select
       setSelectedVersions(prev => prev.filter(v => v.version !== version.version));
     } else {
       if (selectedVersions.length < 2) {
-        // 添加选择
+        // 添加Select
         const newSelection = [...selectedVersions, version];
         setSelectedVersions(newSelection);
 
-        // 如果选择了两个版本，加载详细信息并开始对比
+        // 如果Select了两个版本，加载详细信息并开始对比
         if (newSelection.length === 2) {
           loadVersionsAndCompare(newSelection[0], newSelection[1]);
         }
       } else {
-        // 已经选择了两个版本，替换第一个并开始对比
+        // 已经Select了两个版本，替换第一个并开始对比
         const newSelection = [selectedVersions[1], version];
         setSelectedVersions(newSelection);
         loadVersionsAndCompare(newSelection[0], newSelection[1]);
@@ -366,7 +366,7 @@ const VersionHistoryPage = () => {
   const handleVersionDetailCompare = async () => {
     if (!selectedVersion) return;
 
-    // 找到前一个版本 (按创建时间排序)
+    // 找到前一个版本 (按Created At排序)
     const sortedVersions = [...versions].sort((a, b) => a.createTime - b.createTime);
 
     const currentIndex = sortedVersions.findIndex(v => v.version === selectedVersion.version);
@@ -384,7 +384,7 @@ const VersionHistoryPage = () => {
         ]);
 
         if (prevDetailResponse.code !== 200) {
-          throw new Error('获取前版本详情失败');
+          throw new Error('Failed to get previous version details');
         }
 
         // 处理前版本数据
@@ -407,13 +407,13 @@ const VersionHistoryPage = () => {
         setShowVersionDetail(false);
         setShowCompare(true);
       } catch (err) {
-        console.error('加载版本对比数据失败:', err);
-        handleApiError(err, '加载版本对比数据');
+        console.error('Failed to load version comparison data:', err);
+        handleApiError(err, 'Load version comparison data');
       } finally {
         setLoadingVersionDetail(false);
       }
     } else {
-      notifyError({ message: '没有可对比的前版本' });
+      notifyError({ message: 'No previous version is available for comparison' });
     }
   };
 
@@ -425,7 +425,7 @@ const VersionHistoryPage = () => {
     console.log('目标窗口ID:', targetWindowId);
     console.log('当前 Prompt Key:', promptKey);
 
-    // 构建恢复URL，使用 promptKey 和 version
+    // 构建恢复URL，使用 promptKey and version
     let restoreUrl = `/prompt-detail?promptKey=${promptKey}&restoreVersionId=${selectedVersion.version}`;
     if (targetWindowId) {
       restoreUrl += `&targetWindowId=${targetWindowId}`;
@@ -433,10 +433,10 @@ const VersionHistoryPage = () => {
 
     console.log('=== 跳转URL ===', restoreUrl);
 
-    // 跳转到Prompt详情页面，并传递要恢复的版本信息和目标窗口ID
+    // 跳转到PromptDetails页面，并传递要恢复的版本信息和目标窗口ID
     navigate(restoreUrl);
 
-    // 关闭版本详情弹窗
+    // Close版本Details弹窗
     setShowVersionDetail(false);
   };
 
@@ -460,20 +460,20 @@ const VersionHistoryPage = () => {
                 onClick={() => navigate('/prompts')}
                 size="large"
               />
-              <Title level={1} style={{ margin: 0 }}>版本记录</Title>
+              <Title level={1} style={{ margin: 0 }}>Version History</Title>
             </div>
             <Paragraph style={{ margin: 0, color: '#595959' }}>
-              <Text strong>{currentPrompt.promptKey}</Text> 的版本发布记录
+              <Text strong>{currentPrompt.promptKey}</Text> version release history
             </Paragraph>
           </div>
         </div>
       </div>
 
-      {/* 操作提示 */}
+      {/* Actions提示 */}
       <Alert
         message={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text>勾选两个版本进行对比，或点击操作列的“详情”按钮查看版本详情</Text>
+            <Text>Select two versions to compare, or click Details in the Actions column to view version details.</Text>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {selectedVersions.length > 0 && (
                 <Button
@@ -481,7 +481,7 @@ const VersionHistoryPage = () => {
                   size="small"
                   onClick={clearSelection}
                 >
-                  清除选择 ({selectedVersions.length})
+                  Clear selection ({selectedVersions.length})
                 </Button>
               )}
             </div>
@@ -504,7 +504,7 @@ const VersionHistoryPage = () => {
           }))}
           columns={[
             {
-              title: '选择',
+              title: 'Select',
               key: 'select',
               width: 60,
               align: 'center',
@@ -520,44 +520,44 @@ const VersionHistoryPage = () => {
               )
             },
             {
-              title: '版本号',
+              title: 'Version',
               key: 'version',
               width: 150,
               render: (_, record) => (
                 <Space direction="vertical" size={4}>
                   <Tag color="blue">{record.version}</Tag>
                   {record.actualIndex === 0 && (
-                    <Tag color="success" size="small">当前版本</Tag>
+                    <Tag color="success" size="small">Current Version</Tag>
                   )}
                   {selectedVersions.some(v => v.version === record.version) && (
-                    <Tag color="blue" size="small" icon={<CheckCircleOutlined />}>已选择</Tag>
+                    <Tag color="blue" size="small" icon={<CheckCircleOutlined />}>Selected</Tag>
                   )}
                 </Space>
               )
             },
             {
-              title: '发布时间',
+              title: 'Published At',
               key: 'createTime',
               width: 150,
               render: (_, record) => formatTime(record.createTime)
             },
             {
-              title: '版本说明',
+              title: 'Version Description',
               key: 'description',
               width: 200,
               ellipsis: {
                 showTitle: false
               },
               render: (_, record) => (
-                <Tooltip title={record.versionDescription || record.cachedDetail?.description || '无说明'}>
+                <Tooltip title={record.versionDescription || record.cachedDetail?.description || 'No description'}>
                   <Text ellipsis>
-                    {record.versionDescription || record.cachedDetail?.description || '无说明'}
+                    {record.versionDescription || record.cachedDetail?.description || 'No description'}
                   </Text>
                 </Tooltip>
               )
             },
             // {
-            //   title: '模型配置',
+            //   title: 'Model Configuration',
             //   key: 'modelConfig',
             //   width: 180,
             //   render: (_, record) => {
@@ -565,7 +565,7 @@ const VersionHistoryPage = () => {
             //       return (
             //         <div>
             //           <div style={{ fontSize: '12px' }}>
-            //             <Text strong>模型：</Text>
+            //             <Text strong>Model: </Text>
             //             <Text style={{ marginLeft: 4 }}>{record.cachedDetail.modelConfig.modelId}</Text>
             //           </div>
             //           <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
@@ -599,20 +599,20 @@ const VersionHistoryPage = () => {
             //   }
             // },
             {
-              title: '状态',
+              title: 'Status',
               key: 'status',
               width: 120,
               render: (_, record) => {
                 if (record.status === 'release') {
                   return (
                     <Tag color="success" icon={<CheckCircleOutlined />}>
-                      正式版本
+                      Release
                     </Tag>
                   );
                 }
                 return (
                   <Tag color="warning" icon={<ExperimentOutlined />}>
-                    PRE版本
+                    Pre-release
                   </Tag>
                 );
               }
@@ -647,7 +647,7 @@ const VersionHistoryPage = () => {
             //   }
             // },
             {
-              title: '操作',
+              title: 'Actions',
               key: 'actions',
               width: 100,
               align: 'center',
@@ -660,9 +660,9 @@ const VersionHistoryPage = () => {
                     e.stopPropagation();
                     handleVersionClick(record);
                   }}
-                  title="查看详情"
+                  title="View details"
                 >
-                  详情
+                  Details
                 </Button>
               )
             }
@@ -671,10 +671,10 @@ const VersionHistoryPage = () => {
             emptyText: (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="暂无版本记录"
+                description="No version history yet"
               >
                 <Button type="primary" onClick={() => navigate(`/prompt-detail?promptKey=${promptKey}`)}>
-                  开始创建版本
+                  Create a version
                 </Button>
               </Empty>
             )
@@ -688,12 +688,12 @@ const VersionHistoryPage = () => {
         />
       </Card>
 
-      {/* 分页和底部操作区 */}
+      {/* 分页和底部Actions区 */}
       <Space direction="vertical" size={16} style={{ width: '100%', marginTop: 24 }}>
-        {/* 底部操作区 */}
+        {/* 底部Actions区 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text type="secondary">
-            共 {pagination.total} 个版本，按发布时间倒序排列
+            Total {pagination.total} versions, sorted by publish time in descending order
           </Text>
 
           <Space>
@@ -704,23 +704,23 @@ const VersionHistoryPage = () => {
                 loading={loadingVersionDetail}
                 onClick={() => loadVersionsAndCompare(selectedVersions[0], selectedVersions[1])}
               >
-                {loadingVersionDetail ? '加载中...' : '对比选中版本'}
+                {loadingVersionDetail ? 'Loading...' : 'Compare selected versions'}
               </Button>
             )}
             <div>
               {selectedVersions.length === 0 && (
-                <Text type="secondary">请选择两个版本进行对比</Text>
+                <Text type="secondary">Select two versions to compare</Text>
               )}
               {selectedVersions.length === 1 && (
-                <Text type="secondary">已选择1个版本，请再选择1个版本</Text>
+                <Text type="secondary">1 version selected. Select 1 more version.</Text>
               )}
               {selectedVersions.length === 2 && !loadingVersionDetail && (
-                <Text type="secondary">已选择版本 {selectedVersions[0].version} 和 {selectedVersions[1].version}</Text>
+                <Text type="secondary">Selected versions {selectedVersions[0].version} and {selectedVersions[1].version}</Text>
               )}
               {loadingVersionDetail && (
                 <Text type="secondary">
                   <LoadingOutlined style={{ marginRight: 8 }} />
-                  正在加载版本详情用于对比...
+                  Loading version details for comparison...
                 </Text>
               )}
             </div>
@@ -728,9 +728,9 @@ const VersionHistoryPage = () => {
         </div>
       </Space>
 
-      {/* 版本详情模态框 */}
+      {/* 版本Details模态框 */}
       <Modal
-        title={`版本详情 - ${selectedVersion?.version}`}
+        title={`Version Details - ${selectedVersion?.version}`}
         open={showVersionDetail && selectedVersion}
         onCancel={() => setShowVersionDetail(false)}
         width={1000}
@@ -749,16 +749,16 @@ const VersionHistoryPage = () => {
               icon={<UndoOutlined />}
               onClick={handleRestoreVersion}
             >
-              恢复到编辑区
+              Restore to editor
             </Button>
             <Button
               icon={<BranchesOutlined />}
               onClick={handleVersionDetailCompare}
             >
-              与前版本对比
+              Compare with previous version
             </Button>
             <Button onClick={() => setShowVersionDetail(false)}>
-              关闭
+              Close
             </Button>
           </Space>
         ]}
@@ -770,7 +770,7 @@ const VersionHistoryPage = () => {
               size="large"
             >
               <div style={{ textAlign: 'center', paddingTop: 16 }}>
-                <Text type="secondary">加载版本详情中...</Text>
+                <Text type="secondary">Loading version details...</Text>
               </div>
             </Spin>
           </div>
@@ -780,7 +780,7 @@ const VersionHistoryPage = () => {
             <Row gutter={24}>
               <Col span={12}>
                 <div>
-                  <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>版本号</Text>
+                  <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Version</Text>
                   <div style={{ padding: '8px 16px', backgroundColor: '#fafafa', borderRadius: 6 }}>
                     <Tag color="blue">{selectedVersion?.version}</Tag>
                   </div>
@@ -788,7 +788,7 @@ const VersionHistoryPage = () => {
               </Col>
               <Col span={12}>
                 <div>
-                  <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>创建时间</Text>
+                  <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Created At</Text>
                   <div style={{ padding: '8px 16px', backgroundColor: '#fafafa', borderRadius: 6, color: '#262626' }}>
                     {formatTime(selectedVersion?.createTime)}
                   </div>
@@ -796,22 +796,22 @@ const VersionHistoryPage = () => {
               </Col>
             </Row>
 
-            {/* 版本说明 */}
+            {/* Version Description */}
             <div>
-              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>版本说明</Text>
+              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Version Description</Text>
               <div style={{ padding: '12px 16px', backgroundColor: '#fafafa', borderRadius: 6, color: '#262626' }}>
-                {selectedVersion?.description || selectedVersion?.versionDescription || '无说明'}
+                {selectedVersion?.description || selectedVersion?.versionDescription || 'No description'}
               </div>
             </div>
 
-            {/* 模型配置 */}
+            {/* Model Configuration */}
             {selectedVersion?.modelConfig && (
               <div>
-                <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>模型配置</Text>
+                <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Model Configuration</Text>
                 <div style={{ padding: '12px 16px', backgroundColor: '#fafafa', borderRadius: 6 }}>
                   <Row gutter={16}>
                     <Col span={12}>
-                      <Text strong style={{ color: '#595959' }}>模型：</Text>
+                      <Text strong style={{ color: '#595959' }}>Model: </Text>
                       <Tag color="geekblue">{currentModel?.name}</Tag>
                     </Col>
                     {
@@ -827,10 +827,10 @@ const VersionHistoryPage = () => {
               </div>
             )}
 
-            {/* 参数列表 */}
+            {/* Parameters */}
             {selectedVersion?.parameters && selectedVersion.parameters.length > 0 && (
               <div>
-                <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>参数列表</Text>
+                <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Parameters</Text>
                 <div style={{ padding: '12px 16px', backgroundColor: '#fafafa', borderRadius: 6 }}>
                   <Space size={[8, 8]} wrap>
                     {selectedVersion.parameters.map((param, index) => (
@@ -841,25 +841,25 @@ const VersionHistoryPage = () => {
               </div>
             )}
 
-            {/* 版本状态 */}
+            {/* Version Status */}
             <div>
-              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>版本状态</Text>
+              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Version Status</Text>
               <div style={{ padding: '8px 16px', backgroundColor: '#fafafa', borderRadius: 6 }}>
                 {(selectedVersion?.versionType || selectedVersion?.status) === 'release' ? (
                   <Tag color="success" icon={<CheckCircleOutlined />}>
-                    正式版本
+                    Release
                   </Tag>
                 ) : (
                   <Tag color="warning" icon={<ExperimentOutlined />}>
-                    PRE版本
+                    Pre-release
                   </Tag>
                 )}
               </div>
             </div>
 
-            {/* 版本内容 */}
+            {/* Version Content */}
             <div>
-              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>版本内容</Text>
+              <Text strong style={{ display: 'block', marginBottom: 8, color: '#262626' }}>Version Content</Text>
               <div style={{
                 padding: '12px 16px',
                 backgroundColor: '#fafafa',
@@ -871,7 +871,7 @@ const VersionHistoryPage = () => {
                 maxHeight: 256,
                 overflowY: 'auto'
               }}>
-                {selectedVersion?.content || selectedVersion?.template || '无内容'}
+                {selectedVersion?.content || selectedVersion?.template || 'No content'}
               </div>
             </div>
           </Space>

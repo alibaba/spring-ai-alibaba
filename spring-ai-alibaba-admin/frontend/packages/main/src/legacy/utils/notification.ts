@@ -1,6 +1,6 @@
 import { notification } from 'antd';
 
-// 配置全局通知样式
+// Configure global notification style
 notification.config({
   placement: 'topRight',
   top: 50,
@@ -15,7 +15,6 @@ export interface NotificationOptions {
   placement?: 'top' | 'topLeft' | 'topRight' | 'bottom' | 'bottomLeft' | 'bottomRight';
 }
 
-// 成功通知
 export const notifySuccess = (options: NotificationOptions) => {
   notification.success({
     message: options.message,
@@ -25,7 +24,6 @@ export const notifySuccess = (options: NotificationOptions) => {
   });
 };
 
-// 错误通知
 export const notifyError = (options: NotificationOptions) => {
   notification.error({
     message: options.message,
@@ -35,7 +33,6 @@ export const notifyError = (options: NotificationOptions) => {
   });
 };
 
-// 警告通知
 export const notifyWarning = (options: NotificationOptions) => {
   notification.warning({
     message: options.message,
@@ -45,7 +42,6 @@ export const notifyWarning = (options: NotificationOptions) => {
   });
 };
 
-// 信息通知
 export const notifyInfo = (options: NotificationOptions) => {
   notification.info({
     message: options.message,
@@ -55,44 +51,49 @@ export const notifyInfo = (options: NotificationOptions) => {
   });
 };
 
-// API 错误处理
-export const handleApiError = (error: any, context: string = '操作') => {
-  let message = '操作失败';
-  let description = '请稍后重试';
+const failedMessage = (context: string, suffix = '') => {
+  const base = context?.trim() ? context.trim() : 'Operation';
+  // If caller already passed a full English sentence, keep it.
+  if (/failed|error|unable|cannot/i.test(base)) {
+    return suffix ? `${base}${suffix}` : base;
+  }
+  return `${base} failed${suffix}`;
+};
+
+export const handleApiError = (error: any, context: string = 'Operation') => {
+  let message = failedMessage(context);
+  let description = 'Please try again later';
 
   if (error && typeof error === 'object') {
-    // 处理不同类型的错误
     if (error.message) {
-      message = `${context}失败`;
+      message = failedMessage(context);
       description = error.message;
     } else if (error.code && error.code !== 200) {
-      message = `${context}失败 (错误码: ${error.code})`;
-      description = error.message || '服务器返回异常';
+      message = failedMessage(context, ` (code: ${error.code})`);
+      description = error.message || 'Unexpected server response';
     } else if (typeof error === 'string') {
-      message = `${context}失败`;
+      message = failedMessage(context);
       description = error;
     }
   } else if (typeof error === 'string') {
-    message = `${context}失败`;
+    message = failedMessage(context);
     description = error;
   }
 
   notifyError({ message, description });
 };
 
-// 网络错误处理
-export const handleNetworkError = (context: string = '操作') => {
+export const handleNetworkError = (context: string = 'Operation') => {
   notifyError({
-    message: `${context}失败`,
-    description: '网络连接异常，请检查网络后重试',
+    message: failedMessage(context),
+    description: 'Network error. Check your connection and try again.',
     duration: 6,
   });
 };
 
-// 表单验证错误处理
 export const handleValidationError = (message: string, description?: string) => {
   notifyWarning({
-    message: '输入验证失败',
+    message: 'Validation failed',
     description: description || message,
   });
 };

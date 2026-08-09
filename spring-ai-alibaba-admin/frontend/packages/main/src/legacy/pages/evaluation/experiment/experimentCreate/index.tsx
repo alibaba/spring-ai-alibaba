@@ -145,7 +145,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
     } catch (error) {
       // 发生错误时设置为空数组
       setDatasets([]);
-      message.error('获取评测集列表失败，请重试');
+      message.error('Failed to retrieve evaluation sets. Please try again.');
     } finally {
       setDatasetsLoading(false);
     }
@@ -165,11 +165,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         setPrompts(promptsData);
       } else {
         setPrompts([]);
-        message.error('获取Prompts列表失败');
+        message.error('Failed to retrieve prompts');
       }
     } catch (error) {
       setPrompts([]);
-      message.error('获取Prompts列表失败，请重试');
+      message.error('Failed to retrieve prompts. Please try again.');
     } finally {
       setPromptsLoading(false);
     }
@@ -189,11 +189,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         setEvaluators(evaluatorsData);
       } else {
         setEvaluators([]);
-        message.error('获取评估器列表失败');
+        message.error('Failed to retrieve evaluators');
       }
     } catch (error) {
       setEvaluators([]);
-      message.error('获取评估器列表失败，请重试');
+      message.error('Failed to retrieve evaluators. Please try again.');
     } finally {
       setEvaluatorsLoading(false);
     }
@@ -214,11 +214,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         setDatasetVersions(versionsData);
       } else {
         setDatasetVersions([]);
-        message.error('获取评测集版本列表失败');
+        message.error('Failed to retrieve evaluation set versions');
       }
     } catch (error) {
       setDatasetVersions([]);
-      message.error('获取评测集版本列表失败');
+      message.error('Failed to retrieve evaluation set versions');
     } finally {
       setDatasetVersionsLoading(false);
     }
@@ -398,11 +398,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         }
       } else {
         setPromptVersionDetail(null);
-        message.error('获取Prompt版本详情失败');
+        message.error('Failed to retrieve prompt version details');
       }
     } catch (error) {
       setPromptVersionDetail(null);
-      message.error('获取Prompt版本详情失败');
+      message.error('Failed to retrieve prompt version details');
     } finally {
       setPromptVersionDetailLoading(false);
     }
@@ -425,11 +425,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         }
       } else {
         setDatasetDetail(null);
-        message.error('获取评测集详情失败');
+        message.error('Failed to retrieve evaluation set details');
       }
     } catch (error) {
       setDatasetDetail(null);
-      message.error('获取评测集详情失败');
+      message.error('Failed to retrieve evaluation set details');
     } finally {
       setDatasetDetailLoading(false);
     }
@@ -459,11 +459,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           setPromptVersions((response.data as any).pageItems || []);
         } else {
           setPromptVersions([]);
-          message.error('获取Prompt版本失败');
+          message.error('Failed to retrieve prompt versions');
         }
       } catch (error) {
         setPromptVersions([]);
-        message.error('获取Prompt版本失败');
+        message.error('Failed to retrieve prompt versions');
       } finally {
         setPromptVersionsLoading(false);
       }
@@ -577,11 +577,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
 
         return true;
       } else {
-        message.error(`获取评估器${evaluatorId}的参数失败`);
+        message.error(`Failed to retrieve parameters for evaluator ${evaluatorId}`);
         return false;
       }
     } catch (error) {
-      message.error(`获取评估器${evaluatorId}的参数失败`);
+      message.error(`Failed to retrieve parameters for evaluator ${evaluatorId}`);
       return false;
     }
   };
@@ -626,8 +626,8 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           ...fields,
           ...datasetFields.map(field => ({
             field,
-            source: '评测集',
-            displayName: `${field} (评测集)`
+            source: 'Evaluation Set',
+            displayName: `${field} (Evaluation Set)`
           }))
         ];
       } catch (e) {
@@ -640,8 +640,8 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
       ...fields,
       {
         field: 'actual_output',
-        source: '评测对象',
-        displayName: 'actual_output (评测对象)'
+        source: 'Evaluation Object',
+        displayName: 'actual_output (Evaluation Object)'
       }
     ];
 
@@ -724,7 +724,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           ...prev,
           [evaluatorId]: []
         }));
-        message.error(`获取评估器${evaluatorId}的版本列表失败`);
+        message.error(`Failed to retrieve versions for evaluator ${evaluatorId}`);
       }
     } catch (error) {
       // 设置空数组
@@ -732,7 +732,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         ...prev,
         [evaluatorId]: []
       }));
-      message.error(`获取评估器${evaluatorId}的版本列表失败`);
+      message.error(`Failed to retrieve versions for evaluator ${evaluatorId}`);
     } finally {
       // 重置加载状态
       setEvaluatorVersionsLoading(prev => ({ ...prev, [evaluatorId]: false }));
@@ -899,7 +899,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
 
       // 检查是否有效的评估器配置
       if (selectedEvaluators.length === 0) {
-        message.error('请至少添加一个评估器');
+        message.error('Please add at least one evaluator');
         setLoading(false);
         return;
       }
@@ -911,7 +911,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         return !evaluator.evaluatorId || !selectedEvaluatorVersions[instanceKey];
       });
       if (missingVersions) {
-        message.error('请确保所有评估器都选择了版本');
+        message.error('Please select a version for every evaluator');
         setLoading(false);
         return;
       }
@@ -922,7 +922,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         return !evaluator.evaluatorId || !selectedEvaluatorVersions[instanceKey];
       });
       if (invalidEvaluators) {
-        message.error('请确保所有评估器都已正确配置');
+        message.error('Please ensure all evaluators are configured correctly');
         setLoading(false);
         return;
       }
@@ -986,7 +986,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
             variableMap.push({
               evaluatorVariable: param,
               source: sourceField,
-              dataSource: sourceFieldInfo?.source || '默认' // 添加数据来源信息
+              dataSource: sourceFieldInfo?.source || 'Default' // 添加数据来源信息
             });
           });
         }
@@ -1023,7 +1023,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
       // 调用创建实验的API
       await API.createExperiment(submitData);
 
-      message.success('实验创建成功');
+      message.success('Experiment created successfully');
 
       // 如果提供了onSuccess回调，则调用它，否则导航到列表页面
       if (onSuccess) {
@@ -1032,7 +1032,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         navigate('/evaluation-experiment');
       }
     } catch (error) {
-      message.error('创建失败，请重试');
+      message.error('Creation failed. Please try again.');
 
     } finally {
       setLoading(false);
@@ -1062,9 +1062,9 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
               onClick={handleGoBack}
               className="mr-3"
             >
-              返回
+              Back
             </Button>
-            <h1 className="text-2xl font-semibold mb-0">新建实验</h1>
+            <h1 className="text-2xl font-semibold mb-0">Create Experiment</h1>
           </div>
         </div>
       )}
@@ -1077,25 +1077,25 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           onFinish={handleSubmit}
         >
           {/* 步骤1：配置信息 */}
-          <Card title="步骤1：配置信息" className="mb-6">
+          <Card title="Step 1: Basic Info" className="mb-6">
             <Form.Item
               name="name"
-              label="实验名称"
+              label="Experiment Name"
               rules={[
-                { required: true, message: '请输入实验名称' },
-                { max: 100, message: '名称不能超过100个字符' }
+                { required: true, message: 'Please enter an experiment name' },
+                { max: 100, message: 'Name cannot exceed 100 characters' }
               ]}
             >
-              <Input placeholder="如：问答机器人实验测试" />
+              <Input placeholder="e.g., Q&A Bot Evaluation" />
             </Form.Item>
 
             <Form.Item
               name="description"
-              label="实验描述"
-              rules={[{ max: 500, message: '描述不能超过500个字符' }]}
+              label="Experiment Description"
+              rules={[{ max: 500, message: 'Description cannot exceed 500 characters' }]}
             >
               <TextArea
-                placeholder="描述实验目的和内容"
+                placeholder="Describe the purpose and contents of this experiment"
                 rows={4}
                 showCount
                 maxLength={500}
@@ -1104,17 +1104,17 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           </Card>
 
           {/* 步骤2：配置评测集 */}
-          <Card title="步骤2：配置评测集" className="mb-6">
+          <Card title="Step 2: Configure Evaluation Set" className="mb-6">
             <Form.Item
               name="datasetId"
-              label="选择评测集"
-              rules={[{ required: true, message: '请选择评测集' }]}
+              label="Select Evaluation Set"
+              rules={[{ required: true, message: 'Please select an evaluation set' }]}
             >
               <Select
-                placeholder="选择已创建的评测集"
+                placeholder="Select an existing evaluation set"
                 onChange={handleDatasetChange}
                 loading={datasetsLoading}
-                notFoundContent={datasetsLoading ? '加载中...' : '暂无数据'}
+                notFoundContent={datasetsLoading ? 'Loading...' : 'No data'}
               >
                 {datasets.map(dataset => (
                   <Option key={dataset.id} value={dataset.id}>
@@ -1129,13 +1129,13 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
               <>
                 <Form.Item
                   name="datasetVersionId"
-                  label="选择版本"
-                  rules={[{ required: true, message: '请选择评测集版本' }]}
+                  label="Select Version"
+                  rules={[{ required: true, message: 'Please select an evaluation set version' }]}
                 >
                   <Select
-                    placeholder="选择评测集版本"
+                    placeholder="Select an evaluation set version"
                     loading={datasetVersionsLoading}
-                    notFoundContent={datasetVersionsLoading ? '加载中...' : '暂无版本数据'}
+                    notFoundContent={datasetVersionsLoading ? 'Loading...' : 'No version data'}
                   >
                     {datasetVersions.map((version: any) => (
                       <Option key={version.id} value={version.id}>
@@ -1148,30 +1148,30 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                 {/* 评测集信息 */}
                 <div className="bg-gray-50 rounded-lg p-4 mt-4">
                   <div className="flex justify-between items-start mb-3">
-                    <h4 className="text-base font-medium text-gray-900">评测集信息</h4>
+                    <h4 className="text-base font-medium text-gray-900">Evaluation Set Information</h4>
                     <Button
                       type="link"
                       icon={<EyeOutlined />}
                       className="text-blue-600 hover:text-blue-800 font-medium"
                       onClick={handleViewDatasetDetail}
                     >
-                      查看详情
+                      View Details
                     </Button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <span className="text-sm text-gray-600">描述：</span>
+                      <span className="text-sm text-gray-600">Description:</span>
                       <span className="ml-2 text-sm text-gray-900">{selectedDataset.description}</span>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-600">数据量：</span>
-                      <span className="ml-2 text-sm text-gray-900">{selectedDataset.dataCount} 条</span>
+                      <span className="text-sm text-gray-600">Records:</span>
+                      <span className="ml-2 text-sm text-gray-900">{selectedDataset.dataCount}</span>
                     </div>
                   </div>
 
                   <div className="mt-3">
-                    <span className="text-sm text-gray-600">列名称：</span>
+                    <span className="text-sm text-gray-600">Columns:</span>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {selectedDataset.columns.map((column: string) => (
                         <span
@@ -1189,15 +1189,15 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           </Card>
 
           {/* 步骤3：配置评测对象 */}
-          <Card title="步骤3：配置评测对象" className="mb-6">
+          <Card title="Step 3: Configure Evaluation Object" className="mb-6">
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-4">
               <Form.Item
                 name="objectType"
-                label="对象类型"
-                rules={[{ required: true, message: '请选择对象类型' }]}
+                label="Object Type"
+                rules={[{ required: true, message: 'Please select an object type' }]}
               >
                 <Select
-                  placeholder="选择评测对象类型"
+                  placeholder="Select an evaluation object type"
                   onChange={(value) => {
                     setSelectedObjectType(value);
                     // 当切换对象类型时，清空相关字段
@@ -1227,10 +1227,10 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                   <Form.Item
                     name="promptKey"
                     label="Prompt Key"
-                    rules={[{ required: true, message: '请输入或选择Prompt Key' }]}
+                    rules={[{ required: true, message: 'Enter or select a Prompt Key' }]}
                   >
                     <AutoComplete
-                      placeholder="请输入或选择Prompt Key"
+                      placeholder="Enter or select a Prompt Key"
                       onChange={handlePromptKeyChange}
                       filterOption={(inputValue, option) => {
                         if (!option || !option.value) return false;
@@ -1238,7 +1238,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                         const input = inputValue.toLowerCase();
                         return value.indexOf(input) !== -1;
                       }}
-                      notFoundContent={promptsLoading ? '加载中...' : '暂无数据'}
+                      notFoundContent={promptsLoading ? 'Loading...' : 'No data'}
                     >
                       {prompts.map(prompt => (
                         <AutoComplete.Option key={prompt.promptKey} value={prompt.promptKey}>
@@ -1256,15 +1256,15 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
               <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <Form.Item
                   name="version"
-                  label="版本"
-                  rules={[{ required: true, message: '请选择版本' }]}
+                  label="Version"
+                  rules={[{ required: true, message: 'Please select a version' }]}
                 >
                   <Select
-                    placeholder="选择版本"
+                    placeholder="Select a version"
                     loading={promptVersionsLoading}
                     disabled={!selectedPrompt}
                     onChange={handlePromptVersionChange}
-                    notFoundContent={promptVersionsLoading ? '加载中...' : '请先选择Prompt Key'}
+                    notFoundContent={promptVersionsLoading ? 'Loading...' : 'Select a Prompt Key first'}
                   >
                     {promptVersions.map(version => {
                       const versionStatus = version.status;
@@ -1273,7 +1273,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                           <span className='mr-2'>
                             {version.version} {version.versionDescription ? " - " : ""} {version.versionDescription}
                           </span>
-                          <Tag color={versionStatus === "release" ? "green" : "blue"}>{version.status === "release" ? "正式版本" : "PRE版本"}</Tag>
+                          <Tag color={versionStatus === "release" ? "green" : "blue"}>{version.status === "release" ? "Release" : "Pre-release"}</Tag>
                         </Option>
                       )
                     })}
@@ -1286,38 +1286,38 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
             {selectedObjectType === 'prompt' && promptVersionDetail && (
               <div className="bg-gray-50 rounded-lg p-4 mt-4">
                 <div className="flex justify-between items-start mb-3">
-                  <h4 className="text-base font-medium text-gray-900">Prompt版本详情</h4>
+                  <h4 className="text-base font-medium text-gray-900">Prompt Version Details</h4>
                   <Button
                     type="link"
                     icon={<EyeOutlined />}
                     className="text-blue-600 hover:text-blue-800 font-medium"
                     onClick={handleViewPromptDetail}
                   >
-                    查看完整详情
+                    View Full Details
                   </Button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>版本：</span>
+                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>Version:</span>
                     <span className="ml-2 text-sm text-gray-900">{promptVersionDetail.version}</span>
                   </div>
                   <div>
-                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>版本描述：</span>
+                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>Version Description:</span>
                     <span className="ml-2 text-sm text-gray-900">{promptVersionDetail.versionDescription}</span>
                   </div>
                 </div>
 
                 <div className="mt-3">
-                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>模板：</span>
+                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>Template:</span>
                   <div className="mt-1 bg-white rounded border p-3 text-sm text-gray-900 max-h-32 overflow-y-auto">
-                    {promptVersionDetail.template || '暂无模板内容'}
+                    {promptVersionDetail.template || 'No template content'}
                   </div>
                 </div>
 
                 {promptVersionDetail.variables && (
                   <div className="mt-3">
-                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>参数：</span>
+                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>Parameters:</span>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {Object.keys(JSON.parse(promptVersionDetail.variables || '{}')).map((param: string) => (
                         <span
@@ -1336,18 +1336,18 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
             {/* 只有当选择了 prompt 类型时才显示字段映射配置卡片 */}
             {selectedObjectType === 'prompt' && selectedDataset && promptVersionDetail && datasetDetail && (
               <div className="bg-gray-50 rounded-lg p-4 mt-4">
-                <h4 className="text-base font-medium text-gray-900 mb-4">字段映射配置</h4>
+                <h4 className="text-base font-medium text-gray-900 mb-4">Field Mapping Configuration</h4>
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm text-gray-600">配置Prompt参数与评测集字段的映射关系：</p>
+                  <p className="text-sm text-gray-600">Map Prompt parameters to evaluation set fields:</p>
                   <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                    ✨ 系统已智能匹配默认值
+                    ✨ Default values matched automatically
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 items-center">
-                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>Prompt参数：</span>
+                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>Prompt Parameter:</span>
                   <div></div>
-                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>映射到评测集字段：</span>
+                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>Mapped Evaluation Set Field:</span>
                 </div>
                 <div className="space-y-3">
                   {Object.keys(JSON.parse(promptVersionDetail.variables || '{}')).map((param: string) => {
@@ -1380,7 +1380,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                             value={param}
                             readOnly
                             className="mt-1"
-                            placeholder="Prompt参数"
+                            placeholder="Prompt parameter"
                           />
                         </div>
                         <div style={{textAlign: 'center'}}>↔</div>
@@ -1408,7 +1408,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
 
                 {Object.keys(JSON.parse(promptVersionDetail.variables || '{}')).length === 0 && (
                   <div className="text-center py-4 text-gray-500">
-                    该Prompt版本暂无参数需要映射
+                    This Prompt version has no parameters to map.
                   </div>
                 )}
 
@@ -1417,11 +1417,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                   <div className="flex items-start">
                     <span className="mr-2 text-blue-500 text-xl">💡</span>
                     <div>
-                      <div className="text-base font-medium text-gray-900 mb-2">字段映射说明：</div>
+                      <div className="text-base font-medium text-gray-900 mb-2">Field Mapping Notes:</div>
                       <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
-                        <li>系统已自动检测Prompt中的参数变量并尝试智能匹配评测集字段</li>
-                        <li>请确认每个映射关系是否正确，确保实验执行时数据能正确传递</li>
-                        <li>映射关系将在实验执行时用于将评测集数据填充到Prompt参数中</li>
+                        <li>The system detects Prompt parameters and attempts to match evaluation set fields automatically.</li>
+                        <li>Confirm every mapping to ensure data is passed correctly during the experiment.</li>
+                        <li>Mappings populate Prompt parameters with evaluation set data during execution.</li>
                       </ul>
                     </div>
                   </div>
@@ -1431,20 +1431,20 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           </Card>
 
           {/* 步骤4：配置评估器 */}
-          <Card title="步骤4：配置评估器" className="mb-6">
-            <p className="text-gray-600 mb-4">选个添加评估器，每个评估器需要选择版本并配置字段映射</p>
+          <Card title="Step 4: Configure Evaluators" className="mb-6">
+            <p className="text-gray-600 mb-4">Add evaluators, select a version for each one, and configure field mappings.</p>
 
             {/* 添加评估器按钮 */}
             <div className="text-center border-2 border-dashed rounded-lg p-4 mb-6 cursor-pointer hover:bg-gray-50"
               onClick={handleAddEvaluator}>
               <PlusOutlined className="text-xl text-gray-500" />
-              <div className="mt-2 text-gray-600">添加评估器</div>
+              <div className="mt-2 text-gray-600">Add Evaluator</div>
             </div>
 
             {/* 已配置的评估器列表 */}
             {selectedEvaluators.length > 0 && (
               <div className="mt-4">
-                <h4 className="text-base font-medium text-gray-900 mb-4">已配置的评估器：</h4>
+                <h4 className="text-base font-medium text-gray-900 mb-4">Configured Evaluators:</h4>
                 <div className="space-y-6">
                   {selectedEvaluators.map((evaluator, index) => {
                     // 获取当前评估器的ID
@@ -1461,7 +1461,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex' }}>
                             <h5 className="text-base font-medium text-gray-900 mb-4 mr-4">
-                              评估器 {index + 1}
+                              Evaluator {index + 1}
                             </h5>
                             {isMappingMode && <>
                               <h5 className="text-base font-medium text-blue-500 mb-4 mr-4">
@@ -1479,7 +1479,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                               icon={<DeleteOutlined />}
                               onClick={() => handleRemoveEvaluator(index)}
                             >
-                              移除
+                              Remove
                             </Button>
                           </div>
                         </div>
@@ -1494,14 +1494,14 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                                 style={{marginRight: '6px'}}
                                 onClick={() => handleViewEvaluatorDetail(evaluatorId)}
                               >
-                                <EyeOutlined className="mr-1" /> 查看详情
+                                <EyeOutlined className="mr-1" /> View Details
                               </div>
                               <div
                                 className="text-blue-500 cursor-pointer mr-6"
                                 style={{marginRight: '6px'}}
                                 onClick={handleViewPromptDetail}
                               >
-                                Prompt详情
+                                Prompt Details
                               </div>
                               <div
                                 className="text-blue-500 cursor-pointer"
@@ -1519,7 +1519,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                                   }));
                                 }}
                               >
-                                重新配置
+                                Reconfigure
                               </div>
                             </div>
 
@@ -1527,13 +1527,13 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                             <div className="bg-white rounded-lg p-4 mb-4">
                               <div className="grid grid-cols-1 gap-2">
                                 <div>
-                                  <span className="text-gray-600">描述：</span>
+                                  <span className="text-gray-600">Description:</span>
                                   <span className="ml-2 text-gray-900">
                                     {evaluators.find(e => e.id.toString() === evaluatorId)?.description || '-'}
                                   </span>
                                 </div>
                                 <div>
-                                  <span className="text-gray-600">模型：</span>
+                                  <span className="text-gray-600">Model:</span>
                                   <span className="ml-2">
                                     <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                                       {evaluators.find(e => e.id.toString() === evaluatorId)?.modelName || '-'}
@@ -1545,13 +1545,13 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
 
                             {/* 字段映射配置 */}
                             <div className="bg-white rounded-lg p-4">
-                              <h4 className="text-base font-medium text-gray-900 mb-4">字段映射配置</h4>
+                              <h4 className="text-base font-medium text-gray-900 mb-4">Field Mapping Configuration</h4>
                               <div className="space-y-3">
                                 {/* 映射表头 */}
                                 <div className="grid grid-cols-3 gap-4 font-medium text-gray-700">
-                                  <div>评估器参数</div>
-                                  <div style={{textAlign: 'center'}}>映射关系</div>
-                                  <div>数据来源</div>
+                                  <div>Evaluator Parameter</div>
+                                  <div style={{textAlign: 'center'}}>Mapping</div>
+                                  <div>Data Source</div>
                                 </div>
 
                                 {/* 映射项 */}
@@ -1597,7 +1597,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                                   })
                                 ) : (
                                   <div className="text-center py-4 text-gray-500">
-                                    该评估器暂无参数需要映射
+                                    This evaluator has no parameters to map.
                                   </div>
                                 )}
                               </div>
@@ -1608,11 +1608,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                               <div className="flex items-start">
                                 <span className="mr-2 text-blue-500 text-xl">💡</span>
                                 <div>
-                                  <div className="text-base font-medium text-gray-900 mb-2">映射说明：</div>
+                                  <div className="text-base font-medium text-gray-900 mb-2">Mapping Notes:</div>
                                   <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
-                                    <li>评估器参数映射到相应的数据来源字段</li>
-                                    <li>可选的数据来源包含评测集字段和评测对象输出（actual_output）</li>
-                                    <li>确保每个映射关系是合理的，以便正确评估</li>
+                                    <li>Evaluator parameters map to the corresponding data source fields.</li>
+                                    <li>Available data sources include evaluation set fields and evaluation object output (actual_output).</li>
+                                    <li>Ensure each mapping is appropriate for accurate evaluation.</li>
                                   </ul>
                                 </div>
                               </div>
@@ -1626,11 +1626,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                               {/* 选择评估器 */}
                               <div>
                                 <div className="mb-1 text-sm" style={{color: 'rgba(0, 0, 0, 0.85)'}}>
-                                  <span className="text-red-500">*</span> 选择评估器
+                                  <span className="text-red-500">*</span> Select Evaluator
                                 </div>
                                 <Select
                                   className="w-full"
-                                  placeholder="选择评估器"
+                                  placeholder="Select an evaluator"
                                   value={evaluator.evaluatorId || undefined}
                                   onChange={(value) => {
                                     // 更新评估器ID
@@ -1642,7 +1642,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                                     handleEvaluatorSelectChange(index, value);
                                   }}
                                   loading={evaluatorsLoading}
-                                  notFoundContent={evaluatorsLoading ? '加载中...' : '暂无数据'}
+                                  notFoundContent={evaluatorsLoading ? 'Loading...' : 'No data'}
                                 >
                                   {evaluators.map(e => (
                                     <Option key={e.id} value={e.id.toString()}>
@@ -1655,19 +1655,19 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                               {/* 选择版本 */}
                               <div>
                                 <div className="mb-1 text-sm" style={{color: 'rgba(0, 0, 0, 0.85)'}}>
-                                  <span className="text-red-500">*</span> 选择版本
+                                  <span className="text-red-500">*</span> Select Version
                                 </div>
                                 <Select
                                   className="w-full"
-                                  placeholder="选择版本"
+                                  placeholder="Select a version"
                                   value={evaluator.evaluatorId ? selectedEvaluatorVersions[instanceKey] : undefined}
                                   onChange={(value) => handleEvaluatorVersionChange(index, evaluator.evaluatorId, value)}
                                   disabled={!evaluator.evaluatorId}
                                   loading={evaluator.evaluatorId ? evaluatorVersionsLoading[evaluator.evaluatorId] : false}
                                   notFoundContent={
-                                    !evaluator.evaluatorId ? '请先选择评估器' :
-                                    evaluatorVersionsLoading[evaluator.evaluatorId] ? '加载中...' :
-                                    evaluatorVersions[evaluator.evaluatorId]?.length === 0 ? '暂无版本数据' : '请选择版本'
+                                    !evaluator.evaluatorId ? 'Select an evaluator first' :
+                                    evaluatorVersionsLoading[evaluator.evaluatorId] ? 'Loading...' :
+                                    evaluatorVersions[evaluator.evaluatorId]?.length === 0 ? 'No version data' : 'Select a version'
                                   }
                                 >
                                     {evaluator.evaluatorId && evaluatorVersions[evaluator.evaluatorId]?.map((version: any) => {
@@ -1689,7 +1689,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                                   className="flex items-center text-blue-500 cursor-pointer"
                                   onClick={() => handleViewEvaluatorDetail(evaluator.evaluatorId)}
                                 >
-                                  <EyeOutlined className="mr-1" /> 查看详情
+                                  <EyeOutlined className="mr-1" /> View Details
                                 </div>
                               </div>
                             )}
@@ -1709,7 +1709,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
       <div className="experiment-create-footer">
         <div className="flex justify-end space-x-4">
           <Button size="large" onClick={handleCancel}>
-            取消
+            Cancel
           </Button>
           <Button
             type="primary"
@@ -1718,7 +1718,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
             loading={loading}
             onClick={() => form.submit()}
           >
-            发起实验
+            Start Experiment
           </Button>
         </div>
       </div>

@@ -16,10 +16,10 @@ const FunctionList = ({
   return (
     <div>
       <Text strong className='mb-1 block' style={{ fontSize: size === 'small' ? '12px' : '14px' }}>
-        函数配置
+        Function Configuration
         <Switch
           defaultChecked
-          checkedChildren="启用"
+          checkedChildren="Enabled"
           className='ml-2' size="small" onChange={(checked) => onEnableChange(checked)}
         />
       </Text>
@@ -33,14 +33,14 @@ const FunctionList = ({
                 onClick={() => onClick(fn)}
                 extra={
                   <Popconfirm
-                    title="确定删除这个函数吗？"
+                    title="Delete this function?"
                     onConfirm={(e) => {
                       e?.stopPropagation();
                       onDelete(fn);
                     }}
                     onCancel={(e) => e?.stopPropagation()}
-                    okText="确定"
-                    cancelText="取消"
+                    okText="OK"
+                    cancelText="Cancel"
                   >
                     <Button
                       type="text"

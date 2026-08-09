@@ -26,7 +26,7 @@ const PublishSuccessModal = ({ prompt, version, onClose }) => {
   const [activeTab, setActiveTab] = useState('integration');
 
   const tabs = [
-    { key: 'integration', label: '集成指南', icon: <CodeOutlined /> }
+    { key: 'integration', label: 'Integration Guide', icon: <CodeOutlined /> }
   ];
 
   const integrationCode1 = `<dependency>
@@ -37,10 +37,10 @@ const PublishSuccessModal = ({ prompt, version, onClose }) => {
 `
 
 
-  const integrationCode2 = `spring.ai.alibaba.agent.proxy.nacos.serverAddr={ 替换 nacos address, 示例：127.0.0.1:8848}
-spring.ai.alibaba.agent.proxy.nacos.username={ 替换 nacos 用户名, 示例：nacos}
-spring.ai.alibaba.agent.proxy.nacos.password={ 替换 nacos 密码, 示例：nacos}
-spring.ai.alibaba.agent.proxy.nacos.promptKey={ 替换为promptKey，示例：mse-nacos-helper }`;
+  const integrationCode2 = `spring.ai.alibaba.agent.proxy.nacos.serverAddr={ replace with the Nacos address, e.g. 127.0.0.1:8848}
+spring.ai.alibaba.agent.proxy.nacos.username={ replace with the Nacos username, e.g. nacos}
+spring.ai.alibaba.agent.proxy.nacos.password={ replace with the Nacos password, e.g. nacos}
+spring.ai.alibaba.agent.proxy.nacos.promptKey={ replace with the promptKey, e.g. mse-nacos-helper }`;
 
   const integrationCode3 = `<dependency>
 	<groupId>com.alibaba.cloud.ai</groupId>
@@ -97,9 +97,9 @@ spring.ai.alibaba.arms.model.capture-output=true`;
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-      message.success('复制成功');
+      message.success('Copied successfully');
     }).catch(() => {
-      message.error('复制失败');
+      message.error('Copy failed');
     });
   };
 
@@ -136,10 +136,10 @@ spring.ai.alibaba.arms.model.capture-output=true`;
                 icon={<CheckCircleOutlined />}
               />
               <div>
-                <Title level={2} style={{ margin: 0, color: '#262626' }}>发布成功！</Title>
+                <Title level={2} style={{ margin: 0, color: '#262626' }}>Published successfully!</Title>
                 <Paragraph style={{ margin: '4px 0 0 0', color: '#595959' }}>
                   Prompt <Text style={{ fontWeight: 500, color: '#52c41a' }}>{prompt.promptKey}</Text>{' '}
-                  版本 <Text style={{ fontWeight: 500, color: '#52c41a' }}>{version}</Text> 已成功发布
+                  Version <Text style={{ fontWeight: 500, color: '#52c41a' }}>{version}</Text> published successfully
                 </Paragraph>
               </div>
             </div>
@@ -179,14 +179,14 @@ spring.ai.alibaba.arms.model.capture-output=true`;
               <Alert
                 message={
                   <div>
-                    Prompt发布成功，<span className='text-xs'>版本类型：</span>
-                    <Text strong>{prompt.latestVersionStatus === 'release' ? '正式版本' : 'PRE版本'}</Text>
+                    Prompt published successfully. <span className='text-xs'>Version type: </span>
+                    <Text strong>{prompt.latestVersionStatus === 'release' ? 'Release' : 'Pre-release'}</Text>
                   </div>
                 }
                 description={
                   prompt.latestVersionStatus === "release" ? (
                     <div>
-                      <Text>当前的 Prompt 版本已经发布到Nacos中：</Text>
+                      <Text>The current Prompt version has been published to Nacos:</Text>
                       <div style={{
                         marginTop: 8,
                         padding: 12,
@@ -195,13 +195,13 @@ spring.ai.alibaba.arms.model.capture-output=true`;
                         fontSize: '13px',
                         fontFamily: 'monospace'
                       }}>
-                        <div>group：<Text strong>nacos-ai-meta</Text></div>
-                        <div>dataID：<Text strong>prompt-{prompt.promptKey || '-'}.json</Text></div>
+                        <div>Group: <Text strong>nacos-ai-meta</Text></div>
+                        <div>Data ID: <Text strong>prompt-{prompt.promptKey || '-'}.json</Text></div>
                       </div>
                     </div>
                   )
                   : (
-                    <Text>Prompt 预发版本发布成功，您可以对预发版本 Prompt 进行实验室评估，评估符合预期后发布正式版本</Text>
+                    <Text>The Prompt pre-release version was published successfully. Evaluate it in the lab, then publish a release version when it meets expectations.</Text>
                   )
 
                 }
@@ -211,31 +211,31 @@ spring.ai.alibaba.arms.model.capture-output=true`;
               />
 
               <Alert
-                message="Spring AI Alibaba 集成指南"
-                description="Spring AI Alibaba Agent集成Nacos实现prompt加载以及动态更新。"
+                message="Spring AI Alibaba Integration Guide"
+                description="Integrate Spring AI Alibaba Agent with Nacos for Prompt loading and dynamic updates."
                 type="info"
                 icon={<InfoCircleOutlined />}
                 showIcon
               />
 
               <Title level={4} style={{ margin: 0 }}>
-                Step 1 创建SpringBoot工程
+                Step 1: Create a Spring Boot project
               </Title>
               <div>
                 <span className='text-red-600'>*</span>
-                spring.ai.alibaba.version版本请参照spring-ai-alibaba官网
+                Refer to the Spring AI Alibaba website for the spring.ai.alibaba.version version.
               </div>
               <Card
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text strong>1. 引入spring ai alibaba agent nacos代理模块</Text>
+                    <Text strong>1. Add the Spring AI Alibaba Agent Nacos proxy module</Text>
                     <Button
                       type="default"
                       size="small"
                       icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(integrationCode1)}
                     >
-                      复制代码
+                      Copy Code
                     </Button>
                   </div>
                 }
@@ -261,14 +261,14 @@ spring.ai.alibaba.arms.model.capture-output=true`;
               <Card
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text strong>2. 指定nacos地址及prompKey</Text>
+                    <Text strong>2. Configure the Nacos address and promptKey</Text>
                     <Button
                       type="default"
                       size="small"
                       icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(integrationCode3)}
                     >
-                      复制代码
+                      Copy Code
                     </Button>
                   </div>
                 }
@@ -293,14 +293,14 @@ spring.ai.alibaba.arms.model.capture-output=true`;
               <Card
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text strong>4. 设置可观测参数</Text>
+                    <Text strong>4. Configure observability settings</Text>
                     <Button
                       type="default"
                       size="small"
                       icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(integrationCode2)}
                     >
-                      复制代码
+                      Copy Code
                     </Button>
                   </div>
                 }
@@ -325,14 +325,14 @@ spring.ai.alibaba.arms.model.capture-output=true`;
               <Card
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text strong>3. 引入spring ai alibaba 模块可观测组件</Text>
+                    <Text strong>3. Add the Spring AI Alibaba observability module</Text>
                     <Button
                       type="default"
                       size="small"
                       icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(integrationCode4)}
                     >
-                      复制代码
+                      Copy Code
                     </Button>
                   </div>
                 }
@@ -355,18 +355,18 @@ spring.ai.alibaba.arms.model.capture-output=true`;
                 </div>
                 <div className='p-2'>
                   <span className='text-red-600'>*</span>
-                  {`其中{studio address}请替换为实际的地址`}
+                  {`Replace {studio address} with the actual address.`}
                 </div>
               </Card>
 
               <Title level={4} style={{ margin: 0 }}>
-                Step 1 创建SpringBoot工程
+                Step 1: Create a Spring Boot project
               </Title>
 
               <Card>
                 <div>
                   <Text>
-                    构建ReactAgent指定builderFactory为 NacosAgentPromptBuilderFactory
+                    Build ReactAgent with builderFactory set to NacosAgentPromptBuilderFactory
                   </Text>
                 </div>
                 <div>
@@ -375,16 +375,16 @@ spring.ai.alibaba.arms.model.capture-output=true`;
                   </Text>
                 </div>
                 <div>
-                  说明:
+                  Notes:
                   <ol>
                     <li>
-                      nacosOptions类型是NacosOptions，可以通过标准SpringBean模式引入
+                      nacosOptions is of type NacosOptions and can be injected as a standard Spring Bean.
                     </li>
                     <li>
-                      默认ReactAgent.builder() 内部使用DefaultBuilder, 通过指定。NacosAgentPromptBuilderFactory(nacosOptions)，构建时会从nacos中加载promptKey对应的prompt模版，并且支持prompt动态更新。
+                      ReactAgent.builder() uses DefaultBuilder by default. With NacosAgentPromptBuilderFactory(nacosOptions), it loads the Prompt template for the promptKey from Nacos during construction and supports dynamic Prompt updates.
                     </li>
                     <li>
-                      其余构建的ReactAgent的参数和标准的ReactAgent构建方式一致。
+                      All other ReactAgent builder parameters are the same as the standard ReactAgent construction approach.
                     </li>
                   </ol>
                 </div>
@@ -407,14 +407,14 @@ spring.ai.alibaba.arms.model.capture-output=true`;
         }}>
           <div style={{ display: 'flex', alignItems: 'center', color: '#595959', fontSize: '14px' }}>
             <BulbOutlined style={{ color: '#faad14', marginRight: 4 }} />
-            提示：配置更新后，应用会自动重新加载最新的Prompt配置
+            Tip: After configuration updates, the application automatically reloads the latest Prompt configuration.
           </div>
           <Space>
             <Button
               type="primary"
               onClick={onClose}
             >
-              完成
+              Done
             </Button>
           </Space>
         </div>

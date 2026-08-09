@@ -69,9 +69,9 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
       setLocalFunctions(updatedFunctions);
       setSelectedFunction(updatedFunction);
       setEditingFunction(null);
-      message.success('函数更新成功');
+      message.success('Function updated successfully');
     } catch (error) {
-      message.error('JSON 格式错误，请检查后重试');
+      message.error('Invalid JSON format. Please check and try again.');
     }
   };
 
@@ -91,7 +91,7 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
   const handleDelete = (functionName: string) => {
     const updatedFunctions = localFunctions.filter(fn => fn.toolDefinition.name !== functionName);
     setLocalFunctions(updatedFunctions);
-    message.success('函数删除成功');
+    message.success('Function deleted successfully');
 
     if (selectedFunction?.toolDefinition.name === functionName) {
       setSelectedFunction(updatedFunctions[0] || null);
@@ -118,18 +118,18 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
       open={open}
       onCancel={handleCancel}
       onOk={handleOk}
-      title="查看函数"
+      title="View Function"
       width={1200}
-      okText="保存"
-      cancelText="取消"
+      okText="Save"
+      cancelText="Cancel"
       okButtonProps={{
         disabled: Boolean(editingFunction)
       }}
     >
       <div className="flex gap-4" style={{ height: "600px" }}>
-        {/* 左侧函数列表 */}
+        {/* 左侧Function List */}
         <div className="w-80 border-r border-gray-200 pr-4">
-          <div className="text-sm font-medium text-gray-700 mb-3">函数列表</div>
+          <div className="text-sm font-medium text-gray-700 mb-3">Function List</div>
           <div className="space-y-2 overflow-y-auto">
             {localFunctions.map((fn) => (
               <Card
@@ -143,14 +143,14 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
                 title={fn.toolDefinition.name}
                 extra={
                   <Popconfirm
-                    title="确定删除这个函数吗？"
+                    title="Delete this function?"
                     onConfirm={(e) => {
                       e?.stopPropagation();
                       handleDelete(fn.toolDefinition.name);
                     }}
                     onCancel={(e) => e?.stopPropagation()}
-                    okText="确定"
-                    cancelText="取消"
+                    okText="OK"
+                    cancelText="Cancel"
                   >
                     <Button
                       type="text"
@@ -174,13 +174,13 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
         <div className="flex-1">
           {selectedFunction ? (
             editingFunction?.toolDefinition.name === selectedFunction.toolDefinition.name ? (
-              // 编辑模式
+              // Edit模式
               <div className="h-full">
                 <div className="flex justify-between items-center mb-4">
-                  <div className="text-sm font-medium text-gray-700">编辑函数</div>
+                  <div className="text-sm font-medium text-gray-700">Edit Function</div>
                   <div className="space-x-2">
-                    <Button size="small" onClick={handleCancelEdit}>取消</Button>
-                    <Button size="small" type="primary" onClick={handleSaveEdit}>保存</Button>
+                    <Button size="small" onClick={handleCancelEdit}>Cancel</Button>
+                    <Button size="small" type="primary" onClick={handleSaveEdit}>Save</Button>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -201,7 +201,7 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
                   </div>
                   <div style={{ width: "40%" }}>
                     <div className="flex justify-between">
-                      <Typography.Paragraph className="flex items-center" style={{ marginBottom: 0 }} copyable={{ text: JSON.stringify(defaultValue) }} >默认模拟值</Typography.Paragraph>
+                      <Typography.Paragraph className="flex items-center" style={{ marginBottom: 0 }} copyable={{ text: JSON.stringify(defaultValue) }} >Default Mock Value</Typography.Paragraph>
                       <Button type="text" className="invisible"></Button>
                     </div>
                     <Input.TextArea
@@ -218,27 +218,27 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
                 <div className="flex justify-between items-center mb-4">
                   <div className="text-lg font-medium">{selectedFunction.toolDefinition.name}</div>
                   <Button size="small" type="primary" onClick={() => handleEdit(selectedFunction)}>
-                    编辑
+                    Edit
                   </Button>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <div className="text-sm font-medium text-gray-700 mb-2">描述</div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">Description</div>
                     <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded">
                       {selectedFunction.toolDefinition.description}
                     </div>
                   </div>
 
                   <div>
-                    <div className="text-sm font-medium text-gray-700 mb-2">参数</div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">Parameters</div>
                     <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-70 font-mono">
                       {JSON.stringify(JSON.parse(selectedFunction.toolDefinition.parameters), null, 2)}
                     </pre>
                   </div>
 
                   <div>
-                    <div className="text-sm font-medium text-gray-700 mb-2">默认模拟值</div>
+                    <div className="text-sm font-medium text-gray-700 mb-2">Default Mock Value</div>
                     <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-32 font-mono">
                       {selectedFunction.output}
                     </pre>
@@ -248,7 +248,7 @@ function ViewFunctionModel(props: ViewFunctionModelProps) {
             )
           ) : (
             <div className="flex items-center justify-center h-full text-gray-400">
-              选择一个函数查看详情
+              Select a function to view details
             </div>
           )}
         </div>

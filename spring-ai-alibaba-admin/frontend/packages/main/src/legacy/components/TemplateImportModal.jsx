@@ -62,11 +62,11 @@ const TemplateImportModal = ({ onImport, onClose }) => {
           current: response.data.pageNumber || 1
         }));
       } else {
-        message.error(response.message || '获取模板列表失败');
+        message.error(response.message || 'Failed to load template list.');
       }
     } catch (error) {
       console.error('获取模板列表失败:', error);
-      message.error('获取模板列表失败，请稍后重试');
+      message.error('Failed to load template list. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -83,11 +83,11 @@ const TemplateImportModal = ({ onImport, onClose }) => {
       if (response.code === 200 && response.data) {
         setSelectedTemplateData(response.data);
       } else {
-        message.error(response.message || '获取模板详情失败');
+        message.error(response.message || 'Failed to load template details.');
       }
     } catch (error) {
       console.error('获取模板详情失败:', error);
-      message.error('获取模板详情失败，请稍后重试');
+      message.error('Failed to load template details. Please try again later.');
     } finally {
       setTemplateDetailLoading(false);
     }
@@ -189,8 +189,8 @@ const TemplateImportModal = ({ onImport, onClose }) => {
             <DownloadOutlined style={{ color: '#1890ff', fontSize: 20 }} />
           </div>
           <div>
-            <Title level={3} style={{ margin: 0 }}>从模板导入</Title>
-            <Text type="secondary">选择一个预设模板快速开始创建Prompt</Text>
+            <Title level={3} style={{ margin: 0 }}>Import from Template</Title>
+            <Text type="secondary">Select a preset template to quickly start creating a prompt.</Text>
           </div>
         </div>
       }
@@ -207,7 +207,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
       }}
       footer={[
         <Button key="cancel" onClick={onClose}>
-          取消
+          Cancel
         </Button>,
         <Button
           key="import"
@@ -216,7 +216,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
           onClick={handleImport}
           icon={<DownloadOutlined />}
         >
-          导入模板
+          Import Template
         </Button>
       ]}
       closeIcon={<CloseOutlined />}
@@ -225,7 +225,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
         {/* 搜索栏 */}
         <div>
           <Search
-            placeholder="搜索模板名称或关键词..."
+            placeholder="Search template names or keywords..."
             allowClear
             onSearch={handleSearch}
             style={{ width: 300 }}
@@ -240,8 +240,8 @@ const TemplateImportModal = ({ onImport, onClose }) => {
               title={
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <FolderOutlined />
-                  <span>选择模板</span>
-                  <Text type="secondary">({pagination.total} 个模板)</Text>
+                  <span>Select Template</span>
+                  <Text type="secondary">({pagination.total} templates)</Text>
                 </div>
               }
               size="small"
@@ -283,7 +283,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
                                 }}
                                 ellipsis={{ rows: 2 }}
                               >
-                                {template.templateDescription || '暂无描述'}
+                                {template.templateDescription || 'No description'}
                               </Paragraph>
                               
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
@@ -311,7 +311,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
                           pageSize={pagination.pageSize}
                           showSizeChanger
                           showQuickJumper
-                          showTotal={(total, range) => `第 ${range[0]}-${range[1]} 项，共 ${total} 个模板`}
+                          showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} templates`}
                           onChange={handlePageChange}
                         />
                       </div>
@@ -320,7 +320,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
                 ) : (
                   <Empty 
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="暂无模板数据"
+                    description="No templates available"
                   />
                 )}
               </Spin>
@@ -334,7 +334,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <InfoCircleOutlined />
-                    <span>模板预览</span>
+                    <span>Template Preview</span>
                   </div>
                 }
                 size="small"
@@ -343,7 +343,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
                   {selectedTemplateData ? (
                     <Space direction="vertical" size={16} style={{ width: '100%' }}>
                       <div>
-                        <Text strong style={{ display: 'block', marginBottom: 4 }}>模板名称</Text>
+                        <Text strong style={{ display: 'block', marginBottom: 4 }}>Template Name</Text>
                         <Text>{selectedTemplateData.templateDescription || selectedTemplateData.promptTemplateKey}</Text>
                       </div>
 
@@ -358,7 +358,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
                           const paramNames = Object.keys(variables);
                           return paramNames.length > 0 ? (
                             <div>
-                              <Text strong style={{ display: 'block', marginBottom: 8 }}>参数列表</Text>
+                              <Text strong style={{ display: 'block', marginBottom: 8 }}>Parameters</Text>
                               <Space wrap>
                                 {paramNames.map((param, index) => (
                                   <Tag key={index} color="blue">{param}</Tag>
@@ -373,7 +373,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
 
                       {selectedTemplateData.template && (
                         <div>
-                          <Text strong style={{ display: 'block', marginBottom: 8 }}>内容预览</Text>
+                          <Text strong style={{ display: 'block', marginBottom: 8 }}>Content Preview</Text>
                           <div style={{
                             backgroundColor: '#fafafa',
                             padding: 12,
@@ -394,7 +394,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
                         const tags = parseTags(selectedTemplateData.tags);
                         return tags.length > 0 ? (
                           <div>
-                            <Text strong style={{ display: 'block', marginBottom: 8 }}>标签</Text>
+                            <Text strong style={{ display: 'block', marginBottom: 8 }}>Tags</Text>
                             <Space wrap>
                               {tags.map((tag, index) => (
                                 <Tag key={index} color="geekblue">{tag}</Tag>
@@ -408,7 +408,7 @@ const TemplateImportModal = ({ onImport, onClose }) => {
                     <div style={{ textAlign: 'center', padding: '40px 0' }}>
                       <FileTextOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
                       <br />
-                      <Text type="secondary">点击左侧模板查看详情</Text>
+                      <Text type="secondary">Select a template on the left to view its details.</Text>
                     </div>
                   )}
                 </Spin>
@@ -424,13 +424,13 @@ const TemplateImportModal = ({ onImport, onClose }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <InfoCircleOutlined style={{ color: '#1890ff' }} />
                 <span>
-                  导入后将替换当前Prompt内容
+                  Importing will replace the current prompt content
                   {(() => {
                     try {
                       if (selectedTemplateData.variables) {
                         const variables = JSON.parse(selectedTemplateData.variables);
                         const paramCount = Object.keys(variables).length;
-                        return paramCount > 0 ? `，包含 ${paramCount} 个参数` : '';
+                        return paramCount > 0 ? ` and include ${paramCount} parameters` : '';
                       }
                     } catch (error) {
                       return '';

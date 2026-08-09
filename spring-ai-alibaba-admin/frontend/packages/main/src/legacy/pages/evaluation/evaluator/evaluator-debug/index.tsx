@@ -55,7 +55,7 @@ function EvaluatorDebug() {
         setEvaluator(response.data);
       }
     } catch (error) {
-      handleApiError(error, '加载评估器详情');
+      handleApiError(error, 'Load evaluator details');
     } finally {
       setLoading(false);
     }
@@ -106,7 +106,7 @@ function EvaluatorDebug() {
 
     }
 
-    message.success('表单已清空');
+    message.success('Form cleared');
   };
 
   // 处理运行评估
@@ -139,15 +139,15 @@ function EvaluatorDebug() {
 
       if (response.code === 200) {
         setEvaluationResult(response.data);
-        notifySuccess({ message: '评估完成' });
+        notifySuccess({ message: 'Evaluation completed' });
       } else {
-        throw new Error(response.message || '评估失败');
+        throw new Error(response.message || 'Evaluation failed');
       }
     } catch (error: any) {
       if (error.errorFields) {
-        message.error('请填写必要的测试数据');
+        message.error('Please provide the required test data');
       } else {
-        handleApiError(error, '运行评估');
+        handleApiError(error, 'Run evaluation');
       }
     } finally {
       setEvaluationLoading(false);
@@ -218,37 +218,37 @@ function EvaluatorDebug() {
             onClick={goBackPageFun}
             size="large"
           />
-          <Title level={2} className='m-0'>评估器调试</Title>
+          <Title level={2} className='m-0'>Evaluator Debug</Title>
         </div>
-        <Text type="secondary">测试和调试评估器的评估逻辑</Text>
+        <Text type="secondary">Test and debug evaluator logic</Text>
       </div>
 
       <Row gutter={[24, 24]}>
         {/* 左侧：评估器配置信息 */}
         <Col xs={24} lg={12}>
-          <Card title="评估器配置信息" style={{ height: 'fit-content' }}>
+          <Card title="Evaluator Configuration" style={{ height: 'fit-content' }}>
             {evaluator && (
               <Descriptions column={3} size="small">
-                <Descriptions.Item label="评估器名称">
+                <Descriptions.Item label="Evaluator Name">
                   <Text strong>{evaluator.name}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="描述">
+                <Descriptions.Item label="Description">
                   <Text>{evaluator.description || '-'}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="当前版本">
+                <Descriptions.Item label="Current Version">
                   {evaluator.latestVersion ? (
                     <Tag color="blue">{evaluator.latestVersion}</Tag>
                   ) : (
-                    <Tag color="default">暂无版本</Tag>
+                    <Tag color="default">No Versions</Tag>
                   )}
                 </Descriptions.Item>
               </Descriptions>
             )}
 
-            <Divider orientation="left">模型配置</Divider>
+            <Divider orientation="left">Model Configuration</Divider>
 
             <Descriptions column={3} size="small">
-              <Descriptions.Item span={24} label="模型">
+              <Descriptions.Item span={24} label="Model">
                 <Tag color="geekblue">{getModelName(modelId)}</Tag>
               </Descriptions.Item>
               {
@@ -266,7 +266,7 @@ function EvaluatorDebug() {
 
             <div className='mb-4'>
               <Text type="secondary" className='text-sm mb-2 block'>
-                系统提示词
+                System Prompt
               </Text>
               <div
                 style={{
@@ -281,17 +281,17 @@ function EvaluatorDebug() {
                 }}
                 className="prompt-display"
               >
-                {debugConfig.systemPrompt || '未配置系统提示词'}
+                {debugConfig.systemPrompt || 'System prompt not configured'}
               </div>
             </div>
 
             {/* 显示变量及其值 */}
             {debugConfig.variables && Object.keys(debugConfig.variables).length > 0 && (
               <>
-                <Divider orientation="left">变量配置</Divider>
+                <Divider orientation="left">Variable Configuration</Divider>
                 <div className='mb-4'>
                   <Text type="secondary" className='text-sm mb-2 block'>
-                    检测到的变量 ({Object.keys(debugConfig.variables).length} 个)
+                    Detected Variables ({Object.keys(debugConfig.variables).length})
                   </Text>
                   <div className="p-3 bg-[#f9f9f9] border border-[#e8e8e8] rounded-md">
                     <Space direction="vertical" className='w-full' size="small">
@@ -311,7 +311,7 @@ function EvaluatorDebug() {
         {/* 右侧：测试数据区域 */}
         <Col xs={24} lg={12}>
           <Card
-            title="测试数据"
+            title="Test Data"
             extra={
               <Space>
                 <Button
@@ -319,7 +319,7 @@ function EvaluatorDebug() {
                   onClick={handleClear}
                   disabled={evaluationLoading}
                 >
-                  清空
+                  Clear
                 </Button>
                 <Button
                   type="primary"
@@ -327,7 +327,7 @@ function EvaluatorDebug() {
                   onClick={handleRun}
                   loading={evaluationLoading}
                 >
-                  运行
+                  Run
                 </Button>
               </Space>
             }
@@ -340,10 +340,10 @@ function EvaluatorDebug() {
                   <>
                     <div className="template-variables-section">
                       <div className="template-variables-title">
-                        模版变量配置
+                        Template Variable Configuration
                       </div>
                       <div className="template-variables-description">
-                        请为评估器模版中的变量设置值
+                        Set values for variables in the evaluator template
                       </div>
 
                       {Object.entries(templateVariables).map(([variableName, defaultValue]) => (
@@ -353,7 +353,7 @@ function EvaluatorDebug() {
                           label={
                             <div>
                               <Text strong>{variableName}</Text>
-                              <Tag color="blue" className="ml-2">模版变量</Tag>
+                              <Tag color="blue" className="ml-2">Template Variable</Tag>
                             </div>
                           }
                           name={variableName}
@@ -362,12 +362,12 @@ function EvaluatorDebug() {
                             {
                               required: true,
                               whitespace: true,
-                              message: `请输入${variableName}的值`,
+                              message: `Please enter a value for ${variableName}`,
                             }
                           ]}
                         >
                           <Input
-                            placeholder={`请输入 ${variableName} 的值`}
+                            placeholder={`Enter a value for ${variableName}`}
                             showCount
                             maxLength={500}
                           />
@@ -385,14 +385,14 @@ function EvaluatorDebug() {
             {/* 评估结果 */}
             {evaluationResult && (
               <>
-                <Divider orientation="left">评估结果</Divider>
+                <Divider orientation="left">Evaluation Result</Divider>
                 <Alert
-                  message="评估完成"
+                  message="Evaluation Completed"
                   description={
                     <div>
                       <Row gutter={[16, 8]}>
                         <Col span={12}>
-                          <Text strong>评估得分：</Text>
+                          <Text strong>Evaluation Score:</Text>
                           <Tag
                             color={evaluationResult.score >= 0.8 ? 'success' : evaluationResult.score >= 0.6 ? 'warning' : 'error'}
                             style={{ marginLeft: 8 }}
@@ -402,11 +402,11 @@ function EvaluatorDebug() {
                         </Col>
                       </Row>
                       <div className='mt-3'>
-                        <Text strong>评估理由：</Text>
+                        <Text strong>Evaluation Reason:</Text>
                         <div
                           className='mt-2 p-3 bg-[#f9f9f9] border border-[#e8e8e8] rounded-md'
                         >
-                          <Text>{evaluationResult.reason || '无详细理由'}</Text>
+                          <Text>{evaluationResult.reason || 'No detailed reason provided'}</Text>
                         </div>
                       </div>
                     </div>
@@ -421,8 +421,8 @@ function EvaluatorDebug() {
             {/* 提示信息 */}
             {!debugConfig.evaluatorId && (
               <Alert
-                message="配置信息提示"
-                description="当前使用默认配置进行调试，建议从评估器详情页进入以使用完整配置信息。"
+                message="Configuration Notice"
+                description="Debugging is using the default configuration. Open this page from evaluator details to use the full configuration."
                 type="info"
                 showIcon
                 className='mt-4'
