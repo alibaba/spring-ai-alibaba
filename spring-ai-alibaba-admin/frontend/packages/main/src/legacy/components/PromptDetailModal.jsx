@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import VersionHistoryModal from './VersionHistoryModal';
 import { buildLegacyPath } from '../utils/path';
+import $i18n from '@/i18n';
 
 const PromptDetailModal = ({ prompt, onClose }) => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
       }));
       onClose();
     } else {
-      alert('没有可用版本进行调试');
+      alert($i18n.get({ id: 'legacy.prompts.no.version.is.available.for.debugging', dm: '没有可用版本进行调试' }));
     }
   };
 
@@ -33,8 +34,8 @@ const PromptDetailModal = ({ prompt, onClose }) => {
 
 
   const tabs = [
-    { id: 'details', label: '详情', icon: 'fas fa-info-circle' },
-    { id: 'versions', label: '版本历史', icon: 'fas fa-history' }
+    { id: 'details', label: $i18n.get({ id: 'legacy.prompts.details', dm: '详情' }), icon: 'fas fa-info-circle' },
+    { id: 'versions', label: $i18n.get({ id: 'legacy.prompts.version.history', dm: '版本历史' }), icon: 'fas fa-history' }
   ];
 
   return (
@@ -42,7 +43,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
       <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto fade-in">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Prompt详情</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{$i18n.get({ id: 'legacy.prompts.prompt.details', dm: 'Prompt详情' })}</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
@@ -87,7 +88,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    当前版本
+                    {$i18n.get({ id: 'legacy.prompts.current.version', dm: '当前版本' })}
                   </label>
                   <div className="px-4 py-2 bg-gray-50 rounded-lg">
                     {prompt.currentVersion ? (
@@ -97,26 +98,26 @@ const PromptDetailModal = ({ prompt, onClose }) => {
                         </span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           <i className="fas fa-check-circle mr-1"></i>
-                          正式版本
+                          {$i18n.get({ id: 'legacy.prompts.release', dm: '正式版本' })}
                         </span>
                       </div>
                     ) : prompt.versions && prompt.versions.some(v => v.versionType === 'pre') ? (
                       <div className="flex items-center space-x-2">
-                        <span className="text-gray-500 text-sm">无正式版本</span>
+                        <span className="text-gray-500 text-sm">{$i18n.get({ id: 'legacy.prompts.no.release.version', dm: '无正式版本' })}</span>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                           <i className="fas fa-flask mr-1"></i>
-                          仅PRE版本
+                          {$i18n.get({ id: 'legacy.prompts.pre.release.only', dm: '仅PRE版本' })}
                         </span>
                       </div>
                     ) : (
-                      <span className="text-gray-500 text-sm">暂无版本</span>
+                      <span className="text-gray-500 text-sm">{$i18n.get({ id: 'legacy.prompts.no.version.2', dm: '暂无版本' })}</span>
                     )}
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    创建时间
+                    {$i18n.get({ id: 'legacy.prompts.created.at', dm: '创建时间' })}
                   </label>
                   <div className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">
                     {prompt.createdAt}
@@ -126,7 +127,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
 
               <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    标签
+                    {$i18n.get({ id: 'legacy.prompts.tags', dm: '标签' })}
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {prompt.tags && prompt.tags.length > 0 ? (
@@ -139,7 +140,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
                         </span>
                       ))
                     ) : (
-                      <span className="text-gray-500 text-sm">无标签</span>
+                      <span className="text-gray-500 text-sm">{$i18n.get({ id: 'legacy.prompts.no.tags', dm: '无标签' })}</span>
                     )}
                   </div>
               </div>
@@ -147,7 +148,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
               {prompt.description && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    描述
+                    {$i18n.get({ id: 'legacy.prompts.description', dm: '描述' })}
                   </label>
                   <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
                     {prompt.description}
@@ -159,7 +160,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      当前版本内容
+                      {$i18n.get({ id: 'legacy.prompts.current.version.content', dm: '当前版本内容' })}
                     </label>
                     <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900 whitespace-pre-wrap font-mono text-sm">
                       {prompt.currentVersion.content}
@@ -169,7 +170,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
                   {prompt.currentVersion.parameters && prompt.currentVersion.parameters.length > 0 && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        参数列表
+                        {$i18n.get({ id: 'legacy.prompts.parameters', dm: '参数列表' })}
                       </label>
                       <div className="flex flex-wrap gap-2">
                         {prompt.currentVersion.parameters.map((param, index) => (
@@ -187,16 +188,16 @@ const PromptDetailModal = ({ prompt, onClose }) => {
                   {prompt.currentVersion.modelConfig && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        模型配置
+                        {$i18n.get({ id: 'legacy.prompts.model.configuration', dm: '模型配置' })}
                       </label>
                       <div className="px-4 py-3 bg-gray-50 rounded-lg">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="font-medium text-gray-700">模型：</span>
+                            <span className="font-medium text-gray-700">Model: </span>
                             <span className="ml-2 text-gray-900">{prompt.currentVersion.modelConfig.modelId}</span>
                           </div>
                           <div>
-                            <span className="font-medium text-gray-700">最大令牌：</span>
+                            <span className="font-medium text-gray-700">Max Tokens: </span>
                             <span className="ml-2 text-gray-900">{prompt.currentVersion.modelConfig.maxTokens}</span>
                           </div>
                           <div>
@@ -219,13 +220,13 @@ const PromptDetailModal = ({ prompt, onClose }) => {
           {activeTab === 'versions' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">版本历史</h3>
+                <h3 className="text-lg font-medium text-gray-900">{$i18n.get({ id: 'legacy.prompts.version.history', dm: '版本历史' })}</h3>
                 {prompt.versions && prompt.versions.length > 0 && (
                   <button
                     onClick={handleViewVersionHistory}
                     className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
                   >
-                    查看完整历史
+                    {$i18n.get({ id: 'legacy.prompts.view.full.history', dm: '查看完整历史' })}
                   </button>
                 )}
               </div>
@@ -245,17 +246,17 @@ const PromptDetailModal = ({ prompt, onClose }) => {
                     {version.versionType === 'release' ? (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         <i className="fas fa-check-circle mr-1"></i>
-                        正式版本
+                        {$i18n.get({ id: 'legacy.prompts.release', dm: '正式版本' })}
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                         <i className="fas fa-flask mr-1"></i>
-                        PRE版本
+                        {$i18n.get({ id: 'legacy.prompts.pre.release', dm: 'PRE版本' })}
                       </span>
                     )}
                     {prompt.currentVersion && version.id === prompt.currentVersion.id && (
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                        当前版本
+                        {$i18n.get({ id: 'legacy.prompts.current.version', dm: '当前版本' })}
                       </span>
                     )}
                   </div>
@@ -279,7 +280,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
                 ) : (
                   <div className="text-center py-8">
                     <i className="fas fa-history text-3xl text-gray-300 mb-3"></i>
-                    <p className="text-gray-500">暂无版本发布</p>
+                    <p className="text-gray-500">{$i18n.get({ id: 'legacy.prompts.no.versions.published.yet', dm: '暂无版本发布' })}</p>
                   </div>
                 )}
               </div>
@@ -290,7 +291,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
                     onClick={handleViewVersionHistory}
                     className="text-primary-600 hover:text-primary-700 text-sm font-medium"
                   >
-                    查看全部 {prompt.versions.length} 个版本 →
+                    {$i18n.get({ id: 'legacy.prompts.view.all.versions', dm: '查看全部 {count} 个版本 →' }, { count: prompt.versions.length })}
                   </button>
                 </div>
               )}
@@ -305,7 +306,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
             >
               <i className="fas fa-history mr-2"></i>
-              版本对比
+              {$i18n.get({ id: 'legacy.prompts.compare.versions', dm: '版本对比' })}
             </button>
           )}
           
@@ -318,7 +319,7 @@ const PromptDetailModal = ({ prompt, onClose }) => {
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              关闭
+              {$i18n.get({ id: 'legacy.prompts.close', dm: '关闭' })}
             </button>
             {prompt.currentVersion && (
               <button

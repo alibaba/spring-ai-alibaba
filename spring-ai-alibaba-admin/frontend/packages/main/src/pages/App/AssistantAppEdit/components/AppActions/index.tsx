@@ -171,7 +171,10 @@ export default function AppActions(props: {
                 disabled={appState.saveLoading}
                 onClick={handleExportSAA}
               >
-                导出SAA工程代码
+                {$i18n.get({
+                  id: 'main.pages.App.exportSAAProjectCode',
+                  dm: '导出SAA工程代码',
+                })}
               </Button>
               <Popover
                 onOpenChange={(val) => {

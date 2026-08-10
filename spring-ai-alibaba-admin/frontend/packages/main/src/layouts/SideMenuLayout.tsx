@@ -189,7 +189,10 @@ export default function SideMenuLayout({ children }: { children: React.ReactNode
       },
       {
         key: 'prompt',
-        label: 'Prompt工程',
+        label: $i18n.get({
+          id: 'main.layouts.SideMenu.promptEngineering',
+          dm: 'Prompt工程',
+        }),
         icon: <BulbOutlined />,
         children: [
           {
@@ -206,29 +209,44 @@ export default function SideMenuLayout({ children }: { children: React.ReactNode
       },
       {
         key: 'evaluation',
-        label: '评测',
+        label: $i18n.get({
+          id: 'main.layouts.SideMenu.evaluation',
+          dm: '评测',
+        }),
         icon: <ExperimentOutlined />,
         children: [
           {
             key: '/admin/evaluation/gather',
-            label: '评测集',
+            label: $i18n.get({
+              id: 'main.layouts.SideMenu.evaluationSet',
+              dm: '评测集',
+            }),
             icon: <UnorderedListOutlined />,
           },
           {
             key: '/admin/evaluation/evaluator',
-            label: '评估器',
+            label: $i18n.get({
+              id: 'main.layouts.SideMenu.evaluator',
+              dm: '评估器',
+            }),
             icon: <BarChartOutlined />,
           },
           {
             key: '/admin/evaluation/experiment',
-            label: '实验',
+            label: $i18n.get({
+              id: 'main.layouts.SideMenu.experiment',
+              dm: '实验',
+            }),
             icon: <ExperimentOutlined />,
           },
         ],
       },
       {
         key: 'observability',
-        label: '可观测',
+        label: $i18n.get({
+          id: 'main.layouts.SideMenu.observability',
+          dm: '可观测',
+        }),
         icon: <LineChartOutlined />,
         children: [
           {
@@ -328,7 +346,14 @@ export default function SideMenuLayout({ children }: { children: React.ReactNode
                     ) : (
                       <MenuFoldOutlined className="text-gray-600 text-lg" />
                     )}
-                    {!collapsed && <span className="ml-2 text-gray-600">收起菜单</span>}
+                    {!collapsed && (
+                      <span className="ml-2 text-gray-600">
+                        {$i18n.get({
+                          id: 'main.layouts.SideMenu.collapseMenu',
+                          dm: '收起菜单',
+                        })}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
