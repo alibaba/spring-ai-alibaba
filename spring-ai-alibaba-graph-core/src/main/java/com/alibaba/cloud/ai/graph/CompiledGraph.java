@@ -323,7 +323,12 @@ public class CompiledGraph {
 			var nextNodeCommand = nextNodeId(asNode, branchCheckpoint.getState(), config);
 
 			nextNodeId = nextNodeCommand.gotoNode();
-			branchCheckpoint = branchCheckpoint.updateState(nextNodeCommand.update(), keyStrategyMap);
+			branchCheckpoint = Checkpoint.builder()
+					.id(branchCheckpoint.getId())
+					.state(nextNodeCommand.update())
+					.nodeId(branchCheckpoint.getNodeId())
+					.nextNodeId(branchCheckpoint.getNextNodeId())
+					.build();
 
 		}
 		// update checkpoint in saver
