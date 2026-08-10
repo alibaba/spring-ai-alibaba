@@ -10,6 +10,7 @@ import {
   Avatar,
   message
 } from 'antd';
+import $i18n from '@/i18n';
 import {
   CheckCircleOutlined,
   CloseOutlined,
@@ -26,7 +27,7 @@ const PublishSuccessModal = ({ prompt, version, onClose }) => {
   const [activeTab, setActiveTab] = useState('integration');
 
   const tabs = [
-    { key: 'integration', label: '集成指南', icon: <CodeOutlined /> }
+    { key: 'integration', label: $i18n.get({ id: 'legacy.prompts.integration.guide', dm: '集成指南' }), icon: <CodeOutlined /> }
   ];
 
   const integrationCode1 = `<dependency>
@@ -37,10 +38,10 @@ const PublishSuccessModal = ({ prompt, version, onClose }) => {
 `
 
 
-  const integrationCode2 = `spring.ai.alibaba.agent.proxy.nacos.serverAddr={ 替换 nacos address, 示例：127.0.0.1:8848}
-spring.ai.alibaba.agent.proxy.nacos.username={ 替换 nacos 用户名, 示例：nacos}
-spring.ai.alibaba.agent.proxy.nacos.password={ 替换 nacos 密码, 示例：nacos}
-spring.ai.alibaba.agent.proxy.nacos.promptKey={ 替换为promptKey，示例：mse-nacos-helper }`;
+  const integrationCode2 = `spring.ai.alibaba.agent.proxy.nacos.serverAddr={ replace with the Nacos address, e.g. 127.0.0.1:8848}
+${$i18n.get({ id: 'legacy.prompts.spring.ai.alibaba.agent.proxy.nacos.username', dm: 'spring.ai.alibaba.agent.proxy.nacos.username={ 替换 nacos 用户名, 示例：nacos}' })}
+${$i18n.get({ id: 'legacy.prompts.spring.ai.alibaba.agent.proxy.nacos.password', dm: 'spring.ai.alibaba.agent.proxy.nacos.password={ 替换 nacos 密码, 示例：nacos}' })}
+spring.ai.alibaba.agent.proxy.nacos.promptKey={ replace with the promptKey, e.g. mse-nacos-helper }`;
 
   const integrationCode3 = `<dependency>
 	<groupId>com.alibaba.cloud.ai</groupId>
@@ -97,9 +98,9 @@ spring.ai.alibaba.arms.model.capture-output=true`;
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-      message.success('复制成功');
+      message.success($i18n.get({ id: 'legacy.prompts.copied.successfully', dm: '复制成功' }));
     }).catch(() => {
-      message.error('复制失败');
+      message.error($i18n.get({ id: 'legacy.prompts.copy.failed', dm: '复制失败' }));
     });
   };
 
@@ -136,10 +137,10 @@ spring.ai.alibaba.arms.model.capture-output=true`;
                 icon={<CheckCircleOutlined />}
               />
               <div>
-                <Title level={2} style={{ margin: 0, color: '#262626' }}>发布成功！</Title>
+                <Title level={2} style={{ margin: 0, color: '#262626' }}>{$i18n.get({ id: 'legacy.prompts.published.successfully', dm: '发布成功！' })}</Title>
                 <Paragraph style={{ margin: '4px 0 0 0', color: '#595959' }}>
                   Prompt <Text style={{ fontWeight: 500, color: '#52c41a' }}>{prompt.promptKey}</Text>{' '}
-                  版本 <Text style={{ fontWeight: 500, color: '#52c41a' }}>{version}</Text> 已成功发布
+                  Version <Text style={{ fontWeight: 500, color: '#52c41a' }}>{version}</Text> published successfully
                 </Paragraph>
               </div>
             </div>
@@ -179,14 +180,14 @@ spring.ai.alibaba.arms.model.capture-output=true`;
               <Alert
                 message={
                   <div>
-                    Prompt发布成功，<span className='text-xs'>版本类型：</span>
-                    <Text strong>{prompt.latestVersionStatus === 'release' ? '正式版本' : 'PRE版本'}</Text>
+                    Prompt published successfully. <span className='text-xs'>Version type: </span>
+                    <Text strong>{prompt.latestVersionStatus === 'release' ? $i18n.get({ id: 'legacy.prompts.release', dm: '正式版本' }) : $i18n.get({ id: 'legacy.prompts.pre.release', dm: 'PRE版本' })}</Text>
                   </div>
                 }
                 description={
                   prompt.latestVersionStatus === "release" ? (
                     <div>
-                      <Text>当前的 Prompt 版本已经发布到Nacos中：</Text>
+                      <Text>{$i18n.get({ id: 'legacy.prompts.the.current.prompt.version.has.been.published.to.nacos', dm: '当前的 Prompt 版本已经发布到Nacos中：' })}</Text>
                       <div style={{
                         marginTop: 8,
                         padding: 12,
@@ -195,13 +196,13 @@ spring.ai.alibaba.arms.model.capture-output=true`;
                         fontSize: '13px',
                         fontFamily: 'monospace'
                       }}>
-                        <div>group：<Text strong>nacos-ai-meta</Text></div>
-                        <div>dataID：<Text strong>prompt-{prompt.promptKey || '-'}.json</Text></div>
+                        <div>{$i18n.get({ id: 'legacy.prompts.group', dm: 'group：' })}<Text strong>nacos-ai-meta</Text></div>
+                        <div>Data ID: <Text strong>prompt-{prompt.promptKey || '-'}.json</Text></div>
                       </div>
                     </div>
                   )
                   : (
-                    <Text>Prompt 预发版本发布成功，您可以对预发版本 Prompt 进行实验室评估，评估符合预期后发布正式版本</Text>
+                    <Text>{$i18n.get({ id: 'legacy.prompts.the.prompt.pre.release.version.was.published.successfully.ev', dm: 'Prompt 预发版本发布成功，您可以对预发版本 Prompt 进行实验室评估，评估符合预期后发布正式版本' })}</Text>
                   )
 
                 }
@@ -211,31 +212,31 @@ spring.ai.alibaba.arms.model.capture-output=true`;
               />
 
               <Alert
-                message="Spring AI Alibaba 集成指南"
-                description="Spring AI Alibaba Agent集成Nacos实现prompt加载以及动态更新。"
+                message={$i18n.get({ id: 'legacy.prompts.spring.ai.alibaba.integration.guide', dm: 'Spring AI Alibaba 集成指南' })}
+                description={$i18n.get({ id: 'legacy.prompts.integrate.spring.ai.alibaba.agent.with.nacos.for.prompt.load', dm: 'Spring AI Alibaba Agent集成Nacos实现prompt加载以及动态更新。' })}
                 type="info"
                 icon={<InfoCircleOutlined />}
                 showIcon
               />
 
               <Title level={4} style={{ margin: 0 }}>
-                Step 1 创建SpringBoot工程
+                {$i18n.get({ id: 'legacy.prompts.step.1.create.a.spring.boot.project', dm: 'Step 1 创建SpringBoot工程' })}
               </Title>
               <div>
                 <span className='text-red-600'>*</span>
-                spring.ai.alibaba.version版本请参照spring-ai-alibaba官网
+                {$i18n.get({ id: 'legacy.prompts.refer.to.the.spring.ai.alibaba.website.for.the.spring.ai.ali', dm: 'spring.ai.alibaba.version版本请参照spring-ai-alibaba官网' })}
               </div>
               <Card
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text strong>1. 引入spring ai alibaba agent nacos代理模块</Text>
+                    <Text strong>{$i18n.get({ id: 'legacy.prompts.1.add.the.spring.ai.alibaba.agent.nacos.proxy.module', dm: '1. 引入spring ai alibaba agent nacos代理模块' })}</Text>
                     <Button
                       type="default"
                       size="small"
                       icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(integrationCode1)}
                     >
-                      复制代码
+                      {$i18n.get({ id: 'legacy.prompts.copy.code', dm: '复制代码' })}
                     </Button>
                   </div>
                 }
@@ -261,14 +262,14 @@ spring.ai.alibaba.arms.model.capture-output=true`;
               <Card
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text strong>2. 指定nacos地址及prompKey</Text>
+                    <Text strong>{$i18n.get({ id: 'legacy.prompts.2.configure.the.nacos.address.and.promptkey', dm: '2. 指定nacos地址及prompKey' })}</Text>
                     <Button
                       type="default"
                       size="small"
                       icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(integrationCode3)}
                     >
-                      复制代码
+                      {$i18n.get({ id: 'legacy.prompts.copy.code', dm: '复制代码' })}
                     </Button>
                   </div>
                 }
@@ -293,14 +294,14 @@ spring.ai.alibaba.arms.model.capture-output=true`;
               <Card
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text strong>4. 设置可观测参数</Text>
+                    <Text strong>{$i18n.get({ id: 'legacy.prompts.4.configure.observability.settings', dm: '4. 设置可观测参数' })}</Text>
                     <Button
                       type="default"
                       size="small"
                       icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(integrationCode2)}
                     >
-                      复制代码
+                      {$i18n.get({ id: 'legacy.prompts.copy.code', dm: '复制代码' })}
                     </Button>
                   </div>
                 }
@@ -325,14 +326,14 @@ spring.ai.alibaba.arms.model.capture-output=true`;
               <Card
                 title={
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text strong>3. 引入spring ai alibaba 模块可观测组件</Text>
+                    <Text strong>{$i18n.get({ id: 'legacy.prompts.3.add.the.spring.ai.alibaba.observability.module', dm: '3. 引入spring ai alibaba 模块可观测组件' })}</Text>
                     <Button
                       type="default"
                       size="small"
                       icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(integrationCode4)}
                     >
-                      复制代码
+                      {$i18n.get({ id: 'legacy.prompts.copy.code', dm: '复制代码' })}
                     </Button>
                   </div>
                 }
@@ -355,18 +356,18 @@ spring.ai.alibaba.arms.model.capture-output=true`;
                 </div>
                 <div className='p-2'>
                   <span className='text-red-600'>*</span>
-                  {`其中{studio address}请替换为实际的地址`}
+                  {$i18n.get({ id: 'legacy.prompts.replace.with.the.actual.address', dm: '其中{studio address}请替换为实际的地址' })}
                 </div>
               </Card>
 
               <Title level={4} style={{ margin: 0 }}>
-                Step 1 创建SpringBoot工程
+                {$i18n.get({ id: 'legacy.prompts.step.1.create.a.spring.boot.project', dm: 'Step 1 创建SpringBoot工程' })}
               </Title>
 
               <Card>
                 <div>
                   <Text>
-                    构建ReactAgent指定builderFactory为 NacosAgentPromptBuilderFactory
+                    {$i18n.get({ id: 'legacy.prompts.build.reactagent.with.builderfactory.set.to.nacosagentprompt', dm: '构建ReactAgent指定builderFactory为 NacosAgentPromptBuilderFactory' })}
                   </Text>
                 </div>
                 <div>
@@ -375,16 +376,16 @@ spring.ai.alibaba.arms.model.capture-output=true`;
                   </Text>
                 </div>
                 <div>
-                  说明:
+                  {$i18n.get({ id: 'legacy.prompts.notes', dm: '说明:' })}
                   <ol>
                     <li>
-                      nacosOptions类型是NacosOptions，可以通过标准SpringBean模式引入
+                      {$i18n.get({ id: 'legacy.prompts.nacosoptions.is.of.type.nacosoptions.and.can.be.injected.as', dm: 'nacosOptions类型是NacosOptions，可以通过标准SpringBean模式引入' })}
                     </li>
                     <li>
-                      默认ReactAgent.builder() 内部使用DefaultBuilder, 通过指定。NacosAgentPromptBuilderFactory(nacosOptions)，构建时会从nacos中加载promptKey对应的prompt模版，并且支持prompt动态更新。
+                      {$i18n.get({ id: 'legacy.prompts.reactagent.builder.uses.defaultbuilder.by.default.with.nacos', dm: '默认ReactAgent.builder() 内部使用DefaultBuilder, 通过指定。NacosAgentPromptBuilderFactory(nacosOptions)，构建时会从nacos中加载promptKey对应的prompt模版，并且支持prompt动态更新。' })}
                     </li>
                     <li>
-                      其余构建的ReactAgent的参数和标准的ReactAgent构建方式一致。
+                      {$i18n.get({ id: 'legacy.prompts.all.other.reactagent.builder.parameters.are.the.same.as.the', dm: '其余构建的ReactAgent的参数和标准的ReactAgent构建方式一致。' })}
                     </li>
                   </ol>
                 </div>
@@ -407,14 +408,14 @@ spring.ai.alibaba.arms.model.capture-output=true`;
         }}>
           <div style={{ display: 'flex', alignItems: 'center', color: '#595959', fontSize: '14px' }}>
             <BulbOutlined style={{ color: '#faad14', marginRight: 4 }} />
-            提示：配置更新后，应用会自动重新加载最新的Prompt配置
+            {$i18n.get({ id: 'legacy.prompts.tip.after.configuration.updates.the.application.automaticall', dm: '提示：配置更新后，应用会自动重新加载最新的Prompt配置' })}
           </div>
           <Space>
             <Button
               type="primary"
               onClick={onClose}
             >
-              完成
+              {$i18n.get({ id: 'legacy.prompts.done', dm: '完成' })}
             </Button>
           </Space>
         </div>

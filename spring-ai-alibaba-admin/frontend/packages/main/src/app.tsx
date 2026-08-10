@@ -49,7 +49,7 @@ export function onRouteChange({ clientRoutes, location }) {
     }),
     '/dify': $i18n.get({
       id: 'main.pages.Dify.index.title',
-      dm: 'Dify转换',
+      dm: 'Dify Converter',
     }),
   };
 

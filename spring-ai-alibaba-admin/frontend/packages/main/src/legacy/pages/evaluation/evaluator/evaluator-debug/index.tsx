@@ -25,6 +25,7 @@ import { handleApiError, notifySuccess } from '../../../../utils/notification';
 import API from '../../../../services';
 import './index.css';
 import { ModelsContext } from '../../../../context/models';
+import $i18n from '@/i18n';
 
 const { Title, Text } = Typography;
 
@@ -55,7 +56,7 @@ function EvaluatorDebug() {
         setEvaluator(response.data);
       }
     } catch (error) {
-      handleApiError(error, '加载评估器详情');
+      handleApiError(error, $i18n.get({ id: 'legacy.evaluation.evaluatorDebug.loadContext', dm: '加载评估器详情' }));
     } finally {
       setLoading(false);
     }
@@ -106,7 +107,7 @@ function EvaluatorDebug() {
 
     }
 
-    message.success('表单已清空');
+    message.success($i18n.get({ id: 'legacy.evaluation.evaluatorDebug.formCleared', dm: '表单已清空' }));
   };
 
   // 处理运行评估
@@ -139,15 +140,15 @@ function EvaluatorDebug() {
 
       if (response.code === 200) {
         setEvaluationResult(response.data);
-        notifySuccess({ message: '评估完成' });
+        notifySuccess({ message: $i18n.get({ id: 'legacy.evaluation.evaluatorDebug.evalCompleted', dm: '评估完成' }) });
       } else {
-        throw new Error(response.message || '评估失败');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.evaluation.evaluatorDebug.evalFailed', dm: '评估失败' }));
       }
     } catch (error: any) {
       if (error.errorFields) {
-        message.error('请填写必要的测试数据');
+        message.error($i18n.get({ id: 'legacy.evaluation.evaluatorDebug.fillTestData', dm: '请填写必要的测试数据' }));
       } else {
-        handleApiError(error, '运行评估');
+        handleApiError(error, $i18n.get({ id: 'legacy.evaluation.evaluatorDebug.runContext', dm: '运行评估' }));
       }
     } finally {
       setEvaluationLoading(false);
@@ -218,37 +219,37 @@ function EvaluatorDebug() {
             onClick={goBackPageFun}
             size="large"
           />
-          <Title level={2} className='m-0'>评估器调试</Title>
+          <Title level={2} className='m-0'>{$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.pageTitle', dm: '评估器调试' })}</Title>
         </div>
-        <Text type="secondary">测试和调试评估器的评估逻辑</Text>
+        <Text type="secondary">{$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.pageSubtitle', dm: '测试和调试评估器的评估逻辑' })}</Text>
       </div>
 
       <Row gutter={[24, 24]}>
         {/* 左侧：评估器配置信息 */}
         <Col xs={24} lg={12}>
-          <Card title="评估器配置信息" style={{ height: 'fit-content' }}>
+          <Card title={$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.configCard', dm: '评估器配置信息' })} style={{ height: 'fit-content' }}>
             {evaluator && (
               <Descriptions column={3} size="small">
-                <Descriptions.Item label="评估器名称">
+                <Descriptions.Item label={$i18n.get({ id: 'legacy.evaluation.common.evaluatorName', dm: '评估器名称' })}>
                   <Text strong>{evaluator.name}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="描述">
+                <Descriptions.Item label={$i18n.get({ id: 'legacy.evaluation.common.description', dm: '描述' })}>
                   <Text>{evaluator.description || '-'}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="当前版本">
+                <Descriptions.Item label={$i18n.get({ id: 'legacy.evaluation.common.currentVersion', dm: '当前版本' })}>
                   {evaluator.latestVersion ? (
                     <Tag color="blue">{evaluator.latestVersion}</Tag>
                   ) : (
-                    <Tag color="default">暂无版本</Tag>
+                    <Tag color="default">{$i18n.get({ id: 'legacy.evaluation.common.noVersions', dm: '暂无版本' })}</Tag>
                   )}
                 </Descriptions.Item>
               </Descriptions>
             )}
 
-            <Divider orientation="left">模型配置</Divider>
+            <Divider orientation="left">{$i18n.get({ id: 'legacy.evaluation.common.modelConfiguration', dm: '模型配置' })}</Divider>
 
             <Descriptions column={3} size="small">
-              <Descriptions.Item span={24} label="模型">
+              <Descriptions.Item span={24} label={$i18n.get({ id: 'legacy.evaluation.common.model', dm: '模型' })}>
                 <Tag color="geekblue">{getModelName(modelId)}</Tag>
               </Descriptions.Item>
               {
@@ -266,7 +267,7 @@ function EvaluatorDebug() {
 
             <div className='mb-4'>
               <Text type="secondary" className='text-sm mb-2 block'>
-                系统提示词
+                {$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.systemPrompt', dm: '系统提示词' })}
               </Text>
               <div
                 style={{
@@ -281,17 +282,17 @@ function EvaluatorDebug() {
                 }}
                 className="prompt-display"
               >
-                {debugConfig.systemPrompt || '未配置系统提示词'}
+                {debugConfig.systemPrompt || $i18n.get({ id: 'legacy.evaluation.evaluatorDebug.systemPromptMissing', dm: '未配置系统提示词' })}
               </div>
             </div>
 
             {/* 显示变量及其值 */}
             {debugConfig.variables && Object.keys(debugConfig.variables).length > 0 && (
               <>
-                <Divider orientation="left">变量配置</Divider>
+                <Divider orientation="left">{$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.variableConfig', dm: '变量配置' })}</Divider>
                 <div className='mb-4'>
                   <Text type="secondary" className='text-sm mb-2 block'>
-                    检测到的变量 ({Object.keys(debugConfig.variables).length} 个)
+                    {$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.detectedVariables', dm: '检测到的变量 ({count} 个)' }, { count: Object.keys(debugConfig.variables).length })}
                   </Text>
                   <div className="p-3 bg-[#f9f9f9] border border-[#e8e8e8] rounded-md">
                     <Space direction="vertical" className='w-full' size="small">
@@ -311,7 +312,7 @@ function EvaluatorDebug() {
         {/* 右侧：测试数据区域 */}
         <Col xs={24} lg={12}>
           <Card
-            title="测试数据"
+            title={$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.testData', dm: '测试数据' })}
             extra={
               <Space>
                 <Button
@@ -319,7 +320,7 @@ function EvaluatorDebug() {
                   onClick={handleClear}
                   disabled={evaluationLoading}
                 >
-                  清空
+                  {$i18n.get({ id: 'legacy.evaluation.common.clear', dm: '清空' })}
                 </Button>
                 <Button
                   type="primary"
@@ -327,7 +328,7 @@ function EvaluatorDebug() {
                   onClick={handleRun}
                   loading={evaluationLoading}
                 >
-                  运行
+                  {$i18n.get({ id: 'legacy.evaluation.common.run', dm: '运行' })}
                 </Button>
               </Space>
             }
@@ -340,10 +341,10 @@ function EvaluatorDebug() {
                   <>
                     <div className="template-variables-section">
                       <div className="template-variables-title">
-                        模版变量配置
+                        {$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.templateVarConfig', dm: '模版变量配置' })}
                       </div>
                       <div className="template-variables-description">
-                        请为评估器模版中的变量设置值
+                        {$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.templateVarDesc', dm: '请为评估器模版中的变量设置值' })}
                       </div>
 
                       {Object.entries(templateVariables).map(([variableName, defaultValue]) => (
@@ -353,7 +354,7 @@ function EvaluatorDebug() {
                           label={
                             <div>
                               <Text strong>{variableName}</Text>
-                              <Tag color="blue" className="ml-2">模版变量</Tag>
+                              <Tag color="blue" className="ml-2">{$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.templateVarTag', dm: '模版变量' })}</Tag>
                             </div>
                           }
                           name={variableName}
@@ -362,12 +363,12 @@ function EvaluatorDebug() {
                             {
                               required: true,
                               whitespace: true,
-                              message: `请输入${variableName}的值`,
+                              message: $i18n.get({ id: 'legacy.evaluation.evaluatorDebug.enterVarValue', dm: '请输入{name}的值' }, { name: variableName }),
                             }
                           ]}
                         >
                           <Input
-                            placeholder={`请输入 ${variableName} 的值`}
+                            placeholder={$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.enterVarPlaceholder', dm: '请输入 {name} 的值' }, { name: variableName })}
                             showCount
                             maxLength={500}
                           />
@@ -385,14 +386,14 @@ function EvaluatorDebug() {
             {/* 评估结果 */}
             {evaluationResult && (
               <>
-                <Divider orientation="left">评估结果</Divider>
+                <Divider orientation="left">{$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.resultDivider', dm: '评估结果' })}</Divider>
                 <Alert
-                  message="评估完成"
+                  message={$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.resultAlert', dm: '评估完成' })}
                   description={
                     <div>
                       <Row gutter={[16, 8]}>
                         <Col span={12}>
-                          <Text strong>评估得分：</Text>
+                          <Text strong>{$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.scoreLabel', dm: '评估得分：' })}</Text>
                           <Tag
                             color={evaluationResult.score >= 0.8 ? 'success' : evaluationResult.score >= 0.6 ? 'warning' : 'error'}
                             style={{ marginLeft: 8 }}
@@ -402,11 +403,11 @@ function EvaluatorDebug() {
                         </Col>
                       </Row>
                       <div className='mt-3'>
-                        <Text strong>评估理由：</Text>
+                        <Text strong>{$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.reasonLabel', dm: '评估理由：' })}</Text>
                         <div
                           className='mt-2 p-3 bg-[#f9f9f9] border border-[#e8e8e8] rounded-md'
                         >
-                          <Text>{evaluationResult.reason || '无详细理由'}</Text>
+                          <Text>{evaluationResult.reason || $i18n.get({ id: 'legacy.evaluation.evaluatorDebug.noReason', dm: '无详细理由' })}</Text>
                         </div>
                       </div>
                     </div>
@@ -421,8 +422,8 @@ function EvaluatorDebug() {
             {/* 提示信息 */}
             {!debugConfig.evaluatorId && (
               <Alert
-                message="配置信息提示"
-                description="当前使用默认配置进行调试，建议从评估器详情页进入以使用完整配置信息。"
+                message={$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.configNotice', dm: '配置信息提示' })}
+                description={$i18n.get({ id: 'legacy.evaluation.evaluatorDebug.configNoticeDesc', dm: '当前使用默认配置进行调试，建议从评估器详情页进入以使用完整配置信息。' })}
                 type="info"
                 showIcon
                 className='mt-4'
