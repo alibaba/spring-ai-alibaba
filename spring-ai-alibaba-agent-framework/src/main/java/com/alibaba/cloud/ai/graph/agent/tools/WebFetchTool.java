@@ -173,6 +173,10 @@ public class WebFetchTool implements BiFunction<WebFetchTool.Request, ToolContex
 			return "Error: Invalid URL format: " + e.getMessage();
 		}
 
+		if (!StringUtils.hasText(prompt)) {
+			return "Error: Prompt cannot be empty or null";
+		}
+
 		// Upgrade HTTP to HTTPS if needed
 		if (url.startsWith("http://")) {
 			url = "https://" + url.substring(7);

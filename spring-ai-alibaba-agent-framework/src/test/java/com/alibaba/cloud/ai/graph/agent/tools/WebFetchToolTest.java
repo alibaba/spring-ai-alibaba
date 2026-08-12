@@ -29,7 +29,9 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.tool.ToolCallback;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -83,6 +85,54 @@ class WebFetchToolTest {
 				new ToolContext(Collections.emptyMap()));
 		assertTrue(result.startsWith("Error:"));
 		assertTrue(result.contains("Invalid URL"));
+	}
+
+	@Test
+	void testNullPromptReturnsError() {
+		String result = webFetchTool.apply(new WebFetchTool.Request("https://localhost:1", null),
+				new ToolContext(Collections.emptyMap()));
+		assertTrue(result.startsWith("Error:"));
+		assertTrue(result.contains("Prompt cannot be empty or null"));
+	}
+
+	@Test
+	void testEmptyPromptReturnsError() {
+		String result = webFetchTool.apply(new WebFetchTool.Request("https://localhost:1", ""),
+				new ToolContext(Collections.emptyMap()));
+		assertTrue(result.startsWith("Error:"));
+		assertTrue(result.contains("Prompt cannot be empty or null"));
+	}
+
+	@Test
+	void testBlankPromptReturnsError() {
+		String result = webFetchTool.apply(new WebFetchTool.Request("https://localhost:1", "   "),
+				new ToolContext(Collections.emptyMap()));
+		assertTrue(result.startsWith("Error:"));
+		assertTrue(result.contains("Prompt cannot be empty or null"));
+	}
+
+	@Test
+	void testToolCallbackReturnsErrorForNullPrompt() {
+		ToolCallback toolCallback = WebFetchTool.builder(ChatClient.builder(mock(ChatModel.class)).build()).build();
+		String result = toolCallback.call("{\"url\":\"https://localhost:1\",\"prompt\":null}",
+				new ToolContext(Collections.emptyMap()));
+		assertTrue(result.contains("Error: Prompt cannot be empty or null"));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void testValidPromptUsesCache() throws Exception {
+		String url = "https://example.com";
+		String prompt = "Summarize";
+		String expected = "Cached summary";
+		Field cacheField = WebFetchTool.class.getDeclaredField("urlCache");
+		cacheField.setAccessible(true);
+		Cache<String, String> cache = (Cache<String, String>) cacheField.get(webFetchTool);
+		cache.put(url + "::prompt::" + prompt.hashCode(), expected);
+
+		String result = webFetchTool.apply(new WebFetchTool.Request(url, prompt),
+				new ToolContext(Collections.emptyMap()));
+		assertEquals(expected, result);
 	}
 
 	@Test
