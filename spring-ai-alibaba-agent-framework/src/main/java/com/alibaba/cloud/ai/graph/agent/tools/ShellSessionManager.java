@@ -466,7 +466,7 @@ public class ShellSessionManager {
 			}
 		}
 
-		CommandResult execute(String command, long timeoutMs, int maxOutputLines, Long maxOutputBytes) {
+		synchronized CommandResult execute(String command, long timeoutMs, int maxOutputLines, Long maxOutputBytes) {
 			if (process == null || !process.isAlive()) {
 				throw new IllegalStateException("Shell session is not running");
 			}
