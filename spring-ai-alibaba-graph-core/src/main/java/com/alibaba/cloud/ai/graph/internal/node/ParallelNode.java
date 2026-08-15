@@ -173,17 +173,35 @@ public class ParallelNode extends Node {
 	 * Calculate optimal core pool size based on system resources and workload characteristics.
 	 * For mixed IO/CPU workloads, 2x CPU cores is typically optimal.
 	 * Minimum of 4 threads to ensure reasonable parallelism on small systems.
+	 * The result is capped by {@link #calculateMaximumPoolSize(int)} so that the
+	 * {@code corePoolSize <= maximumPoolSize} invariant required by
+	 * {@link ThreadPoolExecutor} always holds.
 	 * 
 	 * @return optimal core pool size
 	 */
 	private static int calculateCorePoolSize() {
 		int cpuCores = Runtime.getRuntime().availableProcessors();
+		int finalCorePoolSize = calculateCorePoolSize(cpuCores);
+		logger.info("Calculated core pool size: {} (CPU cores: {})", finalCorePoolSize, cpuCores);
+		return finalCorePoolSize;
+	}
+
+	/**
+	 * Calculate optimal core pool size for the given number of CPU cores.
+	 * Visible for testing.
+	 * 
+	 * @param cpuCores number of available CPU cores
+	 * @return optimal core pool size, never greater than the maximum pool size
+	 */
+	static int calculateCorePoolSize(int cpuCores) {
 		// For mixed workloads, 2x CPU cores is typically optimal
 		int corePoolSize = cpuCores * 2;
 		// Ensure minimum of 4 threads for reasonable parallelism on small systems
 		int finalCorePoolSize = Math.max(corePoolSize, 4);
-		logger.info("Calculated core pool size: {} (CPU cores: {})", finalCorePoolSize, cpuCores);
-		return finalCorePoolSize;
+		// The maximum pool size is capped, so the core pool size must respect that cap too:
+		// ThreadPoolExecutor rejects corePoolSize > maximumPoolSize with IllegalArgumentException,
+		// which would break this class' static initializer on hosts with more than 100 CPU cores
+		return Math.min(finalCorePoolSize, calculateMaximumPoolSize(cpuCores));
 	}
 
 	/**
@@ -194,11 +212,22 @@ public class ParallelNode extends Node {
 	 */
 	private static int calculateMaximumPoolSize() {
 		int cpuCores = Runtime.getRuntime().availableProcessors();
-		// Allow for handling burst workloads with 4x CPU cores
-		// Cap at reasonable maximum to prevent resource exhaustion
-		int maxPoolSize = Math.min(cpuCores * 4, 200);
+		int maxPoolSize = calculateMaximumPoolSize(cpuCores);
 		logger.info("Calculated maximum pool size: {} (CPU cores: {})", maxPoolSize, cpuCores);
 		return maxPoolSize;
+	}
+
+	/**
+	 * Calculate maximum pool size for the given number of CPU cores.
+	 * Visible for testing.
+	 * 
+	 * @param cpuCores number of available CPU cores
+	 * @return maximum pool size
+	 */
+	static int calculateMaximumPoolSize(int cpuCores) {
+		// Allow for handling burst workloads with 4x CPU cores
+		// Cap at reasonable maximum to prevent resource exhaustion
+		return Math.min(cpuCores * 4, 200);
 	}
 
 	/**
