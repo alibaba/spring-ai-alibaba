@@ -29,6 +29,11 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -113,6 +118,51 @@ class ShellSessionManagerTest {
 
 		assertTrue(ShellSessionManager.isSessionInRegistry(threadId),
 				"Session should be registered in global registry with threadId");
+	}
+
+	/**
+	 * A persistent session has one stdin stream and one output queue, so concurrent
+	 * commands must not consume each other's output or completion markers.
+	 */
+	@Test
+	void testConcurrentCommandsInSameSessionRemainIsolated() throws Exception {
+		sessionManager = createSessionManager();
+		sessionManager.initialize(config);
+
+		boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+		String firstCommand = isWindows ? "ping -n 2 127.0.0.1 > nul && echo first-only"
+				: "sleep 0.2; printf 'first-only\\n'";
+		String secondCommand = isWindows ? "ping -n 2 127.0.0.1 > nul && echo second-only"
+				: "sleep 0.2; printf 'second-only\\n'";
+
+		CountDownLatch start = new CountDownLatch(1);
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		try {
+			Future<ShellSessionManager.CommandResult> first = executor.submit(() -> {
+				start.await();
+				return sessionManager.executeCommand(firstCommand, config);
+			});
+			Future<ShellSessionManager.CommandResult> second = executor.submit(() -> {
+				start.await();
+				return sessionManager.executeCommand(secondCommand, config);
+			});
+			start.countDown();
+
+			ShellSessionManager.CommandResult firstResult = first.get(5, TimeUnit.SECONDS);
+			ShellSessionManager.CommandResult secondResult = second.get(5, TimeUnit.SECONDS);
+			assertFalse(firstResult.isTimedOut());
+			assertFalse(secondResult.isTimedOut());
+			assertTrue(firstResult.getOutput().contains("first-only"));
+			assertFalse(firstResult.getOutput().contains("second-only"));
+			assertTrue(secondResult.getOutput().contains("second-only"));
+			assertFalse(secondResult.getOutput().contains("first-only"));
+		}
+		catch (ExecutionException e) {
+			throw (e.getCause() instanceof Exception exception) ? exception : e;
+		}
+		finally {
+			executor.shutdownNow();
+		}
 	}
 
 	/**
