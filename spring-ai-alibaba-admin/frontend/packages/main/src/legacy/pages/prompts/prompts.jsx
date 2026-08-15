@@ -33,6 +33,7 @@ import API from '../../services';
 import usePagination from '../../hooks/usePagination';
 import { safeJSONParse } from '../../utils/util';
 import { buildLegacyPath } from '../../utils/path';
+import $i18n from '@/i18n';
 
 const { Title, Paragraph } = Typography;
 const { Search } = Input;
@@ -90,12 +91,12 @@ const PromptsPage = () => {
           totalPage: response.data.totalPage || 0,
         });
       } else {
-        throw new Error(response.message || '加载失败');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.prompts.failed.to.load.prompts', dm: '加载失败' }));
       }
     } catch (err) {
       console.error('加载 Prompts 失败:', err);
-      handleApiError(err, '加载 Prompts 列表');
-      setError(err.message || '网络错误，请稍后重试');
+      handleApiError(err, $i18n.get({ id: 'legacy.prompts.load.prompts', dm: '加载 Prompts 列表' }));
+      setError(err.message || $i18n.get({ id: 'legacy.prompts.network.error.please.try.again.later', dm: '网络错误，请稍后重试' }));
     } finally {
       setLoading(false);
     }
@@ -140,19 +141,19 @@ const PromptsPage = () => {
       if (response.code === 200) {
         // 删除成功后重新加载列表
         notifySuccess({
-          message: 'Prompt 删除成功',
-          description: `已成功删除 Prompt "${selectedPrompt.promptKey}"`
+          message: $i18n.get({ id: 'legacy.prompts.prompt.deleted', dm: 'Prompt 删除成功' }),
+          description: $i18n.get({ id: 'legacy.prompts.prompt.was.deleted.successfully', dm: '已成功删除 Prompt "{promptKey}"' }, { promptKey: selectedPrompt.promptKey })
         });
         await loadPrompts(pagination.current);
         setShowDeleteModal(false);
         setSelectedPrompt(null);
       } else {
-        throw new Error(response.message || '删除失败');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.prompts.failed.to.delete.prompt', dm: '删除失败' }));
       }
     } catch (err) {
       console.error('删除 Prompt 失败:', err);
-      handleApiError(err, '删除 Prompt');
-      setError(err.message || '删除失败，请稍后重试');
+      handleApiError(err, $i18n.get({ id: 'legacy.prompts.delete.prompt', dm: '删除 Prompt' }));
+      setError(err.message || $i18n.get({ id: 'legacy.prompts.failed.to.delete.prompt.please.try.again.later', dm: '删除失败，请稍后重试' }));
     }
   };
 
@@ -161,7 +162,7 @@ const PromptsPage = () => {
     if (!prompt.latestVersion || !prompt.latestVersionStatus) {
       return (
         <Tag color="warning" icon={<ClockCircleOutlined />}>
-          无版本
+          {$i18n.get({ id: 'legacy.prompts.no.version', dm: '无版本' })}
         </Tag>
       );
     }
@@ -170,19 +171,19 @@ const PromptsPage = () => {
     if (prompt.latestVersionStatus === 'release') {
       return (
         <Tag color="success" icon={<CheckCircleOutlined />}>
-          正式版本
+          {$i18n.get({ id: 'legacy.prompts.release', dm: '正式版本' })}
         </Tag>
       );
     } else if (prompt.latestVersionStatus === 'pre') {
       return (
         <Tag color="processing" icon={<ExperimentOutlined />}>
-          PRE版本
+          {$i18n.get({ id: 'legacy.prompts.pre.release', dm: 'PRE版本' })}
         </Tag>
       );
     } else {
       return (
         <Tag color="default" icon={<QuestionCircleOutlined />}>
-          未知状态
+          {$i18n.get({ id: 'legacy.prompts.unknown.status.2', dm: '未知状态' })}
         </Tag>
       );
     }
@@ -197,7 +198,7 @@ const PromptsPage = () => {
       render: (text) => <span style={{ fontWeight: 500 }}>{text}</span>,
     },
     {
-      title: '描述',
+      title: $i18n.get({ id: 'legacy.prompts.description', dm: '描述' }),
       dataIndex: 'promptDescription',
       key: 'promptDescription',
       ellipsis: {
@@ -205,29 +206,29 @@ const PromptsPage = () => {
       },
       render: (text) => (
         <Tooltip placement="topLeft" title={text}>
-          {text || '无描述'}
+          {text || $i18n.get({ id: 'legacy.prompts.no.description.3', dm: '无描述' })}
         </Tooltip>
       ),
     },
     {
-      title: '最新版本',
+      title: $i18n.get({ id: 'legacy.prompts.latest.version.2', dm: '最新版本' }),
       dataIndex: 'latestVersion',
       key: 'latestVersion',
       render: (version) => (
         version ? (
           <Tag color="blue">{version}</Tag>
         ) : (
-          <Tag color="default">无版本</Tag>
+          <Tag color="default">{$i18n.get({ id: 'legacy.prompts.no.version', dm: '无版本' })}</Tag>
         )
       ),
     },
     {
-      title: '状态',
+      title: $i18n.get({ id: 'legacy.prompts.status', dm: '状态' }),
       key: 'status',
       render: (_, record) => renderStatusBadge(record),
     },
     {
-      title: '标签',
+      title: $i18n.get({ id: 'legacy.prompts.tags', dm: '标签' }),
       dataIndex: 'tags',
       key: 'tags',
       render: (tags) => (
@@ -241,23 +242,23 @@ const PromptsPage = () => {
       ),
     },
     {
-      title: '创建时间',
+      title: $i18n.get({ id: 'legacy.prompts.created.at.2', dm: '创建时间' }),
       dataIndex: 'createTime',
       key: 'createTime',
       render: (time) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
-      title: '更新时间',
+      title: $i18n.get({ id: 'legacy.prompts.updated.at', dm: '更新时间' }),
       dataIndex: 'updateTime',
       key: 'updateTime',
       render: (time) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
-      title: '操作',
+      title: $i18n.get({ id: 'legacy.prompts.actions', dm: '操作' }),
       key: 'action',
       render: (_, record) => (
         <Space size="middle">
-          <Tooltip title="查看详情">
+          <Tooltip title={$i18n.get({ id: 'legacy.prompts.view.details', dm: '查看详情' })}>
             <Button
               type="text"
               icon={<EyeOutlined />}
@@ -267,7 +268,7 @@ const PromptsPage = () => {
               }}
             />
           </Tooltip>
-          <Tooltip title="查看调用链路追踪">
+          <Tooltip title={$i18n.get({ id: 'legacy.prompts.view.trace.2', dm: '查看调用链路追踪' })}>
             <Button
               type="text"
               icon={<ShareAltOutlined />}
@@ -283,7 +284,7 @@ const PromptsPage = () => {
               }}
             />
           </Tooltip>
-          <Tooltip title="删除">
+          <Tooltip title={$i18n.get({ id: 'legacy.prompts.delete.2', dm: '删除' })}>
             <Button
               type="text"
               danger
@@ -304,14 +305,14 @@ const PromptsPage = () => {
     {/* <ElementSelector onSelect={handleElementSelect} debug={true}>*/}
       <div className="p-8 fade-in">
       <div className="mb-8">
-        <Title level={2} style={{ marginBottom: 8 }}>Prompts管理</Title>
-        <Paragraph type="secondary">管理和组织你的AI提示词模板</Paragraph>
+        <Title level={2} style={{ marginBottom: 8 }}>{$i18n.get({ id: 'legacy.prompts.prompt.management', dm: 'Prompts管理' })}</Title>
+        <Paragraph type="secondary">{$i18n.get({ id: 'legacy.prompts.manage.and.organize.your.ai.prompt.templates', dm: '管理和组织你的AI提示词模板' })}</Paragraph>
       </div>
 
       {/* 错误提示 */}
       {error && (
         <Alert
-          message="加载错误"
+          message={$i18n.get({ id: 'legacy.prompts.loading.error', dm: '加载错误' })}
           description={error}
           type="error"
           showIcon
@@ -324,10 +325,10 @@ const PromptsPage = () => {
         <div style={{ display: 'flex', gap: 16, alignItems: 'end', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 256 }}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-              按 Prompt Key 搜索
+              {$i18n.get({ id: 'legacy.prompts.search.by.prompt.key', dm: '按 Prompt Key 搜索' })}
             </label>
             <Search
-              placeholder="输入 Prompt Key..."
+              placeholder={$i18n.get({ id: 'legacy.prompts.enter.a.prompt.key', dm: '输入 Prompt Key...' })}
               onSearch={handleSearchName}
               allowClear
             />
@@ -335,10 +336,10 @@ const PromptsPage = () => {
 
           <div style={{ flex: 1, minWidth: 256 }}>
             <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-              按标签搜索
+              {$i18n.get({ id: 'legacy.prompts.search.by.tag', dm: '按标签搜索' })}
             </label>
             <Search
-              placeholder="输入标签..."
+              placeholder={$i18n.get({ id: 'legacy.prompts.enter.a.tag', dm: '输入标签...' })}
               onSearch={handleSearchTag}
               allowClear
             />
@@ -350,7 +351,7 @@ const PromptsPage = () => {
               onClick={() => setShowCreateModal(true)}
               icon={<PlusOutlined />}
             >
-              创建Prompt
+              {$i18n.get({ id: 'legacy.prompts.create.prompt.2', dm: '创建Prompt' })}
             </Button>
           </Space>
         </div>
@@ -371,10 +372,10 @@ const PromptsPage = () => {
             emptyText: (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description="没有找到匹配的 Prompt"
+                description={$i18n.get({ id: 'legacy.prompts.no.matching.prompts.found', dm: '没有找到匹配的 Prompt' })}
               >
                 <Button type="primary" onClick={() => setShowCreateModal(true)}>
-                  创建第一个 Prompt
+                  {$i18n.get({ id: 'legacy.prompts.create.your.first.prompt', dm: '创建第一个 Prompt' })}
                 </Button>
               </Empty>
             ),

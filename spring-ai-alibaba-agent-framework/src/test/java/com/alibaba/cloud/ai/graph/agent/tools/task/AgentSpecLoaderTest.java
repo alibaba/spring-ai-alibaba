@@ -53,6 +53,28 @@ class AgentSpecLoaderTest {
 	}
 
 	@Test
+	@DisplayName("Should parse tool names from YAML list")
+	void shouldParseToolNamesFromYamlList() {
+		String markdown = """
+				---
+				name: Explore
+				description: Fast agent for exploring codebases
+				tools:
+				  - Read
+				  - Grep
+				  - Glob
+				---
+
+				You are a file search specialist.
+				""";
+
+		AgentSpec spec = AgentSpecLoader.parse(markdown);
+
+		assertThat(spec).isNotNull();
+		assertThat(spec.toolNames()).containsExactly("Read", "Grep", "Glob");
+	}
+
+	@Test
 	@DisplayName("Should return null for content without front matter")
 	void shouldReturnNullForContentWithoutFrontMatter() {
 		AgentSpec spec = AgentSpecLoader.parse("Just plain content");

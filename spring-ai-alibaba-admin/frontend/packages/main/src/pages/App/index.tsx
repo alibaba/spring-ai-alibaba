@@ -106,7 +106,10 @@ const HomePage: React.FC = () => {
 
             <div className={styles.cardItem}>
               <ProCard
-                title="DIFY 应用转换为 SAA 工程"
+                title={$i18n.get({
+                  id: 'main.pages.App.index.difyTitle',
+                  dm: 'DIFY 应用转换为 SAA 工程',
+                })}
                 logo={
                   <div className={styles.cardIcon}>
                     <img

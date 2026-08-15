@@ -83,6 +83,16 @@ public class GraphRunnerContext {
 		this.compiledGraph = compiledGraph;
 		this.config = config;
 
+		// Decide whether this run continues from a persisted checkpoint or starts over
+		// from START. A checkpoint is only resumed when the config explicitly asks for it,
+		// either by carrying a concrete checkpoint id or by carrying resume metadata
+		// (added via RunnableConfig.withResume() / RunnableConfig.builder(config).resume()).
+		//
+		// Note: passing a config that merely has a checkpoint saver / thread id (e.g.
+		// invoke(Map.of(), config) without a checkpoint id and without resume metadata)
+		// intentionally starts from START and only reuses the persisted state; it does NOT
+		// continue from the latest checkpoint's next node. To resume from the latest
+		// checkpoint without knowing its id, use config.withResume(). See RunnableConfig#withResume().
 		if (config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY).isPresent() || config.checkPointId().isPresent()) {
 			initializeFromResume(initialState, config);
 		} else {

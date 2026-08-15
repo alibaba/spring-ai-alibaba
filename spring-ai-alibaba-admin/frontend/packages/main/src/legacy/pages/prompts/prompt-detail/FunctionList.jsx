@@ -1,5 +1,6 @@
 import { DeleteOutlined } from '@ant-design/icons';
 import { Row, Col, Card, Button, Popconfirm, Typography, Tooltip, Switch } from 'antd';
+import $i18n from '@/i18n';
 
 const { Text } = Typography;
 
@@ -16,10 +17,10 @@ const FunctionList = ({
   return (
     <div>
       <Text strong className='mb-1 block' style={{ fontSize: size === 'small' ? '12px' : '14px' }}>
-        函数配置
+        {$i18n.get({ id: 'legacy.prompts.function.configuration', dm: '函数配置' })}
         <Switch
           defaultChecked
-          checkedChildren="启用"
+          checkedChildren={$i18n.get({ id: 'legacy.prompts.enabled', dm: '启用' })}
           className='ml-2' size="small" onChange={(checked) => onEnableChange(checked)}
         />
       </Text>
@@ -33,14 +34,14 @@ const FunctionList = ({
                 onClick={() => onClick(fn)}
                 extra={
                   <Popconfirm
-                    title="确定删除这个函数吗？"
+                    title={$i18n.get({ id: 'legacy.prompts.delete.this.function', dm: '确定删除这个函数吗？' })}
                     onConfirm={(e) => {
                       e?.stopPropagation();
                       onDelete(fn);
                     }}
                     onCancel={(e) => e?.stopPropagation()}
-                    okText="确定"
-                    cancelText="取消"
+                    okText={$i18n.get({ id: 'legacy.prompts.ok', dm: '确定' })}
+                    cancelText={$i18n.get({ id: 'legacy.prompts.cancel', dm: '取消' })}
                   >
                     <Button
                       type="text"

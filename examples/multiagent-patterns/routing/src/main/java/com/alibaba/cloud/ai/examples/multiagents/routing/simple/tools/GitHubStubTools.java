@@ -43,4 +43,13 @@ public class GitHubStubTools {
 	public String searchPrs(@ToolParam(description = "Search query") String query) {
 		return "PR #156 added JWT authentication, PR #178 updated OAuth scopes";
 	}
+
+	@Tool(name = "create_pr", description = "Create a pull request on GitHub.")
+	public String createPullRequest(
+			@ToolParam(description = "Branch or commit to merge from") String sourceBranch,
+			@ToolParam(description = "Target branch for the pull request") String targetBranch,
+			@ToolParam(description = "Title of the pull request") String title,
+			@ToolParam(description = "Pull request description") String body) {
+		return String.format("Created PR from %s into %s: %s\n%s", sourceBranch, targetBranch, title, body);
+	}
 }

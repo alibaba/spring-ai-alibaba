@@ -20,8 +20,8 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.pii.PIIDetectionHook;
-import com.alibaba.cloud.ai.graph.agent.hook.pii.PIIType;
 import com.alibaba.cloud.ai.graph.agent.hook.pii.PIIDetectors;
+import com.alibaba.cloud.ai.graph.agent.hook.pii.PIIType;
 import com.alibaba.cloud.ai.graph.agent.hook.pii.RedactionStrategy;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
@@ -37,7 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
 public class PIIDectionHookTest {

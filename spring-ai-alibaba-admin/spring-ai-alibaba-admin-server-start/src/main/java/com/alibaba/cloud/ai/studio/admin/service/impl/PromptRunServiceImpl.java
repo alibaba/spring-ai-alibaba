@@ -93,12 +93,12 @@ public class PromptRunServiceImpl implements PromptRunService {
                     generateRealAIResponse(session, request).onErrorResume(error -> {
                         log.error("模型调用失败，返回错误响应", error);
                         return Flux.just(PromptRunResponse.createErrorResponse(session.getSessionId(),
-                                "模型调用失败: " + error.getMessage()));
+                                "Model call failed: " + error.getMessage()));
                     }));
             
         } catch (Exception e) {
             log.error("处理会话请求失败", e);
-            return Flux.just(PromptRunResponse.createErrorResponse(null, "处理请求失败: " + e.getMessage()));
+            return Flux.just(PromptRunResponse.createErrorResponse(null, "Failed to process request: " + e.getMessage()));
         }
     }
     
@@ -252,10 +252,10 @@ public class PromptRunServiceImpl implements PromptRunService {
                 
             } catch (JsonProcessingException e) {
                 log.error("JSON 处理失败: ", e);
-                throw new RuntimeException("JSON 处理失败: " + e.getMessage(), e);
+                throw new RuntimeException("JSON processing failed: " + e.getMessage(), e);
             } catch (Exception e) {
                 log.error("JSON 处理失败: ", e);
-                throw new RuntimeException("Schema 校验失败: " + e.getMessage(), e);
+                throw new RuntimeException("Schema validation failed: " + e.getMessage(), e);
             }
         }
         

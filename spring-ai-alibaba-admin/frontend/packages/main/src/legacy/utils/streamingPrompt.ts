@@ -1,4 +1,5 @@
 import { message } from 'antd';
+import $i18n from '@/i18n';
 import { MockTool } from '../pages/prompts/prompt-detail/hooks/useFunctions';
 
 /**
@@ -214,7 +215,14 @@ export const executeStreamingPrompt = async (
                   return;
                 } else if (data.type === 'error') {
                   // Handle error
-                  currentMessage.content = `错误: ${data.error || '未知错误'}`;
+                  currentMessage.content = $i18n.get(
+                    { id: 'legacy.prompts.error.with.message', dm: '错误: {message}' },
+                    {
+                      message:
+                        data.error ||
+                        $i18n.get({ id: 'legacy.prompts.unknown.error', dm: '未知错误' }),
+                    },
+                  );
                   currentMessage.isLoading = false;
                   // 清除待执行的更新，立即执行错误状态更新
                   if (updateTimeoutId) {
@@ -223,7 +231,10 @@ export const executeStreamingPrompt = async (
                   }
                   updateChatHistory();
                   delete eventSourceRefs[promptId];
-                  message.error(data.error || '请求失败');
+                  message.error(
+                    data.error ||
+                      $i18n.get({ id: 'legacy.prompts.request.failed', dm: '请求失败' }),
+                  );
                   return;
                 }
               } catch (parseError) {
@@ -234,7 +245,10 @@ export const executeStreamingPrompt = async (
         }
       } catch (streamError) {
         console.error('Stream reading error:', streamError);
-        currentMessage.content = '连接错误，请稍后重试';
+        currentMessage.content = $i18n.get({
+          id: 'legacy.prompts.connection.error.retry',
+          dm: '连接错误，请稍后重试',
+        });
         currentMessage.isLoading = false;
         // 清除待执行的更新，立即执行错误状态更新
         if (updateTimeoutId) {
@@ -243,7 +257,9 @@ export const executeStreamingPrompt = async (
         }
         updateChatHistory();
         delete eventSourceRefs[promptId];
-        message.error('连接失败');
+        message.error(
+          $i18n.get({ id: 'legacy.prompts.connection.failed', dm: '连接失败' }),
+        );
       }
     };
 
@@ -251,13 +267,20 @@ export const executeStreamingPrompt = async (
 
   } catch (error) {
     console.error('Run prompt error:', error);
-    message.error('请求失败');
+    message.error($i18n.get({ id: 'legacy.prompts.request.failed', dm: '请求失败' }));
 
     // Update the loading message to show error
     onUpdateChatHistory(promptId, (chatHistory) =>
       chatHistory.map(msg =>
         msg.isLoading && msg.promptId === promptId
-          ? { ...msg, content: '请求失败，请稍后重试', isLoading: false }
+          ? {
+              ...msg,
+              content: $i18n.get({
+                id: 'legacy.prompts.request.failed.retry',
+                dm: '请求失败，请稍后重试',
+              }),
+              isLoading: false,
+            }
           : msg
       )
     );

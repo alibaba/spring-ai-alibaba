@@ -5,6 +5,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import { githubLight } from '@uiw/codemirror-theme-github';
 import { safeJSONParse, safeJSONStringify } from "../../../../utils/util";
+import $i18n from '@/i18n';
 
 
 interface AddFunctionModalProps {
@@ -27,14 +28,14 @@ function AddFunctionModal(props: AddFunctionModalProps) {
         name: string; description: string; parameters: any;
       };
       if (functions.find(f => f.toolDefinition.name === name)) {
-        message.error('函数已存在')
+        message.error($i18n.get({ id: 'legacy.prompts.function.already.exists', dm: '函数已存在' }))
         return
       }
       onOk({ toolDefinition: { name, description, parameters: safeJSONStringify(parameters) }, output: defaultValue });
       setSchema('');
       setDefaultValue('');
     } catch (e) {
-      message.error('JSON 格式错误，请检查后重试');
+      message.error($i18n.get({ id: 'legacy.prompts.invalid.json.format.please.check.and.try.again', dm: 'JSON 格式错误，请检查后重试' }));
     }
   }
 
@@ -75,7 +76,7 @@ function AddFunctionModal(props: AddFunctionModalProps) {
       destroyOnHidden
       open={open}
       onCancel={handleCancel}
-      title="新增函数"
+      title={$i18n.get({ id: 'legacy.prompts.add.function', dm: '新增函数' })}
       width={900}
       onOk={handleOk}
     >
@@ -83,7 +84,7 @@ function AddFunctionModal(props: AddFunctionModalProps) {
         <div style={{ width: "60%" }}>
           <div className="flex justify-between">
             <Typography.Paragraph className="flex items-center" style={{ marginBottom: 0 }} copyable={{ text: schema }} >SCHEMA</Typography.Paragraph>
-            <Button type="text" onClick={handleInsertTemplate}>插入模版</Button>
+            <Button type="text" onClick={handleInsertTemplate}>{$i18n.get({ id: 'legacy.prompts.insert.template', dm: '插入模版' })}</Button>
           </div>
           <div
             className="border border-solid border-[#d9d9d9] hover:border-[#4096ff] rounded-md mt-2 overflow-hidden"
@@ -101,12 +102,12 @@ function AddFunctionModal(props: AddFunctionModalProps) {
         </div>
         <div style={{ width: "40%" }}>
           <div className="flex justify-between">
-            <Typography.Paragraph className="flex items-center" style={{ marginBottom: 0 }} copyable={{ text: safeJSONStringify(defaultValue) }} >默认模拟值</Typography.Paragraph>
+            <Typography.Paragraph className="flex items-center" style={{ marginBottom: 0 }} copyable={{ text: safeJSONStringify(defaultValue) }} >{$i18n.get({ id: 'legacy.prompts.default.mock.value', dm: '默认模拟值' })}</Typography.Paragraph>
             <Button type="text" className="invisible"></Button>
           </div>
           <div className="border rounded-md mt-2">
             <Input.TextArea
-              placeholder="请输入模拟值来模拟函数返回"
+              placeholder={$i18n.get({ id: 'legacy.prompts.enter.a.mock.value.to.simulate.the.function.response', dm: '请输入模拟值来模拟函数返回' })}
               value={defaultValue}
               onChange={(e) => setDefaultValue(e.target.value)}
               rows={23}
