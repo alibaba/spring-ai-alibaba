@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: agentic-rag
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY:}
+
+# Set to true to run the three demo scenarios on startup (see AgenticRagRunner).
+# Default: false (app starts without calling the model).
+agentic-rag:
+  runner:
+    enabled: false
