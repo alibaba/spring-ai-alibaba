@@ -11,6 +11,8 @@ import {
   Empty,
   Button
 } from 'antd';
+import $i18n from '@/i18n';
+import { formatDateTime } from '../utils/formatDateTime';
 import {
   ArrowLeftOutlined,
   ArrowRightOutlined,
@@ -91,7 +93,15 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
       title={
         <div>
           <Title level={4} style={{ margin: 0 }}>
-            版本对比 - {prompt.promptKey || prompt.name || '未知Prompt'}
+            {$i18n.get(
+              { id: 'legacy.prompts.version.comparison.title', dm: '版本对比 - {name}' },
+              {
+                name:
+                  prompt.promptKey ||
+                  prompt.name ||
+                  $i18n.get({ id: 'legacy.prompts.unknown.prompt', dm: '未知Prompt' }),
+              },
+            )}
           </Title>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginTop: 16, fontSize: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -102,7 +112,7 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
                 borderLeft: '4px solid #ff7875',
                 borderRadius: 2
               }}></div>
-              <Text type="secondary">删除的内容</Text>
+              <Text type="secondary">{$i18n.get({ id: 'legacy.prompts.removed.content', dm: '删除的内容' })}</Text>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{
@@ -112,7 +122,7 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
                 borderLeft: '4px solid #73d13d',
                 borderRadius: 2
               }}></div>
-              <Text type="secondary">新增的内容</Text>
+              <Text type="secondary">{$i18n.get({ id: 'legacy.prompts.added.content', dm: '新增的内容' })}</Text>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{
@@ -122,7 +132,7 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
                 borderLeft: '4px solid #fadb14',
                 borderRadius: 2
               }}></div>
-              <Text type="secondary">修改的内容</Text>
+              <Text type="secondary">{$i18n.get({ id: 'legacy.prompts.modified.content', dm: '修改的内容' })}</Text>
             </div>
           </div>
         </div>
@@ -141,7 +151,7 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
       }}
       footer={[
         <Button key="close" type="primary" onClick={onClose}>
-          关闭对比
+          {$i18n.get({ id: 'legacy.prompts.close.comparison', dm: '关闭对比' })}
         </Button>
       ]}
       closeIcon={<CloseOutlined />}
@@ -153,24 +163,24 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
             <Card size="small">
               <Title level={5} style={{ margin: 0, marginBottom: 12, display: 'flex', alignItems: 'center' }}>
                 <ArrowLeftOutlined style={{ color: '#1890ff', marginRight: 8 }} />
-                旧版本: {olderVersion.version}
+                {$i18n.get({ id: 'legacy.prompts.older.version', dm: '旧版本: {version}' }, { version: olderVersion.version })}
               </Title>
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
                 <div>
-                  <Text strong>创建时间：</Text>
+                  <Text strong>{$i18n.get({ id: 'legacy.prompts.created.at.4', dm: '创建时间：' })}</Text>
                   <Text style={{ marginLeft: 8 }}>
-                    {olderVersion.createTime ? new Date(olderVersion.createTime).toLocaleString('zh-CN') : '未知'}
+                    {olderVersion.createTime ? formatDateTime(olderVersion.createTime) : $i18n.get({ id: 'legacy.prompts.unknown', dm: '未知' })}
                   </Text>
                 </div>
                 <div>
-                  <Text strong>说明：</Text>
+                  <Text strong>{$i18n.get({ id: 'legacy.prompts.description.3', dm: '说明：' })}</Text>
                   <Text style={{ marginLeft: 8 }}>
-                    {olderVersion.description || olderVersion.versionDescription || '无说明'}
+                    {olderVersion.description || olderVersion.versionDescription || $i18n.get({ id: 'legacy.prompts.no.description.2', dm: '无说明' })}
                   </Text>
                 </div>
                 {olderVersion.modelConfig && (
                   <div>
-                    <Text strong>模型：</Text>
+                    <Text strong>Model: </Text>
                     <Text style={{ marginLeft: 8 }}>{olderVersion.modelConfig.modelId}</Text>
                   </div>
                 )}
@@ -182,24 +192,24 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
             <Card size="small">
               <Title level={5} style={{ margin: 0, marginBottom: 12, display: 'flex', alignItems: 'center' }}>
                 <ArrowRightOutlined style={{ color: '#52c41a', marginRight: 8 }} />
-                新版本: {newerVersion.version}
+                {$i18n.get({ id: 'legacy.prompts.newer.version', dm: '新版本: {version}' }, { version: newerVersion.version })}
               </Title>
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
                 <div>
-                  <Text strong>创建时间：</Text>
+                  <Text strong>{$i18n.get({ id: 'legacy.prompts.created.at.4', dm: '创建时间：' })}</Text>
                   <Text style={{ marginLeft: 8 }}>
-                    {newerVersion.createTime ? new Date(newerVersion.createTime).toLocaleString('zh-CN') : '未知'}
+                    {newerVersion.createTime ? formatDateTime(newerVersion.createTime) : $i18n.get({ id: 'legacy.prompts.unknown', dm: '未知' })}
                   </Text>
                 </div>
                 <div>
-                  <Text strong>说明：</Text>
+                  <Text strong>{$i18n.get({ id: 'legacy.prompts.description.3', dm: '说明：' })}</Text>
                   <Text style={{ marginLeft: 8 }}>
-                    {newerVersion.description || newerVersion.versionDescription || '无说明'}
+                    {newerVersion.description || newerVersion.versionDescription || $i18n.get({ id: 'legacy.prompts.no.description.3', dm: '无描述' })}
                   </Text>
                 </div>
                 {newerVersion.modelConfig && (
                   <div>
-                    <Text strong>模型：</Text>
+                    <Text strong>Model: </Text>
                     <Text style={{ marginLeft: 8 }}>{newerVersion.modelConfig.modelId}</Text>
                   </div>
                 )}
@@ -208,12 +218,12 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
           </Col>
         </Row>
 
-        {/* 模型配置对比 */}
+        {/* Model Configuration Comparison */}
         <Card
           title={
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <SettingOutlined style={{ marginRight: 8 }} />
-              模型配置对比
+              {$i18n.get({ id: 'legacy.prompts.model.configuration.comparison', dm: '模型配置对比' })}
             </div>
           }
           size="small"
@@ -221,15 +231,15 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
           {(olderVersion.modelConfig || newerVersion.modelConfig) ? (
             <Row gutter={24}>
               <Col span={12}>
-                <Title level={5} style={{ marginBottom: 12 }}>旧版本配置</Title>
+                <Title level={5} style={{ marginBottom: 12 }}>{$i18n.get({ id: 'legacy.prompts.older.version.settings', dm: '旧版本配置' })}</Title>
                 {olderVersion.modelConfig ? (
                   <Space direction="vertical" size={8} style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Text type="secondary">模型：</Text>
+                      <Text type="secondary">Model: </Text>
                       <Text>{olderVersion.modelConfig.modelId}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Text type="secondary">最大令牌：</Text>
+                      <Text type="secondary">Max Tokens: </Text>
                       <Text>{olderVersion.modelConfig.maxTokens}</Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -242,15 +252,15 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
                     </div>
                   </Space>
                 ) : (
-                  <Text type="secondary">无模型配置</Text>
+                  <Text type="secondary">{$i18n.get({ id: 'legacy.prompts.no.model.configuration', dm: '无模型配置' })}</Text>
                 )}
               </Col>
               <Col span={12}>
-                <Title level={5} style={{ marginBottom: 12 }}>新版本配置</Title>
+                <Title level={5} style={{ marginBottom: 12 }}>{$i18n.get({ id: 'legacy.prompts.newer.version.settings', dm: '新版本配置' })}</Title>
                 {newerVersion.modelConfig ? (
                   <Space direction="vertical" size={8} style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Text type="secondary">模型：</Text>
+                      <Text type="secondary">Model: </Text>
                       <Text
                         strong={olderVersion.modelConfig?.modelId !== newerVersion.modelConfig.modelId}
                         style={{
@@ -261,7 +271,7 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
                       </Text>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Text type="secondary">最大令牌：</Text>
+                      <Text type="secondary">Max Tokens: </Text>
                       <Text
                         strong={olderVersion.modelConfig?.maxTokens !== newerVersion.modelConfig.maxTokens}
                         style={{
@@ -295,25 +305,25 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
                     </div>
                   </Space>
                 ) : (
-                  <Text type="secondary">无模型配置</Text>
+                  <Text type="secondary">{$i18n.get({ id: 'legacy.prompts.no.model.configuration', dm: '无模型配置' })}</Text>
                 )}
               </Col>
             </Row>
           ) : (
             <Empty
               image={<SettingOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />}
-              description="两个版本都没有模型配置"
+              description={$i18n.get({ id: 'legacy.prompts.neither.version.has.model.configuration', dm: '两个版本都没有模型配置' })}
               style={{ padding: '32px 0' }}
             />
           )}
         </Card>
 
-        {/* 内容对比 */}
+        {/* Content Comparison */}
         <Card
           title={
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <FileTextOutlined style={{ marginRight: 8 }} />
-              内容对比
+              {$i18n.get({ id: 'legacy.prompts.content.comparison', dm: '内容对比' })}
             </div>
           }
           size="small"
@@ -387,7 +397,7 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
                         whiteSpace: 'pre-wrap'
                       }}>
                         {line.type === 'added' ? (
-                          <Text type="secondary" italic>（新增行）</Text>
+                          <Text type="secondary" italic>{$i18n.get({ id: 'legacy.prompts.added.line', dm: '（新增行）' })}</Text>
                         ) : (
                           <span
                             style={{
@@ -407,7 +417,7 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
                         whiteSpace: 'pre-wrap'
                       }}>
                         {line.type === 'removed' ? (
-                          <Text type="secondary" italic>（删除行）</Text>
+                          <Text type="secondary" italic>{$i18n.get({ id: 'legacy.prompts.removed.line', dm: '（删除行）' })}</Text>
                         ) : (
                           <span
                             style={{
@@ -426,7 +436,7 @@ const VersionCompareModal = ({ prompt, version1, version2, onClose }) => {
             ) : (
               <Empty
                 image={<FileTextOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />}
-                description="两个版本的内容完全相同"
+                description={$i18n.get({ id: 'legacy.prompts.the.two.versions.have.identical.content', dm: '两个版本的内容完全相同' })}
                 style={{ padding: '32px 0' }}
               />
             )}

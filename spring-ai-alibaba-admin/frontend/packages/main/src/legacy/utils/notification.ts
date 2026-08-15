@@ -1,6 +1,7 @@
 import { notification } from 'antd';
+import $i18n from '@/i18n';
 
-// 配置全局通知样式
+// Configure global notification style
 notification.config({
   placement: 'topRight',
   top: 50,
@@ -15,7 +16,6 @@ export interface NotificationOptions {
   placement?: 'top' | 'topLeft' | 'topRight' | 'bottom' | 'bottomLeft' | 'bottomRight';
 }
 
-// 成功通知
 export const notifySuccess = (options: NotificationOptions) => {
   notification.success({
     message: options.message,
@@ -25,7 +25,6 @@ export const notifySuccess = (options: NotificationOptions) => {
   });
 };
 
-// 错误通知
 export const notifyError = (options: NotificationOptions) => {
   notification.error({
     message: options.message,
@@ -35,7 +34,6 @@ export const notifyError = (options: NotificationOptions) => {
   });
 };
 
-// 警告通知
 export const notifyWarning = (options: NotificationOptions) => {
   notification.warning({
     message: options.message,
@@ -45,7 +43,6 @@ export const notifyWarning = (options: NotificationOptions) => {
   });
 };
 
-// 信息通知
 export const notifyInfo = (options: NotificationOptions) => {
   notification.info({
     message: options.message,
@@ -55,44 +52,98 @@ export const notifyInfo = (options: NotificationOptions) => {
   });
 };
 
-// API 错误处理
-export const handleApiError = (error: any, context: string = '操作') => {
-  let message = '操作失败';
-  let description = '请稍后重试';
+export const handleApiError = (
+  error: any,
+  context: string = $i18n.get({
+    id: 'legacy.notification.operation',
+    dm: '操作',
+  }),
+) => {
+  let message = $i18n.get({
+    id: 'legacy.notification.operationFailed',
+    dm: '操作失败',
+  });
+  let description = $i18n.get({
+    id: 'legacy.notification.retryLater',
+    dm: '请稍后重试',
+  });
 
   if (error && typeof error === 'object') {
-    // 处理不同类型的错误
     if (error.message) {
-      message = `${context}失败`;
+      message = $i18n.get(
+        {
+          id: 'legacy.notification.contextFailed',
+          dm: '{context}失败',
+        },
+        { context },
+      );
       description = error.message;
     } else if (error.code && error.code !== 200) {
-      message = `${context}失败 (错误码: ${error.code})`;
-      description = error.message || '服务器返回异常';
+      message = $i18n.get(
+        {
+          id: 'legacy.notification.contextFailedWithCode',
+          dm: '{context}失败 (错误码: {code})',
+        },
+        { context, code: error.code },
+      );
+      description =
+        error.message ||
+        $i18n.get({
+          id: 'legacy.notification.serverException',
+          dm: '服务器返回异常',
+        });
     } else if (typeof error === 'string') {
-      message = `${context}失败`;
+      message = $i18n.get(
+        {
+          id: 'legacy.notification.contextFailed',
+          dm: '{context}失败',
+        },
+        { context },
+      );
       description = error;
     }
   } else if (typeof error === 'string') {
-    message = `${context}失败`;
+    message = $i18n.get(
+      {
+        id: 'legacy.notification.contextFailed',
+        dm: '{context}失败',
+      },
+      { context },
+    );
     description = error;
   }
 
   notifyError({ message, description });
 };
 
-// 网络错误处理
-export const handleNetworkError = (context: string = '操作') => {
+export const handleNetworkError = (
+  context: string = $i18n.get({
+    id: 'legacy.notification.operation',
+    dm: '操作',
+  }),
+) => {
   notifyError({
-    message: `${context}失败`,
-    description: '网络连接异常，请检查网络后重试',
+    message: $i18n.get(
+      {
+        id: 'legacy.notification.contextFailed',
+        dm: '{context}失败',
+      },
+      { context },
+    ),
+    description: $i18n.get({
+      id: 'legacy.notification.networkError',
+      dm: '网络连接异常，请检查网络后重试',
+    }),
     duration: 6,
   });
 };
 
-// 表单验证错误处理
 export const handleValidationError = (message: string, description?: string) => {
   notifyWarning({
-    message: '输入验证失败',
+    message: $i18n.get({
+      id: 'legacy.notification.validationFailed',
+      dm: '输入验证失败',
+    }),
     description: description || message,
   });
 };

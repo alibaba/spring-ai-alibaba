@@ -1,4 +1,5 @@
 import { useState } from "react";
+import $i18n from '@/i18n';
 
 const usePagination = () => {
 
@@ -10,7 +11,13 @@ const usePagination = () => {
     showQuickJumper: true,
     pageSizeOptions: ['10', '20', '50', '100'],
     showTotal: (total: number, range: number[]) => {
-      return `第 ${range[0]}-${range[1]} 条，共 ${total} 条`
+      return $i18n.get(
+        {
+          id: 'legacy.pagination.showTotal',
+          dm: '第 {start}-{end} 条，共 {total} 条',
+        },
+        { start: range[0], end: range[1], total },
+      );
     },
   });
 

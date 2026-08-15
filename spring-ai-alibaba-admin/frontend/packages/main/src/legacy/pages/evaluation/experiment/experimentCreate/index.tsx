@@ -5,6 +5,7 @@ import { ArrowLeftOutlined, EyeOutlined, PlusOutlined, DeleteOutlined } from '@a
 import API from '../../../../services';
 import { getLegacyPath, buildLegacyPath } from '../../../../utils/path';
 import './index.css';
+import $i18n from '@/i18n';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -145,7 +146,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
     } catch (error) {
       // 发生错误时设置为空数组
       setDatasets([]);
-      message.error('获取评测集列表失败，请重试');
+      message.error($i18n.get({ id: 'legacy.experimentCreate.fetchDatasetsFailedRetry', dm: "获取评测集列表失败，请重试" }));
     } finally {
       setDatasetsLoading(false);
     }
@@ -165,11 +166,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         setPrompts(promptsData);
       } else {
         setPrompts([]);
-        message.error('获取Prompts列表失败');
+        message.error($i18n.get({ id: 'legacy.experimentCreate.fetchPromptsFailed', dm: "获取Prompts列表失败" }));
       }
     } catch (error) {
       setPrompts([]);
-      message.error('获取Prompts列表失败，请重试');
+      message.error($i18n.get({ id: 'legacy.experimentCreate.fetchPromptsFailedRetry', dm: "获取Prompts列表失败，请重试" }));
     } finally {
       setPromptsLoading(false);
     }
@@ -189,11 +190,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         setEvaluators(evaluatorsData);
       } else {
         setEvaluators([]);
-        message.error('获取评估器列表失败');
+        message.error($i18n.get({ id: 'legacy.experimentCreate.fetchEvaluatorsFailed', dm: "获取评估器列表失败" }));
       }
     } catch (error) {
       setEvaluators([]);
-      message.error('获取评估器列表失败，请重试');
+      message.error($i18n.get({ id: 'legacy.experimentCreate.fetchEvaluatorsFailedRetry', dm: "获取评估器列表失败，请重试" }));
     } finally {
       setEvaluatorsLoading(false);
     }
@@ -214,11 +215,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         setDatasetVersions(versionsData);
       } else {
         setDatasetVersions([]);
-        message.error('获取评测集版本列表失败');
+        message.error($i18n.get({ id: 'legacy.experimentCreate.fetchDatasetVersionsFailed', dm: "获取评测集版本列表失败" }));
       }
     } catch (error) {
       setDatasetVersions([]);
-      message.error('获取评测集版本列表失败');
+      message.error($i18n.get({ id: 'legacy.experimentCreate.fetchDatasetVersionsFailed', dm: "获取评测集版本列表失败" }));
     } finally {
       setDatasetVersionsLoading(false);
     }
@@ -398,11 +399,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         }
       } else {
         setPromptVersionDetail(null);
-        message.error('获取Prompt版本详情失败');
+        message.error($i18n.get({ id: 'legacy.experimentCreate.fetchPromptVersionDetailFailed', dm: "获取Prompt版本详情失败" }));
       }
     } catch (error) {
       setPromptVersionDetail(null);
-      message.error('获取Prompt版本详情失败');
+      message.error($i18n.get({ id: 'legacy.experimentCreate.fetchPromptVersionDetailFailed', dm: "获取Prompt版本详情失败" }));
     } finally {
       setPromptVersionDetailLoading(false);
     }
@@ -425,11 +426,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         }
       } else {
         setDatasetDetail(null);
-        message.error('获取评测集详情失败');
+        message.error($i18n.get({ id: 'legacy.experimentCreate.fetchDatasetDetailFailed', dm: "获取评测集详情失败" }));
       }
     } catch (error) {
       setDatasetDetail(null);
-      message.error('获取评测集详情失败');
+      message.error($i18n.get({ id: 'legacy.experimentCreate.fetchDatasetDetailFailed', dm: "获取评测集详情失败" }));
     } finally {
       setDatasetDetailLoading(false);
     }
@@ -459,11 +460,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           setPromptVersions((response.data as any).pageItems || []);
         } else {
           setPromptVersions([]);
-          message.error('获取Prompt版本失败');
+          message.error($i18n.get({ id: 'legacy.experimentCreate.fetchPromptVersionsFailed', dm: "获取Prompt版本失败" }));
         }
       } catch (error) {
         setPromptVersions([]);
-        message.error('获取Prompt版本失败');
+        message.error($i18n.get({ id: 'legacy.experimentCreate.fetchPromptVersionsFailed', dm: "获取Prompt版本失败" }));
       } finally {
         setPromptVersionsLoading(false);
       }
@@ -577,11 +578,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
 
         return true;
       } else {
-        message.error(`获取评估器${evaluatorId}的参数失败`);
+        message.error($i18n.get({ id: 'legacy.experimentCreate.fetchEvaluatorParamsFailed', dm: "获取评估器{evaluatorId}的参数失败" }, { evaluatorId }));
         return false;
       }
     } catch (error) {
-      message.error(`获取评估器${evaluatorId}的参数失败`);
+      message.error($i18n.get({ id: 'legacy.experimentCreate.fetchEvaluatorParamsFailed', dm: "获取评估器{evaluatorId}的参数失败" }, { evaluatorId }));
       return false;
     }
   };
@@ -626,8 +627,8 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           ...fields,
           ...datasetFields.map(field => ({
             field,
-            source: '评测集',
-            displayName: `${field} (评测集)`
+            source: $i18n.get({ id: 'legacy.experimentCreate.source.dataset', dm: "评测集" }),
+            displayName: $i18n.get({ id: 'legacy.experimentCreate.display.datasetField', dm: "{field} (评测集)" }, { field })
           }))
         ];
       } catch (e) {
@@ -640,8 +641,8 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
       ...fields,
       {
         field: 'actual_output',
-        source: '评测对象',
-        displayName: 'actual_output (评测对象)'
+        source: $i18n.get({ id: 'legacy.experimentCreate.source.object', dm: "评测对象" }),
+        displayName: $i18n.get({ id: 'legacy.experimentCreate.display.actualOutput', dm: "actual_output (评测对象)" })
       }
     ];
 
@@ -724,7 +725,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           ...prev,
           [evaluatorId]: []
         }));
-        message.error(`获取评估器${evaluatorId}的版本列表失败`);
+        message.error($i18n.get({ id: 'legacy.experimentCreate.fetchEvaluatorVersionsFailed', dm: "获取评估器{evaluatorId}的版本列表失败" }, { evaluatorId }));
       }
     } catch (error) {
       // 设置空数组
@@ -732,7 +733,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         ...prev,
         [evaluatorId]: []
       }));
-      message.error(`获取评估器${evaluatorId}的版本列表失败`);
+      message.error($i18n.get({ id: 'legacy.experimentCreate.fetchEvaluatorVersionsFailed', dm: "获取评估器{evaluatorId}的版本列表失败" }, { evaluatorId }));
     } finally {
       // 重置加载状态
       setEvaluatorVersionsLoading(prev => ({ ...prev, [evaluatorId]: false }));
@@ -899,7 +900,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
 
       // 检查是否有效的评估器配置
       if (selectedEvaluators.length === 0) {
-        message.error('请至少添加一个评估器');
+        message.error($i18n.get({ id: 'legacy.experimentCreate.needOneEvaluator', dm: "请至少添加一个评估器" }));
         setLoading(false);
         return;
       }
@@ -911,7 +912,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         return !evaluator.evaluatorId || !selectedEvaluatorVersions[instanceKey];
       });
       if (missingVersions) {
-        message.error('请确保所有评估器都选择了版本');
+        message.error($i18n.get({ id: 'legacy.experimentCreate.needEvaluatorVersions', dm: "请确保所有评估器都选择了版本" }));
         setLoading(false);
         return;
       }
@@ -922,7 +923,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         return !evaluator.evaluatorId || !selectedEvaluatorVersions[instanceKey];
       });
       if (invalidEvaluators) {
-        message.error('请确保所有评估器都已正确配置');
+        message.error($i18n.get({ id: 'legacy.experimentCreate.needEvaluatorConfigured', dm: "请确保所有评估器都已正确配置" }));
         setLoading(false);
         return;
       }
@@ -986,7 +987,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
             variableMap.push({
               evaluatorVariable: param,
               source: sourceField,
-              dataSource: sourceFieldInfo?.source || '默认' // 添加数据来源信息
+              dataSource: sourceFieldInfo?.source || $i18n.get({ id: 'legacy.common.default', dm: "默认" }) // 添加数据来源信息
             });
           });
         }
@@ -1023,7 +1024,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
       // 调用创建实验的API
       await API.createExperiment(submitData);
 
-      message.success('实验创建成功');
+      message.success($i18n.get({ id: 'legacy.experimentCreate.createSuccess', dm: "实验创建成功" }));
 
       // 如果提供了onSuccess回调，则调用它，否则导航到列表页面
       if (onSuccess) {
@@ -1032,7 +1033,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
         navigate('/evaluation-experiment');
       }
     } catch (error) {
-      message.error('创建失败，请重试');
+      message.error($i18n.get({ id: 'legacy.experimentCreate.createFailed', dm: "创建失败，请重试" }));
 
     } finally {
       setLoading(false);
@@ -1062,9 +1063,9 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
               onClick={handleGoBack}
               className="mr-3"
             >
-              返回
+              {$i18n.get({ id: 'legacy.common.back', dm: "返回" })}
             </Button>
-            <h1 className="text-2xl font-semibold mb-0">新建实验</h1>
+            <h1 className="text-2xl font-semibold mb-0">{$i18n.get({ id: 'legacy.common.createExperiment', dm: "新建实验" })}</h1>
           </div>
         </div>
       )}
@@ -1077,25 +1078,25 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           onFinish={handleSubmit}
         >
           {/* 步骤1：配置信息 */}
-          <Card title="步骤1：配置信息" className="mb-6">
+          <Card title={$i18n.get({ id: 'legacy.experimentCreate.step1', dm: "步骤1：配置信息" })} className="mb-6">
             <Form.Item
               name="name"
-              label="实验名称"
+              label={$i18n.get({ id: 'legacy.experimentCreate.nameLabel', dm: "实验名称" })}
               rules={[
-                { required: true, message: '请输入实验名称' },
-                { max: 100, message: '名称不能超过100个字符' }
+                { required: true, message: $i18n.get({ id: 'legacy.experimentCreate.nameRequired', dm: "请输入实验名称" }) },
+                { max: 100, message: $i18n.get({ id: 'legacy.experimentCreate.nameMax', dm: "名称不能超过100个字符" }) }
               ]}
             >
-              <Input placeholder="如：问答机器人实验测试" />
+              <Input placeholder={$i18n.get({ id: 'legacy.experimentCreate.namePlaceholder', dm: "如：问答机器人实验测试" })} />
             </Form.Item>
 
             <Form.Item
               name="description"
-              label="实验描述"
-              rules={[{ max: 500, message: '描述不能超过500个字符' }]}
+              label={$i18n.get({ id: 'legacy.experimentCreate.descLabel', dm: "实验描述" })}
+              rules={[{ max: 500, message: $i18n.get({ id: 'legacy.experimentCreate.descMax', dm: "描述不能超过500个字符" }) }]}
             >
               <TextArea
-                placeholder="描述实验目的和内容"
+                placeholder={$i18n.get({ id: 'legacy.experimentCreate.descPlaceholder', dm: "描述实验目的和内容" })}
                 rows={4}
                 showCount
                 maxLength={500}
@@ -1104,17 +1105,17 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           </Card>
 
           {/* 步骤2：配置评测集 */}
-          <Card title="步骤2：配置评测集" className="mb-6">
+          <Card title={$i18n.get({ id: 'legacy.experimentCreate.step2', dm: "步骤2：配置评测集" })} className="mb-6">
             <Form.Item
               name="datasetId"
-              label="选择评测集"
-              rules={[{ required: true, message: '请选择评测集' }]}
+              label={$i18n.get({ id: 'legacy.experimentCreate.selectDataset', dm: "选择评测集" })}
+              rules={[{ required: true, message: $i18n.get({ id: 'legacy.experimentCreate.datasetRequired', dm: "请选择评测集" }) }]}
             >
               <Select
-                placeholder="选择已创建的评测集"
+                placeholder={$i18n.get({ id: 'legacy.experimentCreate.datasetPlaceholder', dm: "选择已创建的评测集" })}
                 onChange={handleDatasetChange}
                 loading={datasetsLoading}
-                notFoundContent={datasetsLoading ? '加载中...' : '暂无数据'}
+                notFoundContent={datasetsLoading ? $i18n.get({ id: 'legacy.common.loading', dm: "加载中..." }) : $i18n.get({ id: 'legacy.common.noData', dm: "暂无数据" })}
               >
                 {datasets.map(dataset => (
                   <Option key={dataset.id} value={dataset.id}>
@@ -1129,13 +1130,13 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
               <>
                 <Form.Item
                   name="datasetVersionId"
-                  label="选择版本"
-                  rules={[{ required: true, message: '请选择评测集版本' }]}
+                  label={$i18n.get({ id: 'legacy.common.selectVersion', dm: "选择版本" })}
+                  rules={[{ required: true, message: $i18n.get({ id: 'legacy.experimentCreate.datasetVersionRequired', dm: "请选择评测集版本" }) }]}
                 >
                   <Select
-                    placeholder="选择评测集版本"
+                    placeholder={$i18n.get({ id: 'legacy.experimentCreate.datasetVersionPlaceholder', dm: "选择评测集版本" })}
                     loading={datasetVersionsLoading}
-                    notFoundContent={datasetVersionsLoading ? '加载中...' : '暂无版本数据'}
+                    notFoundContent={datasetVersionsLoading ? $i18n.get({ id: 'legacy.common.loading', dm: "加载中..." }) : $i18n.get({ id: 'legacy.common.noVersionData', dm: "暂无版本数据" })}
                   >
                     {datasetVersions.map((version: any) => (
                       <Option key={version.id} value={version.id}>
@@ -1148,30 +1149,30 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                 {/* 评测集信息 */}
                 <div className="bg-gray-50 rounded-lg p-4 mt-4">
                   <div className="flex justify-between items-start mb-3">
-                    <h4 className="text-base font-medium text-gray-900">评测集信息</h4>
+                    <h4 className="text-base font-medium text-gray-900">{$i18n.get({ id: 'legacy.experimentCreate.datasetInfo', dm: "评测集信息" })}</h4>
                     <Button
                       type="link"
                       icon={<EyeOutlined />}
                       className="text-blue-600 hover:text-blue-800 font-medium"
                       onClick={handleViewDatasetDetail}
                     >
-                      查看详情
+                      {$i18n.get({ id: 'legacy.common.viewDetails', dm: "查看详情" })}
                     </Button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <span className="text-sm text-gray-600">描述：</span>
+                      <span className="text-sm text-gray-600">{$i18n.get({ id: 'legacy.common.descriptionColon', dm: "描述：" })}</span>
                       <span className="ml-2 text-sm text-gray-900">{selectedDataset.description}</span>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-600">数据量：</span>
-                      <span className="ml-2 text-sm text-gray-900">{selectedDataset.dataCount} 条</span>
+                      <span className="text-sm text-gray-600">{$i18n.get({ id: 'legacy.experimentCreate.recordsLabel', dm: "数据量：" })}</span>
+                      <span className="ml-2 text-sm text-gray-900">{$i18n.get({ id: 'legacy.experimentCreate.recordsCount', dm: "{count} 条" }, { count: selectedDataset.dataCount })}</span>
                     </div>
                   </div>
 
                   <div className="mt-3">
-                    <span className="text-sm text-gray-600">列名称：</span>
+                    <span className="text-sm text-gray-600">{$i18n.get({ id: 'legacy.experimentCreate.columnsLabel', dm: "列名称：" })}</span>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {selectedDataset.columns.map((column: string) => (
                         <span
@@ -1189,15 +1190,15 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           </Card>
 
           {/* 步骤3：配置评测对象 */}
-          <Card title="步骤3：配置评测对象" className="mb-6">
+          <Card title={$i18n.get({ id: 'legacy.experimentCreate.step3', dm: "步骤3：配置评测对象" })} className="mb-6">
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-4">
               <Form.Item
                 name="objectType"
-                label="对象类型"
-                rules={[{ required: true, message: '请选择对象类型' }]}
+                label={$i18n.get({ id: 'legacy.experimentCreate.objectType', dm: "对象类型" })}
+                rules={[{ required: true, message: $i18n.get({ id: 'legacy.experimentCreate.objectTypeRequired', dm: "请选择对象类型" }) }]}
               >
                 <Select
-                  placeholder="选择评测对象类型"
+                  placeholder={$i18n.get({ id: 'legacy.experimentCreate.objectTypePlaceholder', dm: "选择评测对象类型" })}
                   onChange={(value) => {
                     setSelectedObjectType(value);
                     // 当切换对象类型时，清空相关字段
@@ -1227,10 +1228,10 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                   <Form.Item
                     name="promptKey"
                     label="Prompt Key"
-                    rules={[{ required: true, message: '请输入或选择Prompt Key' }]}
+                    rules={[{ required: true, message: $i18n.get({ id: 'legacy.experimentCreate.promptKeyRequired', dm: "请输入或选择Prompt Key" }) }]}
                   >
                     <AutoComplete
-                      placeholder="请输入或选择Prompt Key"
+                      placeholder={$i18n.get({ id: 'legacy.experimentCreate.promptKeyPlaceholder', dm: "请输入或选择Prompt Key" })}
                       onChange={handlePromptKeyChange}
                       filterOption={(inputValue, option) => {
                         if (!option || !option.value) return false;
@@ -1238,7 +1239,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                         const input = inputValue.toLowerCase();
                         return value.indexOf(input) !== -1;
                       }}
-                      notFoundContent={promptsLoading ? '加载中...' : '暂无数据'}
+                      notFoundContent={promptsLoading ? $i18n.get({ id: 'legacy.common.loading', dm: "加载中..." }) : $i18n.get({ id: 'legacy.common.noData', dm: "暂无数据" })}
                     >
                       {prompts.map(prompt => (
                         <AutoComplete.Option key={prompt.promptKey} value={prompt.promptKey}>
@@ -1256,15 +1257,15 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
               <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <Form.Item
                   name="version"
-                  label="版本"
-                  rules={[{ required: true, message: '请选择版本' }]}
+                  label={$i18n.get({ id: 'legacy.common.version', dm: "版本" })}
+                  rules={[{ required: true, message: $i18n.get({ id: 'legacy.common.pleaseSelectVersion', dm: "请选择版本" }) }]}
                 >
                   <Select
-                    placeholder="选择版本"
+                    placeholder={$i18n.get({ id: 'legacy.common.selectVersionPlaceholder', dm: "选择版本" })}
                     loading={promptVersionsLoading}
                     disabled={!selectedPrompt}
                     onChange={handlePromptVersionChange}
-                    notFoundContent={promptVersionsLoading ? '加载中...' : '请先选择Prompt Key'}
+                    notFoundContent={promptVersionsLoading ? $i18n.get({ id: 'legacy.common.loading', dm: "加载中..." }) : $i18n.get({ id: 'legacy.experimentCreate.selectPromptKeyFirst', dm: "请先选择Prompt Key" })}
                   >
                     {promptVersions.map(version => {
                       const versionStatus = version.status;
@@ -1273,7 +1274,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                           <span className='mr-2'>
                             {version.version} {version.versionDescription ? " - " : ""} {version.versionDescription}
                           </span>
-                          <Tag color={versionStatus === "release" ? "green" : "blue"}>{version.status === "release" ? "正式版本" : "PRE版本"}</Tag>
+                          <Tag color={versionStatus === "release" ? "green" : "blue"}>{version.status === "release" ? $i18n.get({ id: 'legacy.experimentCreate.versionRelease', dm: "正式版本" }) : $i18n.get({ id: 'legacy.experimentCreate.versionPre', dm: "PRE版本" })}</Tag>
                         </Option>
                       )
                     })}
@@ -1286,38 +1287,38 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
             {selectedObjectType === 'prompt' && promptVersionDetail && (
               <div className="bg-gray-50 rounded-lg p-4 mt-4">
                 <div className="flex justify-between items-start mb-3">
-                  <h4 className="text-base font-medium text-gray-900">Prompt版本详情</h4>
+                  <h4 className="text-base font-medium text-gray-900">{$i18n.get({ id: 'legacy.experimentCreate.promptVersionDetail', dm: "Prompt版本详情" })}</h4>
                   <Button
                     type="link"
                     icon={<EyeOutlined />}
                     className="text-blue-600 hover:text-blue-800 font-medium"
                     onClick={handleViewPromptDetail}
                   >
-                    查看完整详情
+                    {$i18n.get({ id: 'legacy.experimentCreate.viewFullDetails', dm: "查看完整详情" })}
                   </Button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>版本：</span>
+                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>{$i18n.get({ id: 'legacy.experimentCreate.versionColon', dm: "版本：" })}</span>
                     <span className="ml-2 text-sm text-gray-900">{promptVersionDetail.version}</span>
                   </div>
                   <div>
-                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>版本描述：</span>
+                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>{$i18n.get({ id: 'legacy.experimentCreate.versionDescColon', dm: "版本描述：" })}</span>
                     <span className="ml-2 text-sm text-gray-900">{promptVersionDetail.versionDescription}</span>
                   </div>
                 </div>
 
                 <div className="mt-3">
-                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>模板：</span>
+                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>{$i18n.get({ id: 'legacy.experimentCreate.templateColon', dm: "模板：" })}</span>
                   <div className="mt-1 bg-white rounded border p-3 text-sm text-gray-900 max-h-32 overflow-y-auto">
-                    {promptVersionDetail.template || '暂无模板内容'}
+                    {promptVersionDetail.template || $i18n.get({ id: 'legacy.experimentCreate.noTemplate', dm: "暂无模板内容" })}
                   </div>
                 </div>
 
                 {promptVersionDetail.variables && (
                   <div className="mt-3">
-                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>参数：</span>
+                    <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>{$i18n.get({ id: 'legacy.experimentCreate.paramsColon', dm: "参数：" })}</span>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {Object.keys(JSON.parse(promptVersionDetail.variables || '{}')).map((param: string) => (
                         <span
@@ -1336,18 +1337,18 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
             {/* 只有当选择了 prompt 类型时才显示字段映射配置卡片 */}
             {selectedObjectType === 'prompt' && selectedDataset && promptVersionDetail && datasetDetail && (
               <div className="bg-gray-50 rounded-lg p-4 mt-4">
-                <h4 className="text-base font-medium text-gray-900 mb-4">字段映射配置</h4>
+                <h4 className="text-base font-medium text-gray-900 mb-4">{$i18n.get({ id: 'legacy.experimentCreate.fieldMapping', dm: "字段映射配置" })}</h4>
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm text-gray-600">配置Prompt参数与评测集字段的映射关系：</p>
+                  <p className="text-sm text-gray-600">{$i18n.get({ id: 'legacy.experimentCreate.fieldMappingHint', dm: "配置Prompt参数与评测集字段的映射关系：" })}</p>
                   <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                    ✨ 系统已智能匹配默认值
+                    {$i18n.get({ id: 'legacy.experimentCreate.autoMatched', dm: "✨ 系统已智能匹配默认值" })}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 items-center">
-                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>Prompt参数：</span>
+                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>{$i18n.get({ id: 'legacy.experimentCreate.promptParamColon', dm: "Prompt参数：" })}</span>
                   <div></div>
-                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>映射到评测集字段：</span>
+                  <span className="text-sm" style={{color: 'rgba(0, 0, 0, 0.45)'}}>{$i18n.get({ id: 'legacy.experimentCreate.mapToDatasetFieldColon', dm: "映射到评测集字段：" })}</span>
                 </div>
                 <div className="space-y-3">
                   {Object.keys(JSON.parse(promptVersionDetail.variables || '{}')).map((param: string) => {
@@ -1380,7 +1381,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                             value={param}
                             readOnly
                             className="mt-1"
-                            placeholder="Prompt参数"
+                            placeholder={$i18n.get({ id: 'legacy.experimentCreate.promptParamPlaceholder', dm: "Prompt参数" })}
                           />
                         </div>
                         <div style={{textAlign: 'center'}}>↔</div>
@@ -1408,7 +1409,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
 
                 {Object.keys(JSON.parse(promptVersionDetail.variables || '{}')).length === 0 && (
                   <div className="text-center py-4 text-gray-500">
-                    该Prompt版本暂无参数需要映射
+                    {$i18n.get({ id: 'legacy.experimentCreate.noPromptParams', dm: "该Prompt版本暂无参数需要映射" })}
                   </div>
                 )}
 
@@ -1417,11 +1418,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                   <div className="flex items-start">
                     <span className="mr-2 text-blue-500 text-xl">💡</span>
                     <div>
-                      <div className="text-base font-medium text-gray-900 mb-2">字段映射说明：</div>
+                      <div className="text-base font-medium text-gray-900 mb-2">{$i18n.get({ id: 'legacy.experimentCreate.fieldMappingNotes', dm: "字段映射说明：" })}</div>
                       <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
-                        <li>系统已自动检测Prompt中的参数变量并尝试智能匹配评测集字段</li>
-                        <li>请确认每个映射关系是否正确，确保实验执行时数据能正确传递</li>
-                        <li>映射关系将在实验执行时用于将评测集数据填充到Prompt参数中</li>
+                        <li>{$i18n.get({ id: 'legacy.experimentCreate.fieldMappingNote1', dm: "系统已自动检测Prompt中的参数变量并尝试智能匹配评测集字段" })}</li>
+                        <li>{$i18n.get({ id: 'legacy.experimentCreate.fieldMappingNote2', dm: "请确认每个映射关系是否正确，确保实验执行时数据能正确传递" })}</li>
+                        <li>{$i18n.get({ id: 'legacy.experimentCreate.fieldMappingNote3', dm: "映射关系将在实验执行时用于将评测集数据填充到Prompt参数中" })}</li>
                       </ul>
                     </div>
                   </div>
@@ -1431,20 +1432,20 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
           </Card>
 
           {/* 步骤4：配置评估器 */}
-          <Card title="步骤4：配置评估器" className="mb-6">
-            <p className="text-gray-600 mb-4">选个添加评估器，每个评估器需要选择版本并配置字段映射</p>
+          <Card title={$i18n.get({ id: 'legacy.experimentCreate.step4', dm: "步骤4：配置评估器" })} className="mb-6">
+            <p className="text-gray-600 mb-4">{$i18n.get({ id: 'legacy.experimentCreate.step4Hint', dm: "选个添加评估器，每个评估器需要选择版本并配置字段映射" })}</p>
 
             {/* 添加评估器按钮 */}
             <div className="text-center border-2 border-dashed rounded-lg p-4 mb-6 cursor-pointer hover:bg-gray-50"
               onClick={handleAddEvaluator}>
               <PlusOutlined className="text-xl text-gray-500" />
-              <div className="mt-2 text-gray-600">添加评估器</div>
+              <div className="mt-2 text-gray-600">{$i18n.get({ id: 'legacy.experimentCreate.addEvaluator', dm: "添加评估器" })}</div>
             </div>
 
             {/* 已配置的评估器列表 */}
             {selectedEvaluators.length > 0 && (
               <div className="mt-4">
-                <h4 className="text-base font-medium text-gray-900 mb-4">已配置的评估器：</h4>
+                <h4 className="text-base font-medium text-gray-900 mb-4">{$i18n.get({ id: 'legacy.experimentCreate.configuredEvaluators', dm: "已配置的评估器：" })}</h4>
                 <div className="space-y-6">
                   {selectedEvaluators.map((evaluator, index) => {
                     // 获取当前评估器的ID
@@ -1461,7 +1462,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex' }}>
                             <h5 className="text-base font-medium text-gray-900 mb-4 mr-4">
-                              评估器 {index + 1}
+                              {$i18n.get({ id: 'legacy.experimentCreate.evaluatorIndex', dm: "评估器 {index}" }, { index: index + 1 })}
                             </h5>
                             {isMappingMode && <>
                               <h5 className="text-base font-medium text-blue-500 mb-4 mr-4">
@@ -1479,7 +1480,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                               icon={<DeleteOutlined />}
                               onClick={() => handleRemoveEvaluator(index)}
                             >
-                              移除
+                              {$i18n.get({ id: 'legacy.experimentCreate.remove', dm: "移除" })}
                             </Button>
                           </div>
                         </div>
@@ -1494,14 +1495,14 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                                 style={{marginRight: '6px'}}
                                 onClick={() => handleViewEvaluatorDetail(evaluatorId)}
                               >
-                                <EyeOutlined className="mr-1" /> 查看详情
+                                <EyeOutlined className="mr-1" /> {$i18n.get({ id: 'legacy.common.viewDetails', dm: "查看详情" })}
                               </div>
                               <div
                                 className="text-blue-500 cursor-pointer mr-6"
                                 style={{marginRight: '6px'}}
                                 onClick={handleViewPromptDetail}
                               >
-                                Prompt详情
+                                {$i18n.get({ id: 'legacy.experimentCreate.promptDetails', dm: "Prompt详情" })}
                               </div>
                               <div
                                 className="text-blue-500 cursor-pointer"
@@ -1519,7 +1520,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                                   }));
                                 }}
                               >
-                                重新配置
+                                {$i18n.get({ id: 'legacy.experimentCreate.reconfigure', dm: "重新配置" })}
                               </div>
                             </div>
 
@@ -1527,13 +1528,13 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                             <div className="bg-white rounded-lg p-4 mb-4">
                               <div className="grid grid-cols-1 gap-2">
                                 <div>
-                                  <span className="text-gray-600">描述：</span>
+                                  <span className="text-gray-600">{$i18n.get({ id: 'legacy.common.descriptionColon', dm: "描述：" })}</span>
                                   <span className="ml-2 text-gray-900">
                                     {evaluators.find(e => e.id.toString() === evaluatorId)?.description || '-'}
                                   </span>
                                 </div>
                                 <div>
-                                  <span className="text-gray-600">模型：</span>
+                                  <span className="text-gray-600">{$i18n.get({ id: 'legacy.common.modelColon', dm: "模型：" })}</span>
                                   <span className="ml-2">
                                     <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                                       {evaluators.find(e => e.id.toString() === evaluatorId)?.modelName || '-'}
@@ -1545,13 +1546,13 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
 
                             {/* 字段映射配置 */}
                             <div className="bg-white rounded-lg p-4">
-                              <h4 className="text-base font-medium text-gray-900 mb-4">字段映射配置</h4>
+                              <h4 className="text-base font-medium text-gray-900 mb-4">{$i18n.get({ id: 'legacy.experimentCreate.fieldMapping', dm: "字段映射配置" })}</h4>
                               <div className="space-y-3">
                                 {/* 映射表头 */}
                                 <div className="grid grid-cols-3 gap-4 font-medium text-gray-700">
-                                  <div>评估器参数</div>
-                                  <div style={{textAlign: 'center'}}>映射关系</div>
-                                  <div>数据来源</div>
+                                  <div>{$i18n.get({ id: 'legacy.experimentCreate.evaluatorParam', dm: "评估器参数" })}</div>
+                                  <div style={{textAlign: 'center'}}>{$i18n.get({ id: 'legacy.experimentCreate.mapping', dm: "映射关系" })}</div>
+                                  <div>{$i18n.get({ id: 'legacy.experimentCreate.dataSource', dm: "数据来源" })}</div>
                                 </div>
 
                                 {/* 映射项 */}
@@ -1597,7 +1598,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                                   })
                                 ) : (
                                   <div className="text-center py-4 text-gray-500">
-                                    该评估器暂无参数需要映射
+                                    {$i18n.get({ id: 'legacy.experimentCreate.noEvaluatorParams', dm: "该评估器暂无参数需要映射" })}
                                   </div>
                                 )}
                               </div>
@@ -1608,11 +1609,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                               <div className="flex items-start">
                                 <span className="mr-2 text-blue-500 text-xl">💡</span>
                                 <div>
-                                  <div className="text-base font-medium text-gray-900 mb-2">映射说明：</div>
+                                  <div className="text-base font-medium text-gray-900 mb-2">{$i18n.get({ id: 'legacy.experimentCreate.mappingNotes', dm: "映射说明：" })}</div>
                                   <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
-                                    <li>评估器参数映射到相应的数据来源字段</li>
-                                    <li>可选的数据来源包含评测集字段和评测对象输出（actual_output）</li>
-                                    <li>确保每个映射关系是合理的，以便正确评估</li>
+                                    <li>{$i18n.get({ id: 'legacy.experimentCreate.mappingNote1', dm: "评估器参数映射到相应的数据来源字段" })}</li>
+                                    <li>{$i18n.get({ id: 'legacy.experimentCreate.mappingNote2', dm: "可选的数据来源包含评测集字段和评测对象输出（actual_output）" })}</li>
+                                    <li>{$i18n.get({ id: 'legacy.experimentCreate.mappingNote3', dm: "确保每个映射关系是合理的，以便正确评估" })}</li>
                                   </ul>
                                 </div>
                               </div>
@@ -1626,11 +1627,11 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                               {/* 选择评估器 */}
                               <div>
                                 <div className="mb-1 text-sm" style={{color: 'rgba(0, 0, 0, 0.85)'}}>
-                                  <span className="text-red-500">*</span> 选择评估器
+                                  <span className="text-red-500">*</span> {$i18n.get({ id: 'legacy.experimentCreate.selectEvaluatorLabel', dm: "选择评估器" })}
                                 </div>
                                 <Select
                                   className="w-full"
-                                  placeholder="选择评估器"
+                                  placeholder={$i18n.get({ id: 'legacy.experimentCreate.selectEvaluatorPlaceholder', dm: "选择评估器" })}
                                   value={evaluator.evaluatorId || undefined}
                                   onChange={(value) => {
                                     // 更新评估器ID
@@ -1642,7 +1643,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                                     handleEvaluatorSelectChange(index, value);
                                   }}
                                   loading={evaluatorsLoading}
-                                  notFoundContent={evaluatorsLoading ? '加载中...' : '暂无数据'}
+                                  notFoundContent={evaluatorsLoading ? $i18n.get({ id: 'legacy.common.loading', dm: "加载中..." }) : $i18n.get({ id: 'legacy.common.noData', dm: "暂无数据" })}
                                 >
                                   {evaluators.map(e => (
                                     <Option key={e.id} value={e.id.toString()}>
@@ -1655,19 +1656,19 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                               {/* 选择版本 */}
                               <div>
                                 <div className="mb-1 text-sm" style={{color: 'rgba(0, 0, 0, 0.85)'}}>
-                                  <span className="text-red-500">*</span> 选择版本
+                                  <span className="text-red-500">*</span> {$i18n.get({ id: 'legacy.common.selectVersion', dm: "选择版本" })}
                                 </div>
                                 <Select
                                   className="w-full"
-                                  placeholder="选择版本"
+                                  placeholder={$i18n.get({ id: 'legacy.common.selectVersionPlaceholder', dm: "选择版本" })}
                                   value={evaluator.evaluatorId ? selectedEvaluatorVersions[instanceKey] : undefined}
                                   onChange={(value) => handleEvaluatorVersionChange(index, evaluator.evaluatorId, value)}
                                   disabled={!evaluator.evaluatorId}
                                   loading={evaluator.evaluatorId ? evaluatorVersionsLoading[evaluator.evaluatorId] : false}
                                   notFoundContent={
-                                    !evaluator.evaluatorId ? '请先选择评估器' :
-                                    evaluatorVersionsLoading[evaluator.evaluatorId] ? '加载中...' :
-                                    evaluatorVersions[evaluator.evaluatorId]?.length === 0 ? '暂无版本数据' : '请选择版本'
+                                    !evaluator.evaluatorId ? $i18n.get({ id: 'legacy.experimentCreate.selectEvaluatorFirst', dm: "请先选择评估器" }) :
+                                    evaluatorVersionsLoading[evaluator.evaluatorId] ? $i18n.get({ id: 'legacy.common.loading', dm: "加载中..." }) :
+                                    evaluatorVersions[evaluator.evaluatorId]?.length === 0 ? $i18n.get({ id: 'legacy.common.noVersionData', dm: "暂无版本数据" }) : $i18n.get({ id: 'legacy.common.selectVersionPlaceholder', dm: "选择版本" })
                                   }
                                 >
                                     {evaluator.evaluatorId && evaluatorVersions[evaluator.evaluatorId]?.map((version: any) => {
@@ -1689,7 +1690,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
                                   className="flex items-center text-blue-500 cursor-pointer"
                                   onClick={() => handleViewEvaluatorDetail(evaluator.evaluatorId)}
                                 >
-                                  <EyeOutlined className="mr-1" /> 查看详情
+                                  <EyeOutlined className="mr-1" /> {$i18n.get({ id: 'legacy.common.viewDetails', dm: "查看详情" })}
                                 </div>
                               </div>
                             )}
@@ -1709,7 +1710,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
       <div className="experiment-create-footer">
         <div className="flex justify-end space-x-4">
           <Button size="large" onClick={handleCancel}>
-            取消
+            {$i18n.get({ id: 'legacy.common.cancel', dm: "取消" })}
           </Button>
           <Button
             type="primary"
@@ -1718,7 +1719,7 @@ const ExperimentCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hi
             loading={loading}
             onClick={() => form.submit()}
           >
-            发起实验
+            {$i18n.get({ id: 'legacy.experimentCreate.startExperiment', dm: "发起实验" })}
           </Button>
         </div>
       </div>

@@ -10,6 +10,7 @@ import { getLegacyPath } from '../../../utils/path';
 import dayjs from 'dayjs';
 import './index.css';
 import { ModelsContext } from '../../../context/models';
+import $i18n from '@/i18n';
 
 const { Title } = Typography;
 
@@ -56,11 +57,11 @@ const EvaluationEvaluator: React.FC = () => {
           total: responseData.totalCount || 0
         }));
       } else {
-        throw new Error(response.message || '获取评估器列表失败');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.evaluation.evaluator.fetchFailed', dm: '获取评估器列表失败' }));
       }
     } catch (error) {
-      console.error('获取评估器列表失败:', error);
-      handleApiError(error, '获取评估器列表');
+      console.error('Failed to fetch evaluators:', error);
+      handleApiError(error, $i18n.get({ id: 'legacy.evaluation.evaluator.fetchContext', dm: '获取评估器列表' }));
     } finally {
       setLoading(false);
     }
@@ -106,34 +107,41 @@ const EvaluationEvaluator: React.FC = () => {
       // 跳转到调试页面，携带评估器的实际配置
     } catch (error) {
       console.error('Error in handleDebug:', error);
-      handleApiError(error, '跳转调试页面');
+      handleApiError(error, $i18n.get({ id: 'legacy.evaluation.evaluator.debugNavigateContext', dm: '跳转调试页面' }));
     }
   };
 
   const handleDelete = (record: EvaluatorRecord) => {
     Modal.confirm({
-      title: '确认删除',
+      title: $i18n.get({ id: 'legacy.evaluation.common.confirmDelete', dm: '确认删除' }),
       icon: <ExclamationCircleOutlined />,
       content: (
         <div>
-          <p>确定要删除评估器 <strong>{record.name}</strong> 吗？</p>
-          <p className="text-gray-500 text-sm">此操作不可恢复，请谨慎操作。</p>
+          <p>
+            {$i18n.get(
+              { id: 'legacy.evaluation.evaluator.deleteConfirmContent', dm: '确定要删除评估器 {name} 吗？' },
+              { name: record.name },
+            )}
+          </p>
+          <p className="text-gray-500 text-sm">
+            {$i18n.get({ id: 'legacy.evaluation.evaluator.deleteConfirmHint', dm: '此操作不可恢复，请谨慎操作。' })}
+          </p>
         </div>
       ),
-      okText: '确认删除',
+      okText: $i18n.get({ id: 'legacy.evaluation.evaluator.deleteOk', dm: '确认删除' }),
       okType: 'danger',
-      cancelText: '取消',
+      cancelText: $i18n.get({ id: 'legacy.evaluation.common.cancel', dm: '取消' }),
       onOk: async () => {
         try {
           const response = await API.deleteEvaluator({ id: record.id });
           if (response.code === 200) {
-            notifySuccess({ message: '评估器删除成功' });
+            notifySuccess({ message: $i18n.get({ id: 'legacy.evaluation.evaluator.deletedSuccess', dm: '评估器删除成功' }) });
             fetchEvaluators(pagination, searchName); // 重新加载列表
           } else {
-            throw new Error(response.message || '删除失败');
+            throw new Error(response.message || $i18n.get({ id: 'legacy.evaluation.evaluator.deleteFailed', dm: '删除失败' }));
           }
         } catch (error) {
-          handleApiError(error, '删除评估器');
+          handleApiError(error, $i18n.get({ id: 'legacy.evaluation.evaluator.deleteContext', dm: '删除评估器' }));
         }
       },
     });
@@ -151,7 +159,7 @@ const EvaluationEvaluator: React.FC = () => {
   // 表格列配置
   const columns = [
     {
-      title: '评估器名称',
+      title: $i18n.get({ id: 'legacy.evaluation.common.evaluatorName', dm: '评估器名称' }),
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: EvaluatorRecord) => (
@@ -164,7 +172,7 @@ const EvaluationEvaluator: React.FC = () => {
       ),
     },
     {
-      title: '描述',
+      title: $i18n.get({ id: 'legacy.evaluation.common.description', dm: '描述' }),
       dataIndex: 'description',
       key: 'description',
       render: (text: string) => (
@@ -174,7 +182,7 @@ const EvaluationEvaluator: React.FC = () => {
       ),
     },
     {
-      title: '模型',
+      title: $i18n.get({ id: 'legacy.evaluation.common.model', dm: '模型' }),
       dataIndex: 'modelConfig',
       key: 'modelConfig',
       render: (modelConfig: string) => {
@@ -195,32 +203,34 @@ const EvaluationEvaluator: React.FC = () => {
       },
     },
     {
-      title: '创建时间',
+      title: $i18n.get({ id: 'legacy.evaluation.common.createdAt', dm: '创建时间' }),
       dataIndex: 'createTime',
       key: 'createTime',
       render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
-      title: '更新时间',
+      title: $i18n.get({ id: 'legacy.evaluation.common.updatedAt', dm: '更新时间' }),
       dataIndex: 'updateTime',
       key: 'updateTime',
       render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
-      title: '操作',
+      title: $i18n.get({ id: 'legacy.evaluation.common.actions', dm: '操作' }),
       key: 'action',
       width: 160,
       fixed: 'right' as const,
       render: (_: any, record: EvaluatorRecord) => (
         <Space size="middle">
-          <Tooltip title="详情">
+          <Tooltip title={$i18n.get({ id: 'legacy.evaluation.common.details', dm: '详情' })}>
             <Button
               type="link"
               icon={<EyeOutlined />}
               onClick={() => handleView(record)}
             />
           </Tooltip>
-          <Tooltip title={!record.modelConfig ? "当前暂未发布版本，请先发布版本后调试" : "调试"} >
+          <Tooltip title={!record.modelConfig
+            ? $i18n.get({ id: 'legacy.evaluation.evaluator.noVersionDebug', dm: '当前暂未发布版本，请先发布版本后调试' })
+            : $i18n.get({ id: 'legacy.evaluation.common.debug', dm: '调试' })} >
             <Button
               type="link"
               icon={<BugOutlined />}
@@ -228,7 +238,7 @@ const EvaluationEvaluator: React.FC = () => {
               onClick={() => handleDebug(record)}
             />
           </Tooltip>
-          <Tooltip title="删除">
+          <Tooltip title={$i18n.get({ id: 'legacy.evaluation.common.delete', dm: '删除' })}>
             <Button
               type="link"
               icon={<DeleteOutlined />}
@@ -245,13 +255,15 @@ const EvaluationEvaluator: React.FC = () => {
     <div className="evaluator-page p-8 fade-in">
       {/* 页面标题 */}
       <div className="mb-8">
-        <Title level={2} style={{ marginBottom: 8 }}>评估器管理</Title>
+        <Title level={2} style={{ marginBottom: 8 }}>
+          {$i18n.get({ id: 'legacy.evaluation.evaluator.pageTitle', dm: '评估器管理' })}
+        </Title>
       </div>
       <Card className='mb-4'>
         {/* 搜索区域 */}
         <div className="flex gap-4 justify-between" style={{flexWrap: 'wrap'}}>
           <Input.Search
-            placeholder="搜索名称"
+            placeholder={$i18n.get({ id: 'legacy.evaluation.common.searchByName', dm: '搜索名称' })}
             allowClear
             style={{ width: 280 }}
             onSearch={handleSearch}
@@ -261,7 +273,7 @@ const EvaluationEvaluator: React.FC = () => {
             icon={<PlusOutlined />}
             onClick={handleCreate}
           >
-            新建评估器
+            {$i18n.get({ id: 'legacy.evaluation.common.createEvaluator', dm: '创建评估器' })}
           </Button>
         </div>
 

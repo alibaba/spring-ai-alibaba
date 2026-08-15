@@ -193,12 +193,14 @@ export const FlowBase = memo((props: IFlowBaseProps) => {
                 </Button>
                 <CheckListBtn />
               </Space.Compact>
-              {/* 新增“导出SAA工程代码”按钮 */}
               <Button
                 disabled={actionLoading}
                 onClick={handleExportSAA}
               >
-                导出SAA工程代码
+                {$i18n.get({
+                  id: 'main.pages.App.exportSAAProjectCode',
+                  dm: '导出SAA工程代码',
+                })}
               </Button>
               <Button
                 disabled={actionLoading}

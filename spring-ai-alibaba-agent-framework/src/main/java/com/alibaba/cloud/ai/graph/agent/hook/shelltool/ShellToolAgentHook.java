@@ -21,8 +21,8 @@ import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
-import com.alibaba.cloud.ai.graph.agent.tools.ShellTool2;
 import com.alibaba.cloud.ai.graph.agent.tools.ShellSessionManager;
+import com.alibaba.cloud.ai.graph.agent.tools.ShellTool2;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

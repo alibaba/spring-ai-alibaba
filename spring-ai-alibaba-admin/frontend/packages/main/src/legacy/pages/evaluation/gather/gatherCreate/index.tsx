@@ -4,6 +4,7 @@ import { Form, Input, Button, Card, Select, message, Space, Divider } from 'antd
 import { ArrowLeftOutlined, PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import API from '../../../../services';
 import './index.css';
+import $i18n from '@/i18n';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -77,12 +78,12 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
         })),
       };
 
-      console.log('提交数据:', submitData);
+      console.log('Submitting data:', submitData);
       
       // 这里调用创建评测集的API
       await API.createDataset(submitData);
       
-      message.success('评测集创建成功');
+      message.success($i18n.get({ id: 'legacy.evaluation.gatherCreate.createdSuccess', dm: '评测集创建成功' }));
       
       // 如果提供了onSuccess回调，则调用它，否则导航到列表页面
       if (onSuccess) {
@@ -91,8 +92,8 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
         navigate('/evaluation-gather');
       }
     } catch (error) {
-      message.error('创建失败，请重试');
-      console.error('创建评测集失败:', error);
+      message.error($i18n.get({ id: 'legacy.evaluation.gatherCreate.createFailedRetry', dm: '创建失败，请重试' }));
+      console.error('Failed to create evaluation set:', error);
     } finally {
       setLoading(false);
     }
@@ -120,7 +121,9 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
               className="mr-3"
             >
             </Button>
-            <h1 className="text-2xl font-semibold mb-0">创建评测集</h1>
+            <h1 className="text-2xl font-semibold mb-0">
+              {$i18n.get({ id: 'legacy.evaluation.gatherCreate.pageTitle', dm: '创建评测集' })}
+            </h1>
           </div>
         </div>
       )}
@@ -137,41 +140,41 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
                 name: 'input',
                 dataType: 'String',
                 displayFormat: 'PlainText',
-                description: '实际输入（作为输入)过程给评测对象)',
+                description: $i18n.get({ id: 'legacy.evaluation.gatherCreate.defaultInputDesc', dm: '实际输入（作为输入)过程给评测对象)' }),
                 required: true
               },
               {
                 name: 'reference_output',
                 dataType: 'String',
                 displayFormat: 'PlainText',
-                description: '参考输出答案（预期理想输出，可作为评估时的参考标准)',
+                description: $i18n.get({ id: 'legacy.evaluation.gatherCreate.defaultRefOutputDesc', dm: '参考输出答案（预期理想输出，可作为评估时的参考标准)' }),
                 required: true
               }
             ]
           }}
         >
           {/* 基本信息 */}
-          <Card title="基本信息" className="mb-6">
+          <Card title={$i18n.get({ id: 'legacy.evaluation.common.basicInformation', dm: '基本信息' })} className="mb-6">
             <Form.Item
               name="name"
-              label="评测集名称"
+              label={$i18n.get({ id: 'legacy.evaluation.common.evaluationSetName', dm: '评测集名称' })}
               rules={[
-                { required: true, message: '请输入评测集名称' },
-                { max: 100, message: '名称不能超过100个字符' }
+                { required: true, message: $i18n.get({ id: 'legacy.evaluation.common.pleaseEnterEvaluationSetName', dm: '请输入评测集名称' }) },
+                { max: 100, message: $i18n.get({ id: 'legacy.evaluation.common.nameMax100', dm: '名称不能超过100个字符' }) }
               ]}
             >
-              <Input placeholder="如：问答机器人" />
+              <Input placeholder={$i18n.get({ id: 'legacy.evaluation.gatherCreate.namePlaceholder', dm: '如：问答机器人' })} />
             </Form.Item>
 
             <Form.Item
               name="description"
-              label="评测集描述"
+              label={$i18n.get({ id: 'legacy.evaluation.gatherCreate.descLabel', dm: '评测集描述' })}
               rules={[
-                { max: 500, message: '描述不能超过500个字符' }
+                { max: 500, message: $i18n.get({ id: 'legacy.evaluation.common.descMax500', dm: '描述不能超过500个字符' }) }
               ]}
             >
               <TextArea 
-                placeholder="可选填写评测集描述"
+                placeholder={$i18n.get({ id: 'legacy.evaluation.gatherCreate.descPlaceholder', dm: '可选填写评测集描述' })}
                 rows={4}
                 showCount
                 maxLength={500}
@@ -183,10 +186,10 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
           <Form.List name="columns">
             {(fields, { add, remove }) => {
               const formValues = form.getFieldsValue();
-              
+
               return (
-                <Card 
-                  title="评测集列结构配置" 
+                <Card
+                  title={$i18n.get({ id: 'legacy.evaluation.gatherCreate.columnConfigTitle', dm: '评测集列结构配置' })}
                   extra={
                     <Button
                       type="primary"
@@ -200,17 +203,17 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
                       icon={<PlusOutlined />}
                       size="small"
                     >
-                      添加列
+                      {$i18n.get({ id: 'legacy.evaluation.common.addColumn', dm: '添加列' })}
                     </Button>
                   }
                   className="mb-6"
                 >
-                    {fields.map(({ key, name, ...restField }) => {
+                  {fields.map(({ key, name, ...restField }) => {
                       const currentColumn = formValues?.columns?.[name];
                       const isRequired = currentColumn?.required;
-                      
+
                       return (
-                        <Card 
+                        <Card
                           key={key}
                           type="inner"
                           className="mb-4"
@@ -220,8 +223,8 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
                               name={[name, 'name']}
                               className="mb-0"
                             >
-                              <Input 
-                                placeholder="列名称" 
+                              <Input
+                                placeholder={$i18n.get({ id: 'legacy.evaluation.gatherCreate.columnName', dm: '列名称' })}
                                 variant="borderless"
                                 className="font-medium"
                               />
@@ -242,19 +245,19 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
                             <Form.Item
                               {...restField}
                               name={[name, 'name']}
-                              label="列名称"
-                              rules={[{ required: true, message: '请输入列名称' }]}
+                              label={$i18n.get({ id: 'legacy.evaluation.gatherCreate.columnName', dm: '列名称' })}
+                              rules={[{ required: true, message: $i18n.get({ id: 'legacy.evaluation.gatherCreate.pleaseEnterColumnName', dm: '请输入列名称' }) }]}
                             >
-                              <Input placeholder="如：input" />
+                              <Input placeholder={$i18n.get({ id: 'legacy.evaluation.gatherCreate.columnNamePlaceholder', dm: '如：input' })} />
                             </Form.Item>
 
                             <Form.Item
                               {...restField}
                               name={[name, 'dataType']}
-                              label="数据类型"
-                              rules={[{ required: true, message: '请选择数据类型' }]}
+                              label={$i18n.get({ id: 'legacy.evaluation.gatherCreate.dataType', dm: '数据类型' })}
+                              rules={[{ required: true, message: $i18n.get({ id: 'legacy.evaluation.gatherCreate.pleaseSelectDataType', dm: '请选择数据类型' }) }]}
                             >
-                              <Select placeholder="请选择">
+                              <Select placeholder={$i18n.get({ id: 'legacy.evaluation.common.pleaseSelect', dm: '请选择' })}>
                                 {DATA_TYPES.map(type => (
                                   <Option key={type.value} value={type.value}>
                                     {type.label}
@@ -266,10 +269,10 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
                             <Form.Item
                               {...restField}
                               name={[name, 'displayFormat']}
-                              label="查看格式"
-                              rules={[{ required: true, message: '请选择查看格式' }]}
+                              label={$i18n.get({ id: 'legacy.evaluation.gatherCreate.displayFormat', dm: '查看格式' })}
+                              rules={[{ required: true, message: $i18n.get({ id: 'legacy.evaluation.gatherCreate.pleaseSelectDisplayFormat', dm: '请选择查看格式' }) }]}
                             >
-                              <Select placeholder="请选择">
+                              <Select placeholder={$i18n.get({ id: 'legacy.evaluation.common.pleaseSelect', dm: '请选择' })}>
                                 {VIEW_FORMATS.map(format => (
                                   <Option key={format.value} value={format.value}>
                                     {format.label}
@@ -282,11 +285,11 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
                           <Form.Item
                             {...restField}
                             name={[name, 'description']}
-                            label="列描述"
-                            rules={[{ required: true, message: '请输入列描述' }]}
+                            label={$i18n.get({ id: 'legacy.evaluation.gatherCreate.columnDescription', dm: '列描述' })}
+                            rules={[{ required: true, message: $i18n.get({ id: 'legacy.evaluation.gatherCreate.pleaseEnterColumnDesc', dm: '请输入列描述' }) }]}
                           >
                             <TextArea 
-                              placeholder="请输入列的描述信息"
+                              placeholder={$i18n.get({ id: 'legacy.evaluation.gatherCreate.columnDescPlaceholder', dm: '请输入列的描述信息' })}
                               rows={3}
                             />
                           </Form.Item>
@@ -313,7 +316,7 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
       <div className="gather-create-footer">
         <div className="flex justify-end space-x-4">
           <Button size="large" onClick={handleCancel}>
-            取消
+            {$i18n.get({ id: 'legacy.evaluation.common.cancel', dm: '取消' })}
           </Button>
           <Button 
             type="primary" 
@@ -322,7 +325,7 @@ const GatherCreate: React.FC<GatherCreateProps> = ({ onCancel, onSuccess, hideTi
             loading={loading}
             onClick={() => form.submit()}
           >
-            创建
+            {$i18n.get({ id: 'legacy.evaluation.common.create', dm: '创建' })}
           </Button>
         </div>
       </div>
