@@ -17,14 +17,12 @@ package com.alibaba.cloud.ai.examples.multiagents.agenticrag;
 
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Invokes the agentic RAG graph (classify → [retrieve] → answer → check) for a question
@@ -42,13 +40,10 @@ public class AgenticRagService {
 
 	public AgenticRagResult run(String question) throws GraphRunnerException {
 		Map<String, Object> inputs = Map.of("question", question);
-		// Each run is an independent Q&A turn: give it a fresh thread id so the
-		// checkpoint saver (a MemorySaver by default) does not replay state
-		// (documents, retrieval counters) from a previous run.
-		RunnableConfig config = RunnableConfig.builder()
-			.threadId(UUID.randomUUID().toString())
-			.build();
-		Optional<OverAllState> resultOpt = graph.invoke(inputs, config);
+		// The graph is compiled without a checkpoint saver, so every invoke starts
+		// from a fresh state: nothing from a previous run (documents, retrieval
+		// counters) is replayed, and nothing is retained on success or failure.
+		Optional<OverAllState> resultOpt = graph.invoke(inputs);
 
 		if (resultOpt.isEmpty()) {
 			return new AgenticRagResult(question, "No result from graph.", 0);

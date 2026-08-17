@@ -45,18 +45,26 @@ here, the number of retrieval rounds (including zero) is decided at runtime by t
 
 ## Design choices
 
-1. **Independent Q&A turns**  
-   Each `AgenticRagService.run()` call invokes the graph with a fresh
-   `RunnableConfig` thread id, because compiled graphs register a `MemorySaver` checkpoint
-   saver by default, which replays state from a previous run on the same thread id.
-   The graph is also compiled with `releaseThread(true)` so each one-shot thread's
-   checkpoint is released when the run completes, avoiding unbounded memory growth.
+1. **One-shot turns, no checkpoint saver**  
+   The graph is compiled with an empty `SaverConfig`. This demo treats every question
+   as an independent turn: `graph.invoke()` always starts from a fresh state, so
+   nothing from a previous run is replayed, and nothing is retained in memory after a
+   run completes — whether it succeeded or failed.
 
-2. **Quality gate only after retrieval**  
-   The `check` node is skipped entirely when the router answered without retrieval,
-   so conversational questions never trigger a spurious retry loop.
+2. **Documents accumulate across retrieval retries**  
+   The `documents` state key uses `AppendStrategy` with deduplication, so each retry
+   round adds its newly retrieved documents to the previous ones. A multi-part
+   question (for example, "compare the annual and monthly refund policies") can
+   combine facts retrieved in different rounds instead of seeing only the last round.
 
-3. **Bounded retries**  
+3. **Routing decision drives the prompt, not the document list**  
+   The `answer` node chooses the conversational prompt only when the router decided
+   to answer directly (`route == "answer"`). If the router chose retrieval but the
+   store returned no matches, the answer is still generated from the grounded prompt
+   and the quality gate still runs — the model reports missing information instead of
+   inventing facts. `check` is skipped only for direct answers.
+
+4. **Bounded retries**  
    `CheckNode.MAX_RETRIES` (default `2`) bounds the answer → check → refine → retrieve
    loop, so a question can trigger at most 3 retrieval rounds.
 

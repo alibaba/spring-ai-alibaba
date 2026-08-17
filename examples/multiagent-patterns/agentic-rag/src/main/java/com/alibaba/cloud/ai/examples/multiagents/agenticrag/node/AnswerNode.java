@@ -24,9 +24,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Generates the answer from the retrieved context (or, when the router decided no
- * retrieval was needed, from the direct conversational prompt). Writes the result to
- * the {@code final_answer} state key.
+ * Generates the answer. When the router chose to answer directly ({@code route ==
+ * "answer"}), a conversational prompt is used; otherwise the answer is grounded in the
+ * retrieved context. The choice follows the routing decision rather than whether the
+ * document list happens to be non-empty, so an empty retrieval still produces an honest
+ * "not in the knowledge base" answer instead of unconstrained generation.
  */
 public class AnswerNode implements NodeAction {
 
@@ -45,14 +47,16 @@ public class AnswerNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		String question = state.value("question").map(Object::toString).orElse("");
-		@SuppressWarnings("unchecked")
-		List<String> docs = (List<String>) state.value("documents").orElse(List.of());
+		String route = state.value("route").map(Object::toString).orElse("");
 		String prompt;
-		if (docs.isEmpty()) {
+		if ("answer".equals(route)) {
 			prompt = directAnswerPromptTemplate.formatted(question);
 		}
 		else {
-			prompt = answerPromptTemplate.formatted(String.join("\n\n", docs), question);
+			@SuppressWarnings("unchecked")
+			List<String> docs = (List<String>) state.value("documents").orElse(List.of());
+			String context = docs.isEmpty() ? "(no context retrieved)" : String.join("\n\n", docs);
+			prompt = answerPromptTemplate.formatted(context, question);
 		}
 		String answer = chatModel.call(new Prompt(prompt)).getResult().getOutput().getText();
 		return Map.of("final_answer", answer != null ? answer.trim() : "");

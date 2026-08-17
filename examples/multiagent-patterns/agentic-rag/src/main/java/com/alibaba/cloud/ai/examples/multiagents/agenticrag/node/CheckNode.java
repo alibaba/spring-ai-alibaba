@@ -44,9 +44,9 @@ public class CheckNode implements NodeAction {
 	@Override
 	public Map<String, Object> apply(OverAllState state) throws Exception {
 		int retryCount = state.value("retry_count")
-				.map(Object::toString)
-				.map(Integer::parseInt)
-				.orElse(0);
+			.map(Object::toString)
+			.map(Integer::parseInt)
+			.orElse(0);
 		if (retryCount >= MAX_RETRIES) {
 			return Map.of("route", "done");
 		}
@@ -56,13 +56,15 @@ public class CheckNode implements NodeAction {
 		@SuppressWarnings("unchecked")
 		List<String> docs = (List<String>) state.value("documents").orElse(List.of());
 
-		// Direct answers (no retrieval) are final: the quality gate only applies to
-		// answers grounded in retrieved context.
-		if (docs.isEmpty()) {
+		// Direct answers (the router chose not to retrieve) are final. The gate only
+		// applies to answers produced by the retrieval path — including an empty
+		// retrieval, which must be checked so the model reports missing information
+		// instead of inventing facts.
+		if ("answer".equals(state.value("route").map(Object::toString).orElse(""))) {
 			return Map.of("route", "done");
 		}
 
-		String context = String.join("\n\n", docs);
+		String context = docs.isEmpty() ? "(no context retrieved)" : String.join("\n\n", docs);
 
 		String prompt = promptTemplate.formatted(question, context, answer);
 		String response = chatModel.call(new Prompt(prompt)).getResult().getOutput().getText();

@@ -26,7 +26,6 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -152,7 +151,9 @@ public class AgenticRagConfig {
 			strategies.put("question", new ReplaceStrategy());
 			strategies.put("route", new ReplaceStrategy());
 			strategies.put("search_query", new ReplaceStrategy());
-			strategies.put("documents", new ReplaceStrategy());
+			// Documents accumulate (and deduplicate) across retrieval retries, so a
+			// multi-part question can combine facts from several rounds.
+			strategies.put("documents", new AppendStrategy(false));
 			strategies.put("final_answer", new ReplaceStrategy());
 			strategies.put("retry_count", new ReplaceStrategy());
 			strategies.put("retrieval_rounds", new ReplaceStrategy());
@@ -174,11 +175,10 @@ public class AgenticRagConfig {
 						edge_async(state -> state.<String>value("route").filter("retry"::equals).orElse("done")),
 						Map.of("retry", "retrieve", "done", END));
 
-		// releaseThread(true) makes the MemorySaver drop the checkpoint of each
-		// one-shot thread once the run completes, so repeated Q&A turns do not
-		// accumulate state in memory.
-		SaverConfig saverConfig = SaverConfig.builder().register(new MemorySaver()).build();
-		return graph.compile(CompileConfig.builder().saverConfig(saverConfig).releaseThread(true).build());
+		// This demo treats every question as a one-shot turn: compile without a
+		// checkpoint saver so no state is retained between runs — nothing is replayed
+		// on the next invoke and nothing accumulates on success or failure.
+		return graph.compile(CompileConfig.builder().saverConfig(SaverConfig.builder().build()).build());
 	}
 
 	@Bean
