@@ -480,7 +480,9 @@ class SpringAIJacksonStateSerializerTest {
 
 		AssistantMessage deserialized = serializeAndDeserialize(message);
 
-		assertEquals(List.of("[B", "AQID"), deserialized.getMetadata().get("payload"));
+		assertTrue(deserialized.getMetadata().get("payload") instanceof byte[]);
+		assertArrayEquals(new byte[] { 1, 2, 3 },
+				(byte[]) deserialized.getMetadata().get("payload"));
 	}
 
 	@Test
