@@ -38,7 +38,8 @@ public class AgenticRagRunner implements ApplicationRunner {
 	private static final List<String> DEMO_QUESTIONS = List.of(
 			"What is the refund policy for the annual plan?",
 			"What is your name and what can you help me with?",
-			"Compare the refund policy of the annual plan with the monthly plan.");
+			"Compare the refund policy of the annual plan with the monthly plan.",
+			"Where is Acme Analytics customer data hosted?");
 
 	private final AgenticRagService agenticRagService;
 

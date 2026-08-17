@@ -31,8 +31,9 @@ is complete.
 
 The three LLM decision points are what make this pattern **agentic**:
 
-1. **classify** — routes to `retrieve` or answers directly, so conversational questions
-   never touch the vector store.
+1. **classify** — routes purely conversational questions straight to `answer`; every
+   product question goes to `retrieve`, even when the knowledge base may not hold the
+   answer (so the model reports missing information instead of inventing it).
 2. **answer** — answers strictly from the retrieved context and says so when the
    information is not available.
 3. **check** — a quality gate that detects incomplete answers, writes a more specific
@@ -80,8 +81,9 @@ The three runner questions demonstrate the pattern:
 | Question | What it shows |
 |----------|---------------|
 | `What is the refund policy for the annual plan?` | Retrieval needed; answered from the knowledge base. |
-| `What is your name and what can you help me with?` | Router answers directly — zero retrieval rounds. |
+| `What is your name and what can you help me with?` | Purely conversational — router answers directly, zero retrieval rounds. |
 | `Compare the refund policy of the annual plan with the monthly plan.` | May need 2+ retrieval rounds when the first pass only finds one of the two policies. |
+| `Where is Acme Analytics customer data hosted?` | A product fact the knowledge base does not contain — still routed through retrieval, and the honest answer is "not in the knowledge base" instead of a guess. |
 
 ## Project layout
 

@@ -54,8 +54,8 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
  *
  * <p>In contrast to the fixed-pipeline RAG workflow in the {@code workflow} example
  * (rewrite → retrieve → prepare → agent), retrieval here is a tool the agent drives
- * dynamically, so simple questions skip retrieval entirely and complex questions can
- * trigger several retrieval rounds until the answer is complete.
+ * dynamically: purely conversational questions skip retrieval entirely, while product
+ * questions trigger one or more retrieval rounds until the answer is complete.
  */
 @Configuration
 public class AgenticRagConfig {
@@ -63,10 +63,10 @@ public class AgenticRagConfig {
 	private static final String CLASSIFY_PROMPT = """
 			You are the router of an agentic RAG system for a product knowledge base.
 			Decide whether answering the question REQUIRES retrieving information from the knowledge base.
-			The knowledge base contains: pricing plans, refund policies, API rate limits, features, and support information.
+			The knowledge base covers Acme Analytics product information: pricing plans, refund policies, API rate limits, features, and support.
 			Reply with exactly one word: RETRIEVE or ANSWER.
-			- RETRIEVE: the question asks about facts that may be in the knowledge base (pricing, refunds, API, features, support).
-			- ANSWER: the question is general or conversational, or it cannot be answered by the knowledge base.
+			- RETRIEVE: the question asks about Acme Analytics or its product in any way (pricing, refunds, API, features, support, or other product facts) — even if the knowledge base may not contain the answer.
+			- ANSWER: the question is purely general or conversational (greetings, "who are you", "what can you help me with") and does not ask about the product.
 
 			Question: %s
 			""";
@@ -86,7 +86,8 @@ public class AgenticRagConfig {
 	private static final String DIRECT_ANSWER_PROMPT = """
 			You are a customer support assistant for Acme Analytics, a SaaS analytics product.
 			Answer the question helpfully and conversationally. You may greet the user and
-			explain what you can help with; you do not need to consult the knowledge base.
+			explain what you can help with. If the question asks for a specific product fact
+			you are not sure about, say you would look it up in the knowledge base instead of guessing.
 
 			Question: %s
 			""";
