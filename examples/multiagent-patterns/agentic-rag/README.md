@@ -47,9 +47,10 @@ here, the number of retrieval rounds (including zero) is decided at runtime by t
 
 1. **Independent Q&A turns**  
    Each `AgenticRagService.run()` call invokes the graph with a fresh
-   `RunnableConfig` thread id. Compiled graphs register a `MemorySaver` checkpoint
-   saver by default, which replays state from a previous run on the same thread id;
-   a fresh id keeps every question isolated.
+   `RunnableConfig` thread id, because compiled graphs register a `MemorySaver` checkpoint
+   saver by default, which replays state from a previous run on the same thread id.
+   The graph is also compiled with `releaseThread(true)` so each one-shot thread's
+   checkpoint is released when the run completes, avoiding unbounded memory growth.
 
 2. **Quality gate only after retrieval**  
    The `check` node is skipped entirely when the router answered without retrieval,
@@ -122,7 +123,9 @@ From the repository root:
 
 ### Run the application
 
-Default: the app starts **without** calling the model (no demo run):
+The demo runner is disabled by default, but the application always seeds the in-memory
+vector store at startup, which sends the 6 knowledge-base documents through the
+configured embedding model — so a valid API key is required even without the runner:
 
 ```bash
 java -jar examples/multiagent-patterns/agentic-rag/target/agentic-rag-0.0.1-SNAPSHOT.jar

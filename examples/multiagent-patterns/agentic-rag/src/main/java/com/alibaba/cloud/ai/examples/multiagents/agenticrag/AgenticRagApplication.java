@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.examples.multiagents.agenticrag;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -24,6 +26,8 @@ import org.springframework.core.env.Environment;
 
 @SpringBootApplication
 public class AgenticRagApplication {
+
+	private static final Logger log = LoggerFactory.getLogger(AgenticRagApplication.class);
 
 	public static void main(String[] args) {
 		SpringApplication.run(AgenticRagApplication.class, args);
@@ -35,10 +39,7 @@ public class AgenticRagApplication {
 			String port = environment.getProperty("server.port", "8080");
 			String contextPath = environment.getProperty("server.servlet.context-path", "");
 			String accessUrl = "http://localhost:" + port + contextPath + "/chatui/index.html";
-			System.out.println("\n🎉========================================🎉");
-			System.out.println("✅ Agentic RAG example is ready!");
-			System.out.println("🚀 Chat with the agent: " + accessUrl);
-			System.out.println("🎉========================================🎉\n");
+			log.info("Agentic RAG example is ready! Chat with the agent: {}", accessUrl);
 		};
 	}
 }

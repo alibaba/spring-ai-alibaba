@@ -6,7 +6,8 @@ spring:
       api-key: ${AI_DASHSCOPE_API_KEY:}
 
 # Set to true to run the three demo scenarios on startup (see AgenticRagRunner).
-# Default: false (app starts without calling the model).
+# Default: false. Note: the in-memory vector store is still seeded at startup, which
+# requires a valid API key for the embedding model.
 agentic-rag:
   runner:
     enabled: false

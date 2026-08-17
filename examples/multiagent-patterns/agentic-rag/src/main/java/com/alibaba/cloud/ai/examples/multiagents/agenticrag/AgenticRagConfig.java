@@ -21,9 +21,12 @@ import com.alibaba.cloud.ai.examples.multiagents.agenticrag.node.ClassifyNode;
 import com.alibaba.cloud.ai.examples.multiagents.agenticrag.node.RetrieveNode;
 import com.alibaba.cloud.ai.examples.multiagents.agenticrag.tools.AgenticRagTools;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
@@ -81,6 +84,14 @@ public class AgenticRagConfig {
 			Question: %s
 			""";
 
+	private static final String DIRECT_ANSWER_PROMPT = """
+			You are a customer support assistant for Acme Analytics, a SaaS analytics product.
+			Answer the question helpfully and conversationally. You may greet the user and
+			explain what you can help with; you do not need to consult the knowledge base.
+
+			Question: %s
+			""";
+
 	private static final String CHECK_PROMPT = """
 			You are the quality gate of an agentic RAG system.
 			Determine whether the answer below is complete and grounded in the provided context for the question.
@@ -133,7 +144,7 @@ public class AgenticRagConfig {
 
 		ClassifyNode classifyNode = new ClassifyNode(chatModel, CLASSIFY_PROMPT);
 		RetrieveNode retrieveNode = new RetrieveNode(agenticRagVectorStore);
-		AnswerNode answerNode = new AnswerNode(chatModel, ANSWER_PROMPT);
+		AnswerNode answerNode = new AnswerNode(chatModel, ANSWER_PROMPT, DIRECT_ANSWER_PROMPT);
 		CheckNode checkNode = new CheckNode(chatModel, CHECK_PROMPT);
 
 		StateGraph graph = new StateGraph("agentic_rag", () -> {
@@ -163,7 +174,11 @@ public class AgenticRagConfig {
 						edge_async(state -> state.<String>value("route").filter("retry"::equals).orElse("done")),
 						Map.of("retry", "retrieve", "done", END));
 
-		return graph.compile();
+		// releaseThread(true) makes the MemorySaver drop the checkpoint of each
+		// one-shot thread once the run completes, so repeated Q&A turns do not
+		// accumulate state in memory.
+		SaverConfig saverConfig = SaverConfig.builder().register(new MemorySaver()).build();
+		return graph.compile(CompileConfig.builder().saverConfig(saverConfig).releaseThread(true).build());
 	}
 
 	@Bean
