@@ -25,9 +25,10 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Optional demo runner. Set {@code agentic-rag.runner.enabled=true} to run the three
+ * Optional demo runner. Set {@code agentic-rag.runner.enabled=true} to run the four
  * demo scenarios on startup: a retrieval question, a conversational question that
- * skips retrieval, and a question that may require several retrieval rounds.
+ * skips retrieval, a comparison question that may need several retrieval rounds, and
+ * a product question the knowledge base does not contain.
  */
 @Component
 @ConditionalOnProperty(name = "agentic-rag.runner.enabled", havingValue = "true")

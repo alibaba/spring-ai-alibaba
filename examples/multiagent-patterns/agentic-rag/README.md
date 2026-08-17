@@ -76,7 +76,7 @@ fictional SaaS product ("Acme Analytics"): pricing plans, refund policies, API r
 limits, features, and support. Swap it for a persistent store (PostgreSQL + pgvector,
 Redis, ...) in production.
 
-The three runner questions demonstrate the pattern:
+The four runner questions demonstrate the pattern:
 
 | Question | What it shows |
 |----------|---------------|
@@ -141,7 +141,7 @@ configured embedding model — so a valid API key is required even without the r
 java -jar examples/multiagent-patterns/agentic-rag/target/agentic-rag-0.0.1-SNAPSHOT.jar
 ```
 
-To run the **three demo scenarios** on startup:
+To run the **four demo scenarios** on startup:
 
 ```bash
 ./mvnw -f examples/multiagent-patterns/agentic-rag spring-boot:run \
@@ -168,7 +168,7 @@ int rounds = result.retrievalRounds();    // 0 = answered without retrieval
   `AI_DASHSCOPE_API_KEY` environment variable.
 
 - **`agentic-rag.runner.enabled`**  
-  If `true`, runs the three demo scenarios on startup. Default: `false`.
+  If `true`, runs the four demo scenarios on startup. Default: `false`.
 
 - **`CheckNode.MAX_RETRIES`**  
   Maximum number of retrieval retries after the first round (default `2`). Edit the
