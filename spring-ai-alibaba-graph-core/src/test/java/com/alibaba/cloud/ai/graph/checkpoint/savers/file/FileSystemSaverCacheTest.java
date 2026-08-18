@@ -104,6 +104,26 @@ public class FileSystemSaverCacheTest {
 	}
 
 	@Test
+	public void releaseShouldTreatRegexMetacharactersInThreadIdAsLiterals() throws Exception {
+		FileSystemSaver saver = FileSystemSaver.builder()
+				.targetFolder(tempDir)
+				.build();
+		RunnableConfig config = config("[");
+		Checkpoint checkpoint = checkpoint("v1");
+
+		saver.put(config, checkpoint);
+		assertTrue(Files.exists(tempDir.resolve("thread-[.saver")));
+
+		var tag = saver.release(config);
+
+		assertEquals("[", tag.threadId());
+		assertEquals(1, tag.checkpoints().size());
+		assertEquals(checkpoint.getId(), tag.checkpoints().iterator().next().getId());
+		assertFalse(Files.exists(tempDir.resolve("thread-[.saver")));
+		assertTrue(Files.exists(tempDir.resolve("thread-[-v1.saver")));
+	}
+
+	@Test
 	public void shouldRetainOnlyLatestCheckpoints() throws Exception {
 		FileSystemSaver saver = FileSystemSaver.builder()
 				.targetFolder(tempDir)
