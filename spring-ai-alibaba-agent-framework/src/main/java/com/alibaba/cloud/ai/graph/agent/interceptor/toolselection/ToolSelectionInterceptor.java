@@ -24,8 +24,10 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -75,7 +77,11 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 
 	@Override
 	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
-		List<String> availableTools = request.getTools();
+		List<String> staticTools = request.getTools() != null ? request.getTools() : List.of();
+		List<ToolCallback> dynamicTools = request.getDynamicToolCallbacks() != null
+				? request.getDynamicToolCallbacks()
+				: List.of();
+		List<String> availableTools = buildAvailableToolNames(staticTools, dynamicTools);
 
 		// If no tools or already within limit, skip selection
 		if (availableTools == null || availableTools.isEmpty() ||
@@ -93,7 +99,8 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		Set<String> selectedToolNames;
 		try {
 			ToolSelectionRequest selectionRequest = new ToolSelectionRequest(lastUserQuery,
-					buildToolMetadata(availableTools, request.getToolDescriptions()), maxTools, request.getContext());
+					buildToolMetadata(availableTools, request.getToolDescriptions(), dynamicTools),
+					maxTools, request.getContext());
 			List<String> selected = selectionStrategy.select(selectionRequest);
 			selectedToolNames = normalizeSelection(availableTools, selected);
 		}
@@ -110,10 +117,15 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 				selectedToolNames.size(), availableTools.size(), selectedToolNames);
 
 		// Filter tools based on selection
-		List<String> filteredTools = availableTools.stream().filter(selectedToolNames::contains).toList();
+		List<String> filteredTools = staticTools.stream().filter(selectedToolNames::contains).toList();
+		List<ToolCallback> filteredDynamicTools = dynamicTools.stream()
+				.filter(tool -> selectedToolNames.contains(tool.getToolDefinition().name()))
+				.toList();
 
 		// Create new request with filtered tools
-		ModelRequest.Builder filteredRequestBuilder = ModelRequest.builder(request).tools(filteredTools);
+		ModelRequest.Builder filteredRequestBuilder = ModelRequest.builder(request)
+				.tools(filteredTools)
+				.dynamicToolCallbacks(filteredDynamicTools);
 		if (filteredTools.isEmpty()) {
 			ToolCallingChatOptions options = request.getOptions() != null
 					? request.getOptions().copy()
@@ -136,10 +148,26 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		return null;
 	}
 
-	private List<ToolMetadata> buildToolMetadata(List<String> toolNames, Map<String, String> toolDescriptions) {
+	private List<String> buildAvailableToolNames(List<String> staticTools, List<ToolCallback> dynamicTools) {
+		LinkedHashSet<String> toolNames = new LinkedHashSet<>(staticTools);
+		for (ToolCallback dynamicTool : dynamicTools) {
+			toolNames.add(dynamicTool.getToolDefinition().name());
+		}
+		return List.copyOf(toolNames);
+	}
+
+	private List<ToolMetadata> buildToolMetadata(List<String> toolNames, Map<String, String> toolDescriptions,
+			List<ToolCallback> dynamicTools) {
+		Map<String, String> descriptions = new HashMap<>();
+		if (toolDescriptions != null) {
+			descriptions.putAll(toolDescriptions);
+		}
+		for (ToolCallback dynamicTool : dynamicTools) {
+			String name = dynamicTool.getToolDefinition().name();
+			descriptions.putIfAbsent(name, dynamicTool.getToolDefinition().description());
+		}
 		return toolNames.stream()
-				.map(toolName -> new ToolMetadata(toolName,
-						toolDescriptions != null ? toolDescriptions.get(toolName) : null))
+				.map(toolName -> new ToolMetadata(toolName, descriptions.get(toolName)))
 				.toList();
 	}
 

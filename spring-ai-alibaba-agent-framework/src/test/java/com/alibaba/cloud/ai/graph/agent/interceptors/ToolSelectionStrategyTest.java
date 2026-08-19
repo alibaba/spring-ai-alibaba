@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.graph.agent.interceptors;
 
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.toolselection.ToolMetadata;
@@ -224,37 +226,61 @@ class ToolSelectionStrategyTest {
 	@Test
 	void emptySelectionExposesNoSchemasToModel() throws Exception {
 		AtomicReference<List<ToolCallback>> modelTools = new AtomicReference<>();
+		AtomicReference<ToolSelectionRequest> capturedSelectionRequest = new AtomicReference<>();
 		AtomicInteger weatherToolCalls = new AtomicInteger();
 		AtomicInteger ticketToolCalls = new AtomicInteger();
+		AtomicInteger dynamicToolCalls = new AtomicInteger();
 		ToolCallback weatherTool = tool("weather_tool", "Get weather",
 				"{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}}}",
 				weatherToolCalls);
 		ToolCallback ticketTool = tool("ticket_tool", "Book tickets",
 				"{\"type\":\"object\",\"properties\":{\"destination\":{\"type\":\"string\"}}}",
 				ticketToolCalls);
+		ToolCallback dynamicTool = tool("dynamic_tool", "Dynamically loaded tool",
+				"{\"type\":\"object\",\"properties\":{\"dynamicInput\":{\"type\":\"string\"}}}",
+				dynamicToolCalls);
 		ChatModel model = prompt -> {
 			ToolCallingChatOptions options = (ToolCallingChatOptions) prompt.getOptions();
 			modelTools.set(List.copyOf(options.getToolCallbacks()));
 			return response(new AssistantMessage("No tool needed"));
 		};
 		ToolSelectionInterceptor interceptor = ToolSelectionInterceptor.builder()
-				.selectionStrategy(request -> List.of())
+				.selectionStrategy(request -> {
+					capturedSelectionRequest.set(request);
+					return List.of();
+				})
 				.maxTools(1)
 				.build();
+		ModelInterceptor dynamicToolInjector = new ModelInterceptor() {
+			@Override
+			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
+				return handler.call(ModelRequest.builder(request)
+						.dynamicToolCallbacks(List.of(dynamicTool))
+						.build());
+			}
+
+			@Override
+			public String getName() {
+				return "DynamicToolInjector";
+			}
+		};
 		ReactAgent agent = ReactAgent.builder()
 				.name("empty-tool-selection-test")
 				.model(model)
 				.tools(List.of(weatherTool, ticketTool))
-				.interceptors(interceptor)
+				.interceptors(dynamicToolInjector, interceptor)
 				.saver(new MemorySaver())
 				.build();
 
 		AssistantMessage result = agent.call("Say hello without using a tool");
 
 		assertEquals("No tool needed", result.getText());
+		assertTrue(capturedSelectionRequest.get().tools()
+				.contains(new ToolMetadata("dynamic_tool", "Dynamically loaded tool")));
 		assertTrue(modelTools.get().isEmpty());
 		assertEquals(0, weatherToolCalls.get());
 		assertEquals(0, ticketToolCalls.get());
+		assertEquals(0, dynamicToolCalls.get());
 	}
 
 	@Test
