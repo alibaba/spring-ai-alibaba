@@ -283,6 +283,24 @@ class ToolSelectionStrategyTest {
 		}
 	}
 
+	@Test
+	void malformedLlmSelectionFallsBackToOriginalRequest() {
+		ChatModel malformedSelectionModel = prompt -> response(new AssistantMessage("```json\n{not-json}\n```"));
+		ToolSelectionInterceptor interceptor = ToolSelectionInterceptor.builder()
+				.selectionModel(malformedSelectionModel)
+				.maxTools(1)
+				.build();
+		ModelRequest originalRequest = requestWithThreeTools();
+		AtomicReference<ModelRequest> capturedRequest = new AtomicReference<>();
+
+		interceptor.interceptModel(originalRequest, request -> {
+			capturedRequest.set(request);
+			return ModelResponse.of(new AssistantMessage("done"));
+		});
+
+		assertSame(originalRequest, capturedRequest.get());
+	}
+
 	private ModelRequest requestWithThreeTools() {
 		return ModelRequest.builder()
 				.messages(List.of(new UserMessage("Find weather and a hotel")))

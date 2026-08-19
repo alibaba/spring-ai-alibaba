@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.interceptor.toolselection;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.messages.Message;
@@ -26,15 +27,10 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * {@link ToolSelectionStrategy} that asks a chat model to select relevant tools.
  */
 public final class LlmToolSelectionStrategy implements ToolSelectionStrategy {
-
-	private static final Logger logger = LoggerFactory.getLogger(LlmToolSelectionStrategy.class);
 
 	static final String DEFAULT_SYSTEM_PROMPT =
 			"Your goal is to select the most relevant tools for answering the user's query.";
@@ -58,7 +54,7 @@ public final class LlmToolSelectionStrategy implements ToolSelectionStrategy {
 	}
 
 	@Override
-	public List<String> select(ToolSelectionRequest request) {
+	public List<String> select(ToolSelectionRequest request) throws JsonProcessingException {
 		StringBuilder toolList = new StringBuilder();
 		for (ToolMetadata tool : request.tools()) {
 			toolList.append("- ").append(tool.name());
@@ -84,15 +80,9 @@ public final class LlmToolSelectionStrategy implements ToolSelectionStrategy {
 		return parseToolSelection(responseText);
 	}
 
-	private List<String> parseToolSelection(String responseText) {
-		try {
-			ToolSelectionResponse response = objectMapper.readValue(responseText, ToolSelectionResponse.class);
-			return response.tools != null ? response.tools : List.of();
-		}
-		catch (Exception e) {
-			logger.debug("Failed to parse tool selection response", e);
-			return List.of();
-		}
+	private List<String> parseToolSelection(String responseText) throws JsonProcessingException {
+		ToolSelectionResponse response = objectMapper.readValue(responseText, ToolSelectionResponse.class);
+		return response.tools != null ? response.tools : List.of();
 	}
 
 	private static class ToolSelectionResponse {
