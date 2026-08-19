@@ -221,6 +221,68 @@ class ToolSelectionStrategyTest {
 		assertEquals(2, modelCalls.get());
 	}
 
+	@Test
+	void emptySelectionExposesNoSchemasToModel() throws Exception {
+		AtomicReference<List<ToolCallback>> modelTools = new AtomicReference<>();
+		AtomicInteger weatherToolCalls = new AtomicInteger();
+		AtomicInteger ticketToolCalls = new AtomicInteger();
+		ToolCallback weatherTool = tool("weather_tool", "Get weather",
+				"{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}}}",
+				weatherToolCalls);
+		ToolCallback ticketTool = tool("ticket_tool", "Book tickets",
+				"{\"type\":\"object\",\"properties\":{\"destination\":{\"type\":\"string\"}}}",
+				ticketToolCalls);
+		ChatModel model = prompt -> {
+			ToolCallingChatOptions options = (ToolCallingChatOptions) prompt.getOptions();
+			modelTools.set(List.copyOf(options.getToolCallbacks()));
+			return response(new AssistantMessage("No tool needed"));
+		};
+		ToolSelectionInterceptor interceptor = ToolSelectionInterceptor.builder()
+				.selectionStrategy(request -> List.of())
+				.maxTools(1)
+				.build();
+		ReactAgent agent = ReactAgent.builder()
+				.name("empty-tool-selection-test")
+				.model(model)
+				.tools(List.of(weatherTool, ticketTool))
+				.interceptors(interceptor)
+				.saver(new MemorySaver())
+				.build();
+
+		AssistantMessage result = agent.call("Say hello without using a tool");
+
+		assertEquals("No tool needed", result.getText());
+		assertTrue(modelTools.get().isEmpty());
+		assertEquals(0, weatherToolCalls.get());
+		assertEquals(0, ticketToolCalls.get());
+	}
+
+	@Test
+	void interruptedSelectionRestoresInterruptAndSkipsModelCall() {
+		AtomicBoolean handlerCalled = new AtomicBoolean();
+		ToolSelectionInterceptor interceptor = ToolSelectionInterceptor.builder()
+				.selectionStrategy(request -> {
+					throw new InterruptedException("cancelled");
+				})
+				.maxTools(1)
+				.build();
+
+		try {
+			RuntimeException exception = assertThrows(RuntimeException.class,
+					() -> interceptor.interceptModel(requestWithThreeTools(), request -> {
+						handlerCalled.set(true);
+						return ModelResponse.of(new AssistantMessage("done"));
+					}));
+
+			assertEquals("Tool selection interrupted", exception.getMessage());
+			assertTrue(Thread.currentThread().isInterrupted());
+			assertFalse(handlerCalled.get());
+		}
+		finally {
+			Thread.interrupted();
+		}
+	}
+
 	private ModelRequest requestWithThreeTools() {
 		return ModelRequest.builder()
 				.messages(List.of(new UserMessage("Find weather and a hotel")))

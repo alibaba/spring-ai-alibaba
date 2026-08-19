@@ -23,6 +23,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -96,6 +97,10 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 			List<String> selected = selectionStrategy.select(selectionRequest);
 			selectedToolNames = normalizeSelection(availableTools, selected);
 		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new RuntimeException("Tool selection interrupted", e);
+		}
 		catch (Exception e) {
 			log.warn("Tool selection failed, using all tools: {}", e.getMessage());
 			return handler.call(request);
@@ -108,9 +113,15 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		List<String> filteredTools = availableTools.stream().filter(selectedToolNames::contains).toList();
 
 		// Create new request with filtered tools
-		ModelRequest filteredRequest = ModelRequest.builder(request)
-				.tools(filteredTools)
-				.build();
+		ModelRequest.Builder filteredRequestBuilder = ModelRequest.builder(request).tools(filteredTools);
+		if (filteredTools.isEmpty()) {
+			ToolCallingChatOptions options = request.getOptions() != null
+					? request.getOptions().copy()
+					: ToolCallingChatOptions.builder().build();
+			options.setToolCallbacks(List.of());
+			filteredRequestBuilder.options(options);
+		}
+		ModelRequest filteredRequest = filteredRequestBuilder.build();
 
 		return handler.call(filteredRequest);
 	}
