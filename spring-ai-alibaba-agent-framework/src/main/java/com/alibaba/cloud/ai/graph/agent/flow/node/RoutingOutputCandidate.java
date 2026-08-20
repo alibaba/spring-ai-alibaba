@@ -23,6 +23,19 @@ package com.alibaba.cloud.ai.graph.agent.flow.node;
  * keys written by nested agents.
  * @param outputKey state key to probe
  * @param wrapperOutput whether the key is a subgraph wrapper key
+ * @param routingWrapperOutput whether the wrapper belongs to a routing graph whose
+ * merged result is valid inside the wrapper snapshot
+ * @param preferredInnerOutputKey preferred output key inside a wrapper snapshot
  */
-record RoutingOutputCandidate(String outputKey, boolean wrapperOutput) {
+record RoutingOutputCandidate(String outputKey, boolean wrapperOutput, boolean routingWrapperOutput,
+		String preferredInnerOutputKey) {
+
+	RoutingOutputCandidate(String outputKey, boolean wrapperOutput) {
+		this(outputKey, wrapperOutput, false, null);
+	}
+
+	RoutingOutputCandidate(String outputKey, boolean wrapperOutput, boolean routingWrapperOutput) {
+		this(outputKey, wrapperOutput, routingWrapperOutput, null);
+	}
+
 }

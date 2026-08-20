@@ -351,6 +351,106 @@ class RoutingMergeNodeTest {
 	}
 
 	@Test
+	void ordinaryWorkflowWrappersIgnoreInheritedParentMergedResult() throws Exception {
+		RecordingChatModel chatModel = new RecordingChatModel("SYNTHESIZED ANSWER");
+
+		SequentialAgent firstWorkflow = SequentialAgent.builder()
+			.name("first_workflow")
+			.description("First workflow")
+			.subAgents(List.of(mockAgent("first_final_agent", null)))
+			.build();
+		SequentialAgent secondWorkflow = SequentialAgent.builder()
+			.name("second_workflow")
+			.description("Second workflow")
+			.subAgents(List.of(mockAgent("second_final_agent", null)))
+			.build();
+
+		// Ordinary workflow subgraphs inherit the parent's merged_result from checkpointed
+		// state. Only nested routing wrappers may treat merged_result as their own answer.
+		OverAllState state = new OverAllState(Map.of(
+				"first_workflow_input", "Run the first workflow",
+				"second_workflow_input", "Run the second workflow",
+				outputKeyToParent("first_workflow"), GraphResponse.done(Map.of(
+						DEFAULT_MERGED_OUTPUT_KEY, "Previous parent merged answer.",
+						"messages", List.<Message>of(new AssistantMessage("Current first workflow answer.")))),
+				outputKeyToParent("second_workflow"), GraphResponse.done(Map.of(
+						DEFAULT_MERGED_OUTPUT_KEY, "Previous parent merged answer.",
+						"messages", List.<Message>of(new AssistantMessage("Current second workflow answer.")))),
+				"messages", List.<Message>of(new UserMessage("Run both workflows")))
+		);
+
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(firstWorkflow, secondWorkflow));
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("SYNTHESIZED ANSWER", result.get(DEFAULT_MERGED_OUTPUT_KEY),
+				"Ordinary workflow wrappers should synthesize their current message outputs");
+		assertEquals(1, chatModel.callCount());
+		String promptContent = chatModel.lastPrompt().getContents();
+		assertTrue(promptContent.contains("Current first workflow answer."));
+		assertTrue(promptContent.contains("Current second workflow answer."));
+		assertFalse(promptContent.contains("Previous parent merged answer."));
+	}
+
+	@Test
+	void workflowWrapperMapsWithoutVisibleOutputAreIgnored() throws Exception {
+		RecordingChatModel chatModel = new RecordingChatModel();
+
+		SequentialAgent writingWorkflow = SequentialAgent.builder()
+			.name("writing_workflow")
+			.description("Writing workflow")
+			.subAgents(List.of(mockAgent("writer_agent", "final_answer")))
+			.build();
+
+		// Wrapper snapshots can contain parent inputs, route markers, and user-only messages
+		// after checkpoint merging. Those internal values are not attributable agent answers.
+		OverAllState state = new OverAllState(Map.of(
+				"writing_workflow_input", "Write an article",
+				outputKeyToParent("writing_workflow"), GraphResponse.done(Map.of(
+						"input", "Write an article",
+						"writer_agent_input", "Write an article",
+						"_routing_selected_agents_router", List.of("writing_workflow"),
+						outputKeyToParent("older_workflow"), Map.of("previous", "snapshot"),
+						"messages", List.<Message>of(new UserMessage("Write an article")))),
+				"messages", List.<Message>of(new UserMessage("Write an article")))
+		);
+
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(writingWorkflow));
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("No results found from any knowledge source.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
+				"Internal wrapper state must not be stringified as an agent answer");
+		assertEquals(0, chatModel.callCount());
+	}
+
+	@Test
+	void workflowWrapperMapsUseSingleVisibleOutputValue() throws Exception {
+		RecordingChatModel chatModel = new RecordingChatModel();
+
+		SequentialAgent writingWorkflow = SequentialAgent.builder()
+			.name("writing_workflow")
+			.description("Writing workflow")
+			.subAgents(List.of(mockAgent("writer_agent", "final_answer")))
+			.build();
+
+		OverAllState state = new OverAllState(Map.of(
+				"writing_workflow_input", "Write an article",
+				outputKeyToParent("writing_workflow"), GraphResponse.done(Map.of(
+						"input", "Write an article",
+						"writer_agent_input", "Write an article",
+						"final_answer", new AssistantMessage("Current workflow answer."),
+						"messages", List.<Message>of(new UserMessage("Write an article")))),
+				"messages", List.<Message>of(new UserMessage("Write an article")))
+		);
+
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(writingWorkflow));
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Current workflow answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
+				"A wrapper snapshot with one visible output should still be usable");
+		assertEquals(0, chatModel.callCount());
+	}
+
+	@Test
 	void multipleRoutedParallelWorkflowsPreferMergeOutputKeyOverWrapper() throws Exception {
 		RecordingChatModel chatModel = new RecordingChatModel("SYNTHESIZED ANSWER");
 
@@ -423,8 +523,16 @@ class RoutingMergeNodeTest {
 				"first_parallel_input", "Run the first parallel workflow",
 				"second_parallel_input", "Run the second parallel workflow",
 				"shared_merged_result", new AssistantMessage("Shared merge value that must not be attributed."),
-				outputKeyToParent("first_parallel"), new AssistantMessage("First parallel wrapper answer."),
-				outputKeyToParent("second_parallel"), new AssistantMessage("Second parallel wrapper answer."),
+				outputKeyToParent("first_parallel"), GraphResponse.done(Map.of(
+						"shared_merged_result", new AssistantMessage("First parallel aggregate answer."),
+						"messages", List.<Message>of(
+								new AssistantMessage("First child response that must not be used."),
+								new AssistantMessage("First last child response that must not be used.")))),
+				outputKeyToParent("second_parallel"), GraphResponse.done(Map.of(
+						"shared_merged_result", new AssistantMessage("Second parallel aggregate answer."),
+						"messages", List.<Message>of(
+								new AssistantMessage("Second child response that must not be used."),
+								new AssistantMessage("Second last child response that must not be used.")))),
 				"messages", List.<Message>of(new UserMessage("Run both parallel workflows")))
 		);
 
@@ -435,9 +543,71 @@ class RoutingMergeNodeTest {
 				"Shared mergeOutputKey values should be resolved through workflow wrappers");
 		assertEquals(1, chatModel.callCount());
 		String promptContent = chatModel.lastPrompt().getContents();
-		assertTrue(promptContent.contains("First parallel wrapper answer."));
-		assertTrue(promptContent.contains("Second parallel wrapper answer."));
+		assertTrue(promptContent.contains("First parallel aggregate answer."));
+		assertTrue(promptContent.contains("Second parallel aggregate answer."));
 		assertFalse(promptContent.contains("Shared merge value that must not be attributed."));
+		assertFalse(promptContent.contains("First last child response that must not be used."));
+		assertFalse(promptContent.contains("Second last child response that must not be used."));
+	}
+
+	@Test
+	void multipleRoutedSequentialWorkflowsPreferFinalParallelMergeKeyInsideWrappers() throws Exception {
+		RecordingChatModel chatModel = new RecordingChatModel("SYNTHESIZED ANSWER");
+
+		ParallelAgent firstFinalParallel = ParallelAgent.builder()
+			.name("first_final_parallel")
+			.description("First final parallel")
+			.subAgents(List.of(
+					mockAgent("first_final_search", "first_search_result"),
+					mockAgent("first_final_summary", "first_summary_result")))
+			.mergeOutputKey("shared_merged_result")
+			.build();
+		ParallelAgent secondFinalParallel = ParallelAgent.builder()
+			.name("second_final_parallel")
+			.description("Second final parallel")
+			.subAgents(List.of(
+					mockAgent("second_final_search", "second_search_result"),
+					mockAgent("second_final_summary", "second_summary_result")))
+			.mergeOutputKey("shared_merged_result")
+			.build();
+		SequentialAgent firstWorkflow = SequentialAgent.builder()
+			.name("first_workflow")
+			.description("First workflow")
+			.subAgents(List.of(firstFinalParallel))
+			.build();
+		SequentialAgent secondWorkflow = SequentialAgent.builder()
+			.name("second_workflow")
+			.description("Second workflow")
+			.subAgents(List.of(secondFinalParallel))
+			.build();
+
+		OverAllState state = new OverAllState(Map.of(
+				"first_workflow_input", "Run the first workflow",
+				"second_workflow_input", "Run the second workflow",
+				"shared_merged_result", new AssistantMessage("Shared merge value that must not be attributed."),
+				outputKeyToParent("first_workflow"), GraphResponse.done(Map.of(
+						"shared_merged_result", new AssistantMessage("First workflow aggregate answer."),
+						"messages", List.<Message>of(
+								new AssistantMessage("First workflow child response that must not be used.")))),
+				outputKeyToParent("second_workflow"), GraphResponse.done(Map.of(
+						"shared_merged_result", new AssistantMessage("Second workflow aggregate answer."),
+						"messages", List.<Message>of(
+								new AssistantMessage("Second workflow child response that must not be used.")))),
+				"messages", List.<Message>of(new UserMessage("Run both workflows")))
+		);
+
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(firstWorkflow, secondWorkflow));
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("SYNTHESIZED ANSWER", result.get(DEFAULT_MERGED_OUTPUT_KEY),
+				"Sequential workflows ending in ParallelAgent should read the wrapper aggregate output");
+		assertEquals(1, chatModel.callCount());
+		String promptContent = chatModel.lastPrompt().getContents();
+		assertTrue(promptContent.contains("First workflow aggregate answer."));
+		assertTrue(promptContent.contains("Second workflow aggregate answer."));
+		assertFalse(promptContent.contains("Shared merge value that must not be attributed."));
+		assertFalse(promptContent.contains("First workflow child response that must not be used."));
+		assertFalse(promptContent.contains("Second workflow child response that must not be used."));
 	}
 
 	@Test

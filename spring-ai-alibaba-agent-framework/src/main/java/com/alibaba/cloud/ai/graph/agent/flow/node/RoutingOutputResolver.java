@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.flow.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
@@ -124,7 +125,8 @@ final class RoutingOutputResolver {
 			if (outputOpt.isEmpty()) {
 				continue;
 			}
-			String text = RoutingMergeNode.extractText(outputOpt.get(), candidate.outputKey());
+			String text = RoutingMergeNode.extractText(outputOpt.get(), candidate.outputKey(),
+					candidate.routingWrapperOutput(), candidate.preferredInnerOutputKey());
 			if (text == null || text.isBlank()) {
 				continue;
 			}
@@ -143,7 +145,7 @@ final class RoutingOutputResolver {
 	}
 
 	/**
-	 * Clears a stale wrapper when the current answer came from a nested routing merge key.
+	 * Clears a stale wrapper when the current answer came from a non-wrapper key.
 	 * @param state current graph state
 	 * @param subAgent sub-agent whose wrapper may be stale
 	 * @param result collected result for the sub-agent
@@ -152,12 +154,11 @@ final class RoutingOutputResolver {
 	void markStaleWrapperIfNeeded(OverAllState state, Agent subAgent, CollectedAgentResult result,
 			Set<String> staleWrapperOutputKeys) {
 		String staleWrapperOutputKey = outputKeyToParent(subAgent.name());
-		if (!usesRoutingMergedOutput(subAgent) || result.fromWrapperOutput()
-				|| state.value(staleWrapperOutputKey).isEmpty()) {
+		if (result.fromWrapperOutput() || state.value(staleWrapperOutputKey).isEmpty()) {
 			return;
 		}
 		staleWrapperOutputKeys.add(staleWrapperOutputKey);
-		logger.debug("RoutingMergeNode: routing result for {} came from merged output; clearing stale wrapper key {}",
+		logger.debug("RoutingMergeNode: routing result for {} came from non-wrapper output; clearing wrapper key {}",
 				subAgent.name(), staleWrapperOutputKey);
 	}
 
@@ -210,7 +211,46 @@ final class RoutingOutputResolver {
 	 * @return wrapper output candidate
 	 */
 	private RoutingOutputCandidate wrapperCandidate(Agent agent) {
-		return new RoutingOutputCandidate(outputKeyToParent(agent.name()), true);
+		return new RoutingOutputCandidate(outputKeyToParent(agent.name()), true, usesRoutingMergedOutput(agent),
+				preferredWrapperOutputKey(agent));
+	}
+
+	/**
+	 * Finds the single output key a wrapper should prefer over shared messages.
+	 * @param agent agent whose wrapper snapshot will be inspected
+	 * @return preferred inner output key, or null when the workflow has no single
+	 * aggregate output
+	 */
+	private String preferredWrapperOutputKey(Agent agent) {
+		Agent current = agent;
+		while (true) {
+			if (current instanceof BaseAgent baseAgent) {
+				return baseAgent.getOutputKey();
+			}
+			if (current instanceof LlmRoutingAgent) {
+				return RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY;
+			}
+			if (current instanceof ParallelAgent parallelAgent) {
+				return parallelAgent.mergeOutputKey();
+			}
+			if (current instanceof SequentialAgent sequentialAgent) {
+				List<Agent> nestedAgents = sequentialAgent.subAgents();
+				if (nestedAgents == null || nestedAgents.isEmpty()) {
+					return null;
+				}
+				current = nestedAgents.get(nestedAgents.size() - 1);
+				continue;
+			}
+			if (current instanceof FlowAgent flowAgent) {
+				List<Agent> nestedAgents = flowAgent.subAgents();
+				if (nestedAgents == null || nestedAgents.size() != 1) {
+					return null;
+				}
+				current = nestedAgents.get(0);
+				continue;
+			}
+			return null;
+		}
 	}
 
 	/**

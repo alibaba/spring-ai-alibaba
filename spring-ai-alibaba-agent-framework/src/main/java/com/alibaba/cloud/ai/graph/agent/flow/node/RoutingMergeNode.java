@@ -188,6 +188,15 @@ public class RoutingMergeNode implements NodeAction {
 	}
 
 	public static String extractText(Object output, String outputKey) {
+		return extractText(output, outputKey, false);
+	}
+
+	static String extractText(Object output, String outputKey, boolean allowWrapperMergedOutput) {
+		return extractText(output, outputKey, allowWrapperMergedOutput, null);
+	}
+
+	static String extractText(Object output, String outputKey, boolean allowWrapperMergedOutput,
+			String preferredInnerOutputKey) {
 		if (output instanceof Message message) {
 			return message.getText();
 		}
@@ -199,7 +208,7 @@ public class RoutingMergeNode implements NodeAction {
 			if (val.isPresent()) {
 				Object v = val.get();
 				if (v instanceof Map<?, ?> map) {
-					v = extractMapValue(map, outputKey);
+					v = extractMapValue(map, outputKey, allowWrapperMergedOutput, preferredInnerOutputKey);
 				}
 				if (v instanceof Message m) {
 					return m.getText();
@@ -212,7 +221,7 @@ public class RoutingMergeNode implements NodeAction {
 			return "";
 		}
 		if (output instanceof Map<?, ?> map) {
-			Object v = extractMapValue(map, outputKey);
+			Object v = extractMapValue(map, outputKey, allowWrapperMergedOutput, preferredInnerOutputKey);
 			if (v instanceof Message m) {
 				return m.getText();
 			}
@@ -256,22 +265,100 @@ public class RoutingMergeNode implements NodeAction {
 	 * Extracts the value that corresponds to a candidate output key from graph state maps.
 	 * @param map graph state map or subgraph wrapper map
 	 * @param outputKey candidate output key being extracted
-	 * @return the selected value, the only map value, or the original map as fallback
+	 * @param allowWrapperMergedOutput whether a wrapper may read its internal routing
+	 * merged result
+	 * @param preferredInnerOutputKey preferred output key inside a wrapper snapshot
+	 * @return the selected value, a single visible wrapper value, the only non-wrapper map
+	 * value, or the original map as fallback
 	 */
-	private static Object extractMapValue(Map<?, ?> map, String outputKey) {
+	private static Object extractMapValue(Map<?, ?> map, String outputKey, boolean allowWrapperMergedOutput,
+			String preferredInnerOutputKey) {
+		boolean wrapperOutput = isSubGraphWrapperKey(outputKey);
 		// A subgraph wrapper key namespaces a nested FlowAgent result in the parent graph.
-		// When the nested graph is itself a routing graph, its final answer is stored under
-		// the routing merge key inside that wrapper state.
-		if (isSubGraphWrapperKey(outputKey) && map.containsKey(DEFAULT_MERGED_OUTPUT_KEY)) {
+		// Only wrappers that belong to routing graphs may read their internal merged result;
+		// ordinary workflow wrappers can inherit a stale parent merged_result from checkpoints.
+		if (allowWrapperMergedOutput && wrapperOutput && map.containsKey(DEFAULT_MERGED_OUTPUT_KEY)) {
 			return map.get(DEFAULT_MERGED_OUTPUT_KEY);
 		}
-		if (map.containsKey(outputKey)) {
+		if (wrapperOutput && preferredInnerOutputKey != null && map.containsKey(preferredInnerOutputKey)) {
+			return map.get(preferredInnerOutputKey);
+		}
+		if (wrapperOutput && map.containsKey(DEFAULT_MESSAGES_OUTPUT_KEY)) {
+			Object messages = map.get(DEFAULT_MESSAGES_OUTPUT_KEY);
+			if (messages instanceof List<?> list) {
+				String messageText = extractLastAssistantMessageText(list);
+				if (!messageText.isBlank()) {
+					return messageText;
+				}
+			}
+		}
+		if (!wrapperOutput && map.containsKey(outputKey)) {
 			return map.get(outputKey);
+		}
+		if (wrapperOutput) {
+			return extractSingleVisibleWrapperValue(map);
 		}
 		if (map.size() == 1) {
 			return map.values().iterator().next();
 		}
 		return map;
+	}
+
+	/**
+	 * Extracts a single explicit agent output from a subgraph wrapper snapshot.
+	 * @param map subgraph wrapper snapshot
+	 * @return the only visible agent output, or null when the wrapper only contains
+	 * internal state or ambiguous values
+	 */
+	private static Object extractSingleVisibleWrapperValue(Map<?, ?> map) {
+		Object result = null;
+		for (Map.Entry<?, ?> entry : map.entrySet()) {
+			if (!(entry.getKey() instanceof String key) || isInternalWrapperStateKey(key)) {
+				continue;
+			}
+			Object value = entry.getValue();
+			if (isBlankOutput(value)) {
+				continue;
+			}
+			if (result != null) {
+				return null;
+			}
+			result = value;
+		}
+		return result;
+	}
+
+	/**
+	 * Detects wrapper snapshot keys that belong to graph execution state rather than
+	 * agent-visible output.
+	 * @param key wrapper snapshot key
+	 * @return true when the key should not be treated as an answer
+	 */
+	private static boolean isInternalWrapperStateKey(String key) {
+		return DEFAULT_MESSAGES_OUTPUT_KEY.equals(key)
+				|| DEFAULT_MERGED_OUTPUT_KEY.equals(key)
+				|| "input".equals(key)
+				|| key.startsWith("_")
+				|| key.endsWith("_input")
+				|| isSubGraphWrapperKey(key);
+	}
+
+	/**
+	 * Checks whether a candidate wrapper value has no visible answer text.
+	 * @param value candidate wrapper value
+	 * @return true when the value should be ignored
+	 */
+	private static boolean isBlankOutput(Object value) {
+		if (value == null) {
+			return true;
+		}
+		if (value instanceof String text) {
+			return text.isBlank();
+		}
+		if (value instanceof Message message) {
+			return message.getText() == null || message.getText().isBlank();
+		}
+		return false;
 	}
 
 	/**
