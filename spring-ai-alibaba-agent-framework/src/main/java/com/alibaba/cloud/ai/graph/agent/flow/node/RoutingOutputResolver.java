@@ -126,7 +126,7 @@ final class RoutingOutputResolver {
 				continue;
 			}
 			String text = RoutingMergeNode.extractText(outputOpt.get(), candidate.outputKey(),
-					candidate.routingWrapperOutput(), candidate.preferredInnerOutputKey());
+					candidate.routingWrapperOutput(), candidate.preferredInnerOutputKeys());
 			if (text == null || text.isBlank()) {
 				continue;
 			}
@@ -212,45 +212,51 @@ final class RoutingOutputResolver {
 	 */
 	private RoutingOutputCandidate wrapperCandidate(Agent agent) {
 		return new RoutingOutputCandidate(outputKeyToParent(agent.name()), true, usesRoutingMergedOutput(agent),
-				preferredWrapperOutputKey(agent));
+				preferredWrapperOutputKeys(agent));
 	}
 
 	/**
-	 * Finds the single output key a wrapper should prefer over shared messages.
+	 * Finds the ordered output keys a wrapper should prefer over shared messages.
+	 * <p>
+	 * Sequential workflows expose their final child. Parallel workflows with an
+	 * aggregate expose that key, while parallel workflows without one expose every
+	 * attributable child output in configured order.
 	 * @param agent agent whose wrapper snapshot will be inspected
-	 * @return preferred inner output key, or null when the workflow has no single
-	 * aggregate output
+	 * @return preferred inner output keys; empty when no explicit output is attributable
 	 */
-	private String preferredWrapperOutputKey(Agent agent) {
-		Agent current = agent;
-		while (true) {
+	private List<String> preferredWrapperOutputKeys(Agent agent) {
+		LinkedHashSet<String> outputKeys = new LinkedHashSet<>();
+		Deque<Agent> agents = new ArrayDeque<>();
+		agents.push(agent);
+		while (!agents.isEmpty()) {
+			Agent current = agents.pop();
 			if (current instanceof BaseAgent baseAgent) {
-				return baseAgent.getOutputKey();
+				if (baseAgent.getOutputKey() != null) {
+					outputKeys.add(baseAgent.getOutputKey());
+				}
 			}
-			if (current instanceof LlmRoutingAgent) {
-				return RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY;
+			else if (current instanceof LlmRoutingAgent) {
+				outputKeys.add(RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY);
 			}
-			if (current instanceof ParallelAgent parallelAgent) {
-				return parallelAgent.mergeOutputKey();
+			else if (current instanceof ParallelAgent parallelAgent) {
+				if (parallelAgent.mergeOutputKey() != null) {
+					outputKeys.add(parallelAgent.mergeOutputKey());
+				}
+				else {
+					pushAll(parallelAgent.subAgents(), agents);
+				}
 			}
-			if (current instanceof SequentialAgent sequentialAgent) {
+			else if (current instanceof SequentialAgent sequentialAgent) {
 				List<Agent> nestedAgents = sequentialAgent.subAgents();
-				if (nestedAgents == null || nestedAgents.isEmpty()) {
-					return null;
+				if (nestedAgents != null && !nestedAgents.isEmpty()) {
+					agents.push(nestedAgents.get(nestedAgents.size() - 1));
 				}
-				current = nestedAgents.get(nestedAgents.size() - 1);
-				continue;
 			}
-			if (current instanceof FlowAgent flowAgent) {
-				List<Agent> nestedAgents = flowAgent.subAgents();
-				if (nestedAgents == null || nestedAgents.size() != 1) {
-					return null;
-				}
-				current = nestedAgents.get(0);
-				continue;
+			else if (current instanceof FlowAgent flowAgent) {
+				pushAll(flowAgent.subAgents(), agents);
 			}
-			return null;
 		}
+		return List.copyOf(outputKeys);
 	}
 
 	/**

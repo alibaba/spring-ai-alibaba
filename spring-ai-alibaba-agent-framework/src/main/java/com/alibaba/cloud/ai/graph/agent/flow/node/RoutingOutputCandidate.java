@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
+import java.util.List;
+
 /**
  * A state key that may contain the visible result for one routed agent.
  * <p>
@@ -25,17 +27,24 @@ package com.alibaba.cloud.ai.graph.agent.flow.node;
  * @param wrapperOutput whether the key is a subgraph wrapper key
  * @param routingWrapperOutput whether the wrapper belongs to a routing graph whose
  * merged result is valid inside the wrapper snapshot
- * @param preferredInnerOutputKey preferred output key inside a wrapper snapshot
+ * @param preferredInnerOutputKeys ordered output keys to collect inside a wrapper
+ * snapshot; more than one key represents the visible outputs of a workflow such as a
+ * {@code ParallelAgent} without a merge output key
  */
 record RoutingOutputCandidate(String outputKey, boolean wrapperOutput, boolean routingWrapperOutput,
-		String preferredInnerOutputKey) {
+			List<String> preferredInnerOutputKeys) {
+
+	RoutingOutputCandidate {
+		preferredInnerOutputKeys = preferredInnerOutputKeys != null
+				? List.copyOf(preferredInnerOutputKeys) : List.of();
+	}
 
 	RoutingOutputCandidate(String outputKey, boolean wrapperOutput) {
-		this(outputKey, wrapperOutput, false, null);
+		this(outputKey, wrapperOutput, false, List.of());
 	}
 
 	RoutingOutputCandidate(String outputKey, boolean wrapperOutput, boolean routingWrapperOutput) {
-		this(outputKey, wrapperOutput, routingWrapperOutput, null);
+		this(outputKey, wrapperOutput, routingWrapperOutput, List.of());
 	}
 
 }

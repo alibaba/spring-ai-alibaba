@@ -130,6 +130,22 @@ class RoutingMergeNodeTest {
 	}
 
 	@Test
+	void wrapperPreferredOutputsUseConfiguredOrderAndIgnoreUnrelatedMessages() {
+		String wrapperKey = outputKeyToParent("parallel_workflow");
+		GraphResponse<Object> wrapper = GraphResponse.done(Map.of(
+				"second_result", new AssistantMessage("Second result."),
+				"first_result", new AssistantMessage("First result."),
+				"messages", List.<Message>of(new AssistantMessage("Unrelated wrapper message."))
+		));
+
+		String text = RoutingMergeNode.extractText(wrapper, wrapperKey, false,
+				List.of("first_result", "missing_result", "second_result"));
+
+		assertEquals("First result.\n\nSecond result.", text,
+				"Wrapper outputs should follow agent configuration, skip missing outputs, and not fall back to messages");
+	}
+
+	@Test
 	void flowAgentResultIsResolvedFromNestedFinalOutputKey() throws Exception {
 		RecordingChatModel chatModel = new RecordingChatModel();
 
@@ -636,8 +652,16 @@ class RoutingMergeNodeTest {
 				"second_parallel_input", "Run the second parallel workflow",
 				"shared_search_result", new AssistantMessage("Shared search value that must not be attributed."),
 				"shared_summary_result", new AssistantMessage("Shared summary value that must not be attributed."),
-				outputKeyToParent("first_parallel"), new AssistantMessage("First parallel wrapper answer."),
-				outputKeyToParent("second_parallel"), new AssistantMessage("Second parallel wrapper answer."),
+				outputKeyToParent("first_parallel"), GraphResponse.done(Map.of(
+						"shared_search_result", new AssistantMessage("First parallel search answer."),
+						"shared_summary_result", new AssistantMessage("First parallel summary answer."),
+						"messages", List.<Message>of(
+								new AssistantMessage("First unrelated wrapper message.")))),
+				outputKeyToParent("second_parallel"), GraphResponse.done(Map.of(
+						"shared_search_result", new AssistantMessage("Second parallel search answer."),
+						"shared_summary_result", new AssistantMessage("Second parallel summary answer."),
+						"messages", List.<Message>of(
+								new AssistantMessage("Second unrelated wrapper message.")))),
 				"messages", List.<Message>of(new UserMessage("Run both parallel workflows")))
 		);
 
@@ -648,10 +672,75 @@ class RoutingMergeNodeTest {
 				"Shared child output keys should be resolved through workflow wrappers");
 		assertEquals(1, chatModel.callCount());
 		String promptContent = chatModel.lastPrompt().getContents();
-		assertTrue(promptContent.contains("First parallel wrapper answer."));
-		assertTrue(promptContent.contains("Second parallel wrapper answer."));
+		assertTrue(promptContent.contains("First parallel search answer."));
+		assertTrue(promptContent.contains("First parallel summary answer."));
+		assertTrue(promptContent.contains("Second parallel search answer."));
+		assertTrue(promptContent.contains("Second parallel summary answer."));
 		assertFalse(promptContent.contains("Shared search value that must not be attributed."));
 		assertFalse(promptContent.contains("Shared summary value that must not be attributed."));
+		assertFalse(promptContent.contains("First unrelated wrapper message."));
+		assertFalse(promptContent.contains("Second unrelated wrapper message."));
+	}
+
+	@Test
+	void multipleRoutedSequentialWorkflowsPreserveFinalParallelChildOutputsInsideWrappers() throws Exception {
+		RecordingChatModel chatModel = new RecordingChatModel("SYNTHESIZED ANSWER");
+
+		ParallelAgent firstFinalParallel = ParallelAgent.builder()
+			.name("first_final_parallel")
+			.description("First final parallel")
+			.subAgents(List.of(
+					mockAgent("first_search", "shared_search_result"),
+					mockAgent("first_summary", "shared_summary_result")))
+			.build();
+		ParallelAgent secondFinalParallel = ParallelAgent.builder()
+			.name("second_final_parallel")
+			.description("Second final parallel")
+			.subAgents(List.of(
+					mockAgent("second_search", "shared_search_result"),
+					mockAgent("second_summary", "shared_summary_result")))
+			.build();
+		SequentialAgent firstWorkflow = SequentialAgent.builder()
+			.name("first_workflow")
+			.description("First workflow")
+			.subAgents(List.of(firstFinalParallel))
+			.build();
+		SequentialAgent secondWorkflow = SequentialAgent.builder()
+			.name("second_workflow")
+			.description("Second workflow")
+			.subAgents(List.of(secondFinalParallel))
+			.build();
+
+		OverAllState state = new OverAllState(Map.of(
+				"first_workflow_input", "Run the first workflow",
+				"second_workflow_input", "Run the second workflow",
+				"shared_search_result", new AssistantMessage("Shared search value that must not be attributed."),
+				"shared_summary_result", new AssistantMessage("Shared summary value that must not be attributed."),
+				outputKeyToParent("first_workflow"), GraphResponse.done(Map.of(
+						"shared_search_result", new AssistantMessage("First workflow search answer."),
+						"shared_summary_result", new AssistantMessage("First workflow summary answer."),
+						"messages", List.<Message>of(new AssistantMessage("First unrelated wrapper message.")))),
+				outputKeyToParent("second_workflow"), GraphResponse.done(Map.of(
+						"shared_search_result", new AssistantMessage("Second workflow search answer."),
+						"shared_summary_result", new AssistantMessage("Second workflow summary answer."),
+						"messages", List.<Message>of(new AssistantMessage("Second unrelated wrapper message.")))),
+				"messages", List.<Message>of(new UserMessage("Run both workflows")))
+		);
+
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(firstWorkflow, secondWorkflow));
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("SYNTHESIZED ANSWER", result.get(DEFAULT_MERGED_OUTPUT_KEY));
+		assertEquals(1, chatModel.callCount());
+		String promptContent = chatModel.lastPrompt().getContents();
+		assertTrue(promptContent.contains("First workflow search answer."));
+		assertTrue(promptContent.contains("First workflow summary answer."));
+		assertTrue(promptContent.contains("Second workflow search answer."));
+		assertTrue(promptContent.contains("Second workflow summary answer."));
+		assertFalse(promptContent.contains("Shared search value that must not be attributed."));
+		assertFalse(promptContent.contains("Shared summary value that must not be attributed."));
+		assertFalse(promptContent.contains("First unrelated wrapper message."));
+		assertFalse(promptContent.contains("Second unrelated wrapper message."));
 	}
 
 	@Test

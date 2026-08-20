@@ -192,11 +192,11 @@ public class RoutingMergeNode implements NodeAction {
 	}
 
 	static String extractText(Object output, String outputKey, boolean allowWrapperMergedOutput) {
-		return extractText(output, outputKey, allowWrapperMergedOutput, null);
+		return extractText(output, outputKey, allowWrapperMergedOutput, List.of());
 	}
 
 	static String extractText(Object output, String outputKey, boolean allowWrapperMergedOutput,
-			String preferredInnerOutputKey) {
+			List<String> preferredInnerOutputKeys) {
 		if (output instanceof Message message) {
 			return message.getText();
 		}
@@ -208,7 +208,7 @@ public class RoutingMergeNode implements NodeAction {
 			if (val.isPresent()) {
 				Object v = val.get();
 				if (v instanceof Map<?, ?> map) {
-					v = extractMapValue(map, outputKey, allowWrapperMergedOutput, preferredInnerOutputKey);
+					v = extractMapValue(map, outputKey, allowWrapperMergedOutput, preferredInnerOutputKeys);
 				}
 				if (v instanceof Message m) {
 					return m.getText();
@@ -221,7 +221,7 @@ public class RoutingMergeNode implements NodeAction {
 			return "";
 		}
 		if (output instanceof Map<?, ?> map) {
-			Object v = extractMapValue(map, outputKey, allowWrapperMergedOutput, preferredInnerOutputKey);
+			Object v = extractMapValue(map, outputKey, allowWrapperMergedOutput, preferredInnerOutputKeys);
 			if (v instanceof Message m) {
 				return m.getText();
 			}
@@ -267,12 +267,13 @@ public class RoutingMergeNode implements NodeAction {
 	 * @param outputKey candidate output key being extracted
 	 * @param allowWrapperMergedOutput whether a wrapper may read its internal routing
 	 * merged result
-	 * @param preferredInnerOutputKey preferred output key inside a wrapper snapshot
+	 * @param preferredInnerOutputKeys ordered output keys to collect inside a wrapper
+	 * snapshot
 	 * @return the selected value, a single visible wrapper value, the only non-wrapper map
 	 * value, or the original map as fallback
 	 */
 	private static Object extractMapValue(Map<?, ?> map, String outputKey, boolean allowWrapperMergedOutput,
-			String preferredInnerOutputKey) {
+			List<String> preferredInnerOutputKeys) {
 		boolean wrapperOutput = isSubGraphWrapperKey(outputKey);
 		// A subgraph wrapper key namespaces a nested FlowAgent result in the parent graph.
 		// Only wrappers that belong to routing graphs may read their internal merged result;
@@ -280,8 +281,11 @@ public class RoutingMergeNode implements NodeAction {
 		if (allowWrapperMergedOutput && wrapperOutput && map.containsKey(DEFAULT_MERGED_OUTPUT_KEY)) {
 			return map.get(DEFAULT_MERGED_OUTPUT_KEY);
 		}
-		if (wrapperOutput && preferredInnerOutputKey != null && map.containsKey(preferredInnerOutputKey)) {
-			return map.get(preferredInnerOutputKey);
+		if (wrapperOutput && preferredInnerOutputKeys != null && !preferredInnerOutputKeys.isEmpty()) {
+			String preferredOutput = extractPreferredWrapperOutput(map, preferredInnerOutputKeys);
+			if (!preferredOutput.isBlank()) {
+				return preferredOutput;
+			}
 		}
 		if (wrapperOutput && map.containsKey(DEFAULT_MESSAGES_OUTPUT_KEY)) {
 			Object messages = map.get(DEFAULT_MESSAGES_OUTPUT_KEY);
@@ -302,6 +306,26 @@ public class RoutingMergeNode implements NodeAction {
 			return map.values().iterator().next();
 		}
 		return map;
+	}
+
+	/**
+	 * Collects the explicit workflow outputs stored in one namespaced wrapper snapshot.
+	 * @param map subgraph wrapper snapshot
+	 * @param preferredInnerOutputKeys configured output keys in workflow order
+	 * @return combined non-blank output text, or an empty string when none is present
+	 */
+	private static String extractPreferredWrapperOutput(Map<?, ?> map, List<String> preferredInnerOutputKeys) {
+		List<String> outputTexts = new ArrayList<>();
+		for (String preferredInnerOutputKey : preferredInnerOutputKeys) {
+			if (!map.containsKey(preferredInnerOutputKey)) {
+				continue;
+			}
+			String text = extractText(map.get(preferredInnerOutputKey), preferredInnerOutputKey, false);
+			if (text != null && !text.isBlank()) {
+				outputTexts.add(text);
+			}
+		}
+		return String.join("\n\n", outputTexts);
 	}
 
 	/**
