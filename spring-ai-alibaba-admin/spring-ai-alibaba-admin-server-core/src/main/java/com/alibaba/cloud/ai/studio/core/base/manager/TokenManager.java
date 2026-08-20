@@ -17,7 +17,7 @@
 package com.alibaba.cloud.ai.studio.core.base.manager;
 
 import com.alibaba.cloud.ai.studio.core.config.JwtConfigProperties;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
