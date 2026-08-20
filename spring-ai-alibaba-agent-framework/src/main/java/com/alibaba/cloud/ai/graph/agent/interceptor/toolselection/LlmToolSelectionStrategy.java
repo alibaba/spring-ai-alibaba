@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.toolselection;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -82,12 +83,19 @@ public final class LlmToolSelectionStrategy implements ToolSelectionStrategy {
 
 	private List<String> parseToolSelection(String responseText) throws JsonProcessingException {
 		ToolSelectionResponse response = objectMapper.readValue(responseText, ToolSelectionResponse.class);
-		return response.tools != null ? response.tools : List.of();
+		return response.tools;
 	}
 
 	private static class ToolSelectionResponse {
 
-		@JsonProperty("tools")
-		public List<String> tools;
+		private final List<String> tools;
+
+		@JsonCreator
+		ToolSelectionResponse(@JsonProperty(value = "tools", required = true) List<String> tools) {
+			if (tools == null) {
+				throw new IllegalArgumentException("tools must not be null");
+			}
+			this.tools = tools;
+		}
 	}
 }

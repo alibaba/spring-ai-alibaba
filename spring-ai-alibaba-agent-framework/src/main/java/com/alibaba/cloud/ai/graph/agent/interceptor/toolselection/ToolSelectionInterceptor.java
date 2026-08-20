@@ -96,7 +96,7 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 			return handler.call(request);
 		}
 
-		Set<String> selectedToolNames;
+		List<String> selectedToolNames;
 		try {
 			ToolSelectionRequest selectionRequest = new ToolSelectionRequest(lastUserQuery,
 					buildToolMetadata(availableTools, request.getToolDescriptions(), dynamicTools),
@@ -117,20 +117,26 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 				selectedToolNames.size(), availableTools.size(), selectedToolNames);
 
 		// Filter tools based on selection
-		List<String> filteredTools = staticTools.stream().filter(selectedToolNames::contains).toList();
-		List<ToolCallback> filteredDynamicTools = dynamicTools.stream()
-				.filter(tool -> selectedToolNames.contains(tool.getToolDefinition().name()))
+		Set<String> staticToolNames = new HashSet<>(staticTools);
+		Map<String, ToolCallback> dynamicToolsByName = new HashMap<>();
+		for (ToolCallback dynamicTool : dynamicTools) {
+			dynamicToolsByName.putIfAbsent(dynamicTool.getToolDefinition().name(), dynamicTool);
+		}
+		List<String> filteredTools = selectedToolNames.stream().filter(staticToolNames::contains).toList();
+		List<ToolCallback> filteredDynamicTools = selectedToolNames.stream()
+				.map(dynamicToolsByName::get)
+				.filter(tool -> tool != null)
 				.toList();
 
 		// Create new request with filtered tools
 		ModelRequest.Builder filteredRequestBuilder = ModelRequest.builder(request)
 				.tools(filteredTools)
 				.dynamicToolCallbacks(filteredDynamicTools);
-		if (filteredTools.isEmpty()) {
+		if (request.getOptions() != null || filteredTools.isEmpty()) {
 			ToolCallingChatOptions options = request.getOptions() != null
 					? request.getOptions().copy()
 					: ToolCallingChatOptions.builder().build();
-			options.setToolCallbacks(List.of());
+			options.setToolCallbacks(orderSelectedCallbacks(request, dynamicToolsByName, selectedToolNames));
 			filteredRequestBuilder.options(options);
 		}
 		ModelRequest filteredRequest = filteredRequestBuilder.build();
@@ -171,7 +177,22 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 				.toList();
 	}
 
-	private Set<String> normalizeSelection(List<String> availableTools, List<String> selectedTools) {
+	private List<ToolCallback> orderSelectedCallbacks(ModelRequest request,
+			Map<String, ToolCallback> dynamicToolsByName, List<String> selectedToolNames) {
+		Map<String, ToolCallback> callbacksByName = new HashMap<>();
+		if (request.getOptions() != null && request.getOptions().getToolCallbacks() != null) {
+			for (ToolCallback callback : request.getOptions().getToolCallbacks()) {
+				callbacksByName.putIfAbsent(callback.getToolDefinition().name(), callback);
+			}
+		}
+		dynamicToolsByName.forEach(callbacksByName::putIfAbsent);
+		return selectedToolNames.stream()
+				.map(callbacksByName::get)
+				.filter(callback -> callback != null)
+				.toList();
+	}
+
+	private List<String> normalizeSelection(List<String> availableTools, List<String> selectedTools) {
 		Set<String> available = new HashSet<>(availableTools);
 		LinkedHashSet<String> normalized = new LinkedHashSet<>();
 
@@ -194,10 +215,10 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		}
 
 		if (maxTools != null && normalized.size() > maxTools) {
-			return new LinkedHashSet<>(normalized.stream().limit(maxTools).toList());
+			return normalized.stream().limit(maxTools).toList();
 		}
 
-		return normalized;
+		return List.copyOf(normalized);
 	}
 
 	@Override

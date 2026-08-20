@@ -60,14 +60,20 @@ class ToolSelectionStrategyTest {
 		AtomicReference<ModelRequest> capturedModelRequest = new AtomicReference<>();
 		ToolSelectionStrategy strategy = request -> {
 			capturedSelectionRequest.set(request);
-			return List.of("weather_tool", "hotel_tool");
+			return List.of("hotel_tool", "weather_tool");
 		};
 
 		ToolSelectionInterceptor interceptor = ToolSelectionInterceptor.builder()
 				.selectionStrategy(strategy)
 				.maxTools(2)
 				.build();
-		ModelRequest request = requestWithThreeTools();
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder()
+				.toolCallbacks(List.of(
+						tool("weather_tool", "Get weather", "{}", new AtomicInteger()),
+						tool("ticket_tool", "Book tickets", "{}", new AtomicInteger()),
+						tool("hotel_tool", "Find hotels", "{}", new AtomicInteger())))
+				.build();
+		ModelRequest request = ModelRequest.builder(requestWithThreeTools()).options(options).build();
 
 		interceptor.interceptModel(request, filteredRequest -> {
 			capturedModelRequest.set(filteredRequest);
@@ -82,7 +88,13 @@ class ToolSelectionStrategyTest {
 				new ToolMetadata("weather_tool", "Get weather"),
 				new ToolMetadata("ticket_tool", "Book tickets"),
 				new ToolMetadata("hotel_tool", "Find hotels")), selectionRequest.tools());
-		assertEquals(List.of("weather_tool", "hotel_tool"), capturedModelRequest.get().getTools());
+		assertEquals(List.of("hotel_tool", "weather_tool"), capturedModelRequest.get().getTools());
+		assertEquals(List.of("hotel_tool", "weather_tool"), capturedModelRequest.get()
+				.getOptions()
+				.getToolCallbacks()
+				.stream()
+				.map(callback -> callback.getToolDefinition().name())
+				.toList());
 	}
 
 	@Test
@@ -115,7 +127,7 @@ class ToolSelectionStrategyTest {
 			return ModelResponse.of(new AssistantMessage("done"));
 		});
 
-		assertEquals(List.of("weather_tool", "ticket_tool"), capturedRequest.get().getTools());
+		assertEquals(List.of("ticket_tool", "weather_tool"), capturedRequest.get().getTools());
 	}
 
 	@Test
@@ -325,6 +337,26 @@ class ToolSelectionStrategyTest {
 		});
 
 		assertSame(originalRequest, capturedRequest.get());
+	}
+
+	@Test
+	void missingOrNullToolsArrayFallsBackToOriginalRequest() {
+		for (String responseText : List.of("{}", "{\"tools\":null}")) {
+			ChatModel invalidSelectionModel = prompt -> response(new AssistantMessage(responseText));
+			ToolSelectionInterceptor interceptor = ToolSelectionInterceptor.builder()
+					.selectionModel(invalidSelectionModel)
+					.maxTools(1)
+					.build();
+			ModelRequest originalRequest = requestWithThreeTools();
+			AtomicReference<ModelRequest> capturedRequest = new AtomicReference<>();
+
+			interceptor.interceptModel(originalRequest, request -> {
+				capturedRequest.set(request);
+				return ModelResponse.of(new AssistantMessage("done"));
+			});
+
+			assertSame(originalRequest, capturedRequest.get());
+		}
 	}
 
 	private ModelRequest requestWithThreeTools() {
