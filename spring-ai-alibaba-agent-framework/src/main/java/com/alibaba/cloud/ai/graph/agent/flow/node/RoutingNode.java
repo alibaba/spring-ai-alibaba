@@ -144,10 +144,10 @@ public class RoutingNode implements MultiCommandAction {
 						rootAgent.name(), decisionValues.size(), String.join(", ", decisionValues));
 			}
 			
-				// Return MultiCommand with the routing decisions as gotoNodes and agent queries in state.
-				// Each agent's query is stored as independent key: agentName_input
-				Map<String, Object> stateUpdate = new HashMap<>();
-				stateUpdate.put(routedAgentNamesKey(rootAgent.name()), createRoutingMarker(state, decisionValues));
+			// Return MultiCommand with the routing decisions as gotoNodes and agent queries in state.
+			// Each agent's query is stored as independent key: agentName_input
+			Map<String, Object> stateUpdate = new HashMap<>();
+			stateUpdate.put(routedAgentNamesKey(rootAgent.name()), createRoutingMarker(state, decisionValues));
 			removeStaleSelectedWrapperOutputs(stateUpdate, decisionValues);
 			decision.getAgentQueries().forEach((agentName, query) ->
 					stateUpdate.put(agentName + "_input", query));

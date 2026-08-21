@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -813,7 +814,9 @@ public class NodeExecutor extends BaseGraphExecutor {
 	}
 
 	private static boolean isSubGraphWrapperKey(String outputKey) {
-		return outputKey != null && outputKey.startsWith("subgraph_") && outputKey.endsWith("_compiled_graph");
+		// The prefix matches ResumableSubGraphAction.subGraphId, which has no public constant.
+		return outputKey != null && outputKey.startsWith("subgraph_")
+				&& outputKey.endsWith(ResumableSubGraphAction.OUTPUT_KEY_TO_PARENT_SUFFIX);
 	}
 
 	private static Map<String, Object> copyStateMap(Map<?, ?> resultMap) {

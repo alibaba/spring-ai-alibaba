@@ -260,12 +260,18 @@ final class RoutingOutputResolver {
 
 	/**
 	 * Creates the namespaced wrapper candidate for a nested FlowAgent.
+	 * <p>
+	 * Opaque custom flows cannot expand their configured children because those
+	 * branches may not have executed in the current invocation, so a wrapper with a
+	 * single visible value is their only attributable explicit output. Ambiguous
+	 * wrapper snapshots are still rejected during extraction, which returns null when
+	 * more than one visible value exists.
 	 * @param agent agent whose wrapper key should be created
 	 * @return wrapper output candidate
 	 */
 	private RoutingOutputCandidate wrapperCandidate(Agent agent) {
 		return new RoutingOutputCandidate(outputKeyToParent(agent.name()), agent, true, usesRoutingMergedOutput(agent),
-				preferredWrapperOutputKeys(agent), !isOpaqueCustomFlow(agent));
+				preferredWrapperOutputKeys(agent), true);
 	}
 
 	/**

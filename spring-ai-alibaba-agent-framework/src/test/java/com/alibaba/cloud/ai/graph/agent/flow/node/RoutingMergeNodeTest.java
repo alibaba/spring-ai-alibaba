@@ -897,6 +897,34 @@ class RoutingMergeNodeTest {
 	}
 
 	@Test
+	void opaqueCustomFlowExposesSingleExplicitWrapperOutput() throws Exception {
+		RecordingChatModel chatModel = new RecordingChatModel();
+		FlowAgent conditionalWorkflow = new StubConditionalFlowAgent("conditional_workflow",
+				List.of(
+						mockAgent("first_branch", "first_answer"),
+						mockAgent("second_branch", "second_answer")));
+
+		// A custom graph may end in a deterministic node that writes an explicit state key
+		// without appending an assistant message. The single visible wrapper value is the
+		// attributable result; the stale parent-state branch key must not be probed.
+		OverAllState state = new OverAllState(Map.of(
+				"conditional_workflow_input", "Run the selected branch",
+				"first_answer", new AssistantMessage("Stale first-branch answer."),
+				outputKeyToParent("conditional_workflow"), GraphResponse.done(Map.of(
+						"input", "Run the selected branch",
+						"deterministic_result", "Deterministic branch result.",
+						"messages", List.<Message>of(new UserMessage("Run the selected branch"))))
+		));
+
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(conditionalWorkflow));
+		Map<String, Object> result = node.apply(state);
+
+		assertEquals("Deterministic branch result.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
+				"Custom flows ending in deterministic nodes should expose their explicit wrapper output");
+		assertEquals(0, chatModel.callCount());
+	}
+
+	@Test
 	void opaqueCustomFlowRejectsAmbiguousWrapperOutputsWithoutExecutionEvidence() throws Exception {
 		RecordingChatModel chatModel = new RecordingChatModel();
 		FlowAgent conditionalWorkflow = new StubConditionalFlowAgent("conditional_workflow",
