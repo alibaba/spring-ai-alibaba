@@ -55,6 +55,10 @@ public class RoutingNode implements MultiCommandAction {
 
 	static final String ROUTED_AGENT_NAMES_KEY = "_routing_selected_agents";
 
+	static final String SELECTED_AGENT_NAMES_FIELD = "selected_agent_names";
+
+	static final String PARENT_ROUTING_MARKER_FIELD = "parent_routing_marker";
+
 	static String routedAgentNamesKey(String routingAgentName) {
 		return ROUTED_AGENT_NAMES_KEY + "_" + routingAgentName;
 	}
@@ -140,10 +144,10 @@ public class RoutingNode implements MultiCommandAction {
 						rootAgent.name(), decisionValues.size(), String.join(", ", decisionValues));
 			}
 			
-			// Return MultiCommand with the routing decisions as gotoNodes and agent queries in state.
-			// Each agent's query is stored as independent key: agentName_input
-			Map<String, Object> stateUpdate = new HashMap<>();
-			stateUpdate.put(routedAgentNamesKey(rootAgent.name()), new ArrayList<>(decisionValues));
+				// Return MultiCommand with the routing decisions as gotoNodes and agent queries in state.
+				// Each agent's query is stored as independent key: agentName_input
+				Map<String, Object> stateUpdate = new HashMap<>();
+				stateUpdate.put(routedAgentNamesKey(rootAgent.name()), createRoutingMarker(state, decisionValues));
 			removeStaleSelectedWrapperOutputs(stateUpdate, decisionValues);
 			decision.getAgentQueries().forEach((agentName, query) ->
 					stateUpdate.put(agentName + "_input", query));
@@ -178,10 +182,36 @@ public class RoutingNode implements MultiCommandAction {
 		});
 		Map<String, Object> stateUpdate = new HashMap<>();
 		List<String> decisionValues = List.of(fallbackAgent);
-		stateUpdate.put(routedAgentNamesKey(rootAgent.name()), new ArrayList<>(decisionValues));
+		stateUpdate.put(routedAgentNamesKey(rootAgent.name()), createRoutingMarker(state, decisionValues));
 		removeStaleSelectedWrapperOutputs(stateUpdate, decisionValues);
 		stateUpdate.put(fallbackAgent + "_input", fallbackInput);
 		return new MultiCommand(decisionValues, stateUpdate);
+	}
+
+	/**
+	 * Creates a scoped routing marker and retains an active marker from an enclosing
+	 * same-named router. The merge node restores that parent marker when this routing
+	 * scope completes.
+	 * @param state current graph state
+	 * @param selectedAgentNames sub-agents selected by this router invocation
+	 * @return serializable marker for the current routing scope
+	 */
+	private Map<String, Object> createRoutingMarker(OverAllState state, List<String> selectedAgentNames) {
+		Map<String, Object> marker = new HashMap<>();
+		marker.put(SELECTED_AGENT_NAMES_FIELD, new ArrayList<>(selectedAgentNames));
+		state.value(routedAgentNamesKey(rootAgent.name()))
+			.filter(RoutingNode::isScopedRoutingMarker)
+			.ifPresent(parentMarker -> marker.put(PARENT_ROUTING_MARKER_FIELD, parentMarker));
+		return marker;
+	}
+
+	/**
+	 * Checks whether a state value uses the scoped routing-marker representation.
+	 * @param marker candidate state value
+	 * @return true when the marker contains a current routing selection
+	 */
+	static boolean isScopedRoutingMarker(Object marker) {
+		return marker instanceof Map<?, ?> map && map.containsKey(SELECTED_AGENT_NAMES_FIELD);
 	}
 
 	/**

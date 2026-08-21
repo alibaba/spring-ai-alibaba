@@ -300,6 +300,42 @@ class LlmRoutingFlowAgentIntegrationTest {
 	}
 
 	@Test
+	void sameNamedNestedRoutingAgentsKeepSelectionsIsolatedInRealSubgraphs() throws Exception {
+		ScriptedChatModel chatModel = new ScriptedChatModel(List.of(
+				"{\"agents\":[{\"agent\":\"outer_workflow\",\"query\":\"route inside child\"}]}",
+				"{\"agents\":[{\"agent\":\"inner_agent\",\"query\":\"produce answer\"}]}",
+				"Same-name nested answer"));
+
+		LlmRoutingAgent nestedRouter = LlmRoutingAgent.builder()
+			.name("shared_router")
+			.model(chatModel)
+			.description("Nested router with the same name as its parent")
+			.subAgents(List.of(outputAgent("inner_agent", chatModel, "inner_answer")))
+			.build();
+		SequentialAgent outerWorkflow = SequentialAgent.builder()
+			.name("outer_workflow")
+			.description("Places the same-named router in a separate nested graph")
+			.subAgents(List.of(nestedRouter))
+			.build();
+		LlmRoutingAgent outerRouter = LlmRoutingAgent.builder()
+			.name("shared_router")
+			.model(chatModel)
+			.description("Outer router")
+			.subAgents(List.of(outerWorkflow))
+			.build();
+
+		Optional<OverAllState> result = outerRouter.invoke("Route through the same-named child");
+
+		assertTrue(result.isPresent());
+		assertMessageText(result.get().value("inner_answer"), "Same-name nested answer");
+		assertEquals("Same-name nested answer", result.get().value(DEFAULT_MERGED_OUTPUT_KEY).orElse(null),
+				"The child routing marker must not replace the outer router's current selection");
+		assertFalse(result.get().data().containsKey("_routing_selected_agents_shared_router"),
+				"The outermost router must remove its scoped selection marker after merging");
+		assertEquals(3, chatModel.callCount());
+	}
+
+	@Test
 	void multipleNestedRoutingAgentsUseCurrentMergedResultsFromRealSubgraphs() throws Exception {
 		NestedRoutingChatModel chatModel = new NestedRoutingChatModel();
 

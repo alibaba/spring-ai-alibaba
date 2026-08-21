@@ -31,6 +31,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -76,7 +77,8 @@ final class RoutingOutputResolver {
 	 * @return immutable context for this merge pass
 	 */
 	MergeContext createContext(OverAllState state) {
-		Optional<Set<String>> routedAgentNames = currentRoutedAgentNames(state);
+		Optional<RoutingSelection> routingSelection = currentRoutingSelection(state);
+		Optional<Set<String>> routedAgentNames = routingSelection.map(RoutingSelection::agentNames);
 		long routedAgentCount = countRoutedAgents(state, routedAgentNames);
 		boolean hasRoutingMarkers = routedAgentNames.isPresent() || routedAgentCount > 0;
 		long routingMergedOutputOwnerCount = countRoutingMergedOutputOwners(state, hasRoutingMarkers,
@@ -84,7 +86,24 @@ final class RoutingOutputResolver {
 		boolean exposeMergedResultToParent = routingAgentName != null
 				&& state.value(routingAgentName + "_input").isPresent();
 		return new MergeContext(routedAgentNames, routedAgentCount, hasRoutingMarkers,
-				routingMergedOutputOwnerCount, exposeMergedResultToParent);
+				routingMergedOutputOwnerCount, exposeMergedResultToParent, routingSelection.isPresent(),
+				routingSelection.flatMap(RoutingSelection::parentMarker));
+	}
+
+	/**
+	 * Restores the enclosing same-named router marker after this merge, or removes the
+	 * marker when this invocation is the outermost routing scope.
+	 * @param output merge-node state update
+	 * @param context routing context captured before result collection
+	 */
+	void restoreRoutingMarker(Map<String, Object> output, MergeContext context) {
+		if (!context.routingMarkerPresent()) {
+			return;
+		}
+		String markerKey = routingMarkerKey();
+		Object restoredMarker = context.parentRoutingMarker().orElse(OverAllState.MARK_FOR_REMOVAL);
+		output.put(markerKey, restoredMarker);
+		logger.debug("RoutingMergeNode: restoring routing marker {} to its enclosing scope", markerKey);
 	}
 
 	/**
@@ -366,27 +385,41 @@ final class RoutingOutputResolver {
 	 * @param state current graph state
 	 * @return selected top-level agent names when a routing marker exists
 	 */
-	private Optional<Set<String>> currentRoutedAgentNames(OverAllState state) {
-		Optional<Object> value = routingAgentName != null
-				? state.value(RoutingNode.routedAgentNamesKey(routingAgentName))
-				: state.value(RoutingNode.ROUTED_AGENT_NAMES_KEY);
+	private Optional<RoutingSelection> currentRoutingSelection(OverAllState state) {
+		Optional<Object> value = state.value(routingMarkerKey());
 		if (value.isEmpty()) {
 			return Optional.empty();
 		}
 
+		Object marker = value.get();
+		Object selectedAgents = marker;
+		Optional<Object> parentMarker = Optional.empty();
+		if (marker instanceof Map<?, ?> map && map.containsKey(RoutingNode.SELECTED_AGENT_NAMES_FIELD)) {
+			selectedAgents = map.get(RoutingNode.SELECTED_AGENT_NAMES_FIELD);
+			parentMarker = Optional.ofNullable(map.get(RoutingNode.PARENT_ROUTING_MARKER_FIELD));
+		}
+
 		Set<String> agentNames = new LinkedHashSet<>();
-		Object routedAgents = value.get();
-		if (routedAgents instanceof Iterable<?> iterable) {
+		if (selectedAgents instanceof Iterable<?> iterable) {
 			for (Object agentName : iterable) {
 				if (agentName instanceof String name && !name.isBlank()) {
 					agentNames.add(name);
 				}
 			}
 		}
-		else if (routedAgents instanceof String name && !name.isBlank()) {
+		else if (selectedAgents instanceof String name && !name.isBlank()) {
 			agentNames.add(name);
 		}
-		return Optional.of(agentNames);
+		return Optional.of(new RoutingSelection(Set.copyOf(agentNames), parentMarker));
+	}
+
+	/**
+	 * Returns the state key used by this routing graph's scoped selection marker.
+	 * @return namespaced marker key, or the legacy global key for test-only constructors
+	 */
+	private String routingMarkerKey() {
+		return routingAgentName != null
+				? RoutingNode.routedAgentNamesKey(routingAgentName) : RoutingNode.ROUTED_AGENT_NAMES_KEY;
 	}
 
 	/**
@@ -467,7 +500,16 @@ final class RoutingOutputResolver {
 	}
 
 	record MergeContext(Optional<Set<String>> routedAgentNames, long routedAgentCount,
-			boolean hasRoutingMarkers, long routingMergedOutputOwnerCount, boolean exposeMergedResultToParent) {
+			boolean hasRoutingMarkers, long routingMergedOutputOwnerCount, boolean exposeMergedResultToParent,
+			boolean routingMarkerPresent, Optional<Object> parentRoutingMarker) {
+	}
+
+	/**
+	 * Parsed view of the current serializable routing marker.
+	 * @param agentNames sub-agents selected in the innermost routing scope
+	 * @param parentMarker marker to restore for an enclosing same-named router
+	 */
+	record RoutingSelection(Set<String> agentNames, Optional<Object> parentMarker) {
 	}
 
 	record CollectedAgentResult(String text, boolean fromWrapperOutput) {

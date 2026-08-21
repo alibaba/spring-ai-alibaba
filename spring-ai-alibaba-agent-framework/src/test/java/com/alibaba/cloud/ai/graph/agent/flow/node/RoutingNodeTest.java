@@ -62,8 +62,8 @@ class RoutingNodeTest {
 
 		assertEquals(3, modelCalls.get());
 		assertEquals(List.of("writer_agent"), command.gotoNodes());
-		assertEquals(List.of("writer_agent"),
-				command.update().get(RoutingNode.routedAgentNamesKey("routing_agent")));
+		assertEquals(List.of("writer_agent"), selectedAgentNames(
+				command.update().get(RoutingNode.routedAgentNamesKey("routing_agent"))));
 		assertEquals("write a summary", command.update().get("writer_agent_input"));
 	}
 
@@ -83,8 +83,8 @@ class RoutingNodeTest {
 
 		assertEquals(3, modelCalls.get());
 		assertEquals(List.of("writing_workflow"), command.gotoNodes());
-		assertEquals(List.of("writing_workflow"),
-				command.update().get(RoutingNode.routedAgentNamesKey("routing_agent")));
+		assertEquals(List.of("writing_workflow"), selectedAgentNames(
+				command.update().get(RoutingNode.routedAgentNamesKey("routing_agent"))));
 		assertEquals("write a summary", command.update().get("writing_workflow_input"));
 		assertSame(OverAllState.MARK_FOR_REMOVAL,
 				command.update().get(outputKeyToParent("writing_workflow")));
@@ -118,8 +118,8 @@ class RoutingNodeTest {
 		MultiCommand command = node.apply(state, RunnableConfig.builder().build());
 
 		assertEquals(List.of("writing_workflow"), command.gotoNodes());
-		assertEquals(List.of("writing_workflow"),
-				command.update().get(RoutingNode.routedAgentNamesKey("routing_agent")));
+		assertEquals(List.of("writing_workflow"), selectedAgentNames(
+				command.update().get(RoutingNode.routedAgentNamesKey("routing_agent"))));
 		assertEquals("write and review article", command.update().get("writing_workflow_input"));
 		assertSame(OverAllState.MARK_FOR_REMOVAL,
 				command.update().get(outputKeyToParent("writing_workflow")));
@@ -145,8 +145,29 @@ class RoutingNodeTest {
 		assertFalse(state.value(outputKeyToParent("writing_workflow")).isPresent(),
 				"The route update must remove checkpointed wrapper output before the selected subgraph runs");
 		assertEquals("write and review article", state.value("writing_workflow_input").orElse(null));
-		assertEquals(List.of("writing_workflow"),
-				state.value(RoutingNode.routedAgentNamesKey("routing_agent")).orElse(null));
+		assertEquals(List.of("writing_workflow"), selectedAgentNames(
+				state.value(RoutingNode.routedAgentNamesKey("routing_agent")).orElse(null)));
+	}
+
+	@Test
+	void sameNamedNestedRouterRetainsTheEnclosingRoutingMarker() throws Exception {
+		ScriptedChatModel chatModel = new ScriptedChatModel(
+				List.of("{\"agents\":[{\"agent\":\"writer_agent\",\"query\":\"write article\"}]}"));
+		ReactAgent writerAgent = reactAgent("writer_agent", chatModel);
+		LlmRoutingAgent routingAgent = routingAgent(chatModel, List.of(writerAgent));
+		RoutingNode node = new RoutingNode(chatModel, routingAgent, List.of(writerAgent));
+		Map<String, Object> parentMarker = Map.of(
+				RoutingNode.SELECTED_AGENT_NAMES_FIELD, List.of("outer_workflow"));
+		OverAllState state = new OverAllState(Map.of(
+				RoutingNode.routedAgentNamesKey("routing_agent"), parentMarker,
+				"messages", List.<Message>of(new UserMessage("Please write"))));
+
+		MultiCommand command = node.apply(state, RunnableConfig.builder().build());
+
+		Object marker = command.update().get(RoutingNode.routedAgentNamesKey("routing_agent"));
+		assertEquals(List.of("writer_agent"), selectedAgentNames(marker));
+		assertEquals(parentMarker, ((Map<?, ?>) marker).get(RoutingNode.PARENT_ROUTING_MARKER_FIELD),
+				"A same-named nested router must retain the enclosing router marker for restoration");
 	}
 
 	@Test
@@ -234,6 +255,10 @@ class RoutingNodeTest {
 				return Flux.just(call(prompt));
 			}
 		};
+	}
+
+	private static Object selectedAgentNames(Object marker) {
+		return ((Map<?, ?>) marker).get(RoutingNode.SELECTED_AGENT_NAMES_FIELD);
 	}
 
 	private static ReactAgent reactAgent(String name, ChatModel chatModel) {

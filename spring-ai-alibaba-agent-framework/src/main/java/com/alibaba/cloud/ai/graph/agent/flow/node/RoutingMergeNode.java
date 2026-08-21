@@ -113,19 +113,18 @@ public class RoutingMergeNode implements NodeAction {
 		// single result through unchanged; only genuinely multi-source results need synthesis.
 		if (formattedResults.size() == 1) {
 			logger.debug("RoutingMergeNode: single routed result, returning it without re-synthesis");
-			return mergeResult(lastResult, staleWrapperOutputKeys, context.exposeMergedResultToParent());
+			return mergeResult(lastResult, staleWrapperOutputKeys, context);
 		}
 		if (formattedResults.isEmpty()) {
 			logger.debug("RoutingMergeNode: no routed results found");
-			return mergeResult("No results found from any knowledge source.", staleWrapperOutputKeys,
-					context.exposeMergedResultToParent());
+			return mergeResult("No results found from any knowledge source.", staleWrapperOutputKeys, context);
 		}
 
 		String query = extractOriginalQuery(state);
 		String finalAnswer = synthesize(query, formattedResults);
 		logger.debug("RoutingMergeNode: synthesized {} sources into merged result", formattedResults.size());
 
-		return mergeResult(finalAnswer, staleWrapperOutputKeys, context.exposeMergedResultToParent());
+		return mergeResult(finalAnswer, staleWrapperOutputKeys, context);
 	}
 
 	/**
@@ -136,15 +135,15 @@ public class RoutingMergeNode implements NodeAction {
 	 * inner-agent output.
 	 * @param result the final text produced by the merge node
 	 * @param staleWrapperOutputKeys wrapper keys that should be removed from state
-	 * @param exposeMergedResultToParent whether to also write the result to this router's
-	 * wrapper key
+	 * @param context routing context used to expose nested results and restore the parent
+	 * routing marker
 	 * @return the graph state update emitted by this node
 	 */
 	private Map<String, Object> mergeResult(String result, Set<String> staleWrapperOutputKeys,
-			boolean exposeMergedResultToParent) {
+			RoutingOutputResolver.MergeContext context) {
 		Map<String, Object> output = new HashMap<>();
 		output.put(mergedOutputKey, result);
-		if (exposeMergedResultToParent) {
+		if (context.exposeMergedResultToParent()) {
 			String wrapperOutputKey = outputResolver.wrapperOutputKey();
 			logger.debug("RoutingMergeNode: exposing merged result through wrapper key {}", wrapperOutputKey);
 			output.put(wrapperOutputKey, result);
@@ -153,6 +152,7 @@ public class RoutingMergeNode implements NodeAction {
 			logger.debug("RoutingMergeNode: marking stale wrapper output {} for removal", outputKey);
 			output.put(outputKey, OverAllState.MARK_FOR_REMOVAL);
 		}
+		outputResolver.restoreRoutingMarker(output, context);
 		return output;
 	}
 

@@ -43,6 +43,7 @@ import static com.alibaba.cloud.ai.graph.agent.flow.node.RoutingMergeNode.DEFAUL
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -1001,6 +1002,53 @@ class RoutingMergeNodeTest {
 
 		assertEquals("Child router synthesized answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
 				"Parent routing merge should ignore child-router selection markers");
+		assertEquals(0, chatModel.callCount());
+	}
+
+	@Test
+	void sameNamedNestedRouterRestoresTheEnclosingRoutingMarker() throws Exception {
+		RecordingChatModel chatModel = new RecordingChatModel();
+		BaseAgent innerAgent = mockAgent("inner_agent", "inner_answer");
+		LlmRoutingAgent nestedRouter = LlmRoutingAgent.builder()
+			.name("shared_router")
+			.description("Nested router")
+			.model(chatModel)
+			.subAgents(List.of(innerAgent))
+			.build();
+		SequentialAgent outerWorkflow = SequentialAgent.builder()
+			.name("outer_workflow")
+			.description("Workflow ending in the same-named nested router")
+			.subAgents(List.of(nestedRouter))
+			.build();
+		BaseAgent outerRouter = mockAgent("shared_router", null);
+
+		Map<String, Object> outerMarker = Map.of(
+				RoutingNode.SELECTED_AGENT_NAMES_FIELD, List.of("outer_workflow"));
+		Map<String, Object> nestedMarker = Map.of(
+				RoutingNode.SELECTED_AGENT_NAMES_FIELD, List.of("inner_agent"),
+				RoutingNode.PARENT_ROUTING_MARKER_FIELD, outerMarker);
+		String markerKey = RoutingNode.routedAgentNamesKey("shared_router");
+		OverAllState nestedState = new OverAllState(Map.of(
+				markerKey, nestedMarker,
+				"inner_answer", new AssistantMessage("Nested router answer.")));
+
+		RoutingMergeNode nestedMerge = new RoutingMergeNode(chatModel, nestedRouter, List.of(innerAgent));
+		Map<String, Object> nestedResult = nestedMerge.apply(nestedState);
+
+		assertEquals("Nested router answer.", nestedResult.get(DEFAULT_MERGED_OUTPUT_KEY));
+		assertEquals(outerMarker, nestedResult.get(markerKey),
+				"Nested merge must restore the enclosing same-named router marker");
+
+		OverAllState outerState = new OverAllState(Map.of(
+				markerKey, nestedResult.get(markerKey),
+				outputKeyToParent("outer_workflow"), GraphResponse.done(Map.of(
+						DEFAULT_MERGED_OUTPUT_KEY, "Nested router answer."))));
+		RoutingMergeNode outerMerge = new RoutingMergeNode(chatModel, outerRouter, List.of(outerWorkflow));
+		Map<String, Object> outerResult = outerMerge.apply(outerState);
+
+		assertEquals("Nested router answer.", outerResult.get(DEFAULT_MERGED_OUTPUT_KEY));
+		assertSame(OverAllState.MARK_FOR_REMOVAL, outerResult.get(markerKey),
+				"Outermost merge must clear its routing marker after collection");
 		assertEquals(0, chatModel.callCount());
 	}
 
