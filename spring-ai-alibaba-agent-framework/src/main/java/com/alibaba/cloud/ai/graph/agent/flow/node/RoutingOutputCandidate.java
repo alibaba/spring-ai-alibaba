@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
+import com.alibaba.cloud.ai.graph.agent.Agent;
+
 import java.util.List;
 
 /**
@@ -24,6 +26,7 @@ import java.util.List;
  * {@code subgraph_<agent>_compiled_graph}; non-wrapper candidates are raw output
  * keys written by nested agents.
  * @param outputKey state key to probe
+ * @param outputOwner agent whose raw output or wrapper fallback produced this candidate
  * @param wrapperOutput whether the key is a subgraph wrapper key
  * @param routingWrapperOutput whether the wrapper belongs to a routing graph whose
  * merged result is valid inside the wrapper snapshot
@@ -31,20 +34,21 @@ import java.util.List;
  * snapshot; more than one key represents the visible outputs of a workflow such as a
  * {@code ParallelAgent} without a merge output key
  */
-record RoutingOutputCandidate(String outputKey, boolean wrapperOutput, boolean routingWrapperOutput,
-			List<String> preferredInnerOutputKeys) {
+record RoutingOutputCandidate(String outputKey, Agent outputOwner, boolean wrapperOutput,
+			boolean routingWrapperOutput, List<String> preferredInnerOutputKeys) {
 
 	RoutingOutputCandidate {
 		preferredInnerOutputKeys = preferredInnerOutputKeys != null
 				? List.copyOf(preferredInnerOutputKeys) : List.of();
 	}
 
-	RoutingOutputCandidate(String outputKey, boolean wrapperOutput) {
-		this(outputKey, wrapperOutput, false, List.of());
+	RoutingOutputCandidate(String outputKey, Agent outputOwner, boolean wrapperOutput) {
+		this(outputKey, outputOwner, wrapperOutput, false, List.of());
 	}
 
-	RoutingOutputCandidate(String outputKey, boolean wrapperOutput, boolean routingWrapperOutput) {
-		this(outputKey, wrapperOutput, routingWrapperOutput, List.of());
+	RoutingOutputCandidate(String outputKey, Agent outputOwner, boolean wrapperOutput,
+			boolean routingWrapperOutput) {
+		this(outputKey, outputOwner, wrapperOutput, routingWrapperOutput, List.of());
 	}
 
 }

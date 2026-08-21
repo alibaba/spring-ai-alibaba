@@ -86,10 +86,10 @@ final class BaseAgentOutputStrategy implements RoutingOutputStrategy {
 		BaseAgent baseAgent = (BaseAgent) step.agent();
 		String outputKey = baseAgent.getOutputKey();
 		if (outputKey != null) {
-			candidates.add(new RoutingOutputCandidate(outputKey, false));
+			candidates.add(new RoutingOutputCandidate(outputKey, baseAgent, false));
 		}
 		else if (step.allowDefaultMessagesOutput()) {
-			candidates.add(new RoutingOutputCandidate(RoutingMergeNode.DEFAULT_MESSAGES_OUTPUT_KEY, false));
+			candidates.add(new RoutingOutputCandidate(RoutingMergeNode.DEFAULT_MESSAGES_OUTPUT_KEY, baseAgent, false));
 		}
 	}
 
@@ -110,7 +110,7 @@ final class ParallelAgentOutputStrategy implements RoutingOutputStrategy {
 			List<RoutingOutputCandidate> candidates) {
 		ParallelAgent parallelAgent = (ParallelAgent) step.agent();
 		if (parallelAgent.mergeOutputKey() != null) {
-			candidates.add(new RoutingOutputCandidate(parallelAgent.mergeOutputKey(), false));
+			candidates.add(new RoutingOutputCandidate(parallelAgent.mergeOutputKey(), parallelAgent, false));
 		}
 		else {
 			RoutingOutputStrategy.pushAllAgentSteps(parallelAgent.subAgents(), step, steps, false);
@@ -133,7 +133,7 @@ final class LlmRoutingAgentOutputStrategy implements RoutingOutputStrategy {
 	public void appendCandidates(ExpandAgentOutputStep step, Deque<RoutingOutputResolutionStep> steps,
 			List<RoutingOutputCandidate> candidates) {
 		if (step.allowRoutingMergedOutput()) {
-			candidates.add(new RoutingOutputCandidate(RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY, false));
+			candidates.add(new RoutingOutputCandidate(RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY, step.agent(), false));
 		}
 	}
 
