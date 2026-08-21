@@ -197,6 +197,11 @@ public class RoutingMergeNode implements NodeAction {
 
 	static String extractText(Object output, String outputKey, boolean allowWrapperMergedOutput,
 			List<String> preferredInnerOutputKeys) {
+		return extractText(output, outputKey, allowWrapperMergedOutput, preferredInnerOutputKeys, true);
+	}
+
+	static String extractText(Object output, String outputKey, boolean allowWrapperMergedOutput,
+			List<String> preferredInnerOutputKeys, boolean allowSingleVisibleWrapperFallback) {
 		if (output instanceof Message message) {
 			return message.getText();
 		}
@@ -208,7 +213,8 @@ public class RoutingMergeNode implements NodeAction {
 			if (val.isPresent()) {
 				Object v = val.get();
 				if (v instanceof Map<?, ?> map) {
-					v = extractMapValue(map, outputKey, allowWrapperMergedOutput, preferredInnerOutputKeys);
+					v = extractMapValue(map, outputKey, allowWrapperMergedOutput, preferredInnerOutputKeys,
+							allowSingleVisibleWrapperFallback);
 				}
 				if (v instanceof Message m) {
 					return m.getText();
@@ -221,7 +227,8 @@ public class RoutingMergeNode implements NodeAction {
 			return "";
 		}
 		if (output instanceof Map<?, ?> map) {
-			Object v = extractMapValue(map, outputKey, allowWrapperMergedOutput, preferredInnerOutputKeys);
+			Object v = extractMapValue(map, outputKey, allowWrapperMergedOutput, preferredInnerOutputKeys,
+					allowSingleVisibleWrapperFallback);
 			if (v instanceof Message m) {
 				return m.getText();
 			}
@@ -247,15 +254,19 @@ public class RoutingMergeNode implements NodeAction {
 	}
 
 	/**
-	 * Reads the last assistant answer from the shared messages list.
+	 * Reads the assistant answer produced after the latest user request. An assistant
+	 * message from an earlier checkpointed turn is not a current output.
 	 * @param list message history stored under the shared messages key
-	 * @return the latest assistant message text, or an empty string if none exists
+	 * @return the current assistant message text, or an empty string if none exists
 	 */
 	private static String extractLastAssistantMessageText(List<?> list) {
 		for (int i = list.size() - 1; i >= 0; i--) {
 			Object value = list.get(i);
 			if (value instanceof AssistantMessage message) {
 				return message.getText();
+			}
+			if (value instanceof UserMessage) {
+				return "";
 			}
 		}
 		return "";
@@ -269,11 +280,13 @@ public class RoutingMergeNode implements NodeAction {
 	 * merged result
 	 * @param preferredInnerOutputKeys ordered output keys to collect inside a wrapper
 	 * snapshot
+	 * @param allowSingleVisibleWrapperFallback whether an unresolved wrapper may expose
+	 * its only non-internal state value
 	 * @return the selected value, a single visible wrapper value, the only non-wrapper map
 	 * value, or the original map as fallback
 	 */
 	private static Object extractMapValue(Map<?, ?> map, String outputKey, boolean allowWrapperMergedOutput,
-			List<String> preferredInnerOutputKeys) {
+			List<String> preferredInnerOutputKeys, boolean allowSingleVisibleWrapperFallback) {
 		boolean wrapperOutput = isSubGraphWrapperKey(outputKey);
 		// A subgraph wrapper key namespaces a nested FlowAgent result in the parent graph.
 		// Only wrappers that belong to routing graphs may read their internal merged result;
@@ -299,8 +312,11 @@ public class RoutingMergeNode implements NodeAction {
 		if (!wrapperOutput && map.containsKey(outputKey)) {
 			return map.get(outputKey);
 		}
-		if (wrapperOutput) {
+		if (wrapperOutput && allowSingleVisibleWrapperFallback) {
 			return extractSingleVisibleWrapperValue(map);
+		}
+		if (wrapperOutput) {
+			return null;
 		}
 		if (map.size() == 1) {
 			return map.values().iterator().next();

@@ -22,8 +22,10 @@ import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.LoopMode;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
@@ -865,188 +867,83 @@ class RoutingMergeNodeTest {
 	}
 
 	@Test
-	void singleFanOutWorkflowCollectsEachNestedRoutingWrapper() throws Exception {
+	void opaqueCustomFlowUsesCurrentWrapperMessageInsteadOfConfiguredBranchOutputs() throws Exception {
 		RecordingChatModel chatModel = new RecordingChatModel();
-		LlmRoutingAgent firstRouter = LlmRoutingAgent.builder()
-			.name("first_router")
-			.description("First nested router")
-			.model(chatModel)
-			.subAgents(List.of(mockAgent("first_agent", "first_answer")))
-			.build();
-		LlmRoutingAgent secondRouter = LlmRoutingAgent.builder()
-			.name("second_router")
-			.description("Second nested router")
-			.model(chatModel)
-			.subAgents(List.of(mockAgent("second_agent", "second_answer")))
-			.build();
-		FlowAgent fanOutWorkflow = new StubFanOutFlowAgent("fan_out_workflow",
-				List.of(firstRouter, secondRouter));
+		BaseAgent firstBranch = mockAgent("first_branch", "first_answer");
+		BaseAgent secondBranch = mockAgent("second_branch", "second_answer");
+		FlowAgent conditionalWorkflow = new StubConditionalFlowAgent("conditional_workflow",
+				List.of(firstBranch, secondBranch));
 
-		// Both child routers publish merged_result inside their own wrapper. The raw
-		// parent key is shared and must never be attributed to either child.
+		// The first branch output is inherited from a checkpoint while only the second
+		// branch ran now. Configured children are not proof that both branches executed.
 		OverAllState state = new OverAllState(Map.of(
-				"fan_out_workflow_input", "Run both nested routers",
-				DEFAULT_MERGED_OUTPUT_KEY, "Shared merge result that must not be used.",
-				outputKeyToParent("first_router"), GraphResponse.done(Map.of(
-						DEFAULT_MERGED_OUTPUT_KEY, "First nested router result.")),
-				outputKeyToParent("second_router"), GraphResponse.done(Map.of(
-						DEFAULT_MERGED_OUTPUT_KEY, "Second nested router result.")),
-				outputKeyToParent("fan_out_workflow"), GraphResponse.done(Map.of(
-						DEFAULT_MERGED_OUTPUT_KEY, "Top-level wrapper result that must not be duplicated."))
+				"conditional_workflow_input", "Run the selected branch",
+				"first_answer", new AssistantMessage("Stale first-branch answer."),
+				"second_answer", new AssistantMessage("Current second-branch answer."),
+				outputKeyToParent("conditional_workflow"), GraphResponse.done(Map.of(
+						"first_answer", new AssistantMessage("Stale first-branch answer."),
+						"second_answer", new AssistantMessage("Current second-branch answer."),
+						"messages", List.<Message>of(
+								new UserMessage("Run the selected branch"),
+								new AssistantMessage("Current second-branch answer."))))
 		));
 
-		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(fanOutWorkflow));
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(conditionalWorkflow));
 		Map<String, Object> result = node.apply(state);
 
-		assertEquals("First nested router result.\n\nSecond nested router result.",
-				result.get(DEFAULT_MERGED_OUTPUT_KEY),
-				"A fan-out workflow should preserve every namespaced nested router result");
+		assertEquals("Current second-branch answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
+				"Custom flows should expose their current wrapper answer without probing stale branch keys");
 		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
-	void multiRouteKeepsNestedRouterWrappersInsideFanOutWorkflow() throws Exception {
-		RecordingChatModel chatModel = new RecordingChatModel("SYNTHESIZED ANSWER");
-		LlmRoutingAgent firstRouter = LlmRoutingAgent.builder()
-			.name("first_router")
-			.description("First nested router")
-			.model(chatModel)
-			.subAgents(List.of(mockAgent("first_agent", "first_answer")))
-			.build();
-		LlmRoutingAgent secondRouter = LlmRoutingAgent.builder()
-			.name("second_router")
-			.description("Second nested router")
-			.model(chatModel)
-			.subAgents(List.of(mockAgent("second_agent", "second_answer")))
-			.build();
-		FlowAgent fanOutWorkflow = new StubFanOutFlowAgent("fan_out_workflow",
-				List.of(firstRouter, secondRouter));
-		BaseAgent directAgent = mockAgent("direct_agent", "direct_answer");
-
-		OverAllState state = new OverAllState(Map.of(
-				"fan_out_workflow_input", "Run both nested routers",
-				"direct_agent_input", "Run the direct agent",
-				"direct_answer", new AssistantMessage("Direct routed result."),
-				outputKeyToParent("first_router"), GraphResponse.done(Map.of(
-						DEFAULT_MERGED_OUTPUT_KEY, "First nested router result.")),
-				outputKeyToParent("second_router"), GraphResponse.done(Map.of(
-						DEFAULT_MERGED_OUTPUT_KEY, "Second nested router result.")),
-				outputKeyToParent("fan_out_workflow"), GraphResponse.done(Map.of(
-						DEFAULT_MERGED_OUTPUT_KEY, "Collapsed root wrapper result that must not be used.")),
-				"messages", List.<Message>of(new UserMessage("Run all selected agents"))
-		));
-
-		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(fanOutWorkflow, directAgent));
-		Map<String, Object> result = node.apply(state);
-
-		assertEquals("SYNTHESIZED ANSWER", result.get(DEFAULT_MERGED_OUTPUT_KEY));
-		assertEquals(1, chatModel.callCount());
-		String promptContent = chatModel.lastPrompt().getContents();
-		assertTrue(promptContent.contains("First nested router result."));
-		assertTrue(promptContent.contains("Second nested router result."));
-		assertTrue(promptContent.contains("Direct routed result."));
-		assertFalse(promptContent.contains("Collapsed root wrapper result that must not be used."));
-	}
-
-	@Test
-	void fanOutWorkflowDoesNotSkipNestedRouterWrapperAfterRawChildOutput() throws Exception {
+	void opaqueCustomFlowRejectsAmbiguousWrapperOutputsWithoutExecutionEvidence() throws Exception {
 		RecordingChatModel chatModel = new RecordingChatModel();
-		BaseAgent directAgent = mockAgent("direct_agent", "direct_answer");
-		LlmRoutingAgent nestedRouter = LlmRoutingAgent.builder()
-			.name("nested_router")
-			.description("Nested router")
-			.model(chatModel)
-			.subAgents(List.of(mockAgent("nested_agent", "nested_answer")))
-			.build();
-		FlowAgent fanOutWorkflow = new StubFanOutFlowAgent("mixed_fan_out",
-				List.of(directAgent, nestedRouter));
+		FlowAgent conditionalWorkflow = new StubConditionalFlowAgent("conditional_workflow",
+				List.of(
+						mockAgent("first_branch", "first_answer"),
+						mockAgent("second_branch", "second_answer")));
 
 		OverAllState state = new OverAllState(Map.of(
-				"mixed_fan_out_input", "Run the direct agent and nested router",
-				"direct_answer", new AssistantMessage("Direct agent result."),
-				DEFAULT_MERGED_OUTPUT_KEY, "Inherited parent merge result that must not be used.",
-				outputKeyToParent("nested_router"), GraphResponse.done(Map.of(
-						DEFAULT_MERGED_OUTPUT_KEY, "Nested router result."))
+				"conditional_workflow_input", "Run the selected branch",
+				"first_answer", new AssistantMessage("Stale first-branch answer."),
+				"second_answer", new AssistantMessage("Current second-branch answer."),
+				outputKeyToParent("conditional_workflow"), GraphResponse.done(Map.of(
+						"first_answer", new AssistantMessage("Stale first-branch answer."),
+						"second_answer", new AssistantMessage("Current second-branch answer."),
+						"messages", List.<Message>of(
+								new UserMessage("Previous request"),
+								new AssistantMessage("Stale previous answer."),
+								new UserMessage("Run the selected branch"))))
 		));
 
-		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(fanOutWorkflow));
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(conditionalWorkflow));
 		Map<String, Object> result = node.apply(state);
 
-		assertEquals("Direct agent result.\n\nNested router result.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
-				"A raw child output must not suppress another child's namespaced wrapper output");
+		assertEquals("No results found from any knowledge source.", result.get(DEFAULT_MERGED_OUTPUT_KEY),
+				"Ambiguous custom-flow state must not be guessed or concatenated across checkpointed branches");
 		assertEquals(0, chatModel.callCount());
 	}
 
 	@Test
-	void fanOutWorkflowDoesNotAttributeSharedMessagesToDefaultOutputChildren() throws Exception {
+	void loopAgentUsesItsRepeatedChildOutput() throws Exception {
 		RecordingChatModel chatModel = new RecordingChatModel();
-		BaseAgent firstAgent = mockAgent("first_agent", null);
-		BaseAgent secondAgent = mockAgent("second_agent", null);
-		FlowAgent fanOutWorkflow = new StubFanOutFlowAgent("default_output_fan_out",
-				List.of(firstAgent, secondAgent));
+		LoopAgent loopAgent = LoopAgent.builder()
+			.name("revision_loop")
+			.description("Revises an answer")
+			.loopStrategy(LoopMode.count(2))
+			.subAgent(mockAgent("revision_agent", "revised_answer"))
+			.build();
 
 		OverAllState state = new OverAllState(Map.of(
-				"default_output_fan_out_input", "Run both default-output agents",
-				"messages", List.<Message>of(
-						new UserMessage("Run both agents"),
-						new AssistantMessage("Shared message that must not be attributed.")),
-				outputKeyToParent("first_agent"), new AssistantMessage("First default-output result."),
-				outputKeyToParent("second_agent"), new AssistantMessage("Second default-output result.")
-		));
+				"revision_loop_input", "Revise twice",
+				"revised_answer", new AssistantMessage("Final revised answer."))
+		);
 
-		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(fanOutWorkflow));
+		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(loopAgent));
 		Map<String, Object> result = node.apply(state);
 
-		assertEquals("First default-output result.\n\nSecond default-output result.",
-				result.get(DEFAULT_MERGED_OUTPUT_KEY),
-				"Shared messages must not be attributed when multiple workflow children produce outputs");
-		assertEquals(0, chatModel.callCount());
-	}
-
-	@Test
-	void fanOutWorkflowDoesNotDuplicateNestedAndEnclosingWrappers() throws Exception {
-		RecordingChatModel chatModel = new RecordingChatModel();
-		LlmRoutingAgent firstRouter = LlmRoutingAgent.builder()
-			.name("first_router")
-			.description("First nested router")
-			.model(chatModel)
-			.subAgents(List.of(mockAgent("first_agent", "first_answer")))
-			.build();
-		LlmRoutingAgent secondRouter = LlmRoutingAgent.builder()
-			.name("second_router")
-			.description("Second nested router")
-			.model(chatModel)
-			.subAgents(List.of(mockAgent("second_agent", "second_answer")))
-			.build();
-		SequentialAgent firstWorkflow = SequentialAgent.builder()
-			.name("first_workflow")
-			.description("First workflow")
-			.subAgents(List.of(firstRouter))
-			.build();
-		SequentialAgent secondWorkflow = SequentialAgent.builder()
-			.name("second_workflow")
-			.description("Second workflow")
-			.subAgents(List.of(secondRouter))
-			.build();
-		FlowAgent fanOutWorkflow = new StubFanOutFlowAgent("nested_fan_out",
-				List.of(firstWorkflow, secondWorkflow));
-
-		OverAllState state = new OverAllState(Map.of(
-				"nested_fan_out_input", "Run both workflows",
-				outputKeyToParent("first_router"), GraphResponse.done(Map.of(
-						DEFAULT_MERGED_OUTPUT_KEY, "First nested router result.")),
-				outputKeyToParent("first_workflow"), GraphResponse.done(Map.of(
-						DEFAULT_MERGED_OUTPUT_KEY, "First nested router result.")),
-				outputKeyToParent("second_workflow"), GraphResponse.done(Map.of(
-						DEFAULT_MERGED_OUTPUT_KEY, "Second nested router result."))
-		));
-
-		RoutingMergeNode node = new RoutingMergeNode(chatModel, List.of(fanOutWorkflow));
-		Map<String, Object> result = node.apply(state);
-
-		assertEquals("First nested router result.\n\nSecond nested router result.",
-				result.get(DEFAULT_MERGED_OUTPUT_KEY),
-				"An enclosing workflow wrapper must not duplicate an already collected descendant output");
+		assertEquals("Final revised answer.", result.get(DEFAULT_MERGED_OUTPUT_KEY));
 		assertEquals(0, chatModel.callCount());
 	}
 
@@ -1295,18 +1192,18 @@ class RoutingMergeNodeTest {
 	}
 
 	/**
-	 * Metadata-only flow used to model a custom workflow where every child contributes
-	 * an output. Graph construction is outside the scope of merge-node unit tests.
+	 * Metadata-only flow used to model a custom conditional workflow. Graph construction
+	 * is outside the scope of merge-node unit tests.
 	 */
-	private static final class StubFanOutFlowAgent extends FlowAgent {
+	private static final class StubConditionalFlowAgent extends FlowAgent {
 
 		/**
-		 * Creates a fan-out workflow with the supplied child agents.
+		 * Creates a conditional workflow with the supplied possible branch agents.
 		 * @param name workflow name used for routing and wrapper keys
-		 * @param subAgents child agents whose outputs contribute to the workflow result
+		 * @param subAgents child agents that may be selected by the workflow
 		 */
-		private StubFanOutFlowAgent(String name, List<Agent> subAgents) {
-			super(name, "Test fan-out workflow", null, subAgents);
+		private StubConditionalFlowAgent(String name, List<Agent> subAgents) {
+			super(name, "Test conditional workflow", null, subAgents);
 		}
 
 		@Override

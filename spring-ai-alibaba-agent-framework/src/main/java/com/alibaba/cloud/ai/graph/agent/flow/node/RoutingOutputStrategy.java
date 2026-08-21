@@ -17,8 +17,8 @@ package com.alibaba.cloud.ai.graph.agent.flow.node;
 
 import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
-import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 
@@ -163,21 +163,23 @@ final class SequentialAgentOutputStrategy implements RoutingOutputStrategy {
 }
 
 /**
- * Generic flow agents may expose outputs from any nested child.
+ * Loop agents expose the output produced by their single repeated child.
  */
-final class FlowAgentOutputStrategy implements RoutingOutputStrategy {
+final class LoopAgentOutputStrategy implements RoutingOutputStrategy {
 
 	@Override
 	public boolean supports(Agent agent) {
-		return agent instanceof FlowAgent;
+		return agent instanceof LoopAgent;
 	}
 
 	@Override
 	public void appendCandidates(ExpandAgentOutputStep step, Deque<RoutingOutputResolutionStep> steps,
 			List<RoutingOutputCandidate> candidates) {
-		FlowAgent flowAgent = (FlowAgent) step.agent();
-		RoutingOutputStrategy.pushAllAgentSteps(flowAgent.subAgents(), step, steps,
-				step.allowDefaultMessagesOutput());
+		LoopAgent loopAgent = (LoopAgent) step.agent();
+		List<Agent> nestedAgents = loopAgent.subAgents();
+		if (nestedAgents != null && !nestedAgents.isEmpty()) {
+			steps.push(step.forNestedAgent(nestedAgents.get(0), step.allowDefaultMessagesOutput()));
+		}
 	}
 
 }

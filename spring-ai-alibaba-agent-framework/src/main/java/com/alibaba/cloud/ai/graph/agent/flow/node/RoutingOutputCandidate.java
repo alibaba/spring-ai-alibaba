@@ -33,9 +33,12 @@ import java.util.List;
  * @param preferredInnerOutputKeys ordered output keys to collect inside a wrapper
  * snapshot; more than one key represents the visible outputs of a workflow such as a
  * {@code ParallelAgent} without a merge output key
+ * @param allowSingleVisibleWrapperFallback whether an otherwise unresolved wrapper may
+ * expose its only non-internal state value
  */
 record RoutingOutputCandidate(String outputKey, Agent outputOwner, boolean wrapperOutput,
-			boolean routingWrapperOutput, List<String> preferredInnerOutputKeys) {
+			boolean routingWrapperOutput, List<String> preferredInnerOutputKeys,
+			boolean allowSingleVisibleWrapperFallback) {
 
 	RoutingOutputCandidate {
 		preferredInnerOutputKeys = preferredInnerOutputKeys != null
@@ -43,12 +46,12 @@ record RoutingOutputCandidate(String outputKey, Agent outputOwner, boolean wrapp
 	}
 
 	RoutingOutputCandidate(String outputKey, Agent outputOwner, boolean wrapperOutput) {
-		this(outputKey, outputOwner, wrapperOutput, false, List.of());
+		this(outputKey, outputOwner, wrapperOutput, false, List.of(), true);
 	}
 
 	RoutingOutputCandidate(String outputKey, Agent outputOwner, boolean wrapperOutput,
 			boolean routingWrapperOutput) {
-		this(outputKey, outputOwner, wrapperOutput, routingWrapperOutput, List.of());
+		this(outputKey, outputOwner, wrapperOutput, routingWrapperOutput, List.of(), true);
 	}
 
 }

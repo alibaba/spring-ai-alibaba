@@ -20,6 +20,7 @@ import com.alibaba.cloud.ai.graph.agent.Agent;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import org.slf4j.Logger;
@@ -62,7 +63,7 @@ final class RoutingOutputResolver {
 				new ParallelAgentOutputStrategy(),
 				new LlmRoutingAgentOutputStrategy(),
 				new SequentialAgentOutputStrategy(),
-				new FlowAgentOutputStrategy());
+				new LoopAgentOutputStrategy());
 	}
 
 	int subAgentCount() {
@@ -150,7 +151,8 @@ final class RoutingOutputResolver {
 				continue;
 			}
 			String text = RoutingMergeNode.extractText(outputOpt.get(), candidate.outputKey(),
-					candidate.routingWrapperOutput(), candidate.preferredInnerOutputKeys());
+					candidate.routingWrapperOutput(), candidate.preferredInnerOutputKeys(),
+					candidate.allowSingleVisibleWrapperFallback());
 			if (text == null || text.isBlank()) {
 				continue;
 			}
@@ -263,7 +265,7 @@ final class RoutingOutputResolver {
 	 */
 	private RoutingOutputCandidate wrapperCandidate(Agent agent) {
 		return new RoutingOutputCandidate(outputKeyToParent(agent.name()), agent, true, usesRoutingMergedOutput(agent),
-				preferredWrapperOutputKeys(agent));
+				preferredWrapperOutputKeys(agent), !isOpaqueCustomFlow(agent));
 	}
 
 	/**
@@ -303,8 +305,15 @@ final class RoutingOutputResolver {
 					agents.push(nestedAgents.get(nestedAgents.size() - 1));
 				}
 			}
-			else if (current instanceof FlowAgent flowAgent) {
-				pushAll(flowAgent.subAgents(), agents);
+			else if (current instanceof LoopAgent loopAgent) {
+				List<Agent> nestedAgents = loopAgent.subAgents();
+				if (nestedAgents != null && !nestedAgents.isEmpty()) {
+					agents.push(nestedAgents.get(0));
+				}
+			}
+			else if (current instanceof FlowAgent) {
+				// Custom flow execution semantics are opaque. Its configured children do
+				// not identify which conditional branches executed in this invocation.
 			}
 		}
 		return List.copyOf(outputKeys);
@@ -338,6 +347,9 @@ final class RoutingOutputResolver {
 		if (routedAgentCount <= 1 || !topLevelRoutedAgent || !(agent instanceof FlowAgent)
 				|| state.value(outputKeyToParent(agent.name())).isEmpty()) {
 			return false;
+		}
+		if (isOpaqueCustomFlow(agent)) {
+			return true;
 		}
 		// A single workflow wrapper cannot attribute several nested routers because each
 		// router uses merged_result internally. Resolve their namespaced wrappers instead.
@@ -496,8 +508,11 @@ final class RoutingOutputResolver {
 					stack.push(nestedAgents.get(nestedAgents.size() - 1));
 				}
 			}
-			else if (current instanceof FlowAgent flowAgent) {
-				pushAll(flowAgent.subAgents(), stack);
+			else if (current instanceof LoopAgent loopAgent) {
+				List<Agent> nestedAgents = loopAgent.subAgents();
+				if (nestedAgents != null && !nestedAgents.isEmpty()) {
+					stack.push(nestedAgents.get(0));
+				}
 			}
 		}
 		return producerCount;
@@ -524,13 +539,10 @@ final class RoutingOutputResolver {
 				}
 				current = nestedAgents.get(nestedAgents.size() - 1);
 			}
-			else if (current instanceof FlowAgent flowAgent) {
-				List<Agent> nestedAgents = flowAgent.subAgents();
+			else if (current instanceof LoopAgent loopAgent) {
+				List<Agent> nestedAgents = loopAgent.subAgents();
 				if (nestedAgents == null || nestedAgents.isEmpty()) {
 					return false;
-				}
-				if (nestedAgents.size() > 1) {
-					return true;
 				}
 				current = nestedAgents.get(0);
 			}
@@ -538,6 +550,20 @@ final class RoutingOutputResolver {
 				return false;
 			}
 		}
+	}
+
+	/**
+	 * Detects custom FlowAgent implementations whose child execution semantics are not
+	 * described by one of the framework's built-in flow types.
+	 * @param agent agent to inspect
+	 * @return true when only the completed workflow wrapper is safely attributable
+	 */
+	private boolean isOpaqueCustomFlow(Agent agent) {
+		return agent instanceof FlowAgent
+				&& !(agent instanceof SequentialAgent)
+				&& !(agent instanceof ParallelAgent)
+				&& !(agent instanceof LlmRoutingAgent)
+				&& !(agent instanceof LoopAgent);
 	}
 
 	/**
