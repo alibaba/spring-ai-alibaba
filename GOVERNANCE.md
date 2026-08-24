@@ -24,7 +24,7 @@ The Spring AI Alibaba project management committee (PMC), is the only governance
    all Spring AI Alibaba project resources and has the final say in the disposition of
    those resources.
 5. Define and evolve the scope of the community.
-6. Receive and handle reports about [code of conduct](./CODE-OF-CONDUCT.md)
+6. Receive and handle reports about [code of conduct](./CODE_OF_CONDUCT.md)
    violations and maintain confidentiality.
 7. Approval of logo changes, significant website updates and marketing campaigns.
 8. Establish processes regarding project resources/assets, including artifact repositories, build and test infrastructure, web sites and their domains, blogs, social-media accounts, etc.
