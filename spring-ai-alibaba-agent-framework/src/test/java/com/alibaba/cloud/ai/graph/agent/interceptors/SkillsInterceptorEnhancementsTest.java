@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.util.List.of;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SkillsInterceptorEnhancementsTest {
 
@@ -153,6 +154,37 @@ class SkillsInterceptorEnhancementsTest {
 
 		assertEquals(1, toolCallbacks.size());
 		assertEquals("duplicate_tool", toolCallbacks.get(0).getToolDefinition().name());
+	}
+
+	@Test
+	void groupedToolsSupplierIsResolvedOnEveryModelCall() {
+		ToolCallback recordResultTool = FunctionToolCallback.builder("record_result", args -> "recorded")
+				.description("Records a result value")
+				.inputType(String.class)
+				.build();
+		ToolCallback extraTool = FunctionToolCallback.builder("extra_tool", args -> "extra")
+				.description("Extra tool added after startup")
+				.inputType(String.class)
+				.build();
+
+		AtomicReference<Map<String, List<ToolCallback>>> current = new AtomicReference<>(
+				Map.of("allowed-tools-test", List.of(recordResultTool)));
+
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+				.skillRegistry(registry)
+				.groupedToolsSupplier(current::get)
+				.build();
+
+		Map<String, List<ToolCallback>> first = interceptor.getGroupedTools();
+		assertEquals(1, first.get("allowed-tools-test").size());
+
+		// Registry hot-update: a new tool joins the skill's grouped tools.
+		current.set(Map.of("allowed-tools-test", List.of(recordResultTool, extraTool)));
+
+		Map<String, List<ToolCallback>> second = interceptor.getGroupedTools();
+		assertEquals(2, second.get("allowed-tools-test").size());
+		assertTrue(second.get("allowed-tools-test").stream()
+				.anyMatch(tool -> "extra_tool".equals(tool.getToolDefinition().name())));
 	}
 
 }

@@ -39,6 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -102,6 +103,8 @@ public class SkillsInterceptor extends ModelInterceptor {
 
 	private final Map<String, List<ToolCallback>> groupedTools;
 
+	private final Supplier<Map<String, List<ToolCallback>>> groupedToolsSupplier;
+
 	private final ToolCallbackResolver toolCallbackResolver;
 
 	private SkillsInterceptor(Builder builder) {
@@ -112,6 +115,7 @@ public class SkillsInterceptor extends ModelInterceptor {
 		this.groupedTools = builder.groupedTools != null
 				? builder.groupedTools
 				: Collections.emptyMap();
+		this.groupedToolsSupplier = builder.groupedToolsSupplier;
 		this.toolCallbackResolver = builder.toolCallbackResolver;
 	}
 
@@ -260,11 +264,20 @@ public class SkillsInterceptor extends ModelInterceptor {
 	}
 
 	public Map<String, List<ToolCallback>> getGroupedTools() {
-		if (groupedTools.isEmpty()) {
+		Map<String, List<ToolCallback>> resolved = resolveGroupedTools();
+		if (resolved.isEmpty()) {
 			return Collections.emptyMap();
 		}
-		return groupedTools.entrySet().stream()
+		return resolved.entrySet().stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, e -> List.copyOf(e.getValue())));
+	}
+
+	private Map<String, List<ToolCallback>> resolveGroupedTools() {
+		if (groupedToolsSupplier != null) {
+			Map<String, List<ToolCallback>> supplied = groupedToolsSupplier.get();
+			return supplied != null ? supplied : Collections.emptyMap();
+		}
+		return groupedTools;
 	}
 
 
@@ -284,6 +297,8 @@ public class SkillsInterceptor extends ModelInterceptor {
 		private SkillRegistry skillRegistry;
 
 		private Map<String, List<ToolCallback>> groupedTools;
+
+		private Supplier<Map<String, List<ToolCallback>>> groupedToolsSupplier;
 
 		private ToolCallbackResolver toolCallbackResolver;
 
@@ -310,6 +325,19 @@ public class SkillsInterceptor extends ModelInterceptor {
 		 */
 		public Builder groupedTools(Map<String, List<ToolCallback>> groupedTools) {
 			this.groupedTools = groupedTools;
+			return this;
+		}
+
+		/**
+		 * Set grouped tools as a supplier resolved on every model call. When the LLM calls
+		 * <code>read_skill</code> with a given skill_name, the supplier is invoked at that
+		 * moment, so registry changes (newly added or retired tools) take effect without
+		 * rebuilding the interceptor.
+		 * @param groupedToolsSupplier supplier of map from skill name to list of ToolCallbacks
+		 * @return this builder
+		 */
+		public Builder groupedToolsSupplier(Supplier<Map<String, List<ToolCallback>>> groupedToolsSupplier) {
+			this.groupedToolsSupplier = groupedToolsSupplier;
 			return this;
 		}
 
