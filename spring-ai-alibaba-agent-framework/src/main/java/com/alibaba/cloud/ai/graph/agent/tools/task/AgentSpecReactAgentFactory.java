@@ -92,6 +92,7 @@ public final class AgentSpecReactAgentFactory {
 				.description(spec.description())
 				.systemPrompt(StringUtils.hasText(spec.systemPrompt()) ? spec.systemPrompt() : "")
 				.chatClient(client)
+				.observationRegistry(this.observationRegistry)
 				.tools(tools);
 
 		ReactAgent agent = agentBuilder.build();
