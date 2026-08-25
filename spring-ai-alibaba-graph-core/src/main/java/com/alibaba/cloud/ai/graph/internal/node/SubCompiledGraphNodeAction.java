@@ -28,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.resumeSubGraphId;
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.scopeResumeMetadata;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.subGraphId;
 import static java.lang.String.format;
 
@@ -92,6 +93,7 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 					.build();
 			}
 		}
+		subGraphRunnableConfig = scopeResumeMetadata(subGraphRunnableConfig, resumeSubgraph);
 
 		final CompletableFuture<Map<String, Object>> future = new CompletableFuture<>();
 

@@ -21,13 +21,16 @@ import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.SubGraphInterruptionException;
+import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNodeAction;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -133,6 +136,30 @@ public class CompiledSubGraphTest {
 
 		assertIterableEquals(List.of("parent", "child:context-value", "after:false"),
 				output.value("messages", List.class).orElseThrow());
+	}
+
+	@Test
+	public void testNonTargetSubgraphDoesNotReceiveParentResumeMetadata() throws Exception {
+		AtomicReference<RunnableConfig> childConfig = new AtomicReference<>();
+		var subGraph = new StateGraph(getStrategyFactory())
+			.addNode("child", AsyncNodeActionWithConfig.node_async((state, config) -> {
+				childConfig.set(config);
+				return Map.of("messages", "child");
+			}))
+			.addEdge(START, "child")
+			.addEdge("child", END)
+			.compile();
+		var action = new SubCompiledGraphNodeAction("later-child", CompileConfig.builder().build(), subGraph);
+		var parentResumeConfig = RunnableConfig.builder()
+			.addMetadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY, "feedback")
+			.addMetadata("business-key", "business-value")
+			.build();
+
+		Map<String, Object> result = action.apply(new OverAllState(), parentResumeConfig).join();
+		((Flux<?>) result.values().iterator().next()).blockLast();
+
+		assertFalse(childConfig.get().metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY).isPresent());
+		assertTrue(childConfig.get().metadata("business-key").isPresent());
 	}
 
 	@Test
