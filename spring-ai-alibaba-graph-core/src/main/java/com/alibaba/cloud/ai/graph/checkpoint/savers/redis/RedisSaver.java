@@ -346,6 +346,7 @@ public class RedisSaver implements BaseCheckpointSaver {
 				// Add Checkpoint
 				checkpoints.push(checkpoint);
 			}
+			retainLatestCheckpoints(checkpoints, config);
 
 			RBucket<byte[]> bucket = redisson.getBucket(contentKey, ByteArrayCodec.INSTANCE);
 			bucket.set(serializeCheckpoints(checkpoints));
