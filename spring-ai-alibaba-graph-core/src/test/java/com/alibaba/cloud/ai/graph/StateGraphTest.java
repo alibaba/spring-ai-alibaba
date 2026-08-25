@@ -32,6 +32,8 @@ import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
+import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
 
@@ -1271,6 +1273,47 @@ public class StateGraphTest {
 		assertEquals(1, errorCount.get());
 		assertEquals("agent_1", errorNodeId.get());
 		assertEquals(sourceException, listenerException.get().getCause());
+	}
+
+	@Test
+	public void testGraphFluxErrorUsesChildNodeIdForLifecycleListener() throws Exception {
+		RuntimeException sourceException = new RuntimeException("GraphFlux child failure");
+		AtomicReference<String> errorNodeId = new AtomicReference<>();
+		StateGraph workflow = new StateGraph(createKeyStrategyFactory()).addEdge(START, "parent")
+				.addNode("parent", node_async(state -> Map.of("stream",
+						GraphFlux.of("child", Flux.error(sourceException)))))
+				.addEdge("parent", END);
+
+		CompiledGraph app = workflow.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+			@Override
+			public void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
+				errorNodeId.set(nodeId);
+			}
+		}).build());
+
+		assertThrows(RuntimeException.class, () -> app.stream(Map.of()).blockLast());
+		assertEquals("child", errorNodeId.get());
+	}
+
+	@Test
+	public void testParallelGraphFluxErrorUsesFailingChildNodeIdForLifecycleListener() throws Exception {
+		RuntimeException sourceException = new RuntimeException("ParallelGraphFlux child failure");
+		AtomicReference<String> errorNodeId = new AtomicReference<>();
+		StateGraph workflow = new StateGraph(createKeyStrategyFactory()).addEdge(START, "parent")
+				.addNode("parent", node_async(state -> Map.of("stream", ParallelGraphFlux.of(List.of(
+						GraphFlux.of("child_success", Flux.just("ok")),
+						GraphFlux.of("child_failure", Flux.error(sourceException)))))))
+				.addEdge("parent", END);
+
+		CompiledGraph app = workflow.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+			@Override
+			public void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
+				errorNodeId.set(nodeId);
+			}
+		}).build());
+
+		assertThrows(RuntimeException.class, () -> app.stream(Map.of()).blockLast());
+		assertEquals("child_failure", errorNodeId.get());
 	}
 
 	@Test
