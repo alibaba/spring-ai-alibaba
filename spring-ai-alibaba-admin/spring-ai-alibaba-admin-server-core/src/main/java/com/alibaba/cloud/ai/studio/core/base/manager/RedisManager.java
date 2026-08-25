@@ -19,7 +19,12 @@ package com.alibaba.cloud.ai.studio.core.base.manager;
 import com.alibaba.cloud.ai.studio.core.base.entity.LimitEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.*;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RBucket;
+import org.redisson.api.RLock;
+import org.redisson.api.RMapCache;
+import org.redisson.api.RSet;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

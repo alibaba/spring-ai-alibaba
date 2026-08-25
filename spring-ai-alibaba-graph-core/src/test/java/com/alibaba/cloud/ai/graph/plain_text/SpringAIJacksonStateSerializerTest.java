@@ -67,6 +67,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -480,9 +481,11 @@ class SpringAIJacksonStateSerializerTest {
 
 		AssistantMessage deserialized = serializeAndDeserialize(message);
 
-		assertTrue(deserialized.getMetadata().get("payload") instanceof byte[]);
-		assertArrayEquals(new byte[] { 1, 2, 3 },
-				(byte[]) deserialized.getMetadata().get("payload"));
+		// Primitive-array metadata must retain its binary type. The previous
+		// List["[B", "AQID"] assertion described the serialization defect fixed by #4860.
+		Object payload = deserialized.getMetadata().get("payload");
+		assertInstanceOf(byte[].class, payload);
+		assertArrayEquals(new byte[] { 1, 2, 3 }, (byte[]) payload);
 	}
 
 	@Test

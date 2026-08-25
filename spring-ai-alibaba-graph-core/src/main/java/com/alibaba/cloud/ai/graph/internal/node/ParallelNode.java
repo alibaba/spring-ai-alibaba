@@ -61,6 +61,10 @@ public class ParallelNode extends Node {
 
 	public static final String MAX_CONCURRENCY_KEY = "__MAX_CONCURRENCY__";
 
+	private static final int MIN_DEFAULT_POOL_SIZE = 4;
+
+	private static final int MAX_DEFAULT_POOL_SIZE = 200;
+
 	static {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			shutdownDefaultExecutor();
@@ -181,7 +185,7 @@ public class ParallelNode extends Node {
 		// For mixed workloads, 2x CPU cores is typically optimal
 		int corePoolSize = cpuCores * 2;
 		// Ensure minimum of 4 threads for reasonable parallelism on small systems
-		int finalCorePoolSize = Math.max(corePoolSize, 4);
+		int finalCorePoolSize = Math.min(Math.max(corePoolSize, MIN_DEFAULT_POOL_SIZE), MAX_DEFAULT_POOL_SIZE);
 		logger.info("Calculated core pool size: {} (CPU cores: {})", finalCorePoolSize, cpuCores);
 		return finalCorePoolSize;
 	}
@@ -196,7 +200,7 @@ public class ParallelNode extends Node {
 		int cpuCores = Runtime.getRuntime().availableProcessors();
 		// Allow for handling burst workloads with 4x CPU cores
 		// Cap at reasonable maximum to prevent resource exhaustion
-		int maxPoolSize = Math.min(cpuCores * 4, 200);
+		int maxPoolSize = Math.min(cpuCores * 4, MAX_DEFAULT_POOL_SIZE);
 		logger.info("Calculated maximum pool size: {} (CPU cores: {})", maxPoolSize, cpuCores);
 		return maxPoolSize;
 	}
