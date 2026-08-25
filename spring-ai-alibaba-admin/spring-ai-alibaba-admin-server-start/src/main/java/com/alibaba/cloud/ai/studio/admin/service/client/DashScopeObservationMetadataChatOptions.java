@@ -2,7 +2,7 @@ package com.alibaba.cloud.ai.studio.admin.service.client;
 
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
-import org.springframework.beans.BeanUtils;
+import com.alibaba.cloud.ai.studio.admin.utils.ObservationOptionsCopyUtils;
 
 import java.util.Map;
 
@@ -12,7 +12,7 @@ public class DashScopeObservationMetadataChatOptions extends DashScopeChatOption
     
     public static DashScopeObservationMetadataChatOptions fromDashScopeOptions(DashScopeChatOptions fromOptions) {
         DashScopeObservationMetadataChatOptions options = new DashScopeObservationMetadataChatOptions();
-        BeanUtils.copyProperties(fromOptions, options);
+        ObservationOptionsCopyUtils.copySafely(fromOptions, options);
         return options;
     }
     
