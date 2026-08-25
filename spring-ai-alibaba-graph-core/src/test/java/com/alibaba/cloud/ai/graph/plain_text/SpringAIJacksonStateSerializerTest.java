@@ -489,6 +489,25 @@ class SpringAIJacksonStateSerializerTest {
 	}
 
 	@Test
+	void shouldPreserveListOfByteArraysRoundTrip() throws Exception {
+		AssistantMessage message = AssistantMessage.builder()
+			.content("result")
+			.properties(Map.of("payload", List.of(new byte[] { 1, 2, 3 }, new byte[] { 4, 5 })))
+			.build();
+
+		AssistantMessage deserialized = serializeAndDeserialize(message);
+
+		// Nested primitive arrays keep their element type too: the serializer
+		// restores every WRAPPER_ARRAY-encoded entry, so a List<byte[]> must not
+		// degrade into a List<String> of "[B" descriptors.
+		List<?> list = assertInstanceOf(List.class, deserialized.getMetadata().get("payload"));
+		assertInstanceOf(byte[].class, list.get(0));
+		assertInstanceOf(byte[].class, list.get(1));
+		assertArrayEquals(new byte[] { 1, 2, 3 }, (byte[]) list.get(0));
+		assertArrayEquals(new byte[] { 4, 5 }, (byte[]) list.get(1));
+	}
+
+	@Test
 	void shouldPreserveOrdinaryObjectArrayType() throws Exception {
 		AssistantMessage message = AssistantMessage.builder()
 			.content("result")
