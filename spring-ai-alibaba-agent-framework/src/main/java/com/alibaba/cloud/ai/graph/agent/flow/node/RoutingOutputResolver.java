@@ -1,0 +1,605 @@
+/*
+ * Copyright 2024-2026 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.alibaba.cloud.ai.graph.agent.flow.node;
+
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.agent.Agent;
+import com.alibaba.cloud.ai.graph.agent.BaseAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
+
+/**
+ * Resolves the parent-state output keys a routed agent may expose.
+ */
+final class RoutingOutputResolver {
+
+	private static final Logger logger = LoggerFactory.getLogger(RoutingOutputResolver.class);
+
+	private final String routingAgentName;
+
+	private final List<Agent> subAgents;
+
+	private final List<RoutingOutputStrategy> strategies;
+
+	RoutingOutputResolver(String routingAgentName, List<? extends Agent> subAgents) {
+		this.routingAgentName = routingAgentName;
+		this.subAgents = List.copyOf(subAgents);
+		// Keep this order from specific to generic because several agent types inherit
+		// from FlowAgent.
+		this.strategies = List.of(
+				new BaseAgentOutputStrategy(),
+				new ParallelAgentOutputStrategy(),
+				new LlmRoutingAgentOutputStrategy(),
+				new SequentialAgentOutputStrategy(),
+				new LoopAgentOutputStrategy());
+	}
+
+	int subAgentCount() {
+		return subAgents.size();
+	}
+
+	List<Agent> subAgents() {
+		return subAgents;
+	}
+
+	/**
+	 * Captures route-selection facts that must stay consistent during one merge pass.
+	 * @param state current graph state
+	 * @return immutable context for this merge pass
+	 */
+	MergeContext createContext(OverAllState state) {
+		Optional<RoutingSelection> routingSelection = currentRoutingSelection(state);
+		Optional<Set<String>> routedAgentNames = routingSelection.map(RoutingSelection::agentNames);
+		long routedAgentCount = countRoutedAgents(state, routedAgentNames);
+		boolean hasRoutingMarkers = routedAgentNames.isPresent() || routedAgentCount > 0;
+		long routingMergedOutputProducerCount = countRoutingMergedOutputProducers(state, hasRoutingMarkers,
+				routedAgentNames);
+		boolean exposeMergedResultToParent = routingAgentName != null
+				&& state.value(routingAgentName + "_input").isPresent();
+		return new MergeContext(routedAgentNames, routedAgentCount, hasRoutingMarkers,
+				routingMergedOutputProducerCount, exposeMergedResultToParent, routingSelection.isPresent(),
+				routingSelection.flatMap(RoutingSelection::parentMarker));
+	}
+
+	/**
+	 * Restores the enclosing same-named router marker after this merge, or removes the
+	 * marker when this invocation is the outermost routing scope.
+	 * @param output merge-node state update
+	 * @param context routing context captured before result collection
+	 */
+	void restoreRoutingMarker(Map<String, Object> output, MergeContext context) {
+		if (!context.routingMarkerPresent()) {
+			return;
+		}
+		String markerKey = routingMarkerKey();
+		Object restoredMarker = context.parentRoutingMarker().orElse(OverAllState.MARK_FOR_REMOVAL);
+		output.put(markerKey, restoredMarker);
+		logger.debug("RoutingMergeNode: restoring routing marker {} to its enclosing scope", markerKey);
+	}
+
+	/**
+	 * Collects the best attributable output for one top-level routed sub-agent.
+	 * @param state current graph state
+	 * @param subAgent top-level sub-agent being collected
+	 * @param context merge context created for this pass
+	 * @param collectedOutputKeys output keys already attributed to earlier sub-agents
+	 * @return collected text when the sub-agent has an attributable result
+	 */
+	Optional<CollectedAgentResult> collectAgentResult(OverAllState state, Agent subAgent,
+			MergeContext context, Set<String> collectedOutputKeys) {
+		boolean topLevelRoutedAgent = isTopLevelRoutedAgent(state, subAgent, context.routedAgentNames());
+		if (context.hasRoutingMarkers() && !topLevelRoutedAgent) {
+			logger.debug("Skipping unrouted sub-agent {}", subAgent.name());
+			return Optional.empty();
+		}
+
+		boolean collectMultipleOutputs = collectsMultipleOutputs(subAgent);
+		boolean allowDefaultMessagesOutput = context.routedAgentCount() == 1
+				&& topLevelRoutedAgent && !collectMultipleOutputs;
+		boolean allowRoutingMergedOutput = context.routingMergedOutputProducerCount() == 1
+				&& usesRoutingMergedOutput(subAgent) && !collectMultipleOutputs;
+		boolean preferWrapperOutput = shouldPreferWrapperOutput(state, subAgent, context.routedAgentCount(),
+				topLevelRoutedAgent, context.routingMergedOutputProducerCount(), context.routedAgentNames());
+		List<RoutingOutputCandidate> candidates = resolveCandidates(subAgent, allowDefaultMessagesOutput,
+				allowRoutingMergedOutput, preferWrapperOutput);
+
+		List<String> sourceTexts = new ArrayList<>();
+		boolean collectedWrapperOutput = false;
+		Set<Agent> collectedOutputOwners = Collections.newSetFromMap(new IdentityHashMap<>());
+		for (RoutingOutputCandidate candidate : candidates) {
+			if (collectedOutputKeys.contains(candidate.outputKey())) {
+				continue;
+			}
+			if (candidate.wrapperOutput()
+					&& hasCollectedOutputInTree(candidate.outputOwner(), collectedOutputOwners)) {
+				continue;
+			}
+			Optional<Object> outputOpt = state.value(candidate.outputKey());
+			if (outputOpt.isEmpty()) {
+				continue;
+			}
+			String text = RoutingMergeNode.extractText(outputOpt.get(), candidate.outputKey(),
+					candidate.routingWrapperOutput(), candidate.preferredInnerOutputKeys(),
+					candidate.allowSingleVisibleWrapperFallback());
+			if (text == null || text.isBlank()) {
+				continue;
+			}
+			collectedOutputKeys.add(candidate.outputKey());
+			collectedOutputOwners.add(candidate.outputOwner());
+			sourceTexts.add(text);
+			collectedWrapperOutput = collectedWrapperOutput || candidate.wrapperOutput();
+			logger.debug("Collected result from {} (key: {})", subAgent.name(), candidate.outputKey());
+			if (!collectMultipleOutputs || (preferWrapperOutput && candidate.wrapperOutput())) {
+				break;
+			}
+		}
+		if (sourceTexts.isEmpty()) {
+			return Optional.empty();
+		}
+		return Optional.of(new CollectedAgentResult(String.join("\n\n", sourceTexts), collectedWrapperOutput));
+	}
+
+	/**
+	 * Checks whether a wrapper would repeat an output already collected from its own
+	 * agent branch. Outputs from sibling branches do not suppress one another.
+	 * @param agent wrapper owner whose agent tree should be inspected
+	 * @param collectedOutputOwners agents that already supplied an output
+	 * @return true when the wrapper owns an already collected output
+	 */
+	private boolean hasCollectedOutputInTree(Agent agent, Set<Agent> collectedOutputOwners) {
+		Deque<Agent> stack = new ArrayDeque<>();
+		Set<Agent> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+		stack.push(agent);
+		while (!stack.isEmpty()) {
+			Agent current = stack.pop();
+			if (!visited.add(current)) {
+				continue;
+			}
+			if (collectedOutputOwners.contains(current)) {
+				return true;
+			}
+			if (current instanceof FlowAgent flowAgent) {
+				pushAll(flowAgent.subAgents(), stack);
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Clears a stale wrapper when the current answer came from a non-wrapper key.
+	 * @param state current graph state
+	 * @param subAgent sub-agent whose wrapper may be stale
+	 * @param result collected result for the sub-agent
+	 * @param staleWrapperOutputKeys removal set updated by this method
+	 */
+	void markStaleWrapperIfNeeded(OverAllState state, Agent subAgent, CollectedAgentResult result,
+			Set<String> staleWrapperOutputKeys) {
+		String staleWrapperOutputKey = outputKeyToParent(subAgent.name());
+		if (result.fromWrapperOutput() || state.value(staleWrapperOutputKey).isEmpty()) {
+			return;
+		}
+		staleWrapperOutputKeys.add(staleWrapperOutputKey);
+		logger.debug("RoutingMergeNode: routing result for {} came from non-wrapper output; clearing wrapper key {}",
+				subAgent.name(), staleWrapperOutputKey);
+	}
+
+	/**
+	 * Returns the parent-state wrapper key for this routing graph.
+	 * @return wrapper key for this router's compiled subgraph result
+	 */
+	String wrapperOutputKey() {
+		return outputKeyToParent(routingAgentName);
+	}
+
+	/**
+	 * Resolves candidate output keys in the exact order they should be probed.
+	 * @param agent agent whose outputs are being resolved
+	 * @param allowDefaultMessagesOutput whether the shared messages key can be used
+	 * @param allowRoutingMergedOutput whether nested router merged output can be used
+	 * @param preferWrapperOutput whether the wrapper key should be probed first
+	 * @return ordered output candidates
+	 */
+	private List<RoutingOutputCandidate> resolveCandidates(Agent agent, boolean allowDefaultMessagesOutput,
+			boolean allowRoutingMergedOutput, boolean preferWrapperOutput) {
+		List<RoutingOutputCandidate> candidates = new ArrayList<>();
+		Deque<RoutingOutputResolutionStep> steps = new ArrayDeque<>();
+		steps.push(new ExpandAgentOutputStep(agent, allowDefaultMessagesOutput, allowRoutingMergedOutput,
+				preferWrapperOutput));
+		while (!steps.isEmpty()) {
+			RoutingOutputResolutionStep step = steps.pop();
+			if (step instanceof EmitOutputCandidateStep emitStep) {
+				candidates.add(emitStep.candidate());
+				continue;
+			}
+			ExpandAgentOutputStep expandStep = (ExpandAgentOutputStep) step;
+			if (expandStep.preferWrapperOutput()) {
+				candidates.add(wrapperCandidate(expandStep.agent()));
+			}
+			else {
+				// Delay wrapper output so explicit nested outputs win unless wrapper
+				// isolation is required for multi-routed workflows with shared keys.
+				steps.push(new EmitOutputCandidateStep(wrapperCandidate(expandStep.agent())));
+			}
+			strategyFor(expandStep.agent())
+				.ifPresent(strategy -> strategy.appendCandidates(expandStep, steps, candidates));
+		}
+		return candidates;
+	}
+
+	/**
+	 * Creates the namespaced wrapper candidate for a nested FlowAgent.
+	 * <p>
+	 * Opaque custom flows cannot expand their configured children because those
+	 * branches may not have executed in the current invocation, so a wrapper with a
+	 * single visible value is their only attributable explicit output. Ambiguous
+	 * wrapper snapshots are still rejected during extraction, which returns null when
+	 * more than one visible value exists.
+	 * @param agent agent whose wrapper key should be created
+	 * @return wrapper output candidate
+	 */
+	private RoutingOutputCandidate wrapperCandidate(Agent agent) {
+		return new RoutingOutputCandidate(outputKeyToParent(agent.name()), agent, true, usesRoutingMergedOutput(agent),
+				preferredWrapperOutputKeys(agent), true);
+	}
+
+	/**
+	 * Finds the ordered output keys a wrapper should prefer over shared messages.
+	 * <p>
+	 * Sequential workflows expose their final child. Parallel workflows with an
+	 * aggregate expose that key, while parallel workflows without one expose every
+	 * attributable child output in configured order.
+	 * @param agent agent whose wrapper snapshot will be inspected
+	 * @return preferred inner output keys; empty when no explicit output is attributable
+	 */
+	private List<String> preferredWrapperOutputKeys(Agent agent) {
+		LinkedHashSet<String> outputKeys = new LinkedHashSet<>();
+		Deque<Agent> agents = new ArrayDeque<>();
+		agents.push(agent);
+		while (!agents.isEmpty()) {
+			Agent current = agents.pop();
+			if (current instanceof BaseAgent baseAgent) {
+				if (baseAgent.getOutputKey() != null) {
+					outputKeys.add(baseAgent.getOutputKey());
+				}
+			}
+			else if (current instanceof LlmRoutingAgent) {
+				outputKeys.add(RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY);
+			}
+			else if (current instanceof ParallelAgent parallelAgent) {
+				if (parallelAgent.mergeOutputKey() != null) {
+					outputKeys.add(parallelAgent.mergeOutputKey());
+				}
+				else {
+					pushAll(parallelAgent.subAgents(), agents);
+				}
+			}
+			else if (current instanceof SequentialAgent sequentialAgent) {
+				List<Agent> nestedAgents = sequentialAgent.subAgents();
+				if (nestedAgents != null && !nestedAgents.isEmpty()) {
+					agents.push(nestedAgents.get(nestedAgents.size() - 1));
+				}
+			}
+			else if (current instanceof LoopAgent loopAgent) {
+				List<Agent> nestedAgents = loopAgent.subAgents();
+				if (nestedAgents != null && !nestedAgents.isEmpty()) {
+					agents.push(nestedAgents.get(0));
+				}
+			}
+			else if (current instanceof FlowAgent) {
+				// Custom flow execution semantics are opaque. Its configured children do
+				// not identify which conditional branches executed in this invocation.
+			}
+		}
+		return List.copyOf(outputKeys);
+	}
+
+	/**
+	 * Finds the output strategy for an agent without exposing a default no-op strategy.
+	 * @param agent agent to match
+	 * @return matching strategy, or empty when the agent type has no output strategy
+	 */
+	private Optional<RoutingOutputStrategy> strategyFor(Agent agent) {
+		return strategies.stream()
+			.filter(strategy -> strategy.supports(agent))
+			.findFirst();
+	}
+
+	/**
+	 * Prefers wrapper output when raw nested keys are ambiguous across routed workflows.
+	 * @param state current graph state
+	 * @param agent agent being evaluated
+	 * @param routedAgentCount number of currently selected top-level sub-agents
+	 * @param topLevelRoutedAgent whether the agent belongs to the current route
+	 * @param routingMergedOutputProducerCount nested routing merge producers that contribute
+	 * to selected-agent outputs
+	 * @param routedAgentNames optional namespaced routing selection marker
+	 * @return true when wrapper output should be probed before raw nested keys
+	 */
+	private boolean shouldPreferWrapperOutput(OverAllState state, Agent agent, long routedAgentCount,
+			boolean topLevelRoutedAgent, long routingMergedOutputProducerCount,
+			Optional<Set<String>> routedAgentNames) {
+		if (routedAgentCount <= 1 || !topLevelRoutedAgent || !(agent instanceof FlowAgent)
+				|| state.value(outputKeyToParent(agent.name())).isEmpty()) {
+			return false;
+		}
+		if (isOpaqueCustomFlow(agent)) {
+			return true;
+		}
+		// A single workflow wrapper cannot attribute several nested routers because each
+		// router uses merged_result internally. Resolve their namespaced wrappers instead.
+		if (countRoutingMergedOutputProducers(agent) > 1) {
+			return false;
+		}
+
+		Set<String> outputKeys = resolvedNonWrapperOutputKeys(agent, routingMergedOutputProducerCount);
+		if (outputKeys.isEmpty()) {
+			return true;
+		}
+
+		return subAgents.stream()
+			.filter(other -> other != agent)
+			.filter(other -> isTopLevelRoutedAgent(state, other, routedAgentNames))
+			.map(other -> resolvedNonWrapperOutputKeys(other, routingMergedOutputProducerCount))
+			.anyMatch(otherOutputKeys -> otherOutputKeys.stream().anyMatch(outputKeys::contains));
+	}
+
+	/**
+	 * Collects raw candidate keys so sibling workflows can be checked for shared keys.
+	 * @param agent agent whose non-wrapper output keys should be resolved
+	 * @param routingMergedOutputProducerCount nested routing merge producers that contribute
+	 * to selected-agent outputs
+	 * @return raw non-wrapper output keys
+	 */
+	private Set<String> resolvedNonWrapperOutputKeys(Agent agent, long routingMergedOutputProducerCount) {
+		boolean allowRoutingMergedOutput = routingMergedOutputProducerCount == 1
+				&& usesRoutingMergedOutput(agent) && !collectsMultipleOutputs(agent);
+		Set<String> outputKeys = new HashSet<>();
+		for (RoutingOutputCandidate candidate : resolveCandidates(agent, false, allowRoutingMergedOutput, false)) {
+			if (!candidate.wrapperOutput()) {
+				outputKeys.add(candidate.outputKey());
+			}
+		}
+		return outputKeys;
+	}
+
+	/**
+	 * Counts only currently selected top-level agents, ignoring stale checkpoint inputs.
+	 * @param state current graph state
+	 * @param routedAgentNames optional namespaced routing selection marker
+	 * @return number of selected top-level sub-agents
+	 */
+	private long countRoutedAgents(OverAllState state, Optional<Set<String>> routedAgentNames) {
+		if (routedAgentNames.isPresent()) {
+			Set<String> selectedAgents = routedAgentNames.get();
+			return subAgents.stream().filter(agent -> selectedAgents.contains(agent.name())).count();
+		}
+		return subAgents.stream().filter(agent -> isTopLevelRoutedAgent(state, agent, routedAgentNames)).count();
+	}
+
+	/**
+	 * Counts nested routing merge producers that contribute to selected-agent outputs.
+	 * @param state current graph state
+	 * @param hasRoutingMarkers whether the state contains current routing markers
+	 * @param routedAgentNames optional namespaced routing selection marker
+	 * @return number of contributing nested routing merge producers
+	 */
+	private long countRoutingMergedOutputProducers(OverAllState state, boolean hasRoutingMarkers,
+			Optional<Set<String>> routedAgentNames) {
+		return subAgents.stream()
+			.filter(agent -> !hasRoutingMarkers || isTopLevelRoutedAgent(state, agent, routedAgentNames))
+			.mapToLong(this::countRoutingMergedOutputProducers)
+			.sum();
+	}
+
+	/**
+	 * Checks whether a top-level sub-agent belongs to the current routing decision.
+	 * @param state current graph state
+	 * @param agent top-level sub-agent being checked
+	 * @param routedAgentNames optional namespaced routing selection marker
+	 * @return true if the agent is selected in the current route
+	 */
+	private boolean isTopLevelRoutedAgent(OverAllState state, Agent agent, Optional<Set<String>> routedAgentNames) {
+		if (routedAgentNames.isPresent()) {
+			return routedAgentNames.get().contains(agent.name());
+		}
+		return state.value(agent.name() + "_input").isPresent();
+	}
+
+	/**
+	 * Reads the namespaced routing marker written by RoutingNode for this router.
+	 * @param state current graph state
+	 * @return selected top-level agent names when a routing marker exists
+	 */
+	private Optional<RoutingSelection> currentRoutingSelection(OverAllState state) {
+		Optional<Object> value = state.value(routingMarkerKey());
+		if (value.isEmpty()) {
+			return Optional.empty();
+		}
+
+		Object marker = value.get();
+		Object selectedAgents = marker;
+		Optional<Object> parentMarker = Optional.empty();
+		if (marker instanceof Map<?, ?> map && map.containsKey(RoutingNode.SELECTED_AGENT_NAMES_FIELD)) {
+			selectedAgents = map.get(RoutingNode.SELECTED_AGENT_NAMES_FIELD);
+			parentMarker = Optional.ofNullable(map.get(RoutingNode.PARENT_ROUTING_MARKER_FIELD));
+		}
+
+		Set<String> agentNames = new LinkedHashSet<>();
+		if (selectedAgents instanceof Iterable<?> iterable) {
+			for (Object agentName : iterable) {
+				if (agentName instanceof String name && !name.isBlank()) {
+					agentNames.add(name);
+				}
+			}
+		}
+		else if (selectedAgents instanceof String name && !name.isBlank()) {
+			agentNames.add(name);
+		}
+		return Optional.of(new RoutingSelection(Set.copyOf(agentNames), parentMarker));
+	}
+
+	/**
+	 * Returns the state key used by this routing graph's scoped selection marker.
+	 * @return namespaced marker key, or the legacy global key for test-only constructors
+	 */
+	private String routingMarkerKey() {
+		return routingAgentName != null
+				? RoutingNode.routedAgentNamesKey(routingAgentName) : RoutingNode.ROUTED_AGENT_NAMES_KEY;
+	}
+
+	/**
+	 * Detects whether an agent tree contains a routing graph whose merged answer matters.
+	 * @param agent root of the agent tree to inspect
+	 * @return true if the tree contains a nested routing agent
+	 */
+	private boolean usesRoutingMergedOutput(Agent agent) {
+		return countRoutingMergedOutputProducers(agent) > 0;
+	}
+
+	/**
+	 * Counts routing merge producers whose outputs contribute to an agent's visible result.
+	 * Sequential workflows only expose their final child, while generic fan-out flows may
+	 * expose multiple nested routers.
+	 * @param agent root of the agent tree to inspect
+	 * @return number of contributing routing merge producers
+	 */
+	private long countRoutingMergedOutputProducers(Agent agent) {
+		long producerCount = 0;
+		Deque<Agent> stack = new ArrayDeque<>();
+		stack.push(agent);
+		while (!stack.isEmpty()) {
+			Agent current = stack.pop();
+			if (current instanceof LlmRoutingAgent) {
+				producerCount++;
+				continue;
+			}
+			if (current instanceof ParallelAgent parallelAgent && parallelAgent.mergeOutputKey() != null) {
+				continue;
+			}
+			if (current instanceof SequentialAgent sequentialAgent) {
+				List<Agent> nestedAgents = sequentialAgent.subAgents();
+				if (nestedAgents != null && !nestedAgents.isEmpty()) {
+					stack.push(nestedAgents.get(nestedAgents.size() - 1));
+				}
+			}
+			else if (current instanceof LoopAgent loopAgent) {
+				List<Agent> nestedAgents = loopAgent.subAgents();
+				if (nestedAgents != null && !nestedAgents.isEmpty()) {
+					stack.push(nestedAgents.get(0));
+				}
+			}
+		}
+		return producerCount;
+	}
+
+	/**
+	 * Checks whether one routed workflow should contribute multiple child outputs.
+	 * @param agent routed agent or workflow to inspect
+	 * @return true if the workflow should contribute more than one output
+	 */
+	private boolean collectsMultipleOutputs(Agent agent) {
+		Agent current = agent;
+		while (true) {
+			if (current instanceof ParallelAgent parallelAgent) {
+				return parallelAgent.mergeOutputKey() == null;
+			}
+			if (current instanceof LlmRoutingAgent) {
+				return false;
+			}
+			if (current instanceof SequentialAgent sequentialAgent) {
+				List<Agent> nestedAgents = sequentialAgent.subAgents();
+				if (nestedAgents == null || nestedAgents.isEmpty()) {
+					return false;
+				}
+				current = nestedAgents.get(nestedAgents.size() - 1);
+			}
+			else if (current instanceof LoopAgent loopAgent) {
+				List<Agent> nestedAgents = loopAgent.subAgents();
+				if (nestedAgents == null || nestedAgents.isEmpty()) {
+					return false;
+				}
+				current = nestedAgents.get(0);
+			}
+			else {
+				return false;
+			}
+		}
+	}
+
+	/**
+	 * Detects custom FlowAgent implementations whose child execution semantics are not
+	 * described by one of the framework's built-in flow types.
+	 * @param agent agent to inspect
+	 * @return true when only the completed workflow wrapper is safely attributable
+	 */
+	private boolean isOpaqueCustomFlow(Agent agent) {
+		return agent instanceof FlowAgent
+				&& !(agent instanceof SequentialAgent)
+				&& !(agent instanceof ParallelAgent)
+				&& !(agent instanceof LlmRoutingAgent)
+				&& !(agent instanceof LoopAgent);
+	}
+
+	/**
+	 * Pushes agents in reverse order so stack traversal preserves list order.
+	 * @param agents agents to push
+	 * @param stack stack receiving the agents
+	 */
+	private static void pushAll(List<Agent> agents, Deque<Agent> stack) {
+		if (agents == null) {
+			return;
+		}
+		for (int i = agents.size() - 1; i >= 0; i--) {
+			stack.push(agents.get(i));
+		}
+	}
+
+	record MergeContext(Optional<Set<String>> routedAgentNames, long routedAgentCount,
+			boolean hasRoutingMarkers, long routingMergedOutputProducerCount, boolean exposeMergedResultToParent,
+			boolean routingMarkerPresent, Optional<Object> parentRoutingMarker) {
+	}
+
+	/**
+	 * Parsed view of the current serializable routing marker.
+	 * @param agentNames sub-agents selected in the innermost routing scope
+	 * @param parentMarker marker to restore for an enclosing same-named router
+	 */
+	record RoutingSelection(Set<String> agentNames, Optional<Object> parentMarker) {
+	}
+
+	record CollectedAgentResult(String text, boolean fromWrapperOutput) {
+	}
+
+}

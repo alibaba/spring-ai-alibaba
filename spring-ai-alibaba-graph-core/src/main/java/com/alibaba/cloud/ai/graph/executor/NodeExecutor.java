@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -342,11 +343,15 @@ public class NodeExecutor extends BaseGraphExecutor {
 						}
 
 						if (result instanceof Map resultMap) {
-							if (!resultMap.containsKey(key) && resultMap.containsKey("messages")) {
-								List<Object> messages = (List<Object>) resultMap.get("messages");
-								Object lastMessage = messages.get(messages.size() - 1);
-								if (lastMessage instanceof AssistantMessage lastAssistantMessage) {
-									resultMap.put(key, lastAssistantMessage.getText());
+							if ((!resultMap.containsKey(key) || isSubGraphWrapperKey(key))
+									&& resultMap.containsKey("messages")) {
+								Object messagesValue = resultMap.get("messages");
+								if (messagesValue instanceof List<?> messages && !messages.isEmpty()) {
+									Object lastMessage = messages.get(messages.size() - 1);
+									if (lastMessage instanceof AssistantMessage lastAssistantMessage) {
+										// Replace checkpointed subgraph wrapper output with the current subgraph answer.
+										resultMap.put(key, lastAssistantMessage.getText());
+									}
 								}
 							}
 						}
@@ -790,7 +795,12 @@ public class NodeExecutor extends BaseGraphExecutor {
 			if (resultValue.isPresent()) {
 				Object value = resultValue.get();
 				if (value instanceof Map<?, ?> resultMap) {
-					return copyStateMap(resultMap);
+					Map<String, Object> state = copyStateMap(resultMap);
+					String stateKey = graphFluxStateKey(graphFlux);
+					if (isSubGraphWrapperKey(stateKey)) {
+						state.put(stateKey, copyStateMapWithoutSubGraphWrappers(resultMap));
+					}
+					return state;
 				}
 			}
 		}
@@ -804,11 +814,38 @@ public class NodeExecutor extends BaseGraphExecutor {
 		return StringUtils.hasText(graphFlux.getKey()) ? graphFlux.getKey() : "result";
 	}
 
+	private static boolean isSubGraphWrapperKey(String outputKey) {
+		// The prefix matches ResumableSubGraphAction.subGraphId, which has no public constant.
+		return outputKey != null && outputKey.startsWith("subgraph_")
+				&& outputKey.endsWith(ResumableSubGraphAction.OUTPUT_KEY_TO_PARENT_SUFFIX);
+	}
+
 	private static Map<String, Object> copyStateMap(Map<?, ?> resultMap) {
 		Map<String, Object> state = new HashMap<>();
 		for (Map.Entry<?, ?> entry : resultMap.entrySet()) {
 			if (!(entry.getKey() instanceof String key)) {
 				throw new IllegalArgumentException("GraphFlux done result map keys must be String");
+			}
+			state.put(key, entry.getValue());
+		}
+		return state;
+	}
+
+	/**
+	 * Copies the current subgraph state into its parent wrapper snapshot without
+	 * inherited subgraph wrapper snapshots.
+	 * @param resultMap completed subgraph state
+	 * @return wrapper snapshot that keeps current ordinary outputs but avoids recursive
+	 * wrapper growth across checkpointed runs
+	 */
+	private static Map<String, Object> copyStateMapWithoutSubGraphWrappers(Map<?, ?> resultMap) {
+		Map<String, Object> state = new HashMap<>();
+		for (Map.Entry<?, ?> entry : resultMap.entrySet()) {
+			if (!(entry.getKey() instanceof String key)) {
+				throw new IllegalArgumentException("GraphFlux done result map keys must be String");
+			}
+			if (isSubGraphWrapperKey(key)) {
+				continue;
 			}
 			state.put(key, entry.getValue());
 		}
