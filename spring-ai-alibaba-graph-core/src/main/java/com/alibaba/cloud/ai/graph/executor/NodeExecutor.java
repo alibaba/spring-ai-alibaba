@@ -322,7 +322,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 				// Handle actual error signals from the Flux
 				log.error("Error signal occurred in embedded Flux stream for key '{}': {}",
 					key, error.getMessage());
-				context.doListeners(ERROR, new Exception(error));
+				context.doListeners(ERROR, nodeId, new Exception(error));
 				GraphResponse<NodeOutput> errorResponse = GraphResponse.error(error);
 				lastGraphResponseRef.set(errorResponse);
 				return Flux.just(errorResponse);
