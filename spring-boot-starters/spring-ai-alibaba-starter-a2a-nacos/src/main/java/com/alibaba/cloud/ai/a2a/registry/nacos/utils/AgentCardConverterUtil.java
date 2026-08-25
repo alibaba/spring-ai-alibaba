@@ -16,6 +16,8 @@
 
 package com.alibaba.cloud.ai.a2a.registry.nacos.utils;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,93 +30,139 @@ import com.alibaba.nacos.api.ai.model.a2a.AgentSkill;
 import com.alibaba.nacos.api.ai.model.a2a.SecurityScheme;
 import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
+import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 
 /**
  * Agent card converter util.
  */
 public class AgentCardConverterUtil {
 
-	public static io.a2a.spec.AgentCard convertToA2aAgentCard(AgentCard agentCard) {
+	private static final String LEGACY_PROTOCOL_VERSION = "0.3";
+
+	public static org.a2aproject.sdk.spec.AgentCard convertToA2aAgentCard(AgentCard agentCard) {
 		if (agentCard == null) {
 			return null;
 		}
 
-		return new io.a2a.spec.AgentCard.Builder().protocolVersion(agentCard.getProtocolVersion())
-			.name(agentCard.getName())
+		return org.a2aproject.sdk.spec.AgentCard.builder().name(agentCard.getName())
 			.description(agentCard.getDescription())
 			.version(agentCard.getVersion())
 			.iconUrl(agentCard.getIconUrl())
-			.capabilities(convertToA2aAgentCapabilities(agentCard.getCapabilities()))
+			.capabilities(convertToA2aAgentCapabilities(agentCard.getCapabilities(),
+					Boolean.TRUE.equals(agentCard.getSupportsAuthenticatedExtendedCard())))
 			.skills(convertToA2aAgentSkills(agentCard.getSkills()))
-			.url(agentCard.getUrl())
-			.preferredTransport(agentCard.getPreferredTransport())
-			.additionalInterfaces(convertToA2aAgentInterfaces(agentCard.getAdditionalInterfaces()))
+			.supportedInterfaces(convertToA2aAgentInterfaces(agentCard))
 			.provider(convertToA2aAgentProvider(agentCard.getProvider()))
 			.documentationUrl(agentCard.getDocumentationUrl())
 			.securitySchemes(convertToA2aAgentSecuritySchemes(agentCard.getSecuritySchemes()))
-			.security(agentCard.getSecurity())
-			.defaultInputModes(agentCard.getDefaultInputModes())
-			.defaultOutputModes(agentCard.getDefaultOutputModes())
-			.supportsAuthenticatedExtendedCard(
-				Boolean.TRUE.equals(agentCard.getSupportsAuthenticatedExtendedCard()))
+			.securityRequirements(agentCard.getSecurity() == null ? null
+					: agentCard.getSecurity().stream().map(org.a2aproject.sdk.spec.SecurityRequirement::new).toList())
+			.defaultInputModes(agentCard.getDefaultInputModes() == null ? List.of() : agentCard.getDefaultInputModes())
+			.defaultOutputModes(agentCard.getDefaultOutputModes() == null ? List.of() : agentCard.getDefaultOutputModes())
 			.build();
 	}
 
-	private static Map<String, io.a2a.spec.SecurityScheme> convertToA2aAgentSecuritySchemes(
+	private static Map<String, org.a2aproject.sdk.spec.SecurityScheme> convertToA2aAgentSecuritySchemes(
 			Map<String, SecurityScheme> securitySchemes) {
 		if (null == securitySchemes) {
 			return null;
 		}
-		String securitySchemesJson = JacksonUtils.toJson(securitySchemes);
-		return JacksonUtils.toObj(securitySchemesJson, new TypeReference<>() {
-		});
+		Map<String, org.a2aproject.sdk.spec.SecurityScheme> converted = new LinkedHashMap<>();
+		securitySchemes.forEach((name, scheme) -> converted.put(name, convertToA2aSecurityScheme(name, scheme)));
+		return converted;
 	}
 
-	private static io.a2a.spec.AgentProvider convertToA2aAgentProvider(AgentProvider provider) {
+	private static org.a2aproject.sdk.spec.SecurityScheme convertToA2aSecurityScheme(String name,
+			SecurityScheme securityScheme) {
+		Map<String, Object> scheme = new LinkedHashMap<>(securityScheme);
+		String discriminator;
+		if (scheme.size() == 1 && scheme.values().iterator().next() instanceof Map<?, ?>) {
+			discriminator = scheme.keySet().iterator().next();
+		}
+		else {
+			discriminator = switch (String.valueOf(scheme.remove("type"))) {
+				case "apiKey" -> "apiKeySecurityScheme";
+				case "http" -> "httpAuthSecurityScheme";
+				case "oauth2" -> "oauth2SecurityScheme";
+				case "openIdConnect" -> "openIdConnectSecurityScheme";
+				case "mutualTLS" -> "mtlsSecurityScheme";
+				default -> throw new IllegalArgumentException("Unsupported security scheme type for " + name);
+			};
+			if ("apiKeySecurityScheme".equals(discriminator) && scheme.containsKey("in")) {
+				scheme.put("location", scheme.remove("in"));
+			}
+			scheme = Map.of(discriminator, scheme);
+		}
+		try {
+			return JsonUtil.fromJson(JacksonUtils.toJson(scheme), org.a2aproject.sdk.spec.SecurityScheme.class);
+		}
+		catch (JsonProcessingException e) {
+			throw new IllegalArgumentException("Failed to convert security scheme " + name, e);
+		}
+	}
+
+	private static org.a2aproject.sdk.spec.AgentProvider convertToA2aAgentProvider(AgentProvider provider) {
 		if (null == provider) {
 			return null;
 		}
-		return new io.a2a.spec.AgentProvider(provider.getOrganization(), provider.getUrl());
+		return new org.a2aproject.sdk.spec.AgentProvider(provider.getOrganization(), provider.getUrl());
 	}
 
-	private static List<io.a2a.spec.AgentInterface> convertToA2aAgentInterfaces(List<AgentInterface> nacosInterfaces) {
-		if (nacosInterfaces == null) {
-			return List.of();
+	private static List<org.a2aproject.sdk.spec.AgentInterface> convertToA2aAgentInterfaces(AgentCard agentCard) {
+		List<org.a2aproject.sdk.spec.AgentInterface> interfaces = new ArrayList<>();
+		String protocolVersion = nacosProtocolVersion(agentCard.getProtocolVersion());
+		if (agentCard.getUrl() != null) {
+			interfaces.add(new org.a2aproject.sdk.spec.AgentInterface(
+					agentCard.getPreferredTransport() == null ? "JSONRPC" : agentCard.getPreferredTransport(),
+					agentCard.getUrl(), null, protocolVersion));
 		}
-		return nacosInterfaces.stream()
-			.map(AgentCardConverterUtil::transferAgentInterface)
-			.collect(Collectors.toList());
+		if (agentCard.getAdditionalInterfaces() != null) {
+			agentCard.getAdditionalInterfaces()
+				.stream()
+				.map(agentInterface -> transferAgentInterface(agentInterface, protocolVersion))
+				.filter(agentInterface -> agentInterface != null && !interfaces.contains(agentInterface))
+				.forEach(interfaces::add);
+		}
+		return interfaces;
 	}
 
-	private static io.a2a.spec.AgentInterface transferAgentInterface(AgentInterface agentInterface) {
+	private static String nacosProtocolVersion(String protocolVersion) {
+		return protocolVersion == null || protocolVersion.isBlank() ? LEGACY_PROTOCOL_VERSION : protocolVersion;
+	}
+
+	private static org.a2aproject.sdk.spec.AgentInterface transferAgentInterface(AgentInterface agentInterface,
+			String protocolVersion) {
 		if (null == agentInterface) {
 			return null;
 		}
-		return new io.a2a.spec.AgentInterface(agentInterface.getTransport(), agentInterface.getUrl());
+		return new org.a2aproject.sdk.spec.AgentInterface(agentInterface.getTransport(), agentInterface.getUrl(), null,
+				protocolVersion);
 	}
 
-	private static io.a2a.spec.AgentCapabilities convertToA2aAgentCapabilities(
-			com.alibaba.nacos.api.ai.model.a2a.AgentCapabilities nacosCapabilities) {
+	private static org.a2aproject.sdk.spec.AgentCapabilities convertToA2aAgentCapabilities(
+			com.alibaba.nacos.api.ai.model.a2a.AgentCapabilities nacosCapabilities, boolean extendedAgentCard) {
 		if (nacosCapabilities == null) {
-			return null;
+			return org.a2aproject.sdk.spec.AgentCapabilities.builder().extendedAgentCard(extendedAgentCard).build();
 		}
 
-		return new io.a2a.spec.AgentCapabilities.Builder().streaming(nacosCapabilities.getStreaming())
-			.pushNotifications(nacosCapabilities.getPushNotifications())
-			.stateTransitionHistory(nacosCapabilities.getStateTransitionHistory())
+		return org.a2aproject.sdk.spec.AgentCapabilities.builder()
+			.streaming(Boolean.TRUE.equals(nacosCapabilities.getStreaming()))
+			.pushNotifications(Boolean.TRUE.equals(nacosCapabilities.getPushNotifications()))
+			.extendedAgentCard(extendedAgentCard)
 			.build();
 	}
 
-	private static List<io.a2a.spec.AgentSkill> convertToA2aAgentSkills(List<AgentSkill> nacosSkills) {
+	private static List<org.a2aproject.sdk.spec.AgentSkill> convertToA2aAgentSkills(List<AgentSkill> nacosSkills) {
 		if (nacosSkills == null) {
-			return null;
+			return List.of();
 		}
 
 		return nacosSkills.stream().map(AgentCardConverterUtil::transferAgentSkill).collect(Collectors.toList());
 	}
 
-	private static io.a2a.spec.AgentSkill transferAgentSkill(AgentSkill nacosSkill) {
-		return new io.a2a.spec.AgentSkill.Builder().id(nacosSkill.getId())
+	private static org.a2aproject.sdk.spec.AgentSkill transferAgentSkill(AgentSkill nacosSkill) {
+		return org.a2aproject.sdk.spec.AgentSkill.builder().id(nacosSkill.getId())
 			.tags(nacosSkill.getTags())
 			.examples(nacosSkill.getExamples())
 			.name(nacosSkill.getName())
@@ -124,38 +172,107 @@ public class AgentCardConverterUtil {
 			.build();
 	}
 
-	public static AgentCard convertToNacosAgentCard(io.a2a.spec.AgentCard agentCard) {
+	public static AgentCard convertToNacosAgentCard(org.a2aproject.sdk.spec.AgentCard agentCard) {
+		validateNacosCompatibleCard(agentCard);
 		AgentCard card = new AgentCard();
-		card.setProtocolVersion(agentCard.protocolVersion());
+		List<org.a2aproject.sdk.spec.AgentInterface> supportedInterfaces = effectiveInterfaces(agentCard);
+		org.a2aproject.sdk.spec.AgentInterface primaryInterface = supportedInterfaces.isEmpty() ? null
+				: supportedInterfaces.get(0);
+		validateNacosCompatibleInterfaces(supportedInterfaces, primaryInterface);
+		card.setProtocolVersion(primaryInterface == null ? null : primaryInterface.protocolVersion());
 		card.setName(agentCard.name());
 		card.setDescription(agentCard.description());
 		card.setVersion(agentCard.version());
 		card.setIconUrl(agentCard.iconUrl());
 		card.setCapabilities(convertToNacosAgentCapabilities(agentCard.capabilities()));
 		card.setSkills(agentCard.skills().stream().map(AgentCardConverterUtil::convertToNacosAgentSkill).toList());
-		card.setUrl(agentCard.url());
-		card.setPreferredTransport(agentCard.preferredTransport());
-		card.setAdditionalInterfaces(convertToNacosAgentInterfaces(agentCard.additionalInterfaces()));
+		card.setUrl(primaryInterface == null ? null : primaryInterface.url());
+		card.setPreferredTransport(primaryInterface == null ? null : primaryInterface.protocolBinding());
+		card.setAdditionalInterfaces(convertToNacosAgentInterfaces(supportedInterfaces));
 		card.setProvider(convertToNacosAgentProvider(agentCard.provider()));
 		card.setDocumentationUrl(agentCard.documentationUrl());
 		card.setSecuritySchemes(convertToNacosSecuritySchemes(agentCard.securitySchemes()));
-		card.setSecurity(agentCard.security());
+		card.setSecurity(agentCard.securityRequirements() == null ? null
+				: agentCard.securityRequirements().stream().map(org.a2aproject.sdk.spec.SecurityRequirement::schemes).toList());
 		card.setDefaultInputModes(agentCard.defaultInputModes());
 		card.setDefaultOutputModes(agentCard.defaultOutputModes());
-		card.setSupportsAuthenticatedExtendedCard(
-				Boolean.TRUE.equals(agentCard.supportsAuthenticatedExtendedCard()));
+		card.setSupportsAuthenticatedExtendedCard(agentCard.capabilities().extendedAgentCard());
 		return card;
 	}
 
-	private static AgentCapabilities convertToNacosAgentCapabilities(io.a2a.spec.AgentCapabilities capabilities) {
+	private static List<org.a2aproject.sdk.spec.AgentInterface> effectiveInterfaces(
+			org.a2aproject.sdk.spec.AgentCard agentCard) {
+		if (agentCard.supportedInterfaces() != null && !agentCard.supportedInterfaces().isEmpty()) {
+			return agentCard.supportedInterfaces();
+		}
+		List<org.a2aproject.sdk.spec.AgentInterface> interfaces = new ArrayList<>();
+		if (agentCard.url() != null) {
+			String transport = agentCard.preferredTransport() == null ? "JSONRPC" : agentCard.preferredTransport();
+			interfaces.add(new org.a2aproject.sdk.spec.AgentInterface(transport, agentCard.url(), null,
+					LEGACY_PROTOCOL_VERSION));
+		}
+		if (agentCard.additionalInterfaces() != null) {
+			agentCard.additionalInterfaces().stream().filter(agentInterface -> agentInterface != null).map(agentInterface ->
+					new org.a2aproject.sdk.spec.AgentInterface(agentInterface.transport(), agentInterface.url(), null,
+							LEGACY_PROTOCOL_VERSION))
+				.filter(agentInterface -> !interfaces.contains(agentInterface))
+				.forEach(interfaces::add);
+		}
+		return interfaces;
+	}
+
+	private static void validateNacosCompatibleCard(org.a2aproject.sdk.spec.AgentCard agentCard) {
+		if (agentCard.signatures() != null && !agentCard.signatures().isEmpty()) {
+			throw new IllegalArgumentException("Nacos cannot losslessly represent agent card signatures");
+		}
+		if (agentCard.capabilities() != null && agentCard.capabilities().extensions() != null
+				&& !agentCard.capabilities().extensions().isEmpty()) {
+			throw new IllegalArgumentException("Nacos cannot losslessly represent agent capability extensions");
+		}
+	}
+
+	private static void validateNacosCompatibleInterfaces(
+			List<org.a2aproject.sdk.spec.AgentInterface> supportedInterfaces,
+			org.a2aproject.sdk.spec.AgentInterface primaryInterface) {
+		if (primaryInterface == null) {
+			if (!supportedInterfaces.isEmpty()) {
+				throw new IllegalArgumentException("Nacos cannot register a null primary agent interface");
+			}
+			return;
+		}
+		String primaryVersion = primaryInterface.protocolVersion();
+		if (primaryVersion == null || primaryVersion.isBlank()) {
+			throw incompatibleInterface(0, primaryInterface, "does not declare a protocol version");
+		}
+		for (int index = 0; index < supportedInterfaces.size(); index++) {
+			org.a2aproject.sdk.spec.AgentInterface agentInterface = supportedInterfaces.get(index);
+			if (agentInterface == null) {
+				throw new IllegalArgumentException("Nacos cannot register null agent interface at index " + index);
+			}
+			if (agentInterface.tenant() != null && !agentInterface.tenant().isBlank()) {
+				throw incompatibleInterface(index, agentInterface, "declares tenant " + agentInterface.tenant());
+			}
+			if (!primaryVersion.equals(agentInterface.protocolVersion())) {
+				throw incompatibleInterface(index, agentInterface,
+						"uses protocol version " + agentInterface.protocolVersion() + " instead of " + primaryVersion);
+			}
+		}
+	}
+
+	private static IllegalArgumentException incompatibleInterface(int index,
+			org.a2aproject.sdk.spec.AgentInterface agentInterface, String reason) {
+		return new IllegalArgumentException("Nacos cannot losslessly represent agent interface at index " + index
+				+ " (" + agentInterface.protocolBinding() + " " + agentInterface.url() + "): " + reason);
+	}
+
+	private static AgentCapabilities convertToNacosAgentCapabilities(org.a2aproject.sdk.spec.AgentCapabilities capabilities) {
 		com.alibaba.nacos.api.ai.model.a2a.AgentCapabilities nacosCapabilities = new com.alibaba.nacos.api.ai.model.a2a.AgentCapabilities();
 		nacosCapabilities.setStreaming(capabilities.streaming());
 		nacosCapabilities.setPushNotifications(capabilities.pushNotifications());
-		nacosCapabilities.setStateTransitionHistory(capabilities.stateTransitionHistory());
 		return nacosCapabilities;
 	}
 
-	private static AgentSkill convertToNacosAgentSkill(io.a2a.spec.AgentSkill agentSkill) {
+	private static AgentSkill convertToNacosAgentSkill(org.a2aproject.sdk.spec.AgentSkill agentSkill) {
 		AgentSkill skill = new AgentSkill();
 		skill.setId(agentSkill.id());
 		skill.setName(agentSkill.name());
@@ -168,23 +285,24 @@ public class AgentCardConverterUtil {
 	}
 
 	private static List<AgentInterface> convertToNacosAgentInterfaces(
-			List<io.a2a.spec.AgentInterface> agentInterfaces) {
+			List<org.a2aproject.sdk.spec.AgentInterface> agentInterfaces) {
 		if (agentInterfaces == null) {
 			return List.of();
 		}
 		return agentInterfaces.stream()
+			.skip(1)
 			.map(AgentCardConverterUtil::convertToNacosAgentInterface)
 			.collect(Collectors.toList());
 	}
 
-	private static AgentInterface convertToNacosAgentInterface(io.a2a.spec.AgentInterface agentInterface) {
+	private static AgentInterface convertToNacosAgentInterface(org.a2aproject.sdk.spec.AgentInterface agentInterface) {
 		AgentInterface nacosAgentInterface = new AgentInterface();
 		nacosAgentInterface.setUrl(agentInterface.url());
-		nacosAgentInterface.setTransport(agentInterface.transport());
+		nacosAgentInterface.setTransport(agentInterface.protocolBinding());
 		return nacosAgentInterface;
 	}
 
-	private static AgentProvider convertToNacosAgentProvider(io.a2a.spec.AgentProvider agentProvider) {
+	private static AgentProvider convertToNacosAgentProvider(org.a2aproject.sdk.spec.AgentProvider agentProvider) {
 		if (null == agentProvider) {
 			return null;
 		}
@@ -195,13 +313,41 @@ public class AgentCardConverterUtil {
 	}
 
 	private static Map<String, SecurityScheme> convertToNacosSecuritySchemes(
-			Map<String, io.a2a.spec.SecurityScheme> securitySchemes) {
+			Map<String, org.a2aproject.sdk.spec.SecurityScheme> securitySchemes) {
 		if (securitySchemes == null) {
 			return null;
 		}
-		String originalJson = JacksonUtils.toJson(securitySchemes);
-		return JacksonUtils.toObj(originalJson, new TypeReference<>() {
-		});
+		Map<String, SecurityScheme> converted = new LinkedHashMap<>();
+		securitySchemes.forEach((name, scheme) -> converted.put(name, convertToNacosSecurityScheme(name, scheme)));
+		return converted;
+	}
+
+	private static SecurityScheme convertToNacosSecurityScheme(String name,
+			org.a2aproject.sdk.spec.SecurityScheme securityScheme) {
+		try {
+			Map<String, Map<String, Object>> serialized = JacksonUtils.toObj(JsonUtil.toJson(securityScheme),
+					new TypeReference<>() {
+					});
+			Map<String, Object> values = new LinkedHashMap<>(serialized.get(securityScheme.type()));
+			String legacyType = switch (securityScheme.type()) {
+				case "apiKeySecurityScheme" -> "apiKey";
+				case "httpAuthSecurityScheme" -> "http";
+				case "oauth2SecurityScheme" -> "oauth2";
+				case "openIdConnectSecurityScheme" -> "openIdConnect";
+				case "mtlsSecurityScheme" -> "mutualTLS";
+				default -> throw new IllegalArgumentException("Unsupported security scheme type for " + name);
+			};
+			if ("apiKey".equals(legacyType) && values.containsKey("location")) {
+				values.put("in", values.remove("location"));
+			}
+			values.put("type", legacyType);
+			SecurityScheme converted = new SecurityScheme();
+			converted.putAll(values);
+			return converted;
+		}
+		catch (JsonProcessingException e) {
+			throw new IllegalArgumentException("Failed to convert security scheme " + name, e);
+		}
 	}
 
 }

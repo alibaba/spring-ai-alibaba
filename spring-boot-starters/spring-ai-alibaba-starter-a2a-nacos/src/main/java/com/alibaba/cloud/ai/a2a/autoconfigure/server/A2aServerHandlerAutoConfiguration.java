@@ -34,19 +34,23 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
-import io.a2a.server.agentexecution.AgentExecutor;
-import io.a2a.server.events.InMemoryQueueManager;
-import io.a2a.server.events.QueueManager;
-import io.a2a.server.requesthandlers.DefaultRequestHandler;
-import io.a2a.server.requesthandlers.JSONRPCHandler;
-import io.a2a.server.requesthandlers.RequestHandler;
-import io.a2a.server.tasks.BasePushNotificationSender;
-import io.a2a.server.tasks.InMemoryPushNotificationConfigStore;
-import io.a2a.server.tasks.InMemoryTaskStore;
-import io.a2a.server.tasks.PushNotificationConfigStore;
-import io.a2a.server.tasks.PushNotificationSender;
-import io.a2a.server.tasks.TaskStore;
-import io.a2a.spec.AgentCard;
+import org.a2aproject.sdk.server.agentexecution.AgentExecutor;
+import org.a2aproject.sdk.server.config.A2AConfigProvider;
+import org.a2aproject.sdk.server.config.DefaultValuesConfigProvider;
+import org.a2aproject.sdk.server.events.InMemoryQueueManager;
+import org.a2aproject.sdk.server.events.MainEventBus;
+import org.a2aproject.sdk.server.events.MainEventBusProcessor;
+import org.a2aproject.sdk.server.events.QueueManager;
+import org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandler;
+import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
+import org.a2aproject.sdk.server.tasks.BasePushNotificationSender;
+import org.a2aproject.sdk.server.tasks.InMemoryPushNotificationConfigStore;
+import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
+import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
+import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskStore;
+import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandler;
 
 /**
  * A2A server handler auto-configuration for single-agent mode.
@@ -68,6 +72,13 @@ public class A2aServerHandlerAutoConfiguration {
 		return new DefaultA2aServerExecutorProvider();
 	}
 
+	@Bean(destroyMethod = "close")
+	@ConditionalOnMissingBean
+	A2aEventConsumerExecutorManager a2aEventConsumerExecutorManager(
+			A2aServerExecutorProvider a2aServerExecutorProvider) {
+		return new A2aEventConsumerExecutorManager(a2aServerExecutorProvider);
+	}
+
 	@Bean
 	@ConditionalOnMissingBean
 	public AgentExecutor agentExecutor(Agent rootAgent) {
@@ -81,14 +92,26 @@ public class A2aServerHandlerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	public A2AConfigProvider a2aConfigProvider() {
+		return new DefaultValuesConfigProvider();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
 	public TaskStore taskStore() {
 		return new InMemoryTaskStore();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public QueueManager queueManager() {
-		return new InMemoryQueueManager();
+	public MainEventBus mainEventBus() {
+		return new MainEventBus();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public QueueManager queueManager(TaskStore taskStore, MainEventBus mainEventBus) {
+		return new InMemoryQueueManager(TaskStateProviderAdapter.from(taskStore), mainEventBus);
 	}
 
 	@Bean
@@ -105,18 +128,28 @@ public class A2aServerHandlerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	public MainEventBusProcessor mainEventBusProcessor(MainEventBus mainEventBus, TaskStore taskStore,
+			PushNotificationSender pushSender, QueueManager queueManager) {
+		return new MainEventBusProcessor(mainEventBus, taskStore, pushSender, queueManager);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
 	public RequestHandler requestHandler(AgentExecutor agentExecutor, TaskStore taskStore, QueueManager queueManager,
-			PushNotificationConfigStore pushConfigStore, PushNotificationSender pushSender,
-			A2aServerExecutorProvider a2aServerExecutorProvider) {
-		return new DefaultRequestHandler(agentExecutor, taskStore, queueManager, pushConfigStore, pushSender,
-				a2aServerExecutorProvider.getA2aServerExecutor());
+			PushNotificationConfigStore pushConfigStore, MainEventBusProcessor mainEventBusProcessor,
+			A2aServerExecutorProvider a2aServerExecutorProvider,
+			A2aEventConsumerExecutorManager eventConsumerExecutorManager) {
+		return DefaultRequestHandler.create(agentExecutor, taskStore, queueManager, pushConfigStore,
+				mainEventBusProcessor, a2aServerExecutorProvider.getA2aServerExecutor(),
+				eventConsumerExecutorManager.getExecutor());
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = A2aServerProperties.CONFIG_PREFIX, value = "type",
 			havingValue = ServerTypeEnum.JSON_RPC_TYPE, matchIfMissing = true)
-	public JSONRPCHandler jsonrpcHandler(AgentCard agentCard, RequestHandler requestHandler) {
-		return new JSONRPCHandler(agentCard, requestHandler);
+	public JSONRPCHandler jsonrpcHandler(AgentCard agentCard, RequestHandler requestHandler,
+			A2aServerExecutorProvider a2aServerExecutorProvider) {
+		return new JSONRPCHandler(agentCard, requestHandler, a2aServerExecutorProvider.getA2aServerExecutor());
 	}
 
 	@Bean

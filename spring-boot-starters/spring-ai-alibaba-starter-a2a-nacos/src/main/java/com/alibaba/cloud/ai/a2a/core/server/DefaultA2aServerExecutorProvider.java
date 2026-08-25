@@ -28,19 +28,27 @@ public class DefaultA2aServerExecutorProvider implements A2aServerExecutorProvid
 
 	private final ExecutorService executor;
 
+	private final ExecutorService eventConsumerExecutor;
+
 	public DefaultA2aServerExecutorProvider() {
 		this.executor = Executors.newCachedThreadPool();
-		;
+		this.eventConsumerExecutor = Executors.newCachedThreadPool();
 	}
 
 	@PreDestroy
 	public void close() {
 		executor.shutdown();
+		eventConsumerExecutor.shutdown();
 	}
 
 	@Override
 	public ExecutorService getA2aServerExecutor() {
 		return executor;
+	}
+
+	@Override
+	public ExecutorService getEventConsumerExecutor() {
+		return eventConsumerExecutor;
 	}
 
 }

@@ -24,7 +24,6 @@ import com.alibaba.cloud.ai.a2a.autoconfigure.A2aAgentCardProperties;
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aMultiAgentProperties;
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerProperties;
 import com.alibaba.cloud.ai.a2a.autoconfigure.server.condition.OnMultiAgentModeCondition;
-import com.alibaba.cloud.ai.a2a.core.constants.A2aConstants;
 import com.alibaba.cloud.ai.a2a.core.registry.AgentRegistry;
 import com.alibaba.cloud.ai.a2a.core.registry.AgentRegistryService;
 import com.alibaba.cloud.ai.a2a.core.route.MultiAgentJsonRpcRouterProvider;
@@ -39,6 +38,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.a2a.A2aRemoteAgent;
 
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -50,21 +50,26 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 
-import io.a2a.server.agentexecution.AgentExecutor;
-import io.a2a.server.events.InMemoryQueueManager;
-import io.a2a.server.events.QueueManager;
-import io.a2a.server.requesthandlers.DefaultRequestHandler;
-import io.a2a.server.requesthandlers.JSONRPCHandler;
-import io.a2a.server.requesthandlers.RequestHandler;
-import io.a2a.server.tasks.BasePushNotificationSender;
-import io.a2a.server.tasks.InMemoryPushNotificationConfigStore;
-import io.a2a.server.tasks.InMemoryTaskStore;
-import io.a2a.server.tasks.PushNotificationConfigStore;
-import io.a2a.server.tasks.PushNotificationSender;
-import io.a2a.server.tasks.TaskStore;
-import io.a2a.spec.AgentCapabilities;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.AgentInterface;
+import org.a2aproject.sdk.server.agentexecution.AgentExecutor;
+import org.a2aproject.sdk.server.config.A2AConfigProvider;
+import org.a2aproject.sdk.server.config.DefaultValuesConfigProvider;
+import org.a2aproject.sdk.server.events.InMemoryQueueManager;
+import org.a2aproject.sdk.server.events.MainEventBus;
+import org.a2aproject.sdk.server.events.MainEventBusProcessor;
+import org.a2aproject.sdk.server.events.QueueManager;
+import org.a2aproject.sdk.server.requesthandlers.DefaultRequestHandler;
+import org.a2aproject.sdk.server.requesthandlers.RequestHandler;
+import org.a2aproject.sdk.server.tasks.BasePushNotificationSender;
+import org.a2aproject.sdk.server.tasks.InMemoryPushNotificationConfigStore;
+import org.a2aproject.sdk.server.tasks.InMemoryTaskStore;
+import org.a2aproject.sdk.server.tasks.PushNotificationConfigStore;
+import org.a2aproject.sdk.server.tasks.PushNotificationSender;
+import org.a2aproject.sdk.server.tasks.TaskStore;
+import org.a2aproject.sdk.spec.AgentCapabilities;
+import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentInterface;
+import org.a2aproject.sdk.spec.SecurityRequirement;
+import org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,6 +107,19 @@ public class A2aServerMultiAgentAutoConfiguration {
 		return new DefaultA2aServerExecutorProvider();
 	}
 
+	@Bean(destroyMethod = "close")
+	@ConditionalOnMissingBean
+	A2aEventConsumerExecutorManager multiAgentEventConsumerExecutorManager(
+			A2aServerExecutorProvider executorProvider) {
+		return new A2aEventConsumerExecutorManager(executorProvider);
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public A2AConfigProvider multiAgentA2aConfigProvider() {
+		return new DefaultValuesConfigProvider();
+	}
+
 	@Bean
 	@ConditionalOnMissingBean
 	public TaskStore multiAgentTaskStore() {
@@ -110,8 +128,14 @@ public class A2aServerMultiAgentAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public QueueManager multiAgentQueueManager() {
-		return new InMemoryQueueManager();
+	public MainEventBus multiAgentMainEventBus() {
+		return new MainEventBus();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public QueueManager multiAgentQueueManager(TaskStore taskStore, MainEventBus mainEventBus) {
+		return new InMemoryQueueManager(TaskStateProviderAdapter.from(taskStore), mainEventBus);
 	}
 
 	@Bean
@@ -127,6 +151,13 @@ public class A2aServerMultiAgentAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
+	public MainEventBusProcessor multiAgentMainEventBusProcessor(MainEventBus mainEventBus, TaskStore taskStore,
+			PushNotificationSender pushSender, QueueManager queueManager) {
+		return new MainEventBusProcessor(mainEventBus, taskStore, pushSender, queueManager);
+	}
+
+	@Bean
 	public MultiAgentRequestRouter multiAgentRequestRouter() {
 		return new MultiAgentRequestRouter();
 	}
@@ -135,8 +166,9 @@ public class A2aServerMultiAgentAutoConfiguration {
 	public List<AgentCard> multiAgentCards(A2aServerProperties serverProperties,
 			A2aMultiAgentProperties multiAgentProperties, ObjectProvider<Map<String, Agent>> agentMapProvider,
 			MultiAgentRequestRouter router, TaskStore taskStore, QueueManager queueManager,
-			PushNotificationConfigStore pushConfigStore, PushNotificationSender pushSender,
-			A2aServerExecutorProvider executorProvider) {
+			PushNotificationConfigStore pushConfigStore, MainEventBusProcessor mainEventBusProcessor,
+			A2aServerExecutorProvider executorProvider, A2aEventConsumerExecutorManager eventConsumerExecutorManager,
+			AutowireCapableBeanFactory beanFactory) {
 
 		Map<String, Agent> agents = agentMapProvider.getIfAvailable();
 		Map<String, A2aAgentCardProperties> agentConfigs = multiAgentProperties.getAgents();
@@ -166,9 +198,14 @@ public class A2aServerMultiAgentAutoConfiguration {
 
 			// Create and register handler for this agent
 			AgentExecutor agentExecutor = new GraphAgentExecutor(agent);
-			RequestHandler requestHandler = new DefaultRequestHandler(agentExecutor, taskStore, queueManager,
-					pushConfigStore, pushSender, executorProvider.getA2aServerExecutor());
-			JSONRPCHandler jsonRpcHandler = new JSONRPCHandler(agentCard, requestHandler);
+			DefaultRequestHandler requestHandler = DefaultRequestHandler.create(agentExecutor, taskStore, queueManager,
+					pushConfigStore, mainEventBusProcessor, executorProvider.getA2aServerExecutor(),
+					eventConsumerExecutorManager.getExecutor());
+			beanFactory.autowireBean(requestHandler);
+			RequestHandler initializedRequestHandler = (RequestHandler) beanFactory.initializeBean(requestHandler,
+					"a2aRequestHandler-" + agentKey);
+			JSONRPCHandler jsonRpcHandler = new JSONRPCHandler(agentCard, initializedRequestHandler,
+					executorProvider.getA2aServerExecutor());
 			JsonRpcA2aRequestHandler a2aHandler = new JsonRpcA2aRequestHandler(jsonRpcHandler);
 
 			router.registerHandler(agentKey, a2aHandler);
@@ -237,28 +274,25 @@ public class A2aServerMultiAgentAutoConfiguration {
 		List<String> outputModes = cardProps.getDefaultOutputModes() != null ? cardProps.getDefaultOutputModes()
 				: List.of("text/plain");
 		AgentCapabilities capabilities = cardProps.getCapabilities() != null ? cardProps.getCapabilities()
-				: new AgentCapabilities.Builder().streaming(true).build();
+				: AgentCapabilities.builder().streaming(true).build();
+		capabilities = new AgentCapabilities(capabilities.streaming(), capabilities.pushNotifications(),
+				capabilities.extendedAgentCard() || cardProps.isSupportsAuthenticatedExtendedCard(),
+				capabilities.extensions());
 
-		String url = StringUtils.hasLength(cardProps.getUrl()) ? cardProps.getUrl()
-				: buildMultiAgentUrl(serverProperties, agentKey);
-
-		return new AgentCard.Builder().name(name)
+		return AgentCard.builder().name(name)
 			.description(description)
 			.defaultInputModes(inputModes)
 			.defaultOutputModes(outputModes)
 			.capabilities(capabilities)
 			.version(serverProperties.getVersion())
-			.protocolVersion(A2aConstants.DEFAULT_A2A_PROTOCOL_VERSION)
-			.preferredTransport(serverProperties.getType())
-			.url(url)
-			.supportsAuthenticatedExtendedCard(cardProps.isSupportsAuthenticatedExtendedCard())
+			.supportedInterfaces(buildSupportedInterfaces(cardProps, serverProperties, agentKey))
 			.skills(cardProps.getSkills() != null ? cardProps.getSkills() : List.of())
 			.provider(cardProps.getProvider())
 			.documentationUrl(cardProps.getDocumentationUrl())
-			.security(cardProps.getSecurity())
+			.securityRequirements(cardProps.getSecurity() == null ? null
+					: cardProps.getSecurity().stream().map(SecurityRequirement::new).toList())
 			.securitySchemes(cardProps.getSecuritySchemes())
 			.iconUrl(cardProps.getIconUrl())
-			.additionalInterfaces(buildAdditionalInterfaces(cardProps, serverProperties, agentKey))
 			.build();
 	}
 
@@ -267,14 +301,20 @@ public class A2aServerMultiAgentAutoConfiguration {
 				+ agentKey;
 	}
 
-	private List<AgentInterface> buildAdditionalInterfaces(A2aAgentCardProperties cardProps,
+	private List<AgentInterface> buildSupportedInterfaces(A2aAgentCardProperties cardProps,
 			A2aServerProperties serverProperties, String agentKey) {
-		if (cardProps.getAdditionalInterfaces() != null) {
-			return cardProps.getAdditionalInterfaces();
-		}
 		String url = StringUtils.hasLength(cardProps.getUrl()) ? cardProps.getUrl()
 				: buildMultiAgentUrl(serverProperties, agentKey);
-		return List.of(new AgentInterface(serverProperties.getType(), url));
+		List<AgentInterface> interfaces = new ArrayList<>();
+		interfaces.add(new AgentInterface(serverProperties.getType(), url));
+		if (cardProps.getAdditionalInterfaces() != null) {
+			cardProps.getAdditionalInterfaces()
+				.stream()
+				.map(A2aAgentInterfaceNormalizer::withDefaultProtocolVersion)
+				.filter(agentInterface -> !interfaces.contains(agentInterface))
+				.forEach(interfaces::add);
+		}
+		return List.copyOf(interfaces);
 	}
 
 }

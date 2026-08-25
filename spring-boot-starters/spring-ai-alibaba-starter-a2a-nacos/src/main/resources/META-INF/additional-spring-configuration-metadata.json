@@ -58,7 +58,7 @@
     },
     {
       "name": "spring.ai.alibaba.a2a.client.card.provider",
-      "type": "io.a2a.spec.AgentProvider",
+      "type": "org.a2aproject.sdk.spec.AgentProvider",
       "description": "The provider information of the agent.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
     },
@@ -70,7 +70,7 @@
     },
     {
       "name": "spring.ai.alibaba.a2a.client.card.capabilities",
-      "type": "io.a2a.spec.AgentCapabilities",
+      "type": "org.a2aproject.sdk.spec.AgentCapabilities",
       "description": "The capabilities of the agent.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
     },
@@ -88,7 +88,7 @@
     },
     {
       "name": "spring.ai.alibaba.a2a.client.card.skills",
-      "type": "java.util.List<io.a2a.spec.AgentSkill>",
+      "type": "java.util.List<org.a2aproject.sdk.spec.AgentSkill>",
       "description": "The skills of the agent.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
     },
@@ -101,7 +101,7 @@
     },
     {
       "name": "spring.ai.alibaba.a2a.client.card.security-schemes",
-      "type": "java.util.Map<java.lang.String, io.a2a.spec.SecurityScheme>",
+      "type": "java.util.Map<java.lang.String, org.a2aproject.sdk.spec.SecurityScheme>",
       "description": "The security schemes of the agent.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
     },
@@ -119,7 +119,7 @@
     },
     {
       "name": "spring.ai.alibaba.a2a.client.card.additional-interfaces",
-      "type": "java.util.List<io.a2a.spec.AgentInterface>",
+      "type": "java.util.List<org.a2aproject.sdk.spec.AgentInterface>",
       "description": "The additional interfaces of the agent.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aClientAgentCardProperties"
     },
@@ -227,7 +227,7 @@
       "type": "java.lang.String",
       "description": "The agent card well known url.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerProperties",
-      "defaultValue": "/.well-known/agent.json"
+      "defaultValue": "/.well-known/agent-card.json"
     },
     {
       "name": "spring.ai.alibaba.a2a.server.message-url",
@@ -277,7 +277,7 @@
     },
     {
       "name": "spring.ai.alibaba.a2a.server.card.provider",
-      "type": "io.a2a.spec.AgentProvider",
+      "type": "org.a2aproject.sdk.spec.AgentProvider",
       "description": "The provider information of the agent.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
     },
@@ -289,7 +289,7 @@
     },
     {
       "name": "spring.ai.alibaba.a2a.server.card.capabilities",
-      "type": "io.a2a.spec.AgentCapabilities",
+      "type": "org.a2aproject.sdk.spec.AgentCapabilities",
       "description": "The capabilities of the agent.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
     },
@@ -307,7 +307,7 @@
     },
     {
       "name": "spring.ai.alibaba.a2a.server.card.skills",
-      "type": "java.util.List<io.a2a.spec.AgentSkill>",
+      "type": "java.util.List<org.a2aproject.sdk.spec.AgentSkill>",
       "description": "The skills of the agent.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
     },
@@ -320,7 +320,7 @@
     },
     {
       "name": "spring.ai.alibaba.a2a.server.card.security-schemes",
-      "type": "java.util.Map<java.lang.String, io.a2a.spec.SecurityScheme>",
+      "type": "java.util.Map<java.lang.String, org.a2aproject.sdk.spec.SecurityScheme>",
       "description": "The security schemes of the agent.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
     },
@@ -338,7 +338,7 @@
     },
     {
       "name": "spring.ai.alibaba.a2a.server.card.additional-interfaces",
-      "type": "java.util.List<io.a2a.spec.AgentInterface>",
+      "type": "java.util.List<org.a2aproject.sdk.spec.AgentInterface>",
       "description": "The additional interfaces of the agent.",
       "sourceType": "com.alibaba.cloud.ai.a2a.A2aServerAgentCardProperties"
     },
