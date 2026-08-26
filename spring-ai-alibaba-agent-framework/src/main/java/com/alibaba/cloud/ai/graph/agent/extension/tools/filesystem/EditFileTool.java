@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -78,9 +79,14 @@ public class EditFileTool implements BiFunction<EditFileTool.EditFileRequest, To
 
 			String content = Files.readString(filePath);
 
-			// Count occurrences
-			int occurrences = countOccurrences(content, oldString);
+			// Handle empty file: allow oldString="" to mean "write to empty file"
+			if (StringUtils.isEmpty(content) && StringUtils.isEmpty(oldString)) {
+				Files.writeString(filePath, newString, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+				return String.format("Successfully wrote to empty file: %s", filePath);
+			}
 
+			// Count occurrences
+			int occurrences = StringUtils.countMatches(content, oldString);
 			if (occurrences == 0) {
 				return "Error: String not found in file: '" + oldString + "'";
 			}
@@ -121,19 +127,6 @@ public class EditFileTool implements BiFunction<EditFileTool.EditFileRequest, To
 		catch (IOException e) {
 			return "Error editing file '" + filePath + "': " + e.getMessage();
 		}
-	}
-
-	/**
-	 * Count occurrences of a substring in content.
-	 */
-	private static int countOccurrences(String content, String search) {
-		int count = 0;
-		int index = 0;
-		while ((index = content.indexOf(search, index)) != -1) {
-			count++;
-			index += search.length();
-		}
-		return count;
 	}
 
 	public static ToolCallback createEditFileToolCallback(String description) {
