@@ -269,9 +269,6 @@ public class ExecutionController {
 					String agentName = nodeOutput.agent();
 					Usage tokenUsage = nodeOutput.tokenUsage();
 
-
-					// For streaming, we can use the message content as chunk
-					StringBuilder chunkBuilder = new StringBuilder();
 					AgentRunResponse agentResponse = null;
 					if (nodeOutput instanceof StreamingOutput<?> streamingOutput) {
 						Message message = streamingOutput.message();
@@ -280,17 +277,22 @@ public class ExecutionController {
 									.data("{}")
 									.build();
 						}
+						// Detect if this chunk comes from a sub-graph (sub-agent)
+						boolean isSubGraph = isSubGraphOutput(streamingOutput);
+
 						if (message instanceof AssistantMessage assistantMessage) {
 							if (assistantMessage.hasToolCalls()) {
 								agentResponse = new AgentRunResponse(node, agentName, assistantMessage, tokenUsage, "");
 							}
 							else {
-//						chunkBuilder.append(assistantMessage.getText());
 								agentResponse = new AgentRunResponse(node, agentName, assistantMessage, tokenUsage, assistantMessage.getText());
 							}
 						}
 						else {
 							agentResponse = new AgentRunResponse(node, agentName, message, tokenUsage, "");
+						}
+						if (agentResponse != null) {
+							agentResponse.setSubGraph(isSubGraph);
 						}
 					}
 					else if (nodeOutput instanceof InterruptionMetadata interruptionMetadata) {
@@ -300,9 +302,7 @@ public class ExecutionController {
 					}
 					else {
 						// Handle other NodeOutput types if necessary
-//					agentResponse = new AgentRunResponse(node, agentName, null, tokenUsage, "");
 					}
-
 
 					// Serialize to JSON string
 					try {
@@ -357,5 +357,21 @@ public class ExecutionController {
 						);
 					}
 				});
+	}
+
+	/**
+	 * Checks if a StreamingOutput comes from a sub-graph (sub-agent) by reflectively
+	 * calling {@code isSubGraph()} on the StreamingOutput instance. Returns false if
+	 * the method is not available or invocation fails.
+	 */
+	private boolean isSubGraphOutput(StreamingOutput<?> streamingOutput) {
+		try {
+			java.lang.reflect.Method method = streamingOutput.getClass().getMethod("isSubGraph");
+			return Boolean.TRUE.equals(method.invoke(streamingOutput));
+		}
+		catch (Exception e) {
+			// Method not available or invocation failed — not a sub-graph output
+			return false;
+		}
 	}
 }
