@@ -6,7 +6,7 @@
 >
 > Spring AI Alibaba Website Repo: https://github.com/springaialibaba/spring-ai-alibaba-website
 
-[English](./README-en.md) | 中文
+[English](./README.md) | 中文
 
 ## 项目概述
 
