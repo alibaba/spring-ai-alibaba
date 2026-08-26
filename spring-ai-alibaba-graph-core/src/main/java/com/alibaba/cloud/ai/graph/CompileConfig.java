@@ -328,10 +328,11 @@ public class CompileConfig {
 		this.interruptsBefore = config.interruptsBefore;
 		this.interruptsAfter = config.interruptsAfter;
 		this.releaseThread = config.releaseThread;
-		this.lifecycleListeners = config.lifecycleListeners;
+		this.lifecycleListeners = new LinkedBlockingDeque<>(config.lifecycleListeners);
 		this.observationRegistry = config.observationRegistry;
 		this.interruptBeforeEdge = config.interruptBeforeEdge;
 		this.store = config.store;
+		this.recursionLimit = config.recursionLimit;
 	}
 
 }
