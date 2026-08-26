@@ -19,8 +19,8 @@ import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -66,7 +66,7 @@ public class AppendStrategy implements KeyStrategy {
 			list = new ArrayList<>((List<?>) newValue);
 		}
 		else if (newValue.getClass().isArray()) {
-			list = Arrays.asList((Object[]) newValue);
+			list = arrayToList(newValue);
 		}
 		else if (newValue instanceof Collection) {
 			list = new ArrayList<>((Collection<?>) newValue);
@@ -110,6 +110,15 @@ public class AppendStrategy implements KeyStrategy {
 			}
 			return arrayResult;
 		}
+	}
+
+	private static List<Object> arrayToList(Object array) {
+		int length = Array.getLength(array);
+		List<Object> result = new ArrayList<>(length);
+		for (int i = 0; i < length; i++) {
+			result.add(Array.get(array, i));
+		}
+		return result;
 	}
 
 	private static void removeFromList(List<Object> result, AppenderChannel.RemoveIdentifier<Object> removeIdentifier) {
