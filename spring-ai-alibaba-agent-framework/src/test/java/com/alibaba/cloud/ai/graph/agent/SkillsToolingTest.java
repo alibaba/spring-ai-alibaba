@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.skills.DisableSkillTool;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.ReadSkillTool;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.SearchSkillsTool;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
+import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
 
@@ -26,10 +27,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -102,6 +106,25 @@ class SkillsToolingTest {
 
 		assertEquals(List.of("read_skill", "search_skills", "disable_skill"), toolNames);
 		assertFalse(toolNames.contains("allowed-tools-test"));
+	}
+
+	@Test
+	void groupedToolsMapIsPassedEvenWhenInitiallyEmpty() {
+		Map<String, List<ToolCallback>> dynamic = new ConcurrentHashMap<>();
+		SkillsAgentHook hook = SkillsAgentHook.builder()
+				.skillRegistry(registry)
+				.groupedTools(dynamic)
+				.build();
+
+		SkillsInterceptor interceptor = (SkillsInterceptor) hook.getModelInterceptors().get(0);
+
+		ToolCallback tool = FunctionToolCallback.builder("record_result", args -> "recorded")
+				.description("Records a result value")
+				.inputType(String.class)
+				.build();
+		dynamic.put("allowed-tools-test", List.of(tool));
+
+		assertEquals(1, interceptor.getGroupedTools().get("allowed-tools-test").size());
 	}
 
 }
