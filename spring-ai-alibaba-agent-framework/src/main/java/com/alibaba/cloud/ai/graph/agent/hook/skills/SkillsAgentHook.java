@@ -142,9 +142,10 @@ public class SkillsAgentHook extends AgentHook {
 	@Override
 	public List<ModelInterceptor> getModelInterceptors() {
 		SkillsInterceptor.Builder interceptorBuilder = SkillsInterceptor.builder().skillRegistry(this.skillRegistry);
-		if (!this.groupedTools.isEmpty()) {
-			interceptorBuilder.groupedTools(this.groupedTools);
-		}
+		// Always pass the map through, including when it is initially empty. The
+		// interceptor intentionally keeps this reference so callers can populate it
+		// after the agent has been built.
+		interceptorBuilder.groupedTools(this.groupedTools);
 		if (this.groupedToolsSupplier != null) {
 			interceptorBuilder.groupedToolsSupplier(this.groupedToolsSupplier);
 		}
