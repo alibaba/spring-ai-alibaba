@@ -16,6 +16,8 @@
 package com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem;
 
 import com.alibaba.cloud.ai.graph.agent.extension.file.FileInfo;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -208,10 +210,21 @@ public class ListFilesTool implements BiFunction<String, ToolContext, String> {
 	}
 
 	public static ToolCallback createListFilesToolCallback(String description) {
-		return FunctionToolCallback.builder("ls", new ListFilesTool())
+		ListFilesTool tool = new ListFilesTool();
+		BiFunction<ListFilesRequest, ToolContext, String> function =
+				(request, toolContext) -> tool.apply(request.path(), toolContext);
+		return FunctionToolCallback.builder("ls", function)
 				.description(description)
-				.inputType(String.class)
+				.inputType(ListFilesRequest.class)
 				.build();
 	}
-}
 
+	/**
+	 * Request structure for listing files in a directory.
+	 */
+	public record ListFilesRequest(
+			@JsonProperty(required = true, value = "path")
+			@JsonPropertyDescription("The directory path to list files from")
+			String path
+	) {}
+}

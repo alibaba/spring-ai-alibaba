@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -81,9 +83,21 @@ public class GlobTool implements BiFunction<String, ToolContext, String> {
 	}
 
 	public static ToolCallback createGlobToolCallback(String description) {
-		return FunctionToolCallback.builder("glob", new GlobTool())
+		GlobTool tool = new GlobTool();
+		BiFunction<GlobRequest, ToolContext, String> function =
+				(request, toolContext) -> tool.apply(request.pattern(), toolContext);
+		return FunctionToolCallback.builder("glob", function)
 				.description(description)
-				.inputType(String.class)
+				.inputType(GlobRequest.class)
 				.build();
 	}
+
+	/**
+	 * Request structure for finding files with a glob pattern.
+	 */
+	public record GlobRequest(
+			@JsonProperty(required = true, value = "pattern")
+			@JsonPropertyDescription("The glob pattern to match files")
+			String pattern
+	) {}
 }
