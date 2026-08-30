@@ -29,6 +29,9 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystems;
@@ -36,12 +39,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,7 +85,6 @@ import static com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSk
 public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 
 	private static final Logger logger = LoggerFactory.getLogger(ClasspathSkillRegistry.class);
-	private static final int MAX_RETAINED_EXTRACTION_GENERATIONS = 2;
 	private final String classpathPath;
 	private final Path basePath;
 	private final SkillScanner scanner = new SkillScanner();
@@ -92,8 +95,8 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	// JAR FileSystem for classpath resources (only created if resource is in JAR)
 	private FileSystem jarFileSystem;
 	private boolean ownsJarFileSystem;
-	// Keep the current and immediately previous generations readable across reloads.
-	private final Deque<Path> bootExtractionRoots = new ArrayDeque<>();
+	// Each registry owns an isolated workspace containing its immutable generations.
+	private Path bootExtractionWorkspace;
 
 	private ClasspathSkillRegistry(Builder builder) {
 		this.classpathPath = builder.classpathPath != null && !builder.classpathPath.isEmpty()
@@ -162,8 +165,14 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 				}
 				else if ("jar".equals(uri.getScheme())) {
 					if (isSpringBootJar(uri)) {
-						loadSkillsFromSpringBootJar(loadedSkills);
-						this.skills = loadedSkills;
+						try {
+							loadSkillsFromSpringBootJar(loadedSkills);
+							this.skills = loadedSkills;
+						}
+						catch (Exception e) {
+							logger.error("Failed to reload Spring Boot classpath skills; keeping the previous registry: {}",
+								e.getMessage(), e);
+						}
 						return;
 					}
 					// Resource is in a JAR file (production mode)
@@ -247,23 +256,18 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 				continue;
 			}
 
-			try {
-				ResolvedResourcePath resolvedPath = getResolvedResourcePath(resource);
-				Path relativePath = resolvedPath != null ? resolvedPath.relativePath() : null;
-				if (relativePath == null || relativePath.getNameCount() < 2) {
-					continue;
-				}
+			ResolvedResourcePath resolvedPath = getResolvedResourcePath(resource);
+			Path relativePath = resolvedPath != null ? resolvedPath.relativePath() : null;
+			if (relativePath == null || relativePath.getNameCount() < 2) {
+				continue;
+			}
 
-				String skillDirectoryName = relativePath.getName(0).toString();
-				String sourceRoot = resolvedPath.sourceRoot();
-				classpathRootOrder.computeIfAbsent(sourceRoot, ignored -> classpathRootOrder.size());
-				skillCandidates.computeIfAbsent(skillDirectoryName, ignored -> new LinkedHashMap<>())
-					.computeIfAbsent(sourceRoot, ignored -> new ArrayList<>())
-					.add(new ResolvedSkillResource(resource, relativePath));
-			}
-			catch (Exception e) {
-				logger.warn("Failed to resolve classpath skill resource {}: {}", resource, e.getMessage());
-			}
+			String skillDirectoryName = relativePath.getName(0).toString();
+			String sourceRoot = resolvedPath.sourceRoot();
+			classpathRootOrder.computeIfAbsent(sourceRoot, ignored -> classpathRootOrder.size());
+			skillCandidates.computeIfAbsent(skillDirectoryName, ignored -> new LinkedHashMap<>())
+				.computeIfAbsent(sourceRoot, ignored -> new ArrayList<>())
+				.add(new ResolvedSkillResource(resource, relativePath));
 		}
 
 		// Select the highest-precedence complete source; ancillary files alone must not
@@ -284,17 +288,19 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 			}
 		}
 
-		// A new generation is not published through this.skills until every selected resource
-		// has been copied and scanned, so concurrent readers never observe partial extraction.
-		Path extractionRoot = Files.createTempDirectory(targetRoot, ".extracted-");
-		bootExtractionRoots.addLast(extractionRoot);
-		reclaimSupersededExtractionRoots();
-		for (Map.Entry<String, List<ResolvedSkillResource>> skillResources : selectedSkillResources.entrySet()) {
-			Path skillDirectory = extractionRoot.resolve(skillResources.getKey());
-			try {
+		// Build an unpublished generation first. Its content-addressed published path is
+		// immutable and remains readable until close(), while identical reloads reuse it.
+		if (bootExtractionWorkspace == null || !Files.isDirectory(bootExtractionWorkspace)) {
+			bootExtractionWorkspace = Files.createTempDirectory(targetRoot, ".registry-");
+		}
+		Path stagingRoot = Files.createTempDirectory(bootExtractionWorkspace, ".staging-");
+		Path extractionRoot = null;
+		boolean publishedNewGeneration = false;
+		try {
+			for (Map.Entry<String, List<ResolvedSkillResource>> skillResources : selectedSkillResources.entrySet()) {
 				for (ResolvedSkillResource skillResource : skillResources.getValue()) {
-					Path targetFile = extractionRoot.resolve(skillResource.relativePath()).normalize();
-					if (!targetFile.startsWith(extractionRoot)) {
+					Path targetFile = stagingRoot.resolve(skillResource.relativePath()).normalize();
+					if (!targetFile.startsWith(stagingRoot)) {
 						throw new IOException("Classpath skill resource resolves outside extraction directory: "
 								+ skillResource.resource());
 					}
@@ -303,20 +309,102 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 						Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
 					}
 				}
+			}
 
+			PublishedExtraction publishedExtraction = publishExtractionGeneration(stagingRoot, bootExtractionWorkspace);
+			extractionRoot = publishedExtraction.path();
+			publishedNewGeneration = publishedExtraction.created();
+			Map<String, SkillMetadata> generationSkills = new HashMap<>();
+			for (String skillDirectoryName : selectedSkillResources.keySet()) {
+				Path skillDirectory = extractionRoot.resolve(skillDirectoryName);
 				SkillMetadata metadata = scanner.loadSkill(skillDirectory, "classpath");
-				if (metadata != null) {
-					metadata.setSkillPath(skillDirectory.toString());
-					loadedSkills.put(metadata.getName(), metadata);
+				if (metadata == null) {
+					throw new IOException("Failed to scan extracted classpath skill: " + skillDirectory);
+				}
+				metadata.setSkillPath(skillDirectory.toString());
+				generationSkills.put(metadata.getName(), metadata);
+			}
+
+			loadedSkills.putAll(generationSkills);
+		}
+		catch (Exception e) {
+			IOException loadFailure = e instanceof IOException ioException ? ioException
+					: new IOException("Failed to extract Spring Boot classpath skills", e);
+			try {
+				deleteDirectoryRecursively(stagingRoot);
+			}
+			catch (IOException cleanupFailure) {
+				loadFailure.addSuppressed(cleanupFailure);
+			}
+			if (publishedNewGeneration && extractionRoot != null) {
+				try {
+					deleteDirectoryRecursively(extractionRoot);
+				}
+				catch (IOException cleanupFailure) {
+					loadFailure.addSuppressed(cleanupFailure);
 				}
 			}
-			catch (Exception e) {
-				deleteDirectoryRecursively(skillDirectory);
-				logger.error("Failed to load extracted classpath skill {}: {}", skillDirectory, e.getMessage(), e);
-			}
+			throw loadFailure;
 		}
 
 		logger.info("Loaded {} skills from Spring Boot classpath: {}", loadedSkills.size(), classpathPath);
+	}
+
+	private PublishedExtraction publishExtractionGeneration(Path stagingRoot, Path targetRoot) throws IOException {
+		Path extractionRoot = targetRoot.resolve(".extracted-" + calculateExtractionDigest(stagingRoot));
+		if (Files.exists(extractionRoot)) {
+			if (!Files.isDirectory(extractionRoot)) {
+				throw new IOException("Spring Boot skill extraction path is not a directory: " + extractionRoot);
+			}
+			deleteDirectoryRecursively(stagingRoot);
+			return new PublishedExtraction(extractionRoot, false);
+		}
+
+		try {
+			try {
+				Files.move(stagingRoot, extractionRoot, StandardCopyOption.ATOMIC_MOVE);
+			}
+			catch (AtomicMoveNotSupportedException e) {
+				Files.move(stagingRoot, extractionRoot);
+			}
+			return new PublishedExtraction(extractionRoot, true);
+		}
+		catch (FileAlreadyExistsException e) {
+			deleteDirectoryRecursively(stagingRoot);
+			return new PublishedExtraction(extractionRoot, false);
+		}
+	}
+
+	private String calculateExtractionDigest(Path extractionRoot) throws IOException {
+		MessageDigest digest;
+		try {
+			digest = MessageDigest.getInstance("SHA-256");
+		}
+		catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-256 is not available", e);
+		}
+
+		try (Stream<Path> paths = Files.walk(extractionRoot)) {
+			for (Path path : paths.filter(Files::isRegularFile)
+				.sorted(Comparator.comparing(file -> extractionRoot.relativize(file).toString()))
+				.toList()) {
+				byte[] relativePath = extractionRoot.relativize(path)
+					.toString()
+					.replace('\\', '/')
+					.getBytes(StandardCharsets.UTF_8);
+				digest.update(ByteBuffer.allocate(Integer.BYTES).putInt(relativePath.length).array());
+				digest.update(relativePath);
+				digest.update(ByteBuffer.allocate(Long.BYTES).putLong(Files.size(path)).array());
+				try (InputStream inputStream = Files.newInputStream(path)) {
+					byte[] buffer = new byte[8192];
+					int bytesRead;
+					while ((bytesRead = inputStream.read(buffer)) != -1) {
+						digest.update(buffer, 0, bytesRead);
+					}
+				}
+			}
+		}
+		return HexFormat.of().formatHex(digest.digest());
 	}
 
 	private boolean containsSkillManifest(List<ResolvedSkillResource> resources) {
@@ -379,25 +467,13 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 		}
 	}
 
-	private void reclaimSupersededExtractionRoots() {
-		while (bootExtractionRoots.size() > MAX_RETAINED_EXTRACTION_GENERATIONS) {
-			Path extractionRoot = bootExtractionRoots.removeFirst();
-			try {
-				deleteDirectoryRecursively(extractionRoot);
-			}
-			catch (IOException e) {
-				bootExtractionRoots.addFirst(extractionRoot);
-				logger.warn("Failed to remove superseded Spring Boot skill extraction directory {}: {}",
-						extractionRoot, e.getMessage());
-				break;
-			}
-		}
-	}
-
 	private record ResolvedResourcePath(String sourceRoot, Path relativePath) {
 	}
 
 	private record ResolvedSkillResource(Resource resource, Path relativePath) {
+	}
+
+	private record PublishedExtraction(Path path, boolean created) {
 	}
 
 	FileSystem getOrCreateJarFileSystem(URI uri) throws IOException {
@@ -691,16 +767,16 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 		jarFileSystem = null;
 		ownsJarFileSystem = false;
 
-		for (Path extractionRoot : bootExtractionRoots) {
+		if (bootExtractionWorkspace != null) {
 			try {
-				deleteDirectoryRecursively(extractionRoot);
+				deleteDirectoryRecursively(bootExtractionWorkspace);
 			}
 			catch (IOException e) {
-				logger.warn("Failed to remove Spring Boot skill extraction directory {}: {}", extractionRoot,
+				logger.warn("Failed to remove Spring Boot skill extraction workspace {}: {}", bootExtractionWorkspace,
 						e.getMessage());
 			}
 		}
-		bootExtractionRoots.clear();
+		bootExtractionWorkspace = null;
 	}
 
 	/**

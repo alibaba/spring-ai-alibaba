@@ -89,7 +89,7 @@ class ClasspathSkillRegistryFatJarIntegrationTest {
 		String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 		assertEquals(0, process.exitValue(), output);
 		assertTrue(output.contains("FAT_JAR_SKILLS=[fallback-skill, fat-jar-skill]"), output);
-		assertTrue(output.contains("FAT_JAR_RELOAD_STAGED=true"), output);
+		assertTrue(output.contains("FAT_JAR_CONTENT_ADDRESSED=true"), output);
 	}
 
 	private void createDependencyJar(Path jarPath) throws IOException {
