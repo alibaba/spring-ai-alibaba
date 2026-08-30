@@ -37,15 +37,15 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -81,6 +81,7 @@ import static com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSk
 public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 
 	private static final Logger logger = LoggerFactory.getLogger(ClasspathSkillRegistry.class);
+	private static final int MAX_RETAINED_EXTRACTION_GENERATIONS = 2;
 	private final String classpathPath;
 	private final Path basePath;
 	private final SkillScanner scanner = new SkillScanner();
@@ -91,8 +92,8 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	// JAR FileSystem for classpath resources (only created if resource is in JAR)
 	private FileSystem jarFileSystem;
 	private boolean ownsJarFileSystem;
-	// Keep published generations readable across reloads and remove them when the registry closes.
-	private final Set<Path> bootExtractionRoots = new LinkedHashSet<>();
+	// Keep the current and immediately previous generations readable across reloads.
+	private final Deque<Path> bootExtractionRoots = new ArrayDeque<>();
 
 	private ClasspathSkillRegistry(Builder builder) {
 		this.classpathPath = builder.classpathPath != null && !builder.classpathPath.isEmpty()
@@ -239,9 +240,7 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 				getClass().getClassLoader());
 		Map<String, Integer> classpathRootOrder = getClasspathRootOrder(resolver);
 		Resource[] resources = resolver.getResources("classpath*:" + classpathPath + "/**/*");
-		// Select one complete source for each skill directory according to classpath precedence.
-		Map<String, String> selectedSourceRoots = new LinkedHashMap<>();
-		Map<String, List<ResolvedSkillResource>> selectedSkillResources = new LinkedHashMap<>();
+		Map<String, Map<String, List<ResolvedSkillResource>>> skillCandidates = new LinkedHashMap<>();
 
 		for (Resource resource : resources) {
 			if (!resource.isReadable()) {
@@ -258,26 +257,38 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 				String skillDirectoryName = relativePath.getName(0).toString();
 				String sourceRoot = resolvedPath.sourceRoot();
 				classpathRootOrder.computeIfAbsent(sourceRoot, ignored -> classpathRootOrder.size());
-				String selectedSourceRoot = selectedSourceRoots.get(skillDirectoryName);
-				if (selectedSourceRoot == null || classpathRootOrder.get(sourceRoot) < classpathRootOrder
-					.get(selectedSourceRoot)) {
-					selectedSourceRoots.put(skillDirectoryName, sourceRoot);
-					selectedSkillResources.put(skillDirectoryName, new ArrayList<>());
-				}
-				if (sourceRoot.equals(selectedSourceRoots.get(skillDirectoryName))) {
-					selectedSkillResources.get(skillDirectoryName)
-						.add(new ResolvedSkillResource(resource, relativePath));
-				}
+				skillCandidates.computeIfAbsent(skillDirectoryName, ignored -> new LinkedHashMap<>())
+					.computeIfAbsent(sourceRoot, ignored -> new ArrayList<>())
+					.add(new ResolvedSkillResource(resource, relativePath));
 			}
 			catch (Exception e) {
 				logger.warn("Failed to resolve classpath skill resource {}: {}", resource, e.getMessage());
 			}
 		}
 
+		// Select the highest-precedence complete source; ancillary files alone must not
+		// shadow a lower-precedence skill that contains SKILL.md.
+		Map<String, List<ResolvedSkillResource>> selectedSkillResources = new LinkedHashMap<>();
+		for (Map.Entry<String, Map<String, List<ResolvedSkillResource>>> skillCandidate : skillCandidates
+			.entrySet()) {
+			String selectedSourceRoot = null;
+			for (Map.Entry<String, List<ResolvedSkillResource>> sourceCandidate : skillCandidate.getValue()
+				.entrySet()) {
+				if (containsSkillManifest(sourceCandidate.getValue()) && (selectedSourceRoot == null
+						|| classpathRootOrder.get(sourceCandidate.getKey()) < classpathRootOrder.get(selectedSourceRoot))) {
+					selectedSourceRoot = sourceCandidate.getKey();
+				}
+			}
+			if (selectedSourceRoot != null) {
+				selectedSkillResources.put(skillCandidate.getKey(), skillCandidate.getValue().get(selectedSourceRoot));
+			}
+		}
+
 		// A new generation is not published through this.skills until every selected resource
 		// has been copied and scanned, so concurrent readers never observe partial extraction.
 		Path extractionRoot = Files.createTempDirectory(targetRoot, ".extracted-");
-		bootExtractionRoots.add(extractionRoot);
+		bootExtractionRoots.addLast(extractionRoot);
+		reclaimSupersededExtractionRoots();
 		for (Map.Entry<String, List<ResolvedSkillResource>> skillResources : selectedSkillResources.entrySet()) {
 			Path skillDirectory = extractionRoot.resolve(skillResources.getKey());
 			try {
@@ -306,6 +317,12 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 		}
 
 		logger.info("Loaded {} skills from Spring Boot classpath: {}", loadedSkills.size(), classpathPath);
+	}
+
+	private boolean containsSkillManifest(List<ResolvedSkillResource> resources) {
+		return resources.stream()
+			.anyMatch(resource -> resource.relativePath().getNameCount() == 2
+					&& "SKILL.md".equals(resource.relativePath().getFileName().toString()));
 	}
 
 	private Map<String, Integer> getClasspathRootOrder(PathMatchingResourcePatternResolver resolver) throws IOException {
@@ -358,6 +375,21 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 		try (Stream<Path> paths = Files.walk(directory)) {
 			for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
 				Files.deleteIfExists(path);
+			}
+		}
+	}
+
+	private void reclaimSupersededExtractionRoots() {
+		while (bootExtractionRoots.size() > MAX_RETAINED_EXTRACTION_GENERATIONS) {
+			Path extractionRoot = bootExtractionRoots.removeFirst();
+			try {
+				deleteDirectoryRecursively(extractionRoot);
+			}
+			catch (IOException e) {
+				bootExtractionRoots.addFirst(extractionRoot);
+				logger.warn("Failed to remove superseded Spring Boot skill extraction directory {}: {}",
+						extractionRoot, e.getMessage());
+				break;
 			}
 		}
 	}

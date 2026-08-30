@@ -46,6 +46,11 @@ public final class ClasspathSkillRegistryFatJarTestApplication {
 		if (Files.exists(skillPath.resolve("references/obsolete.md"))) {
 			throw new IllegalStateException("An obsolete extracted resource remained exposed");
 		}
+		Path fallbackSkillPath = Path.of(registry.get("fallback-skill").orElseThrow().getSkillPath());
+		if (!Files.exists(fallbackSkillPath.resolve("references/dependency-reference.md"))
+				|| Files.exists(fallbackSkillPath.resolve("references/app-only.md"))) {
+			throw new IllegalStateException("An incomplete higher-precedence source shadowed a complete skill");
+		}
 
 		registry.reload();
 		Path reloadedSkillPath = Path.of(registry.get("fat-jar-skill").orElseThrow().getSkillPath());
@@ -56,8 +61,13 @@ public final class ClasspathSkillRegistryFatJarTestApplication {
 				|| !Files.exists(reloadedSkillPath.resolve("references/reference.md"))) {
 			throw new IllegalStateException("Reload removed a published skill path or exposed an incomplete one");
 		}
+		registry.reload();
+		Path latestSkillPath = Path.of(registry.get("fat-jar-skill").orElseThrow().getSkillPath());
+		if (Files.exists(skillPath) || !Files.exists(reloadedSkillPath) || !Files.exists(latestSkillPath)) {
+			throw new IllegalStateException("Reload did not retain exactly the two newest extraction generations");
+		}
 		registry.close();
-		if (Files.exists(skillPath) || Files.exists(reloadedSkillPath)) {
+		if (Files.exists(reloadedSkillPath) || Files.exists(latestSkillPath)) {
 			throw new IllegalStateException("Closing the registry did not clean its extraction generations");
 		}
 		System.out.println("FAT_JAR_RELOAD_STAGED=true");

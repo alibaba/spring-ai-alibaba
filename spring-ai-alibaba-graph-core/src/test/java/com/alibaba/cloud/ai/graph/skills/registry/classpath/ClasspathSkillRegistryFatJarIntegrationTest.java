@@ -51,6 +51,14 @@ class ClasspathSkillRegistryFatJarIntegrationTest {
 
 			# Fat JAR Skill
 			""";
+	private static final String FALLBACK_SKILL_CONTENT = """
+			---
+			name: fallback-skill
+			description: Verifies that ancillary files cannot shadow a complete skill.
+			---
+
+			# Fallback Skill
+			""";
 
 	@Test
 	void loadsSkillFromSpringBootExecutableJar(@TempDir Path tempDir) throws Exception {
@@ -80,17 +88,31 @@ class ClasspathSkillRegistryFatJarIntegrationTest {
 
 		String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 		assertEquals(0, process.exitValue(), output);
-		assertTrue(output.contains("FAT_JAR_SKILLS=[fat-jar-skill]"), output);
+		assertTrue(output.contains("FAT_JAR_SKILLS=[fallback-skill, fat-jar-skill]"), output);
 		assertTrue(output.contains("FAT_JAR_RELOAD_STAGED=true"), output);
 	}
 
 	private void createDependencyJar(Path jarPath) throws IOException {
 		try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(jarPath))) {
+			writeDirectoryEntry(output, "fat-jar-skills/");
+			writeDirectoryEntry(output, "fat-jar-skills/fat-jar-skill/");
+			writeDirectoryEntry(output, "fat-jar-skills/fat-jar-skill/references/");
+			writeDirectoryEntry(output, "fat-jar-skills/fallback-skill/");
+			writeDirectoryEntry(output, "fat-jar-skills/fallback-skill/references/");
 			writeEntry(output, "fat-jar-skills/fat-jar-skill/SKILL.md",
 					new java.io.ByteArrayInputStream(SKILL_CONTENT.getBytes(StandardCharsets.UTF_8)));
 			writeEntry(output, "fat-jar-skills/fat-jar-skill/references/dependency-only.md",
 					new java.io.ByteArrayInputStream("# Dependency only".getBytes(StandardCharsets.UTF_8)));
+			writeEntry(output, "fat-jar-skills/fallback-skill/SKILL.md",
+					new java.io.ByteArrayInputStream(FALLBACK_SKILL_CONTENT.getBytes(StandardCharsets.UTF_8)));
+			writeEntry(output, "fat-jar-skills/fallback-skill/references/dependency-reference.md",
+					new java.io.ByteArrayInputStream("# Dependency reference".getBytes(StandardCharsets.UTF_8)));
 		}
+	}
+
+	private void writeDirectoryEntry(JarOutputStream output, String name) throws IOException {
+		output.putNextEntry(new JarEntry(name));
+		output.closeEntry();
 	}
 
 	private void createApplicationJar(Path jarPath) throws IOException {
@@ -110,6 +132,8 @@ class ClasspathSkillRegistryFatJarIntegrationTest {
 					new java.io.ByteArrayInputStream("# Reference".getBytes(StandardCharsets.UTF_8)));
 			writeEntry(output, "fat-jar-skills/fat-jar-skill/references/fat-jar-skills/note.md",
 					new java.io.ByteArrayInputStream("# Repeated root".getBytes(StandardCharsets.UTF_8)));
+			writeEntry(output, "fat-jar-skills/fallback-skill/references/app-only.md",
+					new java.io.ByteArrayInputStream("# Ancillary file".getBytes(StandardCharsets.UTF_8)));
 		}
 	}
 
