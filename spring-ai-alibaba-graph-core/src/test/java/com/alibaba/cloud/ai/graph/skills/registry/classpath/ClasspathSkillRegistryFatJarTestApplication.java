@@ -61,18 +61,25 @@ public final class ClasspathSkillRegistryFatJarTestApplication {
 				|| !Files.exists(reloadedSkillPath.resolve("references/reference.md"))) {
 			throw new IllegalStateException("Reload removed a published skill path or exposed an incomplete one");
 		}
+		Files.writeString(skillPath.resolve("references/reference.md"), "tampered");
+		registry.reload();
+		Path repairedSkillPath = Path.of(registry.get("fat-jar-skill").orElseThrow().getSkillPath());
+		if (skillPath.equals(repairedSkillPath)
+				|| !"# Reference".equals(Files.readString(repairedSkillPath.resolve("references/reference.md")))) {
+			throw new IllegalStateException("Reload reused a modified content-addressed extraction");
+		}
 		registry.reload();
 		Path latestSkillPath = Path.of(registry.get("fat-jar-skill").orElseThrow().getSkillPath());
-		if (!skillPath.equals(latestSkillPath) || !Files.exists(latestSkillPath)) {
-			throw new IllegalStateException("Repeated reloads did not reuse the content-addressed extraction");
+		if (!repairedSkillPath.equals(latestSkillPath) || !Files.exists(latestSkillPath)) {
+			throw new IllegalStateException("Repeated reloads did not reuse the repaired extraction");
 		}
 		try (var generations = Files.list(skillPath.getParent().getParent())) {
-			if (generations.filter(path -> path.getFileName().toString().startsWith(".extracted-")).count() != 1) {
-				throw new IllegalStateException("Identical reloads created redundant extraction generations");
+			if (generations.filter(path -> path.getFileName().toString().startsWith(".extracted-")).count() != 2) {
+				throw new IllegalStateException("Reload did not retain the modified and repaired generations");
 			}
 		}
 		registry.close();
-		if (Files.exists(skillPath)) {
+		if (Files.exists(skillPath) || Files.exists(repairedSkillPath)) {
 			throw new IllegalStateException("Closing the registry did not clean its extraction generations");
 		}
 		System.out.println("FAT_JAR_CONTENT_ADDRESSED=true");

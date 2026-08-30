@@ -351,27 +351,46 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	}
 
 	private PublishedExtraction publishExtractionGeneration(Path stagingRoot, Path targetRoot) throws IOException {
-		Path extractionRoot = targetRoot.resolve(".extracted-" + calculateExtractionDigest(stagingRoot));
-		if (Files.exists(extractionRoot)) {
-			if (!Files.isDirectory(extractionRoot)) {
-				throw new IOException("Spring Boot skill extraction path is not a directory: " + extractionRoot);
+		String expectedDigest = calculateExtractionDigest(stagingRoot);
+		String extractionName = ".extracted-" + expectedDigest;
+		int suffix = 0;
+		while (true) {
+			Path extractionRoot = targetRoot.resolve(suffix == 0 ? extractionName : extractionName + "-" + suffix);
+			if (Files.exists(extractionRoot)) {
+				if (isMatchingExtraction(extractionRoot, expectedDigest)) {
+					deleteDirectoryRecursively(stagingRoot);
+					return new PublishedExtraction(extractionRoot, false);
+				}
+				suffix++;
+				continue;
 			}
-			deleteDirectoryRecursively(stagingRoot);
-			return new PublishedExtraction(extractionRoot, false);
-		}
 
-		try {
 			try {
-				Files.move(stagingRoot, extractionRoot, StandardCopyOption.ATOMIC_MOVE);
+				try {
+					Files.move(stagingRoot, extractionRoot, StandardCopyOption.ATOMIC_MOVE);
+				}
+				catch (AtomicMoveNotSupportedException e) {
+					Files.move(stagingRoot, extractionRoot);
+				}
+				return new PublishedExtraction(extractionRoot, true);
 			}
-			catch (AtomicMoveNotSupportedException e) {
-				Files.move(stagingRoot, extractionRoot);
+			catch (FileAlreadyExistsException e) {
+				// Another publisher won the race; validate that path on the next iteration.
 			}
-			return new PublishedExtraction(extractionRoot, true);
 		}
-		catch (FileAlreadyExistsException e) {
-			deleteDirectoryRecursively(stagingRoot);
-			return new PublishedExtraction(extractionRoot, false);
+	}
+
+	private boolean isMatchingExtraction(Path extractionRoot, String expectedDigest) {
+		if (!Files.isDirectory(extractionRoot)) {
+			return false;
+		}
+		try {
+			return expectedDigest.equals(calculateExtractionDigest(extractionRoot));
+		}
+		catch (IOException e) {
+			logger.warn("Failed to validate existing Spring Boot skill extraction directory {}: {}", extractionRoot,
+					e.getMessage());
+			return false;
 		}
 	}
 
