@@ -20,6 +20,9 @@ import com.alibaba.cloud.ai.graph.skills.registry.AbstractSkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.registry.filesystem.SkillScanner;
 
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,12 +35,15 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -54,6 +60,7 @@ import static com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSk
  * <p>Key features:
  * <ul>
  *   <li>Automatically detects if resources are in filesystem or JAR</li>
+ *   <li>Supports nested resources in Spring Boot executable JARs</li>
  *   <li>Manages JAR FileSystem lifecycle</li>
  *   <li>Caches skill content for JAR resources (since Path.of() cannot access JAR paths)</li>
  * </ul>
@@ -149,6 +156,11 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 					classpathSkillsPath = Path.of(uri);
 				}
 				else if ("jar".equals(uri.getScheme())) {
+					if (isSpringBootJar(uri)) {
+						loadSkillsFromSpringBootJar(loadedSkills);
+						this.skills = loadedSkills;
+						return;
+					}
 					// Resource is in a JAR file (production mode)
 					// Create or reuse JAR FileSystem
 					if (jarFileSystem == null || !jarFileSystem.isOpen()) {
@@ -203,6 +215,94 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 		}
 
 		this.skills = loadedSkills;
+	}
+
+	private boolean isSpringBootJar(URI uri) {
+		String uriString = uri.toString();
+		return uriString.startsWith("jar:nested:") || uriString.contains("BOOT-INF/");
+	}
+
+	/**
+	 * Loads skills from a Spring Boot executable JAR. Spring Boot uses nested JAR URLs
+	 * that are not supported by the JDK's NIO JAR file system provider, so resources
+	 * are resolved through Spring and copied to the configured base path first.
+	 */
+	private void loadSkillsFromSpringBootJar(Map<String, SkillMetadata> loadedSkills) throws IOException {
+		Path targetRoot = basePath.resolve(classpathPath).normalize();
+		Files.createDirectories(targetRoot);
+
+		PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(
+				getClass().getClassLoader());
+		Resource[] resources = resolver.getResources("classpath*:" + classpathPath + "/**/*");
+		Set<Path> extractedSkillDirectories = new LinkedHashSet<>();
+
+		for (Resource resource : resources) {
+			if (!resource.isReadable()) {
+				continue;
+			}
+
+			try {
+				Path relativePath = getRelativeResourcePath(resource);
+				if (relativePath == null || relativePath.getNameCount() < 2) {
+					continue;
+				}
+
+				Path targetFile = targetRoot.resolve(relativePath).normalize();
+				if (!targetFile.startsWith(targetRoot)) {
+					logger.warn("Skipping classpath skill resource outside target directory: {}", resource);
+					continue;
+				}
+
+				Files.createDirectories(targetFile.getParent());
+				try (InputStream inputStream = resource.getInputStream()) {
+					Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
+				}
+				extractedSkillDirectories.add(targetRoot.resolve(relativePath.getName(0)));
+			}
+			catch (Exception e) {
+				logger.warn("Failed to extract classpath skill resource {}: {}", resource, e.getMessage());
+			}
+		}
+
+		for (Path skillDirectory : extractedSkillDirectories) {
+			try {
+				SkillMetadata metadata = scanner.loadSkill(skillDirectory, "classpath");
+				if (metadata != null) {
+					metadata.setSkillPath(skillDirectory.toString());
+					loadedSkills.put(metadata.getName(), metadata);
+				}
+			}
+			catch (Exception e) {
+				logger.error("Failed to load extracted classpath skill {}: {}", skillDirectory, e.getMessage(), e);
+			}
+		}
+
+		logger.info("Loaded {} skills from Spring Boot classpath: {}", loadedSkills.size(), classpathPath);
+	}
+
+	private Path getRelativeResourcePath(Resource resource) throws IOException {
+		String resourceUrl = resource.getURL().toExternalForm();
+		int queryIndex = resourceUrl.indexOf('?');
+		if (queryIndex >= 0) {
+			resourceUrl = resourceUrl.substring(0, queryIndex);
+		}
+
+		String decodedResourceUrl;
+		try {
+			decodedResourceUrl = StringUtils.uriDecode(resourceUrl, StandardCharsets.UTF_8);
+		}
+		catch (IllegalArgumentException e) {
+			throw new IOException("Invalid classpath skill resource URL: " + resourceUrl, e);
+		}
+
+		String marker = "/" + classpathPath + "/";
+		int markerIndex = decodedResourceUrl.lastIndexOf(marker);
+		if (markerIndex < 0) {
+			logger.debug("Unable to determine relative path for classpath skill resource: {}", resourceUrl);
+			return null;
+		}
+
+		return Path.of(decodedResourceUrl.substring(markerIndex + marker.length())).normalize();
 	}
 
 	FileSystem getOrCreateJarFileSystem(URI uri) throws IOException {
