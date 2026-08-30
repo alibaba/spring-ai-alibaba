@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -95,7 +96,7 @@ import static com.alibaba.cloud.ai.graph.skills.SkillPromptConstants.buildSkills
  * Tools from {@link #getGroupedTools()} for those skill names are then added to the request's
  * {@link ModelRequest#getDynamicToolCallbacks() dynamicToolCallbacks}.
  */
-public class SkillsInterceptor extends ModelInterceptor {
+public class SkillsInterceptor extends ModelInterceptor implements ToolCallbackResolver {
 
 	private static final Logger logger = LoggerFactory.getLogger(SkillsInterceptor.class);
 
@@ -278,6 +279,33 @@ public class SkillsInterceptor extends ModelInterceptor {
 			return supplied != null ? supplied : Collections.emptyMap();
 		}
 		return groupedTools;
+	}
+
+	/**
+	 * Resolves tools managed by this interceptor for execution after a run is resumed.
+	 * Dynamic callbacks normally travel through {@code RunnableConfig.context()}, but a
+	 * resumed HITL run uses a new config and therefore needs to resolve the callback again.
+	 */
+	@Override
+	public ToolCallback resolve(String toolName) {
+		for (List<ToolCallback> tools : resolveGroupedTools().values()) {
+			if (tools == null) {
+				continue;
+			}
+			Optional<ToolCallback> groupedTool = tools.stream()
+				.filter(Objects::nonNull)
+				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
+				.findFirst();
+			if (groupedTool.isPresent()) {
+				return groupedTool.get();
+			}
+		}
+
+		if (toolCallbackResolver == null || skillRegistry.listAll().stream()
+			.noneMatch(skill -> skill.getAllowedTools().contains(toolName))) {
+			return null;
+		}
+		return toolCallbackResolver.resolve(toolName);
 	}
 
 

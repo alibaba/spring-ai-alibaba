@@ -15,13 +15,20 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptors;
 
+import com.alibaba.cloud.ai.graph.NodeOutput;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
+import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
+import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.ReadSkillTool;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.tools.PoetTool;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
 
@@ -44,6 +51,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.List.of;
@@ -130,6 +138,12 @@ class SkillsInterceptorEnhancementsTest {
 						.distinct()
 						.toList());
 		assertEquals(1, captured.get().getDynamicToolCallbacks().size());
+
+		SkillsInterceptor allowedToolsResolver = SkillsInterceptor.builder()
+			.skillRegistry(registry)
+			.toolCallbackResolver(resolver)
+			.build();
+		assertEquals(recordResultTool, allowedToolsResolver.resolve("record_result"));
 	}
 
 	@Test
@@ -185,6 +199,86 @@ class SkillsInterceptorEnhancementsTest {
 		assertEquals(2, second.get("allowed-tools-test").size());
 		assertTrue(second.get("allowed-tools-test").stream()
 				.anyMatch(tool -> "extra_tool".equals(tool.getToolDefinition().name())));
+	}
+
+	@Test
+	void groupedToolRemainsExecutableAfterHumanApprovalResume() throws Exception {
+		AtomicInteger modelCalls = new AtomicInteger();
+		AtomicReference<String> recorded = new AtomicReference<>();
+		ChatModel model = new ChatModel() {
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				return response();
+			}
+
+			@Override
+			public Flux<ChatResponse> stream(Prompt prompt) {
+				return Flux.just(response());
+			}
+
+			private ChatResponse response() {
+				AssistantMessage message = switch (modelCalls.getAndIncrement()) {
+					case 0 -> toolCall("read-1", ReadSkillTool.READ_SKILL,
+							"{\"skill_name\":\"allowed-tools-test\"}");
+					case 1 -> toolCall("record-1", "record_result", "{\"value\":\"approved\"}");
+					default -> new AssistantMessage("done");
+				};
+				return new ChatResponse(List.of(new Generation(message)));
+			}
+
+			private AssistantMessage toolCall(String id, String name, String arguments) {
+				return AssistantMessage.builder()
+					.content("")
+					.toolCalls(List.of(new AssistantMessage.ToolCall(id, "function", name, arguments)))
+					.build();
+			}
+		};
+
+		ToolCallback recordResult = FunctionToolCallback
+			.builder("record_result", (RecordRequest request) -> {
+				recorded.set(request.value);
+				return "recorded";
+			})
+			.description("Records a result")
+			.inputType(RecordRequest.class)
+			.build();
+		SkillsAgentHook skills = SkillsAgentHook.builder()
+			.skillRegistry(registry)
+			.groupedTools(Map.of("allowed-tools-test", List.of(recordResult)))
+			.build();
+		HumanInTheLoopHook hitl = HumanInTheLoopHook.builder()
+			.approvalOn(Map.of("record_result", ToolConfig.builder().description("Approve recording").build()))
+			.build();
+		ReactAgent agent = ReactAgent.builder()
+			.name("skill-hitl-agent")
+			.model(model)
+			.saver(new MemorySaver())
+			.hooks(List.of(skills, hitl))
+			.build();
+
+		String threadId = "skill-hitl-resume";
+		NodeOutput first = agent.invokeAndGetOutput("record a value",
+				RunnableConfig.builder().threadId(threadId).build()).orElseThrow();
+		assertTrue(first instanceof InterruptionMetadata);
+		InterruptionMetadata interruption = (InterruptionMetadata) first;
+		InterruptionMetadata.ToolFeedback approved = InterruptionMetadata.ToolFeedback
+			.builder(interruption.toolFeedbacks().get(0))
+			.result(InterruptionMetadata.ToolFeedback.FeedbackResult.APPROVED)
+			.build();
+		InterruptionMetadata feedback = InterruptionMetadata.builder(interruption)
+			.toolFeedbacks(List.of(approved))
+			.build();
+
+		agent.invokeAndGetOutput("", RunnableConfig.builder()
+			.threadId(threadId)
+			.addHumanFeedback(feedback)
+			.build());
+
+		assertEquals("approved", recorded.get());
+	}
+
+	private static class RecordRequest {
+		public String value;
 	}
 
 }

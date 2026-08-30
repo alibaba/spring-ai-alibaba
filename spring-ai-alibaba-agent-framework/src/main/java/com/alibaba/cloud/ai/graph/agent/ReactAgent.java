@@ -65,6 +65,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -149,6 +150,10 @@ public class ReactAgent extends BaseAgent {
 
 		if (mergedModelInterceptors != null && !mergedModelInterceptors.isEmpty()) {
 			this.llmNode.setModelInterceptors(mergedModelInterceptors);
+			this.toolNode.setDynamicToolCallbackResolvers(mergedModelInterceptors.stream()
+				.filter(ToolCallbackResolver.class::isInstance)
+				.map(ToolCallbackResolver.class::cast)
+				.toList());
 		}
 		if (mergedToolInterceptors != null && !mergedToolInterceptors.isEmpty()) {
 			this.toolNode.setToolInterceptors(mergedToolInterceptors);

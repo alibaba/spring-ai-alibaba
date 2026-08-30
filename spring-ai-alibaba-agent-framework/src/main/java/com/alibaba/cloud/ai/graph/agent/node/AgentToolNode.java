@@ -119,6 +119,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private ToolCallbackResolver toolCallbackResolver;
 
+	private List<ToolCallbackResolver> dynamicToolCallbackResolvers = List.of();
+
 	private ToolExecutionExceptionProcessor toolExecutionExceptionProcessor;
 
 	public AgentToolNode(Builder builder) {
@@ -140,6 +142,16 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	public void setToolInterceptors(List<ToolInterceptor> toolInterceptors) {
 		this.toolInterceptors = toolInterceptors;
+	}
+
+	/**
+	 * Sets model-interceptor resolvers used when a dynamic callback is no longer present
+	 * in the current run context, such as after HITL resume.
+	 * @param dynamicToolCallbackResolvers resolvers for execution-only dynamic tools
+	 */
+	public void setDynamicToolCallbackResolvers(List<ToolCallbackResolver> dynamicToolCallbackResolvers) {
+		this.dynamicToolCallbackResolvers = dynamicToolCallbackResolvers != null
+				? List.copyOf(dynamicToolCallbackResolvers) : List.of();
 	}
 
 	void setToolCallbackResolver(ToolCallbackResolver toolCallbackResolver) {
@@ -851,6 +863,12 @@ public class AgentToolNode implements NodeActionWithConfig {
 		ToolCallback fromDynamic = resolveFromConfigMetadata(toolName, config);
 		if (fromDynamic != null) {
 			return fromDynamic;
+		}
+		for (ToolCallbackResolver dynamicResolver : dynamicToolCallbackResolvers) {
+			ToolCallback resolved = dynamicResolver.resolve(toolName);
+			if (resolved != null) {
+				return resolved;
+			}
 		}
 		return toolCallbackResolver == null ? null : toolCallbackResolver.resolve(toolName);
 	}
