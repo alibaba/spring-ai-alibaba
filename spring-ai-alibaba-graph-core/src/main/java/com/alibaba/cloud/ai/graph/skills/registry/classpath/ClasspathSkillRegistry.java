@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +91,8 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	// JAR FileSystem for classpath resources (only created if resource is in JAR)
 	private FileSystem jarFileSystem;
 	private boolean ownsJarFileSystem;
+	// Keep published generations readable across reloads and remove them when the registry closes.
+	private final Set<Path> bootExtractionRoots = new LinkedHashSet<>();
 
 	private ClasspathSkillRegistry(Builder builder) {
 		this.classpathPath = builder.classpathPath != null && !builder.classpathPath.isEmpty()
@@ -234,9 +237,11 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 
 		PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(
 				getClass().getClassLoader());
+		Map<String, Integer> classpathRootOrder = getClasspathRootOrder(resolver);
 		Resource[] resources = resolver.getResources("classpath*:" + classpathPath + "/**/*");
-		Set<Path> extractedSkillDirectories = new LinkedHashSet<>();
-		Set<Path> preparedSkillDirectories = new LinkedHashSet<>();
+		// Select one complete source for each skill directory according to classpath precedence.
+		Map<String, String> selectedSourceRoots = new LinkedHashMap<>();
+		Map<String, List<ResolvedSkillResource>> selectedSkillResources = new LinkedHashMap<>();
 
 		for (Resource resource : resources) {
 			if (!resource.isReadable()) {
@@ -244,36 +249,50 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 			}
 
 			try {
-				Path relativePath = getRelativeResourcePath(resource);
+				ResolvedResourcePath resolvedPath = getResolvedResourcePath(resource);
+				Path relativePath = resolvedPath != null ? resolvedPath.relativePath() : null;
 				if (relativePath == null || relativePath.getNameCount() < 2) {
 					continue;
 				}
 
-				Path targetFile = targetRoot.resolve(relativePath).normalize();
-				if (!targetFile.startsWith(targetRoot)) {
-					logger.warn("Skipping classpath skill resource outside target directory: {}", resource);
-					continue;
+				String skillDirectoryName = relativePath.getName(0).toString();
+				String sourceRoot = resolvedPath.sourceRoot();
+				classpathRootOrder.computeIfAbsent(sourceRoot, ignored -> classpathRootOrder.size());
+				String selectedSourceRoot = selectedSourceRoots.get(skillDirectoryName);
+				if (selectedSourceRoot == null || classpathRootOrder.get(sourceRoot) < classpathRootOrder
+					.get(selectedSourceRoot)) {
+					selectedSourceRoots.put(skillDirectoryName, sourceRoot);
+					selectedSkillResources.put(skillDirectoryName, new ArrayList<>());
 				}
-
-				Path skillDirectory = targetRoot.resolve(relativePath.getName(0));
-				if (!preparedSkillDirectories.contains(skillDirectory)) {
-					deleteDirectoryRecursively(skillDirectory);
-					preparedSkillDirectories.add(skillDirectory);
+				if (sourceRoot.equals(selectedSourceRoots.get(skillDirectoryName))) {
+					selectedSkillResources.get(skillDirectoryName)
+						.add(new ResolvedSkillResource(resource, relativePath));
 				}
-
-				Files.createDirectories(targetFile.getParent());
-				try (InputStream inputStream = resource.getInputStream()) {
-					Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
-				}
-				extractedSkillDirectories.add(skillDirectory);
 			}
 			catch (Exception e) {
-				logger.warn("Failed to extract classpath skill resource {}: {}", resource, e.getMessage());
+				logger.warn("Failed to resolve classpath skill resource {}: {}", resource, e.getMessage());
 			}
 		}
 
-		for (Path skillDirectory : extractedSkillDirectories) {
+		// A new generation is not published through this.skills until every selected resource
+		// has been copied and scanned, so concurrent readers never observe partial extraction.
+		Path extractionRoot = Files.createTempDirectory(targetRoot, ".extracted-");
+		bootExtractionRoots.add(extractionRoot);
+		for (Map.Entry<String, List<ResolvedSkillResource>> skillResources : selectedSkillResources.entrySet()) {
+			Path skillDirectory = extractionRoot.resolve(skillResources.getKey());
 			try {
+				for (ResolvedSkillResource skillResource : skillResources.getValue()) {
+					Path targetFile = extractionRoot.resolve(skillResource.relativePath()).normalize();
+					if (!targetFile.startsWith(extractionRoot)) {
+						throw new IOException("Classpath skill resource resolves outside extraction directory: "
+								+ skillResource.resource());
+					}
+					Files.createDirectories(targetFile.getParent());
+					try (InputStream inputStream = skillResource.resource().getInputStream()) {
+						Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
+					}
+				}
+
 				SkillMetadata metadata = scanner.loadSkill(skillDirectory, "classpath");
 				if (metadata != null) {
 					metadata.setSkillPath(skillDirectory.toString());
@@ -281,6 +300,7 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 				}
 			}
 			catch (Exception e) {
+				deleteDirectoryRecursively(skillDirectory);
 				logger.error("Failed to load extracted classpath skill {}: {}", skillDirectory, e.getMessage(), e);
 			}
 		}
@@ -288,30 +308,46 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 		logger.info("Loaded {} skills from Spring Boot classpath: {}", loadedSkills.size(), classpathPath);
 	}
 
-	private Path getRelativeResourcePath(Resource resource) throws IOException {
+	private Map<String, Integer> getClasspathRootOrder(PathMatchingResourcePatternResolver resolver) throws IOException {
+		Map<String, Integer> rootOrder = new LinkedHashMap<>();
+		for (Resource root : resolver.getResources("classpath*:" + classpathPath)) {
+			String rootUrl = getDecodedResourceUrl(root);
+			while (rootUrl.endsWith("/")) {
+				rootUrl = rootUrl.substring(0, rootUrl.length() - 1);
+			}
+			rootOrder.putIfAbsent(rootUrl, rootOrder.size());
+		}
+		return rootOrder;
+	}
+
+	private ResolvedResourcePath getResolvedResourcePath(Resource resource) throws IOException {
+		String decodedResourceUrl = getDecodedResourceUrl(resource);
+		String marker = "/" + classpathPath + "/";
+		int archiveRootIndex = decodedResourceUrl.lastIndexOf("!/");
+		int markerIndex = decodedResourceUrl.indexOf(marker, archiveRootIndex >= 0 ? archiveRootIndex + 1 : 0);
+		if (markerIndex < 0) {
+			logger.debug("Unable to determine relative path for classpath skill resource: {}", resource);
+			return null;
+		}
+
+		String sourceRoot = decodedResourceUrl.substring(0, markerIndex + marker.length() - 1);
+		Path relativePath = Path.of(decodedResourceUrl.substring(markerIndex + marker.length())).normalize();
+		return new ResolvedResourcePath(sourceRoot, relativePath);
+	}
+
+	private String getDecodedResourceUrl(Resource resource) throws IOException {
 		String resourceUrl = resource.getURL().toExternalForm();
 		int queryIndex = resourceUrl.indexOf('?');
 		if (queryIndex >= 0) {
 			resourceUrl = resourceUrl.substring(0, queryIndex);
 		}
 
-		String decodedResourceUrl;
 		try {
-			decodedResourceUrl = StringUtils.uriDecode(resourceUrl, StandardCharsets.UTF_8);
+			return StringUtils.uriDecode(resourceUrl, StandardCharsets.UTF_8);
 		}
 		catch (IllegalArgumentException e) {
 			throw new IOException("Invalid classpath skill resource URL: " + resourceUrl, e);
 		}
-
-		String marker = "/" + classpathPath + "/";
-		int archiveRootIndex = decodedResourceUrl.lastIndexOf("!/");
-		int markerIndex = decodedResourceUrl.indexOf(marker, archiveRootIndex >= 0 ? archiveRootIndex + 1 : 0);
-		if (markerIndex < 0) {
-			logger.debug("Unable to determine relative path for classpath skill resource: {}", resourceUrl);
-			return null;
-		}
-
-		return Path.of(decodedResourceUrl.substring(markerIndex + marker.length())).normalize();
 	}
 
 	private void deleteDirectoryRecursively(Path directory) throws IOException {
@@ -324,6 +360,12 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 				Files.deleteIfExists(path);
 			}
 		}
+	}
+
+	private record ResolvedResourcePath(String sourceRoot, Path relativePath) {
+	}
+
+	private record ResolvedSkillResource(Resource resource, Path relativePath) {
 	}
 
 	FileSystem getOrCreateJarFileSystem(URI uri) throws IOException {
@@ -601,20 +643,32 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 	}
 
 	/**
-	 * Closes the JAR FileSystem if it was created.
+	 * Closes the JAR FileSystem if it was created and removes managed extraction
+	 * generations.
 	 * Should be called when the registry is no longer needed.
 	 */
-	public void close() {
+	public synchronized void close() {
 		if (ownsJarFileSystem && jarFileSystem != null) {
 			try {
 				jarFileSystem.close();
 			}
 			catch (IOException e) {
 				logger.warn("Failed to close JAR filesystem: {}", e.getMessage());
+			}
 		}
 		jarFileSystem = null;
 		ownsJarFileSystem = false;
-	}
+
+		for (Path extractionRoot : bootExtractionRoots) {
+			try {
+				deleteDirectoryRecursively(extractionRoot);
+			}
+			catch (IOException e) {
+				logger.warn("Failed to remove Spring Boot skill extraction directory {}: {}", extractionRoot,
+						e.getMessage());
+			}
+		}
+		bootExtractionRoots.clear();
 	}
 
 	/**

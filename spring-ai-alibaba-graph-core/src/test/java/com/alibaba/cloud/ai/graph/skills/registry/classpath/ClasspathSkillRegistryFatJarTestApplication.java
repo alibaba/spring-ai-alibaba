@@ -37,6 +37,30 @@ public final class ClasspathSkillRegistryFatJarTestApplication {
 		if (!Files.exists(skillPath.resolve("references/reference.md"))) {
 			throw new IllegalStateException("Nested skill resource was not extracted from the executable JAR");
 		}
+		if (!Files.exists(skillPath.resolve("references/fat-jar-skills/note.md"))) {
+			throw new IllegalStateException("A repeated classpath root was not retained in the resource path");
+		}
+		if (Files.exists(skillPath.resolve("references/dependency-only.md"))) {
+			throw new IllegalStateException("Resources from duplicate dependency skills were merged");
+		}
+		if (Files.exists(skillPath.resolve("references/obsolete.md"))) {
+			throw new IllegalStateException("An obsolete extracted resource remained exposed");
+		}
+
+		registry.reload();
+		Path reloadedSkillPath = Path.of(registry.get("fat-jar-skill").orElseThrow().getSkillPath());
+		if (skillPath.equals(reloadedSkillPath)) {
+			throw new IllegalStateException("Reload replaced files in the published extraction directory");
+		}
+		if (!Files.exists(skillPath.resolve("references/reference.md"))
+				|| !Files.exists(reloadedSkillPath.resolve("references/reference.md"))) {
+			throw new IllegalStateException("Reload removed a published skill path or exposed an incomplete one");
+		}
+		registry.close();
+		if (Files.exists(skillPath) || Files.exists(reloadedSkillPath)) {
+			throw new IllegalStateException("Closing the registry did not clean its extraction generations");
+		}
+		System.out.println("FAT_JAR_RELOAD_STAGED=true");
 	}
 
 }

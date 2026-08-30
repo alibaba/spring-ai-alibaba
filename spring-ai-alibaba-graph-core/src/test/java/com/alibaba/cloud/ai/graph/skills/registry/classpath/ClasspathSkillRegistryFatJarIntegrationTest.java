@@ -15,8 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.skills.registry.classpath;
 
-import org.springframework.boot.loader.tools.Libraries;
 import org.springframework.boot.loader.tools.Layouts;
+import org.springframework.boot.loader.tools.Library;
+import org.springframework.boot.loader.tools.LibraryScope;
 import org.springframework.boot.loader.tools.Repackager;
 import org.springframework.boot.loader.tools.RepackagingLayout;
 
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ClasspathSkillRegistryFatJarIntegrationTest {
@@ -55,17 +55,19 @@ class ClasspathSkillRegistryFatJarIntegrationTest {
 	@Test
 	void loadsSkillFromSpringBootExecutableJar(@TempDir Path tempDir) throws Exception {
 		Path executableJar = tempDir.resolve("classpath-skill-test.jar");
+		Path dependencyJar = tempDir.resolve("duplicate-skill-dependency.jar");
 		Path extractedRoot = tempDir.resolve("extracted");
 		Path obsoleteResource = extractedRoot
 			.resolve("fat-jar-skills/fat-jar-skill/references/obsolete.md");
 		Files.createDirectories(obsoleteResource.getParent());
 		Files.writeString(obsoleteResource, "obsolete");
 		createApplicationJar(executableJar);
+		createDependencyJar(dependencyJar);
 
 		Repackager repackager = new Repackager(executableJar.toFile());
 		repackager.setMainClass(ClasspathSkillRegistryFatJarTestApplication.class.getName());
 		repackager.setLayout(new PropertiesLauncherJarLayout());
-		repackager.repackage(Libraries.NONE);
+		repackager.repackage(callback -> callback.library(new Library(dependencyJar.toFile(), LibraryScope.COMPILE)));
 
 		Process process = new ProcessBuilder(javaExecutable(), "-Dloader.path=" + testClasspath(), "-jar",
 				executableJar.toString(), extractedRoot.toString()).redirectErrorStream(true)
@@ -79,9 +81,16 @@ class ClasspathSkillRegistryFatJarIntegrationTest {
 		String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 		assertEquals(0, process.exitValue(), output);
 		assertTrue(output.contains("FAT_JAR_SKILLS=[fat-jar-skill]"), output);
-		assertTrue(Files.exists(extractedRoot
-			.resolve("fat-jar-skills/fat-jar-skill/references/fat-jar-skills/note.md")));
-		assertFalse(Files.exists(obsoleteResource));
+		assertTrue(output.contains("FAT_JAR_RELOAD_STAGED=true"), output);
+	}
+
+	private void createDependencyJar(Path jarPath) throws IOException {
+		try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(jarPath))) {
+			writeEntry(output, "fat-jar-skills/fat-jar-skill/SKILL.md",
+					new java.io.ByteArrayInputStream(SKILL_CONTENT.getBytes(StandardCharsets.UTF_8)));
+			writeEntry(output, "fat-jar-skills/fat-jar-skill/references/dependency-only.md",
+					new java.io.ByteArrayInputStream("# Dependency only".getBytes(StandardCharsets.UTF_8)));
+		}
 	}
 
 	private void createApplicationJar(Path jarPath) throws IOException {
