@@ -38,6 +38,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -235,6 +236,7 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 				getClass().getClassLoader());
 		Resource[] resources = resolver.getResources("classpath*:" + classpathPath + "/**/*");
 		Set<Path> extractedSkillDirectories = new LinkedHashSet<>();
+		Set<Path> preparedSkillDirectories = new LinkedHashSet<>();
 
 		for (Resource resource : resources) {
 			if (!resource.isReadable()) {
@@ -253,11 +255,17 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 					continue;
 				}
 
+				Path skillDirectory = targetRoot.resolve(relativePath.getName(0));
+				if (!preparedSkillDirectories.contains(skillDirectory)) {
+					deleteDirectoryRecursively(skillDirectory);
+					preparedSkillDirectories.add(skillDirectory);
+				}
+
 				Files.createDirectories(targetFile.getParent());
 				try (InputStream inputStream = resource.getInputStream()) {
 					Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
 				}
-				extractedSkillDirectories.add(targetRoot.resolve(relativePath.getName(0)));
+				extractedSkillDirectories.add(skillDirectory);
 			}
 			catch (Exception e) {
 				logger.warn("Failed to extract classpath skill resource {}: {}", resource, e.getMessage());
@@ -296,13 +304,26 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 		}
 
 		String marker = "/" + classpathPath + "/";
-		int markerIndex = decodedResourceUrl.lastIndexOf(marker);
+		int archiveRootIndex = decodedResourceUrl.lastIndexOf("!/");
+		int markerIndex = decodedResourceUrl.indexOf(marker, archiveRootIndex >= 0 ? archiveRootIndex + 1 : 0);
 		if (markerIndex < 0) {
 			logger.debug("Unable to determine relative path for classpath skill resource: {}", resourceUrl);
 			return null;
 		}
 
 		return Path.of(decodedResourceUrl.substring(markerIndex + marker.length())).normalize();
+	}
+
+	private void deleteDirectoryRecursively(Path directory) throws IOException {
+		if (!Files.exists(directory)) {
+			return;
+		}
+
+		try (Stream<Path> paths = Files.walk(directory)) {
+			for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) {
+				Files.deleteIfExists(path);
+			}
+		}
 	}
 
 	FileSystem getOrCreateJarFileSystem(URI uri) throws IOException {
