@@ -24,6 +24,18 @@ import com.alibaba.cloud.ai.parser.markdown.MarkdownDocumentParser;
 import com.alibaba.cloud.ai.parser.tika.TikaDocumentParser;
 import com.alibaba.cloud.ai.parser.yaml.YamlDocumentParser;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.util.json.JsonParser;
 
@@ -31,11 +43,10 @@ import java.io.BufferedInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
-import java.net.URLConnection;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -139,34 +150,69 @@ public class DocumentExtractorNode implements NodeAction {
 	}
 
 	private InputStream openRemoteInputStream(URI uri) throws IOException {
-		String host = uri.getHost();
-		if (host == null || host.isBlank()) {
-			throw new IOException("Remote document resource must have a host");
-		}
-		for (InetAddress address : InetAddress.getAllByName(host)) {
-			if (isBlockedRemoteAddress(address)) {
-				throw new IOException("Remote document resource resolves to a blocked address");
-			}
-		}
-
-		URLConnection connection = uri.toURL().openConnection();
-		connection.setConnectTimeout(REMOTE_CONNECT_TIMEOUT_MILLIS);
-		connection.setReadTimeout(REMOTE_READ_TIMEOUT_MILLIS);
-		if (connection instanceof HttpURLConnection httpConnection) {
-			httpConnection.setInstanceFollowRedirects(false);
-			int status = httpConnection.getResponseCode();
-			if (status < HttpURLConnection.HTTP_OK || status >= HttpURLConnection.HTTP_MULT_CHOICE) {
+		RequestConfig requestConfig = RequestConfig.custom()
+			.setConnectTimeout(REMOTE_CONNECT_TIMEOUT_MILLIS)
+			.setSocketTimeout(REMOTE_READ_TIMEOUT_MILLIS)
+			.setRedirectsEnabled(false)
+			.build();
+		CloseableHttpClient httpClient = createHttpClient(requestConfig);
+		CloseableHttpResponse response = null;
+		try {
+			response = httpClient.execute(new HttpGet(uri));
+			int status = response.getStatusLine().getStatusCode();
+			if (status < HttpStatus.SC_OK || status >= HttpStatus.SC_MULTIPLE_CHOICES) {
 				throw new IOException("Remote document resource returned HTTP status " + status);
 			}
+			if (response.getEntity() == null) {
+				throw new IOException("Remote document resource has no response body");
+			}
+			long contentLength = response.getEntity().getContentLength();
+			if (contentLength > MAX_REMOTE_RESOURCE_SIZE_BYTES) {
+				throw new IOException("Remote document resource exceeds the maximum allowed size");
+			}
+			InputStream responseStream = new HttpResponseInputStream(response.getEntity().getContent(), response, httpClient);
+			response = null;
+			httpClient = null;
+			return new LimitedInputStream(new BufferedInputStream(responseStream), MAX_REMOTE_RESOURCE_SIZE_BYTES);
 		}
-		long contentLength = connection.getContentLengthLong();
-		if (contentLength > MAX_REMOTE_RESOURCE_SIZE_BYTES) {
-			throw new IOException("Remote document resource exceeds the maximum allowed size");
+		finally {
+			if (response != null) {
+				response.close();
+			}
+			if (httpClient != null) {
+				httpClient.close();
+			}
 		}
-		return new LimitedInputStream(new BufferedInputStream(connection.getInputStream()), MAX_REMOTE_RESOURCE_SIZE_BYTES);
 	}
 
-	private static boolean isBlockedRemoteAddress(InetAddress address) {
+	private static CloseableHttpClient createHttpClient(RequestConfig requestConfig) {
+		Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
+			.register("http", PlainConnectionSocketFactory.getSocketFactory())
+			.register("https", SSLConnectionSocketFactory.getSocketFactory())
+			.build();
+		PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager(socketFactoryRegistry,
+				DocumentExtractorNode::resolveAndValidateRemoteAddresses);
+		return HttpClients.custom()
+			.setConnectionManager(connectionManager)
+			.setDefaultRequestConfig(requestConfig)
+			.disableRedirectHandling()
+			.build();
+	}
+
+	private static InetAddress[] resolveAndValidateRemoteAddresses(String host) throws UnknownHostException {
+		if (host == null || host.isBlank()) {
+			throw new UnknownHostException("Remote document resource must have a host");
+		}
+		InetAddress[] addresses = InetAddress.getAllByName(host);
+		for (InetAddress address : addresses) {
+			if (isBlockedRemoteAddress(address)) {
+				throw new UnknownHostException("Remote document resource resolves to a blocked address");
+			}
+		}
+		return addresses;
+	}
+
+	static boolean isBlockedRemoteAddress(InetAddress address) {
 		if (address.isAnyLocalAddress() || address.isLoopbackAddress() || address.isLinkLocalAddress()
 				|| address.isSiteLocalAddress() || address.isMulticastAddress()) {
 			return true;
@@ -174,6 +220,13 @@ public class DocumentExtractorNode implements NodeAction {
 		if (address instanceof Inet6Address) {
 			byte firstByte = address.getAddress()[0];
 			return (firstByte & 0xFE) == 0xFC;
+		}
+		byte[] bytes = address.getAddress();
+		int first = Byte.toUnsignedInt(bytes[0]);
+		int second = Byte.toUnsignedInt(bytes[1]);
+		if (first == 0 || first >= 224 || (first == 100 && second >= 64 && second <= 127)
+				|| (first == 198 && (second == 18 || second == 19))) {
+			return true;
 		}
 		return false;
 	}
@@ -312,39 +365,94 @@ public class DocumentExtractorNode implements NodeAction {
 
 	}
 
-	private static final class LimitedInputStream extends FilterInputStream {
+	static final class LimitedInputStream extends FilterInputStream {
 
 		private final long maxBytes;
 
 		private long bytesRead;
 
-		private LimitedInputStream(InputStream inputStream, long maxBytes) {
+		LimitedInputStream(InputStream inputStream, long maxBytes) {
 			super(inputStream);
 			this.maxBytes = maxBytes;
 		}
 
 		@Override
 		public int read() throws IOException {
+			if (this.bytesRead == this.maxBytes) {
+				return readPastLimit();
+			}
 			int value = super.read();
 			if (value != -1) {
-				verifyLimit(1);
+				this.bytesRead++;
 			}
 			return value;
 		}
 
 		@Override
 		public int read(byte[] bytes, int offset, int length) throws IOException {
-			int count = super.read(bytes, offset, length);
+			if (length == 0) {
+				return 0;
+			}
+			long remaining = this.maxBytes - this.bytesRead;
+			if (remaining <= 0) {
+				return readPastLimit();
+			}
+			int count = super.read(bytes, offset, (int) Math.min(length, remaining));
 			if (count > 0) {
-				verifyLimit(count);
+				this.bytesRead += count;
 			}
 			return count;
 		}
 
-		private void verifyLimit(int count) throws IOException {
-			this.bytesRead += count;
-			if (this.bytesRead > this.maxBytes) {
+		@Override
+		public long skip(long count) throws IOException {
+			if (count <= 0) {
+				return 0;
+			}
+			long remaining = this.maxBytes - this.bytesRead;
+			if (remaining <= 0) {
+				readPastLimit();
+				return 0;
+			}
+			long skipped = super.skip(Math.min(count, remaining));
+			this.bytesRead += skipped;
+			return skipped;
+		}
+
+		private int readPastLimit() throws IOException {
+			if (super.read() != -1) {
 				throw new IOException("Remote document resource exceeds the maximum allowed size");
+			}
+			return -1;
+		}
+
+	}
+
+	private static final class HttpResponseInputStream extends FilterInputStream {
+
+		private final CloseableHttpResponse response;
+
+		private final CloseableHttpClient httpClient;
+
+		private HttpResponseInputStream(InputStream inputStream, CloseableHttpResponse response,
+				CloseableHttpClient httpClient) {
+			super(inputStream);
+			this.response = response;
+			this.httpClient = httpClient;
+		}
+
+		@Override
+		public void close() throws IOException {
+			try {
+				super.close();
+			}
+			finally {
+				try {
+					this.response.close();
+				}
+				finally {
+					this.httpClient.close();
+				}
 			}
 		}
 

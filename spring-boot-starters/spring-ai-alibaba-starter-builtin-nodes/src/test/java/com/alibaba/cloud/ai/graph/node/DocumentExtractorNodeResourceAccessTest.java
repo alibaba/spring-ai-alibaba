@@ -20,14 +20,18 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DocumentExtractorNodeResourceAccessTest {
 
@@ -120,6 +124,20 @@ class DocumentExtractorNodeResourceAccessTest {
 
 		assertThrows(RuntimeException.class,
 				() -> node.apply(new OverAllState(Map.of("file", "https://example.com/document.txt"))));
+	}
+
+	@Test
+	void rejectsAlibabaCloudMetadataAddress() throws Exception {
+		assertTrue(DocumentExtractorNode.isBlockedRemoteAddress(InetAddress.getByName("100.100.100.200")));
+	}
+
+	@Test
+	void countsSkippedBytesTowardRemoteResourceLimit() throws Exception {
+		try (DocumentExtractorNode.LimitedInputStream inputStream = new DocumentExtractorNode.LimitedInputStream(
+				new ByteArrayInputStream(new byte[11]), 10)) {
+			assertEquals(10, inputStream.skip(10));
+			assertThrows(IOException.class, inputStream::read);
+		}
 	}
 
 }
