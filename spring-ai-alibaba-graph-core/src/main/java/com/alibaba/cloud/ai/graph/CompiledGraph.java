@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -322,7 +323,12 @@ public class CompiledGraph {
 			var nextNodeCommand = nextNodeId(asNode, branchCheckpoint.getState(), config);
 
 			nextNodeId = nextNodeCommand.gotoNode();
-			branchCheckpoint = branchCheckpoint.updateState(nextNodeCommand.update(), keyStrategyMap);
+			branchCheckpoint = Checkpoint.builder()
+					.id(branchCheckpoint.getId())
+					.state(nextNodeCommand.update())
+					.nodeId(branchCheckpoint.getNodeId())
+					.nextNodeId(branchCheckpoint.getNextNodeId())
+					.build();
 
 		}
 		// update checkpoint in saver
@@ -362,7 +368,7 @@ public class CompiledGraph {
 		return parallelNodeEdges.stream()
 				.map(ee -> ee.target().id())
 				.filter(Objects::nonNull)
-				.collect(Collectors.toSet());
+				.collect(Collectors.toCollection(TreeSet::new));
 	}
 
 
@@ -639,7 +645,15 @@ public class CompiledGraph {
 
 	/**
 	 * Calls the graph execution and returns the final state.
-	 * 
+	 * <p>
+	 * Checkpoint semantics: when a checkpoint saver is configured, this method resumes from
+	 * a persisted checkpoint only when {@code config} explicitly requests it, either by
+	 * carrying a concrete checkpoint id ({@link RunnableConfig#withCheckPointId(String)}) or
+	 * by carrying resume metadata ({@link RunnableConfig#withResume()}). Calling
+	 * {@code invoke(Map.of(), config)} with neither reuses the persisted state but restarts
+	 * execution from {@code START}; use {@code invoke(Map.of(), config.withResume())} to
+	 * continue from the latest checkpoint's next node without knowing its id.
+	 *
 	 * @param inputs the input map
 	 * @param config the invoke configuration
 	 * @return an Optional containing the final state

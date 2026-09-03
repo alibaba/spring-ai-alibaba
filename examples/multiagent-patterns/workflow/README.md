@@ -30,12 +30,14 @@ Flow: **Question → Agent (list_tables → get_schema → run_query) → Answer
 
 ## Run
 
+From the repository root (Maven installation is optional when using `mvnw`):
+
 ```bash
 # RAG agent
-mvn spring-boot:run -Dspring-boot.run.arguments="--workflow.rag.enabled=true --workflow.runner.enabled=true"
+./mvnw -f examples/multiagent-patterns/workflow spring-boot:run -Dspring-boot.run.arguments="--workflow.rag.enabled=true --workflow.runner.enabled=true"
 
 # SQL agent
-mvn spring-boot:run -Dspring-boot.run.arguments="--workflow.sql.enabled=true --workflow.runner.enabled=true"
+./mvnw -f examples/multiagent-patterns/workflow spring-boot:run -Dspring-boot.run.arguments="--workflow.sql.enabled=true --workflow.runner.enabled=true"
 ```
 
 Set `AI_DASHSCOPE_API_KEY` environment variable.

@@ -6,9 +6,9 @@ Below is the organizational structure of the Spring AI Alibaba project.
 
 Committers have full write permissions to the entire project codebase, like permissions to operate branches, issues, pull requests, etc. PMC Members have the same codebase permissions as Committers, and are responsible for the community management, decision-making, etc., and are responsible for voting and making decisions on important matters such as releases, vulnerabilities, committer and PMC Member nominations, etc.
 
-The Spring AI Alibaba project belongs to the Alibaba Github organization, so it can leverage all the resources and help from the Alibaba open source organization in some key matters such as security vulnerability reporting and copyright protection.
+The Spring AI Alibaba project belongs to the Alibaba GitHub organization, so it can leverage all the resources and help from the Alibaba open source organization in some key matters such as security vulnerability reporting and copyright protection.
 
-As the only commission of the Alibaba Github organization for this project, PMC is responsible for managing and monitoring the Spring AI Alibaba open source project and ensuring that all development activities comply with the Alibaba organization's open source specifications.
+As the only commission of the Alibaba GitHub organization for this project, PMC is responsible for managing and monitoring the Spring AI Alibaba open source project and ensuring that all development activities comply with the Alibaba organization's open source specifications.
 
 ## Project Management Committee (PMC)
 
@@ -24,7 +24,7 @@ The Spring AI Alibaba project management committee (PMC), is the only governance
    all Spring AI Alibaba project resources and has the final say in the disposition of
    those resources.
 5. Define and evolve the scope of the community.
-6. Receive and handle reports about [code of conduct](./CODE-OF-CONDUCT.md)
+6. Receive and handle reports about [code of conduct](./CODE_OF_CONDUCT.md)
    violations and maintain confidentiality.
 7. Approval of logo changes, significant website updates and marketing campaigns.
 8. Establish processes regarding project resources/assets, including artifact repositories, build and test infrastructure, web sites and their domains, blogs, social-media accounts, etc.

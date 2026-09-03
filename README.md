@@ -146,7 +146,7 @@ This project consists of several core components:
 
 ## Contact Us
 
-* Dingtalk Group (钉钉群), search `94405033092` and join.
+* Dingtalk Group (钉钉群), search `182255021470` and join.
 
 <img src="./docs/imgs/dingding-group.png" style="width: 260px; height: auto"/>
 

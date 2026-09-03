@@ -473,6 +473,7 @@ class AgentToolNodeAsyncExecutionTest {
 			// This simulates the extraStateFromToolCall behavior
 			Map<String, Object> stateUpdates = new java.util.concurrent.ConcurrentHashMap<>();
 			CountDownLatch writeComplete = new CountDownLatch(1);
+			ExecutorService executor = Executors.newSingleThreadExecutor();
 
 			CancellableAsyncToolCallback callback = new CancellableAsyncToolCallback() {
 				@Override
@@ -497,7 +498,7 @@ class AgentToolNodeAsyncExecutionTest {
 							Thread.currentThread().interrupt();
 						}
 						return "result";
-					});
+					}, executor);
 				}
 
 				@Override
@@ -513,25 +514,30 @@ class AgentToolNodeAsyncExecutionTest {
 
 			com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken token = new com.alibaba.cloud.ai.graph.agent.tool.DefaultCancellationToken();
 
-			CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
-
-			// Wait for writes - increased from 1s to 5s for CI stability
-			assertTrue(writeComplete.await(5, TimeUnit.SECONDS));
-			assertEquals(2, stateUpdates.size());
-
-			// Simulate AgentToolNode timeout handling
 			try {
-				future.orTimeout(callback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
-			}
-			catch (Exception e) {
-				// This is what AgentToolNode does on timeout
-				token.cancel();
-				stateUpdates.clear(); // AgentToolNode clears extraStateFromToolCall
-			}
+				CompletableFuture<String> future = callback.callAsync("{}", new ToolContext(Map.of()), token);
 
-			// State should be cleared
-			assertTrue(stateUpdates.isEmpty());
-			assertTrue(token.isCancelled());
+				// Wait for writes - increased from 1s to 5s for CI stability
+				assertTrue(writeComplete.await(5, TimeUnit.SECONDS));
+				assertEquals(2, stateUpdates.size());
+
+				// Simulate AgentToolNode timeout handling
+				try {
+					future.orTimeout(callback.getTimeout().toMillis(), TimeUnit.MILLISECONDS).join();
+				}
+				catch (Exception e) {
+					// This is what AgentToolNode does on timeout
+					token.cancel();
+					stateUpdates.clear(); // AgentToolNode clears extraStateFromToolCall
+				}
+
+				// State should be cleared
+				assertTrue(stateUpdates.isEmpty());
+				assertTrue(token.isCancelled());
+			}
+			finally {
+				executor.shutdownNow();
+			}
 		}
 
 	}

@@ -27,7 +27,7 @@ If you are a first-time contributor, you can claim a relatively simple task from
 - Click the `Fork` icon in the upper right corner of [this project](https://github.com/alibaba/spring-ai-alibaba) to fork alibaba/spring-ai-alibaba to your own space.
 - Clone the spring-ai-alibaba repository from your account to your local machine. For example, if my account is `chickenlj`, I would execute `git clone https://github.com/chickenlj/spring-ai-alibaba.git` to clone it.
 
-### Configure Github Information
+### Configure GitHub Information
 
 - Execute `git config --list` on your machine to check git's global username and email.
 - Verify that the displayed user.name and user.email match your github username and email.

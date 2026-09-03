@@ -100,7 +100,7 @@ public interface DeepSeekAssistantMessageHandler {
 			}
 
 			java.util.Map<String, Object> metadata = msg.getMetadata();
-			serializeMetadata(gen, metadata);
+			serializeMetadata(gen, provider, metadata);
 		}
 
 	}

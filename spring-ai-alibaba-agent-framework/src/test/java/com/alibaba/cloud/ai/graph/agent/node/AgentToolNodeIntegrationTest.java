@@ -301,9 +301,32 @@ class AgentToolNodeIntegrationTest {
 
 	}
 
+
 	@Nested
 	@DisplayName("Sequential Execution Tests")
 	class SequentialExecutionTests {
+
+
+		@Test
+		@DisplayName("should degrade gracefully when tool callback cannot be resolved")
+		void apply_shouldReturnUnavailableToolResponse_whenToolCallbackMissing() throws Exception {
+			AgentToolNode node = baseBuilder.toolCallbacks(List.of()).build();
+
+			AssistantMessage assistantMessage = createAssistantMessageWithToolCalls(
+					createToolCall("call-1", "fuyao-web-search", "{}"));
+
+			OverAllState state = createStateWithMessages(assistantMessage);
+			RunnableConfig config = RunnableConfig.builder().build();
+
+			Map<String, Object> result = node.apply(state, config);
+
+			ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
+			assertEquals(1, responseMessage.getResponses().size());
+			ToolResponseMessage.ToolResponse response = responseMessage.getResponses().get(0);
+			assertEquals("call-1", response.id());
+			assertEquals("fuyao-web-search", response.name());
+			assertEquals("Tool not available: fuyao-web-search", response.responseData());
+		}
 
 		@Test
 		@DisplayName("should maintain tool response order in sequential mode")
@@ -633,9 +656,8 @@ class AgentToolNodeIntegrationTest {
 		}
 
 		@Test
-		@DisplayName("should throw exception when tool not found anywhere")
-		void resolve_shouldThrow_whenToolNotFound() {
-			// Given
+		@DisplayName("should return unavailable response when tool not found anywhere")
+		void resolve_shouldReturnUnavailableResponse_whenToolNotFound() throws Exception {
 			AgentToolNode node = baseBuilder.toolCallbacks(List.of()).toolCallbackResolver(null).build();
 
 			AssistantMessage assistantMessage = createAssistantMessageWithToolCalls(
@@ -644,8 +666,14 @@ class AgentToolNodeIntegrationTest {
 			OverAllState state = createStateWithMessages(assistantMessage);
 			RunnableConfig config = RunnableConfig.builder().build();
 
-			// When/Then
-			assertThrows(IllegalStateException.class, () -> node.apply(state, config));
+			Map<String, Object> result = node.apply(state, config);
+
+			ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
+			assertEquals(1, responseMessage.getResponses().size());
+			ToolResponseMessage.ToolResponse response = responseMessage.getResponses().get(0);
+			assertEquals("call-1", response.id());
+			assertEquals("nonExistentTool", response.name());
+			assertEquals("Tool not available: nonExistentTool", response.responseData());
 		}
 
 	}
@@ -762,6 +790,28 @@ class AgentToolNodeIntegrationTest {
 			assertNotNull(capturedToken.get(), "Token should be passed");
 			// Should NOT be NONE token
 			assertFalse(capturedToken.get() == CancellationToken.NONE, "Should receive real token, not NONE");
+		}
+
+
+		@Test
+		@DisplayName("should degrade gracefully when tool callback cannot be resolved")
+		void apply_shouldReturnUnavailableToolResponse_whenToolCallbackMissing() throws Exception {
+			AgentToolNode node = baseBuilder.toolCallbacks(List.of()).build();
+
+			AssistantMessage assistantMessage = createAssistantMessageWithToolCalls(
+					createToolCall("call-1", "fuyao-web-search", "{}"));
+
+			OverAllState state = createStateWithMessages(assistantMessage);
+			RunnableConfig config = RunnableConfig.builder().build();
+
+			Map<String, Object> result = node.apply(state, config);
+
+			ToolResponseMessage responseMessage = (ToolResponseMessage) result.get("messages");
+			assertEquals(1, responseMessage.getResponses().size());
+			ToolResponseMessage.ToolResponse response = responseMessage.getResponses().get(0);
+			assertEquals("call-1", response.id());
+			assertEquals("fuyao-web-search", response.name());
+			assertEquals("Tool not available: fuyao-web-search", response.responseData());
 		}
 
 	}

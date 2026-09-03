@@ -103,7 +103,19 @@ public class RoutingNode implements MultiCommandAction {
 		// Prepare messages with instruction if available
 		List<Message> messagesWithInstruction = prepareMessagesWithInstruction(messages);
 		
-		RoutingDecision decision = getDecisionWithRetry(messagesWithInstruction, DEFAULT_MAX_RETRIES);
+		RoutingDecision decision;
+		try {
+			decision = getDecisionWithRetry(messagesWithInstruction, DEFAULT_MAX_RETRIES);
+		}
+		catch (Exception e) {
+			MultiCommand fallbackCommand = createFallbackCommand(state, messages);
+			if (fallbackCommand != null) {
+				logger.warn("RoutingAgent {} exhausted routing retries. Routing to fallback agent {}.",
+						rootAgent.name(), fallbackCommand.gotoNodes().get(0));
+				return fallbackCommand;
+			}
+			throw e;
+		}
 		List<String> decisionValues = decision.getAgentNames();
 
 		// Validate all agent names are valid
@@ -132,6 +144,28 @@ public class RoutingNode implements MultiCommandAction {
 			throw new IllegalStateException(
 					"RoutingAgent " + rootAgent.name() + " failed to get valid decision after retries. Invalid agents: " + invalidAgents + ".");
 		}
+	}
+
+	private MultiCommand createFallbackCommand(OverAllState state, List<Message> messages) {
+		if (!(rootAgent instanceof LlmRoutingAgent llmRoutingAgent)) {
+			return null;
+		}
+
+		String fallbackAgent = llmRoutingAgent.getFallbackAgent();
+		if (!StringUtils.hasText(fallbackAgent)
+				|| subAgents.stream().noneMatch(agent -> agent.name().equals(fallbackAgent))) {
+			return null;
+		}
+
+		String fallbackInput = state.value("input").map(Object::toString).orElseGet(() -> {
+			for (int i = messages.size() - 1; i >= 0; i--) {
+				if (messages.get(i) instanceof UserMessage userMessage) {
+					return userMessage.getText();
+				}
+			}
+			return "";
+		});
+		return new MultiCommand(List.of(fallbackAgent), Map.of(fallbackAgent + "_input", fallbackInput));
 	}
 
 	/**
@@ -296,4 +330,3 @@ public class RoutingNode implements MultiCommandAction {
 	public record AgentRouting(String agent, String query) {
 	}
 }
-

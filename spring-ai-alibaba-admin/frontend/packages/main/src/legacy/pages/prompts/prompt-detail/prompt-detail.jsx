@@ -28,6 +28,7 @@ import { buildLegacyPath } from '../../../utils/path';
 import AddFunctionModal from './add-function-modal/add-function-modal';
 import ViewFunctionModel from './view-function-model/view-function-model';
 import FunctionList from './FunctionList';
+import $i18n from '@/i18n';
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;
@@ -111,7 +112,7 @@ const PromptDetailPage = () => {
     return models.length > 0 ? models[0].id : '-';
   };
 
-  // 获取模型参数显示值的辅助函数
+  // 获取Model Parameters显示值的辅助函数
   const getDisplayModelParams = (modelParams, selectedModel) => {
     if (modelParams) {
       // Filter out model identifier fields from display parameters
@@ -119,7 +120,7 @@ const PromptDetailPage = () => {
       return filteredParams; // Return filtered parameters dynamically
     }
 
-    // 如果没有modelParams，使用模型的默认参数
+    // 如果没有modelParams，使用Model的默认参数
     const selectedModelData = models.find(m => m.id === selectedModel);
     const defaultParams = selectedModelData?.defaultParameters || {};
 
@@ -133,7 +134,7 @@ const PromptDetailPage = () => {
   const hasInitializedRef = useRef(false);
   const timeoutRefs = useRef([]);
 
-  // 加载 Prompt 详情
+  // Load Prompt details
   const loadPromptDetail = useCallback(async () => {
     if (!promptKey) {
       navigate(buildLegacyPath('/prompts'));
@@ -148,17 +149,17 @@ const PromptDetailPage = () => {
       const promptResponse = await API.getPrompt({ promptKey });
 
       if (promptResponse.code !== 200) {
-        throw new Error(promptResponse.message || '获取 Prompt 详情失败');
+        throw new Error(promptResponse.message || $i18n.get({ id: 'legacy.prompts.failed.to.get.prompt.details', dm: '获取 Prompt 详情失败' }));
       }
 
       const promptData = promptResponse.data;
 
-      // 2. 并行获取版本列表和最新版本详情
+      // 2. 并行获取版本列表和Latest Version详情
       const promises = [
         API.getPromptVersions({ promptKey, pageNo: 1, pageSize: 100 })
       ];
 
-      // 如果有最新版本，获取其详细信息
+      // 如果有Latest Version，获取其详细信息
       if (promptData.latestVersion) {
         promises.push(
           API.getPromptVersion({ promptKey, version: promptData.latestVersion })
@@ -174,17 +175,17 @@ const PromptDetailPage = () => {
         versions = versionsResponse.data.pageItems || [];
         setPromptVersions(versions);
       } else {
-        console.warn('获取版本列表失败:', versionsResponse.message);
+        console.warn('Failed to get version list:', versionsResponse.message);
         setPromptVersions([]);
       }
 
-      // 4. 聚合 Prompt 数据和最新版本详情
+      // 4. 聚合 Prompt 数据和Latest Version详情
       let aggregatedPrompt = { ...promptData };
 
       if (versionDetailResponse && versionDetailResponse.code === 200) {
         const versionDetail = versionDetailResponse.data;
 
-        // 聚合最新版本的详细信息到 Prompt 对象中
+        // 聚合Latest Version的详细信息到 Prompt 对象中
         aggregatedPrompt = {
           ...promptData,
           currentVersionDetail: {
@@ -201,9 +202,9 @@ const PromptDetailPage = () => {
       setCurrentPrompt(aggregatedPrompt);
 
     } catch (err) {
-      console.error('加载 Prompt 详情失败:', err);
-      handleApiError(err, '加载 Prompt 详情');
-      setError(err.message || '加载失败，请稍后重试');
+      console.error('Failed to load Prompt details:', err);
+      handleApiError(err, $i18n.get({ id: 'legacy.prompts.load.prompt.details', dm: '加载 Prompt 详情' }));
+      setError(err.message || $i18n.get({ id: 'legacy.prompts.loading.failed.please.try.again.later', dm: '加载失败，请稍后重试' }));
     } finally {
       setLoading(false);
     }
@@ -226,12 +227,12 @@ const PromptDetailPage = () => {
         }));
         return response.data;
       } else {
-        message.error(response.message || '获取会话失败');
+        message.error(response.message || $i18n.get({ id: 'legacy.prompts.failed.to.get.session', dm: '获取会话失败' }));
         return null;
       }
     } catch (error) {
       console.error('Load session error:', error);
-      message.error('获取会话失败');
+      message.error($i18n.get({ id: 'legacy.prompts.failed.to.get.session', dm: '获取会话失败' }));
       return null;
     }
   };
@@ -245,15 +246,15 @@ const PromptDetailPage = () => {
           delete newSessions[sessionId];
           return newSessions;
         });
-        message.success('会话删除成功');
+        message.success($i18n.get({ id: 'legacy.prompts.session.deleted.successfully', dm: '会话删除成功' }));
         return true;
       } else {
-        message.error(response.message || '删除会话失败');
+        message.error(response.message || $i18n.get({ id: 'legacy.prompts.failed.to.delete.session', dm: '删除会话失败' }));
         return false;
       }
     } catch (error) {
       console.error('Delete session error:', error);
-      message.error('删除会话失败');
+      message.error($i18n.get({ id: 'legacy.prompts.failed.to.delete.session', dm: '删除会话失败' }));
       return false;
     }
   };
@@ -311,7 +312,7 @@ const PromptDetailPage = () => {
       replaceParameters
     };
 
-    // 为单个 prompt 添加用户消息到对话历史
+    // 为单个 prompt 添加用户消息到对话History
     setPromptInstances(prev => prev.map(prompt => {
       if (prompt.id === promptId) {
         const userMessage = {
@@ -552,7 +553,7 @@ const PromptDetailPage = () => {
                 isLoading: false,
               };
 
-              console.log('=== 恢复配置 ===', restoredWindowConfig);
+              console.log('=== 恢复Configuration ===', restoredWindowConfig);
 
               // 🔥 关键修复：立即执行恢复逻辑，不使用延迟
               if (targetWindowId) {
@@ -618,12 +619,12 @@ const PromptDetailPage = () => {
 
               console.log('=== 版本恢复完成 ===');
             } else {
-              throw new Error(versionDetailResponse.message || '获取版本详情失败');
+              throw new Error(versionDetailResponse.message || $i18n.get({ id: 'legacy.prompts.failed.to.get.version.details', dm: '获取版本详情失败' }));
             }
           } catch (err) {
-            console.error('恢复版本失败:', err);
-            handleApiError(err, '恢复版本');
-            setError(err.message || '恢复版本失败');
+            console.error('Failed to restore version:', err);
+            handleApiError(err, $i18n.get({ id: 'legacy.prompts.restore.version', dm: '恢复版本' }));
+            setError(err.message || $i18n.get({ id: 'legacy.prompts.failed.to.restore.version', dm: '恢复版本失败' }));
           } finally {
             // 🔥 修复：安全重置标志
             const resetTimeoutId = setTimeout(() => {
@@ -635,8 +636,8 @@ const PromptDetailPage = () => {
 
         loadVersionDetail();
       } else {
-        console.error('未找到要恢复的版本:', restoreVersionId);
-        console.log('可用版本:', promptVersions);
+        console.error('Version to restore was not found:', restoreVersionId);
+        console.log('Available versions:', promptVersions);
         isRestoringRef.current = false;
         clearRestoreParams();
       }
@@ -644,7 +645,7 @@ const PromptDetailPage = () => {
       return; // 🔥 修复：恢复逻辑执行后直接返回，避免执行初始化逻辑
     }
 
-    // 🔥 修复：正常初始化逻辑 - 使用最新版本初始化
+    // 🔥 修复：正常初始化逻辑 - 使用Latest Version初始化
     if (!hasInitializedRef.current && !isRestoringRef.current && !restoreVersionId) {
       console.log('=== 正常初始化 ===');
       hasInitializedRef.current = true;
@@ -735,7 +736,7 @@ const PromptDetailPage = () => {
 
   const copyPrompt = (promptId) => {
     if (promptInstances.length >= 3) {
-      alert('最多只能同时对比3个配置');
+      alert($i18n.get({ id: 'legacy.prompts.you.can.compare.up.to.3.configurations.at.once', dm: '最多只能同时对比3个配置' }));
       return;
     }
 
@@ -781,7 +782,7 @@ const PromptDetailPage = () => {
         }));
       }
 
-      // 清空指定prompt的对话历史和会话
+      // Clear指定prompt的对话History和会话
       setPromptInstances(prev => prev.map(prompt =>
         prompt.id === promptId
           ? { ...prompt, chatHistory: [], sessionId: null }
@@ -800,18 +801,18 @@ const PromptDetailPage = () => {
         ...sessionsToStore
       }));
 
-      // 清空所有prompt的对话历史和会话
+      // Clear所有prompt的对话History和会话
       setPromptInstances(prev => prev.map(prompt =>
         ({ ...prompt, chatHistory: [], sessionId: null })
       ));
     }
   };
 
-  // 恢复会话功能
+  // Restore Session功能
   const restoreSession = async (promptId) => {
     const sessionId = recentlyDeletedSessions[promptId];
     if (!sessionId) {
-      message.error('没有可恢复的会话');
+      message.error($i18n.get({ id: 'legacy.prompts.no.session.is.available.to.restore', dm: '没有可恢复的会话' }));
       return false;
     }
 
@@ -820,7 +821,7 @@ const PromptDetailPage = () => {
       if (response.code === 200) {
         const sessionData = response.data;
 
-        // 转换会话数据为聊天历史格式
+        // 转换会话数据为聊天History格式
         const chatHistory = sessionData.messages.map((msg, index) => {
           const displayParams = msg.role === 'assistant' && msg.modelParams ?
             msg.modelParams :
@@ -850,15 +851,15 @@ const PromptDetailPage = () => {
           return newSessions;
         });
 
-        message.success('会话恢复成功');
+        message.success($i18n.get({ id: 'legacy.prompts.session.restored.successfully', dm: '会话恢复成功' }));
         return true;
       } else {
-        message.error(response.message || '恢复会话失败');
+        message.error(response.message || $i18n.get({ id: 'legacy.prompts.failed.to.restore.session', dm: '恢复会话失败' }));
         return false;
       }
     } catch (error) {
       console.error('Restore session error:', error);
-      message.error('恢复会话失败');
+      message.error($i18n.get({ id: 'legacy.prompts.failed.to.restore.session', dm: '恢复会话失败' }));
       return false;
     }
   };
@@ -888,12 +889,12 @@ const PromptDetailPage = () => {
     ));
   };
 
-  // 处理模板导入，包括模型配置
+  // 处理模板Import，包括Model Configuration
   const handleTemplateImport = (promptId, template) => {
     const parameters = extractParametersFromDoubleBrace(template.content);
     const templateModelConfig = template.modelConfig || {};
 
-    // 如果模板有模型配置，使用模板的配置；否则使用当前选中的模型的默认参数
+    // 如果模板有Model Configuration，使用模板的配置；否则使用当前选中的Model的默认参数
     const selectedModelId = templateModelConfig.model || getDefaultModelId();
     const modelParams = getModelParams(selectedModelId, templateModelConfig);
 
@@ -915,14 +916,14 @@ const PromptDetailPage = () => {
     ));
   };
 
-  // 单个配置的对话发送函数
+  // 单个配置的对话Send函数
   const handleSendMessage = (promptId, inputText) => {
     if (!inputText?.trim()) return;
     
     const promptInstance = promptInstances.find(p => p.id === promptId);
     if (promptInstance) {
       runSinglePrompt(promptInstance, inputText);
-      // 清空输入框
+      // Clear输入框
       setPromptInputs(prev => ({
         ...prev,
         [promptId]: ''
@@ -951,7 +952,7 @@ const PromptDetailPage = () => {
             size="large"
           >
             <div className="text-center pt-4">
-              <p className="text-gray-600 mt-4">加载 Prompt 详情中...</p>
+              <p className="text-gray-600 mt-4">{$i18n.get({ id: 'legacy.prompts.loading.prompt.details', dm: '加载 Prompt 详情中...' })}</p>
             </div>
           </Spin>
         </div>
@@ -964,14 +965,14 @@ const PromptDetailPage = () => {
       <div className="p-8 fade-in">
         <Result
           status="error"
-          title="加载 Prompt 详情失败"
+          title={$i18n.get({ id: 'legacy.prompts.failed.to.load.prompt.details', dm: '加载 Prompt 详情失败' })}
           subTitle={error}
           extra={[
             <Button type="primary" key="retry" onClick={() => loadPromptDetail()}>
-              重试
+              {$i18n.get({ id: 'legacy.prompts.retry', dm: '重试' })}
             </Button>,
             <Button key="back" onClick={() => navigate(buildLegacyPath('/prompts'))}>
-              返回列表
+              {$i18n.get({ id: 'legacy.prompts.back.to.list', dm: '返回列表' })}
             </Button>,
           ]}
         />
@@ -984,11 +985,11 @@ const PromptDetailPage = () => {
       <div className="p-8 fade-in">
         <Result
           status="404"
-          title="Prompt 不存在"
-          subTitle="未找到指定的 Prompt，可能已被删除或不存在。"
+          title={$i18n.get({ id: 'legacy.prompts.prompt.not.found', dm: 'Prompt 不存在' })}
+          subTitle={$i18n.get({ id: 'legacy.prompts.the.requested.prompt.was.not.found.it.may.have.been.deleted', dm: '未找到指定的 Prompt，可能已被删除或不存在。' })}
           extra={
             <Button type="primary" onClick={() => navigate(buildLegacyPath('/prompts'))}>
-              返回列表
+              {$i18n.get({ id: 'legacy.prompts.back.to.list', dm: '返回列表' })}
             </Button>
           }
         />
@@ -1012,7 +1013,7 @@ const PromptDetailPage = () => {
           />
           <Title level={2} className='m-0' >{currentPrompt.promptKey}</Title>
         </div>
-        <Paragraph type="secondary">测试和调试你的AI提示词</Paragraph>
+        <Paragraph type="secondary">{$i18n.get({ id: 'legacy.prompts.test.and.debug.your.ai.prompts', dm: '测试和调试你的AI提示词' })}</Paragraph>
       </div>
 
       <div className="mb-8" />
@@ -1034,13 +1035,13 @@ const PromptDetailPage = () => {
           <Col xs={24} sm={12} lg={6}>
             <div>
               <Text type="secondary" className='text-sm uppercase' >
-                最新版本
+                {$i18n.get({ id: 'legacy.prompts.latest.version', dm: '最新版本' })}
               </Text>
               <div className='mt-1' >
                 {currentPrompt.latestVersion ? (
                   <Tag color="blue">{currentPrompt.latestVersion}</Tag>
                 ) : (
-                  <Tag color="default">无版本</Tag>
+                  <Tag color="default">{$i18n.get({ id: 'legacy.prompts.no.version.3', dm: '无版本' })}</Tag>
                 )}
               </div>
             </div>
@@ -1049,22 +1050,22 @@ const PromptDetailPage = () => {
           <Col xs={24} sm={12} lg={6}>
             <div>
               <Text type="secondary" className='text-sm uppercase' >
-                版本状态
+                {$i18n.get({ id: 'legacy.prompts.version.status', dm: '版本状态' })}
               </Text>
               <div className='mt-1' >
                 {currentPrompt.latestVersionStatus ? (
                   currentPrompt.latestVersionStatus === 'release' ? (
                     <Tag color="success" icon={<CheckCircleOutlined />}>
-                      正式版本
+                      {$i18n.get({ id: 'legacy.prompts.release', dm: '正式版本' })}
                     </Tag>
                   ) : (
                     <Tag color="processing" icon={<ExperimentOutlined />}>
-                      PRE版本
+                      {$i18n.get({ id: 'legacy.prompts.pre.release', dm: 'PRE版本' })}
                     </Tag>
                   )
                 ) : (
                   <Tag color="default" icon={<QuestionCircleOutlined />}>
-                    未知状态
+                    {$i18n.get({ id: 'legacy.prompts.unknown.status', dm: '未知状态' })}
                   </Tag>
                 )}
               </div>
@@ -1074,10 +1075,15 @@ const PromptDetailPage = () => {
           <Col xs={24} sm={12} lg={6}>
             <div>
               <Text type="secondary" className='text-sm uppercase' >
-                版本数量
+                {$i18n.get({ id: 'legacy.prompts.version.count', dm: '版本数量' })}
               </Text>
               <div className='mt-1' >
-                <Text strong className='text-lg' >{promptVersions.length} 个版本</Text>
+                <Text strong className='text-lg' >
+                  {$i18n.get(
+                    { id: 'legacy.prompts.version.count.value', dm: '{count} 个版本' },
+                    { count: promptVersions.length },
+                  )}
+                </Text>
               </div>
             </div>
           </Col>
@@ -1086,7 +1092,7 @@ const PromptDetailPage = () => {
         <div className="flex mt-3">
           <div className='flex-1'>
             <Text type="secondary" className='text-sm uppercase' >
-              描述
+              {$i18n.get({ id: 'legacy.prompts.description', dm: '描述' })}
             </Text>
             <div className='mt-1' >
               <Text>{currentPrompt?.promptDescription || "-"}</Text>
@@ -1096,7 +1102,7 @@ const PromptDetailPage = () => {
           {currentPrompt.tags && (
             <div className='flex-1 ml-6'>
               <Text type="secondary" className='text-sm uppercase' >
-                标签
+                {$i18n.get({ id: 'legacy.prompts.tags', dm: '标签' })}
               </Text>
               <div className='mt-2' >
                 <Space size={[0, 8]} wrap>
@@ -1127,18 +1133,18 @@ const PromptDetailPage = () => {
         <Row gutter={[16, 8]}>
           <Col span={12}>
             <Text type="secondary">
-              创建时间：{dayjs(currentPrompt.createTime).format('YYYY-MM-DD HH:mm:ss')}
+              Created: {dayjs(currentPrompt.createTime).format('YYYY-MM-DD HH:mm:ss')}
             </Text>
           </Col>
           <Col span={12}>
             <Text type="secondary">
-              更新时间：{dayjs(currentPrompt.updateTime).format('YYYY-MM-DD HH:mm:ss')}
+              Updated: {dayjs(currentPrompt.updateTime).format('YYYY-MM-DD HH:mm:ss')}
             </Text>
           </Col>
         </Row>
       </Card>
 
-      {/* 横向布局：配置和对话测试整合 */}
+      {/* 横向布局：配置和Chat Test整合 */}
       <div 
         className="grid gap-4" 
         style={{ 
@@ -1182,7 +1188,7 @@ const PromptDetailPage = () => {
                   <div className='flex flex-wrap justify-between items-center gap-2'>
                     <div>
                       <Text strong size="lg">
-                        配置 {index + 1}
+                        {$i18n.get({ id: 'legacy.prompts.configuration', dm: '配置 {n}' }, { n: index + 1 })}
                       </Text>
                       <Text type="secondary" className='ml-2'>
                         ({currentPrompt.promptKey})
@@ -1200,7 +1206,7 @@ const PromptDetailPage = () => {
                             setSelectedSessionId(prompt.id);
                           }}
                         >
-                          {promptInstances.length >= 3 ? '新增' : '新增函数'}
+                          {promptInstances.length >= 3 ? $i18n.get({ id: 'legacy.prompts.add', dm: '新增' }) : $i18n.get({ id: 'legacy.prompts.add.function', dm: '新增函数' })}
                         </Button>
                         <Button
                           type="primary"
@@ -1209,7 +1215,7 @@ const PromptDetailPage = () => {
                           onClick={() => setShowTemplateModal(prompt.id)}
                           style={{ background: 'linear-gradient(90deg, #16a085 0%, #2ecc71 100%)', border: 'none' }}
                         >
-                          {promptInstances.length >= 3 ? '导入' : '从模板导入'}
+                          {promptInstances.length >= 3 ? $i18n.get({ id: 'legacy.prompts.import', dm: '导入' }) : $i18n.get({ id: 'legacy.prompts.import.template', dm: '导入模板' })}
                         </Button>
                         {promptVersions && promptVersions.length > 0 && (
                           <Button
@@ -1217,7 +1223,7 @@ const PromptDetailPage = () => {
                             size={promptInstances.length >= 3 ? "small" : "default"}
                             onClick={() => navigate(buildLegacyPath('/version-history', { promptKey, targetWindowId: prompt.id }))}
                           >
-                            {promptInstances.length >= 3 ? '历史' : '版本记录'}
+                            {promptInstances.length >= 3 ? $i18n.get({ id: 'legacy.prompts.history', dm: '历史' }) : $i18n.get({ id: 'legacy.prompts.version.history', dm: '版本历史' })}
                           </Button>
                         )}
                         <Button
@@ -1238,7 +1244,7 @@ const PromptDetailPage = () => {
                             }
                           })}
                         >
-                          {promptInstances.length >= 3 ? '发布' : '发布新版本'}
+                          {promptInstances.length >= 3 ? $i18n.get({ id: 'legacy.prompts.publish.2', dm: '发布' }) : $i18n.get({ id: 'legacy.prompts.publish.new.version', dm: '发布新版本' })}
                         </Button>
                       </div>
                       {/* 基础操作按钮 - 只显示最重要的 */}
@@ -1248,7 +1254,7 @@ const PromptDetailPage = () => {
                           icon={<CopyOutlined />}
                           onClick={() => copyPrompt(prompt.id)}
                           disabled={promptInstances.length >= 3}
-                          title={promptInstances.length >= 3 ? '最多同时调试3个配置' : '复制配置进行对比'}
+                          title={promptInstances.length >= 3 ? $i18n.get({ id: 'legacy.prompts.you.can.debug.up.to.3.configurations.at.once', dm: '最多同时调试3个配置' }) : $i18n.get({ id: 'legacy.prompts.copy.configuration.for.comparison', dm: '复制配置进行对比' })}
                         />
                         {promptInstances.length > 1 && (
                           <Button
@@ -1256,7 +1262,7 @@ const PromptDetailPage = () => {
                             danger
                             icon={<DeleteOutlined />}
                             onClick={() => removePrompt(prompt.id)}
-                            title="删除配置"
+                            title={$i18n.get({ id: 'legacy.prompts.delete.configuration', dm: '删除配置' })}
                           />
                         )}
                       </Space>
@@ -1268,8 +1274,8 @@ const PromptDetailPage = () => {
                 <div className="mb-4">
                   {showRestoreSuccess && restoredVersion && restoredWindowId === prompt.id ? (
                     <Alert
-                      message="版本恢复成功！"
-                      description={`已恢复版本 ${restoredVersion.version} 的内容`}
+                      message={$i18n.get({ id: 'legacy.prompts.version.restored.successfully', dm: '版本恢复成功！' })}
+                      description={$i18n.get({ id: 'legacy.prompts.restored.version.content', dm: '已恢复版本 {version} 的内容' }, { version: restoredVersion.version })}
                       type="success"
                       showIcon
                       closable
@@ -1283,15 +1289,15 @@ const PromptDetailPage = () => {
                 </div>
 
                 <div className={promptInstances.length >= 3 ? "space-y-3" : "space-y-4"}>
-                  {/* Prompt内容展示 */}
+                  {/* Prompt Content展示 */}
                   <div>
                     <Text strong className="block mb-2">
-                      Prompt内容
+                      {$i18n.get({ id: 'legacy.prompts.prompt.content', dm: 'Prompt内容' })}
                     </Text>
                     <TextArea
                       value={prompt.content}
                       onChange={(e) => handleContentChange(prompt.id, e.target.value)}
-                      placeholder="输入Prompt内容，使用 {{参数名}} 来定义参数..."
+                      placeholder={$i18n.get({ id: 'legacy.prompts.enter.prompt.content.use.to.define.parameters', dm: '输入Prompt内容，使用 {{参数名}} 来定义参数...' })}
                       style={{
                         height: promptInstances.length >= 3 ? 100 : 120,
                         resize: 'none'
@@ -1300,13 +1306,13 @@ const PromptDetailPage = () => {
                     />
                   </div>
 
-                  {/* 模型配置区域 */}
+                  {/* Model Configuration区域 */}
                   <div>
                     <Space direction="vertical" className='w-full' size="small">
-                      {/* 模型选择 */}
+                      {/* Model选择 */}
                       <div>
                         <Text strong className='mb-2 block'>
-                          模型
+                          {$i18n.get({ id: 'legacy.prompts.model', dm: '模型' })}
                         </Text>
                         <Select
                           value={prompt.selectedModel}
@@ -1321,10 +1327,10 @@ const PromptDetailPage = () => {
                         </Select>
                       </div>
 
-                      {/* 模型参数 */}
+                      {/* Model Parameters */}
                       <Card size="small" style={{ backgroundColor: '#fafafa' }}>
                         <Text strong className="block mb-2">
-                          模型参数
+                          {$i18n.get({ id: 'legacy.prompts.model.parameters', dm: '模型参数' })}
                         </Text>
                         <Row gutter={[8, 8]}>
                           {(() => {
@@ -1389,11 +1395,11 @@ const PromptDetailPage = () => {
                     </Space>
                   </div>
 
-                  {/* 参数配置 */}
+                  {/* Parameter Configuration */}
                   {prompt.parameters.length > 0 && (
                     <div>
                       <Text strong className="block mb-2">
-                        参数配置
+                        {$i18n.get({ id: 'legacy.prompts.parameter.configuration', dm: '参数配置' })}
                       </Text>
                       <Row gutter={[8, 8]}>
                         {prompt.parameters.map((param) => (
@@ -1404,7 +1410,7 @@ const PromptDetailPage = () => {
                             <Input
                               value={prompt.parameterValues[param] || ''}
                               onChange={(e) => updateParameterValue(prompt.id, param, e.target.value)}
-                              placeholder={`输入 ${param} 的值...`}
+                              placeholder={$i18n.get({ id: 'legacy.prompts.enter.a.value.for', dm: '输入 {param} 的值...' }, { param: param })}
                               size="small"
                             />
                           </Col>
@@ -1417,19 +1423,19 @@ const PromptDetailPage = () => {
 
               <Divider />
 
-              {/* 对话测试区域 */}
+              {/* Chat Test区域 */}
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <Avatar icon={<CommentOutlined />} style={{ backgroundColor: '#e6f7ff' }} />
                     <div>
-                      <Text strong className="text-lg">对话测试</Text>
+                      <Text strong className="text-lg">{$i18n.get({ id: 'legacy.prompts.chat.test', dm: '对话测试' })}</Text>
                       <div>
                         <Text type="secondary" className="text-sm">
-                          测试配置 {index + 1} 的效果
+                          {$i18n.get({ id: 'legacy.prompts.test.configuration', dm: '测试配置 {n} 的效果' }, { n: index + 1 })}
                           {prompt.sessionId && (
                             <Tag color="green" size="small" className="ml-2">
-                              会话: {prompt.sessionId.substring(0, 8)}...
+                              {$i18n.get({ id: 'legacy.prompts.session', dm: '会话: {id}...' }, { id: prompt.sessionId.substring(0, 8) })}
                             </Tag>
                           )}
                         </Text>
@@ -1443,10 +1449,10 @@ const PromptDetailPage = () => {
                         size="small"
                         icon={<RocketOutlined />}
                         onClick={() => restoreSession(prompt.id)}
-                        title="恢复上一次会话"
+                        title={$i18n.get({ id: 'legacy.prompts.restore.previous.session', dm: '恢复上一次会话' })}
                         style={{ color: '#52c41a' }}
                       >
-                        恢复会话
+                        {$i18n.get({ id: 'legacy.prompts.restore.session', dm: '恢复会话' })}
                       </Button>
                     )}
                     {prompt.sessionId && (
@@ -1459,7 +1465,7 @@ const PromptDetailPage = () => {
                             setSelectedSessionId(prompt.sessionId);
                             setShowSessionModal(true);
                           }}
-                          title="查看会话详情"
+                          title={$i18n.get({ id: 'legacy.prompts.view.session.details', dm: '查看会话详情' })}
                         />
                         <Button
                           type="text"
@@ -1468,8 +1474,8 @@ const PromptDetailPage = () => {
                           icon={<DeleteOutlined />}
                           onClick={async () => {
                             Modal.confirm({
-                              title: '删除会话',
-                              content: '确定要删除这个会话吗？这将清除所有对话历史。',
+                              title: $i18n.get({ id: 'legacy.prompts.delete.session', dm: '删除会话' }),
+                              content: $i18n.get({ id: 'legacy.prompts.delete.this.session.this.will.clear.all.chat.history', dm: '确定要删除这个会话吗？这将清除所有对话历史。' }),
                               onOk: async () => {
                                 const success = await deleteSession(prompt.sessionId);
                                 if (success) {
@@ -1482,7 +1488,7 @@ const PromptDetailPage = () => {
                               }
                             });
                           }}
-                          title="删除会话"
+                          title={$i18n.get({ id: 'legacy.prompts.delete.session', dm: '删除会话' })}
                         />
                       </Space>
                     )}
@@ -1492,9 +1498,9 @@ const PromptDetailPage = () => {
                         size="small"
                         icon={<ClearOutlined />}
                         onClick={() => clearChatHistory(prompt.id)}
-                        title="清空对话"
+                        title={$i18n.get({ id: 'legacy.prompts.clear.chat', dm: '清空对话' })}
                       >
-                        清空
+                        {$i18n.get({ id: 'legacy.prompts.clear', dm: '清空' })}
                       </Button>
                     )}
                     <Badge
@@ -1531,10 +1537,10 @@ const PromptDetailPage = () => {
                         }}
                       />
                       <Title level={5} style={{ margin: 0, marginBottom: 8, color: '#8c8c8c' }}>
-                        等待开始对话
+                        {$i18n.get({ id: 'legacy.prompts.ready.to.start.chatting', dm: '等待开始对话' })}
                       </Title>
                       <Text type="secondary" style={{ fontSize: '13px' }}>
-                        在下方输入框中发送消息开始测试
+                        {$i18n.get({ id: 'legacy.prompts.send.a.message.in.the.input.field.below.to.start.testing', dm: '在下方输入框中发送消息开始测试' })}
                       </Text>
                     </div>
                   ) : (
@@ -1586,9 +1592,9 @@ const PromptDetailPage = () => {
                                       icon={<CopyOutlined />}
                                       onClick={() => {
                                         navigator.clipboard.writeText(message.content);
-                                        message.success('已复制到剪贴板');
+                                        message.success($i18n.get({ id: 'legacy.prompts.copied.to.clipboard', dm: '已复制到剪贴板' }));
                                       }}
-                                      title="复制回复"
+                                      title={$i18n.get({ id: 'legacy.prompts.copy.response', dm: '复制回复' })}
                                       style={{ fontSize: '10px', padding: '2px 4px', height: 20 }}
                                     />
                                   )}
@@ -1632,18 +1638,18 @@ const PromptDetailPage = () => {
                                         {message.content}
                                       </Text>
                                       <div className='flex gap-2 mt-2'>
-                                        <Tag color="geekblue">输入 Token: {message?.usage?.promptTokens}</Tag>
-                                        <Tag color='geekblue'>输出 Token: {message?.usage?.completionTokens}</Tag>
-                                        <Tag color='geekblue'>总 Token: {message?.usage?.totalTokens}</Tag>
+                                        <Tag color="geekblue">Input Tokens: {message?.usage?.promptTokens}</Tag>
+                                        <Tag color='geekblue'>Output Tokens: {message?.usage?.completionTokens}</Tag>
+                                        <Tag color='geekblue'>Total Tokens: {message?.usage?.totalTokens}</Tag>
                                       </div>
-                                      {/* 模型参数信息 */}
+                                      {/* Model Parameters信息 */}
                                       <div className='flex justify-between items-center mt-2 gap-2'>
                                         <Text type="secondary" style={{ fontSize: '11px' }}>
                                           {message.timestamp}
                                         </Text>
                                         {
                                           Boolean(message.traceId) && (
-                                            <Tooltip title="查看调用链路跟踪">
+                                            <Tooltip title={$i18n.get({ id: 'legacy.prompts.view.trace', dm: '查看调用链路跟踪' })}>
                                               <Button
                                                 type="text"
                                                 size="small"
@@ -1684,7 +1690,7 @@ const PromptDetailPage = () => {
                           handleSendMessage(prompt.id, userInput);
                         }
                       }}
-                      placeholder="输入您的问题进行测试... (Enter发送，Shift+Enter换行)"
+                      placeholder={$i18n.get({ id: 'legacy.prompts.enter.your.question.to.test.enter.to.send.shift.enter.for.a', dm: '输入您的问题进行测试... (Enter发送，Shift+Enter换行)' })}
                       rows={3}
                       disabled={prompt.isLoading}
                       style={{
@@ -1715,7 +1721,7 @@ const PromptDetailPage = () => {
                         color: 'white'
                       }}
                     >
-                      {prompt.isLoading ? '处理中...' : '发送'}
+                      {prompt.isLoading ? $i18n.get({ id: 'legacy.prompts.processing', dm: '处理中...' }) : $i18n.get({ id: 'legacy.prompts.send', dm: '发送' })}
                     </Button>
                   </div>
                 </div>
@@ -1758,13 +1764,13 @@ const PromptDetailPage = () => {
         />
       )}
 
-      {/* 会话详情模态框 */}
+      {/* Session Details模态框 */}
       {showSessionModal && selectedSessionId && (
         <Modal
           title={
             <Space>
               <MessageOutlined />
-              <span>会话详情</span>
+              <span>{$i18n.get({ id: 'legacy.prompts.session.details', dm: '会话详情' })}</span>
               <Tag color="blue">{selectedSessionId.substring(0, 8)}...</Tag>
             </Space>
           }
@@ -1779,7 +1785,7 @@ const PromptDetailPage = () => {
               setShowSessionModal(false);
               setSelectedSessionId(null);
             }}>
-              关闭
+              {$i18n.get({ id: 'legacy.prompts.close', dm: '关闭' })}
             </Button>,
             <Button
               key="delete"
@@ -1787,8 +1793,8 @@ const PromptDetailPage = () => {
               icon={<DeleteOutlined />}
               onClick={async () => {
                 Modal.confirm({
-                  title: '删除会话',
-                  content: '确定要删除这个会话吗？这将清除所有对话历史。',
+                  title: $i18n.get({ id: 'legacy.prompts.delete.session', dm: '删除会话' }),
+                  content: $i18n.get({ id: 'legacy.prompts.delete.this.session.this.will.clear.all.chat.history', dm: '确定要删除这个会话吗？这将清除所有对话历史。' }),
                   onOk: async () => {
                     const success = await deleteSession(selectedSessionId);
                     if (success) {
@@ -1804,16 +1810,16 @@ const PromptDetailPage = () => {
                 });
               }}
             >
-              删除会话
+              {$i18n.get({ id: 'legacy.prompts.delete.session', dm: '删除会话' })}
             </Button>
           ]}
         >
           {currentSession ? (
             <div>
-              <Card title="会话信息" size="small" style={{ marginBottom: 16 }}>
+              <Card title={$i18n.get({ id: 'legacy.prompts.session.information', dm: '会话信息' })} size="small" style={{ marginBottom: 16 }}>
                 <Row gutter={[16, 8]}>
                   <Col span={12}>
-                    <Text strong>会话 ID：</Text>
+                    <Text strong>{$i18n.get({ id: 'legacy.prompts.session.id.2', dm: '会话 ID：' })}</Text>
                     <Text code style={{ fontSize: '12px' }}>{currentSession.sessionId}</Text>
                   </Col>
                   <Col span={12}>
@@ -1821,20 +1827,20 @@ const PromptDetailPage = () => {
                     <Text>{currentSession.promptKey}</Text>
                   </Col>
                   <Col span={12}>
-                    <Text strong>版本：</Text>
+                    <Text strong>{$i18n.get({ id: 'legacy.prompts.version.3', dm: '版本：' })}</Text>
                     <Tag color="blue">{currentSession.version}</Tag>
                   </Col>
                   <Col span={12}>
-                    <Text strong>创建时间：</Text>
+                    <Text strong>{$i18n.get({ id: 'legacy.prompts.created.2', dm: '创建时间：' })}</Text>
                     <Text>{dayjs(currentSession.createTime).format('YYYY-MM-DD HH:mm:ss')}</Text>
                   </Col>
                 </Row>
               </Card>
-              <Card title="模型配置" size="small">
+              <Card title={$i18n.get({ id: 'legacy.prompts.model.configuration', dm: '模型配置' })} size="small">
                 <Row gutter={[16, 8]}>
                   <Col span={24}>
                     <Space>
-                      <Text strong>模型：</Text>
+                      <Text strong>Model: </Text>
                       <Text code>{modelNameMap[currentSession.modelConfig.modelId]}</Text>
                     </Space>
                   </Col>
@@ -1850,7 +1856,7 @@ const PromptDetailPage = () => {
                   }
                 </Row>
               </Card>
-              <Card title="参数配置" size="small">
+              <Card title={$i18n.get({ id: 'legacy.prompts.parameter.configuration', dm: '参数配置' })} size="small">
                 <Row gutter={[16, 8]}>
                   {
                     Object.entries(safeJSONParse(currentSession.variables)).map(([key, value]) => {
@@ -1869,7 +1875,7 @@ const PromptDetailPage = () => {
             <div style={{ textAlign: 'center', padding: 40 }}>
               <Spin size="large" />
               <div style={{ marginTop: 16 }}>
-                <Text>加载会话详情中...</Text>
+                <Text>{$i18n.get({ id: 'legacy.prompts.loading.session.details', dm: '加载会话详情中...' })}</Text>
               </div>
             </div>
           )}

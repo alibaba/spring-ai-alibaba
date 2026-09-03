@@ -83,6 +83,16 @@ public class GraphRunnerContext {
 		this.compiledGraph = compiledGraph;
 		this.config = config;
 
+		// Decide whether this run continues from a persisted checkpoint or starts over
+		// from START. A checkpoint is only resumed when the config explicitly asks for it,
+		// either by carrying a concrete checkpoint id or by carrying resume metadata
+		// (added via RunnableConfig.withResume() / RunnableConfig.builder(config).resume()).
+		//
+		// Note: passing a config that merely has a checkpoint saver / thread id (e.g.
+		// invoke(Map.of(), config) without a checkpoint id and without resume metadata)
+		// intentionally starts from START and only reuses the persisted state; it does NOT
+		// continue from the latest checkpoint's next node. To resume from the latest
+		// checkpoint without knowing its id, use config.withResume(). See RunnableConfig#withResume().
 		if (config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY).isPresent() || config.checkPointId().isPresent()) {
 			initializeFromResume(initialState, config);
 		} else {
@@ -304,23 +314,33 @@ public class GraphRunnerContext {
 	// ================================================================================================================
 
 	public void doListeners(String scene, Exception e) {
+		doListeners(scene, getCurrentNodeId(), e);
+	}
+
+	/**
+	 * Notifies lifecycle listeners using an explicit node ID.
+	 * @param scene the lifecycle scene
+	 * @param nodeId the node associated with the lifecycle event
+	 * @param e the error when the scene is {@link StateGraph#ERROR}
+	 */
+	public void doListeners(String scene, String nodeId, Exception e) {
 		for (GraphLifecycleListener listener : compiledGraph.compileConfig.lifecycleListeners()) {
 			try {
 				switch (scene) {
 					case START:
-						listener.onStart(getCurrentNodeId(), getCurrentStateData(), config);
+						listener.onStart(nodeId, getCurrentStateData(), config);
 						break;
 					case END:
 						listener.onComplete(END, getCurrentStateData(), config);
 						break;
 					case NODE_BEFORE:
-						listener.before(getCurrentNodeId(), getCurrentStateData(), config, SystemClock.now());
+						listener.before(nodeId, getCurrentStateData(), config, SystemClock.now());
 						break;
 					case NODE_AFTER:
-						listener.after(getCurrentNodeId(), getCurrentStateData(), config, SystemClock.now());
+						listener.after(nodeId, getCurrentStateData(), config, SystemClock.now());
 						break;
 					case ERROR:
-						listener.onError(getCurrentNodeId(), getCurrentStateData(), e, config);
+						listener.onError(nodeId, getCurrentStateData(), e, config);
 						break;
 				}
 			} catch (Exception ex) {

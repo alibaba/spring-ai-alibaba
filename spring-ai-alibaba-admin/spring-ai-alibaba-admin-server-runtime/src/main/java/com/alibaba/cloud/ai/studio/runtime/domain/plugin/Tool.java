@@ -121,11 +121,6 @@ public class Tool {
 		@JsonProperty("output_params")
 		private List<ApiParameter> outputParams;
 
-		/**
-		 * Usage examples
-		 */
-		private List<ToolExample> examples;
-
 	}
 
 }

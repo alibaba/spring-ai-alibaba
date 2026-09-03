@@ -465,6 +465,7 @@ public class ClasspathSkillRegistry extends AbstractSkillRegistry {
 				+ "\n"
 				+ "**Skill Path Format:**\n"
 				+ "Each skill has a unique id shown in the skill list above. "
+				+ "Skill ids identify registry entries and are not direct tool names. "
 				+ "Use the exact id shown when calling `read_skill` to read the SKILL.md file.\n";
 	}
 

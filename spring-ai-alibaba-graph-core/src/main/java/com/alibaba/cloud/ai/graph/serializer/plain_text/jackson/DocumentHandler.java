@@ -82,7 +82,7 @@ public interface DocumentHandler {
 			if (document.getScore() != null) {
 				gen.writeNumberField(Field.SCORE.name, document.getScore());
 			}
-			serializeMetadata(gen, document.getMetadata());
+			serializeMetadata(gen, provider, document.getMetadata());
 		}
 	}
 

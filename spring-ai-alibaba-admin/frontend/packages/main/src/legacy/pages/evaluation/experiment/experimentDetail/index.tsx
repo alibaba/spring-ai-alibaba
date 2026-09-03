@@ -4,7 +4,9 @@ import { Button, Card, Progress, Tag, Alert, Spin, Table, message, Typography, T
 import { ArrowLeftOutlined, StopOutlined, ReloadOutlined } from '@ant-design/icons';
 import API from '../../../../services';
 import usePagination from '../../../../hooks/usePagination';
+import { formatDateTime } from '../../../../utils/formatDateTime';
 import './index.css';
+import $i18n from '@/i18n';
 
 const { Title, Text } = Typography;
 
@@ -18,24 +20,6 @@ const scrollbarHideStyle = `
     scrollbar-width: none;
   }
 `;
-
-// 格式化时间显示
-const formatDateTime = (dateTimeString: string) => {
-    if (!dateTimeString) return '-';
-    try {
-        const date = new Date(dateTimeString);
-        return date.toLocaleString('zh-CN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    } catch {
-        return dateTimeString;
-    }
-};
 
 // 评测结果数据接口
 interface EvaluationResult {
@@ -135,7 +119,7 @@ const ExperimentDetail: React.FC = () => {
       }
     `;
     document.head.appendChild(style);
-    
+
     return () => {
       document.head.removeChild(style);
     };
@@ -154,7 +138,7 @@ const ExperimentDetail: React.FC = () => {
   const [activeEvaluatorTab, setActiveEvaluatorTab] = useState<string>('test'); // 评估器子Tab的状态
   const [overviewData, setOverviewData] = useState<ExperimentOverview[]>([]); // 概览结果数据
   const [overviewLoading, setOverviewLoading] = useState(false); // 概览数据加载状态
-  
+
   // 评测结果相关状态
   const [resultData, setResultData] = useState<EvaluationResult[]>([]); // 当前评估器的结果数据
   const [resultLoading, setResultLoading] = useState(false); // 结果数据加载状态
@@ -163,24 +147,24 @@ const ExperimentDetail: React.FC = () => {
   // 获取评测结果数据
   const fetchExperimentResult = async (evaluatorVersionId: number, pageNumber?: number, pageSize?: number) => {
     if (!id) return;
-    
+
     try {
       setResultLoading(true);
-      
+
       // 如果没有传入分页参数，则使用当前 pagination 状态
       const current = pageNumber || pagination.current;
       const size = pageSize || pagination.pageSize;
-      
+
       const response = await API.getExperimentResult({
         experimentId: Number(id),
         evaluatorVersionId,
         pageNumber: current,
         pageSize: size
       });
-      
+
       if (response.code === 200 && response.data) {
         const { pageItems, totalCount, pageNumber: currentPage, pageSize: currentPageSize } = response.data as any;
-        
+
         // 转换数据格式
         const results: EvaluationResult[] = (pageItems || []).map((item: any) => ({
           id: item.id,
@@ -189,9 +173,9 @@ const ExperimentDetail: React.FC = () => {
           referenceOutput: item.referenceOutput,
           score: item.score,
           status: item.score > 0.5 ? 'success' : 'failed',
-          reason: item.reason || '暂无理由'
+          reason: item.reason || $i18n.get({ id: 'legacy.experimentDetail.noReason', dm: "暂无理由" })
         }));
-        
+
         setResultData(results);
         // 更新分页状态
         setPagination(prev => ({
@@ -201,7 +185,7 @@ const ExperimentDetail: React.FC = () => {
           total: totalCount || 0
         }));
       } else {
-        throw new Error(response.message || '获取评测结果失败');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.experimentDetail.fetchResultsFailed', dm: "获取评测结果失败" }));
       }
     } catch (error) {
       console.error('获取评测结果失败:', error);
@@ -220,18 +204,18 @@ const ExperimentDetail: React.FC = () => {
   // 获取实验概览结果
   const fetchExperimentOverview = async () => {
     if (!id) return;
-    
+
     try {
       setOverviewLoading(true);
-      
+
       const response = await API.getExperimentOverview({ experimentId: Number(id) });
-      
+
       if (response.code === 200 && response.data) {
         // response.data 已经是数组格式
         const overviewList = response.data as any;
         setOverviewData(overviewList);
       } else {
-        throw new Error(response.message || '获取概览数据失败');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.experimentDetail.fetchOverviewFailed', dm: "获取概览数据失败" }));
       }
     } catch (error) {
       console.error('获取概览数据失败:', error);
@@ -246,13 +230,13 @@ const ExperimentDetail: React.FC = () => {
   const fetchExperimentDetail = async () => {
     try {
       setLoading(true);
-      
+
       // 调用详情接口
       const response = await API.getExperiment({ experimentId: Number(id) });
-      
+
       if (response.code === 200 && response.data) {
         const apiData = response.data as any;
-        
+
         // 解析 evaluationObjectConfig
         let evaluationObject;
         try {
@@ -261,7 +245,7 @@ const ExperimentDetail: React.FC = () => {
           console.warn('解析 evaluationObjectConfig 失败:', e);
           evaluationObject = { type: '', config: {} };
         }
-        
+
         // 解析 evaluatorConfig
         let evaluatorConfigs: EvaluatorConfig[] = [];
         try {
@@ -270,14 +254,14 @@ const ExperimentDetail: React.FC = () => {
           console.warn('解析 API 返回的 evaluatorConfig 失败:', e);
           evaluatorConfigs = [];
         }
-        
+
         // 如果有传递过来的evaluatorConfig数据，尝试解析并合并
         if (passedEvaluatorConfig) {
           try {
             const passedConfigs = JSON.parse(passedEvaluatorConfig || '[]');
             // 合并逻辑：使用传递的数据补充API数据中缺失的字段
             evaluatorConfigs = evaluatorConfigs.map(apiConfig => {
-              const passedConfig = passedConfigs.find((c: any) => 
+              const passedConfig = passedConfigs.find((c: any) =>
                 c.evaluatorId === apiConfig.evaluatorId && c.evaluatorVersionId === apiConfig.evaluatorVersionId
               );
               // 如果找到了对应的传递配置，合并数据
@@ -289,10 +273,10 @@ const ExperimentDetail: React.FC = () => {
               }
               return apiConfig;
             });
-            
+
             // 添加传递数据中有但API数据中没有的配置
             passedConfigs.forEach((passedConfig: any) => {
-              const exists = evaluatorConfigs.some(apiConfig => 
+              const exists = evaluatorConfigs.some(apiConfig =>
                 apiConfig.evaluatorId === passedConfig.evaluatorId && apiConfig.evaluatorVersionId === passedConfig.evaluatorVersionId
               );
               if (!exists) {
@@ -303,7 +287,7 @@ const ExperimentDetail: React.FC = () => {
             console.warn('解析传递的 evaluatorConfig 失败:', e);
           }
         }
-        
+
         // 转换API数据为组件需要的格式
         const detailData: ExperimentDetail = {
           id: apiData.id,
@@ -318,7 +302,7 @@ const ExperimentDetail: React.FC = () => {
           endTime: apiData.completeTime || undefined,
           completeTime: apiData.completeTime || undefined,
           dataset: {
-            name: '默认评测集', // 默认值，后续可以通过 datasetId 查询获取
+            name: $i18n.get({ id: 'legacy.experimentDetail.defaultDataset', dm: "默认评测集" }), // 默认值，后续可以通过 datasetId 查询获取
             id: apiData.datasetId.toString(),
             columns: ['input', 'reference_output']
           },
@@ -327,7 +311,7 @@ const ExperimentDetail: React.FC = () => {
             promptKey: evaluationObject.config?.promptKey || '',
             version: evaluationObject.config?.versionId || '',
             promptDetail: evaluationObject.config?.promptDescription || '',
-            promptContent: '默认Prompt内容', // 默认值
+            promptContent: $i18n.get({ id: 'legacy.experimentDetail.defaultPromptContent', dm: "默认Prompt内容" }), // 默认值
             inputTemplate: '{{input}}'
           },
           evaluators: evaluatorConfigs.map((config: EvaluatorConfig, index: number) => ({
@@ -339,7 +323,7 @@ const ExperimentDetail: React.FC = () => {
             columns: ['input', 'reference_output']
           })),
           evaluationResults: {
-            schema: '字段映射',
+            schema: $i18n.get({ id: 'legacy.experimentDetail.fieldMappingSchema', dm: "字段映射" }),
             mapping: {
               'evaluator.input': 'dataset.input',
               'evaluator.output': 'evaluation_object.output', // 移除硬编码的actual_output
@@ -348,14 +332,14 @@ const ExperimentDetail: React.FC = () => {
             progress: apiData.progress || 0
           }
         };
-        
+
         setDetail(detailData);
       } else {
-        throw new Error(response.message || '获取实验详情失败');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.experimentDetail.fetchDetailFailed', dm: "获取实验详情失败" }));
       }
     } catch (error) {
       console.error('获取实验详情失败:', error);
-      
+
       // 错误处理，设置为空状态
       setDetail(null);
       setLoading(false);
@@ -381,10 +365,10 @@ const ExperimentDetail: React.FC = () => {
   useEffect(() => {
     if (detail && activeTab === 'results') {
       // 根据activeEvaluatorTab找到对应的评估器
-      const currentEvaluator = detail.evaluators.find((evaluator, index) => 
+      const currentEvaluator = detail.evaluators.find((evaluator, index) =>
         `evaluator-${evaluator.id}-${evaluator.version}-${index}` === activeEvaluatorTab
       ) || detail.evaluators[0];
-      
+
       if (currentEvaluator) {
         // 使用当前评估器的ID作为evaluatorVersionId参数调用接口
         // 注意：这里我们使用evaluatorVersionId而不是id
@@ -427,10 +411,10 @@ const ExperimentDetail: React.FC = () => {
   const handleStopExperiment = async () => {
     try {
       setStopping(true);
-      
+
       // 调用停止实验的API
       const response = await API.stopExperiment({ experimentId: Number(id) });
-      
+
       if (response.code === 200) {
         // 停止成功，更新实验状态
         if (detail) {
@@ -439,13 +423,13 @@ const ExperimentDetail: React.FC = () => {
         // 重新获取详情以获取最新状态
         await fetchExperimentDetail();
       } else {
-        throw new Error(response.message || '停止实验失败');
+        throw new Error(response.message || $i18n.get({ id: 'legacy.experimentDetail.stopFailed', dm: "停止实验失败" }));
       }
     } catch (error) {
       console.error('停止实验失败:', error);
-      
+
       // 错误处理
-      message.error('停止实验失败，请重试');
+      message.error($i18n.get({ id: 'legacy.experimentDetail.stopFailedRetry', dm: "停止实验失败，请重试" }));
     } finally {
       setStopping(false);
     }
@@ -454,11 +438,11 @@ const ExperimentDetail: React.FC = () => {
   // 渲染状态标签
   const renderStatusTag = (status: string) => {
     const statusConfig = {
-      RUNNING: { color: 'blue', text: '运行中' },
-      COMPLETED: { color: 'green', text: '已完成' },
-      FAILED: { color: 'red', text: '失败' },
-      WAITING: { color: 'default', text: '等待中' },
-      STOPPED: { color: 'orange', text: '已停止' }
+      RUNNING: { color: 'blue', text: $i18n.get({ id: 'legacy.experiment.status.running', dm: "运行中" }) },
+      COMPLETED: { color: 'green', text: $i18n.get({ id: 'legacy.experiment.status.completed', dm: "已完成" }) },
+      FAILED: { color: 'red', text: $i18n.get({ id: 'legacy.experiment.status.failed', dm: "失败" }) },
+      WAITING: { color: 'default', text: $i18n.get({ id: 'legacy.experiment.status.waiting', dm: "等待中" }) },
+      STOPPED: { color: 'orange', text: $i18n.get({ id: 'legacy.experiment.status.stopped', dm: "已停止" }) }
     };
     const config = statusConfig[status as keyof typeof statusConfig];
     return <Tag color={config?.color || 'default'}>{config?.text || status}</Tag>;
@@ -496,8 +480,8 @@ const ExperimentDetail: React.FC = () => {
           height: '100vh',
           width: '100%'
         }}>
-          <p style={{ marginBottom: '20px' }}>实验详情不存在</p>
-          <Button onClick={handleGoBack}>返回列表</Button>
+          <p style={{ marginBottom: '20px' }}>{$i18n.get({ id: 'legacy.experimentDetail.notFound', dm: "实验详情不存在" })}</p>
+          <Button onClick={handleGoBack}>{$i18n.get({ id: 'legacy.experimentDetail.backToList', dm: "返回列表" })}</Button>
         </div>
       </div>
     );
@@ -508,9 +492,9 @@ const ExperimentDetail: React.FC = () => {
       {/* 页面头部 */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex">
-          <Button 
-            type="text" 
-            icon={<ArrowLeftOutlined />} 
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
             onClick={handleGoBack}
             size="large"
           >
@@ -520,24 +504,24 @@ const ExperimentDetail: React.FC = () => {
             <span className="text-2xl font-semibold mb-0">{detail && renderStatusTag(detail.status)}</span>
           </div>
         </div>
-        
+
         {detail?.status === 'RUNNING' && (
           <div>
-            <Button 
+            <Button
               icon={<ReloadOutlined />}
               onClick={fetchExperimentDetail}
               className="mr-4"
-              title="刷新"
+              title={$i18n.get({ id: 'legacy.common.refresh', dm: "刷新" })}
             >
-              刷新
+              {$i18n.get({ id: 'legacy.common.refresh', dm: "刷新" })}
             </Button>
-            <Button 
-              danger 
+            <Button
+              danger
               icon={<StopOutlined />}
               loading={stopping}
               onClick={handleStopExperiment}
             >
-              停止实验
+              {$i18n.get({ id: 'legacy.experimentDetail.stopExperiment', dm: "停止实验" })}
             </Button>
           </div>
         )}
@@ -546,8 +530,8 @@ const ExperimentDetail: React.FC = () => {
       {/* 实验状态信息 */}
       {/* {detail.status === 'RUNNING' && (
         <Alert
-          message="实验正在运行中"
-          description={`当前进度: ${detail.progress}%，已处理 ${detail.totalProgress} 条数据`}
+          message="Experiment is running"
+          description={`Progress: ${detail.progress}%, processed ${detail.totalProgress} items`}
           type="info"
           showIcon
           className="mb-6"
@@ -560,20 +544,20 @@ const ExperimentDetail: React.FC = () => {
           {/* 左侧列 */}
           <div className="space-y-4">
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>实验名称：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.nameColon', dm: "实验名称：" })}</span>
               <span className="text-base text-gray-900" style={{ wordBreak: 'break-word' }}>{detail?.name || '-'}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>描述：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.common.descriptionColon', dm: "描述：" })}</span>
               <span className="text-base text-gray-900" style={{ wordBreak: 'break-word' }}>{detail?.description || '-'}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>评测集：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.datasetColon', dm: "评测集：" })}</span>
               <span className="text-base text-gray-900" style={{ wordBreak: 'break-word' }}>{detail?.dataset?.name || '-'}</span>
             </div>
             {/* 评估器字段和内容展示在一行 */}
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>评估器：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.evaluatorsColon', dm: "评估器：" })}</span>
               <div>
                 {detail?.evaluators && detail?.evaluators?.length > 0 ? (
                   detail?.evaluators.map((evaluator, index) => (
@@ -587,27 +571,27 @@ const ExperimentDetail: React.FC = () => {
               </div>
             </div>
           </div>
-          
+
           {/* 右侧列 */}
           <div className="space-y-4">
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>状态：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.statusColon', dm: "状态：" })}</span>
               <span className="text-base">{detail && renderStatusTag(detail.status)}</span>
             </div>
             {/* <div className="flex items-center">
-              <span className="text-sm font-medium" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>创建人：</span>
+              <span className="text-sm font-medium" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>Created by: </span>
               <span className="text-base text-gray-900">{detail.creator}</span>
             </div> */}
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>评测对象：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.targetColon', dm: "评测对象：" })}</span>
               <span className="text-base text-gray-900" style={{ wordBreak: 'break-word' }}>{detail?.evaluationObject?.type || '-'}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>更新时间：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.updatedAtColon', dm: "更新时间：" })}</span>
               <span className="text-base text-gray-900">{detail && formatDateTime(detail.startTime)}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>创建时间：</span>
+              <span className="text-sm font-medium flex-shrink-0" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.createdAtColon', dm: "创建时间：" })}</span>
               <span className="text-base text-gray-900">{detail && formatDateTime(detail.createTime)}</span>
             </div>
           </div>
@@ -619,20 +603,20 @@ const ExperimentDetail: React.FC = () => {
         <div className="mb-6">
           <div className="border-b border-gray-200 mb-4">
             <div className="flex space-x-8">
-              <div 
+              <div
                 className={`pb-2 cursor-pointer font-medium ${
-                  activeTab === 'overview' 
-                    ? 'border-b-2 border-blue-500 text-blue-600' 
+                  activeTab === 'overview'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
                 onClick={() => setActiveTab('overview')}
               >
-                概览
+                {$i18n.get({ id: 'legacy.experimentDetail.tab.overview', dm: "概览" })}
               </div>
-              <div 
+              <div
                 className={`pb-2 cursor-pointer font-medium ${
-                  activeTab === 'results' 
-                    ? 'border-b-2 border-blue-500 text-blue-600' 
+                  activeTab === 'results'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
                 onClick={() => {
@@ -649,7 +633,7 @@ const ExperimentDetail: React.FC = () => {
                   }
                 }}
               >
-                评测结果
+                {$i18n.get({ id: 'legacy.experimentDetail.tab.results', dm: "评测结果" })}
               </div>
             </div>
           </div>
@@ -659,7 +643,7 @@ const ExperimentDetail: React.FC = () => {
             <>
               {/* 评估器结果概览 */}
               <div className="mb-6">
-                <h3 className="text-lg font-medium mb-4">评估器结果概览</h3>
+                <h3 className="text-lg font-medium mb-4">{$i18n.get({ id: 'legacy.experimentDetail.evaluatorOverview', dm: "评估器结果概览" })}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {detail?.evaluators && detail.evaluators.length > 0 ? (
                     detail.evaluators.map((evaluator, index) => {
@@ -671,29 +655,29 @@ const ExperimentDetail: React.FC = () => {
                         completeItemsCount: 0,
                         totalItemsCount: 0
                       };
-                      
+
                       // 计算进度百分比
-                      const progressPercent = overview.totalItemsCount > 0 
+                      const progressPercent = overview.totalItemsCount > 0
                         ? Math.round((overview.completeItemsCount / overview.totalItemsCount) * 100)
                         : Math.round(overview.progress);
-                      
+
                       // 根据得分确定颜色
                       const scoreColor = overview.averageScore >= 0.8 ? 'text-green-600' : 'text-orange-500';
-                      
+
                       return (
                         <Card key={evaluator.id} className="p-4">
                           <div className="flex justify-between items-start mb-4">
                             <div>
                               <h4 className="text-base font-medium text-gray-900 mb-1">{evaluator.name}</h4>
-                              <p className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>评估器描述</p>
+                              <p className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.evaluatorDescription', dm: "评估器描述" })}</p>
                             </div>
                             <Tag color="blue">{evaluator.version}</Tag>
                           </div>
-                          
+
                           <div className="space-y-3">
                             <div>
                               <div className="flex justify-between items-center mb-1">
-                                <span className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>完成进度</span>
+                                <span className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.completionProgress', dm: "完成进度" })}</span>
                                 <span className="text-sm font-medium">{overview.completeItemsCount}/{overview.totalItemsCount || evaluator.dataCount}</span>
                               </div>
                               <Progress percent={progressPercent} strokeColor="#1677ff" size="small" />
@@ -701,14 +685,14 @@ const ExperimentDetail: React.FC = () => {
                                 <span className="text-sm font-medium">{progressPercent}%</span>
                               </div>
                             </div>
-                            
+
                             <div className="flex justify-between items-center">
-                              <span className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>平均得分</span>
+                              <span className="text-sm" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.averageScore', dm: "平均得分" })}</span>
                               <span className={`text-lg font-semibold ${scoreColor}`}>{overview.averageScore.toFixed(2)}</span>
                             </div>
-                            
+
                             <div className="text-xs" style={{ color: 'rgba(0, 0, 0, 0.45)' }}>
-                              基于 {overview.completeItemsCount} 条已完成评估
+                              {$i18n.get({ id: 'legacy.experimentDetail.basedOnCompleted', dm: "基于 {count} 条已完成评估" }, { count: overview.completeItemsCount })}
                             </div>
                           </div>
                         </Card>
@@ -716,7 +700,7 @@ const ExperimentDetail: React.FC = () => {
                     })
                   ) : (
                     <div className="col-span-full text-center py-8 text-gray-500">
-                      暂无评估器数据
+                      {$i18n.get({ id: 'legacy.experimentDetail.noEvaluatorData', dm: "暂无评估器数据" })}
                     </div>
                   )}
                 </div>
@@ -733,13 +717,13 @@ const ExperimentDetail: React.FC = () => {
                     // 使用唯一的tabKey，结合评估器ID、版本和索引确保唯一性
                     const tabKey = `evaluator-${evaluator.id}-${evaluator.version}-${index}`;
                     const tabName = evaluator.name; // 只显示评估器名称，不显示版本号
-                    
+
                     return (
-                      <div 
+                      <div
                         key={tabKey}
                         className={`pb-2 cursor-pointer font-medium flex-shrink-0 ${
                           activeEvaluatorTab === tabKey
-                            ? 'border-b-2 border-blue-500 text-blue-600' 
+                            ? 'border-b-2 border-blue-500 text-blue-600'
                             : 'text-gray-500 hover:text-gray-700'
                         }`}
                         onClick={() => setActiveEvaluatorTab(tabKey)}
@@ -748,11 +732,11 @@ const ExperimentDetail: React.FC = () => {
                       </div>
                     );
                   })}
-                  
+
                   {/* 如果没有评估器数据，不显示任何Tab */}
                   {(!detail?.evaluators || detail.evaluators.length === 0) && (
                     <div className="text-gray-500 py-2">
-                      暂无评估器数据
+                      {$i18n.get({ id: 'legacy.experimentDetail.noEvaluatorData', dm: "暂无评估器数据" })}
                     </div>
                   )}
                 </div>
@@ -763,13 +747,13 @@ const ExperimentDetail: React.FC = () => {
                 {/* 评估器信息 */}
                 {detail?.evaluators && detail.evaluators.length > 0 && (() => {
                   // 根据activeEvaluatorTab找到对应的评估器
-                  const currentEvaluator = detail.evaluators.find((evaluator, index) => 
+                  const currentEvaluator = detail.evaluators.find((evaluator, index) =>
                     `evaluator-${evaluator.id}-${evaluator.version}-${index}` === activeEvaluatorTab
                   ) || detail.evaluators[0];
-                  
+
                   if (currentEvaluator) {
                     // 获取对应的概览数据，使用与概览页相同的数据源
-                    const evaluatorIndex = detail.evaluators.findIndex((evaluator, index) => 
+                    const evaluatorIndex = detail.evaluators.findIndex((evaluator, index) =>
                       `evaluator-${evaluator.id}-${evaluator.version}-${index}` === activeEvaluatorTab
                     );
                     const overview = overviewData[evaluatorIndex] || {
@@ -779,27 +763,27 @@ const ExperimentDetail: React.FC = () => {
                       completeItemsCount: 0,
                       totalItemsCount: 0
                     };
-                    
+
                     // 计算进度百分比，与概览页保持一致
-                    const progressPercent = overview.totalItemsCount > 0 
+                    const progressPercent = overview.totalItemsCount > 0
                       ? Math.round((overview.completeItemsCount / overview.totalItemsCount) * 100)
                       : Math.round(overview.progress);
-                    
+
                     // 根据得分确定颜色，与概览页保持一致
                     const scoreColor = overview.averageScore >= 0.8 ? 'text-green-600' : 'text-orange-500';
-                    
+
                     return (
                       <div className="mb-4">
                         <div className="text-base font-medium mb-2">{currentEvaluator.name}</div>
                         <div className="flex items-center space-x-6 text-sm">
                           <div>
-                            <span style={{ color: 'rgba(0, 0, 0, 0.45)' }}>平均得分：</span>
+                            <span style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.averageScoreColon', dm: "平均得分：" })}</span>
                             <span className={`text-lg font-semibold ml-2 ${scoreColor}`}>
                               {overview.averageScore.toFixed(2)}
                             </span>
                           </div>
                           <div>
-                            <span style={{ color: 'rgba(0, 0, 0, 0.45)' }}>完成进度：</span>
+                            <span style={{ color: 'rgba(0, 0, 0, 0.45)' }}>{$i18n.get({ id: 'legacy.experimentDetail.completionProgressColon', dm: "完成进度：" })}</span>
                             <span className="font-medium ml-2">
                               {overview.completeItemsCount}/{overview.totalItemsCount || currentEvaluator.dataCount}
                             </span>
@@ -810,7 +794,7 @@ const ExperimentDetail: React.FC = () => {
                   }
                   return null;
                 })()}
-                
+
                 {/* 详细结果表格 */}
                 <Table
                   dataSource={resultData}
@@ -828,10 +812,10 @@ const ExperimentDetail: React.FC = () => {
                       // 更新分页状态
                       onPaginationChange(page, pageSize);
                       // 根据activeEvaluatorTab找到对应的评估器
-                      const currentEvaluator = detail?.evaluators?.find((evaluator, index) => 
+                      const currentEvaluator = detail?.evaluators?.find((evaluator, index) =>
                         `evaluator-${evaluator.id}-${evaluator.version}-${index}` === activeEvaluatorTab
                       ) || detail?.evaluators?.[0];
-                      
+
                       if (currentEvaluator) {
                         // 使用当前评估器的ID作为evaluatorVersionId参数调用接口
                         const evaluatorVersionId = parseInt(currentEvaluator.id.split('-')[1]);
@@ -843,10 +827,10 @@ const ExperimentDetail: React.FC = () => {
                       // 更新分页状态
                       onShowSizeChange(page, pageSize);
                       // 根据activeEvaluatorTab找到对应的评估器
-                      const currentEvaluator = detail?.evaluators?.find((evaluator, index) => 
+                      const currentEvaluator = detail?.evaluators?.find((evaluator, index) =>
                         `evaluator-${evaluator.id}-${evaluator.version}-${index}` === activeEvaluatorTab
                       ) || detail?.evaluators?.[0];
-                      
+
                       if (currentEvaluator) {
                         // 使用当前评估器的ID作为evaluatorVersionId参数调用接口
                         const evaluatorVersionId = parseInt(currentEvaluator.id.split('-')[1]);
@@ -856,9 +840,9 @@ const ExperimentDetail: React.FC = () => {
                     }
                   }}
                   columns={[
-                    { 
-                      title: '输入', 
-                      dataIndex: 'input', 
+                    {
+                      title: $i18n.get({ id: 'legacy.experimentDetail.col.input', dm: "输入" }),
+                      dataIndex: 'input',
                       width: '25%',
                       ellipsis: true,
                       render: (text: string) => (
@@ -867,9 +851,9 @@ const ExperimentDetail: React.FC = () => {
                         </Tooltip>
                       )
                     },
-                    { 
-                      title: '实际输出', 
-                      dataIndex: 'actualOutput', 
+                    {
+                      title: $i18n.get({ id: 'legacy.experimentDetail.col.actualOutput', dm: "实际输出" }),
+                      dataIndex: 'actualOutput',
                       width: '25%',
                       ellipsis: true,
                       render: (text: string) => (
@@ -878,9 +862,9 @@ const ExperimentDetail: React.FC = () => {
                         </Tooltip>
                       )
                     },
-                    { 
-                      title: '参考输出', 
-                      dataIndex: 'referenceOutput', 
+                    {
+                      title: $i18n.get({ id: 'legacy.experimentDetail.col.referenceOutput', dm: "参考输出" }),
+                      dataIndex: 'referenceOutput',
                       width: '25%',
                       ellipsis: true,
                       render: (text: string) => (
@@ -889,9 +873,9 @@ const ExperimentDetail: React.FC = () => {
                         </Tooltip>
                       )
                     },
-                    { 
-                      title: '分数', 
-                      dataIndex: 'score', 
+                    {
+                      title: $i18n.get({ id: 'legacy.experimentDetail.col.score', dm: "分数" }),
+                      dataIndex: 'score',
                       width: '10%',
                       render: (score: number) => {
                         const scoreColor = score >= 0.8 ? 'text-green-600' : score >= 0.5 ? 'text-orange-500' : 'text-red-500';
@@ -902,9 +886,9 @@ const ExperimentDetail: React.FC = () => {
                         );
                       }
                     },
-                    { 
-                      title: '理由', 
-                      dataIndex: 'reason', 
+                    {
+                      title: $i18n.get({ id: 'legacy.experimentDetail.col.reason', dm: "理由" }),
+                      dataIndex: 'reason',
                       width: '15%',
                       ellipsis: true,
                       render: (text: string) => (

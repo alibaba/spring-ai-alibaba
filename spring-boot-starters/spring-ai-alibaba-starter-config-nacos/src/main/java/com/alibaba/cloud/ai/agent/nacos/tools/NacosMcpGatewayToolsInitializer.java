@@ -16,6 +16,7 @@
 
 package com.alibaba.cloud.ai.agent.nacos.tools;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,9 +42,17 @@ public class NacosMcpGatewayToolsInitializer {
 
 	private List<McpServersVO.McpServerVO> mcpServers;
 
+	private final Duration requestTimeout;
+
 	public NacosMcpGatewayToolsInitializer(NacosMcpOperationService nacosMcpOperationService, List<McpServersVO.McpServerVO> mcpServers) {
+		this(nacosMcpOperationService, mcpServers, null);
+	}
+
+	public NacosMcpGatewayToolsInitializer(NacosMcpOperationService nacosMcpOperationService, List<McpServersVO.McpServerVO> mcpServers,
+			Duration requestTimeout) {
 		this.nacosMcpOperationService = nacosMcpOperationService;
 		this.mcpServers = mcpServers;
+		this.requestTimeout = requestTimeout;
 	}
 
 	public List<ToolCallback> initializeTools() {
@@ -122,7 +131,8 @@ public class NacosMcpGatewayToolsInitializer {
 							.remoteServerConfig(mcpServerRemoteServiceConfig)
 							.toolsMeta(metaInfo)
 							.build();
-					toolCallbacks.add(new NacosMcpGatewayToolCallback(toolDefinition, nacosMcpOperationService, serverVO));
+					toolCallbacks.add(new NacosMcpGatewayToolCallback(toolDefinition, nacosMcpOperationService, serverVO,
+							requestTimeout));
 				}
 			}
 			return toolCallbacks;

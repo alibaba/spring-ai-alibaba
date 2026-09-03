@@ -25,8 +25,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 /**
  * Tool for searching the current SkillRegistry by name, description, or path.

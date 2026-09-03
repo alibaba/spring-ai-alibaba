@@ -32,6 +32,8 @@ import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.state.RemoveByHash;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
+import com.alibaba.cloud.ai.graph.streaming.GraphFlux;
+import com.alibaba.cloud.ai.graph.streaming.ParallelGraphFlux;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.EdgeMappings;
 
@@ -46,6 +48,8 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -1229,23 +1233,31 @@ public class StateGraphTest {
 
 	@Test
 	public void testStreamingNodeWithFluxException() throws Exception {
+		RuntimeException sourceException = new RuntimeException("Exception in streaming flux");
+		AtomicInteger errorCount = new AtomicInteger();
+		AtomicReference<String> errorNodeId = new AtomicReference<>();
+		AtomicReference<Throwable> listenerException = new AtomicReference<>();
 		StateGraph workflow = new StateGraph(createKeyStrategyFactory()).addEdge(START, "agent_1")
 				.addNode("agent_1", node_async(state -> {
 					log.info("agent_1\n{}", state);
-					return Map.of("pro1", Flux.just("response1", "response2", "response3")
-							.map(value -> {
-								if (value.equals("response3")) {
-									throw new RuntimeException("Exception in map operation");
-								}
-								return value;
-							}));
+					return Map.of("pro1", Flux.concat(Flux.just("response1", "response2"), Flux.error(sourceException)));
 				}))
 				.addEdge("agent_1", END);
 
-		CompiledGraph app = workflow.compile();
+		CompiledGraph app = workflow.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+			@Override
+			public void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
+				errorCount.incrementAndGet();
+				errorNodeId.set(nodeId);
+				listenerException.set(ex);
+			}
+		}).build());
 
 		assertThrows(RuntimeException.class,
 				() -> app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1")));
+		errorCount.set(0);
+		errorNodeId.set(null);
+		listenerException.set(null);
 
 		Flux<NodeOutput> flux = app.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 
@@ -1256,26 +1268,79 @@ public class StateGraphTest {
 		assertEquals(2, firstTwoElements.size());
 
 		// 验证第三个元素会抛出异常
-		assertThrows(RuntimeException.class, () -> flux.blockLast());
+		RuntimeException exception = assertThrows(RuntimeException.class, () -> flux.blockLast());
+		assertEquals(sourceException.getMessage(), exception.getMessage());
+		assertEquals(1, errorCount.get());
+		assertEquals("agent_1", errorNodeId.get());
+		assertEquals(sourceException, listenerException.get().getCause());
+	}
+
+	@Test
+	public void testGraphFluxErrorUsesChildNodeIdForLifecycleListener() throws Exception {
+		RuntimeException sourceException = new RuntimeException("GraphFlux child failure");
+		AtomicReference<String> errorNodeId = new AtomicReference<>();
+		StateGraph workflow = new StateGraph(createKeyStrategyFactory()).addEdge(START, "parent")
+				.addNode("parent", node_async(state -> Map.of("stream",
+						GraphFlux.of("child", Flux.error(sourceException)))))
+				.addEdge("parent", END);
+
+		CompiledGraph app = workflow.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+			@Override
+			public void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
+				errorNodeId.set(nodeId);
+			}
+		}).build());
+
+		assertThrows(RuntimeException.class, () -> app.stream(Map.of()).blockLast());
+		assertEquals("child", errorNodeId.get());
+	}
+
+	@Test
+	public void testParallelGraphFluxErrorUsesFailingChildNodeIdForLifecycleListener() throws Exception {
+		RuntimeException sourceException = new RuntimeException("ParallelGraphFlux child failure");
+		AtomicReference<String> errorNodeId = new AtomicReference<>();
+		StateGraph workflow = new StateGraph(createKeyStrategyFactory()).addEdge(START, "parent")
+				.addNode("parent", node_async(state -> Map.of("stream", ParallelGraphFlux.of(List.of(
+						GraphFlux.of("child_success", Flux.just("ok")),
+						GraphFlux.of("child_failure", Flux.error(sourceException)))))))
+				.addEdge("parent", END);
+
+		CompiledGraph app = workflow.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+			@Override
+			public void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
+				errorNodeId.set(nodeId);
+			}
+		}).build());
+
+		assertThrows(RuntimeException.class, () -> app.stream(Map.of()).blockLast());
+		assertEquals("child_failure", errorNodeId.get());
 	}
 
 	@Test
 	public void testStreamingNodeWithNodeException() throws Exception {
+		AtomicInteger errorCount = new AtomicInteger();
 		StateGraph workflow = new StateGraph(createKeyStrategyFactory()).addEdge(START, "agent_1")
 				.addNode("agent_1", node_async(state -> {
 					throw new RuntimeException("forced exception for testing");
 				}))
 				.addEdge("agent_1", END);
 
-		CompiledGraph app = workflow.compile();
+		CompiledGraph app = workflow.compile(CompileConfig.builder().withLifecycleListener(new GraphLifecycleListener() {
+			@Override
+			public void onError(String nodeId, Map<String, Object> state, Throwable ex, RunnableConfig config) {
+				errorCount.incrementAndGet();
+			}
+		}).build());
 
 		// 验证 invoke 会抛出异常
 		assertThrows(RuntimeException.class,
 				() -> app.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1")));
+		assertEquals(1, errorCount.get());
 
 		// 验证 stream 也会抛出异常
 		Flux<NodeOutput> flux = app.stream(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test1"));
 		assertThrows(RuntimeException.class, () -> flux.blockLast());
+		assertEquals(2, errorCount.get());
 	}
 
 	/**
@@ -1794,8 +1859,11 @@ public class StateGraphTest {
 				.addEdge("E", END);
 
 		GraphStateException exception = assertThrows(GraphStateException.class, () -> workflow.compile());
-		assertTrue(exception.getMessage().contains("parallel node [conditional_node] must have only one target"),
-				"Expected compile error for divergent immediate successors, but got: " + exception.getMessage());
+		String message = exception.getMessage();
+		assertTrue(message.contains("parallel node [conditional_node] must have only one target"),
+				"Expected compile error for divergent immediate successors, but got: " + message);
+		assertTrue(message.indexOf("C1") < message.indexOf("D"),
+				"Expected divergent targets to be reported in sorted order, but got: " + message);
 	}
 
 	/**

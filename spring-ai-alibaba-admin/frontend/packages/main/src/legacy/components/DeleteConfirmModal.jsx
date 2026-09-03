@@ -8,6 +8,7 @@ import {
   Alert,
   message
 } from 'antd';
+import $i18n from '@/i18n';
 import {
   ExclamationCircleOutlined,
   CloseOutlined
@@ -23,7 +24,7 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
     if (confirmName === promptName) {
       onConfirm();
     } else {
-      message.error('输入的名称不匹配，请重新输入');
+      message.error($i18n.get({ id: 'legacy.prompts.the.entered.name.does.not.match.please.try.again', dm: '输入的名称不匹配，请重新输入' }));
     }
   };
 
@@ -42,7 +43,7 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
           }}>
             <ExclamationCircleOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />
           </div>
-          <Text strong style={{ fontSize: 18 }}>确认删除</Text>
+          <Text strong style={{ fontSize: 18 }}>{$i18n.get({ id: 'legacy.prompts.confirm.deletion', dm: '确认删除' })}</Text>
         </div>
       }
       open={true}
@@ -51,7 +52,7 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
       centered
       footer={[
         <Button key="cancel" onClick={onClose}>
-          取消
+          {$i18n.get({ id: 'legacy.prompts.cancel', dm: '取消' })}
         </Button>,
         <Button
           key="confirm"
@@ -60,7 +61,7 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
           disabled={confirmName !== (prompt.promptKey || prompt.name)}
           onClick={handleConfirm}
         >
-          确认删除
+          {$i18n.get({ id: 'legacy.prompts.delete', dm: '确认删除' })}
         </Button>
       ]}
       closeIcon={<CloseOutlined />}
@@ -70,7 +71,9 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
           message={
             <div>
               <Paragraph style={{ margin: 0, marginBottom: 8 }}>
-                你确定要删除Prompt吗？请输入 <Text strong style={{ color: '#ff4d4f' }}>{prompt.promptKey || prompt.name}</Text> 确认删除操作。
+                {$i18n.get({ id: 'legacy.prompts.delete.confirm.prefix', dm: '你确定要删除Prompt吗？请输入 ' })}
+                <Text strong style={{ color: '#ff4d4f' }}>{prompt.promptKey || prompt.name}</Text>
+                {$i18n.get({ id: 'legacy.prompts.delete.confirm.suffix', dm: ' 确认删除操作。' })}
               </Paragraph>
             </div>
           }
@@ -79,17 +82,17 @@ const DeleteConfirmModal = ({ prompt, onConfirm, onClose }) => {
         />
         
         <div>
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>请输入Prompt名称确认：</Text>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>{$i18n.get({ id: 'legacy.prompts.enter.the.prompt.name.to.confirm', dm: '请输入Prompt名称确认：' })}</Text>
           <Input
             value={confirmName}
             onChange={(e) => setConfirmName(e.target.value)}
-            placeholder={`输入"${prompt.promptKey || prompt.name}"确认删除`}
+            placeholder={$i18n.get({ id: 'legacy.prompts.enter.to.confirm.deletion', dm: '输入"{promptKey}"确认删除' }, { promptKey: prompt.promptKey || prompt.name })}
             status={confirmName && confirmName !== (prompt.promptKey || prompt.name) ? 'error' : undefined}
             size="large"
           />
           {confirmName && confirmName !== (prompt.promptKey || prompt.name) && (
             <Text type="danger" style={{ fontSize: '12px', marginTop: 4, display: 'block' }}>
-              输入的名称与 Prompt 名称不匹配
+              {$i18n.get({ id: 'legacy.prompts.the.entered.name.does.not.match.the.prompt.name', dm: '输入的名称与 Prompt 名称不匹配' })}
             </Text>
           )}
         </div>

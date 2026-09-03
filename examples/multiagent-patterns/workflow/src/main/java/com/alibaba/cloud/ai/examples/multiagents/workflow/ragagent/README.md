@@ -22,6 +22,8 @@ workflow.runner.enabled: true  # optional demo on startup
 
 ## Run
 
+From the repository root (Maven installation is optional when using `mvnw`):
+
 ```bash
-mvn spring-boot:run -Dspring-boot.run.arguments="--workflow.rag.enabled=true --workflow.runner.enabled=true"
+./mvnw -f examples/multiagent-patterns/workflow spring-boot:run -Dspring-boot.run.arguments="--workflow.rag.enabled=true --workflow.runner.enabled=true"
 ```

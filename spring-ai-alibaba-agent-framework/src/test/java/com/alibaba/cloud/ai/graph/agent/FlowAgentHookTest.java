@@ -20,7 +20,11 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
 import com.alibaba.cloud.ai.graph.GraphRepresentation;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.StateGraph;
-import com.alibaba.cloud.ai.graph.agent.flow.agent.*;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.LlmRoutingAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.LoopAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.ParallelAgent;
+import com.alibaba.cloud.ai.graph.agent.flow.agent.SequentialAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.agent.loop.CountLoopStrategy;
 import com.alibaba.cloud.ai.graph.agent.utils.HookFactory;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
@@ -34,7 +38,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test class for FlowAgent subclasses with Hook functionality.

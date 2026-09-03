@@ -26,6 +26,8 @@ Uses H2 in-memory with a Chinook-like schema. Schema is initialized from `schema
 
 ## Run
 
+From the repository root (Maven installation is optional when using `mvnw`):
+
 ```bash
-mvn spring-boot:run -Dspring-boot.run.arguments="--workflow.sql.enabled=true --workflow.runner.enabled=true"
+./mvnw -f examples/multiagent-patterns/workflow spring-boot:run -Dspring-boot.run.arguments="--workflow.sql.enabled=true --workflow.runner.enabled=true"
 ```

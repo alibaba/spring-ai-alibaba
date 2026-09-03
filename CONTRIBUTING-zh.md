@@ -25,7 +25,7 @@ Spring AI Alibaba 从开源建设以来，受到了很多社区同学的关注�
 - 点击 [本项目](https://github.com/alibaba/spring-ai-alibaba) 右上角的 `Fork` 图标 将 alibaba/spring-ai-alibaba  fork 到自己的空间。
 - 将自己账号下的 spring-ai-alibaba 仓库 clone 到本地，例如我的账号是 `chickenlj`，那就是执行 `git clone https://github.com/chickenlj/spring-ai-alibaba.git` 进行 clone 操作。
 
-### 配置 Github 信息
+### 配置 GitHub 信息
 
 - 在自己的机器执行 `git config --list` ，查看 git 的全局用户名和邮箱。
 - 检查显示的 user.name 和 user.email 是不是与自己 github 的用户名和邮箱相匹配。
