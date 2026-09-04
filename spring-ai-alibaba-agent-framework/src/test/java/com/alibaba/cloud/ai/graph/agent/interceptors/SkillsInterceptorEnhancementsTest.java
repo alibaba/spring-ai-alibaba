@@ -187,4 +187,32 @@ class SkillsInterceptorEnhancementsTest {
 				.anyMatch(tool -> "extra_tool".equals(tool.getToolDefinition().name())));
 	}
 
+	@Test
+	void skillNameToolCallActivatesGroupedToolsAfterFallback() {
+		ToolCallback recordResultTool = FunctionToolCallback.builder("record_result", args -> "recorded")
+				.description("Records a result value")
+				.inputType(String.class)
+				.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+				.skillRegistry(registry)
+				.groupedTools(Map.of("allowed-tools-test", List.of(recordResultTool)))
+				.build();
+
+		AssistantMessage.ToolCall skillCall = new AssistantMessage.ToolCall("call-1", "function",
+				"allowed-tools-test", "{}");
+		ModelRequest request = ModelRequest.builder()
+				.messages(List.of(AssistantMessage.builder().content("").toolCalls(List.of(skillCall)).build()))
+				.build();
+		AtomicReference<ModelRequest> captured = new AtomicReference<>();
+
+		interceptor.interceptModel(request, modified -> {
+			captured.set(modified);
+			return ModelResponse.of(new AssistantMessage("ok"));
+		});
+
+		assertEquals(List.of("record_result"), captured.get().getDynamicToolCallbacks().stream()
+				.map(tool -> tool.getToolDefinition().name())
+				.toList());
+	}
+
 }
