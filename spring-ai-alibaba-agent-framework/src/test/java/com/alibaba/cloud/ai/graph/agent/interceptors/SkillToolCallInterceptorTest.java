@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SkillToolCallInterceptorTest {
@@ -78,6 +79,22 @@ class SkillToolCallInterceptorTest {
 
 		assertEquals("real tool result", response.getResult());
 		assertEquals(ToolCallResponse.SUCCESS_STATUS, response.getStatus());
+	}
+
+	@Test
+	void preservesRealToolFailureWithoutUnresolvedToolMetadata() {
+		ToolCallRequest request = request("allowed-tools-test");
+		ToolCallResponse realToolFailure = ToolCallResponse.builder()
+				.content("real tool failed")
+				.toolName(request.getToolName())
+				.toolCallId(request.getToolCallId())
+				.status("error")
+				.metadata(Map.of("error", true))
+				.build();
+
+		ToolCallResponse response = interceptor.interceptToolCall(request, ignored -> realToolFailure);
+
+		assertSame(realToolFailure, response);
 	}
 
 	@Test

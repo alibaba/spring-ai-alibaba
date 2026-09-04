@@ -43,6 +43,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
@@ -92,6 +93,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private ToolCallingChatOptions chatOptions;
 
+	private ToolCallbackResolver toolCallbackResolver;
+
 	private boolean enableReasoningLog;
 
 	public AgentLlmNode(Builder builder) {
@@ -115,6 +118,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 		this.chatClient = builder.chatClient;
 		this.chatOptions = buildChatOptions(builder.chatOptions, this.toolCallbacks);
+		this.toolCallbackResolver = builder.toolCallbackResolver;
 		this.enableReasoningLog = builder.enableReasoningLog;
 	}
 
@@ -180,6 +184,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		Map<String, Object> metadata = config.metadata().orElse(new HashMap<>());
 		if (!metadata.isEmpty()) {
 			contextMap.putAll(metadata);
+		}
+		Object dynamicToolCallbacks = config.context().get(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY);
+		if (dynamicToolCallbacks instanceof List<?>) {
+			contextMap.put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY, dynamicToolCallbacks);
+		}
+		if (toolCallbackResolver != null) {
+			contextMap.put(RunnableConfig.TOOL_CALLBACK_RESOLVER_METADATA_KEY, toolCallbackResolver);
 		}
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
 				.messages(messages)
@@ -571,6 +582,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private ChatOptions chatOptions;
 
+		private ToolCallbackResolver toolCallbackResolver;
+
 		public Builder agentName(String agentName) {
 			this.agentName = agentName;
 			return this;
@@ -633,6 +646,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder chatOptions(ChatOptions chatOptions) {
 			this.chatOptions = chatOptions;
+			return this;
+		}
+
+		public Builder toolCallbackResolver(ToolCallbackResolver toolCallbackResolver) {
+			this.toolCallbackResolver = toolCallbackResolver;
 			return this;
 		}
 

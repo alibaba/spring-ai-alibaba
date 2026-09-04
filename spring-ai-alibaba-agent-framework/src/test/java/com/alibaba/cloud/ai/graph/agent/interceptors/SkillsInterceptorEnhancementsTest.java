@@ -15,8 +15,12 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptors;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.ReadSkillTool;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
@@ -49,6 +53,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.util.List.of;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SkillsInterceptorEnhancementsTest {
@@ -213,6 +218,142 @@ class SkillsInterceptorEnhancementsTest {
 		assertEquals(List.of("record_result"), captured.get().getDynamicToolCallbacks().stream()
 				.map(tool -> tool.getToolDefinition().name())
 				.toList());
+	}
+
+	@Test
+	void sameNamedDynamicToolIsNotTreatedAsSkill() {
+		ToolCallback realTool = FunctionToolCallback.builder("allowed-tools-test", args -> "real tool")
+				.description("Real tool with a colliding name")
+				.inputType(String.class)
+				.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+				.skillRegistry(registry)
+				.groupedTools(Map.of("allowed-tools-test", List.of(
+						FunctionToolCallback.builder("record_result", args -> "recorded")
+								.description("Grouped skill tool")
+								.inputType(String.class)
+								.build())))
+				.build();
+
+		ModelRequest request = ModelRequest.builder()
+				.messages(List.of(assistantMessageFor("allowed-tools-test")))
+				.dynamicToolCallbacks(List.of(realTool))
+				.build();
+		AtomicReference<ModelRequest> captured = new AtomicReference<>();
+
+		interceptor.interceptModel(request, modified -> {
+			captured.set(modified);
+			return ModelResponse.of(new AssistantMessage("ok"));
+		});
+
+		assertEquals(List.of("allowed-tools-test"), toolNames(captured.get()));
+	}
+
+	@Test
+	void sameNamedToolFromRuntimeContextIsNotTreatedAsSkill() {
+		ToolCallback realTool = FunctionToolCallback.builder("allowed-tools-test", args -> "real tool")
+				.description("Real tool from the runtime callback context")
+				.inputType(String.class)
+				.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+				.skillRegistry(registry)
+				.groupedTools(Map.of("allowed-tools-test", List.of(realTool)))
+				.build();
+
+		ModelRequest request = ModelRequest.builder()
+				.messages(List.of(assistantMessageFor("allowed-tools-test")))
+				.context(Map.of(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY, List.of(realTool)))
+				.build();
+		AtomicReference<ModelRequest> captured = new AtomicReference<>();
+
+		interceptor.interceptModel(request, modified -> {
+			captured.set(modified);
+			return ModelResponse.of(new AssistantMessage("ok"));
+		});
+
+		assertEquals(List.of(), toolNames(captured.get()));
+	}
+
+	@Test
+	void sameNamedToolFromResolverIsNotTreatedAsSkill() {
+		ToolCallback realTool = FunctionToolCallback.builder("allowed-tools-test", args -> "real tool")
+				.description("Real tool from a resolver")
+				.inputType(String.class)
+				.build();
+		SkillsInterceptor interceptor = SkillsInterceptor.builder()
+				.skillRegistry(registry)
+				.groupedTools(Map.of("allowed-tools-test", List.of(
+						FunctionToolCallback.builder("record_result", args -> "recorded")
+								.description("Grouped skill tool")
+								.inputType(String.class)
+								.build())))
+				.toolCallbackResolver(toolName -> "allowed-tools-test".equals(toolName) ? realTool : null)
+				.build();
+
+		ModelRequest request = ModelRequest.builder()
+				.messages(List.of(assistantMessageFor("allowed-tools-test")))
+				.build();
+		AtomicReference<ModelRequest> captured = new AtomicReference<>();
+
+		interceptor.interceptModel(request, modified -> {
+			captured.set(modified);
+			return ModelResponse.of(new AssistantMessage("ok"));
+		});
+
+		assertEquals(List.of(), toolNames(captured.get()));
+	}
+
+	@Test
+	void agentResolverIsAvailableToSkillsInterceptorThroughModelRequest() throws Exception {
+		ToolCallback realTool = FunctionToolCallback.builder("allowed-tools-test", args -> "real tool")
+				.description("Real tool from the agent resolver")
+				.inputType(String.class)
+				.build();
+		ToolCallbackResolver resolver = toolName -> "allowed-tools-test".equals(toolName) ? realTool : null;
+		SkillsInterceptor skillsInterceptor = SkillsInterceptor.builder()
+				.skillRegistry(registry)
+				.groupedTools(Map.of("allowed-tools-test", List.of(
+						FunctionToolCallback.builder("record_result", args -> "recorded")
+								.description("Grouped skill tool")
+								.inputType(String.class)
+								.build())))
+				.build();
+		AtomicReference<ModelRequest> captured = new AtomicReference<>();
+		ModelInterceptor captureInterceptor = new ModelInterceptor() {
+			@Override
+			public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
+				captured.set(request);
+				return ModelResponse.of(new AssistantMessage("ok"));
+			}
+
+			@Override
+			public String getName() {
+				return "CaptureModelRequest";
+			}
+		};
+		AgentLlmNode llmNode = AgentLlmNode.builder()
+				.agentName("resolver-test-agent")
+				.toolCallbackResolver(resolver)
+				.modelInterceptors(List.of(skillsInterceptor, captureInterceptor))
+				.build();
+
+		llmNode.apply(new OverAllState(Map.of("messages", List.of(assistantMessageFor("allowed-tools-test")))),
+				RunnableConfig.builder().build());
+
+		assertNotNull(captured.get());
+		assertSame(resolver, captured.get().getContext().get(RunnableConfig.TOOL_CALLBACK_RESOLVER_METADATA_KEY));
+		assertEquals(List.of(), toolNames(captured.get()));
+	}
+
+	private AssistantMessage assistantMessageFor(String toolName) {
+		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("call-1", "function", toolName, "{}");
+		return AssistantMessage.builder().content("").toolCalls(List.of(toolCall)).build();
+	}
+
+	private List<String> toolNames(ModelRequest request) {
+		return request.getDynamicToolCallbacks().stream()
+				.map(tool -> tool.getToolDefinition().name())
+				.toList();
 	}
 
 }

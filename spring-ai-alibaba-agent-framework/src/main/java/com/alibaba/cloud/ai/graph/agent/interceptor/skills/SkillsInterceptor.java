@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.skills;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.ReadSkillTool;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
@@ -202,13 +203,41 @@ public class SkillsInterceptor extends ModelInterceptor {
 		if (request.getTools() != null && request.getTools().contains(toolName)) {
 			return true;
 		}
-		if (request.getDynamicToolCallbacks() != null && request.getDynamicToolCallbacks().stream()
-				.anyMatch(tool -> tool != null && toolName.equals(tool.getToolDefinition().name()))) {
+		if (containsToolCallback(request.getDynamicToolCallbacks(), toolName)) {
 			return true;
 		}
-		return request.getOptions() != null && request.getOptions().getToolCallbacks() != null
-				&& request.getOptions().getToolCallbacks().stream()
-						.anyMatch(tool -> tool != null && toolName.equals(tool.getToolDefinition().name()));
+		if (request.getOptions() != null && containsToolCallback(request.getOptions().getToolCallbacks(), toolName)) {
+			return true;
+		}
+		Map<String, Object> context = request.getContext();
+		if (context != null
+				&& containsToolCallback(context.get(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY), toolName)) {
+			return true;
+		}
+		if (toolCallbackResolver != null && toolCallbackResolver.resolve(toolName) != null) {
+			return true;
+		}
+		if (context == null) {
+			return false;
+		}
+		Object resolver = context.get(RunnableConfig.TOOL_CALLBACK_RESOLVER_METADATA_KEY);
+		return resolver instanceof ToolCallbackResolver requestResolver
+				&& requestResolver != toolCallbackResolver
+				&& requestResolver.resolve(toolName) != null;
+	}
+
+	private boolean containsToolCallback(Object callbacks, String toolName) {
+		if (!(callbacks instanceof Iterable<?> iterable)) {
+			return false;
+		}
+		for (Object callback : iterable) {
+			if (callback instanceof ToolCallback toolCallback
+					&& toolCallback.getToolDefinition() != null
+					&& toolName.equals(toolCallback.getToolDefinition().name())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private Optional<SkillMetadata> resolveSkillFromArguments(String arguments) {
