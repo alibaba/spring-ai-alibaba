@@ -162,6 +162,24 @@ class SkillsInterceptorEnhancementsTest {
 	}
 
 	@Test
+	void reactAgentBuilderPassesRuntimeResolverToLlmNode() throws Exception {
+		ToolCallbackResolver resolver = toolName -> null;
+		ReactAgent agent = ReactAgent.builder()
+				.name("resolver-agent")
+				.model(new MockChatModel())
+				.resolver(resolver)
+				.build();
+
+		Field llmNodeField = ReactAgent.class.getDeclaredField("llmNode");
+		llmNodeField.setAccessible(true);
+		AgentLlmNode llmNode = (AgentLlmNode) llmNodeField.get(agent);
+		Field resolverField = AgentLlmNode.class.getDeclaredField("toolCallbackResolver");
+		resolverField.setAccessible(true);
+
+		assertSame(resolver, resolverField.get(llmNode));
+	}
+
+	@Test
 	void groupedToolsSupplierIsResolvedOnEveryModelCall() {
 		ToolCallback recordResultTool = FunctionToolCallback.builder("record_result", args -> "recorded")
 				.description("Records a result value")
