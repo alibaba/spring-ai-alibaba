@@ -36,6 +36,10 @@ public class DocumentExtractorNodeData extends NodeData {
 
 	private String outputKey;
 
+	private String localFileRoot;
+
+	private Boolean remoteResourcesAllowed = false;
+
 	public DocumentExtractorNodeData(List<VariableSelector> inputs, List<Variable> outputs) {
 		super(inputs, outputs);
 	}
@@ -53,6 +57,22 @@ public class DocumentExtractorNodeData extends NodeData {
 
 	public void setOutputKey(String outputKey) {
 		this.outputKey = outputKey;
+	}
+
+	public String getLocalFileRoot() {
+		return localFileRoot;
+	}
+
+	public void setLocalFileRoot(String localFileRoot) {
+		this.localFileRoot = localFileRoot;
+	}
+
+	public boolean isRemoteResourcesAllowed() {
+		return Boolean.TRUE.equals(remoteResourcesAllowed);
+	}
+
+	public void setRemoteResourcesAllowed(boolean remoteResourcesAllowed) {
+		this.remoteResourcesAllowed = remoteResourcesAllowed;
 	}
 
 	public boolean isArray() {
