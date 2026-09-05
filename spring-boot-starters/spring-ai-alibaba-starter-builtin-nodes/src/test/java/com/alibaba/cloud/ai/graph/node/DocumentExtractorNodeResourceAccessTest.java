@@ -22,9 +22,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Inet6Address;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.net.InetAddress;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -129,6 +130,19 @@ class DocumentExtractorNodeResourceAccessTest {
 	@Test
 	void rejectsAlibabaCloudMetadataAddress() throws Exception {
 		assertTrue(DocumentExtractorNode.isBlockedRemoteAddress(InetAddress.getByName("100.100.100.200")));
+	}
+
+	@Test
+	void rejectsIpv4MappedIpv6LoopbackAddress() throws Exception {
+		byte[] addressBytes = new byte[16];
+		addressBytes[10] = (byte) 0xFF;
+		addressBytes[11] = (byte) 0xFF;
+		addressBytes[12] = 127;
+		addressBytes[15] = 1;
+
+		InetAddress address = Inet6Address.getByAddress(null, addressBytes, -1);
+
+		assertTrue(DocumentExtractorNode.isBlockedRemoteAddress(address));
 	}
 
 	@Test

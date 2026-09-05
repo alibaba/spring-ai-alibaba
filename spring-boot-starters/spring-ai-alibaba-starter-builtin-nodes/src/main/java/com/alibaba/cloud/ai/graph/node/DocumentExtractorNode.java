@@ -47,14 +47,22 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.nio.channels.Channels;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SecureDirectoryStream;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -138,15 +146,49 @@ public class DocumentExtractorNode implements NodeAction {
 		if (!normalizedPath.startsWith(this.localFileRoot)) {
 			throw new IOException("Document resource is outside the configured local file root");
 		}
-		Path realPath = normalizedPath.toRealPath();
 		Path root = this.localFileRoot.toRealPath();
-		if (!realPath.startsWith(root)) {
-			throw new IOException("Document resource resolves outside the configured local file root");
-		}
-		if (!Files.isRegularFile(realPath)) {
+		Path relativePath = this.localFileRoot.relativize(normalizedPath);
+		if (relativePath.getNameCount() == 0) {
 			throw new IOException("Document resource must be a regular file");
 		}
-		return new BufferedInputStream(Files.newInputStream(realPath));
+		try (DirectoryStream<Path> rootDirectoryStream = Files.newDirectoryStream(root)) {
+			if (!(rootDirectoryStream instanceof SecureDirectoryStream<?>)) {
+				throw new IOException("Secure local document access is not supported by this file system");
+			}
+			return openSecureLocalInputStream(asSecureDirectoryStream(rootDirectoryStream), relativePath);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static SecureDirectoryStream<Path> asSecureDirectoryStream(DirectoryStream<Path> directoryStream) {
+		return (SecureDirectoryStream<Path>) directoryStream;
+	}
+
+	private static InputStream openSecureLocalInputStream(SecureDirectoryStream<Path> rootDirectory,
+			Path relativePath) throws IOException {
+		SecureDirectoryStream<Path> directory = rootDirectory;
+		try {
+			for (int i = 0; i < relativePath.getNameCount() - 1; i++) {
+				SecureDirectoryStream<Path> childDirectory = directory.newDirectoryStream(relativePath.getName(i),
+						LinkOption.NOFOLLOW_LINKS);
+				if (directory != rootDirectory) {
+					directory.close();
+				}
+				directory = childDirectory;
+			}
+			Path fileName = relativePath.getFileName();
+			BasicFileAttributeView attributeView = directory.getFileAttributeView(fileName,
+					BasicFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
+			if (attributeView == null || !attributeView.readAttributes().isRegularFile()) {
+				throw new IOException("Document resource must be a regular file");
+			}
+			SeekableByteChannel channel = directory.newByteChannel(fileName,
+					Set.of(StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS));
+			return new BufferedInputStream(Channels.newInputStream(channel));
+		}
+		finally {
+			directory.close();
+		}
 	}
 
 	private InputStream openRemoteInputStream(URI uri) throws IOException {
@@ -218,14 +260,35 @@ public class DocumentExtractorNode implements NodeAction {
 			return true;
 		}
 		if (address instanceof Inet6Address) {
-			byte firstByte = address.getAddress()[0];
+			byte[] bytes = address.getAddress();
+			if (isIpv4MappedIpv6Address(bytes)) {
+				return isBlockedIpv4Address(Arrays.copyOfRange(bytes, 12, 16));
+			}
+			byte firstByte = bytes[0];
 			return (firstByte & 0xFE) == 0xFC;
 		}
-		byte[] bytes = address.getAddress();
+		return isBlockedIpv4Address(address.getAddress());
+	}
+
+	private static boolean isIpv4MappedIpv6Address(byte[] bytes) {
+		if (bytes.length != 16 || bytes[10] != (byte) 0xFF || bytes[11] != (byte) 0xFF) {
+			return false;
+		}
+		for (int i = 0; i < 10; i++) {
+			if (bytes[i] != 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static boolean isBlockedIpv4Address(byte[] bytes) {
 		int first = Byte.toUnsignedInt(bytes[0]);
 		int second = Byte.toUnsignedInt(bytes[1]);
 		if (first == 0 || first >= 224 || (first == 100 && second >= 64 && second <= 127)
-				|| (first == 198 && (second == 18 || second == 19))) {
+				|| (first == 198 && (second == 18 || second == 19)) || first == 10 || first == 127
+				|| (first == 169 && second == 254) || (first == 172 && second >= 16 && second <= 31)
+				|| (first == 192 && second == 168)) {
 			return true;
 		}
 		return false;
