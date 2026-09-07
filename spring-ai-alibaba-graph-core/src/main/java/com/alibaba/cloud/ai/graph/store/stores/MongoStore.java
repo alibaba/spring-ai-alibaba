@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.graph.store.NamespaceListRequest;
 import com.alibaba.cloud.ai.graph.store.StoreItem;
 import com.alibaba.cloud.ai.graph.store.StoreSearchRequest;
 import com.alibaba.cloud.ai.graph.store.StoreSearchResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -69,7 +69,6 @@ public class MongoStore extends BaseStore {
 		this.mongoLikeCollection = new HashMap<>();
 		this.collectionName = collectionName;
 		this.objectMapper = new ObjectMapper();
-		this.objectMapper.findAndRegisterModules();
 	}
 
 	@Override

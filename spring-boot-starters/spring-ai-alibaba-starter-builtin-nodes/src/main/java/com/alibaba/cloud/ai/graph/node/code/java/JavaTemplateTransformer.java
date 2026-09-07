@@ -33,9 +33,9 @@ public class JavaTemplateTransformer extends TemplateTransformer {
 			case EXPLICIT_PARAMETERS -> String.format(
 					"""
 							import java.util.*;
-							import com.fasterxml.jackson.databind.ObjectMapper;
-							import com.fasterxml.jackson.databind.node.ObjectNode;
-							import com.fasterxml.jackson.core.type.TypeReference;
+							import tools.jackson.databind.ObjectMapper;
+							import tools.jackson.databind.node.ObjectNode;
+							import tools.jackson.core.type.TypeReference;
 							import java.lang.reflect.Method;
 
 							class Main {
@@ -73,9 +73,9 @@ public class JavaTemplateTransformer extends TemplateTransformer {
 					INPUTS_PLACEHOLDER, RESULT_TAG, RESULT_TAG, CODE_PLACEHOLDER);
 			case GLOBAL_DICTIONARY -> String.format("""
 					import java.util.*;
-					import com.fasterxml.jackson.databind.ObjectMapper;
-					import com.fasterxml.jackson.databind.node.ObjectNode;
-					import com.fasterxml.jackson.core.type.TypeReference;
+					import tools.jackson.databind.ObjectMapper;
+					import tools.jackson.databind.node.ObjectNode;
+					import tools.jackson.core.type.TypeReference;
 
 					class Main {
 

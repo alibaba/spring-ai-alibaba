@@ -15,7 +15,6 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,10 +22,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,17 +108,15 @@ public interface JacksonDeserializer<T> {
 	/**
 	 * Degrade an ObjectNode to a Map when the target class cannot be instantiated.
 	 */
-	static Map<String, Object> degradeToMap(ObjectNode node, ObjectMapper objectMapper, TypeMapper typeMapper)
-			throws IOException {
+	static Map<String, Object> degradeToMap(ObjectNode node, ObjectReadContext readContext, TypeMapper typeMapper)
+			throws JacksonException {
 		Map<String, Object> result = new LinkedHashMap<>();
-		var fields = node.fields();
-		while (fields.hasNext()) {
-			var entry = fields.next();
+		for (var entry : node.properties()) {
 			String key = entry.getKey();
 			if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
 				continue;
 			}
-			result.put(key, valueFromNode(entry.getValue(), objectMapper, typeMapper));
+			result.put(key, valueFromNode(entry.getValue(), readContext, typeMapper));
 		}
 		return result;
 	}
@@ -140,74 +140,66 @@ public interface JacksonDeserializer<T> {
 	static Object deserializeWithStrategy(
 			ObjectNode node,
 			Class<?> targetClass,
-			ObjectMapper objectMapper,
-			TypeMapper typeMapper) throws IOException {
+			ObjectReadContext readContext,
+			TypeMapper typeMapper) throws JacksonException {
 
 		// Quick check for known non-instantiable classes
 		if (isNonInstantiableClass(targetClass) || Map.class.isAssignableFrom(targetClass)) {
-			return degradeToMap(node, objectMapper, typeMapper);
+			return degradeToMap(node, readContext, typeMapper);
 		}
-
-		// Prepare ObjectMapper without default typing
-		ObjectMapper mapperNoTyping = objectMapper.copy();
-		mapperNoTyping.setDefaultTyping(null);
-		mapperNoTyping.deactivateDefaultTyping();
 
 		// Check cached strategy
 		DeserializationStrategy cachedStrategy = STRATEGY_CACHE.get(targetClass);
 
 		if (cachedStrategy == DeserializationStrategy.READ_VALUE) {
 			try {
-				return mapperNoTyping.readValue(mapperNoTyping.treeAsTokens(node), targetClass);
+				return readContext.readValue(readContext.treeAsTokens(node), targetClass);
 			}
-			catch (IOException e) {
-				// Strategy might be outdated, clear cache and retry
-				STRATEGY_CACHE.remove(targetClass);
-			}
-		}
-		else if (cachedStrategy == DeserializationStrategy.CONVERT_VALUE) {
-			try {
-				return mapperNoTyping.convertValue(node, targetClass);
-			}
-			catch (RuntimeException e) {
+			catch (JacksonException e) {
 				// Strategy might be outdated, clear cache and retry
 				STRATEGY_CACHE.remove(targetClass);
 			}
 		}
 		else if (cachedStrategy == DeserializationStrategy.DEGRADE_TO_MAP) {
-			return degradeToMap(node, objectMapper, typeMapper);
+			return degradeToMap(node, readContext, typeMapper);
 		}
 
 		// First time encountering this type, perform strategy detection
 		try {
 			// Try readValue first - most comprehensive deserialization
-			Object result = mapperNoTyping.readValue(mapperNoTyping.treeAsTokens(node), targetClass);
+			Object result = readContext.readValue(readContext.treeAsTokens(node), targetClass);
 			cacheStrategy(targetClass, DeserializationStrategy.READ_VALUE);
 			return result;
 		}
-		catch (IOException readValueEx) {
+		catch (JacksonException readValueEx) {
 			// Log at TRACE level for debugging
 			if (logger.isTraceEnabled()) {
-				logger.trace("readValue failed for {}, trying convertValue", targetClass.getName(), readValueEx);
+				logger.trace("readValue failed for {}, trying Map fallback", targetClass.getName(), readValueEx);
 			}
-			// readValue failed, try convertValue
-			try {
-				Object result = mapperNoTyping.convertValue(node, targetClass);
-				cacheStrategy(targetClass, DeserializationStrategy.CONVERT_VALUE);
-				logStrategyFallback(targetClass, "readValue", "convertValue");
-				return result;
-			}
-			catch (RuntimeException convertEx) {
-				// Both methods failed, degrade to Map
-				if (logger.isDebugEnabled()) {
-					logger.debug("Both readValue and convertValue failed for {}, degrading to Map", 
-						targetClass.getName(), convertEx);
-				}
-				cacheStrategy(targetClass, DeserializationStrategy.DEGRADE_TO_MAP);
-				logStrategyFallback(targetClass, "convertValue", "Map");
-				return degradeToMap(node, objectMapper, typeMapper);
-			}
+			cacheStrategy(targetClass, DeserializationStrategy.DEGRADE_TO_MAP);
+			logStrategyFallback(targetClass, "readValue", "Map");
+			return degradeToMap(node, readContext, typeMapper);
 		}
+	}
+
+	static Object deserializeWithStrategy(ObjectNode node, TypeReference<?> targetType,
+			ObjectReadContext readContext, TypeMapper typeMapper) throws JacksonException {
+		try {
+			return readContext.readValue(readContext.treeAsTokens(node), targetType);
+		}
+		catch (JacksonException ex) {
+			return degradeToMap(node, readContext, typeMapper);
+		}
+	}
+
+	static Object deserializeWithContext(ObjectNode node, TypeReference<?> targetType,
+			DeserializationContext context) throws JacksonException {
+		JavaType javaType = context.getTypeFactory().constructType(targetType.getType());
+		var readContext = context.getParser().objectReadContext();
+		var parser = readContext.treeAsTokens(node);
+		parser.nextToken();
+		var deserializer = context.findNonContextualValueDeserializer(javaType);
+		return deserializer.deserialize(parser, context);
 	}
 
 	/**
@@ -258,14 +250,14 @@ public interface JacksonDeserializer<T> {
 	 * @throws IOException if the conversion fails due to an I/O error or a data binding
 	 * issue
 	 */
-	static Object valueFromNode(JsonNode valueNode, ObjectMapper objectMapper, TypeMapper typeMapper)
-			throws IOException {
+	static Object valueFromNode(JsonNode valueNode, ObjectReadContext readContext, TypeMapper typeMapper)
+			throws JacksonException {
 		if (valueNode == null) { // GUARD
 			return null;
 		}
 		return switch (valueNode.getNodeType()) {
 			case NULL, MISSING -> null;
-			case ARRAY -> deserializeArrayNode(valueNode, objectMapper, typeMapper);
+			case ARRAY -> deserializeArrayNode(valueNode, readContext, typeMapper);
 			case OBJECT, POJO -> {
 				String typeHint = null;
 				if (valueNode.has("@typeHint")) {
@@ -276,7 +268,7 @@ public interface JacksonDeserializer<T> {
 					
 					// Special handling for GraphResponse, ChatResponse and CompletableFuture
 					if ("GraphResponse".equals(type)) {
-						yield reconstructGraphResponse(valueNode, objectMapper, typeMapper);
+						yield reconstructGraphResponse(valueNode, readContext, typeMapper);
 					}
 					if ("ChatResponse".equals(type)) {
 						// ChatResponse cannot be reconstructed (no default constructor),
@@ -284,30 +276,27 @@ public interface JacksonDeserializer<T> {
 						yield null;
 					}
 					if ("CompletableFuture".equals(type)) {
-						yield reconstructCompletableFuture(valueNode, objectMapper, typeMapper);
+						yield reconstructCompletableFuture(valueNode, readContext, typeMapper);
 					}
 					
 					// Use unified deserialization strategy for all registered types
 					var ref = typeMapper.getReference(type)
 						.orElseThrow(() -> new IllegalStateException("Type not found: " + type));
-					ObjectNode copy = valueNode.deepCopy();
+					ObjectNode copy = (ObjectNode) valueNode.deepCopy();
 					copy.remove(TYPE_PROPERTY);
 					copy.remove("@typeHint");
 					
-					// Get Class from TypeReference using ObjectMapper's TypeFactory
-					Class<?> targetClass = objectMapper.getTypeFactory().constructType(ref).getRawClass();
-					yield deserializeWithStrategy(copy, targetClass, objectMapper, typeMapper);
+					yield deserializeWithStrategy(copy, ref, readContext, typeMapper);
 				}
 				if (valueNode.has("@class")) {
 					String className = valueNode.get("@class").asText();
 					if (!(typeHint != null && className.startsWith("java.util."))) {
-					ObjectNode copy = valueNode.deepCopy();
-					copy.remove("@class");
+					ObjectNode copy = (ObjectNode) valueNode.deepCopy();
 					copy.remove("@typeHint");
 					try {
 						Class<?> clazz = Class.forName(className);
 						// Use unified deserialization strategy
-						yield deserializeWithStrategy(copy, clazz, objectMapper, typeMapper);
+						yield deserializeWithStrategy(copy, clazz, readContext, typeMapper);
 					}
 					catch (ClassNotFoundException ex) {
 						throw new IllegalStateException(
@@ -316,14 +305,13 @@ public interface JacksonDeserializer<T> {
 				}
 				}
 				if (typeHint != null) {
-					ObjectNode copy = valueNode.deepCopy();
+					ObjectNode copy = (ObjectNode) valueNode.deepCopy();
 					copy.remove("@typeHint");
 					copy.remove(TYPE_PROPERTY);
-					copy.remove("@class");
 					try {
 						Class<?> clazz = Class.forName(typeHint);
 						// Use unified deserialization strategy
-						yield deserializeWithStrategy(copy, clazz, objectMapper, typeMapper);
+						yield deserializeWithStrategy(copy, clazz, readContext, typeMapper);
 					}
 					catch (ClassNotFoundException ex) {
 						throw new IllegalStateException(
@@ -331,14 +319,12 @@ public interface JacksonDeserializer<T> {
 					}
 				}
 				Map<String, Object> result = new LinkedHashMap<>();
-				var fields = valueNode.fields();
-				while (fields.hasNext()) {
-					var entry = fields.next();
+				for (var entry : valueNode.properties()) {
 					String key = entry.getKey();
 					if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
 						continue;
 					}
-					result.put(key, valueFromNode(entry.getValue(), objectMapper, typeMapper));
+					result.put(key, valueFromNode(entry.getValue(), readContext, typeMapper));
 				}
 				yield result;
 			}
@@ -374,8 +360,8 @@ public interface JacksonDeserializer<T> {
 
 	}
 
-	private static Object deserializeArrayNode(JsonNode valueNode, ObjectMapper objectMapper, TypeMapper typeMapper)
-			throws IOException {
+	private static Object deserializeArrayNode(JsonNode valueNode, ObjectReadContext readContext, TypeMapper typeMapper)
+			throws JacksonException {
 		if (valueNode.size() == 2 && valueNode.get(0).isTextual()) {
 			String className = valueNode.get(0).asText();
 			JsonNode payload = valueNode.get(1);
@@ -388,12 +374,12 @@ public interface JacksonDeserializer<T> {
 
 			if (payload.isArray()) {
 				if (className.startsWith("[") || className.endsWith("[]")) {
-					return instantiateArray(className, payload, objectMapper, typeMapper);
+					return instantiateArray(className, payload, readContext, typeMapper);
 				}
 				if (className.startsWith("java.")) {
 					List<Object> list = new java.util.ArrayList<>(payload.size());
 					for (JsonNode element : payload) {
-						list.add(valueFromNode(element, objectMapper, typeMapper));
+					list.add(valueFromNode(element, readContext, typeMapper));
 					}
 					return list;
 				}
@@ -401,7 +387,7 @@ public interface JacksonDeserializer<T> {
 		}
 		List<Object> list = new java.util.ArrayList<>(valueNode.size());
 		for (JsonNode element : valueNode) {
-			list.add(valueFromNode(element, objectMapper, typeMapper));
+			list.add(valueFromNode(element, readContext, typeMapper));
 		}
 		return list;
 	}
@@ -440,13 +426,13 @@ public interface JacksonDeserializer<T> {
 		};
 	}
 
-	private static Object instantiateArray(String className, JsonNode payload, ObjectMapper objectMapper,
-			TypeMapper typeMapper) throws IOException {
+	private static Object instantiateArray(String className, JsonNode payload, ObjectReadContext readContext,
+			TypeMapper typeMapper) throws JacksonException {
 		try {
 			Class<?> arrayClass = resolveArrayClass(className);
 			Class<?> componentType = arrayClass.componentType();
 			if (componentType.isPrimitive()) {
-				return objectMapper.treeToValue(payload, arrayClass);
+				return readContext.readValue(readContext.treeAsTokens(payload), arrayClass);
 			}
 			int length = payload.size();
 			Object typedArray = Array.newInstance(componentType, length);
@@ -456,11 +442,11 @@ public interface JacksonDeserializer<T> {
 				
 				// For object nodes, use unified deserialization strategy
 				if (elementNode.isObject()) {
-					element = deserializeWithStrategy((ObjectNode) elementNode, componentType, objectMapper, typeMapper);
+					element = deserializeWithStrategy((ObjectNode) elementNode, componentType, readContext, typeMapper);
 				}
 				else {
 					// For non-object nodes, use valueFromNode
-					element = valueFromNode(elementNode, objectMapper, typeMapper);
+					element = valueFromNode(elementNode, readContext, typeMapper);
 				}
 				
 				if (element == null && !componentType.isPrimitive()) {
@@ -469,10 +455,7 @@ public interface JacksonDeserializer<T> {
 				}
 				if (element != null && !componentType.isInstance(element)) {
 					// Type mismatch, fall back to generic Object array
-					ObjectMapper mapperNoTyping = objectMapper.copy();
-					mapperNoTyping.setDefaultTyping(null);
-					mapperNoTyping.deactivateDefaultTyping();
-					return payload.traverse(mapperNoTyping).readValueAs(Object[].class);
+					return readContext.readValue(readContext.treeAsTokens(payload), Object[].class);
 				}
 				Array.set(typedArray, i, element);
 			}
@@ -507,28 +490,26 @@ public interface JacksonDeserializer<T> {
 	/**
 	 * Reconstruct GraphResponse from snapshot map.
 	 */
-	private static Object reconstructGraphResponse(JsonNode valueNode, ObjectMapper objectMapper, TypeMapper typeMapper)
-			throws IOException {
+	private static Object reconstructGraphResponse(JsonNode valueNode, ObjectReadContext readContext, TypeMapper typeMapper)
+			throws JacksonException {
 		String status = valueNode.has("status") ? valueNode.get("status").asText() : "pending";
 		boolean isError = valueNode.has("error") && valueNode.get("error").asBoolean();
 		
 		Object result = null;
 		if (valueNode.has("result")) {
-			result = valueFromNode(valueNode.get("result"), objectMapper, typeMapper);
+			result = valueFromNode(valueNode.get("result"), readContext, typeMapper);
 		}
 		
 		Map<String, Object> metadata = new java.util.LinkedHashMap<>();
 		if (valueNode.has("metadata")) {
 			JsonNode metadataNode = valueNode.get("metadata");
 			if (metadataNode.isObject()) {
-				var fields = metadataNode.fields();
-				while (fields.hasNext()) {
-					var entry = fields.next();
+				for (var entry : metadataNode.properties()) {
 					String key = entry.getKey();
 					if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
 						continue;
 					}
-					metadata.put(key, valueFromNode(entry.getValue(), objectMapper, typeMapper));
+					metadata.put(key, valueFromNode(entry.getValue(), readContext, typeMapper));
 				}
 			}
 		}
@@ -568,8 +549,8 @@ public interface JacksonDeserializer<T> {
 	/**
 	 * Reconstruct CompletableFuture from snapshot map.
 	 */
-	private static Object reconstructCompletableFuture(JsonNode valueNode, ObjectMapper objectMapper,
-			TypeMapper typeMapper) throws IOException {
+	private static Object reconstructCompletableFuture(JsonNode valueNode, ObjectReadContext readContext,
+			TypeMapper typeMapper) throws JacksonException {
 		String status = valueNode.has("status") ? valueNode.get("status").asText() : "pending";
 		// Check if error field exists and is an object (error map) - this indicates a failed future
 		boolean hasErrorMap = valueNode.has("error") && valueNode.get("error").isObject();
@@ -597,7 +578,7 @@ public interface JacksonDeserializer<T> {
 		else if ("completed".equals(status)) {
 			Object result = null;
 			if (valueNode.has("result")) {
-				result = valueFromNode(valueNode.get("result"), objectMapper, typeMapper);
+				result = valueFromNode(valueNode.get("result"), readContext, typeMapper);
 			}
 			future.complete(result);
 		}
@@ -631,6 +612,6 @@ public interface JacksonDeserializer<T> {
 	 * @return the deserialized object
 	 * @throws IOException if an I/O error occurs
 	 */
-	T deserialize(JsonNode node, DeserializationContext ctx) throws IOException;
+	T deserialize(JsonNode node, DeserializationContext ctx) throws JacksonException;
 
 }

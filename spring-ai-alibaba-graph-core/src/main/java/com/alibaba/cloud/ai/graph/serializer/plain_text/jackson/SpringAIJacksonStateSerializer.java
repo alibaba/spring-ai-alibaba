@@ -22,10 +22,13 @@ import com.alibaba.cloud.ai.graph.state.AgentStateFactory;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.DefaultTyping;
+import tools.jackson.databind.DatabindContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.jsontype.impl.DefaultTypeResolverBuilder;
+import tools.jackson.databind.jsontype.PolymorphicTypeValidator;
+import tools.jackson.databind.module.SimpleModule;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -71,10 +74,9 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 		}
 		registerZhiPuAITypeMappingIfAvailable();
 
-		objectMapper.registerModule(module);
-
-		ObjectMapper.DefaultTypeResolverBuilder typeResolver = new ObjectMapper.DefaultTypeResolverBuilder(
-				ObjectMapper.DefaultTyping.NON_FINAL, LaissezFaireSubTypeValidator.instance) {
+		DefaultTypeResolverBuilder typeResolver = new DefaultTypeResolverBuilder(
+				permissiveTypeValidator(), DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY, JsonTypeInfo.Id.CLASS,
+				"@class") {
 
 			@Serial
 			private static final long serialVersionUID = 1L;
@@ -103,10 +105,26 @@ public class SpringAIJacksonStateSerializer extends JacksonStateSerializer {
 				return super.useForType(t);
 			}
 		};
-		typeResolver = (ObjectMapper.DefaultTypeResolverBuilder) typeResolver.init(JsonTypeInfo.Id.CLASS, null);
-		typeResolver = (ObjectMapper.DefaultTypeResolverBuilder) typeResolver.inclusion(JsonTypeInfo.As.PROPERTY);
-		typeResolver = (ObjectMapper.DefaultTypeResolverBuilder) typeResolver.typeProperty("@class");
-		objectMapper.setDefaultTyping(typeResolver);
+		this.objectMapper = this.objectMapper.rebuild().addModule(module).setDefaultTyping(typeResolver).build();
+	}
+
+	private static PolymorphicTypeValidator permissiveTypeValidator() {
+		return new PolymorphicTypeValidator() {
+			@Override
+			public Validity validateBaseType(DatabindContext context, JavaType baseType) {
+				return Validity.ALLOWED;
+			}
+
+			@Override
+			public Validity validateSubClassName(DatabindContext context, JavaType baseType, String subClassName) {
+				return Validity.ALLOWED;
+			}
+
+			@Override
+			public Validity validateSubType(DatabindContext context, JavaType baseType, JavaType subType) {
+				return Validity.ALLOWED;
+			}
+		};
 	}
 
 	private void registerZhiPuAITypeMappingIfAvailable() {

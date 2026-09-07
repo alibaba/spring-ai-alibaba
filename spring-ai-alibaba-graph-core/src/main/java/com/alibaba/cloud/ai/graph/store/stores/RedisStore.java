@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.graph.store.StoreItem;
 import com.alibaba.cloud.ai.graph.store.StoreSearchRequest;
 import com.alibaba.cloud.ai.graph.store.StoreSearchResult;
 import com.alibaba.cloud.ai.graph.store.constant.StoreConstant;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -70,7 +70,6 @@ public class RedisStore extends BaseStore {
 		this.redisLikeStorage = new HashMap<>();
 		this.keyPrefix = keyPrefix;
 		this.objectMapper = new ObjectMapper();
-		this.objectMapper.findAndRegisterModules();
 	}
 
 	@Override

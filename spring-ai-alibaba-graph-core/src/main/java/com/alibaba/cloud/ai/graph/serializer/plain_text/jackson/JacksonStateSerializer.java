@@ -41,12 +41,12 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * Base Implementation of {@link PlainTextStateSerializer} using Jackson library. Need to
@@ -54,7 +54,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  */
 public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
-	protected final ObjectMapper objectMapper;
+	protected ObjectMapper objectMapper;
 
 	protected TypeMapper typeMapper = new TypeMapper();
 
@@ -64,29 +64,24 @@ public abstract class JacksonStateSerializer extends PlainTextStateSerializer {
 
 	protected JacksonStateSerializer(AgentStateFactory<OverAllState> stateFactory, ObjectMapper objectMapper) {
 		super(stateFactory);
-		this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper cannot be null");
-		this.objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-		this.objectMapper.addMixIn(Usage.class, NonNullUsageMixin.class);
-		this.objectMapper.addMixIn(EmptyUsage.class, NonNullUsageMixin.class);
-
-		this.objectMapper.registerModule(new Jdk8Module());
-		this.objectMapper.registerModule(new JavaTimeModule());
-		this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_INTEGER_FOR_INTS,
-				false);
-		this.objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS,
-				false);
-		this.objectMapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION, true);
-
-		objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-		objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-//		objectMapper.registerModule(new ParameterNamesModule());
-		objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+		Objects.requireNonNull(objectMapper, "objectMapper cannot be null");
 
 		var module = new SimpleModule();
 		module.addDeserializer(Map.class, new GenericMapDeserializer(typeMapper));
 		module.addDeserializer(List.class, new GenericListDeserializer(typeMapper));
 
-		this.objectMapper.registerModule(module);
+		this.objectMapper = objectMapper.rebuild()
+				.addMixIn(Usage.class, NonNullUsageMixin.class)
+				.addMixIn(EmptyUsage.class, NonNullUsageMixin.class)
+				.changeDefaultVisibility(visibility -> visibility.withVisibility(PropertyAccessor.ALL,
+						JsonAutoDetect.Visibility.ANY))
+				.configure(MapperFeature.FIX_FIELD_NAME_UPPER_CASE_PREFIX, false)
+				.configure(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS, false)
+				.configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, false)
+				.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+				.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+				.addModule(module)
+				.build();
 
 	}
 

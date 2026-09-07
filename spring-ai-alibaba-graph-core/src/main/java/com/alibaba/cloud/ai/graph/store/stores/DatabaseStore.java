@@ -19,8 +19,8 @@ import com.alibaba.cloud.ai.graph.store.NamespaceListRequest;
 import com.alibaba.cloud.ai.graph.store.StoreItem;
 import com.alibaba.cloud.ai.graph.store.StoreSearchRequest;
 import com.alibaba.cloud.ai.graph.store.StoreSearchResult;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -102,7 +102,6 @@ public class DatabaseStore extends BaseStore {
         // Fall back to the default table when caller does not provide a custom name.
         this.tableName = resolveTableName(tableName);
         this.objectMapper = new ObjectMapper();
-        this.objectMapper.findAndRegisterModules();
         initializeTable();
     }
 
@@ -894,7 +893,6 @@ public class DatabaseStore extends BaseStore {
             Timestamp createdAt = rs.getTimestamp("created_at");
             Timestamp updatedAt = rs.getTimestamp("updated_at");
 
-            objectMapper.findAndRegisterModules();
             JavaType namespaceType = objectMapper.getTypeFactory().constructCollectionType(List.class, String.class);
             JavaType valueType = objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class);
             List<String> namespace = objectMapper.readValue(namespaceJson, namespaceType);

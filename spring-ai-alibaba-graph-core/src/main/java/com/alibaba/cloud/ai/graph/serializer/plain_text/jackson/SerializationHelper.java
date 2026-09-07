@@ -15,21 +15,21 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
-import java.io.IOException;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationContext;
 
 class SerializationHelper {
 
 	static final String METADATA_FIELD = "metadata";
 
-	static Map<String, Object> deserializeMetadata(ObjectMapper mapper, JsonNode parentNode)
-			throws JsonProcessingException {
+	static Map<String, Object> deserializeMetadata(ObjectReadContext context, JsonNode parentNode)
+			throws JacksonException {
 		if (parentNode == null) {
 			return Map.of();
 		}
@@ -42,12 +42,13 @@ class SerializationHelper {
 		if (!node.isObject()) {
 			throw new IllegalStateException("Metadata must be an object");
 		}
-		return mapper.treeToValue(node, new TypeReference<>() {
+		return context.readValue(context.treeAsTokens(node), new TypeReference<>() {
 		});
 	}
 
-	static void serializeMetadata(JsonGenerator gen, Map<String, Object> metadata) throws IOException {
-		gen.writeObjectField(METADATA_FIELD, metadata);
+	static void serializeMetadata(JsonGenerator gen, SerializationContext context, Map<String, Object> metadata)
+			throws JacksonException {
+		context.defaultSerializeProperty(METADATA_FIELD, metadata, gen);
 	}
 
 }

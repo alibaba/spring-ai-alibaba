@@ -16,14 +16,13 @@
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.type.WritableTypeId;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.type.WritableTypeId;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 
-import java.io.IOException;
 
 /**
  * Serializer for NodeOutput.
@@ -35,23 +34,24 @@ public class JacksonNodeOutputSerializer extends StdSerializer<NodeOutput> {
     }
 
     @Override
-    public void serialize(NodeOutput value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+    public void serialize(NodeOutput value, JsonGenerator gen, SerializationContext provider) throws tools.jackson.core.JacksonException {
         gen.writeStartObject();
         serializeFields(value, gen, provider);
         gen.writeEndObject();
     }
 
     @Override
-    public void serializeWithType(NodeOutput value, JsonGenerator gen, SerializerProvider provider, TypeSerializer typeSer) throws IOException {
-        WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, typeSer.typeId(value, JsonToken.START_OBJECT));
-        serializeFields(value, gen, provider);
-        typeSer.writeTypeSuffix(gen, typeIdDef);
+    public void serializeWithType(NodeOutput value, JsonGenerator gen, SerializationContext provider, TypeSerializer typeSer) throws tools.jackson.core.JacksonException {
+		WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, provider,
+				typeSer.typeId(value, JsonToken.START_OBJECT));
+		serializeFields(value, gen, provider);
+		typeSer.writeTypeSuffix(gen, provider, typeIdDef);
     }
 
-    private void serializeFields(NodeOutput value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-        gen.writeStringField("node", value.node());
-        gen.writeStringField("agent", value.agent());
-        gen.writeObjectField("state", value.state());
-        gen.writeBooleanField("subGraph", value.isSubGraph());
+    private void serializeFields(NodeOutput value, JsonGenerator gen, SerializationContext provider) throws tools.jackson.core.JacksonException {
+		gen.writeStringProperty("node", value.node());
+		gen.writeStringProperty("agent", value.agent());
+		provider.defaultSerializeProperty("state", value.state(), gen);
+		gen.writeBooleanProperty("subGraph", value.isSubGraph());
     }
 }

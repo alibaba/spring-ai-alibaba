@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.graph.store.NamespaceListRequest;
 import com.alibaba.cloud.ai.graph.store.Store;
 import com.alibaba.cloud.ai.graph.store.StoreItem;
 import com.alibaba.cloud.ai.graph.store.StoreSearchRequest;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Base64;
 import java.util.Comparator;

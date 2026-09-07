@@ -18,14 +18,13 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
 import org.springframework.ai.chat.messages.Message;
 
-import java.io.IOException;
 
 /**
  * Custom deserializer for StreamingOutput.
@@ -38,9 +37,9 @@ public class StreamingOutputDeserializer extends StdDeserializer<StreamingOutput
     }
 
     @Override
-    public StreamingOutput deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
-        ObjectMapper objectMapper = (ObjectMapper) jsonParser.getCodec();
-        JsonNode node = jsonParser.getCodec().readTree(jsonParser);
+    public StreamingOutput deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws tools.jackson.core.JacksonException {
+		ObjectReadContext readContext = jsonParser.objectReadContext();
+		JsonNode node = deserializationContext.readTree(jsonParser);
 
         String nodeName = node.has("node") && !node.get("node").isNull() ? node.get("node").asText() : null;
         String agentName = node.has("agent") && !node.get("agent").isNull() ? node.get("agent").asText() : null;
@@ -48,14 +47,14 @@ public class StreamingOutputDeserializer extends StdDeserializer<StreamingOutput
         // This is critical for types like DeepSeekAssistantMessage that may be nested in OverAllState
         OverAllState state = null;
         if (node.has("state") && !node.get("state").isNull()) {
-            state = objectMapper.readValue(objectMapper.treeAsTokens(node.get("state")), OverAllState.class);
+			state = readContext.readValue(readContext.treeAsTokens(node.get("state")), OverAllState.class);
         }
         String chunk = node.has("chunk") && !node.get("chunk").isNull() ? node.get("chunk").asText() : null;
 
         // Deserialize message if present
         Message message = null;
         if (node.has("message") && !node.get("message").isNull()) {
-            message = objectMapper.readValue(objectMapper.treeAsTokens(node.get("message")), Message.class);
+			message = readContext.readValue(readContext.treeAsTokens(node.get("message")), Message.class);
         }
 
         // Deserialize outputType if present
@@ -81,4 +80,3 @@ public class StreamingOutputDeserializer extends StdDeserializer<StreamingOutput
         }
     }
 }
-

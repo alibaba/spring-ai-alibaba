@@ -15,22 +15,21 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.type.WritableTypeId;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.core.type.WritableTypeId;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ser.std.StdSerializer;
 import org.springframework.ai.chat.messages.AssistantMessage;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedList;
 import java.util.List;
@@ -71,47 +70,49 @@ public interface ZhiPuAIAssistantMessageHandler {
 		}
 
 		@Override
-		public void serialize(Object msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
+		public void serialize(Object msg, JsonGenerator gen, SerializationContext provider) throws tools.jackson.core.JacksonException {
 			gen.writeStartObject();
-			serializeFields(msg, gen);
+			serializeFields(msg, gen, provider);
 			gen.writeEndObject();
 		}
 
 		@Override
-		public void serializeWithType(Object msg, JsonGenerator gen, SerializerProvider provider, TypeSerializer typeSer)
-				throws IOException {
-			WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, typeSer.typeId(msg, JsonToken.START_OBJECT));
-			serializeFields(msg, gen);
-			typeSer.writeTypeSuffix(gen, typeIdDef);
+		public void serializeWithType(Object msg, JsonGenerator gen, SerializationContext provider, TypeSerializer typeSer)
+				throws tools.jackson.core.JacksonException {
+			WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, provider,
+					typeSer.typeId(msg, JsonToken.START_OBJECT));
+			serializeFields(msg, gen, provider);
+			typeSer.writeTypeSuffix(gen, provider, typeIdDef);
 		}
 
 		@SuppressWarnings("unchecked")
-		private void serializeFields(Object msg, JsonGenerator gen) throws IOException {
+		private void serializeFields(Object msg, JsonGenerator gen, SerializationContext provider)
+				throws tools.jackson.core.JacksonException {
 			String text = (String) invoke(msg, "getText");
-			gen.writeStringField(Field.TEXT.name, text);
+			gen.writeStringProperty(Field.TEXT.name, text);
 
 			List<AssistantMessage.ToolCall> toolCalls = (List<AssistantMessage.ToolCall>) invoke(msg, "getToolCalls");
-			gen.writeArrayFieldStart(Field.TOOL_CALLS.name);
+			gen.writeArrayPropertyStart(Field.TOOL_CALLS.name);
 			for (var toolCall : toolCalls) {
 				gen.writeStartObject();
-				gen.writeStringField("id", toolCall.id());
-				gen.writeStringField("name", toolCall.name());
-				gen.writeStringField("type", toolCall.type());
-				gen.writeStringField("arguments", toolCall.arguments());
+				gen.writeStringProperty("id", toolCall.id());
+				gen.writeStringProperty("name", toolCall.name());
+				gen.writeStringProperty("type", toolCall.type());
+				gen.writeStringProperty("arguments", toolCall.arguments());
 				gen.writeEndObject();
 			}
 			gen.writeEndArray();
 
 			String reasoningContent = (String) invoke(msg, "getReasoningContent");
 			if (reasoningContent != null) {
-				gen.writeStringField(Field.REASONING_CONTENT.name, reasoningContent);
+				gen.writeStringProperty(Field.REASONING_CONTENT.name, reasoningContent);
 			}
 			else {
-				gen.writeNullField(Field.REASONING_CONTENT.name);
+				gen.writeNullProperty(Field.REASONING_CONTENT.name);
 			}
 
 			Map<String, Object> metadata = (Map<String, Object>) invoke(msg, "getMetadata");
-			serializeMetadata(gen, metadata);
+			serializeMetadata(gen, provider, metadata);
 		}
 
 	}
@@ -126,13 +127,13 @@ public interface ZhiPuAIAssistantMessageHandler {
 		}
 
 		@Override
-		public Object deserialize(JsonParser jsonParser, DeserializationContext ctx) throws IOException {
-			var mapper = (ObjectMapper) jsonParser.getCodec();
-			ObjectNode node = mapper.readTree(jsonParser);
+		public Object deserialize(JsonParser jsonParser, DeserializationContext ctx) throws tools.jackson.core.JacksonException {
+			ObjectReadContext readContext = jsonParser.objectReadContext();
+			ObjectNode node = (ObjectNode) ctx.readTree(jsonParser);
 
 			var textNode = node.get(Field.TEXT.name);
 			var text = (textNode != null && !textNode.isNull()) ? textNode.asText() : "";
-			var metadata = deserializeMetadata(mapper, node);
+			var metadata = deserializeMetadata(readContext, node);
 			var requestsNode = node.get(Field.TOOL_CALLS.name);
 
 			var reasoningContentNode = node.get(Field.REASONING_CONTENT.name);
@@ -142,7 +143,7 @@ public interface ZhiPuAIAssistantMessageHandler {
 			var requests = new LinkedList<AssistantMessage.ToolCall>();
 			if (requestsNode != null && !requestsNode.isNull() && !requestsNode.isEmpty()) {
 				for (JsonNode requestNode : requestsNode) {
-					var request = mapper.treeToValue(requestNode, AssistantMessage.ToolCall.class);
+					var request = readContext.readValue(readContext.treeAsTokens(requestNode), AssistantMessage.ToolCall.class);
 					requests.add(request);
 				}
 			}
@@ -153,7 +154,7 @@ public interface ZhiPuAIAssistantMessageHandler {
 	}
 
 	private static Object buildMessage(Class<?> zhiPuAIClass, String text, Map<String, Object> metadata,
-			List<AssistantMessage.ToolCall> toolCalls, String reasoningContent) throws IOException {
+			List<AssistantMessage.ToolCall> toolCalls, String reasoningContent) {
 		try {
 			Class<?> builderClass = Class.forName(BUILDER_CLASS_NAME, true, zhiPuAIClass.getClassLoader());
 			Object builder = builderClass.getDeclaredConstructor().newInstance();
@@ -164,19 +165,19 @@ public interface ZhiPuAIAssistantMessageHandler {
 			return builderClass.getMethod("build").invoke(builder);
 		}
 		catch (ReflectiveOperationException e) {
-			throw new IOException("Failed to construct ZhiPuAiAssistantMessage", e);
+			throw new IllegalStateException("Failed to construct ZhiPuAiAssistantMessage", e);
 		}
 	}
 
-	private static Object invoke(Object target, String methodName) throws IOException {
+	private static Object invoke(Object target, String methodName) {
 		try {
 			return target.getClass().getMethod(methodName).invoke(target);
 		}
 		catch (IllegalAccessException | NoSuchMethodException e) {
-			throw new IOException("Failed to read ZhiPuAiAssistantMessage." + methodName + "()", e);
+			throw new IllegalStateException("Failed to read ZhiPuAiAssistantMessage." + methodName + "()", e);
 		}
 		catch (InvocationTargetException e) {
-			throw new IOException("Failed to read ZhiPuAiAssistantMessage." + methodName + "()", e.getCause());
+			throw new IllegalStateException("Failed to read ZhiPuAiAssistantMessage." + methodName + "()", e.getCause());
 		}
 	}
 

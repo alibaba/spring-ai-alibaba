@@ -35,8 +35,8 @@ import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.listOf;
@@ -187,7 +187,7 @@ public class SerializeTest {
 		NodeOutput output = NodeOutput.of("node", "agent", null, new EmptyUsage());
 		output.setSubGraph(true);
 		ObjectMapper mapper = serializer.getObjectMapper();
-		mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+		mapper = mapper.rebuild().configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true).build();
 
 		String json = mapper.writeValueAsString(output);
 
