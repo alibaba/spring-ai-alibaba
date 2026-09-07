@@ -19,7 +19,6 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
-import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -196,14 +195,8 @@ public class AgentTool {
 			// The input parameter is wrapped as {"input": "actual_value"}
 			String actualInput = extractInputValue(input);
 
-			// Build the messages list to add
-			// Add instruction first if present, then the user input
-			// Note: We must add all messages at once because cloneState doesn't copy keyStrategies,
-			// so multiple updateState calls would overwrite instead of append
+			// InstructionAgentHook injects the instruction when the sub-agent starts.
 			List<Message> messagesToAdd = new ArrayList<>();
-			if (StringUtils.hasLength(agent.instruction())) {
-				messagesToAdd.add(AgentInstructionMessage.builder().text(agent.instruction()).build());
-			}
 			messagesToAdd.add(new UserMessage(actualInput));
 
 			Optional<OverAllState> resultState;
