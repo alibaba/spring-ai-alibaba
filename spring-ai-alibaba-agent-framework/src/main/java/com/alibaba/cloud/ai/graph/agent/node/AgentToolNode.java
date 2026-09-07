@@ -318,16 +318,25 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		// Use Semaphore to limit concurrency
 		Semaphore semaphore = new Semaphore(maxParallelTools);
+		long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(toolExecutionTimeout.toMillis());
 
 		List<CompletableFuture<Void>> futures = IntStream.range(0, toolCalls.size()).mapToObj(index -> {
 			AssistantMessage.ToolCall toolCall = toolCalls.get(index);
 			Map<String, Object> toolSpecificUpdate = stateCollector.createToolUpdateMap(index);
+			long submittedAt = System.nanoTime();
 
 			return CompletableFuture.runAsync(() -> {
 				try {
-					// Acquire permit to limit concurrent executions
-					semaphore.acquire();
+					// Executor queueing and permit acquisition share the tool's timeout budget.
+					long remainingNanos = timeoutNanos - (System.nanoTime() - submittedAt);
+					if (remainingNanos <= 0 || !semaphore.tryAcquire(remainingNanos, TimeUnit.NANOSECONDS)) {
+						throw new CompletionException(new TimeoutException());
+					}
 					try {
+						// A permit may become available after the outer future has already timed out.
+						if (orderedResponses.get(index) != null || System.nanoTime() - submittedAt >= timeoutNanos) {
+							throw new CompletionException(new TimeoutException());
+						}
 						ToolCallResponse response = executeToolCallWithInterceptors(toolCall, stateSnapshot, config,
 								toolSpecificUpdate, true, cancellationTokens, index);
 						// CAS: only set if still null (not already timed out)
