@@ -17,19 +17,17 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import org.springframework.ai.chat.messages.UserMessage;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.type.WritableTypeId;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.core.type.WritableTypeId;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.deserializeMetadata;
 import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SerializationHelper.serializeMetadata;
@@ -55,22 +53,23 @@ public interface UserMessageHandler {
 		}
 
 		@Override
-		public void serialize(UserMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
+		public void serialize(UserMessage msg, JsonGenerator gen, SerializationContext provider) throws tools.jackson.core.JacksonException {
 			gen.writeStartObject();
 			serializeFields(msg, gen, provider);
 			gen.writeEndObject();
 		}
 
 		@Override
-		public void serializeWithType(UserMessage msg, JsonGenerator gen, SerializerProvider provider, TypeSerializer typeSer) throws IOException {
-			WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, typeSer.typeId(msg, JsonToken.START_OBJECT));
+		public void serializeWithType(UserMessage msg, JsonGenerator gen, SerializationContext provider, TypeSerializer typeSer) throws tools.jackson.core.JacksonException {
+			WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, provider,
+					typeSer.typeId(msg, JsonToken.START_OBJECT));
 			serializeFields(msg, gen, provider);
-			typeSer.writeTypeSuffix(gen, typeIdDef);
+			typeSer.writeTypeSuffix(gen, provider, typeIdDef);
 		}
 
-		private void serializeFields(UserMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
-			gen.writeStringField(Field.TEXT.name, msg.getText());
-			serializeMetadata(gen, msg.getMetadata());
+		private void serializeFields(UserMessage msg, JsonGenerator gen, SerializationContext provider) throws tools.jackson.core.JacksonException {
+			gen.writeStringProperty(Field.TEXT.name, msg.getText());
+			serializeMetadata(gen, provider, msg.getMetadata());
 
 			// gen.writeArrayFieldStart( Property.MEDIA.field);
 			// for (var media : msg.getMedia()) {
@@ -87,12 +86,12 @@ public interface UserMessageHandler {
 		}
 
 		@Override
-		public UserMessage deserialize(JsonParser jsonParser, DeserializationContext ctx) throws IOException {
-			var mapper = (ObjectMapper) jsonParser.getCodec();
-			ObjectNode node = mapper.readTree(jsonParser);
+		public UserMessage deserialize(JsonParser jsonParser, DeserializationContext ctx) throws tools.jackson.core.JacksonException {
+			ObjectReadContext readContext = jsonParser.objectReadContext();
+			ObjectNode node = (ObjectNode) ctx.readTree(jsonParser);
 
 			var text = node.findValue(Field.TEXT.name).asText();
-			var metadata = deserializeMetadata(mapper, node);
+			var metadata = deserializeMetadata(readContext, node);
 
 			return UserMessage.builder().text(text).metadata(metadata).build();
 

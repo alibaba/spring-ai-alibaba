@@ -36,9 +36,9 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.RunnableErrors;
 import com.alibaba.cloud.ai.graph.utils.InMemoryFileStorage;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
@@ -210,7 +210,7 @@ public class HttpNode implements NodeAction {
 				try {
 					jsonObject = parseNestedJson(jsonTemplate);
 				}
-				catch (JsonProcessingException e) {
+				catch (JacksonException e) {
 					throw RunnableErrors.nodeInterrupt.exception("Failed to parse JSON body: " + e.getMessage());
 				}
 				requestSpec.headers(h -> h.setContentType(MediaType.APPLICATION_JSON));
@@ -289,9 +289,9 @@ public class HttpNode implements NodeAction {
 	 * Parse nested JSON string.
 	 * @param json JSON string
 	 * @return parsed JSON object
-	 * @throws JsonProcessingException if parsing fails
+	 * @throws JacksonException if parsing fails
 	 */
-	public Object parseNestedJson(String json) throws JsonProcessingException {
+	public Object parseNestedJson(String json) throws JacksonException {
 		JsonNode rootNode = this.mapper.readTree(json);
 		if (rootNode.isObject()) {
 			Map<String, Object> map = this.mapper.convertValue(rootNode, Map.class);
@@ -515,13 +515,13 @@ public class HttpNode implements NodeAction {
 			this.data = data != null ? data : List.of();
 		}
 
-		public static HttpRequestNodeBody fromJson(String json) throws JsonProcessingException {
+		public static HttpRequestNodeBody fromJson(String json) throws JacksonException {
 			ObjectMapper objectMapper = new ObjectMapper();
 			Map<String, Object> map = objectMapper.readValue(json, Map.class);
 			return from(map);
 		}
 
-		public static HttpRequestNodeBody from(Object raw) throws JsonProcessingException {
+		public static HttpRequestNodeBody from(Object raw) throws JacksonException {
 			if (raw == null) {
 				return new HttpRequestNodeBody(BodyType.NONE, null);
 			}

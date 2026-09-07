@@ -18,8 +18,8 @@ package com.alibaba.cloud.ai.graph.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -199,7 +199,7 @@ public class ParameterParsingNode implements NodeAction {
 			try {
 				responseJson = OBJECT_MAPPER.readValue(rawJson, Response.class);
 			}
-			catch (JsonProcessingException e) {
+			catch (JacksonException e) {
 				throw new RuntimeException("ChatClient successfully returned, but the returned json is invalid.");
 			}
 

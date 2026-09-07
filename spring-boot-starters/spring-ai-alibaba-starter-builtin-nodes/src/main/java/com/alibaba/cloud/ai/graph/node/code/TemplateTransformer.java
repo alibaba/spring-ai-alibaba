@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.graph.node.code;
 
 import com.alibaba.cloud.ai.graph.node.code.entity.CodeStyle;
 import com.alibaba.cloud.ai.graph.node.code.entity.RunnerAndPreload;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;

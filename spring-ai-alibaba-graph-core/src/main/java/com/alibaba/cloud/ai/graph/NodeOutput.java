@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 
@@ -57,6 +58,7 @@ public class NodeOutput {
 	 * @return {@code true} if the current node refers to the start of the graph
 	 * processing
 	 */
+	@JsonProperty("start")
 	public boolean isSTART() {
 		return Objects.equals(node(), START);
 	}
@@ -66,6 +68,7 @@ public class NodeOutput {
 	 * understand if the workflow has been interrupted.
 	 * @return {@code true} if the current node refers to the end of the graph processing
 	 */
+	@JsonProperty("end")
 	public boolean isEND() {
 		return Objects.equals(node(), END);
 	}

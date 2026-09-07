@@ -16,8 +16,8 @@
 package com.alibaba.cloud.ai.graph.utils;
 
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -39,8 +39,7 @@ public class SerializationUtils {
 		ObjectMapper mapper = new ObjectMapper();
 		SimpleModule module = new SimpleModule();
 		SpringAIJacksonStateSerializer.registerMessageHandlers(module);
-		mapper.registerModule(module);
-		return mapper;
+		return mapper.rebuild().addModule(module).build();
 	}
 
 	private SerializationUtils() {

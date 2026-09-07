@@ -15,25 +15,23 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.BeanProperty;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.BeanProperty;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
-class GenericListDeserializer extends StdDeserializer<List<Object>> implements ContextualDeserializer {
+class GenericListDeserializer extends StdDeserializer<List<Object>> {
 
 	final TypeMapper typeMapper;
 
@@ -50,8 +48,7 @@ class GenericListDeserializer extends StdDeserializer<List<Object>> implements C
 	}
 
 	@Override
-	public JsonDeserializer<?> createContextual(DeserializationContext ctx, BeanProperty property)
-			throws JsonMappingException {
+	public ValueDeserializer<?> createContextual(DeserializationContext ctx, BeanProperty property) {
 		JavaType contextualType = ctx.getContextualType();
 		if (contextualType == null && property != null) {
 			contextualType = property.getType();
@@ -68,9 +65,9 @@ class GenericListDeserializer extends StdDeserializer<List<Object>> implements C
 	}
 
 	@Override
-	public List<Object> deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-		final ObjectMapper mapper = (ObjectMapper) p.getCodec();
-		final JsonNode jsonNode = mapper.readTree(p);
+	public List<Object> deserialize(JsonParser p, DeserializationContext ctx) throws JacksonException {
+		final ObjectReadContext readContext = p.objectReadContext();
+		final JsonNode jsonNode = ctx.readTree(p);
 
 		// Handle null or non-array nodes
 		if (jsonNode == null || jsonNode.isNull() || !jsonNode.isArray()) {
@@ -79,41 +76,41 @@ class GenericListDeserializer extends StdDeserializer<List<Object>> implements C
 
 		final ArrayNode node = (ArrayNode) jsonNode;
 		final List<Object> result = new LinkedList<>();
-		final ObjectMapper typedMapper = hasTypedElement() ? mapperWithoutDefaultTyping(mapper) : null;
-
 		for (JsonNode valueNode : node) {
-			result.add(deserializeElement(valueNode, mapper, typedMapper));
+			result.add(deserializeElement(valueNode, readContext, ctx));
 		}
 
 		return result;
 	}
 
-	private Object deserializeElement(JsonNode valueNode, ObjectMapper mapper, ObjectMapper typedMapper)
-			throws IOException {
+	private Object deserializeElement(JsonNode valueNode, ObjectReadContext readContext, DeserializationContext context)
+			throws JacksonException {
 		if (!hasTypedElement() || valueNode == null || valueNode.isNull()) {
-			return JacksonDeserializer.valueFromNode(valueNode, mapper, typeMapper);
+			return JacksonDeserializer.valueFromNode(valueNode, readContext, typeMapper);
 		}
 		if (valueNode.isObject()
 				&& (valueNode.has("@class") || valueNode.has("@type") || valueNode.has("@typeHint"))) {
-			return JacksonDeserializer.valueFromNode(valueNode, mapper, typeMapper);
+			if (valueNode.has("@type")) {
+				var reference = typeMapper.getReference(valueNode.get("@type").asText());
+				if (reference.isPresent()) {
+					ObjectNode typedNode = (ObjectNode) valueNode.deepCopy();
+					typedNode.remove("@type");
+					typedNode.remove("@typeHint");
+					return JacksonDeserializer.deserializeWithContext(typedNode, reference.get(), context);
+				}
+			}
+			return JacksonDeserializer.valueFromNode(valueNode, readContext, typeMapper);
 		}
 		try {
-			return typedMapper.readValue(typedMapper.treeAsTokens(valueNode), elementType);
+			return readContext.readValue(readContext.treeAsTokens(valueNode), elementType);
 		}
-		catch (JsonProcessingException ex) {
-			return JacksonDeserializer.valueFromNode(valueNode, mapper, typeMapper);
+		catch (JacksonException ex) {
+			return JacksonDeserializer.valueFromNode(valueNode, readContext, typeMapper);
 		}
 	}
 
 	private boolean hasTypedElement() {
 		return elementType != null && !elementType.hasRawClass(Object.class);
-	}
-
-	private ObjectMapper mapperWithoutDefaultTyping(ObjectMapper mapper) {
-		ObjectMapper typedMapper = mapper.copy();
-		typedMapper.setDefaultTyping(null);
-		typedMapper.deactivateDefaultTyping();
-		return typedMapper;
 	}
 
 }

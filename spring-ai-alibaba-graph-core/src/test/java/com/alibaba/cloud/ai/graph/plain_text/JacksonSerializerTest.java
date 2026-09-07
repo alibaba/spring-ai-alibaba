@@ -20,7 +20,7 @@ import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.JacksonStateSeri
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import static com.alibaba.cloud.ai.graph.utils.CollectionsUtils.mapOf;

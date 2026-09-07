@@ -189,7 +189,7 @@ public class GraphResponse<E> implements Serializable {
 	 */
 	@JsonIgnore
 	public Map<String, Object> getAllMetadata() {
-		return new HashMap<>(this.metadata);
+		return this.metadata == null ? Map.of() : new HashMap<>(this.metadata);
 	}
 
 	/**

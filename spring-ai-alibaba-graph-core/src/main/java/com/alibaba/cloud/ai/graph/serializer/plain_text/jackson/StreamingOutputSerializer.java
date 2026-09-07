@@ -17,15 +17,14 @@ package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.type.WritableTypeId;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.type.WritableTypeId;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 import org.springframework.ai.chat.messages.Message;
 
-import java.io.IOException;
 
 /**
  * Custom serializer for StreamingOutput that skips the originData field.
@@ -38,41 +37,41 @@ public class StreamingOutputSerializer extends StdSerializer<StreamingOutput> {
     }
 
     @Override
-    public void serialize(StreamingOutput value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+    public void serialize(StreamingOutput value, JsonGenerator gen, SerializationContext provider) throws tools.jackson.core.JacksonException {
         gen.writeStartObject();
         serializeFields(value, gen, provider);
         gen.writeEndObject();
     }
 
     @Override
-    public void serializeWithType(StreamingOutput value, JsonGenerator gen, SerializerProvider provider, TypeSerializer typeSer) throws IOException {
-        WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, typeSer.typeId(value, JsonToken.START_OBJECT));
-        serializeFields(value, gen, provider);
-        typeSer.writeTypeSuffix(gen, typeIdDef);
+    public void serializeWithType(StreamingOutput value, JsonGenerator gen, SerializationContext provider, TypeSerializer typeSer) throws tools.jackson.core.JacksonException {
+		WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, provider,
+				typeSer.typeId(value, JsonToken.START_OBJECT));
+		serializeFields(value, gen, provider);
+		typeSer.writeTypeSuffix(gen, provider, typeIdDef);
     }
 
-    private void serializeFields(StreamingOutput value, JsonGenerator gen, SerializerProvider provider) throws IOException {
-        gen.writeStringField("node", value.node());
-        gen.writeStringField("agent", value.agent());
-        gen.writeObjectField("state", value.state());
-        gen.writeBooleanField("subGraph", value.isSubGraph());
+    private void serializeFields(StreamingOutput value, JsonGenerator gen, SerializationContext provider) throws tools.jackson.core.JacksonException {
+		gen.writeStringProperty("node", value.node());
+		gen.writeStringProperty("agent", value.agent());
+		provider.defaultSerializeProperty("state", value.state(), gen);
+		gen.writeBooleanProperty("subGraph", value.isSubGraph());
 
         // Serialize message if present
         Message message = value.message();
         if (message != null) {
-            gen.writeObjectField("message", message);
+			provider.defaultSerializeProperty("message", message, gen);
         }
 
         // Serialize outputType if present
         OutputType outputType = value.getOutputType();
         if (outputType != null) {
-            gen.writeStringField("outputType", outputType.name());
+			gen.writeStringProperty("outputType", outputType.name());
         }
 
         // Only serialize chunk field, skip originData
         if (value.chunk() != null) {
-            gen.writeStringField("chunk", value.chunk());
+			gen.writeStringProperty("chunk", value.chunk());
         }
     }
 }
-

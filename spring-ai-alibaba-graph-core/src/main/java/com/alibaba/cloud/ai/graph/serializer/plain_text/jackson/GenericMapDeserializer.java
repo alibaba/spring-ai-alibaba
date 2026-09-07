@@ -15,17 +15,16 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.node.ObjectNode;
 
 class GenericMapDeserializer extends StdDeserializer<Map<String, Object>> {
 
@@ -37,9 +36,9 @@ class GenericMapDeserializer extends StdDeserializer<Map<String, Object>> {
 	}
 
 	@Override
-	public Map<String, Object> deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
-		var mapper = (ObjectMapper) p.getCodec();
-		final JsonNode jsonNode = mapper.readTree(p);
+	public Map<String, Object> deserialize(JsonParser p, DeserializationContext ctx) throws JacksonException {
+		ObjectReadContext readContext = p.objectReadContext();
+		final JsonNode jsonNode = ctx.readTree(p);
 
 		// Handle null or non-object nodes
 		if (jsonNode == null || jsonNode.isNull() || !jsonNode.isObject()) {
@@ -49,18 +48,25 @@ class GenericMapDeserializer extends StdDeserializer<Map<String, Object>> {
 		final ObjectNode node = (ObjectNode) jsonNode;
 		final Map<String, Object> result = new HashMap<>();
 
-		final Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-
-		while (fields.hasNext()) {
-			final var entry = fields.next();
+		for (var entry : node.properties()) {
 			String key = entry.getKey();
-
 
 			if ("@class".equals(key) || "@type".equals(key) || "@typeHint".equals(key)) {
 				continue;
 			}
 
-			result.put(key, JacksonDeserializer.valueFromNode(entry.getValue(), mapper, typeMapper));
+			JsonNode valueNode = entry.getValue();
+			if (valueNode.isObject() && valueNode.has("@type")) {
+				var reference = typeMapper.getReference(valueNode.get("@type").asText());
+				if (reference.isPresent()) {
+					ObjectNode typedNode = (ObjectNode) valueNode.deepCopy();
+					typedNode.remove("@type");
+					typedNode.remove("@typeHint");
+					result.put(key, JacksonDeserializer.deserializeWithContext(typedNode, reference.get(), ctx));
+					continue;
+				}
+			}
+			result.put(key, JacksonDeserializer.valueFromNode(valueNode, readContext, typeMapper));
 		}
 
 		return result;

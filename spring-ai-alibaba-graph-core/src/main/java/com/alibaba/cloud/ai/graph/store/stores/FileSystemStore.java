@@ -19,7 +19,7 @@ import com.alibaba.cloud.ai.graph.store.NamespaceListRequest;
 import com.alibaba.cloud.ai.graph.store.StoreItem;
 import com.alibaba.cloud.ai.graph.store.StoreSearchRequest;
 import com.alibaba.cloud.ai.graph.store.StoreSearchResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -71,7 +71,6 @@ public class FileSystemStore extends BaseStore {
 	public FileSystemStore(Path rootPath) {
 		this.rootPath = rootPath;
 		this.objectMapper = new ObjectMapper();
-		this.objectMapper.findAndRegisterModules();
 		initializeRootDirectory();
 	}
 

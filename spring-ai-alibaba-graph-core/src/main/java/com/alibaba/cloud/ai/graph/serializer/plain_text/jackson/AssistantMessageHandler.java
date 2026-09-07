@@ -15,22 +15,21 @@
  */
 package com.alibaba.cloud.ai.graph.serializer.plain_text.jackson;
 
-import java.io.IOException;
 import java.util.LinkedList;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.core.type.WritableTypeId;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.core.type.WritableTypeId;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 
@@ -58,34 +57,35 @@ public interface AssistantMessageHandler {
 		}
 
 	@Override
-	public void serialize(AssistantMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
+	public void serialize(AssistantMessage msg, JsonGenerator gen, SerializationContext provider) throws tools.jackson.core.JacksonException {
 		gen.writeStartObject();
 		serializeFields(msg, gen, provider);
 		gen.writeEndObject();
 	}
 
 	@Override
-	public void serializeWithType(AssistantMessage msg, JsonGenerator gen, SerializerProvider provider, TypeSerializer typeSer) throws IOException {
-		WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, typeSer.typeId(msg, JsonToken.START_OBJECT));
+	public void serializeWithType(AssistantMessage msg, JsonGenerator gen, SerializationContext provider, TypeSerializer typeSer) throws tools.jackson.core.JacksonException {
+		WritableTypeId typeIdDef = typeSer.writeTypePrefix(gen, provider,
+				typeSer.typeId(msg, JsonToken.START_OBJECT));
 		serializeFields(msg, gen, provider);
-		typeSer.writeTypeSuffix(gen, typeIdDef);
+		typeSer.writeTypeSuffix(gen, provider, typeIdDef);
 	}
 
-	private void serializeFields(AssistantMessage msg, JsonGenerator gen, SerializerProvider provider) throws IOException {
-		gen.writeStringField(Field.TEXT.name, msg.getText());
+	private void serializeFields(AssistantMessage msg, JsonGenerator gen, SerializationContext provider) throws tools.jackson.core.JacksonException {
+		gen.writeStringProperty(Field.TEXT.name, msg.getText());
 
-		gen.writeArrayFieldStart(Field.TOOL_CALLS.name);
+		gen.writeArrayPropertyStart(Field.TOOL_CALLS.name);
 		for (var toolCall : msg.getToolCalls()) {
 			gen.writeStartObject();
-			gen.writeStringField("id", toolCall.id());
-			gen.writeStringField("name", toolCall.name());
-			gen.writeStringField("type", toolCall.type());
-			gen.writeStringField("arguments", toolCall.arguments());
+			gen.writeStringProperty("id", toolCall.id());
+			gen.writeStringProperty("name", toolCall.name());
+			gen.writeStringProperty("type", toolCall.type());
+			gen.writeStringProperty("arguments", toolCall.arguments());
 			gen.writeEndObject();
 		}
 		gen.writeEndArray();
 
-		serializeMetadata(gen, msg.getMetadata());
+		serializeMetadata(gen, provider, msg.getMetadata());
 
 		// gen.writeArrayFieldStart( Property.MEDIA.field);
 		// for (var media : msg.getMedia()) {
@@ -102,12 +102,12 @@ public interface AssistantMessageHandler {
 		}
 
 		@Override
-		public AssistantMessage deserialize(JsonParser jsonParser, DeserializationContext ctx) throws IOException {
-			var mapper = (ObjectMapper) jsonParser.getCodec();
-			ObjectNode node = mapper.readTree(jsonParser);
+		public AssistantMessage deserialize(JsonParser jsonParser, DeserializationContext ctx) throws tools.jackson.core.JacksonException {
+			ObjectReadContext readContext = jsonParser.objectReadContext();
+			ObjectNode node = (ObjectNode) ctx.readTree(jsonParser);
 
 			var text = node.findValue(Field.TEXT.name).asText();
-			var metadata = deserializeMetadata(mapper, node);
+			var metadata = deserializeMetadata(readContext, node);
 			var requestsNode = node.findValue(Field.TOOL_CALLS.name);
 
 			if (requestsNode.isNull() || requestsNode.isEmpty()) {
@@ -120,7 +120,8 @@ public interface AssistantMessageHandler {
 			var requests = new LinkedList<AssistantMessage.ToolCall>();
 
 			for (JsonNode requestNode : requestsNode) {
-				var request = mapper.treeToValue(requestNode, new TypeReference<AssistantMessage.ToolCall>() {
+				var request = readContext.readValue(readContext.treeAsTokens(requestNode),
+						new TypeReference<AssistantMessage.ToolCall>() {
 				});
 
 				requests.add(request);
