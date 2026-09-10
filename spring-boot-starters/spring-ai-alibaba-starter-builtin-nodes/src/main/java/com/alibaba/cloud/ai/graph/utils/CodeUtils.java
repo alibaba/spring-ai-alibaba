@@ -25,7 +25,8 @@ public class CodeUtils {
 	public static String getExecutableForLanguage(String language) throws Exception {
 		return switch (language) {
 			case "python3", "python" -> language;
-			case "shell", "bash", "sh", "powershell" -> "sh";
+			case "shell", "bash", "sh" -> "sh";
+			case "powershell" -> "pwsh";
 			case "nodejs" -> "node";
 			case "java" -> "java";
 			default -> throw new Exception("Language not recognized in code execution:" + language);
@@ -35,7 +36,8 @@ public class CodeUtils {
 	public static String getFileExtForLanguage(String language) throws Exception {
 		return switch (language) {
 			case "python3", "python" -> "py";
-			case "shell", "bash", "sh", "powershell" -> "sh";
+			case "shell", "bash", "sh" -> "sh";
+			case "powershell" -> "ps1";
 			case "nodejs" -> "js";
 			case "java" -> "java";
 			default -> throw new Exception("Language not recognized in code execution:" + language);
