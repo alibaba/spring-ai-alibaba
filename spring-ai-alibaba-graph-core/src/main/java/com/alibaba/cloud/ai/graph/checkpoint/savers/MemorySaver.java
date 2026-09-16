@@ -69,12 +69,12 @@ public class MemorySaver implements BaseCheckpointSaver {
 
 	protected final <T> T loadOrInitCheckpoints(RunnableConfig config,
 			TryFunction<LinkedList<Checkpoint>, T, Exception> transformer) throws Exception {
+		var threadId = config.threadId().orElseGet(() -> {
+			log.warn("Missing 'threadId', using shared default slot '{}'; cross-session leakage possible.", THREAD_ID_DEFAULT);
+			return THREAD_ID_DEFAULT;
+		});
 		_lock.lock();
 		try {
-			var threadId = config.threadId().orElseGet(() -> {
-				log.warn("Missing 'threadId', using shared default slot '{}'; cross-session leakage possible.", THREAD_ID_DEFAULT);
-				return THREAD_ID_DEFAULT;
-			});
 			return transformer.tryApply(loadedCheckpoints(config, _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>())));
 
 		}
