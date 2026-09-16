@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.flow.node;
 
+import static com.alibaba.cloud.ai.graph.agent.utils.LogSanitizer.sanitize;
+
 import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
 import com.alibaba.cloud.ai.graph.GraphResponse;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
@@ -118,12 +120,12 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 					} else {
 						subAgentResults.put(subAgentOutputKey, agentResult.get());
 					}
-					logger.debug("Collected result from {}: {} = {}", subAgent.name(), subAgentOutputKey,
-							agentResult.get());
+					logger.debug("Collected result from {}: {} = {}", sanitize(subAgent.name()), sanitize(subAgentOutputKey),
+							sanitize(agentResult.get()));
 				}
 				else {
-					logger.warn("No output found for sub-agent: {} (outputKey: {})", subAgent.name(),
-							subAgentOutputKey);
+					logger.warn("No output found for sub-agent: {} (outputKey: {})", sanitize(subAgent.name()),
+							sanitize(subAgentOutputKey));
 				}
 			}
 		}
@@ -141,7 +143,7 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 		// Only add the merged result if outputKey is not null
 		if (outputKey != null && !outputKey.trim().isEmpty()) {
 			result.put(outputKey, finalResult);
-			logger.debug("Enhanced result aggregation completed. Final result stored under key: {}", outputKey);
+			logger.debug("Enhanced result aggregation completed. Final result stored under key: {}", sanitize(outputKey));
 		} else {
 			logger.debug("Enhanced result aggregation completed. No outputKey specified, skipping merged result storage.");
 		}
@@ -158,7 +160,7 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 		// Propagate extra state data from sub-agents to parent state
 		if (!extraStateFromSubAgents.isEmpty()) {
 			logger.debug("Propagating {} extra state entries from sub-agents: {}",
-					extraStateFromSubAgents.size(), extraStateFromSubAgents.keySet());
+					extraStateFromSubAgents.size(), sanitize(extraStateFromSubAgents.keySet()));
 			result.putAll(extraStateFromSubAgents);
 		}
 
@@ -196,11 +198,12 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 				extraState.put(key, mergedValue);
 				logger.warn("Extra state key collision detected: key='{}', "
 						+ "oldValue='{}', newValue='{}', strategy={}, mergedValue='{}'",
-						key, oldValue, newValue, strategy.getClass().getSimpleName(), mergedValue);
+						sanitize(key), sanitize(oldValue), sanitize(newValue),
+						strategy.getClass().getSimpleName(), sanitize(mergedValue));
 			}
 			else {
 				extraState.put(key, entry.getValue());
-				logger.debug("Extracted extra state from sub-graph: {} = {}", key, entry.getValue());
+				logger.debug("Extracted extra state from sub-graph: {} = {}", sanitize(key), sanitize(entry.getValue()));
 			}
 		}
 	}

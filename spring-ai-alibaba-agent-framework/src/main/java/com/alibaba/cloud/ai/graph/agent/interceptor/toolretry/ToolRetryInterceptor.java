@@ -15,6 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.toolretry;
 
+import static com.alibaba.cloud.ai.graph.agent.utils.LogSanitizer.sanitize;
+
+import java.security.SecureRandom;
+
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
@@ -42,6 +46,8 @@ import org.slf4j.LoggerFactory;
  *     .build();
  */
 public class ToolRetryInterceptor extends ToolInterceptor {
+
+	private static final SecureRandom JITTER_RANDOM = new SecureRandom();
 
 	private static final Logger log = LoggerFactory.getLogger(ToolRetryInterceptor.class);
 
@@ -104,7 +110,7 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 				// Calculate delay
 				long delay = calculateDelay(attempt);
 				log.warn("Tool '{}' failed (attempt {}/{}), retrying in {}ms: {}",
-						toolName, attempt + 1, maxRetries + 1, delay, e.getMessage());
+						sanitize(toolName), attempt + 1, maxRetries + 1, delay, sanitize(e.getMessage()));
 
 				try {
 					Thread.sleep(delay);
@@ -128,7 +134,8 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 					? errorFormatter.apply(lastException)
 					: "Tool call failed after " + (maxRetries + 1) + " attempts: " + lastException.getMessage();
 
-			log.error("Tool '{}' failed after {} attempts: {}", toolName, maxRetries + 1, lastException.getMessage());
+			log.error("Tool '{}' failed after {} attempts: {}", sanitize(toolName), maxRetries + 1,
+					sanitize(lastException.getMessage()));
 			return ToolCallResponse.of(request.getToolCallId(), request.getToolName(), errorMessage);
 		}
 	}
@@ -139,7 +146,7 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 
 		if (jitter) {
 			// Add random jitter ±25%
-			double jitterFactor = 0.75 + (Math.random() * 0.5);
+			double jitterFactor = 0.75 + (JITTER_RANDOM.nextDouble() * 0.5);
 			delay = (long) (delay * jitterFactor);
 		}
 
@@ -243,4 +250,3 @@ public class ToolRetryInterceptor extends ToolInterceptor {
 		}
 	}
 }
-

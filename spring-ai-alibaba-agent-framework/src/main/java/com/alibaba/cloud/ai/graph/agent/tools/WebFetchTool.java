@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent.tools;
 
+import static com.alibaba.cloud.ai.graph.agent.utils.LogSanitizer.sanitize;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -185,11 +187,11 @@ public class WebFetchTool implements BiFunction<WebFetchTool.Request, ToolContex
 		String content = getCachedContent(cacheKey);
 
 		if (content != null) {
-			logger.debug("Cache hit for URL: {} with prompt hash: {}", url, prompt.hashCode());
+			logger.debug("Cache hit for URL: {} with prompt hash: {}", sanitize(url), prompt.hashCode());
 			return content;
 		}
 
-		logger.debug("Cache miss for URL: {} with prompt hash: {}", url, prompt.hashCode());
+		logger.debug("Cache miss for URL: {} with prompt hash: {}", sanitize(url), prompt.hashCode());
 
 		// Fetch HTML content with retry logic
 		String htmlContent;
@@ -204,7 +206,7 @@ public class WebFetchTool implements BiFunction<WebFetchTool.Request, ToolContex
 			}
 		}
 		catch (WebFetchException e) {
-			logger.error("Failed to fetch URL: {}", url, e);
+			logger.error("Failed to fetch URL: {}", sanitize(url), e);
 			return "Error fetching URL: " + e.getMessage();
 		}
 
@@ -233,7 +235,7 @@ public class WebFetchTool implements BiFunction<WebFetchTool.Request, ToolContex
 			try {
 				if (attempt > 0) {
 					long backoffMs = (long) Math.pow(2, attempt - 1) * 1000;
-					logger.debug("Retrying fetch for URL: {} (attempt {}/{}), waiting {}ms", url, attempt,
+					logger.debug("Retrying fetch for URL: {} (attempt {}/{}), waiting {}ms", sanitize(url), attempt,
 							this.maxRetries, backoffMs);
 					Thread.sleep(backoffMs);
 				}
@@ -243,7 +245,7 @@ public class WebFetchTool implements BiFunction<WebFetchTool.Request, ToolContex
 				if (response.statusCode() >= 500 && response.statusCode() < 600) {
 					lastException = new WebFetchException("Server error: HTTP " + response.statusCode(), null);
 					logger.warn("Fetch attempt {} returned server error {} for URL: {}", attempt + 1,
-							response.statusCode(), url);
+							response.statusCode(), sanitize(url));
 					attempt++;
 					continue;
 				}
@@ -255,7 +257,7 @@ public class WebFetchTool implements BiFunction<WebFetchTool.Request, ToolContex
 				if (e.getCause() instanceof InterruptedException) {
 					throw e;
 				}
-				logger.warn("Fetch attempt {} failed for URL: {}: {}", attempt + 1, url, e.getMessage());
+				logger.warn("Fetch attempt {} failed for URL: {}: {}", attempt + 1, sanitize(url), sanitize(e.getMessage()));
 				attempt++;
 			}
 			catch (InterruptedException e) {
@@ -356,7 +358,7 @@ public class WebFetchTool implements BiFunction<WebFetchTool.Request, ToolContex
 						return Optional.of(Charset.forName(charsetName));
 					}
 					catch (Exception e) {
-						logger.warn("Unsupported charset '{}', falling back to UTF-8", charsetName);
+						logger.warn("Unsupported charset '{}', falling back to UTF-8", sanitize(charsetName));
 						return Optional.empty();
 					}
 				}
