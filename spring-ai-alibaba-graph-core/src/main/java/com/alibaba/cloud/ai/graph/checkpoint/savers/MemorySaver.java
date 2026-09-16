@@ -37,6 +37,7 @@ public class MemorySaver implements BaseCheckpointSaver {
 
 	final Map<String, LinkedList<Checkpoint>> _checkpointsByThread = new HashMap<>();
 	private final ReentrantLock _lock = new ReentrantLock();
+	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MemorySaver.class);
 
 	/**
 	 * Protected constructor for MemorySaver.
@@ -70,7 +71,10 @@ public class MemorySaver implements BaseCheckpointSaver {
 			TryFunction<LinkedList<Checkpoint>, T, Exception> transformer) throws Exception {
 		_lock.lock();
 		try {
-			var threadId = config.threadId().orElse(THREAD_ID_DEFAULT);
+			var threadId = config.threadId().orElseGet(() -> {
+				log.warn("Missing 'threadId', using shared default slot '{}'; cross-session leakage possible.", THREAD_ID_DEFAULT);
+				return THREAD_ID_DEFAULT;
+			});
 			return transformer.tryApply(loadedCheckpoints(config, _checkpointsByThread.computeIfAbsent(threadId, k -> new LinkedList<>())));
 
 		}
