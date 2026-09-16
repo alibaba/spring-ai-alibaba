@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 
@@ -37,6 +38,7 @@ public class MemorySaver implements BaseCheckpointSaver {
 
 	final Map<String, LinkedList<Checkpoint>> _checkpointsByThread = new HashMap<>();
 	private final ReentrantLock _lock = new ReentrantLock();
+	private final AtomicBoolean warnedMissingThreadId = new AtomicBoolean();
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(MemorySaver.class);
 
 	/**
@@ -70,7 +72,9 @@ public class MemorySaver implements BaseCheckpointSaver {
 	protected final <T> T loadOrInitCheckpoints(RunnableConfig config,
 			TryFunction<LinkedList<Checkpoint>, T, Exception> transformer) throws Exception {
 		var threadId = config.threadId().orElseGet(() -> {
-			log.warn("Missing 'threadId', using shared default slot '{}'; cross-session leakage possible.", THREAD_ID_DEFAULT);
+			if (warnedMissingThreadId.compareAndSet(false, true)) {
+				log.warn("Missing 'threadId', using shared default slot '{}'; cross-session leakage possible.", THREAD_ID_DEFAULT);
+			}
 			return THREAD_ID_DEFAULT;
 		});
 		_lock.lock();
