@@ -7,7 +7,6 @@ services:
     image: mysql:8.0.35
     container_name: spring-ai-admin-mysql
     restart: always
-    user: "${UID}:${GID}"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -23,7 +22,7 @@ services:
     ports:
       - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -59,7 +58,7 @@ services:
       - node.name=es-node-1
       - bootstrap.memory_lock=true
       - http.cors.enabled=true
-      - http.cors.allow-origin=*
+      - http.cors.allow-origin="*"
       - action.destructive_requires_name=false
     ulimits:
       memlock:
@@ -142,7 +141,6 @@ services:
     image: apache/rocketmq:5.3.2
     container_name: spring-ai-admin-rmq-namesrv
     restart: always
-    user: "${UID}:${GID}"
     environment:
       - NAMESRV_ADDR=rmq-namesrv:9876
       - HEAP_OPTS=-Xms128M -Xmx256M -Xmn128M
@@ -161,7 +159,6 @@ services:
     image: apache/rocketmq:5.3.2
     container_name: spring-ai-admin-rmq-broker
     restart: always
-    user: "${UID}:${GID}"
     environment:
       - NAMESRV_ADDR=rmq-namesrv:9876
       - HEAP_OPTS=-Xms256M -Xmx512M -Xmn256M -XX:MaxDirectMemorySize=128M
@@ -187,7 +184,6 @@ services:
     image: apache/rocketmq:5.3.2
     container_name: spring-ai-admin-rmq-proxy
     restart: always
-    user: "${UID}:${GID}"
     volumes:
       - ../../docker/middleware/conf/rocketmq:/home/rocketmq/conf
     environment:
@@ -243,7 +239,7 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - TZ=${TZ}
       # MySQL配置
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
       # Redis配置
