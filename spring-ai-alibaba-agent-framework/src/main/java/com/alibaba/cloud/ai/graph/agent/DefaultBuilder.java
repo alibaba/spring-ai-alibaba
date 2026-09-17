@@ -85,6 +85,7 @@ public class DefaultBuilder extends Builder {
 		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
 				.agentName(this.name)
 				.chatOptions(effectiveOptions)
+				.throwOnModelError(this.throwOnModelError)
 				.chatClient(chatClient);
 
 		if (outputKey != null && !outputKey.isEmpty()) {

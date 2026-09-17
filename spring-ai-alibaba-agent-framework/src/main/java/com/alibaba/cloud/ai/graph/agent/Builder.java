@@ -73,6 +73,8 @@ public abstract class Builder {
 
 	protected ChatClient chatClient;
 
+	protected boolean throwOnModelError;
+
 	protected List<ToolCallback> tools = new ArrayList<>();
 
 	protected List<ToolCallbackProvider> toolCallbackProviders = new ArrayList<>();
@@ -150,6 +152,22 @@ public abstract class Builder {
 
 	public Builder chatOptions(ChatOptions chatOptions) {
 		this.chatOptions = chatOptions;
+		return this;
+	}
+
+	/**
+	 * Whether to propagate exceptions caught while invoking the model instead of
+	 * converting them to an {@code AssistantMessage} with an {@code Exception:} prefix.
+	 * Defaults to {@code false} for backward compatibility. When enabled, model
+	 * interceptors receive the original exception, including its type and cause.
+	 * <p>Applies to synchronous calls and synchronous streaming setup failures.
+	 * Errors emitted by a streaming publisher continue to propagate in either mode.
+	 * This option does not change tool exception handling or configure retries.
+	 * @param throwOnModelError whether to propagate caught model exceptions
+	 * @return this builder
+	 */
+	public Builder throwOnModelError(boolean throwOnModelError) {
+		this.throwOnModelError = throwOnModelError;
 		return this;
 	}
 

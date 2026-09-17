@@ -94,6 +94,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private boolean enableReasoningLog;
 
+	private final boolean throwOnModelError;
+
 	public AgentLlmNode(Builder builder) {
 		this.agentName = builder.agentName;
 		this.outputKey = builder.outputKey;
@@ -116,6 +118,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		this.chatClient = builder.chatClient;
 		this.chatOptions = buildChatOptions(builder.chatOptions, this.toolCallbacks);
 		this.enableReasoningLog = builder.enableReasoningLog;
+		this.throwOnModelError = builder.throwOnModelError;
 	}
 
 	public static Builder builder() {
@@ -244,6 +247,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					return ModelResponse.of(chatResponseFlux);
 				} catch (Exception e) {
 					logger.error("Exception during streaming model call: ", e);
+					if (throwOnModelError) {
+						throw e;
+					}
 					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
 				}
 			};
@@ -278,6 +284,9 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					return ModelResponse.of(responseMessage, response);
 				} catch (Exception e) {
 					logger.error("Exception during invoking model call: ", e);
+					if (throwOnModelError) {
+						throw e;
+					}
 					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
 				}
 			};
@@ -569,6 +578,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private boolean enableReasoningLog;
 
+		private boolean throwOnModelError;
+
 		private ChatOptions chatOptions;
 
 		public Builder agentName(String agentName) {
@@ -628,6 +639,18 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder enableReasoningLog(boolean enableReasoningLog) {
 			this.enableReasoningLog = enableReasoningLog;
+			return this;
+		}
+
+		/**
+		 * Whether to propagate caught model exceptions instead of converting them to
+		 * assistant messages. Defaults to {@code false}. Errors emitted by a streaming
+		 * publisher continue to propagate regardless of this setting.
+		 * @param throwOnModelError whether to propagate caught model exceptions
+		 * @return this builder
+		 */
+		public Builder throwOnModelError(boolean throwOnModelError) {
+			this.throwOnModelError = throwOnModelError;
 			return this;
 		}
 
