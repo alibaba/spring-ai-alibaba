@@ -268,7 +268,29 @@ public class SummarizationHook extends MessagesModelHook {
 		StringBuilder messageText = new StringBuilder();
 		for (Message msg : messages) {
 			String role = getRoleName(msg);
-			messageText.append(role).append(": ").append(msg.getText()).append("\n");
+			messageText.append(role).append(": ").append(msg.getText() != null ? msg.getText() : "").append("\n");
+			if (msg instanceof AssistantMessage assistantMessage) {
+				for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+					messageText.append("Tool call [id=")
+						.append(toolCall.id())
+						.append(", name=")
+						.append(toolCall.name())
+						.append("]: ")
+						.append(toolCall.arguments())
+						.append("\n");
+				}
+			}
+			else if (msg instanceof ToolResponseMessage toolResponseMessage) {
+				for (ToolResponseMessage.ToolResponse response : toolResponseMessage.getResponses()) {
+					messageText.append("Tool result [id=")
+						.append(response.id())
+						.append(", name=")
+						.append(response.name())
+						.append("]: ")
+						.append(response.responseData())
+						.append("\n");
+				}
+			}
 		}
 
 		String prompt = String.format(summaryPrompt, messageText.toString());
