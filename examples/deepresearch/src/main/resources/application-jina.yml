@@ -1,0 +1,9 @@
+spring:
+  ai:
+    mcp:
+      client:
+        streamable-http:
+          connections:
+            jina:
+              url: "https://mcp.jina.ai"
+              endpoint: "/sse"

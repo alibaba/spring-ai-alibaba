@@ -21,6 +21,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
+import org.springframework.util.StringUtils;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -36,14 +37,32 @@ public class Application {
 	}
 
 	@Bean
-	public McpSyncHttpClientRequestCustomizer mcpSyncHttpClientRequestCustomizer() {
+	public McpSyncHttpClientRequestCustomizer mcpSyncHttpClientRequestCustomizer(Environment environment) {
 		return new McpSyncHttpClientRequestCustomizer() {
 			@Override
 			public void customize(HttpRequest.Builder builder, String method, URI endpoint, String body, McpTransportContext context) {
-				builder.header("Authorization", "Bearer " + System.getenv("JINA_API_KEY"));
+				String jinaUrl = environment.getProperty("spring.ai.mcp.client.streamable-http.connections.jina.url");
+				if (sameOrigin(endpoint, jinaUrl)) {
+					String apiKey = environment.getProperty("JINA_API_KEY");
+					if (StringUtils.hasText(apiKey)) {
+						builder.header("Authorization", "Bearer " + apiKey);
+					}
+				}
+				String parallelUrl = environment.getProperty("spring.ai.mcp.client.streamable-http.connections.parallel.url");
+				if (sameOrigin(endpoint, parallelUrl)) {
+					builder.header("User-Agent", "spring-ai-alibaba-deepresearch/0.0.1-SNAPSHOT");
+				}
 				builder.timeout(java.time.Duration.ofSeconds(120));
 			}
 		};
+	}
+
+	private static boolean sameOrigin(URI endpoint, String configuredUrl) {
+		if (!StringUtils.hasText(configuredUrl)) {
+			return false;
+		}
+		URI configured = URI.create(configuredUrl);
+		return configured.resolve("/").equals(endpoint.resolve("/"));
 	}
 
 	@Bean
