@@ -120,5 +120,5 @@ System.out.println("Final answer: " + result.finalAnswer());
 
 ## References
 
-- [Subgraph as CompiledGraph](../../documentation/src/main/java/com/alibaba/cloud/ai/examples/documentation/graph/examples/SubgraphAsCompiledGraphExample.java) – agent as graph node.
+- [Subgraph as CompiledGraph](https://github.com/alibaba/spring-ai-alibaba/blob/main/examples/documentation/src/main/java/com/alibaba/cloud/ai/examples/documentation/graph/examples/SubgraphAsCompiledGraphExample.java) – agent as graph node.
 - Spring AI Alibaba: LlmRoutingAgent, StateGraph, RoutingMergeNode, ReactAgent.
