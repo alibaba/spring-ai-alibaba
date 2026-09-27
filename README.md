@@ -119,7 +119,7 @@ There's a ChatBot example provided by the community at [examples/chatbot](https:
 * [Overview](https://java2ai.com/docs/overview) - High level overview of the framework
 * [Quick Start](https://java2ai.com/docs/quick-start) - Get started with a simple agent
 * [Agent Framework Tutorials](https://java2ai.com/docs/frameworks/agent-framework/tutorials/agents) - Step by step tutorials
-* [Use Graph API to Build Complex Workflows](https://java2ai.com/docs/frameworks/agent-framework/advanced/context-engineering) - In-depth user guide for building multi-agent and workflows
+* [Use Graph API to Build Complex Workflows](https://java2ai.com/docs/frameworks/graph-core/quick-start) - In-depth user guide for building multi-agent and workflows
 * [Spring AI Basics](https://java2ai.com/ecosystem/spring-ai/reference/concepts) - Ai Application basic concepts, including ChatModel, MCP, Tool, Messages, etc.
 * [Chat Memory](https://docs.spring.io/spring-ai/reference/api/chatclient.html#chat-memory) - Spring AI reference for chat memory repositories and usage
 
