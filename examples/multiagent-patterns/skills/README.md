@@ -35,7 +35,7 @@ This example implements the **skills** (progressive disclosure) pattern with Spr
 ## Project layout
 
 ```
-examples/multiagents/skills/
+examples/multiagent-patterns/skills/
 ├── README.md
 ├── pom.xml
 └── src/main/
@@ -77,7 +77,7 @@ From the repo root:
 Or from this directory:
 
 ```bash
-cd examples/multiagents/skills
+cd examples/multiagent-patterns/skills
 mvn -B package -DskipTests
 ```
 
