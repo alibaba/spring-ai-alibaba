@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.store.StoreSearchRequest;
 import com.alibaba.cloud.ai.graph.store.StoreSearchResult;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -72,6 +73,27 @@ class FileSystemStoreTest {
 		// Verify file structure
 		Path expectedFile = tempDir.resolve("users").resolve("user123").resolve("preferences.json");
 		assertThat(Files.exists(expectedFile)).isTrue();
+	}
+
+	@Test
+	void testPutAndGetUnicodeItem() throws IOException {
+		List<String> namespace = List.of("users", "unicode");
+		String key = "profile";
+		String text = "你好，café 🚀";
+		Map<String, Object> value = Map.of("message", text);
+		store.putItem(StoreItem.of(namespace, key, value));
+
+		Path itemFile = tempDir.resolve("users").resolve("unicode").resolve("profile.json");
+		assertThat(Files.readString(itemFile, StandardCharsets.UTF_8)).contains(text);
+
+		FileSystemStore reopenedStore = new FileSystemStore(tempDir);
+		Optional<StoreItem> retrieved = reopenedStore.getItem(namespace, key);
+		assertThat(retrieved).isPresent();
+		assertThat(retrieved.get().getValue()).isEqualTo(value);
+
+		StoreSearchResult result = reopenedStore.searchItems(StoreSearchRequest.builder().query("café").build());
+		assertThat(result.getItems()).hasSize(1);
+		assertThat(result.getItems().get(0).getValue()).isEqualTo(value);
 	}
 
 	@Test
