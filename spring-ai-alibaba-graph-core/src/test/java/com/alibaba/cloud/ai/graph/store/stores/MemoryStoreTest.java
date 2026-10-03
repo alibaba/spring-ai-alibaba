@@ -113,6 +113,48 @@ class MemoryStoreTest {
 	}
 
 	@Test
+	void testListNamespacesWithPrefix() {
+		setupTestData();
+		NamespaceListRequest request = NamespaceListRequest.builder().namespace("users", "user1").build();
+
+		assertThat(memoryStore.listNamespaces(request)).containsExactly("users/user1", "users/user1/preferences");
+	}
+
+	@Test
+	void testListNamespacesWithMaxDepthBelowPrefix() {
+		setupTestData();
+		NamespaceListRequest request = NamespaceListRequest.builder()
+			.namespace("users", "user1")
+			.maxDepth(1)
+			.build();
+
+		assertThat(memoryStore.listNamespaces(request)).isEmpty();
+	}
+
+	@Test
+	void testListNamespacesWithMaxDepthAtPrefix() {
+		setupTestData();
+		NamespaceListRequest request = NamespaceListRequest.builder()
+			.namespace("users", "user1")
+			.maxDepth(2)
+			.build();
+
+		assertThat(memoryStore.listNamespaces(request)).containsExactly("users/user1");
+	}
+
+	@Test
+	void testListNamespacesWithPrefixPagination() {
+		setupTestData();
+		NamespaceListRequest request = NamespaceListRequest.builder()
+			.namespace("users", "user1")
+			.offset(1)
+			.limit(1)
+			.build();
+
+		assertThat(memoryStore.listNamespaces(request)).containsExactly("users/user1/preferences");
+	}
+
+	@Test
 	void testValidationErrors() {
 		// Test null item
 		assertThrows(IllegalArgumentException.class, () -> memoryStore.putItem(null));
