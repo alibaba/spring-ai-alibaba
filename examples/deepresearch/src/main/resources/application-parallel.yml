@@ -1,0 +1,9 @@
+spring:
+  ai:
+    mcp:
+      client:
+        streamable-http:
+          connections:
+            parallel:
+              url: "https://search.parallel.ai"
+              endpoint: "/mcp"

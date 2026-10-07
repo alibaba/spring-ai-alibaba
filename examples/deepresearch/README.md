@@ -8,7 +8,7 @@ A DeepResearch agent built with Spring AI Alibaba that conducts thorough researc
 
 * JDK 17+
 * AI_DASHSCOPE_API_KEY - Get from [Alibaba Cloud Bailian](https://bailian.console.aliyun.com/)
-* JINA_API_KEY (Optional) - Get from [Jina AI](https://jina.ai/) for MCP tool support
+* JINA_API_KEY (Optional) - Get from [Jina AI](https://jina.ai/) for the default Jina search connection
 
 ```bash
 export AI_DASHSCOPE_API_KEY=your_dashscope_api_key
@@ -24,6 +24,16 @@ export JINA_API_KEY=your_jina_api_key  # Optional
 
 2. **Run in IDE**
 Import as maven project and run `Application.java`.
+
+### Use Parallel Search
+
+The default run uses Jina for research tools. To use Parallel Search instead, start the same app with the `parallel` profile:
+
+```bash
+./mvnw -f examples/deepresearch spring-boot:run -Dspring-boot.run.profiles=parallel
+```
+
+This profile connects the research agent to Parallel's hosted MCP server at `https://search.parallel.ai/mcp`. It does not load the Jina connection or need a Parallel API key. The agent can call Parallel's search and page-fetch tools while working on a question. Queries, requested URLs, and any context the agent supplies go to Parallel. Free access has limits. To return to Jina, run without the `parallel` profile.
 
 ### Chat With Your Agent
 
@@ -90,7 +100,6 @@ DeepResearch implements an agentic architecture that goes beyond simple tool-cal
 - DashScope Chat Model support
 - MCP Client for tool integration
 - Agent Studio UI for visualization
-
 
 
 
