@@ -58,4 +58,25 @@ class CompiledGraphCloneStateStrategyTest {
 				"cloneState must not overwrite the user-registered strategy held by the compiled graph");
 	}
 
+	@Test
+	void cloneAndSnapShotPreserveTheUserInputStrategy() throws Exception {
+		CompiledGraph compiled = new StateGraph(strategyFactory())
+			.addEdge(StateGraph.START, StateGraph.END)
+			.compile();
+
+		OverAllState cloned = compiled.cloneState(Map.of(OverAllState.DEFAULT_INPUT_KEY, List.of("v1")));
+
+		assertInstanceOf(AppendStrategy.class, cloned.keyStrategies().get(OverAllState.DEFAULT_INPUT_KEY),
+				"the cloned state must keep the user-registered strategy for 'input'");
+
+		cloned.updateState(Map.of(OverAllState.DEFAULT_INPUT_KEY, "v2"));
+		assertEquals(List.of("v1", "v2"), cloned.value(OverAllState.DEFAULT_INPUT_KEY).orElseThrow(),
+				"updates on the cloned state must follow the user-registered append semantics");
+
+		// Parallel-branch snapshots go through the three-argument constructor.
+		OverAllState snapshot = cloned.snapShot().orElseThrow();
+		assertInstanceOf(AppendStrategy.class, snapshot.keyStrategies().get(OverAllState.DEFAULT_INPUT_KEY),
+				"snapshots must keep the user-registered strategy for 'input'");
+	}
+
 }
