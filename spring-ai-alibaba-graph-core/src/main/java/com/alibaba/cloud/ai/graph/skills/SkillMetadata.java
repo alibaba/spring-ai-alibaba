@@ -99,6 +99,9 @@ public class SkillMetadata {
 			}
 
 			String rawContent = Files.readString(skillFile);
+			if (rawContent.startsWith("\uFEFF")) {
+				rawContent = rawContent.substring(1);
+			}
 			fullContent = removeFrontmatter(rawContent);
 		}
 		return fullContent;

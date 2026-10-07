@@ -109,6 +109,9 @@ public class SkillScanner {
 
 		try {
 			String content = Files.readString(skillFile);
+			if (content.startsWith("\uFEFF")) {
+				content = content.substring(1);
+			}
 			Map<String, Object> frontmatter = parseFrontmatter(content);
 
 			if (frontmatter == null || frontmatter.isEmpty()) {
