@@ -169,8 +169,13 @@ public final class OverAllState implements Serializable {
 	 */
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies) {
 		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
-		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
-		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
+		// Copy the caller's map: the default-input registration below must not
+		// leak into a map the caller still owns (e.g. CompiledGraph's compiled
+		// keyStrategyMap, shared across every run of the graph). See #4999.
+		this.keyStrategies = keyStrategies != null ? new HashMap<>(keyStrategies) : new HashMap<>();
+		// Only fill in the default when the caller has no strategy for "input";
+		// a user-registered strategy must survive cloning and snapshots (#4999).
+		this.keyStrategies.putIfAbsent(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 	}
 
 	/**
@@ -182,8 +187,10 @@ public final class OverAllState implements Serializable {
 	protected OverAllState(Map<String, Object> data, Map<String, KeyStrategy> keyStrategies,
 			Store store) {
 		this.data = data != null ? new HashMap<>(data) : new HashMap<>();
-		this.keyStrategies = keyStrategies != null ? keyStrategies : new HashMap<>();
-		this.registerKeyAndStrategy(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
+		// Defensive copy, same rationale as the two-argument constructor.
+		this.keyStrategies = keyStrategies != null ? new HashMap<>(keyStrategies) : new HashMap<>();
+		// putIfAbsent: a user-registered strategy must survive cloning/snapshots (#4999).
+		this.keyStrategies.putIfAbsent(OverAllState.DEFAULT_INPUT_KEY, new ReplaceStrategy());
 		this.store = store;
 	}
 
