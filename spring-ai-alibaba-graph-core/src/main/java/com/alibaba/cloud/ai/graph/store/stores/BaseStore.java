@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.store.StoreItem;
 import com.alibaba.cloud.ai.graph.store.StoreSearchRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.math.BigInteger;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -263,11 +264,24 @@ public abstract class BaseStore implements Store {
 				if (val2 == null) {
 					return 1;
 				}
+				if (val1.getClass() != val2.getClass() && isIntegralNumber(val1) && isIntegralNumber(val2)) {
+					// JSON may deserialize the same integral field into different number types.
+					return toBigInteger(val1).compareTo(toBigInteger(val2));
+				}
 				if (val1 instanceof Comparable && val2 instanceof Comparable) {
 					return ((Comparable<Object>) val1).compareTo(val2);
 				}
 				return val1.toString().compareTo(val2.toString());
 		}
+	}
+
+	private static boolean isIntegralNumber(Object value) {
+		return value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long
+				|| value.getClass() == BigInteger.class;
+	}
+
+	private static BigInteger toBigInteger(Object value) {
+		return value instanceof BigInteger integer ? integer : BigInteger.valueOf(((Number) value).longValue());
 	}
 
 }
