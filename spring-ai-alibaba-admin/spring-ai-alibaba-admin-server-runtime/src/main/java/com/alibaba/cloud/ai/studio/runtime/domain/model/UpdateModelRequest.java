@@ -47,6 +47,11 @@ public class UpdateModelRequest {
 	private String tags;
 
 	/**
+	 * Model type: llm, rerank, text_embedding, tts, stt
+	 */
+	private String type;
+
+	/**
 	 * Model status
 	 */
 	private Boolean enable;

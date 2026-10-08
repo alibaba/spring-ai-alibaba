@@ -12,6 +12,7 @@ import {
   IModel,
   IProviderConfigInfo,
   MODEL_TAGS,
+  MODEL_TYPES,
 } from '@/types/modelService';
 import {
   AlertDialog,
@@ -100,6 +101,8 @@ const ModelServiceDetail: React.FC = () => {
       }),
       dataIndex: 'type',
       key: 'type',
+      render: (type: string) =>
+        MODEL_TYPES[type as keyof typeof MODEL_TYPES] || type,
     },
     {
       title: $i18n.get({

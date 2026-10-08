@@ -9,8 +9,9 @@ COPY packages/main/package.json ./packages/main/
 COPY packages/spark-flow/package.json ./packages/spark-flow/
 COPY packages/spark-i18n/package.json ./packages/spark-i18n/
 
-# Install dependencies
-RUN npm install
+# Install dependencies. HUSKY=0 avoids husky prepare failing (.husky is dockerignored).
+ENV HUSKY=0
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
@@ -27,8 +28,8 @@ FROM nginx:alpine
 # Copy built files from builder stage
 COPY --from=builder /app/packages/main/dist /usr/share/nginx/html
 
-# Copy nginx configuration (optional, if you have custom nginx config)
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+RUN apk add --no-cache curl
 
 # Expose port 80
 EXPOSE 80

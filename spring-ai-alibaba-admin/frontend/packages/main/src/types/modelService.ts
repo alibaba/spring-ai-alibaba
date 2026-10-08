@@ -83,6 +83,7 @@ export interface IUpdateModelParams {
   name: string;
   icon?: string;
   tags?: string[];
+  type?: string;
   enable?: boolean;
 }
 
@@ -141,6 +142,21 @@ export interface IModelSelectorItem {
   /** Model list under this provider */
   models: IModelConfigInfo[];
 }
+
+export const MODEL_TYPES = {
+  llm: $i18n.get({
+    id: 'main.types.modelService.llm',
+    dm: 'LLM',
+  }),
+  text_embedding: $i18n.get({
+    id: 'main.types.modelService.textEmbedding',
+    dm: 'Embedding',
+  }),
+  rerank: $i18n.get({
+    id: 'main.types.modelService.rerank',
+    dm: 'Rerank',
+  }),
+};
 
 // Model tags mapping
 export const MODEL_TAGS = {

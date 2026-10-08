@@ -84,7 +84,9 @@ public class ModelManager {
 		modelEntity.setEnable(true);
 		modelEntity.setType(modelConfigInfo.getType());
 		modelEntity.setModelId(modelConfigInfo.getModelId());
-		modelEntity.setTags(modelConfigInfo.getTags().stream().collect(Collectors.joining(",")));
+		if (modelConfigInfo.getTags() != null && !modelConfigInfo.getTags().isEmpty()) {
+			modelEntity.setTags(modelConfigInfo.getTags().stream().collect(Collectors.joining(",")));
+		}
 		int insert = modelMapper.insert(modelEntity);
 		return insert > 0;
 	}
@@ -132,6 +134,9 @@ public class ModelManager {
 		}
 		if (modelConfigInfo.getEnable() != null) {
 			existingModel.setEnable(modelConfigInfo.getEnable());
+		}
+		if (StringUtils.isNotBlank(modelConfigInfo.getType())) {
+			existingModel.setType(modelConfigInfo.getType());
 		}
 
 		int update = modelMapper.updateById(existingModel);
