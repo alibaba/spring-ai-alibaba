@@ -123,6 +123,8 @@ export interface AgentRunResponse {
   message: MessageDTO | null;
   tokenUsage: Usage | null;
   chunk: string | null;
+  /** True when this chunk comes from a sub-graph (sub-agent) */
+  subGraph?: boolean;
 }
 
 /** Graph SSE response: node, message, and overall state for workflow observation. */
