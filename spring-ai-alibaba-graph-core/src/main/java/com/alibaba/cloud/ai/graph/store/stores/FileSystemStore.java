@@ -69,7 +69,7 @@ public class FileSystemStore extends BaseStore {
 	 * @param rootPath the root path for storage
 	 */
 	public FileSystemStore(Path rootPath) {
-		this.rootPath = rootPath;
+		this.rootPath = rootPath.toAbsolutePath().normalize();
 		this.objectMapper = new ObjectMapper();
 		this.objectMapper.findAndRegisterModules();
 		initializeRootDirectory();
