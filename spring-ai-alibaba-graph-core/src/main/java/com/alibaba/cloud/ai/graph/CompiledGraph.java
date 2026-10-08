@@ -379,7 +379,7 @@ public class CompiledGraph {
 			throw RunnableErrors.missingEdge.exception(nodeId);
 		}
 		if (route.id() != null) {
-			return new Command(route.id(), state);
+			return new Command(route.id());
 		}
 		if (route.value() != null) {
 			OverAllState derefState = stateGraph.getStateFactory().apply(state);
@@ -389,7 +389,7 @@ public class CompiledGraph {
 			if (edgeCondition.isMultiCommand()) {
 				// Multi-command action - route to ConditionalParallelNode
 				String conditionalParallelNodeId = ParallelNode.formatNodeId(nodeId);
-				return new Command(conditionalParallelNodeId, state);
+				return new Command(conditionalParallelNodeId);
 			} else {
 				// Single Command action
 				var singleAction = edgeCondition.singleAction();
@@ -401,8 +401,7 @@ public class CompiledGraph {
 					throw RunnableErrors.missingNodeInEdgeMapping.exception(nodeId, newRoute);
 				}
 
-				var currentState = OverAllState.updateState(state, command.update(), keyStrategyMap);
-				return new Command(result, currentState);
+				return new Command(result, command.update());
 			}
 		}
 		throw RunnableErrors.executionError.exception(format("invalid edge value for nodeId: [%s] !", nodeId));
