@@ -44,6 +44,8 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Grep search tool for fast content search.
  * Searches file contents using regular expressions.
@@ -95,6 +97,9 @@ public class GrepSearchTool implements BiFunction<GrepSearchTool.Request, ToolCo
 	@Override
 	public String apply(Request request, ToolContext toolContext) {
 		// Validate regex pattern
+		if (StringUtils.isEmpty(request.pattern())) {
+			return "Error: Pattern is required";
+		}
 		try {
 			Pattern.compile(request.pattern());
 		} catch (PatternSyntaxException e) {
