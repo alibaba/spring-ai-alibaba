@@ -96,7 +96,7 @@ public class AppendStrategy implements KeyStrategy {
 			else {
 				var result = new ArrayList<>(oldList);
 				result.add(newValue);
-				return result;
+				return allowDuplicate ? result : result.stream().distinct().collect(Collectors.toList());
 			}
 			return oldList;
 		}
