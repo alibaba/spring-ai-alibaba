@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.skills;
 
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.ReadSkillTool;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
@@ -91,9 +92,10 @@ import static com.alibaba.cloud.ai.graph.skills.SkillPromptConstants.buildSkills
  *
  * <p>When {@link #groupedTools} is configured, this interceptor scans {@link ModelRequest} messages
  * for {@link org.springframework.ai.chat.messages.AssistantMessage} with tool calls named
- * {@value ReadSkillTool#READ_SKILL}. For each such call, the <i>skill_name</i> argument is recorded.
- * Tools from {@link #getGroupedTools()} for those skill names are then added to the request's
- * {@link ModelRequest#getDynamicToolCallbacks() dynamicToolCallbacks}.
+ * {@value ReadSkillTool#READ_SKILL}. If the fallback interceptor recovered a call whose name is a
+ * registered skill, that name is also treated as a read. Tools from {@link #getGroupedTools()} for
+ * those skill names are then added to the request's {@link ModelRequest#getDynamicToolCallbacks()
+ * dynamicToolCallbacks}.
  */
 public class SkillsInterceptor extends ModelInterceptor {
 
@@ -131,8 +133,8 @@ public class SkillsInterceptor extends ModelInterceptor {
 			return handler.call(request);
 		}
 
-		// 1. Extract resolved skills from AssistantMessage with read_skill tool calls
-		List<SkillMetadata> readSkills = extractReadSkills(request.getMessages());
+		// 1. Extract skills explicitly read through read_skill or recovered from a direct skill call
+		List<SkillMetadata> readSkills = extractReadSkills(request);
 
 		// 2. Collect tools from groupedTools and allowed_tools for those skills
 		List<ToolCallback> skillTools = new ArrayList<>(request.getDynamicToolCallbacks());
@@ -165,7 +167,8 @@ public class SkillsInterceptor extends ModelInterceptor {
 		return handler.call(modified);
 	}
 
-	private List<SkillMetadata> extractReadSkills(List<Message> messages) {
+	private List<SkillMetadata> extractReadSkills(ModelRequest request) {
+		List<Message> messages = request.getMessages();
 		if (messages == null || messages.isEmpty()) {
 			return List.of();
 		}
@@ -175,14 +178,66 @@ public class SkillsInterceptor extends ModelInterceptor {
 				continue;
 			}
 			for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-				if (!ReadSkillTool.READ_SKILL.equals(toolCall.name())) {
-					continue;
-				}
-				resolveSkillFromArguments(toolCall.arguments())
+				resolveSkillFromToolCall(toolCall, request)
 						.ifPresent(skill -> skillsByName.putIfAbsent(skill.getName(), skill));
 			}
 		}
 		return List.copyOf(skillsByName.values());
+	}
+
+	private Optional<SkillMetadata> resolveSkillFromToolCall(AssistantMessage.ToolCall toolCall,
+			ModelRequest request) {
+		if (ReadSkillTool.READ_SKILL.equals(toolCall.name())) {
+			return resolveSkillFromArguments(toolCall.arguments());
+		}
+		if (isRegisteredTool(request, toolCall.name())) {
+			return Optional.empty();
+		}
+		return skillRegistry.get(toolCall.name());
+	}
+
+	private boolean isRegisteredTool(ModelRequest request, String toolName) {
+		if (request == null || !StringUtils.hasText(toolName)) {
+			return false;
+		}
+		if (request.getTools() != null && request.getTools().contains(toolName)) {
+			return true;
+		}
+		if (containsToolCallback(request.getDynamicToolCallbacks(), toolName)) {
+			return true;
+		}
+		if (request.getOptions() != null && containsToolCallback(request.getOptions().getToolCallbacks(), toolName)) {
+			return true;
+		}
+		Map<String, Object> context = request.getContext();
+		if (context != null
+				&& containsToolCallback(context.get(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY), toolName)) {
+			return true;
+		}
+		if (toolCallbackResolver != null && toolCallbackResolver.resolve(toolName) != null) {
+			return true;
+		}
+		if (context == null) {
+			return false;
+		}
+		Object resolver = context.get(RunnableConfig.TOOL_CALLBACK_RESOLVER_METADATA_KEY);
+		return resolver instanceof ToolCallbackResolver requestResolver
+				&& requestResolver != toolCallbackResolver
+				&& requestResolver.resolve(toolName) != null;
+	}
+
+	private boolean containsToolCallback(Object callbacks, String toolName) {
+		if (!(callbacks instanceof Iterable<?> iterable)) {
+			return false;
+		}
+		for (Object callback : iterable) {
+			if (callback instanceof ToolCallback toolCallback
+					&& toolCallback.getToolDefinition() != null
+					&& toolName.equals(toolCallback.getToolDefinition().name())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private Optional<SkillMetadata> resolveSkillFromArguments(String arguments) {

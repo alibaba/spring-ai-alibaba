@@ -21,7 +21,9 @@ import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillToolCallInterceptor;
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 
@@ -43,6 +45,7 @@ import org.slf4j.LoggerFactory;
  * This hook provides a complete Skills integration solution:
  * - Manages skill loading and reloading from the SkillRegistry
  * - Provides the `read_skill` tool for LLM to read SKILL.md files
+ * - Recovers when an LLM emits a registered skill name as an unresolved tool name
  * - Automatically creates and configures SkillsInterceptor to inject skills into system prompts
  *
  * The hook wraps a SkillRegistry instance and shares it with SkillsInterceptor.
@@ -88,6 +91,8 @@ public class SkillsAgentHook extends AgentHook {
 	private final ToolCallback searchSkillsTool;
 	private final ToolCallback disableSkillTool;
 
+	private final ToolInterceptor skillToolCallInterceptor;
+
 	private SkillsAgentHook(Builder builder) {
 		if (builder.skillRegistry == null) {
 			throw new IllegalArgumentException("SkillRegistry must be provided. Use FileSystemSkillRegistry.builder() to create one.");
@@ -109,6 +114,7 @@ public class SkillsAgentHook extends AgentHook {
 				this.skillRegistry,
 				DisableSkillTool.DESCRIPTION
 		);
+		this.skillToolCallInterceptor = new SkillToolCallInterceptor(this.skillRegistry, this.readSkillTool);
 	}
 
 	public static Builder builder() {
@@ -157,6 +163,11 @@ public class SkillsAgentHook extends AgentHook {
 	@Override
 	public List<ToolCallback> getTools() {
 		return List.of(readSkillTool, searchSkillsTool, disableSkillTool);
+	}
+
+	@Override
+	public List<ToolInterceptor> getToolInterceptors() {
+		return List.of(skillToolCallInterceptor);
 	}
 
 	public int getSkillCount() {

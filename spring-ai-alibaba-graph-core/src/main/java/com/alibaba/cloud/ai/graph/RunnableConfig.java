@@ -60,6 +60,12 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	public static final String DYNAMIC_TOOL_CALLBACKS_METADATA_KEY = "_DYNAMIC_TOOL_CALLBACKS_";
 
 	/**
+	 * Metadata key for the agent's runtime tool callback resolver. Used internally to let model
+	 * interceptors identify tools that are resolved lazily by the tool node.
+	 */
+	public static final String TOOL_CALLBACK_RESOLVER_METADATA_KEY = "_TOOL_CALLBACK_RESOLVER_";
+
+	/**
 	 * Metadata key for enabling merge of reasoning content in streamed assistant message
 	 * metadata. When set to {@link Boolean#TRUE}, last and current chunk metadata (including
 	 * reasoning content) are merged; otherwise only current message metadata is used.
