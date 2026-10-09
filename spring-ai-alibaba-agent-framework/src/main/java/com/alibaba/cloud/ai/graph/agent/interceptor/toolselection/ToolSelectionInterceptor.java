@@ -21,30 +21,29 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Uses an LLM to select relevant tools before calling the main model.
+ * Selects relevant tools before calling the main model.
  *
  * When an agent has many tools available, this interceptor filters them down
  * to only the most relevant ones for the user's query. This reduces token usage
- * and helps the main model focus on the right tools.
+ * and helps the main model focus on the right tools. Selection can be performed
+ * by an LLM or by a custom {@link ToolSelectionStrategy}.
  *
  * Example:
  * ToolSelectionInterceptor interceptor = ToolSelectionInterceptor.builder()
@@ -56,23 +55,20 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 
 	private static final Logger log = LoggerFactory.getLogger(ToolSelectionInterceptor.class);
 
-	private static final String DEFAULT_SYSTEM_PROMPT =
-			"Your goal is to select the most relevant tools for answering the user's query.";
+	private final ToolSelectionStrategy selectionStrategy;
 
-	private final ChatModel selectionModel;
-	private final String systemPrompt;
 	private final Integer maxTools;
+
 	private final Set<String> alwaysInclude;
-	private final ObjectMapper objectMapper;
 
 	private ToolSelectionInterceptor(Builder builder) {
-		this.selectionModel = builder.selectionModel;
-		this.systemPrompt = builder.systemPrompt;
+		this.selectionStrategy = builder.selectionStrategy != null
+				? builder.selectionStrategy
+				: new LlmToolSelectionStrategy(builder.selectionModel, builder.systemPrompt);
 		this.maxTools = builder.maxTools;
 		this.alwaysInclude = builder.alwaysInclude != null
-				? new HashSet<>(builder.alwaysInclude)
-				: new HashSet<>();
-		this.objectMapper = new ObjectMapper();
+				? new LinkedHashSet<>(builder.alwaysInclude)
+				: new LinkedHashSet<>();
 	}
 
 	public static Builder builder() {
@@ -81,7 +77,11 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 
 	@Override
 	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
-		List<String> availableTools = request.getTools();
+		List<String> staticTools = request.getTools() != null ? request.getTools() : List.of();
+		List<ToolCallback> dynamicTools = request.getDynamicToolCallbacks() != null
+				? request.getDynamicToolCallbacks()
+				: List.of();
+		List<String> availableTools = buildAvailableToolNames(staticTools, dynamicTools);
 
 		// If no tools or already within limit, skip selection
 		if (availableTools == null || availableTools.isEmpty() ||
@@ -96,21 +96,50 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 			return handler.call(request);
 		}
 
-		// Perform tool selection
-		Set<String> selectedToolNames = selectTools(availableTools, lastUserQuery, request.getToolDescriptions());
+		List<String> selectedToolNames;
+		try {
+			ToolSelectionRequest selectionRequest = new ToolSelectionRequest(lastUserQuery,
+					buildToolMetadata(availableTools, request.getToolDescriptions(), dynamicTools),
+					maxTools, request.getContext());
+			List<String> selected = selectionStrategy.select(selectionRequest);
+			selectedToolNames = normalizeSelection(availableTools, selected);
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new RuntimeException("Tool selection interrupted", e);
+		}
+		catch (Exception e) {
+			log.warn("Tool selection failed, using all tools: {}", e.getMessage());
+			return handler.call(request);
+		}
 
 		log.info("Selected {} tools from {} available: {}",
 				selectedToolNames.size(), availableTools.size(), selectedToolNames);
 
 		// Filter tools based on selection
-		List<String> filteredTools = availableTools.stream()
-				.filter(selectedToolNames::contains)
-				.collect(Collectors.toList());
+		Set<String> staticToolNames = new HashSet<>(staticTools);
+		Map<String, ToolCallback> dynamicToolsByName = new HashMap<>();
+		for (ToolCallback dynamicTool : dynamicTools) {
+			dynamicToolsByName.putIfAbsent(dynamicTool.getToolDefinition().name(), dynamicTool);
+		}
+		List<String> filteredTools = selectedToolNames.stream().filter(staticToolNames::contains).toList();
+		List<ToolCallback> filteredDynamicTools = selectedToolNames.stream()
+				.map(dynamicToolsByName::get)
+				.filter(tool -> tool != null)
+				.toList();
 
 		// Create new request with filtered tools
-		ModelRequest filteredRequest = ModelRequest.builder(request)
+		ModelRequest.Builder filteredRequestBuilder = ModelRequest.builder(request)
 				.tools(filteredTools)
-				.build();
+				.dynamicToolCallbacks(filteredDynamicTools);
+		if (request.getOptions() != null || filteredTools.isEmpty()) {
+			ToolCallingChatOptions options = request.getOptions() != null
+					? request.getOptions().copy()
+					: ToolCallingChatOptions.builder().build();
+			options.setToolCallbacks(orderSelectedCallbacks(request, dynamicToolsByName, selectedToolNames));
+			filteredRequestBuilder.options(options);
+		}
+		ModelRequest filteredRequest = filteredRequestBuilder.build();
 
 		return handler.call(filteredRequest);
 	}
@@ -125,70 +154,71 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		return null;
 	}
 
-	private Set<String> selectTools(List<String> toolNames, String userQuery, Map<String, String> toolDescriptions) {
-		try {
-			// Build tool list for prompt with descriptions
-			StringBuilder toolList = new StringBuilder();
-			for (String toolName : toolNames) {
-				toolList.append("- ").append(toolName);
-				if (toolDescriptions != null) {
-					String description = toolDescriptions.get(toolName);
-					if (description != null && !description.isEmpty()) {
-						toolList.append(": ").append(description);
-					}
-				}
-				toolList.append("\n");
-			}
-
-			String maxToolsInstruction = maxTools != null
-					? "\nIMPORTANT: List the tool names in order of relevance. " +
-					"Select at most " + maxTools + " tools."
-					: "";
-
-			// Create selection prompt
-			List<Message> selectionMessages = List.of(
-					new SystemMessage(systemPrompt + maxToolsInstruction),
-					new UserMessage("Available tools:\n" + toolList +
-							"\nUser query: " + userQuery +
-							"\n\nRespond with a JSON object containing a 'tools' array with the selected tool names: {\"tools\": [\"tool1\", \"tool2\"]}")
-			);
-
-			Prompt prompt = new Prompt(selectionMessages);
-			var response = selectionModel.call(prompt);
-			String responseText = response.getResult().getOutput().getText();
-
-			// Parse JSON response
-			Set<String> selected = parseToolSelection(responseText);
-
-			// Add always-include tools
-			selected.addAll(alwaysInclude);
-
-			// Limit to maxTools if specified
-			if (maxTools != null && selected.size() > maxTools) {
-				List<String> selectedList = new ArrayList<>(selected);
-				selected = new HashSet<>(selectedList.subList(0, maxTools));
-			}
-
-			return selected;
-
+	private List<String> buildAvailableToolNames(List<String> staticTools, List<ToolCallback> dynamicTools) {
+		LinkedHashSet<String> toolNames = new LinkedHashSet<>(staticTools);
+		for (ToolCallback dynamicTool : dynamicTools) {
+			toolNames.add(dynamicTool.getToolDefinition().name());
 		}
-		catch (Exception e) {
-			log.warn("Tool selection failed, using all tools: {}", e.getMessage());
-			return new HashSet<>(toolNames);
-		}
+		return List.copyOf(toolNames);
 	}
 
-	private Set<String> parseToolSelection(String responseText) {
-		try {
-			// Try to parse as JSON
-			ToolSelectionResponse response = objectMapper.readValue(responseText, ToolSelectionResponse.class);
-			return new HashSet<>(response.tools);
+	private List<ToolMetadata> buildToolMetadata(List<String> toolNames, Map<String, String> toolDescriptions,
+			List<ToolCallback> dynamicTools) {
+		Map<String, String> descriptions = new HashMap<>();
+		if (toolDescriptions != null) {
+			descriptions.putAll(toolDescriptions);
 		}
-		catch (Exception e) {
-			// Fallback: extract tool names from text
-			log.debug("Failed to parse JSON, using fallback extraction");
-			return new HashSet<>();
+		for (ToolCallback dynamicTool : dynamicTools) {
+			String name = dynamicTool.getToolDefinition().name();
+			descriptions.putIfAbsent(name, dynamicTool.getToolDefinition().description());
 		}
+		return toolNames.stream()
+				.map(toolName -> new ToolMetadata(toolName, descriptions.get(toolName)))
+				.toList();
+	}
+
+	private List<ToolCallback> orderSelectedCallbacks(ModelRequest request,
+			Map<String, ToolCallback> dynamicToolsByName, List<String> selectedToolNames) {
+		Map<String, ToolCallback> callbacksByName = new HashMap<>();
+		if (request.getOptions() != null && request.getOptions().getToolCallbacks() != null) {
+			for (ToolCallback callback : request.getOptions().getToolCallbacks()) {
+				callbacksByName.putIfAbsent(callback.getToolDefinition().name(), callback);
+			}
+		}
+		dynamicToolsByName.forEach(callbacksByName::putIfAbsent);
+		return selectedToolNames.stream()
+				.map(callbacksByName::get)
+				.filter(callback -> callback != null)
+				.toList();
+	}
+
+	private List<String> normalizeSelection(List<String> availableTools, List<String> selectedTools) {
+		Set<String> available = new HashSet<>(availableTools);
+		LinkedHashSet<String> normalized = new LinkedHashSet<>();
+
+		// Always-included tools take priority when maxTools is configured.
+		for (String toolName : alwaysInclude) {
+			if (available.contains(toolName)) {
+				normalized.add(toolName);
+			}
+		}
+
+		if (selectedTools != null) {
+			for (String toolName : selectedTools) {
+				if (available.contains(toolName)) {
+					normalized.add(toolName);
+				}
+				if (maxTools != null && normalized.size() >= maxTools) {
+					break;
+				}
+			}
+		}
+
+		if (maxTools != null && normalized.size() > maxTools) {
+			return normalized.stream().limit(maxTools).toList();
+		}
+
+		return List.copyOf(normalized);
 	}
 
 	@Override
@@ -196,19 +226,30 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		return "ToolSelection";
 	}
 
-	private static class ToolSelectionResponse {
-		@JsonProperty("tools")
-		public List<String> tools;
-	}
-
 	public static class Builder {
 		private ChatModel selectionModel;
-		private String systemPrompt = DEFAULT_SYSTEM_PROMPT;
+
+		private ToolSelectionStrategy selectionStrategy;
+
+		private String systemPrompt = LlmToolSelectionStrategy.DEFAULT_SYSTEM_PROMPT;
+
 		private Integer maxTools;
+
 		private Set<String> alwaysInclude;
 
 		public Builder selectionModel(ChatModel selectionModel) {
 			this.selectionModel = selectionModel;
+			return this;
+		}
+
+		/**
+		 * Use a custom strategy instead of an LLM to select tools. A custom strategy
+		 * can integrate lexical search, a vector store, or business routing rules.
+		 * @param selectionStrategy tool selection strategy
+		 * @return this builder
+		 */
+		public Builder selectionStrategy(ToolSelectionStrategy selectionStrategy) {
+			this.selectionStrategy = selectionStrategy;
 			return this;
 		}
 
@@ -231,13 +272,16 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		}
 
 		public Builder alwaysInclude(String... toolNames) {
-			this.alwaysInclude = new HashSet<>(Arrays.asList(toolNames));
+			this.alwaysInclude = new LinkedHashSet<>(Arrays.asList(toolNames));
 			return this;
 		}
 
 		public ToolSelectionInterceptor build() {
-			if (selectionModel == null) {
-				throw new IllegalStateException("selectionModel is required");
+			if (selectionModel != null && selectionStrategy != null) {
+				throw new IllegalStateException("selectionModel and selectionStrategy are mutually exclusive");
+			}
+			if (selectionModel == null && selectionStrategy == null) {
+				throw new IllegalStateException("selectionModel or selectionStrategy is required");
 			}
 			return new ToolSelectionInterceptor(this);
 		}

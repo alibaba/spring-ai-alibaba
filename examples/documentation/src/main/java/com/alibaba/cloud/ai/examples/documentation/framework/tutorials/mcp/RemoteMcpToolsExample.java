@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.Builder;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.interceptor.toolselection.ToolSelectionInterceptor;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
@@ -306,6 +307,10 @@ public class RemoteMcpToolsExample {
                 .model(chatModel)
                 .description("Your Travel Assistant")
                 .instruction(instruction)
+                .interceptors(ToolSelectionInterceptor.builder()
+                        .selectionModel(chatModel)
+                        .maxTools(5)
+                        .build())
                 .saver(new MemorySaver());
         if (toolCallbackProvider != null) {
             builder.toolCallbackProviders(toolCallbackProvider);
