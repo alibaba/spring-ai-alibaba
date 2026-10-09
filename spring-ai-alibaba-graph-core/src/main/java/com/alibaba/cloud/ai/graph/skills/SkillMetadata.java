@@ -109,7 +109,8 @@ public class SkillMetadata {
 			return content;
 		}
 
-		int endIndex = content.indexOf("---", 3);
+		int fenceIdx = content.indexOf("\n---", 3);
+		int endIndex = fenceIdx != -1 ? fenceIdx + 1 : content.indexOf("---", 3);
 		if (endIndex == -1) {
 			return content;
 		}
