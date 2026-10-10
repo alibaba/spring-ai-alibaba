@@ -1,8 +1,8 @@
 package com.alibaba.cloud.ai.studio.admin.service.client;
 
 import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
+import com.alibaba.cloud.ai.studio.admin.utils.ObservationOptionsCopyUtils;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
-import org.springframework.beans.BeanUtils;
 
 import java.util.Map;
 
@@ -12,7 +12,7 @@ public class DeepSeekObservationMetadataChatOptions extends DeepSeekChatOptions 
     
     public static DeepSeekObservationMetadataChatOptions fromDeepSeekOptions(DeepSeekChatOptions fromOptions) {
         DeepSeekObservationMetadataChatOptions options = new DeepSeekObservationMetadataChatOptions();
-        BeanUtils.copyProperties(fromOptions, options);
+        ObservationOptionsCopyUtils.copySafely(fromOptions, options);
         return options;
     }
     
