@@ -20,8 +20,10 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
+import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.state.ReplaceAllWith;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 
 import java.util.HashMap;
@@ -110,6 +112,20 @@ public abstract class MessagesModelHook implements Hook {
 			}
 			if (command.getJumpTo() != null) {
 				result.put("jump_to", command.getJumpTo().name());
+			}
+			// A before-model hook can terminate without another AgentLlmNode run, so keep a
+			// configured output key aligned with the final assistant message.
+			if (JumpTo.end == command.getJumpTo()) {
+				ReactAgent agent = messagesModelHook.getAgent();
+				List<Message> updatedMessages = command.getMessages();
+				String outputKey = agent == null ? null : agent.getOutputKey();
+				if (outputKey != null && !outputKey.isEmpty()
+						&& updatedMessages != null && !updatedMessages.isEmpty()) {
+					Message finalMessage = updatedMessages.get(updatedMessages.size() - 1);
+					if (finalMessage instanceof AssistantMessage) {
+						result.put(outputKey, finalMessage);
+					}
+				}
 			}
 
 			return CompletableFuture.completedFuture(result);
