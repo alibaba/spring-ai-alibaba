@@ -607,6 +607,113 @@ public class InterruptionTest {
 	}
 
 
+	/**
+	 * Test for issue #4519: resume() checkpoint state not passed to nodes.
+	 * This test verifies that when a node stores data in OverAllState and then suspends,
+	 * the subsequent node can access that data after resume.
+	 */
+	@Test
+	public void resumeShouldPreserveCheckpointState() throws Exception {
+		var saver = MemorySaver.builder().build();
+		KeyStrategyFactory keyStrategyFactory = new KeyStrategyFactoryBuilder()
+			.defaultStrategy(KeyStrategy.REPLACE)
+			.addStrategy("messages")
+			.build();
+
+		// Node A stores data in OverAllState, then the graph interrupts after A
+		var nodeA = node_async((state, config) -> {
+			Map<String, Object> result = new HashMap<>();
+			result.put("messages", "A");
+			result.put("dataFromA", "important_data_from_node_A");
+			return result;
+		});
+
+		// Node B reads data stored by Node A
+		var nodeB = node_async((state, config) -> {
+			// After resume, this node should be able to access dataFromA
+			String dataFromA = state.value("dataFromA", String.class).orElse(null);
+			Map<String, Object> result = new HashMap<>();
+			result.put("messages", "B");
+			result.put("dataFromAReadByB", dataFromA);
+			return result;
+		});
+
+		// Node C reads data stored by both A and B
+		var nodeC = node_async((state, config) -> {
+			String dataFromA = state.value("dataFromA", String.class).orElse(null);
+			String dataFromAReadByB = state.value("dataFromAReadByB", String.class).orElse(null);
+			Map<String, Object> result = new HashMap<>();
+			result.put("messages", "C");
+			result.put("verifyA", dataFromA);
+			result.put("verifyB", dataFromAReadByB);
+			return result;
+		});
+
+		var workflow = new StateGraph(keyStrategyFactory)
+			.addNode("A", nodeA)
+			.addNode("B", nodeB)
+			.addNode("C", nodeC)
+			.addEdge(START, "A")
+			.addEdge("A", "B")
+			.addEdge("B", "C")
+			.addEdge("C", END)
+			.compile(CompileConfig.builder()
+				.saverConfig(SaverConfig.builder().register(saver).build())
+				.interruptAfter("A")
+				.build());
+
+		// First run - executes A, then interrupts after A
+		var runnableConfig = RunnableConfig.builder().build();
+		AtomicReference<NodeOutput> lastOutputRef = new AtomicReference<>();
+
+		var results = workflow.stream(Map.of(), runnableConfig)
+			.doOnNext(output -> {
+				lastOutputRef.set(output);
+			})
+			.map(NodeOutput::node)
+			.collectList()
+			.block();
+
+		// Should execute START -> A, then interrupt after A
+		assertIterableEquals(List.of(START, "A", "A"), results);
+		assertInstanceOf(InterruptionMetadata.class, lastOutputRef.get());
+
+		// Verify that the interrupted state contains dataFromA
+		InterruptionMetadata metadata = (InterruptionMetadata) lastOutputRef.get();
+		assertEquals("important_data_from_node_A",
+			metadata.state().value("dataFromA", String.class).orElse(null),
+			"Interrupted state should contain dataFromA");
+
+		// Resume execution - should continue from B with state preserved
+		RunnableConfig resumeConfig = RunnableConfig.builder().resume().build();
+		AtomicReference<OverAllState> finalStateRef = new AtomicReference<>();
+
+		results = workflow.stream(null, resumeConfig)
+			.doOnNext(output -> {
+				finalStateRef.set(output.state());
+			})
+			.map(NodeOutput::node)
+			.collectList()
+			.block();
+
+		assertIterableEquals(List.of("B", "C", END), results);
+
+		// Verify Node B could access data from Node A after resume
+		OverAllState finalState = finalStateRef.get();
+		assertEquals("important_data_from_node_A",
+			finalState.value("dataFromA", String.class).orElse(null),
+			"After resume, dataFromA should be preserved in final state");
+		assertEquals("important_data_from_node_A",
+			finalState.value("dataFromAReadByB", String.class).orElse(null),
+			"Node B should have been able to read dataFromA after resume");
+		assertEquals("important_data_from_node_A",
+			finalState.value("verifyA", String.class).orElse(null),
+			"Node C should have been able to read dataFromA");
+		assertEquals("important_data_from_node_A",
+			finalState.value("verifyB", String.class).orElse(null),
+			"Node C should verify that Node B read dataFromA correctly");
+	}
+
 	@Test
 	public void testLongTypePreservationInWorkflow() throws Exception {
 		class ResultCheckerAction implements AsyncNodeActionWithConfig, InterruptableAction {
