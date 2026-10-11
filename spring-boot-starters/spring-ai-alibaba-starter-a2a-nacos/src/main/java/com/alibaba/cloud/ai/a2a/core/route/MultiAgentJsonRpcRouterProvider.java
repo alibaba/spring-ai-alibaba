@@ -16,22 +16,20 @@
 
 package com.alibaba.cloud.ai.a2a.core.route;
 
-import java.io.IOException;
 import java.time.Duration;
-import java.util.function.Consumer;
 
 import com.alibaba.cloud.ai.a2a.core.server.JsonRpcA2aRequestHandler;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.servlet.function.HandlerFunction;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.RouterFunctions;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
-import io.a2a.spec.JSONRPCResponse;
-import io.a2a.spec.TaskStatusUpdateEvent;
-import io.a2a.util.Utils;
+import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
+import org.a2aproject.sdk.jsonrpc.common.json.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -41,7 +39,7 @@ import reactor.core.publisher.Flux;
  * <p>
  * Provides routing for multiple agents, each accessible at its own URL path:
  * <ul>
- *   <li>Agent card: /.well-known/agent.json/{agentName}</li>
+ *   <li>Agent card: /.well-known/agent-card.json/{agentName}</li>
  *   <li>Message endpoint: /a2a/{agentName}</li>
  * </ul>
  *
@@ -51,7 +49,7 @@ public class MultiAgentJsonRpcRouterProvider {
 
 	private static final Logger log = LoggerFactory.getLogger(MultiAgentJsonRpcRouterProvider.class);
 
-	public static final String MULTI_AGENT_WELL_KNOWN_URL = "/.well-known/agent.json/{agentName}";
+	public static final String MULTI_AGENT_WELL_KNOWN_URL = "/.well-known/agent-card.json/{agentName}";
 
 	public static final String MULTI_AGENT_MESSAGE_URL = "/a2a/{agentName}";
 
@@ -96,7 +94,9 @@ public class MultiAgentJsonRpcRouterProvider {
 					.body("Agent not found: " + agentName);
 			}
 			try {
-				return ServerResponse.ok().body(handler.getAgentCard());
+				return ServerResponse.ok()
+					.contentType(MediaType.APPLICATION_JSON)
+					.body(JsonUtil.toJson(handler.getAgentCard()));
 			}
 			catch (Exception e) {
 				log.error("Failed to get Agent Card for {}: {}", agentName, e.getMessage());
@@ -139,40 +139,12 @@ public class MultiAgentJsonRpcRouterProvider {
 			}
 		}
 
-		private ServerResponse buildJsonRpcResponse(Object result) {
-			return ServerResponse.ok().body(result);
+		private ServerResponse buildJsonRpcResponse(Object result) throws JsonProcessingException {
+			return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(JsonUtil.toJson(result));
 		}
 
 		private ServerResponse buildSseResponse(Flux<?> result) {
-			return ServerResponse.sse(sseBuilder -> {
-				sseBuilder.onComplete(() -> {
-					log.debug("Agent SSE connection completed.");
-				});
-				sseBuilder.onTimeout(() -> {
-					log.debug("Agent SSE connection timeout.");
-				});
-				result.subscribe((Consumer<Object>) o -> {
-					if (o instanceof JSONRPCResponse) {
-						try {
-							String sseBody = Utils.OBJECT_MAPPER.writeValueAsString(o);
-							if (log.isDebugEnabled()) {
-								log.debug("send sse body to agent: {}", sseBody);
-							}
-							sseBuilder.data(sseBody);
-							if (((JSONRPCResponse<?>) o).getResult() instanceof TaskStatusUpdateEvent) {
-								TaskStatusUpdateEvent event = (TaskStatusUpdateEvent) ((JSONRPCResponse<?>) o)
-									.getResult();
-								if (event.isFinal()) {
-									sseBuilder.complete();
-								}
-							}
-						}
-						catch (IOException e) {
-							sseBuilder.error(e);
-						}
-					}
-				});
-			}, Duration.ZERO);
+			return ServerResponse.sse(sseBuilder -> A2aSseResponseWriter.write(result, sseBuilder, log), Duration.ZERO);
 		}
 
 	}

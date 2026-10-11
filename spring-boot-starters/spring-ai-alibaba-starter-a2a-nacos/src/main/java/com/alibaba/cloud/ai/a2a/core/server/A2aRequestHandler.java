@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.a2a.core.server;
 
 import org.springframework.web.servlet.function.ServerRequest;
 
-import io.a2a.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentCard;
 
 /**
  * A2a interface request handler.

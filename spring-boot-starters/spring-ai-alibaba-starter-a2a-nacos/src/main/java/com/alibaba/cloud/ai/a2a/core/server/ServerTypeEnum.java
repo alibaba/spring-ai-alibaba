@@ -25,11 +25,11 @@ public enum ServerTypeEnum {
 
 	JSON_RPC(ServerTypeEnum.JSON_RPC_TYPE), GRPC(ServerTypeEnum.GRPC_TYPE), REST(ServerTypeEnum.REST_TYPE);
 
-	public static final String JSON_RPC_TYPE = "jsonrpc";
+	public static final String JSON_RPC_TYPE = "JSONRPC";
 
-	public static final String GRPC_TYPE = "grpc";
+	public static final String GRPC_TYPE = "GRPC";
 
-	public static final String REST_TYPE = "rest";
+	public static final String REST_TYPE = "HTTP+JSON";
 
 	private final String type;
 

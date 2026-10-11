@@ -16,36 +16,55 @@
 
 package com.alibaba.cloud.ai.a2a.core.server;
 
+import static org.a2aproject.sdk.server.ServerCallContext.TRANSPORT_KEY;
+import static org.a2aproject.sdk.transport.jsonrpc.context.JSONRPCContextKeys.HEADERS_KEY;
+import static org.a2aproject.sdk.transport.jsonrpc.context.JSONRPCContextKeys.METHOD_NAME_KEY;
+
 import org.springframework.web.servlet.function.ServerRequest;
 
-import java.time.Duration;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Flow;
-import java.util.function.Function;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import io.a2a.server.requesthandlers.JSONRPCHandler;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.CancelTaskRequest;
-import io.a2a.spec.DeleteTaskPushNotificationConfigRequest;
-import io.a2a.spec.GetTaskPushNotificationConfigRequest;
-import io.a2a.spec.GetTaskRequest;
-import io.a2a.spec.JSONParseError;
-import io.a2a.spec.JSONRPCError;
-import io.a2a.spec.JSONRPCErrorResponse;
-import io.a2a.spec.JSONRPCRequest;
-import io.a2a.spec.JSONRPCResponse;
-import io.a2a.spec.ListTaskPushNotificationConfigRequest;
-import io.a2a.spec.MessageSendParams;
-import io.a2a.spec.NonStreamingJSONRPCRequest;
-import io.a2a.spec.SendMessageRequest;
-import io.a2a.spec.SendStreamingMessageRequest;
-import io.a2a.spec.SetTaskPushNotificationConfigRequest;
-import io.a2a.spec.StreamingJSONRPCRequest;
-import io.a2a.spec.TaskResubscriptionRequest;
-import io.a2a.spec.UnsupportedOperationError;
-import io.a2a.util.Utils;
+import com.google.gson.JsonSyntaxException;
+import org.a2aproject.sdk.common.A2AHeaders;
+import org.a2aproject.sdk.grpc.utils.JSONRPCUtils;
+import org.a2aproject.sdk.jsonrpc.common.json.IdJsonMappingException;
+import org.a2aproject.sdk.jsonrpc.common.json.InvalidParamsJsonMappingException;
+import org.a2aproject.sdk.jsonrpc.common.json.JsonMappingException;
+import org.a2aproject.sdk.jsonrpc.common.json.JsonProcessingException;
+import org.a2aproject.sdk.jsonrpc.common.json.MethodNotFoundJsonMappingException;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.A2AErrorResponse;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.A2ARequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.A2AResponse;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.CancelTaskRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.CreateTaskPushNotificationConfigRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.DeleteTaskPushNotificationConfigRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.GetExtendedAgentCardRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskPushNotificationConfigRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.GetTaskRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTaskPushNotificationConfigsRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.ListTasksRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.NonStreamingJSONRPCRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendMessageRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SendStreamingMessageRequest;
+import org.a2aproject.sdk.jsonrpc.common.wrappers.SubscribeToTaskRequest;
+import org.a2aproject.sdk.server.ServerCallContext;
+import org.a2aproject.sdk.server.auth.UnauthenticatedUser;
+import org.a2aproject.sdk.spec.A2AError;
+import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.InternalError;
+import org.a2aproject.sdk.spec.InvalidParamsError;
+import org.a2aproject.sdk.spec.InvalidRequestError;
+import org.a2aproject.sdk.spec.JSONParseError;
+import org.a2aproject.sdk.spec.MessageSendParams;
+import org.a2aproject.sdk.spec.MethodNotFoundError;
+import org.a2aproject.sdk.spec.TransportProtocol;
+import org.a2aproject.sdk.spec.UnsupportedOperationError;
+import org.a2aproject.sdk.transport.jsonrpc.handler.JSONRPCHandler;
 import org.reactivestreams.FlowAdapters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,100 +92,127 @@ public class JsonRpcA2aRequestHandler implements A2aRequestHandler {
 
 	@Override
 	public Object onHandler(String body, ServerRequest.Headers headers) {
-		boolean streaming = isStreamingRequest(body);
-		Object result = null;
+		A2ARequest<?> request = null;
 		try {
-			result = streaming ? handleStreamRequest(body) : handleNonStreamRequest(body);
+			request = JSONRPCUtils.parseRequestBody(body, null);
+			ServerCallContext context = createCallContext(headers);
+			context.getState().put(METHOD_NAME_KEY, request.getMethod());
+			return request instanceof NonStreamingJSONRPCRequest<?> nonStreamingRequest
+					? handleNonStreamRequest(nonStreamingRequest, context) : handleStreamRequest(request, context);
 		}
-		catch (JsonProcessingException e) {
-			result = new JSONRPCErrorResponse(null, new JSONParseError());
+		catch (InvalidParamsJsonMappingException e) {
+			return new A2AErrorResponse(e.getId(), new InvalidParamsError(null, e.getMessage(), null));
 		}
-		return result;
+		catch (MethodNotFoundJsonMappingException e) {
+			return new A2AErrorResponse(e.getId(), new MethodNotFoundError(null, e.getMessage(), null));
+		}
+		catch (IdJsonMappingException e) {
+			return new A2AErrorResponse(e.getId(), new InvalidRequestError(null, e.getMessage(), null));
+		}
+		catch (JsonMappingException e) {
+			return new A2AErrorResponse(new InvalidRequestError(null, e.getMessage(), null));
+		}
+		catch (JsonSyntaxException | JsonProcessingException e) {
+			return new A2AErrorResponse(new JSONParseError(e.getMessage()));
+		}
+		catch (A2AError e) {
+			return request != null ? generateErrorResponse(request, e) : new A2AErrorResponse(e);
+		}
+		catch (Exception ex) {
+			LOGGER.error("Unexpected error while handling an A2A JSON-RPC request", ex);
+			InternalError error = new InternalError("Internal server error");
+			return request != null ? generateErrorResponse(request, error) : new A2AErrorResponse(error);
+		}
 	}
 
-	private static boolean isStreamingRequest(String requestBody) {
-		try {
-			JsonNode node = Utils.OBJECT_MAPPER.readTree(requestBody);
-			JsonNode method = node != null ? node.get("method") : null;
-			return method != null && (SendStreamingMessageRequest.METHOD.equals(method.asText())
-					|| TaskResubscriptionRequest.METHOD.equals(method.asText()));
-		}
-		catch (Exception e) {
-			return false;
-		}
-	}
-
-	private Flux<?> handleStreamRequest(String body) throws JsonProcessingException {
-		StreamingJSONRPCRequest<?> request = Utils.OBJECT_MAPPER.readValue(body, StreamingJSONRPCRequest.class);
-		Flow.Publisher<? extends JSONRPCResponse<?>> publisher;
+	private Flux<?> handleStreamRequest(A2ARequest<?> request, ServerCallContext context) {
+		Flow.Publisher<? extends A2AResponse<?>> publisher;
 		if (request instanceof SendStreamingMessageRequest req) {
-			SendStreamingMessageRequest.Builder newReqBuilder = new SendStreamingMessageRequest.Builder()
+			SendStreamingMessageRequest newRequest = SendStreamingMessageRequest.builder()
 				.id(req.getId())
 				.jsonrpc(req.getJsonrpc())
-				.method(req.getMethod())
-				.params(injectStreamMetadata(req.getParams(), true));
-			publisher = jsonRpcHandler.onMessageSendStream(newReqBuilder.build());
-			LOGGER.info("get Stream publisher {}", publisher);
+				.params(injectStreamMetadata(req.getParams(), true))
+				.build();
+			publisher = jsonRpcHandler.onMessageSendStream(newRequest, context);
+			LOGGER.debug("Created stream publisher {}", publisher);
 		}
-		else if (request instanceof TaskResubscriptionRequest req) {
-			publisher = jsonRpcHandler.onResubscribeToTask(req);
+		else if (request instanceof SubscribeToTaskRequest req) {
+			publisher = jsonRpcHandler.onSubscribeToTask(req, context);
 		}
 		else {
 			return Flux.just(generateErrorResponse(request, new UnsupportedOperationError()));
 		}
-		return Flux.from(FlowAdapters.toPublisher(publisher))
-			.map((Function<JSONRPCResponse<?>, JSONRPCResponse<?>>) jsonrpcResponse -> jsonrpcResponse)
-			.delaySubscription(Duration.ofMillis(10));
+		return Flux.from(FlowAdapters.toPublisher(publisher));
 	}
 
-	private JSONRPCResponse<?> handleNonStreamRequest(String body) throws JsonProcessingException {
-		NonStreamingJSONRPCRequest<?> request = Utils.OBJECT_MAPPER.readValue(body, NonStreamingJSONRPCRequest.class);
+	private A2AResponse<?> handleNonStreamRequest(NonStreamingJSONRPCRequest<?> request, ServerCallContext context) {
 		if (request instanceof GetTaskRequest req) {
-			return jsonRpcHandler.onGetTask(req);
+			return jsonRpcHandler.onGetTask(req, context);
 		}
 		else if (request instanceof SendMessageRequest req) {
-			SendMessageRequest.Builder newReqBuilder = new SendMessageRequest.Builder().id(req.getId())
+			SendMessageRequest newRequest = SendMessageRequest.builder()
+				.id(req.getId())
 				.jsonrpc(req.getJsonrpc())
-				.method(req.getMethod())
-				.params(injectStreamMetadata(req.getParams(), false));
-			return jsonRpcHandler.onMessageSend(newReqBuilder.build());
+				.params(injectStreamMetadata(req.getParams(), false))
+				.build();
+			return jsonRpcHandler.onMessageSend(newRequest, context);
 		}
 		else if (request instanceof CancelTaskRequest req) {
-			return jsonRpcHandler.onCancelTask(req);
+			return jsonRpcHandler.onCancelTask(req, context);
 		}
 		else if (request instanceof GetTaskPushNotificationConfigRequest req) {
-			return jsonRpcHandler.getPushNotificationConfig(req);
+			return jsonRpcHandler.getPushNotificationConfig(req, context);
 		}
-		else if (request instanceof SetTaskPushNotificationConfigRequest req) {
-			return jsonRpcHandler.setPushNotificationConfig(req);
+		else if (request instanceof CreateTaskPushNotificationConfigRequest req) {
+			return jsonRpcHandler.setPushNotificationConfig(req, context);
 		}
-		else if (request instanceof ListTaskPushNotificationConfigRequest req) {
-			return jsonRpcHandler.listPushNotificationConfig(req);
+		else if (request instanceof ListTaskPushNotificationConfigsRequest req) {
+			return jsonRpcHandler.listPushNotificationConfigs(req, context);
 		}
 		else if (request instanceof DeleteTaskPushNotificationConfigRequest req) {
-			return jsonRpcHandler.deletePushNotificationConfig(req);
+			return jsonRpcHandler.deletePushNotificationConfig(req, context);
+		}
+		else if (request instanceof ListTasksRequest req) {
+			return jsonRpcHandler.onListTasks(req, context);
+		}
+		else if (request instanceof GetExtendedAgentCardRequest req) {
+			return jsonRpcHandler.onGetExtendedCardRequest(req, context);
 		}
 		else {
 			return generateErrorResponse(request, new UnsupportedOperationError());
 		}
 	}
 
-	private static JSONRPCErrorResponse generateErrorResponse(JSONRPCRequest<?> request, JSONRPCError error) {
-		return new JSONRPCErrorResponse(request.getId(), error);
+	private static A2AErrorResponse generateErrorResponse(A2ARequest<?> request, A2AError error) {
+		return new A2AErrorResponse(request.getId(), error);
 	}
 
 	private MessageSendParams injectStreamMetadata(MessageSendParams original, boolean isStreaming) {
-		if (null == original.metadata()) {
-			MessageSendParams.Builder newBuilder = new MessageSendParams.Builder();
-			newBuilder.configuration(original.configuration());
-			newBuilder.metadata(Map.of(GraphAgentExecutor.STREAMING_METADATA_KEY, isStreaming));
-			newBuilder.message(original.message());
-			return newBuilder.build();
+		Map<String, Object> metadata = new HashMap<>();
+		if (original.metadata() != null) {
+			metadata.putAll(original.metadata());
 		}
-		else {
-			original.metadata().put(GraphAgentExecutor.STREAMING_METADATA_KEY, isStreaming);
-			return original;
-		}
+		metadata.put(GraphAgentExecutor.STREAMING_METADATA_KEY, isStreaming);
+		return MessageSendParams.builder().configuration(original.configuration())
+			.message(original.message())
+			.metadata(metadata)
+			.tenant(original.tenant())
+			.build();
+	}
+
+	private ServerCallContext createCallContext(ServerRequest.Headers headers) {
+		Map<String, Object> state = new HashMap<>();
+		state.put(TRANSPORT_KEY, TransportProtocol.JSONRPC);
+		state.put(HEADERS_KEY, headers.asHttpHeaders().toSingleValueMap());
+
+		Set<String> requestedExtensions = new HashSet<>();
+		headers.asHttpHeaders().getOrEmpty(A2AHeaders.A2A_EXTENSIONS).stream()
+			.flatMap(extensionsHeader -> Arrays.stream(extensionsHeader.split(",")))
+				.map(String::trim)
+				.filter(extension -> !extension.isEmpty())
+				.forEach(requestedExtensions::add);
+		return new ServerCallContext(UnauthenticatedUser.INSTANCE, state, requestedExtensions,
+				headers.firstHeader(A2AHeaders.A2A_VERSION));
 	}
 
 }

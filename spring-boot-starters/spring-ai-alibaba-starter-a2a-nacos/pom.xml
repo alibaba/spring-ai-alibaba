@@ -69,11 +69,11 @@
         </dependency>
 
         <dependency>
-            <groupId>io.github.a2asdk</groupId>
-            <artifactId>a2a-java-reference-server</artifactId>
+            <groupId>org.a2aproject.sdk</groupId>
+            <artifactId>a2a-java-sdk-transport-jsonrpc</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.github.a2asdk</groupId>
+            <groupId>org.a2aproject.sdk</groupId>
             <artifactId>a2a-java-sdk-server-common</artifactId>
         </dependency>
 

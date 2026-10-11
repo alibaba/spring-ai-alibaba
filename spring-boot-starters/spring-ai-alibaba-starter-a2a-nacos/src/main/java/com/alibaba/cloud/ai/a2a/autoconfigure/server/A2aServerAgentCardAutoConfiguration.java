@@ -18,7 +18,6 @@ package com.alibaba.cloud.ai.a2a.autoconfigure.server;
 
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerAgentCardProperties;
 import com.alibaba.cloud.ai.a2a.autoconfigure.A2aServerProperties;
-import com.alibaba.cloud.ai.a2a.core.constants.A2aConstants;
 import com.alibaba.cloud.ai.a2a.core.route.MultiAgentRequestRouter;
 import com.alibaba.cloud.ai.graph.agent.Agent;
 
@@ -29,12 +28,14 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import io.a2a.spec.AgentCapabilities;
-import io.a2a.spec.AgentCard;
-import io.a2a.spec.AgentInterface;
-import io.a2a.spec.AgentSkill;
+import org.a2aproject.sdk.spec.AgentCapabilities;
+import org.a2aproject.sdk.spec.AgentCard;
+import org.a2aproject.sdk.spec.AgentInterface;
+import org.a2aproject.sdk.spec.AgentSkill;
+import org.a2aproject.sdk.spec.SecurityRequirement;
 
 /**
  * Auto-configuration for single-agent A2A server.
@@ -57,23 +58,19 @@ public class A2aServerAgentCardAutoConfiguration {
 	@ConditionalOnBean({ Agent.class })
 	public AgentCard agentCard(Agent rootAgent, A2aServerProperties a2aServerProperties,
 			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
-		return new AgentCard.Builder().name(getName(rootAgent, a2AServerAgentCardProperties))
+		return AgentCard.builder().name(getName(rootAgent, a2AServerAgentCardProperties))
 			.description(getDescription(rootAgent, a2AServerAgentCardProperties))
 			.defaultInputModes(getDefaultInputModes(rootAgent, a2AServerAgentCardProperties))
 			.defaultOutputModes(getDefaultOutputModes(rootAgent, a2AServerAgentCardProperties))
 			.capabilities(getCapabilities(rootAgent, a2AServerAgentCardProperties))
 			.version(a2aServerProperties.getVersion())
-			.protocolVersion(A2aConstants.DEFAULT_A2A_PROTOCOL_VERSION)
-			.preferredTransport(a2aServerProperties.getType())
-			.url(getUrl(a2aServerProperties, a2AServerAgentCardProperties))
-			.supportsAuthenticatedExtendedCard(a2AServerAgentCardProperties.isSupportsAuthenticatedExtendedCard())
+			.supportedInterfaces(getSupportedInterfaces(a2AServerAgentCardProperties, a2aServerProperties))
 			.skills(getAgentSkills(rootAgent, a2AServerAgentCardProperties))
 			.provider(a2AServerAgentCardProperties.getProvider())
 			.documentationUrl(a2AServerAgentCardProperties.getDocumentationUrl())
-			.security(a2AServerAgentCardProperties.getSecurity())
+			.securityRequirements(getSecurityRequirements(a2AServerAgentCardProperties))
 			.securitySchemes(a2AServerAgentCardProperties.getSecuritySchemes())
 			.iconUrl(a2AServerAgentCardProperties.getIconUrl())
-			.additionalInterfaces(getAdditionalInterfaces(a2AServerAgentCardProperties, a2aServerProperties))
 			.build();
 	}
 
@@ -95,8 +92,12 @@ public class A2aServerAgentCardAutoConfiguration {
 
 	private AgentCapabilities getCapabilities(Agent rootAgent,
 			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
-		return null != a2AServerAgentCardProperties.getCapabilities() ? a2AServerAgentCardProperties.getCapabilities()
-				: new AgentCapabilities.Builder().streaming(true).build();
+		AgentCapabilities capabilities = null != a2AServerAgentCardProperties.getCapabilities()
+				? a2AServerAgentCardProperties.getCapabilities()
+				: AgentCapabilities.builder().streaming(true).build();
+		return new AgentCapabilities(capabilities.streaming(), capabilities.pushNotifications(),
+				capabilities.extendedAgentCard() || a2AServerAgentCardProperties.isSupportsAuthenticatedExtendedCard(),
+				capabilities.extensions());
 	}
 
 	private List<String> getDefaultOutputModes(Agent rootAgent,
@@ -116,12 +117,25 @@ public class A2aServerAgentCardAutoConfiguration {
 		return null != a2AServerAgentCardProperties.getSkills() ? a2AServerAgentCardProperties.getSkills() : List.of();
 	}
 
-	private List<AgentInterface> getAdditionalInterfaces(A2aServerAgentCardProperties a2AServerAgentCardProperties,
+	private List<AgentInterface> getSupportedInterfaces(A2aServerAgentCardProperties a2AServerAgentCardProperties,
 			A2aServerProperties a2aServerProperties) {
-		if (null != a2AServerAgentCardProperties.getAdditionalInterfaces()) {
-			return a2AServerAgentCardProperties.getAdditionalInterfaces();
+		List<AgentInterface> interfaces = new ArrayList<>();
+		interfaces.add(new AgentInterface(a2aServerProperties.getType(),
+				getUrl(a2aServerProperties, a2AServerAgentCardProperties)));
+		if (a2AServerAgentCardProperties.getAdditionalInterfaces() != null) {
+			a2AServerAgentCardProperties.getAdditionalInterfaces()
+				.stream()
+				.map(A2aAgentInterfaceNormalizer::withDefaultProtocolVersion)
+				.filter(agentInterface -> !interfaces.contains(agentInterface))
+				.forEach(interfaces::add);
 		}
-		return List.of(new AgentInterface(a2aServerProperties.getType(), getUrl(a2aServerProperties, a2AServerAgentCardProperties)));
+		return List.copyOf(interfaces);
+	}
+
+	private List<SecurityRequirement> getSecurityRequirements(
+			A2aServerAgentCardProperties a2AServerAgentCardProperties) {
+		return a2AServerAgentCardProperties.getSecurity() == null ? null
+				: a2AServerAgentCardProperties.getSecurity().stream().map(SecurityRequirement::new).toList();
 	}
 
 	private String buildUrl(A2aServerProperties a2aServerProperties) {

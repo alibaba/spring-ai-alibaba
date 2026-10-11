@@ -153,7 +153,7 @@
 
         <mcp.version>0.14.0</mcp.version>
         <opentelemetry.version>1.38.0</opentelemetry.version>
-        <a2a-sdk.version>0.2.5.Beta2</a2a-sdk.version>
+        <a2a-sdk.version>1.0.0.Final</a2a-sdk.version>
 
         <graalvm.polyglot.version>24.2.1</graalvm.polyglot.version>
 
@@ -237,23 +237,17 @@
 
             <!-- A2A SDK Dependencies -->
             <dependency>
-                <groupId>io.github.a2asdk</groupId>
-                <artifactId>a2a-java-reference-server</artifactId>
+                <groupId>org.a2aproject.sdk</groupId>
+                <artifactId>a2a-java-sdk-transport-jsonrpc</artifactId>
                 <version>${a2a-sdk.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.slf4j</groupId>
-                        <artifactId>slf4j-jboss-logmanager</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
-                <groupId>io.github.a2asdk</groupId>
+                <groupId>org.a2aproject.sdk</groupId>
                 <artifactId>a2a-java-sdk-server-common</artifactId>
                 <version>${a2a-sdk.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.github.a2asdk</groupId>
+                <groupId>org.a2aproject.sdk</groupId>
                 <artifactId>a2a-java-sdk-client</artifactId>
                 <version>${a2a-sdk.version}</version>
             </dependency>
