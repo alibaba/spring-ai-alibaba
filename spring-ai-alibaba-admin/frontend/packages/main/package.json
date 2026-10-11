@@ -4,7 +4,6 @@
   "scripts": {
     "build": "cross-env DID_YOU_KNOW=none umi build",
     "dev": "cross-env DID_YOU_KNOW=none umi dev",
-    "postinstall": "umi setup",
     "setup": "umi setup",
     "start": "npm run dev"
   },
