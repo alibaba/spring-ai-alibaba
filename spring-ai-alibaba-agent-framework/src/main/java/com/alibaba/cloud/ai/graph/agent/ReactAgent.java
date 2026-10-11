@@ -25,7 +25,10 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.SubGraphNode;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.EdgeAction;
+import com.alibaba.cloud.ai.graph.action.InterruptableAction;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.agent.exception.AgentException;
 import com.alibaba.cloud.ai.graph.agent.factory.AgentBuilderFactory;
@@ -34,11 +37,9 @@ import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.InstructionAgentHook;
-import com.alibaba.cloud.ai.graph.agent.hook.InterruptionHook;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.hook.ToolInjection;
-import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
@@ -79,6 +80,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -368,27 +370,33 @@ public class ReactAgent extends BaseAgent {
 
 		// Add hook nodes for beforeModel hooks
 		for (Hook hook : beforeModelHooks) {
+			AsyncNodeActionWithConfig action = null;
 			if (hook instanceof ModelHook modelHook) {
-				if (hook instanceof InterruptionHook interruptionHook) {
-					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", interruptionHook);
-				} else {
-					graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", modelHook::beforeModel);
-				}
+				action = modelHook::beforeModel;
 			} else if (hook instanceof MessagesModelHook messagesModelHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", MessagesModelHook.beforeModelAction(messagesModelHook));
+				action = MessagesModelHook.beforeModelAction(messagesModelHook);
+			}
+			if (action != null) {
+				if (hook instanceof InterruptableAction interruptableAction) {
+					action = new InterruptibleModelHookAction(action, interruptableAction);
+				}
+				graph.addNode(Hook.getFullHookName(hook) + ".beforeModel", action);
 			}
 		}
 
 		// Add hook nodes for afterModel hooks
 		for (Hook hook : afterModelHooks) {
+			AsyncNodeActionWithConfig action = null;
 			if (hook instanceof ModelHook modelHook) {
-				if (hook instanceof HumanInTheLoopHook humanInTheLoopHook) {
-					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", humanInTheLoopHook);
-				} else {
-					graph.addNode(Hook.getFullHookName(hook) + ".afterModel", modelHook::afterModel);
-				}
+				action = modelHook::afterModel;
 			} else if (hook instanceof MessagesModelHook messagesModelHook) {
-				graph.addNode(Hook.getFullHookName(hook) + ".afterModel", MessagesModelHook.afterModelAction(messagesModelHook));
+				action = MessagesModelHook.afterModelAction(messagesModelHook);
+			}
+			if (action != null) {
+				if (hook instanceof InterruptableAction interruptableAction) {
+					action = new InterruptibleModelHookAction(action, interruptableAction);
+				}
+				graph.addNode(Hook.getFullHookName(hook) + ".afterModel", action);
 			}
 		}
 
@@ -403,6 +411,36 @@ public class ReactAgent extends BaseAgent {
 		setupHookEdges(graph, beforeAgentHooks, afterAgentHooks, beforeModelHooks, afterModelHooks,
 				entryNode, loopEntryNode, loopExitNode, exitNode, this);
 		return graph;
+	}
+
+	private static final class InterruptibleModelHookAction implements AsyncNodeActionWithConfig, InterruptableAction {
+
+		private final AsyncNodeActionWithConfig positionAction;
+
+		private final InterruptableAction interruptableAction;
+
+		private InterruptibleModelHookAction(AsyncNodeActionWithConfig positionAction,
+				InterruptableAction interruptableAction) {
+			this.positionAction = positionAction;
+			this.interruptableAction = interruptableAction;
+		}
+
+		@Override
+		public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+			return this.positionAction.apply(state, config);
+		}
+
+		@Override
+		public Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config) {
+			return this.interruptableAction.interrupt(nodeId, state, config);
+		}
+
+		@Override
+		public Optional<InterruptionMetadata> interruptAfter(String nodeId, OverAllState state,
+				Map<String, Object> actionResult, RunnableConfig config) {
+			return this.interruptableAction.interruptAfter(nodeId, state, actionResult, config);
+		}
+
 	}
 
 	/**
