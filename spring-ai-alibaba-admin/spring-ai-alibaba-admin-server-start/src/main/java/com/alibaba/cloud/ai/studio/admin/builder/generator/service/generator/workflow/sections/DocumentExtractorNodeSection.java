@@ -53,6 +53,12 @@ public class DocumentExtractorNodeSection implements NodeSection<DocumentExtract
 		sb.append(String.format(".outputKey(\"%s\")%n", escape(outputKey)));
 
 		sb.append(String.format(".inputIsArray(%s)%n", data.isArray()));
+		if (data.getLocalFileRoot() != null && !data.getLocalFileRoot().isBlank()) {
+			sb.append(String.format(".localFileRoot(Paths.get(\"%s\"))%n", escape(data.getLocalFileRoot())));
+		}
+		if (data.isRemoteResourcesAllowed()) {
+			sb.append(".allowRemoteResources(true)\n");
+		}
 
 		sb.append(".build();\n");
 		sb.append(String.format("stateGraph.addNode(\"%s\", AsyncNodeAction.node_async(%s));%n%n", varName, varName));
@@ -62,7 +68,7 @@ public class DocumentExtractorNodeSection implements NodeSection<DocumentExtract
 
 	@Override
 	public List<String> getImports() {
-		return List.of("com.alibaba.cloud.ai.graph.node.DocumentExtractorNode");
+		return List.of("com.alibaba.cloud.ai.graph.node.DocumentExtractorNode", "java.nio.file.Paths");
 	}
 
 }

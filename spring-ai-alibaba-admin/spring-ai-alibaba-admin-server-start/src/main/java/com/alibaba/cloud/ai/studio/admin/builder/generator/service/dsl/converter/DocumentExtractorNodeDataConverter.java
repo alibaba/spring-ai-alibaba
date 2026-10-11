@@ -71,9 +71,14 @@ public class DocumentExtractorNodeDataConverter extends AbstractNodeDataConverte
 					.orElse(DocumentExtractorNodeData.getDefaultOutputSchema().getName());
 
 				Boolean isArray = (Boolean) data.getOrDefault("is_array_file", false);
+				String localFileRoot = (String) data.get("local_file_root");
+				Boolean remoteResourcesAllowed = (Boolean) data.getOrDefault("remote_resources_allowed", false);
 
-				return new DocumentExtractorNodeData(inputs,
+				DocumentExtractorNodeData nodeData = new DocumentExtractorNodeData(inputs,
 						List.of(DocumentExtractorNodeData.getDefaultOutputSchema()), outputKey, isArray);
+				nodeData.setLocalFileRoot(localFileRoot);
+				nodeData.setRemoteResourcesAllowed(remoteResourcesAllowed);
+				return nodeData;
 			}
 
 			@Override
@@ -95,6 +100,12 @@ public class DocumentExtractorNodeDataConverter extends AbstractNodeDataConverte
 
 				Boolean isArray = nodeData.isArray();
 				data.put("is_array_file", isArray);
+				if (nodeData.getLocalFileRoot() != null && !nodeData.getLocalFileRoot().isBlank()) {
+					data.put("local_file_root", nodeData.getLocalFileRoot());
+				}
+				if (nodeData.isRemoteResourcesAllowed()) {
+					data.put("remote_resources_allowed", true);
+				}
 
 				return data;
 			}
