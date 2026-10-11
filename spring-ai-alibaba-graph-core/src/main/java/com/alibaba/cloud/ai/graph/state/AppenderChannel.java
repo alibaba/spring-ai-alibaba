@@ -18,8 +18,8 @@ package com.alibaba.cloud.ai.graph.state;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -150,6 +150,15 @@ public class AppenderChannel<T> implements Channel<List<T>> {
 		}
 	}
 
+	private static List<Object> arrayToList(Object array) {
+		int length = Array.getLength(array);
+		List<Object> result = new ArrayList<>(length);
+		for (int i = 0; i < length; i++) {
+			result.add(Array.get(array, i));
+		}
+		return result;
+	}
+
 	/**
 	 * Represents a record for data removal operations with generic types.
 	 *
@@ -215,7 +224,7 @@ public class AppenderChannel<T> implements Channel<List<T>> {
 				list = (List<Object>) newValue;
 			}
 			else if (newValue.getClass().isArray()) {
-				list = Arrays.asList((T[]) newValue);
+				list = arrayToList(newValue);
 			}
 			if (list != null) {
 				if (list.isEmpty()) {
