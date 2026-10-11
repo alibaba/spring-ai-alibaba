@@ -17,9 +17,11 @@ package com.alibaba.cloud.ai.graph.agent.interceptors;
 
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +38,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Tests the new toolDescriptions field added to support enhanced tool selection.
  */
 class ModelRequestTest {
+
+	@Test
+	void testModelRequestMessagesAreIsolatedFromSourceList() {
+		List<Message> stateMessages = new ArrayList<>(List.of(new UserMessage("Hello")));
+		ModelRequest request = ModelRequest.builder().messages(stateMessages).build();
+
+		request.getMessages().clear();
+
+		assertEquals(1, stateMessages.size(),
+				"Mutating an interceptor request must not mutate the graph state message list");
+	}
+
+	@Test
+	void testModelRequestCopyHasIndependentMessages() {
+		ModelRequest original = ModelRequest.builder()
+			.messages(List.of(new UserMessage("Hello")))
+			.build();
+		ModelRequest copy = ModelRequest.builder(original).build();
+
+		copy.getMessages().clear();
+
+		assertEquals(1, original.getMessages().size(),
+				"An interceptor-built request must not mutate the previous request");
+	}
 
 	@Test
 	void testModelRequestWithToolDescriptions() {
