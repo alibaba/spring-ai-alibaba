@@ -15,9 +15,10 @@
  */
 package com.alibaba.cloud.ai.graph.agent.extension.tools.filesystem;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.io.IOException;
@@ -33,7 +34,7 @@ import java.util.function.BiFunction;
 /**
  * Tool for finding files matching a glob pattern.
  */
-public class GlobTool implements BiFunction<String, ToolContext, String> {
+public class GlobTool implements BiFunction<GlobTool.GlobRequest, ToolContext, String> {
 
 	public static final String DESCRIPTION = """
 			Find files matching a glob pattern.
@@ -52,10 +53,9 @@ public class GlobTool implements BiFunction<String, ToolContext, String> {
 	}
 
 	@Override
-	public String apply(
-			@ToolParam(description = "The glob pattern to match files") String pattern,
-			ToolContext toolContext) {
+	public String apply(GlobRequest request, ToolContext toolContext) {
 		try {
+			String pattern = request.pattern;
 			Path basePathObj = Paths.get(System.getProperty("user.dir"));
 			PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern);
 
@@ -83,7 +83,24 @@ public class GlobTool implements BiFunction<String, ToolContext, String> {
 	public static ToolCallback createGlobToolCallback(String description) {
 		return FunctionToolCallback.builder("glob", new GlobTool())
 				.description(description)
-				.inputType(String.class)
+				.inputType(GlobRequest.class)
 				.build();
+	}
+
+	/**
+	 * Request structure for glob pattern matching.
+	 */
+	public static class GlobRequest {
+
+		@JsonProperty(required = true, value = "pattern")
+		@JsonPropertyDescription("The glob pattern to match files")
+		public String pattern;
+
+		public GlobRequest() {
+		}
+
+		public GlobRequest(String pattern) {
+			this.pattern = pattern;
+		}
 	}
 }
