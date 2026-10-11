@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.interceptors;
 
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.ReadSkillTool;
+import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
@@ -44,6 +45,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.List.of;
@@ -185,6 +187,27 @@ class SkillsInterceptorEnhancementsTest {
 		assertEquals(2, second.get("allowed-tools-test").size());
 		assertTrue(second.get("allowed-tools-test").stream()
 				.anyMatch(tool -> "extra_tool".equals(tool.getToolDefinition().name())));
+	}
+
+	@Test
+	void hookRetainsInitiallyEmptyGroupedToolsForLaterUpdates() {
+		Map<String, List<ToolCallback>> groupedTools = new ConcurrentHashMap<>();
+		SkillsAgentHook hook = SkillsAgentHook.builder()
+				.skillRegistry(registry)
+				.groupedTools(groupedTools)
+				.build();
+
+		SkillsInterceptor interceptor = (SkillsInterceptor) hook.getModelInterceptors().get(0);
+		assertTrue(interceptor.getGroupedTools().isEmpty());
+
+		ToolCallback tool = FunctionToolCallback.builder("late_tool", args -> "ok")
+				.description("Tool added after agent construction")
+				.inputType(String.class)
+				.build();
+		groupedTools.put("allowed-tools-test", List.of(tool));
+
+		assertEquals(List.of("late_tool"), interceptor.getGroupedTools().get("allowed-tools-test")
+				.stream().map(callback -> callback.getToolDefinition().name()).toList());
 	}
 
 }
