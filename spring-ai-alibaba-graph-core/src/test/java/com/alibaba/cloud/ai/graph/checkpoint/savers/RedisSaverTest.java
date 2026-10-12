@@ -829,6 +829,65 @@ class RedisSaverTest {
 		assertTrue(allCheckpoints.stream().anyMatch(cp -> "cp2".equals(cp.getId())));
 	}
 
+	@Test
+	void testCheckpointRetention() throws Exception {
+		String threadName = "test-retention-thread-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadName).checkpointsNumRetained(2).build();
+
+		Checkpoint cp1 = Checkpoint.builder().id("cp1").state(Map.of()).nodeId("node1").nextNodeId("node2").build();
+		Checkpoint cp2 = Checkpoint.builder().id("cp2").state(Map.of()).nodeId("node2").nextNodeId("node3").build();
+		Checkpoint cp3 = Checkpoint.builder().id("cp3").state(Map.of()).nodeId("node3").nextNodeId("node4").build();
+
+		redisSaver.put(config, cp1);
+		redisSaver.put(config, cp2);
+		redisSaver.put(config, cp3);
+
+		List<Checkpoint> checkpoints = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(List.of("cp3", "cp2"), checkpoints.stream().map(Checkpoint::getId).toList());
+		assertEquals("cp3", redisSaver.get(config).orElseThrow().getId());
+		assertTrue(redisSaver.get(RunnableConfig.builder(config).checkPointId("cp1").build()).isEmpty());
+	}
+
+	@Test
+	void testCheckpointRetentionAfterUpdate() throws Exception {
+		String threadName = "test-retention-update-thread-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadName).build();
+		Checkpoint cp1 = Checkpoint.builder().id("cp1").state(Map.of()).nodeId("node1").nextNodeId("node2").build();
+		Checkpoint cp2 = Checkpoint.builder().id("cp2").state(Map.of("version", 1)).nodeId("node2").nextNodeId("node3").build();
+		Checkpoint cp3 = Checkpoint.builder().id("cp3").state(Map.of()).nodeId("node3").nextNodeId("node4").build();
+
+		redisSaver.put(config, cp1);
+		redisSaver.put(config, cp2);
+		redisSaver.put(config, cp3);
+		RunnableConfig updateConfig = RunnableConfig.builder(config).checkPointId("cp2").checkpointsNumRetained(2).build();
+		Checkpoint updatedCp2 = Checkpoint.builder()
+				.id("cp2")
+				.state(Map.of("version", 2))
+				.nodeId("node2")
+				.nextNodeId("node3")
+				.build();
+
+		redisSaver.put(updateConfig, updatedCp2);
+
+		List<Checkpoint> checkpoints = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(List.of("cp3", "cp2"), checkpoints.stream().map(Checkpoint::getId).toList());
+		assertEquals(2, redisSaver.get(updateConfig).orElseThrow().getState().get("version"));
+		assertTrue(redisSaver.get(RunnableConfig.builder(config).checkPointId("cp1").build()).isEmpty());
+	}
+
+	@Test
+	void testCheckpointsWithoutRetentionAreNotPruned() throws Exception {
+		String threadName = "test-no-retention-thread-" + UUID.randomUUID();
+		RunnableConfig config = RunnableConfig.builder().threadId(threadName).build();
+
+		redisSaver.put(config, Checkpoint.builder().id("cp1").state(Map.of()).nodeId("node1").nextNodeId("node2").build());
+		redisSaver.put(config, Checkpoint.builder().id("cp2").state(Map.of()).nodeId("node2").nextNodeId("node3").build());
+		redisSaver.put(config, Checkpoint.builder().id("cp3").state(Map.of()).nodeId("node3").nextNodeId("node4").build());
+
+		List<Checkpoint> checkpoints = (List<Checkpoint>) redisSaver.list(config);
+		assertEquals(List.of("cp3", "cp2", "cp1"), checkpoints.stream().map(Checkpoint::getId).toList());
+	}
+
 	/**
 	 * Test concurrent access to the same thread_name with locks.
 	 */
