@@ -125,8 +125,3 @@ AssistantMessage response = orchestratorAgent.call(new UserMessage(
   - **API**: `subAgent(type, ReactAgent)` registers programmatically defined ReactAgents
 - **TodoListInterceptor**: Injects write_todos tool and system prompt for task planning
 - **Agent specs (Markdown)**: `name`, `description`, `tools` (comma-separated) in YAML front matter
-
-## Related
-
-- [subagents.md](../../../multiagents/subagents.md) - Subagent architecture documentation
-- [spring-ai-agent-utils subagent-demo](../../../multiagents/spring-ai-agent-utils/examples/subagent-demo) - Similar pattern with Spring AI community tools
