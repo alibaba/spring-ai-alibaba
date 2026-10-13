@@ -25,6 +25,7 @@ import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -186,11 +187,11 @@ public abstract class BaseStore implements Store {
 		// Text query filter
 		String query = searchRequest.getQuery();
 		if (query != null && !query.trim().isEmpty()) {
-			String lowerQuery = query.toLowerCase();
+			String lowerQuery = query.toLowerCase(Locale.ROOT);
 			// Search in key
-			if (!item.getKey().toLowerCase().contains(lowerQuery)) {
+			if (!item.getKey().toLowerCase(Locale.ROOT).contains(lowerQuery)) {
 				// Search in value
-				String valueStr = item.getValue().toString().toLowerCase();
+				String valueStr = item.getValue().toString().toLowerCase(Locale.ROOT);
 				if (!valueStr.contains(lowerQuery)) {
 					return false;
 				}
