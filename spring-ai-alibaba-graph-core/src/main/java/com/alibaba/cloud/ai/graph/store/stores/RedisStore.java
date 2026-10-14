@@ -157,7 +157,7 @@ public class RedisStore extends BaseStore {
 				return StoreSearchResult.of(Collections.emptyList(), totalCount, offset, limit);
 			}
 
-			int endIndex = Math.min(offset + limit, filteredItems.size());
+			int endIndex = (int) Math.min((long) offset + limit, filteredItems.size());
 			List<StoreItem> resultItems = filteredItems.subList(offset, endIndex);
 
 			return StoreSearchResult.of(resultItems, totalCount, offset, limit);
@@ -207,7 +207,7 @@ public class RedisStore extends BaseStore {
 				return Collections.emptyList();
 			}
 
-			int endIndex = Math.min(offset + limit, namespaces.size());
+			int endIndex = (int) Math.min((long) offset + limit, namespaces.size());
 			return namespaces.subList(offset, endIndex);
 		}
 		finally {
