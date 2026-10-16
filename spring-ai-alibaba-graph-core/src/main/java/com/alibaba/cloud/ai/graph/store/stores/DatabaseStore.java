@@ -428,9 +428,22 @@ public class DatabaseStore extends BaseStore {
      */
     private void executeH2Merge(Connection conn, String itemId, String itemHash, String namespaceJson, String key, String valueJson,
                                 Timestamp createdAt, Timestamp updatedAt) throws SQLException {
-        // MERGE by id_hash to avoid long-key index limitations across dialects.
-        String sql = "MERGE INTO " + tableName + " (id, id_hash, namespace, key_name, value_json, created_at, updated_at) "
-                + "KEY(id_hash) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        // Standard MERGE by id_hash. The legacy "MERGE INTO t (cols) KEY(id_hash) VALUES(...)"
+        // form overwrites every column on match, including created_at; use the explicit
+        // WHEN MATCHED / WHEN NOT MATCHED form so an update preserves the existing
+        // created_at (only updated_at and the mutable columns change), consistent with
+        // the MySQL/PostgreSQL/Oracle upserts.
+        // CAST each bound parameter so H2 can infer the derived-table column types
+        // (untyped "SELECT ? AS id" fails with "Unknown data type").
+        String sql = "MERGE INTO " + tableName + " t "
+                + "USING (SELECT CAST(? AS VARCHAR) AS id, CAST(? AS VARCHAR) AS id_hash, "
+                + "CAST(? AS VARCHAR) AS namespace, CAST(? AS VARCHAR) AS key_name, CAST(? AS VARCHAR) AS value_json, "
+                + "CAST(? AS TIMESTAMP) AS created_at, CAST(? AS TIMESTAMP) AS updated_at) s "
+                + "ON (t.id_hash = s.id_hash) "
+                + "WHEN MATCHED THEN UPDATE SET t.id = s.id, t.namespace = s.namespace, "
+                + "t.key_name = s.key_name, t.value_json = s.value_json, t.updated_at = s.updated_at "
+                + "WHEN NOT MATCHED THEN INSERT (id, id_hash, namespace, key_name, value_json, created_at, updated_at) "
+                + "VALUES (s.id, s.id_hash, s.namespace, s.key_name, s.value_json, s.created_at, s.updated_at)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, itemId);
             stmt.setString(2, itemHash);

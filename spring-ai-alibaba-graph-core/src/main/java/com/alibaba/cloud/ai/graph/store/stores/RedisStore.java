@@ -77,12 +77,12 @@ public class RedisStore extends BaseStore {
 	public void putItem(StoreItem item) {
 		validatePutItem(item);
 
-		// Preserve original createdAt on update (before acquiring the write lock to avoid
-		// read-lock reacquisition under ReentrantReadWriteLock).
-		preserveCreatedAt(item);
-
 		lock.writeLock().lock();
 		try {
+			// Preserve original createdAt on update. Kept inside the write lock so the
+			// lookup-and-store is atomic (lock downgrade to read is allowed).
+			preserveCreatedAt(item);
+
 			String redisKey = createRedisKey(item.getNamespace(), item.getKey());
 			String itemJson = objectMapper.writeValueAsString(item);
 			redisLikeStorage.put(redisKey, itemJson);

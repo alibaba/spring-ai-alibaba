@@ -22,12 +22,15 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
+import javax.sql.DataSource;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,9 +39,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * semantics: when an item with the same (namespace, key) already exists, the original
  * {@code createdAt} must be preserved while {@code updatedAt} is refreshed.
  * <p>
- * {@code DatabaseStore} already preserves {@code createdAt} (its upsert SQL deliberately
- * omits {@code created_at} from the UPDATE SET). This test asserts the same contract for
- * the in-memory / file-system implementations.
+ * Covers {@code MemoryStore}, {@code FileSystemStore} and the H2-backed
+ * {@code DatabaseStore} so all put-on-existing-key paths honor the same update contract.
  * <p>
  * Deterministic by construction: the original item is created with an explicit, clearly
  * old {@code createdAt}; the update goes through {@code StoreItem.of(...)} which sets
@@ -60,10 +62,25 @@ class StoreCreatedAtPreservationTest {
 	private static final long OLD_UPDATED_AT = 1_000_000_000_000L;
 
 	private Store create(String name) {
-		if ("FileSystemStore".equals(name)) {
-			return new FileSystemStore(tempDir);
+		switch (name) {
+			case "FileSystemStore":
+				return new FileSystemStore(tempDir);
+			case "DatabaseStore(H2)":
+				return newH2DatabaseStore();
+			default:
+				return new MemoryStore();
 		}
-		return new MemoryStore();
+	}
+
+	private static DatabaseStore newH2DatabaseStore() {
+		String dbUrl = "jdbc:h2:mem:createdat" + System.nanoTime() + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
+		HikariConfig config = new HikariConfig();
+		config.setJdbcUrl(dbUrl);
+		config.setUsername("sa");
+		config.setPassword("");
+		config.setDriverClassName("org.h2.Driver");
+		DataSource dataSource = new HikariDataSource(config);
+		return new DatabaseStore(dataSource, "created_at_store");
 	}
 
 	@ParameterizedTest(name = "{0} preserves createdAt on update")
@@ -92,7 +109,7 @@ class StoreCreatedAtPreservationTest {
 	}
 
 	static Stream<String> storeNames() {
-		return Stream.of("MemoryStore", "FileSystemStore");
+		return Stream.of("MemoryStore", "FileSystemStore", "DatabaseStore(H2)");
 	}
 
 }
