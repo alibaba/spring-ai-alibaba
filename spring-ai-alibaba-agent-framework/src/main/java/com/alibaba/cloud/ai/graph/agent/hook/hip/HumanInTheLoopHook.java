@@ -27,7 +27,7 @@ import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
-import com.alibaba.cloud.ai.graph.state.RemoveByHash;
+import com.alibaba.cloud.ai.graph.state.AppenderChannel;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -119,14 +119,17 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 			List<Object> newMessages = new ArrayList<>();
 
 			if (!newToolCalls.isEmpty()) {
-				// Replace the last message with the new assistant message containing updated tool calls
+				// Replace the pending message by position; hashes can also match earlier messages.
+				int assistantMessageIndex = state.<List<Message>>value("messages").orElse(List.of())
+					.lastIndexOf(assistantMessage);
 				newMessages.add(AssistantMessage.builder()
 					.content(assistantMessage.getText())
 					.properties(assistantMessage.getMetadata())
 					.toolCalls(newToolCalls)
 					.media(assistantMessage.getMedia())
 					.build());
-				newMessages.add(new RemoveByHash<>(assistantMessage));
+				newMessages.add((AppenderChannel.RemoveIdentifier<Message>)
+					(message, atIndex) -> Integer.compare(atIndex, assistantMessageIndex));
 			}
 
 			// ToolResponseMessages must be added after AssistantMessage
