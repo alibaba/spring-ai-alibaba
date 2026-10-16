@@ -88,7 +88,8 @@ class DatabaseStoreAllDialectTest {
 
 	@Test
 	/**
-	 * Verifies that H2 dialect uses MERGE ... KEY(id_hash) for upsert.
+	 * Verifies that H2 dialect uses a standard MERGE whose matched UPDATE preserves
+	 * created_at (only updated_at and the mutable columns are updated).
 	 */
 	void shouldUseH2MergeSql() throws Exception {
 		TestFixture fixture = fixture("H2");
@@ -97,7 +98,8 @@ class DatabaseStoreAllDialectTest {
 		fixture.store.putItem(item);
 
 		verify(fixture.connection).prepareStatement(contains("MERGE INTO"));
-		verify(fixture.connection).prepareStatement(contains("KEY(id_hash) VALUES"));
+		verify(fixture.connection).prepareStatement(contains("WHEN MATCHED THEN UPDATE SET"));
+		verify(fixture.connection).prepareStatement(contains("WHEN NOT MATCHED THEN INSERT"));
 	}
 
 	@Test

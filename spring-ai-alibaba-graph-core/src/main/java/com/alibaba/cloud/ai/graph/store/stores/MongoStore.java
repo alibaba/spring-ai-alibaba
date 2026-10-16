@@ -78,6 +78,10 @@ public class MongoStore extends BaseStore {
 
 		lock.writeLock().lock();
 		try {
+			// Preserve original createdAt on update. Kept inside the write lock so the
+			// lookup-and-store is atomic (lock downgrade to read is allowed).
+			preserveCreatedAt(item);
+
 			String documentId = createDocumentId(item.getNamespace(), item.getKey());
 
 			Map<String, Object> doc = new HashMap<>();

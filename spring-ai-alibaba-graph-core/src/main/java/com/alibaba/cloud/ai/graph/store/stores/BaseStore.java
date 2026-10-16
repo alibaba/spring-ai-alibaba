@@ -171,6 +171,41 @@ public abstract class BaseStore implements Store {
 	}
 
 	/**
+	 * Preserve the original {@code createdAt} when a {@code putItem} overwrites an
+	 * existing item with the same namespace and key.
+	 * <p>
+	 * {@link Store#putItem(StoreItem)} defines put-on-existing-key as an update, and the
+	 * creation time should stay stable across updates (only {@code updatedAt} changes),
+	 * consistent with {@code StoreItem#updateValue}. Overwrite-based implementations
+	 * (memory/file system/etc.) should call this to carry the existing item's
+	 * {@code createdAt} onto the incoming item before writing.
+	 * <p>
+	 * This performs a read-modify-write and must be invoked <strong>inside</strong> the
+	 * same write-locked critical section that performs the actual write, so the lookup
+	 * and the subsequent store are atomic. It calls {@link #getItem(List, String)}, which
+	 * acquires the read lock; a {@link java.util.concurrent.locks.ReentrantReadWriteLock}
+	 * allows a thread holding the write lock to also acquire the read lock (lock
+	 * downgrade), so this is safe to call while the write lock is held.
+	 * <p>
+	 * Preservation is best-effort: if the existing record cannot be read (e.g. a prior
+	 * write left a truncated/corrupt payload), the lookup failure is ignored and the
+	 * incoming {@code createdAt} is kept as-is, so a retried {@code putItem} can still
+	 * overwrite and repair the damaged record rather than being blocked by it.
+	 * @param item the incoming item about to be stored (its {@code createdAt} may be
+	 * overwritten with the existing item's value)
+	 */
+	protected void preserveCreatedAt(StoreItem item) {
+		try {
+			getItem(item.getNamespace(), item.getKey())
+				.ifPresent(existing -> item.setCreatedAt(existing.getCreatedAt()));
+		}
+		catch (RuntimeException e) {
+			// Best-effort: an unreadable existing record has no preservable timestamp.
+			// Keep the incoming createdAt so the write below can replace the record.
+		}
+	}
+
+	/**
 	 * Check if item matches the search filter.
 	 * @param item item to check
 	 * @param searchRequest search parameters
