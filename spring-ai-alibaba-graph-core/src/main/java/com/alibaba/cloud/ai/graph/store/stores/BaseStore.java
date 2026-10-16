@@ -186,12 +186,23 @@ public abstract class BaseStore implements Store {
 	 * acquires the read lock; a {@link java.util.concurrent.locks.ReentrantReadWriteLock}
 	 * allows a thread holding the write lock to also acquire the read lock (lock
 	 * downgrade), so this is safe to call while the write lock is held.
+	 * <p>
+	 * Preservation is best-effort: if the existing record cannot be read (e.g. a prior
+	 * write left a truncated/corrupt payload), the lookup failure is ignored and the
+	 * incoming {@code createdAt} is kept as-is, so a retried {@code putItem} can still
+	 * overwrite and repair the damaged record rather than being blocked by it.
 	 * @param item the incoming item about to be stored (its {@code createdAt} may be
 	 * overwritten with the existing item's value)
 	 */
 	protected void preserveCreatedAt(StoreItem item) {
-		getItem(item.getNamespace(), item.getKey())
-			.ifPresent(existing -> item.setCreatedAt(existing.getCreatedAt()));
+		try {
+			getItem(item.getNamespace(), item.getKey())
+				.ifPresent(existing -> item.setCreatedAt(existing.getCreatedAt()));
+		}
+		catch (RuntimeException e) {
+			// Best-effort: an unreadable existing record has no preservable timestamp.
+			// Keep the incoming createdAt so the write below can replace the record.
+		}
 	}
 
 	/**

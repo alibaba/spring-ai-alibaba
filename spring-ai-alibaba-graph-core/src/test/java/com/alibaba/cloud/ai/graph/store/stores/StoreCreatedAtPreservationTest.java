@@ -18,6 +18,8 @@ package com.alibaba.cloud.ai.graph.store.stores;
 import com.alibaba.cloud.ai.graph.store.Store;
 import com.alibaba.cloud.ai.graph.store.StoreItem;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,7 @@ import javax.sql.DataSource;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -110,6 +113,31 @@ class StoreCreatedAtPreservationTest {
 
 	static Stream<String> storeNames() {
 		return Stream.of("MemoryStore", "FileSystemStore", "DatabaseStore(H2)");
+	}
+
+	/**
+	 * createdAt preservation is best-effort: if an existing record is unreadable (e.g. a
+	 * prior write left a corrupt payload), a retried {@code putItem} must still overwrite
+	 * and repair it rather than failing on the preservation lookup.
+	 */
+	@Test
+	void putItemShouldReplaceCorruptExistingRecord() throws IOException {
+		FileSystemStore store = new FileSystemStore(tempDir);
+		store.putItem(StoreItem.of(NS, KEY, Map.of("version", 1)));
+
+		// Corrupt the stored file on disk to simulate a truncated/interrupted write.
+		Path corrupted;
+		try (Stream<Path> files = Files.walk(tempDir)) {
+			corrupted = files.filter(Files::isRegularFile).findFirst().orElseThrow();
+		}
+		Files.writeString(corrupted, "{ this is not valid json");
+
+		// Re-putting the same key must succeed (overwrite), not throw on the lookup.
+		store.putItem(StoreItem.of(NS, KEY, Map.of("version", 2, "repaired", true)));
+
+		Optional<StoreItem> retrieved = store.getItem(NS, KEY);
+		assertThat(retrieved).isPresent();
+		assertThat(retrieved.get().getValue()).isEqualTo(Map.of("version", 2, "repaired", true));
 	}
 
 }
