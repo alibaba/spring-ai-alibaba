@@ -171,6 +171,28 @@ public abstract class BaseStore implements Store {
 	}
 
 	/**
+	 * Preserve the original {@code createdAt} when a {@code putItem} overwrites an
+	 * existing item with the same namespace and key.
+	 * <p>
+	 * {@link Store#putItem(StoreItem)} defines put-on-existing-key as an update, and
+	 * {@code DatabaseStore} already preserves {@code createdAt} (its upsert SQL omits
+	 * {@code created_at} from the UPDATE SET). Overwrite-based implementations
+	 * (memory/file system/etc.) should call this before writing so the creation time
+	 * stays stable across updates, consistent with {@code DatabaseStore}.
+	 * <p>
+	 * Must be invoked <strong>before</strong> acquiring any write lock: it calls
+	 * {@link #getItem(List, String)}, which typically takes a read lock, and a
+	 * {@link java.util.concurrent.locks.ReentrantReadWriteLock} cannot acquire a read
+	 * lock while the current thread holds the write lock.
+	 * @param item the incoming item about to be stored (its {@code createdAt} may be
+	 * overwritten with the existing item's value)
+	 */
+	protected void preserveCreatedAt(StoreItem item) {
+		getItem(item.getNamespace(), item.getKey())
+			.ifPresent(existing -> item.setCreatedAt(existing.getCreatedAt()));
+	}
+
+	/**
 	 * Check if item matches the search filter.
 	 * @param item item to check
 	 * @param searchRequest search parameters

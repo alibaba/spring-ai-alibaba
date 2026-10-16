@@ -79,6 +79,10 @@ public class FileSystemStore extends BaseStore {
 	public void putItem(StoreItem item) {
 		validatePutItem(item);
 
+		// Preserve original createdAt on update (before acquiring the write lock to avoid
+		// read-lock reacquisition under ReentrantReadWriteLock).
+		preserveCreatedAt(item);
+
 		lock.writeLock().lock();
 		try {
 			Path itemPath = createItemPath(item.getNamespace(), item.getKey());
