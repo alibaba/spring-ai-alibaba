@@ -15,6 +15,9 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptors;
 
+import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallExecutionContext;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -123,7 +127,9 @@ class ToolCallRequestTest {
 		Map<String, Object> context = new HashMap<>();
 		context.put("key", "value");
 
-		ToolCallRequest original = new ToolCallRequest("tool1", "{}", "id-1", context);
+		ToolCallExecutionContext executionContext = new ToolCallExecutionContext(
+				RunnableConfig.builder().threadId("thread-1").build(), new OverAllState(Map.of("value", 42)));
+		ToolCallRequest original = new ToolCallRequest("tool1", "{}", "id-1", context, executionContext);
 
 		ToolCallRequest copy = ToolCallRequest.builder(original).build();
 
@@ -131,6 +137,8 @@ class ToolCallRequestTest {
 		assertEquals(original.getArguments(), copy.getArguments());
 		assertEquals(original.getToolCallId(), copy.getToolCallId());
 		assertEquals(original.getContext().get("key"), copy.getContext().get("key"));
+		assertSame(executionContext, copy.getExecutionContext().orElseThrow());
+		assertNotSame(original.getContext(), copy.getContext());
 	}
 
 	@Test
@@ -147,6 +155,7 @@ class ToolCallRequestTest {
 		assertEquals("tool2", modified.getToolName());
 		assertEquals("{\"new\": true}", modified.getArguments());
 		assertEquals("id-1", modified.getToolCallId()); // Unchanged
+		assertTrue(modified.getExecutionContext().isEmpty());
 	}
 
 	@Test

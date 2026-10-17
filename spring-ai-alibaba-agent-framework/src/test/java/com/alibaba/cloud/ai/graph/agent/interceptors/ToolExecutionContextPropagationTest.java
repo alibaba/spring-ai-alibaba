@@ -23,7 +23,8 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 
@@ -38,8 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ToolExecutionContextPropagationTest {
 
-    @Test
-    void toolInterceptorShouldSeeThreadIdAndState() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void toolInterceptorShouldSeeThreadIdAndState(boolean copyRequest) throws Exception {
         // Build an AssistantMessage with one tool call.
         AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("call-1", "tool", "demo_tool", "{}");
         Message assistantMessage = AssistantMessage.builder().content("").toolCalls(List.of(toolCall)).build();
@@ -49,14 +51,25 @@ class ToolExecutionContextPropagationTest {
         initialData.put("messages", new ArrayList<>(List.of(assistantMessage)));
         OverAllState state = new OverAllState(initialData);
 
-        RunnableConfig config = RunnableConfig.builder().threadId("t-1").build();
+        RunnableConfig config = RunnableConfig.builder().threadId("t-1").checkPointId("cp-1").build();
 
         CapturingToolInterceptor interceptor = new CapturingToolInterceptor();
 
         // Configure AgentToolNode with a dummy tool resolver (we won't reach tool execution).
         AgentToolNode node = AgentToolNode.builder().agentName("test").toolExecutionExceptionProcessor(null).enableActingLog(false).build();
         node.setToolCallbacks(List.of());
-        node.setToolInterceptors(List.of(interceptor));
+        ToolInterceptor copyingInterceptor = new ToolInterceptor() {
+            @Override
+            public String getName() {
+                return "copying-tool-interceptor";
+            }
+
+            @Override
+            public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
+                return handler.call(ToolCallRequest.builder(request).arguments("{\"modified\":true}").build());
+            }
+        };
+        node.setToolInterceptors(copyRequest ? List.of(copyingInterceptor, interceptor) : List.of(interceptor));
 
         try {
             node.apply(state, config);
@@ -68,6 +81,8 @@ class ToolExecutionContextPropagationTest {
         assertNotNull(captured);
         assertTrue(captured.getExecutionContext().isPresent());
         assertEquals("t-1", captured.getExecutionContext().flatMap(ctx -> ctx.threadId()).orElse(null));
+        assertEquals("cp-1", captured.getExecutionContext().flatMap(ctx -> ctx.checkpointId()).orElse(null));
+        assertEquals(copyRequest ? "{\"modified\":true}" : "{}", captured.getArguments());
         assertTrue(captured.getExecutionContext().map(ctx -> ctx.state() == state).orElse(false));
     }
 
