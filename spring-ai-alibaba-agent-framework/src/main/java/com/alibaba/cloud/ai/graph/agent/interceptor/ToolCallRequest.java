@@ -64,12 +64,16 @@ public class ToolCallRequest {
 		return builder().toolCall(toolCall).context(new HashMap<>()).build();
 	}
 
+	/**
+	 * Create a builder copying the request, including its execution context.
+	 */
 	public static Builder builder(ToolCallRequest request) {
 		return new Builder()
 				.toolName(request.toolName)
 				.arguments(request.arguments)
 				.toolCallId(request.toolCallId)
-				.context(request.context);
+				.context(request.context)
+				.executionContext(request.executionContext);
 	}
 
 	public String getToolName() {
