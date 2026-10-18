@@ -573,4 +573,86 @@ class ShellSessionManagerTest {
 		}
 	}
 
+	/**
+	 * A genuine blank line produced by a command (e.g. {@code Write-Output ''}) is command
+	 * output and must survive transcript stripping, including in the line and byte totals.
+	 * Empty strings used to be treated as transcript, so such lines were silently dropped.
+	 */
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellKeepsGenuineBlankOutputLines() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("Write-Output 'a'; Write-Output ''; Write-Output 'b'", cfg);
+
+			assertFalse(result.isTimedOut(), "PowerShell command should not time out");
+			assertEquals("a\n\nb", result.getOutput());
+			assertEquals(3, result.getTotalLines(), "the blank line must be counted");
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	/**
+	 * Output that contains the completion wrapper's literal token must be preserved. The
+	 * wrapper is only stripped when the whole wrapper command (with its per-command marker)
+	 * is echoed, not on a bare {@code $__lcSucceeded} occurrence.
+	 */
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellKeepsOutputContainingWrapperToken() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			String literal = "$__lcSucceeded = $?; $__lcNativeExit = $LASTEXITCODE;";
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("Write-Output '" + literal + "'", cfg);
+
+			assertFalse(result.isTimedOut(), "PowerShell command should not time out");
+			assertEquals(literal, result.getOutput());
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	/**
+	 * After a restart the first command must not capture the new shell's startup transcript.
+	 * Reader threads from the stopped process used to be able to enqueue a stale EOF marker
+	 * into the reused queue, which ended the readiness wait early.
+	 */
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellRestartKeepsFirstOutputClean() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			manager.executeCommand("Write-Output 'before-restart'", cfg);
+			manager.restartSession(cfg);
+
+			ShellSessionManager.CommandResult result = manager.executeCommand("Write-Output 'after-restart'", cfg);
+
+			assertFalse(result.isTimedOut(), "PowerShell command should not time out");
+			assertEquals("after-restart", result.getOutput());
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
 }

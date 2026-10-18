@@ -402,33 +402,42 @@ public class ShellSessionManager {
 			pb.redirectErrorStream(false); // Keep stderr separate for better error tracking
 
 			process = pb.start();
+			Process readerProcess = process;
 			stdin = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+
+			// Give each process its own queue. The reader threads below capture these local
+			// references, so threads left over from a previous process (after a restart) keep
+			// writing to the old queue and can no longer enqueue a stale EOF marker into the
+			// new session. Otherwise such a marker could make awaitReady() return early and
+			// leak the new shell's startup transcript into the first command's output.
+			BlockingQueue<OutputLine> queue = new LinkedBlockingQueue<>();
+			this.outputQueue = queue;
 
 			// Start stdout reader thread
 			new Thread(() -> {
-				try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(readerProcess.getInputStream()))) {
 					String line;
 					while ((line = reader.readLine()) != null) {
-						outputQueue.offer(new OutputLine("stdout", line));
+						queue.offer(new OutputLine("stdout", line));
 					}
 				} catch (IOException e) {
 					log.debug("Stdout reader terminated", e);
 				} finally {
-					outputQueue.offer(new OutputLine("stdout", null)); // EOF marker
+					queue.offer(new OutputLine("stdout", null)); // EOF marker
 				}
 			}, "shell-stdout-reader").start();
 
 			// Start stderr reader thread
 			new Thread(() -> {
-				try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(readerProcess.getErrorStream()))) {
 					String line;
 					while ((line = reader.readLine()) != null) {
-						outputQueue.offer(new OutputLine("stderr", line));
+						queue.offer(new OutputLine("stderr", line));
 					}
 				} catch (IOException e) {
 					log.debug("Stderr reader terminated", e);
 				} finally {
-					outputQueue.offer(new OutputLine("stderr", null)); // EOF marker
+					queue.offer(new OutputLine("stderr", null)); // EOF marker
 				}
 			}, "shell-stderr-reader").start();
 
@@ -532,17 +541,21 @@ public class ShellSessionManager {
 				}
 				
 				// Send marker command based on shell type
+				String wrapperCommand = null;
 				if (isPowerShell) {
 					// PowerShell only sets $LASTEXITCODE for native programs and scripts. Capture
 					// $? first so successful cmdlets still produce a numeric completion status,
 					// while preserving the native exit code when one is available.
-					stdin.write(String.format(
+					// The exact text is kept so collectOutput can recognise the echoed wrapper
+					// (it embeds the per-command marker) instead of matching a bare token.
+					wrapperCommand = String.format(
 							"$__lcSucceeded = $?; $__lcNativeExit = $LASTEXITCODE; "
 									+ "if ($__lcSucceeded) { $__lcExitCode = 0 } "
 									+ "elseif ($null -ne $__lcNativeExit) { $__lcExitCode = $__lcNativeExit } "
 									+ "else { $__lcExitCode = 1 }; "
-									+ "Write-Output \"%s $__lcExitCode\"\n",
-							marker));
+									+ "Write-Output \"%s $__lcExitCode\"",
+							marker);
+					stdin.write(wrapperCommand + "\n");
 				} else if (isWindows) {
 					// Windows cmd.exe: use ERRORLEVEL
 					stdin.write(String.format("echo %s %%ERRORLEVEL%%\n", marker));
@@ -553,15 +566,15 @@ public class ShellSessionManager {
 				stdin.flush();
 
 				// Collect output
-				return collectOutput(marker, command, deadline, maxOutputLines, maxOutputBytes);
+				return collectOutput(marker, command, wrapperCommand, deadline, maxOutputLines, maxOutputBytes);
 
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to execute command", e);
 			}
 		}
 
-		private CommandResult collectOutput(String marker, String command, long deadline, int maxOutputLines,
-				Long maxOutputBytes) {
+		private CommandResult collectOutput(String marker, String command, String wrapperCommand, long deadline,
+				int maxOutputLines, Long maxOutputBytes) {
 			List<String> lines = new ArrayList<>();
 			int totalLines = 0;
 			long totalBytes = 0;
@@ -629,13 +642,17 @@ public class ShellSessionManager {
 					// completion-marker wrapper into the same stdout we capture. None of that is
 					// command output, so it must not reach the caller (or the model).
 					if (isPowerShell) {
-						line = stripPowerShellTranscript(line, command);
-						if (line.isEmpty()) {
+						// A null result means the line was pure transcript (prompt, echoed command
+						// or echoed completion wrapper) and must be dropped. An empty string is a
+						// genuine blank output line (e.g. `Write-Output ''`) and must be kept.
+						String cleaned = stripPowerShellTranscript(line, command, wrapperCommand);
+						if (cleaned == null) {
 							if (completed) {
 								break;
 							}
 							continue;
 						}
+						line = cleaned;
 					}
 
 					totalLines++;
@@ -677,25 +694,50 @@ public class ShellSessionManager {
 		 * Removes the parts of the Windows PowerShell console transcript that are not command
 		 * output: the echoed completion-marker wrapper, the prompt token installed in
 		 * {@link #start()} and the echoed command line itself.
-		 * @return the remaining output, or an empty string when the line was pure transcript
+		 * @param line the captured line
+		 * @param command the command that was executed
+		 * @param wrapperCommand the exact completion-marker wrapper written to stdin
+		 * @return the remaining output, or {@code null} when the line was entirely transcript.
+		 * An empty string is returned for a genuine blank output line (for example
+		 * {@code Write-Output ''}), which must be kept instead of being mistaken for transcript.
 		 */
-		private String stripPowerShellTranscript(String line, String command) {
-			String cleaned = line;
+		private String stripPowerShellTranscript(String line, String command, String wrapperCommand) {
+			// A blank line carries no transcript marker, so it is real command output. Returning
+			// it as an empty string (null is reserved for identified transcript) is what lets
+			// collectOutput keep genuine blank lines and count them in the totals.
+			if (line.isEmpty()) {
+				return "";
+			}
 
-			int wrapperEcho = cleaned.indexOf("$__lcSucceeded");
+			String cleaned = line;
+			boolean sawTranscript = false;
+
+			// Cut the echoed completion wrapper. Match the whole wrapper command (which embeds
+			// the per-command random marker) instead of a bare "$__lcSucceeded" substring: a
+			// command that prints or searches that literal — reading this source file, say —
+			// must not have its real output truncated.
+			int wrapperEcho = wrapperCommand == null ? -1 : cleaned.indexOf(wrapperCommand);
 			if (wrapperEcho >= 0) {
 				cleaned = cleaned.substring(0, wrapperEcho);
+				sawTranscript = true;
 			}
 			// Output without a trailing newline is merged onto the next prompt, e.g.
 			// "42<prompt-token>$__lcSucceeded = ..." after the wrapper echo has been cut away.
 			if (cleaned.endsWith(PROMPT_TOKEN)) {
 				cleaned = cleaned.substring(0, cleaned.length() - PROMPT_TOKEN.length());
+				sawTranscript = true;
 			}
 			if (cleaned.startsWith(PROMPT_TOKEN)) {
 				cleaned = cleaned.substring(PROMPT_TOKEN.length());
+				sawTranscript = true;
 			}
 			if (cleaned.trim().equals(command.trim())) {
-				return "";
+				return null;
+			}
+			// The whole line was transcript (prompt / echoed command / echoed wrapper), so it
+			// collapses to an empty string even though it was not blank to begin with.
+			if (cleaned.isEmpty() && sawTranscript) {
+				return null;
 			}
 			return cleaned;
 		}
