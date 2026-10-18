@@ -367,6 +367,11 @@ public class ShellSessionManager {
 		private static final Logger log = LoggerFactory.getLogger(ShellSession.class);
 		private static final String DONE_MARKER_PREFIX = "__LC_SHELL_DONE__";
 
+		private static final String READY_MARKER_PREFIX = "__LC_SHELL_READY__";
+
+		/** Prompt emitted by the PowerShell session; stripped from captured output. */
+		private static final String PROMPT_TOKEN = "__LC_POWERSHELL_PROMPT__";
+
 		private final Path workspace;
 		private final List<String> command;
 		private final Map<String, String> env;
@@ -426,6 +431,48 @@ public class ShellSessionManager {
 					outputQueue.offer(new OutputLine("stderr", null)); // EOF marker
 				}
 			}, "shell-stderr-reader").start();
+
+			// The Windows PowerShell console writes its prompt into the same stdout we capture
+			// (together with an echo of every line it reads), so any captured output would carry
+			// that transcript. Replacing the prompt function with one that returns a known token
+			// makes the prompt removable instead of guessing at "PS C:\dir>". A ready marker is
+			// emitted afterwards so the override is known to have taken effect before the first
+			// real command is sent; everything up to that marker (the echoed initialisation
+			// lines) is discarded here instead of leaking into the first result.
+			if (isPowerShell) {
+				String readyMarker = READY_MARKER_PREFIX + UUID.randomUUID().toString().replace("-", "");
+				stdin.write(String.format("function prompt { '%s' }\n", PROMPT_TOKEN));
+				stdin.write(String.format("Write-Output \"%s\"\n", readyMarker));
+				stdin.flush();
+				awaitReady(readyMarker);
+			}
+		}
+
+		/**
+		 * Waits until the session echoes the given ready marker, discarding everything before
+		 * it. Returns silently if the process dies or the wait times out; the next command will
+		 * then simply run against whatever session state is left.
+		 */
+		private void awaitReady(String readyMarker) {
+			long deadline = System.currentTimeMillis() + Math.min(terminationTimeout, 10_000L);
+			while (System.currentTimeMillis() < deadline) {
+				OutputLine line;
+				try {
+					line = outputQueue.poll(deadline - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
+				}
+				if (line == null || line.content == null) {
+					return;
+				}
+				// Match the emitted line exactly: PowerShell also echoes the command that
+				// produced it, and that echo contains the marker as a substring.
+				if (line.content.trim().equals(readyMarker)) {
+					return;
+				}
+			}
 		}
 
 		void restart() {
@@ -506,14 +553,15 @@ public class ShellSessionManager {
 				stdin.flush();
 
 				// Collect output
-				return collectOutput(marker, deadline, maxOutputLines, maxOutputBytes);
+				return collectOutput(marker, command, deadline, maxOutputLines, maxOutputBytes);
 
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to execute command", e);
 			}
 		}
 
-		private CommandResult collectOutput(String marker, long deadline, int maxOutputLines, Long maxOutputBytes) {
+		private CommandResult collectOutput(String marker, String command, long deadline, int maxOutputLines,
+				Long maxOutputBytes) {
 			List<String> lines = new ArrayList<>();
 			int totalLines = 0;
 			long totalBytes = 0;
@@ -577,6 +625,19 @@ public class ShellSessionManager {
 						}
 					}
 
+					// The Windows PowerShell console echoes the prompt, the command line and the
+					// completion-marker wrapper into the same stdout we capture. None of that is
+					// command output, so it must not reach the caller (or the model).
+					if (isPowerShell) {
+						line = stripPowerShellTranscript(line, command);
+						if (line.isEmpty()) {
+							if (completed) {
+								break;
+							}
+							continue;
+						}
+					}
+
 					totalLines++;
 
 					// Format line with stderr label if needed
@@ -610,6 +671,33 @@ public class ShellSessionManager {
 			String output = String.join("\n", lines);
 			return new CommandResult(output, exitCode, timedOut, truncatedByLines,
 				truncatedByBytes, totalLines, totalBytes);
+		}
+
+		/**
+		 * Removes the parts of the Windows PowerShell console transcript that are not command
+		 * output: the echoed completion-marker wrapper, the prompt token installed in
+		 * {@link #start()} and the echoed command line itself.
+		 * @return the remaining output, or an empty string when the line was pure transcript
+		 */
+		private String stripPowerShellTranscript(String line, String command) {
+			String cleaned = line;
+
+			int wrapperEcho = cleaned.indexOf("$__lcSucceeded");
+			if (wrapperEcho >= 0) {
+				cleaned = cleaned.substring(0, wrapperEcho);
+			}
+			// Output without a trailing newline is merged onto the next prompt, e.g.
+			// "42<prompt-token>$__lcSucceeded = ..." after the wrapper echo has been cut away.
+			if (cleaned.endsWith(PROMPT_TOKEN)) {
+				cleaned = cleaned.substring(0, cleaned.length() - PROMPT_TOKEN.length());
+			}
+			if (cleaned.startsWith(PROMPT_TOKEN)) {
+				cleaned = cleaned.substring(PROMPT_TOKEN.length());
+			}
+			if (cleaned.trim().equals(command.trim())) {
+				return "";
+			}
+			return cleaned;
 		}
 
 		/**
@@ -775,8 +863,11 @@ public class ShellSessionManager {
 			String os = System.getProperty("os.name").toLowerCase();
 			
 			if (os.contains("windows")) {
-				// Windows: use PowerShell for better compatibility and features
-				return Arrays.asList("powershell.exe");
+				// Windows: use PowerShell for better compatibility and features.
+				// -NoLogo keeps the "Windows PowerShell / Copyright ..." banner out of the
+				// captured stdout, and -NoProfile keeps a user profile from printing
+				// arbitrary text (and from slowing down every session start).
+				return Arrays.asList("powershell.exe", "-NoLogo", "-NoProfile");
 			} else if (os.contains("mac")) {
 				// macOS: prefer zsh (default since Catalina), fallback to bash, then sh
 				if (new File("/bin/zsh").exists()) {

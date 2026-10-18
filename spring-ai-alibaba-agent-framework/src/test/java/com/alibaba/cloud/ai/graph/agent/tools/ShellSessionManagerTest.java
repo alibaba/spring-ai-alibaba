@@ -534,6 +534,29 @@ class ShellSessionManagerTest {
 	@Test
 	@Timeout(value = 20, unit = TimeUnit.SECONDS)
 	@EnabledOnOs(OS.WINDOWS)
+	void powershellMultiLineOutputIsKeptAndEchoIsDropped() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			// The console echoes the command line before running it. Dropping that echo must
+			// not eat the output lines the command produces.
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("Write-Output 'first-line'; Write-Output 'second-line'", cfg);
+
+			assertFalse(result.isTimedOut(), "PowerShell command should not time out");
+			assertEquals("first-line\nsecond-line", result.getOutput());
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
 	void powershellPreservesNativeProgramExitCode() throws Exception {
 		Path workspace = Files.createTempDirectory("shell_session_test_");
 		ShellSessionManager manager = newManager(workspace);
