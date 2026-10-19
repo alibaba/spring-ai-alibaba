@@ -570,7 +570,17 @@ public class ShellSessionManager {
 				if (!command.endsWith("\n")) {
 					stdin.write("\n");
 				}
-				
+
+				// A command that redefines prompt (a virtual-environment activation script, for
+				// example) makes the console print that new prompt before reading the completion
+				// wrapper, so the echoed wrapper would carry an unknown prefix the stripper
+				// cannot recognise. Re-fixing the sentinel prompt here keeps the wrapper echo
+				// prefixed with the known token; this echo is dropped as transcript like the
+				// others. (The reassertion above only covers the command's own echo.)
+				if (isPowerShell) {
+					stdin.write(String.format("function prompt { '%s' }\n", promptToken));
+				}
+
 				// Send marker command based on shell type
 				String wrapperCommand = null;
 				if (isPowerShell) {
@@ -759,13 +769,25 @@ public class ShellSessionManager {
 			if (readyMarker != null && cleaned.contains(readyMarker)) {
 				return null;
 			}
-			// The prompt-function reassertion written before every command (see execute()) is
-			// echoed back like any input line. Everything before it on the same line is the
-			// console prompt — possibly one redefined by an earlier command, which can no
-			// longer be recognised — never command output. The prompt token appears inside
-			// the reassertion text, so this check must run before the prefix/suffix cuts.
-			if (promptToken != null && cleaned.contains(String.format("function prompt { '%s' }", promptToken))) {
-				return null;
+			// The prompt-function reassertion written between the command and the wrapper
+			// (see execute()) is echoed back like any input line, and the console prints the
+			// active prompt before reading it. Cut the echo and look at what precedes it:
+			// a prefix ending in the sentinel prompt is real output without a trailing
+			// newline merged onto the prompt, so the token is stripped and the output kept;
+			// anything else is the prompt itself — possibly one the command just redefined,
+			// which can no longer be recognised — and is dropped.
+			if (promptToken != null) {
+				String reassertion = String.format("function prompt { '%s' }", promptToken);
+				int reassertEcho = cleaned.indexOf(reassertion);
+				if (reassertEcho >= 0) {
+					sawTranscript = true;
+					String prefix = cleaned.substring(0, reassertEcho);
+					if (prefix.endsWith(promptToken)) {
+						cleaned = prefix.substring(0, prefix.length() - promptToken.length());
+					} else {
+						return null;
+					}
+				}
 			}
 			// Output without a trailing newline is merged onto the next prompt, e.g.
 			// "42<prompt-token>$__lcSucceeded = ..." after the wrapper echo has been cut away.
@@ -777,7 +799,12 @@ public class ShellSessionManager {
 				cleaned = cleaned.substring(promptToken.length());
 				sawTranscript = true;
 			}
-			if (cleaned.trim().equals(command.trim())) {
+			// The echoed command line is always preceded by the sentinel prompt on the same
+			// line (sawTranscript after the prefix cut above). A command whose genuine output
+			// equals its own text — function foo { 'foo' } followed by foo — would otherwise
+			// be dropped here, so the equality check only fires on lines that carried
+			// transcript.
+			if (sawTranscript && cleaned.trim().equals(command.trim())) {
 				return null;
 			}
 			// The whole line was transcript (prompt / echoed command / echoed wrapper), so it

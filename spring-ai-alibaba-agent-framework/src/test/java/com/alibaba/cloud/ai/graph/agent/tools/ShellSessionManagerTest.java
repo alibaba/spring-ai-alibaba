@@ -680,16 +680,45 @@ class ShellSessionManagerTest {
 	@Test
 	@Timeout(value = 20, unit = TimeUnit.SECONDS)
 	@EnabledOnOs(OS.WINDOWS)
+	void powershellKeepsOutputEqualToCommandText() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			// A persistent session can define a function and then run it: the command's
+			// genuine output equals its own text and must not be dropped as the echoed
+			// command line.
+			manager.executeCommand("function foo { 'foo' }", cfg);
+
+			ShellSessionManager.CommandResult result = manager.executeCommand("foo", cfg);
+
+			assertFalse(result.isTimedOut(), "command should not time out");
+			assertEquals("foo", result.getOutput().trim());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
 	void powershellSurvivesPromptRedefinition() throws Exception {
 		Path workspace = Files.createTempDirectory("shell_session_test_");
 		ShellSessionManager manager = newManager(workspace);
 		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
 		manager.initialize(cfg);
 		try {
-			// Simulate a virtual-environment activation script redefining the prompt.
-			manager.executeCommand("function prompt { 'CUSTOM> ' }", cfg);
-			// This command absorbs the redefined-prompt transcript and lets the per-command
-			// prompt reassertion take effect again; its own output is not asserted.
+			// Simulate a virtual-environment activation script redefining the prompt. The
+			// redefining command's own result must stay clean: the console prints the new
+			// prompt before reading the completion wrapper, and the wrapper echo would carry
+			// that unknown prefix.
+			ShellSessionManager.CommandResult redefineResult = manager
+					.executeCommand("function prompt { 'CUSTOM> ' }", cfg);
+			assertEquals("", redefineResult.getOutput(), "redefining command's output should be clean");
+			// This command absorbs any leftover transcript and lets the per-command prompt
+			// reassertion take effect again; its own output is not asserted.
 			manager.executeCommand("Write-Output 'warmup'", cfg);
 
 			ShellSessionManager.CommandResult result = manager.executeCommand("Write-Output 'after-redefine'", cfg);
