@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * File system-based implementation of the Store interface.
@@ -296,8 +297,8 @@ public class FileSystemStore extends BaseStore {
 			return items;
 		}
 
-		try {
-			Files.walk(rootPath).filter(path -> path.toString().endsWith(".json")).forEach(path -> {
+		try (Stream<Path> paths = Files.walk(rootPath)) {
+			paths.filter(path -> path.toString().endsWith(".json")).forEach(path -> {
 				try {
 					String itemJson = Files.readString(path);
 					StoreItem item = objectMapper.readValue(itemJson, StoreItem.class);
@@ -324,12 +325,12 @@ public class FileSystemStore extends BaseStore {
 	 */
 	private void scanDirectoriesForNamespaces(Path path, List<String> currentNamespace, Set<String> namespaceSet,
 			NamespaceListRequest request) {
-		try {
-			if (!Files.exists(path) || !Files.isDirectory(path)) {
-				return;
-			}
+		if (!Files.exists(path) || !Files.isDirectory(path)) {
+			return;
+		}
 
-			Files.list(path).forEach(subPath -> {
+		try (Stream<Path> paths = Files.list(path)) {
+			paths.forEach(subPath -> {
 				if (Files.isDirectory(subPath)) {
 					List<String> newNamespace = new ArrayList<>(currentNamespace);
 					newNamespace.add(subPath.getFileName().toString());
@@ -411,11 +412,13 @@ public class FileSystemStore extends BaseStore {
 	 * @param directory directory to delete
 	 */
 	private void deleteDirectoryRecursively(Path directory) throws IOException {
-		Files.walk(directory).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(file -> {
-			if (!file.delete()) {
-				file.deleteOnExit();
-			}
-		});
+		try (Stream<Path> paths = Files.walk(directory)) {
+			paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(file -> {
+				if (!file.delete()) {
+					file.deleteOnExit();
+				}
+			});
+		}
 	}
 
 }
