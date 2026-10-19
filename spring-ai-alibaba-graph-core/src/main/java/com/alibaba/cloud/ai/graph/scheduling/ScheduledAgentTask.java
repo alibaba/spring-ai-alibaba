@@ -29,7 +29,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.Trigger;
+import org.springframework.scheduling.TriggerContext;
 import org.springframework.scheduling.support.CronTrigger;
+import org.springframework.scheduling.support.PeriodicTrigger;
+import org.springframework.scheduling.support.SimpleTriggerContext;
+import org.springframework.util.Assert;
 
 /**
  * ScheduledGraphExecution
@@ -72,43 +77,40 @@ public class ScheduledAgentTask {
 			throw new IllegalStateException("Schedule already started");
 		}
 
-		switch (config.getMode()) {
-			case CRON:
-				scheduledFuture = taskScheduler.schedule(this::executeGraph,
-						new CronTrigger(config.getCronExpression()));
-				break;
-			case FIXED_DELAY:
-				scheduledFuture = taskScheduler.scheduleWithFixedDelay(this::executeGraph,
-						Instant.now().plusMillis(config.getInitialDelay()), Duration.ofMillis(config.getFixedDelay()));
-				break;
-			case FIXED_RATE:
-				scheduledFuture = taskScheduler.scheduleAtFixedRate(this::executeGraph,
-						Instant.now().plusMillis(config.getInitialDelay()), Duration.ofMillis(config.getFixedRate()));
-				break;
-			case ONE_TIME:
-				scheduledFuture = taskScheduler.schedule(this::executeGraph,
-						Instant.now().plusMillis(config.getInitialDelay()));
-				break;
-			case TRIGGER:
-				scheduledFuture = taskScheduler.schedule(this::executeGraph, config.getTrigger());
-				break;
-			default:
-				throw new IllegalStateException("Unexpected value: " + config.getMode());
-		}
+		RetryingTask task = new RetryingTask(createTrigger());
+		scheduledFuture = taskScheduler.schedule(task, task);
 
 		started = true;
 		notifyListeners(ScheduleLifecycleListener.ScheduleEvent.STARTED);
 		return this;
 	}
 
+	private Trigger createTrigger() {
+		return switch (config.getMode()) {
+			case CRON -> new CronTrigger(config.getCronExpression());
+			case FIXED_DELAY, FIXED_RATE -> {
+				boolean fixedRate = config.getMode() == ScheduleConfig.ScheduleMode.FIXED_RATE;
+				long period = fixedRate ? config.getFixedRate() : config.getFixedDelay();
+				Assert.isTrue(period > 0, "Schedule period must be positive");
+				PeriodicTrigger trigger = new PeriodicTrigger(Duration.ofMillis(period));
+				trigger.setFixedRate(fixedRate);
+				trigger.setInitialDelay(Duration.ofMillis(config.getInitialDelay()));
+				yield trigger;
+			}
+			case ONE_TIME -> context -> context.lastCompletion() == null
+					? context.getClock().instant().plusMillis(config.getInitialDelay()) : null;
+			case TRIGGER -> config.getTrigger();
+		};
+	}
+
 	/**
 	 * Stop the scheduled execution
 	 */
 	public void stop() {
+		stopped = true;
 		if (scheduledFuture != null && !scheduledFuture.isCancelled()) {
 			scheduledFuture.cancel(false);
 		}
-		stopped = true;
 
 		// Unregister from active manager
 		ScheduledAgentManagerFactory.getInstance().getManager().unregisterTask(taskId);
@@ -124,14 +126,7 @@ public class ScheduledAgentTask {
 	 */
 	public void execute(RunnableConfig runnableConfig, Map<String, Object> inputs) {
 		try {
-			notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_STARTED);
-			OverAllState initialState = createInitialState(inputs);
-			if (runnableConfig == null) {
-				String threadId = String.format("%s-%d", taskId, System.currentTimeMillis());
-				runnableConfig = RunnableConfig.builder().threadId(threadId).build();
-			}
-			Optional<OverAllState> result = graph.invoke(initialState, runnableConfig);
-			notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_COMPLETED, result.orElse(null));
+			executeOnce(runnableConfig, inputs);
 		}
 		catch (Exception e) {
 			log.error("Graph execution failed", e);
@@ -139,40 +134,87 @@ public class ScheduledAgentTask {
 		}
 	}
 
-	/**
-	 * Execute the graph with retry logic
-	 */
-	private void executeGraph() {
-		int attempt = 0;
-		while (attempt <= config.getMaxRetries()) {
-			try {
-				execute(config.getRunnableConfig(), config.getInputs());
+	private void executeOnce(RunnableConfig runnableConfig, Map<String, Object> inputs) throws Exception {
+		notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_STARTED);
+		OverAllState initialState = createInitialState(inputs);
+		if (runnableConfig == null) {
+			String threadId = String.format("%s-%d", taskId, System.currentTimeMillis());
+			runnableConfig = RunnableConfig.builder().threadId(threadId).build();
+		}
+		Optional<OverAllState> result = graph.invoke(initialState, runnableConfig);
+		notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_COMPLETED, result.orElse(null));
+	}
+
+	private class RetryingTask implements Runnable, Trigger {
+
+		private final Trigger trigger;
+
+		private final SimpleTriggerContext executionContext = new SimpleTriggerContext(taskScheduler.getClock());
+
+		private Instant scheduledExecution;
+
+		private Instant actualExecution;
+
+		private Instant nextRetry;
+
+		private int attempt;
+
+		RetryingTask(Trigger trigger) {
+			this.trigger = trigger;
+		}
+
+		@Override
+		public Instant nextExecution(TriggerContext context) {
+			if (stopped) {
+				return null;
+			}
+			if (nextRetry != null) {
+				return nextRetry;
+			}
+			scheduledExecution = trigger.nextExecution(executionContext);
+			return scheduledExecution;
+		}
+
+		@Override
+		public void run() {
+			if (stopped) {
 				return;
+			}
+			if (attempt == 0) {
+				actualExecution = executionContext.getClock().instant();
+			}
+			boolean retry = false;
+			try {
+				if (attempt <= config.getMaxRetries()) {
+					executeOnce(config.getRunnableConfig(), config.getInputs());
+				}
 			}
 			catch (Exception e) {
 				log.warn("Graph execution failed (attempt {}): {}", attempt + 1, e.getMessage());
-				if (attempt < config.getMaxRetries() && config.getRetryPredicate().apply(e)) {
+				notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_FAILED, e);
+				if (attempt < config.getMaxRetries() && config.getRetryPredicate().apply(e) && !stopped
+						&& !Thread.currentThread().isInterrupted()) {
+					long delay = config.getRetryDelay().toMillis();
+					Assert.isTrue(delay >= 0, "Retry delay must not be negative");
+					nextRetry = executionContext.getClock().instant().plusMillis(delay);
 					attempt++;
-					try {
-						Thread.sleep(config.getRetryDelay().toMillis());
-					}
-					catch (InterruptedException ie) {
-						Thread.currentThread().interrupt();
-						break;
-					}
+					retry = true;
 				}
-				else {
-					break;
+			}
+			finally {
+				if (!retry) {
+					// Only a completed retry chain advances the recurring schedule.
+					executionContext.update(scheduledExecution, actualExecution, executionContext.getClock().instant());
+					nextRetry = null;
+					attempt = 0;
 				}
 			}
 		}
+
 	}
 
 	private OverAllState createInitialState(Map<String, Object> inputs) {
-		return OverAllStateBuilder.builder()
-			.withKeyStrategies(graph.getKeyStrategyMap())
-			.withData(inputs)
-			.build();
+		return OverAllStateBuilder.builder().withKeyStrategies(graph.getKeyStrategyMap()).withData(inputs).build();
 	}
 
 	private void notifyListeners(ScheduleLifecycleListener.ScheduleEvent event, Object data) {
