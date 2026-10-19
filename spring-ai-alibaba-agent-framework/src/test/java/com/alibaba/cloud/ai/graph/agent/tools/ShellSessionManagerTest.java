@@ -731,4 +731,30 @@ class ShellSessionManagerTest {
 		}
 	}
 
+	/**
+	 * A command submitted with real newlines is prompted and echoed one input line at a
+	 * time, so every echo must be matched against that one line. Comparing against the
+	 * whole multi-line text never matched and leaked every echo into the result.
+	 */
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellStripsEachEchoLineOfMultiLineCommand() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("Write-Output 'a'\nWrite-Output 'b'\n", cfg);
+
+			assertFalse(result.isTimedOut(), "multi-line command should not time out");
+			assertEquals("a\nb", result.getOutput(), "echoes of the input lines must not reach the result");
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
 }

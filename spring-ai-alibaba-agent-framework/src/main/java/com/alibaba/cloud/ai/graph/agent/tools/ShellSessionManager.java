@@ -803,9 +803,14 @@ public class ShellSessionManager {
 			// line (sawTranscript after the prefix cut above). A command whose genuine output
 			// equals its own text — function foo { 'foo' } followed by foo — would otherwise
 			// be dropped here, so the equality check only fires on lines that carried
-			// transcript.
-			if (sawTranscript && cleaned.trim().equals(command.trim())) {
-				return null;
+			// transcript. For a multi-line command PowerShell prompts and echoes every input
+			// line separately, so each echo must be matched against that one line rather
+			// than the whole multi-line text.
+			if (sawTranscript) {
+				String trimmed = cleaned.trim();
+				if (trimmed.equals(command.trim()) || matchesAnyCommandLine(command, trimmed)) {
+					return null;
+				}
 			}
 			// The whole line was transcript (prompt / echoed command / echoed wrapper), so it
 			// collapses to an empty string even though it was not blank to begin with.
@@ -813,6 +818,23 @@ public class ShellSessionManager {
 				return null;
 			}
 			return cleaned;
+		}
+
+		/**
+		 * Returns whether {@code line} equals one input line of a multi-line {@code command}.
+		 * Single-line commands never match, because their echo is already handled by the
+		 * whole-command equality check above.
+		 */
+		private static boolean matchesAnyCommandLine(String command, String line) {
+			if (command.indexOf('\n') < 0) {
+				return false;
+			}
+			for (String part : command.split("\n")) {
+				if (part.trim().equals(line)) {
+					return true;
+				}
+			}
+			return false;
 		}
 
 		/**
