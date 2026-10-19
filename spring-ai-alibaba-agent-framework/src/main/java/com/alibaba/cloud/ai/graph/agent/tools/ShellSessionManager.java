@@ -369,8 +369,24 @@ public class ShellSessionManager {
 
 		private static final String READY_MARKER_PREFIX = "__LC_SHELL_READY__";
 
-		/** Prompt emitted by the PowerShell session; stripped from captured output. */
-		private static final String PROMPT_TOKEN = "__LC_POWERSHELL_PROMPT__";
+		/**
+		 * Cap for the startup readiness wait. This used to be capped by the termination
+		 * timeout (5s in the tests), which expires before a cold-started PowerShell is up
+		 * on a loaded machine — the readiness wait then gave up silently and the startup
+		 * transcript leaked into the first command's result. The wait still ends early
+		 * when the process dies (the reader threads enqueue an EOF marker), so a larger
+		 * cap only affects a genuinely hung shell.
+		 */
+		private static final long STARTUP_TIMEOUT_MS = 30_000L;
+
+		/**
+		 * Prefix of the prompt token emitted by the PowerShell session. The suffix is
+		 * randomized on every start, like the completion and ready markers. A fixed token
+		 * would let a command that legitimately prints the literal (e.g.
+		 * {@code Write-Output '__LC_POWERSHELL_PROMPT__'}) lose that line, because the
+		 * stripper would mistake it for the console prompt.
+		 */
+		private static final String PROMPT_TOKEN_PREFIX = "__LC_POWERSHELL_PROMPT_";
 
 		private final Path workspace;
 		private final List<String> command;
@@ -382,6 +398,10 @@ public class ShellSessionManager {
 		private BufferedWriter stdin;
 		private BlockingQueue<OutputLine> outputQueue;
 		private volatile boolean terminated;
+		/** Per-session prompt sentinel; {@code null} until the first PowerShell start. */
+		private String promptToken;
+		/** Ready marker of the current process; lets the stripper discard leaked startup transcript. */
+		private String readyMarker;
 
 		ShellSession(Path workspace, List<String> command, Map<String, String> env, long terminationTimeout) {
 			this.workspace = workspace;
@@ -449,8 +469,9 @@ public class ShellSessionManager {
 			// real command is sent; everything up to that marker (the echoed initialisation
 			// lines) is discarded here instead of leaking into the first result.
 			if (isPowerShell) {
-				String readyMarker = READY_MARKER_PREFIX + UUID.randomUUID().toString().replace("-", "");
-				stdin.write(String.format("function prompt { '%s' }\n", PROMPT_TOKEN));
+				promptToken = PROMPT_TOKEN_PREFIX + UUID.randomUUID().toString().replace("-", "");
+				readyMarker = READY_MARKER_PREFIX + UUID.randomUUID().toString().replace("-", "");
+				stdin.write(String.format("function prompt { '%s' }\n", promptToken));
 				stdin.write(String.format("Write-Output \"%s\"\n", readyMarker));
 				stdin.flush();
 				awaitReady(readyMarker);
@@ -463,7 +484,7 @@ public class ShellSessionManager {
 		 * then simply run against whatever session state is left.
 		 */
 		private void awaitReady(String readyMarker) {
-			long deadline = System.currentTimeMillis() + Math.min(terminationTimeout, 10_000L);
+			long deadline = System.currentTimeMillis() + STARTUP_TIMEOUT_MS;
 			while (System.currentTimeMillis() < deadline) {
 				OutputLine line;
 				try {
@@ -533,6 +554,16 @@ public class ShellSessionManager {
 			try {
 				// Clear output queue
 				outputQueue.clear();
+
+				// A startup or earlier persistent command can redefine the prompt function
+				// (a virtual-environment activation script, for example), which would break
+				// transcript detection for the rest of the session. Reasserting the sentinel
+				// prompt before every command keeps the protocol independent of mutable
+				// session state. The echo of this line is dropped as transcript by
+				// stripPowerShellTranscript, like the echoed command itself.
+				if (isPowerShell) {
+					stdin.write(String.format("function prompt { '%s' }\n", promptToken));
+				}
 
 				// Send command
 				stdin.write(command);
@@ -693,7 +724,8 @@ public class ShellSessionManager {
 		/**
 		 * Removes the parts of the Windows PowerShell console transcript that are not command
 		 * output: the echoed completion-marker wrapper, the prompt token installed in
-		 * {@link #start()} and the echoed command line itself.
+		 * {@link #start()} and reasserted before every command, the echoed reassertion line
+		 * itself and the echoed command line.
 		 * @param line the captured line
 		 * @param command the command that was executed
 		 * @param wrapperCommand the exact completion-marker wrapper written to stdin
@@ -721,14 +753,28 @@ public class ShellSessionManager {
 				cleaned = cleaned.substring(0, wrapperEcho);
 				sawTranscript = true;
 			}
+			// Startup transcript that leaked past the readiness wait (a loaded machine can
+			// take longer to bring the shell up than the wait allows) must not reach the
+			// caller either. The marker is random per start, so real output cannot contain it.
+			if (readyMarker != null && cleaned.contains(readyMarker)) {
+				return null;
+			}
+			// The prompt-function reassertion written before every command (see execute()) is
+			// echoed back like any input line. Everything before it on the same line is the
+			// console prompt — possibly one redefined by an earlier command, which can no
+			// longer be recognised — never command output. The prompt token appears inside
+			// the reassertion text, so this check must run before the prefix/suffix cuts.
+			if (promptToken != null && cleaned.contains(String.format("function prompt { '%s' }", promptToken))) {
+				return null;
+			}
 			// Output without a trailing newline is merged onto the next prompt, e.g.
 			// "42<prompt-token>$__lcSucceeded = ..." after the wrapper echo has been cut away.
-			if (cleaned.endsWith(PROMPT_TOKEN)) {
-				cleaned = cleaned.substring(0, cleaned.length() - PROMPT_TOKEN.length());
+			if (cleaned.endsWith(promptToken)) {
+				cleaned = cleaned.substring(0, cleaned.length() - promptToken.length());
 				sawTranscript = true;
 			}
-			if (cleaned.startsWith(PROMPT_TOKEN)) {
-				cleaned = cleaned.substring(PROMPT_TOKEN.length());
+			if (cleaned.startsWith(promptToken)) {
+				cleaned = cleaned.substring(promptToken.length());
 				sawTranscript = true;
 			}
 			if (cleaned.trim().equals(command.trim())) {

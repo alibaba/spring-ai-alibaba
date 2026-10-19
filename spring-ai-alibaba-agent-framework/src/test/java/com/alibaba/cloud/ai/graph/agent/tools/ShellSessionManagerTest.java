@@ -655,4 +655,51 @@ class ShellSessionManagerTest {
 		}
 	}
 
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellKeepsOutputContainingPromptTokenLiteral() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			// The prompt sentinel is randomized per session, so a command that prints the
+			// well-known literal must not have that line stripped as console transcript.
+			ShellSessionManager.CommandResult result = manager.executeCommand(
+					"Write-Output '__LC_POWERSHELL_PROMPT__'", cfg);
+
+			assertFalse(result.isTimedOut(), "command should not time out");
+			assertEquals("__LC_POWERSHELL_PROMPT__", result.getOutput().trim());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellSurvivesPromptRedefinition() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			// Simulate a virtual-environment activation script redefining the prompt.
+			manager.executeCommand("function prompt { 'CUSTOM> ' }", cfg);
+			// This command absorbs the redefined-prompt transcript and lets the per-command
+			// prompt reassertion take effect again; its own output is not asserted.
+			manager.executeCommand("Write-Output 'warmup'", cfg);
+
+			ShellSessionManager.CommandResult result = manager.executeCommand("Write-Output 'after-redefine'", cfg);
+
+			assertFalse(result.isTimedOut(), "command should not time out");
+			assertEquals("after-redefine", result.getOutput().trim());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
 }
