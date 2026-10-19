@@ -534,6 +534,29 @@ class ShellSessionManagerTest {
 	@Test
 	@Timeout(value = 20, unit = TimeUnit.SECONDS)
 	@EnabledOnOs(OS.WINDOWS)
+	void powershellMultiLineOutputIsKeptAndEchoIsDropped() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			// The console echoes the command line before running it. Dropping that echo must
+			// not eat the output lines the command produces.
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("Write-Output 'first-line'; Write-Output 'second-line'", cfg);
+
+			assertFalse(result.isTimedOut(), "PowerShell command should not time out");
+			assertEquals("first-line\nsecond-line", result.getOutput());
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
 	void powershellPreservesNativeProgramExitCode() throws Exception {
 		Path workspace = Files.createTempDirectory("shell_session_test_");
 		ShellSessionManager manager = newManager(workspace);
@@ -544,6 +567,216 @@ class ShellSessionManagerTest {
 
 			assertFalse(result.isTimedOut(), "native command should not time out");
 			assertEquals(7, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	/**
+	 * A genuine blank line produced by a command (e.g. {@code Write-Output ''}) is command
+	 * output and must survive transcript stripping, including in the line and byte totals.
+	 * Empty strings used to be treated as transcript, so such lines were silently dropped.
+	 */
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellKeepsGenuineBlankOutputLines() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("Write-Output 'a'; Write-Output ''; Write-Output 'b'", cfg);
+
+			assertFalse(result.isTimedOut(), "PowerShell command should not time out");
+			assertEquals("a\n\nb", result.getOutput());
+			assertEquals(3, result.getTotalLines(), "the blank line must be counted");
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	/**
+	 * Output that contains the completion wrapper's literal token must be preserved. The
+	 * wrapper is only stripped when the whole wrapper command (with its per-command marker)
+	 * is echoed, not on a bare {@code $__lcSucceeded} occurrence.
+	 */
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellKeepsOutputContainingWrapperToken() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			String literal = "$__lcSucceeded = $?; $__lcNativeExit = $LASTEXITCODE;";
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("Write-Output '" + literal + "'", cfg);
+
+			assertFalse(result.isTimedOut(), "PowerShell command should not time out");
+			assertEquals(literal, result.getOutput());
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	/**
+	 * After a restart the first command must not capture the new shell's startup transcript.
+	 * Reader threads from the stopped process used to be able to enqueue a stale EOF marker
+	 * into the reused queue, which ended the readiness wait early.
+	 */
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellRestartKeepsFirstOutputClean() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			manager.executeCommand("Write-Output 'before-restart'", cfg);
+			manager.restartSession(cfg);
+
+			ShellSessionManager.CommandResult result = manager.executeCommand("Write-Output 'after-restart'", cfg);
+
+			assertFalse(result.isTimedOut(), "PowerShell command should not time out");
+			assertEquals("after-restart", result.getOutput());
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellKeepsOutputContainingPromptTokenLiteral() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			// The prompt sentinel is randomized per session, so a command that prints the
+			// well-known literal must not have that line stripped as console transcript.
+			ShellSessionManager.CommandResult result = manager.executeCommand(
+					"Write-Output '__LC_POWERSHELL_PROMPT__'", cfg);
+
+			assertFalse(result.isTimedOut(), "command should not time out");
+			assertEquals("__LC_POWERSHELL_PROMPT__", result.getOutput().trim());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellKeepsOutputEqualToCommandText() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			// A persistent session can define a function and then run it: the command's
+			// genuine output equals its own text and must not be dropped as the echoed
+			// command line.
+			manager.executeCommand("function foo { 'foo' }", cfg);
+
+			ShellSessionManager.CommandResult result = manager.executeCommand("foo", cfg);
+
+			assertFalse(result.isTimedOut(), "command should not time out");
+			assertEquals("foo", result.getOutput().trim());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellSurvivesPromptRedefinition() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			// Simulate a virtual-environment activation script redefining the prompt. The
+			// redefining command's own result must stay clean: the console prints the new
+			// prompt before reading the completion wrapper, and the wrapper echo would carry
+			// that unknown prefix.
+			ShellSessionManager.CommandResult redefineResult = manager
+					.executeCommand("function prompt { 'CUSTOM> ' }", cfg);
+			assertEquals("", redefineResult.getOutput(), "redefining command's output should be clean");
+			// This command absorbs any leftover transcript and lets the per-command prompt
+			// reassertion take effect again; its own output is not asserted.
+			manager.executeCommand("Write-Output 'warmup'", cfg);
+
+			ShellSessionManager.CommandResult result = manager.executeCommand("Write-Output 'after-redefine'", cfg);
+
+			assertFalse(result.isTimedOut(), "command should not time out");
+			assertEquals("after-redefine", result.getOutput().trim());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	/**
+	 * A command submitted with real newlines is prompted and echoed one input line at a
+	 * time, so every echo must be matched against that one line. Comparing against the
+	 * whole multi-line text never matched and leaked every echo into the result.
+	 */
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellStripsEachEchoLineOfMultiLineCommand() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("Write-Output 'a'\nWrite-Output 'b'\n", cfg);
+
+			assertFalse(result.isTimedOut(), "multi-line command should not time out");
+			assertEquals("a\nb", result.getOutput(), "echoes of the input lines must not reach the result");
+			assertEquals(0, result.getExitCode());
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
+	/**
+	 * A failing cmdlet leaves {@code $?} false with no {@code $LASTEXITCODE}, so the
+	 * wrapper must report the failure exit status. The prompt reassertion written between
+	 * the command and the wrapper must not turn this into a success (a function definition
+	 * does not update {@code $?} on Windows PowerShell, and this test pins that down).
+	 */
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellReportsFailingCmdletExitStatus() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("Get-Item 'C:\\definitely-missing-xyz-12345'", cfg);
+
+			assertFalse(result.isTimedOut(), "failing cmdlet should not time out");
+			assertEquals(1, result.getExitCode(), "a failing cmdlet must be reported as failed");
 		}
 		finally {
 			manager.cleanup(cfg);

@@ -367,6 +367,27 @@ public class ShellSessionManager {
 		private static final Logger log = LoggerFactory.getLogger(ShellSession.class);
 		private static final String DONE_MARKER_PREFIX = "__LC_SHELL_DONE__";
 
+		private static final String READY_MARKER_PREFIX = "__LC_SHELL_READY__";
+
+		/**
+		 * Cap for the startup readiness wait. This used to be capped by the termination
+		 * timeout (5s in the tests), which expires before a cold-started PowerShell is up
+		 * on a loaded machine — the readiness wait then gave up silently and the startup
+		 * transcript leaked into the first command's result. The wait still ends early
+		 * when the process dies (the reader threads enqueue an EOF marker), so a larger
+		 * cap only affects a genuinely hung shell.
+		 */
+		private static final long STARTUP_TIMEOUT_MS = 30_000L;
+
+		/**
+		 * Prefix of the prompt token emitted by the PowerShell session. The suffix is
+		 * randomized on every start, like the completion and ready markers. A fixed token
+		 * would let a command that legitimately prints the literal (e.g.
+		 * {@code Write-Output '__LC_POWERSHELL_PROMPT__'}) lose that line, because the
+		 * stripper would mistake it for the console prompt.
+		 */
+		private static final String PROMPT_TOKEN_PREFIX = "__LC_POWERSHELL_PROMPT_";
+
 		private final Path workspace;
 		private final List<String> command;
 		private final Map<String, String> env;
@@ -377,6 +398,10 @@ public class ShellSessionManager {
 		private BufferedWriter stdin;
 		private BlockingQueue<OutputLine> outputQueue;
 		private volatile boolean terminated;
+		/** Per-session prompt sentinel; {@code null} until the first PowerShell start. */
+		private String promptToken;
+		/** Ready marker of the current process; lets the stripper discard leaked startup transcript. */
+		private String readyMarker;
 
 		ShellSession(Path workspace, List<String> command, Map<String, String> env, long terminationTimeout) {
 			this.workspace = workspace;
@@ -397,35 +422,87 @@ public class ShellSessionManager {
 			pb.redirectErrorStream(false); // Keep stderr separate for better error tracking
 
 			process = pb.start();
+			Process readerProcess = process;
 			stdin = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
+
+			// Give each process its own queue. The reader threads below capture these local
+			// references, so threads left over from a previous process (after a restart) keep
+			// writing to the old queue and can no longer enqueue a stale EOF marker into the
+			// new session. Otherwise such a marker could make awaitReady() return early and
+			// leak the new shell's startup transcript into the first command's output.
+			BlockingQueue<OutputLine> queue = new LinkedBlockingQueue<>();
+			this.outputQueue = queue;
 
 			// Start stdout reader thread
 			new Thread(() -> {
-				try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(readerProcess.getInputStream()))) {
 					String line;
 					while ((line = reader.readLine()) != null) {
-						outputQueue.offer(new OutputLine("stdout", line));
+						queue.offer(new OutputLine("stdout", line));
 					}
 				} catch (IOException e) {
 					log.debug("Stdout reader terminated", e);
 				} finally {
-					outputQueue.offer(new OutputLine("stdout", null)); // EOF marker
+					queue.offer(new OutputLine("stdout", null)); // EOF marker
 				}
 			}, "shell-stdout-reader").start();
 
 			// Start stderr reader thread
 			new Thread(() -> {
-				try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(readerProcess.getErrorStream()))) {
 					String line;
 					while ((line = reader.readLine()) != null) {
-						outputQueue.offer(new OutputLine("stderr", line));
+						queue.offer(new OutputLine("stderr", line));
 					}
 				} catch (IOException e) {
 					log.debug("Stderr reader terminated", e);
 				} finally {
-					outputQueue.offer(new OutputLine("stderr", null)); // EOF marker
+					queue.offer(new OutputLine("stderr", null)); // EOF marker
 				}
 			}, "shell-stderr-reader").start();
+
+			// The Windows PowerShell console writes its prompt into the same stdout we capture
+			// (together with an echo of every line it reads), so any captured output would carry
+			// that transcript. Replacing the prompt function with one that returns a known token
+			// makes the prompt removable instead of guessing at "PS C:\dir>". A ready marker is
+			// emitted afterwards so the override is known to have taken effect before the first
+			// real command is sent; everything up to that marker (the echoed initialisation
+			// lines) is discarded here instead of leaking into the first result.
+			if (isPowerShell) {
+				promptToken = PROMPT_TOKEN_PREFIX + UUID.randomUUID().toString().replace("-", "");
+				readyMarker = READY_MARKER_PREFIX + UUID.randomUUID().toString().replace("-", "");
+				stdin.write(String.format("function prompt { '%s' }\n", promptToken));
+				stdin.write(String.format("Write-Output \"%s\"\n", readyMarker));
+				stdin.flush();
+				awaitReady(readyMarker);
+			}
+		}
+
+		/**
+		 * Waits until the session echoes the given ready marker, discarding everything before
+		 * it. Returns silently if the process dies or the wait times out; the next command will
+		 * then simply run against whatever session state is left.
+		 */
+		private void awaitReady(String readyMarker) {
+			long deadline = System.currentTimeMillis() + STARTUP_TIMEOUT_MS;
+			while (System.currentTimeMillis() < deadline) {
+				OutputLine line;
+				try {
+					line = outputQueue.poll(deadline - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
+				}
+				if (line == null || line.content == null) {
+					return;
+				}
+				// Match the emitted line exactly: PowerShell also echoes the command that
+				// produced it, and that echo contains the marker as a substring.
+				if (line.content.trim().equals(readyMarker)) {
+					return;
+				}
+			}
 		}
 
 		void restart() {
@@ -478,24 +555,48 @@ public class ShellSessionManager {
 				// Clear output queue
 				outputQueue.clear();
 
+				// A startup or earlier persistent command can redefine the prompt function
+				// (a virtual-environment activation script, for example), which would break
+				// transcript detection for the rest of the session. Reasserting the sentinel
+				// prompt before every command keeps the protocol independent of mutable
+				// session state. The echo of this line is dropped as transcript by
+				// stripPowerShellTranscript, like the echoed command itself.
+				if (isPowerShell) {
+					stdin.write(String.format("function prompt { '%s' }\n", promptToken));
+				}
+
 				// Send command
 				stdin.write(command);
 				if (!command.endsWith("\n")) {
 					stdin.write("\n");
 				}
-				
+
+				// A command that redefines prompt (a virtual-environment activation script, for
+				// example) makes the console print that new prompt before reading the completion
+				// wrapper, so the echoed wrapper would carry an unknown prefix the stripper
+				// cannot recognise. Re-fixing the sentinel prompt here keeps the wrapper echo
+				// prefixed with the known token; this echo is dropped as transcript like the
+				// others. (The reassertion above only covers the command's own echo.)
+				if (isPowerShell) {
+					stdin.write(String.format("function prompt { '%s' }\n", promptToken));
+				}
+
 				// Send marker command based on shell type
+				String wrapperCommand = null;
 				if (isPowerShell) {
 					// PowerShell only sets $LASTEXITCODE for native programs and scripts. Capture
 					// $? first so successful cmdlets still produce a numeric completion status,
 					// while preserving the native exit code when one is available.
-					stdin.write(String.format(
+					// The exact text is kept so collectOutput can recognise the echoed wrapper
+					// (it embeds the per-command marker) instead of matching a bare token.
+					wrapperCommand = String.format(
 							"$__lcSucceeded = $?; $__lcNativeExit = $LASTEXITCODE; "
 									+ "if ($__lcSucceeded) { $__lcExitCode = 0 } "
 									+ "elseif ($null -ne $__lcNativeExit) { $__lcExitCode = $__lcNativeExit } "
 									+ "else { $__lcExitCode = 1 }; "
-									+ "Write-Output \"%s $__lcExitCode\"\n",
-							marker));
+									+ "Write-Output \"%s $__lcExitCode\"",
+							marker);
+					stdin.write(wrapperCommand + "\n");
 				} else if (isWindows) {
 					// Windows cmd.exe: use ERRORLEVEL
 					stdin.write(String.format("echo %s %%ERRORLEVEL%%\n", marker));
@@ -506,14 +607,15 @@ public class ShellSessionManager {
 				stdin.flush();
 
 				// Collect output
-				return collectOutput(marker, deadline, maxOutputLines, maxOutputBytes);
+				return collectOutput(marker, command, wrapperCommand, deadline, maxOutputLines, maxOutputBytes);
 
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to execute command", e);
 			}
 		}
 
-		private CommandResult collectOutput(String marker, long deadline, int maxOutputLines, Long maxOutputBytes) {
+		private CommandResult collectOutput(String marker, String command, String wrapperCommand, long deadline,
+				int maxOutputLines, Long maxOutputBytes) {
 			List<String> lines = new ArrayList<>();
 			int totalLines = 0;
 			long totalBytes = 0;
@@ -577,6 +679,23 @@ public class ShellSessionManager {
 						}
 					}
 
+					// The Windows PowerShell console echoes the prompt, the command line and the
+					// completion-marker wrapper into the same stdout we capture. None of that is
+					// command output, so it must not reach the caller (or the model).
+					if (isPowerShell) {
+						// A null result means the line was pure transcript (prompt, echoed command
+						// or echoed completion wrapper) and must be dropped. An empty string is a
+						// genuine blank output line (e.g. `Write-Output ''`) and must be kept.
+						String cleaned = stripPowerShellTranscript(line, command, wrapperCommand);
+						if (cleaned == null) {
+							if (completed) {
+								break;
+							}
+							continue;
+						}
+						line = cleaned;
+					}
+
 					totalLines++;
 
 					// Format line with stderr label if needed
@@ -610,6 +729,112 @@ public class ShellSessionManager {
 			String output = String.join("\n", lines);
 			return new CommandResult(output, exitCode, timedOut, truncatedByLines,
 				truncatedByBytes, totalLines, totalBytes);
+		}
+
+		/**
+		 * Removes the parts of the Windows PowerShell console transcript that are not command
+		 * output: the echoed completion-marker wrapper, the prompt token installed in
+		 * {@link #start()} and reasserted before every command, the echoed reassertion line
+		 * itself and the echoed command line.
+		 * @param line the captured line
+		 * @param command the command that was executed
+		 * @param wrapperCommand the exact completion-marker wrapper written to stdin
+		 * @return the remaining output, or {@code null} when the line was entirely transcript.
+		 * An empty string is returned for a genuine blank output line (for example
+		 * {@code Write-Output ''}), which must be kept instead of being mistaken for transcript.
+		 */
+		private String stripPowerShellTranscript(String line, String command, String wrapperCommand) {
+			// A blank line carries no transcript marker, so it is real command output. Returning
+			// it as an empty string (null is reserved for identified transcript) is what lets
+			// collectOutput keep genuine blank lines and count them in the totals.
+			if (line.isEmpty()) {
+				return "";
+			}
+
+			String cleaned = line;
+			boolean sawTranscript = false;
+
+			// Cut the echoed completion wrapper. Match the whole wrapper command (which embeds
+			// the per-command random marker) instead of a bare "$__lcSucceeded" substring: a
+			// command that prints or searches that literal — reading this source file, say —
+			// must not have its real output truncated.
+			int wrapperEcho = wrapperCommand == null ? -1 : cleaned.indexOf(wrapperCommand);
+			if (wrapperEcho >= 0) {
+				cleaned = cleaned.substring(0, wrapperEcho);
+				sawTranscript = true;
+			}
+			// Startup transcript that leaked past the readiness wait (a loaded machine can
+			// take longer to bring the shell up than the wait allows) must not reach the
+			// caller either. The marker is random per start, so real output cannot contain it.
+			if (readyMarker != null && cleaned.contains(readyMarker)) {
+				return null;
+			}
+			// The prompt-function reassertion written between the command and the wrapper
+			// (see execute()) is echoed back like any input line, and the console prints the
+			// active prompt before reading it. Cut the echo and look at what precedes it:
+			// a prefix ending in the sentinel prompt is real output without a trailing
+			// newline merged onto the prompt, so the token is stripped and the output kept;
+			// anything else is the prompt itself — possibly one the command just redefined,
+			// which can no longer be recognised — and is dropped.
+			if (promptToken != null) {
+				String reassertion = String.format("function prompt { '%s' }", promptToken);
+				int reassertEcho = cleaned.indexOf(reassertion);
+				if (reassertEcho >= 0) {
+					sawTranscript = true;
+					String prefix = cleaned.substring(0, reassertEcho);
+					if (prefix.endsWith(promptToken)) {
+						cleaned = prefix.substring(0, prefix.length() - promptToken.length());
+					} else {
+						return null;
+					}
+				}
+			}
+			// Output without a trailing newline is merged onto the next prompt, e.g.
+			// "42<prompt-token>$__lcSucceeded = ..." after the wrapper echo has been cut away.
+			if (cleaned.endsWith(promptToken)) {
+				cleaned = cleaned.substring(0, cleaned.length() - promptToken.length());
+				sawTranscript = true;
+			}
+			if (cleaned.startsWith(promptToken)) {
+				cleaned = cleaned.substring(promptToken.length());
+				sawTranscript = true;
+			}
+			// The echoed command line is always preceded by the sentinel prompt on the same
+			// line (sawTranscript after the prefix cut above). A command whose genuine output
+			// equals its own text — function foo { 'foo' } followed by foo — would otherwise
+			// be dropped here, so the equality check only fires on lines that carried
+			// transcript. For a multi-line command PowerShell prompts and echoes every input
+			// line separately, so each echo must be matched against that one line rather
+			// than the whole multi-line text.
+			if (sawTranscript) {
+				String trimmed = cleaned.trim();
+				if (trimmed.equals(command.trim()) || matchesAnyCommandLine(command, trimmed)) {
+					return null;
+				}
+			}
+			// The whole line was transcript (prompt / echoed command / echoed wrapper), so it
+			// collapses to an empty string even though it was not blank to begin with.
+			if (cleaned.isEmpty() && sawTranscript) {
+				return null;
+			}
+			return cleaned;
+		}
+
+		/**
+		 * Returns whether {@code line} equals one input line of a multi-line {@code command}.
+		 * Single-line commands never match, because their echo is already handled by the
+		 * whole-command equality check above.
+		 */
+		private static boolean matchesAnyCommandLine(String command, String line) {
+			if (command.indexOf('\n') < 0) {
+				return false;
+			}
+			for (String part : command.split("\n")) {
+				if (part.trim().equals(line)) {
+					return true;
+				}
+			}
+			return false;
 		}
 
 		/**
@@ -775,8 +1000,11 @@ public class ShellSessionManager {
 			String os = System.getProperty("os.name").toLowerCase();
 			
 			if (os.contains("windows")) {
-				// Windows: use PowerShell for better compatibility and features
-				return Arrays.asList("powershell.exe");
+				// Windows: use PowerShell for better compatibility and features.
+				// -NoLogo keeps the "Windows PowerShell / Copyright ..." banner out of the
+				// captured stdout, and -NoProfile keeps a user profile from printing
+				// arbitrary text (and from slowing down every session start).
+				return Arrays.asList("powershell.exe", "-NoLogo", "-NoProfile");
 			} else if (os.contains("mac")) {
 				// macOS: prefer zsh (default since Catalina), fallback to bash, then sh
 				if (new File("/bin/zsh").exists()) {
