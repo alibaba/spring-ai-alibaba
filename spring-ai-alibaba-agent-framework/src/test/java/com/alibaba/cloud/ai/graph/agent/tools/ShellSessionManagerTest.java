@@ -757,4 +757,30 @@ class ShellSessionManagerTest {
 		}
 	}
 
+	/**
+	 * A failing cmdlet leaves {@code $?} false with no {@code $LASTEXITCODE}, so the
+	 * wrapper must report the failure exit status. The prompt reassertion written between
+	 * the command and the wrapper must not turn this into a success (a function definition
+	 * does not update {@code $?} on Windows PowerShell, and this test pins that down).
+	 */
+	@Test
+	@Timeout(value = 20, unit = TimeUnit.SECONDS)
+	@EnabledOnOs(OS.WINDOWS)
+	void powershellReportsFailingCmdletExitStatus() throws Exception {
+		Path workspace = Files.createTempDirectory("shell_session_test_");
+		ShellSessionManager manager = newManager(workspace);
+		RunnableConfig cfg = RunnableConfig.builder().threadId("test-thread").build();
+		manager.initialize(cfg);
+		try {
+			ShellSessionManager.CommandResult result = manager
+					.executeCommand("Get-Item 'C:\\definitely-missing-xyz-12345'", cfg);
+
+			assertFalse(result.isTimedOut(), "failing cmdlet should not time out");
+			assertEquals(1, result.getExitCode(), "a failing cmdlet must be reported as failed");
+		}
+		finally {
+			manager.cleanup(cfg);
+		}
+	}
+
 }
