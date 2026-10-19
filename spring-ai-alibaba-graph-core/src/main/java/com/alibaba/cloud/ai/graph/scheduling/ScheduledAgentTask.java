@@ -124,19 +124,23 @@ public class ScheduledAgentTask {
 	 */
 	public void execute(RunnableConfig runnableConfig, Map<String, Object> inputs) {
 		try {
-			notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_STARTED);
-			OverAllState initialState = createInitialState(inputs);
-			if (runnableConfig == null) {
-				String threadId = String.format("%s-%d", taskId, System.currentTimeMillis());
-				runnableConfig = RunnableConfig.builder().threadId(threadId).build();
-			}
-			Optional<OverAllState> result = graph.invoke(initialState, runnableConfig);
-			notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_COMPLETED, result.orElse(null));
+			executeOnce(runnableConfig, inputs);
 		}
 		catch (Exception e) {
 			log.error("Graph execution failed", e);
 			notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_FAILED, e);
 		}
+	}
+
+	private void executeOnce(RunnableConfig runnableConfig, Map<String, Object> inputs) throws Exception {
+		notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_STARTED);
+		OverAllState initialState = createInitialState(inputs);
+		if (runnableConfig == null) {
+			String threadId = String.format("%s-%d", taskId, System.currentTimeMillis());
+			runnableConfig = RunnableConfig.builder().threadId(threadId).build();
+		}
+		Optional<OverAllState> result = graph.invoke(initialState, runnableConfig);
+		notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_COMPLETED, result.orElse(null));
 	}
 
 	/**
@@ -146,11 +150,12 @@ public class ScheduledAgentTask {
 		int attempt = 0;
 		while (attempt <= config.getMaxRetries()) {
 			try {
-				execute(config.getRunnableConfig(), config.getInputs());
+				executeOnce(config.getRunnableConfig(), config.getInputs());
 				return;
 			}
 			catch (Exception e) {
 				log.warn("Graph execution failed (attempt {}): {}", attempt + 1, e.getMessage());
+				notifyListeners(ScheduleLifecycleListener.ScheduleEvent.EXECUTION_FAILED, e);
 				if (attempt < config.getMaxRetries() && config.getRetryPredicate().apply(e)) {
 					attempt++;
 					try {
@@ -169,10 +174,7 @@ public class ScheduledAgentTask {
 	}
 
 	private OverAllState createInitialState(Map<String, Object> inputs) {
-		return OverAllStateBuilder.builder()
-			.withKeyStrategies(graph.getKeyStrategyMap())
-			.withData(inputs)
-			.build();
+		return OverAllStateBuilder.builder().withKeyStrategies(graph.getKeyStrategyMap()).withData(inputs).build();
 	}
 
 	private void notifyListeners(ScheduleLifecycleListener.ScheduleEvent event, Object data) {
