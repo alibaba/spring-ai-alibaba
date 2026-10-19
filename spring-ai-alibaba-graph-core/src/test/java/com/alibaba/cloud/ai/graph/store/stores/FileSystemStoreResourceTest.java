@@ -66,7 +66,8 @@ class FileSystemStoreResourceTest {
 
 			switch (operation) {
 				case "size" -> assertThat(store.size()).isEqualTo(1);
-				case "search" -> assertThat(store.searchItems(StoreSearchRequest.builder().build()).getItems()).hasSize(1);
+				case "search" ->
+					assertThat(store.searchItems(StoreSearchRequest.builder().build()).getItems()).hasSize(1);
 				case "namespaces" -> assertThat(store.listNamespaces(NamespaceListRequest.builder().build()))
 					.contains("users", "users/alice");
 				case "clear" -> store.clear();
