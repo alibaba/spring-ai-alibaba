@@ -85,7 +85,7 @@ public class FileSystemStore extends BaseStore {
 			ensureDirectoryExists(itemPath.getParent());
 
 			String itemJson = objectMapper.writeValueAsString(item);
-			Files.write(itemPath, itemJson.getBytes());
+			Files.writeString(itemPath, itemJson);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to store item to file system", e);
