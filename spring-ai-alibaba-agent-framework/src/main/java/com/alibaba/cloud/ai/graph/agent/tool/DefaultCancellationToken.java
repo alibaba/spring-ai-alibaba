@@ -90,12 +90,37 @@ public class DefaultCancellationToken implements CancellationToken {
 	/**
 	 * Requests cancellation and notifies all registered callbacks.
 	 *
-	 * <p>This method is idempotent - calling it multiple times has the same
-	 * effect as calling it once. Callbacks are only invoked on the first call.</p>
+	 * <p>
+	 * This method is idempotent - calling it multiple times has the same effect as
+	 * calling it once. Callbacks are only invoked on the first call.
+	 * </p>
+	 *
+	 * <p>
+	 * If a callback throws a RuntimeException, the remaining callbacks are still invoked.
+	 * The first exception is rethrown after notification, with subsequent exceptions
+	 * suppressed.
+	 * </p>
+	 * @throws RuntimeException if a cancellation callback fails
 	 */
 	public void cancel() {
 		if (cancelled.compareAndSet(false, true)) {
-			callbacks.forEach(CancellationCallback::runOnce);
+			RuntimeException failure = null;
+			for (CancellationCallback callback : callbacks) {
+				try {
+					callback.runOnce();
+				}
+				catch (RuntimeException e) {
+					if (failure == null) {
+						failure = e;
+					}
+					else if (failure != e) {
+						failure.addSuppressed(e);
+					}
+				}
+			}
+			if (failure != null) {
+				throw failure;
+			}
 		}
 	}
 

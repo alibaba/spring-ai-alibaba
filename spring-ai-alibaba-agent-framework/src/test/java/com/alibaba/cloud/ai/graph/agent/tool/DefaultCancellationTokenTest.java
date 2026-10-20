@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -149,24 +150,74 @@ class DefaultCancellationTokenTest {
 		void callbackException_shouldNotPreventOtherCallbacks() {
 			DefaultCancellationToken token = new DefaultCancellationToken();
 			List<String> executionOrder = Collections.synchronizedList(new ArrayList<>());
+			RuntimeException failure = new RuntimeException("Intentional exception");
 
 			token.onCancel(() -> executionOrder.add("callback1"));
 			token.onCancel(() -> {
 				executionOrder.add("callback2-start");
-				throw new RuntimeException("Intentional exception");
+				throw failure;
 			});
 			token.onCancel(() -> executionOrder.add("callback3"));
 
-			// Should not throw, even though one callback throws
-			try {
-				token.cancel();
-			}
-			catch (Exception e) {
-				// One callback may throw, but others should still execute
-			}
+			assertSame(failure, assertThrows(RuntimeException.class, token::cancel));
+			assertEquals(List.of("callback1", "callback2-start", "callback3"), executionOrder);
+			token.cancel();
+			assertEquals(List.of("callback1", "callback2-start", "callback3"), executionOrder);
+		}
 
-			// At least the first callback should have executed
-			assertTrue(executionOrder.contains("callback1"), "First callback should execute");
+		@Test
+		void multipleCallbackFailures_shouldStillNotifyAllCallbacks() {
+			DefaultCancellationToken token = new DefaultCancellationToken();
+			RuntimeException first = new IllegalStateException("first failure");
+			RuntimeException second = new IllegalArgumentException("second failure");
+			AtomicInteger completed = new AtomicInteger();
+			token.onCancel(() -> {
+				throw first;
+			});
+			token.onCancel(completed::incrementAndGet);
+			token.onCancel(() -> {
+				throw second;
+			});
+			token.onCancel(completed::incrementAndGet);
+
+			assertSame(first, assertThrows(RuntimeException.class, token::cancel));
+			assertEquals(2, completed.get());
+			assertEquals(1, first.getSuppressed().length);
+			assertSame(second, first.getSuppressed()[0]);
+			token.cancel();
+			assertEquals(2, completed.get());
+		}
+
+		@Test
+		void callbackError_shouldStillPropagateImmediately() {
+			DefaultCancellationToken token = new DefaultCancellationToken();
+			AssertionError failure = new AssertionError("callback error");
+			AtomicInteger completed = new AtomicInteger();
+			token.onCancel(() -> {
+				throw failure;
+			});
+			token.onCancel(completed::incrementAndGet);
+
+			assertSame(failure, assertThrows(AssertionError.class, token::cancel));
+			assertEquals(0, completed.get());
+		}
+
+		@Test
+		void sharedCallbackFailure_shouldNotSuppressItself() {
+			DefaultCancellationToken token = new DefaultCancellationToken();
+			RuntimeException failure = new IllegalStateException("shared failure");
+			AtomicInteger completed = new AtomicInteger();
+			token.onCancel(() -> {
+				throw failure;
+			});
+			token.onCancel(() -> {
+				throw failure;
+			});
+			token.onCancel(completed::incrementAndGet);
+
+			assertSame(failure, assertThrows(RuntimeException.class, token::cancel));
+			assertEquals(1, completed.get());
+			assertEquals(0, failure.getSuppressed().length);
 		}
 
 		@Test
@@ -318,6 +369,21 @@ class DefaultCancellationTokenTest {
 	@Nested
 	@DisplayName("LinkedTo Factory Method")
 	class LinkedToTests {
+
+		@Test
+		void linkedCancellation_shouldNotifyCallbacksAfterFailure() {
+			CompletableFuture<String> future = new CompletableFuture<>();
+			DefaultCancellationToken token = DefaultCancellationToken.linkedTo(future);
+			AtomicInteger completed = new AtomicInteger();
+			token.onCancel(() -> {
+				throw new IllegalStateException("cleanup failure");
+			});
+			token.onCancel(completed::incrementAndGet);
+
+			assertTrue(future.cancel(true));
+			assertTrue(token.isCancelled());
+			assertEquals(1, completed.get());
+		}
 
 		@Test
 		@DisplayName("linkedTo should cancel when future is cancelled")
