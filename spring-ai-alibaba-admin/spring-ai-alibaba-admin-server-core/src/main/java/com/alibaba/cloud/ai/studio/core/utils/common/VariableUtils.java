@@ -27,7 +27,6 @@ import com.alibaba.cloud.ai.studio.core.workflow.WorkflowContext;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import ognl.Ognl;
-import ognl.OgnlException;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashSet;
@@ -79,17 +78,17 @@ public class VariableUtils {
 		}
 		Matcher matcher = VALID_EXPRESSION_PATTERN.matcher(expression);
 		if (matcher.matches()) {
-			// 将[]转为{}，适配array下的获取逻辑
-			String replaceExpression = expression.replaceAll("\\[", "\\{").replaceAll("\\]", "\\}");
-			Object value;
+			// OGNL 原生支持下标访问（如 a.list[0].name），此前将 [] 转为 {} 的做法
+			// 会得到非法 OGNL 语法（{} 是 List 字面量），导致下标表达式恒解析失败
 			try {
-				value = Ognl.getValue(replaceExpression, payload);
+				return Ognl.getValue(expression, payload);
 			}
-			catch (OgnlException e) {
+			// 与 setValueForPayload 保持一致的宽松语义：解析失败（路径缺失、下标越界等）
+			// 记日志后返回 null
+			catch (Exception e) {
 				log.error("getValueFromPayload error, expression:{}, payload:{}", expression, payload, e);
 				return null;
 			}
-			return value;
 		}
 		return null;
 	}
@@ -121,10 +120,8 @@ public class VariableUtils {
 		try {
 			Matcher matcher = VALID_EXPRESSION_PATTERN.matcher(expression);
 			if (matcher.matches()) {
-				// 将[]转为{}，适配array下的获取逻辑
-				String replaceExpression = expression.replaceAll("\\[", "\\{").replaceAll("\\]", "\\}");
-				// 这里执行的命令会被拦截
-				Ognl.setValue(replaceExpression, payload, value);
+				// OGNL 原生支持下标访问（见 getValueFromPayload）
+				Ognl.setValue(expression, payload, value);
 				return true;
 			}
 			return false;
