@@ -153,7 +153,7 @@ public class AssignerNode implements NodeAction {
 		}
 
 		public Builder addClear(String targetKey) {
-			items.add(new AssignItem(targetKey));
+			items.add(new AssignItem(targetKey, null, WriteMode.CLEAR));
 			return this;
 		}
 

@@ -21,8 +21,12 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -111,6 +115,21 @@ public class AssignerNodeTest {
 		assertEquals("x", result.get("x"));
 		assertEquals("y", result.get("y"));
 		assertEquals("z", result.get("z"));
+	}
+
+	@ParameterizedTest
+	@MethodSource("clearValues")
+	public void testAddClear(Object initialValue, Object expectedValue) {
+		OverAllState state = new OverAllState(Map.of("target", initialValue));
+		AssignerNode node = AssignerNode.builder().addClear("target").build();
+
+		assertEquals(expectedValue, node.apply(state).get("target"));
+		assertEquals(initialValue, state.value("target").orElseThrow());
+	}
+
+	static Stream<Arguments> clearValues() {
+		return Stream.of(Arguments.of("text", ""), Arguments.of(List.of(1, 2), List.of()),
+				Arguments.of(Map.of("key", "value"), Map.of()), Arguments.of(42, 0));
 	}
 
 	@Test
