@@ -50,7 +50,8 @@ import reactor.core.publisher.Hooks;
  * @author sixiyida
  * @since 2025/7/3
  */
-@AutoConfiguration
+@AutoConfiguration(
+		afterName = "org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration")
 @ConditionalOnClass({ StateGraph.class, ObservationRegistry.class })
 @EnableConfigurationProperties(GraphObservationProperties.class)
 @ConditionalOnProperty(prefix = GraphObservationProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true", matchIfMissing = true)
