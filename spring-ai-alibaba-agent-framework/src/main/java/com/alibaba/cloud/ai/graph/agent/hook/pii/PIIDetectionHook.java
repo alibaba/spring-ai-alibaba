@@ -176,7 +176,11 @@ public class PIIDetectionHook extends MessagesModelHook {
 			return message;
 		}
 
-		return UserMessage.builder().text(result.redactedText).metadata(message.getMetadata()).build();
+		return UserMessage.builder()
+			.text(result.redactedText)
+			.media(message.getMedia())
+			.metadata(message.getMetadata())
+			.build();
 	}
 
 	private AssistantMessage processContent(AssistantMessage message) {
