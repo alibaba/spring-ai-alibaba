@@ -30,6 +30,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.DefaultChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -38,11 +39,14 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
@@ -505,6 +509,18 @@ public class AgentLlmNode implements NodeActionWithConfig {
                 .messages(messages)
                 .advisors(this.advisors);
 
+		// Tools are executed by AgentToolNode, after AFTER_MODEL hooks (e.g. HumanInTheLoopHook) have run.
+		// ToolCallAdvisor runs its own tool loop inside the advisor chain and ignores
+		// internalToolExecutionEnabled=false, so drop it from the model call (it may come from ChatClient defaults).
+		if (promptSpec instanceof DefaultChatClient.DefaultChatClientRequestSpec spec
+				&& spec.getAdvisors().removeIf(advisor -> advisor instanceof ToolCallAdvisor)) {
+			logger.warn("Agent {}: ignoring ToolCallAdvisor on the model call; tools are executed by the agent tool node so that hooks can gate them.", agentName);
+		}
+		// The model call only needs tool definitions. Any other advisor that tries to execute a tool here fails closed.
+		filteredToolCallbacks = filteredToolCallbacks.stream()
+				.<ToolCallback>map(DefinitionOnlyToolCallback::new)
+				.toList();
+
         ToolCallingChatOptions requestOptions = modelRequest.getOptions();
 
         if (requestOptions != null) {
@@ -542,6 +558,41 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	public String getName() {
 		return AGENT_MODEL_NAME;
+	}
+
+	/**
+	 * Exposes a tool's definition to the model call but refuses to execute it there, so that an advisor
+	 * running its own tool loop cannot bypass hooks that gate tool execution.
+	 */
+	static final class DefinitionOnlyToolCallback implements ToolCallback {
+
+		private final ToolCallback delegate;
+
+		DefinitionOnlyToolCallback(ToolCallback delegate) {
+			this.delegate = delegate instanceof DefinitionOnlyToolCallback d ? d.delegate : delegate;
+		}
+
+		@Override
+		public ToolDefinition getToolDefinition() {
+			return this.delegate.getToolDefinition();
+		}
+
+		@Override
+		public ToolMetadata getToolMetadata() {
+			return this.delegate.getToolMetadata();
+		}
+
+		@Override
+		public String call(String toolInput) {
+			throw new IllegalStateException("Tool '" + getToolDefinition().name()
+					+ "' must not be executed inside the agent model node; it is executed by the agent tool node after hooks run.");
+		}
+
+		@Override
+		public String call(String toolInput, @Nullable ToolContext toolContext) {
+			return call(toolInput);
+		}
+
 	}
 
 	public static class Builder {
