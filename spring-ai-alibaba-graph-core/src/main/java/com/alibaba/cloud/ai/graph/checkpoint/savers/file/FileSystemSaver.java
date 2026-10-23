@@ -25,8 +25,10 @@ import com.alibaba.cloud.ai.graph.serializer.check_point.CheckPointSerializer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -61,25 +63,27 @@ import static java.lang.String.format;
 public class FileSystemSaver implements BaseCheckpointSaver {
 
 	public static final String EXTENSION = ".saver";
+
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FileSystemSaver.class);
+
 	private final Path targetFolder;
 
 	private final Serializer<Checkpoint> serializer;
 
 	private final Map<String, Checkpoint> latestCheckpointCache;
+
 	private final ReentrantLock lock = new ReentrantLock();
+
 	private final int maxCachedThreads;
 
 	/**
-	 * Protected constructor for FileSystemSaver.
-	 * Use {@link #builder()} to create instances.
+	 * Protected constructor for FileSystemSaver. Use {@link #builder()} to create
+	 * instances.
 	 * @param targetFolder the directory where checkpoint files are stored
 	 * @param stateSerializer the serializer used to persist checkpoint state
 	 */
 	protected FileSystemSaver(Path targetFolder, StateSerializer stateSerializer) {
-		this(new Builder()
-				.targetFolder(targetFolder)
-				.stateSerializer(stateSerializer));
+		this(new Builder().targetFolder(targetFolder).stateSerializer(stateSerializer));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -135,12 +139,37 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 	private void serialize(LinkedList<Checkpoint> checkpoints, File outFile) throws IOException {
 		Objects.requireNonNull(checkpoints, "checkpoints cannot be null");
 		Objects.requireNonNull(outFile, "outFile cannot be null");
-		try (ObjectOutputStream oos = new ObjectOutputStream(Files.newOutputStream(outFile.toPath()))) {
-
-			oos.writeInt(checkpoints.size());
-			for (Checkpoint checkpoint : checkpoints) {
-				serializer.write(checkpoint, oos);
+		Path target = outFile.toPath().toAbsolutePath();
+		Path temporary = Files.createTempFile(target.getParent(), ".checkpoint-", ".tmp");
+		try {
+			try (ObjectOutputStream oos = new ObjectOutputStream(Files.newOutputStream(temporary))) {
+				oos.writeInt(checkpoints.size());
+				for (Checkpoint checkpoint : checkpoints) {
+					serializer.write(checkpoint, oos);
+				}
 			}
+			try (InputStream input = Files.newInputStream(temporary);
+					OutputStream output = Files.newOutputStream(target)) {
+				input.transferTo(output);
+			}
+		}
+		catch (IOException | RuntimeException | Error failure) {
+			try {
+				Files.deleteIfExists(temporary);
+			}
+			catch (IOException | RuntimeException cleanupFailure) {
+				if (cleanupFailure != failure) {
+					failure.addSuppressed(cleanupFailure);
+				}
+			}
+			throw failure;
+		}
+		try {
+			Files.deleteIfExists(temporary);
+		}
+		catch (IOException | RuntimeException cleanupFailure) {
+			// The checkpoint is saved, so cleanup must not prevent the cache update.
+			log.warn("Unable to delete checkpoint staging file {}", temporary, cleanupFailure);
 		}
 	}
 
@@ -211,9 +240,9 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 	private void updateCheckpoint(RunnableConfig config, String checkpointId, Checkpoint checkpoint) throws Exception {
 		LinkedList<Checkpoint> checkpoints = loadCheckpoints(config);
 		int index = IntStream.range(0, checkpoints.size())
-				.filter(i -> checkpoints.get(i).getId().equals(checkpointId))
-				.findFirst()
-				.orElseThrow(() -> new NoSuchElementException(format("Checkpoint with id %s not found!", checkpointId)));
+			.filter(i -> checkpoints.get(i).getId().equals(checkpointId))
+			.findFirst()
+			.orElseThrow(() -> new NoSuchElementException(format("Checkpoint with id %s not found!", checkpointId)));
 		checkpoints.set(index, checkpoint);
 		retainLatestCheckpoints(checkpoints, config);
 		serialize(checkpoints, getFile(config));
@@ -281,17 +310,14 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 			if (config.checkPointId().isPresent()) {
 				String checkpointId = config.checkPointId().get();
 				updateCheckpoint(config, checkpointId, checkpoint);
-				getCachedLatest(threadId)
-						.filter(latest -> latest.getId().equals(checkpointId))
-						.ifPresent(latest -> cacheLatest(threadId, checkpoint));
+				getCachedLatest(threadId).filter(latest -> latest.getId().equals(checkpointId))
+					.ifPresent(latest -> cacheLatest(threadId, checkpoint));
 				return config;
 			}
 
 			insertCheckpoint(config, checkpoint);
 			cacheLatest(threadId, checkpoint);
-			return RunnableConfig.builder(config)
-					.checkPointId(checkpoint.getId())
-					.build();
+			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 		}
 		finally {
 			lock.unlock();
@@ -418,8 +444,11 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 	 * Builder class for FileSystemSaver.
 	 */
 	public static class Builder {
+
 		private Path targetFolder;
+
 		private StateSerializer stateSerializer;
+
 		private int maxCachedThreads = 1024;
 
 		public Builder targetFolder(Path targetFolder) {
@@ -453,6 +482,7 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 		public FileSystemSaver build() {
 			return new FileSystemSaver(this);
 		}
+
 	}
 
 }
