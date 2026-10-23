@@ -38,6 +38,10 @@ The core of the framework includes: **StateGraph** (the state graph for defining
    Provides two hook points: `interrupt()` (before execution) and `interruptAfter()` (after execution).
    Useful for human-in-the-loop scenarios, approval workflows, and multi-turn conversations.
 
+## Checkpoint Thread IDs
+
+`MemorySaver` groups checkpoints by `RunnableConfig.threadId`. If the thread ID is omitted, calls using the same saver instance share the default `"$default"` thread and its checkpoint history. Set a stable, distinct thread ID for each conversation when their state must be isolated; `MemorySaver` does not infer caller identity or enforce tenant boundaries.
+
 ## How It's Used (Typical Flow)
 - Define StateGraph: In a Spring configuration, you define a StateGraph bean, add nodes (each encapsulating a model call or logic), and connect them with edges.
 - Configure State: Use an OverAllStateFactory to define the initial state and key strategies.
