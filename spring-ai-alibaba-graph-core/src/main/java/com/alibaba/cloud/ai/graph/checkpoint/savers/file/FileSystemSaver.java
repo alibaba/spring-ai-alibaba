@@ -25,8 +25,10 @@ import com.alibaba.cloud.ai.graph.serializer.check_point.CheckPointSerializer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,14 +58,6 @@ import static java.lang.String.format;
  * <p>
  * Full checkpoint history is loaded from the file on demand. In memory this saver keeps
  * only a bounded latest-checkpoint cache.
- * </p>
- * <p>
- * Saves require atomic replacement support from the filesystem. Complete history is
- * written and closed in a temporary file in the target directory before replacement;
- * unsupported atomic moves fail without a copy fallback. Replacement changes the target
- * file identity and uses the temporary file's attributes: symbolic links are replaced
- * rather than followed, and other hard links keep the previous contents. This does not
- * guarantee durability across power loss.
  * </p>
  */
 public class FileSystemSaver implements BaseCheckpointSaver {
@@ -154,7 +148,10 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 					serializer.write(checkpoint, oos);
 				}
 			}
-			Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+			try (InputStream input = Files.newInputStream(temporary);
+					OutputStream output = Files.newOutputStream(target)) {
+				input.transferTo(output);
+			}
 		}
 		catch (IOException | RuntimeException | Error failure) {
 			try {
@@ -166,6 +163,13 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 				}
 			}
 			throw failure;
+		}
+		try {
+			Files.deleteIfExists(temporary);
+		}
+		catch (IOException | RuntimeException cleanupFailure) {
+			// The checkpoint is saved, so cleanup must not prevent the cache update.
+			log.warn("Unable to delete checkpoint staging file {}", temporary, cleanupFailure);
 		}
 	}
 
