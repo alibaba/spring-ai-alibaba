@@ -72,6 +72,81 @@ class UserMessageMediaSerializationTest {
 	}
 
 	@Test
+	void shouldRetainStringMediaAtDefaultReadLimit() throws Exception {
+		UserMessage original = message(stringMedia(20_000_000, false));
+		assertMessageEquals(original, cloneMessage(original));
+		assertMessageEquals(original, checkpointRoundTrip(original));
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void shouldRejectUnreadableStringMediaAtDefaultReadLimit(boolean uri) throws Exception {
+		UserMessage oversized = message(stringMedia(20_000_001, uri));
+		assertWriteConstraintFailure(serializer, oversized);
+		FileSystemSaver writer = FileSystemSaver.builder()
+			.targetFolder(tempDir)
+			.stateSerializer(serializer)
+			.maxCachedThreads(1)
+			.build();
+		RunnableConfig config = RunnableConfig.builder().threadId("string-limit").build();
+		UserMessage original = message(uriMedia());
+		Checkpoint seed = Checkpoint.builder()
+			.nodeId("seed")
+			.nextNodeId("before")
+			.state(Map.of("messages", List.of(original)))
+			.build();
+		RunnableConfig saved = writer.put(config, seed);
+		Path target = tempDir.resolve("thread-string-limit.saver");
+		byte[] before = Files.readAllBytes(target);
+		Checkpoint checkpoint = Checkpoint.builder()
+			.nodeId("before")
+			.nextNodeId("after")
+			.state(Map.of("messages", List.of(oversized)))
+			.build();
+
+		for (RunnableConfig writeConfig : List.of(config, saved)) {
+			IOException failure = assertThrows(IOException.class, () -> writer.put(writeConfig, checkpoint));
+			assertStreamConstraintCause(failure);
+			assertArrayEquals(before, Files.readAllBytes(target));
+			assertEquals(seed.getId(), writer.get(config).orElseThrow().getId());
+			FileSystemSaver reader = FileSystemSaver.builder()
+				.targetFolder(tempDir)
+				.stateSerializer(new SpringAIJacksonStateSerializer(OverAllState::new))
+				.maxCachedThreads(0)
+				.build();
+			Checkpoint restored = reader.get(saved).orElseThrow();
+			assertMessageEquals(original, (UserMessage) ((List<?>) restored.getState().get("messages")).get(0));
+			assertEquals(1, reader.list(config).size());
+			try (var files = Files.list(tempDir)) {
+				assertEquals(List.of(target), files.toList());
+			}
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void shouldHonorConfiguredReadLimitForStringMedia(boolean uri) throws Exception {
+		SpringAIJacksonStateSerializer bounded = serializerWithReadLimit(128);
+		UserMessage original = message(stringMedia(128, uri));
+		OverAllState cloned = bounded.cloneObject(Map.of("messages", List.of(original)));
+		assertMessageEquals(original, (UserMessage) ((List<?>) cloned.value("messages").orElseThrow()).get(0));
+		assertMessageEquals(original, checkpointRoundTrip(original, bounded));
+		assertWriteConstraintFailure(bounded, message(stringMedia(129, uri)));
+		assertEquals(128, bounded.objectMapper().getFactory().streamReadConstraints().getMaxStringLength());
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void shouldPreserveRelaxedReadLimitForStringMedia(boolean uri) throws Exception {
+		SpringAIJacksonStateSerializer relaxed = serializerWithReadLimit(30_000_000);
+		UserMessage original = message(stringMedia(20_000_001, uri));
+		OverAllState cloned = relaxed.cloneObject(Map.of("messages", List.of(original)));
+		assertMessageEquals(original, (UserMessage) ((List<?>) cloned.value("messages").orElseThrow()).get(0));
+		assertMessageEquals(original, checkpointRoundTrip(original, relaxed));
+		assertEquals(30_000_000, relaxed.objectMapper().getFactory().streamReadConstraints().getMaxStringLength());
+	}
+
+	@Test
 	void shouldRetainByteMediaAtDefaultReadLimit() throws Exception {
 		UserMessage original = message(byteMedia(15_000_000));
 		assertMessageEquals(original, cloneMessage(original));
@@ -311,6 +386,13 @@ class UserMessageMediaSerializationTest {
 			.id("uri-image")
 			.name("uri-fixture.png")
 			.build();
+	}
+
+	private static Media stringMedia(int length, boolean uri) {
+		String prefix = "https://example.invalid/";
+		String data = prefix + "a".repeat(length - prefix.length());
+		Media.Builder builder = Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).id("string").name("offline.png");
+		return (uri ? builder.data(URI.create(data)) : builder.data((Object) data)).build();
 	}
 
 	private static Media byteMedia() {

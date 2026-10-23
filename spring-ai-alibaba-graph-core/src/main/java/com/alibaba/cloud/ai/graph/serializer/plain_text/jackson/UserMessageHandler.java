@@ -43,7 +43,7 @@ import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.Serializa
 /**
  * Jackson handlers for user messages, including media with String or byte[] data. Spring
  * AI normalizes URI and Resource media to these types. Other media data types remain
- * omitted during serialization. Binary data must fit the ObjectMapper's configured string
+ * omitted during serialization. Media data must fit the ObjectMapper's configured string
  * read limit so serialized media can be read by the same mapper.
  */
 public interface UserMessageHandler {
@@ -119,8 +119,12 @@ public interface UserMessageHandler {
 				gen.writeBinaryField(Field.DATA.name, bytes);
 			}
 			else {
+				String data = (String) media.getData();
+				if (gen.getCodec() instanceof ObjectMapper mapper) {
+					mapper.getFactory().streamReadConstraints().validateStringLength(data.length());
+				}
 				gen.writeStringField(Field.DATA_TYPE.name, "string");
-				gen.writeStringField(Field.DATA.name, (String) media.getData());
+				gen.writeStringField(Field.DATA.name, data);
 			}
 			gen.writeEndObject();
 		}
