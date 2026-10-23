@@ -26,6 +26,7 @@ import java.util.List;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import com.fasterxml.jackson.core.type.WritableTypeId;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -42,7 +43,8 @@ import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.Serializa
 /**
  * Jackson handlers for user messages, including media with String or byte[] data. Spring
  * AI normalizes URI and Resource media to these types. Other media data types remain
- * omitted during serialization.
+ * omitted during serialization. Binary data must fit the ObjectMapper's configured string
+ * read limit so serialized media can be read by the same mapper.
  */
 public interface UserMessageHandler {
 
@@ -105,6 +107,14 @@ public interface UserMessageHandler {
 			gen.writeStringField(Field.ID.name, media.getId());
 			gen.writeStringField(Field.NAME.name, media.getName());
 			if (media.getData() instanceof byte[] bytes) {
+				if (gen.getCodec() instanceof ObjectMapper mapper) {
+					long encodedLength = ((bytes.length + 2L) / 3) * 4;
+					int maxLength = mapper.getFactory().streamReadConstraints().getMaxStringLength();
+					if (encodedLength > maxLength) {
+						throw new StreamConstraintsException("Encoded binary media length (" + encodedLength
+								+ ") exceeds the maximum string read length (" + maxLength + ")");
+					}
+				}
 				gen.writeStringField(Field.DATA_TYPE.name, "bytes");
 				gen.writeBinaryField(Field.DATA.name, bytes);
 			}

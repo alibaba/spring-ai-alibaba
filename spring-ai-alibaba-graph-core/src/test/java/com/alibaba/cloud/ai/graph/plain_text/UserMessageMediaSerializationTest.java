@@ -20,6 +20,9 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.file.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.SpringAIJacksonStateSerializer;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.StreamReadConstraints;
+import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.junit.jupiter.api.Test;
@@ -31,6 +34,9 @@ import org.springframework.ai.content.Media;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.util.MimeTypeUtils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,6 +48,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UserMessageMediaSerializationTest {
@@ -61,6 +69,89 @@ class UserMessageMediaSerializationTest {
 	void shouldRetainByteMediaWhenCloningState() throws Exception {
 		UserMessage original = message(byteMedia());
 		assertMessageEquals(original, cloneMessage(original));
+	}
+
+	@Test
+	void shouldRetainByteMediaAtDefaultReadLimit() throws Exception {
+		UserMessage original = message(byteMedia(15_000_000));
+		assertMessageEquals(original, cloneMessage(original));
+		assertMessageEquals(original, checkpointRoundTrip(original));
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = { 15_000_001, 16_000_000 })
+	void shouldRejectUnreadableByteMediaBeforeWritingState(int size) throws Exception {
+		assertWriteConstraintFailure(serializer, message(byteMedia(size)));
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = { 15_000_001, 16_000_000 })
+	void shouldRejectUnreadableByteMediaBeforeSavingCheckpoint(int size) throws Exception {
+		FileSystemSaver writer = FileSystemSaver.builder()
+			.targetFolder(tempDir)
+			.stateSerializer(serializer)
+			.maxCachedThreads(1)
+			.build();
+		RunnableConfig config = RunnableConfig.builder().threadId("oversized").build();
+		UserMessage original = message(byteMedia());
+		Checkpoint seed = Checkpoint.builder()
+			.nodeId("seed")
+			.nextNodeId("before")
+			.state(Map.of("messages", List.of(original)))
+			.build();
+		RunnableConfig saved = writer.put(config, seed);
+		Path target = tempDir.resolve("thread-oversized.saver");
+		byte[] before = Files.readAllBytes(target);
+		Checkpoint checkpoint = Checkpoint.builder()
+			.nodeId("before")
+			.nextNodeId("after")
+			.state(Map.of("messages", List.of(message(byteMedia(size)))))
+			.build();
+
+		for (RunnableConfig writeConfig : List.of(config, saved)) {
+			IOException failure = assertThrows(IOException.class, () -> writer.put(writeConfig, checkpoint));
+			assertStreamConstraintCause(failure);
+			assertArrayEquals(before, Files.readAllBytes(target));
+			assertEquals(seed.getId(), writer.get(config).orElseThrow().getId());
+			FileSystemSaver reader = FileSystemSaver.builder()
+				.targetFolder(tempDir)
+				.stateSerializer(new SpringAIJacksonStateSerializer(OverAllState::new))
+				.maxCachedThreads(0)
+				.build();
+			Checkpoint restored = reader.get(saved).orElseThrow();
+			assertEquals(seed.getId(), restored.getId());
+			assertMessageEquals(original, (UserMessage) ((List<?>) restored.getState().get("messages")).get(0));
+			assertEquals(1, reader.list(config).size());
+			try (var files = Files.list(tempDir)) {
+				assertEquals(List.of(target), files.toList());
+			}
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = { 15_000_001, 16_000_000 })
+	void shouldPreserveRelaxedReadLimitAndBinaryFormat(int size) throws Exception {
+		SpringAIJacksonStateSerializer relaxed = serializerWithReadLimit(30_000_000);
+		UserMessage original = message(byteMedia(size));
+		String json = relaxed.objectMapper().writeValueAsString(original);
+		assertTrue(relaxed.objectMapper().readTree(json).path("media").get(0).path("data").isTextual());
+		OverAllState cloned = relaxed.cloneObject(Map.of("messages", List.of(original)));
+
+		assertMessageEquals(original, (UserMessage) ((List<?>) cloned.value("messages").orElseThrow()).get(0));
+		assertMessageEquals(original, checkpointRoundTrip(original, relaxed));
+		assertEquals(30_000_000, relaxed.objectMapper().getFactory().streamReadConstraints().getMaxStringLength());
+	}
+
+	@Test
+	void shouldHonorConfiguredStringReadLimit() throws Exception {
+		SpringAIJacksonStateSerializer bounded = serializerWithReadLimit(128);
+		UserMessage original = message(byteMedia(96));
+		OverAllState cloned = bounded.cloneObject(Map.of("messages", List.of(original)));
+		assertMessageEquals(original, (UserMessage) ((List<?>) cloned.value("messages").orElseThrow()).get(0));
+		assertWriteConstraintFailure(bounded, message(byteMedia(97)));
+		assertEquals(128, bounded.objectMapper().getFactory().streamReadConstraints().getMaxStringLength());
+		assertThrows(StreamConstraintsException.class,
+				() -> bounded.objectMapper().readTree("\"" + "x".repeat(129) + "\""));
 	}
 
 	@Test
@@ -151,9 +242,14 @@ class UserMessageMediaSerializationTest {
 	}
 
 	private UserMessage checkpointRoundTrip(UserMessage original) throws Exception {
+		return checkpointRoundTrip(original, serializer);
+	}
+
+	private UserMessage checkpointRoundTrip(UserMessage original, SpringAIJacksonStateSerializer stateSerializer)
+			throws Exception {
 		FileSystemSaver writer = FileSystemSaver.builder()
 			.targetFolder(tempDir)
-			.stateSerializer(serializer)
+			.stateSerializer(stateSerializer)
 			.maxCachedThreads(0)
 			.build();
 		RunnableConfig config = RunnableConfig.builder().threadId("media").build();
@@ -167,7 +263,8 @@ class UserMessageMediaSerializationTest {
 
 		FileSystemSaver reader = FileSystemSaver.builder()
 			.targetFolder(tempDir)
-			.stateSerializer(new SpringAIJacksonStateSerializer(OverAllState::new))
+			.stateSerializer(
+					new SpringAIJacksonStateSerializer(OverAllState::new, stateSerializer.objectMapper().copy()))
 			.maxCachedThreads(0)
 			.build();
 		Checkpoint restored = reader.get(saved).orElseThrow();
@@ -175,6 +272,28 @@ class UserMessageMediaSerializationTest {
 		assertEquals(checkpoint.getNodeId(), restored.getNodeId());
 		assertEquals(checkpoint.getNextNodeId(), restored.getNextNodeId());
 		return (UserMessage) ((List<?>) restored.getState().get("messages")).get(0);
+	}
+
+	private static SpringAIJacksonStateSerializer serializerWithReadLimit(int limit) {
+		StreamReadConstraints constraints = StreamReadConstraints.builder().maxStringLength(limit).build();
+		ObjectMapper mapper = new ObjectMapper(JsonFactory.builder().streamReadConstraints(constraints).build());
+		return new SpringAIJacksonStateSerializer(OverAllState::new, mapper);
+	}
+
+	private static void assertWriteConstraintFailure(SpringAIJacksonStateSerializer stateSerializer,
+			UserMessage message) throws Exception {
+		try (ObjectOutputStream out = new ObjectOutputStream(new ByteArrayOutputStream())) {
+			IOException failure = assertThrows(IOException.class,
+					() -> stateSerializer.writeData(Map.of("messages", List.of(message)), out));
+			assertStreamConstraintCause(failure);
+		}
+	}
+
+	private static void assertStreamConstraintCause(Throwable failure) {
+		while (failure.getCause() != null) {
+			failure = failure.getCause();
+		}
+		assertInstanceOf(StreamConstraintsException.class, failure);
 	}
 
 	private static UserMessage message(Media... media) {
@@ -202,6 +321,19 @@ class UserMessageMediaSerializationTest {
 			.data(new ByteArrayResource(png))
 			.id("byte-image")
 			.name("byte-fixture.png")
+			.build();
+	}
+
+	private static Media byteMedia(int size) {
+		byte[] data = new byte[size];
+		for (int i = 0; i < data.length; i++) {
+			data[i] = (byte) (i % 251);
+		}
+		return Media.builder()
+			.mimeType(MimeTypeUtils.APPLICATION_OCTET_STREAM)
+			.data(data)
+			.id("boundary-bytes")
+			.name("boundary-fixture.bin")
 			.build();
 	}
 
