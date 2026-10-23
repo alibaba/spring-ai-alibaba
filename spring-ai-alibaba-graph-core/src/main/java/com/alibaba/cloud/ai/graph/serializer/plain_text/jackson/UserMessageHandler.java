@@ -43,8 +43,8 @@ import static com.alibaba.cloud.ai.graph.serializer.plain_text.jackson.Serializa
 /**
  * Jackson handlers for user messages, including media with String or byte[] data. Spring
  * AI normalizes URI and Resource media to these types. Other media data types remain
- * omitted during serialization. Media data must fit the ObjectMapper's configured string
- * read limit so serialized media can be read by the same mapper.
+ * omitted during serialization. All emitted media string values, including Base64 data,
+ * must fit the ObjectMapper's configured string read limit.
  */
 public interface UserMessageHandler {
 
@@ -103,30 +103,37 @@ public interface UserMessageHandler {
 		private void serializeMedia(Media media, JsonGenerator gen) throws IOException {
 			// Binary data is encoded as text in JSON, so retain its type separately.
 			gen.writeStartObject();
-			gen.writeStringField(Field.MIME_TYPE.name, media.getMimeType().toString());
-			gen.writeStringField(Field.ID.name, media.getId());
-			gen.writeStringField(Field.NAME.name, media.getName());
+			writeMediaString(Field.MIME_TYPE, media.getMimeType().toString(), gen);
+			writeMediaString(Field.ID, media.getId(), gen);
+			writeMediaString(Field.NAME, media.getName(), gen);
 			if (media.getData() instanceof byte[] bytes) {
-				if (gen.getCodec() instanceof ObjectMapper mapper) {
-					long encodedLength = ((bytes.length + 2L) / 3) * 4;
-					int maxLength = mapper.getFactory().streamReadConstraints().getMaxStringLength();
-					if (encodedLength > maxLength) {
-						throw new StreamConstraintsException("Encoded binary media length (" + encodedLength
-								+ ") exceeds the maximum string read length (" + maxLength + ")");
-					}
-				}
-				gen.writeStringField(Field.DATA_TYPE.name, "bytes");
+				validateMediaStringLength(Field.DATA, ((bytes.length + 2L) / 3) * 4, gen);
+				writeMediaString(Field.DATA_TYPE, "bytes", gen);
 				gen.writeBinaryField(Field.DATA.name, bytes);
 			}
 			else {
-				String data = (String) media.getData();
-				if (gen.getCodec() instanceof ObjectMapper mapper) {
-					mapper.getFactory().streamReadConstraints().validateStringLength(data.length());
-				}
-				gen.writeStringField(Field.DATA_TYPE.name, "string");
-				gen.writeStringField(Field.DATA.name, data);
+				writeMediaString(Field.DATA_TYPE, "string", gen);
+				writeMediaString(Field.DATA, (String) media.getData(), gen);
 			}
 			gen.writeEndObject();
+		}
+
+		private void writeMediaString(Field field, String value, JsonGenerator gen) throws IOException {
+			if (value != null) {
+				validateMediaStringLength(field, value.length(), gen);
+			}
+			gen.writeStringField(field.name, value);
+		}
+
+		private void validateMediaStringLength(Field field, long length, JsonGenerator gen)
+				throws StreamConstraintsException {
+			if (gen.getCodec() instanceof ObjectMapper mapper) {
+				int maxLength = mapper.getFactory().streamReadConstraints().getMaxStringLength();
+				if (length > maxLength) {
+					throw new StreamConstraintsException("User message media " + field.name + " length (" + length
+							+ ") exceeds the maximum string read length (" + maxLength + ")");
+				}
+			}
 		}
 
 	}
