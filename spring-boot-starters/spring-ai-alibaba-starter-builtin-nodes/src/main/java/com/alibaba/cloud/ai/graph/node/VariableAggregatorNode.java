@@ -74,17 +74,15 @@ public class VariableAggregatorNode implements NodeAction {
 	}
 
 	private Object getValueByPath(OverAllState state, List<String> path) {
-		Object current = null;
-		for (String key : path) {
-			if (current == null) {
-				current = state.value(key).orElse(null);
-			}
-			else if (current instanceof Map) {
-				current = ((Map<?, ?>) current).get(key);
-			}
-			else {
+		if (path == null || path.isEmpty()) {
+			return null;
+		}
+		Object current = state.value(path.get(0)).orElse(null);
+		for (int i = 1; i < path.size(); i++) {
+			if (!(current instanceof Map)) {
 				return null;
 			}
+			current = ((Map<?, ?>) current).get(path.get(i));
 		}
 		return current;
 	}

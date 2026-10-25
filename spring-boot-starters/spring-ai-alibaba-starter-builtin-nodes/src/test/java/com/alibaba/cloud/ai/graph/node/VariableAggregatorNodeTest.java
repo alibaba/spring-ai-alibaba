@@ -129,4 +129,34 @@ public class VariableAggregatorNodeTest {
 		assertEquals(Collections.emptyList(), result.get("result"));
 	}
 
+	@Test
+	public void testApply_missingIntermediateSegmentShouldNotFallThroughToRootKey() throws Exception {
+		// ["http_request", "body"]: http_request is absent, so the path must resolve
+		// to null. A root-level "body" written by another node must not be picked up.
+		List<List<String>> variables = Collections.singletonList(Arrays.asList("http_request", "body"));
+
+		when(mockState.value("http_request")).thenReturn(Optional.empty());
+		when(mockState.value("body")).thenReturn(Optional.of("stale root value"));
+
+		VariableAggregatorNode node = new VariableAggregatorNode(variables, "result", "list", null);
+		Map<String, Object> result = node.apply(mockState);
+
+		assertEquals(Collections.emptyList(), result.get("result"));
+	}
+
+	@Test
+	public void testApply_nullRootValueShouldNotFallThroughToNextSegmentAsRootKey() throws Exception {
+		// ["a", "b"] where "a" exists but holds null: the remaining segment "b" must
+		// not be re-read as a root state key.
+		List<List<String>> variables = Collections.singletonList(Arrays.asList("a", "b"));
+
+		when(mockState.value("a")).thenReturn(Optional.empty());
+		when(mockState.value("b")).thenReturn(Optional.of("wrong value"));
+
+		VariableAggregatorNode node = new VariableAggregatorNode(variables, "result", "list", null);
+		Map<String, Object> result = node.apply(mockState);
+
+		assertEquals(Collections.emptyList(), result.get("result"));
+	}
+
 }
