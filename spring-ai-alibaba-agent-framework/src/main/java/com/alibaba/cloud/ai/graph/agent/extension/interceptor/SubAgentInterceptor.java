@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -221,12 +222,19 @@ public class SubAgentInterceptor extends ModelInterceptor {
 		this.subAgents = new HashMap<>(builder.subAgents);
 		this.includeGeneralPurpose = builder.includeGeneralPurpose;
 
+		// Build spec subagents here rather than in addSubAgent(spec), so that the default model,
+		// tools, interceptors and hooks apply whatever order the builder methods were called in.
+		for (SubAgentSpec spec : builder.subAgentSpecs.values()) {
+			this.subAgents.put(spec.getName(), builder.createSubAgentFromSpec(spec));
+		}
+
 		// Add general-purpose agent if enabled
 		if (includeGeneralPurpose && builder.defaultModel != null) {
 			ReactAgent generalPurposeAgent = createGeneralPurposeAgent(
 				builder.defaultModel,
 				builder.defaultTools,
-				builder.defaultInterceptors
+				builder.defaultInterceptors,
+				builder.defaultHooks
 			);
 			this.subAgents.put("general-purpose", generalPurposeAgent);
 		}
@@ -243,7 +251,8 @@ public class SubAgentInterceptor extends ModelInterceptor {
 	private ReactAgent createGeneralPurposeAgent(
 			ChatModel model,
 			List<ToolCallback> tools,
-			List<? extends Interceptor> interceptors) {
+			List<? extends Interceptor> interceptors,
+			List<? extends Hook> hooks) {
 
 		com.alibaba.cloud.ai.graph.agent.Builder builder = ReactAgent.builder()
 				.name("general-purpose")
@@ -257,6 +266,12 @@ public class SubAgentInterceptor extends ModelInterceptor {
 
 		if (interceptors != null && !interceptors.isEmpty()) {
 			builder.interceptors(interceptors);
+		}
+
+		// The general-purpose agent has the same tools as the main agent, so it must also carry the
+		// default hooks (e.g. HumanInTheLoopHook) that spec subagents get.
+		if (hooks != null && !hooks.isEmpty()) {
+			builder.hooks(hooks);
 		}
 
 		return builder.build();
@@ -326,6 +341,7 @@ public class SubAgentInterceptor extends ModelInterceptor {
 		private List<Interceptor> defaultInterceptors;
 		private List<Hook> defaultHooks;
 		private Map<String, ReactAgent> subAgents = new HashMap<>();
+		private final Map<String, SubAgentSpec> subAgentSpecs = new LinkedHashMap<>();
 		private boolean includeGeneralPurpose = true;
 
 		/**
@@ -370,16 +386,18 @@ public class SubAgentInterceptor extends ModelInterceptor {
 		 * Add a custom subagent.
 		 */
 		public Builder addSubAgent(String name, ReactAgent agent) {
+			this.subAgentSpecs.remove(name);
 			this.subAgents.put(name, agent);
 			return this;
 		}
 
 		/**
-		 * Add a subagent from specification.
+		 * Add a subagent from specification. The agent is built in {@link #build()}, so the
+		 * default model, tools, interceptors and hooks apply regardless of call order.
 		 */
 		public Builder addSubAgent(SubAgentSpec spec) {
-			ReactAgent agent = createSubAgentFromSpec(spec);
-			this.subAgents.put(spec.getName(), agent);
+			this.subAgents.remove(spec.getName());
+			this.subAgentSpecs.put(spec.getName(), spec);
 			return this;
 		}
 
