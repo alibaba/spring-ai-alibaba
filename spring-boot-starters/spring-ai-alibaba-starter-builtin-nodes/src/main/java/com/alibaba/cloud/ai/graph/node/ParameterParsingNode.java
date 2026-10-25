@@ -219,7 +219,8 @@ public class ParameterParsingNode implements NodeAction {
 			return result;
 		}
 		catch (Exception e) {
-			return Map.of(successKey, false, reasonKey, e.getMessage());
+			String reason = e.getMessage() != null ? e.getMessage() : e.toString();
+			return Map.of(successKey, false, reasonKey, reason);
 		}
 	}
 
