@@ -233,6 +233,13 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 * @return a new RunnableConfig with human feedback placeholder metadata
 	 */
 	public RunnableConfig withResume() {
+		if (metadata(HUMAN_FEEDBACK_METADATA_KEY).isPresent()) {
+			// Real feedback already makes the run resumable, and it carries the
+			// approved/rejected decisions. Writing the placeholder here would replace that
+			// InterruptionMetadata with a String, and whoever reads the key back (e.g.
+			// HumanInTheLoopHook) would no longer see the feedback.
+			return this;
+		}
 		return RunnableConfig.builder(this)
 				.addMetadata(HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
 				.build();
@@ -424,6 +431,13 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 * @return this builder for chaining
 		 */
 		public Builder resume() {
+			if (metadata().containsKey(HUMAN_FEEDBACK_METADATA_KEY)) {
+				// resume() only marks "continue from the latest checkpoint", and a present
+				// InterruptionMetadata already does that. Overwriting it with the placeholder
+				// would drop the real feedback: addHumanFeedback(...).resume() must keep the
+				// feedback regardless of the order the two methods are called in.
+				return this;
+			}
 			return addMetadata(HUMAN_FEEDBACK_METADATA_KEY, "placeholder");
 		}
 
