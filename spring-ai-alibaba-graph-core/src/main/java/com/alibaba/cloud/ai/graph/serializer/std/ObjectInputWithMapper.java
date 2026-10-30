@@ -39,6 +39,10 @@ public class ObjectInputWithMapper implements ObjectInput {
 	public Object readObject() throws ClassNotFoundException, IOException {
 		Object object = in.readObject();
 
+		if (object instanceof ObjectOutputWithMapper.ClassValue classValue) {
+			return classValue.value();
+		}
+
 		if (object instanceof Class) {
 			Class<?> type = (Class<?>) object;
 
