@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -121,6 +122,7 @@ class ContextEditingTest {
 	@Test
 	void testContextEditingUsesConfiguredTokenCounterForToolCallBudget() {
 		ContextEditingInterceptor contextEditingInterceptor = ContextEditingInterceptor.builder()
+				.clearToolInputs(true)
 				.trigger(50)
 				.keep(0)
 				.clearAtLeast(100)
@@ -142,6 +144,93 @@ class ContextEditingTest {
 
 		assertTrue(capturedRequest.get() != null, "Updated request should be passed to handler");
 		assertEquals(1, countClearedToolCalls(capturedRequest.get().getMessages()));
+	}
+
+
+	@Test
+	void testToolInputsArePreservedByDefault() {
+		assertToolInputsPreserved(compactionBuilder().build());
+	}
+
+	@Test
+	void testToolInputsArePreservedWhenDisabled() {
+		assertToolInputsPreserved(compactionBuilder().clearToolInputs(false).build());
+	}
+
+	@Test
+	void testPreservedToolInputsDoNotConsumeClearingBudget() {
+		assertToolInputsPreserved(compactionBuilder().clearAtLeast(100).build());
+	}
+
+	@Test
+	void testToolInputsAreClearedWhenEnabled() {
+		List<Message> messages = toolExchange();
+		List<Message> updated = compact(compactionBuilder().clearToolInputs(true).build(), messages);
+		assertEquals(1, countClearedToolCalls(updated));
+		assertEquals(1, countClearedToolResponses(updated));
+		assertEquals("{\"query\":\"original input\"}",
+				((AssistantMessage) messages.get(0)).getToolCalls().get(0).arguments());
+	}
+
+	@Test
+	void testKeepPreservesNewestToolResultWithoutClearingInputs() {
+		List<Message> messages = new ArrayList<>(toolExchange());
+		messages.add(assistantToolCall("call-2", "search", "{\"query\":\"new input\"}"));
+		messages.add(toolResponse("call-2", "search", "new result"));
+		List<Message> updated = compact(compactionBuilder().keep(1).build(), messages);
+		assertEquals(1, countClearedToolResponses(updated));
+		assertSame(messages.get(0), updated.get(0));
+		assertSame(messages.get(2), updated.get(2));
+		assertSame(messages.get(3), updated.get(3));
+	}
+
+	@Test
+	void testExcludedToolsRetainInputsAndResults() {
+		List<Message> messages = new ArrayList<>(toolExchange());
+		messages.add(assistantToolCall("call-2", "protected", "{\"key\":\"value\"}"));
+		messages.add(toolResponse("call-2", "protected", "protected result"));
+		List<Message> updated = compact(compactionBuilder().clearToolInputs(true)
+				.excludeTools("protected").build(), messages);
+		assertEquals(1, countClearedToolCalls(updated));
+		assertEquals(1, countClearedToolResponses(updated));
+		assertSame(messages.get(2), updated.get(2));
+		assertSame(messages.get(3), updated.get(3));
+	}
+
+	@Test
+	void testBelowTriggerLeavesMessagesUntouched() {
+		List<Message> messages = toolExchange();
+		List<Message> updated = compact(compactionBuilder().trigger(1000).clearToolInputs(true).build(), messages);
+		assertSame(messages, updated);
+	}
+
+	private ContextEditingInterceptor.Builder compactionBuilder() {
+		return ContextEditingInterceptor.builder().trigger(1).keep(0).clearAtLeast(1000)
+				.tokenCounter(messages -> messages.size() * 100);
+	}
+
+	private List<Message> toolExchange() {
+		return List.of(assistantToolCall("call-1", "search", "{\"query\":\"original input\"}"),
+				toolResponse("call-1", "search", "original result"));
+	}
+
+	private List<Message> compact(ContextEditingInterceptor interceptor, List<Message> messages) {
+		AtomicReference<ModelRequest> captured = new AtomicReference<>();
+		interceptor.interceptModel(ModelRequest.builder().messages(messages).build(), request -> {
+			captured.set(request);
+			return ModelResponse.of(new AssistantMessage("Task completed."));
+		});
+		return captured.get().getMessages();
+	}
+
+	private void assertToolInputsPreserved(ContextEditingInterceptor interceptor) {
+		List<Message> messages = toolExchange();
+		List<Message> updated = compact(interceptor, messages);
+		assertSame(messages.get(0), updated.get(0));
+		assertEquals("{\"query\":\"original input\"}",
+				((AssistantMessage) updated.get(0)).getToolCalls().get(0).arguments());
+		assertEquals(1, countClearedToolResponses(updated));
+		assertEquals("original result", ((ToolResponseMessage) messages.get(1)).getResponses().get(0).responseData());
 	}
 
 	/**

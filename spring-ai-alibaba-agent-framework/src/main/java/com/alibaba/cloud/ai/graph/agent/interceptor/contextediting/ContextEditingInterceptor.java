@@ -207,7 +207,7 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 				int tokens = tokenCounter.countTokens(List.of(toolMsg));
 				candidates.add(new ClearableToolMessage(i, tokens));
 			}
-			else if (msg instanceof AssistantMessage assistantMsg) {
+			else if (clearToolInputs && msg instanceof AssistantMessage assistantMsg) {
 
 				// Check if message has tool calls
 				if (assistantMsg.getToolCalls().isEmpty()) {
