@@ -79,10 +79,6 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 				return handleStartNode(context);
 			}
 
-			if (context.isEndNode()) {
-				return handleEndNode(context, resultValue);
-			}
-
 			final var resumeFrom = context.getResumeFromAndReset();
 			if (resumeFrom.isPresent()) {
 				if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
@@ -90,7 +86,15 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 					var nextNodeCommand = context.nextNodeId(resumeFrom.get(), context.getCurrentStateData());
 					context.setNextNodeId(nextNodeCommand.gotoNode());
 					context.setCurrentNodeId(null);
+					if (context.isEndNode()) {
+						// There is no following node to persist the resolved route and its updates.
+						context.addCheckpoint(resumeFrom.get(), END);
+					}
 				}
+			}
+
+			if (context.isEndNode()) {
+				return handleEndNode(context, resultValue);
 			}
 
 			if (context.shouldInterrupt()) {
