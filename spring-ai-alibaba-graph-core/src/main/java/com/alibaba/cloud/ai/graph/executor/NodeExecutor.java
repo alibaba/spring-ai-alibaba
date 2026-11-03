@@ -195,15 +195,8 @@ public class NodeExecutor extends BaseGraphExecutor {
 
 			context.mergeIntoCurrentState(updateState);
 
-			if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
-					&& context.getCompiledGraph().compileConfig.interruptsAfter()
-						.contains(context.getCurrentNodeId())) {
-				context.setNextNodeId(INTERRUPT_AFTER);
-			}
-			else {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
-			}
+			updateNextNode(context, false);
+
 			NodeOutput output = context.buildNodeOutputAndAddCheckpoint(updateState);
 
 			context.doListeners(NODE_AFTER, null);
@@ -597,8 +590,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			context.mergeIntoCurrentState(updateState);
 
 			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
+				updateNextNode(context, interruptAfterMetadata.isPresent());
 
 				context.buildNodeOutputAndAddCheckpoint(updateState);
 
@@ -767,8 +759,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 
 			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
+				updateNextNode(context, interruptAfterMetadata.isPresent());
 
 				context.buildNodeOutputAndAddCheckpoint(partialStateWithoutGraphFlux);
 
@@ -920,8 +911,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 			}
 
 			try {
-				Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-				context.setNextNodeId(nextCommand.gotoNode());
+				updateNextNode(context, interruptAfterMetadata.isPresent());
 
 				context.buildNodeOutputAndAddCheckpoint(partialStateWithoutParallelGraphFlux);
 
@@ -946,19 +936,28 @@ public class NodeExecutor extends BaseGraphExecutor {
 	 */
 	private Flux<GraphResponse<NodeOutput>> handleNonStreamingResult(GraphRunnerContext context,
 																	 Map<String, Object> partialState, AtomicReference<Object> resultValue) throws Exception {
-		if (context.getCompiledGraph().compileConfig.interruptBeforeEdge()
-				&& context.getCompiledGraph().compileConfig.interruptsAfter()
-				.contains(context.getCurrentNodeId())) {
-			context.setNextNodeId(INTERRUPT_AFTER);
-		}
-		else {
-			Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
-			context.setNextNodeId(nextCommand.gotoNode());
-		}
+		updateNextNode(context, false);
 
 		NodeOutput output = context.buildNodeOutputAndAddCheckpoint(partialState);
 		// Continue with the main execution handler (expanded iteratively by GraphRunner)
 		return Flux.just(GraphResponse.of(output),
 				GraphResponse.continueWith(() -> mainGraphExecutor.execute(context, resultValue)));
 	}
+
+	/**
+	 * Preserves the distinction between configured before-edge interruptions and action
+	 * hooks, whose existing behavior saves the already selected next node.
+	 */
+	private void updateNextNode(GraphRunnerContext context, boolean interruptedByAction) throws Exception {
+		if (!interruptedByAction && context.getCompiledGraph().compileConfig.interruptBeforeEdge()
+				&& context.getCompiledGraph().compileConfig.interruptsAfter()
+					.contains(context.getCurrentNodeId())) {
+			context.setNextNodeId(INTERRUPT_AFTER);
+		}
+		else {
+			Command nextCommand = context.nextNodeId(context.getCurrentNodeId(), context.getCurrentStateData());
+			context.setNextNodeId(nextCommand.gotoNode());
+		}
+	}
+
 }
