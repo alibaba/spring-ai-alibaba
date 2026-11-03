@@ -86,10 +86,8 @@ public class MainGraphExecutor extends BaseGraphExecutor {
 					var nextNodeCommand = context.nextNodeId(resumeFrom.get(), context.getCurrentStateData());
 					context.setNextNodeId(nextNodeCommand.gotoNode());
 					context.setCurrentNodeId(null);
-					if (context.isEndNode()) {
-						// There is no following node to persist the resolved route and its updates.
-						context.addCheckpoint(resumeFrom.get(), END);
-					}
+					// Persist the route and its updates before the successor can pause or fail.
+					context.addCheckpoint(resumeFrom.get(), context.getNextNodeId());
 				}
 			}
 
