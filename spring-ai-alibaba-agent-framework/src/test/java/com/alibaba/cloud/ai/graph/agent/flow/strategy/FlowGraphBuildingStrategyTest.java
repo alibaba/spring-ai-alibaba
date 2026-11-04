@@ -45,4 +45,26 @@ class FlowGraphBuildingStrategyTest {
 		assertEquals(3, ((List<?>) merged).size());
 	}
 
+	@Test
+	void messagesStrategyMergesNestedFlowHistoryWithoutDuplicates() {
+		FlowGraphBuilder.FlowGraphConfig config = FlowGraphBuilder.FlowGraphConfig.builder().name("test");
+
+		Map<String, KeyStrategy> keyStrategies = new SequentialGraphBuildingStrategy()
+			.generateKeyStrategyFactory(config)
+			.apply();
+
+		KeyStrategy messagesStrategy = keyStrategies.get("messages");
+		UserMessage firstUser = new UserMessage("hello");
+		AssistantMessage firstAssistant = new AssistantMessage("hi");
+		UserMessage secondUser = new UserMessage("continue");
+		AssistantMessage secondAssistant = new AssistantMessage("ok");
+
+		List<Object> parentMessages = List.of(firstUser, firstAssistant);
+		List<Object> childFullHistory = List.of(firstUser, firstAssistant, secondUser, secondAssistant);
+
+		Object merged = messagesStrategy.apply(parentMessages, childFullHistory);
+
+		assertEquals(List.of(firstUser, firstAssistant, secondUser, secondAssistant), merged);
+	}
+
 }

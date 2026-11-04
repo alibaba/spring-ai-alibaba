@@ -25,7 +25,6 @@ import com.alibaba.cloud.ai.graph.agent.flow.agent.FlowAgent;
 import com.alibaba.cloud.ai.graph.agent.flow.builder.FlowGraphBuilder;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
-import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import java.util.HashMap;
@@ -97,9 +96,9 @@ public interface FlowGraphBuildingStrategy {
 				}
 			}
 
-			// Messages must be appended even when their content repeats (for example, a
-			// user answering "continue" in consecutive turns), so duplicates are allowed.
-			keyStrategyMap.put("messages", new AppendStrategy(true));
+			// Append every turn, but treat a nested flow's full history as a snapshot and
+			// append only its new suffix.
+			keyStrategyMap.put("messages", new MessageAppendStrategy());
 
 			return keyStrategyMap;
 		};
