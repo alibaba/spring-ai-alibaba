@@ -97,7 +97,9 @@ public interface FlowGraphBuildingStrategy {
 				}
 			}
 
-			keyStrategyMap.put("messages", new AppendStrategy(false));
+			// Messages must be appended even when their content repeats (for example, a
+			// user answering "continue" in consecutive turns), so duplicates are allowed.
+			keyStrategyMap.put("messages", new AppendStrategy(true));
 
 			return keyStrategyMap;
 		};
