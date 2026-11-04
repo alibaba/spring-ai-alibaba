@@ -29,6 +29,7 @@ import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
@@ -45,9 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
  *
  * @see <a href="https://github.com/alibaba/spring-ai-alibaba/issues/5041">Issue #5041</a>
  */
-class Issue5041ReproductionTest {
-
-	// https://github.com/alibaba/spring-ai-alibaba/issues/5041
+public class Issue5041ReproductionTest {
 	@Test
 	void updateStateWithAsNode_staticEdge_doesNotDuplicateAppendStrategyKeys() throws Exception {
 		var saver = MemorySaver.builder().build();
@@ -79,6 +78,7 @@ class Issue5041ReproductionTest {
 
 		// resume: B appends its message
 		var resumeOutputs = workflow.stream(null, updatedConfig.withResume()).collectList().block();
+		assertFalse(resumeOutputs.isEmpty(), "resume stream should produce at least one output");
 
 		// the final state is carried by the last resume output (getState(updatedConfig) would
 		// return the checkpoint created by updateState, not the latest one)
