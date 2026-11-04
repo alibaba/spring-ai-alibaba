@@ -67,4 +67,21 @@ class FlowGraphBuildingStrategyTest {
 		assertEquals(List.of(firstUser, firstAssistant, secondUser, secondAssistant), merged);
 	}
 
+	@Test
+	void messagesStrategyDoesNotStripRepeatedContentDelta() {
+		FlowGraphBuilder.FlowGraphConfig config = FlowGraphBuilder.FlowGraphConfig.builder().name("test");
+
+		Map<String, KeyStrategy> keyStrategies = new SequentialGraphBuildingStrategy()
+			.generateKeyStrategyFactory(config)
+			.apply();
+
+		KeyStrategy messagesStrategy = keyStrategies.get("messages");
+		List<Object> oldMessages = List.of(new UserMessage("x"));
+		List<Object> newMessages = List.of(new UserMessage("x"), new UserMessage("x"));
+
+		Object merged = messagesStrategy.apply(oldMessages, newMessages);
+
+		assertEquals(3, ((List<?>) merged).size());
+	}
+
 }

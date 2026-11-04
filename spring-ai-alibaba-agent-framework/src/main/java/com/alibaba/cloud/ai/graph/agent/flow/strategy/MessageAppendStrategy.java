@@ -42,13 +42,27 @@ public class MessageAppendStrategy extends AppendStrategy {
 	public Object apply(Object oldValue, Object newValue) {
 		final Object previous = oldValue instanceof Optional<?> optional ? optional.orElse(null) : oldValue;
 		if (previous instanceof List<?> oldList && newValue instanceof List<?> newList
-				&& newList.size() >= oldList.size() && newList.subList(0, oldList.size()).equals(oldList)) {
+				&& newList.size() >= oldList.size() && startsWithSameInstances(newList, oldList)) {
 			if (newList.size() == oldList.size()) {
 				return oldValue;
 			}
 			newValue = new ArrayList<>(newList.subList(oldList.size(), newList.size()));
 		}
 		return super.apply(previous, newValue);
+	}
+
+	/**
+	 * Checks the prefix by object identity rather than {@code equals}. Messages with
+	 * identical content can be legitimate new turns, so content-based prefix detection
+	 * would drop one of them.
+	 */
+	private static boolean startsWithSameInstances(List<?> newList, List<?> oldList) {
+		for (int i = 0; i < oldList.size(); i++) {
+			if (newList.get(i) != oldList.get(i)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }
