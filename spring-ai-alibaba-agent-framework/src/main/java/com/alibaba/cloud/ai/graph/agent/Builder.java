@@ -263,11 +263,26 @@ public abstract class Builder {
 		return this;
 	}
 
+	/**
+	 * Supplies output format instructions to append to the user message with the
+	 * default ReactAgent builder. A non-empty value takes precedence over
+	 * {@link #outputType(Class)}.
+	 * @param outputSchema the output format instructions
+	 * @return this builder
+	 */
 	public Builder outputSchema(String outputSchema) {
 		this.outputSchema = outputSchema;
 		return this;
 	}
 
+	/**
+	 * Derives output format instructions from a Java type when the default ReactAgent
+	 * builder has no explicit {@linkplain #outputSchema(String) output schema}.
+	 * The model receives these instructions in the user message. This option does not
+	 * register an output tool or deserialize the assistant message into the given type.
+	 * @param outputType the type used to derive the output schema
+	 * @return this builder
+	 */
 	public Builder outputType(Class<?> outputType) {
 		this.outputType = outputType;
 		return this;
