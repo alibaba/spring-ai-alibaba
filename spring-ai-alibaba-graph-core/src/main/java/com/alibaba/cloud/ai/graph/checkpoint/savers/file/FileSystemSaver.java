@@ -25,12 +25,23 @@ import com.alibaba.cloud.ai.graph.serializer.check_point.CheckPointSerializer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -57,29 +68,41 @@ import static java.lang.String.format;
  * Full checkpoint history is loaded from the file on demand. In memory this saver keeps
  * only a bounded latest-checkpoint cache.
  * </p>
+ * <p>
+ * Replacing an existing checkpoint on the default POSIX filesystem keeps a private
+ * old-image backup until the write and close finish. This requires additional disk space.
+ * A failed copy attempts restoration through the same file handle, preserving existing
+ * file identity and access controls. If restoration or close fails, the old backup is
+ * retained and the exception identifies it for recovery. A failed first write on POSIX
+ * removes its new file only after a known close and a matching file identity check.
+ * Dangling symbolic links and non-POSIX stores retain their existing copy behavior. This
+ * is not a crash-atomic or cross-process transaction.
+ * </p>
  */
 public class FileSystemSaver implements BaseCheckpointSaver {
 
 	public static final String EXTENSION = ".saver";
+
 	private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(FileSystemSaver.class);
+
 	private final Path targetFolder;
 
 	private final Serializer<Checkpoint> serializer;
 
 	private final Map<String, Checkpoint> latestCheckpointCache;
+
 	private final ReentrantLock lock = new ReentrantLock();
+
 	private final int maxCachedThreads;
 
 	/**
-	 * Protected constructor for FileSystemSaver.
-	 * Use {@link #builder()} to create instances.
+	 * Protected constructor for FileSystemSaver. Use {@link #builder()} to create
+	 * instances.
 	 * @param targetFolder the directory where checkpoint files are stored
 	 * @param stateSerializer the serializer used to persist checkpoint state
 	 */
 	protected FileSystemSaver(Path targetFolder, StateSerializer stateSerializer) {
-		this(new Builder()
-				.targetFolder(targetFolder)
-				.stateSerializer(stateSerializer));
+		this(new Builder().targetFolder(targetFolder).stateSerializer(stateSerializer));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -135,13 +158,288 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 	private void serialize(LinkedList<Checkpoint> checkpoints, File outFile) throws IOException {
 		Objects.requireNonNull(checkpoints, "checkpoints cannot be null");
 		Objects.requireNonNull(outFile, "outFile cannot be null");
-		try (ObjectOutputStream oos = new ObjectOutputStream(Files.newOutputStream(outFile.toPath()))) {
+		Path target = outFile.toPath().toAbsolutePath();
+		Path temporary = createTemporary(target.getParent(), ".checkpoint-", ".tmp");
+		try {
+			try (ObjectOutputStream oos = new ObjectOutputStream(openScratch(temporary))) {
+				oos.writeInt(checkpoints.size());
+				for (Checkpoint checkpoint : checkpoints) {
+					serializer.write(checkpoint, oos);
+				}
+			}
+			replaceFromStaged(temporary, target);
+		}
+		catch (IOException | RuntimeException | Error failure) {
+			try {
+				Files.deleteIfExists(temporary);
+			}
+			catch (IOException | RuntimeException cleanupFailure) {
+				if (cleanupFailure != failure) {
+					failure.addSuppressed(cleanupFailure);
+				}
+			}
+			throw failure;
+		}
+		try {
+			Files.deleteIfExists(temporary);
+		}
+		catch (IOException | RuntimeException cleanupFailure) {
+			// The checkpoint is saved, so cleanup must not prevent the cache update.
+			log.warn("Unable to delete checkpoint staging file {}", temporary, cleanupFailure);
+		}
+	}
 
-			oos.writeInt(checkpoints.size());
-			for (Checkpoint checkpoint : checkpoints) {
-				serializer.write(checkpoint, oos);
+	/*
+	 * Recovery and failed-first-write cleanup are limited to the default POSIX
+	 * filesystem. Other stores retain their existing copy behavior. In particular, this
+	 * does not change creation through a dangling symbolic link.
+	 */
+	void replaceFromStaged(Path staged, Path target) throws IOException {
+		if (Files.notExists(target, LinkOption.NOFOLLOW_LINKS) && supportsPosix(target.getParent())) {
+			createFromStaged(staged, target);
+			return;
+		}
+		if (!supportsPrivateRecovery(target)) {
+			try (InputStream input = Files.newInputStream(staged);
+					OutputStream output = Files.newOutputStream(target)) {
+				input.transferTo(output);
+			}
+			return;
+		}
+
+		Path backup = createTemporary(target.getParent(), ".checkpoint-recovery-", ".bak");
+		FileChannel channel = null;
+		Throwable failure = null;
+		boolean completeBackup = false;
+		boolean mutated = false;
+		boolean copied = false;
+		boolean restored = false;
+		boolean closed = false;
+		try {
+			channel = FileChannel.open(target, StandardOpenOption.READ, StandardOpenOption.WRITE);
+			try (OutputStream output = openScratch(backup)) {
+				ByteBuffer buffer = ByteBuffer.allocate(65536);
+				while (channel.read(buffer) >= 0) {
+					output.write(buffer.array(), 0, buffer.position());
+					buffer.clear();
+				}
+			}
+			completeBackup = true;
+			mutated = true;
+			channel.truncate(0);
+			channel.position(0);
+			copyToCheckpoint(staged, channel);
+			copied = true;
+		}
+		catch (IOException | RuntimeException | Error problem) {
+			failure = problem;
+		}
+
+		if (failure != null && mutated) {
+			// Free the new image before restoring the old one, especially after ENOSPC.
+			try {
+				Files.deleteIfExists(staged);
+			}
+			catch (IOException | RuntimeException | Error cleanup) {
+				failure.addSuppressed(cleanup);
+			}
+			try {
+				channel.truncate(0);
+				channel.position(0);
+				copyToCheckpoint(backup, channel);
+				restored = true;
+			}
+			catch (IOException | RuntimeException | Error rollback) {
+				failure.addSuppressed(rollback);
 			}
 		}
+		if (channel != null) {
+			try {
+				closeCheckpoint(channel);
+				closed = true;
+			}
+			catch (IOException | RuntimeException | Error close) {
+				if (failure == null) {
+					failure = close;
+				}
+				else {
+					failure.addSuppressed(close);
+				}
+			}
+		}
+		if (completeBackup && mutated && (!closed || (!copied && !restored))) {
+			IOException recovery = new IOException(
+					"Checkpoint outcome is uncertain; previous checkpoint retained at " + backup);
+			failure.addSuppressed(recovery);
+		}
+		else {
+			try {
+				Files.deleteIfExists(backup);
+			}
+			catch (IOException | RuntimeException | Error cleanup) {
+				if (failure != null) {
+					failure.addSuppressed(cleanup);
+				}
+				else {
+					log.warn("Checkpoint saved but private backup remains {}", backup, cleanup);
+				}
+			}
+		}
+		if (failure instanceof IOException io) {
+			throw io;
+		}
+		if (failure instanceof RuntimeException runtime) {
+			throw runtime;
+		}
+		if (failure instanceof Error error) {
+			throw error;
+		}
+	}
+
+	void createFromStaged(Path staged, Path target) throws IOException {
+		// A failed CREATE_NEW never owns an existing entry and must not clean it up.
+		FileChannel channel = FileChannel.open(target, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+		Object identity = null;
+		Throwable failure = null;
+		boolean closed = false;
+		try {
+			identity = checkpointFileKey(target);
+			copyToCheckpoint(staged, channel);
+		}
+		catch (IOException | RuntimeException | Error problem) {
+			failure = problem;
+		}
+		try {
+			closeCheckpoint(channel);
+			closed = true;
+		}
+		catch (IOException | RuntimeException | Error close) {
+			if (failure == null) {
+				failure = close;
+			}
+			else if (failure != close) {
+				failure.addSuppressed(close);
+			}
+		}
+		if (failure != null) {
+			if (closed) {
+				removeIncompleteCheckpoint(target, identity, failure);
+			}
+			else {
+				failure.addSuppressed(
+						new IOException("First checkpoint close is uncertain; file may remain at " + target));
+			}
+		}
+		if (failure instanceof IOException io) {
+			throw io;
+		}
+		if (failure instanceof RuntimeException runtime) {
+			throw runtime;
+		}
+		if (failure instanceof Error error) {
+			throw error;
+		}
+	}
+
+	private void removeIncompleteCheckpoint(Path target, Object identity, Throwable failure) {
+		try {
+			if (Files.notExists(target, LinkOption.NOFOLLOW_LINKS)) {
+				return;
+			}
+			// These path checks are not an atomic binding to the open handle or a
+			// cross-process compare-and-delete. External writers remain unsupported.
+			if (identity == null || !identity.equals(checkpointFileKey(target))) {
+				failure.addSuppressed(new IOException(
+						"Failed first checkpoint identity is unverified; path left untouched at " + target));
+				return;
+			}
+			Files.delete(target);
+		}
+		catch (IOException | RuntimeException | Error cleanup) {
+			failure.addSuppressed(
+					new IOException("Failed first checkpoint cleanup is uncertain; file may remain at " + target,
+							cleanup == failure ? null : cleanup));
+		}
+	}
+
+	Object checkpointFileKey(Path target) throws IOException {
+		BasicFileAttributes attributes = Files.readAttributes(target, BasicFileAttributes.class,
+				LinkOption.NOFOLLOW_LINKS);
+		return attributes.isRegularFile() ? attributes.fileKey() : null;
+	}
+
+	OutputStream openScratch(Path scratch) throws IOException {
+		SeekableByteChannel channel = Files.newByteChannel(scratch, StandardOpenOption.WRITE);
+		try {
+			if (channel.size() != 0) {
+				throw new IOException("Checkpoint scratch file is not empty: " + scratch);
+			}
+			return Channels.newOutputStream(channel);
+		}
+		catch (IOException | RuntimeException | Error failure) {
+			try {
+				channel.close();
+			}
+			catch (IOException | RuntimeException | Error close) {
+				if (close != failure) {
+					failure.addSuppressed(close);
+				}
+			}
+			throw failure;
+		}
+	}
+
+	private static Path createTemporary(Path directory, String prefix, String suffix) throws IOException {
+		if (!supportsPosix(directory)) {
+			return Files.createTempFile(directory, prefix, suffix);
+		}
+		var permissions = PosixFilePermissions.fromString("rw-------");
+		Path temporary = Files.createTempFile(directory, prefix, suffix,
+				PosixFilePermissions.asFileAttribute(permissions));
+		try {
+			if (!Files.getPosixFilePermissions(temporary).equals(permissions)) {
+				throw new IOException("Private checkpoint temporary permissions were not honored");
+			}
+			return temporary;
+		}
+		catch (IOException | RuntimeException | Error failure) {
+			try {
+				Files.deleteIfExists(temporary);
+			}
+			catch (IOException | RuntimeException | Error cleanup) {
+				failure.addSuppressed(cleanup);
+			}
+			throw failure;
+		}
+	}
+
+	private static boolean supportsPrivateRecovery(Path target) {
+		return Files.exists(target) && supportsPosix(target) && supportsPosix(target.getParent());
+	}
+
+	private static boolean supportsPosix(Path path) {
+		try {
+			return Files.getFileStore(path).supportsFileAttributeView(PosixFileAttributeView.class);
+		}
+		catch (IOException | UnsupportedOperationException unavailable) {
+			return false;
+		}
+	}
+
+	void copyToCheckpoint(Path source, FileChannel target) throws IOException {
+		try (InputStream input = Files.newInputStream(source)) {
+			byte[] bytes = new byte[65536];
+			for (int count; (count = input.read(bytes)) >= 0;) {
+				ByteBuffer buffer = ByteBuffer.wrap(bytes, 0, count);
+				while (buffer.hasRemaining()) {
+					target.write(buffer);
+				}
+			}
+		}
+	}
+
+	void closeCheckpoint(FileChannel channel) throws IOException {
+		channel.close();
 	}
 
 	private void deserialize(File file, LinkedList<Checkpoint> result) throws IOException, ClassNotFoundException {
@@ -211,9 +509,9 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 	private void updateCheckpoint(RunnableConfig config, String checkpointId, Checkpoint checkpoint) throws Exception {
 		LinkedList<Checkpoint> checkpoints = loadCheckpoints(config);
 		int index = IntStream.range(0, checkpoints.size())
-				.filter(i -> checkpoints.get(i).getId().equals(checkpointId))
-				.findFirst()
-				.orElseThrow(() -> new NoSuchElementException(format("Checkpoint with id %s not found!", checkpointId)));
+			.filter(i -> checkpoints.get(i).getId().equals(checkpointId))
+			.findFirst()
+			.orElseThrow(() -> new NoSuchElementException(format("Checkpoint with id %s not found!", checkpointId)));
 		checkpoints.set(index, checkpoint);
 		retainLatestCheckpoints(checkpoints, config);
 		serialize(checkpoints, getFile(config));
@@ -281,17 +579,14 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 			if (config.checkPointId().isPresent()) {
 				String checkpointId = config.checkPointId().get();
 				updateCheckpoint(config, checkpointId, checkpoint);
-				getCachedLatest(threadId)
-						.filter(latest -> latest.getId().equals(checkpointId))
-						.ifPresent(latest -> cacheLatest(threadId, checkpoint));
+				getCachedLatest(threadId).filter(latest -> latest.getId().equals(checkpointId))
+					.ifPresent(latest -> cacheLatest(threadId, checkpoint));
 				return config;
 			}
 
 			insertCheckpoint(config, checkpoint);
 			cacheLatest(threadId, checkpoint);
-			return RunnableConfig.builder(config)
-					.checkPointId(checkpoint.getId())
-					.build();
+			return RunnableConfig.builder(config).checkPointId(checkpoint.getId()).build();
 		}
 		finally {
 			lock.unlock();
@@ -418,8 +713,11 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 	 * Builder class for FileSystemSaver.
 	 */
 	public static class Builder {
+
 		private Path targetFolder;
+
 		private StateSerializer stateSerializer;
+
 		private int maxCachedThreads = 1024;
 
 		public Builder targetFolder(Path targetFolder) {
@@ -453,6 +751,7 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 		public FileSystemSaver build() {
 			return new FileSystemSaver(this);
 		}
+
 	}
 
 }
