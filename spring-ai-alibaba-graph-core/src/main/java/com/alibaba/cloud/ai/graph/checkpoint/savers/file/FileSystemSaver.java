@@ -30,7 +30,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -159,7 +161,7 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 		Path target = outFile.toPath().toAbsolutePath();
 		Path temporary = createTemporary(target.getParent(), ".checkpoint-", ".tmp");
 		try {
-			try (ObjectOutputStream oos = new ObjectOutputStream(Files.newOutputStream(temporary))) {
+			try (ObjectOutputStream oos = new ObjectOutputStream(openScratch(temporary))) {
 				oos.writeInt(checkpoints.size());
 				for (Checkpoint checkpoint : checkpoints) {
 					serializer.write(checkpoint, oos);
@@ -215,7 +217,7 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 		boolean closed = false;
 		try {
 			channel = FileChannel.open(target, StandardOpenOption.READ, StandardOpenOption.WRITE);
-			try (OutputStream output = Files.newOutputStream(backup)) {
+			try (OutputStream output = openScratch(backup)) {
 				ByteBuffer buffer = ByteBuffer.allocate(65536);
 				while (channel.read(buffer) >= 0) {
 					output.write(buffer.array(), 0, buffer.position());
@@ -364,6 +366,27 @@ public class FileSystemSaver implements BaseCheckpointSaver {
 		BasicFileAttributes attributes = Files.readAttributes(target, BasicFileAttributes.class,
 				LinkOption.NOFOLLOW_LINKS);
 		return attributes.isRegularFile() ? attributes.fileKey() : null;
+	}
+
+	OutputStream openScratch(Path scratch) throws IOException {
+		SeekableByteChannel channel = Files.newByteChannel(scratch, StandardOpenOption.WRITE);
+		try {
+			if (channel.size() != 0) {
+				throw new IOException("Checkpoint scratch file is not empty: " + scratch);
+			}
+			return Channels.newOutputStream(channel);
+		}
+		catch (IOException | RuntimeException | Error failure) {
+			try {
+				channel.close();
+			}
+			catch (IOException | RuntimeException | Error close) {
+				if (close != failure) {
+					failure.addSuppressed(close);
+				}
+			}
+			throw failure;
+		}
 	}
 
 	private static Path createTemporary(Path directory, String prefix, String suffix) throws IOException {
