@@ -24,10 +24,13 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
@@ -257,6 +260,107 @@ class UserMessageMediaSerializationTest {
 
 		UserMessage restored = mapper.readValue(mapper.writeValueAsString(original), UserMessage.class);
 		assertMessageEquals(original, restored);
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void shouldRetainBinaryMediaDuringInMemoryConversion(boolean treeConversion) throws Exception {
+		SimpleModule module = new SimpleModule();
+		SpringAIJacksonStateSerializer.registerMessageHandlers(module);
+		ObjectMapper mapper = new ObjectMapper().registerModule(module);
+		UserMessage original = message(uriMedia(), byteMedia(), byteMedia(0));
+
+		UserMessage restored;
+		if (treeConversion) {
+			ObjectNode tree = mapper.valueToTree(original);
+			assertTrue(tree.path("media").get(1).path("data").isBinary());
+			assertTrue(tree.path("media").get(2).path("data").isBinary());
+			restored = mapper.treeToValue(tree, UserMessage.class);
+		}
+		else {
+			restored = mapper.convertValue(original, UserMessage.class);
+		}
+
+		assertMessageEquals(original, restored);
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void shouldKeepBinaryReadBudgetDuringInMemoryConversion(boolean treeConversion) throws Exception {
+		SimpleModule module = new SimpleModule();
+		SpringAIJacksonStateSerializer.registerMessageHandlers(module);
+		StreamReadConstraints constraints = StreamReadConstraints.builder().maxStringLength(128).build();
+		ObjectMapper mapper = new ObjectMapper(JsonFactory.builder().streamReadConstraints(constraints).build())
+			.registerModule(module);
+		UserMessage boundary = message(byteMedia(96));
+		UserMessage oversized = message(byteMedia(97));
+
+		IllegalArgumentException failure;
+		if (treeConversion) {
+			assertMessageEquals(boundary, mapper.treeToValue(mapper.valueToTree(boundary), UserMessage.class));
+			failure = assertThrows(IllegalArgumentException.class, () -> mapper.valueToTree(oversized));
+		}
+		else {
+			assertMessageEquals(boundary, mapper.convertValue(boundary, UserMessage.class));
+			failure = assertThrows(IllegalArgumentException.class,
+					() -> mapper.convertValue(oversized, UserMessage.class));
+		}
+
+		assertStreamConstraintCause(failure);
+		assertEquals(128, mapper.getFactory().streamReadConstraints().getMaxStringLength());
+	}
+
+	@Test
+	void shouldHonorReaderBudgetForNativeBinaryTrees() throws Exception {
+		SimpleModule module = new SimpleModule();
+		SpringAIJacksonStateSerializer.registerMessageHandlers(module);
+		ObjectMapper writer = new ObjectMapper().registerModule(module);
+		StreamReadConstraints constraints = StreamReadConstraints.builder().maxStringLength(128).build();
+		ObjectMapper reader = new ObjectMapper(JsonFactory.builder().streamReadConstraints(constraints).build())
+			.registerModule(module);
+		UserMessage boundary = message(byteMedia(96));
+		ObjectNode boundaryTree = writer.valueToTree(boundary);
+		ObjectNode oversizedTree = writer.valueToTree(message(byteMedia(97)));
+		assertTrue(oversizedTree.path("media").get(0).path("data").isBinary());
+
+		assertMessageEquals(boundary, reader.treeToValue(boundaryTree, UserMessage.class));
+		IOException failure = assertThrows(IOException.class,
+				() -> reader.treeToValue(oversizedTree, UserMessage.class));
+
+		assertStreamConstraintCause(failure);
+		assertEquals(128, reader.getFactory().streamReadConstraints().getMaxStringLength());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "string", "unknown", "missing" })
+	void shouldRejectNativeBinaryWithoutBytesType(String dataType) throws Exception {
+		SimpleModule module = new SimpleModule();
+		SpringAIJacksonStateSerializer.registerMessageHandlers(module);
+		ObjectMapper mapper = new ObjectMapper().registerModule(module);
+		ObjectNode tree = mapper.valueToTree(message(byteMedia()));
+		ObjectNode media = (ObjectNode) tree.path("media").get(0);
+		if ("missing".equals(dataType)) {
+			media.remove("dataType");
+		}
+		else {
+			media.put("dataType", dataType);
+		}
+
+		assertThrows(MismatchedInputException.class, () -> mapper.treeToValue(tree, UserMessage.class));
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "bytes, 0", "bytes, true", "bytes, {}", "string, 0", "string, true", "string, {}" })
+	void shouldKeepRejectingOtherMediaDataNodeTypes(String dataType, String jsonData) throws Exception {
+		SimpleModule module = new SimpleModule();
+		SpringAIJacksonStateSerializer.registerMessageHandlers(module);
+		ObjectMapper mapper = new ObjectMapper().registerModule(module);
+		ObjectNode tree = mapper.valueToTree(message(byteMedia()));
+		ObjectNode media = (ObjectNode) tree.path("media").get(0);
+		media.put("dataType", dataType);
+		media.set("data", mapper.readTree(jsonData));
+
+		assertThrows(MismatchedInputException.class, () -> mapper.treeToValue(tree, UserMessage.class));
 	}
 
 	@Test

@@ -198,6 +198,7 @@ class FileSystemSaverCopyFailureTest {
 		saver.put(config, checkpoint("old"));
 		byte[] before = Files.readAllBytes(target());
 		Files.setPosixFilePermissions(target(), PosixFilePermissions.fromString("r--r--r--"));
+		assumeTrue(!Files.isWritable(target()), "Current user can still write to the read-only target");
 
 		assertThrows(IOException.class, () -> saver.put(config, checkpoint("new")));
 

@@ -61,6 +61,15 @@ public interface UserMessageHandler {
 
 	}
 
+	private static void validateMediaStringLength(Field field, long length, ObjectMapper mapper)
+			throws StreamConstraintsException {
+		int maxLength = mapper.getFactory().streamReadConstraints().getMaxStringLength();
+		if (length > maxLength) {
+			throw new StreamConstraintsException("User message media " + field.name + " length (" + length
+					+ ") exceeds the maximum string read length (" + maxLength + ")");
+		}
+	}
+
 	class Serializer extends StdSerializer<UserMessage> {
 
 		public Serializer() {
@@ -128,11 +137,7 @@ public interface UserMessageHandler {
 		private void validateMediaStringLength(Field field, long length, JsonGenerator gen)
 				throws StreamConstraintsException {
 			if (gen.getCodec() instanceof ObjectMapper mapper) {
-				int maxLength = mapper.getFactory().streamReadConstraints().getMaxStringLength();
-				if (length > maxLength) {
-					throw new StreamConstraintsException("User message media " + field.name + " length (" + length
-							+ ") exceeds the maximum string read length (" + maxLength + ")");
-				}
+				UserMessageHandler.validateMediaStringLength(field, length, mapper);
 			}
 		}
 
@@ -152,12 +157,13 @@ public interface UserMessageHandler {
 			var text = node.findValue(Field.TEXT.name).asText();
 			var metadata = deserializeMetadata(mapper, node);
 
-			List<Media> media = deserializeMedia(node.get(Field.MEDIA.name), ctx);
+			List<Media> media = deserializeMedia(node.get(Field.MEDIA.name), ctx, mapper);
 			return UserMessage.builder().text(text).metadata(metadata).media(media).build();
 
 		}
 
-		private List<Media> deserializeMedia(JsonNode node, DeserializationContext ctx) throws IOException {
+		private List<Media> deserializeMedia(JsonNode node, DeserializationContext ctx, ObjectMapper mapper)
+				throws IOException {
 			if (node == null || node.isNull()) {
 				return List.of();
 			}
@@ -167,11 +173,20 @@ public interface UserMessageHandler {
 			List<Media> media = new ArrayList<>();
 			for (JsonNode item : node) {
 				JsonNode data = item.path(Field.DATA.name);
-				if (!data.isTextual()) {
-					return ctx.reportInputMismatch(UserMessage.class, "User message media data must be a string");
+				String dataType = item.path(Field.DATA_TYPE.name).asText("string");
+				if (!data.isTextual() && !("bytes".equals(dataType) && data.isBinary())) {
+					return ctx.reportInputMismatch(UserMessage.class,
+							"User message media data must be a string or native binary for bytes");
 				}
-				Object value = switch (item.path(Field.DATA_TYPE.name).asText("string")) {
-					case "bytes" -> data.binaryValue();
+				Object value = switch (dataType) {
+					case "bytes" -> {
+						byte[] bytes = data.binaryValue();
+						if (data.isBinary()) {
+							UserMessageHandler.validateMediaStringLength(Field.DATA, ((bytes.length + 2L) / 3) * 4,
+									mapper);
+						}
+						yield bytes;
+					}
 					case "string" -> data.asText();
 					default -> ctx.reportInputMismatch(UserMessage.class, "Unsupported user message media data type");
 				};
