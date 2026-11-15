@@ -23,9 +23,14 @@ import com.alibaba.cloud.ai.graph.agent.hook.JumpTo;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.AgentCommand;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectReader;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.util.json.JsonParser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +46,9 @@ import static org.springframework.ai.model.tool.ToolExecutionResult.FINISH_REASO
  */
 @HookPositions({HookPosition.BEFORE_MODEL})
 public class ReturnDirectModelHook extends MessagesModelHook {
+
+	private static final ObjectReader JSON_READER = JsonParser.getObjectMapper().reader()
+		.with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
 
 	@Override
 	public String getName() {
@@ -125,9 +133,7 @@ public class ReturnDirectModelHook extends MessagesModelHook {
 				if (responseData == null) {
 					jsonArray.append("null");
 				} else {
-					String trimmed = responseData.trim();
-					// If responseData is already in JSON format, add it directly; otherwise add it as a string
-					if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+				if (isJsonContainer(responseData)) {
 						jsonArray.append(responseData);
 					} else {
 						// Escape JSON string
@@ -137,6 +143,20 @@ public class ReturnDirectModelHook extends MessagesModelHook {
 			}
 			jsonArray.append("]");
 			return jsonArray.toString();
+		}
+	}
+
+	private boolean isJsonContainer(String responseData) {
+		String trimmed = responseData.trim();
+		if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+			return false;
+		}
+		try {
+			JSON_READER.readTree(responseData);
+			return true;
+		}
+		catch (JsonProcessingException ex) {
+			return false;
 		}
 	}
 
