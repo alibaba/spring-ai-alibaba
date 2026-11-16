@@ -213,8 +213,9 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	}
 
 	/**
-	 * Returns a new RunnableConfig that copies this config and adds
-	 * {@link #HUMAN_FEEDBACK_METADATA_KEY} with value {@code "placeholder"} to metadata.
+	 * Returns a new RunnableConfig that copies this config and, unless human feedback
+	 * metadata is already present, adds {@link #HUMAN_FEEDBACK_METADATA_KEY} with value
+	 * {@code "placeholder"} to metadata.
 	 * Used when building a config for resuming a run (e.g. after human feedback is
 	 * collected and the graph is continued).
 	 * <p>
@@ -230,12 +231,17 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 * // continues from the latest checkpoint's next node
 	 * graph.invoke(Map.of(), config.withResume());
 	 * }</pre>
-	 * @return a new RunnableConfig with human feedback placeholder metadata
+	 * @return a new RunnableConfig carrying either the existing human feedback or the
+	 * resume placeholder metadata
 	 */
 	public RunnableConfig withResume() {
-		return RunnableConfig.builder(this)
-				.addMetadata(HUMAN_FEEDBACK_METADATA_KEY, "placeholder")
-				.build();
+		RunnableConfig.Builder builder = RunnableConfig.builder(this);
+		if (builder.metadata().containsKey(HUMAN_FEEDBACK_METADATA_KEY)) {
+			// Real feedback added by addHumanFeedback() is itself a resume marker.
+			// Overwriting it with the placeholder would discard the approval decisions.
+			return builder.build();
+		}
+		return builder.addMetadata(HUMAN_FEEDBACK_METADATA_KEY, "placeholder").build();
 	}
 
 	/**
@@ -421,9 +427,17 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 		 * makes a subsequent {@code invoke}/{@code stream} continue from the latest
 		 * checkpoint's next node without an explicit checkpoint id; see
 		 * {@link RunnableConfig#withResume()} for details.
+		 * <p>Human feedback previously added with
+		 * {@link #addHumanFeedback(InterruptionMetadata)} is preserved; the placeholder
+		 * is only written when no feedback is present.
 		 * @return this builder for chaining
 		 */
 		public Builder resume() {
+			if (metadata().containsKey(HUMAN_FEEDBACK_METADATA_KEY)) {
+				// Keep the real InterruptionMetadata; the placeholder must only be used
+				// when no feedback was supplied.
+				return this;
+			}
 			return addMetadata(HUMAN_FEEDBACK_METADATA_KEY, "placeholder");
 		}
 
