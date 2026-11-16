@@ -263,11 +263,35 @@ public abstract class Builder {
 		return this;
 	}
 
+	/**
+	 * Set the structured output requirement of the agent.
+	 * <p>
+	 * A JSON object schema registers an internal {@code structured_output} tool that the
+	 * model is asked to call with its final result. Synchronous invocations
+	 * ({@code call} and {@code invoke}) then expose the parsed result through the
+	 * {@code structured_output} state key. Other values, and streaming invocations, are
+	 * appended to the user message as format instructions and the model is expected to
+	 * answer with JSON text.
+	 * </p>
+	 * @param outputSchema a JSON object schema or free-form output format instructions
+	 * @return this builder
+	 */
 	public Builder outputSchema(String outputSchema) {
 		this.outputSchema = outputSchema;
 		return this;
 	}
 
+	/**
+	 * Set the structured output Java type of the agent.
+	 * <p>
+	 * The type is converted to a JSON schema with {@code BeanOutputConverter}. Object
+	 * schemas use the internal {@code structured_output} tool for synchronous invocations
+	 * and store an instance of the given type under the {@code structured_output} state
+	 * key. Types that do not map to a JSON object keep the prompt based behavior.
+	 * </p>
+	 * @param outputType the Java type the model output should be converted to
+	 * @return this builder
+	 */
 	public Builder outputType(Class<?> outputType) {
 		this.outputType = outputType;
 		return this;

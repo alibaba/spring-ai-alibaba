@@ -43,6 +43,8 @@ import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.messages.MessagesModelHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
+import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputHook;
+import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputSupport;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
@@ -117,6 +119,10 @@ public class ReactAgent extends BaseAgent {
 
     private final Boolean hasTools;
 
+	private final boolean structuredOutputEnabled;
+
+	private final Class<?> structuredOutputType;
+
 	public ReactAgent(AgentLlmNode llmNode, AgentToolNode toolNode, CompileConfig compileConfig, Builder builder) {
 		super(builder.name, builder.description, builder.includeContents, builder.returnReasoningContents, builder.outputKey, builder.outputKeyStrategy);
 		this.threadIdStateMap = new ConcurrentHashMap<>();
@@ -134,6 +140,8 @@ public class ReactAgent extends BaseAgent {
 		this.inputType = builder.inputType;
 		this.outputSchema = builder.outputSchema;
 		this.outputType = builder.outputType;
+		this.structuredOutputEnabled = StructuredOutputSupport.resolveObjectSchema(builder.outputSchema, builder.outputType) != null;
+		this.structuredOutputType = StructuredOutputSupport.resolveConversionType(builder.outputSchema, builder.outputType);
 
 		// Set state serializer from builder, or use default
         // Default to Jackson serializer for better compatibility and features
@@ -300,6 +308,47 @@ public class ReactAgent extends BaseAgent {
 	}
 
 	@Override
+	protected Optional<OverAllState> doInvoke(Map<String, Object> input, RunnableConfig runnableConfig) {
+		return super.doInvoke(clearStaleStructuredOutput(input, runnableConfig), runnableConfig);
+	}
+
+	@Override
+	protected Optional<NodeOutput> doInvokeAndGetOutput(Map<String, Object> input, RunnableConfig runnableConfig) {
+		return super.doInvokeAndGetOutput(clearStaleStructuredOutput(input, runnableConfig), runnableConfig);
+	}
+
+	@Override
+	protected Flux<NodeOutput> doStream(Map<String, Object> input, RunnableConfig runnableConfig) {
+		return super.doStream(clearStaleStructuredOutput(input, runnableConfig), runnableConfig);
+	}
+
+	/**
+	 * Remove a structured result left over from a previous invocation on a reused thread.
+	 * <p>
+	 * A checkpoint continuation keeps the saved state on purpose, so the marker is not
+	 * injected for resumes: {@code GraphRunnerContext.initializeFromResume()} applies the
+	 * inputs with a plain replace strategy instead of honoring
+	 * {@link OverAllState#MARK_FOR_REMOVAL}.
+	 * </p>
+	 * @param input the invocation input
+	 * @param config the invocation config
+	 * @return the input to use for the graph invocation
+	 */
+	private Map<String, Object> clearStaleStructuredOutput(Map<String, Object> input, RunnableConfig config) {
+		if (!structuredOutputEnabled || isResume(config)) {
+			return input;
+		}
+		Map<String, Object> prepared = input == null ? new HashMap<>() : new HashMap<>(input);
+		prepared.put(StructuredOutputSupport.STATE_KEY, OverAllState.MARK_FOR_REMOVAL);
+		return prepared;
+	}
+
+	private boolean isResume(RunnableConfig config) {
+		return config != null && (config.checkPointId().isPresent()
+				|| config.metadata(RunnableConfig.HUMAN_FEEDBACK_METADATA_KEY).isPresent());
+	}
+
+	@Override
 	public Node asNode(boolean includeContents, boolean returnReasoningContents) {
 		if (this.compiledGraph == null) {
 			this.compiledGraph = getAndCompileGraph();
@@ -318,6 +367,9 @@ public class ReactAgent extends BaseAgent {
 		List<Hook> effectiveHooks = new ArrayList<>();
 		effectiveHooks.add(InstructionAgentHook.create());
 		effectiveHooks.addAll(hooks);
+		if (structuredOutputEnabled) {
+			effectiveHooks.add(new StructuredOutputHook(structuredOutputType));
+		}
 
 		// Validate hook uniqueness
 		Set<String> hookNames = new HashSet<>();
@@ -744,6 +796,7 @@ public class ReactAgent extends BaseAgent {
 				keyStrategyHashMap.put(outputKey, outputKeyStrategy == null ? new ReplaceStrategy() : outputKeyStrategy);
 			}
 			keyStrategyHashMap.put("messages", new AppendStrategy());
+			keyStrategyHashMap.put(StructuredOutputSupport.STATE_KEY, new ReplaceStrategy());
 
 			// Iterate through hooks and collect their key strategies
 			if (hooks != null) {
