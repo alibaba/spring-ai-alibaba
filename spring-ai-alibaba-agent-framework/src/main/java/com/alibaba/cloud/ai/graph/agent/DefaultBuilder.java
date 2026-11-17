@@ -22,6 +22,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
+import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputSupport;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.collections4.CollectionUtils;
@@ -114,7 +115,12 @@ public class DefaultBuilder extends Builder {
 		if (StringUtils.hasLength(outputSchema)) {
 			llmNodeBuilder.outputSchema(outputSchema);
 		}
-		
+
+		String structuredOutputSchema = StructuredOutputSupport.resolveObjectSchema(this.outputSchema, this.outputType);
+		if (StringUtils.hasText(structuredOutputSchema)) {
+			llmNodeBuilder.structuredOutputSchema(structuredOutputSchema);
+		}
+
 		separateInterceptorsByType();
 
 		registerDefaultModelInterceptors();

@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.NodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputSupport;
 import com.alibaba.cloud.ai.graph.serializer.AgentInstructionMessage;
 import com.alibaba.cloud.ai.graph.utils.TypeRef;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
@@ -82,6 +83,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private String outputSchema;
 
+	private String structuredOutputSchema;
+
+	private ToolCallback structuredOutputToolCallback;
+
 	private ChatClient chatClient;
 
 	private String systemPrompt;
@@ -98,6 +103,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		this.agentName = builder.agentName;
 		this.outputKey = builder.outputKey;
 		this.outputSchema = builder.outputSchema;
+		this.structuredOutputSchema = builder.structuredOutputSchema;
+		if (StringUtils.hasText(this.structuredOutputSchema)) {
+			this.structuredOutputToolCallback = StructuredOutputSupport.createToolCallback(this.structuredOutputSchema);
+		}
 		this.systemPrompt = builder.systemPrompt;
 		this.instruction = builder.instruction;
 		this.templateRenderer = builder.templateRenderer;
@@ -172,7 +181,18 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			messages = (List<Message>) state.value("messages").get();
 		}
 
-		augmentUserMessage(messages, outputSchema);
+		// add streaming support
+		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
+		// Tool-call based structured output requires a complete model response, so it is
+		// used for synchronous invocations only. Streaming keeps the prompt based format.
+		boolean toolBasedStructuredOutput = !stream && structuredOutputToolCallback != null;
+
+		if (toolBasedStructuredOutput) {
+			augmentUserMessage(messages, StructuredOutputSupport.INSTRUCTION);
+		}
+		else {
+			augmentUserMessage(messages, outputSchema);
+		}
 		renderTemplatedUserMessage(messages, state.data(), config.metadata());
 
 		// Create ModelRequest; include state in context so interceptors (e.g. handoffs step-config) can read it
@@ -181,15 +201,34 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		if (!metadata.isEmpty()) {
 			contextMap.putAll(metadata);
 		}
+		ToolCallingChatOptions requestOptions = this.chatOptions != null ? this.chatOptions.copy() : null;
+		if (requestOptions == null && toolBasedStructuredOutput) {
+			// The structured output tool still needs an options object to be sent to the
+			// model when the agent has no tools and no explicit chat options.
+			requestOptions = ToolCallingChatOptions.builder().internalToolExecutionEnabled(false).build();
+		}
+		if (toolBasedStructuredOutput && requestOptions != null) {
+			// Expose the internal tool through ModelRequest as well, so interceptors that
+			// rebuild the model call (for example a model fallback interceptor) keep the
+			// structured output contract.
+			List<ToolCallback> requestToolCallbacks = requestOptions.getToolCallbacks() == null
+					? new ArrayList<>() : new ArrayList<>(requestOptions.getToolCallbacks());
+			boolean alreadyRegistered = requestToolCallbacks.stream()
+				.anyMatch(callback -> StructuredOutputSupport.TOOL_NAME.equals(callback.getToolDefinition().name()));
+			if (!alreadyRegistered) {
+				requestToolCallbacks.add(structuredOutputToolCallback);
+			}
+			requestOptions.setToolCallbacks(requestToolCallbacks);
+		}
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
 				.messages(messages)
-				.options(this.chatOptions != null ? this.chatOptions.copy() : null)
+				.options(requestOptions)
 				.context(contextMap);
 
         // Extract tool names and descriptions from toolCallbacks and pass them to ModelRequest
-        if (toolCallbacks != null && !toolCallbacks.isEmpty()) {
-            List<String> toolNames = new ArrayList<>();
-            Map<String, String> toolDescriptions = new HashMap<>();
+        List<String> toolNames = new ArrayList<>();
+        Map<String, String> toolDescriptions = new HashMap<>();
+        if (toolCallbacks != null) {
             for (ToolCallback callback : toolCallbacks) {
                 String name = callback.getToolDefinition().name();
                 String description = callback.getToolDefinition().description();
@@ -198,6 +237,15 @@ public class AgentLlmNode implements NodeActionWithConfig {
                     toolDescriptions.put(name, description);
                 }
             }
+        }
+        if (toolBasedStructuredOutput) {
+            toolNames.add(StructuredOutputSupport.TOOL_NAME);
+            String description = structuredOutputToolCallback.getToolDefinition().description();
+            if (description != null && !description.isEmpty()) {
+                toolDescriptions.put(StructuredOutputSupport.TOOL_NAME, description);
+            }
+        }
+        if (!toolNames.isEmpty()) {
             requestBuilder.tools(toolNames);
             requestBuilder.toolDescriptions(toolDescriptions);
         }
@@ -208,8 +256,6 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		ModelRequest modelRequest = requestBuilder.build();
 
-		// add streaming support
-		boolean stream = config.metadata("_stream_", new TypeRef<Boolean>(){}).orElse(true);
 		if (stream) {
 			// Create base handler that actually calls the model with streaming
 			ModelCallHandler baseHandler = request -> {
@@ -221,7 +267,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 									.orElse(THREAD_ID_DEFAULT), agentName, systemPrompt);
 						}
 					}
-					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, config).stream().chatResponse();
+					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, config, false).stream().chatResponse();
 					if (enableReasoningLog) {
 						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
 							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
@@ -244,7 +290,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					return ModelResponse.of(chatResponseFlux);
 				} catch (Exception e) {
 					logger.error("Exception during streaming model call: ", e);
-					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
+					return ModelResponse.of(StructuredOutputSupport.modelFailure(e));
 				}
 			};
 
@@ -264,7 +310,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 						logger.info("[ThreadId {}] Agent {} reasoning round {} with system prompt: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), systemPrompt);
 					}
 
-					ChatResponse response = buildChatClientRequestSpec(request, config).call().chatResponse();
+					ChatResponse response = buildChatClientRequestSpec(request, config, toolBasedStructuredOutput).call().chatResponse();
 
 					AssistantMessage responseMessage = new AssistantMessage("Empty response from model for unknown reason");
 					if (response != null && response.getResult() != null) {
@@ -278,7 +324,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 					return ModelResponse.of(responseMessage, response);
 				} catch (Exception e) {
 					logger.error("Exception during invoking model call: ", e);
-					return ModelResponse.of(new AssistantMessage("Exception: " + e.getMessage()));
+					return ModelResponse.of(StructuredOutputSupport.modelFailure(e));
 				}
 			};
 
@@ -295,11 +341,22 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			Usage tokenUsage = modelResponse.getChatResponse() != null ? modelResponse.getChatResponse().getMetadata()
 					.getUsage() : new EmptyUsage();
 
+			Object responseMessage = modelResponse.getMessage();
+			if (toolBasedStructuredOutput && responseMessage instanceof AssistantMessage assistantMessage) {
+				// The structured value is parsed at the end of the invocation, after any
+				// AFTER_MODEL hooks (for example output PII redaction) updated the message.
+				Optional<AssistantMessage> finalized = StructuredOutputSupport
+					.finalizeToolCallMessage(assistantMessage);
+				if (finalized.isPresent()) {
+					responseMessage = finalized.get();
+				}
+			}
+
 			Map<String, Object> updatedState = new HashMap<>();
 			updatedState.put("_TOKEN_USAGE_", tokenUsage);
-			updatedState.put("messages", modelResponse.getMessage());
+			updatedState.put("messages", responseMessage);
 			if (StringUtils.hasLength(this.outputKey)) {
-				updatedState.put(this.outputKey, modelResponse.getMessage());
+				updatedState.put(this.outputKey, responseMessage);
 			}
 
 			return updatedState;
@@ -485,7 +542,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.toList()));
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest, RunnableConfig config) {
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest, RunnableConfig config,
+			boolean includeStructuredOutputTool) {
 		List<Message> messages = appendSystemPromptIfNeeded(modelRequest);
 
 		// NOTICE! If both tools(ToolSelectionInterceptor) and options are customized in ModelRequest, tools will override toolcall setting in options.
@@ -499,6 +557,14 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 		else {
 			config.context().remove(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY);
+		}
+
+		if (includeStructuredOutputTool && structuredOutputToolCallback != null) {
+			boolean alreadyRegistered = filteredToolCallbacks.stream()
+				.anyMatch(callback -> StructuredOutputSupport.TOOL_NAME.equals(callback.getToolDefinition().name()));
+			if (!alreadyRegistered) {
+				filteredToolCallbacks.add(structuredOutputToolCallback);
+			}
 		}
 
 		var promptSpec = this.chatClient.prompt()
@@ -551,6 +617,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		private String outputSchema;
 
+		private String structuredOutputSchema;
+
 		private String systemPrompt;
 
 		private TemplateRenderer templateRenderer;
@@ -583,6 +651,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder outputSchema(String outputSchema) {
 			this.outputSchema = outputSchema;
+			return this;
+		}
+
+		public Builder structuredOutputSchema(String structuredOutputSchema) {
+			this.structuredOutputSchema = structuredOutputSchema;
 			return this;
 		}
 
