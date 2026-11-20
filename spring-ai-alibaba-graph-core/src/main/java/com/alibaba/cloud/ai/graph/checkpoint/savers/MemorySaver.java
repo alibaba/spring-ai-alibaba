@@ -21,9 +21,9 @@ import com.alibaba.cloud.ai.graph.checkpoint.Checkpoint;
 import com.alibaba.cloud.ai.graph.utils.TryFunction;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -86,7 +86,7 @@ public class MemorySaver implements BaseCheckpointSaver {
 	@Override
 	public final Collection<Checkpoint> list(RunnableConfig config) {
 		try {
-			return loadOrInitCheckpoints(config, Collections::unmodifiableCollection);
+			return loadOrInitCheckpoints(config, List::copyOf);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);

@@ -88,6 +88,22 @@ public class StateGraphMemorySaverTest {
 		return keyStrategyMap;
 	};
 
+	@Test
+	void listedCheckpointsRemainStableAfterAnotherPut() throws Exception {
+		var saver = new MemorySaver();
+		var config = RunnableConfig.builder().threadId("history").build();
+		var first = Checkpoint.builder().state(Map.of()).nodeId("first").nextNodeId("second").build();
+		var second = Checkpoint.builder().state(Map.of()).nodeId("second").nextNodeId(END).build();
+
+		saver.put(config, first);
+		var history = saver.list(config);
+		saver.put(config, second);
+
+		assertIterableEquals(List.of(first), history);
+		assertIterableEquals(List.of(second, first), saver.list(config));
+		assertThrowsExactly(UnsupportedOperationException.class, history::clear);
+	}
+
 	@BeforeAll
 	public static void initLogging() throws IOException {
 		try (var is = StateGraphMemorySaverTest.class.getResourceAsStream("/logging.properties")) {
