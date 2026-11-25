@@ -89,6 +89,7 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Keep the shaded client ahead of the RPC classes in nacos-common. -->
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
@@ -103,9 +104,17 @@
                     <groupId>com.alibaba.nacos</groupId>
                     <artifactId>nacos-api</artifactId>
                 </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-common</artifactId>
+            <version>${nacos3.version}</version>
+            <exclusions>
                 <exclusion>
                     <groupId>com.alibaba.nacos</groupId>
-                    <artifactId>nacos-common</artifactId>
+                    <artifactId>nacos-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
