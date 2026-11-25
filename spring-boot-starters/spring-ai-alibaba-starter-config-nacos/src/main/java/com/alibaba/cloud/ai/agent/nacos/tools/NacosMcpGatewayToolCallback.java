@@ -19,7 +19,6 @@ package com.alibaba.cloud.ai.agent.nacos.tools;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,7 +40,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
-import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.spec.McpClientTransport;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.InitializeResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
@@ -428,28 +430,15 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 				throw new IllegalStateException("Protocol is null");
 			}
 
-			if ("mcp-sse".equalsIgnoreCase(protocol)) {
-				McpServerRemoteServiceConfig remoteServerConfig = this.toolDefinition.getRemoteServerConfig();
-				if (remoteServerConfig == null) {
-					throw new IllegalStateException("Remote server config is null");
-				}
-				return handleMcpStreamProtocol(args, remoteServerConfig, protocol);
-			}
-			else if ("mcp-streamable".equalsIgnoreCase(protocol)) {
-
-				logger.error("[call] Unsupported protocol: {}", protocol);
-				return "Error: Unsupported protocol " + protocol;
-				// McpServerRemoteServiceConfig remoteServerConfig =
-				// this.toolDefinition.getRemoteServerConfig();
-				// if (remoteServerConfig == null) {
-				// throw new IllegalStateException("Remote server config is null");
-				// }
-				// return handleMcpStreamableProtocol(args, remoteServerConfig, protocol);
-			}
-			else {
+			if (!"mcp-sse".equalsIgnoreCase(protocol) && !"mcp-streamable".equalsIgnoreCase(protocol)) {
 				logger.error("[call] Unsupported protocol: {}", protocol);
 				return "Error: Unsupported protocol " + protocol;
 			}
+			McpServerRemoteServiceConfig remoteServerConfig = this.toolDefinition.getRemoteServerConfig();
+			if (remoteServerConfig == null) {
+				throw new IllegalStateException("Remote server config is null");
+			}
+			return handleMcpStreamProtocol(args, remoteServerConfig, protocol);
 		}
 		catch (Exception e) {
 			logger.error("[call] Unexpected error occurred", e);
@@ -463,137 +452,65 @@ public class NacosMcpGatewayToolCallback implements ToolCallback {
 	private String handleMcpStreamProtocol(Map<String, Object> args, McpServerRemoteServiceConfig remoteServerConfig,
 			String protocol) throws NacosException {
 		McpServiceRef serviceRef = remoteServerConfig.getServiceRef();
-		if (serviceRef != null) {
-			McpEndpointInfo mcpEndpointInfo = nacosMcpOperationService.selectEndpoint(serviceRef);
-			if (mcpEndpointInfo == null) {
-				throw new RuntimeException("No available endpoint found for service: " + serviceRef.getServiceName());
-			}
-
-			logger.info("[handleMcpStreamProtocol] Tool callback instance: {}", JacksonUtils.toJson(mcpEndpointInfo));
-			String exportPath = remoteServerConfig.getExportPath();
-
-			// 构建基础URL，根据协议类型调整
-			String transportProtocol = StringUtils.hasText(serviceRef.getTransportProtocol()) ? serviceRef.getTransportProtocol() : "http";
-			StringBuilder baseUrl;
-			if ("mcp-sse".equalsIgnoreCase(protocol)) {
-				baseUrl = new StringBuilder(transportProtocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort());
-			}
-			else {
-				// mcp-streamable 或其他协议
-				baseUrl = new StringBuilder(transportProtocol + "://" + mcpEndpointInfo.getAddress() + ":" + mcpEndpointInfo.getPort());
-			}
-
-			logger.info("[handleMcpStreamProtocol] Processing {} protocol with args: {} and baseUrl: {}", protocol,
-					args, baseUrl.toString());
-
-			try {
-				// 获取工具名称 - 从工具定义名称中提取实际的工具名称
-				String toolDefinitionName = this.toolDefinition.name();
-				if (toolDefinitionName == null || toolDefinitionName.isEmpty()) {
-					throw new RuntimeException("Tool definition name is not available");
+		if (serviceRef == null) {
+			return "Error: service reference is null";
+		}
+		McpEndpointInfo address = nacosMcpOperationService.selectEndpoint(serviceRef);
+		if (address == null) {
+			throw new IllegalStateException("No available endpoint found for service: " + serviceRef.getServiceName());
+		}
+		String scheme = StringUtils.hasText(serviceRef.getTransportProtocol()) ? serviceRef.getTransportProtocol() : "http";
+		String baseUrl = scheme + "://" + address.getAddress() + ":" + address.getPort();
+		boolean streamable = "mcp-streamable".equalsIgnoreCase(protocol);
+		String exportPath = remoteServerConfig.getExportPath();
+		String defaultPath = streamable ? "/mcp" : "/sse";
+		StringBuilder endpoint = new StringBuilder(StringUtils.hasText(exportPath) ? exportPath : defaultPath);
+		if (!CollectionUtils.isEmpty(mcpServerVO.getQueryParams())) {
+			endpoint.append(endpoint.indexOf("?") >= 0 ? "&" : "?");
+			Iterator<Map.Entry<String, String>> queryParams = mcpServerVO.getQueryParams().entrySet().iterator();
+			while (queryParams.hasNext()) {
+				Map.Entry<String, String> param = queryParams.next();
+				endpoint.append(param.getKey()).append('=').append(param.getValue());
+				if (queryParams.hasNext()) {
+					endpoint.append('&');
 				}
-
-				// 工具定义名称格式为: serverName_tools_toolName
-				// 需要提取最后的 toolName 部分
-				String toolName;
-				if (toolDefinitionName.contains("_tools_")) {
-					toolName = toolDefinitionName.substring(toolDefinitionName.lastIndexOf("_tools_") + 7);
-				}
-				else {
-					// 如果没有 _tools_ 分隔符，使用整个名称
-					toolName = toolDefinitionName;
-				}
-
-				if (toolName.isEmpty()) {
-					throw new RuntimeException("Extracted tool name is empty");
-				}
-
-				// 构建传输层
-				StringBuilder sseEndpoint = new StringBuilder("/sse");
-				if (exportPath != null && !exportPath.isEmpty()) {
-					sseEndpoint = new StringBuilder(exportPath);
-					if (mcpServerVO.getQueryParams() != null) {
-
-
-						if (!sseEndpoint.toString().contains("?")) {
-							sseEndpoint.append("?");
-						}
-						Iterator<Map.Entry<String, String>> iterator = mcpServerVO.getQueryParams().entrySet()
-								.iterator();
-						while (iterator.hasNext()) {
-							Map.Entry<String, String> next = iterator.next();
-							sseEndpoint.append(next.getKey()).append("=").append(next.getValue())
-									.append(iterator.hasNext() ? "&" : "");
-						}
-					}
-				}
-
-				HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl.toString())
-						.sseEndpoint(sseEndpoint.toString());
-				if (mcpServerVO.getHeaders() != null) {
-					transportBuilder.httpRequestCustomizer((requestBuilder, method, uri, body, context) -> {
-						for (Map.Entry<String, String> headerName : mcpServerVO.getHeaders().entrySet())
-							requestBuilder.header(headerName.getKey(), headerName.getValue());
-					});
-				}
-
-				// 添加自定义请求头（如果需要）
-				// 这里可以根据需要添加认证头等
-				HttpClientSseClientTransport transport = transportBuilder.build();
-
-				// 创建MCP同步客户端
-				McpSyncClient client = configureTimeouts(McpClient.sync(transport)).build();
-				try {
-					// 初始化客户端
-					InitializeResult initializeResult = client.initialize();
-					logger.info("[handleMcpStreamProtocol] MCP Client initialized: {}", initializeResult);
-
-					// 调用工具
-					McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, args);
-					logger.info("[handleMcpStreamProtocol] CallToolRequest: {}", request);
-
-					CallToolResult result = client.callTool(request);
-					logger.info("[handleMcpStreamProtocol] tool call result: {}", result);
-
-					// 处理结果
-					Object content = result.content();
-					if (content instanceof List<?> list && !CollectionUtils.isEmpty(list)) {
-						Object first = list.get(0);
-						// 兼容TextContent的text字段
-						if (first instanceof TextContent textContent) {
-							return textContent.text();
-						}
-						else if (first instanceof Map<?, ?> map && map.containsKey("text")) {
-							return map.get("text").toString();
-						}
-						else {
-							return first.toString();
-						}
-					}
-					else {
-						return content != null ? content.toString() : "No content returned";
-					}
-				}
-				finally {
-					// 清理资源
-					try {
-						if (client != null) {
-							client.close();
-						}
-					}
-					catch (Exception e) {
-						logger.warn("[handleMcpStreamProtocol] Failed to close MCP client", e);
-					}
-				}
-			}
-			catch (Exception e) {
-				logger.error("[handleMcpStreamProtocol] MCP call failed:", e);
-				return "Error: MCP call failed - " + e.getMessage();
 			}
 		}
-		else {
-			logger.error("[handleMcpStreamProtocol] serviceRef is null");
-			return "Error: service reference is null";
+		McpSyncHttpClientRequestCustomizer headers = (request, method, uri, body, context) -> {
+			if (mcpServerVO.getHeaders() != null) {
+				mcpServerVO.getHeaders().forEach(request::header);
+			}
+		};
+		McpClientTransport transport = streamable
+				? HttpClientStreamableHttpTransport.builder(baseUrl).endpoint(endpoint.toString())
+						.httpRequestCustomizer(headers).build()
+				: HttpClientSseClientTransport.builder(baseUrl).sseEndpoint(endpoint.toString())
+						.httpRequestCustomizer(headers).build();
+		String configuredName = this.toolDefinition.name();
+		int separator = configuredName.lastIndexOf("_tools_");
+		String toolName = separator >= 0 ? configuredName.substring(separator + "_tools_".length()) : configuredName;
+		if (!StringUtils.hasText(toolName)) {
+			throw new IllegalStateException("Extracted tool name is empty");
+		}
+		try (McpSyncClient client = configureTimeouts(McpClient.sync(transport)).build()) {
+			InitializeResult initialized = client.initialize();
+			logger.debug("MCP client initialized: {}", initialized);
+			CallToolResult result = client.callTool(CallToolRequest.builder(toolName).arguments(args).build());
+			if (CollectionUtils.isEmpty(result.content())) {
+				return result.content() != null ? result.content().toString() : "No content returned";
+			}
+			Object first = result.content().get(0);
+			if (first instanceof TextContent text) {
+				return text.text();
+			}
+			if (first instanceof Map<?, ?> map && map.containsKey("text")) {
+				return map.get("text").toString();
+			}
+			return String.valueOf(first);
+		}
+		catch (Exception e) {
+			logger.error("MCP call failed", e);
+			return "Error: MCP call failed - " + e.getMessage();
 		}
 	}
 

@@ -42,6 +42,7 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -55,6 +56,8 @@ class NacosReactAgentBuilderObservationMetadataTest {
 	private NacosConfigService nacosConfigService;
 
 	private NacosOptions nacosOptions;
+
+	private ModelVO modelVO;
 
 	@BeforeEach
 	void setUp() throws Exception {
@@ -83,8 +86,22 @@ class NacosReactAgentBuilderObservationMetadataTest {
 				ObservationMetadataAwareOptions.class, requestOptions);
 		assertEquals("gpt-4", requestOptions.getModel());
 		assertEquals(0.4, requestOptions.getTemperature());
+		assertEquals(Boolean.TRUE, requestOptions.getStrict());
+		assertEquals(Boolean.FALSE, requestOptions.getReplayReasoningContent());
 		assertEquals(Map.of("promptKey", "test-prompt", "promptVersion", "v1"),
 				requestObservationOptions.getObservationMetadata());
+	}
+
+	@Test
+	void missingOpenAiOptionsInModelJsonUseProviderDefaults() {
+		this.modelVO.setStrict(null);
+		this.modelVO.setReplayReasoningContent(null);
+		NacosReactAgentBuilder builder = new NacosReactAgentBuilder();
+		builder.nacosOptions(this.nacosOptions).name("test-agent").build();
+
+		var options = assertInstanceOf(OpenAiChatOptions.class, builder.agentVOHolder.getObservationMetadataAwareOptions());
+		assertNull(options.getStrict());
+		assertNull(options.getReplayReasoningContent());
 	}
 
 	@Test
@@ -119,13 +136,15 @@ class NacosReactAgentBuilderObservationMetadataTest {
 		when(this.nacosConfigService.getConfig(eq("prompt-test-prompt.json"), anyString(), anyLong()))
 				.thenReturn(JSON.toJSONString(promptVO));
 
-		ModelVO modelVO = new ModelVO();
+		this.modelVO = new ModelVO();
 		modelVO.setBaseUrl("https://api.openai.com/v1");
 		modelVO.setApiKey("test-api-key");
 		modelVO.setModel("gpt-4");
 		modelVO.setTemperature("0.7");
+		modelVO.setStrict(true);
+		modelVO.setReplayReasoningContent(false);
 		when(this.nacosConfigService.getConfig(eq("model.json"), anyString(), anyLong()))
-				.thenReturn(JSON.toJSONString(modelVO));
+				.thenAnswer(invocation -> JSON.toJSONString(this.modelVO));
 
 		McpServersVO mcpServersVO = new McpServersVO();
 		mcpServersVO.setMcpServers(Collections.emptyList());

@@ -267,8 +267,9 @@ public class RemoteMcpToolsExample {
                                 //build tools request
                                 log.debug("[{}] Call MCP Tool: {} With Input: {}",
                                         serverName, mcpTool.name(), functionInput);
-                                McpSchema.CallToolRequest callRequest = new McpSchema.CallToolRequest(
-                                        mcpTool.name(), functionInput);
+                                McpSchema.CallToolRequest callRequest = McpSchema.CallToolRequest.builder(mcpTool.name())
+                                        .arguments(functionInput)
+                                        .build();
 
                                 // Call Tool
                                 McpSchema.CallToolResult callResult = mcpClient.callTool(callRequest);

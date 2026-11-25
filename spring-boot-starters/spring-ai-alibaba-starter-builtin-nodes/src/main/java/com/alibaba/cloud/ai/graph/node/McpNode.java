@@ -21,7 +21,7 @@ import com.alibaba.cloud.ai.graph.action.NodeAction;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
-import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.InitializeResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
@@ -57,10 +57,6 @@ public class McpNode implements NodeAction {
 
 	private final List<String> inputParamKeys;
 
-	private HttpClientSseClientTransport transport;
-
-	private McpSyncClient client;
-
 	private McpNode(Builder builder) {
 		this.url = builder.url;
 		this.tool = builder.tool;
@@ -90,10 +86,6 @@ public class McpNode implements NodeAction {
 			transportBuilder.httpRequestCustomizer((requestBuilder, method, uri, body, context) -> this.headers
 				.forEach(requestBuilder::header));
 		}
-		this.transport = transportBuilder.build();
-		this.client = McpClient.sync(this.transport).build();
-		InitializeResult initializeResult = this.client.initialize();
-		log.info("[McpNode] MCP Client initialized: {}", initializeResult);
 		// Variable replacement
 		String finalTool = replaceVariables(tool, state);
 		Map<String, Object> finalParams = new HashMap<>();
@@ -114,10 +106,11 @@ public class McpNode implements NodeAction {
 		log.info("[McpNode] after replace params: url={}, tool={}, headers={}, params={}", url, finalTool, headers,
 				finalParams);
 
-		// Directly use the already initialized client
 		CallToolResult result;
-		try {
-			McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(finalTool, finalParams);
+		try (McpSyncClient client = McpClient.sync(transportBuilder.build()).build()) {
+			InitializeResult initializeResult = client.initialize();
+			log.info("[McpNode] MCP Client initialized: {}", initializeResult);
+			CallToolRequest request = CallToolRequest.builder(finalTool).arguments(finalParams).build();
 			log.info("[McpNode] CallToolRequest: {}", request);
 			result = client.callTool(request);
 			log.info("[McpNode] tool call result: {}", result);

@@ -27,6 +27,10 @@ public class ModelVO {
 
 	private String maxTokens;
 
+	private Boolean strict;
+
+	private Boolean replayReasoningContent;
+
 	public String getBaseUrl() {
 		return baseUrl;
 	}
@@ -65,5 +69,21 @@ public class ModelVO {
 
 	public void setMaxTokens(String maxTokens) {
 		this.maxTokens = maxTokens;
+	}
+
+	public Boolean getStrict() {
+		return strict;
+	}
+
+	public void setStrict(Boolean strict) {
+		this.strict = strict;
+	}
+
+	public Boolean getReplayReasoningContent() {
+		return replayReasoningContent;
+	}
+
+	public void setReplayReasoningContent(Boolean replayReasoningContent) {
+		this.replayReasoningContent = replayReasoningContent;
 	}
 }

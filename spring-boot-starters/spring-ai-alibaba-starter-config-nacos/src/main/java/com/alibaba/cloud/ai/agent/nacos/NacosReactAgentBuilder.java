@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.agent.nacos.vo.PromptVO;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
+import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 import com.alibaba.cloud.ai.observation.model.ObservationMetadataAwareOptions;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.listener.AbstractListener;
@@ -105,16 +106,13 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		
 		separateInterceptorsByType();
 		
-		List<ToolCallback> allTools = new ArrayList<>();
 		this.localTools = gatherLocalTools();
 		List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO);
-		allTools.addAll(localTools);
-		if (mcpTools != null) {
-			allTools.addAll(mcpTools);
-		}
+		List<ToolCallback> allTools = ToolCallbackUtils.deduplicateByName(localTools, mcpTools);
 		
 		//7. build tools
 		AgentLlmNode.Builder llmNodeBuilder = AgentLlmNode.builder()
+				.agentName(this.name)
 				.chatClient(chatClient)
 				.systemPrompt(systemPrompt);
 		if (outputKey != null && !outputKey.isEmpty()) {
@@ -125,7 +123,8 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		}
 		AgentLlmNode llmNode = llmNodeBuilder.build();
 
-		AgentToolNode.Builder builder = AgentToolNode.builder();
+		AgentToolNode.Builder builder = AgentToolNode.builder().agentName(this.name)
+				.toolCallLimits(this.maxCallsPerTool, this.maxTotalToolCalls);
 		if (toolExecutionExceptionProcessor != null) {
 			builder.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor);
 		} else {
@@ -168,9 +167,7 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 							McpServersVO mcpServersVO = JSON.parseObject(configInfo, McpServersVO.class);
 							List<ToolCallback> mcpTools = convert(nacosOptions, mcpServersVO);
 							if (mcpTools != null) {
-								List<ToolCallback> allTools = new ArrayList<>();
-								allTools.addAll(localTools);
-								allTools.addAll(mcpTools);
+								List<ToolCallback> allTools = ToolCallbackUtils.deduplicateByName(localTools, mcpTools);
 								toolNode.setToolCallbacks(allTools);
 								llmNode.setToolCallbacks(allTools);
 							}
@@ -262,6 +259,8 @@ public class NacosReactAgentBuilder extends NacosAgentPromptBuilder {
 		}
 		OpenAiChatOptions openaiChatOptions = chatOptionsBuilder
 				.model(model.getModel())
+					.strict(model.getStrict())
+					.replayReasoningContent(model.getReplayReasoningContent())
 				.build();
 		return (OpenAiChatOptions) ObservationMetadataChatOptionsSupport.withObservationMetadata(openaiChatOptions,
 				metadata);
