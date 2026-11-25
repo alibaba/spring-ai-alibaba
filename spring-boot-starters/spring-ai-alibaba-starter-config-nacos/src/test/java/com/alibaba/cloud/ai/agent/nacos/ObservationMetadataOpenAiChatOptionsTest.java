@@ -32,6 +32,8 @@ class ObservationMetadataOpenAiChatOptionsTest {
 		OpenAiChatOptions options = ObservationMetadataOpenAiChatOptions.from(OpenAiChatOptions.builder()
 				.model("configured-model")
 				.temperature(0.3)
+			.strict(true)
+			.replayReasoningContent(false)
 				.build(), Map.of("promptKey", "prompt-a", "promptVersion", "v1"));
 
 		OpenAiChatOptions mutatedOptions = options.mutate()
@@ -42,6 +44,8 @@ class ObservationMetadataOpenAiChatOptionsTest {
 				mutatedOptions);
 		assertEquals("configured-model", mutatedOptions.getModel());
 		assertEquals(0.7, mutatedOptions.getTemperature());
+		assertEquals(Boolean.TRUE, mutatedOptions.getStrict());
+		assertEquals(Boolean.FALSE, mutatedOptions.getReplayReasoningContent());
 		assertEquals(Map.of("promptKey", "prompt-a", "promptVersion", "v1"),
 				observationOptions.getObservationMetadata());
 	}

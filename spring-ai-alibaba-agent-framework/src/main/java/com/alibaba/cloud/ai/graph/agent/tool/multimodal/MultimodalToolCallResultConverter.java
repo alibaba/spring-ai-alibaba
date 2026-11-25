@@ -119,7 +119,8 @@ public class MultimodalToolCallResultConverter implements ToolCallResultConverte
 			itemMap.put("type", type);
 		}
 
-		Object data = media.getData();
+		Object data = media instanceof ToolMultimodalResult.UrlMediaWithBase64 urlMedia ? urlMedia.formats()
+				: media.getData();
 		if (data instanceof ToolMultimodalResult.MediaFormats formats) {
 			handleMediaFormats(formats, mimeTypeStr, itemMap);
 		}
@@ -134,8 +135,13 @@ public class MultimodalToolCallResultConverter implements ToolCallResultConverte
 				putUriOrEncodeToDataUrl(URI.create(url.toExternalForm()), mimeTypeStr, itemMap);
 			}
 		}
-		else if (data instanceof String s && isUriLike(s)) {
-			putUriOrEncodeToDataUrl(URI.create(s), mimeTypeStr, itemMap);
+		else if (data instanceof String text) {
+			if (isUriLike(text)) {
+				putUriOrEncodeToDataUrl(URI.create(text), mimeTypeStr, itemMap);
+			}
+			else {
+				handleMediaFormats(new ToolMultimodalResult.MediaFormats(null, text), mimeTypeStr, itemMap);
+			}
 		}
 		else if (data instanceof Resource resource) {
 			handleBytes(() -> {

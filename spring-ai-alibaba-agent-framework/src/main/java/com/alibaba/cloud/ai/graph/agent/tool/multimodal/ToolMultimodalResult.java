@@ -20,11 +20,13 @@ import org.springframework.ai.content.Media;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
+import org.springframework.util.StringUtils;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Generic result type for tools that return multimodal content (image, audio, etc.).
@@ -123,7 +125,10 @@ public final class ToolMultimodalResult {
 	 * @param base64 Base64-encoded data (raw string, not data URL; may be null)
 	 */
 	public static Media mediaFromUrlAndBase64(String url, String base64, MimeType mimeType) {
-		return Media.builder().mimeType(mimeType).data(new MediaFormats(url, base64)).build();
+		if (!StringUtils.hasText(url)) {
+			return mediaFromBase64(base64, mimeType);
+		}
+		return new UrlMediaWithBase64(mimeType, new MediaFormats(url, base64));
 	}
 
 	/**
@@ -132,7 +137,7 @@ public final class ToolMultimodalResult {
 	 * @param base64 Base64-encoded data (raw string, not data URL)
 	 */
 	public static Media mediaFromBase64(String base64, MimeType mimeType) {
-		return Media.builder().mimeType(mimeType).data(new MediaFormats(null, base64)).build();
+		return Media.builder().mimeType(mimeType).data(Objects.requireNonNullElse(base64, "")).build();
 	}
 
 	/**
@@ -140,6 +145,21 @@ public final class ToolMultimodalResult {
 	 * to prefer the format matching OutputFormat without unnecessary conversion.
 	 */
 	public record MediaFormats(String url, String base64) {
+	}
+
+	static final class UrlMediaWithBase64 extends Media {
+
+		private final MediaFormats formats;
+
+		private UrlMediaWithBase64(MimeType mimeType, MediaFormats formats) {
+			super(mimeType, URI.create(formats.url()));
+			this.formats = formats;
+		}
+
+		MediaFormats formats() {
+			return this.formats;
+		}
+
 	}
 
 	public static class Builder {
