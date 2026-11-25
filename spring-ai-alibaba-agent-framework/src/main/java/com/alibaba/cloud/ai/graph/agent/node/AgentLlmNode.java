@@ -38,6 +38,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -144,6 +145,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	@Override
 	public Map<String, Object> apply(OverAllState state, RunnableConfig config) throws Exception {
+		config.context().remove(RequestToolScope.contextKey(this.agentName));
 		if (enableReasoningLog && logger.isDebugEnabled()) {
 			logger.debug("[ThreadId {}] Agent {} start reasoning.", config.threadId()
 					.orElse(THREAD_ID_DEFAULT), agentName);
@@ -221,7 +223,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 									.orElse(THREAD_ID_DEFAULT), agentName, systemPrompt);
 						}
 					}
-					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, config).stream().chatResponse();
+					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, modelRequest, config)
+							.stream().chatResponse();
 					if (enableReasoningLog) {
 						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
 							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
@@ -254,7 +257,15 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			// Execute the chained handler
 			ModelResponse modelResponse = chainedHandler.call(modelRequest);
-			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", modelResponse.getMessage());
+			Object output = modelResponse.getMessage();
+			if (output instanceof Flux<?> streamOutput) {
+				output = streamOutput.map(chunk -> chunk instanceof ChatResponse response
+						? withRequestTools(response, config) : chunk);
+			}
+			else if (output instanceof AssistantMessage assistant) {
+				output = withRequestTools(assistant, config);
+			}
+			return Map.of(StringUtils.hasLength(this.outputKey) ? this.outputKey : "messages", output);
 		} else {
 			// Create base handler that actually calls the model
 			ModelCallHandler baseHandler = request -> {
@@ -264,7 +275,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 						logger.info("[ThreadId {}] Agent {} reasoning round {} with system prompt: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), systemPrompt);
 					}
 
-					ChatResponse response = buildChatClientRequestSpec(request, config).call().chatResponse();
+						ChatResponse response = buildChatClientRequestSpec(request, modelRequest, config).call().chatResponse();
 
 					AssistantMessage responseMessage = new AssistantMessage("Empty response from model for unknown reason");
 					if (response != null && response.getResult() != null) {
@@ -297,9 +308,13 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 			Map<String, Object> updatedState = new HashMap<>();
 			updatedState.put("_TOKEN_USAGE_", tokenUsage);
-			updatedState.put("messages", modelResponse.getMessage());
+			Object output = modelResponse.getMessage();
+			if (output instanceof AssistantMessage assistant) {
+				output = withRequestTools(assistant, config);
+			}
+			updatedState.put("messages", output);
 			if (StringUtils.hasLength(this.outputKey)) {
-				updatedState.put(this.outputKey, modelResponse.getMessage());
+				updatedState.put(this.outputKey, output);
 			}
 
 			return updatedState;
@@ -473,7 +488,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 
 		List<String> requestedTools = modelRequest.getTools();
-		if (requestedTools == null || requestedTools.isEmpty()) {
+		if (!modelRequest.hasToolSelection()) {
 			return ToolCallbackUtils.deduplicateByName(toolCallbacks);
 		}
 		return ToolCallbackUtils.deduplicateByName(new ArrayList<>(toolCallbacks.stream()
@@ -481,7 +496,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.toList()));
 	}
 
-	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest, RunnableConfig config) {
+	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest modelRequest, ModelRequest originalRequest,
+			RunnableConfig config) {
 		List<Message> messages = appendSystemPromptIfNeeded(modelRequest);
 
 		// NOTICE! If both tools(ToolSelectionInterceptor) and options are customized in ModelRequest, tools will override toolcall setting in options.
@@ -490,18 +506,18 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		List<ToolCallback> dynamicToolCallbacks = ToolCallbackUtils.deduplicateByName(modelRequest.getDynamicToolCallbacks());
 		if (!CollectionUtils.isEmpty(dynamicToolCallbacks)) {
 			filteredToolCallbacks = ToolCallbackUtils.deduplicateByName(filteredToolCallbacks, dynamicToolCallbacks);
-			// FIXME, use RunnableConfig to pass dynamic tool callbacks to tool node via config context (internal use)
-			config.context().put(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY, dynamicToolCallbacks);
 		}
-		else {
-			config.context().remove(RunnableConfig.DYNAMIC_TOOL_CALLBACKS_METADATA_KEY);
-		}
+		boolean selectionChanged = modelRequest.hasToolSelection()
+				&& (!originalRequest.hasToolSelection() || !modelRequest.getTools().equals(originalRequest.getTools()));
+		var toolScope = new RequestToolScope(filteredToolCallbacks);
+		config.context().put(RequestToolScope.contextKey(this.agentName), toolScope);
 
 		var promptSpec = this.chatClient.prompt()
                 .messages(messages)
 				.advisors(advisorSpec -> advisorSpec.param(
 						ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey(), false))
-                .advisors(this.advisors);
+                .advisors(this.advisors)
+				.advisors(new RequestToolScope.RequestAdvisor(config, this.agentName, filteredToolCallbacks, selectionChanged));
 
         ToolCallingChatOptions requestOptions = modelRequest.getOptions();
 
@@ -512,6 +528,23 @@ public class AgentLlmNode implements NodeActionWithConfig {
         }
 
         return promptSpec;
+	}
+
+	private ChatResponse withRequestTools(ChatResponse response, RunnableConfig config) {
+		var scope = RequestToolScope.get(config, this.agentName);
+		if (scope == null || response.getResults().isEmpty()) {
+			return response;
+		}
+		var generations = response.getResults().stream()
+				.map(generation -> generation.getOutput() == null ? generation
+						: new Generation(scope.mark(generation.getOutput()), generation.getMetadata()))
+				.toList();
+		return new ChatResponse(generations, response.getMetadata());
+	}
+
+	private AssistantMessage withRequestTools(AssistantMessage message, RunnableConfig config) {
+		var scope = RequestToolScope.get(config, this.agentName);
+		return scope == null || !message.hasToolCalls() ? message : scope.mark(message);
 	}
 
 	public String getName() {

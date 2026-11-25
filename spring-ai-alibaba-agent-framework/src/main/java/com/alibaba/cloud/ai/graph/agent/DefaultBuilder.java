@@ -36,6 +36,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.FormatProvider;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -128,6 +129,9 @@ public class DefaultBuilder extends Builder {
 		registerDefaultModelInterceptors();
 
 		List<ToolCallback> allTools = gatherLocalTools();
+		if (effectiveOptions instanceof ToolCallingChatOptions toolOptions) {
+			allTools = ToolCallbackUtils.deduplicateByName(allTools, toolOptions.getToolCallbacks());
+		}
 		
 		// Set combined tools to LLM node
 		if (CollectionUtils.isNotEmpty(allTools)) {
@@ -147,6 +151,7 @@ public class DefaultBuilder extends Builder {
 				.parallelToolExecution(this.parallelToolExecution)
 				.maxParallelTools(this.maxParallelTools)
 				.toolExecutionTimeout(this.toolExecutionTimeout)
+				.toolCallLimits(this.maxCallsPerTool, this.maxTotalToolCalls)
 				.wrapSyncToolsAsAsync(this.wrapSyncToolsAsAsync);
 
 		if (resolver != null) {

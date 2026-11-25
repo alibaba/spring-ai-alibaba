@@ -36,6 +36,8 @@ public class ModelRequest {
 	private final ToolCallingChatOptions options;
 	// tools working for current request, leave it to empty if all default in options should be used.
 	private final List<String> tools;
+
+	private final boolean toolSelectionSpecified;
 	// dynamic tool callbacks for current request.
 	private final List<ToolCallback> dynamicToolCallbacks;
 
@@ -48,7 +50,8 @@ public class ModelRequest {
 		this.systemMessage = systemMessage;
 		this.messages = messages;
 		this.options = options;
-		this.tools = tools;
+		this.tools = tools != null ? tools : List.of();
+		this.toolSelectionSpecified = tools != null;
 		this.dynamicToolCallbacks = dynamicToolCallbacks;
 		this.toolDescriptions = toolDescriptions;
 		this.context = context;
@@ -63,7 +66,7 @@ public class ModelRequest {
 				.systemMessage(request.systemMessage)
 				.messages(request.messages)
 				.options(request.options)
-				.tools(request.tools)
+				.tools(request.toolSelectionSpecified ? request.tools : null)
 				.dynamicToolCallbacks(request.dynamicToolCallbacks)
 				.toolDescriptions(request.toolDescriptions)
 				.context(request.context);
@@ -85,6 +88,10 @@ public class ModelRequest {
 		return tools;
 	}
 
+	public boolean hasToolSelection() {
+		return toolSelectionSpecified;
+	}
+
 	public List<ToolCallback> getDynamicToolCallbacks() {
 		return dynamicToolCallbacks;
 	}
@@ -101,7 +108,7 @@ public class ModelRequest {
 		private SystemMessage systemMessage;
 		private List<Message> messages;
 		private ToolCallingChatOptions options;
-		private List<String> tools = List.of();
+		private List<String> tools;
 		private List<ToolCallback> dynamicToolCallbacks = List.of();
 
 		private Map<String, String> toolDescriptions = new HashMap<>();

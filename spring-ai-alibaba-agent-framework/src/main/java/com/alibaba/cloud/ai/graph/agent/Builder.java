@@ -44,6 +44,7 @@ import org.springframework.ai.chat.client.advisor.observation.AdvisorObservation
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
@@ -131,6 +132,8 @@ public abstract class Builder {
 	protected int maxParallelTools = 5;
 	protected Duration toolExecutionTimeout = Duration.ofMinutes(5);
 	protected boolean wrapSyncToolsAsAsync = false;
+	protected int maxCallsPerTool = DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL;
+	protected int maxTotalToolCalls = DefaultToolCallingManager.DEFAULT_MAX_TOTAL_TOOL_CALLS;
 
 	public Builder name(String name) {
 		this.name = name;
@@ -442,6 +445,17 @@ public abstract class Builder {
 	 */
 	public Builder toolExecutionTimeout(Duration timeout) {
 		this.toolExecutionTimeout = Objects.requireNonNull(timeout, "timeout cannot be null");
+		return this;
+	}
+
+	/**
+	 * Sets the per-turn tool call limits. Use -1 to disable either limit.
+	 */
+	public Builder toolCallLimits(int maxCallsPerTool, int maxTotalToolCalls) {
+		Assert.isTrue(maxCallsPerTool >= -1 && maxTotalToolCalls >= -1,
+				"tool call limits must be nonnegative or -1 for unlimited");
+		this.maxCallsPerTool = maxCallsPerTool;
+		this.maxTotalToolCalls = maxTotalToolCalls;
 		return this;
 	}
 

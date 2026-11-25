@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.graph.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolCallResponse;
@@ -30,9 +31,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -82,6 +86,44 @@ class AgentToolNodeIntegrationTest {
 			.toolExecutionTimeout(Duration.ofSeconds(5))
 			.toolExecutionExceptionProcessor(
 					DefaultToolExecutionExceptionProcessor.builder().alwaysThrow(false).build());
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = {false, true})
+	void preservesPriorResultsAndEnforcesTurnLimitsInRequestOrder(boolean parallel) throws Exception {
+		var executions = new AtomicInteger();
+		var echo = createSimpleTool("echo", input -> "executed " + executions.incrementAndGet());
+		var node = baseBuilder.toolCallbacks(List.of(echo)).parallelToolExecution(parallel).toolCallLimits(2, 3).build();
+		var previousTurn = ToolResponseMessage.builder()
+				.responses(List.of(new ToolResponseMessage.ToolResponse("old", "echo", "old response"))).build();
+		var currentTurn = ToolResponseMessage.builder().responses(List.of(
+				new ToolResponseMessage.ToolResponse("first", "echo", "first response"))).build();
+		var pending = createAssistantMessageWithToolCalls(
+				createToolCall("second", "echo", "{}"), createToolCall("third", "echo", "{}"),
+				createToolCall("fourth", "echo", "{}"));
+		var state = createStateWithMessages(previousTurn, new UserMessage("new turn"), currentTurn, pending);
+
+		var output = (ToolResponseMessage) node.apply(state, RunnableConfig.builder().build()).get("messages");
+
+		assertEquals(1, executions.get());
+		assertEquals("executed 1", output.getResponses().get(0).responseData());
+		assertTrue(output.getResponses().get(1).responseData().contains("Tool call limit (2)"));
+		assertTrue(output.getResponses().get(2).responseData().contains("Total tool call limit (3)"));
+	}
+
+	@Test
+	void restoredToolScopeRejectsAnUnlistedToolWithFreshRuntimeConfig() throws Exception {
+		var allowed = createSimpleTool("allowed", input -> "allowed result");
+		var hidden = createSimpleTool("hidden", input -> "hidden result");
+		var node = baseBuilder.toolCallbacks(List.of(allowed, hidden)).toolCallbackResolver(name -> hidden).build();
+		var pending = new RequestToolScope(List.of(allowed)).mark(createAssistantMessageWithToolCalls(
+				createToolCall("one", "allowed", "{}"), createToolCall("two", "hidden", "{}")));
+		var saved = StateGraph.DEFAULT_JACKSON_SERIALIZER.cloneObject(Map.of("messages", List.of(pending)));
+
+		var output = (ToolResponseMessage) node.apply(saved, RunnableConfig.builder().build()).get("messages");
+
+		assertEquals("allowed result", output.getResponses().get(0).responseData());
+		assertTrue(output.getResponses().get(1).responseData().contains("Tool not available: hidden"));
 	}
 
 	@Nested

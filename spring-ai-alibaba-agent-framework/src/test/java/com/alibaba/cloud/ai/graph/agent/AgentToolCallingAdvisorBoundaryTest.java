@@ -25,12 +25,17 @@ import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
@@ -42,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AgentToolCallingAdvisorBoundaryTest {
 
@@ -86,12 +92,86 @@ class AgentToolCallingAdvisorBoundaryTest {
 		assertNull(capturedRequest.get().getOptions());
 	}
 
+	@ParameterizedTest
+	@ValueSource(booleans = {false, true})
+	void excludedToolCannotRunThroughTheResolver(boolean stream) throws Exception {
+		var tools = new BoundaryTools();
+		var callback = ToolCallbacks.from(tools)[0];
+		var model = new ToolCallThenFinalChatModel();
+		var agent = ReactAgent.builder()
+				.name("filtered-tool-agent").model(model).tools(callback).resolver(name -> callback)
+				.interceptors(new ModelInterceptor() {
+					@Override
+					public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
+						return handler.call(ModelRequest.builder(request).tools(List.of()).build());
+					}
+
+					@Override
+					public String getName() {
+						return "exclude-all-tools";
+					}
+				})
+				.saver(new MemorySaver()).build();
+
+		var answer = agent.call("answer without tools", RunnableConfig.builder()
+				.threadId("filtered-tool").addMetadata("_stream_", stream).build());
+
+		assertEquals("final response", answer.getText());
+		assertEquals(0, tools.agentToolNodeExecutions.get());
+		assertEquals(0, tools.chatClientAdvisorExecutions.get());
+		assertTrue(model.lastPrompt.get().getInstructions().stream().anyMatch(message ->
+				message instanceof ToolResponseMessage response && response.getResponses().stream()
+						.anyMatch(tool -> tool.responseData().contains("Tool not available"))));
+	}
+
+	@Test
+	void configuredAgentAndChatClientToolsAreBothAvailableInTheSameRound() throws Exception {
+		var tools = new BoundaryTools();
+		var shadowedDefault = new BoundaryTools();
+		var gateway = new GatewayTools();
+		var declaredNames = new AtomicReference<List<String>>();
+		var calls = new AtomicInteger();
+		ChatModel model = new ChatModel() {
+			@Override
+			public ToolCallingChatOptions getOptions() {
+				return ToolCallingChatOptions.builder().build();
+			}
+
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				if (calls.incrementAndGet() == 1) {
+					var options = (ToolCallingChatOptions) prompt.getOptions();
+					declaredNames.set(options.getToolCallbacks().stream().map(tool -> tool.getToolDefinition().name()).toList());
+					var localCall = new AssistantMessage.ToolCall("local", "function", "boundary_tool", "{}");
+					var gatewayCall = new AssistantMessage.ToolCall("remote", "function", "gateway_lookup", "{}");
+					return new ChatResponse(List.of(new Generation(
+							AssistantMessage.builder().content("").toolCalls(List.of(localCall, gatewayCall)).build())));
+				}
+				return new ChatResponse(List.of(new Generation(new AssistantMessage("finished"))));
+			}
+		};
+		var client = ChatClient.builder(model)
+				.defaultTools(ToolCallbacks.from(gateway, shadowedDefault)).build();
+		var agent = ReactAgent.builder().name("combined-tools").chatClient(client)
+				.tools(ToolCallbacks.from(tools)).saver(new MemorySaver()).build();
+
+		assertEquals("finished", agent.call("use both tools", RunnableConfig.builder()
+				.threadId("combined").addMetadata("_stream_", false).build()).getText());
+		assertEquals(List.of("boundary_tool", "gateway_lookup"), declaredNames.get());
+		assertEquals(1, tools.agentToolNodeExecutions.get());
+		assertEquals(1, gateway.executions.get());
+		assertEquals(0, shadowedDefault.agentToolNodeExecutions.get());
+	}
+
 	private static final class ToolCallThenFinalChatModel implements ChatModel {
 
 		private final AtomicInteger callCount = new AtomicInteger();
 
+		private final AtomicReference<Prompt> lastPrompt = new AtomicReference<>();
+
 		@Override
 		public ChatResponse call(Prompt prompt) {
+			lastPrompt.set(prompt);
 			if (callCount.incrementAndGet() == 1) {
 				AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("call-1", "function",
 						"boundary_tool", "{}");
@@ -156,6 +236,17 @@ class AgentToolCallingAdvisorBoundaryTest {
 				chatClientAdvisorExecutions.incrementAndGet();
 			}
 			return "tool result";
+		}
+	}
+
+	private static final class GatewayTools {
+
+		private final AtomicInteger executions = new AtomicInteger();
+
+		@Tool(name = "gateway_lookup", description = "Gateway test tool")
+		String lookup() {
+			executions.incrementAndGet();
+			return "remote result";
 		}
 	}
 

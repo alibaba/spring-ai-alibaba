@@ -39,7 +39,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
@@ -111,6 +113,10 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 	private final boolean wrapSyncToolsAsAsync;
 
+	private final int maxCallsPerTool;
+
+	private final int maxTotalToolCalls;
+
 	private List<ToolCallback> toolCallbacks;
 
 	private Map<String, Object> toolContext;
@@ -132,6 +138,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 		this.maxParallelTools = builder.maxParallelTools;
 		this.toolExecutionTimeout = builder.toolExecutionTimeout;
 		this.wrapSyncToolsAsAsync = builder.wrapSyncToolsAsAsync;
+		this.maxCallsPerTool = builder.maxCallsPerTool;
+		this.maxTotalToolCalls = builder.maxTotalToolCalls;
 	}
 
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
@@ -221,16 +229,24 @@ public class AgentToolNode implements NodeActionWithConfig {
 		Map<String, Object> updatedState = new HashMap<>();
 		Map<String, Object> mergedUpdates = new HashMap<>(); // Accumulated results from successful tools
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
+		Map<Integer, ToolCallResponse> limitResponses = checkToolCallLimits(state, toolCalls);
 
 		Boolean returnDirect = null;
-		for (AssistantMessage.ToolCall toolCall : toolCalls) {
+		for (int index = 0; index < toolCalls.size(); index++) {
+			AssistantMessage.ToolCall toolCall = toolCalls.get(index);
+			ToolCallResponse limitResponse = limitResponses.get(index);
+			if (limitResponse != null) {
+				toolResponses.add(limitResponse.toToolResponse());
+				returnDirect = false;
+				continue;
+			}
 			// Each tool gets its own isolated update map
 			// If this tool times out, clear() only affects this map, not mergedUpdates
 			Map<String, Object> toolSpecificUpdate = new ConcurrentHashMap<>();
 			ToolCallResponse response = executeToolCallWithInterceptors(toolCall, state, config, toolSpecificUpdate,
 					false);
 			toolResponses.add(response.toToolResponse());
-			returnDirect = shouldReturnDirect(toolCall, returnDirect, config);
+			returnDirect = shouldReturnDirect(toolCall, returnDirect, state, config);
 			// Merge immediately - subsequent timeout clear() won't affect already-merged data
 			mergedUpdates.putAll(toolSpecificUpdate);
 		}
@@ -310,6 +326,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 		// Use AtomicReferenceArray + CAS to prevent race condition between
 		// successful completion and timeout/error handling
 		AtomicReferenceArray<ToolCallResponse> orderedResponses = new AtomicReferenceArray<>(toolCalls.size());
+		Map<Integer, ToolCallResponse> limitResponses = checkToolCallLimits(state, toolCalls);
 		List<Throwable> failures = java.util.Collections.synchronizedList(new ArrayList<>());
 
 		// Pre-create cancellation tokens for cancellable tools so they can be accessed
@@ -320,6 +337,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 		Semaphore semaphore = new Semaphore(maxParallelTools);
 
 		List<CompletableFuture<Void>> futures = IntStream.range(0, toolCalls.size()).mapToObj(index -> {
+			ToolCallResponse limitResponse = limitResponses.get(index);
+			if (limitResponse != null) {
+				orderedResponses.set(index, limitResponse);
+				return CompletableFuture.<Void>completedFuture(null);
+			}
 			AssistantMessage.ToolCall toolCall = toolCalls.get(index);
 			Map<String, Object> toolSpecificUpdate = stateCollector.createToolUpdateMap(index);
 
@@ -385,7 +407,8 @@ public class AgentToolNode implements NodeActionWithConfig {
 				logger.warn("Tool {} at index {} has null response, using error fallback", toolCall.name(), i);
 			}
 			toolResponses.add(response.toToolResponse());
-			returnDirect = shouldReturnDirect(toolCalls.get(i), returnDirect, config);
+			returnDirect = limitResponses.containsKey(i) ? false
+					: shouldReturnDirect(toolCalls.get(i), returnDirect, state, config);
 		}
 
 		ToolResponseMessage.Builder builder = ToolResponseMessage.builder().responses(toolResponses);
@@ -457,9 +480,11 @@ public class AgentToolNode implements NodeActionWithConfig {
 		allResponses.addAll(newToolResponseMessage.getResponses());
 
 		// Compute returnDirect from all tool calls (existing + remaining)
-		Boolean returnDirect = null;
+		Boolean returnDirect = FINISH_REASON.equals(newToolResponseMessage.getMetadata().get(FINISH_REASON_METADATA_KEY));
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-			returnDirect = shouldReturnDirect(toolCall, returnDirect, config);
+			if (executedToolIds.contains(toolCall.id())) {
+				returnDirect = shouldReturnDirect(toolCall, returnDirect, state, config);
+			}
 		}
 
 		// Build final result
@@ -481,8 +506,46 @@ public class AgentToolNode implements NodeActionWithConfig {
 		return updatedState;
 	}
 
-	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect, RunnableConfig config) {
-		ToolCallback toolCallback = resolve(toolCall.name(), config);
+	private Map<Integer, ToolCallResponse> checkToolCallLimits(OverAllState state, List<AssistantMessage.ToolCall> toolCalls) {
+		if (maxCallsPerTool < 0 && maxTotalToolCalls < 0) {
+			return Map.of();
+		}
+		List<?> messages = state.value("messages", List.class).orElse(List.of());
+		Map<String, Integer> counts = new HashMap<>();
+		int total = 0;
+		for (int index = messages.size() - 1; index >= 0; index--) {
+			Object message = messages.get(index);
+			if (message instanceof UserMessage) {
+				break;
+			}
+			if (message instanceof ToolResponseMessage toolResponse) {
+				for (var response : toolResponse.getResponses()) {
+					counts.merge(response.name(), 1, Integer::sum);
+					total++;
+				}
+			}
+		}
+
+		Map<Integer, ToolCallResponse> rejected = new HashMap<>();
+		for (int index = 0; index < toolCalls.size(); index++) {
+			var call = toolCalls.get(index);
+			int count = counts.merge(call.name(), 1, Integer::sum);
+			total++;
+			if (maxTotalToolCalls >= 0 && total > maxTotalToolCalls) {
+				rejected.put(index, ToolCallResponse.error(call.id(), call.name(),
+						"Total tool call limit (%d) exceeded for this turn".formatted(maxTotalToolCalls)));
+			}
+			else if (maxCallsPerTool >= 0 && count > maxCallsPerTool) {
+				rejected.put(index, ToolCallResponse.error(call.id(), call.name(),
+						"Tool call limit (%d) exceeded for '%s' in this turn".formatted(maxCallsPerTool, call.name())));
+			}
+		}
+		return rejected;
+	}
+
+	private Boolean shouldReturnDirect(AssistantMessage.ToolCall toolCall, Boolean returnDirect, OverAllState state,
+			RunnableConfig config) {
+		ToolCallback toolCallback = resolve(toolCall.name(), state, config);
 		if (toolCallback == null) {
 			return returnDirect;
 		}
@@ -540,7 +603,7 @@ public class AgentToolNode implements NodeActionWithConfig {
 
 		// Create base handler that actually executes the tool
 		ToolCallHandler baseHandler = req -> {
-			ToolCallback toolCallback = resolve(req.getToolName(), config);
+			ToolCallback toolCallback = resolve(req.getToolName(), state, config);
 
 			if (toolCallback == null) {
 				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, req.getToolName());
@@ -838,7 +901,24 @@ public class AgentToolNode implements NodeActionWithConfig {
 			.orElseGet(() -> ParallelNode.getExecutor(config, AGENT_TOOL_NAME));
 	}
 
-	private ToolCallback resolve(String toolName, RunnableConfig config) {
+	private ToolCallback resolve(String toolName, OverAllState state, RunnableConfig config) {
+		// A resumed model response keeps its tool names even when runtime callbacks are gone.
+		List<?> messages = state.value("messages", List.class).orElse(List.of());
+		int index = messages.size() - 1;
+		if (index >= 0 && messages.get(index) instanceof ToolResponseMessage) {
+			index--;
+		}
+		if (index >= 0 && messages.get(index) instanceof AssistantMessage assistant
+				&& assistant.getMetadata().get(RequestToolScope.TOOL_NAMES_METADATA) instanceof List<?> names
+				&& !names.contains(toolName)) {
+			return null;
+		}
+
+		var scope = RequestToolScope.get(config, this.agentName);
+		if (scope != null) {
+			return scope.resolve(toolName);
+		}
+
 		if (toolCallbacks != null) {
 			var fromNode = toolCallbacks.stream()
 				.filter(callback -> callback.getToolDefinition().name().equals(toolName))
@@ -887,6 +967,19 @@ public class AgentToolNode implements NodeActionWithConfig {
 		private Duration toolExecutionTimeout = Duration.ofMinutes(5);
 
 		private boolean wrapSyncToolsAsAsync = false;
+
+		private int maxCallsPerTool = DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL;
+
+		private int maxTotalToolCalls = DefaultToolCallingManager.DEFAULT_MAX_TOTAL_TOOL_CALLS;
+
+		public Builder toolCallLimits(int maxCallsPerTool, int maxTotalToolCalls) {
+			if (maxCallsPerTool < -1 || maxTotalToolCalls < -1) {
+				throw new IllegalArgumentException("tool call limits must be nonnegative or -1 for unlimited");
+			}
+			this.maxCallsPerTool = maxCallsPerTool;
+			this.maxTotalToolCalls = maxTotalToolCalls;
+			return this;
+		}
 
 		private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
