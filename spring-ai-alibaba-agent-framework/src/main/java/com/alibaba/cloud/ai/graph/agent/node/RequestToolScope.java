@@ -90,7 +90,8 @@ final class RequestToolScope {
 			}
 			List<ToolCallback> effectiveCallbacks = selectionChanged ? callbacks
 					: ToolCallbackUtils.deduplicateByName(callbacks, options.getToolCallbacks());
-			config.context().put(contextKey(agentName), new RequestToolScope(effectiveCallbacks));
+			// A typed request must reach the model before its tools can be executed.
+			config.context().put(contextKey(agentName), new RequestToolScope(List.of()));
 			if (effectiveCallbacks.equals(options.getToolCallbacks())) {
 				return request;
 			}
@@ -107,6 +108,40 @@ final class RequestToolScope {
 		@Override
 		public int getOrder() {
 			return Ordered.HIGHEST_PRECEDENCE;
+		}
+	}
+
+	/** Captures the callbacks after application advisors have finalized the model request. */
+	record CaptureAdvisor(RunnableConfig config, String agentName) implements CallAdvisor, StreamAdvisor {
+
+		@Override
+		public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+			capture(request);
+			return chain.nextCall(request);
+		}
+
+		@Override
+		public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+			capture(request);
+			return chain.nextStream(request);
+		}
+
+		private void capture(ChatClientRequest request) {
+			if (request.prompt().getOptions() instanceof ToolCallingChatOptions options) {
+				var callbacks = ToolCallbackUtils.deduplicateByName(options.getToolCallbacks());
+				config.context().put(contextKey(agentName), new RequestToolScope(callbacks));
+			}
+		}
+
+		@Override
+		public String getName() {
+			return "CaptureRequestToolsAdvisor";
+		}
+
+		@Override
+		public int getOrder() {
+			// Spring AI's terminal model advisors use LOWEST_PRECEDENCE.
+			return Ordered.LOWEST_PRECEDENCE - 1;
 		}
 	}
 

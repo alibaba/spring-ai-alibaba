@@ -28,6 +28,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -41,6 +45,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -113,10 +118,7 @@ class AgentToolCallingAdvisorBoundaryTest {
 				})
 				.saver(new MemorySaver()).build();
 
-		var answer = agent.call("answer without tools", RunnableConfig.builder()
-				.threadId("filtered-tool").addMetadata("_stream_", stream).build());
-
-		assertEquals("final response", answer.getText());
+		callAndVerifyMode(agent, model, "filtered-tool", stream);
 		assertEquals(0, tools.agentToolNodeExecutions.get());
 		assertEquals(0, tools.chatClientAdvisorExecutions.get());
 		assertTrue(model.lastPrompt.get().getInstructions().stream().anyMatch(message ->
@@ -163,11 +165,70 @@ class AgentToolCallingAdvisorBoundaryTest {
 		assertEquals(0, shadowedDefault.agentToolNodeExecutions.get());
 	}
 
+	@ParameterizedTest
+	@ValueSource(booleans = {false, true})
+	void chatClientAdvisorCanRemoveAToolBeforeModelExecution(boolean stream) throws Exception {
+		var tools = new BoundaryTools();
+		var model = new ToolCallThenFinalChatModel();
+		var client = ChatClient.builder(model).defaultAdvisors(new BaseAdvisor() {
+			@Override
+			public ChatClientRequest before(ChatClientRequest request, AdvisorChain chain) {
+				var prompt = request.prompt();
+				var options = (ToolCallingChatOptions) prompt.getOptions();
+				return new ChatClientRequest(new Prompt(prompt.getInstructions(),
+						options.mutate().toolCallbacks(List.of()).build()), request.context());
+			}
+
+			@Override
+			public ChatClientResponse after(ChatClientResponse response, AdvisorChain chain) {
+				return response;
+			}
+
+			@Override
+			public String getName() {
+				return "remove-tools";
+			}
+
+			@Override
+			public int getOrder() {
+				return 0;
+			}
+		}).build();
+		var agent = ReactAgent.builder().name("advisor-filtered-tool").chatClient(client)
+				.tools(ToolCallbacks.from(tools)).saver(new MemorySaver()).build();
+
+		callAndVerifyMode(agent, model, "advisor-filtered", stream);
+		assertEquals(0, tools.agentToolNodeExecutions.get());
+		assertTrue(model.lastPrompt.get().getInstructions().stream().anyMatch(message ->
+				message instanceof ToolResponseMessage response && response.getResponses().stream()
+						.anyMatch(tool -> tool.responseData().contains("Tool not available"))));
+	}
+
+	private static void callAndVerifyMode(ReactAgent agent, ToolCallThenFinalChatModel model, String threadId,
+			boolean stream) throws Exception {
+		var config = RunnableConfig.builder().threadId(threadId).build();
+		if (stream) {
+			agent.stream("answer without tools", config).blockLast(Duration.ofSeconds(10));
+		}
+		else {
+			assertEquals("final response", agent.call("answer without tools", config).getText());
+		}
+		assertEquals(2, model.callCount.get());
+		assertEquals(stream ? 2 : 0, model.streamCount.get());
+	}
+
 	private static final class ToolCallThenFinalChatModel implements ChatModel {
 
 		private final AtomicInteger callCount = new AtomicInteger();
 
+		private final AtomicInteger streamCount = new AtomicInteger();
+
 		private final AtomicReference<Prompt> lastPrompt = new AtomicReference<>();
+
+		@Override
+		public ToolCallingChatOptions getOptions() {
+			return ToolCallingChatOptions.builder().build();
+		}
 
 		@Override
 		public ChatResponse call(Prompt prompt) {
@@ -183,6 +244,7 @@ class AgentToolCallingAdvisorBoundaryTest {
 
 		@Override
 		public Flux<ChatResponse> stream(Prompt prompt) {
+			streamCount.incrementAndGet();
 			return Flux.just(call(prompt));
 		}
 	}

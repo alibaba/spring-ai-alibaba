@@ -517,7 +517,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.advisors(advisorSpec -> advisorSpec.param(
 						ChatClientAttributes.TOOL_CALLING_ADVISOR_AUTO_REGISTER.getKey(), false))
                 .advisors(this.advisors)
-				.advisors(new RequestToolScope.RequestAdvisor(config, this.agentName, filteredToolCallbacks, selectionChanged));
+				.advisors(new RequestToolScope.RequestAdvisor(config, this.agentName, filteredToolCallbacks, selectionChanged),
+						new RequestToolScope.CaptureAdvisor(config, this.agentName));
 
         ToolCallingChatOptions requestOptions = modelRequest.getOptions();
 
