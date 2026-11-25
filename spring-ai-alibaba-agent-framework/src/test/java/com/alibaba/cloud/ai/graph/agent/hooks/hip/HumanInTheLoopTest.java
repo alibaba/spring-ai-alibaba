@@ -24,21 +24,30 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.HumanInTheLoopHook;
 import com.alibaba.cloud.ai.graph.agent.hook.hip.ToolConfig;
+import com.alibaba.cloud.ai.graph.agent.tools.PoetTool;
 import com.alibaba.cloud.ai.graph.agent.tools.WeatherTool;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
 
-import static com.alibaba.cloud.ai.graph.agent.tools.PoetTool.createPoetToolCallback;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @EnabledIfEnvironmentVariable(named = "AI_DASHSCOPE_API_KEY", matches = ".+")
@@ -158,7 +167,10 @@ public class HumanInTheLoopTest {
 	 */
 	@Test
 	public void testMultipleRoundAssistantMessages() throws Exception {
-		ReactAgent agent = createAgentWithMultipleTools();
+		ReactAgent agent = createAgentWithMultipleTools(scriptedModel(
+				toolCalls(new AssistantMessage.ToolCall("poem-1", "function", "poem", "{\"request\":\"write a poem\"}")),
+				toolCalls(new AssistantMessage.ToolCall("weather-1", "function", "weather_tool", "{\"location\":\"Beijing\"}")),
+				new AssistantMessage("Both tools completed")));
 
 		printGraphRepresentation(agent);
 
@@ -202,6 +214,10 @@ public class HumanInTheLoopTest {
 	}
 
 	private ReactAgent createAgentWithMultipleTools() {
+		return createAgentWithMultipleTools(chatModel);
+	}
+
+	private ReactAgent createAgentWithMultipleTools(ChatModel model) {
 		Map approvalOn = Map.of(
 				"poem", ToolConfig.builder().description("请确认诗歌工具执行").build(),
 				"weather_tool", ToolConfig.builder().description("请确认天气工具执行").build()
@@ -209,12 +225,31 @@ public class HumanInTheLoopTest {
 
 		return ReactAgent.builder()
 				.name("single_agent")
-				.model(chatModel)
+				.model(model)
 				.saver(new MemorySaver())
-				.tools(List.of(createPoetToolCallback(), WeatherTool.createWeatherTool("weather_tool", new WeatherTool())))
+				.tools(List.of(createPoetToolCallback(), createWeatherToolCallback()))
 				.hooks(HumanInTheLoopHook.builder().approvalOn(approvalOn).build())
 				.outputKey("article")
 				.build();
+	}
+
+	private static ToolCallback createPoetToolCallback() {
+		var tool = new PoetTool();
+		return FunctionToolCallback.builder("poem", (PoemInput input, ToolContext context) -> tool.apply(input.request(), context))
+				.description("用来写诗的工具").inputType(PoemInput.class).build();
+	}
+
+	private static ToolCallback createWeatherToolCallback() {
+		var tool = new WeatherTool();
+		return FunctionToolCallback.builder("weather_tool",
+				(WeatherInput input, ToolContext context) -> tool.apply(input.location(), context))
+				.description("查询指定城市的天气").inputType(WeatherInput.class).build();
+	}
+
+	private record PoemInput(String request) {
+	}
+
+	private record WeatherInput(String location) {
 	}
 
 	private void printGraphRepresentation(ReactAgent agent) {
@@ -379,6 +414,7 @@ public class HumanInTheLoopTest {
 			Assertions.assertNotNull(finalOutput.state().data(), "Final output state should have data");
 			Assertions.assertFalse(finalOutput.state().data().isEmpty(),
 				"Final output state data should not be empty");
+			assertModelCompleted(finalOutput);
 
 		} catch (java.util.concurrent.CompletionException e) {
 			System.err.println("ReactAgent execution failed: " + e.getMessage());
@@ -464,12 +500,20 @@ public class HumanInTheLoopTest {
 			Assertions.assertNotNull(finalOutput.state().data(), "Final output state should have data");
 			Assertions.assertFalse(finalOutput.state().data().isEmpty(),
 					"Final output state data should not be empty");
+			assertModelCompleted(finalOutput);
 
 		} catch (java.util.concurrent.CompletionException e) {
 			System.err.println("ReactAgent execution failed: " + e.getMessage());
 			e.printStackTrace();
 			fail("ReactAgent execution failed: " + e.getMessage());
 		}
+	}
+
+	private static void assertModelCompleted(NodeOutput output) {
+		var messages = output.state().value("messages", List.class).orElseThrow();
+		var reply = Assertions.assertInstanceOf(AssistantMessage.class, messages.get(messages.size() - 1));
+		Assertions.assertNotNull(reply.getText());
+		Assertions.assertFalse(reply.getText().startsWith("Exception:"), reply::getText);
 	}
 
 	private InterruptionMetadata buildFeedbackWithOnlyOneApproval(InterruptionMetadata interruptionMetadata) {
@@ -543,7 +587,11 @@ public class HumanInTheLoopTest {
 	 */
 	@Test
 	public void testMultipleToolsWithMixedDecisions() throws Exception {
-		ReactAgent agent = createAgentWithThreeTools();
+		ReactAgent agent = createAgentWithThreeTools(scriptedModel(toolCalls(
+				new AssistantMessage.ToolCall("one", "function", "tool1", "{\"value\":\"first\"}"),
+				new AssistantMessage.ToolCall("two", "function", "tool2", "{\"value\":\"second\"}"),
+				new AssistantMessage.ToolCall("three", "function", "tool3", "{\"value\":\"third\"}")),
+				new AssistantMessage("Approval decisions applied")));
 
 		printGraphRepresentation(agent);
 
@@ -565,21 +613,21 @@ public class HumanInTheLoopTest {
 		performSecondInvocation(agent, threadId, feedbackMetadata);
 	}
 
-	private ReactAgent createAgentWithThreeTools() {
+	private ReactAgent createAgentWithThreeTools(ChatModel model) {
 		// Create three simple tools similar to example5_multipleTools
-		org.springframework.ai.tool.ToolCallback tool1 = org.springframework.ai.tool.function.FunctionToolCallback.builder("tool1", (args) -> "工具1结果")
+		ToolCallback tool1 = FunctionToolCallback.builder("tool1", (TextInput input) -> "工具1结果")
 				.description("工具1")
-				.inputType(String.class)
+				.inputType(TextInput.class)
 				.build();
 
-		org.springframework.ai.tool.ToolCallback tool2 = org.springframework.ai.tool.function.FunctionToolCallback.builder("tool2", (args) -> "工具2结果")
+		ToolCallback tool2 = FunctionToolCallback.builder("tool2", (TextInput input) -> "工具2结果")
 				.description("工具2")
-				.inputType(String.class)
+				.inputType(TextInput.class)
 				.build();
 
-		org.springframework.ai.tool.ToolCallback tool3 = org.springframework.ai.tool.function.FunctionToolCallback.builder("tool3", (args) -> "工具3结果")
+		ToolCallback tool3 = FunctionToolCallback.builder("tool3", (TextInput input) -> "工具3结果")
 				.description("工具3")
-				.inputType(String.class)
+				.inputType(TextInput.class)
 				.build();
 
 		Map approvalOn = Map.of(
@@ -590,11 +638,33 @@ public class HumanInTheLoopTest {
 
 		return ReactAgent.builder()
 				.name("multi_tool_agent")
-				.model(chatModel)
+				.model(model)
 				.saver(new MemorySaver())
 				.tools(List.of(tool1, tool2, tool3))
 				.hooks(HumanInTheLoopHook.builder().approvalOn(approvalOn).build())
 				.build();
+	}
+
+	private record TextInput(String value) {
+	}
+
+	private static AssistantMessage toolCalls(AssistantMessage.ToolCall... calls) {
+		return AssistantMessage.builder().content("").toolCalls(List.of(calls)).build();
+	}
+
+	private static ChatModel scriptedModel(AssistantMessage... responses) {
+		var index = new AtomicInteger();
+		return new ChatModel() {
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				return new ChatResponse(List.of(new Generation(responses[index.getAndIncrement()])));
+			}
+
+			@Override
+			public Flux<ChatResponse> stream(Prompt prompt) {
+				return Flux.just(call(prompt));
+			}
+		};
 	}
 
 	private InterruptionMetadata performFirstInvocationAndCheckThreeToolsRequested(ReactAgent agent, RunnableConfig runnableConfig) throws Exception {
@@ -651,7 +721,7 @@ public class HumanInTheLoopTest {
 				System.out.println("Tool " + (i + 1) + " (" + feedback.getName() + "): APPROVED");
 			} else if (i == 1) {
 				// Second tool: edit
-				String editedArguments = "\"newValue\"";
+				String editedArguments = "{\"value\":\"newValue\"}";
 				InterruptionMetadata.ToolFeedback editedFeedback = InterruptionMetadata.ToolFeedback
 						.builder(feedback)
 						.arguments(editedArguments)

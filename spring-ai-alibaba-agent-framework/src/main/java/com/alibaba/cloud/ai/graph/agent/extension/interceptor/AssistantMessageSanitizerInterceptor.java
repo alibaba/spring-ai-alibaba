@@ -127,12 +127,7 @@ public class AssistantMessageSanitizerInterceptor extends ModelInterceptor {
 			if (needsSanitizing(msg)) {
 				AssistantMessage assistantMsg = (AssistantMessage) msg;
 				// text == null -> use empty string; keep toolCalls, metadata and media intact.
-				AssistantMessage fixed = AssistantMessage.builder()
-						.content("")
-						.toolCalls(assistantMsg.getToolCalls())
-						.properties(assistantMsg.getMetadata())
-						.media(assistantMsg.getMedia())
-						.build();
+				AssistantMessage fixed = assistantMsg.mutate().content("").build();
 				if (log.isDebugEnabled()) {
 					log.debug("[{}] AssistantMessage text was null with tool calls; patched content to empty string", NAME);
 				}

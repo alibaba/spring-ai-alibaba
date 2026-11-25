@@ -141,11 +141,7 @@ public class ContextEditingInterceptor extends ModelInterceptor {
 					}
 
 					// Create new AssistantMessage with cleared tool calls
-					AssistantMessage clearedAssistantMsg = AssistantMessage.builder()
-						.content(assistantMsg.getText())
-						.properties(assistantMsg.getMetadata())
-						.toolCalls(clearedToolCalls)
-						.build();
+					AssistantMessage clearedAssistantMsg = assistantMsg.mutate().toolCalls(clearedToolCalls).build();
 					updatedMessages.add(clearedAssistantMsg);
 				}
 			}

@@ -28,6 +28,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
@@ -48,6 +49,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * stream tool call chunks should be merged into one complete tool call.
  */
 public class StreamFunctionCallTest {
+
+    @Test
+    void preservesDeepSeekReasoningAcrossStreamChunks() throws Exception {
+        var first = DeepSeekAssistantMessage.builder().reasoningContent("look ").build();
+        var second = DeepSeekAssistantMessage.builder().reasoningContent("it up").build();
+        var finalChunk = AssistantMessage.builder().content("answer").build();
+        ChatModel model = new ChatModel() {
+            @Override
+            public ChatResponse call(Prompt prompt) {
+                return new ChatResponse(List.of(new Generation(finalChunk)));
+            }
+
+            @Override
+            public Flux<ChatResponse> stream(Prompt prompt) {
+                return Flux.just(new ChatResponse(List.of(new Generation(first))),
+                        new ChatResponse(List.of(new Generation(second))), call(prompt));
+            }
+        };
+        var graph = new StateGraph(() -> Map.of("messages", new AppendStrategy()))
+                .addNode("llmNode", node_async(new LLmNodeAction(model, "llmNode")))
+                .addEdge(START, "llmNode").addEdge("llmNode", END).compile();
+
+        var messages = graph.invoke(Map.of(OverAllState.DEFAULT_INPUT_KEY, "test"))
+                .orElseThrow().value("messages", List.class).orElseThrow();
+        var response = assertInstanceOf(DeepSeekAssistantMessage.class, messages.get(messages.size() - 1));
+        assertEquals("answer", response.getText());
+        assertEquals("look it up", response.getReasoningContent());
+    }
 
     @Test
     void testStreamingToolCallFragmentsShouldMergeIntoSingleToolCall() throws Exception {

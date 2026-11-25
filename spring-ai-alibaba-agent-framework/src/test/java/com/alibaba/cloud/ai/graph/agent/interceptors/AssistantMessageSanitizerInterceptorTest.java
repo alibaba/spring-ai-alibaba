@@ -32,6 +32,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,6 +89,21 @@ class AssistantMessageSanitizerInterceptorTest {
 		assertTrue(rewrittenAssistant.hasToolCalls());
 		assertEquals(1, rewrittenAssistant.getToolCalls().size());
 		assertEquals("search", rewrittenAssistant.getToolCalls().get(0).name());
+	}
+
+	@Test
+	void preservesDeepSeekReasoningWhenNormalizingToolCallContent() {
+		var message = DeepSeekAssistantMessage.builder()
+				.reasoningContent("look up the answer")
+				.toolCalls(List.of(sampleToolCall()))
+				.build();
+		var captured = new AtomicReference<ModelRequest>();
+		interceptor.interceptModel(ModelRequest.builder().messages(List.of(message)).build(), capturingHandler(captured));
+
+		var forwarded = assertInstanceOf(DeepSeekAssistantMessage.class, captured.get().getMessages().get(0));
+		assertEquals("", forwarded.getText());
+		assertEquals("look up the answer", forwarded.getReasoningContent());
+		assertEquals(message.getToolCalls(), forwarded.getToolCalls());
 	}
 
 	@Test

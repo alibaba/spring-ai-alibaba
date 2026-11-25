@@ -120,12 +120,7 @@ public class HumanInTheLoopHook extends ModelHook implements AsyncNodeActionWith
 
 			if (!newToolCalls.isEmpty()) {
 				// Replace the last message with the new assistant message containing updated tool calls
-				newMessages.add(AssistantMessage.builder()
-					.content(assistantMessage.getText())
-					.properties(assistantMessage.getMetadata())
-					.toolCalls(newToolCalls)
-					.media(assistantMessage.getMedia())
-					.build());
+				newMessages.add(assistantMessage.mutate().toolCalls(newToolCalls).build());
 				newMessages.add(new RemoveByHash<>(assistantMessage));
 			}
 

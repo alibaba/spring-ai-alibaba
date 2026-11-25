@@ -36,8 +36,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
+import org.springframework.ai.support.UsageCalculator;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -71,6 +75,9 @@ import static com.alibaba.cloud.ai.graph.internal.node.ParallelNode.getExecutor;
 public class NodeExecutor extends BaseGraphExecutor {
 
 	private static final Logger log = LoggerFactory.getLogger(NodeExecutor.class);
+
+	private static final boolean DEEPSEEK_PRESENT = ClassUtils.isPresent(
+			"org.springframework.ai.deepseek.DeepSeekAssistantMessage", NodeExecutor.class.getClassLoader());
 
 	private final MainGraphExecutor mainGraphExecutor;
 
@@ -228,6 +235,7 @@ public class NodeExecutor extends BaseGraphExecutor {
 	private Flux<GraphResponse<NodeOutput>> transformFluxToGraphResponse(
 			GraphRunnerContext context, Flux<?> rawFlux, String key, String nodeId) {
 		var lastChatResponseRef = new AtomicReference<ChatResponse>(null);
+		var lastUsageRef = new AtomicReference<Usage>();
 		var lastGraphResponseRef = new AtomicReference<GraphResponse<NodeOutput>>(null);
 		var upstreamAlreadyEmittedCompletion = new AtomicBoolean(false);
 
@@ -247,6 +255,10 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return errorResponse;
 				}
 				if (element instanceof ChatResponse response) {
+						Usage usage = response.getMetadata().getUsage();
+						if (!UsageCalculator.isEmpty(usage)) {
+							lastUsageRef.set(usage);
+						}
 					// Handle usage-only chunks (null result/output) without dropping usage metadata
 					if (response.getResult() == null || response.getResult().getOutput() == null) {
 						GraphResponse<NodeOutput> graphResponse = GraphResponse
@@ -273,11 +285,11 @@ public class NodeExecutor extends BaseGraphExecutor {
 								? mergeMetadataWithReasoningContent(lastOutput.getMetadata(), currentMessage.getMetadata())
 								: currentMessage.getMetadata();
 
-						var newMessage = AssistantMessage.builder()
+							var newMessage = assistantMessageBuilder(lastOutput, currentMessage)
 								.content(currentMessageText != null ? lastMessageText.concat(currentMessageText) : lastMessageText)
 								.properties(messageMetadata)
 								.toolCalls(mergeToolCalls(lastOutput.getToolCalls(), currentMessage.getToolCalls()))
-								.media(currentMessage.getMedia())
+									.media(currentMessage.getMedia().isEmpty() ? lastOutput.getMedia() : currentMessage.getMedia())
 								.build();
 
 						var newGeneration = new Generation(newMessage,
@@ -354,6 +366,10 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.empty();
 				} else {
 					ChatResponse lastChatResponse = lastChatResponseRef.get();
+						Usage usage = lastUsageRef.get();
+						if (usage != null && usage != lastChatResponse.getMetadata().getUsage()) {
+							lastChatResponse = UsageCalculator.withUsage(lastChatResponse, usage);
+						}
 					// FINISHED StreamingOutput omits message for agent/graph LLM nodes (tool/hook unchanged); full text still in done(state).
 					Message messageForCompletion = lastChatResponse.getResult().getOutput();
 					if (shouldOmitMessageOnStreamCompletion(nodeId)) {
@@ -371,6 +387,30 @@ public class NodeExecutor extends BaseGraphExecutor {
 					return Flux.just(aggregatedResponse, doneResponse);
 				}
 			}));
+	}
+
+	private static AssistantMessage.Builder<?> assistantMessageBuilder(AssistantMessage previous, AssistantMessage current) {
+		AssistantMessage source = current.getClass() == AssistantMessage.class ? previous : current;
+		AssistantMessage.Builder<?> builder = source.mutate();
+		if (DEEPSEEK_PRESENT) {
+			DeepSeekMessages.mergeReasoning(builder, previous, current);
+		}
+		return builder;
+	}
+
+	private static final class DeepSeekMessages {
+
+		private static void mergeReasoning(AssistantMessage.Builder<?> builder, AssistantMessage previous,
+				AssistantMessage current) {
+			if (builder instanceof DeepSeekAssistantMessage.Builder deepSeekBuilder) {
+				String previousReasoning = previous instanceof DeepSeekAssistantMessage message
+						? message.getReasoningContent() : null;
+				String currentReasoning = current instanceof DeepSeekAssistantMessage message
+						? message.getReasoningContent() : null;
+				deepSeekBuilder.reasoningContent(currentReasoning == null ? previousReasoning
+						: previousReasoning == null ? currentReasoning : previousReasoning + currentReasoning);
+			}
+		}
 	}
 
 	/**
