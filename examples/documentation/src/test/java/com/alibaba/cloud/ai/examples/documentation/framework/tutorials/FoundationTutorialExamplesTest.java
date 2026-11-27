@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
+import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputException;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
@@ -194,6 +196,76 @@ class FoundationTutorialExamplesTest {
 		var response = ModelsExample.classifyRequest(model, "Where is my invoice?");
 		assertEquals("billing", response.getChoice("route").getValue());
 		assertEquals(0.9, response.getChoice("route").getProbability());
+	}
+
+	@Test
+	void convertsAgentTextToAContactAndChecksReviewFields() throws Exception {
+		var contact = StructuredOutputExample.extractContact(
+				prompt -> reply("""
+						```json
+						{"name":"Ada","email":"ada@example.com","phone":"1234"}
+						```
+						"""), "Ada, ada@example.com");
+		assertEquals("ada@example.com", contact.email());
+		assertThrows(StructuredOutputException.class,
+				() -> StructuredOutputExample.extractContact(prompt -> reply("null"), "Ada"));
+
+		var review = StructuredOutputExample.analyzeReview(
+				prompt -> reply("{\"rating\":5,\"sentiment\":\"POSITIVE\",\"keyPoints\":[\"配送快\"]}"), "A positive review");
+		assertEquals(List.of("配送快"), review.keyPoints());
+		var invalidRating = assertThrows(StructuredOutputException.class,
+				() -> StructuredOutputExample.analyzeReview(
+						prompt -> reply("{\"rating\":8,\"sentiment\":\"POSITIVE\",\"keyPoints\":[]}"), "An invalid rating"));
+		assertTrue(invalidRating.getMessage().contains("maximum"));
+	}
+
+	@Test
+	void appendsSchemaAfterRenderingTheAgentInstruction() throws Exception {
+		String schema = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}";
+		ChatModel model = prompt -> {
+			assertTrue(prompt.getInstructions().stream().map(Message::getText)
+					.anyMatch(text -> text.startsWith("Extract Ada" + System.lineSeparator()) && text.endsWith(schema)));
+			return reply("{\"name\":\"Ada\"}");
+		};
+		var agent = ReactAgent.builder().name("structured_template").model(model)
+				.instruction("Extract {contact}")
+				.templateRenderer((template, variables) -> {
+					assertEquals("Extract {contact}", template);
+					return template.replace("{contact}", variables.get("contact").toString());
+				})
+				.outputSchema(schema)
+				.build();
+
+		assertEquals("{\"name\":\"Ada\"}", agent.call(Map.of("input", "Find contact", "contact", "Ada")).getText());
+	}
+
+	@Test
+	void usesTheOutputTypeWhenTheExplicitSchemaIsBlank() throws Exception {
+		ChatModel model = prompt -> {
+			assertTrue(prompt.getInstructions().stream().map(Message::getText)
+					.anyMatch(text -> text.contains("\"email\"") && text.contains("\"phone\"")));
+			return reply("{\"name\":\"Ada\",\"email\":\"ada@example.com\",\"phone\":\"1234\"}");
+		};
+		var agent = ReactAgent.builder().name("schema_fallback").model(model)
+				.outputSchema("  ").outputType(StructuredOutputExample.ContactInfo.class).build();
+		agent.call("Extract Ada's contact details");
+	}
+
+	@Test
+	void retriesMalformedOutputInAStandaloneExtraction() {
+		var requests = new ArrayList<Prompt>();
+		ChatModel model = prompt -> {
+			requests.add(prompt);
+			return requests.size() == 1 ? reply("Not JSON")
+					: reply("{\"name\":\"Ada\",\"email\":\"ada@example.com\",\"phone\":\"1234\"}");
+		};
+		var contact = StructuredOutputExample.validatedContact(ChatClient.create(model), "Find a contact");
+		assertEquals("Ada", contact.name());
+		assertEquals(2, requests.size());
+	}
+
+	private static ChatResponse reply(String content) {
+		return new ChatResponse(List.of(new Generation(new AssistantMessage(content))));
 	}
 
 	@Test
