@@ -15,6 +15,7 @@
  */
 package com.alibaba.cloud.ai.graph.agent.interceptor.modelretry;
 
+import com.alibaba.cloud.ai.graph.agent.context.ContextWindowExceededException;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
@@ -126,6 +127,9 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 				return modelResponse;
 
 			} catch (Exception e) {
+				if (e instanceof ContextWindowExceededException exceeded) {
+					throw exceeded;
+				}
 				lastException = e;
 				log.warn("Model call failed (attempted {}/{}): {}", attempt, maxAttempts, e.getMessage());
 
@@ -165,7 +169,7 @@ public class ModelRetryInterceptor extends ModelInterceptor {
 		return Flux.defer(() -> {
 			AtomicBoolean chunkEmitted = new AtomicBoolean(false);
 			return responseFlux.doOnNext(response -> chunkEmitted.set(true)).onErrorResume(error -> {
-				if (chunkEmitted.get()) {
+				if (chunkEmitted.get() || error instanceof ContextWindowExceededException) {
 					// Retrying after partial output would duplicate chunks downstream.
 					return Flux.error(error);
 				}

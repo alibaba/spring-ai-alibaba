@@ -33,9 +33,8 @@ import java.util.concurrent.Executor;
  * {@code FunctionToolCallback}, {@code MethodToolCallback}, and MCP tools) to benefit from
  * the async execution infrastructure without requiring user code changes.</p>
  *
- * <p>The adapter follows the LangChain pattern of running synchronous tools in an executor
- * to achieve parallel execution. This is especially useful when multiple independent tools
- * need to execute concurrently.</p>
+ * <p>Synchronous tool callbacks run on the supplied executor, which allows independent
+ * calls to execute concurrently.</p>
  *
  * <p>Example usage:</p>
  * <pre>{@code
