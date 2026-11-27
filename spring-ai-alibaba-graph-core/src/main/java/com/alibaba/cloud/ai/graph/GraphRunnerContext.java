@@ -77,6 +77,8 @@ public class GraphRunnerContext {
 
 	private final List<Map<String, Object>> branchWrites = new ArrayList<>();
 
+	private boolean captureWrites;
+
 	private final UUID executionId = UUID.randomUUID();
 
 	private volatile Checkpoint currentCheckpoint;
@@ -107,6 +109,7 @@ public class GraphRunnerContext {
 		this.compiledGraph = compiledGraph;
 		this.config = config;
 		this.branchPath = branchPath;
+		this.captureWrites = branchPath != null || isEmbeddedRun();
 
 		// Decide whether this run continues from a persisted checkpoint or starts over
 		// from START. A checkpoint is only resumed when the config explicitly asks for it,
@@ -133,9 +136,13 @@ public class GraphRunnerContext {
 		var checkpoint = saver.get(config)
 				.orElseThrow(() -> new IllegalStateException("Resume request without a valid checkpoint!"));
 		this.currentCheckpoint = checkpoint;
-		if (branchPath != null) {
+		if (captureWrites && checkpoint.runtimeData().containsKey(BRANCH_WRITES)) {
 			CheckpointWrite.decodeAll(checkpoint.runtimeData().get(BRANCH_WRITES)).stream()
 					.map(CheckpointWrite::encode).forEach(branchWrites::add);
+		}
+		else if (branchPath == null) {
+			// Earlier child checkpoints contain only a state snapshot.
+			captureWrites = false;
 		}
 		this.replayingHistoricalCheckpoint = compiledGraph.compileConfig.taskCheckpoints()
 				&& config.checkPointId().isPresent()
@@ -175,9 +182,9 @@ public class GraphRunnerContext {
 			log.debug("Initializing with inputs: {}", inputs.keySet());
 		}
 
-		// Use CompiledGraph's getInitialState method
-		this.overallState = stateCreate(branchPath == null ? compiledGraph.getInitialState(inputs, config) : inputs,
-				initialState);
+		// A child starts from the parent state already materialized by its reducers.
+		this.overallState = stateCreate(isParallelBranch() || isEmbeddedRun()
+				? inputs : compiledGraph.getInitialState(inputs, config), initialState);
 		this.currentNodeId = START;
 		this.nextNodeId = null;
 	}
@@ -215,6 +222,10 @@ public class GraphRunnerContext {
 
 	public boolean isParallelBranch() {
 		return branchPath != null;
+	}
+
+	public boolean isEmbeddedRun() {
+		return config.metadata(ResumableSubGraphAction.CAPTURE_WRITES).filter(Boolean.TRUE::equals).isPresent();
 	}
 
 	public boolean shouldInterrupt() {
@@ -303,7 +314,7 @@ public class GraphRunnerContext {
 		if (compiledGraph.compileConfig.checkpointSaver().isPresent()) {
 			var cp = Checkpoint.builder().nodeId(nodeId).state(cloneState(overallState.data())).nextNodeId(nextNodeId)
 					.build();
-			if (branchPath != null) {
+			if (captureWrites) {
 				cp = cp.withRuntimeData(branchCompletionMetadata());
 			}
 			// Force checkPointId to null to ensure we append a new checkpoint instead of
@@ -318,7 +329,7 @@ public class GraphRunnerContext {
 	}
 
 	public Map<String, Object> branchCompletionMetadata() {
-		return branchPath == null ? Map.of() : Map.of(BRANCH_WRITES, List.copyOf(branchWrites));
+		return captureWrites ? Map.of(BRANCH_WRITES, List.copyOf(branchWrites)) : Map.of();
 	}
 
 	public void checkpointPausedNode() throws Exception {
@@ -472,7 +483,7 @@ public class GraphRunnerContext {
 	public void mergeIntoCurrentState(Map<String, Object> updateState) {
 		// Create a new map and filter out ChatResponse entries
 		Map<String, Object> filteredState = findTokenUsageInDeltaState(updateState);
-		var write = branchPath != null && !filteredState.isEmpty() ? CheckpointWrite.encode(filteredState) : null;
+		var write = captureWrites && !filteredState.isEmpty() ? CheckpointWrite.encode(filteredState) : null;
 		this.overallState.updateState(filteredState);
 		if (write != null) {
 			branchWrites.add(write);

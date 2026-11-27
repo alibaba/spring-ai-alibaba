@@ -54,13 +54,13 @@ public abstract class BaseGraphExecutor {
 		return Flux.defer(() -> {
 			try {
 				var branchMetadata = context.branchCompletionMetadata();
-				if (branchMetadata.isEmpty() && context.getCompiledGraph().compileConfig.releaseThread()
+				if (!context.isParallelBranch() && context.getCompiledGraph().compileConfig.releaseThread()
 						&& context.getCompiledGraph().compileConfig.checkpointSaver().isPresent()) {
 					BaseCheckpointSaver.Tag tag = context
 						.getCompiledGraph().compileConfig.checkpointSaver()
 						.get()
 						.release(context.getConfig());
-					resultValue.set(tag);
+					resultValue.set(context.isEmbeddedRun() ? new HashMap<>(context.getOverallState().data()) : tag);
 				} else {
 					resultValue.set(new HashMap<>(context.getOverallState().data()));
 				}

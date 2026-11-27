@@ -44,6 +44,8 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.file.FileSystemSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.streaming.OutputType;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 import com.alibaba.cloud.ai.graph.utils.FinishReasonMetadata;
 
 import org.junit.jupiter.api.Test;
@@ -271,8 +273,9 @@ class AgentToolCallingAdvisorBoundaryTest {
 				.parallelToolExecution(parallel).saver(saver).build();
 	}
 
-	@Test
-	void handoffKeepsTheActiveAgentAcrossTurnsAndSaverRestarts(@TempDir Path directory) throws Exception {
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void handoffKeepsTheActiveAgentAcrossTurnsAndSaverRestarts(boolean streaming, @TempDir Path directory) throws Exception {
 		var salesCalls = new AtomicInteger();
 		var supportCalls = new AtomicInteger();
 		ChatModel sales = prompt -> {
@@ -285,17 +288,18 @@ class AgentToolCallingAdvisorBoundaryTest {
 		};
 		ChatModel support = prompt -> new ChatResponse(List.of(new Generation(
 				new AssistantMessage("support reply " + supportCalls.incrementAndGet()))));
-		var run = RunnableConfig.builder().threadId("handoff-thread").addMetadata("_stream_", false).build();
-		var first = handoffGraph(directory, sales, support)
+		var run = RunnableConfig.builder().threadId("handoff-thread").addMetadata("_stream_", streaming).build();
+		var first = handoffGraph(directory, streamable(sales), streamable(support))
 				.stream(Map.of("messages", List.of(new UserMessage("I need technical support"))), run)
 				.blockLast(Duration.ofSeconds(5)).state();
 		assertEquals("support", first.value("activeAgent").orElseThrow());
 		assertEquals(1, salesCalls.get());
 		assertEquals(1, supportCalls.get());
 
-		var second = handoffGraph(directory, sales, support)
+		var secondEvents = handoffGraph(directory, streamable(sales), streamable(support))
 				.stream(Map.of("messages", List.of(new UserMessage("The issue happened again"))), run)
-				.blockLast(Duration.ofSeconds(5)).state();
+				.collectList().block(Duration.ofSeconds(5));
+		var second = secondEvents.get(secondEvents.size() - 1).state();
 		assertEquals(1, salesCalls.get());
 		assertEquals(2, supportCalls.get());
 		var messages = second.<List<?>>value("messages").orElseThrow();
@@ -303,6 +307,25 @@ class AgentToolCallingAdvisorBoundaryTest {
 				.map(ToolResponseMessage.class::cast).flatMap(tool -> tool.getResponses().stream()).toList();
 		assertEquals(List.of("handoff-1"), response.stream().map(ToolResponseMessage.ToolResponse::id).toList());
 		assertEquals("support reply 2", assertInstanceOf(AssistantMessage.class, messages.get(messages.size() - 1)).getText());
+		if (streaming) {
+			assertEquals(List.of("support reply 2"), secondEvents.stream().filter(StreamingOutput.class::isInstance)
+					.map(StreamingOutput.class::cast).filter(out -> out.getOutputType() == OutputType.AGENT_MODEL_STREAMING)
+					.map(out -> out.message().getText()).toList());
+		}
+	}
+
+	private static ChatModel streamable(ChatModel model) {
+		return new ChatModel() {
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				return model.call(prompt);
+			}
+
+			@Override
+			public Flux<ChatResponse> stream(Prompt prompt) {
+				return Flux.defer(() -> Flux.just(call(prompt)));
+			}
+		};
 	}
 
 	private static CompiledGraph handoffGraph(Path directory, ChatModel sales, ChatModel support) throws Exception {
@@ -334,8 +357,9 @@ class AgentToolCallingAdvisorBoundaryTest {
 
 	}
 
-	@Test
-	void supervisorResumesOnlyTheWorkerAwaitingToolApproval(@TempDir Path directory) throws Exception {
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void supervisorResumesOnlyTheWorkerAwaitingToolApproval(boolean streaming, @TempDir Path directory) throws Exception {
 		var tools = new BoundaryTools();
 		var leftCalls = new AtomicInteger();
 		var rightCalls = new AtomicInteger();
@@ -360,7 +384,7 @@ class AgentToolCallingAdvisorBoundaryTest {
 				return Flux.just(call(prompt));
 			}
 		};
-		var config = RunnableConfig.builder().threadId("supervisor").addMetadata("_stream_", false).build();
+		var config = RunnableConfig.builder().threadId("supervisor").addMetadata("_stream_", streaming).build();
 		var beforeRestart = supervisor(directory, model, tools);
 		var pause = assertInstanceOf(InterruptionMetadata.class,
 				beforeRestart.stream(Map.of(), config).blockLast(Duration.ofSeconds(5)));

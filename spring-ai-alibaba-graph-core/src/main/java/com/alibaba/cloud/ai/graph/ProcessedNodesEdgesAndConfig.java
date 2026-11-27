@@ -41,17 +41,6 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 	}
 
 	/**
-	 * Instantiates a new Processed nodes edges and config.
-	 * 
-	 * @param stateGraph the state graph
-	 * @param config     the config
-	 */
-	ProcessedNodesEdgesAndConfig(StateGraph stateGraph, CompileConfig config) {
-		this(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(), config.interruptsAfter(), Map.of(),
-				Map.copyOf(stateGraph.parallelJoins));
-	}
-
-	/**
 	 * Process processed nodes edges and config.
 	 * 
 	 * @param stateGraph the state graph
@@ -63,9 +52,16 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 			throws GraphStateException {
 
 		var subgraphNodes = stateGraph.nodes.onlySubStateGraphNodes();
+		Map<String, KeyStrategy> keyStrategyMap = new LinkedHashMap<>();
+		for (var node : stateGraph.nodes.elements) {
+			if (node instanceof SubGraphNode subGraphNode) {
+				subGraphNode.keyStrategies().forEach(keyStrategyMap::putIfAbsent);
+			}
+		}
 
 		if (subgraphNodes.isEmpty()) {
-			return new ProcessedNodesEdgesAndConfig(stateGraph, config);
+			return new ProcessedNodesEdgesAndConfig(stateGraph.nodes, stateGraph.edges, config.interruptsBefore(),
+					config.interruptsAfter(), keyStrategyMap, Map.copyOf(stateGraph.parallelJoins));
 		}
 
 		var interruptsBefore = config.interruptsBefore();
@@ -73,18 +69,14 @@ public record ProcessedNodesEdgesAndConfig(StateGraph.Nodes nodes, StateGraph.Ed
 		var nodes = new StateGraph.Nodes(stateGraph.nodes.exceptSubStateGraphNodes());
 		var edges = new StateGraph.Edges(stateGraph.edges.elements);
 
-		Map<String, KeyStrategy> keyStrategyMap = new LinkedHashMap<>();
 		var parallelJoins = new LinkedHashMap<>(stateGraph.parallelJoins);
 
 		for (var subgraphNode : subgraphNodes) {
 
 			var sgWorkflow = subgraphNode.subGraph();
 
-            // Merges keyStrategies of this subgraph.
-            subgraphNode.keyStrategies().forEach(keyStrategyMap::putIfAbsent);
-            // Merges the keyStrategyMap aggregated from recursive subgraphs.
-            ProcessedNodesEdgesAndConfig processedSubGraph = process(sgWorkflow, config);
-            processedSubGraph.keyStrategyMap().forEach(keyStrategyMap::putIfAbsent);
+			ProcessedNodesEdgesAndConfig processedSubGraph = process(sgWorkflow, config);
+			processedSubGraph.keyStrategyMap().forEach(keyStrategyMap::putIfAbsent);
 
 			StateGraph.Nodes processedSubGraphNodes = processedSubGraph.nodes;
 			StateGraph.Edges processedSubGraphEdges = processedSubGraph.edges;

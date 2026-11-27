@@ -113,13 +113,14 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 				Optional<Object> agentResult = state.value(subAgentOutputKey);
 				if (agentResult.isPresent()) {
 					if (agentResult.get() instanceof GraphResponse<?> graphResponse) {
-						if (graphResponse.resultValue().isPresent() && graphResponse.resultValue().get() instanceof Map subGraphState) {
-							subAgentResults.put(subAgentOutputKey, subGraphState.get(subAgentOutputKey));
+						Object output = graphResponse.resultValue().orElse(null);
+						if (output instanceof Map<?, ?> subGraphState) {
+							output = subGraphState.get(subAgentOutputKey);
 							// Extract extra state data from sub-graph (e.g., data written via ToolContext)
-							extractExtraStateFromSubGraph(subGraphState, allOutputKeys, extraStateFromSubAgents);
-						} else {
-							subAgentResults.put(subAgentOutputKey, graphResponse.resultValue().get());
+							extractExtraStateFromSubGraph((Map<String, Object>) subGraphState, allOutputKeys, extraStateFromSubAgents);
 						}
+						subAgentResults.put(subAgentOutputKey, output);
+						result.put(subAgentOutputKey, output);
 					} else {
 						subAgentResults.put(subAgentOutputKey, agentResult.get());
 					}
@@ -150,15 +151,6 @@ public class EnhancedParallelResultAggregator implements NodeAction {
 		} else {
 			logger.debug("Enhanced result aggregation completed. No outputKey specified, skipping merged result storage.");
 		}
-
-		Map<String, KeyStrategy> releaseStrategyResults = subAgentResults.entrySet().stream()
-				.collect(HashMap::new,
-						(map, entry) -> map.put(entry.getKey(), KeyStrategy.REPLACE),
-						HashMap::putAll);
-
-		state.updateStateWithKeyStrategies(subAgentResults, releaseStrategyResults);
-
-		result.putAll(subAgentResults);
 
 		// Propagate extra state data from sub-agents to parent state
 		if (!extraStateFromSubAgents.isEmpty()) {

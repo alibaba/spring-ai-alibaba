@@ -18,6 +18,7 @@ package com.alibaba.cloud.ai.graph.agent;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.GraphRunnerContext;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
 import com.alibaba.cloud.ai.graph.NodeOutput;
@@ -50,6 +51,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
+import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.internal.node.Node;
@@ -71,6 +73,7 @@ import org.springframework.ai.tool.ToolCallback;
 
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,6 +88,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.alibaba.cloud.ai.graph.RunnableConfig.AGENT_MODEL_NAME;
@@ -602,7 +606,7 @@ public class ReactAgent extends BaseAgent {
 
 		// Chain after_agent hook (reverse order)
 		if (!afterAgentHooks.isEmpty()) {
-			chainAgentHookReverse(graph, afterAgentHooks, ".after", exitNode, loopEntryNode, exitNode);
+			chainAgentHookReverse(graph, afterAgentHooks, loopEntryNode);
 		}
 
 		// Add tool routing if tools exist
@@ -641,18 +645,12 @@ public class ReactAgent extends BaseAgent {
 	private static void chainAgentHookReverse(
 			StateGraph graph,
 			List<Hook> hooks,
-			String nameSuffix,
-			String defaultNext,
-			String modelDestination,
-			String endDestination) throws GraphStateException {
-		for (int i = hooks.size() - 1; i > 0; i--) {
-			Hook m1 = hooks.get(i);
-			Hook m2 = hooks.get(i - 1);
-			addHookEdge(graph,
-					Hook.getFullHookName(m1) + nameSuffix,
-					Hook.getFullHookName(m2) + nameSuffix,
-					modelDestination, endDestination,
-					m1.canJumpTo());
+			String modelDestination) throws GraphStateException {
+		String next = StateGraph.END;
+		for (Hook hook : hooks) {
+			String current = Hook.getFullHookName(hook) + ".after";
+			addHookEdge(graph, current, next, modelDestination, StateGraph.END, hook.canJumpTo());
+			next = current;
 		}
 	}
 
@@ -1015,25 +1013,53 @@ public class ReactAgent extends BaseAgent {
 
 		private Flux<GraphResponse<NodeOutput>> getGraphResponseFlux(OverAllState parentState,
 				Flux<GraphResponse<NodeOutput>> subGraphResult) {
-			return subGraphResult.map(response -> response.isDone() ? projectResult(response, parentState) : response);
+			return Flux.defer(() -> {
+				List<?> inherited = includeContents ? parentState.<List<?>>value("messages").orElseGet(List::of) : List.of();
+				var initialMessages = new AtomicReference<List<?>>(inherited);
+				return subGraphResult.concatMap(response -> {
+					if (response.isDone()) {
+						return Mono.just(projectResult(response, initialMessages.get()));
+					}
+					if (response.isError() || response.getOutput() == null) {
+						return Mono.just(response);
+					}
+					return Mono.fromFuture(response.getOutput()).map(output -> {
+						if (START.equals(output.node()) && !output.isSubGraph()) {
+							initialMessages.set(output.state().<List<?>>value("messages").orElseGet(List::of));
+						}
+						return response;
+					});
+				});
+			});
 		}
 
 		@SuppressWarnings("unchecked")
-		private GraphResponse<NodeOutput> projectResult(GraphResponse<NodeOutput> response, OverAllState parentState) {
+		private GraphResponse<NodeOutput> projectResult(GraphResponse<NodeOutput> response, List<?> inheritedMessages) {
 			if (!(response.resultValue().orElse(null) instanceof Map<?, ?> state)
 					|| !(state.get("messages") instanceof List<?> childMessages)) {
 				return response;
 			}
 			var messages = new ArrayList<>(childMessages);
-			if (includeContents) {
-				parentState.<List<Object>>value("messages")
-						.ifPresent(parentMessages -> parentMessages.forEach(messages::remove));
-			}
+			inheritedMessages.forEach(messages::remove);
 			List<?> output = returnReasoningContents || messages.isEmpty()
 					? messages : List.of(messages.get(messages.size() - 1));
 			var projected = new HashMap<>((Map<String, Object>) state);
 			projected.put("messages", output);
-			return GraphResponse.done(projected, response.getAllMetadata());
+			var metadata = new HashMap<>(response.getAllMetadata());
+			if (response.hasMetadata(GraphRunnerContext.BRANCH_WRITES)) {
+				var writes = new ArrayList<Map<String, Object>>();
+				for (var write : CheckpointWrite.decodeAll(response.getMetadata(GraphRunnerContext.BRANCH_WRITES))) {
+					write.remove("messages");
+					if (!write.isEmpty()) {
+						writes.add(CheckpointWrite.encode(write));
+					}
+				}
+				if (!output.isEmpty()) {
+					writes.add(CheckpointWrite.encode(Map.of("messages", output)));
+				}
+				metadata.put(GraphRunnerContext.BRANCH_WRITES, writes);
+			}
+			return GraphResponse.done(projected, metadata);
 		}
 
 		private RunnableConfig getSubGraphRunnableConfig(RunnableConfig config) {
