@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph.agent;
 
+import com.alibaba.cloud.ai.graph.agent.context.ToolResultArchive;
+
 import com.alibaba.cloud.ai.graph.agent.extension.interceptor.AssistantMessageSanitizerInterceptor;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
@@ -137,6 +139,14 @@ public class DefaultBuilder extends Builder {
 		List<ToolCallback> allTools = ToolCallbackUtils.deduplicateByName(gatherLocalTools(),
 				effectiveOptions instanceof ToolCallingChatOptions options ? options.getToolCallbacks() : null,
 				clientTools);
+		if (this.toolResultArchive != null) {
+			if (allTools.stream().anyMatch(tool -> ToolResultArchive.READ_TOOL_NAME.equals(tool.getToolDefinition().name()))) {
+				throw new IllegalArgumentException("Tool name is reserved by the result archive: "
+						+ ToolResultArchive.READ_TOOL_NAME);
+			}
+			allTools = new ArrayList<>(allTools);
+			allTools.add(this.toolResultArchive.createReadTool(this.name));
+		}
 		
 		// Set combined tools to LLM node
 		if (CollectionUtils.isNotEmpty(allTools)) {
@@ -153,6 +163,7 @@ public class DefaultBuilder extends Builder {
 		AgentToolNode toolNode;
 		AgentToolNode.Builder toolBuilder = AgentToolNode.builder()
 				.agentName(this.name)
+				.toolResultArchive(this.toolResultArchive)
 				.parallelToolExecution(this.parallelToolExecution)
 				.maxParallelTools(this.maxParallelTools)
 				.toolCallLimits(this.maxCallsPerTool, this.maxTotalToolCalls)

@@ -28,6 +28,7 @@ import java.util.concurrent.Executor;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.agent.context.ContextWindowPolicy;
+import com.alibaba.cloud.ai.graph.agent.context.ToolResultArchive;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.Interceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
@@ -76,6 +77,8 @@ public abstract class Builder {
 	protected ChatOptions chatOptions;
 
 	protected ContextWindowPolicy contextWindowPolicy;
+
+	protected ToolResultArchive toolResultArchive;
 
 	protected ChatClient chatClient;
 
@@ -316,6 +319,16 @@ public abstract class Builder {
 	 */
 	public Builder contextWindowPolicy(ContextWindowPolicy policy) {
 		this.contextWindowPolicy = Objects.requireNonNull(policy, "policy must not be null");
+		return this;
+	}
+
+	/**
+	 * Archives oversized tool results and exposes a scoped page-reading tool.
+	 * @param archive the archive policy and backing store
+	 * @return this builder instance
+	 */
+	public Builder toolResultArchive(ToolResultArchive archive) {
+		this.toolResultArchive = Objects.requireNonNull(archive, "archive must not be null");
 		return this;
 	}
 
