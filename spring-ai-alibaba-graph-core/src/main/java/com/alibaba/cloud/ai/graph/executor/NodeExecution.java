@@ -47,7 +47,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 final class NodeExecution {
 
 	private static final Logger log = LoggerFactory.getLogger(NodeExecution.class);
-	private static final String TASK_TRACE_KEY = "_GRAPH_TASK_TRACE_";
 
 	private NodeExecution() {
 	}
@@ -79,7 +78,7 @@ final class NodeExecution {
 					.removeMetadata(RunnableConfig.TASK_ATTEMPT_METADATA_KEY);
 		}
 		if (trace != null) {
-			builder.addMetadata(TASK_TRACE_KEY, trace);
+			builder.addMetadata(RunnableConfig.TASK_TRACE_METADATA_KEY, trace);
 		}
 		return builder.build();
 	}
@@ -97,7 +96,7 @@ final class NodeExecution {
 						.addMetadata(RunnableConfig.TASK_ID_METADATA_KEY, taskId)
 						.addMetadata(RunnableConfig.TASK_ATTEMPT_METADATA_KEY, attempt);
 				if (trace != null) {
-					builder.addMetadata(TASK_TRACE_KEY, trace);
+					builder.addMetadata(RunnableConfig.TASK_TRACE_METADATA_KEY, trace);
 				}
 				var attemptConfig = builder.build();
 				long started = System.nanoTime();
@@ -148,7 +147,7 @@ final class NodeExecution {
 	private static TaskTrace taskTrace(GraphRunnerContext context, String nodeId, String taskId, RunnableConfig config) {
 		var graph = context.getCompiledGraph();
 		var localListeners = graph.compileConfig.lifecycleListeners();
-		var enclosing = context.getConfig().metadata(TASK_TRACE_KEY)
+		var enclosing = context.getConfig().metadata(RunnableConfig.TASK_TRACE_METADATA_KEY)
 				.filter(TaskTrace.class::isInstance).map(TaskTrace.class::cast).orElse(null);
 		if (enclosing == null && localListeners.isEmpty()) {
 			return null;

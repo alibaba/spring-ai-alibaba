@@ -19,6 +19,7 @@ import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
 import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.agent.context.AgentToolContext;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellableAsyncToolCallback;
 import com.alibaba.cloud.ai.graph.agent.tool.CancellationToken;
 import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
@@ -42,14 +43,16 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_TOOL_CALL_ID_CONTEXT_KEY;
 import static com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver.THREAD_ID_DEFAULT;
-import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.childInvocation;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.taskThreadId;
 
 /**
@@ -59,6 +62,7 @@ import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.t
 public class AgentTool {
 	private static final ToolCallResultConverter CONVERTER = new MessageToolCallResultConverter();
 	private static final JsonHelper jsonHelper = new JsonHelper();
+	private static final AgentToolContext ISOLATED_CONTEXT = AgentToolContext.builder().build();
 
 	public static final String CONTINUATION_CONTEXT_KEY = "_AGENT_TOOL_CONTINUATION_";
 
@@ -109,6 +113,11 @@ public class AgentTool {
 	 * @return ToolCallback for the ReactAgent
 	 */
 	public static ToolCallback create(ReactAgent agent) {
+		return create(agent, ISOLATED_CONTEXT);
+	}
+
+	/** Creates a delegated tool with explicit parent inputs and child outputs. */
+	public static ToolCallback create(ReactAgent agent, AgentToolContext context) {
 		// Get the original schema from inputSchema or inputType
 		String originalSchema = StringUtils.hasLength(agent.getInputSchema())
 				? agent.getInputSchema()
@@ -121,7 +130,7 @@ public class AgentTool {
 				.description(agent.description())
 				.inputSchema(wrapSchemaInInputParameter(originalSchema));
 
-		return new AgentToolCallback(builder.build(), new AgentToolExecutor(agent));
+		return new AgentToolCallback(builder.build(), new AgentToolExecutor(agent, context));
 	}
 
 	/**
@@ -202,8 +211,7 @@ public class AgentTool {
 		@Override
 		public String call(String toolInput, ToolContext toolContext) {
 			try {
-				AssistantMessage result = executor.executeAgent(toolInput, toolContext);
-				return CONVERTER.convert(result, AssistantMessage.class);
+				return executor.executeTool(toolInput, toolContext);
 			}
 			catch (Interrupted | ToolExecutionException e) {
 				throw e;
@@ -216,7 +224,7 @@ public class AgentTool {
 		@Override
 		public CompletableFuture<String> callAsync(String arguments, ToolContext context, CancellationToken cancellation) {
 			var result = executor.executeAgentResult(arguments, context)
-					.map(message -> CONVERTER.convert(message, AssistantMessage.class))
+					.map(executor::formatResult)
 					.onErrorMap(RuntimeException.class,
 							error -> error instanceof Interrupted || error instanceof ToolExecutionException
 									? error : new ToolExecutionException(toolDefinition, error))
@@ -234,8 +242,15 @@ public class AgentTool {
 
 		private final ReactAgent agent;
 
+		private final AgentToolContext scope;
+
 		public AgentToolExecutor(ReactAgent agent) {
-			this.agent = agent;
+			this(agent, ISOLATED_CONTEXT);
+		}
+
+		public AgentToolExecutor(ReactAgent agent, AgentToolContext scope) {
+			this.agent = Objects.requireNonNull(agent, "agent must not be null");
+			this.scope = Objects.requireNonNull(scope, "context must not be null");
 		}
 
 		/**
@@ -247,54 +262,102 @@ public class AgentTool {
 		 * @return AssistantMessage the response from the agent
 		 */
 		public AssistantMessage executeAgent(String input, ToolContext toolContext) {
-			return executeAgentResult(input, toolContext).block();
+			return executeAgentResult(input, toolContext).map(ExecutionResult::answer).block();
 		}
 
-		private Mono<AssistantMessage> executeAgentResult(String input, ToolContext toolContext) {
-			// Extract the actual input value from the wrapped JSON structure
-			// The input parameter is wrapped as {"input": "actual_value"}
-			String actualInput = extractInputValue(input);
-
-			// Build the messages list to add
-			// Add instruction first if present, then the user input
-			// Note: We must add all messages at once because cloneState doesn't copy keyStrategies,
-			// so multiple updateState calls would overwrite instead of append
-			List<Message> messagesToAdd = new ArrayList<>();
-			if (StringUtils.hasLength(agent.instruction())) {
-				messagesToAdd.add(AgentInstructionMessage.builder().text(agent.instruction()).build());
+		private String executeTool(String input, ToolContext toolContext) {
+			if (this.scope.outputKeys().isEmpty()) {
+				return CONVERTER.convert(executeAgent(input, toolContext), AssistantMessage.class);
 			}
-			messagesToAdd.add(new UserMessage(actualInput));
+			return executeAgentResult(input, toolContext).map(this::formatResult).block();
+		}
 
+		private Mono<ExecutionResult> executeAgentResult(String input, ToolContext toolContext) {
+			return Mono.defer(() -> executeChild(input, toolContext));
+		}
+
+		private Mono<ExecutionResult> executeChild(String input, ToolContext toolContext) {
+			String actualInput = extractInputValue(input);
 			var parent = ToolContextHelper.getConfig(toolContext).orElse(null);
 			var continuation = ToolContextHelper.getMetadata(toolContext, CONTINUATION_CONTEXT_KEY, Continuation.class);
+			var parentState = continuation.isPresent() ? Map.<String, Object>of()
+					: ToolContextHelper.getState(toolContext).map(state -> select(state.data(), this.scope.stateKeys()))
+						.orElseGet(Map::of);
+			var parentMetadata = parent == null ? Map.<String, Object>of()
+					: parent.metadata().map(metadata -> select(metadata, this.scope.metadataKeys())).orElseGet(Map::of);
+			String stateJson = parentState.isEmpty() ? "" : jsonHelper.toJson(parentState);
+			String metadataJson = parentMetadata.isEmpty() ? "" : jsonHelper.toJson(parentMetadata);
+			if ((long) stateJson.length() + metadataJson.length() > this.scope.maxContextCharacters()) {
+				throw new IllegalArgumentException("Delegated context exceeds the configured character limit");
+			}
+
 			var run = childConfig(toolContext, parent, continuation);
-			var inputs = continuation.isPresent() ? Map.<String, Object>of() : Map.<String, Object>of("messages", messagesToAdd);
-			return Mono.defer(() -> agent.getAndCompileGraph().stream(inputs, agent.buildNonStreamConfig(run)).last())
+			if (!metadataJson.isEmpty()) {
+				jsonHelper.fromJsonToMap(metadataJson).forEach(run::addMetadata);
+			}
+			var inputs = continuation.isPresent() ? Map.<String, Object>of() : childInputs(actualInput, stateJson);
+			var childRun = agent.buildNonStreamConfig(run.build());
+			return Mono.defer(() -> agent.getAndCompileGraph().stream(inputs, childRun).last())
 					.onErrorMap(error -> buildExecutionException(actualInput, parent,
-							"sub-agent invocation failed: " + error.getMessage(), error))
-					.map(output -> requireAssistantMessage(output, run, actualInput, parent));
+							"sub-agent invocation failed", error))
+					.map(output -> new ExecutionResult(requireAssistantMessage(output, childRun, actualInput, parent),
+							select(output.state().data(), this.scope.outputKeys())));
 		}
 
-		private RunnableConfig childConfig(ToolContext context, RunnableConfig parent, Optional<Continuation> continuation) {
-			if (parent == null && continuation.isEmpty()) {
-				return RunnableConfig.builder().build();
+		private Map<String, Object> childInputs(String actualInput, String stateJson) {
+			List<Message> messages = new ArrayList<>();
+			if (StringUtils.hasLength(agent.instruction())) {
+				messages.add(AgentInstructionMessage.builder().text(agent.instruction()).build());
 			}
-			var caller = parent == null ? RunnableConfig.builder().build() : parent;
-			var child = childInvocation(caller, continuation.isPresent())
-					.threadId(caller.threadId().map(id -> id + "_" + agent.name()).orElseGet(agent::name))
-					.clearContext();
-			ToolContextHelper.getMetadata(context, AGENT_TOOL_CALL_ID_CONTEXT_KEY, String.class)
-					.filter(StringUtils::hasText).ifPresent(callId -> {
-						String parentExecution = caller.checkPointId().or(caller::taskId)
-								.or(() -> ToolContextHelper.getState(context)
-										.flatMap(state -> state.value(GraphLifecycleListener.EXECUTION_ID_KEY, String.class)))
-								.orElse("");
-						String invocationId = taskThreadId(caller, agent.name(), parentExecution + ":" + callId);
-						child.threadId(invocationId).addMetadata(RunnableConfig.TASK_ID_METADATA_KEY, invocationId);
-					});
-			continuation.ifPresent(resume -> child.threadId(resume.threadId())
-					.addMetadata(RunnableConfig.TASK_ID_METADATA_KEY, resume.threadId()).addHumanFeedback(resume.feedback()));
-			return child.build();
+			if (!stateJson.isEmpty()) {
+				messages.add(new UserMessage("Delegated reference data (JSON):\n" + stateJson));
+			}
+			messages.add(new UserMessage(actualInput));
+			return stateJson.isEmpty() ? Map.of("messages", messages)
+					: Map.of("messages", messages, AgentToolContext.STATE_KEY, jsonHelper.fromJsonToMap(stateJson));
+		}
+
+		private RunnableConfig.Builder childConfig(ToolContext context, RunnableConfig parent,
+				Optional<Continuation> continuation) {
+			String threadId = continuation.map(Continuation::threadId).orElseGet(() -> childThreadId(context, parent));
+			var child = RunnableConfig.isolatedChild(parent).threadId(threadId)
+					.addMetadata(RunnableConfig.TASK_ID_METADATA_KEY, threadId);
+			continuation.ifPresent(resume -> child.addHumanFeedback(resume.feedback()));
+			return child;
+		}
+
+		private String childThreadId(ToolContext context, RunnableConfig parent) {
+			if (parent != null) {
+				var callId = ToolContextHelper.getMetadata(context, AGENT_TOOL_CALL_ID_CONTEXT_KEY, String.class)
+						.filter(StringUtils::hasText);
+				var dispatch = parent.checkPointId().or(parent::taskId)
+						.or(() -> ToolContextHelper.getState(context)
+								.flatMap(state -> state.value(GraphLifecycleListener.EXECUTION_ID_KEY, String.class)));
+				if (callId.isPresent() && dispatch.isPresent()) {
+					return taskThreadId(parent, agent.name(), dispatch.get() + ":" + callId.get());
+				}
+			}
+			return "task-" + UUID.randomUUID();
+		}
+
+		private static Map<String, Object> select(Map<String, Object> source, List<String> keys) {
+			Map<String, Object> selected = new LinkedHashMap<>();
+			for (String key : keys) {
+				Object value = source.get(key);
+				if (value != null) {
+					selected.put(key, value instanceof Message message ? message.getText() : value);
+				}
+			}
+			return selected;
+		}
+
+		private String formatResult(ExecutionResult result) {
+			String answer = CONVERTER.convert(result.answer(), AssistantMessage.class);
+			return this.scope.outputKeys().isEmpty() ? answer
+					: jsonHelper.toJson(Map.of("answer", answer, "outputs", result.outputs()));
+		}
+
+		private record ExecutionResult(AssistantMessage answer, Map<String, Object> outputs) {
 		}
 
 		private AssistantMessage requireAssistantMessage(NodeOutput output, RunnableConfig run, String actualInput,
