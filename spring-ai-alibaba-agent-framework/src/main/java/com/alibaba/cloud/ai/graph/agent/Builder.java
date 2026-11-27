@@ -149,6 +149,8 @@ public abstract class Builder {
 
 	protected Executor executor;
 
+	protected Executor toolExecutor;
+
 	// Async tool execution configuration
 	protected boolean parallelToolExecution = false;
 	protected int maxParallelTools = 5;
@@ -485,6 +487,18 @@ public abstract class Builder {
 	}
 
 	/**
+	 * Uses an externally managed executor for blocking tool callbacks. A per-run
+	 * tool-node executor can override this setting.
+	 * @param executor the executor for blocking tools
+	 * @return this builder
+	 */
+	public Builder toolExecutor(Executor executor) {
+		Assert.notNull(executor, "executor cannot be null");
+		this.toolExecutor = executor;
+		return this;
+	}
+
+	/**
 	 * Enables or disables parallel tool execution.
 	 * <p>
 	 * When enabled, multiple tool calls in a single response will be executed
@@ -540,13 +554,9 @@ public abstract class Builder {
 	}
 
 	/**
-	 * Enables or disables automatic wrapping of synchronous tools as async.
-	 * <p>
-	 * When enabled, tools that implement only {@code ToolCallback} (synchronous)
-	 * will be automatically wrapped in an {@code AsyncToolCallbackAdapter} to
-	 * enable async execution. This allows parallel execution without requiring
-	 * tool implementations to be modified.
-	 * @param wrap true to wrap sync tools as async, false to leave them as-is
+	 * Applies the tool execution timeout to synchronous callbacks in sequential mode.
+	 * Synchronous callbacks run on the blocking tool executor in either mode.
+	 * @param wrap whether to time out sequential synchronous callbacks
 	 * @return this builder instance
 	 */
 	public Builder wrapSyncToolsAsAsync(boolean wrap) {

@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.agent.tool.ToolStreamPart;
 import com.alibaba.cloud.ai.graph.agent.tools.ToolContextHelper;
 import com.alibaba.cloud.ai.graph.streaming.RunEvent;
 import com.alibaba.cloud.ai.graph.streaming.StreamOptions;
+import com.alibaba.cloud.ai.graph.streaming.StreamWriter;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -43,6 +44,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.ArrayList;
 import java.util.function.Function;
 
@@ -127,6 +129,46 @@ class AgentRunEventTest {
 		activeCall.cancel();
 		assertThat(cancelled.await(5, TimeUnit.SECONDS)).isTrue();
 		assertThat(pending).isCancelled();
+	}
+
+	@Test
+	void timesOutAStreamingToolAndClosesItsWriter() throws Exception {
+		var cancelled = new CountDownLatch(1);
+		var writer = new AtomicReference<StreamWriter>();
+		var lateWrite = new AtomicReference<StreamWriter.Result>();
+		var tool = new StreamingToolCallback() {
+			@Override
+			public ToolDefinition getToolDefinition() {
+				return ToolDefinition.builder().name("read").description("Read data").inputSchema("{}").build();
+			}
+
+			@Override
+			public Duration getTimeout() {
+				return Duration.ofMillis(100);
+			}
+
+			@Override
+			public Flux<ToolStreamPart> stream(String arguments, ToolContext context, CancellationToken cancellation) {
+				writer.set(ToolContextHelper.streamWriter(context));
+				return Flux.<ToolStreamPart>never().doOnCancel(cancelled::countDown);
+			}
+		};
+		var agent = ReactAgent.builder().name("reader").tools(tool).model(model(prompt -> {
+			String result = toolResult(prompt);
+			if (result == null) {
+				return Flux.just(calls("read", "{}"));
+			}
+			lateWrite.set(writer.get().tryEmit("late", 1));
+			return Flux.just(reply(result));
+		})).build();
+
+		var events = agent.streamEvents("request", config(), StreamOptions.all()).collectList().block(Duration.ofSeconds(5));
+
+		assertThat(cancelled.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(events.stream().map(RunEvent::type).filter(type -> type.channel() == RunEvent.Channel.TOOLS))
+				.containsExactly(Type.TOOL_STARTED, Type.TOOL_FAILED);
+		assertThat(lateWrite).hasValue(StreamWriter.Result.CLOSED);
+		assertThat(events.get(events.size() - 1).type()).isEqualTo(Type.RUN_COMPLETED);
 	}
 
 	private static StreamingToolCallback callback(Flux<ToolStreamPart> parts) {

@@ -185,6 +185,9 @@ public class DefaultBuilder extends Builder {
 				.toolExecutionTimeout(this.toolExecutionTimeout)
 				.wrapSyncToolsAsAsync(this.wrapSyncToolsAsAsync);
 
+		if (this.toolExecutor != null) {
+			toolBuilder.toolExecutor(this.toolExecutor);
+		}
 		if (resolver != null) {
 			toolBuilder.toolCallbackResolver(resolver);
 		}
