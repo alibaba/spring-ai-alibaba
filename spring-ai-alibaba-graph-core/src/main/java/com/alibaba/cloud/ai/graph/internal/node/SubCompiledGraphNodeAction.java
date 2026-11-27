@@ -18,12 +18,19 @@ package com.alibaba.cloud.ai.graph.internal.node;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.GraphLifecycleListener;
+import com.alibaba.cloud.ai.graph.GraphResponse;
+import com.alibaba.cloud.ai.graph.GraphRunnerContext;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.OverAllStateBuilder;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.checkpoint.CheckpointWrite;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.UnaryOperator;
 
@@ -49,7 +56,13 @@ import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.s
  * @see AsyncNodeActionWithConfig
  */
 public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentCompileConfig,
-		CompiledGraph subGraph, UnaryOperator<RunnableConfig> configure) implements AsyncNodeActionWithConfig, ResumableSubGraphAction {
+		CompiledGraph subGraph, UnaryOperator<RunnableConfig> configure, Set<String> inputKeys, Set<String> outputKeys)
+		implements AsyncNodeActionWithConfig, ResumableSubGraphAction {
+
+	public SubCompiledGraphNodeAction(String nodeId, CompileConfig parentCompileConfig, CompiledGraph subGraph,
+			UnaryOperator<RunnableConfig> configure) {
+		this(nodeId, parentCompileConfig, subGraph, configure, null, null);
+	}
 
 	public SubCompiledGraphNodeAction(String nodeId, CompileConfig parentCompileConfig, CompiledGraph subGraph) {
 		this(nodeId, parentCompileConfig, subGraph, UnaryOperator.identity());
@@ -73,20 +86,61 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 		try {
 			var subGraphRunnableConfig = configure.apply(
 					childConfig(nodeId, config, parentCompileConfig, subGraph.compileConfig).build());
-			if (shouldResume(nodeId, config)) {
+			boolean resume = shouldResume(nodeId, config);
+			boolean useChildCheckpoint = config.metadata(getResumeSubGraphId())
+				.filter(USE_CHILD_CHECKPOINT::equals).isPresent();
+			if (resume && inputKeys == null && !useChildCheckpoint) {
 				if (config.taskId().isEmpty()) {
 					subGraphRunnableConfig = subGraph.updateState(subGraphRunnableConfig, state.data());
 				}
 				return CompletableFuture.completedFuture(Map.of(outputKeyToParent(nodeId),
 						subGraph.graphResponseStream(Map.of(), subGraphRunnableConfig)));
 			}
-			var childState = OverAllStateBuilder.builder().withData(state.data()).withStore(state.getStore())
+			var inputs = resume ? Map.<String, Object>of() : state.data();
+			if (!resume && inputKeys != null) {
+				inputs = selectKeys(inputs, inputKeys);
+				String executionIdKey = GraphLifecycleListener.EXECUTION_ID_KEY;
+				if (state.data().containsKey(executionIdKey)) {
+					inputs.put(executionIdKey, state.data().get(executionIdKey));
+				}
+			}
+			var childState = OverAllStateBuilder.builder().withData(inputs).withStore(state.getStore())
 					.withKeyStrategies(subGraph.getKeyStrategyMap()).build();
-			return CompletableFuture.completedFuture(Map.of(outputKeyToParent(nodeId),
-					subGraph.graphResponseStream(childState, subGraphRunnableConfig)));
+			var responses = subGraph.graphResponseStream(childState, subGraphRunnableConfig);
+			if (outputKeys != null) {
+				responses = responses.map(this::selectOutputs);
+			}
+			return CompletableFuture.completedFuture(Map.of(outputKeyToParent(nodeId), responses));
 		}
 		catch (Exception e) {
 			return CompletableFuture.failedFuture(e);
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private GraphResponse<NodeOutput> selectOutputs(GraphResponse<NodeOutput> response) {
+		if (!response.isDone() || !(response.resultValue().orElse(null) instanceof Map<?, ?> state)) {
+			return response;
+		}
+		var metadata = response.getAllMetadata();
+		if (response.hasMetadata(GraphRunnerContext.BRANCH_WRITES)) {
+			var writes = CheckpointWrite.decodeAll(response.getMetadata(GraphRunnerContext.BRANCH_WRITES)).stream()
+				.map(write -> selectKeys(write, outputKeys))
+				.filter(write -> !write.isEmpty())
+				.map(CheckpointWrite::encode)
+				.toList();
+			metadata.put(GraphRunnerContext.BRANCH_WRITES, writes);
+		}
+		return GraphResponse.done(selectKeys((Map<String, Object>) state, outputKeys), metadata);
+	}
+
+	private static Map<String, Object> selectKeys(Map<String, Object> state, Set<String> keys) {
+		var selected = new HashMap<String, Object>();
+		for (String key : keys) {
+			if (state.containsKey(key)) {
+				selected.put(key, state.get(key));
+			}
+		}
+		return selected;
 	}
 }

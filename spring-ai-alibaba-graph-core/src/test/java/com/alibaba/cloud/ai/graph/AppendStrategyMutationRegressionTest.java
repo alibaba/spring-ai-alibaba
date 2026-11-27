@@ -15,6 +15,8 @@
  */
 package com.alibaba.cloud.ai.graph;
 
+import com.alibaba.cloud.ai.graph.state.AppenderChannel;
+import com.alibaba.cloud.ai.graph.state.RemoveByValue;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import org.junit.jupiter.api.Test;
 
@@ -23,8 +25,22 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class AppendStrategyMutationRegressionTest {
+
+    @Test
+    void removesByEqualityWithoutStoringRemovalCommands() {
+        var strategy = new AppendStrategy();
+        var remove = RemoveByValue.of("Aa");
+        assertEquals(List.of("BB", "Aa"), strategy.apply(List.of("BB", "Aa", "Aa"), remove));
+        assertNull(strategy.apply(null, remove));
+        assertEquals(List.of("new"), strategy.apply(null, List.of("new", remove)));
+
+        var channel = AppenderChannel.of(() -> new ArrayList<>(List.of("BB", "Aa")));
+        assertEquals(List.of("BB"), channel.update("items", null, remove));
+        assertEquals(List.of("BB", "new"), channel.update("items", null, List.of(remove, "new")));
+    }
 
     // https://github.com/alibaba/spring-ai-alibaba/issues/4757
     @Test

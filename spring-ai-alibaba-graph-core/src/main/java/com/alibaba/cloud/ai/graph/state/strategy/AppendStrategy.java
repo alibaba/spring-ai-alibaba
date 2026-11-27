@@ -55,7 +55,10 @@ public class AppendStrategy implements KeyStrategy {
 
 		boolean oldValueIsList = oldValue instanceof List<?>;
 
-		if (oldValueIsList && newValue instanceof AppenderChannel.RemoveIdentifier<?>) {
+		if (newValue instanceof AppenderChannel.RemoveIdentifier<?>) {
+			if (!oldValueIsList) {
+				return oldValue;
+			}
 			var result = new ArrayList<>((List<Object>) oldValue);
 			removeFromList(result, (AppenderChannel.RemoveIdentifier) newValue);
 			return new ArrayList<>(result);
@@ -103,7 +106,8 @@ public class AppendStrategy implements KeyStrategy {
 		else {
 			ArrayList<Object> arrayResult = new ArrayList<>();
 			if (list != null) {
-				arrayResult.addAll(list);
+				list.stream().filter(value -> !(value instanceof AppenderChannel.RemoveIdentifier<?>))
+					.forEach(arrayResult::add);
 			}
 			else {
 				arrayResult.add(newValue);

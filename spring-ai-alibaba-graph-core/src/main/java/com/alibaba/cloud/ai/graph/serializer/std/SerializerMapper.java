@@ -47,16 +47,20 @@ public class SerializerMapper {
 
 	public SerializerMapper register(Class<?> clazz, Serializer<?> serializer) {
 		Objects.requireNonNull(clazz, "class cannot be null ");
-		Objects.requireNonNull(clazz, "serializer cannot be null ");
+		Objects.requireNonNull(serializer, "serializer cannot be null ");
 
 		_serializers.put(Key.of(clazz), serializer);
 		return this;
 	}
 
+	/**
+	 * Removes registrations backed by the supplied serializer implementation class.
+	 * @param clazz the serializer implementation class
+	 * @return whether any registration was removed
+	 */
 	public boolean unregister(Class<? extends Serializer<?>> clazz) {
 		Objects.requireNonNull(clazz, "Serializer's class cannot be null");
-		Serializer<?> serializer = _serializers.remove(Key.of(clazz));
-		return serializer != null;
+		return _serializers.values().removeIf(serializer -> clazz.equals(serializer.getClass()));
 	}
 
 	@SuppressWarnings("unchecked")

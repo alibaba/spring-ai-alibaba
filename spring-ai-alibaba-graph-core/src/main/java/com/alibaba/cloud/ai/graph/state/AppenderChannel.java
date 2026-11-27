@@ -207,8 +207,14 @@ public class AppenderChannel<T> implements Channel<List<T>> {
 		boolean oldValueIsList = oldValue instanceof List<?>;
 
 		try {
-			if (oldValueIsList && newValue instanceof RemoveIdentifier<?>) {
-				return remove((List<T>) oldValue, (RemoveIdentifier<T>) newValue);
+			if (newValue instanceof RemoveIdentifier<?>) {
+				if (oldValueIsList) {
+					return remove((List<T>) oldValue, (RemoveIdentifier<T>) newValue);
+				}
+				return oldValue == null
+						? getDefault().map(Supplier::get)
+							.map(list -> remove(list, (RemoveIdentifier<T>) newValue)).orElse(null)
+						: oldValue;
 			}
 			List<?> list = null;
 			if (newValue instanceof List) {
@@ -223,6 +229,11 @@ public class AppenderChannel<T> implements Channel<List<T>> {
 				}
 				if (oldValueIsList) {
 					var result = evaluateRemoval((List<T>) oldValue, list);
+					return Channel.super.update(key, result.oldValues(), result.newValues());
+				}
+				if (oldValue == null && list.stream().anyMatch(RemoveIdentifier.class::isInstance)) {
+					var initial = getDefault().map(Supplier::get).orElseGet(List::of);
+					var result = evaluateRemoval(initial, list);
 					return Channel.super.update(key, result.oldValues(), result.newValues());
 				}
 				return Channel.super.update(key, oldValue, list);

@@ -26,23 +26,48 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
 
 public class SubCompiledGraphNode extends Node implements SubGraphNode {
 	private final CompiledGraph subGraph;
-	private final String id;
+	private final String outputKey;
+	private final Set<String> outputKeys;
 
 	public SubCompiledGraphNode(String id, CompiledGraph subGraph) {
 		this(id, subGraph, UnaryOperator.identity());
 	}
 
 	public SubCompiledGraphNode(String id, CompiledGraph subGraph, UnaryOperator<RunnableConfig> configure) {
+		this(id, subGraph, configure, null, null);
+	}
+
+	public SubCompiledGraphNode(String id, CompiledGraph subGraph, Set<String> inputKeys, Set<String> outputKeys) {
+		this(id, subGraph, UnaryOperator.identity(), Set.copyOf(inputKeys), Set.copyOf(outputKeys));
+	}
+
+	private SubCompiledGraphNode(String id, CompiledGraph subGraph, UnaryOperator<RunnableConfig> configure,
+			Set<String> inputKeys, Set<String> outputKeys) {
 		super(Objects.requireNonNull(id, "id cannot be null"),
-				(config) -> new SubCompiledGraphNodeAction(id, config, subGraph, configure));
+				(config) -> new SubCompiledGraphNodeAction(id, config, subGraph, configure, inputKeys, outputKeys));
 		this.subGraph = subGraph;
-		this.id = id;
+		this.outputKey = outputKeyToParent(id);
+		this.outputKeys = outputKeys;
+	}
+
+	private SubCompiledGraphNode(String id, SubCompiledGraphNode node) {
+		super(id, node.actionFactory());
+		this.subGraph = node.subGraph;
+		this.outputKey = node.outputKey;
+		this.outputKeys = node.outputKeys;
+	}
+
+	@Override
+	public SubCompiledGraphNode withIdUpdated(Function<String, String> newId) {
+		return new SubCompiledGraphNode(newId.apply(id()), this);
 	}
 
 	public StateGraph subGraph() {
@@ -52,7 +77,10 @@ public class SubCompiledGraphNode extends Node implements SubGraphNode {
 	@Override
 	public Map<String, KeyStrategy> keyStrategies() {
 		var strategies = new HashMap<>(subGraph.getKeyStrategyMap());
-		strategies.put(outputKeyToParent(id), new ReplaceStrategy());
+		if (outputKeys != null) {
+			strategies.keySet().retainAll(outputKeys);
+		}
+		strategies.put(outputKey, new ReplaceStrategy());
 		return strategies;
 	}
 
