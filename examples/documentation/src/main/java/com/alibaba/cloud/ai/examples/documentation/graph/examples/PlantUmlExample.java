@@ -67,6 +67,8 @@ public class PlantUmlExample {
 		// 显示 PlantUML 代码
 		System.out.println("PlantUML representation:");
 		System.out.println(representation.content());
+		System.out.println("Mermaid representation:");
+		System.out.println(compiledGraph.getGraph(GraphRepresentation.Type.MERMAID, "My Workflow").content());
 	}
 
 	/**

@@ -105,7 +105,7 @@ public class CoreLibraryExample {
 				.addEdge("agent_3", END);
 
 		CompiledGraph graph = workflow.compile();
-		System.out.println("Remove messages graph compiled successfully");
+		System.out.println("Messages: " + graph.invoke(Map.of()).orElseThrow().value("messages").orElseThrow());
 	}
 
 	/**
@@ -125,7 +125,21 @@ public class CoreLibraryExample {
 				.addEdge("nodeC", END);
 
 		CompiledGraph graph = workflow.compile();
-		System.out.println("Conditional edges graph compiled successfully");
+		System.out.println("Route result: " + graph.invoke(Map.of()).orElseThrow().value("data").orElseThrow());
+	}
+
+	public record TicketStatus(String name, int priority) {
+	}
+
+	public static String serializableStateExample() throws GraphStateException {
+		var graph = new StateGraph()
+				.addNode("save", node_async(state -> Map.of("ticket", new TicketStatus("open", 2))))
+				.addNode("read", node_async(state -> {
+					var ticket = state.value("ticket", TicketStatus.class).orElseThrow();
+					return Map.of("summary", ticket.name() + " (priority " + ticket.priority() + ")");
+				}))
+				.addEdge(START, "save").addEdge("save", "read").addEdge("read", END).compile();
+		return graph.invoke(Map.of()).orElseThrow().value("summary", String.class).orElseThrow();
 	}
 
 	public static void main(String[] args) {
@@ -147,7 +161,7 @@ public class CoreLibraryExample {
 			conditionalEdgesExample();
 			System.out.println();
 
-			System.out.println("所有示例执行完成");
+			System.out.println(serializableStateExample());
 		}
 		catch (Exception e) {
 			System.err.println("执行示例时出错: " + e.getMessage());

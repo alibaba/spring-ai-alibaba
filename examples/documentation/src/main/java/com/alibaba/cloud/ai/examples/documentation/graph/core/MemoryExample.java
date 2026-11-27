@@ -136,7 +136,7 @@ public class MemoryExample {
 	/**
 	 * 示例 2: 使用 Store 实现长期内存
 	 */
-	public static void longTermMemoryWithDatabase() throws GraphStateException {
+	public static void readUserProfile() throws GraphStateException {
 		// 在节点中使用 Store 存储用户信息
 		var userProfileNode = com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_async((state, config) -> {
 			String userId = (String) state.value("userId").orElse("");
@@ -199,7 +199,7 @@ public class MemoryExample {
 	/**
 	 * 示例 3: 使用 Store 缓存实现长期内存
 	 */
-	public static void longTermMemoryWithRedis() throws GraphStateException {
+	public static void cacheWithStore() throws GraphStateException {
 		var cacheNode = com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig.node_async((state, config) -> {
 			String key = (String) state.value("cacheKey").orElse("");
 
@@ -395,12 +395,12 @@ public class MemoryExample {
 
 			// 示例 2: 使用 Store 实现长期内存
 			System.out.println("示例 2: 使用 Store 实现长期内存");
-			longTermMemoryWithDatabase();
+			readUserProfile();
 			System.out.println();
 
 			// 示例 3: 使用 Store 缓存实现长期内存
 			System.out.println("示例 3: 使用 Store 缓存实现长期内存");
-			longTermMemoryWithRedis();
+			cacheWithStore();
 			System.out.println();
 
 			// 示例 4: 结合短期和长期内存（需要 ChatClient）

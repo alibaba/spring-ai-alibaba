@@ -17,17 +17,17 @@ package com.alibaba.cloud.ai.examples.documentation.graph.examples;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.KeyStrategy;
-import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.NodeOutput;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
-import java.util.HashMap;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
@@ -35,132 +35,46 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
 import static com.alibaba.cloud.ai.graph.action.AsyncEdgeAction.edge_async;
 import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
-/**
- * 等待用户输入示例
- * 演示如何实现等待用户输入的交互式工作流
- */
 public class WaitUserInputExample {
 
-	/**
-	 * 定义带中断的 Graph
-	 */
 	public static CompiledGraph createGraphWithInterrupt() throws GraphStateException {
-		// 定义节点
-		var step1 = node_async(state -> {
-			return Map.of("messages", "Step 1");
-		});
-
-		var humanFeedback = node_async(state -> {
-			return Map.of(); // 等待用户输入，不修改状态
-		});
-
-		var step3 = node_async(state -> {
-			return Map.of("messages", "Step 3");
-		});
-
-		// 定义条件边
-		var evalHumanFeedback = edge_async(state -> {
-			var feedback = (String) state.value("human_feedback").orElse("unknown");
-			return (feedback.equals("next") || feedback.equals("back")) ? feedback : "unknown";
-		});
-
-		// 配置 KeyStrategyFactory
-		KeyStrategyFactory keyStrategyFactory = () -> {
-			HashMap<String, KeyStrategy> keyStrategyHashMap = new HashMap<>();
-			keyStrategyHashMap.put("messages", new AppendStrategy());
-			keyStrategyHashMap.put("human_feedback", new ReplaceStrategy());
-			return keyStrategyHashMap;
-		};
-
-		// 构建 Graph
-		StateGraph builder = new StateGraph(keyStrategyFactory)
-				.addNode("step_1", step1)
-				.addNode("human_feedback", humanFeedback)
-				.addNode("step_3", step3)
-				.addEdge(START, "step_1")
-				.addEdge("step_1", "human_feedback")
-				.addConditionalEdges("human_feedback", evalHumanFeedback,
-						Map.of("back", "step_1", "next", "step_3", "unknown", "human_feedback"))
-				.addEdge("step_3", END);
-
-		// 配置内存保存器和中断点
-		var saver = new MemorySaver();
-
-		var compileConfig = CompileConfig.builder()
-				.saverConfig(SaverConfig.builder()
-						.register(saver)
-						.build())
-				.interruptBefore("human_feedback") // 在 human_feedback 节点前中断
-				.build();
-
-		return builder.compile(compileConfig);
+		var saver = SaverConfig.builder().register(MemorySaver.builder().build()).build();
+		return new StateGraph(() -> Map.of("steps", new AppendStrategy()))
+				.addNode("prepare", node_async(state -> Map.of("steps", List.of("prepared"))))
+				.addNode("feedback", node_async(state -> Map.of()))
+				.addNode("finish", node_async(state -> Map.of("steps", List.of("finished"))))
+				.addEdge(START, "prepare").addEdge("prepare", "feedback")
+				.addConditionalEdges("feedback", edge_async(state -> state.value("feedback", String.class).orElseThrow()),
+						Map.of("back", "prepare", "next", "finish"))
+				.addEdge("finish", END)
+				.compile(CompileConfig.builder().saverConfig(saver).interruptBefore("feedback").build());
 	}
 
-	/**
-	 * 执行 Graph 直到中断
-	 */
-	public static void executeUntilInterrupt(CompiledGraph graph) {
-		// 初始输入
-		Map<String, Object> initialInput = Map.of("messages", "Step 0");
+	public static List<?> runTwoRounds() throws Exception {
+		var graph = createGraphWithInterrupt();
+		var thread = RunnableConfig.builder().threadId("feedback-demo").build();
+		var firstPause = graph.stream(Map.of(), thread).blockLast(Duration.ofSeconds(5));
+		expectPause(firstPause);
 
-		// 配置线程 ID
-		var invokeConfig = RunnableConfig.builder()
-				.threadId("Thread1")
-				.build();
+		var back = graph.updateState(thread, Map.of("feedback", "back"));
+		var secondPause = graph.stream(Map.of(), back.withResume()).blockLast(Duration.ofSeconds(5));
+		expectPause(secondPause);
 
-		// 运行 Graph 直到第一个中断点
-		graph.stream(initialInput, invokeConfig)
-				.doOnNext(event -> System.out.println(event))
-				.doOnError(error -> System.err.println("流错误: " + error.getMessage()))
-				.doOnComplete(() -> System.out.println("流完成"))
-				.blockLast();
+		var next = graph.updateState(thread, Map.of("feedback", "next"));
+		var result = graph.invoke(Map.of(), next.withResume()).orElseThrow();
+		return result.value("steps", List.class).orElseThrow();
 	}
 
-	/**
-	 * 等待用户输入并更新状态
-	 */
-	public static void waitUserInputAndUpdateState(CompiledGraph graph) throws Exception {
-		var invokeConfig = RunnableConfig.builder()
-				.threadId("Thread1")
-				.build();
-
-		// 检查当前状态
-		System.out.printf("--State before update--\n%s\n", graph.getState(invokeConfig));
-
-		// 模拟用户输入
-		var userInput = "back"; // "back" 表示返回上一个节点
-		System.out.printf("\n--User Input--\n用户选择: '%s'\n\n", userInput);
-
-		// 更新状态（模拟 human_feedback 节点的输出）
-		var updateConfig = graph.updateState(invokeConfig, Map.of("human_feedback", userInput), null);
-
-		// 检查更新后的状态
-		System.out.printf("--State after update--\n%s\n", graph.getState(invokeConfig));
-	}
-
-	/**
-	 * 继续执行 Graph
-	 */
-	public static void continueExecution(CompiledGraph graph) {
-		var invokeConfig = RunnableConfig.builder()
-				.threadId("Thread1")
-				.build();
-
-		// 继续执行 Graph
-		graph.stream(null, invokeConfig)
-				.doOnNext(event -> System.out.println(event))
-				.doOnError(error -> System.err.println("流错误: " + error.getMessage()))
-				.doOnComplete(() -> System.out.println("流完成"))
-				.blockLast();
+	private static void expectPause(NodeOutput output) {
+		if (!(output instanceof InterruptionMetadata interruption)) {
+			throw new IllegalStateException("Expected the graph to wait for feedback");
+		}
+		System.out.println("Waiting: " + interruption.state().value("steps").orElseThrow());
 	}
 
 	public static void main(String[] args) throws Exception {
-		System.out.println("=== 等待用户输入示例 ===");
-		CompiledGraph graph = createGraphWithInterrupt();
-		executeUntilInterrupt(graph);
-		waitUserInputAndUpdateState(graph);
-		continueExecution(graph);
-		System.out.println("所有示例执行完成");
+		System.out.println("Steps: " + runTwoRounds());
 	}
+
 }
 

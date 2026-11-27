@@ -68,17 +68,17 @@ public class SubgraphAsCompiledGraphExample {
 	public static CompiledGraph useInParentGraph(CompiledGraph compiledSubGraph) throws GraphStateException {
 		KeyStrategyFactory parentKeyFactory = () -> {
 			HashMap<String, KeyStrategy> strategies = new HashMap<>();
-			strategies.put("data", new ReplaceStrategy());
-			strategies.put("result", new ReplaceStrategy());
+			strategies.put("input", new ReplaceStrategy());
+			strategies.put("output", new ReplaceStrategy());
 			return strategies;
 		};
 
 		StateGraph parentGraph = new StateGraph(parentKeyFactory)
 				.addNode("prepare", node_async(state ->
-						Map.of("data", "hello world")))
+						Map.of("input", "hello world")))
 				.addNode("subgraph", compiledSubGraph)
 				.addNode("finalize", node_async(state -> {
-					String result = (String) state.value("result").orElse("");
+					String result = state.value("output", String.class).orElseThrow();
 					return Map.of("final", "Done: " + result);
 				}))
 				.addEdge(START, "prepare")
@@ -126,13 +126,13 @@ public class SubgraphAsCompiledGraphExample {
 			// 示例 2: 在父图中使用
 			System.out.println("示例 2: 在父图中使用");
 			CompiledGraph parentGraph = useInParentGraph(subGraph);
-			System.out.println("父图创建完成");
+			System.out.println(parentGraph.invoke(Map.of()).orElseThrow().value("final").orElseThrow());
 			System.out.println();
 
 			// 示例 3: 多个子图复用
 			System.out.println("示例 3: 多个子图复用");
 			CompiledGraph reusedGraph = reuseMultipleSubGraphs(subGraph);
-			System.out.println("多子图复用示例创建完成");
+			System.out.println(reusedGraph.invoke(Map.of("input", "hello")).orElseThrow().value("output").orElseThrow());
 			System.out.println();
 
 			System.out.println("所有示例执行完成");
