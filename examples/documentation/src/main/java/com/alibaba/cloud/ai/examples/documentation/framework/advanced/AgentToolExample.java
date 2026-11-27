@@ -193,14 +193,15 @@ public class AgentToolExample {
 	public void example4_agentToolWithOutputSchema() throws GraphRunnerException {
 		// Use BeanOutputConverter to generate outputSchema
 		BeanOutputConverter<ArticleOutput> outputConverter = new BeanOutputConverter<>(ArticleOutput.class);
-		String format = outputConverter.getFormat();
+		String schema = outputConverter.getJsonSchema();
 
 		ReactAgent writerAgent = ReactAgent.builder()
 				.name("writer_with_output_schema")
 				.model(chatModel)
 				.description("写文章并返回结构化输出")
-				.instruction("你是一个专业作家。请创作文章并严格按照指定的JSON格式返回结果。")
-				.outputSchema(format)
+				.instruction("你是一个专业作家。请创作文章并提交结构化结果。")
+				.outputSchema(schema)
+				.outputType(ArticleOutput.class)
 				.build();
 
 		ReactAgent coordinatorAgent = ReactAgent.builder()

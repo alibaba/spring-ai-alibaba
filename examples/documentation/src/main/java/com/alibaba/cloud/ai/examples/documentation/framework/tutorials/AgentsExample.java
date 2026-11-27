@@ -494,9 +494,8 @@ public class AgentsExample {
 				.saver(new MemorySaver())
 				.build();
 
-		AssistantMessage response = agent.call("写一首关于春天的诗");
-		// 输出会遵循 PoemOutput 的结构
-		System.out.println(response.getText());
+		PoemOutput poem = agent.callStructured("写一首关于春天的诗", PoemOutput.class);
+		System.out.println(poem.getTitle());
 	}
 
 	/**
@@ -513,16 +512,19 @@ public class AgentsExample {
 
 		// Use BeanOutputConverter to generate outputSchema
 		BeanOutputConverter<TextAnalysisResult> outputConverter = new BeanOutputConverter<>(TextAnalysisResult.class);
-		String format = outputConverter.getFormat();
+		String schema = outputConverter.getJsonSchema();
 
 		ReactAgent agent = ReactAgent.builder()
 				.name("analysis_agent")
 				.model(chatModel)
-				.outputSchema(format)
+				.outputSchema(schema)
+				.outputType(TextAnalysisResult.class)
 				.saver(new MemorySaver())
 				.build();
 
-		AssistantMessage response = agent.call("分析这段文本：春天来了，万物复苏。");
+		TextAnalysisResult analysis = agent.callStructured("分析这段文本：春天来了，万物复苏。",
+				TextAnalysisResult.class);
+		System.out.println(analysis.getSummary());
 	}
 
 	/**
