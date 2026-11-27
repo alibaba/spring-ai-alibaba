@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -28,6 +29,10 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.decision.DecisionModel;
+import org.springframework.ai.decision.DecisionPrompt;
+import org.springframework.ai.decision.DecisionResponse;
+import org.springframework.ai.decision.question.ChoiceQuestion;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
@@ -228,13 +233,9 @@ public class ModelsExample {
 				.inputType(String.class)
 				.build();
 
-		// 使用函数
-		DashScopeChatOptions options = DashScopeChatOptions.builder()
-				.toolCallbacks(List.of(weatherFunction))
-				.build();
-
-		Prompt prompt = new Prompt("北京的天气怎么样?", options);
-		ChatResponse response = chatModel.call(prompt);
+		// ChatClient registers the tool loop and passes the final answer back.
+		ChatClient.create(chatModel).prompt("北京的天气怎么样?")
+				.tools(weatherFunction).call().content();
 	}
 
 	// ==================== 与 ReactAgent 集成 ====================
@@ -398,6 +399,32 @@ public class ModelsExample {
 		System.out.println("Conservative (temp=0.1): " + conservativeResponse);
 		System.out.println("Balanced (temp=0.7): " + balancedResponse);
 		System.out.println("Creative (temp=1.5): " + creativeResponse);
+	}
+
+	// ==================== Spring AI 2.1 ====================
+
+	/**
+	 * The client accepts an options builder and merges it with the model defaults.
+	 */
+	public static ChatResponse requestOptions(ChatClient client, String question) {
+		return client.prompt(question)
+				.options(DashScopeChatOptions.builder().temperature(0.2))
+				.call()
+				.chatResponse();
+	}
+
+	/**
+	 * Route a request with typed choices. The caller handles refusal and reads the
+	 * selected option and its probabilities from the answer.
+	 */
+	public static DecisionResponse classifyRequest(DecisionModel model, String question) {
+		var route = ChoiceQuestion.builder()
+				.text("Which team should handle the request?")
+				.option("billing", "Invoices, charges and refunds")
+				.option("support", "Technical issues")
+				.build();
+
+		return model.call(DecisionPrompt.builder().text(question).question("route", route).build());
 	}
 
 	// ==================== Main 方法 ====================

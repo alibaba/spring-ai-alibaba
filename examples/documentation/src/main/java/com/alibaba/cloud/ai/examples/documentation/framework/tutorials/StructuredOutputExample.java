@@ -21,6 +21,7 @@ import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphRunnerException;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -353,6 +354,17 @@ public class StructuredOutputExample {
 		// 使用 outputSchema
 		AssistantMessage schemaResult = schemaAgent.call(input);
 		System.out.println("Schema-based: " + schemaResult.getText());
+	}
+
+	/**
+	 * Use a ChatClient backed by a model that supports provider-native JSON Schema.
+	 * Guardrail refusals are reported separately from malformed output.
+	 */
+	public static ContactInfo providerStructuredContact(ChatClient client, String input) {
+		return client.prompt()
+				.user(input)
+				.call()
+				.entity(ContactInfo.class, spec -> spec.useProviderStructuredOutput().validateSchema());
 	}
 
 	public static void main(String[] args) {
