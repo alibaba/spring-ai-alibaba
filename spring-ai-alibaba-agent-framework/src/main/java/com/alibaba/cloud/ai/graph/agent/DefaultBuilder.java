@@ -109,6 +109,8 @@ public class DefaultBuilder extends Builder {
 			llmNodeBuilder.systemPrompt(systemPrompt);
 		}
 
+		llmNodeBuilder.checkpointContextCompaction(this.checkpointContextCompaction);
+
 		if (templateRenderer != null) {
 			llmNodeBuilder.templateRenderer(templateRenderer);
     }

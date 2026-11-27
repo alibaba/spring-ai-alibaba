@@ -27,6 +27,7 @@ import java.util.concurrent.Executor;
 
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
+import com.alibaba.cloud.ai.graph.agent.context.CheckpointContextCompaction;
 import com.alibaba.cloud.ai.graph.agent.context.ContextWindowPolicy;
 import com.alibaba.cloud.ai.graph.agent.context.ToolResultArchive;
 import com.alibaba.cloud.ai.graph.agent.hook.Hook;
@@ -67,6 +68,8 @@ public abstract class Builder {
 	protected String instruction;
 
 	protected String systemPrompt;
+
+	protected CheckpointContextCompaction checkpointContextCompaction;
 
 	// Provide customized template renderer instance, for example
 	// SaaStTemplateRenderer.builder().startDelimiterToken("{{").endDelimiterToken("}}").build()
@@ -247,6 +250,17 @@ public abstract class Builder {
 
 	public Builder systemPrompt(String systemPrompt) {
 		this.systemPrompt = systemPrompt;
+		return this;
+	}
+
+	/**
+	 * Summarizes completed turns for the model while retaining the full message history.
+	 * Use a durable checkpoint saver to restore summaries after a restart.
+	 * @param compaction the checkpoint compaction policy
+	 * @return this builder instance
+	 */
+	public Builder checkpointContextCompaction(CheckpointContextCompaction compaction) {
+		this.checkpointContextCompaction = Objects.requireNonNull(compaction, "compaction must not be null");
 		return this;
 	}
 
