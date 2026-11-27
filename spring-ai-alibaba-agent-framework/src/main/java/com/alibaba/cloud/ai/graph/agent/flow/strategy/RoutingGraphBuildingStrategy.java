@@ -85,7 +85,8 @@ public class RoutingGraphBuildingStrategy extends AbstractFlowGraphBuildingStrat
 			}
 			baseAgentList.add((BaseAgent) subAgent);
 		}
-		graph.addNode(mergeNodeName, node_async(new RoutingMergeNode(config.getChatModel(), baseAgentList)));
+		graph.addNode(mergeNodeName, node_async(new RoutingMergeNode(config.getChatModel(), baseAgentList,
+				RoutingMergeNode.DEFAULT_MERGED_OUTPUT_KEY, RoutingNode.selectionKey(rootAgent.name()))));
 
 		// Step 5: Process sub-agents for routing
 		Map<String, String> edgeRoutingMap = new HashMap<>();

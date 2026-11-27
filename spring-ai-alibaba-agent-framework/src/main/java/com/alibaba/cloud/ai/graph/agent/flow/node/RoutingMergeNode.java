@@ -57,15 +57,21 @@ public class RoutingMergeNode implements NodeAction {
 	private final ChatModel chatModel;
 	private final List<BaseAgent> subAgents;
 	private final String mergedOutputKey;
+	private final String selectionKey;
 
 	public RoutingMergeNode(ChatModel chatModel, List<BaseAgent> subAgents) {
 		this(chatModel, subAgents, DEFAULT_MERGED_OUTPUT_KEY);
 	}
 
 	public RoutingMergeNode(ChatModel chatModel, List<BaseAgent> subAgents, String mergedOutputKey) {
+		this(chatModel, subAgents, mergedOutputKey, null);
+	}
+
+	public RoutingMergeNode(ChatModel chatModel, List<BaseAgent> subAgents, String mergedOutputKey, String selectionKey) {
 		this.chatModel = chatModel;
 		this.subAgents = subAgents;
 		this.mergedOutputKey = mergedOutputKey != null ? mergedOutputKey : DEFAULT_MERGED_OUTPUT_KEY;
+		this.selectionKey = selectionKey;
 	}
 
 	@Override
@@ -74,7 +80,11 @@ public class RoutingMergeNode implements NodeAction {
 
 		List<String> formattedResults = new ArrayList<>();
 		String lastResult = null;
+		var selected = selectionKey == null ? List.<String>of() : state.<List<String>>value(selectionKey).orElseGet(List::of);
 		for (BaseAgent subAgent : subAgents) {
+			if (!selected.isEmpty() && !selected.contains(subAgent.name())) {
+				continue;
+			}
 			String outputKey = subAgent.getOutputKey();
 			if (outputKey == null) {
 				continue;
@@ -108,13 +118,13 @@ public class RoutingMergeNode implements NodeAction {
 	}
 
 	private String extractOriginalQuery(OverAllState state) {
-		@SuppressWarnings("unchecked")
-		List<Message> messages = (List<Message>) state.value("messages").orElse(List.of());
-		if (messages.isEmpty()) {
-			return "";
+		var messages = state.<List<Message>>value("messages").orElseGet(List::of);
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			if (messages.get(i) instanceof UserMessage user) {
+				return user.getText();
+			}
 		}
-		Message last = messages.get(messages.size() - 1);
-		return last.getText() != null ? last.getText() : "";
+		return state.<String>value("input").orElse("");
 	}
 
 	private String synthesize(String query, List<String> formattedResults) {

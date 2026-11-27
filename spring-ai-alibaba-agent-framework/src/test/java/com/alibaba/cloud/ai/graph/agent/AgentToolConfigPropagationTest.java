@@ -38,12 +38,29 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisplayName("AgentTool config propagation tests")
 class AgentToolConfigPropagationTest {
+
+	@Test
+	void isolatesRepeatedToolInvocationsOfTheSameAgent() {
+		var capture = new ConfigCaptureHook();
+		var worker = ReactAgent.builder().name("worker").model(new FixedResponseChatModel("done"))
+				.hooks(List.of(capture)).saver(new MemorySaver()).build();
+		var caller = RunnableConfig.builder().threadId("parent").checkPointId("model-step").build();
+		var executor = new AgentTool.AgentToolExecutor(worker);
+		executor.executeAgent("{\"input\":\"left\"}", new ToolContext(Map.of(
+				ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY, caller, ToolContextConstants.AGENT_TOOL_CALL_ID_CONTEXT_KEY, "left")));
+		String left = capture.capturedConfig().threadId().orElseThrow();
+		executor.executeAgent("{\"input\":\"right\"}", new ToolContext(Map.of(
+				ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY, caller, ToolContextConstants.AGENT_TOOL_CALL_ID_CONTEXT_KEY, "right")));
+		String right = capture.capturedConfig().threadId().orElseThrow();
+		assertNotEquals(left, right);
+	}
 
 	@Test
 	@DisplayName("AgentTool should override _AGENT_ for sub-agent and preserve business metadata")
