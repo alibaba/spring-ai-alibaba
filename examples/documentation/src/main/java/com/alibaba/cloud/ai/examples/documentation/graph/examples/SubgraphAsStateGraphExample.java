@@ -81,7 +81,7 @@ public class SubgraphAsStateGraphExample {
 	public static StateGraph createParentGraphWithDirectEmbedding() throws GraphStateException {
 		KeyStrategyFactory keyFactory = () -> {
 			HashMap<String, KeyStrategy> strategies = new HashMap<>();
-			strategies.put("data", new ReplaceStrategy());
+			strategies.put("input", new ReplaceStrategy());
 			strategies.put("output", new ReplaceStrategy());
 			strategies.put("result", new ReplaceStrategy());
 			return strategies;
@@ -91,12 +91,12 @@ public class SubgraphAsStateGraphExample {
 
 		return new StateGraph(keyFactory)
 				.addNode("prepare", node_async(state -> {
-					return Map.of("data", "hello world");
+					return Map.of("input", "hello world");
 				}))
 				// 将子图作为节点添加
 				.addNode("process", subGraph)
 				.addNode("finalize", node_async(state -> {
-					String output = (String) state.value("output").orElse("");
+					String output = state.value("output", String.class).orElseThrow();
 					return Map.of("result", "Final: " + output);
 				}))
 				.addEdge(START, "prepare")
@@ -128,10 +128,10 @@ public class SubgraphAsStateGraphExample {
 				.addNode("process", node_async(state -> {
 					// 手动调用子图
 					Map<String, Object> subInput = Map.of(
-							"input", state.value("data").orElse("")
+							"input", state.value("data").orElseThrow()
 					);
 					OverAllState subResult = compiledSubGraph.invoke(subInput).orElseThrow();
-					return Map.of("processed", subResult.value("output").orElse(""));
+					return Map.of("processed", subResult.value("output").orElseThrow());
 				}))
 				.addEdge(START, "prepare")
 				.addEdge("prepare", "process")
@@ -142,7 +142,8 @@ public class SubgraphAsStateGraphExample {
 		System.out.println("=== 子图作为 StateGraph 示例 ===");
 		StateGraph parentGraph1 = createParentGraphWithDirectEmbedding();
 		StateGraph parentGraph2 = createParentGraphWithCompiledSubGraph();
-		System.out.println("所有示例执行完成");
+		System.out.println(parentGraph1.compile().invoke(Map.of()).orElseThrow().value("result").orElseThrow());
+		System.out.println(parentGraph2.compile().invoke(Map.of()).orElseThrow().value("processed").orElseThrow());
 	}
 
 	/**

@@ -38,6 +38,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,29 @@ import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 public class QuickStartExample {
 
 	private static final Logger log = LoggerFactory.getLogger(QuickStartExample.class);
+
+	public static CompiledGraph createTicketGraph() throws GraphStateException {
+		return new StateGraph(() -> Map.of("steps", new AppendStrategy()))
+				.addNode("classify", node_async(state -> {
+					String request = state.value("request", String.class).orElseThrow();
+					String route = request.contains("退款") ? "billing" : "help";
+					return Map.of("route", route, "steps", List.of("classify"));
+				}))
+				.addNode("billing", node_async(state -> Map.of("reply", "已转账单处理", "steps", List.of("billing"))))
+				.addNode("help", node_async(state -> Map.of("reply", "请查看帮助中心", "steps", List.of("help"))))
+				.addEdge(START, "classify")
+				.addConditionalEdges("classify", edge_async(state -> state.value("route", String.class).orElseThrow()),
+						Map.of("billing", "billing", "help", "help"))
+				.addEdge("billing", END)
+				.addEdge("help", END)
+				.compile();
+	}
+
+	public static void runTicketExample() throws GraphStateException {
+		var graph = createTicketGraph();
+		var result = graph.invoke(Map.of("request", "我需要退款")).orElseThrow();
+		log.info("steps={}, reply={}", result.value("steps").orElseThrow(), result.value("reply").orElseThrow());
+	}
 
 	// ==================== 状态定义 ====================
 
@@ -649,6 +673,14 @@ public class QuickStartExample {
 	 * 主方法
 	 */
 	public static void main(String[] args) throws Exception {
+		if (!Arrays.asList(args).contains("--live")) {
+			runTicketExample();
+			return;
+		}
+		String apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
+		if (apiKey == null || apiKey.isBlank()) {
+			throw new IllegalStateException("Set AI_DASHSCOPE_API_KEY before using --live");
+		}
 		log.info("========================================");
 		log.info("Graph 工作流编排快速入门示例");
 		log.info("========================================\n");
@@ -656,7 +688,7 @@ public class QuickStartExample {
 		// 注意：实际使用时需要提供 ChatModel 实例
 		// 创建 DashScope API 实例
 		DashScopeApi dashScopeApi = DashScopeApi.builder()
-				.apiKey(System.getenv("AI_DASHSCOPE_API_KEY"))
+				.apiKey(apiKey)
 				.build();
 
 		// 创建 ChatModel

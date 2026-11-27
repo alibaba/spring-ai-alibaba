@@ -26,7 +26,6 @@ import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -95,7 +94,7 @@ public class SubgraphAsNodeActionExample {
 
 		CompiledGraph subGraph = createSubGraph(keyStrategyFactory);
 		CompiledGraph parentGraph = useInParentGraph(keyStrategyFactory, subGraph);
-		System.out.println("所有示例执行完成");
+		System.out.println(parentGraph.invoke(Map.of()).orElseThrow().value("final").orElseThrow());
 	}
 
 	/**
@@ -116,10 +115,10 @@ public class SubgraphAsNodeActionExample {
 
 			// 执行子图
 			Map<String, Object> subInput = Map.of("input", input);
-			Optional<OverAllState> subResult = subGraph.invoke(subInput);
+			OverAllState subResult = subGraph.invoke(subInput).orElseThrow();
 
 			// 返回结果给父图
-			String result = (String) subResult.get().value("result").orElse("");
+			String result = subResult.value("result", String.class).orElseThrow();
 			return Map.of("processed", result);
 		}
 	}

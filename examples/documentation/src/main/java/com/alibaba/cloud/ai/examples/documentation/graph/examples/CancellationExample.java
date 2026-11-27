@@ -15,157 +15,51 @@
  */
 package com.alibaba.cloud.ai.examples.documentation.graph.examples;
 
-import com.alibaba.cloud.ai.graph.CompiledGraph;
-import com.alibaba.cloud.ai.graph.NodeOutput;
-import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.StateGraph;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
-import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
+import reactor.core.publisher.SignalType;
 
-/**
- * Graph 执行取消示例
- * 演示如何取消图的执行
- */
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+
 public class CancellationExample {
 
-	/**
-	 * 示例 1: 使用 forEachAsync 消费流时取消
-	 */
-	public static void cancelWithForEachAsync(CompiledGraph compiledGraph, boolean mayInterruptIfRunning) {
-		// 创建运行配置
-		RunnableConfig runnableConfig = RunnableConfig.builder()
-				.threadId("test-thread")
-				.build();
+	public static SignalType cancelSubscription() throws GraphStateException, InterruptedException {
+		var started = new CountDownLatch(1);
+		var unfinished = new CompletableFuture<Map<String, Object>>();
+		var graph = new StateGraph()
+				.addNode("work", (state, config) -> {
+					started.countDown();
+					return unfinished;
+				})
+				.addEdge(START, "work")
+				.addEdge("work", END)
+				.compile();
 
-		// 准备输入数据
-		Map<String, Object> inputData = new HashMap<>();
-		// ... 添加输入数据
-
-		// 执行图并获取流
-		Flux<NodeOutput> stream = compiledGraph.stream(inputData, runnableConfig);
-
-		// 从新线程在 500 毫秒后请求取消
-		CompletableFuture.runAsync(() -> {
-			try {
-				Thread.sleep(500);
-				// Flux 使用 dispose() 来取消
-				System.out.println("请求取消执行");
-			}
-			catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		});
-
-		// 异步处理每个输出
-		var disposable = stream.subscribe(
-				output -> System.out.println("当前迭代节点: " + output),
-				error -> System.out.println("流错误: " + error.getMessage()),
-				() -> System.out.println("流完成")
-		);
-
-		// 等待流完成或取消
+		var termination = new CompletableFuture<SignalType>();
+		var subscription = graph.stream(Map.of())
+				.doFinally(termination::complete)
+				.subscribe(output -> System.out.println(output.node()), termination::completeExceptionally);
 		try {
-			stream.blockLast();
-		}
-		catch (Exception e) {
-			System.err.println("执行异常: " + e.getMessage());
-		}
-
-		// 验证是否已取消（Flux 使用 isDisposed 检查）
-		System.out.println("是否已取消: " + disposable.isDisposed());
-	}
-
-	/**
-	 * 示例 2: 使用迭代器消费流时取消
-	 */
-	public static void cancelWithIterator(CompiledGraph compiledGraph, boolean mayInterruptIfRunning) {
-		// 创建运行配置
-		RunnableConfig runnableConfig = RunnableConfig.builder()
-				.threadId("test-thread")
-				.build();
-
-		// 准备输入数据
-		Map<String, Object> inputData = new HashMap<>();
-		// ... 添加输入数据
-
-		// 执行图并获取流
-		Flux<NodeOutput> stream = compiledGraph.stream(inputData, runnableConfig);
-
-		// 从新线程在 500 毫秒后请求取消
-		var disposable = stream.subscribe(
-				output -> {
-					System.out.println("当前迭代节点: " + output);
-				},
-				error -> {
-					System.out.println("流错误: " + error.getMessage());
-				},
-				() -> {
-					System.out.println("流完成");
-				}
-		);
-
-		CompletableFuture.runAsync(() -> {
-			try {
-				Thread.sleep(500);
-				disposable.dispose(); // 取消流
-				System.out.println("已请求取消执行");
+			if (!started.await(5, TimeUnit.SECONDS)) {
+				throw new IllegalStateException("The work node did not start");
 			}
-			catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		});
-
-		// 等待流完成或取消
-		try {
-			stream.blockLast();
 		}
-		catch (Exception e) {
-			System.out.println("流被中断: " + e.getMessage());
+		finally {
+			subscription.dispose();
 		}
-
-		// 验证取消状态
-		System.out.println("是否已取消: " + disposable.isDisposed());
+		return termination.join();
 	}
 
-	/**
-	 * 检查取消状态
-	 */
-	public static void checkCancellationStatus(Disposable disposable) {
-		if (disposable.isDisposed()) {
-			System.out.println("流已被取消");
-		}
-		else {
-			System.out.println("流仍在运行");
-		}
+	public static void main(String[] args) throws Exception {
+		System.out.println("Termination: " + cancelSubscription());
 	}
 
-	public static void main(String[] args) {
-		System.out.println("=== Graph 执行取消示例 ===\n");
-
-		try {
-			// 示例 1: 使用 forEachAsync 消费流时取消（需要 CompiledGraph）
-			System.out.println("示例 1: 使用 forEachAsync 消费流时取消");
-			System.out.println("注意: 此示例需要 CompiledGraph，跳过执行");
-			// cancelWithForEachAsync(compiledGraph, true);
-			System.out.println();
-
-			// 示例 2: 使用迭代器消费流时取消（需要 CompiledGraph）
-			System.out.println("示例 2: 使用迭代器消费流时取消");
-			System.out.println("注意: 此示例需要 CompiledGraph，跳过执行");
-			// cancelWithIterator(compiledGraph, true);
-			System.out.println();
-
-			System.out.println("所有示例执行完成");
-			System.out.println("提示: 请配置 CompiledGraph 后运行完整示例");
-		}
-		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
-			e.printStackTrace();
-		}
-	}
 }
 

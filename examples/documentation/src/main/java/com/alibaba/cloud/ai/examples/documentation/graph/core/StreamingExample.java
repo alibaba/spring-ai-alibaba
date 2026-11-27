@@ -29,9 +29,13 @@ import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 
+import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import reactor.core.publisher.Flux;
@@ -44,6 +48,27 @@ import static com.alibaba.cloud.ai.graph.StateGraph.START;
  * 演示如何在 Spring AI Alibaba Graph 中实现流式输出
  */
 public class StreamingExample {
+
+	public static String runLocalStream() throws GraphStateException {
+		var chunks = Flux.just("Spring", " AI").map(StreamingExample::responseChunk);
+		var graph = new StateGraph(() -> Map.of("messages", new AppendStrategy()))
+				.addNode("answer", AsyncNodeAction.node_async(state -> Map.of("messages", chunks)))
+				.addEdge(START, "answer").addEdge("answer", END).compile();
+
+		var end = graph.stream(Map.of())
+				.doOnNext(output -> {
+					if (output instanceof StreamingOutput<?> token && token.chunk() != null) {
+						System.out.printf("%s: %s%n", token.node(), token.chunk());
+					}
+				})
+				.blockLast(Duration.ofSeconds(5));
+		var messages = end.state().value("messages", List.class).orElseThrow();
+		return ((AssistantMessage) messages.get(messages.size() - 1)).getText();
+	}
+
+	public static ChatResponse responseChunk(String text) {
+		return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
+	}
 
 	/**
 	 * 使用 StateGraph 实现流式输出的完整示例
@@ -118,24 +143,8 @@ public class StreamingExample {
 				.blockLast(); // 阻塞等待流完成
 	}
 
-	public static void main(String[] args) {
-		System.out.println("=== 流式输出示例 ===\n");
-
-		try {
-			// 示例 1: 使用 Spring AI 的流式 LLM tokens（需要 ChatClient）
-			System.out.println("示例 1: 使用 Spring AI 的流式 LLM tokens");
-			System.out.println("注意: 此示例需要 ChatClient，跳过执行");
-			System.out.println("使用方法: streamLLMTokens(ChatClient.builder()...)");
-			// streamLLMTokens(ChatClient.builder()...);
-			System.out.println();
-
-			System.out.println("所有示例执行完成");
-			System.out.println("提示: 请配置 ChatClient 后运行完整示例");
-		}
-		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
-			e.printStackTrace();
-		}
+	public static void main(String[] args) throws GraphStateException {
+		System.out.println("Final answer: " + runLocalStream());
 	}
 
 	public static class StreamingNode implements NodeAction {

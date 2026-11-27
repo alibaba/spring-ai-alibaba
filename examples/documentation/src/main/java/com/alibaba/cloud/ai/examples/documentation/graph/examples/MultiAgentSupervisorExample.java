@@ -17,6 +17,7 @@ package com.alibaba.cloud.ai.examples.documentation.graph.examples;
 
 import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
 import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
@@ -160,7 +161,7 @@ public class MultiAgentSupervisorExample {
 				.addEdge("researcher", "supervisor")
 				.addEdge("coder", "supervisor");
 
-		return workflow.compile();
+		return workflow.compile(CompileConfig.builder().recursionLimit(12).build());
 	}
 
 	/**

@@ -16,16 +16,23 @@
 package com.alibaba.cloud.ai.examples.documentation.graph.examples;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import reactor.core.publisher.Flux;
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * MCP 节点示例
@@ -33,39 +40,28 @@ import reactor.core.publisher.Flux;
  */
 public class McpNodeExample {
 
-	/**
-	 * 配置 MCP 节点
-	 */
-	public static void configureMcpNode(ChatClient.Builder chatClientBuilder, Set<ToolCallback> toolCallbacks) {
-		McpNode mcpNode = new McpNode(chatClientBuilder, toolCallbacks);
-		System.out.println("MCP node configured successfully");
+	public static CompiledGraph createGraph(ChatClient.Builder builder, ToolCallbackProvider provider,
+			Set<String> allowedTools) throws GraphStateException {
+		var tools = Arrays.stream(provider.getToolCallbacks())
+				.filter(tool -> allowedTools.contains(tool.getToolDefinition().name()))
+				.collect(Collectors.toUnmodifiableSet());
+		var selectedNames = tools.stream().map(tool -> tool.getToolDefinition().name()).collect(Collectors.toSet());
+		if (!selectedNames.equals(allowedTools) || tools.isEmpty()) {
+			throw new IllegalArgumentException("Check the allowed MCP tool names");
+		}
+		return new StateGraph()
+				.addNode("mcp", node_async(new McpNode(builder.clone(), tools)))
+				.addEdge(START, "mcp").addEdge("mcp", END).compile();
 	}
 
-	public static void main(String[] args) {
-		System.out.println("=== MCP 节点示例 ===\n");
-
-		try {
-			// 示例: 配置 MCP 节点（需要 ChatClient 和 ToolCallbacks）
-			System.out.println("示例: 配置 MCP 节点");
-			System.out.println("注意: 此示例需要 ChatClient 和 ToolCallbacks，跳过执行");
-			// configureMcpNode(ChatClient.builder(...), toolCallbacks);
-			System.out.println();
-
-			System.out.println("所有示例执行完成");
-			System.out.println("提示: 请配置 ChatClient 和 ToolCallbacks 后运行完整示例");
-		}
-		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
-			e.printStackTrace();
-		}
+	public static String runQuery(CompiledGraph graph, String query) {
+		return graph.invoke(Map.of("query", query)).orElseThrow().value("mcpcontent", String.class).orElseThrow();
 	}
 
 	/**
 	 * MCP 节点实现
 	 */
 	public static class McpNode implements NodeAction {
-
-		private static final String NODENAME = "mcp-node";
 
 		private final ChatClient chatClient;
 
@@ -78,14 +74,9 @@ public class McpNodeExample {
 
 		@Override
 		public Map<String, Object> apply(OverAllState state) {
-			String query = state.value("query", "");
-			Flux<String> streamResult = chatClient.prompt(query).stream().content();
-			String result = streamResult.reduce("", (acc, item) -> acc + item).block();
-
-			HashMap<String, Object> resultMap = new HashMap<>();
-			resultMap.put("mcpcontent", result);
-
-			return resultMap;
+			String query = state.value("query", String.class).orElseThrow();
+			String result = chatClient.prompt(query).call().content();
+			return Map.of("mcpcontent", result);
 		}
 	}
 }

@@ -15,15 +15,28 @@
  */
 package com.alibaba.cloud.ai.examples.documentation.graph.examples;
 
+import com.alibaba.cloud.ai.dashscope.api.DashScopeApi;
+import com.alibaba.cloud.ai.dashscope.chat.DashScopeChatModel;
+import com.alibaba.cloud.ai.examples.documentation.graph.core.StreamingExample;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.NodeAction;
+import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
 
 import reactor.core.publisher.Flux;
+
+import static com.alibaba.cloud.ai.graph.StateGraph.END;
+import static com.alibaba.cloud.ai.graph.StateGraph.START;
+import static com.alibaba.cloud.ai.graph.action.AsyncNodeAction.node_async;
 
 /**
  * Spring AI Alibaba LLM 流式集成示例
@@ -67,29 +80,33 @@ public class LlmStreamingSpringAiExample {
 		});
 	}
 
-	public static void main(String[] args) {
-		System.out.println("=== Spring AI Alibaba LLM 流式集成示例 ===\n");
+	public static void streamGraph(ChatClient.Builder builder, String query) throws GraphStateException {
+		var graph = new StateGraph(() -> Map.of("messages", new AppendStrategy()))
+				.addNode("answer", node_async(new StreamingAgentNode(builder)))
+				.addEdge(START, "answer").addEdge("answer", END).compile();
 
-		try {
-			// 示例 1: 使用流式 ChatClient（需要 ChatClient）
-			System.out.println("示例 1: 使用流式 ChatClient");
-			System.out.println("注意: 此示例需要 ChatClient，跳过执行");
-			// useStreamingChatClient(chatClient);
-			System.out.println();
+		graph.stream(Map.of("query", query))
+				.doOnNext(output -> {
+					if (output instanceof StreamingOutput<?> chunk && chunk.chunk() != null) {
+						System.out.print(chunk.chunk());
+					}
+				})
+				.blockLast(Duration.ofSeconds(60));
+		System.out.println();
+	}
 
-			// 示例 2: 使用 Reactor 的阻塞式处理（需要 ChatClient）
-			System.out.println("示例 2: 使用 Reactor 的阻塞式处理");
-			System.out.println("注意: 此示例需要 ChatClient，跳过执行");
-			// useBlockingStreaming(chatClient);
-			System.out.println();
-
-			System.out.println("所有示例执行完成");
-			System.out.println("提示: 请配置 ChatClient 后运行完整示例");
+	public static void main(String[] args) throws GraphStateException {
+		if (!Arrays.asList(args).contains("--live")) {
+			StreamingExample.main(args);
+			return;
 		}
-		catch (Exception e) {
-			System.err.println("执行示例时出错: " + e.getMessage());
-			e.printStackTrace();
+		var apiKey = System.getenv("AI_DASHSCOPE_API_KEY");
+		if (apiKey == null || apiKey.isBlank()) {
+			throw new IllegalStateException("Set AI_DASHSCOPE_API_KEY before using --live");
 		}
+		var api = DashScopeApi.builder().apiKey(apiKey).build();
+		var model = DashScopeChatModel.builder().dashScopeApi(api).build();
+		streamGraph(ChatClient.builder(model), "用一句话介绍 Spring AI");
 	}
 
 	/**
@@ -108,12 +125,12 @@ public class LlmStreamingSpringAiExample {
 			String userMessage = (String) state.value("query").orElse("Hello");
 
 			// 使用流式输出
-			Flux<String> contentFlux = chatClient.prompt()
+			var responses = chatClient.prompt()
 					.user(userMessage)
 					.stream()
-					.content();
+					.chatResponse();
 
-			return Map.of("answer", contentFlux);
+			return Map.of("messages", responses);
 		}
 	}
 }

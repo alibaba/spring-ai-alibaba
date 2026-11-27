@@ -18,14 +18,17 @@ package com.alibaba.cloud.ai.examples.documentation.graph.examples;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.KeyStrategyFactory;
+import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeAction;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 import static com.alibaba.cloud.ai.graph.StateGraph.END;
 import static com.alibaba.cloud.ai.graph.StateGraph.START;
@@ -79,12 +82,15 @@ public class ParallelBranchExample {
 	 * 执行并行 Graph
 	 */
 	public static void executeParallelGraph(CompiledGraph compiledGraph) {
-		// 执行 Graph
-		compiledGraph.stream(Map.of())
-				.doOnNext(step -> System.out.println(step))
-				.doOnError(error -> System.err.println("流错误: " + error.getMessage()))
-				.doOnComplete(() -> System.out.println("流完成"))
-				.blockLast();
+		var executor = Executors.newFixedThreadPool(3);
+		try {
+			var run = RunnableConfig.builder().addParallelNodeExecutor("A", executor).build();
+			var result = compiledGraph.stream(Map.of(), run).blockLast(Duration.ofSeconds(5));
+			System.out.println("Messages: " + result.state().value("messages").orElseThrow());
+		}
+		finally {
+			executor.shutdown();
+		}
 	}
 
 	/**
@@ -120,9 +126,9 @@ public class ParallelBranchExample {
 		// 主图：混合使用节点和子图
 		StateGraph workflow = new StateGraph(keyStrategyFactory)
 				.addNode("A", makeNode("A"))
-				.addNode("A1", node_async(state -> subgraphA1.invoke(state.data()).orElseThrow().data()))
+				.addNode("A1", subgraphA1)
 				.addNode("A2", makeNode("A2"))
-				.addNode("A3", node_async(state -> subgraphA3.invoke(state.data()).orElseThrow().data()))
+				.addNode("A3", subgraphA3)
 				.addNode("B", makeNode("B"))
 				.addEdge("A", "A1")
 				.addEdge("A", "A2")

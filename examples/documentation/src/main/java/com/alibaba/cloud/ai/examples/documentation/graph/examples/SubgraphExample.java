@@ -74,18 +74,14 @@ public class SubgraphExample {
 
 		StateGraph parentGraph = new StateGraph(keyStrategyFactory)
 				.addNode("parent_node1", parentNode1)
-				.addNode("call_child", node_async(state -> {
-					return compiledChild.invoke(state.data(),
-									RunnableConfig.builder().build())
-							.orElseThrow()
-							.data();
-				}))
+				.addNode("call_child", compiledChild)
 				.addEdge(START, "parent_node1")
 				.addEdge("parent_node1", "call_child")
 				.addEdge("call_child", END);
 
 		CompiledGraph compiledParent = parentGraph.compile();
-		System.out.println("Compiled subgraph as node example created");
+		var result = compiledParent.invoke(Map.of()).orElseThrow();
+		System.out.println(result.value("results").orElseThrow());
 	}
 
 	/**
@@ -196,15 +192,16 @@ public class SubgraphExample {
 		CompiledGraph compiledChild = childGraph.compile();
 
 		// 执行父图并获取流式输出
-		Flux<NodeOutput> stream = compiledChild.stream(
+		var parent = new StateGraph(keyStrategyFactory)
+				.addNode("child", compiledChild).addEdge(START, "child").addEdge("child", END).compile();
+		Flux<NodeOutput> stream = parent.stream(
 				Map.of("data", "input"),
 				RunnableConfig.builder().threadId("parent-thread").build()
 		);
 
 		// 处理流式输出
-		stream.subscribe(output -> {
-			System.out.println("Subgraph output: " + output);
-		});
+		stream.doOnNext(output -> System.out.printf("%s subgraph=%s%n", output.node(), output.isSubGraph()))
+				.blockLast();
 	}
 
 	public static void main(String[] args) {
