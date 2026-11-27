@@ -24,6 +24,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
+import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputFormat;
 import com.alibaba.cloud.ai.graph.agent.tool.DeferredToolCatalog;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 import io.micrometer.observation.ObservationRegistry;
@@ -38,8 +39,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.converter.FormatProvider;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -123,17 +122,9 @@ public class DefaultBuilder extends Builder {
 			llmNodeBuilder.instruction(instruction);
 		}
 
-		String outputSchema = null;
-		if (StringUtils.hasLength(this.outputSchema) ) {
-			outputSchema = this.outputSchema;
-		} else if (this.outputType != null) {
-			FormatProvider formatProvider = new BeanOutputConverter<>(this.outputType);
-			outputSchema = formatProvider.getFormat();
-		}
-
-		if (StringUtils.hasLength(outputSchema)) {
-			llmNodeBuilder.outputSchema(outputSchema);
-		}
+		var structuredOutput = StructuredOutputFormat.from(this.outputSchema, this.outputType,
+				this.structuredOutputStrategy, this.structuredOutputMaxRetries);
+		llmNodeBuilder.outputSchema(this.outputSchema).structuredOutput(structuredOutput);
 		
 		separateInterceptorsByType();
 
@@ -145,6 +136,11 @@ public class DefaultBuilder extends Builder {
 		List<ToolCallback> allTools = ToolCallbackUtils.deduplicateByName(gatherLocalTools(),
 				effectiveOptions instanceof ToolCallingChatOptions options ? options.getToolCallbacks() : null,
 				clientTools);
+		if (structuredOutput != null && allTools.stream().anyMatch(
+				tool -> StructuredOutputFormat.RESULT_TOOL_NAME.equals(tool.getToolDefinition().name()))) {
+			throw new IllegalArgumentException("Tool name is reserved for structured output: "
+					+ StructuredOutputFormat.RESULT_TOOL_NAME);
+		}
 		if (this.toolResultArchive != null) {
 			if (allTools.stream().anyMatch(tool -> ToolResultArchive.READ_TOOL_NAME.equals(tool.getToolDefinition().name()))) {
 				throw new IllegalArgumentException("Tool name is reserved by the result archive: "

@@ -35,6 +35,7 @@ import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.modelfallback.ModelFallbackInterceptor;
 import com.alibaba.cloud.ai.graph.agent.model.ModelRoutingPolicy;
+import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputFormat;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientAttributes;
@@ -95,6 +96,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 	private String outputSchema;
 
+	private final StructuredOutputFormat structuredOutput;
+
 	private ChatClient chatClient;
 
 	private String systemPrompt;
@@ -117,6 +120,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		this.agentName = builder.agentName;
 		this.outputKey = builder.outputKey;
 		this.outputSchema = builder.outputSchema;
+		this.structuredOutput = builder.structuredOutput;
 		this.systemPrompt = builder.systemPrompt;
 		this.instruction = builder.instruction;
 		this.templateRenderer = builder.templateRenderer;
@@ -207,8 +211,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 			}
 		}
 
-		augmentUserMessage(messages, outputSchema);
 		renderTemplatedUserMessage(messages, state.data(), config.metadata());
+		if (structuredOutput == null) {
+			augmentUserMessage(messages, outputSchema);
+		}
 
 		// Create ModelRequest; include state in context so interceptors (e.g. handoffs step-config) can read it
 		Map<String, Object> contextMap = new HashMap<>(state.data());
@@ -226,6 +232,10 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		var initialOptions = this.chatOptions != null
 				? this.chatOptions.mutate().toolCallbacks(configuredCallbacks).build() : null;
 		var scope = new RequestToolScope(agentName, configuredCallbacks);
+		var structuredAdvisor = structuredOutput == null ? null
+				: new StructuredOutputAdvisor(structuredOutput, agentName,
+						state.value(GraphLifecycleListener.EXECUTION_ID_KEY, String.class).orElse(""),
+						this::augmentUserMessage, config.mergeReasoningContent());
 		ModelRequest.Builder requestBuilder = ModelRequest.builder()
 				.messages(messages)
 				.options(initialOptions)
@@ -247,7 +257,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 
 		ModelRequest modelRequest = route(requestBuilder.build(), state, updatedState);
-		boolean propagateModelErrors = this.contextWindowPolicy != null || this.modelRoutingPolicy != null
+		boolean propagateModelErrors = this.structuredOutput != null || this.contextWindowPolicy != null || this.modelRoutingPolicy != null
 				|| this.modelInterceptors.stream().anyMatch(ModelFallbackInterceptor.class::isInstance);
 
 		// add streaming support
@@ -263,7 +273,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 									.orElse(THREAD_ID_DEFAULT), agentName, systemPrompt);
 						}
 					}
-					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, modelRequest, configuredCallbacks, scope).stream().chatResponse();
+					Flux<ChatResponse> chatResponseFlux = buildChatClientRequestSpec(request, modelRequest,
+							configuredCallbacks, scope, structuredAdvisor).stream().chatResponse();
 					if (enableReasoningLog && streamingOutputFilters.isEmpty()) {
 						chatResponseFlux = chatResponseFlux.doOnNext(chatResponse -> {
 							if (chatResponse != null && chatResponse.getResult() != null && chatResponse.getResult().getOutput() != null) {
@@ -327,7 +338,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 						logger.info("[ThreadId {}] Agent {} reasoning round {} with system prompt: {}.", config.threadId().orElse(THREAD_ID_DEFAULT), agentName, iterations.get(), systemPrompt);
 					}
 
-					ChatResponse response = buildChatClientRequestSpec(request, modelRequest, configuredCallbacks, scope).call().chatResponse();
+					ChatResponse response = buildChatClientRequestSpec(request, modelRequest, configuredCallbacks,
+							scope, structuredAdvisor).call().chatResponse();
 
 					AssistantMessage responseMessage = new AssistantMessage("Empty response from model for unknown reason");
 					if (response != null && response.getResult() != null && response.getResult().getOutput() != null) {
@@ -458,6 +470,7 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		return builder.build().render(params);
 	}
 
+	/** Appends the output format to the model request after any instruction template has been rendered. */
 	public void augmentUserMessage(List<Message> messages, String outputSchema) {
 		if (!StringUtils.hasText(outputSchema)) {
 			return;
@@ -466,25 +479,20 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			Message message = messages.get(i);
 			if (message instanceof UserMessage userMessage) {
-				// Check if outputSchema is already present to avoid duplication
 				if (!userMessage.getText().contains(outputSchema)) {
 					messages.set(i, userMessage.mutate().part(TextPart.of(System.lineSeparator() + outputSchema)).build());
 				}
-				break;
+				return;
 			}
 			if (message instanceof AgentInstructionMessage templatedUserMessage) {
-                String newOutputSchema = outputSchema.replace("{", "\\{").replace("}", "\\}");
-                // Check if outputSchema is already present to avoid duplication
-                if (!templatedUserMessage.getText().contains(newOutputSchema)) {
-                	messages.set(i, templatedUserMessage.mutate().text(templatedUserMessage.getText() + System.lineSeparator() + newOutputSchema).build());
-                }
-				break;
-			}
-
-			if (i == 0) {
-				messages.add(new UserMessage(outputSchema));
+				if (!templatedUserMessage.getText().contains(outputSchema)) {
+					messages.set(i, templatedUserMessage.mutate()
+							.text(templatedUserMessage.getText() + System.lineSeparator() + outputSchema).build());
+				}
+				return;
 			}
 		}
+		messages.add(new UserMessage(outputSchema));
 	}
 
 	public void renderTemplatedUserMessage(List<Message> messages, Map<String, Object> params, Optional<Map<String, Object>> metadata) {
@@ -526,7 +534,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 	}
 
 	private ChatClient.ChatClientRequestSpec buildChatClientRequestSpec(ModelRequest request,
-			ModelRequest originalRequest, List<ToolCallback> configuredCallbacks, RequestToolScope scope) {
+			ModelRequest originalRequest, List<ToolCallback> configuredCallbacks, RequestToolScope scope,
+			StructuredOutputAdvisor structuredAdvisor) {
 		var options = request.getOptions();
 		var originalOptions = originalRequest.getOptions();
 		var optionCallbacks = options != null ? options.getToolCallbacks() : null;
@@ -548,7 +557,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 				.advisors(this.advisors);
 		var prepare = scope.prepareAdvisor(requestCallbacks, request.getDynamicToolCallbacks(), replaceDefaults,
 				selection, targetOptions);
-		var capture = scope.captureAdvisor(selection, policy, targetModel);
+		var capture = scope.captureAdvisor(selection, policy, targetModel,
+				structuredAdvisor == null ? null : structuredAdvisor.resultTool());
+		if (structuredAdvisor != null) {
+			promptSpec.advisors(structuredAdvisor);
+		}
 		if (promptSpec instanceof DefaultChatClientRequestSpec spec) {
 			// Graph owns dispatch and approval. On equal order ChatClient runs the
 			// last registered advisor first, so put capture before other registrations.
@@ -573,6 +586,8 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		private String outputKey;
 
 		private String outputSchema;
+
+		private StructuredOutputFormat structuredOutput;
 
 		private String systemPrompt;
 
@@ -629,6 +644,11 @@ public class AgentLlmNode implements NodeActionWithConfig {
 
 		public Builder outputSchema(String outputSchema) {
 			this.outputSchema = outputSchema;
+			return this;
+		}
+
+		public Builder structuredOutput(StructuredOutputFormat structuredOutput) {
+			this.structuredOutput = structuredOutput;
 			return this;
 		}
 

@@ -36,6 +36,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
 import com.alibaba.cloud.ai.graph.agent.model.ModelRoutingPolicy;
+import com.alibaba.cloud.ai.graph.agent.structured.StructuredOutputStrategy;
 import com.alibaba.cloud.ai.graph.checkpoint.BaseCheckpointSaver;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 
@@ -131,6 +132,10 @@ public abstract class Builder {
 
 	protected String outputSchema;
 	protected Class<?> outputType;
+
+	protected StructuredOutputStrategy structuredOutputStrategy = StructuredOutputStrategy.AUTO;
+
+	protected int structuredOutputMaxRetries = 2;
 
 	protected ObservationRegistry observationRegistry;
 
@@ -314,6 +319,21 @@ public abstract class Builder {
 
 	public Builder outputType(Class<?> outputType) {
 		this.outputType = outputType;
+		return this;
+	}
+
+	/** Selects the output strategy. AUTO prefers native JSON Schema, then a result tool, then a prompt. */
+	public Builder structuredOutputStrategy(StructuredOutputStrategy strategy) {
+		this.structuredOutputStrategy = Objects.requireNonNull(strategy, "Structured output strategy is required");
+		return this;
+	}
+
+	/** Sets the number of additional model attempts after an invalid structured answer. */
+	public Builder structuredOutputMaxRetries(int maxRetries) {
+		if (maxRetries < 0) {
+			throw new IllegalArgumentException("Structured output retries must be non-negative");
+		}
+		this.structuredOutputMaxRetries = maxRetries;
 		return this;
 	}
 
