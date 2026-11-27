@@ -60,6 +60,7 @@
         <module>spring-boot-starters/spring-ai-alibaba-starter-graph-observation</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-builtin-nodes</module>
         <module>spring-boot-starters/spring-ai-alibaba-starter-agentscope</module>
+        <module>spring-boot-starters/spring-ai-alibaba-starter-message-channel</module>
     </modules>
 
     <scm>
