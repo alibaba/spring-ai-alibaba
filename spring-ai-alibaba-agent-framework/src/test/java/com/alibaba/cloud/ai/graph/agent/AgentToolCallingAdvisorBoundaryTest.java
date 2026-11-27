@@ -56,6 +56,7 @@ import com.alibaba.cloud.ai.graph.utils.FinishReasonMetadata;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.chat.client.ChatClient;
@@ -146,8 +147,10 @@ class AgentToolCallingAdvisorBoundaryTest {
 		assertEquals(1, model.attempt());
 	}
 
-	@Test
-	void cancellingTheParentGraphCancelsTheChildAgentsTool() throws Exception {
+	@ParameterizedTest
+	@CsvSource({ "false,false", "true,false", "false,true", "true,true" })
+	void cancellingOrTimingOutTheParentToolCancelsTheChildAgentsTool(boolean timeout, boolean legacyInterceptor)
+			throws Exception {
 		var childStarted = new CountDownLatch(1);
 		var childCancelled = new CountDownLatch(1);
 		var slowTool = new CancellableAsyncToolCallback() {
@@ -179,16 +182,36 @@ class AgentToolCallingAdvisorBoundaryTest {
 				.build())));
 		var worker = ReactAgent.builder().name("worker").description("A worker with a slow tool").model(childModel)
 				.tools(slowTool).build();
-		var parent = ReactAgent.builder().name("parent").model(parentModel).tools(AgentTool.create(worker)).build();
+		var builder = ReactAgent.builder().name("parent").model(parentModel).tools(AgentTool.create(worker))
+				.toolExecutionTimeout(timeout ? Duration.ofSeconds(2) : Duration.ofSeconds(10));
+		if (legacyInterceptor) {
+			builder.interceptors(new ToolInterceptor() {
+				@Override
+				public String getName() {
+					return "test-interceptor";
+				}
+
+				@Override
+				public ToolCallResponse interceptToolCall(ToolCallRequest request, ToolCallHandler handler) {
+					return handler.call(request);
+				}
+			});
+		}
+		var parent = builder.build();
 		var config = RunnableConfig.builder().threadId("cancel-child").addMetadata("_stream_", false).build();
-		var error = new AtomicReference<Throwable>();
-		var subscription = parent.getAndCompileGraph().stream(Map.of("messages", List.of(new UserMessage("delegate"))), config)
-				.subscribe(ignored -> { }, error::set);
+		var result = parent.getAndCompileGraph().stream(Map.of("messages", List.of(new UserMessage("delegate"))), config)
+				.filter(output -> RunnableConfig.AGENT_TOOL_NAME.equals(output.node())).next().toFuture();
 		try {
-			assertTrue(childStarted.await(5, TimeUnit.SECONDS), () -> "Child tool did not start. Error " + error.get());
+			assertTrue(childStarted.await(5, TimeUnit.SECONDS), "Child tool did not start");
+			if (timeout) {
+				var output = result.get(5, TimeUnit.SECONDS);
+				var messages = output.state().<List<?>>value("messages").orElseThrow();
+				var response = assertInstanceOf(ToolResponseMessage.class, messages.get(messages.size() - 1));
+				assertTrue(response.getResponses().get(0).responseData().contains("Tool execution timed out"));
+			}
 		}
 		finally {
-			subscription.dispose();
+			result.cancel(true);
 		}
 		assertTrue(childCancelled.await(5, TimeUnit.SECONDS));
 	}
