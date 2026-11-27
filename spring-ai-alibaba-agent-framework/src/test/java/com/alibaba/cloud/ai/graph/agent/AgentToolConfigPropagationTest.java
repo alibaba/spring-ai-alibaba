@@ -17,29 +17,39 @@ package com.alibaba.cloud.ai.graph.agent;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.agent.context.AgentToolContext;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPositions;
 import com.alibaba.cloud.ai.graph.agent.hook.ModelHook;
 import com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.store.stores.MemoryStore;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.util.JsonHelper;
 import reactor.core.publisher.Flux;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -63,8 +73,7 @@ class AgentToolConfigPropagationTest {
 	}
 
 	@Test
-	@DisplayName("AgentTool should override _AGENT_ for sub-agent and preserve business metadata")
-	void shouldOverrideAgentMetadataAndPreserveBusinessMetadata() {
+	void onlyForwardsSelectedBusinessMetadata() {
 		ConfigCaptureHook captureHook = new ConfigCaptureHook();
 		ReactAgent subAgent = ReactAgent.builder()
 				.name("child_agent")
@@ -77,9 +86,13 @@ class AgentToolConfigPropagationTest {
 				.threadId("parent-thread")
 				.addMetadata("_AGENT_", "parent_agent")
 				.addMetadata("business_key", "business-value")
+				.addMetadata("private_key", "private-value")
+				.store(new MemoryStore())
 				.build();
+		parentConfig.context().put("private_context", "private-value");
 
-		AssistantMessage result = new AgentTool.AgentToolExecutor(subAgent)
+		var scope = AgentToolContext.builder().metadataKeys("business_key").build();
+		AssistantMessage result = new AgentTool.AgentToolExecutor(subAgent, scope)
 				.executeAgent("{\"input\":\"hello\"}",
 						new ToolContext(Map.of(ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY, parentConfig)));
 
@@ -91,8 +104,95 @@ class AgentToolConfigPropagationTest {
 				"Sub-agent should see its own agent name");
 		assertEquals("business-value", capturedConfig.metadata("business_key").orElse(null),
 				"Business metadata from parent config should be preserved");
-		assertEquals("parent-thread_child_agent", capturedConfig.threadId().orElse(null),
-				"Sub-agent thread id should be derived from the parent thread id");
+		assertTrue(capturedConfig.metadata("private_key").isEmpty());
+		assertFalse(capturedConfig.context().containsKey("private_context"));
+		assertNotEquals("parent-thread", capturedConfig.threadId().orElseThrow());
+		assertNull(capturedConfig.store());
+	}
+
+	@Test
+	void delegatesSnapshotDataAndReturnsOnlyTheSelectedOutputsThroughTheToolNode() throws Exception {
+		var captured = new AtomicReference<Map<String, Object>>();
+		var scope = AgentToolContext.builder().stateKeys("reference").metadataKeys("project")
+				.outputKeys("child_answer").build();
+		var model = new FixedResponseChatModel("worker answer") {
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				var messages = prompt.getInstructions().stream().filter(UserMessage.class::isInstance)
+						.map(Message::getText).toList();
+				assertEquals(List.of("Delegated reference data (JSON):\n{\"reference\":{\"title\":\"public\"}}",
+						"inspect the reference"), messages);
+				return super.call(prompt);
+			}
+		};
+		var capture = new ConfigCaptureHook() {
+			@Override
+			public CompletableFuture<Map<String, Object>> beforeModel(OverAllState state, RunnableConfig config) {
+				captured.set(state.<Map<String, Object>>value(AgentToolContext.STATE_KEY).orElseThrow());
+				assertEquals("spring", config.metadata("project").orElseThrow());
+				assertTrue(config.metadata("private_metadata").isEmpty());
+				assertTrue(state.value("private_state").isEmpty());
+				return CompletableFuture.completedFuture(Map.of("private_output", "child-private"));
+			}
+		};
+		var worker = ReactAgent.builder().name("worker").description("Delegate narrow tasks").model(model)
+				.outputKey("child_answer").hooks(List.of(capture)).build();
+		var parentModel = new FixedResponseChatModel("parent answer") {
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				var result = prompt.getInstructions().stream().filter(ToolResponseMessage.class::isInstance)
+						.map(ToolResponseMessage.class::cast).findFirst();
+				if (result.isPresent()) {
+					var output = result.get().getResponses().get(0).responseData();
+					assertEquals(Map.of("answer", "worker answer", "outputs", Map.of("child_answer", "worker answer")),
+							new JsonHelper().fromJsonToMap(output));
+					return super.call(prompt);
+				}
+				var tool = new AssistantMessage.ToolCall("delegate", "function", "worker",
+						"{\"input\":\"inspect the reference\",\"stateKeys\":[\"private_state\"]}");
+				return new ChatResponse(List.of(new Generation(AssistantMessage.builder().toolCalls(List.of(tool)).build())));
+			}
+		};
+		var parent = ReactAgent.builder().name("parent").model(parentModel).tools(AgentTool.create(worker, scope)).build();
+		var config = RunnableConfig.builder().threadId("parent").addMetadata("project", "spring")
+				.addMetadata("private_metadata", "parent-private").build();
+		var reference = new HashMap<>(Map.of("title", "public"));
+		var inputs = Map.<String, Object>of("messages", List.of(new UserMessage("parent history")),
+				"reference", reference, "private_state", "parent-private");
+
+		var output = parent.invokeAndGetOutput(inputs, config).orElseThrow();
+
+		assertEquals(Map.of("reference", reference), captured.get());
+		assertTrue(output.state().value("child_answer").isEmpty());
+		assertTrue(output.state().value("private_output").isEmpty());
+	}
+
+	@Test
+	void isolatesStandaloneCallsThatShareASaver() {
+		var model = new FixedResponseChatModel("done") {
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				assertEquals(1, prompt.getInstructions().stream().filter(UserMessage.class::isInstance).count());
+				return super.call(prompt);
+			}
+		};
+		var worker = ReactAgent.builder().name("worker").description("Worker").model(model).saver(new MemorySaver()).build();
+		var tool = AgentTool.create(worker);
+		assertEquals("done", tool.call("{\"input\":\"first\"}"));
+		assertEquals("done", tool.call("{\"input\":\"second\"}"));
+	}
+
+	@Test
+	void rejectsReservedInputsAndOverBudgetContext() {
+		assertThrows(IllegalArgumentException.class, () -> AgentToolContext.builder().stateKeys("messages"));
+		assertThrows(IllegalArgumentException.class, () -> AgentToolContext.builder().metadataKeys("HUMAN_FEEDBACK"));
+		var worker = ReactAgent.builder().name("worker").model(new FixedResponseChatModel("unused")).build();
+		var scope = AgentToolContext.builder().stateKeys("reference").maxContextCharacters(5).build();
+		var context = new ToolContext(Map.of(ToolContextConstants.AGENT_STATE_CONTEXT_KEY,
+				new OverAllState(Map.of("reference", "oversized"))));
+		var error = assertThrows(IllegalArgumentException.class, () -> new AgentTool.AgentToolExecutor(worker, scope)
+				.executeAgent("{\"input\":\"delegate\"}", context));
+		assertTrue(error.getMessage().contains("configured character limit"));
 	}
 
 	@Test
@@ -136,6 +236,11 @@ class AgentToolConfigPropagationTest {
 		@Override
 		public Flux<ChatResponse> stream(Prompt prompt) {
 			return Flux.just(call(prompt));
+		}
+
+		@Override
+		public ToolCallingChatOptions getOptions() {
+			return ToolCallingChatOptions.builder().build();
 		}
 	}
 

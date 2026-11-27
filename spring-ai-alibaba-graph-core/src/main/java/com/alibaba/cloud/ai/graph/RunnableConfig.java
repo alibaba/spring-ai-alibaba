@@ -51,6 +51,9 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	public static final String STATE_UPDATE_METADATA_KEY = "STATE_UPDATE";
 	public static final String TASK_ID_METADATA_KEY = "_GRAPH_TASK_ID_";
 	public static final String TASK_ATTEMPT_METADATA_KEY = "_GRAPH_TASK_ATTEMPT_";
+
+	/** Framework-internal task attribution passed between nested executions. */
+	public static final String TASK_TRACE_METADATA_KEY = "_GRAPH_TASK_TRACE_";
 	public static final String DEFAULT_PARALLEL_EXECUTOR_KEY = "_DEFAULT_PARALLEL_EXECUTOR_";
 	public static final String DEFAULT_PARALLEL_AGGREGATION_STRATEGY_KEY = "_DEFAULT_PARALLEL_AGGREGATION_STRATEGY_";
 
@@ -327,6 +330,15 @@ public final class RunnableConfig implements HasMetadata<RunnableConfig.Builder>
 	 */
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	/** Starts an independent execution while retaining its enclosing task trace. */
+	public static Builder isolatedChild(RunnableConfig parent) {
+		var child = builder();
+		if (parent != null) {
+			parent.metadata(TASK_TRACE_METADATA_KEY).ifPresent(trace -> child.addMetadata(TASK_TRACE_METADATA_KEY, trace));
+		}
+		return child;
 	}
 
 	/**
