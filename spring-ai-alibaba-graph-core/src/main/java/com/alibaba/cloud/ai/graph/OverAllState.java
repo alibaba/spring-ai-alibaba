@@ -228,7 +228,7 @@ public final class OverAllState implements Serializable {
 
 		Map<String, KeyStrategy> keyStrategies = keyStrategies();
 		input.keySet().stream().filter(key -> keyStrategies.containsKey(key)).forEach(key -> {
-			this.data.put(key, keyStrategies.get(key).apply(value(key, null), input.get(key)));
+			this.data.put(key, keyStrategies.get(key).apply(data.get(key), input.get(key)));
 		});
 		return this;
 	}
@@ -279,7 +279,7 @@ public final class OverAllState implements Serializable {
 			if (partialState.get(key) == MARK_FOR_REMOVAL) {
 				this.data.remove(key);
 			} else {
-				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
+				this.data.put(key, strategy.apply(data.get(key), partialState.get(key)));
 			}
 		});
 		return data();
@@ -308,7 +308,7 @@ public final class OverAllState implements Serializable {
 				this.data.remove(key);
 			}
 			else {
-				this.data.put(key, strategy.apply(value(key, null), partialState.get(key)));
+				this.data.put(key, strategy.apply(data.get(key), partialState.get(key)));
 			}
 		});
 	}

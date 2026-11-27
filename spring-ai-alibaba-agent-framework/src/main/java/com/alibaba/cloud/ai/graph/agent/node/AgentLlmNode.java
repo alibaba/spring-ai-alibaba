@@ -169,16 +169,14 @@ public class AgentLlmNode implements NodeActionWithConfig {
 		}
 
 		// Check and manage messages
-		List<Message> messages = new ArrayList<>();
-		if (state.value("messages").isEmpty()) {
+		List<Message> messages = new ArrayList<>(state.<List<Message>>value("messages").orElseGet(List::of));
+		if (messages.isEmpty()) {
 			// try with "input" key, which is more commonly used in graph input when agent is used as a node.
 			if (state.value("input").isPresent()) {
 				messages.add(new UserMessage(state.value("input").get().toString()));
 			} else {
 				throw new IllegalArgumentException("Either 'instruction' or 'includeContents' must be set for Agent.");
 			}
-		} else {
-			messages = (List<Message>) state.value("messages").get();
 		}
 
 		augmentUserMessage(messages, outputSchema);

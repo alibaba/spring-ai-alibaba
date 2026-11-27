@@ -19,11 +19,13 @@ package com.alibaba.cloud.ai.graph.internal.node;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.OverAllStateBuilder;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.UnaryOperator;
 
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.childConfig;
 import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.outputKeyToParent;
@@ -47,7 +49,11 @@ import static com.alibaba.cloud.ai.graph.internal.node.ResumableSubGraphAction.s
  * @see AsyncNodeActionWithConfig
  */
 public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentCompileConfig,
-		CompiledGraph subGraph) implements AsyncNodeActionWithConfig, ResumableSubGraphAction {
+		CompiledGraph subGraph, UnaryOperator<RunnableConfig> configure) implements AsyncNodeActionWithConfig, ResumableSubGraphAction {
+
+	public SubCompiledGraphNodeAction(String nodeId, CompileConfig parentCompileConfig, CompiledGraph subGraph) {
+		this(nodeId, parentCompileConfig, subGraph, UnaryOperator.identity());
+	}
 
 	public String getResumeSubGraphId() {
 		return resumeSubGraphId(nodeId);
@@ -65,16 +71,19 @@ public record SubCompiledGraphNodeAction(String nodeId, CompileConfig parentComp
 	@Override
 	public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
 		try {
-			var subGraphRunnableConfig = childConfig(nodeId, config, parentCompileConfig, subGraph.compileConfig).build();
-			if (shouldResume(nodeId, config) && config.taskId().isPresent()) {
+			var subGraphRunnableConfig = configure.apply(
+					childConfig(nodeId, config, parentCompileConfig, subGraph.compileConfig).build());
+			if (shouldResume(nodeId, config)) {
+				if (config.taskId().isEmpty()) {
+					subGraphRunnableConfig = subGraph.updateState(subGraphRunnableConfig, state.data());
+				}
 				return CompletableFuture.completedFuture(Map.of(outputKeyToParent(nodeId),
 						subGraph.graphResponseStream(Map.of(), subGraphRunnableConfig)));
 			}
-			if (shouldResume(nodeId, config)) {
-				subGraphRunnableConfig = subGraph.updateState(subGraphRunnableConfig, state.data());
-			}
+			var childState = OverAllStateBuilder.builder().withData(state.data()).withStore(state.getStore())
+					.withKeyStrategies(subGraph.getKeyStrategyMap()).build();
 			return CompletableFuture.completedFuture(Map.of(outputKeyToParent(nodeId),
-					subGraph.graphResponseStream(state, subGraphRunnableConfig)));
+					subGraph.graphResponseStream(childState, subGraphRunnableConfig)));
 		}
 		catch (Exception e) {
 			return CompletableFuture.failedFuture(e);

@@ -724,14 +724,17 @@ public class NodeExecutor extends BaseGraphExecutor {
 				}
 			}
 
+			List<Map<String, Object>> writes = data.hasMetadata(GraphRunnerContext.BRANCH_WRITES)
+					? CheckpointWrite.decodeAll(data.getMetadata(GraphRunnerContext.BRANCH_WRITES))
+					: List.of(updateState);
 			Map<String, Object> combinedUpdateState = new HashMap<>(partialStateWithoutFlux);
-			combinedUpdateState.putAll(updateState);
+			writes.forEach(combinedUpdateState::putAll);
 			Optional<InterruptionMetadata> interruptAfterMetadata = interruptAfter(context, combinedUpdateState);
 
 			context.mergeIntoCurrentState(partialStateWithoutFlux);
-			context.mergeIntoCurrentState(updateState);
+			writes.forEach(context::mergeIntoCurrentState);
 
-			return finishStreamingStep(context, updateState, interruptAfterMetadata);
+			return finishStreamingStep(context, combinedUpdateState, interruptAfterMetadata);
 		});
 
 		return processedFlux

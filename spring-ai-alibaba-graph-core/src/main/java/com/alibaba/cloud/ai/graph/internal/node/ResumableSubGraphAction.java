@@ -31,6 +31,7 @@ import static java.lang.String.format;
  */
 public interface ResumableSubGraphAction {
 	static final String OUTPUT_KEY_TO_PARENT_SUFFIX = "_compiled_graph";
+	String CAPTURE_WRITES = "_graph_capture_subgraph_writes_";
 
 	/**
 	 * Gets the resume sub-graph identifier.
@@ -60,7 +61,7 @@ public interface ResumableSubGraphAction {
 	}
 
 	static RunnableConfig.Builder childInvocation(RunnableConfig parent, boolean resume) {
-		var builder = RunnableConfig.builder(parent).checkPointId(null).nextNode(null);
+		var builder = RunnableConfig.builder(parent).checkPointId(null).nextNode(null).removeMetadata(CAPTURE_WRITES);
 		if (!resume) {
 			builder.removeMetadata(HUMAN_FEEDBACK_METADATA_KEY)
 					.removeMetadata(RunnableConfig.STATE_UPDATE_METADATA_KEY);
@@ -71,7 +72,8 @@ public interface ResumableSubGraphAction {
 	static RunnableConfig.Builder childConfig(String nodeId, RunnableConfig parent,
 			CompileConfig parentCompileConfig, CompileConfig childCompileConfig) {
 		boolean resume = shouldResume(nodeId, parent);
-		var builder = childInvocation(parent, resume).removeMetadata(resumeSubGraphId(nodeId));
+		var builder = childInvocation(parent, resume).removeMetadata(resumeSubGraphId(nodeId))
+				.addMetadata(CAPTURE_WRITES, true);
 		var parentSaver = parentCompileConfig.checkpointSaver();
 		var childSaver = childCompileConfig.checkpointSaver();
 		if (childSaver.isPresent()) {
