@@ -338,6 +338,7 @@ export function ToolFeedbackConfirm({
 
   const toolFeedback = message.message.toolFeedback || [];
   const toolsAutomaticallyApproved = message.message.toolsAutomaticallyApproved || [];
+  const interruptionId = message.message.interruptionId;
 
   // If there are no tools to confirm and no auto-approved tools, don't render
   if (toolFeedback.length === 0 && toolsAutomaticallyApproved.length === 0) {
@@ -396,7 +397,7 @@ export function ToolFeedbackConfirm({
       console.log('[ToolFeedbackConfirm] Submitting feedback:', feedbackForApi);
 
       // Call resume API (SSE stream)
-      await stream.resumeFeedback(feedbackForApi);
+      await stream.resumeFeedback(feedbackForApi, interruptionId);
 
       // Mark as submitted to prevent duplicate submissions
       setIsSubmitted(true);
@@ -405,7 +406,11 @@ export function ToolFeedbackConfirm({
       toast.success("Feedback submitted successfully");
     } catch (error: any) {
       console.error('[ToolFeedbackConfirm] Failed to submit feedback:', error);
-      toast.error(error.message || "Failed to submit feedback");
+      if (error.name === "AbortError") {
+        toast.info("Request cancelled");
+      } else {
+        toast.error(error.message || "Failed to submit feedback");
+      }
       setIsSubmitting(false);
     }
   };

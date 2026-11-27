@@ -47,6 +47,9 @@ public class AgentResumeRequest {
 	@JsonProperty("toolFeedbacks")
 	public List<ToolRequestConfirmMessageDTO.ToolFeedback> toolFeedbacks;
 
+	@JsonProperty("interruptionId")
+	public String interruptionId;
+
 	/**
 	 * Optional state delta to merge into the session state before running the agent. This allows
 	 * updating session state dynamically per request, useful for injecting configuration (e.g.,
@@ -80,6 +83,10 @@ public class AgentResumeRequest {
 
 	public List<ToolRequestConfirmMessageDTO.ToolFeedback> getToolFeedbacks() {
 		return toolFeedbacks;
+	}
+
+	public String getInterruptionId() {
+		return interruptionId;
 	}
 
 	public Map<String, Object> getStateDelta() {

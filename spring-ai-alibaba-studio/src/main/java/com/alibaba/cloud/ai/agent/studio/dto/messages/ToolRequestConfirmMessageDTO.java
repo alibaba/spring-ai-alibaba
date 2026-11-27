@@ -25,11 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Data Transfer Object for AssistantMessage.
- * Provides serialization-friendly representation with default constructor and getters/setters.
+ * Data transfer object for a tool approval request.
  */
 public class ToolRequestConfirmMessageDTO implements MessageDTO {
 
@@ -41,6 +41,14 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 
 	@JsonProperty("metadata")
 	private Map<String, Object> metadata;
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonProperty("interruptionId")
+	private String interruptionId;
+
+	@JsonInclude(JsonInclude.Include.NON_EMPTY)
+	@JsonProperty("pendingInterruptions")
+	private List<ToolRequestConfirmMessageDTO> pendingInterruptions = List.of();
 
 	@JsonProperty("toolFeedback")
 	private List<ToolFeedback> toolFeedback;
@@ -72,6 +80,10 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 		this();
 		this.content = "";
 		this.metadata = new HashMap<>(interruptionMetadata.metadata().orElse(Map.of()));
+		this.interruptionId = interruptionMetadata.interruptionId().orElse(null);
+		this.pendingInterruptions = interruptionMetadata.pendingInterruptions().stream()
+			.map(ToolRequestConfirmMessageDTO::new)
+			.toList();
 
 		// Convert InterruptionMetadata.ToolFeedback to ToolFeedback
 		if (interruptionMetadata.toolFeedbacks() != null && !interruptionMetadata.toolFeedbacks().isEmpty()) {
@@ -115,6 +127,14 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 			for (Map.Entry<String, Object> entry : this.metadata.entrySet()) {
 				builder.addMetadata(entry.getKey(), entry.getValue());
 			}
+		}
+		if (this.interruptionId != null) {
+			builder.interruptionId(this.interruptionId);
+		}
+		if (this.pendingInterruptions != null) {
+			builder.pendingInterruptions(this.pendingInterruptions.stream()
+				.map(interruption -> interruption.toInterruptionMetadata(nodeId, state))
+				.toList());
 		}
 
 		// Convert ToolFeedback to InterruptionMetadata.ToolFeedback
@@ -174,6 +194,14 @@ public class ToolRequestConfirmMessageDTO implements MessageDTO {
 
 	public void setMetadata(Map<String, Object> metadata) {
 		this.metadata = metadata;
+	}
+
+	public String getInterruptionId() {
+		return interruptionId;
+	}
+
+	public List<ToolRequestConfirmMessageDTO> getPendingInterruptions() {
+		return pendingInterruptions;
 	}
 
 	public List<ToolFeedback> getToolFeedback() {

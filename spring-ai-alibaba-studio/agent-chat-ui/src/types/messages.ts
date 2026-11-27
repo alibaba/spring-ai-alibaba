@@ -43,6 +43,7 @@ export interface ToolRequestMessage extends BaseMessage {
 // Tool request confirm message - matches backend ToolRequestConfirmMessageDTO
 export interface ToolRequestConfirmMessage extends BaseMessage {
   messageType: 'tool-confirm';
+  interruptionId?: string;
   toolFeedback?: ToolFeedback[];
   toolsAutomaticallyApproved?: ToolCall[];
 }
@@ -135,6 +136,11 @@ export function fromMessageDTO(dto: any): Message {
         messageType: 'tool-confirm',
         content: dto.content || '',
         metadata: dto.metadata || {},
+        interruptionId: typeof dto.interruptionId === 'string'
+          ? dto.interruptionId
+          : typeof dto.metadata?.interruptionId === 'string'
+            ? dto.metadata.interruptionId
+            : undefined,
         toolFeedback: dto.toolFeedback || [],
         toolsAutomaticallyApproved: dto.toolsAutomaticallyApproved || []
       } as ToolRequestConfirmMessage;
