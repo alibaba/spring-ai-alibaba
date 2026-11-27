@@ -22,7 +22,6 @@ import java.util.UUID;
 
 import com.alibaba.cloud.ai.dashscope.audio.tts.DashScopeAudioSpeechModel;
 import com.alibaba.cloud.ai.dashscope.audio.tts.DashScopeAudioSpeechOptions;
-import com.alibaba.cloud.ai.dashscope.spec.DashScopeModel;
 import com.alibaba.cloud.ai.graph.agent.tool.multimodal.OutputFormat;
 import com.alibaba.cloud.ai.graph.agent.tool.multimodal.ToolMultimodalResult;
 
@@ -60,7 +59,7 @@ public class AudioService {
 	/**
 	 * Synthesize text to speech.
 	 * @param text the text to convert
-	 * @param voice voice name (e.g. Cherry, Stella), default Cherry
+	 * @param voice optional voice supported by the configured speech model
 	 * @param outputFormat url (file URI) or base64 (inline data)
 	 * @return ToolMultimodalResult with media
 	 */
@@ -94,9 +93,8 @@ public class AudioService {
 
 	private byte[] getAudioBytes(String text, String voice) throws Exception {
 		var options = DashScopeAudioSpeechOptions.builder()
-				.model(DashScopeModel.AudioModel.COSYVOICE_V3_FLASH.getValue())
-				// check for available voices, https://help.aliyun.com/zh/model-studio/cosyvoice-voice-list?spm=a2c4g.11186623.help-menu-2400256.d_2_6_0_9.216d5c77ST1d1N
-				.voice(voice != null && !voice.isBlank() ? voice : "longanyang")
+				.format("mp3")
+				.voice(voice != null && !voice.isBlank() ? voice : null)
 				.build();
 		var prompt = new TextToSpeechPrompt(text, options);
 		try {

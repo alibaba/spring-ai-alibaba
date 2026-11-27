@@ -97,12 +97,36 @@
         .result.success { border-color: var(--success); }
         .result.error { border-color: var(--error); color: var(--error); }
         .loading { color: var(--text-muted); }
+        .workflow-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+        .workflow-artifact { margin-top: 1rem; }
+        .workflow-artifact img { display: block; max-width: 100%; height: auto; border-radius: 8px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Spring AI Alibaba 多模态示例</h1>
         <p class="subtitle">图像理解、视觉 Agent、创意生成、语音合成</p>
+
+        <div class="card">
+            <h2>图文理解与插画生成</h2>
+            <div class="file-input-wrap">
+                <label for="workflow-image">上传 PNG 或 JPEG</label>
+                <input id="workflow-image" type="file" accept="image/png,image/jpeg">
+            </div>
+            <label for="workflow-question">关于图片的问题</label>
+            <textarea id="workflow-question">描述图片中的主要物体和配色。</textarea>
+            <div class="workflow-controls">
+                <label for="workflow-mode">编排方式</label>
+                <select id="workflow-mode">
+                    <option value="agent">Agent Framework</option>
+                    <option value="graph">Graph Core</option>
+                </select>
+                <label><input id="workflow-generate" type="checkbox" checked> 生成插画</label>
+                <button id="workflow-submit" onclick="runImageWorkflow()">运行</button>
+            </div>
+            <div id="workflow-result" class="result" role="status" style="display:none;"></div>
+            <div id="workflow-artifacts"></div>
+        </div>
 
         <!-- Scene 1: Image from URL -->
         <div class="card">
@@ -162,7 +186,7 @@
             <h2>5. TTS - 语音合成</h2>
             <p class="desc">使用 DashScope 语音合成（需配置 DashScopeAudioSpeechModel）。输出格式 base64 可在页面直接播放，url 为服务器临时文件地址。</p>
             <textarea id="tts-text" placeholder="要合成的文本" rows="3">Hello, this is a text to speech demo.</textarea>
-            <input type="text" id="tts-voice" placeholder="音色，如 longanyang、longanhuan" value="longanyang">
+            <input type="text" id="tts-voice" aria-label="音色" placeholder="留空使用默认音色，或填写 longanhuan_v3.1">
             <label style="color:var(--text-muted);font-size:0.9rem;">输出格式：</label>
             <select id="tts-outputFormat" style="width:100%;padding:0.6rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);margin-bottom:0.75rem;">
                 <option value="base64">base64（页面内播放）</option>
@@ -213,6 +237,52 @@
             if (status >= 500) return data._raw && !data._raw.startsWith('<') ? data._raw : '服务器错误 (' + status + ')，请稍后重试。';
             if (data._raw && typeof data._raw === 'string' && !data._raw.trim().startsWith('<')) return data._raw;
             return '请求失败 (' + status + ')。';
+        }
+
+        async function runImageWorkflow() {
+            const image = document.getElementById('workflow-image').files[0];
+            const question = document.getElementById('workflow-question').value.trim();
+            const artifacts = document.getElementById('workflow-artifacts');
+            artifacts.replaceChildren();
+            if (!image || !question) {
+                showResult('workflow-result', '请选择图片并填写问题。', true);
+                return;
+            }
+
+            const mode = document.getElementById('workflow-mode').value;
+            const button = document.getElementById('workflow-submit');
+            const body = new FormData();
+            body.append('image', image);
+            body.append('question', question);
+            body.append('createIllustration', document.getElementById('workflow-generate').checked);
+            button.disabled = true;
+            setLoading('workflow-result', true);
+            try {
+                const response = await fetch(API + '/workflows/' + mode, { method: 'POST', body });
+                const data = await parseResponse(response);
+                if (!response.ok) {
+                    showResult('workflow-result', getErrorMessage(response, data), true);
+                    return;
+                }
+                showResult('workflow-result', data.observation);
+                for (const artifact of data.artifacts) {
+                    const figure = document.createElement('figure');
+                    figure.className = 'workflow-artifact';
+                    const preview = new Image();
+                    preview.src = artifact.url;
+                    preview.alt = '生成的插画';
+                    const download = document.createElement('a');
+                    download.href = artifact.url;
+                    download.download = artifact.id + (artifact.mimeType === 'image/jpeg' ? '.jpg' : '.png');
+                    download.textContent = '下载插画';
+                    figure.append(preview, download);
+                    artifacts.append(figure);
+                }
+            } catch (error) {
+                showResult('workflow-result', error.message, true);
+            } finally {
+                button.disabled = false;
+            }
         }
 
         async function runImageFromUrl() {
@@ -367,7 +437,7 @@
 
         async function runTts() {
             const text = document.getElementById('tts-text').value.trim();
-            const voice = document.getElementById('tts-voice').value.trim() || 'longanyang';
+            const voice = document.getElementById('tts-voice').value.trim();
             const outputFormat = document.getElementById('tts-outputFormat').value || 'base64';
             if (!text) {
                 showResult('tts-result', '请填写要合成的文本', true);

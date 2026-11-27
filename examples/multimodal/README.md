@@ -1,14 +1,14 @@
 # Multimodal Example - Spring AI Alibaba
 
-This example demonstrates **multimodal (vision) capabilities** with Spring AI Alibaba, using DashScope's vision models (e.g., `qwen-vl-plus`) to understand and analyze images.
+Upload a PNG or JPEG with a question, run the same workflow through Agent Framework or Graph Core, and download the generated illustration from the application.
 
 ## Overview
 
 | Feature | Description |
 |---------|-------------|
 | **Input** | Images (URL or local file) via `UserMessage.media` |
-| **Output** | Image via tools (GenerateImageTool); Audio via `DashScopeAudioSpeechModel` directly |
-| **Model** | DashScope vision (`qwen-vl-plus`), image (Wanx), TTS (CosyVoice) |
+| **Output** | Downloadable image artifacts via Agent tools or Graph nodes, plus direct audio synthesis |
+| **Model** | DashScope vision and tools (`qwen4-max`), image generation (`qwen-image-3.0-pro`), speech synthesis (`qwen-audio-3.1-tts-plus`) |
 | **Scenarios** | Image understanding, ReactAgent with media input, **Image generation via tools**, **TTS via /api/audio/tts** |
 | **Reference** | [Spring AI Multimodality](https://docs.spring.io/spring-ai/reference/api/multimodality.html)|
 
@@ -25,14 +25,38 @@ export AI_DASHSCOPE_API_KEY=your_api_key
 
 ```bash
 # From project root
-./mvnw -pl examples/multimodal spring-boot:run
+./mvnw -f examples/multimodal/pom.xml spring-boot:run
 ```
 
 Or with explicit API key:
 
 ```bash
-AI_DASHSCOPE_API_KEY=your_key ./mvnw -pl examples/multimodal spring-boot:run
+AI_DASHSCOPE_API_KEY=your_key ./mvnw -f examples/multimodal/pom.xml spring-boot:run
 ```
+
+## Image workflows
+
+Open `http://localhost:8080/`, choose **Agent Framework** or **Graph Core** in the image workflow card, and upload a PNG or JPEG with a question. Enable illustration generation to see and download the resulting file.
+
+Both routes accept the same multipart form. Use `agent` or `graph` for `mode`.
+
+```bash
+mode=agent
+curl --fail-with-body --silent --show-error \
+  -F 'image=@examples/multimodal/src/main/resources/images/sample.png' \
+  -F 'question=Describe the main objects and colors in the picture.' \
+  -F 'createIllustration=true' \
+  "http://localhost:8080/api/workflows/$mode" > workflow.json
+
+curl --fail-with-body --silent --show-error \
+  "http://localhost:8080$(jq -r '.artifacts[0].url' workflow.json)" -o illustration
+```
+
+The response contains `observation` and an `artifacts` array. Each completed artifact has an `id`, `mimeType`, `sizeBytes`, and application-relative `url`. Sending `createIllustration=false` runs only visual inspection and returns an empty array.
+
+- **Agent Framework** sends the user's text and image to `ReactAgent`. With generation enabled, the model calls `generate_illustration` with the visual observation and a prompt. The service reads the artifact ID from the tool response.
+- **Graph Core** stages the upload, puts its ID in `StateGraph`, resolves it inside `inspect`, and follows the conditional edge to `illustrate` only when generation was requested. The staged upload is removed when the request ends.
+- Both routes use `ImageModel` to request a single Base64 image from Qwen Image 3.0 Pro. The application saves it before returning a download URL. Set `MULTIMODAL_ARTIFACT_DIRECTORY` to keep generated files in a directory you control. The example serves artifacts by ID and is intended for local use.
 
 ## Scenarios Demonstrated
 
@@ -90,13 +114,13 @@ creativeAgent.call("Generate an image of a sunset over mountains");
 
 ### 5. TTS via DashScopeAudioSpeechModel (Direct API)
 
-TTS uses `DashScopeAudioSpeechModel` directly (not as a tool). `AudioService` uses `call()` or `stream()` based on model support; `outputFormat` controls url vs base64:
+`AudioService` calls `DashScopeAudioSpeechModel` and returns MP3. Omit `voice` to use the model's default or supply a [voice supported by the selected Qwen Audio model](https://www.alibabacloud.com/help/en/model-studio/qwen-audio-tts-voice-list).
 
 ```bash
 # POST /api/audio/tts
 curl -X POST http://localhost:8080/api/audio/tts \
   -H "Content-Type: application/json" \
-  -d '{"text":"Hello world","voice":"Cherry","outputFormat":"url"}'
+  -d '{"text":"你好，欢迎使用语音合成示例。","outputFormat":"base64"}'
 ```
 
 | outputFormat | Result |
@@ -109,14 +133,13 @@ curl -X POST http://localhost:8080/api/audio/tts \
 | Property | Default | Description |
 |----------|---------|-------------|
 | `spring.ai.dashscope.api-key` | `${AI_DASHSCOPE_API_KEY}` | DashScope API key |
-| `spring.ai.dashscope.chat.options.model` | `qwen-vl-plus` | Vision model (use `-vl` models for multimodal) |
-| `spring.ai.dashscope.chat.options.multi-model` | `false` | Use the DashScope multimodal generation endpoint; set to `true` for vision models |
+| `DASHSCOPE_VISION_MODEL` | `qwen4-max` | DashScope chat model. The Agent workflow requires image input and tool calling |
+| `spring.ai.dashscope.chat.multi-model` | `true` | Use the DashScope multimodal generation endpoint |
+| `DASHSCOPE_ILLUSTRATION_MODEL` | `qwen-image-3.0-pro` | Image model. The two workflows require synchronous `b64_json` output |
+| `DASHSCOPE_TTS_MODEL` | `qwen-audio-3.1-tts-plus` | Speech synthesis model. Custom voices must match the selected model |
+| `MULTIMODAL_ARTIFACT_DIRECTORY` | `${java.io.tmpdir}/saa-multimodal` | Local directory for generated images and temporary uploads |
 
-Supported vision models: `qwen-vl-plus`, `qwen-vl-max`, `qwen2-vl-plus`, `qwen3-vl-plus`.
-
-## Limitations (Current)
-- **Checkpoint/Resume**: Media may not persist in Graph state serialization
-- **Studio**: Media field may be stripped in Studio's API pipeline
+The Graph workflow runs within one HTTP request. The staged input is available to the graph until the request finishes. Generated artifacts remain in the configured directory.
 
 ## Tool Multimodal Result
 
@@ -133,11 +156,11 @@ produces JSON like: `{"text":"...","media":[{"type":"image","url":"..."}]}` or `
 
 ### Output Format Parameter (url vs base64)
 
-`generate_image` and `AudioService` (TTS) support an `outputFormat` parameter:
+The TTS endpoint accepts `outputFormat`. The standalone `generate_image` tool uses the URL converter by default.
 
 | Value | Default | Use case |
 |-------|---------|----------|
-| **url** | ✓ | Model-friendly; tool result sent to model as context. Minimal token usage. |
-| **base64** | | Inline data for client (e.g., `returnDirect=true`). **Note:** Base64 significantly increases token usage when sent to the model; prefer `url` for agent reasoning loops. |
+| **url** | ✓ | Small text result containing a reference the client can display or download. |
+| **base64** | | Inline data the client can display without another request. Keep large payloads out of model context. |
 
-Industry practice: Use URLs for tool results that feed back into the model (OpenAI, LangChain, etc.). Use base64 when the consumer needs inline display without a separate fetch.
+DashScope tool responses carry text. To inspect an image produced by a tool, make a separate multimodal request that attaches the actual image as `Media`.
