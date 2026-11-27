@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.interceptor.skills;
 
 import com.alibaba.cloud.ai.graph.agent.hook.skills.ReadSkillTool;
+import com.alibaba.cloud.ai.graph.agent.hook.skills.OnDemandSkillTools;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory;
 import static com.alibaba.cloud.ai.graph.skills.SkillPromptConstants.buildSkillsPrompt;
 
 /**
- * Interceptor for integrating Claude-style Skills into ReactAgent.
+ * Interceptor for integrating reusable Skills into ReactAgent.
  *
  * This interceptor injects skills metadata into system prompt, following progressive disclosure pattern:
  * - Injects lightweight skills list (name + description + path)
@@ -99,6 +100,11 @@ public class SkillsInterceptor extends ModelInterceptor {
 
 	private static final Logger logger = LoggerFactory.getLogger(SkillsInterceptor.class);
 
+	private static final String DISCOVERY_PROMPT = """
+			Use search_skills to discover registered skills when the task requires one.
+			Use read_skill to load a skill by name and continue with the returned nextOffset when needed.
+			""".strip();
+
 	private final SkillRegistry skillRegistry;
 
 	private final Map<String, List<ToolCallback>> groupedTools;
@@ -106,6 +112,8 @@ public class SkillsInterceptor extends ModelInterceptor {
 	private final Supplier<Map<String, List<ToolCallback>>> groupedToolsSupplier;
 
 	private final ToolCallbackResolver toolCallbackResolver;
+
+	private final boolean onDemand;
 
 	private SkillsInterceptor(Builder builder) {
 		if (builder.skillRegistry == null) {
@@ -117,6 +125,7 @@ public class SkillsInterceptor extends ModelInterceptor {
 				: Collections.emptyMap();
 		this.groupedToolsSupplier = builder.groupedToolsSupplier;
 		this.toolCallbackResolver = builder.toolCallbackResolver;
+		this.onDemand = builder.onDemand;
 	}
 
 	public static Builder builder() {
@@ -125,18 +134,19 @@ public class SkillsInterceptor extends ModelInterceptor {
 
 	@Override
 	public ModelResponse interceptModel(ModelRequest request, ModelCallHandler handler) {
-		List<SkillMetadata> skills = skillRegistry.listAll();
+		List<SkillMetadata> skills = this.onDemand ? List.of() : skillRegistry.listAll();
 
-		if (skills.isEmpty()) {
+		if (!this.onDemand && skills.isEmpty()) {
 			return handler.call(request);
 		}
 
 		// 1. Extract resolved skills from AssistantMessage with read_skill tool calls
-		List<SkillMetadata> readSkills = extractReadSkills(request.getMessages());
+		List<SkillMetadata> readSkills = this.onDemand ? OnDemandSkillTools.activeSkills(this.skillRegistry, request.getContext())
+				: extractReadSkills(request.getMessages());
 
 		// 2. Collect tools from groupedTools and allowed_tools for those skills
 		List<ToolCallback> skillTools = new ArrayList<>(request.getDynamicToolCallbacks());
-		Map<String, List<ToolCallback>> grouped = getGroupedTools();
+		Map<String, List<ToolCallback>> grouped = this.onDemand && readSkills.isEmpty() ? Map.of() : getGroupedTools();
 		for (SkillMetadata skill : readSkills) {
 			List<ToolCallback> toolsForSkill = grouped.get(skill.getName());
 			if (toolsForSkill != null && !toolsForSkill.isEmpty()) {
@@ -150,19 +160,24 @@ public class SkillsInterceptor extends ModelInterceptor {
 		}
 		skillTools = ToolCallbackUtils.deduplicateByName(skillTools);
 
-		String skillsPrompt = buildSkillsPrompt(skills, skillRegistry, skillRegistry.getSystemPromptTemplate());
+		String skillsPrompt = this.onDemand ? DISCOVERY_PROMPT
+				: buildSkillsPrompt(skills, skillRegistry, skillRegistry.getSystemPromptTemplate());
 		SystemMessage enhanced = enhanceSystemMessage(request.getSystemMessage(), skillsPrompt);
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("Enhanced system message:\n{}", enhanced.getText());
 		}
 
-		ModelRequest modified = ModelRequest.builder(request)
+		var modified = ModelRequest.builder(request)
 				.systemMessage(enhanced)
 				.dynamicToolCallbacks(skillTools)
 				.build();
 
 		return handler.call(modified);
+	}
+
+	public boolean isOnDemand() {
+		return this.onDemand;
 	}
 
 	private List<SkillMetadata> extractReadSkills(List<Message> messages) {
@@ -297,6 +312,12 @@ public class SkillsInterceptor extends ModelInterceptor {
 		private Supplier<Map<String, List<ToolCallback>>> groupedToolsSupplier;
 
 		private ToolCallbackResolver toolCallbackResolver;
+		private boolean onDemand;
+
+		public Builder onDemand(boolean onDemand) {
+			this.onDemand = onDemand;
+			return this;
+		}
 
 		/**
 		 * Set a shared SkillRegistry instance.

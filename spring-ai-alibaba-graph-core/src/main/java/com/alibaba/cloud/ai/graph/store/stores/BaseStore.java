@@ -179,7 +179,9 @@ public abstract class BaseStore implements Store {
 	protected boolean matchesSearchCriteria(StoreItem item, StoreSearchRequest searchRequest) {
 		// Namespace filter
 		List<String> namespaceFilter = searchRequest.getNamespace();
-		if (!namespaceFilter.isEmpty() && !startsWithPrefix(item.getNamespace(), namespaceFilter)) {
+		boolean inNamespace = searchRequest.isExactNamespace() ? namespaceFilter.equals(item.getNamespace())
+				: namespaceFilter.isEmpty() || startsWithPrefix(item.getNamespace(), namespaceFilter);
+		if (!inNamespace) {
 			return false;
 		}
 

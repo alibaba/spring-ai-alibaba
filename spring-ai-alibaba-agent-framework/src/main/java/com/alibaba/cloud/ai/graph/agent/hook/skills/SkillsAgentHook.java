@@ -16,6 +16,7 @@
 package com.alibaba.cloud.ai.graph.agent.hook.skills;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.agent.hook.AgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.HookPosition;
@@ -24,6 +25,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
 import com.alibaba.cloud.ai.graph.skills.SkillMetadata;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
+import com.alibaba.cloud.ai.graph.state.strategy.MergeStrategy;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
@@ -84,9 +86,8 @@ public class SkillsAgentHook extends AgentHook {
 	private final Map<String, List<ToolCallback>> groupedTools;
 	private final Supplier<Map<String, List<ToolCallback>>> groupedToolsSupplier;
 	private final ToolCallbackResolver toolCallbackResolver;
-	private final ToolCallback readSkillTool;
-	private final ToolCallback searchSkillsTool;
-	private final ToolCallback disableSkillTool;
+	private final boolean onDemand;
+	private final List<ToolCallback> tools;
 
 	private SkillsAgentHook(Builder builder) {
 		if (builder.skillRegistry == null) {
@@ -97,18 +98,12 @@ public class SkillsAgentHook extends AgentHook {
 		this.groupedTools = builder.groupedTools != null ? builder.groupedTools : Collections.emptyMap();
 		this.groupedToolsSupplier = builder.groupedToolsSupplier;
 		this.toolCallbackResolver = builder.toolCallbackResolver;
-		this.readSkillTool = ReadSkillTool.createReadSkillToolCallback(
-				this.skillRegistry,
-				ReadSkillTool.DESCRIPTION
-		);
-		this.searchSkillsTool = SearchSkillsTool.createSearchSkillsToolCallback(
-				this.skillRegistry,
-				SearchSkillsTool.DESCRIPTION
-		);
-		this.disableSkillTool = DisableSkillTool.createDisableSkillToolCallback(
-				this.skillRegistry,
-				DisableSkillTool.DESCRIPTION
-		);
+		this.onDemand = builder.onDemand;
+		this.tools = this.onDemand
+				? new OnDemandSkillTools(this.skillRegistry, builder.maxSearchResults, builder.pageCharacters).callbacks()
+				: List.of(ReadSkillTool.createReadSkillToolCallback(this.skillRegistry, ReadSkillTool.DESCRIPTION),
+						SearchSkillsTool.createSearchSkillsToolCallback(this.skillRegistry, SearchSkillsTool.DESCRIPTION),
+						DisableSkillTool.createDisableSkillToolCallback(this.skillRegistry, DisableSkillTool.DESCRIPTION));
 	}
 
 	public static Builder builder() {
@@ -141,7 +136,8 @@ public class SkillsAgentHook extends AgentHook {
 
 	@Override
 	public List<ModelInterceptor> getModelInterceptors() {
-		SkillsInterceptor.Builder interceptorBuilder = SkillsInterceptor.builder().skillRegistry(this.skillRegistry);
+		SkillsInterceptor.Builder interceptorBuilder = SkillsInterceptor.builder().skillRegistry(this.skillRegistry)
+				.onDemand(this.onDemand);
 		if (!this.groupedTools.isEmpty()) {
 			interceptorBuilder.groupedTools(this.groupedTools);
 		}
@@ -156,7 +152,12 @@ public class SkillsAgentHook extends AgentHook {
 
 	@Override
 	public List<ToolCallback> getTools() {
-		return List.of(readSkillTool, searchSkillsTool, disableSkillTool);
+		return this.tools;
+	}
+
+	@Override
+	public Map<String, KeyStrategy> getKeyStrategys() {
+		return this.onDemand ? Map.of(OnDemandSkillTools.STATE_KEY, new MergeStrategy()) : Map.of();
 	}
 
 	public int getSkillCount() {
@@ -221,6 +222,25 @@ public class SkillsAgentHook extends AgentHook {
 		private Map<String, List<ToolCallback>> groupedTools;
 		private Supplier<Map<String, List<ToolCallback>>> groupedToolsSupplier;
 		private ToolCallbackResolver toolCallbackResolver;
+		private boolean onDemand;
+		private int maxSearchResults = 8;
+		private int pageCharacters = 4096;
+
+		/** Discovers skills through tools and loads their contents in bounded pages. */
+		public Builder onDemand() {
+			return onDemand(this.maxSearchResults, this.pageCharacters);
+		}
+
+		/** Sets the descriptor count and the maximum UTF-16 page size for on-demand reads. */
+		public Builder onDemand(int maxSearchResults, int pageCharacters) {
+			if (maxSearchResults < 1 || pageCharacters < 2) {
+				throw new IllegalArgumentException("Skill search results must be positive and pages must allow two characters");
+			}
+			this.onDemand = true;
+			this.maxSearchResults = maxSearchResults;
+			this.pageCharacters = pageCharacters;
+			return this;
+		}
 
 		/**
 		 * Sets the SkillRegistry instance.

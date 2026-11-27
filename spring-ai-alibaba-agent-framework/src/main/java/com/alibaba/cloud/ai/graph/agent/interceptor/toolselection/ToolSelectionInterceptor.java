@@ -27,6 +27,7 @@ import com.alibaba.cloud.ai.graph.agent.interceptor.ModelCallHandler;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelRequest;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelResponse;
+import com.alibaba.cloud.ai.graph.agent.tool.ContextSourceTool;
 import com.alibaba.cloud.ai.graph.agent.tool.DeferredToolCatalog;
 import com.alibaba.cloud.ai.graph.agent.tool.ToolCallbackUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -96,12 +97,16 @@ public class ToolSelectionInterceptor extends ModelInterceptor {
 		}
 
 		var options = request.getOptions();
+		var callbacks = ToolCallbackUtils.deduplicateByName(options == null ? null : options.getToolCallbacks(), dynamic);
 		Map<String, ToolDefinition> definitions = new LinkedHashMap<>();
-		ToolCallbackUtils.deduplicateByName(options == null ? null : options.getToolCallbacks(), dynamic)
-			.forEach(tool -> definitions.put(tool.getToolDefinition().name(), tool.getToolDefinition()));
+		callbacks.forEach(tool -> definitions.put(tool.getToolDefinition().name(), tool.getToolDefinition()));
 		var context = request.getContext();
-		List<String> discovery = context != null && Boolean.TRUE.equals(context.get(DeferredToolCatalog.DISCOVERY_CONTEXT_KEY))
-				? DeferredToolCatalog.DISCOVERY_TOOLS : List.of();
+		var discovery = new LinkedHashSet<String>();
+		if (context != null && Boolean.TRUE.equals(context.get(DeferredToolCatalog.DISCOVERY_CONTEXT_KEY))) {
+			discovery.addAll(DeferredToolCatalog.DISCOVERY_TOOLS);
+		}
+		callbacks.stream().filter(ContextSourceTool.class::isInstance)
+			.map(tool -> tool.getToolDefinition().name()).forEach(discovery::add);
 		var required = available.stream().filter(name -> this.alwaysInclude.contains(name) || discovery.contains(name))
 			.toList();
 		var candidates = available.stream().filter(name -> !required.contains(name)).toList();

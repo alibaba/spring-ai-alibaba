@@ -49,6 +49,8 @@ import com.alibaba.cloud.ai.graph.agent.hook.returndirect.ReturnDirectModelHook;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.StreamingModelInterceptor;
 import com.alibaba.cloud.ai.graph.agent.interceptor.ToolInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.skills.SkillsInterceptor;
+import com.alibaba.cloud.ai.graph.agent.interceptor.toolselection.ToolSelectionInterceptor;
 import com.alibaba.cloud.ai.graph.agent.node.AgentLlmNode;
 import com.alibaba.cloud.ai.graph.agent.node.AgentToolNode;
 import com.alibaba.cloud.ai.graph.agent.tool.DeferredToolCatalog;
@@ -902,7 +904,12 @@ public class ReactAgent extends BaseAgent {
 					for (ModelInterceptor interceptor : hookInterceptors) {
 						String name = interceptor.getName();
 						if (!addedNames.contains(name)) {
-							result.add(interceptor);
+							int index = result.size();
+							if (interceptor instanceof SkillsInterceptor skills && skills.isOnDemand()) {
+								index = result.stream().filter(ToolSelectionInterceptor.class::isInstance)
+										.findFirst().map(result::indexOf).orElse(index);
+							}
+							result.add(index, interceptor);
 							addedNames.add(name);
 						} else {
 							logger.info("Skipping model interceptor '{}' from hook '{}' because an interceptor with the same name already exists in ReactAgent configuration", name, hook.getName());

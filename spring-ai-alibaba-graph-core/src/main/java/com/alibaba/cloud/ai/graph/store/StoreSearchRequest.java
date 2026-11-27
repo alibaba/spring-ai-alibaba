@@ -55,10 +55,12 @@ import java.util.Map;
 public class StoreSearchRequest {
 
 	/**
-	 * Namespace filter - search within specific namespace path. Empty list means search
-	 * across all namespaces.
+	 * Namespace filter. An empty list matches all namespaces in prefix mode and only
+	 * the root namespace in exact mode.
 	 */
 	private List<String> namespace = Collections.emptyList();
+
+	private boolean exactNamespace;
 
 	/**
 	 * Text query to search in keys and values.
@@ -113,6 +115,14 @@ public class StoreSearchRequest {
 
 	public void setNamespace(List<String> namespace) {
 		this.namespace = namespace != null ? namespace : Collections.emptyList();
+	}
+
+	public boolean isExactNamespace() {
+		return this.exactNamespace;
+	}
+
+	public void setExactNamespace(boolean exactNamespace) {
+		this.exactNamespace = exactNamespace;
 	}
 
 	public String getQuery() {
@@ -190,6 +200,12 @@ public class StoreSearchRequest {
 			return this;
 		}
 
+		/** Restricts matching to the supplied namespace without including descendants. */
+		public Builder exactNamespace(boolean exactNamespace) {
+			request.setExactNamespace(exactNamespace);
+			return this;
+		}
+
 		/**
 		 * Set text query.
 		 * @param query search query
@@ -262,7 +278,8 @@ public class StoreSearchRequest {
 
 	@Override
 	public String toString() {
-		return "StoreSearchRequest{" + "namespace=" + namespace + ", query='" + query + '\'' + ", filter=" + filter
+		return "StoreSearchRequest{" + "namespace=" + namespace + ", exactNamespace=" + exactNamespace
+				+ ", query='" + query + '\'' + ", filter=" + filter
 				+ ", sortFields=" + sortFields + ", ascending=" + ascending + ", offset=" + offset + ", limit=" + limit
 				+ '}';
 	}
